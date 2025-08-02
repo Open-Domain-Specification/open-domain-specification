@@ -1,0 +1,23 @@
+@import "@mantine/core/styles.css";
+@import "@mantine/notifications/styles.css";
+@import "@mantine/spotlight/styles.css";
+@import "@fontsource/geist-mono";
+@import "@fontsource/geist-sans";
+
+.app-header {
+	padding: var(--mantine-spacing-md);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.app-spotlight-input {
+	input {
+		cursor: pointer !important;
+	}
+}
+
+a {
+	text-decoration: unset;
+	color: unset;
+}

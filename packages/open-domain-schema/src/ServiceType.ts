@@ -1,1 +1,1 @@
-export type ServiceType = "domain" | "application";
+export type ServiceType = "domain" | "application" | "infrastructure";

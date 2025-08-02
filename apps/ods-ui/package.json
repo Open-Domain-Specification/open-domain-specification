@@ -1,0 +1,41 @@
+{
+	"name": "ods-ui",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc -b && vite build",
+		"preview": "vite preview"
+	},
+	"dependencies": {
+		"@fontsource/geist-mono": "^5.2.6",
+		"@fontsource/geist-sans": "^5.2.5",
+		"@mantine/colors-generator": "^8.2.2",
+		"@mantine/core": "^8.2.2",
+		"@mantine/hooks": "^8.2.2",
+		"@mantine/notifications": "^8.2.2",
+		"@mantine/spotlight": "^8.2.2",
+		"@types/chroma-js": "^3.1.1",
+		"chroma-js": "^3.1.2",
+		"fuse.js": "^7.1.0",
+		"geist": "^1.4.2",
+		"marked": "^16.1.1",
+		"mermaid": "^11.9.0",
+		"ods-example-ws": "^0.0.0",
+		"open-domain-schema": "^0.0.0",
+		"react": "^19.1.0",
+		"react-dom": "^19.1.0",
+		"react-icons": "^5.5.0",
+		"react-router-dom": "^7.7.1",
+		"react-use": "^17.6.0"
+	},
+	"devDependencies": {
+		"@types/react": "^19.1.8",
+		"@types/react-dom": "^19.1.6",
+		"@vitejs/plugin-react": "^4.6.0",
+		"globals": "^16.3.0",
+		"typescript": "~5.8.3",
+		"vite": "^7.0.4"
+	}
+}

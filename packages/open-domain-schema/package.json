@@ -1,0 +1,31 @@
+{
+	"name": "open-domain-schema",
+	"version": "0.0.0",
+	"description": "> TODO: description",
+	"author": "Jonathan Turnock <jonathan.turnock@outlook.com>",
+	"homepage": "",
+	"license": "ISC",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"publishConfig": {
+		"registry": "https://registry.npmjs.org/",
+		"access": "public"
+	},
+	"files": [
+		"src",
+		"dist"
+	],
+	"scripts": {
+		"build": "tsc --project tsconfig.json",
+		"build:watch": "tsc --project tsconfig.json --watch"
+	},
+	"keywords": [
+		"domain-driven-design",
+		"ddd",
+		"open-domain-specification",
+		"ods"
+	],
+	"dependencies": {
+		"typescript": "^5.8.3"
+	}
+}

@@ -1,10 +1,17 @@
 {
-  "name": "ods-example-ws",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "private": true
+	"name": "ods-example-ws",
+	"version": "0.0.0",
+	"description": "",
+	"main": "dist/index.js",
+	"scripts": {
+		"build": "tsc --project tsconfig.json && node ."
+	},
+	"private": true,
+	"dependencies": {
+		"open-domain-schema": "0.0.0"
+	},
+	"devDependencies": {
+		"@types/node": "^24.1.0",
+		"typescript": "^5.8.3"
+	}
 }

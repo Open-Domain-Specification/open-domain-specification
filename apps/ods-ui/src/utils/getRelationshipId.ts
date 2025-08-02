@@ -1,15 +1,15 @@
 import type {
-	Aggregate,
 	BoundedContext,
+	ContextRelationship,
 	Domain,
 	Subdomain,
 } from "open-domain-schema";
 
-export function getAggregateId(
+export function getRelationshipId(
 	domain: Domain,
 	subdomain: Subdomain,
 	boundedContext: BoundedContext,
-	aggregate: Aggregate,
+	relationship: ContextRelationship,
 ): string {
-	return `${domain}:${subdomain}:${boundedContext}:${aggregate}`;
+	return `${domain.id}:${subdomain.id}:${boundedContext.id}:${boundedContext.id}:${relationship.target}`;
 }

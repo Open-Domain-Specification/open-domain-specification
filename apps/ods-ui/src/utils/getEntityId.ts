@@ -2,16 +2,16 @@ import type {
 	Aggregate,
 	BoundedContext,
 	Domain,
+	Entity,
 	Subdomain,
-	ValueObject,
 } from "open-domain-schema";
 
-export function getValueObjectId(
+export function getEntityId(
 	domain: Domain,
 	subdomain: Subdomain,
 	boundedContext: BoundedContext,
 	aggregate: Aggregate,
-	valueObject: ValueObject,
+	entity: Entity,
 ): string {
-	return `${domain.id}:${subdomain.id}:${boundedContext.id}:${aggregate.id}:${valueObject.id}`;
+	return `${domain.id}:${subdomain.id}:${boundedContext.id}:${aggregate.id}:${entity.id}`;
 }

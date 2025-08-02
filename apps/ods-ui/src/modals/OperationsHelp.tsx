@@ -1,4 +1,4 @@
-import { HelpModalWithButton } from "./HelpModalWithButton.tsx";
+import { HelpModalWithButton } from "../components/HelpModalWithButton.tsx";
 
 const help = `\
 In **Domain-Driven Design (DDD)**, **operations** are the **things an aggregate can do**.

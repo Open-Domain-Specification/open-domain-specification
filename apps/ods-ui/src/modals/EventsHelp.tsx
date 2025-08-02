@@ -1,4 +1,4 @@
-import { HelpModalWithButton } from "./HelpModalWithButton.tsx";
+import { HelpModalWithButton } from "../components/HelpModalWithButton.tsx";
 
 const help = `\
 An aggregate event represents something **important that has happened** within the boundary of an aggregate. Events capture **state transitions** or meaningful domain activities that occur as a result of applying a command or decision.
@@ -24,7 +24,7 @@ An aggregate raises events to **express that a change has occurred**—not to ca
 
 ---
 
-**How to Think About Aggregate Events**
+### **How to Think About Aggregate Events**
 
 When designing an aggregate, ask yourself:
 
@@ -36,7 +36,7 @@ Then, make your aggregate emit those events **only after** successfully validati
 
 ---
 
-**Key Principles**
+### **Key Principles**
 
 * Events are **facts**: once they occur, they can’t be undone—only compensated for.
 * Events reflect **business language**: name them in terms that stakeholders understand.
@@ -47,8 +47,6 @@ Then, make your aggregate emit those events **only after** successfully validati
 By modeling events thoughtfully within your aggregates, you make your system more **expressive**, **traceable**, and **aligned with the business**.
 `;
 
-export function EntitiesAndValueObjectsHelp() {
-	return (
-		<HelpModalWithButton content={help} title={"Entities and Value Objects"} />
-	);
+export function EventsHelp() {
+	return <HelpModalWithButton content={help} title={"Events"} />;
 }

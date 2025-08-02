@@ -1,21 +1,22 @@
-import { Badge, Card, Stack, Text, Title } from "@mantine/core";
-import type { Subdomain } from "open-domain-schema";
-import { VscSymbolClass } from "react-icons/vsc";
+import type { Domain } from "open-domain-schema";
+import { useNavigate } from "react-router-dom";
+import { Icons } from "../Icons.tsx";
+import { GenericCard } from "./GenericCard";
 
-export function SubDomainCard({ subdomain }: { subdomain: Subdomain }) {
+export function DomainCard({ domain }: { domain: Domain }) {
+	const nav = useNavigate();
+
 	return (
-		<Card withBorder>
-			<Stack gap={"xs"}>
-				<Title order={4}>{subdomain.name}</Title>
-				<Text lineClamp={2}>{subdomain.description}</Text>
-				<Badge
-					color={"primary"}
-					variant={"light"}
-					leftSection={<VscSymbolClass />}
-				>
-					{subdomain.boundedContexts?.length || 0}
-				</Badge>
-			</Stack>
-		</Card>
+		<GenericCard
+			onClick={() => nav(domain.id)}
+			title={domain.name}
+			content={domain.description}
+			badges={[
+				{
+					content: domain.subdomains?.length || 0,
+					icon: Icons.Subdomain,
+				},
+			]}
+		/>
 	);
 }

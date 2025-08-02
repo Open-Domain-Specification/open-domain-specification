@@ -1,5 +1,9 @@
-import type { Domain, Subdomain } from "open-domain-schema";
+import type { BoundedContext, Domain, Subdomain } from "open-domain-schema";
 
-export function getSubdomainId(domain: Domain, subdomain: Subdomain): string {
-	return `${domain}:${subdomain}`;
+export function getBoundedContextId(
+	domain: Domain,
+	subdomain: Subdomain,
+	boundedContext: BoundedContext,
+): string {
+	return `${domain.id}:${subdomain.id}:${boundedContext.id}`;
 }

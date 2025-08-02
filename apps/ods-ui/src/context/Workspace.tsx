@@ -1,21 +1,41 @@
 import type { Workspace } from "open-domain-schema";
-import { createContext, useContext, useState } from "react";
-import { defaultWorkspace } from "../default-workspace.ts";
+import { createContext, type ReactNode, useContext, useState } from "react";
+
+export const INITIAL_WORKSPACE: Workspace = {
+	name: "",
+	description: "",
+	odsVersion: "0.0.0",
+	version: "0.0.0",
+	domains: [],
+};
 
 export type WorkspaceContext = {
 	workspace: Workspace;
-	setWorkspace: (workspace: Workspace) => void;
+	loadWorkspace: (workspace: Workspace) => void;
+	closeWorkspace: () => void;
 };
 export const WorkspaceContext = createContext<WorkspaceContext>({
-	workspace: defaultWorkspace,
-	setWorkspace: () => {},
+	workspace: INITIAL_WORKSPACE,
+	closeWorkspace: () => {},
+	loadWorkspace: () => {},
 });
 
-export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
-	const [workspace, setWorkspace] = useState<Workspace>(defaultWorkspace);
+export function WorkspaceProvider({ children }: { children: ReactNode }) {
+	const [workspace, setWorkspace] = useState<Workspace>(INITIAL_WORKSPACE);
+
+	function closeWorkspace() {
+		window.location.href = "/";
+		setWorkspace(INITIAL_WORKSPACE);
+	}
 
 	return (
-		<WorkspaceContext.Provider value={{ workspace, setWorkspace }}>
+		<WorkspaceContext.Provider
+			value={{
+				workspace,
+				loadWorkspace: setWorkspace,
+				closeWorkspace,
+			}}
+		>
 			{children}
 		</WorkspaceContext.Provider>
 	);

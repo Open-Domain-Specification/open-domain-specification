@@ -1,4 +1,4 @@
-import { HelpModalWithButton } from "./HelpModalWithButton.tsx";
+import { HelpModalWithButton } from "../components/HelpModalWithButton.tsx";
 
 const help = `\
 ### **Aggregates (Your Consistency Guardians)**

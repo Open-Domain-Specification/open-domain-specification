@@ -1,11 +1,8 @@
-import type { CardinalityRange } from "./Aggregate";
+import type { EntityRelation } from "./EntityRelation";
 
-export type Entity = {
+export type ValueObject = {
 	id: string;
 	name: string;
 	description?: string;
-	relationships?: Record<
-		string,
-		{ left: CardinalityRange; right: CardinalityRange; label?: string }
-	>;
+	relations?: EntityRelation[];
 };

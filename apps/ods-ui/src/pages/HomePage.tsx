@@ -1,53 +1,29 @@
-import {
-	Badge,
-	Container,
-	Grid,
-	Stack,
-	Title,
-	Typography,
-} from "@mantine/core";
-import { Marked } from "marked";
-import type { Domain, Subdomain } from "open-domain-schema";
-import { useParams } from "react-router-dom";
-import { SubDomainCard } from "../components/SubDomainCard.tsx";
+import { Grid, Title } from "@mantine/core";
+import type { Domain } from "open-domain-schema";
+import { DomainCard } from "../components/DomainCard.tsx";
+import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
+import { PageSkeleton } from "../components/PageSkeleton.tsx";
 import { useWorkspace } from "../context/Workspace.tsx";
-import { getSubdomainId } from "../utils/getSubdomainId.ts";
-import { NotFoundPage } from "./NotFoundPage.tsx";
 
-const marked = new Marked();
-
-export function _DomainPage({ domain }: { domain: Domain }) {
-	const htmlDescription = marked.parse(domain.description || "");
+export function HomePage() {
+	const { workspace } = useWorkspace();
 
 	return (
-		<Container p={"md"}>
-			<Stack gap={"xl"}>
-				<Stack>
-					<Title>{domain.name}</Title>
-					<Badge>{domain.type}</Badge>
-					{/** biome-ignore lint/security/noDangerouslySetInnerHtml: Parsed Markdown */}
-					<Typography dangerouslySetInnerHTML={{ __html: htmlDescription }} />
-				</Stack>
-				<Stack>
-					<Title order={2}>Subdomains</Title>
-					<Grid>
-						{domain.subdomains?.map((subdomain: Subdomain) => (
-							<Grid.Col key={getSubdomainId(domain, subdomain)} span={4}>
-								<SubDomainCard subdomain={subdomain} />
-							</Grid.Col>
-						))}
-					</Grid>
-				</Stack>
-			</Stack>
-		</Container>
+		<GenericWorkspacePage>
+			<PageSkeleton
+				avatar={workspace.logoUrl}
+				title={workspace.name}
+				description={workspace.description || ""}
+			>
+				<Title order={2}>Subdomains</Title>
+				<Grid>
+					{workspace.domains.map((domain: Domain) => (
+						<Grid.Col key={domain.id} span={4}>
+							<DomainCard domain={domain} />
+						</Grid.Col>
+					))}
+				</Grid>
+			</PageSkeleton>
+		</GenericWorkspacePage>
 	);
-}
-
-export function DomainPage() {
-	const { domainId } = useParams<{ domainId: string }>();
-	const { workspace } = useWorkspace();
-	const domain = workspace.domains.find((domain) => domain.id === domainId);
-
-	if (!domain) return <NotFoundPage />;
-	return <_DomainPage domain={domain} />;
 }

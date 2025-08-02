@@ -1,4 +1,4 @@
-import { HelpModalWithButton } from "./HelpModalWithButton.tsx";
+import { HelpModalWithButton } from "../components/HelpModalWithButton.tsx";
 
 const help = `\
 An **invariant** is a rule that must **always be true** in your domain model.

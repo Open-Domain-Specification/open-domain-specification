@@ -1,9 +1,12 @@
-import {Aggregate} from "./Aggregate";
-import {ContextRelationship} from "./ContextRelationship";
+import type { Aggregate } from "./Aggregate";
+import type { ContextRelationship } from "./ContextRelationship";
+import type { Service } from "./Service";
 
 export type BoundedContext = {
-    name: string;
-    description: string;
-    relationships?: ContextRelationship[];
-    aggregates?: Aggregate[];
-}
+	id: string;
+	name: string;
+	description: string;
+	relationships?: ContextRelationship[];
+	aggregates?: Aggregate[];
+	services?: Service[];
+};

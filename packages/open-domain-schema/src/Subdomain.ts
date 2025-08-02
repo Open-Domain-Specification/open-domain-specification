@@ -1,7 +1,8 @@
-import {BoundedContext} from "./BoundedContext";
+import type { BoundedContext } from "./BoundedContext";
 
 export type Subdomain = {
-    name: string;
-    description: string;
-    boundedContexts?: BoundedContext[];
-}
+	id: string;
+	name: string;
+	description: string;
+	boundedContexts?: BoundedContext[];
+};
