@@ -1,33 +1,34 @@
 import type {
-	Aggregate,
 	BoundedContext,
 	Domain,
+	Service,
 	Subdomain,
 } from "open-domain-schema";
 import { useNavigate } from "react-router-dom";
 import { Icons } from "../Icons.tsx";
 import { GenericCard } from "./GenericCard.tsx";
 
-export function AggregateCard({
-	aggregate,
+export function ServiceCard({
+	service,
 }: {
 	domain: Domain;
 	subdomain: Subdomain;
 	boundedContext: BoundedContext;
-	aggregate: Aggregate;
+	service: Service;
 }) {
 	const nav = useNavigate();
 	return (
 		<GenericCard
-			onClick={() => nav(`aggregates/${aggregate.id}`)}
-			title={aggregate.name}
-			content={aggregate.description}
+			onClick={() => nav(`services/${service.id}`)}
+			title={service.name}
+			content={service.description}
 			badges={[
-				{ content: aggregate.entities?.length || 0, icon: Icons.Entity },
+				{ content: service.provides?.length || 0, icon: Icons.Provider },
 				{
-					content: aggregate.valueObjects?.length || 0,
-					icon: Icons.ValueObject,
+					content: service.consumes?.length || 0,
+					icon: Icons.Consumer,
 				},
+				{ content: service.type, icon: Icons.Service },
 			]}
 		/>
 	);

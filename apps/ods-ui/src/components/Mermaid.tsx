@@ -1,4 +1,5 @@
-import { Card, useComputedColorScheme } from "@mantine/core";
+import { CodeHighlight } from "@mantine/code-highlight";
+import { Card, Tabs, useComputedColorScheme } from "@mantine/core";
 import { useId } from "@mantine/hooks";
 import mermaid from "mermaid";
 import { useRef } from "react";
@@ -22,12 +23,23 @@ export function Mermaid({ chart }: MermaidProps) {
 	}
 
 	return (
-		<Card>
-			<div
-				ref={ref}
-				className="mermaid"
-				style={{ width: "100%", textAlign: "center" }}
-			/>
-		</Card>
+		<Tabs defaultValue={"mermaid"} variant={"outline"}>
+			<Tabs.List>
+				<Tabs.Tab value="mermaid">Diagram</Tabs.Tab>
+				<Tabs.Tab value="source">Source</Tabs.Tab>
+			</Tabs.List>
+			<Tabs.Panel value="mermaid">
+				<Card>
+					<div
+						ref={ref}
+						className="mermaid"
+						style={{ width: "100%", textAlign: "center" }}
+					/>
+				</Card>
+			</Tabs.Panel>
+			<Tabs.Panel value="source">
+				<CodeHighlight code={chart} language="mermaid" />
+			</Tabs.Panel>
+		</Tabs>
 	);
 }

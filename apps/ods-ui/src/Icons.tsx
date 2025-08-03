@@ -1,12 +1,16 @@
 import {
+	VscDebugStepInto,
+	VscDebugStepOut,
 	VscLayers,
 	VscOrganization,
+	VscPlay,
 	VscShield,
 	VscSymbolClass,
 	VscSymbolEvent,
 	VscSymbolMethod,
 	VscSymbolNamespace,
 	VscSymbolVariable,
+	VscTypeHierarchy,
 } from "react-icons/vsc";
 
 export const Icons = {
@@ -17,6 +21,9 @@ export const Icons = {
 	Entity: <VscSymbolMethod />,
 	ValueObject: <VscSymbolNamespace />,
 	Events: <VscSymbolEvent />,
-	Operations: <VscSymbolMethod />,
+	Operations: <VscPlay />,
 	Invariants: <VscShield />,
+	Service: <VscTypeHierarchy />,
+	Provider: <VscDebugStepInto />,
+	Consumer: <VscDebugStepOut />,
 };

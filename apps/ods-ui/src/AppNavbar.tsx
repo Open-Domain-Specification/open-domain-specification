@@ -54,17 +54,30 @@ export function AppNavbar() {
 										active:
 											location.pathname?.split("/").length === 4 &&
 											location.pathname?.endsWith(bc.id),
-										items:
-											bc.aggregates?.map((agg) => ({
+										items: [
+											...(bc.aggregates?.map((agg) => ({
 												id: getAggregateId(d, sd, bc, agg).replace(":", "/"),
 												label: agg.name,
 												onClick: () =>
-													nav(`/${d.id}/${sd.id}/${bc.id}/${agg.id}`),
+													nav(
+														`/${d.id}/${sd.id}/${bc.id}/aggregates/${agg.id}`,
+													),
 												active:
-													location.pathname?.split("/").length === 5 &&
+													location.pathname?.split("/").length === 6 &&
 													location.pathname?.endsWith(agg.id),
 												leftSection: Icons.Aggregate,
-											})) || [],
+											})) || []),
+											...(bc.services?.map((svc) => ({
+												id: svc.id.replace(":", "/"),
+												label: svc.name,
+												onClick: () =>
+													nav(`/${d.id}/${sd.id}/${bc.id}/services/${svc.id}`),
+												active:
+													location.pathname?.split("/").length === 6 &&
+													location.pathname?.endsWith(svc.id),
+												leftSection: Icons.Service,
+											})) || []),
+										],
 									})) || [],
 							})) || [],
 					}))}

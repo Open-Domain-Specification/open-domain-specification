@@ -14,7 +14,7 @@ export function aggregateToMermaid(
 		const name = entity.name;
 
 		entities.push(
-			`${id}["<b>${name}</b><br/>«<small>Entity</small>»"]:::entity`,
+			`\t${id}["<b>${name}</b><br/>«<small>Entity</small>»"]:::entity`,
 		);
 
 		for (const relationship of entity.relations ?? []) {
@@ -23,7 +23,7 @@ export function aggregateToMermaid(
 			const relation = relationship.relation;
 
 			relations.push(
-				`${id} ${relation} ${target}${label ? `: "${label}"` : ""}`,
+				`\t${id} ${relation} ${target}${label ? `: "${label}"` : ""}`,
 			);
 		}
 	}
@@ -33,7 +33,7 @@ export function aggregateToMermaid(
 		const name = valueObject.name;
 
 		valueObjects.push(
-			`${id}["<b>${name}</b><br/>«<small>Value Object</small>»"]:::value_object`,
+			`\t${id}["<b>${name}</b><br/>«<small>Value Object</small>»"]:::value_object`,
 		);
 
 		for (const relationship of valueObject.relations ?? []) {
@@ -42,19 +42,19 @@ export function aggregateToMermaid(
 			const relation = relationship.relation;
 
 			relations.push(
-				`${id} ${relation} ${target}${label ? `: "${label}"` : ""}`,
+				`\t${id} ${relation} ${target}${label ? `: "${label}"` : ""}`,
 			);
 		}
 	}
 
 	const text = [
 		`erDiagram`,
-		`direction TB`,
+		`\tdirection TB`,
 		...entities,
 		...valueObjects,
 		...relations,
-		`classDef entity stroke-solid`,
-		`classDef value_object stroke-dasharray: 10,rx: 20,ry: 200`,
+		`\tclassDef entity stroke-solid`,
+		`\tclassDef value_object stroke-dasharray: 10,rx: 20,ry: 200`,
 	].join("\n");
 
 	console.log(text);

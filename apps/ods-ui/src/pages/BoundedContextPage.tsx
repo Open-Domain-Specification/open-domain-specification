@@ -2,8 +2,8 @@ import { Alert, Grid, Stack, Title } from "@mantine/core";
 import type {
 	Aggregate,
 	BoundedContext,
-	ContextRelationship,
 	Domain,
+	Service,
 	Subdomain,
 } from "open-domain-schema";
 import { useParams } from "react-router-dom";
@@ -11,10 +11,11 @@ import { AggregateCard } from "../components/AggregateCard.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
 import { PageSkeleton } from "../components/PageSkeleton.tsx";
+import { ServiceCard } from "../components/ServiceCard.tsx";
 import { useWorkspace } from "../context/Workspace.tsx";
 import { Icons } from "../Icons.tsx";
 import { getAggregateId } from "../utils/getAggregateId.ts";
-import { getRelationshipId } from "../utils/getRelationshipId.ts";
+import { getServiceId } from "../utils/getServiceId.ts";
 
 export function _BoundedContextPage({
 	domain,
@@ -57,19 +58,24 @@ export function _BoundedContextPage({
 				</Grid>
 			</Stack>
 			<Stack>
-				<Title order={2}>Relationships</Title>
+				<Title order={2}>Services</Title>
 				<Grid>
-					{!boundedContext.relationships?.length && (
-						<Alert w={"100%"}>
-							No relationships exist in this bounded context.
-						</Alert>
+					{!boundedContext.services?.length && (
+						<Alert w={"100%"}>No services exist in this bounded context.</Alert>
 					)}
-					{boundedContext.relationships?.map((rel: ContextRelationship) => (
+					{boundedContext.services?.map((service: Service) => (
 						<Grid.Col
-							key={getRelationshipId(domain, subdomain, boundedContext, rel)}
+							key={getServiceId(domain, subdomain, boundedContext, service)}
 							span={4}
+							mih={200}
+							display={"flex"}
 						>
-							{JSON.stringify(rel)}
+							<ServiceCard
+								domain={domain}
+								subdomain={subdomain}
+								boundedContext={boundedContext}
+								service={service}
+							/>
 						</Grid.Col>
 					))}
 				</Grid>

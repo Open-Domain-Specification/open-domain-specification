@@ -23,8 +23,8 @@ export function GenericCard(props: GenericCardProps) {
 			}}
 			shadow={hovered ? "sm" : undefined}
 		>
-			<Stack align={"space-between"}>
-				<Stack gap={"xs"}>
+			<Stack align={"space-between"} flex={"auto"}>
+				<Stack gap={"xs"} flex={"auto"}>
 					<Title order={4} lineClamp={2}>
 						{props.title}
 					</Title>
