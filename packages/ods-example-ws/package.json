@@ -2,16 +2,16 @@
 	"name": "ods-example-ws",
 	"version": "0.0.0",
 	"description": "",
-	"main": "dist/index.js",
+	"type": "module",
 	"scripts": {
-		"build": "tsc --project tsconfig.json && node ."
+		"build": "node index.ts"
 	},
 	"private": true,
 	"dependencies": {
 		"open-domain-schema": "0.0.0"
 	},
 	"devDependencies": {
-		"@types/node": "^24.1.0",
-		"typescript": "^5.8.3"
+		"@types/node": "^24.2.1",
+		"typescript": "^5.9.2"
 	}
 }

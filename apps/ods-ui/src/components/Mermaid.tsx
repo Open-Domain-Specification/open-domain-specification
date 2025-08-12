@@ -16,9 +16,19 @@ export function Mermaid({ chart }: MermaidProps) {
 		mermaid.initialize({
 			theme: colorScheme === "dark" ? "dark" : "default",
 			darkMode: colorScheme === "dark",
+			flowchart: {
+				nodeSpacing: 20,
+				rankSpacing: 20,
+				padding: 5,
+				diagramPadding: 5,
+				subGraphTitleMargin: {
+					top: 5,
+					bottom: 5,
+				},
+			},
 		});
 		mermaid.render(id, chart, ref.current).then((it) => {
-			if (ref.current) ref.current.innerHTML = it.svg;
+			if (ref.current) ref.current.innerHTML = it.svg.replaceAll("__()", "");
 		});
 	}
 

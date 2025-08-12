@@ -6,7 +6,7 @@ export type AccordionItemProps = {
 	icon: ReactNode;
 
 	id: string;
-	name: string;
+	name: ReactNode;
 	description?: string;
 };
 export type AccordionItemsProps = {

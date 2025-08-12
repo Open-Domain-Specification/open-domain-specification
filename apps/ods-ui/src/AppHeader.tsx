@@ -8,14 +8,17 @@ import {
 	Text,
 	useMantineColorScheme,
 } from "@mantine/core";
+import { BiDownload } from "react-icons/bi";
 import { BsLaptop, BsMoon, BsSun } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
-import { useWorkspace } from "./context/Workspace.tsx";
+import { useWorkspace } from "./context/WorkspaceContext.tsx";
+import { useExportWorkspace } from "./hooks/useExportWorkspace.ts";
 
 export function AppHeader() {
 	const { workspace, closeWorkspace } = useWorkspace();
 	const nav = useNavigate();
 	const { colorScheme, setColorScheme } = useMantineColorScheme();
+	const exportWorkspace = useExportWorkspace();
 
 	return (
 		<Group justify={"space-between"} flex={"auto"}>
@@ -24,14 +27,14 @@ export function AppHeader() {
 					style={{ cursor: "pointer" }}
 					onClick={() => nav("/")}
 					radius={"xs"}
-					src={workspace.logoUrl}
+					src={workspace.workspace.logoUrl}
 					color={"initials"}
-					name={workspace.name}
+					name={workspace.workspace.name}
 				/>
 				<Text fz={"md"} fw={"bold"}>
-					{workspace.name} | {workspace.version}
+					{workspace.workspace.name} | {workspace.workspace.version}
 				</Text>
-				<Badge>{workspace.odsVersion}</Badge>
+				<Badge>{workspace.workspace.odsVersion}</Badge>
 			</Group>
 			<Group>
 				<Menu>
@@ -56,7 +59,7 @@ export function AppHeader() {
 						</Menu.Item>
 						<Menu.Item
 							onClick={() => setColorScheme("dark")}
-							color={colorScheme === "auto" ? "primary" : undefined}
+							color={colorScheme === "dark" ? "primary" : undefined}
 							leftSection={<BsMoon />}
 						>
 							Dark
@@ -72,6 +75,9 @@ export function AppHeader() {
 				</Menu>
 				<ActionIcon size={"lg"} variant={"default"} onClick={closeWorkspace}>
 					<CloseButton />
+				</ActionIcon>
+				<ActionIcon size={"lg"} variant={"default"} onClick={exportWorkspace}>
+					<BiDownload />
 				</ActionIcon>
 			</Group>
 		</Group>

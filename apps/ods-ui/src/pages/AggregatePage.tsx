@@ -6,66 +6,61 @@ import {
 	Stack,
 	Title,
 } from "@mantine/core";
-import type {
-	Aggregate,
-	BoundedContext,
-	Domain,
-	Subdomain,
-} from "open-domain-schema";
-import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { AccordionItems } from "../components/AccordionItems.tsx";
+import { ConsumableAccordionLabel } from "../components/ConsumableAccordionLabel.tsx";
+import { ConsumptionAccordionLabel } from "../components/ConsumptionAccordionLabel.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
 import { Mermaid } from "../components/Mermaid.tsx";
 import { PageNavigation } from "../components/PageNavigation.tsx";
 import { PageSkeleton } from "../components/PageSkeleton.tsx";
-import { useWorkspace } from "../context/Workspace.tsx";
+import { useWorkspace } from "../context/WorkspaceContext.tsx";
 import { Icons } from "../Icons.tsx";
 import { EntitiesAndValueObjectsHelp } from "../modals/EntitiesAndValueObjectsHelp.tsx";
 import { InvariantsHelp } from "../modals/InvariantsHelp.tsx";
 import { aggregateToMermaid } from "../utils/aggregateToMermaid.ts";
 
-function toNavigationItems(
-	icon: ReactNode,
-	onScrollToSection: (id: string) => void,
-	items: Aggregate["invariants"] | Aggregate["provides"],
-) {
-	return (
-		items?.map((item) => ({
-			key: item.id,
-			label: item.name,
-			icon: icon,
-			onClick: () => onScrollToSection(item.id),
-		})) || []
-	);
-}
-
-export function _AggregatePage({
-	aggregate,
-}: {
-	domain: Domain;
-	subdomain: Subdomain;
-	boundedContext: BoundedContext;
-	aggregate: Aggregate;
+export function _AggregatePage(props: {
+	name: string;
+	description: string;
+	domainId: string;
+	subdomainId: string;
+	boundedcontextId: string;
+	aggregateId: string;
 }) {
 	const { workspace } = useWorkspace();
-	const scrollToSection = (id: string) => {
-		const element = document.getElementById(id);
-		if (element) {
-			const y = element.getBoundingClientRect().top + window.scrollY - 100;
 
-			window.scrollTo({ top: y, behavior: "smooth" });
-			element.getElementsByTagName("button").item(0)?.click();
-		}
-	};
+	const consumables =
+		workspace.findAggregateConsumablesByDomainIdSubdomainIdAndBoundedContextIdAndAggregateId(
+			props.domainId,
+			props.subdomainId,
+			props.boundedcontextId,
+			props.aggregateId,
+		);
+
+	const consumptions =
+		workspace.findAggregateConsumptionsByDomainIdSubdomainIdAndBoundedContextIdAndAggregateId(
+			props.domainId,
+			props.subdomainId,
+			props.boundedcontextId,
+			props.aggregateId,
+		);
+
+	const invariants =
+		workspace.findAggregateInvariantsByDomainIdSubdomainIdAndBoundedContextIdAndAggregateId(
+			props.domainId,
+			props.subdomainId,
+			props.boundedcontextId,
+			props.aggregateId,
+		);
 
 	return (
 		<>
 			<PageSkeleton
 				avatar={Icons.Aggregate}
-				title={aggregate.name}
-				description={aggregate.description}
+				title={props.name}
+				description={props.description}
 			>
 				<Stack>
 					<Stack gap={2}>
@@ -77,14 +72,21 @@ export function _AggregatePage({
 						</Group>
 						<Divider />
 					</Stack>
-					<Mermaid chart={aggregateToMermaid(workspace, aggregate)} />
+					{workspace.sqlJsDatabase && (
+						<Mermaid
+							chart={aggregateToMermaid(
+								workspace.sqlJsDatabase,
+								props.aggregateId,
+							)}
+						/>
+					)}
 				</Stack>
 
 				<AccordionItems
 					title={"Invariants"}
 					items={
-						aggregate.invariants?.map((it) => ({
-							id: it.id,
+						invariants?.map((it) => ({
+							id: it.invariantId,
 							name: it.name,
 							description: it.description,
 							icon: Icons.Invariants,
@@ -97,9 +99,11 @@ export function _AggregatePage({
 				<AccordionItems
 					title={"Provides"}
 					items={
-						aggregate.provides?.map((it) => ({
-							id: it.id,
-							name: it.name,
+						consumables?.map((it) => ({
+							id: it.consumableId,
+							name: (
+								<ConsumableAccordionLabel name={it.name} pattern={it.pattern} />
+							),
 							description: it.description,
 							icon: it.type === "event" ? Icons.Events : Icons.Operations,
 						})) || []
@@ -110,12 +114,23 @@ export function _AggregatePage({
 				<AccordionItems
 					title={"Consumes"}
 					items={
-						aggregate.consumes?.map((it) => ({
-							id: it.target,
-							name: it.target,
-							description: it.pattern,
-							icon: Icons.Consumer,
-						})) || []
+						consumptions?.map((it) => {
+							return {
+								id:
+									it.aggregate_consumer.aggregateRef +
+									it.aggregate_consumer.consumableRef,
+								name: (
+									<ConsumptionAccordionLabel
+										name={it.consumable.name}
+										pattern={it.consumable.pattern}
+										consumptionPattern={it.aggregate_consumer.pattern}
+										consumableRef={it.consumable.ref}
+									/>
+								),
+								description: `${it.consumable.name} (${it?.consumable.pattern}) <-- ${it.aggregate_consumer.pattern}`,
+								icon: Icons.Consumer,
+							};
+						}) || []
 					}
 					emptyMessage={"No consumptions defined."}
 				/>
@@ -125,44 +140,8 @@ export function _AggregatePage({
 					<PageNavigation
 						sections={[
 							{
-								title: "Entities",
-								items: toNavigationItems(
-									Icons.Entity,
-									() => scrollToSection("entities-and-value-objects"),
-									aggregate.entities,
-								),
-							},
-							{
-								title: "Value Objects",
-								items: toNavigationItems(
-									Icons.ValueObject,
-									() => scrollToSection("entities-and-value-objects"),
-									aggregate.valueObjects,
-								),
-							},
-							{
 								title: "Invariants",
-								items: toNavigationItems(
-									Icons.Invariants,
-									scrollToSection,
-									aggregate.invariants,
-								),
-							},
-							{
-								title: "Operations",
-								items: toNavigationItems(
-									Icons.Operations,
-									scrollToSection,
-									aggregate.provides?.filter((it) => it.type === "operation"),
-								),
-							},
-							{
-								title: "Events",
-								items: toNavigationItems(
-									Icons.Events,
-									scrollToSection,
-									aggregate.provides?.filter((it) => it.type === "event"),
-								),
+								items: [],
 							},
 						]}
 					/>
@@ -180,27 +159,26 @@ export function AggregatePage() {
 		aggregateId: string;
 	}>();
 	const { workspace } = useWorkspace();
-	const domain = workspace.domains.find((domain) => domain.id === domainId);
-	const subdomain = domain?.subdomains?.find(
-		(subdomain) => subdomain.id === subdomainId,
-	);
-	const boundedContext = subdomain?.boundedContexts?.find(
-		(boundedContext) => boundedContext.id === boundedContextId,
-	);
-	const aggregate = boundedContext?.aggregates?.find(
-		(aggregate) => aggregate.id === aggregateId,
-	);
+	const aggregate =
+		workspace.findAggregateByDomainIdSubdomainIdAndBoundedContextId(
+			domainId!,
+			subdomainId!,
+			boundedContextId!,
+			aggregateId!,
+		);
 
 	return (
 		<GenericWorkspacePage>
-			{!domain || !subdomain || !boundedContext || !aggregate ? (
+			{!aggregate ? (
 				<GenericNotFoundContent />
 			) : (
 				<_AggregatePage
-					domain={domain}
-					subdomain={subdomain}
-					boundedContext={boundedContext}
-					aggregate={aggregate}
+					domainId={domainId!}
+					subdomainId={subdomainId!}
+					boundedcontextId={boundedContextId!}
+					aggregateId={aggregateId!}
+					name={aggregate.name}
+					description={aggregate.description}
 				/>
 			)}
 		</GenericWorkspacePage>

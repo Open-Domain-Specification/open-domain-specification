@@ -5,7 +5,7 @@ import {
 import { MantineProvider } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { type ReactNode, useMemo } from "react";
-import { useWorkspace } from "./context/Workspace.tsx";
+import { useWorkspace } from "./context/WorkspaceContext.tsx";
 import { theme } from "./theme.ts";
 
 async function loadShiki() {
@@ -27,8 +27,8 @@ export function AppMantineProvider({ children }: AppMantineProviderProps) {
 	const { workspace } = useWorkspace();
 
 	const myTheme = useMemo(
-		() => theme({ primaryColor: workspace.primaryColor }),
-		[workspace.primaryColor],
+		() => theme({ primaryColor: workspace.workspace.primaryColor }),
+		[workspace.workspace.primaryColor],
 	);
 
 	return (

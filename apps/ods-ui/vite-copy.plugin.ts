@@ -10,7 +10,7 @@ export default function (): Plugin {
 
 			const path = resolve(
 				__dirname,
-				"../../packages/ods-example-ws/dist/big-bank-workspace.json",
+				"../../packages/ods-example-ws/big-bank-workspace.json",
 			);
 
 			if (!existsSync(path)) {

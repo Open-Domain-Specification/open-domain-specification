@@ -12,14 +12,17 @@ import {
 } from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
 import { showNotification } from "@mantine/notifications";
-import type { Workspace } from "open-domain-schema";
+import { drizzle } from "drizzle-orm/sql-js";
 import { useEffect, useRef } from "react";
 import { BiImport } from "react-icons/bi";
 import { useSearchParams } from "react-router-dom";
 import { useAsyncFn, useMount, useWindowSize } from "react-use";
 import { LearningResources } from "../components/LearningResources.tsx";
 import { Markdown } from "../components/Markdown.tsx";
-import { useWorkspace } from "../context/Workspace.tsx";
+import { useWorkspace } from "../context/WorkspaceContext.tsx";
+import { importWorkspaceToDatabase } from "../store/importWorkspaceToDatabase.ts";
+import { initializeWorkspace } from "../store/initializeWorkspace.ts";
+import { Workspace } from "../Workspace.ts";
 
 const intro = `\
 Use the **Open Domain Specification (ODS)** to model, document, and communicate your domain design using proven Domain-Driven Design patterns.
@@ -54,7 +57,11 @@ export function ImportWorkspacePage() {
 
 			const data = JSON.parse(text);
 
-			loadWorkspace(data);
+			const database = await initializeWorkspace();
+			const sqlJsDatabase = drizzle(database);
+			importWorkspaceToDatabase(data, sqlJsDatabase);
+
+			loadWorkspace(new Workspace(data, { database, sqlJsDatabase }));
 
 			showNotification({
 				title: "Workspace Loaded",
@@ -73,8 +80,14 @@ export function ImportWorkspacePage() {
 			if (!response.ok) {
 				throw new Error(`Failed to fetch workspace from ${url}`);
 			}
-			const data: Workspace = await response.json();
-			loadWorkspace(data);
+
+			const data = await response.json();
+
+			const database = await initializeWorkspace();
+			const sqlJsDatabase = drizzle(database);
+			importWorkspaceToDatabase(data, sqlJsDatabase);
+
+			loadWorkspace(new Workspace(data, { database, sqlJsDatabase }));
 
 			showNotification({
 				title: "Workspace Loaded",
@@ -97,7 +110,7 @@ export function ImportWorkspacePage() {
 				<Flex align={"center"} flex={"auto"}>
 					<Stack>
 						<Stack flex={"auto"}>
-							<Title>Domain First Design</Title>
+							<Title>Open Domain Specification</Title>
 							<Markdown content={intro} />
 
 							<TextInput

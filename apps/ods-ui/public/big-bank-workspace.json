@@ -1,4 +1,5 @@
 {
+  "id": "big_bank_workspace",
   "odsVersion": "0.0.0",
   "name": "Big Bank PLC - Core Banking System",
   "homepage": "https://bigbank.example.com",
@@ -6,281 +7,307 @@
   "primaryColor": "#0F68BD",
   "description": "This workspace models the core banking system of Big Bank PLC using Domain-Driven Design concepts and the Open Domain Schema.",
   "version": "1.0.0",
-  "domains": [
-    {
+  "domains": {
+    "retail_banking": {
       "id": "retail_banking",
       "name": "Retail Banking",
       "type": "core",
       "description": "All aspects of retail banking operations.",
-      "subdomains": [
-        {
+      "subdomains": {
+        "core_banking": {
           "id": "core_banking",
           "name": "Core Banking",
           "description": "Core banking operations including accounts and transactions.",
-          "boundedContexts": [
-            {
+          "boundedcontexts": {
+            "accounts": {
               "id": "accounts",
               "name": "Accounts Management",
               "description": "Handles customer accounts and related operations.",
-              "aggregates": [
-                {
+              "aggregates": {
+                "account": {
                   "id": "account",
                   "name": "Account",
                   "description": "Represents a customer's bank account.",
-                  "entities": [
-                    {
-                      "id": "account_entity",
-                      "name": "Account",
-                      "description": "Bank account with balance and ownership details.",
-                      "root": true,
-                      "relations": [
-                        {
-                          "id": "account_balance",
-                          "target": "money_vo",
-                          "relation": "||--||",
-                          "label": "has balance"
-                        }
-                      ]
-                    }
-                  ],
-                  "valueObjects": [
-                    {
-                      "id": "money_vo",
-                      "name": "Money",
-                      "description": "Represents a monetary amount with currency."
-                    }
-                  ],
-                  "provides": [
-                    {
+                  "provides": {
+                    "accountDebited": {
                       "id": "accountDebited",
                       "name": "Account Debited",
                       "description": "Event indicating that an account has been debited.",
                       "type": "event",
                       "pattern": "published-language"
                     },
-                    {
-                      "id": "withdrawFunds",
-                      "name": "Withdraw Funds",
-                      "description": "Operation to withdraw money from an account.",
-                      "type": "operation",
-                      "pattern": "open-host-service"
-                    },
-                    {
+                    "depositFunds": {
                       "id": "depositFunds",
                       "name": "Deposit Funds",
                       "description": "Operation to deposit money into an account.",
                       "type": "operation",
                       "pattern": "open-host-service"
+                    },
+                    "withdrawFunds": {
+                      "id": "withdrawFunds",
+                      "name": "Withdraw Funds",
+                      "description": "Operation to withdraw money from an account.",
+                      "type": "operation",
+                      "pattern": "open-host-service"
                     }
-                  ],
-                  "invariants": [
-                    {
+                  },
+                  "consumes": [],
+                  "invariants": {
+                    "account_non_negative_balance": {
                       "id": "account_non_negative_balance",
                       "name": "Non-negative Balance",
                       "description": "An account's balance must never be negative."
                     }
-                  ]
+                  },
+                  "entities": {
+                    "account_entity": {
+                      "id": "account_entity",
+                      "name": "Account",
+                      "description": "Bank account with balance and ownership details.",
+                      "root": true,
+                      "relations": [
+                        {
+                          "target": {
+                            "$ref": "#/domains/[object Object]/subdomains/[object Object]/boundedcontexts/[object Object]/aggregates/[object Object]/valueobjects/[object Object]"
+                          },
+                          "relation": "||--||",
+                          "label": "has balance"
+                        }
+                      ]
+                    }
+                  },
+                  "valueobjects": {
+                    "money_vo": {
+                      "id": "money_vo",
+                      "name": "Money",
+                      "description": "Represents a monetary amount with currency.",
+                      "relations": []
+                    }
+                  }
                 }
-              ],
-              "services": [
-                {
+              },
+              "services": {
+                "account_validation_service": {
                   "id": "account_validation_service",
                   "type": "domain",
                   "name": "Account Validation Service",
-                  "description": "Validates the existence and status of accounts."
+                  "description": "Validates the existence and status of accounts.",
+                  "provides": {},
+                  "consumes": []
                 }
-              ]
+              }
             },
-            {
-              "id": "transactions",
-              "name": "Transactions Management",
-              "description": "Manages customer transactions and financial operations.",
-              "aggregates": [
-                {
-                  "id": "funds_transfer",
-                  "name": "Funds Transfer",
-                  "description": "Initiates and tracks funds transfers between accounts.",
-                  "entities": [
-                    {
-                      "id": "transfer",
-                      "name": "FundsTransfer",
-                      "description": "Funds transfer transaction entity.",
-                      "root": true,
-                      "relations": [
-                        {
-                          "id": "transfer_details",
-                          "target": "transfer_details_vo",
-                          "relation": "||--||",
-                          "label": "has details"
-                        },
-                        {
-                          "id": "transfer_source_account",
-                          "target": "account_entity",
-                          "relation": "||..||",
-                          "label": "source account"
-                        },
-                        {
-                          "id": "transfer_dest_account",
-                          "target": "account_entity",
-                          "relation": "||..||",
-                          "label": "destination account"
-                        }
-                      ]
-                    }
-                  ],
-                  "valueObjects": [
-                    {
-                      "id": "transfer_details_vo",
-                      "name": "Transfer Details",
-                      "description": "Contains amount, source and destination details."
-                    }
-                  ],
-                  "provides": [
-                    {
-                      "id": "fundsTransferInitiated",
-                      "name": "Funds Transfer Initiated",
-                      "description": "Event raised when a funds transfer is started.",
-                      "type": "event",
-                      "pattern": "published-language"
-                    }
-                  ],
-                  "invariants": [
-                    {
-                      "id": "positive_transfer_amount",
-                      "name": "Positive Transfer Amount",
-                      "description": "A funds transfer must involve a positive amount."
-                    },
-                    {
-                      "id": "distinct_accounts",
-                      "name": "Distinct Source and Destination Accounts",
-                      "description": "Funds must be transferred between two different accounts."
-                    }
-                  ]
-                }
-              ],
-              "services": [
-                {
-                  "id": "funds_transfer_service",
-                  "type": "application",
-                  "name": "Funds Transfer Service",
-                  "description": "Coordinates account debits and ledger postings for a transfer.",
-                  "provides": [
-                    {
-                      "id": "initiateFundsTransfer",
-                      "name": "Initiate Funds Transfer",
-                      "description": "Operation to begin a transfer request.",
-                      "type": "operation",
-                      "pattern": "open-host-service"
-                    }
-                  ],
-                  "consumes": [
-                    {
-                      "target": "withdrawFunds",
-                      "pattern": "customer-supplier"
-                    },
-                    {
-                      "target": "depositFunds",
-                      "pattern": "customer-supplier"
-                    },
-                    {
-                      "target": "postLedgerEntry",
-                      "pattern": "customer-supplier"
-                    },
-                    {
-                      "target": "accountDebited",
-                      "pattern": "customer-supplier"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
+            "ledger": {
               "id": "ledger",
               "name": "Ledger Management",
               "description": "Maintains the financial ledger and accounting records.",
-              "aggregates": [
-                {
+              "aggregates": {
+                "ledger_entry": {
                   "id": "ledger_entry",
                   "name": "Ledger Entry",
                   "description": "Posts accounting entries for financial transactions.",
-                  "entities": [
-                    {
-                      "id": "ledgerEntry",
-                      "name": "LedgerEntry",
-                      "description": "Represents a credit or debit in the ledger.",
-                      "root": true,
-                      "relations": [
-                        {
-                          "id": "ledger_entry_amount",
-                          "target": "entryAmount_vo",
-                          "relation": "||--||",
-                          "label": "has amount"
-                        },
-                        {
-                          "id": "ledger_entry_account",
-                          "target": "account_entity",
-                          "relation": "||..||",
-                          "label": "posted to account"
-                        }
-                      ]
-                    }
-                  ],
-                  "valueObjects": [
-                    {
-                      "id": "entryAmount_vo",
-                      "name": "Entry Amount",
-                      "description": "Amount and currency of a ledger entry."
-                    }
-                  ],
-                  "provides": [
-                    {
+                  "provides": {
+                    "ledgerUpdated": {
                       "id": "ledgerUpdated",
                       "name": "Ledger Updated",
                       "description": "Indicates that a ledger entry was successfully created.",
                       "type": "event",
                       "pattern": "published-language"
                     },
-                    {
+                    "postLedgerEntry": {
                       "id": "postLedgerEntry",
                       "name": "Post Ledger Entry",
                       "description": "Operation to record a ledger entry for a funds transfer.",
                       "type": "operation",
                       "pattern": "open-host-service"
                     }
-                  ],
+                  },
                   "consumes": [
                     {
-                      "target": "fundsTransferInitiated",
+                      "consumable": {
+                        "$ref": "#/domains/[object Object]/subdomains/[object Object]/boundedcontexts/[object Object]/services/[object Object]/provides/[object Object]"
+                      },
                       "pattern": "conformist"
                     }
                   ],
-                  "invariants": [
-                    {
+                  "invariants": {
+                    "ledger_balancing": {
                       "id": "ledger_balancing",
                       "name": "Balanced Ledger Entry",
                       "description": "Ledger entries must balance with equal debits and credits."
                     }
-                  ]
+                  },
+                  "entities": {
+                    "ledgerEntry": {
+                      "id": "ledgerEntry",
+                      "name": "LedgerEntry",
+                      "description": "Represents a credit or debit in the ledger.",
+                      "root": true,
+                      "relations": [
+                        {
+                          "target": {
+                            "$ref": "#/domains/[object Object]/subdomains/[object Object]/boundedcontexts/[object Object]/aggregates/[object Object]/valueobjects/[object Object]"
+                          },
+                          "relation": "||--||",
+                          "label": "has amount"
+                        },
+                        {
+                          "target": {
+                            "$ref": "#/domains/[object Object]/subdomains/[object Object]/boundedcontexts/[object Object]/aggregates/[object Object]/entities/[object Object]"
+                          },
+                          "relation": "||..||",
+                          "label": "posted to account"
+                        }
+                      ]
+                    }
+                  },
+                  "valueobjects": {
+                    "entryAmount_vo": {
+                      "id": "entryAmount_vo",
+                      "name": "Entry Amount",
+                      "description": "Amount and currency of a ledger entry.",
+                      "relations": []
+                    }
+                  }
                 }
-              ],
-              "services": [
-                {
+              },
+              "services": {
+                "ledger_posting_service": {
                   "id": "ledger_posting_service",
                   "type": "domain",
                   "name": "Ledger Posting Service",
                   "description": "Listens to transaction events and posts appropriate ledger entries.",
+                  "provides": {},
                   "consumes": [
                     {
-                      "target": "fundsTransferInitiated",
+                      "consumable": {
+                        "$ref": "#/domains/[object Object]/subdomains/[object Object]/boundedcontexts/[object Object]/services/[object Object]/provides/[object Object]"
+                      },
                       "pattern": "conformist"
                     }
                   ]
                 }
-              ]
+              }
+            },
+            "transactions": {
+              "id": "transactions",
+              "name": "Transactions Management",
+              "description": "Manages customer transactions and financial operations.",
+              "aggregates": {
+                "funds_transfer": {
+                  "id": "funds_transfer",
+                  "name": "Funds Transfer",
+                  "description": "Initiates and tracks funds transfers between accounts.",
+                  "provides": {
+                    "fundsTransferInitiated": {
+                      "id": "fundsTransferInitiated",
+                      "name": "Funds Transfer Initiated",
+                      "description": "Event raised when a funds transfer is started.",
+                      "type": "event",
+                      "pattern": "published-language"
+                    }
+                  },
+                  "consumes": [],
+                  "invariants": {
+                    "positive_transfer_amount": {
+                      "id": "positive_transfer_amount",
+                      "name": "Positive Transfer Amount",
+                      "description": "A funds transfer must involve a positive amount."
+                    },
+                    "distinct_accounts": {
+                      "id": "distinct_accounts",
+                      "name": "Distinct Source and Destination Accounts",
+                      "description": "Funds must be transferred between two different accounts."
+                    }
+                  },
+                  "entities": {
+                    "transfer": {
+                      "id": "transfer",
+                      "name": "FundsTransfer",
+                      "description": "Funds transfer transaction entity.",
+                      "root": true,
+                      "relations": [
+                        {
+                          "target": {
+                            "$ref": "#/domains/[object Object]/subdomains/[object Object]/boundedcontexts/[object Object]/aggregates/[object Object]/valueobjects/[object Object]"
+                          },
+                          "relation": "||--||",
+                          "label": "has details"
+                        },
+                        {
+                          "target": {
+                            "$ref": "#/domains/[object Object]/subdomains/[object Object]/boundedcontexts/[object Object]/aggregates/[object Object]/entities/[object Object]"
+                          },
+                          "relation": "||..||",
+                          "label": "source account"
+                        },
+                        {
+                          "target": {
+                            "$ref": "#/domains/[object Object]/subdomains/[object Object]/boundedcontexts/[object Object]/aggregates/[object Object]/entities/[object Object]"
+                          },
+                          "relation": "||..||",
+                          "label": "destination account"
+                        }
+                      ]
+                    }
+                  },
+                  "valueobjects": {
+                    "transfer_details_vo": {
+                      "id": "transfer_details_vo",
+                      "name": "Transfer Details",
+                      "description": "Contains amount, source and destination details.",
+                      "relations": []
+                    }
+                  }
+                }
+              },
+              "services": {
+                "funds_transfer_service": {
+                  "id": "funds_transfer_service",
+                  "type": "application",
+                  "name": "Funds Transfer Service",
+                  "description": "Coordinates account debits and ledger postings for a transfer.",
+                  "provides": {
+                    "initiateFundsTransfer": {
+                      "id": "initiateFundsTransfer",
+                      "name": "Initiate Funds Transfer",
+                      "description": "Operation to begin a transfer request.",
+                      "type": "operation",
+                      "pattern": "open-host-service"
+                    }
+                  },
+                  "consumes": [
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/[object Object]/subdomains/[object Object]/boundedcontexts/[object Object]/services/[object Object]/provides/[object Object]"
+                      },
+                      "pattern": "customer-supplier"
+                    },
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/[object Object]/subdomains/[object Object]/boundedcontexts/[object Object]/services/[object Object]/provides/[object Object]"
+                      },
+                      "pattern": "customer-supplier"
+                    },
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/[object Object]/subdomains/[object Object]/boundedcontexts/[object Object]/services/[object Object]/provides/[object Object]"
+                      },
+                      "pattern": "customer-supplier"
+                    },
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/[object Object]/subdomains/[object Object]/boundedcontexts/[object Object]/services/[object Object]/provides/[object Object]"
+                      },
+                      "pattern": "customer-supplier"
+                    }
+                  ]
+                }
+              }
             }
-          ]
+          }
         }
-      ]
+      }
     }
-  ]
+  }
 }

@@ -1,19 +1,20 @@
 import { Flex, List, Stack, Text } from "@mantine/core";
 import type { ReactNode } from "react";
+import { useScrollToNavigable } from "../hooks/useScrollToNavigable.ts";
+import type { OnPageNavigable } from "../Workspace.ts";
 
-export type NavigationItem = {
-	key: string;
-	label: string;
-	onClick?: () => void;
+export interface NavigationItem extends OnPageNavigable {
 	icon?: ReactNode;
 	items?: NavigationItem[];
-};
+}
 
 export type PageNavigationProps = {
 	sections: { title: string; items: NavigationItem[] }[];
 };
 
 export function PageNavigation(props: PageNavigationProps) {
+	const scrollToNavigable = useScrollToNavigable();
+
 	return (
 		<Stack>
 			{props.sections.map((section) => (
@@ -27,14 +28,14 @@ export function PageNavigation(props: PageNavigationProps) {
 						)}
 						{section.items.map((item) => (
 							<List.Item
-								key={item.key}
+								key={item.htmlId}
 								icon={<Flex>{item.icon}</Flex>}
-								onClick={item.onClick}
+								onClick={() => scrollToNavigable(item)}
 								styles={{
 									item: { cursor: "pointer" },
 								}}
 							>
-								<Text size={"sm"}>{item.label}</Text>
+								<Text size={"sm"}>{item.name}</Text>
 							</List.Item>
 						))}
 					</List>

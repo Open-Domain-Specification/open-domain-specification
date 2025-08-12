@@ -4,7 +4,7 @@ import "./index.css";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App.tsx";
 import { AppMantineProvider } from "./AppMantineProvider.tsx";
-import { WorkspaceProvider } from "./context/Workspace.tsx";
+import { WorkspaceProvider } from "./context/WorkspaceContext.tsx";
 
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>

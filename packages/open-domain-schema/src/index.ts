@@ -2,19 +2,19 @@ export type Aggregate = {
 	id: string;
 	name: string;
 	description: string;
-	entities: Entity[];
-	valueObjects?: ValueObject[];
-	invariants?: Invariant[];
-	provides?: Consumable[];
-	consumes?: Consumption[];
+	entities: Record<string, Entity>;
+	valueobjects: Record<string, ValueObject>;
+	invariants: Record<string, Invariant>;
+	provides: Record<string, Consumable>;
+	consumes: Consumption[];
 };
 
 export type BoundedContext = {
 	id: string;
 	name: string;
 	description: string;
-	aggregates?: Aggregate[];
-	services?: Service[];
+	aggregates: Record<string, Aggregate>;
+	services: Record<string, Service>;
 };
 
 export type ConsumablePattern =
@@ -22,11 +22,13 @@ export type ConsumablePattern =
 	| "published-language"
 	| "shared-kernel";
 
+export type ConsumableType = "event" | "operation";
+
 export type Consumable = {
 	id: string;
 	name: string;
 	description: string;
-	type: "event" | "operation";
+	type: ConsumableType;
 	pattern: ConsumablePattern;
 };
 
@@ -39,7 +41,7 @@ export type ConsumptionPattern =
 	| "separate-ways";
 
 export type Consumption = {
-	target: string;
+	consumable: { $ref: string };
 	pattern: ConsumptionPattern;
 };
 
@@ -50,7 +52,7 @@ export type Domain = {
 	name: string;
 	type: DomainType;
 	description: string;
-	subdomains?: Subdomain[];
+	subdomains: Record<string, Subdomain>;
 };
 
 export type Entity = {
@@ -58,7 +60,7 @@ export type Entity = {
 	id: string;
 	name: string;
 	description: string;
-	relations?: EntityRelation[];
+	relations: EntityRelation[];
 };
 
 export type ZeroOrOne_ZeroOrOne = "|o--o|";
@@ -167,8 +169,7 @@ export enum RelationType {
 }
 
 export type EntityRelation = {
-	id: string;
-	target: string;
+	target: { $ref: string };
 	relation: EntityRelationType;
 	label?: string;
 };
@@ -186,25 +187,26 @@ export type Service = {
 	type: ServiceType;
 	name: string;
 	description: string;
-	provides?: Consumable[];
-	consumes?: Consumption[];
+	provides: Record<string, Consumable>;
+	consumes: Consumption[];
 };
 
 export type Subdomain = {
 	id: string;
 	name: string;
 	description: string;
-	boundedContexts?: BoundedContext[];
+	boundedcontexts: Record<string, BoundedContext>;
 };
 
 export type ValueObject = {
 	id: string;
 	name: string;
 	description: string;
-	relations?: EntityRelation[];
+	relations: EntityRelation[];
 };
 
 export type Workspace = {
+	id: string;
 	odsVersion: `${number}.${number}.${number}`;
 	name: string;
 	homepage?: string;
@@ -212,5 +214,233 @@ export type Workspace = {
 	primaryColor?: string;
 	description: string;
 	version: string;
-	domains: Domain[];
+	domains: Record<string, Domain>;
 };
+
+export function domainRef(domain: string) {
+	return {
+		$ref: `#/domains/${domain}`,
+	};
+}
+
+export function subdomainRef(domain: string, subdomain: string) {
+	const { $ref } = domainRef(domain);
+
+	return {
+		$ref: `${$ref}/subdomains/${subdomain}`,
+	};
+}
+
+export function boundedcontextRef(
+	domain: string,
+	subdomain: string,
+	boundedcontext: string,
+) {
+	const { $ref } = subdomainRef(domain, subdomain);
+
+	return {
+		$ref: `${$ref}/boundedcontexts/${boundedcontext}`,
+	};
+}
+
+export function serviceRef(
+	domain: string,
+	subdomain: string,
+	boundedcontext: string,
+	service: string,
+) {
+	const { $ref } = boundedcontextRef(domain, subdomain, boundedcontext);
+
+	return {
+		$ref: `${$ref}/services/${service}`,
+	};
+}
+
+export function aggregateRef(
+	domain: string,
+	subdomain: string,
+	boundedcontext: string,
+	aggregate: string,
+) {
+	const { $ref } = boundedcontextRef(domain, subdomain, boundedcontext);
+
+	return {
+		$ref: `${$ref}/aggregates/${aggregate}`,
+	};
+}
+
+export function entityRef(
+	domain: string,
+	subdomain: string,
+	boundedcontext: string,
+	aggregate: string,
+	entity: string,
+) {
+	const { $ref } = aggregateRef(domain, subdomain, boundedcontext, aggregate);
+
+	return {
+		$ref: `${$ref}/entities/${entity}`,
+	};
+}
+
+export function valueObjectRef(
+	domain: string,
+	subdomain: string,
+	boundedcontext: string,
+	aggregate: string,
+	valueobject: string,
+) {
+	const { $ref } = aggregateRef(domain, subdomain, boundedcontext, aggregate);
+
+	return {
+		$ref: `${$ref}/valueobjects/${valueobject}`,
+	};
+}
+
+export function invariantRef(
+	domain: string,
+	subdomain: string,
+	boundedcontext: string,
+	aggregate: string,
+	invariant: string,
+) {
+	const { $ref } = aggregateRef(domain, subdomain, boundedcontext, aggregate);
+
+	return {
+		$ref: `${$ref}/invariants/${invariant}`,
+	};
+}
+
+export function consumableRef(
+	domain: string,
+	subdomain: string,
+	boundedcontext: string,
+	provider: string,
+	consumable: string,
+	providerType: "service" | "aggregate",
+) {
+	const { $ref } =
+		providerType === "aggregate"
+			? aggregateRef(domain, subdomain, boundedcontext, provider)
+			: serviceRef(domain, subdomain, boundedcontext, provider);
+
+	return {
+		$ref: `${$ref}/provides/${consumable}`,
+	};
+}
+
+export function workspace(workspace: Omit<Workspace, "domains">): Workspace {
+	return {
+		...workspace,
+		domains: {},
+	};
+}
+
+export function domain(
+	workspace: Workspace,
+	domain: Omit<Domain, "subdomains">,
+): Domain {
+	const _domain = {
+		...domain,
+		subdomains: {},
+	};
+	workspace.domains[_domain.id] = _domain;
+	return _domain;
+}
+
+export function subdomain(
+	domain: Domain,
+	subdomain: Omit<Subdomain, "boundedcontexts">,
+): Subdomain {
+	const _subdomain = {
+		...subdomain,
+		boundedcontexts: {},
+	};
+	domain.subdomains[_subdomain.id] = _subdomain;
+	return _subdomain;
+}
+
+export function boundedcontext(
+	subdomain: Subdomain,
+	boundedcontext: Omit<BoundedContext, "aggregates" | "services">,
+): BoundedContext {
+	const _boundedcontext = {
+		...boundedcontext,
+		aggregates: {},
+		services: {},
+	};
+	subdomain.boundedcontexts[_boundedcontext.id] = _boundedcontext;
+	return _boundedcontext;
+}
+
+export function service(
+	boundedcontext: BoundedContext,
+	service: Omit<Service, "consumes" | "provides">,
+): Service {
+	const _service = {
+		...service,
+		provides: {},
+		consumes: [],
+	};
+	boundedcontext.services[_service.id] = _service;
+	return _service;
+}
+
+export function aggregate(
+	boundedcontext: BoundedContext,
+	aggregate: Omit<
+		Aggregate,
+		"provides" | "consumes" | "invariants" | "entities" | "valueobjects"
+	>,
+): Aggregate {
+	const _aggregate = {
+		...aggregate,
+		provides: {},
+		consumes: [],
+		invariants: {},
+		entities: {},
+		valueobjects: {},
+	};
+	boundedcontext.aggregates[_aggregate.id] = _aggregate;
+	return _aggregate;
+}
+
+export function invariant(
+	aggregate: Aggregate,
+	invariant: Invariant,
+): Invariant {
+	aggregate.invariants[invariant.id] = invariant;
+	return invariant;
+}
+
+export function entity(
+	aggregate: Aggregate,
+	entity: Omit<Entity, "relations">,
+): Entity {
+	const _entity = {
+		...entity,
+		relations: [],
+	};
+	aggregate.entities[_entity.id] = _entity;
+	return _entity;
+}
+
+export function valueobject(
+	aggregate: Aggregate,
+	valueobject: Omit<ValueObject, "relations">,
+): ValueObject {
+	const _valueobject = {
+		...valueobject,
+		relations: [],
+	};
+	aggregate.valueobjects[_valueobject.id] = _valueobject;
+	return _valueobject;
+}
+
+export function consumable<T extends { provides: Record<string, Consumable> }>(
+	provider: T,
+	consumable: Consumable,
+): Consumable {
+	provider.provides[consumable.id] = consumable;
+	return consumable;
+}

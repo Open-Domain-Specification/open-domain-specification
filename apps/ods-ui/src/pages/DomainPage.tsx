@@ -1,34 +1,42 @@
 import { Grid, Stack, Title } from "@mantine/core";
-import type { Domain, Subdomain } from "open-domain-schema";
 import { useParams } from "react-router-dom";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
 import { PageSkeleton } from "../components/PageSkeleton.tsx";
 import { SubDomainCard } from "../components/SubDomainCard.tsx";
-import { useWorkspace } from "../context/Workspace.tsx";
+import { useWorkspace } from "../context/WorkspaceContext.tsx";
+import { useRefNavigate } from "../hooks/useRefNavigate.ts";
 import { Icons } from "../Icons.tsx";
-import { getSubdomainId } from "../utils/getSubdomainId.ts";
 
-export function _DomainPage({ domain }: { domain: Domain }) {
+export function _DomainPage(props: {
+	domainId: string;
+	name: string;
+	description: string;
+}) {
+	const { workspace } = useWorkspace();
+	const nav = useRefNavigate();
+
 	return (
 		<PageSkeleton
 			avatar={Icons.Domain}
-			title={domain.name}
-			description={domain.description}
+			title={props.name}
+			description={props.description}
 		>
 			<Stack>
 				<Title order={2}>Subdomains</Title>
+
 				<Grid>
-					{domain.subdomains?.map((subdomain: Subdomain) => (
-						<Grid.Col
-							key={getSubdomainId(domain, subdomain)}
-							span={4}
-							mih={200}
-							display={"flex"}
-						>
-							<SubDomainCard subdomain={subdomain} />
-						</Grid.Col>
-					))}
+					{workspace
+						.findSubdomainsByDomainId(props.domainId)
+						?.map((subdomain) => (
+							<Grid.Col key={subdomain.ref} span={4} mih={200} display={"flex"}>
+								<SubDomainCard
+									name={subdomain.name}
+									description={subdomain.description}
+									onClick={() => nav(subdomain.ref)}
+								/>
+							</Grid.Col>
+						))}
 				</Grid>
 			</Stack>
 		</PageSkeleton>
@@ -38,11 +46,19 @@ export function _DomainPage({ domain }: { domain: Domain }) {
 export function DomainPage() {
 	const { domainId } = useParams<{ domainId: string }>();
 	const { workspace } = useWorkspace();
-	const domain = workspace.domains.find((domain) => domain.id === domainId);
+	const domain = workspace.findDomain(domainId!);
 
 	return (
 		<GenericWorkspacePage>
-			{!domain ? <GenericNotFoundContent /> : <_DomainPage domain={domain} />}
+			{!domain ? (
+				<GenericNotFoundContent />
+			) : (
+				<_DomainPage
+					domainId={domain.domainId}
+					name={domain.name}
+					description={domain.description}
+				/>
+			)}
 		</GenericWorkspacePage>
 	);
 }

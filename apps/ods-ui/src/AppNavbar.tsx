@@ -1,19 +1,14 @@
 import { Divider, Flex, ScrollArea, TextInput } from "@mantine/core";
 import { spotlight } from "@mantine/spotlight";
 import { PiMagnifyingGlass } from "react-icons/pi";
-import { useNavigate } from "react-router-dom";
-import { useLocation } from "react-use";
 import { Navbar } from "./components/Navbar.tsx";
-import { useWorkspace } from "./context/Workspace.tsx";
+import { useWorkspace } from "./context/WorkspaceContext.tsx";
+import { useRefNavigate } from "./hooks/useRefNavigate.ts";
 import { Icons } from "./Icons.tsx";
-import { getAggregateId } from "./utils/getAggregateId.ts";
-import { getBoundedContextId } from "./utils/getBoundedContextId.ts";
-import { getSubdomainId } from "./utils/getSubdomainId.ts";
 
 export function AppNavbar() {
 	const { workspace } = useWorkspace();
-	const nav = useNavigate();
-	const location = useLocation();
+	const nav = useRefNavigate();
 
 	return (
 		<Flex display={"flex"} direction={"column"} style={{ overflow: "hidden" }}>
@@ -28,57 +23,65 @@ export function AppNavbar() {
 			<Divider />
 			<ScrollArea flex={"auto"}>
 				<Navbar
-					groups={workspace.domains.map((d) => ({
-						id: d.id,
+					groups={(workspace.getDomains() || [])?.map((d) => ({
+						id: d.ref,
 						label: d.name,
-						onClick: () => nav(`/${d.id}`),
+						onClick: () => nav(d.ref),
 						leftSection: Icons.Domain,
-						active:
-							location.pathname?.split("/").length === 2 &&
-							location.pathname?.endsWith(d.id),
+						active: d.ref.replace(/^#/g, "") === window.location.pathname,
 						subgroups:
-							d.subdomains?.map((sd) => ({
-								id: getSubdomainId(d, sd).replace(":", "/"),
+							workspace.findSubdomainsByDomainId(d.domainId)?.map((sd) => ({
+								id: sd.ref,
 								label: sd.name,
-								onClick: () => nav(`/${d.id}/${sd.id}`),
+								onClick: () => nav(sd.ref),
 								leftSection: Icons.Subdomain,
-								active:
-									location.pathname?.split("/").length === 3 &&
-									location.pathname?.endsWith(sd.id),
+								active: sd.ref.replace(/^#/g, "") === window.location.pathname,
 								collections:
-									sd.boundedContexts?.map((bc) => ({
-										id: getBoundedContextId(d, sd, bc).replace(":", "/"),
-										label: bc.name,
-										onClick: () => nav(`/${d.id}/${sd.id}/${bc.id}`),
-										leftSection: Icons.BoundedContext,
-										active:
-											location.pathname?.split("/").length === 4 &&
-											location.pathname?.endsWith(bc.id),
-										items: [
-											...(bc.aggregates?.map((agg) => ({
-												id: getAggregateId(d, sd, bc, agg).replace(":", "/"),
-												label: agg.name,
-												onClick: () =>
-													nav(
-														`/${d.id}/${sd.id}/${bc.id}/aggregates/${agg.id}`,
-													),
-												active:
-													location.pathname?.split("/").length === 6 &&
-													location.pathname?.endsWith(agg.id),
-												leftSection: Icons.Aggregate,
-											})) || []),
-											...(bc.services?.map((svc) => ({
-												id: svc.id.replace(":", "/"),
-												label: svc.name,
-												onClick: () =>
-													nav(`/${d.id}/${sd.id}/${bc.id}/services/${svc.id}`),
-												active:
-													location.pathname?.split("/").length === 6 &&
-													location.pathname?.endsWith(svc.id),
-												leftSection: Icons.Service,
-											})) || []),
-										],
-									})) || [],
+									workspace
+										.findBoundedcontextsByDomainIdAndSubdomainId(
+											sd.domainId,
+											sd.subdomainId,
+										)
+										?.map((bc) => ({
+											id: bc.ref,
+											label: bc.name,
+											onClick: () => nav(bc.ref),
+											leftSection: Icons.BoundedContext,
+											active:
+												bc.ref.replace(/^#/g, "") === window.location.pathname,
+											items: [
+												...(workspace
+													.findAggregatesByDomainIdSubdomainIdAndBoundedContextId(
+														bc.domainId,
+														bc.subdomainId,
+														bc.boundedContextId,
+													)
+													?.map((agg) => ({
+														id: agg.ref,
+														label: agg.name,
+														onClick: () => nav(agg.ref),
+														active:
+															agg.ref.replace(/^#/g, "") ===
+															window.location.pathname,
+														leftSection: Icons.Aggregate,
+													})) || []),
+												...(workspace
+													.findServicesByDomainIdSubdomainIdAndBoundedContextId(
+														bc.domainId,
+														bc.subdomainId,
+														bc.boundedContextId,
+													)
+													?.map((svc) => ({
+														id: svc.ref,
+														label: svc.name,
+														onClick: () => nav(svc.ref),
+														active:
+															svc.ref.replace(/^#/g, "") ===
+															window.location.pathname,
+														leftSection: Icons.Service,
+													})) || []),
+											],
+										})) || [],
 							})) || [],
 					}))}
 				/>

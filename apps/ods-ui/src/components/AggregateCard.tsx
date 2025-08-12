@@ -1,34 +1,16 @@
-import type {
-	Aggregate,
-	BoundedContext,
-	Domain,
-	Subdomain,
-} from "open-domain-schema";
-import { useNavigate } from "react-router-dom";
-import { Icons } from "../Icons.tsx";
 import { GenericCard } from "./GenericCard.tsx";
 
-export function AggregateCard({
-	aggregate,
-}: {
-	domain: Domain;
-	subdomain: Subdomain;
-	boundedContext: BoundedContext;
-	aggregate: Aggregate;
+export function AggregateCard(props: {
+	name: string;
+	description: string;
+	onClick: () => void;
 }) {
-	const nav = useNavigate();
 	return (
 		<GenericCard
-			onClick={() => nav(`aggregates/${aggregate.id}`)}
-			title={aggregate.name}
-			content={aggregate.description}
-			badges={[
-				{ content: aggregate.entities?.length || 0, icon: Icons.Entity },
-				{
-					content: aggregate.valueObjects?.length || 0,
-					icon: Icons.ValueObject,
-				},
-			]}
+			onClick={props.onClick}
+			title={props.name}
+			content={props.description}
+			badges={[]}
 		/>
 	);
 }

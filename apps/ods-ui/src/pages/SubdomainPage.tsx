@@ -1,44 +1,61 @@
 import { Grid, Stack, Title } from "@mantine/core";
-import type { BoundedContext, Domain, Subdomain } from "open-domain-schema";
 import { useParams } from "react-router-dom";
 import { BoundedContextCard } from "../components/BoundedContextCard.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
+import { Mermaid } from "../components/Mermaid.tsx";
 import { PageSkeleton } from "../components/PageSkeleton.tsx";
-import { useWorkspace } from "../context/Workspace.tsx";
+import { useWorkspace } from "../context/WorkspaceContext.tsx";
+import { useRefNavigate } from "../hooks/useRefNavigate.ts";
 import { Icons } from "../Icons.tsx";
-import { getSubdomainId } from "../utils/getSubdomainId.ts";
+import { contextMapToMermaidFlowchart } from "../lib/diagrams/mermaid/contextMapToMermaidFlowchart.ts";
+import { subdomainContextMap } from "../utils/subdomainContextMap.ts";
 
-export function _SubdomainPage({
-	domain,
-	subdomain,
-}: {
-	domain: Domain;
-	subdomain: Subdomain;
+export function _SubdomainPage(props: {
+	name: string;
+	description: string;
+	domainId: string;
+	subdomainId: string;
 }) {
+	const { workspace } = useWorkspace();
+	const nav = useRefNavigate();
 	return (
 		<PageSkeleton
 			avatar={Icons.Subdomain}
-			title={subdomain.name}
-			description={subdomain.description}
+			title={props.name}
+			description={props.description}
 		>
 			<Stack>
 				<Title order={2}>Bounded Contexts</Title>
+				<Mermaid
+					chart={contextMapToMermaidFlowchart(
+						subdomainContextMap(
+							workspace.sqlJsDatabase!,
+							props.domainId,
+							props.subdomainId,
+						),
+					)}
+				/>
 				<Grid>
-					{subdomain.boundedContexts?.map((boundedContext: BoundedContext) => (
-						<Grid.Col
-							key={getSubdomainId(domain, subdomain)}
-							span={4}
-							mih={200}
-							display={"flex"}
-						>
-							<BoundedContextCard
-								domain={domain}
-								subdomain={subdomain}
-								boundedContext={boundedContext}
-							/>
-						</Grid.Col>
-					))}
+					{workspace
+						.findBoundedcontextsByDomainIdAndSubdomainId(
+							props.domainId,
+							props.subdomainId,
+						)
+						?.map((boundedContext) => (
+							<Grid.Col
+								key={boundedContext.ref}
+								span={4}
+								mih={200}
+								display={"flex"}
+							>
+								<BoundedContextCard
+									name={boundedContext.name}
+									description={boundedContext.description}
+									onClick={() => nav(boundedContext.ref)}
+								/>
+							</Grid.Col>
+						))}
 				</Grid>
 			</Stack>
 		</PageSkeleton>
@@ -51,17 +68,22 @@ export function SubdomainPage() {
 		subdomainId: string;
 	}>();
 	const { workspace } = useWorkspace();
-	const domain = workspace.domains.find((domain) => domain.id === domainId);
-	const subdomain = domain?.subdomains?.find(
-		(subdomain) => subdomain.id === subdomainId,
+	const subdomain = workspace.findSubdomainByDomainIdAndSubdomainId(
+		domainId!,
+		subdomainId!,
 	);
 
 	return (
 		<GenericWorkspacePage>
-			{!domain || !subdomain ? (
+			{!subdomain ? (
 				<GenericNotFoundContent />
 			) : (
-				<_SubdomainPage domain={domain} subdomain={subdomain} />
+				<_SubdomainPage
+					name={subdomain.name}
+					description={subdomain.description}
+					domainId={domainId!}
+					subdomainId={subdomainId!}
+				/>
 			)}
 		</GenericWorkspacePage>
 	);

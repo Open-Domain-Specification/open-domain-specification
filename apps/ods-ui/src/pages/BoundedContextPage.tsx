@@ -1,57 +1,58 @@
 import { Alert, Grid, Stack, Title } from "@mantine/core";
-import type {
-	Aggregate,
-	BoundedContext,
-	Domain,
-	Service,
-	Subdomain,
-} from "open-domain-schema";
 import { useParams } from "react-router-dom";
 import { AggregateCard } from "../components/AggregateCard.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
 import { PageSkeleton } from "../components/PageSkeleton.tsx";
 import { ServiceCard } from "../components/ServiceCard.tsx";
-import { useWorkspace } from "../context/Workspace.tsx";
+import { useWorkspace } from "../context/WorkspaceContext.tsx";
+import { useRefNavigate } from "../hooks/useRefNavigate.ts";
 import { Icons } from "../Icons.tsx";
-import { getAggregateId } from "../utils/getAggregateId.ts";
-import { getServiceId } from "../utils/getServiceId.ts";
 
-export function _BoundedContextPage({
-	domain,
-	subdomain,
-	boundedContext,
-}: {
-	domain: Domain;
-	subdomain: Subdomain;
-	boundedContext: BoundedContext;
+export function _BoundedContextPage(props: {
+	name: string;
+	description: string;
+	domainId: string;
+	subdomainId: string;
+	boundedcontextId: string;
 }) {
+	const { workspace } = useWorkspace();
+	const nav = useRefNavigate();
+
+	const aggregates =
+		workspace.findAggregatesByDomainIdSubdomainIdAndBoundedContextId(
+			props.domainId,
+			props.subdomainId,
+			props.boundedcontextId,
+		);
+
+	const services =
+		workspace.findServicesByDomainIdSubdomainIdAndBoundedContextId(
+			props.domainId,
+			props.subdomainId,
+			props.boundedcontextId,
+		);
+
 	return (
 		<PageSkeleton
 			avatar={Icons.BoundedContext}
-			title={boundedContext.name}
-			description={boundedContext.description}
+			title={props.name}
+			description={props.description}
 		>
 			<Stack>
 				<Title order={2}>Aggregates</Title>
 				<Grid>
-					{!boundedContext.aggregates?.length && (
+					{!aggregates?.length && (
 						<Alert w={"100%"}>
 							No aggregates exist in this bounded context.
 						</Alert>
 					)}
-					{boundedContext.aggregates?.map((agg: Aggregate) => (
-						<Grid.Col
-							key={getAggregateId(domain, subdomain, boundedContext, agg)}
-							span={4}
-							mih={200}
-							display={"flex"}
-						>
+					{aggregates?.map((agg) => (
+						<Grid.Col key={agg.ref} span={4} mih={200} display={"flex"}>
 							<AggregateCard
-								domain={domain}
-								subdomain={subdomain}
-								boundedContext={boundedContext}
-								aggregate={agg}
+								name={agg.name}
+								description={agg.description}
+								onClick={() => nav(agg.ref)}
 							/>
 						</Grid.Col>
 					))}
@@ -60,21 +61,16 @@ export function _BoundedContextPage({
 			<Stack>
 				<Title order={2}>Services</Title>
 				<Grid>
-					{!boundedContext.services?.length && (
+					{!services?.length && (
 						<Alert w={"100%"}>No services exist in this bounded context.</Alert>
 					)}
-					{boundedContext.services?.map((service: Service) => (
-						<Grid.Col
-							key={getServiceId(domain, subdomain, boundedContext, service)}
-							span={4}
-							mih={200}
-							display={"flex"}
-						>
+					{services?.map((service) => (
+						<Grid.Col key={service.ref} span={4} mih={200} display={"flex"}>
 							<ServiceCard
-								domain={domain}
-								subdomain={subdomain}
-								boundedContext={boundedContext}
-								service={service}
+								name={service.name}
+								description={service.description}
+								type={service.type}
+								onClick={() => nav(service.ref)}
 							/>
 						</Grid.Col>
 					))}
@@ -91,23 +87,25 @@ export function BoundedContextPage() {
 		boundedContextId: string;
 	}>();
 	const { workspace } = useWorkspace();
-	const domain = workspace.domains.find((domain) => domain.id === domainId);
-	const subdomain = domain?.subdomains?.find(
-		(subdomain) => subdomain.id === subdomainId,
-	);
-	const boundedContext = subdomain?.boundedContexts?.find(
-		(boundedContext) => boundedContext.id === boundedContextId,
-	);
+
+	const boundedContext =
+		workspace.findBoundedContextByDomainIdSubdomainIdAndBoundedContextId(
+			domainId!,
+			subdomainId!,
+			boundedContextId!,
+		);
 
 	return (
 		<GenericWorkspacePage>
-			{!domain || !subdomain || !boundedContext ? (
+			{!boundedContext ? (
 				<GenericNotFoundContent />
 			) : (
 				<_BoundedContextPage
-					domain={domain}
-					subdomain={subdomain}
-					boundedContext={boundedContext}
+					name={boundedContext.name}
+					description={boundedContext.description}
+					domainId={domainId!}
+					subdomainId={subdomainId!}
+					boundedcontextId={boundedContextId!}
 				/>
 			)}
 		</GenericWorkspacePage>

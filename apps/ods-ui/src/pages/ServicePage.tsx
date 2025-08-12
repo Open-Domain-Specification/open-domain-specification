@@ -1,84 +1,108 @@
-import { AppShell, Badge, ScrollArea } from "@mantine/core";
-import type {
-	BoundedContext,
-	Domain,
-	Service,
-	Subdomain,
-} from "open-domain-schema";
-import type { ReactNode } from "react";
+import {
+	AppShell,
+	Badge,
+	Divider,
+	Group,
+	ScrollArea,
+	Stack,
+	Title,
+} from "@mantine/core";
 import { useParams } from "react-router-dom";
 import { AccordionItems } from "../components/AccordionItems.tsx";
+import { ConsumableAccordionLabel } from "../components/ConsumableAccordionLabel.tsx";
+import { ConsumptionAccordionLabel } from "../components/ConsumptionAccordionLabel.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
 import { PageNavigation } from "../components/PageNavigation.tsx";
 import { PageSkeleton } from "../components/PageSkeleton.tsx";
-import { useWorkspace } from "../context/Workspace.tsx";
+import { useWorkspace } from "../context/WorkspaceContext.tsx";
 import { Icons } from "../Icons.tsx";
+import { EntitiesAndValueObjectsHelp } from "../modals/EntitiesAndValueObjectsHelp.tsx";
 
-function toNavigationItems(
-	icon: ReactNode,
-	onScrollToSection: (id: string) => void,
-	items: Service["provides"],
-) {
-	return (
-		items?.map((item) => ({
-			key: item.id,
-			label: item.name,
-			icon: icon,
-			onClick: () => onScrollToSection(item.id),
-		})) || []
-	);
-}
-
-export function _ServicePage({
-	service,
-}: {
-	domain: Domain;
-	subdomain: Subdomain;
-	boundedContext: BoundedContext;
-	service: Service;
+export function _ServicePage(props: {
+	name: string;
+	description: string;
+	type: string;
+	domainId: string;
+	subdomainId: string;
+	boundedcontextId: string;
+	serviceId: string;
 }) {
-	const scrollToSection = (id: string) => {
-		const element = document.getElementById(id);
-		if (element) {
-			const y = element.getBoundingClientRect().top + window.scrollY - 100;
+	const { workspace } = useWorkspace();
 
-			window.scrollTo({ top: y, behavior: "smooth" });
-			element.getElementsByTagName("button").item(0)?.click();
-		}
-	};
+	const consumables =
+		workspace.findServiceConsumablesByDomainIdSubdomainIdAndBoundedContextIdAndServiceId(
+			props.domainId,
+			props.subdomainId,
+			props.boundedcontextId,
+			props.serviceId,
+		);
+
+	const consumptions =
+		workspace.findServiceConsumptionsByDomainIdSubdomainIdAndBoundedContextIdAndServiceId(
+			props.domainId,
+			props.subdomainId,
+			props.boundedcontextId,
+			props.serviceId,
+		);
 
 	return (
 		<>
 			<PageSkeleton
 				avatar={Icons.Service}
-				title={service.name}
-				description={service.description}
+				title={props.name}
+				description={props.description}
 			>
-				<Badge>{service.type}</Badge>
+				<Badge>{props.type}</Badge>
+
+				<Stack>
+					<Stack gap={2}>
+						<Group justify={"space-between"} align={"center"}>
+							<Title order={2} id={"entities-and-value-objects"}>
+								Service Context
+							</Title>
+							<EntitiesAndValueObjectsHelp />
+						</Group>
+						<Divider />
+					</Stack>
+					{/*<Mermaid chart={serviceToMermaid(workspace, service)} />*/}
+				</Stack>
 
 				<AccordionItems
 					title={"Provides"}
 					items={
-						service.provides?.map((it) => ({
-							id: it.id,
-							name: it.name,
+						consumables?.map((it) => ({
+							id: it.ref,
+							name: (
+								<ConsumableAccordionLabel name={it.name} pattern={it.pattern} />
+							),
 							description: it.description,
 							icon: it.type === "event" ? Icons.Events : Icons.Operations,
 						})) || []
 					}
-					emptyMessage={"No provisions defined."}
+					emptyMessage={"No consumables defined."}
 				/>
 
 				<AccordionItems
 					title={"Consumes"}
 					items={
-						service.consumes?.map((it) => ({
-							id: it.target,
-							name: it.target,
-							description: it.pattern,
-							icon: Icons.Consumer,
-						})) || []
+						consumptions?.map((it) => {
+							return {
+								id:
+									it.service_consumer.serviceRef +
+									it.service_consumer.consumableRef,
+								name: (
+									<ConsumptionAccordionLabel
+										name={it.consumable.name}
+										pattern={it.consumable.pattern}
+										consumptionPattern={it.service_consumer.pattern}
+										consumableRef={it.consumable.ref}
+									/>
+								),
+								description: it.consumable.description,
+								icon: Icons.Consumer,
+							};
+						}) || []
 					}
 					emptyMessage={"No consumptions defined."}
 				/>
@@ -89,19 +113,11 @@ export function _ServicePage({
 						sections={[
 							{
 								title: "Operations",
-								items: toNavigationItems(
-									Icons.Operations,
-									scrollToSection,
-									service.provides?.filter((it) => it.type === "operation"),
-								),
+								items: [],
 							},
 							{
 								title: "Events",
-								items: toNavigationItems(
-									Icons.Events,
-									scrollToSection,
-									service.provides?.filter((it) => it.type === "event"),
-								),
+								items: [],
 							},
 						]}
 					/>
@@ -119,27 +135,27 @@ export function ServicePage() {
 		serviceId: string;
 	}>();
 	const { workspace } = useWorkspace();
-	const domain = workspace.domains.find((domain) => domain.id === domainId);
-	const subdomain = domain?.subdomains?.find(
-		(subdomain) => subdomain.id === subdomainId,
-	);
-	const boundedContext = subdomain?.boundedContexts?.find(
-		(boundedContext) => boundedContext.id === boundedContextId,
-	);
-	const service = boundedContext?.services?.find(
-		(service) => service.id === serviceId,
-	);
+	const service =
+		workspace.findServiceByDomainIdSubdomainIdAndBoundedContextIdAndServiceId(
+			domainId!,
+			subdomainId!,
+			boundedContextId!,
+			serviceId!,
+		);
 
 	return (
 		<GenericWorkspacePage>
-			{!domain || !subdomain || !boundedContext || !service ? (
+			{!service ? (
 				<GenericNotFoundContent />
 			) : (
 				<_ServicePage
-					domain={domain}
-					subdomain={subdomain}
-					boundedContext={boundedContext}
-					service={service}
+					name={service.name}
+					description={service.description}
+					type={service.type}
+					domainId={service.domainId}
+					subdomainId={service.subdomainId}
+					boundedcontextId={service.boundedContextId}
+					serviceId={service.serviceId}
 				/>
 			)}
 		</GenericWorkspacePage>
