@@ -1,0 +1,1093 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "7c2690ca-1522-492b-a7e9-eb481c58a49d",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "aggregate": {
+      "name": "aggregate",
+      "columns": {
+        "ref": {
+          "name": "ref",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "domain_id": {
+          "name": "domain_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subdomain_id": {
+          "name": "subdomain_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bounded_context_id": {
+          "name": "bounded_context_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "aggregate_domain_id_domain_id_fk": {
+          "name": "aggregate_domain_id_domain_id_fk",
+          "tableFrom": "aggregate",
+          "tableTo": "domain",
+          "columnsFrom": [
+            "domain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "aggregate_subdomain_id_subdomain_id_fk": {
+          "name": "aggregate_subdomain_id_subdomain_id_fk",
+          "tableFrom": "aggregate",
+          "tableTo": "subdomain",
+          "columnsFrom": [
+            "subdomain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "aggregate_bounded_context_id_bounded_context_bounded_context_id_fk": {
+          "name": "aggregate_bounded_context_id_bounded_context_bounded_context_id_fk",
+          "tableFrom": "aggregate",
+          "tableTo": "bounded_context",
+          "columnsFrom": [
+            "bounded_context_id"
+          ],
+          "columnsTo": [
+            "bounded_context_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "aggregate_consumer": {
+      "name": "aggregate_consumer",
+      "columns": {
+        "aggregate_ref": {
+          "name": "aggregate_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "aggregate_boundedcontext_ref": {
+          "name": "aggregate_boundedcontext_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "consumable_ref": {
+          "name": "consumable_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "consumable_boundedcontext_ref": {
+          "name": "consumable_boundedcontext_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pattern": {
+          "name": "pattern",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "aggregate_consumer_aggregate_ref_aggregate_ref_fk": {
+          "name": "aggregate_consumer_aggregate_ref_aggregate_ref_fk",
+          "tableFrom": "aggregate_consumer",
+          "tableTo": "aggregate",
+          "columnsFrom": [
+            "aggregate_ref"
+          ],
+          "columnsTo": [
+            "ref"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "aggregate_consumer_aggregate_boundedcontext_ref_bounded_context_ref_fk": {
+          "name": "aggregate_consumer_aggregate_boundedcontext_ref_bounded_context_ref_fk",
+          "tableFrom": "aggregate_consumer",
+          "tableTo": "bounded_context",
+          "columnsFrom": [
+            "aggregate_boundedcontext_ref"
+          ],
+          "columnsTo": [
+            "ref"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "aggregate_consumer_consumable_ref_consumable_ref_fk": {
+          "name": "aggregate_consumer_consumable_ref_consumable_ref_fk",
+          "tableFrom": "aggregate_consumer",
+          "tableTo": "consumable",
+          "columnsFrom": [
+            "consumable_ref"
+          ],
+          "columnsTo": [
+            "ref"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "aggregate_consumer_consumable_boundedcontext_ref_bounded_context_ref_fk": {
+          "name": "aggregate_consumer_consumable_boundedcontext_ref_bounded_context_ref_fk",
+          "tableFrom": "aggregate_consumer",
+          "tableTo": "bounded_context",
+          "columnsFrom": [
+            "consumable_boundedcontext_ref"
+          ],
+          "columnsTo": [
+            "ref"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "aggregate_consumer_aggregate_ref_consumable_ref_pk": {
+          "columns": [
+            "aggregate_ref",
+            "consumable_ref"
+          ],
+          "name": "aggregate_consumer_aggregate_ref_consumable_ref_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "bounded_context": {
+      "name": "bounded_context",
+      "columns": {
+        "ref": {
+          "name": "ref",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "domain_id": {
+          "name": "domain_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subdomain_id": {
+          "name": "subdomain_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bounded_context_id": {
+          "name": "bounded_context_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "bounded_context_domain_id_domain_id_fk": {
+          "name": "bounded_context_domain_id_domain_id_fk",
+          "tableFrom": "bounded_context",
+          "tableTo": "domain",
+          "columnsFrom": [
+            "domain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "bounded_context_subdomain_id_subdomain_id_fk": {
+          "name": "bounded_context_subdomain_id_subdomain_id_fk",
+          "tableFrom": "bounded_context",
+          "tableTo": "subdomain",
+          "columnsFrom": [
+            "subdomain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "consumable": {
+      "name": "consumable",
+      "columns": {
+        "ref": {
+          "name": "ref",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "domain_id": {
+          "name": "domain_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subdomain_id": {
+          "name": "subdomain_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bounded_context_id": {
+          "name": "bounded_context_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider_id": {
+          "name": "provider_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider_type": {
+          "name": "provider_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pattern": {
+          "name": "pattern",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "consumable_domain_id_domain_id_fk": {
+          "name": "consumable_domain_id_domain_id_fk",
+          "tableFrom": "consumable",
+          "tableTo": "domain",
+          "columnsFrom": [
+            "domain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "consumable_subdomain_id_subdomain_id_fk": {
+          "name": "consumable_subdomain_id_subdomain_id_fk",
+          "tableFrom": "consumable",
+          "tableTo": "subdomain",
+          "columnsFrom": [
+            "subdomain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "consumable_bounded_context_id_bounded_context_bounded_context_id_fk": {
+          "name": "consumable_bounded_context_id_bounded_context_bounded_context_id_fk",
+          "tableFrom": "consumable",
+          "tableTo": "bounded_context",
+          "columnsFrom": [
+            "bounded_context_id"
+          ],
+          "columnsTo": [
+            "bounded_context_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "consumable_provider_id_service_id_fk": {
+          "name": "consumable_provider_id_service_id_fk",
+          "tableFrom": "consumable",
+          "tableTo": "service",
+          "columnsFrom": [
+            "provider_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "domain": {
+      "name": "domain",
+      "columns": {
+        "ref": {
+          "name": "ref",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "entity": {
+      "name": "entity",
+      "columns": {
+        "ref": {
+          "name": "ref",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "domain_id": {
+          "name": "domain_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subdomain_id": {
+          "name": "subdomain_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bounded_context_id": {
+          "name": "bounded_context_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "aggregate_id": {
+          "name": "aggregate_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "root": {
+          "name": "root",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "entity_domain_id_domain_id_fk": {
+          "name": "entity_domain_id_domain_id_fk",
+          "tableFrom": "entity",
+          "tableTo": "domain",
+          "columnsFrom": [
+            "domain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "entity_subdomain_id_subdomain_id_fk": {
+          "name": "entity_subdomain_id_subdomain_id_fk",
+          "tableFrom": "entity",
+          "tableTo": "subdomain",
+          "columnsFrom": [
+            "subdomain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "entity_bounded_context_id_bounded_context_bounded_context_id_fk": {
+          "name": "entity_bounded_context_id_bounded_context_bounded_context_id_fk",
+          "tableFrom": "entity",
+          "tableTo": "bounded_context",
+          "columnsFrom": [
+            "bounded_context_id"
+          ],
+          "columnsTo": [
+            "bounded_context_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "entity_aggregate_id_aggregate_id_fk": {
+          "name": "entity_aggregate_id_aggregate_id_fk",
+          "tableFrom": "entity",
+          "tableTo": "aggregate",
+          "columnsFrom": [
+            "aggregate_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "entity_relation": {
+      "name": "entity_relation",
+      "columns": {
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "target": {
+          "name": "target",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "relation": {
+          "name": "relation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "entity_relation_source_entity_ref_fk": {
+          "name": "entity_relation_source_entity_ref_fk",
+          "tableFrom": "entity_relation",
+          "tableTo": "entity",
+          "columnsFrom": [
+            "source"
+          ],
+          "columnsTo": [
+            "ref"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "entity_relation_target_entity_ref_fk": {
+          "name": "entity_relation_target_entity_ref_fk",
+          "tableFrom": "entity_relation",
+          "tableTo": "entity",
+          "columnsFrom": [
+            "target"
+          ],
+          "columnsTo": [
+            "ref"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "entity_relation_source_target_relation_label_pk": {
+          "columns": [
+            "source",
+            "target",
+            "relation",
+            "label"
+          ],
+          "name": "entity_relation_source_target_relation_label_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "invariant": {
+      "name": "invariant",
+      "columns": {
+        "ref": {
+          "name": "ref",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "domain_id": {
+          "name": "domain_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subdomain_id": {
+          "name": "subdomain_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bounded_context_id": {
+          "name": "bounded_context_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "aggregate_id": {
+          "name": "aggregate_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "invariant_domain_id_domain_id_fk": {
+          "name": "invariant_domain_id_domain_id_fk",
+          "tableFrom": "invariant",
+          "tableTo": "domain",
+          "columnsFrom": [
+            "domain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "invariant_subdomain_id_subdomain_id_fk": {
+          "name": "invariant_subdomain_id_subdomain_id_fk",
+          "tableFrom": "invariant",
+          "tableTo": "subdomain",
+          "columnsFrom": [
+            "subdomain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "invariant_bounded_context_id_bounded_context_bounded_context_id_fk": {
+          "name": "invariant_bounded_context_id_bounded_context_bounded_context_id_fk",
+          "tableFrom": "invariant",
+          "tableTo": "bounded_context",
+          "columnsFrom": [
+            "bounded_context_id"
+          ],
+          "columnsTo": [
+            "bounded_context_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "invariant_aggregate_id_aggregate_id_fk": {
+          "name": "invariant_aggregate_id_aggregate_id_fk",
+          "tableFrom": "invariant",
+          "tableTo": "aggregate",
+          "columnsFrom": [
+            "aggregate_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "service": {
+      "name": "service",
+      "columns": {
+        "ref": {
+          "name": "ref",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "domain_id": {
+          "name": "domain_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subdomain_id": {
+          "name": "subdomain_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bounded_context_id": {
+          "name": "bounded_context_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "service_domain_id_domain_id_fk": {
+          "name": "service_domain_id_domain_id_fk",
+          "tableFrom": "service",
+          "tableTo": "domain",
+          "columnsFrom": [
+            "domain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "service_subdomain_id_subdomain_id_fk": {
+          "name": "service_subdomain_id_subdomain_id_fk",
+          "tableFrom": "service",
+          "tableTo": "subdomain",
+          "columnsFrom": [
+            "subdomain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "service_bounded_context_id_bounded_context_bounded_context_id_fk": {
+          "name": "service_bounded_context_id_bounded_context_bounded_context_id_fk",
+          "tableFrom": "service",
+          "tableTo": "bounded_context",
+          "columnsFrom": [
+            "bounded_context_id"
+          ],
+          "columnsTo": [
+            "bounded_context_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "service_consumer": {
+      "name": "service_consumer",
+      "columns": {
+        "service_ref": {
+          "name": "service_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "service_boundedcontext_ref": {
+          "name": "service_boundedcontext_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "consumable_ref": {
+          "name": "consumable_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "consumable_boundedcontext_ref": {
+          "name": "consumable_boundedcontext_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pattern": {
+          "name": "pattern",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "service_consumer_service_ref_service_ref_fk": {
+          "name": "service_consumer_service_ref_service_ref_fk",
+          "tableFrom": "service_consumer",
+          "tableTo": "service",
+          "columnsFrom": [
+            "service_ref"
+          ],
+          "columnsTo": [
+            "ref"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "service_consumer_service_boundedcontext_ref_bounded_context_ref_fk": {
+          "name": "service_consumer_service_boundedcontext_ref_bounded_context_ref_fk",
+          "tableFrom": "service_consumer",
+          "tableTo": "bounded_context",
+          "columnsFrom": [
+            "service_boundedcontext_ref"
+          ],
+          "columnsTo": [
+            "ref"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "service_consumer_consumable_ref_consumable_ref_fk": {
+          "name": "service_consumer_consumable_ref_consumable_ref_fk",
+          "tableFrom": "service_consumer",
+          "tableTo": "consumable",
+          "columnsFrom": [
+            "consumable_ref"
+          ],
+          "columnsTo": [
+            "ref"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "service_consumer_consumable_boundedcontext_ref_bounded_context_ref_fk": {
+          "name": "service_consumer_consumable_boundedcontext_ref_bounded_context_ref_fk",
+          "tableFrom": "service_consumer",
+          "tableTo": "bounded_context",
+          "columnsFrom": [
+            "consumable_boundedcontext_ref"
+          ],
+          "columnsTo": [
+            "ref"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "service_consumer_service_ref_consumable_ref_pk": {
+          "columns": [
+            "service_ref",
+            "consumable_ref"
+          ],
+          "name": "service_consumer_service_ref_consumable_ref_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "subdomain": {
+      "name": "subdomain",
+      "columns": {
+        "ref": {
+          "name": "ref",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "domain_id": {
+          "name": "domain_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "subdomain_domain_id_domain_id_fk": {
+          "name": "subdomain_domain_id_domain_id_fk",
+          "tableFrom": "subdomain",
+          "tableTo": "domain",
+          "columnsFrom": [
+            "domain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}
