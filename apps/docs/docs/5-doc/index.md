@@ -2,6 +2,11 @@
 
 A TypeScript library for generating comprehensive Markdown documentation from Open Domain Specification (ODS) workspaces. This package automatically creates structured documentation with embedded diagrams, relationship tables, and navigation for domain-driven design projects.
 
+<strong>
+> 👀 Check out the ODS Example Workspace documentation and hosted Docsify site: https://eshop.open-ds.io
+> https://github.com/Open-Domain-Specification/open-domain-specification/tree/main/packages/ods-example-ws
+</strong>
+
 ## Features
 
 - **Hierarchical Documentation**: Generate complete documentation trees from workspace to aggregate level
