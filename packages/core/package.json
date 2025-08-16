@@ -29,10 +29,10 @@
 	"dependencies": {
 		"@types/object-hash": "^3.0.6",
 		"object-hash": "^3.0.0",
-		"typescript": "^5.8.3"
+		"typescript": "^5.9.2"
 	},
 	"devDependencies": {
-		"tsup": "^6.7.0",
+		"tsup": "^8.5.0",
 		"vitest": "^3.2.4"
 	}
 }
