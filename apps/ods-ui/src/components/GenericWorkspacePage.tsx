@@ -4,6 +4,7 @@ import {
 	type AppShellHeaderConfiguration,
 	type AppShellNavbarConfiguration,
 } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import type { ReactNode } from "react";
 import { AppHeader } from "../AppHeader.tsx";
 import { AppNavbar } from "../AppNavbar.tsx";
@@ -12,7 +13,7 @@ import { AppSpotlight } from "../AppSpotlight.tsx";
 export function GenericWorkspacePage({
 	children,
 	header = { height: 65 },
-	navbar = { width: 300, breakpoint: 0 },
+	navbar = { width: 300, breakpoint: "sm", collapsed: { mobile: true } },
 	aside,
 }: {
 	children: ReactNode;
@@ -20,11 +21,20 @@ export function GenericWorkspacePage({
 	navbar?: AppShellNavbarConfiguration;
 	aside?: AppShellAsideConfiguration;
 }) {
+	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
+
 	return (
-		<AppShell header={header} navbar={navbar} aside={aside}>
+		<AppShell 
+			header={header} 
+			navbar={{
+				...navbar,
+				collapsed: { mobile: !mobileOpened }
+			}} 
+			aside={aside}
+		>
 			<AppSpotlight />
 			<AppShell.Header className={"app-header"}>
-				<AppHeader />
+				<AppHeader onToggleMobile={toggleMobile} />
 			</AppShell.Header>
 			<AppShell.Navbar>
 				<AppNavbar />
@@ -33,9 +43,3 @@ export function GenericWorkspacePage({
 		</AppShell>
 	);
 }
-
-// {
-// 				width: location.pathname?.split("/").length === 5 ? 300 : 0,
-// 				breakpoint: 0,
-// 				collapsed: { mobile: true },
-// 			}
