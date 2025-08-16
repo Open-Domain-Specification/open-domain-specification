@@ -39,19 +39,20 @@ export function _AggregatePage(props: { aggregate: Aggregate }) {
 				description={props.aggregate.description}
 			>
 				<Graphviz
-					title={`${props.aggregate.name} Consumable Map`}
-					height={"50vh"}
-					dot={consumableMapToDigraph(
-						ODSConsumableMap.fromAggregate(props.aggregate),
-					).toDot()}
-				/>
-				<Graphviz
 					title={`${props.aggregate.name} Relation Map`}
 					height={"50vh"}
 					dot={relationMapToDigraph(
 						ODSRelationMap.fromAggregate(props.aggregate),
 					).toDot()}
 				/>
+				<Graphviz
+					title={`${props.aggregate.name} Consumable Map`}
+					height={"50vh"}
+					dot={consumableMapToDigraph(
+						ODSConsumableMap.fromAggregate(props.aggregate),
+					).toDot()}
+				/>
+
 				<Stack>
 					<Stack gap={2}>
 						<Group justify={"space-between"} align={"center"}>

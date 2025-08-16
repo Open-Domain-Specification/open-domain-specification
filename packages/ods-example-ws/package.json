@@ -4,7 +4,7 @@
 	"description": "",
 	"type": "module",
 	"scripts": {
-		"build": "ts-node src/index.ts",
+		"build": "tsc && ts-node src/index.ts",
 		"serve": "docsify serve ./docs"
 	},
 	"private": true,

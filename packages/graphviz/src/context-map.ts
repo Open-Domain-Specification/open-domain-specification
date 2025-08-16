@@ -72,7 +72,7 @@ export function contextMapToDigraph(contextMap: ODSContextMap): {
 			subgraphs[ns.id] =
 				subgraphs[ns.id] ||
 				new Subgraph(ns.id, {
-					// @ts-ignore
+					// @ts-expect-error
 					cluster: true,
 					class: "namespace",
 					label: ns.name,
@@ -100,7 +100,6 @@ export function contextMapToDigraph(contextMap: ODSContextMap): {
 				tooltip: node.description,
 				width: 1.5,
 				height: 1,
-				fixedsize: "shape",
 				fillcolor: "white",
 				style: "filled,solid",
 				fontname: "sans-serif",

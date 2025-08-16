@@ -79,6 +79,8 @@ describe("ConsumableMap", () => {
 			      "a1" [
 			        label = "A1";
 			        shape = "egg";
+			        width = 1.5;
+			        height = 1;
 			        tooltip = "A1 Description";
 			        fillcolor = "white";
 			        style = "filled,solid";
@@ -87,6 +89,8 @@ describe("ConsumableMap", () => {
 			      "a2" [
 			        label = "A2";
 			        shape = "egg";
+			        width = 1.5;
+			        height = 1;
 			        tooltip = "A2 Description";
 			        fillcolor = "white";
 			        style = "filled,solid";

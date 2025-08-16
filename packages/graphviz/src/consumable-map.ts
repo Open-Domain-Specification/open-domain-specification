@@ -72,7 +72,7 @@ export function consumableMapToDigraph(contextMap: ODSConsumableMap): {
 			subgraphs[ns.id] =
 				subgraphs[ns.id] ||
 				new Subgraph(ns.id, {
-					// @ts-ignore
+					// @ts-expect-error
 					cluster: true,
 					class: "namespace",
 					label: ns.name,
@@ -98,6 +98,8 @@ export function consumableMapToDigraph(contextMap: ODSConsumableMap): {
 			new Node(id, {
 				label: node.name,
 				shape: "egg",
+				width: 1.5,
+				height: 1,
 				tooltip: node.description,
 				fillcolor: "white",
 				style: "filled,solid",
