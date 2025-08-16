@@ -12,7 +12,7 @@ import {
 } from "@mantine/core";
 import { useLocalStorage } from "@mantine/hooks";
 import { showNotification } from "@mantine/notifications";
-import { drizzle } from "drizzle-orm/sql-js";
+import { Workspace } from "@open-domain-specification/core";
 import { useEffect, useRef } from "react";
 import { BiImport } from "react-icons/bi";
 import { useSearchParams } from "react-router-dom";
@@ -20,9 +20,6 @@ import { useAsyncFn, useMount, useWindowSize } from "react-use";
 import { LearningResources } from "../components/LearningResources.tsx";
 import { Markdown } from "../components/Markdown.tsx";
 import { useWorkspace } from "../context/WorkspaceContext.tsx";
-import { importWorkspaceToDatabase } from "../store/importWorkspaceToDatabase.ts";
-import { initializeWorkspace } from "../store/initializeWorkspace.ts";
-import { Workspace } from "../Workspace.ts";
 
 const intro = `\
 Use the **Open Domain Specification (ODS)** to model, document, and communicate your domain design using proven Domain-Driven Design patterns.
@@ -57,11 +54,7 @@ export function ImportWorkspacePage() {
 
 			const data = JSON.parse(text);
 
-			const database = await initializeWorkspace();
-			const sqlJsDatabase = drizzle(database);
-			importWorkspaceToDatabase(data, sqlJsDatabase);
-
-			loadWorkspace(new Workspace(data, { database, sqlJsDatabase }));
+			loadWorkspace(Workspace.fromSchema(data));
 
 			showNotification({
 				title: "Workspace Loaded",
@@ -83,11 +76,7 @@ export function ImportWorkspacePage() {
 
 			const data = await response.json();
 
-			const database = await initializeWorkspace();
-			const sqlJsDatabase = drizzle(database);
-			importWorkspaceToDatabase(data, sqlJsDatabase);
-
-			loadWorkspace(new Workspace(data, { database, sqlJsDatabase }));
+			loadWorkspace(Workspace.fromSchema(data));
 
 			showNotification({
 				title: "Workspace Loaded",

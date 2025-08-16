@@ -1,13 +1,10 @@
+import { Workspace } from "@open-domain-specification/core";
 import { createContext, type ReactNode, useContext, useState } from "react";
-import { Workspace } from "../Workspace.ts";
 
-export const INITIAL_WORKSPACE: Workspace = new Workspace({
-	id: "",
-	name: "",
+export const INITIAL_WORKSPACE: Workspace = new Workspace("", {
 	description: "",
 	odsVersion: "0.0.0",
 	version: "0.0.0",
-	domains: {},
 });
 
 export type WorkspaceContext = {

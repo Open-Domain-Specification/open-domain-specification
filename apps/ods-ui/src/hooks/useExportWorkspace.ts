@@ -1,6 +1,6 @@
+import fileDownload from "js-file-download";
 import { useCallback } from "react";
 import { useWorkspace } from "../context/WorkspaceContext.tsx";
-import { exportWorkspace } from "../store/export.ts";
 
 /**
  * Custom hook to export the workspace using the workspace context.
@@ -16,7 +16,11 @@ export function useExportWorkspace() {
 
 	// useCallback ensures the function is memoized and only changes when `db` changes.
 	return useCallback(
-		() => workspace.database && exportWorkspace(workspace.database),
-		[workspace.database],
+		() =>
+			fileDownload(
+				"workspace.json",
+				JSON.stringify(workspace.toSchema(), null, 2),
+			),
+		[workspace],
 	);
 }

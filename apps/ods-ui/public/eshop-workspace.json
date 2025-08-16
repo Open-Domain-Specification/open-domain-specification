@@ -1,0 +1,11 @@
+{
+  "id": "e_shop",
+  "name": "eShop",
+  "description": "Workspace for the eShop example, demonstrating the Open Domain Specification.",
+  "version": "1.0.0",
+  "odsVersion": "0.0.0",
+  "primaryColor": "#0F68BD",
+  "domains": {},
+  "homepage": "https://eshop.com",
+  "logoUrl": "https://cdn-icons-png.flaticon.com/512/1162/1162456.png"
+}

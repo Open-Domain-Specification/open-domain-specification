@@ -1,0 +1,170 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Visitor Example > should compile  1`] = `
+{
+  "description": "DDD workspace for an eCommerce platform example",
+  "domains": {
+    "commerce": {
+      "description": "Core commerce capabilities",
+      "name": "Commerce",
+      "subdomains": {
+        "sales": {
+          "boundedcontexts": {
+            "ordering": {
+              "aggregates": {
+                "order": {
+                  "consumes": [],
+                  "description": "Immutable record of a purchase",
+                  "entities": {
+                    "order": {
+                      "description": "Order header",
+                      "name": "Order",
+                      "relations": [
+                        {
+                          "label": "totals",
+                          "relation": "uses",
+                          "target": {
+                            "$ref": "#/domains/commerce/subdomains/sales/boundedcontexts/ordering/aggregates/order/valueobjects/money",
+                          },
+                        },
+                      ],
+                      "root": true,
+                    },
+                  },
+                  "invariants": {
+                    "totals_non_negative": {
+                      "description": "Order totals must be >= 0",
+                      "name": "TotalsNonNegative",
+                    },
+                  },
+                  "name": "Order",
+                  "provides": {},
+                  "valueobjects": {
+                    "money": {
+                      "description": "Amount + currency",
+                      "name": "Money",
+                      "relations": [],
+                    },
+                  },
+                },
+              },
+              "description": "Checkout flow and orders",
+              "name": "Ordering",
+              "services": {
+                "checkout_app": {
+                  "consumes": [
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/content/subdomains/publishing/boundedcontexts/cms/services/content_renderer/provides/get_article",
+                      },
+                      "pattern": "anti-corruption-layer",
+                    },
+                  ],
+                  "description": "Application service for placing orders",
+                  "name": "CheckoutApp",
+                  "provides": {
+                    "place_order": {
+                      "description": "Create an order from a valid checkout",
+                      "name": "PlaceOrder",
+                      "pattern": "open-host-service",
+                      "type": "operation",
+                    },
+                  },
+                  "type": "application",
+                },
+              },
+            },
+          },
+          "description": "From cart to order",
+          "name": "Sales",
+        },
+      },
+      "type": "core",
+    },
+    "content": {
+      "description": "Supporting site content",
+      "name": "Content",
+      "subdomains": {
+        "publishing": {
+          "boundedcontexts": {
+            "cms": {
+              "aggregates": {
+                "article": {
+                  "consumes": [],
+                  "description": "Renderable content unit",
+                  "entities": {
+                    "article": {
+                      "description": "Article/page content",
+                      "name": "Article",
+                      "relations": [
+                        {
+                          "label": "addressable by",
+                          "relation": "uses",
+                          "target": {
+                            "$ref": "#/domains/content/subdomains/publishing/boundedcontexts/cms/aggregates/article/valueobjects/slug",
+                          },
+                        },
+                      ],
+                      "root": true,
+                    },
+                  },
+                  "invariants": {
+                    "slug_format_valid": {
+                      "description": "Slug must be lowercase, dash-separated",
+                      "name": "SlugFormatValid",
+                    },
+                  },
+                  "name": "Article",
+                  "provides": {},
+                  "valueobjects": {
+                    "slug": {
+                      "description": "URL-safe identifier",
+                      "name": "Slug",
+                      "relations": [],
+                    },
+                  },
+                },
+              },
+              "description": "Site content retrieval/rendering",
+              "name": "CMS",
+              "services": {
+                "content_renderer": {
+                  "consumes": [
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/commerce/subdomains/sales/boundedcontexts/ordering/services/checkout_app/provides/place_order",
+                      },
+                      "pattern": "conformist",
+                    },
+                  ],
+                  "description": "Application service for fetching/rendering content",
+                  "name": "ContentRenderer",
+                  "provides": {
+                    "get_article": {
+                      "description": "Fetch article/page content by slug",
+                      "name": "GetArticle",
+                      "pattern": "open-host-service",
+                      "type": "operation",
+                    },
+                  },
+                  "type": "application",
+                },
+              },
+            },
+          },
+          "description": "Pages and articles",
+          "name": "Publishing",
+        },
+      },
+      "type": "supporting",
+    },
+  },
+  "homepage": "https://example.com",
+  "id": "e_commerce",
+  "logoUrl": "https://example.com/logo.svg",
+  "name": "eCommerce",
+  "odsVersion": "1.0.0",
+  "primaryColor": "#0ea5e9",
+  "version": "0.1.0",
+}
+`;

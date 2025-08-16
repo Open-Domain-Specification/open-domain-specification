@@ -27,14 +27,14 @@ export function AppHeader() {
 					style={{ cursor: "pointer" }}
 					onClick={() => nav("/")}
 					radius={"xs"}
-					src={workspace.workspace.logoUrl}
+					src={workspace.logoUrl}
 					color={"initials"}
-					name={workspace.workspace.name}
+					name={workspace.name}
 				/>
 				<Text fz={"md"} fw={"bold"}>
-					{workspace.workspace.name} | {workspace.workspace.version}
+					{workspace.name} | {workspace.version}
 				</Text>
-				<Badge>{workspace.workspace.odsVersion}</Badge>
+				<Badge>{workspace.odsVersion}</Badge>
 			</Group>
 			<Group>
 				<Menu>

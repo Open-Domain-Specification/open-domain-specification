@@ -7,53 +7,42 @@ import {
 	Stack,
 	Title,
 } from "@mantine/core";
+import {
+	ODSConsumableMap,
+	type Service,
+	serviceRef,
+} from "@open-domain-specification/core";
+import { consumableMapToDigraph } from "@open-domain-specification/graphviz";
 import { useParams } from "react-router-dom";
 import { AccordionItems } from "../components/AccordionItems.tsx";
 import { ConsumableAccordionLabel } from "../components/ConsumableAccordionLabel.tsx";
 import { ConsumptionAccordionLabel } from "../components/ConsumptionAccordionLabel.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
+import { Graphviz } from "../components/Graphviz.tsx";
 import { PageNavigation } from "../components/PageNavigation.tsx";
 import { PageSkeleton } from "../components/PageSkeleton.tsx";
 import { useWorkspace } from "../context/WorkspaceContext.tsx";
 import { Icons } from "../Icons.tsx";
 import { EntitiesAndValueObjectsHelp } from "../modals/EntitiesAndValueObjectsHelp.tsx";
 
-export function _ServicePage(props: {
-	name: string;
-	description: string;
-	type: string;
-	domainId: string;
-	subdomainId: string;
-	boundedcontextId: string;
-	serviceId: string;
-}) {
-	const { workspace } = useWorkspace();
-
-	const consumables =
-		workspace.findServiceConsumablesByDomainIdSubdomainIdAndBoundedContextIdAndServiceId(
-			props.domainId,
-			props.subdomainId,
-			props.boundedcontextId,
-			props.serviceId,
-		);
-
-	const consumptions =
-		workspace.findServiceConsumptionsByDomainIdSubdomainIdAndBoundedContextIdAndServiceId(
-			props.domainId,
-			props.subdomainId,
-			props.boundedcontextId,
-			props.serviceId,
-		);
-
+export function _ServicePage(props: { service: Service }) {
 	return (
 		<>
 			<PageSkeleton
 				avatar={Icons.Service}
-				title={props.name}
-				description={props.description}
+				title={props.service.name}
+				description={props.service.description}
 			>
-				<Badge>{props.type}</Badge>
+				<Badge>{props.service.type}</Badge>
+
+				<Graphviz
+					title={`${props.service.name} Consumable Map`}
+					height={"50vh"}
+					dot={consumableMapToDigraph(
+						ODSConsumableMap.fromService(props.service),
+					).toDot()}
+				/>
 
 				<Stack>
 					<Stack gap={2}>
@@ -71,7 +60,7 @@ export function _ServicePage(props: {
 				<AccordionItems
 					title={"Provides"}
 					items={
-						consumables?.map((it) => ({
+						Array.from(props.service.consumables.values())?.map((it) => ({
 							id: it.ref,
 							name: (
 								<ConsumableAccordionLabel name={it.name} pattern={it.pattern} />
@@ -86,16 +75,14 @@ export function _ServicePage(props: {
 				<AccordionItems
 					title={"Consumes"}
 					items={
-						consumptions?.map((it) => {
+						Array.from(props.service.consumptions)?.map((it) => {
 							return {
-								id:
-									it.service_consumer.serviceRef +
-									it.service_consumer.consumableRef,
+								id: it.consumable.ref + it.consumer.ref,
 								name: (
 									<ConsumptionAccordionLabel
 										name={it.consumable.name}
 										pattern={it.consumable.pattern}
-										consumptionPattern={it.service_consumer.pattern}
+										consumptionPattern={it.pattern}
 										consumableRef={it.consumable.ref}
 									/>
 								),
@@ -135,28 +122,16 @@ export function ServicePage() {
 		serviceId: string;
 	}>();
 	const { workspace } = useWorkspace();
-	const service =
-		workspace.findServiceByDomainIdSubdomainIdAndBoundedContextIdAndServiceId(
-			domainId!,
-			subdomainId!,
-			boundedContextId!,
-			serviceId!,
-		);
+	const service = workspace.getServiceByRefOrThrow(
+		serviceRef(domainId!, subdomainId!, boundedContextId!, serviceId!).$ref,
+	);
 
 	return (
 		<GenericWorkspacePage>
 			{!service ? (
 				<GenericNotFoundContent />
 			) : (
-				<_ServicePage
-					name={service.name}
-					description={service.description}
-					type={service.type}
-					domainId={service.domainId}
-					subdomainId={service.subdomainId}
-					boundedcontextId={service.boundedContextId}
-					serviceId={service.serviceId}
-				/>
+				<_ServicePage service={service} />
 			)}
 		</GenericWorkspacePage>
 	);

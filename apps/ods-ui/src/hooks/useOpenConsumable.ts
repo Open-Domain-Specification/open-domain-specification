@@ -14,18 +14,13 @@ export function useOpenConsumable(
 			event?.stopPropagation();
 			event?.preventDefault();
 
-			const consumable = workspace.findConsumableByRef(consumableRef);
+			const consumable = workspace.getConsumableByRef(consumableRef);
 
 			if (!consumable) {
 				throw new Error("No consumable found for ref: " + consumableRef);
 			}
 
-			const provider =
-				consumable.providerType === "service"
-					? workspace.findServiceByRef(consumable.provider)
-					: workspace.findAggregateByRef(consumable.provider);
-
-			provider && nav(provider.ref);
+			nav(consumable.provider.ref);
 		},
 		[consumableRef, nav, workspace],
 	);

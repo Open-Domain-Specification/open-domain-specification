@@ -1,1 +1,0 @@
-SELECT name, hash, created_at FROM __drizzle_migrations WHERE name = ? AND hash = ?

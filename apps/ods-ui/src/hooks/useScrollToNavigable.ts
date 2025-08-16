@@ -1,10 +1,9 @@
 import { useCallback } from "react";
-import type { OnPageNavigable } from "../Workspace.ts";
 
 export function useScrollToNavigable(offset: number = 100) {
 	return useCallback(
-		({ htmlId }: OnPageNavigable) => {
-			const element = document.getElementById(htmlId);
+		({ ref }: { ref: string }) => {
+			const element = document.getElementById(ref);
 			if (element) {
 				const y = element.getBoundingClientRect().top + window.scrollY - offset;
 

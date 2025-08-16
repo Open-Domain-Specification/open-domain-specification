@@ -1,48 +1,43 @@
 import { Grid, Stack, Title } from "@mantine/core";
+import {
+	ODSConsumptionGraph,
+	ODSContextMap,
+	type Subdomain,
+	subdomainRef,
+} from "@open-domain-specification/core";
+import { contextMapToDigraph } from "@open-domain-specification/graphviz";
 import { useParams } from "react-router-dom";
 import { BoundedContextCard } from "../components/BoundedContextCard.tsx";
+import { ConsumptionTable } from "../components/ConsumptionTable.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
-import { Mermaid } from "../components/Mermaid.tsx";
+import { Graphviz } from "../components/Graphviz.tsx";
 import { PageSkeleton } from "../components/PageSkeleton.tsx";
 import { useWorkspace } from "../context/WorkspaceContext.tsx";
 import { useRefNavigate } from "../hooks/useRefNavigate.ts";
 import { Icons } from "../Icons.tsx";
-import { contextMapToMermaidFlowchart } from "../lib/diagrams/mermaid/contextMapToMermaidFlowchart.ts";
-import { subdomainContextMap } from "../utils/subdomainContextMap.ts";
 
-export function _SubdomainPage(props: {
-	name: string;
-	description: string;
-	domainId: string;
-	subdomainId: string;
-}) {
-	const { workspace } = useWorkspace();
+export function _SubdomainPage(props: { subdomain: Subdomain }) {
 	const nav = useRefNavigate();
+
 	return (
 		<PageSkeleton
 			avatar={Icons.Subdomain}
-			title={props.name}
-			description={props.description}
+			title={props.subdomain.name}
+			description={props.subdomain.description}
 		>
+			<Graphviz
+				title={`${props.subdomain.name} Context Map`}
+				height={"50vh"}
+				dot={contextMapToDigraph(
+					ODSContextMap.fromSubdomain(props.subdomain),
+				).toDot()}
+			/>
 			<Stack>
 				<Title order={2}>Bounded Contexts</Title>
-				<Mermaid
-					chart={contextMapToMermaidFlowchart(
-						subdomainContextMap(
-							workspace.sqlJsDatabase!,
-							props.domainId,
-							props.subdomainId,
-						),
-					)}
-				/>
 				<Grid>
-					{workspace
-						.findBoundedcontextsByDomainIdAndSubdomainId(
-							props.domainId,
-							props.subdomainId,
-						)
-						?.map((boundedContext) => (
+					{Array.from(props.subdomain.boundedcontexts.values()).map(
+						(boundedContext) => (
 							<Grid.Col
 								key={boundedContext.ref}
 								span={4}
@@ -55,8 +50,15 @@ export function _SubdomainPage(props: {
 									onClick={() => nav(boundedContext.ref)}
 								/>
 							</Grid.Col>
-						))}
+						),
+					)}
 				</Grid>
+			</Stack>
+			<Stack>
+				<Title order={2}>Relationships</Title>
+				<ConsumptionTable
+					graph={ODSConsumptionGraph.fromSubdomain(props.subdomain)}
+				/>
 			</Stack>
 		</PageSkeleton>
 	);
@@ -68,9 +70,8 @@ export function SubdomainPage() {
 		subdomainId: string;
 	}>();
 	const { workspace } = useWorkspace();
-	const subdomain = workspace.findSubdomainByDomainIdAndSubdomainId(
-		domainId!,
-		subdomainId!,
+	const subdomain = workspace.getSubdomainByRef(
+		subdomainRef(domainId!, subdomainId!).$ref,
 	);
 
 	return (
@@ -78,12 +79,7 @@ export function SubdomainPage() {
 			{!subdomain ? (
 				<GenericNotFoundContent />
 			) : (
-				<_SubdomainPage
-					name={subdomain.name}
-					description={subdomain.description}
-					domainId={domainId!}
-					subdomainId={subdomainId!}
-				/>
+				<_SubdomainPage subdomain={subdomain} />
 			)}
 		</GenericWorkspacePage>
 	);

@@ -7,7 +7,6 @@
 	],
 	"scripts": {
 		"format": "npx @biomejs/biome check --write",
-		"dev:ui": "lerna run build --scope ods-example-ws && lerna run dev --scope ods-ui",
 		"build": "lerna run build --stream"
 	},
 	"devDependencies": {

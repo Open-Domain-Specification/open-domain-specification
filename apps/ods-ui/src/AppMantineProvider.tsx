@@ -11,7 +11,7 @@ import { theme } from "./theme.ts";
 async function loadShiki() {
 	const { createHighlighter } = await import("shiki");
 	const shiki = await createHighlighter({
-		langs: ["json", "mermaid"],
+		langs: ["json", "mermaid", "dot"],
 		themes: [],
 	});
 
@@ -27,8 +27,8 @@ export function AppMantineProvider({ children }: AppMantineProviderProps) {
 	const { workspace } = useWorkspace();
 
 	const myTheme = useMemo(
-		() => theme({ primaryColor: workspace.workspace.primaryColor }),
-		[workspace.workspace.primaryColor],
+		() => theme({ primaryColor: workspace.primaryColor }),
+		[workspace.primaryColor],
 	);
 
 	return (

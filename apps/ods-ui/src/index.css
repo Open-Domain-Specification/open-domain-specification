@@ -22,3 +22,16 @@ a {
 	text-decoration: unset;
 	color: unset;
 }
+
+.graph text {
+	font-family: sans-serif;
+	stroke: white;
+	paint-order: stroke;
+	stroke-width: 3;
+	stroke-linecap: square;
+}
+
+.namespace polygon {
+	fill-opacity: 0.2;
+	stroke: none;
+}

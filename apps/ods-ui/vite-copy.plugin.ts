@@ -10,14 +10,14 @@ export default function (): Plugin {
 
 			const path = resolve(
 				__dirname,
-				"../../packages/ods-example-ws/big-bank-workspace.json",
+				"../../packages/ods-example-ws/docs/workspace.json",
 			);
 
 			if (!existsSync(path)) {
 				throw new Error(`Example workspace file does not exist: ${path}`);
 			}
 
-			const publicPath = resolve(__dirname, "./public/big-bank-workspace.json");
+			const publicPath = resolve(__dirname, "./public/eshop-workspace.json");
 
 			if (existsSync(publicPath)) {
 				rmSync(publicPath);

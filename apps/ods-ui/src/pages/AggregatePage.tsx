@@ -6,62 +6,52 @@ import {
 	Stack,
 	Title,
 } from "@mantine/core";
+import {
+	type Aggregate,
+	aggregateRef,
+	ODSConsumableMap,
+	ODSRelationMap,
+} from "@open-domain-specification/core";
+import {
+	consumableMapToDigraph,
+	relationMapToDigraph,
+} from "@open-domain-specification/graphviz";
 import { useParams } from "react-router-dom";
 import { AccordionItems } from "../components/AccordionItems.tsx";
 import { ConsumableAccordionLabel } from "../components/ConsumableAccordionLabel.tsx";
 import { ConsumptionAccordionLabel } from "../components/ConsumptionAccordionLabel.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
-import { Mermaid } from "../components/Mermaid.tsx";
+import { Graphviz } from "../components/Graphviz.tsx";
 import { PageNavigation } from "../components/PageNavigation.tsx";
 import { PageSkeleton } from "../components/PageSkeleton.tsx";
 import { useWorkspace } from "../context/WorkspaceContext.tsx";
 import { Icons } from "../Icons.tsx";
 import { EntitiesAndValueObjectsHelp } from "../modals/EntitiesAndValueObjectsHelp.tsx";
 import { InvariantsHelp } from "../modals/InvariantsHelp.tsx";
-import { aggregateToMermaid } from "../utils/aggregateToMermaid.ts";
 
-export function _AggregatePage(props: {
-	name: string;
-	description: string;
-	domainId: string;
-	subdomainId: string;
-	boundedcontextId: string;
-	aggregateId: string;
-}) {
-	const { workspace } = useWorkspace();
-
-	const consumables =
-		workspace.findAggregateConsumablesByDomainIdSubdomainIdAndBoundedContextIdAndAggregateId(
-			props.domainId,
-			props.subdomainId,
-			props.boundedcontextId,
-			props.aggregateId,
-		);
-
-	const consumptions =
-		workspace.findAggregateConsumptionsByDomainIdSubdomainIdAndBoundedContextIdAndAggregateId(
-			props.domainId,
-			props.subdomainId,
-			props.boundedcontextId,
-			props.aggregateId,
-		);
-
-	const invariants =
-		workspace.findAggregateInvariantsByDomainIdSubdomainIdAndBoundedContextIdAndAggregateId(
-			props.domainId,
-			props.subdomainId,
-			props.boundedcontextId,
-			props.aggregateId,
-		);
-
+export function _AggregatePage(props: { aggregate: Aggregate }) {
 	return (
 		<>
 			<PageSkeleton
 				avatar={Icons.Aggregate}
-				title={props.name}
-				description={props.description}
+				title={props.aggregate.name}
+				description={props.aggregate.description}
 			>
+				<Graphviz
+					title={`${props.aggregate.name} Consumable Map`}
+					height={"50vh"}
+					dot={consumableMapToDigraph(
+						ODSConsumableMap.fromAggregate(props.aggregate),
+					).toDot()}
+				/>
+				<Graphviz
+					title={`${props.aggregate.name} Relation Map`}
+					height={"50vh"}
+					dot={relationMapToDigraph(
+						ODSRelationMap.fromAggregate(props.aggregate),
+					).toDot()}
+				/>
 				<Stack>
 					<Stack gap={2}>
 						<Group justify={"space-between"} align={"center"}>
@@ -72,21 +62,13 @@ export function _AggregatePage(props: {
 						</Group>
 						<Divider />
 					</Stack>
-					{workspace.sqlJsDatabase && (
-						<Mermaid
-							chart={aggregateToMermaid(
-								workspace.sqlJsDatabase,
-								props.aggregateId,
-							)}
-						/>
-					)}
 				</Stack>
 
 				<AccordionItems
 					title={"Invariants"}
 					items={
-						invariants?.map((it) => ({
-							id: it.invariantId,
+						Array.from(props.aggregate.invariants.values())?.map((it) => ({
+							id: it.ref,
 							name: it.name,
 							description: it.description,
 							icon: Icons.Invariants,
@@ -99,8 +81,8 @@ export function _AggregatePage(props: {
 				<AccordionItems
 					title={"Provides"}
 					items={
-						consumables?.map((it) => ({
-							id: it.consumableId,
+						Array.from(props.aggregate.consumables.values())?.map((it) => ({
+							id: it.ref,
 							name: (
 								<ConsumableAccordionLabel name={it.name} pattern={it.pattern} />
 							),
@@ -114,20 +96,18 @@ export function _AggregatePage(props: {
 				<AccordionItems
 					title={"Consumes"}
 					items={
-						consumptions?.map((it) => {
+						Array.from(props.aggregate.consumptions.values())?.map((it) => {
 							return {
-								id:
-									it.aggregate_consumer.aggregateRef +
-									it.aggregate_consumer.consumableRef,
+								id: it.consumable.ref + it.consumer.ref,
 								name: (
 									<ConsumptionAccordionLabel
 										name={it.consumable.name}
 										pattern={it.consumable.pattern}
-										consumptionPattern={it.aggregate_consumer.pattern}
+										consumptionPattern={it.pattern}
 										consumableRef={it.consumable.ref}
 									/>
 								),
-								description: `${it.consumable.name} (${it?.consumable.pattern}) <-- ${it.aggregate_consumer.pattern}`,
+								description: `${it.consumable.name} (${it?.consumable.pattern}) <-- ${it.pattern}`,
 								icon: Icons.Consumer,
 							};
 						}) || []
@@ -159,27 +139,16 @@ export function AggregatePage() {
 		aggregateId: string;
 	}>();
 	const { workspace } = useWorkspace();
-	const aggregate =
-		workspace.findAggregateByDomainIdSubdomainIdAndBoundedContextId(
-			domainId!,
-			subdomainId!,
-			boundedContextId!,
-			aggregateId!,
-		);
+	const aggregate = workspace.getAggregateByRefOrThrow(
+		aggregateRef(domainId!, subdomainId!, boundedContextId!, aggregateId!).$ref,
+	);
 
 	return (
 		<GenericWorkspacePage>
 			{!aggregate ? (
 				<GenericNotFoundContent />
 			) : (
-				<_AggregatePage
-					domainId={domainId!}
-					subdomainId={subdomainId!}
-					boundedcontextId={boundedContextId!}
-					aggregateId={aggregateId!}
-					name={aggregate.name}
-					description={aggregate.description}
-				/>
+				<_AggregatePage aggregate={aggregate} />
 			)}
 		</GenericWorkspacePage>
 	);

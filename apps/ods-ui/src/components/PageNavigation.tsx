@@ -1,9 +1,13 @@
 import { Flex, List, Stack, Text } from "@mantine/core";
 import type { ReactNode } from "react";
 import { useScrollToNavigable } from "../hooks/useScrollToNavigable.ts";
-import type { OnPageNavigable } from "../Workspace.ts";
 
-export interface NavigationItem extends OnPageNavigable {
+interface Referenceable {
+	ref: string;
+	name: string;
+}
+
+export interface NavigationItem extends Referenceable {
 	icon?: ReactNode;
 	items?: NavigationItem[];
 }
@@ -28,7 +32,7 @@ export function PageNavigation(props: PageNavigationProps) {
 						)}
 						{section.items.map((item) => (
 							<List.Item
-								key={item.htmlId}
+								key={item.ref}
 								icon={<Flex>{item.icon}</Flex>}
 								onClick={() => scrollToNavigable(item)}
 								styles={{
