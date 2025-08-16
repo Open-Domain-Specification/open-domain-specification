@@ -12,7 +12,7 @@ import { AppSpotlight } from "../AppSpotlight.tsx";
 export function GenericWorkspacePage({
 	children,
 	header = { height: 65 },
-	navbar = { width: 300, breakpoint: 0 },
+	navbar = { width: 300, breakpoint: "sm", collapsed: { mobile: true } },
 	aside,
 }: {
 	children: ReactNode;
