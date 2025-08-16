@@ -31,7 +31,7 @@ export function ImportWorkspacePage() {
 	const { loadWorkspace } = useWorkspace();
 	const [searchParams] = useSearchParams();
 
-	const defaultExample = `${window.location.origin}/big-bank-workspace.json`;
+	const defaultExample = `${window.location.origin}/eshop-workspace.json`;
 
 	useMount(() => {
 		const url = searchParams.get("url");
