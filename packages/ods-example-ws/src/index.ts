@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { toDoc } from "@open-domain-specification/doc";
-import { workspace } from "./eshop/workspace.ts";
+import { workspace } from "./petstore/workspace.ts";
 
 fs.writeFileSync(
 	"./docs/workspace.json",
