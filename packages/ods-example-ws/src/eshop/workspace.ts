@@ -1,308 +1,407 @@
 import { Workspace } from "@open-domain-specification/core";
 
-export const workspace = new Workspace("eShop", {
+/**
+ * Swagger Petstore (OpenAPI 3) — ODS Core Workspace
+ * Modes: Domains → Subdomains → Bounded Contexts → Aggregates / Services
+ * Services expose operations (open-host-service); Aggregates publish events (published-language).
+ */
+
+export const workspace = new Workspace("Swagger Petstore (v3)", {
 	odsVersion: "1.0.0",
 	description:
-		"DDD workspace for the current dotnet/eShop reference app (.NET 9, .NET Aspire).",
-	version: "0.2.1",
-	homepage: "https://github.com/dotnet/eShop",
-	primaryColor: "#2563eb",
-	logoUrl: "https://cdn-icons-png.flaticon.com/512/1162/1162456.png",
+		"DDD/ODS model for Swagger Petstore v3. Inventory is a projection returning a status→count map; Orders use placed|approved|delivered.",
+	version: "0.1.0",
+	homepage: "https://petstore.swagger.io",
+	primaryColor: "#0ea5e9",
+	logoUrl: "https://petstore.swagger.io/favicon-32x32.png",
 });
 
-// === DOMAINS ===
-const commerce = workspace.addDomain("Commerce", {
-	description: "Core e-commerce capabilities (catalog, basket, ordering).",
+/* =======================
+   DOMAINS & SUBDOMAINS
+   ======================= */
+
+const commerce = workspace.addDomain("Petstore Commerce", {
+	description: "Core pet catalog, sales, and inventory capabilities",
 	type: "core",
 });
-const identity = workspace.addDomain("Identity & Access", {
-	description: "Authentication/authorization via Duende IdentityServer.",
-	type: "supporting",
-});
-const apiIntegration = workspace.addDomain("API Integration", {
-	description: "Cross-cutting integration (webhooks, external processors).",
-	type: "supporting",
-});
-const payment = workspace.addDomain("Payment Processing", {
-	description: "External payment processor integration.",
-	type: "supporting",
-});
-const edge = workspace.addDomain("Edge & Experience", {
-	description: "Customer-facing web app and mobile BFF.",
-	type: "supporting",
-});
-const operations = workspace.addDomain("Operations", {
-	description: "Backoffice and admin operations.",
+
+const identity = workspace.addDomain("Identity & Accounts", {
+	description: "Users and sessions per Petstore API",
 	type: "supporting",
 });
 
-// === SUBDOMAINS ===
-const catalogSd = commerce.addSubdomain("Catalog", {
-	description: "Manage and query product catalog.",
+const catalogSD = commerce.addSubdomain("Catalog", {
+	description: "Pet definitions, attributes, lifecycle",
 });
-const basketSd = commerce.addSubdomain("Basket", {
-	description: "Shopping basket management.",
+const salesSD = commerce.addSubdomain("Sales", {
+	description: "Orders and order lifecycle",
 });
-const orderingSd = commerce.addSubdomain("Ordering", {
-	description: "Order lifecycle and payments coordination.",
+const inventorySD = commerce.addSubdomain("Inventory", {
+	description: "Aggregated availability by status",
 });
-const authSd = identity.addSubdomain("AuthN and AuthZ", {
-	description: "OpenID Connect identity provider.",
-});
-const webhooksSd = apiIntegration.addSubdomain("Webhooks", {
-	description: "Webhook registration and event delivery.",
-});
-const paymentProcessorsSd = payment.addSubdomain("Payment Processors", {
-	description: "Background processors that integrate with external systems.",
-});
-const webSd = edge.addSubdomain("Web", {
-	description: "Blazor web UI for customers.",
+const usersSD = identity.addSubdomain("Users", {
+	description: "User records and login/logout",
 });
 
-const mobileSd = edge.addSubdomain("Mobile", {
-	description: "Mobile BFF/aggregator for shopping flows.",
+/* =======================
+   BOUNDED CONTEXTS
+   ======================= */
+
+const catalogBC = catalogSD.addBoundedcontext("Catalog BC", {
+	description: "Owns Pet aggregate & pet-facing operations",
+});
+const salesBC = salesSD.addBoundedcontext("Sales BC", {
+	description: "Owns Order aggregate & order-facing operations",
+});
+const inventoryBC = inventorySD.addBoundedcontext("Inventory BC", {
+	description: "Projection for /store/inventory (status→count)",
+});
+const identityBC = usersSD.addBoundedcontext("Identity BC", {
+	description: "Owns User aggregate & user endpoints",
 });
 
-const backofficeSd = operations.addSubdomain("Backoffice", {
-	description: "Admin/ops touchpoints (price updates, etc.).",
+/* =======================
+   CATALOG — Aggregate & Service
+   ======================= */
+
+// Aggregate: Pet
+const petAgg = catalogBC.addAggregate("Pet", {
+	description: "A pet listed in the store",
 });
 
-// === BOUNDED CONTEXTS ===
-
-const webappBc = webSd.addBoundedcontext("Web", {
-	description: "Blazor Server web app for customers.",
+const petRoot = petAgg.addRootEntity("Pet", {
+	description: "Pet root entity",
 });
 
-const bffBc = mobileSd.addBoundedcontext("Mobile BFF", {
-	description: "BFF that aggregates catalog/basket/ordering.",
+const categoryVO = petAgg.addValueObject("Category", {
+	description: "{ id?: number, name?: string }",
+});
+const tagVO = petAgg.addValueObject("Tag", {
+	description: "{ id?: number, name?: string }",
+});
+const photoUrlVO = petAgg.addValueObject("PhotoUrl", {
+	description: "string (URL)",
+});
+const petStatusVO = petAgg.addValueObject("PetStatus", {
+	description: "'available' | 'pending' | 'sold'",
 });
 
-const catalogBc = catalogSd.addBoundedcontext("Catalog", {
-	description: "Minimal API for catalog queries and management.",
+petRoot.uses(categoryVO, "categorized-as");
+petRoot.uses(tagVO, "tagged-with");
+petRoot.uses(photoUrlVO, "has-photo");
+petRoot.uses(petStatusVO, "has-status");
+
+petAgg.addInvariant("NameRequired", {
+	description: "Pet.name must be non-empty",
+});
+petAgg.addInvariant("SoldNotReopen", {
+	description: "Once sold, do not revert to available without explicit policy",
 });
 
-const basketBc = basketSd.addBoundedcontext("Basket", {
-	description: "Basket service (gRPC/HTTP) to manage user baskets.",
+// Aggregate events (published-language)
+const petRegisteredEvt = petAgg.provides("PetRegistered", {
+	description: "A new pet was registered",
+	type: "event",
+	pattern: "published-language",
+});
+const petUpdatedEvt = petAgg.provides("PetUpdated", {
+	description: "Pet profile updated",
+	type: "event",
+	pattern: "published-language",
+});
+const petStatusChangedEvt = petAgg.provides("PetStatusChanged", {
+	description: "Pet status changed (available|pending|sold)",
+	type: "event",
+	pattern: "published-language",
+});
+const petPhotoUploadedEvt = petAgg.provides("PetPhotoUploaded", {
+	description: "Photo added via upload",
+	type: "event",
+	pattern: "published-language",
+});
+const petDeletedEvt = petAgg.provides("PetDeleted", {
+	description: "Pet removed from catalog",
+	type: "event",
+	pattern: "published-language",
 });
 
-const orderingBc = orderingSd.addBoundedcontext("Ordering", {
-	description: "Order lifecycle, status and events.",
-});
-
-const identityBc = authSd.addBoundedcontext("Identity", {
-	description: "Identity provider (Duende IdentityServer / OIDC).",
-});
-
-const webhooksBc = webhooksSd.addBoundedcontext("Webhooks", {
-	description: "Register webhooks and deliver order events to subscribers.",
-});
-
-const webhookClientBc = webhooksSd.addBoundedcontext("WebhookClient", {
-	description: "Sample receiver app for incoming webhook deliveries.",
-});
-
-const paymentBc = paymentProcessorsSd.addBoundedcontext("PaymentProcessor", {
-	description: "Simulated external payment processor.",
-});
-
-const backofficeBc = backofficeSd.addBoundedcontext("BackofficeApp", {
-	description: "Admin/demo app for price updates.",
-});
-
-// === SERVICES ===
-const catalogSvc = catalogBc.addService("CatalogService", {
-	description: "Catalog application service (HTTP).",
+// Service: PetApp (open-host)
+const petApp = catalogBC.addService("PetApp", {
+	description: "Open-host service for /pet endpoints",
 	type: "application",
 });
 
-const basketSvc = basketBc.addService("BasketService", {
-	description: "Basket application service.",
-	type: "application",
-});
-
-const orderingSvc = orderingBc.addService("OrderingService", {
-	description: "Ordering application service.",
-	type: "application",
-});
-
-const identitySvc = identityBc.addService("IdentityService", {
-	description: "Token service for authN/authZ.",
-	type: "application",
-});
-
-const webhooksSvc = webhooksBc.addService("WebhooksService", {
-	description: "Webhook registration/delivery application service.",
-	type: "application",
-});
-
-const webhookClientSvc = webhookClientBc.addService("WebhookReceiver", {
-	description: "Receives webhook POSTs.",
-	type: "application",
-});
-
-const paymentSvc = paymentBc.addService("PaymentService", {
-	description: "Takes payments and emits status changes.",
-	type: "application",
-});
-
-const webappSvc = webappBc.addService("WebApp", {
-	description: "Customer-facing web application.",
-	type: "application",
-});
-
-const bffSvc = bffBc.addService("ShoppingBff", {
-	description: "Aggregation endpoints for shopping journeys.",
-	type: "application",
-});
-
-const backofficeSvc = backofficeBc.addService("Backoffice", {
-	description: "Uses open-host operations for admin workflows.",
-	type: "application",
-});
-
-// === AGGREGATES, ENTITIES, VALUE OBJECTS ===
-
-const catalogAgg = catalogBc.addAggregate("CatalogItem", {
-	description: "Sellable product item.",
-});
-
-const skuVO = catalogAgg.addValueObject("Sku", {
-	description: "Stock-keeping unit.",
-});
-
-const priceVO = catalogAgg.addValueObject("Money", {
-	description: "Amount + currency.",
-});
-
-const catalogRoot = catalogAgg.addRootEntity("CatalogItem", {
-	description: "Catalog item root with price and stock.",
-});
-
-catalogRoot.uses(skuVO, "identified by");
-catalogRoot.uses(priceVO, "priced in");
-
-const basketAgg = basketBc.addAggregate("Basket", {
-	description: "Customer basket.",
-});
-const basketRoot = basketAgg.addRootEntity("Basket", {
-	description: "Basket root with items and user ownership.",
-});
-const basketItemVO = basketAgg.addValueObject("BasketItem", {
-	description: "ProductId, quantity, unit price snapshot.",
-});
-basketRoot.uses(basketItemVO, "contains");
-
-const getBasketOp = basketSvc.provides("GetBasket", {
-	description: "Fetch basket by user.",
+const addPetOp = petApp.provides("AddPet", {
+	description: "POST /pet",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const addItemOp = basketSvc.provides("AddItem", {
-	description: "Add/merge an item into basket.",
+const updatePetOp = petApp.provides("UpdatePet", {
+	description: "PUT /pet",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const clearBasketOp = basketSvc.provides("ClearBasket", {
-	description: "Remove all items from basket.",
+const findByStatusOp = petApp.provides("FindPetsByStatus", {
+	description: "GET /pet/findByStatus?status=available|pending|sold",
+	type: "operation",
+	pattern: "open-host-service",
+});
+const findByTagsOp = petApp.provides("FindPetsByTags", {
+	description: "GET /pet/findByTags?tags=tag1,tag2",
+	type: "operation",
+	pattern: "open-host-service",
+});
+const getPetByIdOp = petApp.provides("GetPetById", {
+	description: "GET /pet/{petId}",
+	type: "operation",
+	pattern: "open-host-service",
+});
+const uploadImageOp = petApp.provides("UploadPetImage", {
+	description:
+		"POST /pet/{petId}/uploadImage (multipart: additionalMetadata, file)",
+	type: "operation",
+	pattern: "open-host-service",
+});
+const deletePetOp = petApp.provides("DeletePet", {
+	description: "DELETE /pet/{petId}",
 	type: "operation",
 	pattern: "open-host-service",
 });
 
-const orderAgg = orderingBc.addAggregate("Order", {
-	description: "Order aggregate with status transitions.",
+// Internal ACL-friendly read
+const getPetSummaryOp = petApp.provides("GetPetSummary", {
+	description: "Internal: {id,name,status} for ACL checks",
+	type: "operation",
+	pattern: "open-host-service",
 });
+
+/* =======================
+   SALES — Aggregate & Service
+   ======================= */
+
+// Aggregate: Order
+const orderAgg = salesBC.addAggregate("Order", {
+	description: "Order for a single pet",
+});
+
 const orderRoot = orderAgg.addRootEntity("Order", {
-	description: "Order header.",
-});
-const orderIdVO = orderAgg.addValueObject("OrderId", {
-	description: "Order identifier.",
-});
-const currencyVO = orderAgg.addValueObject("Money", {
-	description: "Totals & fees.",
-});
-orderRoot.uses(orderIdVO, "identified by");
-orderRoot.uses(currencyVO, "totals");
-orderAgg.addInvariant("TotalsNonNegative", {
-	description: "Order totals must be >= 0.",
+	description: "Order root entity",
 });
 
-const placeOrderOp = orderingSvc.provides("PlaceOrder", {
-	description: "Create an order from a valid basket.",
-	type: "operation",
-	pattern: "open-host-service",
+const orderStatusVO = orderAgg.addValueObject("OrderStatus", {
+	description: "'placed' | 'approved' | 'delivered'",
 });
-const orderPaidEvt = orderingSvc.provides("OrderPaid", {
-	description: "Integration event when an order is marked paid.",
+const quantityVO = orderAgg.addValueObject("Quantity", {
+	description: "int > 0",
+});
+const shipDateVO = orderAgg.addValueObject("ShipDate", {
+	description: "date-time",
+});
+const completeFlagVO = orderAgg.addValueObject("CompleteFlag", {
+	description: "boolean",
+});
+
+orderRoot.uses(orderStatusVO, "has-status");
+orderRoot.uses(quantityVO, "has-quantity");
+orderRoot.uses(shipDateVO, "ships-on");
+orderRoot.uses(completeFlagVO, "is-complete");
+
+orderAgg.addInvariant("QuantityPositive", {
+	description: "Quantity must be > 0",
+});
+orderAgg.addInvariant("ApproveOnlyWhenAvailable", {
+	description: "Approve only if Pet.status == available",
+});
+orderAgg.addInvariant("DeliverOnlyWhenApproved", {
+	description: "Deliver only from approved",
+});
+
+// Aggregate events
+const orderPlacedEvt = orderAgg.provides("OrderPlaced", {
+	description: "Order created (status=placed)",
+	type: "event",
+	pattern: "published-language",
+});
+const orderApprovedEvt = orderAgg.provides("OrderApproved", {
+	description: "Order approved (status=approved)",
+	type: "event",
+	pattern: "published-language",
+});
+const orderDeliveredEvt = orderAgg.provides("OrderDelivered", {
+	description: "Order delivered (status=delivered)",
+	type: "event",
+	pattern: "published-language",
+});
+const orderDeletedEvt = orderAgg.provides("OrderDeleted", {
+	description: "Order deleted via DELETE /store/order/{orderId}",
 	type: "event",
 	pattern: "published-language",
 });
 
-const issueTokenOp = identitySvc.provides("IssueToken", {
-	description: "Obtain access/id tokens via OIDC flows.",
+// Service: OrderApp
+const orderApp = salesBC.addService("OrderApp", {
+	description: "Open-host service for /store/order endpoints",
+	type: "application",
+});
+
+const placeOrderOp = orderApp.provides("PlaceOrder", {
+	description: "POST /store/order",
+	type: "operation",
+	pattern: "open-host-service",
+});
+const getOrderByIdOp = orderApp.provides("GetOrderById", {
+	description: "GET /store/order/{orderId}",
+	type: "operation",
+	pattern: "open-host-service",
+});
+const deleteOrderOp = orderApp.provides("DeleteOrder", {
+	description: "DELETE /store/order/{orderId}",
 	type: "operation",
 	pattern: "open-host-service",
 });
 
-// Webhooks.API + WebhookClient
+// OrderApp depends on Catalog for status checks
+orderApp.consumes(getPetSummaryOp, { pattern: "anti-corruption-layer" });
 
-const registerWebhookOp = webhooksSvc.provides("RegisterWebhook", {
-	description: "Register a webhook endpoint for an event (e.g., OrderPaid).",
-	type: "operation",
-	pattern: "open-host-service",
+/* =======================
+   INVENTORY — Projection & Service
+   ======================= */
+
+// Aggregate (projection): InventoryProjection
+const inventoryAgg = inventoryBC.addAggregate("InventoryProjection", {
+	description:
+		"Materialized view: { available: number, pending: number, sold: number }",
 });
 
-const receiveWebhookOp = webhookClientSvc.provides("ReceiveWebhook", {
-	description: "Endpoint to receive webhook deliveries.",
-	type: "operation",
-	pattern: "open-host-service",
+const invView = inventoryAgg.addRootEntity("InventoryView", {
+	description: "Status→count map for /store/inventory",
 });
 
-// PaymentProcessor (worker/external)
-
-const authorizePaymentOp = paymentSvc.provides("ProcessPayment", {
-	description: "Process/authorize payment for an order.",
-	type: "operation",
-	pattern: "open-host-service",
-});
-const paymentSucceededEvt = paymentSvc.provides("PaymentSucceeded", {
-	description: "Integration event when a payment is successful.",
+// Projection event
+const inventoryUpdatedEvt = inventoryAgg.provides("InventoryUpdated", {
+	description: "Inventory counts changed",
 	type: "event",
 	pattern: "published-language",
 });
 
-// === CONSUMABLES ===
-const getCatalogItemsOp = catalogSvc.provides("GetCatalogItems", {
-	description: "Browse/search catalog items.",
+// Inventory listens to Catalog & Sales events (conformist)
+inventoryAgg.consumes(petRegisteredEvt, { pattern: "conformist" });
+inventoryAgg.consumes(petDeletedEvt, { pattern: "conformist" });
+inventoryAgg.consumes(petStatusChangedEvt, { pattern: "conformist" });
+inventoryAgg.consumes(orderApprovedEvt, { pattern: "conformist" });
+inventoryAgg.consumes(orderDeliveredEvt, { pattern: "conformist" });
+inventoryAgg.consumes(orderDeletedEvt, { pattern: "conformist" });
+
+// Service: InventoryQuery
+const inventoryQuery = inventoryBC.addService("InventoryQuery", {
+	description: "Open-host service for /store/inventory",
+	type: "application",
+});
+
+const getInventoryOp = inventoryQuery.provides("GetInventory", {
+	description: "GET /store/inventory → { [status]: count }",
 	type: "operation",
 	pattern: "open-host-service",
 });
 
-const changePriceOp = catalogSvc.provides("ChangePrice", {
-	description: "Admin operation to change item price.",
+// Service consumes its own projection's update to drive re-query/push, if desired
+inventoryQuery.consumes(inventoryUpdatedEvt, { pattern: "conformist" });
+
+/* =======================
+   IDENTITY — Aggregate & Service
+   ======================= */
+
+// Aggregate: User
+const userAgg = identityBC.addAggregate("User", {
+	description: "Petstore user record",
+});
+
+const userRoot = userAgg.addRootEntity("User", {
+	description:
+		"username, firstName, lastName, email, password, phone, userStatus(int)",
+});
+
+const userStatusVO = userAgg.addValueObject("UserStatus", {
+	description: "int (per Petstore v3 model)",
+});
+
+userRoot.uses(userStatusVO, "has-status");
+
+// User events
+const userRegisteredEvt = userAgg.provides("UserRegistered", {
+	description: "New user created",
+	type: "event",
+	pattern: "published-language",
+});
+const userUpdatedEvt = userAgg.provides("UserUpdated", {
+	description: "User fields updated",
+	type: "event",
+	pattern: "published-language",
+});
+const userDeletedEvt = userAgg.provides("UserDeleted", {
+	description: "User removed",
+	type: "event",
+	pattern: "published-language",
+});
+const userLoggedInEvt = userAgg.provides("UserLoggedIn", {
+	description: "Login via /user/login",
+	type: "event",
+	pattern: "published-language",
+});
+const userLoggedOutEvt = userAgg.provides("UserLoggedOut", {
+	description: "Logout via /user/logout",
+	type: "event",
+	pattern: "published-language",
+});
+
+// Service: UserApp
+const userApp = identityBC.addService("UserApp", {
+	description: "Open-host service for /user endpoints",
+	type: "application",
+});
+
+const createUserOp = userApp.provides("CreateUser", {
+	description: "POST /user",
+	type: "operation",
+	pattern: "open-host-service",
+});
+const createUsersWithArrayOp = userApp.provides("CreateUsersWithArray", {
+	description: "POST /user/createWithArray",
+	type: "operation",
+	pattern: "open-host-service",
+});
+const createUsersWithListOp = userApp.provides("CreateUsersWithList", {
+	description: "POST /user/createWithList",
+	type: "operation",
+	pattern: "open-host-service",
+});
+const loginOp = userApp.provides("Login", {
+	description: "GET /user/login?username=&password=",
+	type: "operation",
+	pattern: "open-host-service",
+});
+const logoutOp = userApp.provides("Logout", {
+	description: "GET /user/logout",
+	type: "operation",
+	pattern: "open-host-service",
+});
+const getUserByUsernameOp = userApp.provides("GetUserByUsername", {
+	description: "GET /user/{username}",
+	type: "operation",
+	pattern: "open-host-service",
+});
+const updateUserOp = userApp.provides("UpdateUser", {
+	description: "PUT /user/{username}",
+	type: "operation",
+	pattern: "open-host-service",
+});
+const deleteUserOp = userApp.provides("DeleteUser", {
+	description: "DELETE /user/{username}",
 	type: "operation",
 	pattern: "open-host-service",
 });
 
-// === CONSUMPTIONS ===
-webappSvc.consumes(issueTokenOp, { pattern: "customer-supplier" });
-webappSvc.consumes(getCatalogItemsOp, { pattern: "anti-corruption-layer" });
-webappSvc.consumes(getBasketOp, { pattern: "anti-corruption-layer" });
-webappSvc.consumes(addItemOp, { pattern: "anti-corruption-layer" });
-webappSvc.consumes(clearBasketOp, { pattern: "anti-corruption-layer" });
-webappSvc.consumes(placeOrderOp, { pattern: "anti-corruption-layer" });
+// (optional) export JSON schema for tooling
+// console.log(JSON.stringify(workspace.toSchema(), null, 2));
 
-bffSvc.consumes(issueTokenOp, { pattern: "customer-supplier" });
-bffSvc.consumes(getCatalogItemsOp, { pattern: "anti-corruption-layer" });
-bffSvc.consumes(getBasketOp, { pattern: "anti-corruption-layer" });
-bffSvc.consumes(addItemOp, { pattern: "anti-corruption-layer" });
-bffSvc.consumes(clearBasketOp, { pattern: "anti-corruption-layer" });
-bffSvc.consumes(placeOrderOp, { pattern: "anti-corruption-layer" });
-
-orderingSvc.consumes(authorizePaymentOp, { pattern: "customer-supplier" });
-orderingSvc.consumes(paymentSucceededEvt, { pattern: "conformist" });
-
-webhooksSvc.consumes(orderPaidEvt, { pattern: "conformist" });
-webhookClientSvc.consumes(registerWebhookOp, { pattern: "customer-supplier" });
-webhooksSvc.consumes(receiveWebhookOp, { pattern: "customer-supplier" });
-
-backofficeSvc.consumes(changePriceOp, { pattern: "customer-supplier" });
+export default workspace;

@@ -1,40 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { workspace } from "./eshop/workspace";
 
-describe("eShop Example Workspace", () => {
+describe("Petstore Example Workspace", () => {
 	it("should create a valid workspace", () => {
-		expect(workspace.name).toBe("eShop");
+		expect(workspace.name).toBe("Swagger Petstore (v3)");
 		expect(workspace.odsVersion).toBe("1.0.0");
-		expect(workspace.description).toContain("eShop reference app");
-		expect(workspace.homepage).toBe("https://github.com/dotnet/eShop");
-		expect(workspace.primaryColor).toBe("#2563eb");
+		expect(workspace.description).toContain("Swagger Petstore v3");
+		expect(workspace.homepage).toBe("https://petstore.swagger.io");
+		expect(workspace.primaryColor).toBe("#0ea5e9");
 		expect(workspace.logoUrl).toBeDefined();
 	});
 
 	it("should have core commerce domain", () => {
-		const commerceDomain = workspace.getDomainByRef("#/domains/commerce");
+		const commerceDomain = workspace.getDomainByRef("#/domains/petstore_commerce");
 		expect(commerceDomain).toBeDefined();
-		expect(commerceDomain?.name).toBe("Commerce");
+		expect(commerceDomain?.name).toBe("Petstore Commerce");
 		expect(commerceDomain?.type).toBe("core");
-		expect(commerceDomain?.description).toContain("e-commerce capabilities");
+		expect(commerceDomain?.description).toContain("pet catalog, sales, and inventory");
 	});
 
 	it("should have supporting domains", () => {
-		const identityDomain = workspace.getDomainByRef("#/domains/identity_&_access");
+		const identityDomain = workspace.getDomainByRef("#/domains/identity_&_accounts");
 		expect(identityDomain).toBeDefined();
 		expect(identityDomain?.type).toBe("supporting");
-
-		const apiDomain = workspace.getDomainByRef("#/domains/api_integration");
-		expect(apiDomain).toBeDefined();
-		expect(apiDomain?.type).toBe("supporting");
-
-		const paymentDomain = workspace.getDomainByRef("#/domains/payment_processing");
-		expect(paymentDomain).toBeDefined();
-		expect(paymentDomain?.type).toBe("supporting");
 	});
 
 	it("should have proper domain structure", () => {
-		expect(workspace.domains.size).toBeGreaterThan(3);
+		expect(workspace.domains.size).toBeGreaterThan(1);
 		
 		// Check that all domains have descriptions
 		for (const [_, domain] of workspace.domains) {
@@ -46,14 +38,14 @@ describe("eShop Example Workspace", () => {
 	it("should generate valid schema", () => {
 		const schema = workspace.toSchema();
 		
-		expect(schema.name).toBe("eShop");
+		expect(schema.name).toBe("Swagger Petstore (v3)");
 		expect(schema.odsVersion).toBe("1.0.0");
 		expect(schema.domains).toBeDefined();
-		expect(Object.keys(schema.domains).length).toBeGreaterThan(3);
+		expect(Object.keys(schema.domains).length).toBeGreaterThan(1);
 	});
 
 	it("should have subdomains in commerce domain", () => {
-		const commerceDomain = workspace.getDomainByRef("#/domains/commerce");
+		const commerceDomain = workspace.getDomainByRef("#/domains/petstore_commerce");
 		expect(commerceDomain).toBeDefined();
 		expect(commerceDomain?.subdomains.size).toBeGreaterThan(0);
 		
@@ -61,7 +53,7 @@ describe("eShop Example Workspace", () => {
 		for (const [_, subdomain] of commerceDomain?.subdomains || new Map()) {
 			expect(subdomain.name).toBeTruthy();
 			expect(subdomain.description).toBeTruthy();
-			expect(subdomain.path).toContain("domains/commerce/subdomains");
+			expect(subdomain.path).toContain("domains/petstore_commerce/subdomains");
 		}
 	});
 
