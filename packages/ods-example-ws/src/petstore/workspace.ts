@@ -103,7 +103,7 @@ const petRegisteredEvt = petAgg.provides("PetRegistered", {
 	type: "event",
 	pattern: "published-language",
 });
-const petUpdatedEvt = petAgg.provides("PetUpdated", {
+const _petUpdatedEvt = petAgg.provides("PetUpdated", {
 	description: "Pet profile updated",
 	type: "event",
 	pattern: "published-language",
@@ -113,7 +113,7 @@ const petStatusChangedEvt = petAgg.provides("PetStatusChanged", {
 	type: "event",
 	pattern: "published-language",
 });
-const petPhotoUploadedEvt = petAgg.provides("PetPhotoUploaded", {
+const _petPhotoUploadedEvt = petAgg.provides("PetPhotoUploaded", {
 	description: "Photo added via upload",
 	type: "event",
 	pattern: "published-language",
@@ -130,38 +130,38 @@ const petApp = catalogBC.addService("PetApp", {
 	type: "application",
 });
 
-const addPetOp = petApp.provides("AddPet", {
+const _addPetOp = petApp.provides("AddPet", {
 	description: "POST /pet",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const updatePetOp = petApp.provides("UpdatePet", {
+const _updatePetOp = petApp.provides("UpdatePet", {
 	description: "PUT /pet",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const findByStatusOp = petApp.provides("FindPetsByStatus", {
+const _findByStatusOp = petApp.provides("FindPetsByStatus", {
 	description: "GET /pet/findByStatus?status=available|pending|sold",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const findByTagsOp = petApp.provides("FindPetsByTags", {
+const _findByTagsOp = petApp.provides("FindPetsByTags", {
 	description: "GET /pet/findByTags?tags=tag1,tag2",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const getPetByIdOp = petApp.provides("GetPetById", {
+const _getPetByIdOp = petApp.provides("GetPetById", {
 	description: "GET /pet/{petId}",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const uploadImageOp = petApp.provides("UploadPetImage", {
+const _uploadImageOp = petApp.provides("UploadPetImage", {
 	description:
 		"POST /pet/{petId}/uploadImage (multipart: additionalMetadata, file)",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const deletePetOp = petApp.provides("DeletePet", {
+const _deletePetOp = petApp.provides("DeletePet", {
 	description: "DELETE /pet/{petId}",
 	type: "operation",
 	pattern: "open-host-service",
@@ -216,7 +216,7 @@ orderAgg.addInvariant("DeliverOnlyWhenApproved", {
 });
 
 // Aggregate events
-const orderPlacedEvt = orderAgg.provides("OrderPlaced", {
+const _orderPlacedEvt = orderAgg.provides("OrderPlaced", {
 	description: "Order created (status=placed)",
 	type: "event",
 	pattern: "published-language",
@@ -243,17 +243,17 @@ const orderApp = salesBC.addService("OrderApp", {
 	type: "application",
 });
 
-const placeOrderOp = orderApp.provides("PlaceOrder", {
+const _placeOrderOp = orderApp.provides("PlaceOrder", {
 	description: "POST /store/order",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const getOrderByIdOp = orderApp.provides("GetOrderById", {
+const _getOrderByIdOp = orderApp.provides("GetOrderById", {
 	description: "GET /store/order/{orderId}",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const deleteOrderOp = orderApp.provides("DeleteOrder", {
+const _deleteOrderOp = orderApp.provides("DeleteOrder", {
 	description: "DELETE /store/order/{orderId}",
 	type: "operation",
 	pattern: "open-host-service",
@@ -272,7 +272,7 @@ const inventoryAgg = inventoryBC.addAggregate("InventoryProjection", {
 		"Materialized view: { available: number, pending: number, sold: number }",
 });
 
-const invView = inventoryAgg.addRootEntity("InventoryView", {
+const _invView = inventoryAgg.addRootEntity("InventoryView", {
 	description: "Status→count map for /store/inventory",
 });
 
@@ -297,7 +297,7 @@ const inventoryQuery = inventoryBC.addService("InventoryQuery", {
 	type: "application",
 });
 
-const getInventoryOp = inventoryQuery.provides("GetInventory", {
+const _getInventoryOp = inventoryQuery.provides("GetInventory", {
 	description: "GET /store/inventory → { [status]: count }",
 	type: "operation",
 	pattern: "open-host-service",
@@ -327,27 +327,27 @@ const userStatusVO = userAgg.addValueObject("UserStatus", {
 userRoot.uses(userStatusVO, "has-status");
 
 // User events
-const userRegisteredEvt = userAgg.provides("UserRegistered", {
+const _userRegisteredEvt = userAgg.provides("UserRegistered", {
 	description: "New user created",
 	type: "event",
 	pattern: "published-language",
 });
-const userUpdatedEvt = userAgg.provides("UserUpdated", {
+const _userUpdatedEvt = userAgg.provides("UserUpdated", {
 	description: "User fields updated",
 	type: "event",
 	pattern: "published-language",
 });
-const userDeletedEvt = userAgg.provides("UserDeleted", {
+const _userDeletedEvt = userAgg.provides("UserDeleted", {
 	description: "User removed",
 	type: "event",
 	pattern: "published-language",
 });
-const userLoggedInEvt = userAgg.provides("UserLoggedIn", {
+const _userLoggedInEvt = userAgg.provides("UserLoggedIn", {
 	description: "Login via /user/login",
 	type: "event",
 	pattern: "published-language",
 });
-const userLoggedOutEvt = userAgg.provides("UserLoggedOut", {
+const _userLoggedOutEvt = userAgg.provides("UserLoggedOut", {
 	description: "Logout via /user/logout",
 	type: "event",
 	pattern: "published-language",
@@ -359,42 +359,42 @@ const userApp = identityBC.addService("UserApp", {
 	type: "application",
 });
 
-const createUserOp = userApp.provides("CreateUser", {
+const _createUserOp = userApp.provides("CreateUser", {
 	description: "POST /user",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const createUsersWithArrayOp = userApp.provides("CreateUsersWithArray", {
+const _createUsersWithArrayOp = userApp.provides("CreateUsersWithArray", {
 	description: "POST /user/createWithArray",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const createUsersWithListOp = userApp.provides("CreateUsersWithList", {
+const _createUsersWithListOp = userApp.provides("CreateUsersWithList", {
 	description: "POST /user/createWithList",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const loginOp = userApp.provides("Login", {
+const _loginOp = userApp.provides("Login", {
 	description: "GET /user/login?username=&password=",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const logoutOp = userApp.provides("Logout", {
+const _logoutOp = userApp.provides("Logout", {
 	description: "GET /user/logout",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const getUserByUsernameOp = userApp.provides("GetUserByUsername", {
+const _getUserByUsernameOp = userApp.provides("GetUserByUsername", {
 	description: "GET /user/{username}",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const updateUserOp = userApp.provides("UpdateUser", {
+const _updateUserOp = userApp.provides("UpdateUser", {
 	description: "PUT /user/{username}",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const deleteUserOp = userApp.provides("DeleteUser", {
+const _deleteUserOp = userApp.provides("DeleteUser", {
 	description: "DELETE /user/{username}",
 	type: "operation",
 	pattern: "open-host-service",

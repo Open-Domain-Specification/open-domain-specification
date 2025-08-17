@@ -12,11 +12,15 @@ describe("Swagger Petstore Example Workspace", () => {
 	});
 
 	it("should have core Petstore Commerce domain", () => {
-		const commerceDomain = workspace.getDomainByRef("#/domains/petstore_commerce");
+		const commerceDomain = workspace.getDomainByRef(
+			"#/domains/petstore_commerce",
+		);
 		expect(commerceDomain).toBeDefined();
 		expect(commerceDomain?.name).toBe("Petstore Commerce");
 		expect(commerceDomain?.type).toBe("core");
-		expect(commerceDomain?.description).toContain("pet catalog, sales, and inventory");
+		expect(commerceDomain?.description).toContain(
+			"pet catalog, sales, and inventory",
+		);
 	});
 
 	it("should have supporting Identity & Accounts domain", () => {
@@ -49,23 +53,33 @@ describe("Swagger Petstore Example Workspace", () => {
 	});
 
 	it("should have subdomains for Catalog, Sales, Inventory, and Users", () => {
-		const commerceDomain = workspace.getDomainByRef("#/domains/petstore_commerce");
+		const commerceDomain = workspace.getDomainByRef(
+			"#/domains/petstore_commerce",
+		);
 		expect(commerceDomain).toBeDefined();
 		expect(commerceDomain?.subdomains.size).toBe(3); // Catalog, Sales, Inventory
 
-		const catalogSubdomain = workspace.getSubdomainByRefOrThrow("#/domains/petstore_commerce/subdomains/catalog");
+		const catalogSubdomain = workspace.getSubdomainByRefOrThrow(
+			"#/domains/petstore_commerce/subdomains/catalog",
+		);
 		expect(catalogSubdomain.name).toBe("Catalog");
 		expect(catalogSubdomain.description).toContain("Pet definitions");
 
-		const salesSubdomain = workspace.getSubdomainByRefOrThrow("#/domains/petstore_commerce/subdomains/sales");
+		const salesSubdomain = workspace.getSubdomainByRefOrThrow(
+			"#/domains/petstore_commerce/subdomains/sales",
+		);
 		expect(salesSubdomain.name).toBe("Sales");
 		expect(salesSubdomain.description).toContain("Orders");
 
-		const inventorySubdomain = workspace.getSubdomainByRefOrThrow("#/domains/petstore_commerce/subdomains/inventory");
+		const inventorySubdomain = workspace.getSubdomainByRefOrThrow(
+			"#/domains/petstore_commerce/subdomains/inventory",
+		);
 		expect(inventorySubdomain.name).toBe("Inventory");
 		expect(inventorySubdomain.description).toContain("availability");
 
-		const usersSubdomain = workspace.getSubdomainByRefOrThrow("#/domains/identity_&_accounts/subdomains/users");
+		const usersSubdomain = workspace.getSubdomainByRefOrThrow(
+			"#/domains/identity_&_accounts/subdomains/users",
+		);
 		expect(usersSubdomain.name).toBe("Users");
 		expect(usersSubdomain.description).toContain("User records");
 	});
@@ -98,11 +112,15 @@ describe("Swagger Petstore Example Workspace", () => {
 	});
 
 	it("should have Pet and Order aggregates", () => {
-		const petAggregate = workspace.getAggregateByRefOrThrow("#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet");
+		const petAggregate = workspace.getAggregateByRefOrThrow(
+			"#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet",
+		);
 		expect(petAggregate.name).toBe("Pet");
 		expect(petAggregate.description).toContain("pet listed in the store");
 
-		const orderAggregate = workspace.getAggregateByRefOrThrow("#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order");
+		const orderAggregate = workspace.getAggregateByRefOrThrow(
+			"#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order",
+		);
 		expect(orderAggregate.name).toBe("Order");
 		expect(orderAggregate.description).toContain("Order for a single pet");
 	});
@@ -180,10 +198,12 @@ describe("Swagger Petstore Example Workspace", () => {
 	});
 
 	it("should have Pet application service with Swagger API operations", () => {
-		const petApp = workspace.getServiceByRefOrThrow("#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/services/pet_app");
+		const petApp = workspace.getServiceByRefOrThrow(
+			"#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/services/pet_app",
+		);
 		expect(petApp.name).toBe("PetApp");
 		expect(petApp.description).toContain("/pet endpoints");
-		
+
 		// Check for key Swagger Petstore operations
 		expect(petApp.consumables.has("add_pet")).toBe(true);
 		expect(petApp.consumables.has("update_pet")).toBe(true);
@@ -193,10 +213,12 @@ describe("Swagger Petstore Example Workspace", () => {
 	});
 
 	it("should have Order application service with store operations", () => {
-		const orderApp = workspace.getServiceByRefOrThrow("#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/services/order_app");
+		const orderApp = workspace.getServiceByRefOrThrow(
+			"#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/services/order_app",
+		);
 		expect(orderApp.name).toBe("OrderApp");
 		expect(orderApp.description).toContain("/store/order endpoints");
-		
+
 		// Check for key store operations
 		expect(orderApp.consumables.has("place_order")).toBe(true);
 		expect(orderApp.consumables.has("get_order_by_id")).toBe(true);
@@ -204,10 +226,12 @@ describe("Swagger Petstore Example Workspace", () => {
 	});
 
 	it("should have User application service with user operations", () => {
-		const userApp = workspace.getServiceByRefOrThrow("#/domains/identity_&_accounts/subdomains/users/boundedcontexts/identity_bc/services/user_app");
+		const userApp = workspace.getServiceByRefOrThrow(
+			"#/domains/identity_&_accounts/subdomains/users/boundedcontexts/identity_bc/services/user_app",
+		);
 		expect(userApp.name).toBe("UserApp");
 		expect(userApp.description).toContain("/user endpoints");
-		
+
 		// Check for key user operations
 		expect(userApp.consumables.has("create_user")).toBe(true);
 		expect(userApp.consumables.has("login")).toBe(true);
