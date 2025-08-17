@@ -1,6 +1,6 @@
+import { ODSContextMap, Workspace } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { contextMapToDigraph } from "./context-map";
-import { ODSContextMap, Workspace } from "@open-domain-specification/core";
 
 describe("contextMapToDigraph edge cases", () => {
 	it("should handle empty context map", async () => {
@@ -107,7 +107,7 @@ describe("contextMapToDigraph edge cases", () => {
 		});
 
 		const contextMap = ODSContextMap.fromWorkspace(workspace);
-		
+
 		// The digraph should handle empty maps gracefully
 		const digraph = contextMapToDigraph(contextMap);
 		expect(() => digraph.toSVG()).not.toThrow();

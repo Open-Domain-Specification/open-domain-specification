@@ -1,6 +1,9 @@
 {
 	"name": "open-domain-specification",
 	"version": "0.0.0",
+	"engines": {
+		"node": ">=24"
+	},
 	"workspaces": [
 		"apps/*",
 		"packages/*"

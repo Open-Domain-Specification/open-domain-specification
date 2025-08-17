@@ -17,7 +17,7 @@ export function useOpenConsumable(
 			const consumable = workspace.getConsumableByRef(consumableRef);
 
 			if (!consumable) {
-				throw new Error("No consumable found for ref: " + consumableRef);
+				throw new Error(`No consumable found for ref: ${consumableRef}`);
 			}
 
 			nav(consumable.provider.ref);

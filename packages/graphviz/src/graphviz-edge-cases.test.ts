@@ -1,7 +1,11 @@
+import {
+	ODSConsumableMap,
+	ODSRelationMap,
+	Workspace,
+} from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
-import { relationMapToDigraph } from "./relation-map";
 import { consumableMapToDigraph } from "./consumable-map";
-import { ODSRelationMap, ODSConsumableMap, Workspace } from "@open-domain-specification/core";
+import { relationMapToDigraph } from "./relation-map";
 
 describe("relationMapToDigraph edge cases", () => {
 	it("should handle empty relation map", async () => {
@@ -152,7 +156,7 @@ describe("consumableMapToDigraph edge cases", () => {
 			type: "domain",
 		});
 
-		const orderOperation = orderService.provides("CreateOrder", {
+		const _orderOperation = orderService.provides("CreateOrder", {
 			description: "Create order operation",
 			type: "operation",
 			pattern: "open-host-service",
@@ -201,7 +205,7 @@ describe("consumableMapToDigraph edge cases", () => {
 			description: "Order aggregate",
 		});
 
-		const operation = aggregate.provides("CreateOrder", {
+		const _operation = aggregate.provides("CreateOrder", {
 			description: "Create order operation",
 			type: "operation",
 			pattern: "open-host-service",
@@ -232,7 +236,7 @@ describe("Graphviz error handling", () => {
 
 		const relationMap = ODSRelationMap.fromDomain(domain);
 		const digraph = relationMapToDigraph(relationMap);
-		
+
 		// This should not throw even if the map is empty or has issues
 		expect(() => digraph.toSVG()).not.toThrow();
 	});

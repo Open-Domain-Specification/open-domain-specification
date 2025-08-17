@@ -10,19 +10,15 @@ Always reference these instructions first and fallback to search or bash command
 - Install dependencies: `npm install` -- takes 5 minutes. NEVER CANCEL. Set timeout to 10+ minutes.
 - Build all packages: `npm run build` -- takes 50 seconds but has known issues (see workarounds below). NEVER CANCEL. Set timeout to 5+ minutes.
 - Run all tests: `npm run test` -- takes 4 seconds. Fast and reliable.
-- Format code: `npx @biomejs/biome check --write` -- takes 40 seconds and flags issues in build files (expected). NEVER CANCEL. Set timeout to 2+ minutes.
+- Format & Lint code: `npm run format` -- takes 5 seconds and flags issues in build files (expected). NEVER CANCEL. Set timeout to 2+ minutes.
 
 ### Development Servers
 - Start documentation site: `cd apps/docs && npm run start` -- runs on http://localhost:3000
-- Start ODS UI application: `cd apps/ods-ui && npm run dev` -- runs on http://localhost:5173
+- Start ODS UI application: `cd apps/ods-ui && npm run start` -- runs on http://localhost:5173
 - Start example workspace docs: `cd packages/ods-example-ws && npm run serve` -- runs on random port (displays in output)
 
 ### Known Build Issues and Workarounds
-- **ods-example-ws build fails**: Package uses `"type": "module"` but tries to run ts-node which doesn't support ESM properly. 
-  - **Workaround**: Use `cd packages/ods-example-ws && npx tsx src/index.ts` instead of the npm build script.
-  - This generates documentation in the `docs/` directory from the workspace definition.
-- **Biome linting flags build files**: Expected behavior - build artifacts shouldn't be linted but are included in checks.
-- **Source code linting issues exist**: The codebase currently has ~10 linting errors in source files (mainly forEach callback return values and explicit any usage). These are existing issues, not caused by your changes.
+There are no currently known issues and the project is healthy.
 
 ## Validation Scenarios
 
@@ -32,7 +28,7 @@ Always reference these instructions first and fallback to search or bash command
    - `npm install` (wait 5+ minutes)
    - `npm run test` (verify all pass)
    - `cd apps/docs && npm run start` then verify http://localhost:3000 loads correctly
-   - `cd apps/ods-ui && npm run dev` then verify http://localhost:5173 loads correctly
+   - `cd apps/ods-ui && npm run start` then verify http://localhost:5173 loads correctly
    - Stop both servers before proceeding
 
 2. **Package Build Validation**:
@@ -41,8 +37,7 @@ Always reference these instructions first and fallback to search or bash command
    - Verify all packages in `packages/*/dist/` have generated files
 
 3. **Code Quality Checks**:
-   - `npx @biomejs/biome check` (review for new issues, build file warnings are expected)
-   - NOTE: ~10 existing linting errors in source code are expected (forEach callbacks, explicit any usage)
+   - `npm run format` (review for new issues)
    - `npm run test` (ensure no new test failures)
 
 4. **Manual User Scenario Testing**:
@@ -86,7 +81,7 @@ Always reference these instructions first and fallback to search or bash command
 npm install                    # Install all dependencies (5 min)
 npm run build                  # Build all packages (50 sec, has known issues)
 npm run test                   # Run all tests (4 sec)
-npm run format                 # Format and lint code (40 sec)
+npm run format                 # Format and lint code (5 sec)
 lerna run [script] --stream    # Run script across all packages
 ```
 
@@ -94,7 +89,7 @@ lerna run [script] --stream    # Run script across all packages
 ```bash
 npm run build                  # Build individual package
 npm test                       # Test individual package  
-npx tsx src/index.ts          # Direct TypeScript execution (ESM safe)
+npm run start                    # Start development server (if applicable)
 ```
 
 ### Documentation
@@ -107,7 +102,7 @@ npm run build                  # Production build
 ### ODS UI
 ```bash
 cd apps/ods-ui  
-npm run dev                    # Development server (port 5173)
+npm run start                    # Development server (port 5173)
 npm run build                  # Production build
 ```
 
@@ -133,22 +128,19 @@ npm run build                  # Production build
 - **npm install**: 5 minutes
 - **npm run build**: 50 seconds (with expected ods-example-ws failure)
 - **npm run test**: 4 seconds  
-- **npm run format**: 40 seconds
+- **npm run format**: 5 seconds
 - **Development server startup**: 10-15 seconds each
 - **Docusaurus build**: 25-30 seconds
 
 ## Before Committing Changes
 
 1. Run `npm run test` and ensure all tests pass
-2. Run `npx @biomejs/biome check --write` to format code (ignore existing linting errors)
+2. Run `npm run format` to format code
 3. Manually test affected applications by starting their dev servers and exercising user workflows
-4. For domain model changes, regenerate example docs with `cd packages/ods-example-ws && npx tsx src/index.ts`
+4. For domain model changes, regenerate example docs with `npm run build`
 5. **ALWAYS test a complete user workflow** - don't just start and stop servers, actually use the applications
 
 ## Troubleshooting
 
-- **"Unknown file extension .ts" error**: Use `npx tsx` instead of `ts-node` for ESM modules
-- **Build failures in ods-example-ws**: Expected, use the tsx workaround documented above
-- **Biome errors on build files**: Expected, these are generated artifacts
 - **Port conflicts**: Development servers use ports 3000, 5173, and random ports - ensure they're available
-- **Node version issues**: Prefer Node 24 but 20 works for development
+- **Node version issues**: A Minimum version of Node 24 is mandatory

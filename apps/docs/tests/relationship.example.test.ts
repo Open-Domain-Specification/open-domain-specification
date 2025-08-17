@@ -1,16 +1,6 @@
 import { writeFileSync } from "node:fs";
-import {
-	ODSConsumableMap,
-	ODSConsumptionGraph,
-	ODSContextMap,
-	ODSRelationMap,
-	Workspace,
-} from "@open-domain-specification/core";
-import {
-	consumableMapToDigraph,
-	contextMapToDigraph,
-	relationMapToDigraph,
-} from "@open-domain-specification/graphviz";
+import { ODSRelationMap, Workspace } from "@open-domain-specification/core";
+import { relationMapToDigraph } from "@open-domain-specification/graphviz";
 import { describe, expect, it } from "vitest";
 
 const ws = new Workspace("eCommerce", {

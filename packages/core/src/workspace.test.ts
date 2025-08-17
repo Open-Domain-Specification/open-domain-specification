@@ -1,5 +1,14 @@
-import { describe, expect, it, beforeEach } from "vitest";
-import { Workspace, Domain, Subdomain, BoundedContext, Service, Aggregate, Entity, ValueObject } from "./workspace";
+import { beforeEach, describe, expect, it } from "vitest";
+import {
+	type Aggregate,
+	type BoundedContext,
+	type Domain,
+	type Entity,
+	type Service,
+	type Subdomain,
+	type ValueObject,
+	Workspace,
+} from "./workspace";
 
 describe("Workspace", () => {
 	it("should create a workspace with basic attributes", () => {
@@ -47,7 +56,7 @@ describe("Workspace", () => {
 	it("should add a domain and retrieve it", () => {
 		const workspace = new Workspace("Test Workspace", {
 			odsVersion: "1.0.0",
-			description: "A test workspace", 
+			description: "A test workspace",
 			version: "0.1.0",
 		});
 
@@ -88,7 +97,7 @@ describe("Workspace", () => {
 		});
 
 		expect(() => workspace.getDomainByRefOrThrow("#/invalid/ref")).toThrow(
-			"Domain with ref #/invalid/ref not found"
+			"Domain with ref #/invalid/ref not found",
 		);
 	});
 
@@ -120,7 +129,7 @@ describe("Workspace", () => {
 		});
 
 		expect(() => workspace.getSubdomainByRefOrThrow("#/invalid/ref")).toThrow(
-			"Subdomain with ref #/invalid/ref not found"
+			"Subdomain with ref #/invalid/ref not found",
 		);
 	});
 
@@ -132,7 +141,7 @@ describe("Workspace", () => {
 			homepage: "https://example.com",
 		});
 
-		const domain = workspace.addDomain("Commerce", {
+		const _domain = workspace.addDomain("Commerce", {
 			description: "Core commerce capabilities",
 			type: "core",
 		});
@@ -196,7 +205,7 @@ describe("Domain", () => {
 		});
 
 		const domain = workspace.addDomain("Commerce", {
-			description: "Core commerce capabilities", 
+			description: "Core commerce capabilities",
 			type: "supporting",
 		});
 
@@ -253,7 +262,9 @@ describe("Subdomain", () => {
 
 		expect(boundedContext.name).toBe("Order Management");
 		expect(boundedContext.subdomain).toBe(subdomain);
-		expect(subdomain.boundedcontexts.get("order_management")).toBe(boundedContext);
+		expect(subdomain.boundedcontexts.get("order_management")).toBe(
+			boundedContext,
+		);
 	});
 });
 
@@ -306,14 +317,16 @@ describe("Workspace lookup methods", () => {
 	});
 
 	it("should find bounded context by ref", () => {
-		expect(workspace.getBoundedContextByRef(boundedContext.ref)).toBe(boundedContext);
+		expect(workspace.getBoundedContextByRef(boundedContext.ref)).toBe(
+			boundedContext,
+		);
 		expect(workspace.getBoundedContextByRef("#/invalid/ref")).toBeUndefined();
 	});
 
 	it("should throw error when bounded context not found by ref", () => {
-		expect(() => workspace.getBoundedContextByRefOrThrow("#/invalid/ref")).toThrow(
-			"Bounded Context with ref #/invalid/ref not found"
-		);
+		expect(() =>
+			workspace.getBoundedContextByRefOrThrow("#/invalid/ref"),
+		).toThrow("Bounded Context with ref #/invalid/ref not found");
 	});
 
 	it("should find service by ref", () => {
@@ -323,7 +336,7 @@ describe("Workspace lookup methods", () => {
 
 	it("should throw error when service not found by ref", () => {
 		expect(() => workspace.getServiceByRefOrThrow("#/invalid/ref")).toThrow(
-			"Service with ref #/invalid/ref not found"
+			"Service with ref #/invalid/ref not found",
 		);
 	});
 
@@ -334,7 +347,7 @@ describe("Workspace lookup methods", () => {
 
 	it("should throw error when aggregate not found by ref", () => {
 		expect(() => workspace.getAggregateByRefOrThrow("#/invalid/ref")).toThrow(
-			"Aggregate with ref #/invalid/ref not found"
+			"Aggregate with ref #/invalid/ref not found",
 		);
 	});
 
@@ -345,7 +358,7 @@ describe("Workspace lookup methods", () => {
 
 	it("should throw error when entity not found by ref", () => {
 		expect(() => workspace.getEntityByRefOrThrow("#/invalid/ref")).toThrow(
-			"Entity with ref #/invalid/ref not found"
+			"Entity with ref #/invalid/ref not found",
 		);
 	});
 
@@ -356,19 +369,23 @@ describe("Workspace lookup methods", () => {
 
 	it("should throw error when value object not found by ref", () => {
 		expect(() => workspace.getValueObjectByRefOrThrow("#/invalid/ref")).toThrow(
-			"Value Object with ref #/invalid/ref not found"
+			"Value Object with ref #/invalid/ref not found",
 		);
 	});
 
 	it("should find entity or value object by ref", () => {
 		expect(workspace.getEntityOrValueobjectByRef(entity.ref)).toBe(entity);
-		expect(workspace.getEntityOrValueobjectByRef(valueObject.ref)).toBe(valueObject);
-		expect(workspace.getEntityOrValueobjectByRef("#/invalid/ref")).toBeUndefined();
+		expect(workspace.getEntityOrValueobjectByRef(valueObject.ref)).toBe(
+			valueObject,
+		);
+		expect(
+			workspace.getEntityOrValueobjectByRef("#/invalid/ref"),
+		).toBeUndefined();
 	});
 
 	it("should throw error when entity or value object not found by ref", () => {
-		expect(() => workspace.getEntityOrValueobjectByRefOrThrow("#/invalid/ref")).toThrow(
-			"Entity or Value Object with ref #/invalid/ref not found"
-		);
+		expect(() =>
+			workspace.getEntityOrValueobjectByRefOrThrow("#/invalid/ref"),
+		).toThrow("Entity or Value Object with ref #/invalid/ref not found");
 	});
 });

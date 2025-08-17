@@ -2,16 +2,11 @@ import {
 	type Aggregate,
 	type BoundedContext,
 	ODSConsumptionGraph,
-	ODSContextMap,
 	type Service,
 } from "@open-domain-specification/core";
 import { breadcrumbsMd } from "./breadcrumbs.md";
 import { markdownTable } from "./lib/markdown-table";
-import {
-	pathToConsumableMapSvg,
-	pathToContextMapSvg,
-	pathToIndexMd,
-} from "./lib/paths";
+import { pathToContextMapSvg, pathToIndexMd } from "./lib/paths";
 import type { Options } from "./options";
 
 const aggregateSection = (aggregate: Aggregate) => `

@@ -56,7 +56,7 @@ export abstract class AbstractVisitor implements Visitor {
 	 * @param node - The node to mark, must have a `ref` property.
 	 */
 	protected mark(node: { ref?: string }): boolean {
-		const key = (node as any)?.ref;
+		const key = node?.ref;
 		if (!key) return false;
 		if (this.seen.has(key)) return true;
 		this.seen.add(key);
@@ -77,7 +77,9 @@ export abstract class AbstractVisitor implements Visitor {
 	 */
 	visitWorkspace(node: Workspace): void {
 		this.before(node);
-		node.domains.forEach((d) => d.accept(this));
+		for (const domain of node.domains.values()) {
+			domain.accept(this);
+		}
 		this.after(node);
 	}
 
@@ -87,7 +89,9 @@ export abstract class AbstractVisitor implements Visitor {
 	 */
 	visitDomain(node: Domain): void {
 		this.before(node);
-		node.subdomains.forEach((s) => s.accept(this));
+		for (const subdomain of node.subdomains.values()) {
+			subdomain.accept(this);
+		}
 		this.after(node);
 	}
 
@@ -97,7 +101,9 @@ export abstract class AbstractVisitor implements Visitor {
 	 */
 	visitSubdomain(node: Subdomain): void {
 		this.before(node);
-		node.boundedcontexts.forEach((bc) => bc.accept(this));
+		for (const bc of node.boundedcontexts.values()) {
+			bc.accept(this);
+		}
 		this.after(node);
 	}
 
@@ -107,8 +113,15 @@ export abstract class AbstractVisitor implements Visitor {
 	 */
 	visitBoundedContext(node: BoundedContext): void {
 		this.before(node);
-		node.services.forEach((s) => s.accept(this));
-		node.aggregates.forEach((a) => a.accept(this));
+
+		for (const service of node.services.values()) {
+			service.accept(this);
+		}
+
+		for (const aggregate of node.aggregates.values()) {
+			aggregate.accept(this);
+		}
+
 		this.after(node);
 	}
 
@@ -118,7 +131,9 @@ export abstract class AbstractVisitor implements Visitor {
 	 */
 	visitService(node: Service): void {
 		this.before(node);
-		node.consumables.forEach((c) => c.accept(this));
+		for (const cons of node.consumables.values()) {
+			cons.accept(this);
+		}
 		if (this.followConsumptions) {
 			for (const cons of node.consumptions) cons.accept(this);
 		}
@@ -131,10 +146,18 @@ export abstract class AbstractVisitor implements Visitor {
 	 */
 	visitAggregate(node: Aggregate): void {
 		this.before(node);
-		node.consumables.forEach((c) => c.accept(this));
-		node.invariants.forEach((i) => i.accept(this));
-		node.entities.forEach((e) => e.accept(this));
-		node.valueobjects.forEach((v) => v.accept(this));
+		for (const consumable of node.consumables.values()) {
+			consumable.accept(this);
+		}
+		for (const invariant of node.invariants.values()) {
+			invariant.accept(this);
+		}
+		for (const entity of node.entities.values()) {
+			entity.accept(this);
+		}
+		for (const valueObject of node.valueobjects.values()) {
+			valueObject.accept(this);
+		}
 		if (this.followConsumptions) {
 			for (const cons of node.consumptions) cons.accept(this);
 		}

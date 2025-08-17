@@ -14,7 +14,7 @@
 
 .app-spotlight-input {
 	input {
-		cursor: pointer !important;
+		cursor: pointer;
 	}
 }
 

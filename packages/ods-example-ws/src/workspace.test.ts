@@ -20,7 +20,9 @@ describe("eShop Example Workspace", () => {
 	});
 
 	it("should have supporting domains", () => {
-		const identityDomain = workspace.getDomainByRef("#/domains/identity_&_access");
+		const identityDomain = workspace.getDomainByRef(
+			"#/domains/identity_&_access",
+		);
 		expect(identityDomain).toBeDefined();
 		expect(identityDomain?.type).toBe("supporting");
 
@@ -28,14 +30,16 @@ describe("eShop Example Workspace", () => {
 		expect(apiDomain).toBeDefined();
 		expect(apiDomain?.type).toBe("supporting");
 
-		const paymentDomain = workspace.getDomainByRef("#/domains/payment_processing");
+		const paymentDomain = workspace.getDomainByRef(
+			"#/domains/payment_processing",
+		);
 		expect(paymentDomain).toBeDefined();
 		expect(paymentDomain?.type).toBe("supporting");
 	});
 
 	it("should have proper domain structure", () => {
 		expect(workspace.domains.size).toBeGreaterThan(3);
-		
+
 		// Check that all domains have descriptions
 		for (const [_, domain] of workspace.domains) {
 			expect(domain.description).toBeTruthy();
@@ -45,7 +49,7 @@ describe("eShop Example Workspace", () => {
 
 	it("should generate valid schema", () => {
 		const schema = workspace.toSchema();
-		
+
 		expect(schema.name).toBe("eShop");
 		expect(schema.odsVersion).toBe("1.0.0");
 		expect(schema.domains).toBeDefined();
@@ -56,7 +60,7 @@ describe("eShop Example Workspace", () => {
 		const commerceDomain = workspace.getDomainByRef("#/domains/commerce");
 		expect(commerceDomain).toBeDefined();
 		expect(commerceDomain?.subdomains.size).toBeGreaterThan(0);
-		
+
 		// Check that subdomains have proper structure
 		for (const [_, subdomain] of commerceDomain?.subdomains || new Map()) {
 			expect(subdomain.name).toBeTruthy();
@@ -74,7 +78,7 @@ describe("eShop Example Workspace", () => {
 			for (const [_, subdomain] of domain.subdomains) {
 				if (subdomain.boundedcontexts.size > 0) {
 					foundBoundedContext = true;
-					
+
 					for (const [_, bc] of subdomain.boundedcontexts) {
 						if (bc.services.size > 0) {
 							foundService = true;
@@ -112,8 +116,8 @@ describe("eShop Example Workspace", () => {
 							consumptionCount += service.consumptions.length;
 						}
 					}
-					
-					// Check aggregates for consumables and consumptions  
+
+					// Check aggregates for consumables and consumptions
 					for (const [_, aggregate] of bc.aggregates) {
 						if (aggregate.consumables.size > 0) {
 							foundConsumable = true;

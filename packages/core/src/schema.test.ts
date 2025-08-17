@@ -14,13 +14,13 @@ describe("Workspace Schema Validation", () => {
 					name: "Commerce",
 					description: "Commerce domain",
 					type: "core" as const,
-					subdomains: {}
-				}
-			}
+					subdomains: {},
+				},
+			},
 		};
 
 		const workspace = Workspace.fromSchema(schema);
-		
+
 		expect(workspace.name).toBe("Test Workspace");
 		expect(workspace.odsVersion).toBe("1.0.0");
 		expect(workspace.domains.size).toBe(1);
@@ -37,11 +37,11 @@ describe("Workspace Schema Validation", () => {
 			homepage: "https://example.com",
 			logoUrl: "https://example.com/logo.png",
 			primaryColor: "#123456",
-			domains: {}
+			domains: {},
 		};
 
 		const workspace = Workspace.fromSchema(schema);
-		
+
 		expect(workspace.name).toBe("Edge Case Workspace");
 		expect(workspace.homepage).toBe("https://example.com");
 		expect(workspace.logoUrl).toBe("https://example.com/logo.png");
@@ -56,11 +56,11 @@ describe("Workspace Schema Validation", () => {
 			odsVersion: "1.0.0" as const,
 			description: "Empty workspace for testing",
 			version: "0.1.0",
-			domains: {}
+			domains: {},
 		};
 
 		const workspace = Workspace.fromSchema(schema);
-		
+
 		expect(workspace.name).toBe("Empty Workspace");
 		expect(workspace.domains.size).toBe(0);
 	});
@@ -87,13 +87,37 @@ describe("Workspace Edge Cases", () => {
 
 		// Test all search methods return undefined for empty workspace
 		expect(workspace.getDomainByRef("#/domains/nonexistent")).toBeUndefined();
-		expect(workspace.getSubdomainByRef("#/domains/nonexistent/subdomains/test")).toBeUndefined();
-		expect(workspace.getBoundedContextByRef("#/domains/nonexistent/subdomains/test/boundedcontexts/test")).toBeUndefined();
-		expect(workspace.getServiceByRef("#/domains/nonexistent/subdomains/test/boundedcontexts/test/services/test")).toBeUndefined();
-		expect(workspace.getAggregateByRef("#/domains/nonexistent/subdomains/test/boundedcontexts/test/aggregates/test")).toBeUndefined();
-		expect(workspace.getEntityByRef("#/domains/nonexistent/subdomains/test/boundedcontexts/test/aggregates/test/entities/test")).toBeUndefined();
-		expect(workspace.getValueObjectByRef("#/domains/nonexistent/subdomains/test/boundedcontexts/test/aggregates/test/valueobjects/test")).toBeUndefined();
-		expect(workspace.getEntityOrValueobjectByRef("#/invalid/ref")).toBeUndefined();
+		expect(
+			workspace.getSubdomainByRef("#/domains/nonexistent/subdomains/test"),
+		).toBeUndefined();
+		expect(
+			workspace.getBoundedContextByRef(
+				"#/domains/nonexistent/subdomains/test/boundedcontexts/test",
+			),
+		).toBeUndefined();
+		expect(
+			workspace.getServiceByRef(
+				"#/domains/nonexistent/subdomains/test/boundedcontexts/test/services/test",
+			),
+		).toBeUndefined();
+		expect(
+			workspace.getAggregateByRef(
+				"#/domains/nonexistent/subdomains/test/boundedcontexts/test/aggregates/test",
+			),
+		).toBeUndefined();
+		expect(
+			workspace.getEntityByRef(
+				"#/domains/nonexistent/subdomains/test/boundedcontexts/test/aggregates/test/entities/test",
+			),
+		).toBeUndefined();
+		expect(
+			workspace.getValueObjectByRef(
+				"#/domains/nonexistent/subdomains/test/boundedcontexts/test/aggregates/test/valueobjects/test",
+			),
+		).toBeUndefined();
+		expect(
+			workspace.getEntityOrValueobjectByRef("#/invalid/ref"),
+		).toBeUndefined();
 	});
 
 	it("should handle malformed refs in entity/value object search", () => {
@@ -104,8 +128,12 @@ describe("Workspace Edge Cases", () => {
 		});
 
 		// Test with refs that don't match entity or value object patterns
-		expect(workspace.getEntityOrValueobjectByRef("#/domains/test")).toBeUndefined();
-		expect(workspace.getEntityOrValueobjectByRef("#/invalid/format")).toBeUndefined();
+		expect(
+			workspace.getEntityOrValueobjectByRef("#/domains/test"),
+		).toBeUndefined();
+		expect(
+			workspace.getEntityOrValueobjectByRef("#/invalid/format"),
+		).toBeUndefined();
 		expect(workspace.getEntityOrValueobjectByRef("not-a-ref")).toBeUndefined();
 	});
 
