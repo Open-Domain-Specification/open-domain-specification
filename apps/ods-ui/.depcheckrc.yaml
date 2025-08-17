@@ -3,3 +3,5 @@ ignores:
   - "@fontsource/geist-sans"
   - "vitest"
   - "globals"
+  - "sonda"
+  - "ods-example-ws"

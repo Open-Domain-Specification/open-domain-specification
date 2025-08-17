@@ -3,12 +3,6 @@ import path from "node:path";
 import { toDoc } from "@open-domain-specification/doc";
 import { workspace } from "./petstore/workspace.ts";
 
-fs.writeFileSync(
-	"./docs/workspace.json",
-	JSON.stringify(workspace.toSchema(), null, 2),
-	"utf-8",
-);
-
 toDoc(workspace).then((res) => {
 	for (const [file, content] of Object.entries(res)) {
 		const _file = path.join("docs", file);
@@ -18,4 +12,10 @@ toDoc(workspace).then((res) => {
 		}
 		fs.writeFileSync(_file, content, "utf-8");
 	}
+
+	fs.writeFileSync(
+		"./docs/workspace.json",
+		JSON.stringify(workspace.toSchema(), null, 2),
+		"utf-8",
+	);
 });
