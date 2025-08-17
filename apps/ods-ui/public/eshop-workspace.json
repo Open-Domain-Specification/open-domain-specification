@@ -1,563 +1,579 @@
 {
-	"id": "e_shop",
-	"name": "eShop",
-	"description": "DDD workspace for the current dotnet/eShop reference app (.NET 9, .NET Aspire).",
-	"version": "0.2.1",
-	"odsVersion": "1.0.0",
-	"primaryColor": "#2563eb",
-	"domains": {
-		"commerce": {
-			"name": "Commerce",
-			"description": "Core e-commerce capabilities (catalog, basket, ordering).",
-			"type": "core",
-			"subdomains": {
-				"catalog": {
-					"name": "Catalog",
-					"description": "Manage and query product catalog.",
-					"boundedcontexts": {
-						"catalog": {
-							"name": "Catalog",
-							"description": "Minimal API for catalog queries and management.",
-							"aggregates": {
-								"catalog_item": {
-									"name": "CatalogItem",
-									"description": "Sellable product item.",
-									"provides": {},
-									"consumes": [],
-									"entities": {
-										"catalog_item": {
-											"name": "CatalogItem",
-											"description": "Catalog item root with price and stock.",
-											"root": true,
-											"relations": [
-												{
-													"target": {
-														"$ref": "#/domains/commerce/subdomains/catalog/boundedcontexts/catalog/aggregates/catalog_item/valueobjects/sku"
-													},
-													"relation": "uses",
-													"label": "identified by"
-												},
-												{
-													"target": {
-														"$ref": "#/domains/commerce/subdomains/catalog/boundedcontexts/catalog/aggregates/catalog_item/valueobjects/money"
-													},
-													"relation": "uses",
-													"label": "priced in"
-												}
-											]
-										}
-									},
-									"valueobjects": {
-										"sku": {
-											"name": "Sku",
-											"description": "Stock-keeping unit.",
-											"relations": []
-										},
-										"money": {
-											"name": "Money",
-											"description": "Amount + currency.",
-											"relations": []
-										}
-									},
-									"invariants": {}
-								}
-							},
-							"services": {
-								"catalog_service": {
-									"name": "CatalogService",
-									"description": "Catalog application service (HTTP).",
-									"type": "application",
-									"provides": {
-										"get_catalog_items": {
-											"name": "GetCatalogItems",
-											"description": "Browse/search catalog items.",
-											"pattern": "open-host-service",
-											"type": "operation"
-										},
-										"change_price": {
-											"name": "ChangePrice",
-											"description": "Admin operation to change item price.",
-											"pattern": "open-host-service",
-											"type": "operation"
-										}
-									},
-									"consumes": []
-								}
-							}
-						}
-					}
-				},
-				"basket": {
-					"name": "Basket",
-					"description": "Shopping basket management.",
-					"boundedcontexts": {
-						"basket": {
-							"name": "Basket",
-							"description": "Basket service (gRPC/HTTP) to manage user baskets.",
-							"aggregates": {
-								"basket": {
-									"name": "Basket",
-									"description": "Customer basket.",
-									"provides": {},
-									"consumes": [],
-									"entities": {
-										"basket": {
-											"name": "Basket",
-											"description": "Basket root with items and user ownership.",
-											"root": true,
-											"relations": [
-												{
-													"target": {
-														"$ref": "#/domains/commerce/subdomains/basket/boundedcontexts/basket/aggregates/basket/valueobjects/basket_item"
-													},
-													"relation": "uses",
-													"label": "contains"
-												}
-											]
-										}
-									},
-									"valueobjects": {
-										"basket_item": {
-											"name": "BasketItem",
-											"description": "ProductId, quantity, unit price snapshot.",
-											"relations": []
-										}
-									},
-									"invariants": {}
-								}
-							},
-							"services": {
-								"basket_service": {
-									"name": "BasketService",
-									"description": "Basket application service.",
-									"type": "application",
-									"provides": {
-										"get_basket": {
-											"name": "GetBasket",
-											"description": "Fetch basket by user.",
-											"pattern": "open-host-service",
-											"type": "operation"
-										},
-										"add_item": {
-											"name": "AddItem",
-											"description": "Add/merge an item into basket.",
-											"pattern": "open-host-service",
-											"type": "operation"
-										},
-										"clear_basket": {
-											"name": "ClearBasket",
-											"description": "Remove all items from basket.",
-											"pattern": "open-host-service",
-											"type": "operation"
-										}
-									},
-									"consumes": []
-								}
-							}
-						}
-					}
-				},
-				"ordering": {
-					"name": "Ordering",
-					"description": "Order lifecycle and payments coordination.",
-					"boundedcontexts": {
-						"ordering": {
-							"name": "Ordering",
-							"description": "Order lifecycle, status and events.",
-							"aggregates": {
-								"order": {
-									"name": "Order",
-									"description": "Order aggregate with status transitions.",
-									"provides": {},
-									"consumes": [],
-									"entities": {
-										"order": {
-											"name": "Order",
-											"description": "Order header.",
-											"root": true,
-											"relations": [
-												{
-													"target": {
-														"$ref": "#/domains/commerce/subdomains/ordering/boundedcontexts/ordering/aggregates/order/valueobjects/order_id"
-													},
-													"relation": "uses",
-													"label": "identified by"
-												},
-												{
-													"target": {
-														"$ref": "#/domains/commerce/subdomains/ordering/boundedcontexts/ordering/aggregates/order/valueobjects/money"
-													},
-													"relation": "uses",
-													"label": "totals"
-												}
-											]
-										}
-									},
-									"valueobjects": {
-										"order_id": {
-											"name": "OrderId",
-											"description": "Order identifier.",
-											"relations": []
-										},
-										"money": {
-											"name": "Money",
-											"description": "Totals & fees.",
-											"relations": []
-										}
-									},
-									"invariants": {
-										"totals_non_negative": {
-											"name": "TotalsNonNegative",
-											"description": "Order totals must be >= 0."
-										}
-									}
-								}
-							},
-							"services": {
-								"ordering_service": {
-									"name": "OrderingService",
-									"description": "Ordering application service.",
-									"type": "application",
-									"provides": {
-										"place_order": {
-											"name": "PlaceOrder",
-											"description": "Create an order from a valid basket.",
-											"pattern": "open-host-service",
-											"type": "operation"
-										},
-										"order_paid": {
-											"name": "OrderPaid",
-											"description": "Integration event when an order is marked paid.",
-											"pattern": "published-language",
-											"type": "event"
-										}
-									},
-									"consumes": [
-										{
-											"consumable": {
-												"$ref": "#/domains/payment_processing/subdomains/payment_processors/boundedcontexts/payment_processor/services/payment_service/provides/process_payment"
-											},
-											"pattern": "customer-supplier"
-										},
-										{
-											"consumable": {
-												"$ref": "#/domains/payment_processing/subdomains/payment_processors/boundedcontexts/payment_processor/services/payment_service/provides/payment_succeeded"
-											},
-											"pattern": "conformist"
-										}
-									]
-								}
-							}
-						}
-					}
-				}
-			}
-		},
-		"identity_&_access": {
-			"name": "Identity & Access",
-			"description": "Authentication/authorization via Duende IdentityServer.",
-			"type": "supporting",
-			"subdomains": {
-				"auth_n_and_auth_z": {
-					"name": "AuthN and AuthZ",
-					"description": "OpenID Connect identity provider.",
-					"boundedcontexts": {
-						"identity": {
-							"name": "Identity",
-							"description": "Identity provider (Duende IdentityServer / OIDC).",
-							"aggregates": {},
-							"services": {
-								"identity_service": {
-									"name": "IdentityService",
-									"description": "Token service for authN/authZ.",
-									"type": "application",
-									"provides": {
-										"issue_token": {
-											"name": "IssueToken",
-											"description": "Obtain access/id tokens via OIDC flows.",
-											"pattern": "open-host-service",
-											"type": "operation"
-										}
-									},
-									"consumes": []
-								}
-							}
-						}
-					}
-				}
-			}
-		},
-		"api_integration": {
-			"name": "API Integration",
-			"description": "Cross-cutting integration (webhooks, external processors).",
-			"type": "supporting",
-			"subdomains": {
-				"webhooks": {
-					"name": "Webhooks",
-					"description": "Webhook registration and event delivery.",
-					"boundedcontexts": {
-						"webhooks": {
-							"name": "Webhooks",
-							"description": "Register webhooks and deliver order events to subscribers.",
-							"aggregates": {},
-							"services": {
-								"webhooks_service": {
-									"name": "WebhooksService",
-									"description": "Webhook registration/delivery application service.",
-									"type": "application",
-									"provides": {
-										"register_webhook": {
-											"name": "RegisterWebhook",
-											"description": "Register a webhook endpoint for an event (e.g., OrderPaid).",
-											"pattern": "open-host-service",
-											"type": "operation"
-										}
-									},
-									"consumes": [
-										{
-											"consumable": {
-												"$ref": "#/domains/commerce/subdomains/ordering/boundedcontexts/ordering/services/ordering_service/provides/order_paid"
-											},
-											"pattern": "conformist"
-										},
-										{
-											"consumable": {
-												"$ref": "#/domains/api_integration/subdomains/webhooks/boundedcontexts/webhook_client/services/webhook_receiver/provides/receive_webhook"
-											},
-											"pattern": "customer-supplier"
-										}
-									]
-								}
-							}
-						},
-						"webhook_client": {
-							"name": "WebhookClient",
-							"description": "Sample receiver app for incoming webhook deliveries.",
-							"aggregates": {},
-							"services": {
-								"webhook_receiver": {
-									"name": "WebhookReceiver",
-									"description": "Receives webhook POSTs.",
-									"type": "application",
-									"provides": {
-										"receive_webhook": {
-											"name": "ReceiveWebhook",
-											"description": "Endpoint to receive webhook deliveries.",
-											"pattern": "open-host-service",
-											"type": "operation"
-										}
-									},
-									"consumes": [
-										{
-											"consumable": {
-												"$ref": "#/domains/api_integration/subdomains/webhooks/boundedcontexts/webhooks/services/webhooks_service/provides/register_webhook"
-											},
-											"pattern": "customer-supplier"
-										}
-									]
-								}
-							}
-						}
-					}
-				}
-			}
-		},
-		"payment_processing": {
-			"name": "Payment Processing",
-			"description": "External payment processor integration.",
-			"type": "supporting",
-			"subdomains": {
-				"payment_processors": {
-					"name": "Payment Processors",
-					"description": "Background processors that integrate with external systems.",
-					"boundedcontexts": {
-						"payment_processor": {
-							"name": "PaymentProcessor",
-							"description": "Simulated external payment processor.",
-							"aggregates": {},
-							"services": {
-								"payment_service": {
-									"name": "PaymentService",
-									"description": "Takes payments and emits status changes.",
-									"type": "application",
-									"provides": {
-										"process_payment": {
-											"name": "ProcessPayment",
-											"description": "Process/authorize payment for an order.",
-											"pattern": "open-host-service",
-											"type": "operation"
-										},
-										"payment_succeeded": {
-											"name": "PaymentSucceeded",
-											"description": "Integration event when a payment is successful.",
-											"pattern": "published-language",
-											"type": "event"
-										}
-									},
-									"consumes": []
-								}
-							}
-						}
-					}
-				}
-			}
-		},
-		"edge_&_experience": {
-			"name": "Edge & Experience",
-			"description": "Customer-facing web app and mobile BFF.",
-			"type": "supporting",
-			"subdomains": {
-				"web": {
-					"name": "Web",
-					"description": "Blazor web UI for customers.",
-					"boundedcontexts": {
-						"web": {
-							"name": "Web",
-							"description": "Blazor Server web app for customers.",
-							"aggregates": {},
-							"services": {
-								"web_app": {
-									"name": "WebApp",
-									"description": "Customer-facing web application.",
-									"type": "application",
-									"provides": {},
-									"consumes": [
-										{
-											"consumable": {
-												"$ref": "#/domains/identity_&_access/subdomains/auth_n_and_auth_z/boundedcontexts/identity/services/identity_service/provides/issue_token"
-											},
-											"pattern": "customer-supplier"
-										},
-										{
-											"consumable": {
-												"$ref": "#/domains/commerce/subdomains/catalog/boundedcontexts/catalog/services/catalog_service/provides/get_catalog_items"
-											},
-											"pattern": "anti-corruption-layer"
-										},
-										{
-											"consumable": {
-												"$ref": "#/domains/commerce/subdomains/basket/boundedcontexts/basket/services/basket_service/provides/get_basket"
-											},
-											"pattern": "anti-corruption-layer"
-										},
-										{
-											"consumable": {
-												"$ref": "#/domains/commerce/subdomains/basket/boundedcontexts/basket/services/basket_service/provides/add_item"
-											},
-											"pattern": "anti-corruption-layer"
-										},
-										{
-											"consumable": {
-												"$ref": "#/domains/commerce/subdomains/basket/boundedcontexts/basket/services/basket_service/provides/clear_basket"
-											},
-											"pattern": "anti-corruption-layer"
-										},
-										{
-											"consumable": {
-												"$ref": "#/domains/commerce/subdomains/ordering/boundedcontexts/ordering/services/ordering_service/provides/place_order"
-											},
-											"pattern": "anti-corruption-layer"
-										}
-									]
-								}
-							}
-						}
-					}
-				},
-				"mobile": {
-					"name": "Mobile",
-					"description": "Mobile BFF/aggregator for shopping flows.",
-					"boundedcontexts": {
-						"mobile_bff": {
-							"name": "Mobile BFF",
-							"description": "BFF that aggregates catalog/basket/ordering.",
-							"aggregates": {},
-							"services": {
-								"shopping_bff": {
-									"name": "ShoppingBff",
-									"description": "Aggregation endpoints for shopping journeys.",
-									"type": "application",
-									"provides": {},
-									"consumes": [
-										{
-											"consumable": {
-												"$ref": "#/domains/identity_&_access/subdomains/auth_n_and_auth_z/boundedcontexts/identity/services/identity_service/provides/issue_token"
-											},
-											"pattern": "customer-supplier"
-										},
-										{
-											"consumable": {
-												"$ref": "#/domains/commerce/subdomains/catalog/boundedcontexts/catalog/services/catalog_service/provides/get_catalog_items"
-											},
-											"pattern": "anti-corruption-layer"
-										},
-										{
-											"consumable": {
-												"$ref": "#/domains/commerce/subdomains/basket/boundedcontexts/basket/services/basket_service/provides/get_basket"
-											},
-											"pattern": "anti-corruption-layer"
-										},
-										{
-											"consumable": {
-												"$ref": "#/domains/commerce/subdomains/basket/boundedcontexts/basket/services/basket_service/provides/add_item"
-											},
-											"pattern": "anti-corruption-layer"
-										},
-										{
-											"consumable": {
-												"$ref": "#/domains/commerce/subdomains/basket/boundedcontexts/basket/services/basket_service/provides/clear_basket"
-											},
-											"pattern": "anti-corruption-layer"
-										},
-										{
-											"consumable": {
-												"$ref": "#/domains/commerce/subdomains/ordering/boundedcontexts/ordering/services/ordering_service/provides/place_order"
-											},
-											"pattern": "anti-corruption-layer"
-										}
-									]
-								}
-							}
-						}
-					}
-				}
-			}
-		},
-		"operations": {
-			"name": "Operations",
-			"description": "Backoffice and admin operations.",
-			"type": "supporting",
-			"subdomains": {
-				"backoffice": {
-					"name": "Backoffice",
-					"description": "Admin/ops touchpoints (price updates, etc.).",
-					"boundedcontexts": {
-						"backoffice_app": {
-							"name": "BackofficeApp",
-							"description": "Admin/demo app for price updates.",
-							"aggregates": {},
-							"services": {
-								"backoffice": {
-									"name": "Backoffice",
-									"description": "Uses open-host operations for admin workflows.",
-									"type": "application",
-									"provides": {},
-									"consumes": [
-										{
-											"consumable": {
-												"$ref": "#/domains/commerce/subdomains/catalog/boundedcontexts/catalog/services/catalog_service/provides/change_price"
-											},
-											"pattern": "customer-supplier"
-										}
-									]
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	},
-	"homepage": "https://github.com/dotnet/eShop",
-	"logoUrl": "https://cdn-icons-png.flaticon.com/512/1162/1162456.png"
+  "id": "swagger_petstore_(v3)",
+  "name": "Swagger Petstore (v3)",
+  "description": "DDD/ODS model for Swagger Petstore v3. Inventory is a projection returning a status→count map; Orders use placed|approved|delivered.",
+  "version": "0.1.0",
+  "odsVersion": "1.0.0",
+  "primaryColor": "#0ea5e9",
+  "domains": {
+    "petstore_commerce": {
+      "name": "Petstore Commerce",
+      "description": "Core pet catalog, sales, and inventory capabilities",
+      "type": "core",
+      "subdomains": {
+        "catalog": {
+          "name": "Catalog",
+          "description": "Pet definitions, attributes, lifecycle",
+          "boundedcontexts": {
+            "catalog_bc": {
+              "name": "Catalog BC",
+              "description": "Owns Pet aggregate & pet-facing operations",
+              "aggregates": {
+                "pet": {
+                  "name": "Pet",
+                  "description": "A pet listed in the store",
+                  "provides": {
+                    "pet_registered": {
+                      "name": "PetRegistered",
+                      "description": "A new pet was registered",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "pet_updated": {
+                      "name": "PetUpdated",
+                      "description": "Pet profile updated",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "pet_status_changed": {
+                      "name": "PetStatusChanged",
+                      "description": "Pet status changed (available|pending|sold)",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "pet_photo_uploaded": {
+                      "name": "PetPhotoUploaded",
+                      "description": "Photo added via upload",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "pet_deleted": {
+                      "name": "PetDeleted",
+                      "description": "Pet removed from catalog",
+                      "pattern": "published-language",
+                      "type": "event"
+                    }
+                  },
+                  "consumes": [],
+                  "entities": {
+                    "pet": {
+                      "name": "Pet",
+                      "description": "Pet root entity",
+                      "root": true,
+                      "relations": [
+                        {
+                          "target": {
+                            "$ref": "#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+                          },
+                          "relation": "uses",
+                          "label": "categorized-as"
+                        },
+                        {
+                          "target": {
+                            "$ref": "#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/tag"
+                          },
+                          "relation": "uses",
+                          "label": "tagged-with"
+                        },
+                        {
+                          "target": {
+                            "$ref": "#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/photo_url"
+                          },
+                          "relation": "uses",
+                          "label": "has-photo"
+                        },
+                        {
+                          "target": {
+                            "$ref": "#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+                          },
+                          "relation": "uses",
+                          "label": "has-status"
+                        }
+                      ]
+                    }
+                  },
+                  "valueobjects": {
+                    "category": {
+                      "name": "Category",
+                      "description": "{ id?: number, name?: string }",
+                      "relations": []
+                    },
+                    "tag": {
+                      "name": "Tag",
+                      "description": "{ id?: number, name?: string }",
+                      "relations": []
+                    },
+                    "photo_url": {
+                      "name": "PhotoUrl",
+                      "description": "string (URL)",
+                      "relations": []
+                    },
+                    "pet_status": {
+                      "name": "PetStatus",
+                      "description": "'available' | 'pending' | 'sold'",
+                      "relations": []
+                    }
+                  },
+                  "invariants": {
+                    "name_required": {
+                      "name": "NameRequired",
+                      "description": "Pet.name must be non-empty"
+                    },
+                    "sold_not_reopen": {
+                      "name": "SoldNotReopen",
+                      "description": "Once sold, do not revert to available without explicit policy"
+                    }
+                  }
+                }
+              },
+              "services": {
+                "pet_app": {
+                  "name": "PetApp",
+                  "description": "Open-host service for /pet endpoints",
+                  "type": "application",
+                  "provides": {
+                    "add_pet": {
+                      "name": "AddPet",
+                      "description": "POST /pet",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "update_pet": {
+                      "name": "UpdatePet",
+                      "description": "PUT /pet",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "find_pets_by_status": {
+                      "name": "FindPetsByStatus",
+                      "description": "GET /pet/findByStatus?status=available|pending|sold",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "find_pets_by_tags": {
+                      "name": "FindPetsByTags",
+                      "description": "GET /pet/findByTags?tags=tag1,tag2",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "get_pet_by_id": {
+                      "name": "GetPetById",
+                      "description": "GET /pet/{petId}",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "upload_pet_image": {
+                      "name": "UploadPetImage",
+                      "description": "POST /pet/{petId}/uploadImage (multipart: additionalMetadata, file)",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "delete_pet": {
+                      "name": "DeletePet",
+                      "description": "DELETE /pet/{petId}",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "get_pet_summary": {
+                      "name": "GetPetSummary",
+                      "description": "Internal: {id,name,status} for ACL checks",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    }
+                  },
+                  "consumes": []
+                }
+              }
+            }
+          }
+        },
+        "sales": {
+          "name": "Sales",
+          "description": "Orders and order lifecycle",
+          "boundedcontexts": {
+            "sales_bc": {
+              "name": "Sales BC",
+              "description": "Owns Order aggregate & order-facing operations",
+              "aggregates": {
+                "order": {
+                  "name": "Order",
+                  "description": "Order for a single pet",
+                  "provides": {
+                    "order_placed": {
+                      "name": "OrderPlaced",
+                      "description": "Order created (status=placed)",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "order_approved": {
+                      "name": "OrderApproved",
+                      "description": "Order approved (status=approved)",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "order_delivered": {
+                      "name": "OrderDelivered",
+                      "description": "Order delivered (status=delivered)",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "order_deleted": {
+                      "name": "OrderDeleted",
+                      "description": "Order deleted via DELETE /store/order/{orderId}",
+                      "pattern": "published-language",
+                      "type": "event"
+                    }
+                  },
+                  "consumes": [],
+                  "entities": {
+                    "order": {
+                      "name": "Order",
+                      "description": "Order root entity",
+                      "root": true,
+                      "relations": [
+                        {
+                          "target": {
+                            "$ref": "#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status"
+                          },
+                          "relation": "uses",
+                          "label": "has-status"
+                        },
+                        {
+                          "target": {
+                            "$ref": "#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
+                          },
+                          "relation": "uses",
+                          "label": "has-quantity"
+                        },
+                        {
+                          "target": {
+                            "$ref": "#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order/valueobjects/ship_date"
+                          },
+                          "relation": "uses",
+                          "label": "ships-on"
+                        },
+                        {
+                          "target": {
+                            "$ref": "#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order/valueobjects/complete_flag"
+                          },
+                          "relation": "uses",
+                          "label": "is-complete"
+                        }
+                      ]
+                    }
+                  },
+                  "valueobjects": {
+                    "order_status": {
+                      "name": "OrderStatus",
+                      "description": "'placed' | 'approved' | 'delivered'",
+                      "relations": []
+                    },
+                    "quantity": {
+                      "name": "Quantity",
+                      "description": "int > 0",
+                      "relations": []
+                    },
+                    "ship_date": {
+                      "name": "ShipDate",
+                      "description": "date-time",
+                      "relations": []
+                    },
+                    "complete_flag": {
+                      "name": "CompleteFlag",
+                      "description": "boolean",
+                      "relations": []
+                    }
+                  },
+                  "invariants": {
+                    "quantity_positive": {
+                      "name": "QuantityPositive",
+                      "description": "Quantity must be > 0"
+                    },
+                    "approve_only_when_available": {
+                      "name": "ApproveOnlyWhenAvailable",
+                      "description": "Approve only if Pet.status == available"
+                    },
+                    "deliver_only_when_approved": {
+                      "name": "DeliverOnlyWhenApproved",
+                      "description": "Deliver only from approved"
+                    }
+                  }
+                }
+              },
+              "services": {
+                "order_app": {
+                  "name": "OrderApp",
+                  "description": "Open-host service for /store/order endpoints",
+                  "type": "application",
+                  "provides": {
+                    "place_order": {
+                      "name": "PlaceOrder",
+                      "description": "POST /store/order",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "get_order_by_id": {
+                      "name": "GetOrderById",
+                      "description": "GET /store/order/{orderId}",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "delete_order": {
+                      "name": "DeleteOrder",
+                      "description": "DELETE /store/order/{orderId}",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    }
+                  },
+                  "consumes": [
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/services/pet_app/provides/get_pet_summary"
+                      },
+                      "pattern": "anti-corruption-layer"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "inventory": {
+          "name": "Inventory",
+          "description": "Aggregated availability by status",
+          "boundedcontexts": {
+            "inventory_bc": {
+              "name": "Inventory BC",
+              "description": "Projection for /store/inventory (status→count)",
+              "aggregates": {
+                "inventory_projection": {
+                  "name": "InventoryProjection",
+                  "description": "Materialized view: { available: number, pending: number, sold: number }",
+                  "provides": {
+                    "inventory_updated": {
+                      "name": "InventoryUpdated",
+                      "description": "Inventory counts changed",
+                      "pattern": "published-language",
+                      "type": "event"
+                    }
+                  },
+                  "consumes": [
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_registered"
+                      },
+                      "pattern": "conformist"
+                    },
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_deleted"
+                      },
+                      "pattern": "conformist"
+                    },
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
+                      },
+                      "pattern": "conformist"
+                    },
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order/provides/order_approved"
+                      },
+                      "pattern": "conformist"
+                    },
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order/provides/order_delivered"
+                      },
+                      "pattern": "conformist"
+                    },
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order/provides/order_deleted"
+                      },
+                      "pattern": "conformist"
+                    }
+                  ],
+                  "entities": {
+                    "inventory_view": {
+                      "name": "InventoryView",
+                      "description": "Status→count map for /store/inventory",
+                      "root": true,
+                      "relations": []
+                    }
+                  },
+                  "valueobjects": {},
+                  "invariants": {}
+                }
+              },
+              "services": {
+                "inventory_query": {
+                  "name": "InventoryQuery",
+                  "description": "Open-host service for /store/inventory",
+                  "type": "application",
+                  "provides": {
+                    "get_inventory": {
+                      "name": "GetInventory",
+                      "description": "GET /store/inventory → { [status]: count }",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    }
+                  },
+                  "consumes": [
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/petstore_commerce/subdomains/inventory/boundedcontexts/inventory_bc/aggregates/inventory_projection/provides/inventory_updated"
+                      },
+                      "pattern": "conformist"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "identity_&_accounts": {
+      "name": "Identity & Accounts",
+      "description": "Users and sessions per Petstore API",
+      "type": "supporting",
+      "subdomains": {
+        "users": {
+          "name": "Users",
+          "description": "User records and login/logout",
+          "boundedcontexts": {
+            "identity_bc": {
+              "name": "Identity BC",
+              "description": "Owns User aggregate & user endpoints",
+              "aggregates": {
+                "user": {
+                  "name": "User",
+                  "description": "Petstore user record",
+                  "provides": {
+                    "user_registered": {
+                      "name": "UserRegistered",
+                      "description": "New user created",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "user_updated": {
+                      "name": "UserUpdated",
+                      "description": "User fields updated",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "user_deleted": {
+                      "name": "UserDeleted",
+                      "description": "User removed",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "user_logged_in": {
+                      "name": "UserLoggedIn",
+                      "description": "Login via /user/login",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "user_logged_out": {
+                      "name": "UserLoggedOut",
+                      "description": "Logout via /user/logout",
+                      "pattern": "published-language",
+                      "type": "event"
+                    }
+                  },
+                  "consumes": [],
+                  "entities": {
+                    "user": {
+                      "name": "User",
+                      "description": "username, firstName, lastName, email, password, phone, userStatus(int)",
+                      "root": true,
+                      "relations": [
+                        {
+                          "target": {
+                            "$ref": "#/domains/identity_&_accounts/subdomains/users/boundedcontexts/identity_bc/aggregates/user/valueobjects/user_status"
+                          },
+                          "relation": "uses",
+                          "label": "has-status"
+                        }
+                      ]
+                    }
+                  },
+                  "valueobjects": {
+                    "user_status": {
+                      "name": "UserStatus",
+                      "description": "int (per Petstore v3 model)",
+                      "relations": []
+                    }
+                  },
+                  "invariants": {}
+                }
+              },
+              "services": {
+                "user_app": {
+                  "name": "UserApp",
+                  "description": "Open-host service for /user endpoints",
+                  "type": "application",
+                  "provides": {
+                    "create_user": {
+                      "name": "CreateUser",
+                      "description": "POST /user",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "create_users_with_array": {
+                      "name": "CreateUsersWithArray",
+                      "description": "POST /user/createWithArray",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "create_users_with_list": {
+                      "name": "CreateUsersWithList",
+                      "description": "POST /user/createWithList",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "login": {
+                      "name": "Login",
+                      "description": "GET /user/login?username=&password=",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "logout": {
+                      "name": "Logout",
+                      "description": "GET /user/logout",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "get_user_by_username": {
+                      "name": "GetUserByUsername",
+                      "description": "GET /user/{username}",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "update_user": {
+                      "name": "UpdateUser",
+                      "description": "PUT /user/{username}",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "delete_user": {
+                      "name": "DeleteUser",
+                      "description": "DELETE /user/{username}",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    }
+                  },
+                  "consumes": []
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "homepage": "https://petstore.swagger.io",
+  "logoUrl": "https://petstore.swagger.io/favicon-32x32.png"
 }
