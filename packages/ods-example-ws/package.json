@@ -5,7 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"build": "tsc && ts-node src/index.ts",
-		"serve": "docsify serve ./docs"
+		"serve": "docsify serve ./docs",
+		"test": "vitest run --config vitest.config.ts"
 	},
 	"private": true,
 	"dependencies": {
@@ -15,7 +16,9 @@
 	},
 	"devDependencies": {
 		"@types/node": "^24.2.1",
+		"@vitest/coverage-v8": "^3.2.4",
 		"ts-node": "^10.9.2",
-		"typescript": "^5.9.2"
+		"typescript": "^5.9.2",
+		"vitest": "^3.2.4"
 	}
 }
