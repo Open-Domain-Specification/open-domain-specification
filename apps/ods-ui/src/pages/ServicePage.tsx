@@ -7,6 +7,7 @@ import {
 	Stack,
 	Title,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
 	ODSConsumableMap,
 	type Service,
@@ -27,6 +28,7 @@ import { Icons } from "../Icons.tsx";
 import { EntitiesAndValueObjectsHelp } from "../modals/EntitiesAndValueObjectsHelp.tsx";
 
 export function _ServicePage(props: { service: Service }) {
+	const isMobile = useMediaQuery("(max-width: 768px)");
 	return (
 		<>
 			<PageSkeleton
@@ -94,22 +96,24 @@ export function _ServicePage(props: { service: Service }) {
 					emptyMessage={"No consumptions defined."}
 				/>
 			</PageSkeleton>
-			<AppShell.Aside>
-				<ScrollArea p={"md"}>
-					<PageNavigation
-						sections={[
-							{
-								title: "Operations",
-								items: [],
-							},
-							{
-								title: "Events",
-								items: [],
-							},
-						]}
-					/>
-				</ScrollArea>
-			</AppShell.Aside>
+			{!isMobile && (
+				<AppShell.Aside>
+					<ScrollArea p={"md"}>
+						<PageNavigation
+							sections={[
+								{
+									title: "Operations",
+									items: [],
+								},
+								{
+									title: "Events",
+									items: [],
+								},
+							]}
+						/>
+					</ScrollArea>
+				</AppShell.Aside>
+			)}
 		</>
 	);
 }

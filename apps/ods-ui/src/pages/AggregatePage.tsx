@@ -6,6 +6,7 @@ import {
 	Stack,
 	Title,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
 	type Aggregate,
 	aggregateRef,
@@ -31,6 +32,8 @@ import { EntitiesAndValueObjectsHelp } from "../modals/EntitiesAndValueObjectsHe
 import { InvariantsHelp } from "../modals/InvariantsHelp.tsx";
 
 export function _AggregatePage(props: { aggregate: Aggregate }) {
+	const isMobile = useMediaQuery("(max-width: 768px)");
+
 	return (
 		<>
 			<PageSkeleton
@@ -116,18 +119,20 @@ export function _AggregatePage(props: { aggregate: Aggregate }) {
 					emptyMessage={"No consumptions defined."}
 				/>
 			</PageSkeleton>
-			<AppShell.Aside>
-				<ScrollArea p={"md"}>
-					<PageNavigation
-						sections={[
-							{
-								title: "Invariants",
-								items: [],
-							},
-						]}
-					/>
-				</ScrollArea>
-			</AppShell.Aside>
+			{!isMobile && (
+				<AppShell.Aside>
+					<ScrollArea p={"md"}>
+						<PageNavigation
+							sections={[
+								{
+									title: "Invariants",
+									items: [],
+								},
+							]}
+						/>
+					</ScrollArea>
+				</AppShell.Aside>
+			)}
 		</>
 	);
 }
