@@ -4,6 +4,7 @@ import {
 	Badge,
 	Burger,
 	CloseButton,
+	em,
 	Group,
 	Menu,
 	Text,
@@ -18,7 +19,7 @@ export function AppHeader({ onToggleMobile }: { onToggleMobile?: () => void }) {
 	const { workspace, closeWorkspace } = useWorkspace();
 	const nav = useNavigate();
 	const { colorScheme, setColorScheme } = useMantineColorScheme();
-	const isMobile = useMediaQuery("(max-width: 768px)");
+	const isMobile = useMediaQuery(`(max-width: ${em(750)})`);
 
 	return (
 		<Group justify={"space-between"} flex={"auto"} wrap="nowrap">
@@ -26,15 +27,17 @@ export function AppHeader({ onToggleMobile }: { onToggleMobile?: () => void }) {
 				{isMobile && onToggleMobile && (
 					<Burger onClick={onToggleMobile} size="sm" />
 				)}
-				<Avatar
-					style={{ cursor: "pointer" }}
-					onClick={() => nav("/")}
-					radius={"xs"}
-					src={workspace.logoUrl}
-					color={"initials"}
-					name={workspace.name}
-					size={isMobile ? "sm" : "md"}
-				/>
+				{!isMobile && (
+					<Avatar
+						style={{ cursor: "pointer" }}
+						onClick={() => nav("/")}
+						radius={"xs"}
+						src={workspace.logoUrl}
+						color={"initials"}
+						name={workspace.name}
+						size={isMobile ? "sm" : "md"}
+					/>
+				)}
 				{!isMobile && (
 					<Text fz={"md"} fw={"bold"}>
 						{workspace.name} | {workspace.version}

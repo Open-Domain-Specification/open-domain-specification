@@ -1,12 +1,4 @@
-import {
-	AppShell,
-	Badge,
-	Divider,
-	Group,
-	ScrollArea,
-	Stack,
-	Title,
-} from "@mantine/core";
+import { Anchor, AppShell, Badge } from "@mantine/core";
 import {
 	ODSConsumableMap,
 	type Service,
@@ -23,10 +15,15 @@ import { Graphviz } from "../components/Graphviz.tsx";
 import { PageNavigation } from "../components/PageNavigation.tsx";
 import { PageSkeleton } from "../components/PageSkeleton.tsx";
 import { useWorkspace } from "../context/WorkspaceContext.tsx";
+import { useRefNavigate } from "../hooks/useRefNavigate.ts";
+import { useScrollToNavigable } from "../hooks/useScrollToNavigable.ts";
 import { Icons } from "../Icons.tsx";
-import { EntitiesAndValueObjectsHelp } from "../modals/EntitiesAndValueObjectsHelp.tsx";
+import { ProvidesHelp } from "../modals/ProvidesHelp.tsx";
 
 export function _ServicePage(props: { service: Service }) {
+	const scrollToNavigable = useScrollToNavigable(100);
+	const nav = useRefNavigate();
+
 	return (
 		<>
 			<PageSkeleton
@@ -44,71 +41,64 @@ export function _ServicePage(props: { service: Service }) {
 					).toDot()}
 				/>
 
-				<Stack>
-					<Stack gap={2}>
-						<Group justify={"space-between"} align={"center"}>
-							<Title order={2} id={"entities-and-value-objects"}>
-								Service Context
-							</Title>
-							<EntitiesAndValueObjectsHelp />
-						</Group>
-						<Divider />
-					</Stack>
-					{/*<Mermaid chart={serviceToMermaid(workspace, service)} />*/}
-				</Stack>
-
 				<AccordionItems
 					title={"Provides"}
-					items={
-						Array.from(props.service.consumables.values())?.map((it) => ({
-							id: it.ref,
-							name: (
-								<ConsumableAccordionLabel name={it.name} pattern={it.pattern} />
-							),
-							description: it.description,
-							icon: it.type === "event" ? Icons.Events : Icons.Operations,
-						})) || []
-					}
-					emptyMessage={"No consumables defined."}
+					items={Array.from(props.service.consumables.values()).map((it) => ({
+						id: it.ref,
+						name: <ConsumableAccordionLabel consumable={it} />,
+						description: it.description,
+						icon: it.type === "event" ? Icons.Events : Icons.Operations,
+					}))}
+					emptyMessage={"This service does not provide any consumables."}
+					rightSection={<ProvidesHelp />}
 				/>
 
 				<AccordionItems
 					title={"Consumes"}
-					items={
-						Array.from(props.service.consumptions)?.map((it) => {
-							return {
-								id: it.consumable.ref + it.consumer.ref,
-								name: (
-									<ConsumptionAccordionLabel
-										name={it.consumable.name}
-										pattern={it.consumable.pattern}
-										consumptionPattern={it.pattern}
-										consumableRef={it.consumable.ref}
-									/>
-								),
-								description: it.consumable.description,
-								icon: Icons.Consumer,
-							};
-						}) || []
-					}
-					emptyMessage={"No consumptions defined."}
+					items={Array.from(props.service.consumptions).map((it) => {
+						return {
+							id: it.consumable.ref,
+							name: <ConsumptionAccordionLabel consumption={it} />,
+							description: it.consumable.description,
+							icon: Icons.Consumer,
+							endSlot: (
+								<Anchor onClick={() => nav(it.consumable.provider.ref)}>
+									{it.consumable.provider.name}
+								</Anchor>
+							),
+						};
+					})}
+					emptyMessage={"This service does not consume anything."}
 				/>
 			</PageSkeleton>
-			<AppShell.Aside>
-				<ScrollArea p={"md"}>
-					<PageNavigation
-						sections={[
-							{
-								title: "Operations",
-								items: [],
-							},
-							{
-								title: "Events",
-								items: [],
-							},
-						]}
-					/>
-				</ScrollArea>
+			<AppShell.Aside p={"md"}>
+				<PageNavigation
+					sections={[
+						{
+							title: "Provides",
+							items: Array.from(props.service.consumables.values()).map(
+								(consumable) => ({
+									ref: consumable.ref,
+									name: consumable.name,
+									icon:
+										consumable.type === "event"
+											? Icons.Events
+											: Icons.Operations,
+									onClick: () => scrollToNavigable(consumable),
+								}),
+							),
+						},
+						{
+							title: "Consumes",
+							items: Array.from(props.service.consumptions).map((it) => ({
+								ref: it.consumable.ref,
+								name: it.consumable.name,
+								icon: Icons.Consumer,
+								onClick: () => scrollToNavigable(it.consumable),
+							})),
+						},
+					]}
+				/>
 			</AppShell.Aside>
 		</>
 	);

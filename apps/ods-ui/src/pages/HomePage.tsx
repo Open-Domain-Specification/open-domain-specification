@@ -1,12 +1,18 @@
-import { Grid, Title } from "@mantine/core";
-import { ODSContextMap } from "@open-domain-specification/core";
+import { AppShell, Stack } from "@mantine/core";
+import {
+	ODSConsumptionGraph,
+	ODSContextMap,
+} from "@open-domain-specification/core";
 import { contextMapToDigraph } from "@open-domain-specification/graphviz";
-import { DomainCard } from "../components/DomainCard.tsx";
+import { ConsumptionTable } from "../components/ConsumptionTable.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
 import { Graphviz } from "../components/Graphviz.tsx";
+import { PageNavigation } from "../components/PageNavigation.tsx";
 import { PageSkeleton } from "../components/PageSkeleton.tsx";
+import { PageSubtitle } from "../components/PageSubtitle.tsx";
 import { useWorkspace } from "../context/WorkspaceContext.tsx";
 import { useRefNavigate } from "../hooks/useRefNavigate.ts";
+import { Icons } from "../Icons.tsx";
 
 export function HomePage() {
 	const { workspace } = useWorkspace();
@@ -26,19 +32,29 @@ export function HomePage() {
 						ODSContextMap.fromWorkspace(workspace),
 					).toDot()}
 				/>
-				<Title order={2}>Subdomains</Title>
-				<Grid>
-					{Array.from(workspace.domains.values()).map((domain) => (
-						<Grid.Col key={domain.ref} span={4}>
-							<DomainCard
-								name={domain.name}
-								description={domain.description}
-								onClick={() => nav(domain.ref)}
-							/>
-						</Grid.Col>
-					))}
-				</Grid>
+
+				<Stack>
+					<PageSubtitle title={"Relationships"} />
+					<ConsumptionTable
+						graph={ODSConsumptionGraph.fromWorkspace(workspace)}
+					/>
+				</Stack>
 			</PageSkeleton>
+			<AppShell.Aside p={"md"}>
+				<PageNavigation
+					sections={[
+						{
+							title: "Domains",
+							items: Array.from(workspace.domains.values()).map((domain) => ({
+								ref: domain.ref,
+								name: domain.name,
+								icon: Icons.Domain,
+								onClick: () => nav(domain.ref),
+							})),
+						},
+					]}
+				/>
+			</AppShell.Aside>
 		</GenericWorkspacePage>
 	);
 }

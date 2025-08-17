@@ -1,6 +1,5 @@
 import { Flex, List, Stack, Text } from "@mantine/core";
 import type { ReactNode } from "react";
-import { useScrollToNavigable } from "../hooks/useScrollToNavigable.ts";
 
 interface Referenceable {
 	ref: string;
@@ -10,6 +9,7 @@ interface Referenceable {
 export interface NavigationItem extends Referenceable {
 	icon?: ReactNode;
 	items?: NavigationItem[];
+	onClick?: () => void;
 }
 
 export type PageNavigationProps = {
@@ -17,8 +17,6 @@ export type PageNavigationProps = {
 };
 
 export function PageNavigation(props: PageNavigationProps) {
-	const scrollToNavigable = useScrollToNavigable();
-
 	return (
 		<Stack>
 			{props.sections.map((section) => (
@@ -34,7 +32,7 @@ export function PageNavigation(props: PageNavigationProps) {
 							<List.Item
 								key={item.ref}
 								icon={<Flex>{item.icon}</Flex>}
-								onClick={() => scrollToNavigable(item)}
+								onClick={() => item.onClick?.()}
 								styles={{
 									item: { cursor: "pointer" },
 								}}

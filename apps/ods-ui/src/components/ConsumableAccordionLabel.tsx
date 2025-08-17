@@ -1,13 +1,13 @@
-import { Badge, Group } from "@mantine/core";
+import { Group } from "@mantine/core";
+import type { Consumable } from "@open-domain-specification/core";
+import { ConsumablePatternBadge } from "./ConsumablePatternBadge.tsx";
+import { ResponsiveText } from "./ResponsiveText.tsx";
 
-export function ConsumableAccordionLabel(props: {
-	name: string;
-	pattern: string;
-}) {
+export function ConsumableAccordionLabel(props: { consumable: Consumable }) {
 	return (
 		<Group justify={"space-between"} align={"center"} pr={"md"}>
-			<Group>{props.name}</Group>
-			<Badge variant={"default"}>{props.pattern}</Badge>
+			<ResponsiveText>{props.consumable.name}</ResponsiveText>
+			<ConsumablePatternBadge pattern={props.consumable.pattern} />
 		</Group>
 	);
 }

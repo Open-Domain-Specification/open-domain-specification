@@ -15,6 +15,7 @@ import { type Engine, graphviz } from "d3-graphviz";
 import { type CSSProperties, useRef } from "react";
 import { VscCode, VscScreenFull } from "react-icons/vsc";
 import { useAsync } from "react-use";
+import { PageSubtitle } from "./PageSubtitle.tsx";
 
 function Graph({ dot, engine }: { dot: string; engine?: Engine }) {
 	const graph = useRef<HTMLDivElement>(null);
@@ -70,9 +71,8 @@ export const Graphviz = ({ title, dot, engine, height }: IGraphvizProps) => {
 	return (
 		<Stack gap={"xs"}>
 			<Group justify={"space-between"}>
-				<Text size={"lg"} fw={"bold"}>
-					{title}
-				</Text>
+				<PageSubtitle title={title} />
+
 				<Group>
 					<ActionIcon variant={"subtle"} onClick={expanded.toggle}>
 						<VscCode />

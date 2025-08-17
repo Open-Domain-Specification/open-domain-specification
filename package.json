@@ -9,6 +9,7 @@
 		"packages/*"
 	],
 	"scripts": {
+		"clean": "lerna run clean --stream",
 		"format": "npx @biomejs/biome check --write",
 		"build": "lerna run build --stream",
 		"test": "lerna run test --stream"

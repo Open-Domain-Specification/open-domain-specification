@@ -1,4 +1,4 @@
-import { Alert, Grid, Stack, Title } from "@mantine/core";
+import { AppShell, Stack } from "@mantine/core";
 import {
 	type BoundedContext,
 	boundedcontextRef,
@@ -7,13 +7,13 @@ import {
 } from "@open-domain-specification/core";
 import { contextMapToDigraph } from "@open-domain-specification/graphviz";
 import { useParams } from "react-router-dom";
-import { AggregateCard } from "../components/AggregateCard.tsx";
 import { ConsumptionTable } from "../components/ConsumptionTable.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
 import { Graphviz } from "../components/Graphviz.tsx";
+import { PageNavigation } from "../components/PageNavigation.tsx";
 import { PageSkeleton } from "../components/PageSkeleton.tsx";
-import { ServiceCard } from "../components/ServiceCard.tsx";
+import { PageSubtitle } from "../components/PageSubtitle.tsx";
 import { useWorkspace } from "../context/WorkspaceContext.tsx";
 import { useRefNavigate } from "../hooks/useRefNavigate.ts";
 import { Icons } from "../Icons.tsx";
@@ -34,49 +34,42 @@ export function _BoundedContextPage(props: { boundedcontext: BoundedContext }) {
 					ODSContextMap.fromBoundedContext(props.boundedcontext),
 				).toDot()}
 			/>
+
 			<Stack>
-				<Title order={2}>Aggregates</Title>
-				<Grid>
-					{!props.boundedcontext.aggregates.size && (
-						<Alert w={"100%"}>
-							No aggregates exist in this bounded context.
-						</Alert>
-					)}
-					{Array.from(props.boundedcontext.aggregates.values()).map((agg) => (
-						<Grid.Col key={agg.ref} span={4} mih={200} display={"flex"}>
-							<AggregateCard
-								name={agg.name}
-								description={agg.description}
-								onClick={() => nav(agg.ref)}
-							/>
-						</Grid.Col>
-					))}
-				</Grid>
-			</Stack>
-			<Stack>
-				<Title order={2}>Services</Title>
-				<Grid>
-					{!props.boundedcontext.services?.size && (
-						<Alert w={"100%"}>No services exist in this bounded context.</Alert>
-					)}
-					{Array.from(props.boundedcontext.services.values()).map((service) => (
-						<Grid.Col key={service.ref} span={4} mih={200} display={"flex"}>
-							<ServiceCard
-								name={service.name}
-								description={service.description}
-								type={service.type}
-								onClick={() => nav(service.ref)}
-							/>
-						</Grid.Col>
-					))}
-				</Grid>
-			</Stack>
-			<Stack>
-				<Title order={2}>Relationships</Title>
+				<PageSubtitle title={"Relationships"} />
 				<ConsumptionTable
 					graph={ODSConsumptionGraph.fromBoundedContext(props.boundedcontext)}
 				/>
 			</Stack>
+
+			<AppShell.Aside p={"md"}>
+				<PageNavigation
+					sections={[
+						{
+							title: "Aggregates",
+							items: Array.from(props.boundedcontext.aggregates.values()).map(
+								(aggregate) => ({
+									ref: aggregate.ref,
+									name: aggregate.name,
+									icon: Icons.Aggregate,
+									onClick: () => nav(aggregate.ref),
+								}),
+							),
+						},
+						{
+							title: "Services",
+							items: Array.from(props.boundedcontext.services.values()).map(
+								(service) => ({
+									ref: service.ref,
+									name: service.name,
+									icon: Icons.Service,
+									onClick: () => nav(service.ref),
+								}),
+							),
+						},
+					]}
+				/>
+			</AppShell.Aside>
 		</PageSkeleton>
 	);
 }

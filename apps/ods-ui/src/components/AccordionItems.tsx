@@ -1,4 +1,4 @@
-import { Accordion, Alert, Group, Stack, Title } from "@mantine/core";
+import { Accordion, Alert, Divider, Group, Stack, Title } from "@mantine/core";
 import type { ReactNode } from "react";
 import { Markdown } from "./Markdown.tsx";
 
@@ -8,6 +8,7 @@ export type AccordionItemProps = {
 	id: string;
 	name: ReactNode;
 	description?: string;
+	endSlot?: ReactNode;
 };
 export type AccordionItemsProps = {
 	title: string;
@@ -21,8 +22,6 @@ export function AccordionItems({
 	items,
 	rightSection,
 }: AccordionItemsProps) {
-	console.log(items);
-
 	return (
 		<Stack>
 			<Group justify={"space-between"} align={"center"}>
@@ -36,7 +35,11 @@ export function AccordionItems({
 						<Accordion.Item id={it.id} key={it.id} value={it.id}>
 							<Accordion.Control icon={it.icon}>{it.name}</Accordion.Control>
 							<Accordion.Panel>
-								<Markdown content={it.description || ""} />
+								<Stack>
+									<Markdown content={it.description || ""} />
+									{it.endSlot && <Divider />}
+									{it.endSlot}
+								</Stack>
 							</Accordion.Panel>
 						</Accordion.Item>
 					))}

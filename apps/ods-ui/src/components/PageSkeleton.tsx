@@ -1,13 +1,8 @@
-import {
-	Avatar,
-	Container,
-	Group,
-	Stack,
-	Title,
-	Typography,
-} from "@mantine/core";
-import { marked } from "marked";
+import { Avatar, Container, Group, Stack } from "@mantine/core";
 import type { ReactNode } from "react";
+import { useIsMobile } from "../hooks/useIsMobile.ts";
+import { Markdown } from "./Markdown.tsx";
+import { PageTitle } from "./PageTitle.tsx";
 
 export type PageSkeletonProps = {
 	avatar: string | ReactNode;
@@ -21,25 +16,25 @@ export function PageSkeleton({
 	children,
 	description,
 }: PageSkeletonProps) {
-	const htmlDescription = marked.parse(description) as string;
+	const isMobile = useIsMobile();
 
 	return (
 		<Container p={"md"}>
 			<Stack gap={"xl"}>
 				<Stack>
-					<Group>
+					<Group wrap={"nowrap"}>
 						<Avatar
 							src={typeof avatar === "string" ? avatar : undefined}
 							name={title}
 							color={"initials"}
 							radius={"sm"}
+							size={isMobile ? "sm" : "md"}
 						>
 							{typeof avatar !== "string" ? avatar : undefined}
 						</Avatar>
-						<Title>{title}</Title>
+						<PageTitle title={title} />
 					</Group>
-					{/** biome-ignore lint/security/noDangerouslySetInnerHtml: Parsed Markdown */}
-					<Typography dangerouslySetInnerHTML={{ __html: htmlDescription }} />
+					<Markdown content={description} />
 				</Stack>
 				{children}
 			</Stack>

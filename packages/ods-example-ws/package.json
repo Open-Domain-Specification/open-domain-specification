@@ -4,9 +4,11 @@
 	"description": "",
 	"type": "module",
 	"scripts": {
+		"clean": "npx rimraf docs",
 		"build": "node src/index.ts",
 		"serve": "docsify serve ./docs",
-		"test": "vitest run --config vitest.config.ts"
+		"test": "vitest run --config vitest.config.ts",
+		"npx depcheck": "npx depcheck"
 	},
 	"private": true,
 	"dependencies": {

@@ -1,4 +1,4 @@
-import { Grid, Stack, Title } from "@mantine/core";
+import { AppShell, Stack } from "@mantine/core";
 import {
 	ODSConsumptionGraph,
 	ODSContextMap,
@@ -7,12 +7,13 @@ import {
 } from "@open-domain-specification/core";
 import { contextMapToDigraph } from "@open-domain-specification/graphviz";
 import { useParams } from "react-router-dom";
-import { BoundedContextCard } from "../components/BoundedContextCard.tsx";
 import { ConsumptionTable } from "../components/ConsumptionTable.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
 import { Graphviz } from "../components/Graphviz.tsx";
+import { PageNavigation } from "../components/PageNavigation.tsx";
 import { PageSkeleton } from "../components/PageSkeleton.tsx";
+import { PageSubtitle } from "../components/PageSubtitle.tsx";
 import { useWorkspace } from "../context/WorkspaceContext.tsx";
 import { useRefNavigate } from "../hooks/useRefNavigate.ts";
 import { Icons } from "../Icons.tsx";
@@ -33,33 +34,31 @@ export function _SubdomainPage(props: { subdomain: Subdomain }) {
 					ODSContextMap.fromSubdomain(props.subdomain),
 				).toDot()}
 			/>
+
 			<Stack>
-				<Title order={2}>Bounded Contexts</Title>
-				<Grid>
-					{Array.from(props.subdomain.boundedcontexts.values()).map(
-						(boundedContext) => (
-							<Grid.Col
-								key={boundedContext.ref}
-								span={4}
-								mih={200}
-								display={"flex"}
-							>
-								<BoundedContextCard
-									name={boundedContext.name}
-									description={boundedContext.description}
-									onClick={() => nav(boundedContext.ref)}
-								/>
-							</Grid.Col>
-						),
-					)}
-				</Grid>
-			</Stack>
-			<Stack>
-				<Title order={2}>Relationships</Title>
+				<PageSubtitle title={"Relationships"} />
 				<ConsumptionTable
 					graph={ODSConsumptionGraph.fromSubdomain(props.subdomain)}
 				/>
 			</Stack>
+
+			<AppShell.Aside p={"md"}>
+				<PageNavigation
+					sections={[
+						{
+							title: "Bounded Contexts",
+							items: Array.from(props.subdomain.boundedcontexts.values()).map(
+								(boundedcontext) => ({
+									ref: boundedcontext.ref,
+									name: boundedcontext.name,
+									icon: Icons.BoundedContext,
+									onClick: () => nav(boundedcontext.ref),
+								}),
+							),
+						},
+					]}
+				/>
+			</AppShell.Aside>
 		</PageSkeleton>
 	);
 }

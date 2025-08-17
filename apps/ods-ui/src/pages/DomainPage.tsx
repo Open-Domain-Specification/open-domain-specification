@@ -1,4 +1,4 @@
-import { Grid, Stack, Title } from "@mantine/core";
+import { AppShell, Stack } from "@mantine/core";
 import {
 	type Domain,
 	domainRef,
@@ -11,8 +11,9 @@ import { ConsumptionTable } from "../components/ConsumptionTable.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
 import { Graphviz } from "../components/Graphviz.tsx";
+import { PageNavigation } from "../components/PageNavigation.tsx";
 import { PageSkeleton } from "../components/PageSkeleton.tsx";
-import { SubDomainCard } from "../components/SubDomainCard.tsx";
+import { PageSubtitle } from "../components/PageSubtitle.tsx";
 import { useWorkspace } from "../context/WorkspaceContext.tsx";
 import { useRefNavigate } from "../hooks/useRefNavigate.ts";
 import { Icons } from "../Icons.tsx";
@@ -33,27 +34,31 @@ export function _DomainPage(props: { domain: Domain }) {
 					ODSContextMap.fromDomain(props.domain),
 				).toDot()}
 			/>
-			<Stack>
-				<Title order={2}>Subdomains</Title>
 
-				<Grid>
-					{Array.from(props.domain.subdomains.values()).map((subdomain) => (
-						<Grid.Col key={subdomain.ref} span={4} mih={200} display={"flex"}>
-							<SubDomainCard
-								name={subdomain.name}
-								description={subdomain.description}
-								onClick={() => nav(subdomain.ref)}
-							/>
-						</Grid.Col>
-					))}
-				</Grid>
-			</Stack>
 			<Stack>
-				<Title order={2}>Relationships</Title>
+				<PageSubtitle title={"Relationships"} />
 				<ConsumptionTable
 					graph={ODSConsumptionGraph.fromDomain(props.domain)}
 				/>
 			</Stack>
+
+			<AppShell.Aside p={"md"}>
+				<PageNavigation
+					sections={[
+						{
+							title: "Subdomains",
+							items: Array.from(props.domain.subdomains.values()).map(
+								(subdomain) => ({
+									ref: subdomain.ref,
+									name: subdomain.name,
+									icon: Icons.Subdomain,
+									onClick: () => nav(subdomain.ref),
+								}),
+							),
+						},
+					]}
+				/>
+			</AppShell.Aside>
 		</PageSkeleton>
 	);
 }

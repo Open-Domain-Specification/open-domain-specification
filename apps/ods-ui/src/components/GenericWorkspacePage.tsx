@@ -14,7 +14,7 @@ export function GenericWorkspacePage({
 	children,
 	header = { height: 65 },
 	navbar = { width: 300, breakpoint: "sm", collapsed: { mobile: true } },
-	aside,
+	aside = { width: 300, breakpoint: "sm", collapsed: { mobile: true } },
 }: {
 	children: ReactNode;
 	header?: AppShellHeaderConfiguration;

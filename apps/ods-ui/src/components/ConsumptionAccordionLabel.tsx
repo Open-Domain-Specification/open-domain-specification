@@ -1,27 +1,17 @@
-import { ActionIcon, Badge, Group } from "@mantine/core";
-import { VscLinkExternal } from "react-icons/vsc";
-import { useOpenConsumable } from "../hooks/useOpenConsumable.ts";
+import { Group } from "@mantine/core";
+import type { Consumption } from "@open-domain-specification/core";
+import { ConsumablePatternBadge } from "./ConsumablePatternBadge.tsx";
+import { ConsumptionPatternBadge } from "./ConsumptionPatternBadge.tsx";
+import { ResponsiveText } from "./ResponsiveText.tsx";
 
-export function ConsumptionAccordionLabel(props: {
-	name: string;
-	pattern: string;
-	consumptionPattern: string;
-	consumableRef: string;
-}) {
-	const onOpen = useOpenConsumable(props.consumableRef);
-
+export function ConsumptionAccordionLabel(props: { consumption: Consumption }) {
 	return (
 		<Group justify={"space-between"} align={"center"} pr={"md"}>
-			<Group>
-				{props.name}
-				<Badge variant={"light"}>{props.consumptionPattern}</Badge>
+			<Group gap={"xs"}>
+				<ResponsiveText>{props.consumption.consumable.name}</ResponsiveText>
+				<ConsumptionPatternBadge pattern={props.consumption.pattern} />
 			</Group>
-			<Group>
-				<Badge variant={"default"}>{props.pattern}</Badge>
-				<ActionIcon size={"sm"} variant={"light"} onClick={onOpen}>
-					<VscLinkExternal />
-				</ActionIcon>
-			</Group>
+			<ConsumablePatternBadge pattern={props.consumption.consumable.pattern} />
 		</Group>
 	);
 }

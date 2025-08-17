@@ -16,8 +16,10 @@
 		"dist"
 	],
 	"scripts": {
+		"clean": "npx rimraf dist",
 		"build": "tsc --project tsconfig.json && tsup src/index.ts --format cjs,esm --dts --sourcemap --out-dir dist",
-		"test": "vitest run --config vitest.config.ts"
+		"test": "vitest run --config vitest.config.ts",
+		"depcheck": "npx depcheck"
 	},
 	"keywords": [
 		"domain-driven-design",
