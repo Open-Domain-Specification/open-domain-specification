@@ -1,19 +1,27 @@
-export type AggregateSchema = {
+/**
+ * @title Aggregate
+ * @description Represents an aggregate in the Open Domain Specification (ODS).
+ */
+export interface AggregateSchema {
 	name: string;
 	description: string;
-	entities: Record<string, EntitySchema>;
-	valueobjects: Record<string, ValueObjectSchema>;
-	invariants: Record<string, InvariantSchema>;
-	provides: Record<string, ConsumableSchema>;
+	entities: { [entity: string]: EntitySchema };
+	valueobjects: { [valueobject: string]: ValueObjectSchema };
+	invariants: { [invariant: string]: InvariantSchema };
+	provides: { [consumable: string]: ConsumableSchema };
 	consumes: ConsumptionSchema[];
-};
+}
 
-export type BoundedContextSchema = {
+/**
+ * @title BoundedContext
+ * @description Represents a bounded context in the Open Domain Specification (ODS).
+ */
+export interface BoundedContextSchema {
 	name: string;
 	description: string;
-	aggregates: Record<string, AggregateSchema>;
-	services: Record<string, ServiceSchema>;
-};
+	aggregates: { [aggregate: string]: AggregateSchema };
+	services: { [service: string]: ServiceSchema };
+}
 
 export type ConsumablePattern =
 	| "open-host-service"
@@ -23,12 +31,16 @@ export type ConsumablePattern =
 
 export type ConsumableType = "event" | "operation";
 
-export type ConsumableSchema = {
+/**
+ * @title Consumable
+ * @description Represents a consumable in the Open Domain Specification (ODS).
+ */
+export interface ConsumableSchema {
 	name: string;
 	description: string;
 	type: ConsumableType;
 	pattern: ConsumablePattern;
-};
+}
 
 export type ConsumptionPattern =
 	| "conformist"
@@ -37,26 +49,40 @@ export type ConsumptionPattern =
 	| "partnership"
 	| "separate-ways";
 
-export type ConsumptionSchema = {
+/**
+ * @title Consumption
+ * @description Represents a consumption in the Open Domain Specification (ODS).
+ */
+export interface ConsumptionSchema {
 	consumable: { $ref: string };
 	pattern: ConsumptionPattern;
-};
+}
 
 export type DomainType = "core" | "supporting" | "generic";
 
-export type DomainSchema = {
+/**
+ * @title Domain
+ * @description Represents a domain in the Open Domain Specification (ODS).
+ */
+export interface DomainSchema {
 	name: string;
 	type: DomainType;
 	description: string;
-	subdomains: Record<string, SubdomainSchema>;
-};
+	subdomains: {
+		[subdomain: string]: SubdomainSchema;
+	};
+}
 
-export type EntitySchema = {
+/**
+ * @title Entity
+ * @description Represents an entity in the Open Domain Specification (ODS).
+ */
+export interface EntitySchema {
 	root?: boolean;
 	name: string;
 	description: string;
 	relations: EntityRelationSchema[];
-};
+}
 
 export type EntityRelationType = "references" | "includes" | "uses";
 
@@ -66,40 +92,62 @@ export enum RelationType {
 	Uses = "uses",
 }
 
-export type EntityRelationSchema = {
+export interface EntityRelationSchema {
 	target: { $ref: string };
 	relation: EntityRelationType;
 	label?: string;
-};
+}
 
-export type InvariantSchema = {
+/**
+ * @title Invariant
+ * @description Represents an invariant in the Open Domain Specification (ODS).
+ */
+export interface InvariantSchema {
 	name: string;
 	description: string;
-};
+}
 
 export type ServiceType = "application" | "domain" | "infrastructure";
 
-export type ServiceSchema = {
+/**
+ * @title Service
+ * @description Represents a service in the Open Domain Specification (ODS).
+ */
+export interface ServiceSchema {
 	type: ServiceType;
 	name: string;
 	description: string;
-	provides: Record<string, ConsumableSchema>;
+	provides: { [consumable: string]: ConsumableSchema };
 	consumes: ConsumptionSchema[];
-};
+}
 
-export type SubdomainSchema = {
+/**
+ * @title Subdomain
+ * @description Represents a subdomain in the Open Domain Specification (ODS).
+ */
+export interface SubdomainSchema {
 	name: string;
 	description: string;
-	boundedcontexts: Record<string, BoundedContextSchema>;
-};
+	boundedcontexts: {
+		[boundedcontext: string]: BoundedContextSchema;
+	};
+}
 
-export type ValueObjectSchema = {
+/**
+ * @title ValueObject
+ * @description Represents a value object in the Open Domain Specification (ODS).
+ */
+export interface ValueObjectSchema {
 	name: string;
 	description: string;
 	relations: EntityRelationSchema[];
-};
+}
 
-export type WorkspaceSchema = {
+/**
+ * @title Workspace
+ * @description Represents a workspace in the Open Domain Specification (ODS).
+ */
+export interface WorkspaceSchema {
 	id: string;
 	odsVersion: `${number}.${number}.${number}`;
 	name: string;
@@ -108,8 +156,10 @@ export type WorkspaceSchema = {
 	primaryColor?: string;
 	description: string;
 	version: string;
-	domains: Record<string, DomainSchema>;
-};
+	domains: {
+		[domain: string]: DomainSchema;
+	};
+}
 
 export function domainRef(domain: string) {
 	return {

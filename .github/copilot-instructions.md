@@ -43,7 +43,7 @@ There are no currently known issues and the project is healthy.
 4. **Manual User Scenario Testing**:
    - After starting both development servers, test key user workflows:
    - **Docs site**: Navigate to different documentation sections, verify all links work
-   - **ODS UI**: Import the example workspace from URL (http://localhost:5173/eshop-workspace.json), explore the generated visualizations
+   - **ODS UI**: Import the example workspace from URL (http://localhost:5173/petstore-workspace.json), explore the generated visualizations
    - **Example workspace docs**: If docsify server starts properly, verify generated markdown documentation loads
 
 ## Repository Structure

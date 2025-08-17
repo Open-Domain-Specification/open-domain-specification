@@ -1,0 +1,428 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "definitions": {
+        "AggregateSchema": {
+            "additionalProperties": false,
+            "description": "Represents an aggregate in the Open Domain Specification (ODS).",
+            "properties": {
+                "consumes": {
+                    "items": {
+                        "$ref": "#/definitions/ConsumptionSchema"
+                    },
+                    "type": "array"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "entities": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/EntitySchema"
+                    },
+                    "type": "object"
+                },
+                "invariants": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/InvariantSchema"
+                    },
+                    "type": "object"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "provides": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/ConsumableSchema"
+                    },
+                    "type": "object"
+                },
+                "valueobjects": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/ValueObjectSchema"
+                    },
+                    "type": "object"
+                }
+            },
+            "required": [
+                "consumes",
+                "description",
+                "entities",
+                "invariants",
+                "name",
+                "provides",
+                "valueobjects"
+            ],
+            "title": "Aggregate",
+            "type": "object"
+        },
+        "BoundedContextSchema": {
+            "additionalProperties": false,
+            "description": "Represents a bounded context in the Open Domain Specification (ODS).",
+            "properties": {
+                "aggregates": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/AggregateSchema"
+                    },
+                    "type": "object"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "services": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/ServiceSchema"
+                    },
+                    "type": "object"
+                }
+            },
+            "required": [
+                "aggregates",
+                "description",
+                "name",
+                "services"
+            ],
+            "title": "BoundedContext",
+            "type": "object"
+        },
+        "ConsumablePattern": {
+            "enum": [
+                "customer-supplier",
+                "open-host-service",
+                "published-language",
+                "shared-kernel"
+            ],
+            "type": "string"
+        },
+        "ConsumableSchema": {
+            "additionalProperties": false,
+            "description": "Represents a consumable in the Open Domain Specification (ODS).",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "pattern": {
+                    "$ref": "#/definitions/ConsumablePattern"
+                },
+                "type": {
+                    "$ref": "#/definitions/ConsumableType"
+                }
+            },
+            "required": [
+                "description",
+                "name",
+                "pattern",
+                "type"
+            ],
+            "title": "Consumable",
+            "type": "object"
+        },
+        "ConsumableType": {
+            "enum": [
+                "event",
+                "operation"
+            ],
+            "type": "string"
+        },
+        "ConsumptionPattern": {
+            "enum": [
+                "anti-corruption-layer",
+                "conformist",
+                "customer-supplier",
+                "partnership",
+                "separate-ways"
+            ],
+            "type": "string"
+        },
+        "ConsumptionSchema": {
+            "additionalProperties": false,
+            "description": "Represents a consumption in the Open Domain Specification (ODS).",
+            "properties": {
+                "consumable": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
+                "pattern": {
+                    "$ref": "#/definitions/ConsumptionPattern"
+                }
+            },
+            "required": [
+                "consumable",
+                "pattern"
+            ],
+            "title": "Consumption",
+            "type": "object"
+        },
+        "DomainSchema": {
+            "additionalProperties": false,
+            "description": "Represents a domain in the Open Domain Specification (ODS).",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "subdomains": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/SubdomainSchema"
+                    },
+                    "type": "object"
+                },
+                "type": {
+                    "$ref": "#/definitions/DomainType"
+                }
+            },
+            "required": [
+                "description",
+                "name",
+                "subdomains",
+                "type"
+            ],
+            "title": "Domain",
+            "type": "object"
+        },
+        "DomainType": {
+            "enum": [
+                "core",
+                "generic",
+                "supporting"
+            ],
+            "type": "string"
+        },
+        "EntityRelationSchema": {
+            "additionalProperties": false,
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "relation": {
+                    "$ref": "#/definitions/EntityRelationType"
+                },
+                "target": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                }
+            },
+            "required": [
+                "relation",
+                "target"
+            ],
+            "type": "object"
+        },
+        "EntityRelationType": {
+            "enum": [
+                "includes",
+                "references",
+                "uses"
+            ],
+            "type": "string"
+        },
+        "EntitySchema": {
+            "additionalProperties": false,
+            "description": "Represents an entity in the Open Domain Specification (ODS).",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "relations": {
+                    "items": {
+                        "$ref": "#/definitions/EntityRelationSchema"
+                    },
+                    "type": "array"
+                },
+                "root": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "description",
+                "name",
+                "relations"
+            ],
+            "title": "Entity",
+            "type": "object"
+        },
+        "InvariantSchema": {
+            "additionalProperties": false,
+            "description": "Represents an invariant in the Open Domain Specification (ODS).",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "description",
+                "name"
+            ],
+            "title": "Invariant",
+            "type": "object"
+        },
+        "ServiceSchema": {
+            "additionalProperties": false,
+            "description": "Represents a service in the Open Domain Specification (ODS).",
+            "properties": {
+                "consumes": {
+                    "items": {
+                        "$ref": "#/definitions/ConsumptionSchema"
+                    },
+                    "type": "array"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "provides": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/ConsumableSchema"
+                    },
+                    "type": "object"
+                },
+                "type": {
+                    "$ref": "#/definitions/ServiceType"
+                }
+            },
+            "required": [
+                "consumes",
+                "description",
+                "name",
+                "provides",
+                "type"
+            ],
+            "title": "Service",
+            "type": "object"
+        },
+        "ServiceType": {
+            "enum": [
+                "application",
+                "domain",
+                "infrastructure"
+            ],
+            "type": "string"
+        },
+        "SubdomainSchema": {
+            "additionalProperties": false,
+            "description": "Represents a subdomain in the Open Domain Specification (ODS).",
+            "properties": {
+                "boundedcontexts": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/BoundedContextSchema"
+                    },
+                    "type": "object"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "boundedcontexts",
+                "description",
+                "name"
+            ],
+            "title": "Subdomain",
+            "type": "object"
+        },
+        "ValueObjectSchema": {
+            "additionalProperties": false,
+            "description": "Represents a value object in the Open Domain Specification (ODS).",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "relations": {
+                    "items": {
+                        "$ref": "#/definitions/EntityRelationSchema"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "description",
+                "name",
+                "relations"
+            ],
+            "title": "ValueObject",
+            "type": "object"
+        }
+    },
+    "description": "Represents a workspace in the Open Domain Specification (ODS).",
+    "properties": {
+        "description": {
+            "type": "string"
+        },
+        "domains": {
+            "additionalProperties": {
+                "$ref": "#/definitions/DomainSchema"
+            },
+            "type": "object"
+        },
+        "homepage": {
+            "type": "string"
+        },
+        "id": {
+            "type": "string"
+        },
+        "logoUrl": {
+            "type": "string"
+        },
+        "name": {
+            "type": "string"
+        },
+        "odsVersion": {
+            "pattern": "^[0-9]*\\.[0-9]*\\.[0-9]*$",
+            "type": "string"
+        },
+        "primaryColor": {
+            "type": "string"
+        },
+        "version": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "description",
+        "domains",
+        "id",
+        "name",
+        "odsVersion",
+        "version"
+    ],
+    "title": "Workspace",
+    "type": "object"
+}
+

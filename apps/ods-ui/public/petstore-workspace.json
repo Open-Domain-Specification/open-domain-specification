@@ -1,0 +1,579 @@
+{
+  "id": "swagger_petstore_(v3)",
+  "name": "Swagger Petstore (v3)",
+  "description": "DDD/ODS model for Swagger Petstore v3. Inventory is a projection returning a status→count map; Orders use placed|approved|delivered.",
+  "version": "0.1.0",
+  "odsVersion": "1.0.0",
+  "primaryColor": "#0ea5e9",
+  "domains": {
+    "petstore_commerce": {
+      "name": "Petstore Commerce",
+      "description": "Core pet catalog, sales, and inventory capabilities",
+      "type": "core",
+      "subdomains": {
+        "catalog": {
+          "name": "Catalog",
+          "description": "Pet definitions, attributes, lifecycle",
+          "boundedcontexts": {
+            "catalog_bc": {
+              "name": "Catalog BC",
+              "description": "Owns Pet aggregate & pet-facing operations",
+              "aggregates": {
+                "pet": {
+                  "name": "Pet",
+                  "description": "A pet listed in the store",
+                  "provides": {
+                    "pet_registered": {
+                      "name": "PetRegistered",
+                      "description": "A new pet was registered",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "pet_updated": {
+                      "name": "PetUpdated",
+                      "description": "Pet profile updated",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "pet_status_changed": {
+                      "name": "PetStatusChanged",
+                      "description": "Pet status changed (available|pending|sold)",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "pet_photo_uploaded": {
+                      "name": "PetPhotoUploaded",
+                      "description": "Photo added via upload",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "pet_deleted": {
+                      "name": "PetDeleted",
+                      "description": "Pet removed from catalog",
+                      "pattern": "published-language",
+                      "type": "event"
+                    }
+                  },
+                  "consumes": [],
+                  "entities": {
+                    "pet": {
+                      "name": "Pet",
+                      "description": "Pet root entity",
+                      "root": true,
+                      "relations": [
+                        {
+                          "target": {
+                            "$ref": "#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+                          },
+                          "relation": "uses",
+                          "label": "categorized-as"
+                        },
+                        {
+                          "target": {
+                            "$ref": "#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/tag"
+                          },
+                          "relation": "uses",
+                          "label": "tagged-with"
+                        },
+                        {
+                          "target": {
+                            "$ref": "#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/photo_url"
+                          },
+                          "relation": "uses",
+                          "label": "has-photo"
+                        },
+                        {
+                          "target": {
+                            "$ref": "#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+                          },
+                          "relation": "uses",
+                          "label": "has-status"
+                        }
+                      ]
+                    }
+                  },
+                  "valueobjects": {
+                    "category": {
+                      "name": "Category",
+                      "description": "{ id?: number, name?: string }",
+                      "relations": []
+                    },
+                    "tag": {
+                      "name": "Tag",
+                      "description": "{ id?: number, name?: string }",
+                      "relations": []
+                    },
+                    "photo_url": {
+                      "name": "PhotoUrl",
+                      "description": "string (URL)",
+                      "relations": []
+                    },
+                    "pet_status": {
+                      "name": "PetStatus",
+                      "description": "'available' | 'pending' | 'sold'",
+                      "relations": []
+                    }
+                  },
+                  "invariants": {
+                    "name_required": {
+                      "name": "NameRequired",
+                      "description": "Pet.name must be non-empty"
+                    },
+                    "sold_not_reopen": {
+                      "name": "SoldNotReopen",
+                      "description": "Once sold, do not revert to available without explicit policy"
+                    }
+                  }
+                }
+              },
+              "services": {
+                "pet_app": {
+                  "name": "PetApp",
+                  "description": "Open-host service for /pet endpoints",
+                  "type": "application",
+                  "provides": {
+                    "add_pet": {
+                      "name": "AddPet",
+                      "description": "POST /pet",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "update_pet": {
+                      "name": "UpdatePet",
+                      "description": "PUT /pet",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "find_pets_by_status": {
+                      "name": "FindPetsByStatus",
+                      "description": "GET /pet/findByStatus?status=available|pending|sold",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "find_pets_by_tags": {
+                      "name": "FindPetsByTags",
+                      "description": "GET /pet/findByTags?tags=tag1,tag2",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "get_pet_by_id": {
+                      "name": "GetPetById",
+                      "description": "GET /pet/{petId}",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "upload_pet_image": {
+                      "name": "UploadPetImage",
+                      "description": "POST /pet/{petId}/uploadImage (multipart: additionalMetadata, file)",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "delete_pet": {
+                      "name": "DeletePet",
+                      "description": "DELETE /pet/{petId}",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "get_pet_summary": {
+                      "name": "GetPetSummary",
+                      "description": "Internal: {id,name,status} for ACL checks",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    }
+                  },
+                  "consumes": []
+                }
+              }
+            }
+          }
+        },
+        "sales": {
+          "name": "Sales",
+          "description": "Orders and order lifecycle",
+          "boundedcontexts": {
+            "sales_bc": {
+              "name": "Sales BC",
+              "description": "Owns Order aggregate & order-facing operations",
+              "aggregates": {
+                "order": {
+                  "name": "Order",
+                  "description": "Order for a single pet",
+                  "provides": {
+                    "order_placed": {
+                      "name": "OrderPlaced",
+                      "description": "Order created (status=placed)",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "order_approved": {
+                      "name": "OrderApproved",
+                      "description": "Order approved (status=approved)",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "order_delivered": {
+                      "name": "OrderDelivered",
+                      "description": "Order delivered (status=delivered)",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "order_deleted": {
+                      "name": "OrderDeleted",
+                      "description": "Order deleted via DELETE /store/order/{orderId}",
+                      "pattern": "published-language",
+                      "type": "event"
+                    }
+                  },
+                  "consumes": [],
+                  "entities": {
+                    "order": {
+                      "name": "Order",
+                      "description": "Order root entity",
+                      "root": true,
+                      "relations": [
+                        {
+                          "target": {
+                            "$ref": "#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status"
+                          },
+                          "relation": "uses",
+                          "label": "has-status"
+                        },
+                        {
+                          "target": {
+                            "$ref": "#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
+                          },
+                          "relation": "uses",
+                          "label": "has-quantity"
+                        },
+                        {
+                          "target": {
+                            "$ref": "#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order/valueobjects/ship_date"
+                          },
+                          "relation": "uses",
+                          "label": "ships-on"
+                        },
+                        {
+                          "target": {
+                            "$ref": "#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order/valueobjects/complete_flag"
+                          },
+                          "relation": "uses",
+                          "label": "is-complete"
+                        }
+                      ]
+                    }
+                  },
+                  "valueobjects": {
+                    "order_status": {
+                      "name": "OrderStatus",
+                      "description": "'placed' | 'approved' | 'delivered'",
+                      "relations": []
+                    },
+                    "quantity": {
+                      "name": "Quantity",
+                      "description": "int > 0",
+                      "relations": []
+                    },
+                    "ship_date": {
+                      "name": "ShipDate",
+                      "description": "date-time",
+                      "relations": []
+                    },
+                    "complete_flag": {
+                      "name": "CompleteFlag",
+                      "description": "boolean",
+                      "relations": []
+                    }
+                  },
+                  "invariants": {
+                    "quantity_positive": {
+                      "name": "QuantityPositive",
+                      "description": "Quantity must be > 0"
+                    },
+                    "approve_only_when_available": {
+                      "name": "ApproveOnlyWhenAvailable",
+                      "description": "Approve only if Pet.status == available"
+                    },
+                    "deliver_only_when_approved": {
+                      "name": "DeliverOnlyWhenApproved",
+                      "description": "Deliver only from approved"
+                    }
+                  }
+                }
+              },
+              "services": {
+                "order_app": {
+                  "name": "OrderApp",
+                  "description": "Open-host service for /store/order endpoints",
+                  "type": "application",
+                  "provides": {
+                    "place_order": {
+                      "name": "PlaceOrder",
+                      "description": "POST /store/order",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "get_order_by_id": {
+                      "name": "GetOrderById",
+                      "description": "GET /store/order/{orderId}",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "delete_order": {
+                      "name": "DeleteOrder",
+                      "description": "DELETE /store/order/{orderId}",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    }
+                  },
+                  "consumes": [
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/services/pet_app/provides/get_pet_summary"
+                      },
+                      "pattern": "anti-corruption-layer"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "inventory": {
+          "name": "Inventory",
+          "description": "Aggregated availability by status",
+          "boundedcontexts": {
+            "inventory_bc": {
+              "name": "Inventory BC",
+              "description": "Projection for /store/inventory (status→count)",
+              "aggregates": {
+                "inventory_projection": {
+                  "name": "InventoryProjection",
+                  "description": "Materialized view: { available: number, pending: number, sold: number }",
+                  "provides": {
+                    "inventory_updated": {
+                      "name": "InventoryUpdated",
+                      "description": "Inventory counts changed",
+                      "pattern": "published-language",
+                      "type": "event"
+                    }
+                  },
+                  "consumes": [
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_registered"
+                      },
+                      "pattern": "conformist"
+                    },
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_deleted"
+                      },
+                      "pattern": "conformist"
+                    },
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
+                      },
+                      "pattern": "conformist"
+                    },
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order/provides/order_approved"
+                      },
+                      "pattern": "conformist"
+                    },
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order/provides/order_delivered"
+                      },
+                      "pattern": "conformist"
+                    },
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order/provides/order_deleted"
+                      },
+                      "pattern": "conformist"
+                    }
+                  ],
+                  "entities": {
+                    "inventory_view": {
+                      "name": "InventoryView",
+                      "description": "Status→count map for /store/inventory",
+                      "root": true,
+                      "relations": []
+                    }
+                  },
+                  "valueobjects": {},
+                  "invariants": {}
+                }
+              },
+              "services": {
+                "inventory_query": {
+                  "name": "InventoryQuery",
+                  "description": "Open-host service for /store/inventory",
+                  "type": "application",
+                  "provides": {
+                    "get_inventory": {
+                      "name": "GetInventory",
+                      "description": "GET /store/inventory → { [status]: count }",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    }
+                  },
+                  "consumes": [
+                    {
+                      "consumable": {
+                        "$ref": "#/domains/petstore_commerce/subdomains/inventory/boundedcontexts/inventory_bc/aggregates/inventory_projection/provides/inventory_updated"
+                      },
+                      "pattern": "conformist"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "identity_&_accounts": {
+      "name": "Identity & Accounts",
+      "description": "Users and sessions per Petstore API",
+      "type": "supporting",
+      "subdomains": {
+        "users": {
+          "name": "Users",
+          "description": "User records and login/logout",
+          "boundedcontexts": {
+            "identity_bc": {
+              "name": "Identity BC",
+              "description": "Owns User aggregate & user endpoints",
+              "aggregates": {
+                "user": {
+                  "name": "User",
+                  "description": "Petstore user record",
+                  "provides": {
+                    "user_registered": {
+                      "name": "UserRegistered",
+                      "description": "New user created",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "user_updated": {
+                      "name": "UserUpdated",
+                      "description": "User fields updated",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "user_deleted": {
+                      "name": "UserDeleted",
+                      "description": "User removed",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "user_logged_in": {
+                      "name": "UserLoggedIn",
+                      "description": "Login via /user/login",
+                      "pattern": "published-language",
+                      "type": "event"
+                    },
+                    "user_logged_out": {
+                      "name": "UserLoggedOut",
+                      "description": "Logout via /user/logout",
+                      "pattern": "published-language",
+                      "type": "event"
+                    }
+                  },
+                  "consumes": [],
+                  "entities": {
+                    "user": {
+                      "name": "User",
+                      "description": "username, firstName, lastName, email, password, phone, userStatus(int)",
+                      "root": true,
+                      "relations": [
+                        {
+                          "target": {
+                            "$ref": "#/domains/identity_&_accounts/subdomains/users/boundedcontexts/identity_bc/aggregates/user/valueobjects/user_status"
+                          },
+                          "relation": "uses",
+                          "label": "has-status"
+                        }
+                      ]
+                    }
+                  },
+                  "valueobjects": {
+                    "user_status": {
+                      "name": "UserStatus",
+                      "description": "int (per Petstore v3 model)",
+                      "relations": []
+                    }
+                  },
+                  "invariants": {}
+                }
+              },
+              "services": {
+                "user_app": {
+                  "name": "UserApp",
+                  "description": "Open-host service for /user endpoints",
+                  "type": "application",
+                  "provides": {
+                    "create_user": {
+                      "name": "CreateUser",
+                      "description": "POST /user",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "create_users_with_array": {
+                      "name": "CreateUsersWithArray",
+                      "description": "POST /user/createWithArray",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "create_users_with_list": {
+                      "name": "CreateUsersWithList",
+                      "description": "POST /user/createWithList",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "login": {
+                      "name": "Login",
+                      "description": "GET /user/login?username=&password=",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "logout": {
+                      "name": "Logout",
+                      "description": "GET /user/logout",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "get_user_by_username": {
+                      "name": "GetUserByUsername",
+                      "description": "GET /user/{username}",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "update_user": {
+                      "name": "UpdateUser",
+                      "description": "PUT /user/{username}",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    },
+                    "delete_user": {
+                      "name": "DeleteUser",
+                      "description": "DELETE /user/{username}",
+                      "pattern": "open-host-service",
+                      "type": "operation"
+                    }
+                  },
+                  "consumes": []
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "homepage": "https://petstore.swagger.io/",
+  "logoUrl": "https://petstore.swagger.io/favicon-32x32.png"
+}
