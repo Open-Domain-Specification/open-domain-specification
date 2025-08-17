@@ -18,8 +18,8 @@
 	],
 	"scripts": {
 		"clean": "npx rimraf dist",
-		"prebuild": "typescript-json-schema --required --noExtraProps --refs --ignoreErrors 'src/schema.ts' 'WorkspaceSchema' > dist/workspace.schema.json",
 		"build": "tsc --project tsconfig.json && tsup src/index.ts --format cjs,esm --dts --sourcemap --out-dir dist",
+		"postbuild": "typescript-json-schema --required --noExtraProps --refs --ignoreErrors 'src/schema.ts' 'WorkspaceSchema' > dist/workspace.schema.json",
 		"test": "vitest run --config vitest.config.ts",
 		"depcheck": "npx depcheck"
 	},
