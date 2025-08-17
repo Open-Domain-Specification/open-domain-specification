@@ -1,9 +1,9 @@
 {
 	"name": "@open-domain-specification/core",
 	"version": "0.1.8",
-	"description": "> TODO: description",
+	"description": "Core library for the Open Domain Specification (ODS)",
 	"author": "Jonathan Turnock <jonathan.turnock@outlook.com>",
-	"homepage": "",
+	"homepage": "https://docs.open-ds.io/docs/core/",
 	"license": "ISC",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",

@@ -1,8 +1,9 @@
 {
 	"name": "@open-domain-specification/doc",
 	"version": "0.1.8",
+	"description": "Open Domain Specification (ODS) documentation generator",
 	"author": "Jonathan Turnock <jonathan.turnock@outlook.com>",
-	"homepage": "",
+	"homepage": "https://docs.open-ds.io/docs/doc/",
 	"license": "ISC",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",

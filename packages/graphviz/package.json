@@ -1,8 +1,9 @@
 {
 	"name": "@open-domain-specification/graphviz",
 	"version": "0.1.8",
+	"description": "Graphviz integration for the Open Domain Specification.",
 	"author": "Jonathan Turnock <jonathan.turnock@outlook.com>",
-	"homepage": "",
+	"homepage": "https://docs.open-ds.io/docs/graphviz/",
 	"license": "ISC",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
