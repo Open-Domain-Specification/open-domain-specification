@@ -4,5 +4,6 @@ dist
 build
 *.zip
 .DS_Store
+coverage/
 
 
