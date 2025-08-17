@@ -1,6 +1,6 @@
 {
 	"name": "@open-domain-specification/core",
-	"version": "0.1.7",
+	"version": "0.1.8",
 	"description": "> TODO: description",
 	"author": "Jonathan Turnock <jonathan.turnock@outlook.com>",
 	"homepage": "",
@@ -46,5 +46,5 @@
 		"typescript-json-schema": "^0.65.1",
 		"vitest": "^3.2.4"
 	},
-	"gitHead": "78ed1d991d3737ffa58cddd94662fd809b6f4770"
+	"gitHead": "59fb63d2b6cc0a108951112088a5e30bc5270c95"
 }
