@@ -14,7 +14,7 @@
 		"depcheck": "lerna run depcheck --stream",
 		"format": "npx @biomejs/biome check --write",
 		"build": "lerna run build --stream",
-		"test": "lerna run test --stream"
+		"test": "lerna run build --stream && lerna run test --stream"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.2.0",
