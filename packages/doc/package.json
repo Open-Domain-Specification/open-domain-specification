@@ -1,6 +1,6 @@
 {
 	"name": "@open-domain-specification/doc",
-	"version": "0.1.8",
+	"version": "0.1.9",
 	"description": "Open Domain Specification (ODS) documentation generator",
 	"author": "Jonathan Turnock <jonathan.turnock@outlook.com>",
 	"homepage": "https://docs.open-ds.io/docs/doc/",
@@ -33,8 +33,8 @@
 		"ods"
 	],
 	"dependencies": {
-		"@open-domain-specification/core": "^0.1.8",
-		"@open-domain-specification/graphviz": "^0.1.8",
+		"@open-domain-specification/core": "^0.1.9",
+		"@open-domain-specification/graphviz": "^0.1.9",
 		"typescript": "^5.8.3"
 	},
 	"devDependencies": {

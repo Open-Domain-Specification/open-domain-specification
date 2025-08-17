@@ -1,6 +1,6 @@
 {
 	"name": "ods-example-ws",
-	"version": "0.1.8",
+	"version": "0.1.9",
 	"description": "",
 	"type": "module",
 	"scripts": {
@@ -12,8 +12,8 @@
 	},
 	"private": true,
 	"dependencies": {
-		"@open-domain-specification/core": "^0.1.8",
-		"@open-domain-specification/doc": "^0.1.8",
+		"@open-domain-specification/core": "^0.1.9",
+		"@open-domain-specification/doc": "^0.1.9",
 		"docsify-cli": "^4.4.4"
 	},
 	"devDependencies": {
