@@ -9,6 +9,7 @@
 		"packages/*"
 	],
 	"scripts": {
+		"publish": "npm run build && lerna publish --conventional-commits --yes",
 		"clean": "lerna run clean --stream",
 		"depcheck": "lerna run depcheck --stream",
 		"format": "npx @biomejs/biome check --write",
