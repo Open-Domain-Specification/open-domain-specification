@@ -1,6 +1,6 @@
 {
 	"name": "@open-domain-specification/doc",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"author": "Jonathan Turnock <jonathan.turnock@outlook.com>",
 	"homepage": "",
 	"license": "ISC",
@@ -28,8 +28,8 @@
 		"ods"
 	],
 	"dependencies": {
-		"@open-domain-specification/core": "^0.0.1",
-		"@open-domain-specification/graphviz": "^0.0.1",
+		"@open-domain-specification/core": "^0.0.2",
+		"@open-domain-specification/graphviz": "^0.0.2",
 		"typescript": "^5.8.3"
 	},
 	"devDependencies": {
