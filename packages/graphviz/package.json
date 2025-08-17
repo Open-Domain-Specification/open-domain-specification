@@ -1,6 +1,6 @@
 {
 	"name": "@open-domain-specification/graphviz",
-	"version": "0.1.5",
+	"version": "0.1.6",
 	"author": "Jonathan Turnock <jonathan.turnock@outlook.com>",
 	"homepage": "",
 	"license": "ISC",
@@ -33,7 +33,7 @@
 	],
 	"dependencies": {
 		"@hpcc-js/wasm-graphviz": "^1.11.0",
-		"@open-domain-specification/core": "^0.1.5",
+		"@open-domain-specification/core": "^0.1.6",
 		"debug": "^4.4.1",
 		"ts-graphviz": "^3.0.0",
 		"typescript": "^5.8.3"

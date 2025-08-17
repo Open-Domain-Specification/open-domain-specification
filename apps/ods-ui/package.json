@@ -1,7 +1,7 @@
 {
 	"name": "ods-ui",
 	"private": true,
-	"version": "0.1.5",
+	"version": "0.1.6",
 	"type": "module",
 	"scripts": {
 		"clean": "npx rimraf dist",
@@ -19,8 +19,8 @@
 		"@mantine/hooks": "^8.2.2",
 		"@mantine/notifications": "^8.2.2",
 		"@mantine/spotlight": "^8.2.2",
-		"@open-domain-specification/core": "^0.1.5",
-		"@open-domain-specification/graphviz": "^0.1.5",
+		"@open-domain-specification/core": "^0.1.6",
+		"@open-domain-specification/graphviz": "^0.1.6",
 		"@types/d3-graphviz": "^2.6.10",
 		"d3-graphviz": "^5.6.0",
 		"debug": "^4.4.1",
@@ -39,7 +39,7 @@
 		"@types/react-dom": "^19.1.6",
 		"@vitejs/plugin-react": "^4.6.0",
 		"globals": "^16.3.0",
-		"ods-example-ws": "^0.1.5",
+		"ods-example-ws": "^0.1.6",
 		"sonda": "^0.9.0",
 		"typescript": "~5.8.3",
 		"vite": "^7.0.4"
