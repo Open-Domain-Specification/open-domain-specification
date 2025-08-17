@@ -24,12 +24,12 @@ export function GenericWorkspacePage({
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
 
 	return (
-		<AppShell 
-			header={header} 
+		<AppShell
+			header={header}
 			navbar={{
 				...navbar,
-				collapsed: { mobile: !mobileOpened }
-			}} 
+				collapsed: { mobile: !mobileOpened },
+			}}
 			aside={aside}
 		>
 			<AppSpotlight />

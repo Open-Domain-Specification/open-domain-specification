@@ -88,7 +88,7 @@ export function relationMapToDigraph(contextMap: ODSRelationMap): {
 			subgraphs[ns.id] =
 				subgraphs[ns.id] ||
 				new Subgraph(ns.id, {
-					// @ts-ignore
+					// @ts-expect-error
 					cluster: true,
 					class: "namespace",
 					label: ns.name,

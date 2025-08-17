@@ -24,8 +24,8 @@ export function AppHeader({ onToggleMobile }: { onToggleMobile?: () => void }) {
 	const isMobile = useMediaQuery("(max-width: 768px)");
 
 	return (
-		<Group justify={"space-between"} flex={"auto"}>
-			<Group>
+		<Group justify={"space-between"} flex={"auto"} wrap="nowrap">
+			<Group gap={isMobile ? "xs" : "sm"} style={{ minWidth: 0, flex: 1 }}>
 				{isMobile && onToggleMobile && (
 					<Burger onClick={onToggleMobile} size="sm" />
 				)}
@@ -36,16 +36,32 @@ export function AppHeader({ onToggleMobile }: { onToggleMobile?: () => void }) {
 					src={workspace.logoUrl}
 					color={"initials"}
 					name={workspace.name}
+					size={isMobile ? "sm" : "md"}
 				/>
-				<Text fz={"md"} fw={"bold"}>
-					{workspace.name} | {workspace.version}
-				</Text>
-				<Badge>{workspace.odsVersion}</Badge>
+				{!isMobile && (
+					<Text fz={"md"} fw={"bold"}>
+						{workspace.name} | {workspace.version}
+					</Text>
+				)}
+				{isMobile && (
+					<Text
+						fz={"sm"}
+						fw={"bold"}
+						style={{
+							overflow: "hidden",
+							textOverflow: "ellipsis",
+							whiteSpace: "nowrap",
+						}}
+					>
+						{workspace.name}
+					</Text>
+				)}
+				<Badge size={isMobile ? "sm" : "md"}>{workspace.odsVersion}</Badge>
 			</Group>
-			<Group>
+			<Group gap={isMobile ? "xs" : "sm"} wrap="nowrap">
 				<Menu>
 					<Menu.Target>
-						<ActionIcon variant={"default"} size={"lg"}>
+						<ActionIcon variant={"default"} size={isMobile ? "md" : "lg"}>
 							{colorScheme === "dark" ? (
 								<BsMoon />
 							) : colorScheme === "light" ? (
@@ -79,10 +95,18 @@ export function AppHeader({ onToggleMobile }: { onToggleMobile?: () => void }) {
 						</Menu.Item>
 					</Menu.Dropdown>
 				</Menu>
-				<ActionIcon size={"lg"} variant={"default"} onClick={closeWorkspace}>
+				<ActionIcon
+					size={isMobile ? "md" : "lg"}
+					variant={"default"}
+					onClick={closeWorkspace}
+				>
 					<CloseButton />
 				</ActionIcon>
-				<ActionIcon size={"lg"} variant={"default"} onClick={exportWorkspace}>
+				<ActionIcon
+					size={isMobile ? "md" : "lg"}
+					variant={"default"}
+					onClick={exportWorkspace}
+				>
 					<BiDownload />
 				</ActionIcon>
 			</Group>
