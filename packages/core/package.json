@@ -8,6 +8,10 @@
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"module": "dist/index.mjs",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Open-Domain-Specification/open-domain-specification.git"
+	},
 	"publishConfig": {
 		"registry": "https://registry.npmjs.org/",
 		"access": "public"
@@ -42,5 +46,5 @@
 		"typescript-json-schema": "^0.65.1",
 		"vitest": "^3.2.4"
 	},
-	"gitHead": "b0bbe12e1a78928a68d21040b5f21bfbeca9acf8"
+	"gitHead": "78ed1d991d3737ffa58cddd94662fd809b6f4770"
 }
