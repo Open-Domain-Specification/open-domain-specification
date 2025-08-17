@@ -8,6 +8,10 @@
 		"apps/*",
 		"packages/*"
 	],
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
+	},
 	"scripts": {
 		"publish": "npm run build && lerna publish --conventional-commits --yes",
 		"clean": "lerna run clean --stream",
