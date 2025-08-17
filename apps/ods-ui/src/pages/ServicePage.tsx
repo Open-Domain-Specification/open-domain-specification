@@ -28,7 +28,9 @@ import { Icons } from "../Icons.tsx";
 import { EntitiesAndValueObjectsHelp } from "../modals/EntitiesAndValueObjectsHelp.tsx";
 
 export function _ServicePage(props: { service: Service }) {
-	const isMobile = useMediaQuery("(max-width: 768px)");
+	// Use Mantine's sm breakpoint (48em = 768px) to match AppShell behavior
+	const isMobile = useMediaQuery("(max-width: 48em)");
+	
 	return (
 		<>
 			<PageSkeleton

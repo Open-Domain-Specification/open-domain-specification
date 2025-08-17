@@ -32,7 +32,8 @@ import { EntitiesAndValueObjectsHelp } from "../modals/EntitiesAndValueObjectsHe
 import { InvariantsHelp } from "../modals/InvariantsHelp.tsx";
 
 export function _AggregatePage(props: { aggregate: Aggregate }) {
-	const isMobile = useMediaQuery("(max-width: 768px)");
+	// Use Mantine's sm breakpoint (48em = 768px) to match AppShell behavior
+	const isMobile = useMediaQuery("(max-width: 48em)");
 
 	return (
 		<>
