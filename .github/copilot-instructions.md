@@ -139,6 +139,7 @@ npm run build                  # Production build
 3. Manually test affected applications by starting their dev servers and exercising user workflows
 4. For domain model changes, regenerate example docs with `npm run build`
 5. **ALWAYS test a complete user workflow** - don't just start and stop servers, actually use the applications
+6. Always use Angular Conventional Commits for commit messages (e.g., `feat: add new feature`, `fix: resolve issue`, `docs: update documentation`)
 
 ## Troubleshooting
 
