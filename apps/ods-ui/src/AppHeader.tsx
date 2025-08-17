@@ -10,17 +10,14 @@ import {
 	useMantineColorScheme,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import { BiDownload } from "react-icons/bi";
 import { BsLaptop, BsMoon, BsSun } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "./context/WorkspaceContext.tsx";
-import { useExportWorkspace } from "./hooks/useExportWorkspace.ts";
 
 export function AppHeader({ onToggleMobile }: { onToggleMobile?: () => void }) {
 	const { workspace, closeWorkspace } = useWorkspace();
 	const nav = useNavigate();
 	const { colorScheme, setColorScheme } = useMantineColorScheme();
-	const exportWorkspace = useExportWorkspace();
 	const isMobile = useMediaQuery("(max-width: 768px)");
 
 	return (
@@ -101,13 +98,6 @@ export function AppHeader({ onToggleMobile }: { onToggleMobile?: () => void }) {
 					onClick={closeWorkspace}
 				>
 					<CloseButton />
-				</ActionIcon>
-				<ActionIcon
-					size={isMobile ? "md" : "lg"}
-					variant={"default"}
-					onClick={exportWorkspace}
-				>
-					<BiDownload />
 				</ActionIcon>
 			</Group>
 		</Group>
