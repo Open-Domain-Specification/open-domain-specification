@@ -9,3 +9,4 @@ tsconfig.test.json
 .vscode-test.mjs
 vitest.config.ts
 **/*.map
+.gitignore

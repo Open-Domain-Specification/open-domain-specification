@@ -18,6 +18,9 @@ copyFileSync(
 	join(here, "schema.json"),
 );
 
+// vsce wants a licence beside the manifest; the repo keeps a single one at the root.
+copyFileSync(join(here, "../../LICENSE.md"), join(here, "LICENSE.md"));
+
 // The webview hosts the pages app; copy its Vite build into media/app.
 const pagesPkg = dirname(
 	require.resolve("@open-domain-specification/pages/package.json"),

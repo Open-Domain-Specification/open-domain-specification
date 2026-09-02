@@ -165,7 +165,7 @@
 		]
 	},
 	"scripts": {
-		"clean": "npx rimraf dist out schema.json",
+		"clean": "npx rimraf dist out schema.json LICENSE.md media/app",
 		"build": "tsc --noEmit && node esbuild.mjs",
 		"watch": "node esbuild.mjs --watch",
 		"dev": "node esbuild.mjs && node dev.mjs",

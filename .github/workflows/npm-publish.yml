@@ -18,11 +18,21 @@ jobs:
           node-version: 24
       - run: npm ci
       - run: npm test
+      - name: Package the VS Code extension
+        run: |
+          mkdir -p artifacts
+          npm run package --workspace ods-vscode -- --out "$GITHUB_WORKSPACE/artifacts/ods-vscode.vsix"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ods-vscode-vsix
+          path: artifacts/ods-vscode.vsix
 
   publish:
     runs-on: ubuntu-latest
     needs: test
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -33,6 +43,37 @@ jobs:
         run: |
           git config user.name "$(git log -n 1 --pretty=format:%an)"
           git config user.email "$(git log -n 1 --pretty=format:%ae)"
+      - name: Record the version before publishing
+        id: before
+        run: echo "version=$(node -p "require('./lerna.json').version")" >> "$GITHUB_OUTPUT"
+      # Builds every workspace (including the pages app that Cloudflare serves at
+      # open-ds.io and the extension bundle) and publishes the public packages.
       - run: npm run publish
         env:
           NPM_TOKEN: ${{secrets.NPM_TOKEN}}
+      - name: Record the version after publishing
+        id: after
+        run: echo "version=$(node -p "require('./lerna.json').version")" >> "$GITHUB_OUTPUT"
+
+      # The remaining steps only run when lerna actually cut a new version, and
+      # so pushed the v<version> tag the release hangs off.
+      - name: Package the VS Code extension
+        if: steps.before.outputs.version != steps.after.outputs.version
+        run: |
+          mkdir -p artifacts
+          npm run package --workspace ods-vscode -- \
+            --out "$GITHUB_WORKSPACE/artifacts/ods-vscode-${{ steps.after.outputs.version }}.vsix"
+      - name: Archive the pages site
+        if: steps.before.outputs.version != steps.after.outputs.version
+        run: |
+          mkdir -p artifacts
+          (cd packages/pages/app && zip -qr "$GITHUB_WORKSPACE/artifacts/ods-pages-${{ steps.after.outputs.version }}.zip" .)
+      - name: Create the GitHub release
+        if: steps.before.outputs.version != steps.after.outputs.version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.after.outputs.version }}" \
+            --title "v${{ steps.after.outputs.version }}" \
+            --generate-notes \
+            artifacts/*.vsix artifacts/*.zip
