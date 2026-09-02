@@ -72,6 +72,17 @@ describe("App (standalone host)", () => {
 		).toBeInTheDocument();
 	});
 
+	it("passes the host's examples to the import screen", () => {
+		render(App, {
+			initial: {
+				examples: [{ name: "Petstore", url: "https://example.com/p.json" }],
+			},
+		});
+		expect(
+			screen.getByRole("button", { name: /Petstore/ }),
+		).toBeInTheDocument();
+	});
+
 	it("switches to the workspace page once the import screen loads a schema", async () => {
 		vi.stubGlobal(
 			"fetch",

@@ -20,10 +20,10 @@ import WorkspacePicker from "./WorkspacePicker.svelte";
 let { initial }: { initial?: Bootstrap } = $props();
 const router = createRouter();
 let models = $state<Model[]>(
-	untrack(() => (initial ? initial.workspaces.map(load) : [])),
+	untrack(() => initial?.workspaces?.map(load) ?? []),
 );
 let chosen = $state<number | undefined>(
-	untrack(() => (initial?.workspaces.length === 1 ? 0 : undefined)),
+	untrack(() => (initial?.workspaces?.length === 1 ? 0 : undefined)),
 );
 const model = $derived(chosen === undefined ? undefined : models[chosen]);
 
@@ -76,5 +76,5 @@ $effect(() => {
 {:else if models.length > 1}
 	<WorkspacePicker {models} onpick={(i) => (chosen = i)} />
 {:else}
-	<ImportScreen onload={(schema, fileLabel) => { models = [load({ schema, fileLabel })]; chosen = 0; }} />
+	<ImportScreen examples={initial?.examples ?? []} onload={(schema, fileLabel) => { models = [load({ schema, fileLabel })]; chosen = 0; }} />
 {/if}

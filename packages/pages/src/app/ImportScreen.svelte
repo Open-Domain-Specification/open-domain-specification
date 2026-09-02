@@ -1,7 +1,14 @@
 <script lang="ts">
-/** Import by URL (query parameter or form) or by file upload; the last URL is remembered. */
-let { onload }: { onload: (schema: unknown, fileLabel: string) => void } =
-	$props();
+import type { Example } from "../protocol";
+
+/** Import by URL (query parameter or form), by file upload, or from an example card; the last URL is remembered. */
+let {
+	onload,
+	examples = [],
+}: {
+	onload: (schema: unknown, fileLabel: string) => void;
+	examples?: Example[];
+} = $props();
 const KEY = "ods-viewer-url";
 let url = $state(
 	new URLSearchParams(location.search).get("url") ?? remembered(),
@@ -47,6 +54,11 @@ async function fromFile(e: Event) {
 	}
 }
 
+function fromExample(example: Example) {
+	url = example.url;
+	fromUrl();
+}
+
 if (new URLSearchParams(location.search).get("url")) fromUrl();
 </script>
 
@@ -65,6 +77,17 @@ if (new URLSearchParams(location.search).get("url")) fromUrl();
 		<label for="file">From a file</label>
 		<input id="file" type="file" accept=".json,application/json" onchange={fromFile} />
 		{#if error}<p class="problems error">{error}</p>{/if}
+		{#if examples.length}
+			<h2 class="examples-title">Or try an example</h2>
+			<div class="grid examples">
+				{#each examples as example (example.url)}
+					<button type="button" class="card example" style:--tint={example.color} onclick={() => fromExample(example)} disabled={loading}>
+						<span class="card-head">{example.name}</span>
+						{#if example.description}<span class="dim">{example.description}</span>{/if}
+					</button>
+				{/each}
+			</div>
+		{/if}
 	</main>
 </div>
 
@@ -76,4 +99,10 @@ if (new URLSearchParams(location.search).get("url")) fromUrl();
 	input, button { font: inherit; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); color: inherit; }
 	button { cursor: pointer; }
 	.error { color: var(--error); }
+	.examples-title { margin: 28px 0 10px; font-size: 1rem; font-weight: 600; }
+	.examples { gap: 10px; }
+	.example { --tint: var(--accent); display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left; margin: 0; padding: 12px 14px; border-left: 3px solid var(--tint); cursor: pointer; }
+	.example:hover:not(:disabled) { border-color: var(--tint); }
+	.example .card-head { color: var(--tint); }
+	.example:disabled { cursor: default; opacity: 0.6; }
 </style>

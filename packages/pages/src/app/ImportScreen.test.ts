@@ -210,3 +210,57 @@ describe("ImportScreen", () => {
 		await waitFor(() => expect(screen.getByText("boom")).toBeInTheDocument());
 	});
 });
+
+describe("ImportScreen examples", () => {
+	const examples = [
+		{
+			name: "Petstore",
+			description: "A small shop",
+			url: "https://example.com/examples/petstore.json",
+			color: "#0ea5e9",
+		},
+		{ name: "Bare", url: "https://example.com/examples/bare.json" },
+	];
+
+	it("shows no example section when the host offers none", () => {
+		render(ImportScreen, { onload: vi.fn() });
+		expect(screen.queryByText("Or try an example")).not.toBeInTheDocument();
+	});
+
+	it("renders one card per example, tinted with its colour or the accent", () => {
+		render(ImportScreen, { onload: vi.fn(), examples });
+		expect(screen.getByText("Or try an example")).toBeInTheDocument();
+		const petstore = screen.getByRole("button", { name: /Petstore/ });
+		expect(petstore).toHaveTextContent("A small shop");
+		expect(petstore.getAttribute("style")).toContain("--tint: #0ea5e9");
+		// No colour: the card leaves --tint unset so the stylesheet's accent default applies.
+		expect(
+			screen.getByRole("button", { name: /Bare/ }).getAttribute("style") ?? "",
+		).not.toContain("--tint");
+	});
+
+	it("loads the example's URL when its card is clicked", async () => {
+		const schema = { name: "petstore" };
+		let resolve!: (r: unknown) => void;
+		const fetch = vi.fn().mockReturnValue(
+			new Promise((r) => {
+				resolve = r;
+			}),
+		);
+		vi.stubGlobal("fetch", fetch);
+		const onload = vi.fn();
+		render(ImportScreen, { onload, examples });
+
+		const card = screen.getByRole("button", { name: /Petstore/ });
+		await fireEvent.click(card);
+		// Cards are disabled while a load is in flight.
+		await waitFor(() => expect(card).toBeDisabled());
+		resolve({ ok: true, json: async () => schema });
+
+		await waitFor(() =>
+			expect(onload).toHaveBeenCalledWith(schema, "petstore.json"),
+		);
+		expect(fetch).toHaveBeenCalledWith(examples[0].url);
+		expect(screen.getByLabelText("From a URL")).toHaveValue(examples[0].url);
+	});
+});

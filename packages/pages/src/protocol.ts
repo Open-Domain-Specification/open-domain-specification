@@ -13,9 +13,21 @@ export type WorkspacePayload = {
 	diagnostics?: Diagnostic[];
 };
 
+/** An example workspace the viewer offers on its import screen. */
+export type Example = {
+	name: string;
+	description?: string;
+	/** Fetched by the browser, so it must allow cross-origin requests or be same-origin. */
+	url: string;
+	/** Accent for the card, e.g. the workspace primaryColor. */
+	color?: string;
+};
+
 /** What a host may place on `window.__ODS__` before the app script runs. */
 export type Bootstrap = {
-	workspaces: WorkspacePayload[];
+	workspaces?: WorkspacePayload[];
+	/** Shown as cards on the import screen when no workspace is handed in. */
+	examples?: Example[];
 	/** Ref to open first, when the host wants one other than the hash. */
 	ref?: string;
 };
