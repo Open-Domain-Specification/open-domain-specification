@@ -28,7 +28,6 @@ describe("contextMapToDigraph edge cases", () => {
 
 		const domain = workspace.addDomain("TestDomain", {
 			description: "Test domain",
-			type: "core",
 		});
 
 		const contextMap = ODSContextMap.fromDomain(domain);
@@ -49,10 +48,10 @@ describe("contextMapToDigraph edge cases", () => {
 
 		const domain = workspace.addDomain("Commerce", {
 			description: "Commerce domain",
-			type: "core",
 		});
 
 		const subdomain = domain.addSubdomain("Sales", {
+			type: "core",
 			description: "Sales subdomain",
 		});
 

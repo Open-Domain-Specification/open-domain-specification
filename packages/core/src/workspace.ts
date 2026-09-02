@@ -407,7 +407,6 @@ export class Workspace
 
 export type DomainAttributes = {
 	description: string;
-	type: ods.DomainType;
 	id?: string;
 };
 
@@ -415,7 +414,6 @@ export class Domain implements Visitable, SchemaConvertible<ods.DomainSchema> {
 	id: string;
 	name: string;
 	description: string;
-	type: ods.DomainType;
 	subdomains = new Map<string, Subdomain>();
 	workspace: Workspace;
 
@@ -435,7 +433,6 @@ export class Domain implements Visitable, SchemaConvertible<ods.DomainSchema> {
 		this.id = attributes.id || snakeCase(name);
 		this.name = name;
 		this.description = attributes.description;
-		this.type = attributes.type;
 		this.workspace = workspace;
 		this.workspace.domains.set(this.id, this);
 	}
@@ -452,7 +449,6 @@ export class Domain implements Visitable, SchemaConvertible<ods.DomainSchema> {
 		return {
 			name: this.name,
 			description: this.description,
-			type: this.type,
 			subdomains: asRecords(this.subdomains),
 		};
 	}
@@ -460,6 +456,7 @@ export class Domain implements Visitable, SchemaConvertible<ods.DomainSchema> {
 
 export type SubdomainAttributes = {
 	description: string;
+	type: ods.SubdomainType;
 	id?: string;
 };
 
@@ -469,6 +466,7 @@ export class Subdomain
 	id: string;
 	name: string;
 	description: string;
+	type: ods.SubdomainType;
 	boundedcontexts = new Map<string, BoundedContext>();
 	domain: Domain;
 
@@ -484,6 +482,7 @@ export class Subdomain
 		this.id = attributes.id || snakeCase(name);
 		this.name = name;
 		this.description = attributes.description;
+		this.type = attributes.type;
 		this.domain = domain;
 		this.domain.subdomains.set(this.id, this);
 	}
@@ -502,6 +501,7 @@ export class Subdomain
 	toSchema(): ods.SubdomainSchema {
 		return {
 			name: this.name,
+			type: this.type,
 			description: this.description,
 			boundedcontexts: asRecords(this.boundedcontexts),
 		};

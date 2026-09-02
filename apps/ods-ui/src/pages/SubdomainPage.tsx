@@ -1,4 +1,4 @@
-import { AppShell, Stack } from "@mantine/core";
+import { AppShell, Badge, Stack } from "@mantine/core";
 import {
 	ODSConsumptionGraph,
 	ODSContextMap,
@@ -27,6 +27,8 @@ export function _SubdomainPage(props: { subdomain: Subdomain }) {
 			title={props.subdomain.name}
 			description={props.subdomain.description}
 		>
+			<Badge>{props.subdomain.type}</Badge>
+
 			<Graphviz
 				title={`${props.subdomain.name} Context Map`}
 				height={"50vh"}

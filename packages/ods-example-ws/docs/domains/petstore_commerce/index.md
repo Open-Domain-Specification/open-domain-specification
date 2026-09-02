@@ -1,22 +1,22 @@
 
 
 
-# Petstore Commerce (core)
+# Petstore Commerce
 Core pet catalog, sales, and inventory capabilities
 
 ![contextmap](./contextmap.svg)
 
 ## Subdomains
 
-### [Catalog](subdomains/catalog/index.md)
+### [Catalog](subdomains/catalog/index.md) (core)
 Pet definitions, attributes, lifecycle
 
 
-### [Sales](subdomains/sales/index.md)
+### [Sales](subdomains/sales/index.md) (core)
 Orders and order lifecycle
 
 
-### [Inventory](subdomains/inventory/index.md)
+### [Inventory](subdomains/inventory/index.md) (supporting)
 Aggregated availability by status
 
 

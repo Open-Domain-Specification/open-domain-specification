@@ -10,7 +10,7 @@ import type { Options } from "./options";
 
 const domainSection = (domain: Domain) => `
 
-### [${domain.name}](${pathToIndexMd(domain.path, domain.workspace.path)}) (${domain.type})
+### [${domain.name}](${pathToIndexMd(domain.path, domain.workspace.path)})
 ${domain.description}
 
 `;

@@ -17,12 +17,10 @@ const workspace = new Workspace("Example Workspace", {
 
 workspace.addDomain("Example Domain A", {
 	description: "An example domain for testing.",
-	type: "core",
 });
 
 workspace.addDomain("Example Domain B", {
 	description: "Another example domain for testing.",
-	type: "core",
 });
 
 class SimpleVisitor extends AbstractVisitor {

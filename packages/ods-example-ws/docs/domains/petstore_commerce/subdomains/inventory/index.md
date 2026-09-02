@@ -1,6 +1,6 @@
 
 
-# Inventory
+# Inventory (supporting)
 Aggregated availability by status
 
 ![contextmap](./contextmap.svg)

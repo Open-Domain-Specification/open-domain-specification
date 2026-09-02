@@ -12,25 +12,28 @@ describe("Swagger Petstore Example Workspace", () => {
 		expect(workspace.logoUrl).toBeDefined();
 	});
 
-	it("should have core Petstore Commerce domain", () => {
+	it("should classify Petstore Commerce subdomains", () => {
 		const commerceDomain = workspace.getDomainByRef(
 			"#/domains/petstore_commerce",
 		);
 		expect(commerceDomain).toBeDefined();
 		expect(commerceDomain?.name).toBe("Petstore Commerce");
-		expect(commerceDomain?.type).toBe("core");
+		expect(commerceDomain?.subdomains.get("catalog")?.type).toBe("core");
+		expect(commerceDomain?.subdomains.get("inventory")?.type).toBe(
+			"supporting",
+		);
 		expect(commerceDomain?.description).toContain(
 			"pet catalog, sales, and inventory",
 		);
 	});
 
-	it("should have supporting Identity & Accounts domain", () => {
+	it("should classify the Identity & Accounts subdomain as generic", () => {
 		const identityDomain = workspace.getDomainByRef(
 			"#/domains/identity_&_accounts",
 		);
 		expect(identityDomain).toBeDefined();
 		expect(identityDomain?.name).toBe("Identity & Accounts");
-		expect(identityDomain?.type).toBe("supporting");
+		expect(identityDomain?.subdomains.get("users")?.type).toBe("generic");
 		expect(identityDomain?.description).toContain("Users and sessions");
 	});
 

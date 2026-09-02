@@ -13,20 +13,20 @@ const ws = new Workspace("eCommerce", {
 // === DOMAINS ===
 const commerce = ws.addDomain("Commerce", {
 	description: "Core commerce capabilities",
-	type: "core",
 });
 
 const content = ws.addDomain("Content", {
 	description: "Supporting site content",
-	type: "supporting",
 });
 
 // === SUBDOMAINS ===
 const sales = commerce.addSubdomain("Sales", {
+	type: "core",
 	description: "From cart to order",
 });
 
 const publishing = content.addSubdomain("Publishing", {
+	type: "supporting",
 	description: "Pages and articles",
 });
 

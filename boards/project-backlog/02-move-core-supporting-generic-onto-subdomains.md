@@ -1,8 +1,9 @@
 ---
-column: backlog
+column: review
 labels: [ddd, backend, breaking]
 priority: high
-updatedAt: 2026-09-02T12:00:00.000Z
+updatedAt: 2026-09-02T11:48:45.000Z
+live: false
 ---
 # Move core/supporting/generic classification onto subdomains
 
@@ -10,7 +11,11 @@ DDD classifies subdomains as core, supporting or generic. The schema puts `type:
 
 ## Checklist
 
-- [ ] Add `type` to SubdomainSchema and Subdomain class
-- [ ] Remove or deprecate `type` on Domain with a migration in workspace-from-schema.ts
-- [ ] Update doc, graphviz and UI rendering of the type badge
-- [ ] Update the petstore example
+- [x] Add `type` to SubdomainSchema and Subdomain class
+- [x] Remove or deprecate `type` on Domain with a migration in workspace-from-schema.ts
+- [x] Update doc, graphviz and UI rendering of the type badge
+- [x] Update the petstore example
+
+## Comments
+
+- **claude** (2026-09-02T11:48:45.000Z): Recorded decisions/01-classify-subdomains-not-domains.md. Added SubdomainType and removed type from DomainSchema in packages/core/src/schema.ts:61-80; moved the field on the model in packages/core/src/workspace.ts:405-470. New migration module packages/core/src/migrate.ts:1-57 backfills subdomain type from the legacy domain type (default supporting) and is applied by getWorkspaceFromSchema at packages/core/src/workspace-from-schema.ts:14-17, with tests in packages/core/src/migrate.test.ts. Doc templates show the badge on subdomains (packages/doc/src/domain.md.ts:12, subdomain.md.ts:19); UI badge added in apps/ods-ui/src/pages/SubdomainPage.tsx:30. Petstore reclassified per subdomain (Catalog/Sales core, Inventory supporting, Users generic) and example JSON, docs tests and snapshots regenerated. Full build and tests green. Six-agent clean-code audit: nothing above 0.5.

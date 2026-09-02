@@ -1,4 +1,5 @@
 import { getDebug } from "./debug";
+import { migrateWorkspaceSchema } from "./migrate";
 import {
 	aggregateRef,
 	entityRef,
@@ -11,8 +12,9 @@ import { Workspace } from "./workspace";
 const debug = getDebug("get-workspace-from-schema");
 
 export function getWorkspaceFromSchema(
-	workspaceSchema: WorkspaceSchema,
+	rawWorkspaceSchema: WorkspaceSchema,
 ): Workspace {
+	const workspaceSchema = migrateWorkspaceSchema(rawWorkspaceSchema);
 	debug(`Creating workspace from schema: ${workspaceSchema.name}`);
 	debug(workspaceSchema);
 	const workspace = new Workspace(workspaceSchema.name, {

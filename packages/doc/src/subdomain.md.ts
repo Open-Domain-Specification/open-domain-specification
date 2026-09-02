@@ -16,7 +16,7 @@ ${boundedcontext.description}
 
 export const subdomainMd = (subdomain: Subdomain, options?: Options) => `
 ${options?.breadcrumbs ? breadcrumbsMd(subdomain.domain.workspace, subdomain.domain, subdomain) : ""}
-# ${subdomain.name}
+# ${subdomain.name} (${subdomain.type})
 ${subdomain.description}
 
 ![contextmap](${pathToContextMapSvg(subdomain.path, subdomain.path)})

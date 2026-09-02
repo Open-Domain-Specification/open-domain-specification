@@ -9,10 +9,10 @@
     "petstore_commerce": {
       "name": "Petstore Commerce",
       "description": "Core pet catalog, sales, and inventory capabilities",
-      "type": "core",
       "subdomains": {
         "catalog": {
           "name": "Catalog",
+          "type": "core",
           "description": "Pet definitions, attributes, lifecycle",
           "boundedcontexts": {
             "catalog_bc": {
@@ -189,6 +189,7 @@
         },
         "sales": {
           "name": "Sales",
+          "type": "core",
           "description": "Orders and order lifecycle",
           "boundedcontexts": {
             "sales_bc": {
@@ -340,6 +341,7 @@
         },
         "inventory": {
           "name": "Inventory",
+          "type": "supporting",
           "description": "Aggregated availability by status",
           "boundedcontexts": {
             "inventory_bc": {
@@ -438,10 +440,10 @@
     "identity_&_accounts": {
       "name": "Identity & Accounts",
       "description": "Users and sessions per Petstore API",
-      "type": "supporting",
       "subdomains": {
         "users": {
           "name": "Users",
+          "type": "generic",
           "description": "User records and login/logout",
           "boundedcontexts": {
             "identity_bc": {

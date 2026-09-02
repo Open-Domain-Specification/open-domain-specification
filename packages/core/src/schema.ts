@@ -58,7 +58,15 @@ export interface ConsumptionSchema {
 	pattern: ConsumptionPattern;
 }
 
-export type DomainType = "core" | "supporting" | "generic";
+/**
+ * Strategic classification of a subdomain: the part of the problem space
+ * the business competes on (core), needs but does not differentiate on
+ * (supporting), or can buy off the shelf (generic).
+ */
+export type SubdomainType = "core" | "supporting" | "generic";
+
+/** @deprecated Classification moved to subdomains. Use {@link SubdomainType}. */
+export type DomainType = SubdomainType;
 
 /**
  * @title Domain
@@ -66,7 +74,6 @@ export type DomainType = "core" | "supporting" | "generic";
  */
 export interface DomainSchema {
 	name: string;
-	type: DomainType;
 	description: string;
 	subdomains: {
 		[subdomain: string]: SubdomainSchema;
@@ -127,6 +134,7 @@ export interface ServiceSchema {
  */
 export interface SubdomainSchema {
 	name: string;
+	type: SubdomainType;
 	description: string;
 	boundedcontexts: {
 		[boundedcontext: string]: BoundedContextSchema;

@@ -1,6 +1,6 @@
 
 
-# Sales
+# Sales (core)
 Orders and order lifecycle
 
 ![contextmap](./contextmap.svg)

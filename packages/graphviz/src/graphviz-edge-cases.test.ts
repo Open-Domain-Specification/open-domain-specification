@@ -17,10 +17,10 @@ describe("relationMapToDigraph edge cases", () => {
 
 		const domain = workspace.addDomain("Test", {
 			description: "Test domain",
-			type: "core",
 		});
 
 		const subdomain = domain.addSubdomain("Test", {
+			type: "core",
 			description: "Test subdomain",
 		});
 
@@ -50,10 +50,10 @@ describe("relationMapToDigraph edge cases", () => {
 
 		const domain = workspace.addDomain("Commerce", {
 			description: "Commerce domain",
-			type: "core",
 		});
 
 		const subdomain = domain.addSubdomain("Sales", {
+			type: "core",
 			description: "Sales subdomain",
 		});
 
@@ -97,10 +97,10 @@ describe("consumableMapToDigraph edge cases", () => {
 
 		const domain = workspace.addDomain("Test", {
 			description: "Test domain",
-			type: "core",
 		});
 
 		const subdomain = domain.addSubdomain("Test", {
+			type: "core",
 			description: "Test subdomain",
 		});
 
@@ -131,10 +131,10 @@ describe("consumableMapToDigraph edge cases", () => {
 
 		const domain = workspace.addDomain("Commerce", {
 			description: "Commerce domain",
-			type: "core",
 		});
 
 		const subdomain = domain.addSubdomain("Sales", {
+			type: "core",
 			description: "Sales subdomain",
 		});
 
@@ -190,10 +190,10 @@ describe("consumableMapToDigraph edge cases", () => {
 
 		const domain = workspace.addDomain("Commerce", {
 			description: "Commerce domain",
-			type: "core",
 		});
 
 		const subdomain = domain.addSubdomain("Sales", {
+			type: "core",
 			description: "Sales subdomain",
 		});
 
@@ -231,7 +231,6 @@ describe("Graphviz error handling", () => {
 
 		const domain = workspace.addDomain("Test", {
 			description: "Test domain",
-			type: "core",
 		});
 
 		const relationMap = ODSRelationMap.fromDomain(domain);

@@ -1,6 +1,6 @@
 
 
-# Catalog
+# Catalog (core)
 Pet definitions, attributes, lifecycle
 
 ![contextmap](./contextmap.svg)

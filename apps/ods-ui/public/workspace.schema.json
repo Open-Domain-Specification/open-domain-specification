@@ -181,27 +181,15 @@
                         "$ref": "#/definitions/SubdomainSchema"
                     },
                     "type": "object"
-                },
-                "type": {
-                    "$ref": "#/definitions/DomainType"
                 }
             },
             "required": [
                 "description",
                 "name",
-                "subdomains",
-                "type"
+                "subdomains"
             ],
             "title": "Domain",
             "type": "object"
-        },
-        "DomainType": {
-            "enum": [
-                "core",
-                "generic",
-                "supporting"
-            ],
-            "type": "string"
         },
         "EntityRelationSchema": {
             "additionalProperties": false,
@@ -344,15 +332,28 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/SubdomainType"
                 }
             },
             "required": [
                 "boundedcontexts",
                 "description",
-                "name"
+                "name",
+                "type"
             ],
             "title": "Subdomain",
             "type": "object"
+        },
+        "SubdomainType": {
+            "description": "Strategic classification of a subdomain: the part of the problem space\nthe business competes on (core), needs but does not differentiate on\n(supporting), or can buy off the shelf (generic).",
+            "enum": [
+                "core",
+                "generic",
+                "supporting"
+            ],
+            "type": "string"
         },
         "ValueObjectSchema": {
             "additionalProperties": false,

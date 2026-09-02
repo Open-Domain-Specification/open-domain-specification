@@ -9,7 +9,7 @@ import { pathToContextMapSvg, pathToIndexMd } from "./lib/paths";
 import type { Options } from "./options";
 
 const subdomainSection = (subdomain: Subdomain) => `
-### [${subdomain.name}](${pathToIndexMd(subdomain.path, subdomain.domain.path)})
+### [${subdomain.name}](${pathToIndexMd(subdomain.path, subdomain.domain.path)}) (${subdomain.type})
 ${subdomain.description}
 
 `;
@@ -17,7 +17,7 @@ ${subdomain.description}
 export const domainMd = (domain: Domain, options?: Options) => `
 ${options?.breadcrumbs ? breadcrumbsMd(domain.workspace, domain) : ""}
 
-# ${domain.name} (${domain.type})
+# ${domain.name}
 ${domain.description}
 
 ![contextmap](${pathToContextMapSvg(domain.path, domain.path)})

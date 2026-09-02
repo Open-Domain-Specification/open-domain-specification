@@ -9,10 +9,10 @@ export function makeTestWs() {
 
 	const d1 = ws.addDomain("D1", {
 		description: "",
-		type: "core",
 	});
 
 	const d1Sd1 = d1.addSubdomain([d1.name, "SD1"].join("."), {
+		type: "core",
 		description: "",
 	});
 
@@ -61,10 +61,10 @@ export function makeTestWs() {
 
 	const d2 = ws.addDomain("D2", {
 		description: "",
-		type: "core",
 	});
 
 	const d2Sd1 = d2.addSubdomain([d2.name, "SD1"].join("."), {
+		type: "core",
 		description: "",
 	});
 
@@ -140,9 +140,9 @@ export function makeRichTestWs() {
 
 	const sales = ws.addDomain("Sales", {
 		description: "Sales domain",
-		type: "core",
 	});
 	const ordering = sales.addSubdomain("Ordering", {
+		type: "core",
 		description: "Ordering subdomain",
 	});
 	const orderingBc = ordering.addBoundedcontext("Ordering BC", {
@@ -182,9 +182,9 @@ export function makeRichTestWs() {
 
 	const billing = ws.addDomain("Billing", {
 		description: "Billing domain",
-		type: "supporting",
 	});
 	const invoicing = billing.addSubdomain("Invoicing", {
+		type: "supporting",
 		description: "Invoicing subdomain",
 	});
 	const invoicingBc = invoicing.addBoundedcontext("Invoicing BC", {

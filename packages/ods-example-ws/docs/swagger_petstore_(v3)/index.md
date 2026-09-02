@@ -8,12 +8,12 @@ DDD/ODS model for Swagger Petstore v3. Inventory is a projection returning a sta
 ## Domains
 
 
-### [Petstore Commerce](../domains/petstore_commerce/index.md) (core)
+### [Petstore Commerce](../domains/petstore_commerce/index.md)
 Core pet catalog, sales, and inventory capabilities
 
 
 
-### [Identity & Accounts](../domains/identity_&_accounts/index.md) (supporting)
+### [Identity & Accounts](../domains/identity_&_accounts/index.md)
 Users and sessions per Petstore API
 
 

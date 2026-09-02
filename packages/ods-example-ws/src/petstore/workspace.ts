@@ -21,24 +21,26 @@ export const workspace = new Workspace("Swagger Petstore (v3)", {
 
 const commerce = workspace.addDomain("Petstore Commerce", {
 	description: "Core pet catalog, sales, and inventory capabilities",
-	type: "core",
 });
 
 const identity = workspace.addDomain("Identity & Accounts", {
 	description: "Users and sessions per Petstore API",
-	type: "supporting",
 });
 
 const catalogSD = commerce.addSubdomain("Catalog", {
+	type: "core",
 	description: "Pet definitions, attributes, lifecycle",
 });
 const salesSD = commerce.addSubdomain("Sales", {
+	type: "core",
 	description: "Orders and order lifecycle",
 });
 const inventorySD = commerce.addSubdomain("Inventory", {
+	type: "supporting",
 	description: "Aggregated availability by status",
 });
 const usersSD = identity.addSubdomain("Users", {
+	type: "generic",
 	description: "User records and login/logout",
 });
 

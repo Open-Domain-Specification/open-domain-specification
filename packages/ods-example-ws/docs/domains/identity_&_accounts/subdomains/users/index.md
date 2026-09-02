@@ -1,6 +1,6 @@
 
 
-# Users
+# Users (generic)
 User records and login/logout
 
 ![contextmap](./contextmap.svg)

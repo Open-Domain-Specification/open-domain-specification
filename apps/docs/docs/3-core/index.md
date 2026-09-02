@@ -37,8 +37,8 @@ The ODS core follows a hierarchical structure aligned with Domain-Driven Design 
 
 ```
 Workspace
-├── Domain (core/supporting/generic)
-│   └── Subdomain
+├── Domain
+│   └── Subdomain (core/supporting/generic)
 │       └── Bounded Context
 │           ├── Service (application/domain/infrastructure)
 │           │   ├── Consumables

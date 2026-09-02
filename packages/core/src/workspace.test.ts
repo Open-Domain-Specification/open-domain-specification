@@ -62,13 +62,11 @@ describe("Workspace", () => {
 
 		const domain = workspace.addDomain("Commerce", {
 			description: "Core commerce capabilities",
-			type: "core",
 		});
 
 		expect(domain.name).toBe("Commerce");
 		expect(domain.id).toBe("commerce");
 		expect(domain.description).toBe("Core commerce capabilities");
-		expect(domain.type).toBe("core");
 		expect(domain.workspace).toBe(workspace);
 		expect(workspace.domains.get("commerce")).toBe(domain);
 	});
@@ -82,7 +80,6 @@ describe("Workspace", () => {
 
 		const domain = workspace.addDomain("Commerce", {
 			description: "Core commerce capabilities",
-			type: "core",
 		});
 
 		expect(workspace.getDomainByRef(domain.ref)).toBe(domain);
@@ -110,10 +107,10 @@ describe("Workspace", () => {
 
 		const domain = workspace.addDomain("Commerce", {
 			description: "Core commerce capabilities",
-			type: "core",
 		});
 
 		const subdomain = domain.addSubdomain("Sales", {
+			type: "core",
 			description: "Sales functionality",
 		});
 
@@ -143,7 +140,6 @@ describe("Workspace", () => {
 
 		const _domain = workspace.addDomain("Commerce", {
 			description: "Core commerce capabilities",
-			type: "core",
 		});
 
 		const schema = workspace.toSchema();
@@ -168,7 +164,6 @@ describe("Domain", () => {
 
 		const domain = workspace.addDomain("Commerce Domain", {
 			description: "Core commerce capabilities",
-			type: "core",
 			id: "custom-commerce",
 		});
 
@@ -185,10 +180,10 @@ describe("Domain", () => {
 
 		const domain = workspace.addDomain("Commerce", {
 			description: "Core commerce capabilities",
-			type: "core",
 		});
 
 		const subdomain = domain.addSubdomain("Sales", {
+			type: "core",
 			description: "Sales functionality",
 		});
 
@@ -206,14 +201,13 @@ describe("Domain", () => {
 
 		const domain = workspace.addDomain("Commerce", {
 			description: "Core commerce capabilities",
-			type: "supporting",
 		});
 
 		const schema = domain.toSchema();
 
 		expect(schema.name).toBe("Commerce");
 		expect(schema.description).toBe("Core commerce capabilities");
-		expect(schema.type).toBe("supporting");
+		expect(schema).not.toHaveProperty("type");
 		expect(schema.subdomains).toEqual({});
 	});
 });
@@ -228,10 +222,10 @@ describe("Subdomain", () => {
 
 		const domain = workspace.addDomain("Commerce", {
 			description: "Core commerce capabilities",
-			type: "core",
 		});
 
 		const subdomain = domain.addSubdomain("Sales & Marketing", {
+			type: "core",
 			description: "Sales functionality",
 			id: "sales-marketing",
 		});
@@ -249,10 +243,10 @@ describe("Subdomain", () => {
 
 		const domain = workspace.addDomain("Commerce", {
 			description: "Core commerce capabilities",
-			type: "core",
 		});
 
 		const subdomain = domain.addSubdomain("Sales", {
+			type: "core",
 			description: "Sales functionality",
 		});
 
@@ -287,10 +281,10 @@ describe("Workspace lookup methods", () => {
 
 		domain = workspace.addDomain("Commerce", {
 			description: "Core commerce capabilities",
-			type: "core",
 		});
 
 		subdomain = domain.addSubdomain("Sales", {
+			type: "core",
 			description: "Sales functionality",
 		});
 

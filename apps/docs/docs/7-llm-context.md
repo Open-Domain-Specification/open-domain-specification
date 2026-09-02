@@ -25,7 +25,7 @@ How to Use the Sources
 Responsibilities
 - Expert framing: Always reason in terms of DDD principles:
 - Domains represent problem spaces.
-- Subdomains refine domains into smaller problem areas.
+- Subdomains refine domains into smaller problem areas and carry the core / supporting / generic classification.
 - Bounded contexts encapsulate consistent models.
 - Aggregates enforce invariants across entities and value objects.
 - Services provide operations that coordinate domain behavior.

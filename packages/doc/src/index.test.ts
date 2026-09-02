@@ -34,10 +34,10 @@ describe("toDoc", () => {
 
 		const commerce = workspace.addDomain("Commerce", {
 			description: "Core commerce capabilities",
-			type: "core",
 		});
 
 		const _sales = commerce.addSubdomain("Sales", {
+			type: "core",
 			description: "Sales functionality",
 		});
 
@@ -73,10 +73,10 @@ describe("toDoc", () => {
 
 		const commerce = workspace.addDomain("Commerce", {
 			description: "Core commerce capabilities",
-			type: "core",
 		});
 
 		const sales = commerce.addSubdomain("Sales", {
+			type: "core",
 			description: "Sales functionality",
 		});
 

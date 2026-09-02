@@ -68,7 +68,6 @@ describe("Workspace ref lookups", () => {
 		const { ws } = makeRichTestWs();
 		const domain = ws.addDomain("Whatever Name", {
 			description: "",
-			type: "generic",
 			id: "stable",
 		});
 		expect(domain.ref).toBe("#/domains/stable");
