@@ -34,17 +34,22 @@ const apply = () => diagramOptions.set({ handles, edges });
 <style>
 	:global(.diagram-options) {
 		display: flex;
-		gap: 8px;
-		padding: 6px 8px;
+		gap: 10px;
+		align-items: center;
+		padding: 4px 8px;
 		background: var(--card);
 		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		font-size: 11px;
+		opacity: 0.85;
+	}
+	:global(.diagram-options:hover) {
+		opacity: 1;
 	}
 	label {
 		display: flex;
-		flex-direction: column;
-		gap: 2px;
+		align-items: center;
+		gap: 4px;
 		color: var(--muted);
 	}
 	select {
@@ -53,6 +58,6 @@ const apply = () => diagramOptions.set({ handles, edges });
 		background: var(--bg);
 		border: 1px solid var(--border);
 		border-radius: 3px;
-		padding: 2px 4px;
+		padding: 1px 3px;
 	}
 </style>

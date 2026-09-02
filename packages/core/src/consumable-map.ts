@@ -1,7 +1,7 @@
 import objectHash from "object-hash";
 import { ODSConsumptionGraph } from "./consumption-graph";
 import { contextMemberNamespace, type ODSNamespace } from "./namespace";
-import type { DownstreamRole, UpstreamRole } from "./schema";
+import type { ConsumableType, DownstreamRole, UpstreamRole } from "./schema";
 import {
 	type Aggregate,
 	type BoundedContext,
@@ -71,6 +71,7 @@ export class ODSConsumableMap {
 				id: consumption.consumable.ref,
 				name: consumption.consumable.name,
 				description: consumption.consumable.description,
+				type: consumption.consumable.type,
 				node: targetNode,
 			});
 
@@ -136,6 +137,8 @@ export type ODSConsumptionMapNodeSlot = {
 	id: string;
 	name: string;
 	description?: string;
+	/** Whether the consumable is an event or an operation. */
+	type: ConsumableType;
 	node: ODSConsumptionMapNode;
 };
 

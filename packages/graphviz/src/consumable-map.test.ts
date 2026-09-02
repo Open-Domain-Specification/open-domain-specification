@@ -43,6 +43,7 @@ describe("ConsumableMap", () => {
 			id: "a2-slot",
 			name: "A2 Slot",
 			description: "A2 Slot Description",
+			type: "operation",
 			node: a2,
 		});
 

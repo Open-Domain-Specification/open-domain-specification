@@ -16,7 +16,11 @@ import {
 	toDot,
 } from "ts-graphviz";
 import { getDebug } from "./debug";
-import { DOWNSTREAM_ROLE_LABELS, UPSTREAM_ROLE_LABELS } from "./role-labels";
+import {
+	DOWNSTREAM_ROLE_LABELS,
+	RELATIONSHIP_LABELS,
+	UPSTREAM_ROLE_LABELS,
+} from "./role-labels";
 
 const stylesheet = `\
 .graph text {
@@ -38,14 +42,6 @@ const debug = getDebug("context-map");
 function namespaceId(node: ODSContextMapNode): string {
 	return node.namespace.map((it) => it.id).join("__");
 }
-
-const RELATIONSHIP_LABELS: Record<ContextRelationshipType, string> = {
-	"upstream-downstream": "U/D",
-	"customer-supplier": "C/S",
-	partnership: "P",
-	"shared-kernel": "SK",
-	"separate-ways": "SW",
-};
 
 const SYMMETRIC_EDGE_COLORS: Partial<Record<ContextRelationshipType, string>> =
 	{

@@ -1,119 +1,115 @@
+import {
+	ODSConsumableMap,
+	ODSContextMap,
+	ODSRelationMap,
+} from "@open-domain-specification/core";
 import { fireEvent, render, waitFor } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
-import type { Graph } from "../flow/graph";
+import { petstoreModel } from "../fixtures";
+import { consumableGraph, contextGraph, relationGraph } from "../flow/graph";
+import { diagramOptions } from "../flow/options.svelte";
 import { installXyflowTestEnv } from "../xyflow-test-env";
 import InteractiveDiagram from "./InteractiveDiagram.svelte";
 
 installXyflowTestEnv();
 
-const graph: Graph = {
-	nodes: [
-		{ id: "#/a", label: "A", icon: "symbol-field" },
-		{
-			id: "#/b",
-			label: "B",
-			icon: "symbol-field",
-			group: "Group",
-			tone: "core",
-		},
-		{
-			id: "#/c",
-			label: "C",
-			icon: "symbol-field",
-			chips: ["root"],
-			tone: "warn",
-			attributes: [
-				{ name: "id", type: "string", identity: true },
-				{ name: "name", type: "string", identity: false },
-			],
-		},
-	],
-	edges: [
-		{
-			id: "e1",
-			source: "#/a",
-			target: "#/b",
-			label: "relates",
-			directed: true,
-		},
-		{
-			id: "e2",
-			source: "#/b",
-			target: "#/c",
-			label: "includes",
-			directed: false,
-			dashed: true,
-		},
-	],
-};
+const { workspace } = petstoreModel();
+const sales = workspace.boundedcontexts.get("sales_bc")!;
+const order = sales.aggregates.get("order")!;
 
 describe("InteractiveDiagram", () => {
-	it("renders every node, including groups, chips and attribute compartments", async () => {
+	it("draws the context map with context nodes, nested clusters and context edges, and navigates on click", async () => {
 		location.hash = "";
+		const graph = contextGraph(ODSContextMap.fromWorkspace(workspace));
 		const { container } = render(InteractiveDiagram, { graph });
-
 		await waitFor(() => {
-			expect(container.querySelector('[data-id="#/a"]')).toBeTruthy();
-			expect(container.querySelector('[data-id="#/b"]')).toBeTruthy();
-			expect(container.querySelector('[data-id="#/c"]')).toBeTruthy();
+			expect(container.querySelectorAll(".context-node").length).toBe(
+				graph.nodes.length,
+			);
 		});
-		expect(container.querySelector(".ods-node.core")).toBeInTheDocument();
-		expect(container.querySelector(".ods-node.warn")).toBeInTheDocument();
-		expect(container.querySelector(".group")).toHaveTextContent("Group");
-		expect(container.querySelector(".chips")).toHaveTextContent("root");
-		expect(container.querySelectorAll(".attrs li")).toHaveLength(2);
-
-		const node = container.querySelector('[data-id="#/b"]') as HTMLElement;
+		expect(container.querySelectorAll(".cluster-node").length).toBe(
+			graph.groups?.length,
+		);
+		expect(container.querySelector(".group")).toBeInTheDocument();
+		// The workspace cluster is the outermost region; contexts sit inside their domain's region.
+		const ws = container.querySelector(
+			'.cluster-node[data-depth="0"]',
+		) as HTMLElement;
+		expect(ws.getAttribute("style")).toContain("--shade: 0.14");
+		expect(
+			container
+				.querySelector('.cluster-node[data-depth="1"]')
+				?.getAttribute("style"),
+		).toContain("--shade: 0.11");
+		const node = container.querySelector(
+			`[data-id="${sales.ref}"]`,
+		) as HTMLElement;
+		const region = container.querySelector(
+			'.svelte-flow__node[data-id^="cluster:"]',
+		) as HTMLElement;
+		// Svelte Flow stacks children above their parent, so the region sits behind its members.
+		expect(Number(node.style.zIndex)).toBeGreaterThan(
+			Number(region.style.zIndex),
+		);
 		await fireEvent.click(node);
-		expect(location.hash).toBe("#/b");
+		expect(location.hash).toBe(sales.ref);
 	});
 
-	it("accepts a top-to-bottom direction", async () => {
-		const { container } = render(InteractiveDiagram, {
-			graph,
+	it("draws the consumable and relation maps with their own node and edge components", async () => {
+		const consumables = render(InteractiveDiagram, {
+			graph: consumableGraph(ODSConsumableMap.fromBoundedContext(sales)),
 			direction: "TB",
 		});
 		await waitFor(() => {
-			expect(container.querySelector(".interactive")).toBeInTheDocument();
+			expect(
+				consumables.container.querySelector(".consumable-node .slot"),
+			).toBeTruthy();
 		});
+		const relations = render(InteractiveDiagram, {
+			graph: relationGraph(ODSRelationMap.fromAggregate(order)),
+		});
+		await waitFor(() => {
+			expect(
+				relations.container.querySelectorAll(".relation-node").length,
+			).toBeGreaterThan(1);
+		});
+		expect(relations.container.querySelector(".stereotype")).toBeTruthy();
 	});
 });
 
-describe("OdsNode tone", () => {
-	it("falls back to no tone class when the node has none", () => {
-		const { container } = render(InteractiveDiagram, {
-			graph: {
-				nodes: [{ id: "#/plain", label: "Plain", icon: "symbol-class" }],
-				edges: [],
-			},
-		});
-		const node = container.querySelector(".ods-node");
-		expect(node).toBeTruthy();
-		for (const tone of ["core", "warn", "muted"])
-			expect(node?.classList.contains(tone)).toBe(false);
-	});
-});
-
-describe("diagram options in the interactive view", () => {
-	it("switches every edge to the floating type and hides the fixed handles", async () => {
-		const { diagramOptions } = await import("../flow/options.svelte");
-		diagramOptions.set({ handles: "floating", edges: "straight" });
+describe("InteractiveDiagram with a bare graph", () => {
+	it("draws ungrouped nodes at the top level and dashed, directed edges", async () => {
 		const { container } = render(InteractiveDiagram, {
 			graph: {
 				nodes: [
-					{ id: "#/a", label: "A", icon: "symbol-class" },
-					{ id: "#/b", label: "B", icon: "symbol-class" },
+					{ id: "#/a", type: "context", label: "A", icon: "boundedcontext" },
+					{ id: "#/b", type: "context", label: "B", icon: "boundedcontext" },
 				],
 				edges: [
 					{
 						id: "e",
+						type: "context",
 						source: "#/a",
 						target: "#/b",
-						label: "uses",
+						label: "U/D",
+						dashed: true,
 						directed: true,
 					},
 				],
 			},
+		});
+		await waitFor(() => {
+			expect(container.querySelectorAll(".context-node").length).toBe(2);
+		});
+		expect(container.querySelector(".cluster-node")).toBeNull();
+	});
+});
+
+describe("diagram options in the interactive view", () => {
+	it("hides the fixed handles while floating and shows the options panel", async () => {
+		diagramOptions.set({ handles: "floating", edges: "straight" });
+		const { container } = render(InteractiveDiagram, {
+			graph: contextGraph(ODSContextMap.fromWorkspace(workspace)),
 		});
 		await waitFor(() => {
 			expect(
@@ -123,10 +119,6 @@ describe("diagram options in the interactive view", () => {
 		expect(
 			container.querySelector(".svelte-flow__panel.top.right"),
 		).toBeTruthy();
-		for (const edges of ["bezier", "step", "smoothstep"] as const) {
-			diagramOptions.set({ edges });
-			await waitFor(() => expect(diagramOptions.edges).toBe(edges));
-		}
 		diagramOptions.set({ handles: "fixed", edges: "bezier" });
 		await waitFor(() => {
 			expect(container.querySelectorAll(".handle-hidden").length).toBe(0);

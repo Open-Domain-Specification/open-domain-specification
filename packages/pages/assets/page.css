@@ -453,6 +453,79 @@ table.attrs td.k {
 	border-top: 1px solid var(--border);
 }
 
+/* Interactive diagrams */
+/* The node card every diagram node builds on. */
+.flow-card {
+	background: var(--card);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: 8px 12px;
+	font-size: 12px;
+	color: var(--fg);
+	min-width: 120px;
+	cursor: pointer;
+}
+.flow-card .head {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+	white-space: nowrap;
+}
+/* The cluster path under the name. */
+.flow-card .group {
+	color: var(--muted);
+	font-size: 11px;
+	white-space: nowrap;
+}
+/* Edge text: the midpoint label and the stereotype, haloed so lines never cross it. */
+.svelte-flow .edge-label {
+	font-size: 11px;
+	fill: var(--fg);
+	paint-order: stroke;
+	stroke: var(--card);
+	stroke-width: 4px;
+	stroke-linejoin: round;
+	pointer-events: none;
+}
+/* Ports: where an edge meets a node, badged with that end's role, pattern or cardinality.
+   Edges draw theirs as edge labels, above every line; a node draws its own as a port handle. */
+.svelte-flow .svelte-flow__edge-label.port,
+.svelte-flow .svelte-flow__handle.port-handle {
+	box-sizing: border-box;
+	min-width: 22px;
+	height: 22px;
+	padding: 0 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 11px;
+	background: var(--card);
+	border: 1px solid var(--border);
+	color: var(--fg);
+	font-size: 9px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	line-height: 1;
+	white-space: nowrap;
+}
+.svelte-flow .svelte-flow__edge-label.port {
+	pointer-events: none;
+}
+/* Fixed handles are small dots in the card colours. */
+.svelte-flow .svelte-flow__handle {
+	width: 6px;
+	height: 6px;
+	background: var(--card);
+	border: 1px solid var(--border);
+}
+.svelte-flow .svelte-flow__handle.port-handle {
+	width: auto;
+}
+/* Hidden while the handles float: the edge finds its own end, but the handle keeps its measurement. */
+.svelte-flow .svelte-flow__handle.handle-hidden {
+	opacity: 0;
+}
+
 /* diagram modal */
 .modal {
 	position: fixed;

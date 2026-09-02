@@ -14,6 +14,7 @@ import {
 	toDot,
 } from "ts-graphviz";
 import { getDebug } from "./debug";
+import { STEREOTYPES } from "./role-labels";
 import {
 	escapeHtml,
 	FONT,
@@ -22,13 +23,6 @@ import {
 } from "./theme";
 
 const debug = getDebug("relation-map");
-
-/** UML stereotype shown above the class name. */
-const STEREOTYPES: Record<ODSRelationMapNode["type"], string> = {
-	entity_root: "root entity",
-	entity: "entity",
-	valueobject: "value object",
-};
 
 /**
  * UML arrow for each relation: `references` is a navigable association,

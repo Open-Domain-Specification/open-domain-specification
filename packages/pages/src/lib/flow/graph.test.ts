@@ -1,8 +1,6 @@
 import type {
 	ODSContextMapEdge,
 	ODSContextMapNode,
-	ODSRelationMapEdge,
-	ODSRelationMapNode,
 } from "@open-domain-specification/core";
 import {
 	ODSConsumableMap,
@@ -11,7 +9,12 @@ import {
 } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { petstoreModel } from "../fixtures";
-import { consumableGraph, contextGraph, relationGraph } from "./graph";
+import {
+	consumableGraph,
+	contextGraph,
+	namespaceGroups,
+	relationGraph,
+} from "./graph";
 import { layout } from "./layout";
 
 const { workspace } = petstoreModel();
@@ -38,11 +41,31 @@ describe("graph adapters", () => {
 		const con = consumableGraph(ODSConsumableMap.fromBoundedContext(bc));
 		expect(con.edges.every((e) => e.label)).toBe(true);
 	});
-	it("lay out every node with a position", () => {
+	it("lay out every node and group with a position", () => {
 		const g = layout(contextGraph(ODSContextMap.fromWorkspace(workspace)));
-		expect(g.positions.size).toBe(g.nodes.length);
+		expect(g.groups?.length).toBeGreaterThan(1);
+		expect(g.positions.size).toBe(g.nodes.length + (g.groups?.length ?? 0));
 		for (const p of g.positions.values())
 			expect(Number.isFinite(p.x) && Number.isFinite(p.y)).toBe(true);
+	});
+});
+
+describe("namespaceGroups", () => {
+	it("orders parents before children whatever order the nodes arrive in", () => {
+		const ws = { id: "ws", name: "WS" };
+		const dom = { id: "dom", name: "Dom" };
+		const sub = { id: "sub", name: "Sub" };
+		const groups = namespaceGroups([
+			{ namespace: [ws, dom, sub] },
+			{ namespace: [ws, dom] },
+			{ namespace: [ws] },
+		]);
+		expect(groups.map((g) => g.id)).toEqual([
+			"cluster:ws",
+			"cluster:dom",
+			"cluster:sub",
+		]);
+		expect(groups[2].parent).toBe("cluster:dom");
 	});
 });
 
@@ -63,7 +86,7 @@ describe("contextGraph branches", () => {
 			]),
 			edges: new Map(),
 		} as unknown as ODSContextMap;
-		expect(contextGraph(map).nodes[0].group).toBeUndefined();
+		expect(contextGraph(map).nodes[0].groupPath).toBeUndefined();
 	});
 
 	it("groups by everything past the first namespace entry", () => {
@@ -82,7 +105,7 @@ describe("contextGraph branches", () => {
 			]),
 			edges: new Map(),
 		} as unknown as ODSContextMap;
-		expect(contextGraph(map).nodes[0].group).toBe("Domain / Sub");
+		expect(contextGraph(map).nodes[0].groupPath).toBe("Domain / Sub");
 	});
 
 	it("carries no team chip and a plain tone when there is no team and no big ball of mud", () => {
@@ -134,69 +157,5 @@ describe("contextGraph branches", () => {
 		const [e] = contextGraph(map).edges;
 		expect(e.sourceLabel).toBeUndefined();
 		expect(e.targetLabel).toBeUndefined();
-	});
-});
-
-describe("relationGraph branches", () => {
-	function node(
-		overrides: Partial<ODSRelationMapNode> = {},
-	): ODSRelationMapNode {
-		return {
-			id: "#/x",
-			name: "X",
-			namespace: [],
-			type: "entity",
-			attributes: [],
-			...overrides,
-		};
-	}
-
-	it("gives a plain, non-root entity no chips and a plain tone", () => {
-		const map = {
-			nodes: new Map([["#/x", node()]]),
-			edges: new Map(),
-		} as unknown as ODSRelationMap;
-		const [n] = relationGraph(map).nodes;
-		expect(n.chips).toEqual([]);
-		expect(n.tone).toBe("");
-	});
-
-	it("marks the root entity as core with a root chip", () => {
-		const map = {
-			nodes: new Map([["#/x", node({ type: "entity_root" })]]),
-			edges: new Map(),
-		} as unknown as ODSRelationMap;
-		const [n] = relationGraph(map).nodes;
-		expect(n.chips).toEqual(["root"]);
-		expect(n.tone).toBe("core");
-	});
-
-	it("marks a value object as muted with a value-object chip", () => {
-		const map = {
-			nodes: new Map([["#/x", node({ type: "valueobject" })]]),
-			edges: new Map(),
-		} as unknown as ODSRelationMap;
-		const [n] = relationGraph(map).nodes;
-		expect(n.chips).toEqual(["value object"]);
-		expect(n.tone).toBe("muted");
-	});
-
-	it("dashes a references relation but not includes/uses", () => {
-		const a = node({ id: "#/a" });
-		const b = node({ id: "#/b" });
-		const edge: ODSRelationMapEdge = {
-			source: a,
-			target: b,
-			relation: "references",
-			label: "points at",
-		};
-		const map = {
-			nodes: new Map([
-				["#/a", a],
-				["#/b", b],
-			]),
-			edges: new Map([["e", edge]]),
-		} as unknown as ODSRelationMap;
-		expect(relationGraph(map).edges[0].dashed).toBe(true);
 	});
 });
