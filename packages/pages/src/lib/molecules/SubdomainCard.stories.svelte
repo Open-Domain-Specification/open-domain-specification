@@ -11,6 +11,7 @@ const subdomains = [...model.workspace.domains.values()].flatMap((d) => [
 const { Story } = defineMeta({
 	title: "Molecules/SubdomainCard",
 	component: SubdomainCard,
+	args: { subdomain: subdomains[0] },
 });
 </script>
 

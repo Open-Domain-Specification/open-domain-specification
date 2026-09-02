@@ -6,7 +6,7 @@ import { exportSite } from "../dist/site.js";
 
 export const PETSTORE = join(
 	__dirname,
-	"../../ods-example-ws/.ods/petstore.json",
+	"../../../models/petstore/.ods/petstore.json",
 );
 export const EXPORT_DIR = join(__dirname, ".export");
 

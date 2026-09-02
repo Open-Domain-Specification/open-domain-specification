@@ -13,6 +13,7 @@ const { Story } = defineMeta({
 	title: "Templates/ValueObjectPage",
 	component: ValueObjectPage,
 	parameters: { layout: "fullscreen" },
+	args: { valueobject },
 });
 </script>
 

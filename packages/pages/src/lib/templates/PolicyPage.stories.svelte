@@ -13,6 +13,7 @@ const { Story } = defineMeta({
 	title: "Templates/PolicyPage",
 	component: PolicyPage,
 	parameters: { layout: "fullscreen" },
+	args: { policy },
 });
 </script>
 

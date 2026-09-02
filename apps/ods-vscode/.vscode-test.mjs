@@ -8,12 +8,12 @@ import { defineConfig } from "@vscode/test-cli";
 const userDataDir = join(tmpdir(), "ods-vscode-test");
 
 // Integration tests run inside a real Extension Development Host, opened on the
-// example workspace so the extension has four .ods files to load. Sources are
-// compiled by tsconfig.test.json into out/; the extension itself is the esbuild
-// bundle in dist/, exactly what ships.
+// petstore reference model so the extension has an .ods file to load. Sources
+// are compiled by tsconfig.test.json into out/; the extension itself is the
+// esbuild bundle in dist/, exactly what ships.
 export default defineConfig({
 	files: "out/test/**/*.test.js",
-	workspaceFolder: "../../packages/ods-example-ws",
+	workspaceFolder: "../../models/petstore",
 	version: "1.96.4",
 	launchArgs: ["--disable-extensions", "--user-data-dir", userDataDir],
 	mocha: {

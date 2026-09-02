@@ -16,6 +16,7 @@ const { Story } = defineMeta({
 	title: "Organisms/InteractiveDiagram",
 	component: InteractiveDiagram,
 	parameters: { layout: "fullscreen" },
+	args: { graph: contextGraph(ODSContextMap.fromWorkspace(workspace)) },
 });
 </script>
 

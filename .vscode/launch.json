@@ -7,7 +7,7 @@
 			"request": "launch",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}/apps/ods-vscode",
-				"${workspaceFolder}/packages/ods-example-ws"
+				"${workspaceFolder}/models/petstore"
 			],
 			"outFiles": ["${workspaceFolder}/apps/ods-vscode/dist/**/*.js"],
 			"preLaunchTask": "ods-vscode: build"

@@ -75,9 +75,9 @@ those never breaks a ref.
 
 ## Reference models
 
-The `ods-example-ws` package in the repository holds four workspaces written
-with the DSL, each generated into a `.ods/*.json` file and used by the viewer,
-the export and the test fixtures:
+The `models/` workspace folder in the repository holds four packages, each a
+workspace written with the DSL and generated into a `.ods/*.json` file used by
+the viewer, the export and the test fixtures:
 
 - **Swagger Petstore** is the demonstration reference. Every feature of the
   model appears once, descriptions say why each choice was made, and it

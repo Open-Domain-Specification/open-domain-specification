@@ -13,6 +13,7 @@ const { Story } = defineMeta({
 	title: "Templates/SchemaPage",
 	component: SchemaPage,
 	parameters: { layout: "fullscreen" },
+	args: { schema },
 });
 </script>
 

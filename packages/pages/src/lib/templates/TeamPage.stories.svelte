@@ -11,6 +11,7 @@ const { Story } = defineMeta({
 	title: "Templates/TeamPage",
 	component: TeamPage,
 	parameters: { layout: "fullscreen" },
+	args: { team },
 });
 </script>
 

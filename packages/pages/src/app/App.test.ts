@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import petstore from "../../../ods-example-ws/.ods/petstore.json";
+import petstore from "../../../../models/petstore/.ods/petstore.json";
 import type { Bootstrap, HostMessage, WorkspacePayload } from "../protocol";
 import App from "./App.svelte";
 

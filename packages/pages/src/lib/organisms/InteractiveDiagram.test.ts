@@ -93,3 +93,43 @@ describe("OdsNode tone", () => {
 			expect(node?.classList.contains(tone)).toBe(false);
 	});
 });
+
+describe("diagram options in the interactive view", () => {
+	it("switches every edge to the floating type and hides the fixed handles", async () => {
+		const { diagramOptions } = await import("../flow/options.svelte");
+		diagramOptions.set({ handles: "floating", edges: "straight" });
+		const { container } = render(InteractiveDiagram, {
+			graph: {
+				nodes: [
+					{ id: "#/a", label: "A", icon: "symbol-class" },
+					{ id: "#/b", label: "B", icon: "symbol-class" },
+				],
+				edges: [
+					{
+						id: "e",
+						source: "#/a",
+						target: "#/b",
+						label: "uses",
+						directed: true,
+					},
+				],
+			},
+		});
+		await waitFor(() => {
+			expect(
+				container.querySelectorAll(".handle-hidden").length,
+			).toBeGreaterThan(0);
+		});
+		expect(
+			container.querySelector(".svelte-flow__panel.top.right"),
+		).toBeTruthy();
+		for (const edges of ["bezier", "step", "smoothstep"] as const) {
+			diagramOptions.set({ edges });
+			await waitFor(() => expect(diagramOptions.edges).toBe(edges));
+		}
+		diagramOptions.set({ handles: "fixed", edges: "bezier" });
+		await waitFor(() => {
+			expect(container.querySelectorAll(".handle-hidden").length).toBe(0);
+		});
+	});
+});

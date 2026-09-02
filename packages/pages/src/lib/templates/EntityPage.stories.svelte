@@ -13,6 +13,7 @@ const { Story } = defineMeta({
 	title: "Templates/EntityPage",
 	component: EntityPage,
 	parameters: { layout: "fullscreen" },
+	args: { entity },
 });
 </script>
 

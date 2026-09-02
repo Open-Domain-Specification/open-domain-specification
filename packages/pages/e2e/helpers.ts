@@ -6,7 +6,7 @@ import type { Page } from "@playwright/test";
 
 export const PETSTORE_PATH = join(
 	__dirname,
-	"../../ods-example-ws/.ods/petstore.json",
+	"../../../models/petstore/.ods/petstore.json",
 );
 export const PETSTORE_JSON = readFileSync(PETSTORE_PATH, "utf8");
 export const PETSTORE_SCHEMA = JSON.parse(PETSTORE_JSON);

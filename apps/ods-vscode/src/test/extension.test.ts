@@ -113,15 +113,10 @@ describe("ODS extension in a real VS Code window", function () {
 		api = await extension.activate();
 	});
 
-	it("activates and loads the example workspaces", () => {
+	it("activates and loads the example workspace", () => {
 		assert.ok(api, "activate() returned no test API");
 		const names = api.project.workspaces.map((f) => f.relativePath).sort();
-		assert.deepEqual(names, [
-			"northbank.json",
-			PETSTORE,
-			"rivermart.json",
-			"streamline.json",
-		]);
+		assert.deepEqual(names, [PETSTORE]);
 	});
 
 	describe("ods.openPage", () => {

@@ -1,0 +1,24 @@
+{
+	"name": "@open-domain-specification/model-streamline",
+	"version": "0.1.9",
+	"description": "StreamLine, a fictional streaming service, as an Open Domain Specification stress-test reference workspace",
+	"type": "module",
+	"scripts": {
+		"clean": "npx rimraf docs .ods",
+		"build": "node src/generate.ts",
+		"test": "vitest run --config vitest.config.ts",
+		"npx depcheck": "npx depcheck"
+	},
+	"private": true,
+	"dependencies": {
+		"@open-domain-specification/core": "^0.1.9",
+		"@open-domain-specification/doc": "^0.1.9",
+		"@open-domain-specification/model-tools": "^0.1.9"
+	},
+	"devDependencies": {
+		"@types/node": "^24.2.1",
+		"@vitest/coverage-v8": "^3.2.4",
+		"typescript": "^5.9.2",
+		"vitest": "^3.2.4"
+	}
+}

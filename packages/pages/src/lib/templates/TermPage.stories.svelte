@@ -13,6 +13,7 @@ const { Story } = defineMeta({
 	title: "Templates/TermPage",
 	component: TermPage,
 	parameters: { layout: "fullscreen" },
+	args: { term },
 });
 </script>
 

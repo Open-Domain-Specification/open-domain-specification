@@ -1,6 +1,6 @@
 # Patterns from the Petstore example
 
-Excerpts from the ODS example workspace (`packages/ods-example-ws/src/petstore/workspace.ts`
+Excerpts from the ODS example workspace (`models/petstore/src/workspace.ts`
 in the ODS repository). Each shows one pattern worth copying.
 
 ## A context serving two subdomains, and a legacy one

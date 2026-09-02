@@ -4,12 +4,15 @@ import Icon from "../atoms/Icon.svelte";
 import type { GraphNode } from "./graph";
 
 /** A graph node styled like the page cards, with an optional attribute compartment. */
-let { data }: NodeProps & { data: GraphNode } = $props();
+/** `floating` hides the fixed handles; the floating edge attaches on its own. */
+let { data }: NodeProps & { data: GraphNode & { floating?: boolean } } =
+	$props();
 const tone = $derived(data.tone ?? "");
+const handleClass = $derived(data.floating ? "handle-hidden" : "");
 </script>
 
 <div class={`ods-node ${tone}`} title={data.id}>
-	<Handle type="target" position={Position.Left} />
+	<Handle type="target" position={Position.Left} class={handleClass} />
 	<div class="head"><Icon name={data.icon} /> <strong>{data.label}</strong></div>
 	{#if data.group}<div class="group">{data.group}</div>{/if}
 	{#if data.chips?.length}
@@ -22,7 +25,7 @@ const tone = $derived(data.tone ?? "");
 			{/each}
 		</ul>
 	{/if}
-	<Handle type="source" position={Position.Right} />
+	<Handle type="source" position={Position.Right} class={handleClass} />
 </div>
 
 <style>

@@ -13,6 +13,7 @@ const { Story } = defineMeta({
 	title: "Templates/ConsumablePage",
 	component: ConsumablePage,
 	parameters: { layout: "fullscreen" },
+	args: { consumable: event },
 });
 </script>
 

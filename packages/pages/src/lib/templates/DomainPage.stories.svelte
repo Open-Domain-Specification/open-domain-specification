@@ -10,6 +10,7 @@ const { Story } = defineMeta({
 	title: "Templates/DomainPage",
 	component: DomainPage,
 	parameters: { layout: "fullscreen" },
+	args: { domain: target },
 });
 </script>
 

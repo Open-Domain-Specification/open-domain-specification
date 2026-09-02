@@ -12,6 +12,7 @@ const { Story } = defineMeta({
 	title: "Templates/SubdomainPage",
 	component: SubdomainPage,
 	parameters: { layout: "fullscreen" },
+	args: { subdomain: target },
 });
 </script>
 

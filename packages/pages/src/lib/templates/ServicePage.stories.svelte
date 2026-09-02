@@ -12,6 +12,7 @@ const { Story } = defineMeta({
 	title: "Templates/ServicePage",
 	component: ServicePage,
 	parameters: { layout: "fullscreen" },
+	args: { service },
 });
 </script>
 

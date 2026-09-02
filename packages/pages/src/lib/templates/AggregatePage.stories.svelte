@@ -12,6 +12,7 @@ const { Story } = defineMeta({
 	title: "Templates/AggregatePage",
 	component: AggregatePage,
 	parameters: { layout: "fullscreen" },
+	args: { aggregate },
 });
 </script>
 

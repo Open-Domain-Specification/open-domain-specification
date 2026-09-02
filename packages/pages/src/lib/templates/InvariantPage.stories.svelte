@@ -13,6 +13,7 @@ const { Story } = defineMeta({
 	title: "Templates/InvariantPage",
 	component: InvariantPage,
 	parameters: { layout: "fullscreen" },
+	args: { invariant },
 });
 </script>
 

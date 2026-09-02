@@ -77,3 +77,29 @@ test("clicking an interactive node navigates to that element", async ({
 	await expect.poll(() => page.evaluate(() => location.hash)).toBe(ref);
 	await expect(page.locator("main h1")).toContainText(label);
 });
+
+test("the options panel switches handles and edge styles", async ({ page }) => {
+	await servePetstore(page);
+	await page.goto(viewerAt("#/boundedcontexts/sales_bc/aggregates/order"));
+	const figure = page.locator("#boundary figure.diagram");
+	await figure.scrollIntoViewIfNeeded();
+	await figure.getByRole("button", { name: "interactive" }).click();
+	const flow = figure.locator(".svelte-flow");
+	await expect(flow.locator(".svelte-flow__edge").first()).toBeVisible();
+	const panel = flow.locator(".diagram-options");
+	await expect(panel).toBeVisible();
+	await panel.getByLabel("Handle placement").selectOption("floating");
+	await expect(flow.locator(".handle-hidden").first()).toBeAttached();
+	await expect(flow.locator(".svelte-flow__edge-path").first()).toBeVisible();
+	for (const style of ["straight", "step", "smoothstep", "bezier"]) {
+		await panel.getByLabel("Edge style").selectOption(style);
+		await expect(flow.locator(".svelte-flow__edge-path").first()).toBeVisible();
+	}
+	await panel.getByLabel("Handle placement").selectOption("fixed");
+	await expect(flow.locator(".handle-hidden")).toHaveCount(0);
+	await page.reload();
+	await figure.getByRole("button", { name: "interactive" }).click();
+	await expect(
+		flow.locator(".diagram-options").getByLabel("Edge style"),
+	).toHaveValue("bezier");
+});

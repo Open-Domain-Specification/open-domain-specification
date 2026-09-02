@@ -4,7 +4,7 @@ A TypeScript library for generating comprehensive Markdown documentation from Op
 
 <strong>
 > 👀 Check out the ODS Example Workspace documentation and hosted Docsify site: https://eshop.open-ds.io
-> https://github.com/Open-Domain-Specification/open-domain-specification/tree/main/packages/ods-example-ws
+> https://github.com/Open-Domain-Specification/open-domain-specification/tree/main/models/petstore
 </strong>
 
 ## Features
@@ -31,7 +31,7 @@ At its core the `@open-domain-specification/doc` package provides a single funct
 
 The function accepts an `ODSWorkspace` instance and returns a dictionary where keys are file paths and values are Markdown content.
 
-See the [Example Workspace](https://github.com/Open-Domain-Specification/open-domain-specification/tree/main/packages/ods-example-ws) for a complete example of how to use the `toDoc` function and generate documentation.
+See the [Example Workspace](https://github.com/Open-Domain-Specification/open-domain-specification/tree/main/models/petstore) for a complete example of how to use the `toDoc` function and generate documentation.
 
 ```ts file=../../tests/doc.example.test.ts
 ```

@@ -10,6 +10,7 @@ const { Story } = defineMeta({
 	title: "Templates/ContextPage",
 	component: ContextPage,
 	parameters: { layout: "fullscreen" },
+	args: { context: target },
 });
 </script>
 

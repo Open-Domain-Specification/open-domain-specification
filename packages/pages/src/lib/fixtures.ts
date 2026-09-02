@@ -1,8 +1,8 @@
 import { Workspace } from "@open-domain-specification/core";
-import northbank from "../../../ods-example-ws/.ods/northbank.json";
-import petstore from "../../../ods-example-ws/.ods/petstore.json";
-import rivermart from "../../../ods-example-ws/.ods/rivermart.json";
-import streamline from "../../../ods-example-ws/.ods/streamline.json";
+import northbank from "../../../../models/northbank/.ods/northbank.json";
+import petstore from "../../../../models/petstore/.ods/petstore.json";
+import rivermart from "../../../../models/rivermart/.ods/rivermart.json";
+import streamline from "../../../../models/streamline/.ods/streamline.json";
 import { dotToSvg } from "../graphviz";
 import type { Model } from "./model";
 

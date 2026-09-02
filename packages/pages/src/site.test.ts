@@ -8,7 +8,7 @@ import { exportSite, type SiteResult } from "./site";
 
 const schema = JSON.parse(
 	readFileSync(
-		join(__dirname, "../../ods-example-ws/.ods/petstore.json"),
+		join(__dirname, "../../../models/petstore/.ods/petstore.json"),
 		"utf8",
 	),
 );
