@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeRichTestWs } from "./makeTestWs";
+import { Workspace } from "./workspace";
 
 describe("Workspace ref lookups", () => {
 	const fixture = makeRichTestWs();
@@ -72,5 +73,20 @@ describe("Workspace ref lookups", () => {
 		});
 		expect(domain.ref).toBe("#/domains/stable");
 		expect(ws.getDomainByRef("#/domains/stable")).toBe(domain);
+	});
+
+	it("uses the JSON object keys as ids when loading from schema", () => {
+		const { ws } = makeRichTestWs();
+		const schema = JSON.parse(JSON.stringify(ws.toSchema()));
+		schema.boundedcontexts.renamed_key = schema.boundedcontexts.invoicing_bc;
+		delete schema.boundedcontexts.invoicing_bc;
+		schema.boundedcontexts.renamed_key.subdomains = [];
+		const rebuilt = Workspace.fromSchema(schema);
+		expect(
+			rebuilt.getBoundedContextByRef("#/boundedcontexts/renamed_key")?.name,
+		).toBe("Invoicing BC");
+		expect(
+			rebuilt.getBoundedContextByRef("#/boundedcontexts/invoicing_bc"),
+		).toBeUndefined();
 	});
 });

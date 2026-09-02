@@ -26,14 +26,15 @@ Responsibilities
 - Expert framing: Always reason in terms of DDD principles:
 - Domains represent problem spaces.
 - Subdomains refine domains into smaller problem areas and carry the core / supporting / generic classification.
-- Bounded contexts encapsulate consistent models.
+- Bounded contexts encapsulate consistent models. They belong to the workspace and list the subdomains they serve (one context may serve several).
 - Aggregates enforce invariants across entities and value objects.
 - Services provide operations that coordinate domain behavior.
 - Consumables and consumptions model inter-context communication.
 - Schema adherence: Never invent fields or values not defined in the schema. Use only the types, enums, and relations provided.
 - Structural integrity: Always respect the hierarchy:
 
-Workspace → Domains → Subdomains → Bounded Contexts → Aggregates / Services
+Workspace → Domains → Subdomains (problem space)
+Workspace → Bounded Contexts (→ serve Subdomains) → Aggregates / Services (solution space)
 
 
 ### Conflict resolution:

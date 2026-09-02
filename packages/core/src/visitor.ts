@@ -80,6 +80,11 @@ export abstract class AbstractVisitor implements Visitor {
 		for (const domain of node.domains.values()) {
 			domain.accept(this);
 		}
+		// Contexts are reached through the subdomains they serve; visit the
+		// ones that serve none so nothing is skipped.
+		for (const bc of node.boundedcontexts.values()) {
+			if (!this.mark(bc)) bc.accept(this);
+		}
 		this.after(node);
 	}
 
@@ -102,7 +107,8 @@ export abstract class AbstractVisitor implements Visitor {
 	visitSubdomain(node: Subdomain): void {
 		this.before(node);
 		for (const bc of node.boundedcontexts.values()) {
-			bc.accept(this);
+			// A context serving several subdomains is visited once.
+			if (!this.mark(bc)) bc.accept(this);
 		}
 		this.after(node);
 	}

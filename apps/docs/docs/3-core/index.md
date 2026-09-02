@@ -37,19 +37,24 @@ The ODS core follows a hierarchical structure aligned with Domain-Driven Design 
 
 ```
 Workspace
-├── Domain
+├── Domain                                  (problem space)
 │   └── Subdomain (core/supporting/generic)
-│       └── Bounded Context
-│           ├── Service (application/domain/infrastructure)
-│           │   ├── Consumables
-│           │   └── Consumptions
-│           └── Aggregate
-│               ├── Entities
-│               ├── Value Objects
-│               ├── Invariants
-│               ├── Consumables
-│               └── Consumptions
+└── Bounded Context                         (solution space; serves one or more subdomains)
+    ├── Service (application/domain/infrastructure)
+    │   ├── Consumables
+    │   └── Consumptions
+    └── Aggregate
+        ├── Entities
+        ├── Value Objects
+        ├── Invariants
+        ├── Consumables
+        └── Consumptions
 ```
+
+Domains and subdomains describe the *problem space*. Bounded contexts describe
+the *solution space* and are owned by the workspace, each linked to the
+subdomains it serves, so one context can span several subdomains and one
+subdomain can be served by several contexts.
 
 ## Installation
 

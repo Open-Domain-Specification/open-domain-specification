@@ -76,13 +76,30 @@
                         "$ref": "#/definitions/ServiceSchema"
                     },
                     "type": "object"
+                },
+                "subdomains": {
+                    "description": "The subdomains this context serves; a context may serve several.",
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
                 }
             },
             "required": [
                 "aggregates",
                 "description",
                 "name",
-                "services"
+                "services",
+                "subdomains"
             ],
             "title": "BoundedContext",
             "type": "object"
@@ -321,12 +338,6 @@
             "additionalProperties": false,
             "description": "Represents a subdomain in the Open Domain Specification (ODS).",
             "properties": {
-                "boundedcontexts": {
-                    "additionalProperties": {
-                        "$ref": "#/definitions/BoundedContextSchema"
-                    },
-                    "type": "object"
-                },
                 "description": {
                     "type": "string"
                 },
@@ -338,7 +349,6 @@
                 }
             },
             "required": [
-                "boundedcontexts",
                 "description",
                 "name",
                 "type"
@@ -383,6 +393,12 @@
     },
     "description": "Represents a workspace in the Open Domain Specification (ODS).",
     "properties": {
+        "boundedcontexts": {
+            "additionalProperties": {
+                "$ref": "#/definitions/BoundedContextSchema"
+            },
+            "type": "object"
+        },
         "description": {
             "type": "string"
         },
@@ -416,6 +432,7 @@
         }
     },
     "required": [
+        "boundedcontexts",
         "description",
         "domains",
         "id",

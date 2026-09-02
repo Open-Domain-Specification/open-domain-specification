@@ -54,8 +54,11 @@ const catalogBC = catalogSD.addBoundedcontext("Catalog BC", {
 const salesBC = salesSD.addBoundedcontext("Sales BC", {
 	description: "Owns Order aggregate & order-facing operations",
 });
-const inventoryBC = inventorySD.addBoundedcontext("Inventory BC", {
+// A context may serve several subdomains: the inventory projection is
+// built from catalog data as well as sales, so it serves both.
+const inventoryBC = workspace.addBoundedContext("Inventory BC", {
 	description: "Projection for /store/inventory (status→count)",
+	subdomains: [inventorySD, catalogSD],
 });
 const identityBC = usersSD.addBoundedcontext("Identity BC", {
 	description: "Owns User aggregate & user endpoints",

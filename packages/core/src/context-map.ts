@@ -1,5 +1,6 @@
 import objectHash from "object-hash";
 import { ODSConsumptionGraph } from "./consumption-graph";
+import { boundedContextNamespace, type ODSNamespace } from "./namespace";
 import type { ConsumablePattern, ConsumptionPattern } from "./schema";
 import type {
 	BoundedContext,
@@ -8,6 +9,15 @@ import type {
 	Subdomain,
 	Workspace,
 } from "./workspace";
+
+function contextNode(bc: BoundedContext): ODSContextMapNode {
+	return {
+		id: bc.ref,
+		name: bc.name,
+		description: bc.description,
+		namespace: boundedContextNamespace(bc),
+	};
+}
 
 export class ODSContextMap {
 	readonly nodes = new Map<string, ODSContextMapNode>();
@@ -38,51 +48,12 @@ export class ODSContextMap {
 
 	constructor(consumptions: Consumption[]) {
 		for (const consumption of consumptions) {
-			const sourceNode = this.addNode({
-				id: consumption.consumable.provider.boundedcontext.ref,
-				name: consumption.consumable.provider.boundedcontext.name,
-				description: consumption.consumable.provider.boundedcontext.description,
-				namespace: [
-					{
-						id: consumption.consumer.boundedcontext.subdomain.domain.workspace
-							.id,
-						name: consumption.consumer.boundedcontext.subdomain.domain.workspace
-							.name,
-					},
-					{
-						id: consumption.consumable.provider.boundedcontext.subdomain.domain
-							.ref,
-						name: consumption.consumable.provider.boundedcontext.subdomain
-							.domain.name,
-					},
-					{
-						id: consumption.consumable.provider.boundedcontext.subdomain.ref,
-						name: consumption.consumable.provider.boundedcontext.subdomain.name,
-					},
-				],
-			});
-
-			const targetNode = this.addNode({
-				id: consumption.consumer.boundedcontext.ref,
-				name: consumption.consumer.boundedcontext.name,
-				description: consumption.consumer.boundedcontext.description,
-				namespace: [
-					{
-						id: consumption.consumer.boundedcontext.subdomain.domain.workspace
-							.id,
-						name: consumption.consumer.boundedcontext.subdomain.domain.workspace
-							.name,
-					},
-					{
-						id: consumption.consumer.boundedcontext.subdomain.domain.ref,
-						name: consumption.consumer.boundedcontext.subdomain.domain.name,
-					},
-					{
-						id: consumption.consumer.boundedcontext.subdomain.ref,
-						name: consumption.consumer.boundedcontext.subdomain.name,
-					},
-				],
-			});
+			const sourceNode = this.addNode(
+				contextNode(consumption.consumable.provider.boundedcontext),
+			);
+			const targetNode = this.addNode(
+				contextNode(consumption.consumer.boundedcontext),
+			);
 
 			this.addEdge({
 				source: sourceNode,
@@ -118,10 +89,7 @@ export class ODSContextMap {
 	}
 }
 
-export type ODSContextMapNamespace = {
-	id: string;
-	name: string;
-};
+export type ODSContextMapNamespace = ODSNamespace;
 
 export type ODSContextMapNode = {
 	id: string;

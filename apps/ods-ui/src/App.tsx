@@ -28,21 +28,15 @@ export function App() {
 						element={<SubdomainPage />}
 					/>
 					<Route
-						path={
-							"/domains/:domainId/subdomains/:subdomainId/boundedcontexts/:boundedContextId"
-						}
+						path={"/boundedcontexts/:boundedContextId"}
 						element={<BoundedContextPage />}
 					/>
 					<Route
-						path={
-							"/domains/:domainId/subdomains/:subdomainId/boundedcontexts/:boundedContextId/services/:serviceId"
-						}
+						path={"/boundedcontexts/:boundedContextId/services/:serviceId"}
 						element={<ServicePage />}
 					/>
 					<Route
-						path={
-							"/domains/:domainId/subdomains/:subdomainId/boundedcontexts/:boundedContextId/aggregates/:aggregateId"
-						}
+						path={"/boundedcontexts/:boundedContextId/aggregates/:aggregateId"}
 						element={<AggregatePage />}
 					/>
 					<Route path={"*"} element={<GenericNotFoundContent />} />

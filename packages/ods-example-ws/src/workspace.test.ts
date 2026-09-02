@@ -117,13 +117,13 @@ describe("Swagger Petstore Example Workspace", () => {
 
 	it("should have Pet and Order aggregates", () => {
 		const petAggregate = workspace.getAggregateByRefOrThrow(
-			"#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/aggregates/pet",
+			"#/boundedcontexts/catalog_bc/aggregates/pet",
 		);
 		expect(petAggregate.name).toBe("Pet");
 		expect(petAggregate.description).toContain("pet listed in the store");
 
 		const orderAggregate = workspace.getAggregateByRefOrThrow(
-			"#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/aggregates/order",
+			"#/boundedcontexts/sales_bc/aggregates/order",
 		);
 		expect(orderAggregate.name).toBe("Order");
 		expect(orderAggregate.description).toContain("Order for a single pet");
@@ -203,7 +203,7 @@ describe("Swagger Petstore Example Workspace", () => {
 
 	it("should have Pet application service with Swagger API operations", () => {
 		const petApp = workspace.getServiceByRefOrThrow(
-			"#/domains/petstore_commerce/subdomains/catalog/boundedcontexts/catalog_bc/services/pet_app",
+			"#/boundedcontexts/catalog_bc/services/pet_app",
 		);
 		expect(petApp.name).toBe("PetApp");
 		expect(petApp.description).toContain("/pet endpoints");
@@ -218,7 +218,7 @@ describe("Swagger Petstore Example Workspace", () => {
 
 	it("should have Order application service with store operations", () => {
 		const orderApp = workspace.getServiceByRefOrThrow(
-			"#/domains/petstore_commerce/subdomains/sales/boundedcontexts/sales_bc/services/order_app",
+			"#/boundedcontexts/sales_bc/services/order_app",
 		);
 		expect(orderApp.name).toBe("OrderApp");
 		expect(orderApp.description).toContain("/store/order endpoints");
@@ -231,7 +231,7 @@ describe("Swagger Petstore Example Workspace", () => {
 
 	it("should have User application service with user operations", () => {
 		const userApp = workspace.getServiceByRefOrThrow(
-			"#/domains/identity_&_accounts/subdomains/users/boundedcontexts/identity_bc/services/user_app",
+			"#/boundedcontexts/identity_bc/services/user_app",
 		);
 		expect(userApp.name).toBe("UserApp");
 		expect(userApp.description).toContain("/user endpoints");

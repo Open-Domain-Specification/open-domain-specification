@@ -8,8 +8,11 @@ import { markdownTable } from "./lib/markdown-table";
 import { pathToContextMapSvg, pathToIndexMd } from "./lib/paths";
 import type { Options } from "./options";
 
-const boundedContextSection = (boundedcontext: BoundedContext) => `
-### [${boundedcontext.name}](${pathToIndexMd(boundedcontext.path, boundedcontext.subdomain.path)})
+const boundedContextSection = (
+	subdomain: Subdomain,
+	boundedcontext: BoundedContext,
+) => `
+### [${boundedcontext.name}](${pathToIndexMd(boundedcontext.path, subdomain.path)})
 ${boundedcontext.description}
 
 `;
@@ -25,7 +28,9 @@ ${subdomain.description}
 ${
 	subdomain.boundedcontexts.size > 0
 		? Array.from(subdomain.boundedcontexts.entries())
-				.map(([_name, boundedcontext]) => boundedContextSection(boundedcontext))
+				.map(([_name, boundedcontext]) =>
+					boundedContextSection(subdomain, boundedcontext),
+				)
 				.join("")
 		: "> No bounded contexts."
 }

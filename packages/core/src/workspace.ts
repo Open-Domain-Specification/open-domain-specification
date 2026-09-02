@@ -59,6 +59,7 @@ export class Workspace
 	description: string;
 	version: string;
 	domains = new Map<string, Domain>();
+	boundedcontexts = new Map<string, BoundedContext>();
 
 	get path(): string {
 		return `${this.id}`;
@@ -78,6 +79,13 @@ export class Workspace
 
 	addDomain(name: string, attributes: DomainAttributes): Domain {
 		return new Domain(this, name, attributes);
+	}
+
+	addBoundedContext(
+		name: string,
+		attributes: BoundedContextAttributes,
+	): BoundedContext {
+		return new BoundedContext(this, name, attributes);
 	}
 
 	accept(v: Visitor) {
@@ -127,18 +135,9 @@ export class Workspace
 
 	getBoundedContextByRef(ref: string): BoundedContext | undefined {
 		this.debug(`Searching for bounded context with ref: ${ref}`);
-		for (const domain of this.domains.values()) {
-			this.debug(`Checking domain: ${domain.name}`);
-			for (const subdomain of domain.subdomains.values()) {
-				this.debug(`Checking subdomain: ${subdomain.name}`);
-				for (const boundedContext of subdomain.boundedcontexts.values()) {
-					this.debug(
-						`Checking bounded context: ${boundedContext.name} with ref: ${boundedContext.ref}`,
-					);
-					if (boundedContext.ref === ref) {
-						return boundedContext;
-					}
-				}
+		for (const boundedContext of this.boundedcontexts.values()) {
+			if (boundedContext.ref === ref) {
+				return boundedContext;
 			}
 		}
 	}
@@ -170,23 +169,23 @@ export class Workspace
 		return serviceOrAggregate;
 	}
 
+	private *services(): Iterable<Service> {
+		for (const boundedContext of this.boundedcontexts.values()) {
+			yield* boundedContext.services.values();
+		}
+	}
+
+	private *aggregates(): Iterable<Aggregate> {
+		for (const boundedContext of this.boundedcontexts.values()) {
+			yield* boundedContext.aggregates.values();
+		}
+	}
+
 	getServiceByRef(ref: string): Service | undefined {
 		this.debug(`Searching for service with ref: ${ref}`);
-		for (const domain of this.domains.values()) {
-			this.debug(`Checking domain: ${domain.name}`);
-			for (const subdomain of domain.subdomains.values()) {
-				this.debug(`Checking subdomain: ${subdomain.name}`);
-				for (const boundedContext of subdomain.boundedcontexts.values()) {
-					this.debug(`Checking bounded context: ${boundedContext.name}`);
-					for (const service of boundedContext.services.values()) {
-						this.debug(
-							`Checking service: ${service.name} with ref: ${service.ref}`,
-						);
-						if (service.ref === ref) {
-							return service;
-						}
-					}
-				}
+		for (const service of this.services()) {
+			if (service.ref === ref) {
+				return service;
 			}
 		}
 	}
@@ -201,21 +200,9 @@ export class Workspace
 
 	getAggregateByRef(ref: string): Aggregate | undefined {
 		this.debug(`Searching for aggregate with ref: ${ref}`);
-		for (const domain of this.domains.values()) {
-			this.debug(`Checking domain: ${domain.name}`);
-			for (const subdomain of domain.subdomains.values()) {
-				this.debug(`Checking subdomain: ${subdomain.name}`);
-				for (const boundedContext of subdomain.boundedcontexts.values()) {
-					this.debug(`Checking bounded context: ${boundedContext.name}`);
-					for (const aggregate of boundedContext.aggregates.values()) {
-						this.debug(
-							`Checking aggregate: ${aggregate.name} with ref: ${aggregate.ref}`,
-						);
-						if (aggregate.ref === ref) {
-							return aggregate;
-						}
-					}
-				}
+		for (const aggregate of this.aggregates()) {
+			if (aggregate.ref === ref) {
+				return aggregate;
 			}
 		}
 	}
@@ -249,23 +236,10 @@ export class Workspace
 
 	getEntityByRef(ref: string): Entity | undefined {
 		this.debug(`Searching for entity with ref: ${ref}`);
-		for (const domain of this.domains.values()) {
-			this.debug(`Checking domain: ${domain.name}`);
-			for (const subdomain of domain.subdomains.values()) {
-				this.debug(`Checking subdomain: ${subdomain.name}`);
-				for (const boundedContext of subdomain.boundedcontexts.values()) {
-					this.debug(`Checking bounded context: ${boundedContext.name}`);
-					for (const aggregate of boundedContext.aggregates.values()) {
-						this.debug(`Checking aggregate: ${aggregate.name}`);
-						for (const entity of aggregate.entities.values()) {
-							this.debug(
-								`Checking entity: ${entity.name} with ref: ${entity.ref}`,
-							);
-							if (entity.ref === ref) {
-								return entity;
-							}
-						}
-					}
+		for (const aggregate of this.aggregates()) {
+			for (const entity of aggregate.entities.values()) {
+				if (entity.ref === ref) {
+					return entity;
 				}
 			}
 		}
@@ -281,23 +255,10 @@ export class Workspace
 
 	getValueObjectByRef(ref: string): ValueObject | undefined {
 		this.debug(`Searching for value object with ref: ${ref}`);
-		for (const domain of this.domains.values()) {
-			this.debug(`Checking domain: ${domain.name}`);
-			for (const subdomain of domain.subdomains.values()) {
-				this.debug(`Checking subdomain: ${subdomain.name}`);
-				for (const boundedContext of subdomain.boundedcontexts.values()) {
-					this.debug(`Checking bounded context: ${boundedContext.name}`);
-					for (const aggregate of boundedContext.aggregates.values()) {
-						this.debug(`Checking aggregate: ${aggregate.name}`);
-						for (const valueObject of aggregate.valueobjects.values()) {
-							this.debug(
-								`Checking value object: ${valueObject.name} with ref: ${valueObject.ref}`,
-							);
-							if (valueObject.ref === ref) {
-								return valueObject;
-							}
-						}
-					}
+		for (const aggregate of this.aggregates()) {
+			for (const valueObject of aggregate.valueobjects.values()) {
+				if (valueObject.ref === ref) {
+					return valueObject;
 				}
 			}
 		}
@@ -313,23 +274,10 @@ export class Workspace
 
 	getInvariantByRef(ref: string): Invariant | undefined {
 		this.debug(`Searching for invariant with ref: ${ref}`);
-		for (const domain of this.domains.values()) {
-			this.debug(`Checking domain: ${domain.name}`);
-			for (const subdomain of domain.subdomains.values()) {
-				this.debug(`Checking subdomain: ${subdomain.name}`);
-				for (const boundedContext of subdomain.boundedcontexts.values()) {
-					this.debug(`Checking bounded context: ${boundedContext.name}`);
-					for (const aggregate of boundedContext.aggregates.values()) {
-						this.debug(`Checking aggregate: ${aggregate.name}`);
-						for (const invariant of aggregate.invariants.values()) {
-							this.debug(
-								`Checking invariant: ${invariant.name} with ref: ${invariant.ref}`,
-							);
-							if (invariant.ref === ref) {
-								return invariant;
-							}
-						}
-					}
+		for (const aggregate of this.aggregates()) {
+			for (const invariant of aggregate.invariants.values()) {
+				if (invariant.ref === ref) {
+					return invariant;
 				}
 			}
 		}
@@ -345,34 +293,10 @@ export class Workspace
 
 	getConsumableByRef(ref: string): Consumable | undefined {
 		this.debug(`Searching for consumable with ref: ${ref}`);
-		for (const domain of this.domains.values()) {
-			this.debug(`Checking domain: ${domain.name}`);
-			for (const subdomain of domain.subdomains.values()) {
-				this.debug(`Checking subdomain: ${subdomain.name}`);
-				for (const boundedContext of subdomain.boundedcontexts.values()) {
-					this.debug(`Checking bounded context: ${boundedContext.name}`);
-					for (const aggregate of boundedContext.aggregates.values()) {
-						this.debug(`Checking aggregate: ${aggregate.name}`);
-						for (const consumable of aggregate.consumables.values()) {
-							this.debug(
-								`Checking consumable: ${consumable.name} with ref: ${consumable.ref}`,
-							);
-							if (consumable.ref === ref) {
-								return consumable;
-							}
-						}
-					}
-					for (const service of boundedContext.services.values()) {
-						this.debug(`Checking service: ${service.name}`);
-						for (const consumable of service.consumables.values()) {
-							this.debug(
-								`Checking consumable: ${consumable.name} with ref: ${consumable.ref}`,
-							);
-							if (consumable.ref === ref) {
-								return consumable;
-							}
-						}
-					}
+		for (const provider of [...this.aggregates(), ...this.services()]) {
+			for (const consumable of provider.consumables.values()) {
+				if (consumable.ref === ref) {
+					return consumable;
 				}
 			}
 		}
@@ -395,6 +319,7 @@ export class Workspace
 			odsVersion: this.odsVersion,
 			primaryColor: this.primaryColor,
 			domains: asRecords(this.domains),
+			boundedcontexts: asRecords(this.boundedcontexts),
 			homepage: this.homepage,
 			logoUrl: this.logoUrl,
 		};
@@ -467,8 +392,16 @@ export class Subdomain
 	name: string;
 	description: string;
 	type: ods.SubdomainType;
-	boundedcontexts = new Map<string, BoundedContext>();
 	domain: Domain;
+
+	/** The bounded contexts serving this subdomain, derived from the workspace. */
+	get boundedcontexts(): ReadonlyMap<string, BoundedContext> {
+		const serving = new Map<string, BoundedContext>();
+		for (const bc of this.domain.workspace.boundedcontexts.values()) {
+			if (bc.subdomains.has(this)) serving.set(bc.id, bc);
+		}
+		return serving;
+	}
 
 	get path(): string {
 		return `${this.domain.path}/subdomains/${this.id}`;
@@ -487,11 +420,15 @@ export class Subdomain
 		this.domain.subdomains.set(this.id, this);
 	}
 
+	/** Creates a context on the workspace that serves this subdomain. */
 	addBoundedcontext(
 		name: string,
-		attributes: BoundedContextAttributes,
+		attributes: Omit<BoundedContextAttributes, "subdomains">,
 	): BoundedContext {
-		return new BoundedContext(this, name, attributes);
+		return this.domain.workspace.addBoundedContext(name, {
+			...attributes,
+			subdomains: [this],
+		});
 	}
 
 	accept(v: Visitor) {
@@ -503,13 +440,14 @@ export class Subdomain
 			name: this.name,
 			type: this.type,
 			description: this.description,
-			boundedcontexts: asRecords(this.boundedcontexts),
 		};
 	}
 }
 
 export type BoundedContextAttributes = {
 	description: string;
+	/** The subdomains this context serves. */
+	subdomains?: Subdomain[];
 	id?: string;
 };
 
@@ -521,26 +459,46 @@ export class BoundedContext
 	description: string;
 	services = new Map<string, Service>();
 	aggregates = new Map<string, Aggregate>();
-	subdomain: Subdomain;
+	workspace: Workspace;
+	subdomains = new Set<Subdomain>();
 
 	get path(): string {
-		return `${this.subdomain.path}/boundedcontexts/${this.id}`;
+		return `boundedcontexts/${this.id}`;
 	}
 
 	get ref(): string {
 		return `#/${this.path}`;
 	}
 
+	/**
+	 * The subdomain used when this context has to be shown in exactly one
+	 * place, such as a context-map cluster or a breadcrumb trail. It is the
+	 * first subdomain the context was linked to, or undefined when the
+	 * context serves no subdomain.
+	 */
+	get primarySubdomain(): Subdomain | undefined {
+		return this.subdomains.values().next().value;
+	}
+
 	constructor(
-		subdomain: Subdomain,
+		workspace: Workspace,
 		name: string,
 		attributes: BoundedContextAttributes,
 	) {
 		this.id = attributes.id || snakeCase(name);
 		this.name = name;
 		this.description = attributes.description;
-		this.subdomain = subdomain;
-		this.subdomain.boundedcontexts.set(this.id, this);
+		this.workspace = workspace;
+		this.workspace.boundedcontexts.set(this.id, this);
+		for (const subdomain of attributes.subdomains ?? []) {
+			this.serves(subdomain);
+		}
+	}
+
+	/** Links this context to a subdomain it serves. */
+	serves(subdomain: Subdomain): this {
+		this.subdomains.add(subdomain);
+		return this;
 	}
 
 	addService(name: string, attributes: ServiceAttributes): Service {
@@ -559,6 +517,7 @@ export class BoundedContext
 		return {
 			name: this.name,
 			description: this.description,
+			subdomains: Array.from(this.subdomains, (it) => ({ $ref: it.ref })),
 			aggregates: asRecords(this.aggregates),
 			services: asRecords(this.services),
 		};

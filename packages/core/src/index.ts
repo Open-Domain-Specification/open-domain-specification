@@ -1,6 +1,7 @@
 export * from "./consumable-map";
 export * from "./consumption-graph";
 export * from "./context-map";
+export * from "./namespace";
 export * from "./relation-map";
 export * from "./schema";
 export * from "./visitable";

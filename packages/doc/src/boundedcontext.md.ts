@@ -4,7 +4,7 @@ import {
 	ODSConsumptionGraph,
 	type Service,
 } from "@open-domain-specification/core";
-import { breadcrumbsMd } from "./breadcrumbs.md";
+import { contextBreadcrumbsMd } from "./breadcrumbs.md";
 import { markdownTable } from "./lib/markdown-table";
 import { pathToContextMapSvg, pathToIndexMd } from "./lib/paths";
 import type { Options } from "./options";
@@ -25,9 +25,21 @@ export const boundedcontextMd = (
 	boundedcontext: BoundedContext,
 	options?: Options,
 ) => `
-${options?.breadcrumbs ? breadcrumbsMd(boundedcontext.subdomain.domain.workspace, boundedcontext.subdomain.domain, boundedcontext.subdomain, boundedcontext) : ""}
+${options?.breadcrumbs ? contextBreadcrumbsMd(boundedcontext) : ""}
 # ${boundedcontext.name}
 ${boundedcontext.description}
+
+## Serves
+${
+	boundedcontext.subdomains.size > 0
+		? Array.from(boundedcontext.subdomains)
+				.map(
+					(subdomain) =>
+						`- [${subdomain.domain.name} / ${subdomain.name}](${pathToIndexMd(subdomain.path, boundedcontext.path)}) (${subdomain.type})`,
+				)
+				.join("\n")
+		: "> No subdomains."
+}
 
 ![contextmap](${pathToContextMapSvg(boundedcontext.path, boundedcontext.path)})
 

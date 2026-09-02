@@ -1,4 +1,5 @@
 import objectHash from "object-hash";
+import { aggregateNamespace, type ODSNamespace } from "./namespace";
 import type { EntityRelationType } from "./schema";
 import { AbstractVisitor } from "./visitor";
 import {
@@ -8,8 +9,26 @@ import {
 	Entity,
 	type EntityRelation,
 	type Subdomain,
+	type ValueObject,
 	type Workspace,
 } from "./workspace";
+
+function relationNodeType(
+	node: Entity | ValueObject,
+): ODSRelationMapNode["type"] {
+	if (!(node instanceof Entity)) return "valueobject";
+	return node.root ? "entity_root" : "entity";
+}
+
+function relationNode(node: Entity | ValueObject): ODSRelationMapNode {
+	return {
+		id: node.ref,
+		name: node.name,
+		description: node.description,
+		type: relationNodeType(node),
+		namespace: aggregateNamespace(node.aggregate),
+	};
+}
 
 export class ODSRelationGraph extends AbstractVisitor {
 	protected readonly _relations = new Set<EntityRelation>();
@@ -87,79 +106,8 @@ export class ODSRelationMap {
 
 	constructor(relations: EntityRelation[]) {
 		for (const relation of relations) {
-			const sourceNode = this.addNode({
-				id: relation.source.ref,
-				name: relation.source.name,
-				description: relation.target.description,
-				type:
-					relation.source instanceof Entity
-						? relation.source.root
-							? "entity_root"
-							: "entity"
-						: "valueobject",
-				namespace: [
-					{
-						id: relation.source.aggregate.boundedcontext.subdomain.domain
-							.workspace.id,
-						name: relation.source.aggregate.boundedcontext.subdomain.domain
-							.workspace.name,
-					},
-					{
-						id: relation.source.aggregate.boundedcontext.subdomain.domain.ref,
-						name: relation.source.aggregate.boundedcontext.subdomain.domain
-							.name,
-					},
-					{
-						id: relation.source.aggregate.boundedcontext.subdomain.ref,
-						name: relation.source.aggregate.boundedcontext.subdomain.name,
-					},
-					{
-						id: relation.source.aggregate.boundedcontext.ref,
-						name: relation.source.aggregate.boundedcontext.name,
-					},
-					{
-						id: relation.source.aggregate.ref,
-						name: relation.source.aggregate.name,
-					},
-				],
-			});
-
-			const targetNode = this.addNode({
-				id: relation.target.ref,
-				name: relation.target.name,
-				description: relation.target.description,
-				type:
-					relation.target instanceof Entity
-						? relation.target.root
-							? "entity_root"
-							: "entity"
-						: "valueobject",
-				namespace: [
-					{
-						id: relation.target.aggregate.boundedcontext.subdomain.domain
-							.workspace.id,
-						name: relation.target.aggregate.boundedcontext.subdomain.domain
-							.workspace.name,
-					},
-					{
-						id: relation.target.aggregate.boundedcontext.subdomain.domain.ref,
-						name: relation.target.aggregate.boundedcontext.subdomain.domain
-							.name,
-					},
-					{
-						id: relation.target.aggregate.boundedcontext.subdomain.ref,
-						name: relation.target.aggregate.boundedcontext.subdomain.name,
-					},
-					{
-						id: relation.target.aggregate.boundedcontext.ref,
-						name: relation.target.aggregate.boundedcontext.name,
-					},
-					{
-						id: relation.target.aggregate.ref,
-						name: relation.target.aggregate.name,
-					},
-				],
-			});
+			const sourceNode = this.addNode(relationNode(relation.source));
+			const targetNode = this.addNode(relationNode(relation.target));
 
 			this.addEdge({
 				source: sourceNode,
@@ -199,10 +147,7 @@ export class ODSRelationMap {
 	}
 }
 
-export type ODSRelationMapNamespace = {
-	id: string;
-	name: string;
-};
+export type ODSRelationMapNamespace = ODSNamespace;
 
 export type ODSRelationMapNode = {
 	id: string;

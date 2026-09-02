@@ -3,6 +3,7 @@ import {
 	AbstractVisitor,
 	type Aggregate,
 	type BoundedContext,
+	boundedContextNamespace,
 	type Consumable,
 	type Domain,
 	type Entity,
@@ -16,6 +17,19 @@ import { BiSearch } from "react-icons/bi";
 import { useWorkspace } from "./context/WorkspaceContext.tsx";
 import { useRefNavigate } from "./hooks/useRefNavigate.ts";
 import { Icons } from "./Icons.tsx";
+
+/** "Domain / Subdomain / Context" for a context, or just its name when it serves no subdomain. */
+function contextLabel(bc: BoundedContext): string {
+	return boundedContextNamespace(bc)
+		.slice(1)
+		.map((it) => it.name)
+		.concat(bc.name)
+		.join(" / ");
+}
+
+function aggregateLabel(aggregate: Aggregate): string {
+	return `${contextLabel(aggregate.boundedcontext)} / ${aggregate.name}`;
+}
 
 class SpotlightCollector extends AbstractVisitor {
 	actions: SpotlightProps["actions"];
@@ -56,7 +70,7 @@ class SpotlightCollector extends AbstractVisitor {
 	visitBoundedContext(node: BoundedContext) {
 		this.actions.push({
 			id: node.ref,
-			label: `${node.subdomain.domain.name} / ${node.subdomain.name} / ${node.name}`,
+			label: contextLabel(node),
 			description: node.description,
 			onClick: () => {
 				this.navigator(node.ref);
@@ -70,7 +84,7 @@ class SpotlightCollector extends AbstractVisitor {
 	visitAggregate(node: Aggregate) {
 		this.actions.push({
 			id: node.ref,
-			label: `${node.boundedcontext.subdomain.domain.name} / ${node.boundedcontext.subdomain.name} / ${node.boundedcontext.name} / ${node.name}`,
+			label: `${contextLabel(node.boundedcontext)} / ${node.name}`,
 			description: node.description,
 			onClick: () => {
 				this.navigator(node.ref);
@@ -84,7 +98,7 @@ class SpotlightCollector extends AbstractVisitor {
 	visitService(node: Service) {
 		this.actions.push({
 			id: node.ref,
-			label: `${node.boundedcontext.subdomain.domain.name} / ${node.boundedcontext.subdomain.name} / ${node.boundedcontext.name} / ${node.name}`,
+			label: `${contextLabel(node.boundedcontext)} / ${node.name}`,
 			description: node.description,
 			onClick: () => {
 				this.navigator(node.ref);
@@ -98,7 +112,7 @@ class SpotlightCollector extends AbstractVisitor {
 	visitConsumable(node: Consumable) {
 		this.actions.push({
 			id: node.ref,
-			label: `${node.provider.boundedcontext.subdomain.domain.name} / ${node.provider.boundedcontext.subdomain.name} / ${node.provider.boundedcontext.name} / ${node.provider.name} / ${node.name}`,
+			label: `${contextLabel(node.provider.boundedcontext)} / ${node.provider.name} / ${node.name}`,
 			description: node.description,
 			onClick: () => {
 				this.navigator(node.provider.ref);
@@ -112,7 +126,7 @@ class SpotlightCollector extends AbstractVisitor {
 	visitInvariant(node: Invariant) {
 		this.actions.push({
 			id: node.ref,
-			label: `${node.aggregate.boundedcontext.subdomain.domain.name} / ${node.aggregate.boundedcontext.subdomain.name} / ${node.aggregate.boundedcontext.name} / ${node.aggregate.name} / ${node.name}`,
+			label: `${aggregateLabel(node.aggregate)} / ${node.name}`,
 			description: node.description,
 			onClick: () => {
 				this.navigator(node.aggregate.ref);
@@ -126,7 +140,7 @@ class SpotlightCollector extends AbstractVisitor {
 	visitEntity(node: Entity) {
 		this.actions.push({
 			id: node.ref,
-			label: `${node.aggregate.boundedcontext.subdomain.domain.name} / ${node.aggregate.boundedcontext.subdomain.name} / ${node.aggregate.boundedcontext.name} / ${node.aggregate.name} / ${node.name}`,
+			label: `${aggregateLabel(node.aggregate)} / ${node.name}`,
 			description: node.description,
 			onClick: () => {
 				this.navigator(node.aggregate.ref);
@@ -140,7 +154,7 @@ class SpotlightCollector extends AbstractVisitor {
 	visitValueObject(node: ValueObject) {
 		this.actions.push({
 			id: node.ref,
-			label: `${node.aggregate.boundedcontext.subdomain.domain.name} / ${node.aggregate.boundedcontext.subdomain.name} / ${node.aggregate.boundedcontext.name} / ${node.aggregate.name} / ${node.name}`,
+			label: `${aggregateLabel(node.aggregate)} / ${node.name}`,
 			description: node.description,
 			onClick: () => {
 				this.navigator(node.aggregate.ref);

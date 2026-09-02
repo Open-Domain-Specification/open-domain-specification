@@ -105,15 +105,13 @@ export function _ServicePage(props: { service: Service }) {
 }
 
 export function ServicePage() {
-	const { domainId, subdomainId, boundedContextId, serviceId } = useParams<{
-		domainId: string;
-		subdomainId: string;
+	const { boundedContextId, serviceId } = useParams<{
 		boundedContextId: string;
 		serviceId: string;
 	}>();
 	const { workspace } = useWorkspace();
 	const service = workspace.getServiceByRefOrThrow(
-		serviceRef(domainId!, subdomainId!, boundedContextId!, serviceId!).$ref,
+		serviceRef(boundedContextId!, serviceId!).$ref,
 	);
 
 	return (

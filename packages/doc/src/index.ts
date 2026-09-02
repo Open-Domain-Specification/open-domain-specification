@@ -1,4 +1,5 @@
 import {
+	type BoundedContext,
 	ODSConsumableMap,
 	ODSContextMap,
 	ODSRelationMap,
@@ -38,6 +39,9 @@ export async function toDoc(
 
 	sidebar.push(`* [${workspace.name}](/${pathToIndexMd(workspace.path)})`);
 
+	const contextSidebarEntry = (bc: BoundedContext, depth: number) =>
+		`${"\t".repeat(depth)}* [${bc.name}](/${pathToIndexMd(bc.path)})`;
+
 	for (const [_, domain] of workspace.domains.entries()) {
 		docs[pathToIndexMd(domain.path)] = domainMd(domain);
 
@@ -58,50 +62,46 @@ export async function toDoc(
 				`\t\t* [${subdomain.name}](/${pathToIndexMd(subdomain.path)})`,
 			);
 
+			// A context serving several subdomains is listed under each of them.
 			for (const [_, boundedcontext] of subdomain.boundedcontexts.entries()) {
-				docs[pathToIndexMd(boundedcontext.path)] = boundedcontextMd(
-					boundedcontext,
-					options,
-				);
-
-				docs[pathToContextMapSvg(boundedcontext.path)] =
-					await contextMapToDigraph(
-						ODSContextMap.fromBoundedContext(boundedcontext),
-					).toSVG();
-
-				sidebar.push(
-					`\t\t\t* [${boundedcontext.name}](/${pathToIndexMd(boundedcontext.path)})`,
-				);
-
-				for (const [_, service] of boundedcontext.services.entries()) {
-					docs[pathToIndexMd(service.path)] = serviceMd(service, options);
-					sidebar.push(
-						`\t\t\t\t* [${service.name}](/${pathToIndexMd(service.path)})`,
-					);
-
-					docs[pathToConsumableMapSvg(service.path)] =
-						await consumableMapToDigraph(
-							ODSConsumableMap.fromService(service),
-						).toSVG();
-				}
-
-				for (const [_, aggregate] of boundedcontext.aggregates.entries()) {
-					docs[pathToIndexMd(aggregate.path)] = aggergateMd(aggregate, options);
-					sidebar.push(
-						`\t\t\t\t* [${aggregate.name}](/${pathToIndexMd(aggregate.path)})`,
-					);
-
-					docs[pathToRelationMapSvg(aggregate.path)] =
-						await relationMapToDigraph(
-							ODSRelationMap.fromAggregate(aggregate),
-						).toSVG();
-
-					docs[pathToConsumableMapSvg(aggregate.path)] =
-						await consumableMapToDigraph(
-							ODSConsumableMap.fromAggregate(aggregate),
-						).toSVG();
-				}
+				sidebar.push(contextSidebarEntry(boundedcontext, 3));
 			}
+		}
+	}
+
+	for (const [_, boundedcontext] of workspace.boundedcontexts.entries()) {
+		if (boundedcontext.subdomains.size === 0) {
+			sidebar.push(contextSidebarEntry(boundedcontext, 1));
+		}
+
+		docs[pathToIndexMd(boundedcontext.path)] = boundedcontextMd(
+			boundedcontext,
+			options,
+		);
+
+		docs[pathToContextMapSvg(boundedcontext.path)] = await contextMapToDigraph(
+			ODSContextMap.fromBoundedContext(boundedcontext),
+		).toSVG();
+
+		for (const [_, service] of boundedcontext.services.entries()) {
+			docs[pathToIndexMd(service.path)] = serviceMd(service, options);
+
+			docs[pathToConsumableMapSvg(service.path)] = await consumableMapToDigraph(
+				ODSConsumableMap.fromService(service),
+			).toSVG();
+		}
+
+		for (const [_, aggregate] of boundedcontext.aggregates.entries()) {
+			docs[pathToIndexMd(aggregate.path)] = aggergateMd(aggregate, options);
+
+			docs[pathToRelationMapSvg(aggregate.path)] = await relationMapToDigraph(
+				ODSRelationMap.fromAggregate(aggregate),
+			).toSVG();
+
+			docs[pathToConsumableMapSvg(aggregate.path)] =
+				await consumableMapToDigraph(
+					ODSConsumableMap.fromAggregate(aggregate),
+				).toSVG();
 		}
 	}
 

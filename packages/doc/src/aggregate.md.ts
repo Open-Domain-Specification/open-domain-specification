@@ -7,7 +7,7 @@ import {
 	ODSRelationGraph,
 	type ValueObject,
 } from "@open-domain-specification/core";
-import { breadcrumbsMd } from "./breadcrumbs.md";
+import { contextBreadcrumbsMd } from "./breadcrumbs.md";
 import { markdownTable } from "./lib/markdown-table";
 import {
 	pathToConsumableMapSvg,
@@ -45,7 +45,7 @@ ${consumption.consumable.description}
 `;
 
 export const aggergateMd = (aggregate: Aggregate, options?: Options) => `
-${options?.breadcrumbs ? breadcrumbsMd(aggregate.boundedcontext.subdomain.domain.workspace, aggregate.boundedcontext.subdomain.domain, aggregate.boundedcontext.subdomain, aggregate.boundedcontext) : ""}
+${options?.breadcrumbs ? contextBreadcrumbsMd(aggregate.boundedcontext) : ""}
 # ${aggregate.name}
 ${aggregate.description}
 

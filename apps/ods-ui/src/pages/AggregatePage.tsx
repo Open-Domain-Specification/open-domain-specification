@@ -193,15 +193,13 @@ export function _AggregatePage(props: { aggregate: Aggregate }) {
 }
 
 export function AggregatePage() {
-	const { domainId, subdomainId, boundedContextId, aggregateId } = useParams<{
-		domainId: string;
-		subdomainId: string;
+	const { boundedContextId, aggregateId } = useParams<{
 		boundedContextId: string;
 		aggregateId: string;
 	}>();
 	const { workspace } = useWorkspace();
 	const aggregate = workspace.getAggregateByRefOrThrow(
-		aggregateRef(domainId!, subdomainId!, boundedContextId!, aggregateId!).$ref,
+		aggregateRef(boundedContextId!, aggregateId!).$ref,
 	);
 
 	return (

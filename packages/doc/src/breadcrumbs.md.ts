@@ -6,6 +6,15 @@ import type {
 } from "@open-domain-specification/core";
 import { pathToIndexMd } from "./lib/paths";
 
+/** Breadcrumbs for a context, shown under its primary subdomain. */
+export const contextBreadcrumbsMd = (boundedcontext: BoundedContext) =>
+	breadcrumbsMd(
+		boundedcontext.workspace,
+		boundedcontext.primarySubdomain?.domain,
+		boundedcontext.primarySubdomain,
+		boundedcontext,
+	);
+
 export const breadcrumbsMd = (
 	workspace: Workspace,
 	domain?: Domain,

@@ -1,4 +1,4 @@
-import { AppShell, Stack } from "@mantine/core";
+import { AppShell, Badge, Group, Stack } from "@mantine/core";
 import {
 	type BoundedContext,
 	boundedcontextRef,
@@ -27,6 +27,18 @@ export function _BoundedContextPage(props: { boundedcontext: BoundedContext }) {
 			title={props.boundedcontext.name}
 			description={props.boundedcontext.description}
 		>
+			<Group gap={"xs"}>
+				{Array.from(props.boundedcontext.subdomains).map((subdomain) => (
+					<Badge
+						key={subdomain.ref}
+						style={{ cursor: "pointer" }}
+						onClick={() => nav(subdomain.ref)}
+					>
+						{subdomain.domain.name} / {subdomain.name}
+					</Badge>
+				))}
+			</Group>
+
 			<Graphviz
 				title={`${props.boundedcontext.name} Context Map`}
 				height={"50vh"}
@@ -75,15 +87,11 @@ export function _BoundedContextPage(props: { boundedcontext: BoundedContext }) {
 }
 
 export function BoundedContextPage() {
-	const { domainId, subdomainId, boundedContextId } = useParams<{
-		domainId: string;
-		subdomainId: string;
-		boundedContextId: string;
-	}>();
+	const { boundedContextId } = useParams<{ boundedContextId: string }>();
 	const { workspace } = useWorkspace();
 
-	const boundedContext = workspace.getBoundedContextByRefOrThrow(
-		boundedcontextRef(domainId!, subdomainId!, boundedContextId!).$ref,
+	const boundedContext = workspace.getBoundedContextByRef(
+		boundedcontextRef(boundedContextId!).$ref,
 	);
 
 	return (

@@ -7,7 +7,7 @@ User records and login/logout
 
 ## Bounded Contexts
 
-### [Identity BC](boundedcontexts/identity_bc/index.md)
+### [Identity BC](../../../../boundedcontexts/identity_bc/index.md)
 Owns User aggregate & user endpoints
 
 

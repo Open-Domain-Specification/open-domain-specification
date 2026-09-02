@@ -3,7 +3,7 @@ import type {
 	Consumption,
 	Service,
 } from "@open-domain-specification/core";
-import { breadcrumbsMd } from "./breadcrumbs.md";
+import { contextBreadcrumbsMd } from "./breadcrumbs.md";
 import { pathToConsumableMapSvg, pathToIndexMd } from "./lib/paths";
 import type { Options } from "./options";
 
@@ -19,7 +19,7 @@ ${consumption.consumable.description}
 `;
 
 export const serviceMd = (service: Service, options?: Options) => `
-${options?.breadcrumbs ? breadcrumbsMd(service.boundedcontext.subdomain.domain.workspace, service.boundedcontext.subdomain.domain, service.boundedcontext.subdomain, service.boundedcontext) : ""}
+${options?.breadcrumbs ? contextBreadcrumbsMd(service.boundedcontext) : ""}
 
 # ${service.name}
 ${service.description}

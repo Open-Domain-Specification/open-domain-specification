@@ -22,14 +22,14 @@ describe("schema round-trip", () => {
 		);
 		expect(subdomain.description).toBe("Ordering subdomain");
 		const bc = rebuilt.getBoundedContextByRefOrThrow(
-			"#/domains/sales/subdomains/ordering/boundedcontexts/ordering_bc",
+			"#/boundedcontexts/ordering_bc",
 		);
 		expect(bc.description).toBe("Ordering bounded context");
 	});
 
 	it("re-links consumptions to live objects", () => {
 		const invoiceAgg = rebuilt.getAggregateByRefOrThrow(
-			"#/domains/billing/subdomains/invoicing/boundedcontexts/invoicing_bc/aggregates/invoice",
+			"#/boundedcontexts/invoicing_bc/aggregates/invoice",
 		);
 		expect(invoiceAgg.consumptions).toHaveLength(1);
 		const consumption = invoiceAgg.consumptions[0];
@@ -40,7 +40,7 @@ describe("schema round-trip", () => {
 
 	it("re-links entity relations across aggregates", () => {
 		const invoice = rebuilt.getEntityByRefOrThrow(
-			"#/domains/billing/subdomains/invoicing/boundedcontexts/invoicing_bc/aggregates/invoice/entities/invoice",
+			"#/boundedcontexts/invoicing_bc/aggregates/invoice/entities/invoice",
 		);
 		expect(invoice.root).toBe(true);
 		expect(invoice.relations).toHaveLength(1);

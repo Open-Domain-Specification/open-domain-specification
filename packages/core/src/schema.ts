@@ -19,6 +19,8 @@ export interface AggregateSchema {
 export interface BoundedContextSchema {
 	name: string;
 	description: string;
+	/** The subdomains this context serves; a context may serve several. */
+	subdomains: { $ref: string }[];
 	aggregates: { [aggregate: string]: AggregateSchema };
 	services: { [service: string]: ServiceSchema };
 }
@@ -136,9 +138,6 @@ export interface SubdomainSchema {
 	name: string;
 	type: SubdomainType;
 	description: string;
-	boundedcontexts: {
-		[boundedcontext: string]: BoundedContextSchema;
-	};
 }
 
 /**
@@ -167,6 +166,9 @@ export interface WorkspaceSchema {
 	domains: {
 		[domain: string]: DomainSchema;
 	};
+	boundedcontexts: {
+		[boundedcontext: string]: BoundedContextSchema;
+	};
 }
 
 export function domainRef(domain: string) {
@@ -183,38 +185,22 @@ export function subdomainRef(domain: string, subdomain: string) {
 	};
 }
 
-export function boundedcontextRef(
-	domain: string,
-	subdomain: string,
-	boundedcontext: string,
-) {
-	const { $ref } = subdomainRef(domain, subdomain);
-
+export function boundedcontextRef(boundedcontext: string) {
 	return {
-		$ref: `${$ref}/boundedcontexts/${boundedcontext}`,
+		$ref: `#/boundedcontexts/${boundedcontext}`,
 	};
 }
 
-export function serviceRef(
-	domain: string,
-	subdomain: string,
-	boundedcontext: string,
-	service: string,
-) {
-	const { $ref } = boundedcontextRef(domain, subdomain, boundedcontext);
+export function serviceRef(boundedcontext: string, service: string) {
+	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
 		$ref: `${$ref}/services/${service}`,
 	};
 }
 
-export function aggregateRef(
-	domain: string,
-	subdomain: string,
-	boundedcontext: string,
-	aggregate: string,
-) {
-	const { $ref } = boundedcontextRef(domain, subdomain, boundedcontext);
+export function aggregateRef(boundedcontext: string, aggregate: string) {
+	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
 		$ref: `${$ref}/aggregates/${aggregate}`,
@@ -222,13 +208,11 @@ export function aggregateRef(
 }
 
 export function entityRef(
-	domain: string,
-	subdomain: string,
 	boundedcontext: string,
 	aggregate: string,
 	entity: string,
 ) {
-	const { $ref } = aggregateRef(domain, subdomain, boundedcontext, aggregate);
+	const { $ref } = aggregateRef(boundedcontext, aggregate);
 
 	return {
 		$ref: `${$ref}/entities/${entity}`,
@@ -236,13 +220,11 @@ export function entityRef(
 }
 
 export function valueObjectRef(
-	domain: string,
-	subdomain: string,
 	boundedcontext: string,
 	aggregate: string,
 	valueobject: string,
 ) {
-	const { $ref } = aggregateRef(domain, subdomain, boundedcontext, aggregate);
+	const { $ref } = aggregateRef(boundedcontext, aggregate);
 
 	return {
 		$ref: `${$ref}/valueobjects/${valueobject}`,
@@ -250,13 +232,11 @@ export function valueObjectRef(
 }
 
 export function invariantRef(
-	domain: string,
-	subdomain: string,
 	boundedcontext: string,
 	aggregate: string,
 	invariant: string,
 ) {
-	const { $ref } = aggregateRef(domain, subdomain, boundedcontext, aggregate);
+	const { $ref } = aggregateRef(boundedcontext, aggregate);
 
 	return {
 		$ref: `${$ref}/invariants/${invariant}`,
@@ -264,8 +244,6 @@ export function invariantRef(
 }
 
 export function consumableRef(
-	domain: string,
-	subdomain: string,
 	boundedcontext: string,
 	provider: string,
 	consumable: string,
@@ -273,8 +251,8 @@ export function consumableRef(
 ) {
 	const { $ref } =
 		providerType === "aggregate"
-			? aggregateRef(domain, subdomain, boundedcontext, provider)
-			: serviceRef(domain, subdomain, boundedcontext, provider);
+			? aggregateRef(boundedcontext, provider)
+			: serviceRef(boundedcontext, provider);
 
 	return {
 		$ref: `${$ref}/provides/${consumable}`,

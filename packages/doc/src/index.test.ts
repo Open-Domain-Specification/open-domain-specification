@@ -97,28 +97,25 @@ describe("toDoc", () => {
 
 		// Should have service docs
 		expect(docs).toHaveProperty(
-			"domains/commerce/subdomains/sales/boundedcontexts/ordering/services/order_service/index.md",
+			"boundedcontexts/ordering/services/order_service/index.md",
 		);
 		expect(docs).toHaveProperty(
-			"domains/commerce/subdomains/sales/boundedcontexts/ordering/services/order_service/consumablemap.svg",
+			"boundedcontexts/ordering/services/order_service/consumablemap.svg",
 		);
 
 		// Should have aggregate docs
 		expect(docs).toHaveProperty(
-			"domains/commerce/subdomains/sales/boundedcontexts/ordering/aggregates/order/index.md",
+			"boundedcontexts/ordering/aggregates/order/index.md",
 		);
 		expect(docs).toHaveProperty(
-			"domains/commerce/subdomains/sales/boundedcontexts/ordering/aggregates/order/relationmap.svg",
+			"boundedcontexts/ordering/aggregates/order/relationmap.svg",
 		);
 		expect(docs).toHaveProperty(
-			"domains/commerce/subdomains/sales/boundedcontexts/ordering/aggregates/order/consumablemap.svg",
+			"boundedcontexts/ordering/aggregates/order/consumablemap.svg",
 		);
 
 		// Check that the bounded context doc contains services and aggregates
-		const boundedContextDoc =
-			docs[
-				"domains/commerce/subdomains/sales/boundedcontexts/ordering/index.md"
-			];
+		const boundedContextDoc = docs["boundedcontexts/ordering/index.md"];
 		expect(boundedContextDoc).toContain("OrderService");
 		expect(boundedContextDoc).toContain("Order");
 	});

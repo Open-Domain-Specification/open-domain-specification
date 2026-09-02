@@ -17,6 +17,7 @@ describe("Workspace Schema Validation", () => {
 					subdomains: {},
 				},
 			},
+			boundedcontexts: {},
 		};
 
 		const workspace = Workspace.fromSchema(schema);
@@ -38,6 +39,7 @@ describe("Workspace Schema Validation", () => {
 			logoUrl: "https://example.com/logo.png",
 			primaryColor: "#123456",
 			domains: {},
+			boundedcontexts: {},
 		};
 
 		const workspace = Workspace.fromSchema(schema);
@@ -57,6 +59,7 @@ describe("Workspace Schema Validation", () => {
 			description: "Empty workspace for testing",
 			version: "0.1.0",
 			domains: {},
+			boundedcontexts: {},
 		};
 
 		const workspace = Workspace.fromSchema(schema);
@@ -91,28 +94,22 @@ describe("Workspace Edge Cases", () => {
 			workspace.getSubdomainByRef("#/domains/nonexistent/subdomains/test"),
 		).toBeUndefined();
 		expect(
-			workspace.getBoundedContextByRef(
-				"#/domains/nonexistent/subdomains/test/boundedcontexts/test",
-			),
+			workspace.getBoundedContextByRef("#/boundedcontexts/test"),
 		).toBeUndefined();
 		expect(
-			workspace.getServiceByRef(
-				"#/domains/nonexistent/subdomains/test/boundedcontexts/test/services/test",
-			),
+			workspace.getServiceByRef("#/boundedcontexts/test/services/test"),
 		).toBeUndefined();
 		expect(
-			workspace.getAggregateByRef(
-				"#/domains/nonexistent/subdomains/test/boundedcontexts/test/aggregates/test",
-			),
+			workspace.getAggregateByRef("#/boundedcontexts/test/aggregates/test"),
 		).toBeUndefined();
 		expect(
 			workspace.getEntityByRef(
-				"#/domains/nonexistent/subdomains/test/boundedcontexts/test/aggregates/test/entities/test",
+				"#/boundedcontexts/test/aggregates/test/entities/test",
 			),
 		).toBeUndefined();
 		expect(
 			workspace.getValueObjectByRef(
-				"#/domains/nonexistent/subdomains/test/boundedcontexts/test/aggregates/test/valueobjects/test",
+				"#/boundedcontexts/test/aggregates/test/valueobjects/test",
 			),
 		).toBeUndefined();
 		expect(

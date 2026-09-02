@@ -255,7 +255,11 @@ describe("Subdomain", () => {
 		});
 
 		expect(boundedContext.name).toBe("Order Management");
-		expect(boundedContext.subdomain).toBe(subdomain);
+		expect(boundedContext.subdomains.has(subdomain)).toBe(true);
+		expect(boundedContext.primarySubdomain).toBe(subdomain);
+		expect(workspace.boundedcontexts.get("order_management")).toBe(
+			boundedContext,
+		);
 		expect(subdomain.boundedcontexts.get("order_management")).toBe(
 			boundedContext,
 		);
