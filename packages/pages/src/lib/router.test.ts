@@ -24,6 +24,12 @@ describe("createRouter", () => {
 		expect(router.ref).toBe("#/domains/sales");
 	});
 
+	it("keeps a hash with a malformed escape instead of throwing", () => {
+		location.hash = "#/search?q=100%";
+		const router = createRouter();
+		expect(router.ref).toBe("#/search?q=100%");
+	});
+
 	it("keeps a hash with no trailing slash as-is", () => {
 		location.hash = "#/domains/sales";
 		const router = createRouter();

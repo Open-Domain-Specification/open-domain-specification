@@ -51,7 +51,7 @@ const refit = () => {
 </script>
 
 <div class="interactive">
-	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={0.2} colorMode="system" nodesConnectable={false} elementsSelectable={false} onnodeclick={({ node }) => { location.hash = node.id; }} onnodedrag={refit} onnodedragstop={refit}>
+	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={0.2} colorMode="system" nodesConnectable={false} elementsSelectable={false} onnodeclick={({ node }) => { if (node.id.startsWith("#")) location.hash = node.id; }} onnodedrag={refit} onnodedragstop={refit}>
 		<Background />
 		{#if sketch}<SketchBackdrop {nodes} groupLabels={labels} />{/if}
 		<Controls showLock={false} />

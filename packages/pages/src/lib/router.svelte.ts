@@ -9,8 +9,13 @@
 export function createRouter() {
 	let ref = $state(read());
 	function read(): string {
-		const raw =
-			typeof location === "undefined" ? "" : decodeURIComponent(location.hash);
+		if (typeof location === "undefined") return "#";
+		let raw = location.hash;
+		try {
+			raw = decodeURIComponent(raw);
+		} catch {
+			// A malformed escape (`#/search?q=100%`) is kept verbatim rather than crashing the app.
+		}
 		return raw.length > 2 ? raw.replace(/\/$/, "") : "#";
 	}
 	if (typeof window !== "undefined") {
@@ -24,7 +29,8 @@ export function createRouter() {
 		if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
 		const anchor = (e.target as Element | null)?.closest?.("a[href]");
 		if (!anchor || anchor.getAttribute("target")) return;
-		const href = anchor.getAttribute("href") ?? "";
+		// The selector guarantees the attribute.
+		const href = anchor.getAttribute("href") as string;
 		if (!isRoute(href)) return;
 		e.preventDefault();
 		go(href);

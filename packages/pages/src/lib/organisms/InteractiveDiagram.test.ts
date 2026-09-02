@@ -55,6 +55,9 @@ describe("InteractiveDiagram", () => {
 		);
 		await fireEvent.click(node);
 		expect(location.hash).toBe(sales.ref);
+		// Regions are grouping, not pages: clicking one must not navigate.
+		await fireEvent.click(region);
+		expect(location.hash).toBe(sales.ref);
 		// Read-only diagram: nodes stay clickable (just proven above), but no handle may start
 		// a drag connection.
 		const handles = container.querySelectorAll(".svelte-flow__handle");

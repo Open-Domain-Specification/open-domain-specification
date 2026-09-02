@@ -1,4 +1,7 @@
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { expect, test } from "@playwright/test";
+import { EXPORT_DIR } from "./global-setup";
 import { EXPORT_ORIGIN, WORKSPACE_NAME } from "./helpers";
 
 /** The static export: a folder on a plain host, two workspaces behind a picker. */
@@ -59,6 +62,26 @@ test("assets load without console errors", async ({ page }) => {
 	});
 
 	await page.goto("/");
+	await page.getByRole("link", { name: WORKSPACE_NAME }).click();
+	await expect(page.locator("main h1")).toContainText(WORKSPACE_NAME);
+	await expect(
+		page.locator("figure.diagram .svelte-flow__node").first(),
+	).toBeVisible();
+
+	expect(problems.filter((p) => !/favicon/.test(p))).toEqual([]);
+});
+
+test("the export opens from a file:// URL", async ({ page }) => {
+	// Every file is its own opaque origin under file://, so a module script or a
+	// crossorigin asset would be blocked; the bundle must load as a plain script.
+	const problems: string[] = [];
+	page.on("console", (m) => {
+		if (m.type() === "error") problems.push(m.text());
+	});
+	page.on("pageerror", (e) => problems.push(e.message));
+	page.on("requestfailed", (r) => problems.push(`failed ${r.url()}`));
+
+	await page.goto(pathToFileURL(join(EXPORT_DIR, "index.html")).href);
 	await page.getByRole("link", { name: WORKSPACE_NAME }).click();
 	await expect(page.locator("main h1")).toContainText(WORKSPACE_NAME);
 	await expect(

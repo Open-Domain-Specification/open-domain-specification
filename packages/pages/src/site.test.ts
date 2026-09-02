@@ -42,5 +42,13 @@ describe("static site export", () => {
 		expect(html).toContain(workspace.name);
 		expect(html).toMatch(/<script defer src="\.\/assets\//);
 		expect(html).not.toContain("crossorigin");
+		const script = html.match(
+			/<script defer src="\.\/(assets\/[^"]+)"/,
+		)?.[1] as string;
+		const js = readFileSync(join(outDir, script), "utf8");
+		// A strict-mode IIFE: nothing leaks onto window when it runs as a classic script.
+		expect(js.startsWith('(()=>{"use strict";')).toBe(true);
+		expect(js.trimEnd().endsWith("})();")).toBe(true);
+		expect(js).not.toMatch(/\bimport\.meta\b/);
 	});
 });
