@@ -1,8 +1,9 @@
 /**
  * Viewer preferences for the interactive diagrams: where edges attach to
  * nodes, how they are drawn, and whether nodes are cards in shaded clusters
- * or sketch-style ellipses over a Voronoi backdrop. Remembered per browser
- * so a choice sticks across pages and visits.
+ * or sketch-style ellipses over a Voronoi backdrop, and whether the legend
+ * is collapsed. Remembered per browser so a choice sticks across pages and
+ * visits.
  */
 export type HandleMode = "fixed" | "floating";
 export type EdgeStyle = "bezier" | "straight" | "step" | "smoothstep";
@@ -12,6 +13,7 @@ export type DiagramOptions = {
 	handles: HandleMode;
 	edges: EdgeStyle;
 	style: DiagramStyle;
+	legendCollapsed: boolean;
 };
 
 export const HANDLE_MODES: HandleMode[] = ["fixed", "floating"];
@@ -28,6 +30,7 @@ const DEFAULTS: DiagramOptions = {
 	handles: "fixed",
 	edges: "bezier",
 	style: "cards",
+	legendCollapsed: false,
 };
 
 function read(): DiagramOptions {
@@ -45,6 +48,7 @@ function read(): DiagramOptions {
 			style: DIAGRAM_STYLES.includes(parsed.style as DiagramStyle)
 				? (parsed.style as DiagramStyle)
 				: DEFAULTS.style,
+			legendCollapsed: parsed.legendCollapsed === true,
 		};
 	} catch {
 		return { ...DEFAULTS };
@@ -71,6 +75,9 @@ export function createDiagramOptions() {
 		},
 		get style() {
 			return current.style;
+		},
+		get legendCollapsed() {
+			return current.legendCollapsed;
 		},
 		set(patch: Partial<DiagramOptions>) {
 			current = { ...current, ...patch };

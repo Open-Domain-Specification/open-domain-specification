@@ -10,6 +10,7 @@ describe("diagram options", () => {
 		expect(o.handles).toBe("fixed");
 		expect(o.edges).toBe("bezier");
 		expect(o.style).toBe("cards");
+		expect(o.legendCollapsed).toBe(false);
 	});
 	it("remembers a choice and reads it back", () => {
 		localStorage.removeItem(KEY);
@@ -17,25 +18,34 @@ describe("diagram options", () => {
 		o.set({ handles: "floating" });
 		o.set({ edges: "step" });
 		o.set({ style: "sketch" });
+		o.set({ legendCollapsed: true });
 		expect(JSON.parse(localStorage.getItem(KEY) ?? "{}")).toEqual({
 			handles: "floating",
 			edges: "step",
 			style: "sketch",
+			legendCollapsed: true,
 		});
 		const again = createDiagramOptions();
 		expect(again.handles).toBe("floating");
 		expect(again.edges).toBe("step");
 		expect(again.style).toBe("sketch");
+		expect(again.legendCollapsed).toBe(true);
 	});
 	it("ignores unknown or corrupt stored values", () => {
 		localStorage.setItem(
 			KEY,
-			JSON.stringify({ handles: "diagonal", edges: "zigzag", style: "oil" }),
+			JSON.stringify({
+				handles: "diagonal",
+				edges: "zigzag",
+				style: "oil",
+				legendCollapsed: "yes",
+			}),
 		);
 		let o = createDiagramOptions();
 		expect(o.handles).toBe("fixed");
 		expect(o.edges).toBe("bezier");
 		expect(o.style).toBe("cards");
+		expect(o.legendCollapsed).toBe(false);
 		localStorage.setItem(KEY, "not json");
 		o = createDiagramOptions();
 		expect(o.handles).toBe("fixed");

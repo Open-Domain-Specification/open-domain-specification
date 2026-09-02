@@ -7,9 +7,11 @@ import PortBadge from "./PortBadge.svelte";
  * A UML connector for one entity relation, picked by the edge `type`:
  * `relation-includes` is a composition (filled diamond on the whole),
  * `relation-references` a navigable association (open arrow) and
- * `relation-uses` a dependency (dashed, open arrow). The label sits at the
- * midpoint and the cardinality is a port at the target end, as in the
- * Graphviz image. Ends follow the diagram options: fixed handles or floating
+ * `relation-uses` a dependency (dashed, open arrow). The core expresses no
+ * aggregation, so there is no hollow diamond. The role label sits at the
+ * midpoint and the multiplicities are ports at the ends: the cardinality at
+ * the target, as in the Graphviz image, and "1" at the whole of a
+ * composition. Ends follow the diagram options: fixed handles or floating
  * anchors.
  */
 let {
@@ -20,7 +22,8 @@ let {
 	label,
 	data,
 	...ends
-}: EdgeProps & { data?: { targetLabel?: string } } = $props();
+}: EdgeProps & { data?: { sourceLabel?: string; targetLabel?: string } } =
+	$props();
 // An edge's ends never change once created, so the initial ids are the ids.
 // svelte-ignore state_referenced_locally
 const sourceNode = useInternalNode(source);
@@ -35,16 +38,23 @@ const params = $derived(
 	edgeEndpoints(ends, sourceNode.current, targetNode.current),
 );
 const path = $derived(
-	params && edgePath(padEndpoints(params, { target: !!data?.targetLabel })),
+	params &&
+		edgePath(
+			padEndpoints(params, {
+				source: !!data?.sourceLabel,
+				target: !!data?.targetLabel,
+			}),
+		),
 );
 </script>
 
 {#if params && path}
 	<defs>
-		<marker id={`${id}-diamond`} viewBox="0 0 14 8" refX="14" refY="4" markerWidth="14" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+		<!-- Sized in stroke widths, so both markers scale with the edge stroke. -->
+		<marker id={`${id}-diamond`} viewBox="0 0 14 8" refX="14" refY="4" markerWidth="9" markerHeight="5" markerUnits="strokeWidth" orient="auto-start-reverse">
 			<path d="M0,4 L7,0 L14,4 L7,8 Z" class="marker-fill" />
 		</marker>
-		<marker id={`${id}-vee`} viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto">
+		<marker id={`${id}-vee`} viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" markerUnits="strokeWidth" orient="auto">
 			<path d="M0,0 L10,5 L0,10" class="marker-stroke" />
 		</marker>
 	</defs>
@@ -59,13 +69,17 @@ const path = $derived(
 	{#if label}
 		<text class="edge-label" x={path[1]} y={path[2]} text-anchor="middle" dominant-baseline="middle">{label}</text>
 	{/if}
+	{#if data?.sourceLabel}
+		{@const at = portCentre(params.sourceX, params.sourceY, params.sourcePosition)}
+		<PortBadge class="cardinality source" x={at.x} y={at.y} label={data.sourceLabel} />
+	{/if}
 	{#if data?.targetLabel}
 		{@const at = portCentre(params.targetX, params.targetY, params.targetPosition)}
-		<PortBadge class="cardinality" x={at.x} y={at.y} label={data.targetLabel} />
+		<PortBadge class="cardinality target" x={at.x} y={at.y} label={data.targetLabel} />
 	{/if}
 {/if}
 
 <style>
 	.marker-fill { fill: var(--fg); stroke: none; }
-	.marker-stroke { fill: none; stroke: var(--fg); stroke-width: 1.5px; }
+	.marker-stroke { fill: none; stroke: var(--fg); stroke-width: 1px; }
 </style>

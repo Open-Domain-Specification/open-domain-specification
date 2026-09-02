@@ -126,6 +126,39 @@ describe("diagram options in the interactive view", () => {
 	});
 });
 
+describe("diagram kinds", () => {
+	it("never applies the sketch style to the consumable or relation map and hides their style select", async () => {
+		diagramOptions.set({ style: "sketch" });
+		const consumables = render(InteractiveDiagram, {
+			graph: consumableGraph(ODSConsumableMap.fromBoundedContext(sales)),
+		});
+		await waitFor(() => {
+			expect(
+				consumables.container.querySelector(".consumable-node"),
+			).toBeTruthy();
+		});
+		expect(consumables.container.querySelector(".sketch")).toBeNull();
+		expect(consumables.container.querySelector(".sketch-backdrop")).toBeNull();
+		expect(
+			consumables.container.querySelectorAll(".cluster-node").length,
+		).toBeGreaterThan(0);
+		expect(
+			consumables.container.querySelector('[aria-label="Diagram style"]'),
+		).toBeNull();
+		const relations = render(InteractiveDiagram, {
+			graph: relationGraph(ODSRelationMap.fromAggregate(order)),
+		});
+		await waitFor(() => {
+			expect(relations.container.querySelector(".relation-node")).toBeTruthy();
+		});
+		expect(relations.container.querySelector(".sketch-backdrop")).toBeNull();
+		expect(
+			relations.container.querySelector('[aria-label="Diagram style"]'),
+		).toBeNull();
+		diagramOptions.set({ style: "cards" });
+	});
+});
+
 describe("sketch style", () => {
 	it("draws ellipse nodes over the Voronoi backdrop and hides the clusters, then restores the cards", async () => {
 		diagramOptions.set({ style: "sketch" });

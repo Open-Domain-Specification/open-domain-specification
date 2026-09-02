@@ -43,6 +43,33 @@ test("the interactive context map draws context nodes with stereotypes and roles
 	);
 	// Ports are full-size and the line starts at their rim, not underneath them.
 	await expect(upstream.first()).toHaveCSS("height", "22px");
+	// The style select is offered here, and only here.
+	await expect(
+		flow.locator(".diagram-options").getByLabel("Diagram style"),
+	).toBeVisible();
+	// Edges are twice Svelte Flow's stroke and every one animates.
+	await expect(flow.locator(".svelte-flow__edge-path").first()).toHaveCSS(
+		"stroke-width",
+		"2px",
+	);
+	await expect(flow.locator(".svelte-flow__edge").first()).toHaveClass(
+		/animated/,
+	);
+	// The legend lists exactly the abbreviations on show, with their full names, and collapses.
+	const legend = flow.locator(".diagram-legend");
+	const terms = await legend.locator("dt").allTextContents();
+	for (const s of new Set(stereotypes)) expect(terms).toContain(s);
+	for (const t of terms.filter((t) => /^[A-Z/]+$/.test(t)))
+		expect(
+			await flow.locator(".stereotype, .port-label", { hasText: t }).count(),
+		).toBeGreaterThan(0);
+	await expect(
+		legend.locator("dd", { hasText: "Open host service" }),
+	).toBeVisible();
+	await legend.getByRole("button", { name: "Legend" }).click();
+	await expect(legend.locator("dl")).toHaveCount(0);
+	await legend.getByRole("button", { name: "Legend" }).click();
+	await expect(legend.locator("dl")).toBeVisible();
 	// Ports follow the floating ends.
 	await flow
 		.locator(".diagram-options")

@@ -4,13 +4,18 @@ import { centre as centreOf } from "./floating";
 /**
  * Geometry for the sketch backdrop: a Voronoi tessellation of the node
  * centres, the boundaries between cells of different groups (the dashed
- * subdomain lines), an organic outer blob around every node, and a label
- * position per group. Pure functions over placed boxes in flow coordinates,
- * so the backdrop only has to read positions and draw paths.
+ * subdomain lines), the thicker borders between domains (the union of each
+ * domain's subdomain cells) with a path for the domain name to run along,
+ * an organic outer blob around every node, and a label position per group.
+ * Pure functions over placed boxes in flow coordinates, so the backdrop
+ * only has to read positions and draw paths.
  */
 export type Point = [number, number];
 
-/** A placed node: top-left corner, size and the deepest group it belongs to. */
+/**
+ * A placed node: top-left corner, size, the deepest group it belongs to (its
+ * subdomain) and that group's parent (its domain).
+ */
 export type SketchNode = {
 	id: string;
 	x: number;
@@ -18,18 +23,37 @@ export type SketchNode = {
 	width: number;
 	height: number;
 	groupId?: string;
+	domainId?: string;
 };
 
 export type Segment = { a: Point; b: Point };
 
 export type GroupLabel = { id: string; x: number; y: number };
 
+/**
+ * A domain's border: the longest straight stretch of its boundary, oriented
+ * left to right so the name reads upright, and whether the name hangs below
+ * the line (the domain lies below it) rather than sitting above.
+ */
+export type DomainBorder = { id: string; labelPath: string; below: boolean };
+
 export type Backdrop = {
 	/** Closed, smoothed outline around every node, as an SVG path. */
 	blob: string;
 	/** Every boundary between cells of different groups, as one SVG path. */
 	boundaries: string;
+	/** Every boundary between cells of different domains, as one SVG path. */
+	domainBorders: string;
+	domains: DomainBorder[];
 	labels: GroupLabel[];
+};
+
+export const EMPTY_BACKDROP: Backdrop = {
+	blob: "",
+	boundaries: "",
+	domainBorders: "",
+	domains: [],
+	labels: [],
 };
 
 /** Points sampled round each node's padded ellipse. */
@@ -199,27 +223,86 @@ function cells(
 }
 
 /**
- * The Voronoi edges separating nodes of different groups: the boundaries
- * drawn dashed between subdomains. Each is the edge two adjacent cells share.
+ * The edge two neighbouring cells share, from the first cell's vertices.
+ * Voronoi neighbours share an edge by definition (d3 checks that after
+ * clipping), so there is always one.
  */
-function groupBoundaries(
+function sharedEdge(cell: Point[], other: Point[]): Segment {
+	const shared = (p: Point) => other.some((q) => same(p, q));
+	const k = cell.findIndex(
+		(a, i) => shared(a) && shared(cell[(i + 1) % cell.length]),
+	);
+	return { a: cell[k], b: cell[(k + 1) % cell.length] };
+}
+
+/**
+ * The Voronoi edges between cells whose `key` differs, each once. With the
+ * group as key they are the boundaries drawn dashed between subdomains; with
+ * the domain, the thicker borders between domains.
+ */
+function boundariesBy(
 	nodes: SketchNode[],
 	bounds: [number, number, number, number],
+	key: (n: SketchNode) => string | undefined,
 ): Segment[] {
 	const { polygons, neighbors } = cells(nodes, bounds);
 	const out: Segment[] = [];
 	polygons.forEach((cell, i) => {
 		for (const j of neighbors(i)) {
-			if (j < i || nodes[i].groupId === nodes[j].groupId) continue;
-			const other = polygons[j];
-			const shared = (p: Point) => other.some((q) => same(p, q));
-			cell.forEach((a, k) => {
-				const b = cell[(k + 1) % cell.length];
-				if (shared(a) && shared(b)) out.push({ a, b });
-			});
+			if (j < i || key(nodes[i]) === key(nodes[j])) continue;
+			out.push(sharedEdge(cell, polygons[j]));
 		}
 	});
 	return out;
+}
+
+/** The Voronoi edges separating nodes of different groups: the dashed subdomain lines. */
+const groupBoundaries = (
+	nodes: SketchNode[],
+	bounds: [number, number, number, number],
+) => boundariesBy(nodes, bounds, (n) => n.groupId);
+
+/** The Voronoi edges separating nodes of different domains: the thick domain borders. */
+const domainBoundaries = (
+	nodes: SketchNode[],
+	bounds: [number, number, number, number],
+) => boundariesBy(nodes, bounds, (n) => n.domainId);
+
+/**
+ * The border of each domain: its Voronoi boundary segments oriented so the
+ * domain lies on the side text sits on when it runs along the path, of which
+ * the longest carries the domain name, straight as a map boundary label. A
+ * segment that would read right to left is reversed, and the name then
+ * hangs below it.
+ */
+function domainBorders(
+	nodes: SketchNode[],
+	bounds: [number, number, number, number],
+): DomainBorder[] {
+	const { polygons, neighbors } = cells(nodes, bounds);
+	const segments = new Map<string, Segment[]>();
+	polygons.forEach((cell, i) => {
+		const domain = nodes[i].domainId;
+		if (!domain) return;
+		for (const j of neighbors(i)) {
+			if (nodes[j].domainId === domain) continue;
+			const { a, b } = sharedEdge(cell, polygons[j]);
+			// d3 walks a cell with its centre on the clockwise side in screen coordinates; text on a
+			// path stands on the counter-clockwise side, so the edge is reversed to put the domain there.
+			segments.set(domain, [...(segments.get(domain) ?? []), { a: b, b: a }]);
+		}
+	});
+	const length = ({ a, b }: Segment) => Math.hypot(b[0] - a[0], b[1] - a[1]);
+	return [...segments].map(([id, segs]) => {
+		const [longest] = segs.sort((x, y) => length(y) - length(x));
+		const below = longest.b[0] < longest.a[0];
+		const { a, b } = below ? { a: longest.b, b: longest.a } : longest;
+		return {
+			id,
+			labelPath: `M${f(a[0])} ${f(a[1])} L${f(b[0])} ${f(b[1])}`,
+			below,
+		};
+	});
 }
 
 /**
@@ -256,11 +339,13 @@ const segmentsPath = (segments: Segment[]) =>
 
 /** Everything the backdrop draws for the given nodes; empty paths for no nodes. */
 export function sketchBackdrop(nodes: SketchNode[], padding: number): Backdrop {
-	if (nodes.length === 0) return { blob: "", boundaries: "", labels: [] };
+	if (nodes.length === 0) return EMPTY_BACKDROP;
 	const bounds = paddedBounds(nodes, padding * BOUNDARY_BOUNDS_FACTOR);
 	return {
 		blob: smoothPath(outerBlob(nodes, padding)),
 		boundaries: segmentsPath(groupBoundaries(nodes, bounds)),
+		domainBorders: segmentsPath(domainBoundaries(nodes, bounds)),
+		domains: domainBorders(nodes, bounds),
 		labels: groupLabels(nodes),
 	};
 }
@@ -274,6 +359,9 @@ export const internals = {
 	resample,
 	outerBlob,
 	smoothPath,
+	sharedEdge,
 	groupBoundaries,
+	domainBoundaries,
+	domainBorders,
 	groupLabels,
 };

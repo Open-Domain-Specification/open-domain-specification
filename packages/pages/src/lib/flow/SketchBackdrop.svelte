@@ -2,13 +2,21 @@
 import { type Node, ViewportPortal } from "@xyflow/svelte";
 import type { GraphNode } from "./graph";
 import { nodeSize } from "./layout";
-import { type Backdrop, type SketchNode, sketchBackdrop } from "./voronoi";
+import {
+	type Backdrop,
+	EMPTY_BACKDROP,
+	type SketchNode,
+	sketchBackdrop,
+} from "./voronoi";
 
 /**
  * The sketch style's backdrop, drawn in flow coordinates under the nodes: a
  * solid organic blob round the whole map, dashed Voronoi boundaries between
- * groups and a muted label per group. It follows the nodes it is given, so
- * dragging one reshapes the regions. Cluster nodes are layout-only here.
+ * groups (subdomains), thicker solid borders between domains (a group's
+ * parent group) with the domain name running along the border like a map
+ * boundary label, and a muted label per group. It follows the nodes it is
+ * given, so dragging one reshapes the regions, even out of its cluster.
+ * Cluster nodes are layout-only here.
  */
 let {
 	nodes,
@@ -39,6 +47,7 @@ const boxes = $derived<SketchNode[]>(
 				width: n.measured?.width ?? fallback.width,
 				height: n.measured?.height ?? fallback.height,
 				groupId: n.parentId,
+				domainId: nodes.find((p) => p.id === n.parentId)?.parentId,
 			};
 		}),
 );
@@ -58,7 +67,7 @@ const fingerprint = $derived(
 );
 let lastFingerprint = "";
 let lastPadding: number | undefined;
-let cachedBackdrop: Backdrop = { blob: "", boundaries: "", labels: [] };
+let cachedBackdrop: Backdrop = EMPTY_BACKDROP;
 /** Recomputed only when the fingerprint or padding actually changes. */
 const backdrop = $derived.by(() => {
 	if (fingerprint !== lastFingerprint || padding !== lastPadding) {
@@ -78,6 +87,13 @@ const clipId = `sketch-clip-${Math.random().toString(36).slice(2, 8)}`;
 		</defs>
 		<path class="blob" d={backdrop.blob} />
 		<path class="boundaries" d={backdrop.boundaries} clip-path={`url(#${clipId})`} />
+		<path class="domain-borders" d={backdrop.domainBorders} clip-path={`url(#${clipId})`} />
+		{#each backdrop.domains as domain, i (domain.id)}
+			<path id={`${clipId}-domain-${i}`} class="domain-path" d={domain.labelPath} />
+			<text class="domain-label" dy={domain.below ? 15 : -7}>
+				<textPath href={`#${clipId}-domain-${i}`} startOffset="50%" text-anchor="middle">{groupLabels.get(domain.id) ?? domain.id}</textPath>
+			</text>
+		{/each}
 		{#each backdrop.labels as label (label.id)}
 			<text class="region-label" x={label.x} y={label.y} text-anchor="middle">{groupLabels.get(label.id) ?? label.id}</text>
 		{/each}
@@ -100,6 +116,26 @@ const clipId = `sketch-clip-${Math.random().toString(36).slice(2, 8)}`;
 		stroke-opacity: 0.35;
 		stroke-dasharray: 10 8;
 		stroke-linecap: round;
+	}
+	.domain-borders {
+		fill: none;
+		stroke: var(--fg);
+		stroke-width: 4px;
+		stroke-opacity: 0.5;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+	.domain-path { fill: none; stroke: none; }
+	.domain-label {
+		fill: var(--fg);
+		font-size: 12px;
+		font-weight: 600;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		paint-order: stroke;
+		stroke: var(--bg);
+		stroke-width: 4px;
+		stroke-linejoin: round;
 	}
 	.region-label {
 		fill: var(--muted);

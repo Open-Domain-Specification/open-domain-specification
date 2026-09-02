@@ -13,12 +13,52 @@ const base: ConsumableNodeData = {
 	label: "Pet",
 	icon: "symbol-structure",
 	slots: [],
+	requires: [],
 };
-const consumable = (
-	data: ConsumableNodeData & { floating?: boolean; sketch?: boolean },
-) => render(Harness, { node: ConsumableNode, type: "consumable", data });
+const consumable = (data: ConsumableNodeData & { floating?: boolean }) =>
+	render(Harness, { node: ConsumableNode, type: "consumable", data });
 
 describe("ConsumableNode", () => {
+	it("is a «component» box with the icon, and draws each required consumable as a socket source handle", () => {
+		const { container } = consumable({
+			...base,
+			requires: [
+				{
+					id: "#/boundedcontexts/sales/aggregates/order/provides/order_placed",
+					name: "Order Placed",
+					pattern: "conformist",
+				},
+				{ id: "#/x/provides/plain", name: "Plain" },
+			],
+		});
+		const node = container.querySelector(".consumable-node") as HTMLElement;
+		expect(node).toHaveClass("component");
+		expect(node.querySelector(".stereotype")?.textContent).toBe("«component»");
+		expect(node.querySelector("svg.component-icon")).toBeTruthy();
+		const sockets = node.querySelectorAll(".slot.required");
+		expect(sockets).toHaveLength(2);
+		expect(sockets[0].querySelector(".name")?.textContent).toBe("Order Placed");
+		const socket = sockets[0].querySelector(
+			".svelte-flow__handle.source",
+		) as HTMLElement;
+		expect(socket).toHaveClass("socket");
+		expect(socket).toHaveClass("port-handle");
+		expect(socket.getAttribute("data-handleid")).toBe(
+			"#/boundedcontexts/sales/aggregates/order/provides/order_placed",
+		);
+		expect(socket.querySelector(".port-label")?.textContent).toBe("CF");
+		expect(socket.getAttribute("title")).toBe("conformist");
+		const plain = sockets[1].querySelector(".socket") as HTMLElement;
+		expect(plain).not.toHaveClass("port-handle");
+		expect(plain.getAttribute("title")).toBe("Plain");
+		// No provided consumables: the plain target handle stays; sockets replace the plain source handle.
+		expect(node.querySelectorAll(".svelte-flow__handle.target")).toHaveLength(
+			1,
+		);
+		expect(
+			node.querySelectorAll(".svelte-flow__handle.source:not(.socket)"),
+		).toHaveLength(0);
+	});
 	it("shows the name, cluster path and one slot per consumable with icon and a port handle carrying the pattern", () => {
 		const { container } = consumable({
 			...base,
@@ -63,11 +103,19 @@ describe("ConsumableNode", () => {
 				slot.getAttribute("data-slot"),
 			);
 		}
-		// A slot with a pattern is a labelled port; one without is a plain handle.
+		// Every slot is a lollipop; one with a pattern is a labelled port, one without a plain ball.
 		const port = slots[0].querySelector(".port-handle") as HTMLElement;
+		expect(port).toHaveClass("lollipop");
 		expect(port.querySelector(".port-label")?.textContent).toBe("OHS");
 		expect(port.getAttribute("title")).toBe("open-host-service");
 		expect(slots[1].querySelector(".port-handle")).toBeNull();
+		expect(slots[1].querySelector(".lollipop")?.getAttribute("title")).toBe(
+			"Pet Status Changed",
+		);
+		// Lollipops replace the plain target handle; nothing is required, so the plain source stays.
+		expect(
+			node.querySelectorAll(".svelte-flow__handle.target:not(.lollipop)"),
+		).toHaveLength(0);
 		expect(node.querySelectorAll(".svelte-flow__handle.source")).toHaveLength(
 			1,
 		);
@@ -93,12 +141,5 @@ describe("ConsumableNode", () => {
 		expect(node.querySelector(".port-handle")).not.toHaveClass("handle-hidden");
 		const { container: bare } = consumable(base);
 		expect(bare.querySelector(".slots")).toBeNull();
-	});
-});
-
-describe("ConsumableNode in sketch style", () => {
-	it("takes the sketch class for the ellipse style", () => {
-		const { container } = consumable({ ...base, sketch: true });
-		expect(container.querySelector(".consumable-node.sketch")).toBeTruthy();
 	});
 });

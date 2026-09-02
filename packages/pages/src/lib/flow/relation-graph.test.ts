@@ -133,11 +133,15 @@ describe("relationGraph", () => {
 			source: "#/a",
 			target: "#/b",
 			label: "has",
+			// A composition: exactly one whole at the source, the cardinality at the part.
+			sourceLabel: "1",
 			targetLabel: "*",
 			directed: false,
 			dashed: false,
 		});
 		expect(edges[1].targetLabel).toBeUndefined();
+		expect(edges[1].sourceLabel).toBeUndefined();
+		expect(edges[2].sourceLabel).toBeUndefined();
 		expect(relationEdgeType("uses")).toBe("relation-uses");
 	});
 });

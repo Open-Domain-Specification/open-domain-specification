@@ -1,5 +1,6 @@
 <script lang="ts">
 import { Panel } from "@xyflow/svelte";
+import type { DiagramKind } from "./kind";
 import {
 	type DiagramStyle,
 	diagramOptions,
@@ -7,7 +8,12 @@ import {
 	type HandleMode,
 } from "./options.svelte";
 
-/** Top-right controls: how edges attach, how they are drawn, and the figure style. */
+/**
+ * Top-right controls: how edges attach, how they are drawn, and the figure
+ * style. The style select only shows for the context map: the consumable
+ * and relation maps are always drawn in their UML form.
+ */
+let { kind = "context" }: { kind?: DiagramKind } = $props();
 let handles = $state<HandleMode>(diagramOptions.handles);
 let edges = $state<EdgeStyle>(diagramOptions.edges);
 let style = $state<DiagramStyle>(diagramOptions.style);
@@ -31,13 +37,15 @@ const apply = () => diagramOptions.set({ handles, edges, style });
 			<option value="smoothstep">Smooth step</option>
 		</select>
 	</label>
-	<label>
-		<span>Style</span>
-		<select aria-label="Diagram style" bind:value={style} onchange={apply}>
-			<option value="cards">Cards</option>
-			<option value="sketch">Sketch</option>
-		</select>
-	</label>
+	{#if kind === "context"}
+		<label>
+			<span>Style</span>
+			<select aria-label="Diagram style" bind:value={style} onchange={apply}>
+				<option value="cards">Cards</option>
+				<option value="sketch">Sketch</option>
+			</select>
+		</label>
+	{/if}
 </Panel>
 
 <style>

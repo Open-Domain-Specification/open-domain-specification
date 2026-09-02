@@ -7,8 +7,8 @@ import type { Component } from "svelte";
  * One edge component inside a real flow: node `#/a` with a source handle at
  * (10, 20) and node `#/b` with a target handle at (200, 80), declared rather
  * than measured so the edge renders in jsdom too. Tests and stories pick the
- * component and the props that vary; the target handle takes the id the
- * edge names, if any.
+ * component and the props that vary; each handle takes the id the edge
+ * names for its end, if any.
  */
 let {
 	edge,
@@ -20,6 +20,7 @@ let {
 	sourcePosition = Position.Right,
 	targetPosition = Position.Left,
 	targetHandleId = undefined,
+	sourceHandleId = undefined,
 }: {
 	// biome-ignore lint/suspicious/noExplicitAny: any edge component from the registry
 	edge: Component<any>;
@@ -31,6 +32,7 @@ let {
 	sourcePosition?: Position;
 	targetPosition?: Position;
 	targetHandleId?: string | null;
+	sourceHandleId?: string | null;
 } = $props();
 /** A zero-size handle, so its declared point is the edge's end whatever side it faces. */
 const handle = (
@@ -48,7 +50,9 @@ let nodes = $state.raw<Node[]>([
 		width: 100,
 		height: 50,
 		data: { label: "a" },
-		handles: [handle("source", sourcePosition, 10, 20)],
+		handles: [
+			handle("source", sourcePosition, 10, 20, sourceHandleId ?? undefined),
+		],
 	},
 	{
 		id: "#/b",
@@ -68,6 +72,7 @@ let edges = $state.raw<Edge[]>([
 		type,
 		source: "#/a",
 		target: "#/b",
+		sourceHandle: sourceHandleId ?? undefined,
 		targetHandle: targetHandleId ?? undefined,
 		label,
 		markerEnd,

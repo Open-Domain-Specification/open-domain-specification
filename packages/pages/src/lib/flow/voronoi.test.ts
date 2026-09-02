@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	EMPTY_BACKDROP,
 	internals,
 	type Point,
 	type SketchNode,
@@ -9,9 +10,12 @@ import {
 const {
 	centre,
 	convexHull,
+	domainBoundaries,
+	domainBorders,
 	ellipsePoints,
 	groupBoundaries,
 	groupLabels,
+	sharedEdge,
 	outerBlob,
 	paddedBounds,
 	resample,
@@ -182,10 +186,103 @@ describe("sketchBackdrop", () => {
 		expect(b.boundaries.startsWith("M")).toBe(true);
 		expect(b.boundaries).toContain(" L");
 		expect(b.labels.length).toBe(2);
-		expect(sketchBackdrop([], 20)).toEqual({
-			blob: "",
-			boundaries: "",
-			labels: [],
+		expect(b.domainBorders).toBe("");
+		expect(b.domains).toEqual([]);
+		expect(sketchBackdrop([], 20)).toEqual(EMPTY_BACKDROP);
+	});
+});
+
+/** Two domains side by side, each with two subdomains stacked: a 2x2 grid of nodes plus one loose node. */
+const twoDomains: SketchNode[] = [
+	{ ...box("a", 0, 0, "s1"), domainId: "d1" },
+	{ ...box("b", 0, 300, "s2"), domainId: "d1" },
+	{ ...box("c", 400, 0, "s3"), domainId: "d2" },
+	{ ...box("d", 400, 300, "s4"), domainId: "d2" },
+	box("loose", 800, 150),
+];
+
+describe("domainBoundaries", () => {
+	it("keeps only the Voronoi edges between different domains, a loose node counting as none", () => {
+		const bounds = paddedBounds(twoDomains, 20);
+		const segs = domainBoundaries(twoDomains, bounds);
+		// d1|d2 is one vertical line in two pieces; d2 against the loose node is another, and the loose
+		// node's cell can also touch d1's cells through the corner region only when they share an edge.
+		expect(segs.length).toBeGreaterThanOrEqual(4);
+		const vertical = segs.filter((s) => Math.abs(s.a[0] - 250) < 1e-6);
+		expect(vertical.length).toBe(2);
+		for (const s of vertical) expect(s.b[0]).toBeCloseTo(250);
+		// Same-domain and same-group edges never appear.
+		expect(
+			domainBoundaries(
+				twoDomains.map((n) => ({ ...n, domainId: "one" })),
+				bounds,
+			),
+		).toEqual([]);
+	});
+});
+
+describe("sharedEdge", () => {
+	it("finds the edge two cells share, whichever way round the vertices come", () => {
+		const square = (x: number, y: number): Point[] => [
+			[x, y],
+			[x + 1, y],
+			[x + 1, y + 1],
+			[x, y + 1],
+		];
+		expect(sharedEdge(square(0, 0), square(1, 0))).toEqual({
+			a: [1, 0],
+			b: [1, 1],
 		});
+		expect(sharedEdge(square(0, 0), square(0, 1))).toEqual({
+			a: [1, 1],
+			b: [0, 1],
+		});
+	});
+});
+
+describe("domainBorders", () => {
+	it("gives each domain its longest straight border segment, oriented left to right with the name on the domain's side", () => {
+		const bounds = paddedBounds(twoDomains, 20);
+		const borders = domainBorders(twoDomains, bounds);
+		expect(borders.map((b) => b.id)).toEqual(["d1", "d2"]);
+		const d1 = borders[0];
+		const d2 = borders[1];
+		// The shared vertical border between the two domains, walked top to bottom or bottom to top.
+		expect(d1.labelPath).toMatch(/^M250 \S+ L250 \S+$/);
+		// d1 lies left of a vertical line: read upwards it sits on the text side, so no flip.
+		expect(d1.below).toBe(false);
+		// d2's longest stretch is one leg of its bent border against the loose node, walked upwards with d2 on its left.
+		expect(d2.labelPath).toMatch(
+			/^M695 370 L621.88 175$|^M621.88 175 L695 -20$/,
+		);
+		expect(d2.below).toBe(false);
+		// Without the loose node both share the vertical line, walked in opposite directions so each
+		// name stays on its own side; a vertical segment never reads right to left, so neither flips.
+		const pair = twoDomains.slice(0, 4);
+		const [p1, p2] = domainBorders(pair, paddedBounds(pair, 20));
+		const ys = (p: string) =>
+			p.match(/[ML]\S+ (\S+)/g)?.map((m) => Number(m.split(" ")[1])) ?? [];
+		expect(p2.labelPath).toMatch(/^M250 /);
+		expect(p1.below).toBe(false);
+		expect(p2.below).toBe(false);
+		expect(ys(p1.labelPath)).toEqual([...ys(p2.labelPath)].reverse());
+		expect(domainBorders([quad[0]], paddedBounds([quad[0]], 20))).toEqual([]);
+	});
+	it("flips a run that would read right to left and hangs the name below it", () => {
+		const stacked: SketchNode[] = [
+			{ ...box("a", 0, 0, "s1"), domainId: "top" },
+			{ ...box("b", 0, 300, "s2"), domainId: "bottom" },
+		];
+		const borders = domainBorders(stacked, paddedBounds(stacked, 20));
+		// The horizontal line between them: "top" is above so its name sits above, read left to right;
+		// "bottom" would read right to left, so it is flipped and hangs below.
+		expect(borders.find((b) => b.id === "top")).toMatchObject({ below: false });
+		expect(borders.find((b) => b.id === "bottom")).toMatchObject({
+			below: true,
+		});
+		for (const b of borders) {
+			const [, x0, x1] = b.labelPath.match(/^M(\S+) \S+ L(\S+) \S+$/) ?? [];
+			expect(Number(x0)).toBeLessThan(Number(x1));
+		}
 	});
 });

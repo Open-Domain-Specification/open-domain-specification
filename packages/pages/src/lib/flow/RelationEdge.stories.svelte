@@ -11,6 +11,6 @@ const { Story } = defineMeta({
 });
 </script>
 
-<Story name="Includes (composition)" args={{ type: "relation-includes", label: "attempted-by", data: { targetLabel: "*" } }} />
+<Story name="Includes (composition)" args={{ type: "relation-includes", label: "attempted-by", data: { sourceLabel: "1", targetLabel: "*" } }} />
 <Story name="References (association)" args={{ type: "relation-references", label: "for-pet", data: { targetLabel: "1" } }} />
 <Story name="Uses (dependency)" args={{ type: "relation-uses", label: "has-status", data: { targetLabel: "0..1" } }} />

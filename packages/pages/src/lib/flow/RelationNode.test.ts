@@ -7,7 +7,7 @@ import RelationNode from "./RelationNode.svelte";
 
 installXyflowTestEnv();
 
-const relation = (data: GraphNode & { floating?: boolean; sketch?: boolean }) =>
+const relation = (data: GraphNode & { floating?: boolean }) =>
 	render(Harness, { node: RelationNode, type: "relation", data });
 
 describe("RelationNode", () => {
@@ -82,18 +82,5 @@ describe("RelationNode", () => {
 		await waitFor(() =>
 			expect(container.querySelector(".relation-node")).toHaveClass("muted"),
 		);
-	});
-});
-
-describe("RelationNode in sketch style", () => {
-	it("takes the sketch class for the ellipse style", () => {
-		const { container } = relation({
-			id: "#/x",
-			type: "relation",
-			label: "X",
-			icon: "entity",
-			sketch: true,
-		});
-		expect(container.querySelector(".relation-node.sketch")).toBeTruthy();
 	});
 });

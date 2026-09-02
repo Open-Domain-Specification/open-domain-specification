@@ -476,8 +476,6 @@ table.attrs td.k {
 }
 .svelte-flow .flow-card.sketch .head { justify-content: center; }
 .svelte-flow .flow-card.sketch.context-node { border-top-width: 5px; }
-.svelte-flow .flow-card.sketch.relation-node { padding: 14px 28px; }
-.svelte-flow .flow-card.sketch.consumable-node .slots { margin: 6px -20px 0; }
 .flow-card .head {
 	display: flex;
 	gap: 6px;
@@ -489,6 +487,19 @@ table.attrs td.k {
 	color: var(--muted);
 	font-size: 11px;
 	white-space: nowrap;
+}
+/* Edges: the theme foreground at 0.7 rather than Svelte Flow's grey, so lines stand out from
+   both the page and the shaded clusters in either theme (the context map's SK/SW colours
+   override inline); twice Svelte Flow's stroke, and every edge animates along its dash
+   pattern so the flow direction reads. Solid edges get a long dash with a small gap; dashed
+   ones set their own short pattern inline, which wins over this. */
+.svelte-flow .svelte-flow__edge-path {
+	stroke: var(--fg);
+	stroke-opacity: 0.7;
+	stroke-width: 2;
+}
+.svelte-flow .svelte-flow__edge.animated .svelte-flow__edge-path {
+	stroke-dasharray: 24 3;
 }
 /* Edge text: the midpoint label and the stereotype, haloed so lines never cross it. */
 .svelte-flow .edge-label {
@@ -534,6 +545,36 @@ table.attrs td.k {
 .svelte-flow .svelte-flow__handle.port-handle {
 	width: auto;
 }
+/* UML interfaces on a component: a lollipop (ball on a stem) for a provided one on the left
+   edge, a socket (half circle on a stem) for a required one on the right, both pushed out
+   so the stem shows and both labelled with the pattern when there is one. */
+.svelte-flow .svelte-flow__handle.lollipop,
+.svelte-flow .svelte-flow__handle.socket {
+	box-sizing: border-box;
+	width: 22px;
+	min-width: 22px;
+	height: 22px;
+	border: 1.5px solid var(--fg);
+	background: var(--card);
+	opacity: 1;
+}
+.svelte-flow .svelte-flow__handle.lollipop { left: -22px; }
+.svelte-flow .svelte-flow__handle.socket {
+	right: -22px;
+	border-right-color: transparent;
+	background: transparent;
+}
+.svelte-flow .svelte-flow__handle.lollipop::before,
+.svelte-flow .svelte-flow__handle.socket::before {
+	content: "";
+	position: absolute;
+	top: 50%;
+	width: 12px;
+	border-top: 1.5px solid var(--fg);
+}
+.svelte-flow .svelte-flow__handle.lollipop::before { left: 100%; }
+.svelte-flow .svelte-flow__handle.socket::before { right: 100%; }
+.svelte-flow .svelte-flow__handle.socket .port-label { margin-right: 4px; }
 /* Hidden while the handles float: the edge finds its own end, but the handle keeps its measurement. */
 .svelte-flow .svelte-flow__handle.handle-hidden {
 	opacity: 0;

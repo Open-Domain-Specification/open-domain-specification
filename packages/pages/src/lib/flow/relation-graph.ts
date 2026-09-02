@@ -25,9 +25,11 @@ export const relationEdgeType = (relation: EntityRelationType) =>
 	`relation-${relation}` as const;
 
 /**
- * The relation map as UML class boxes. As in the Graphviz image there is one
- * flat cluster per aggregate (the innermost namespace), labelled with the
- * aggregate's path below the workspace.
+ * The relation map as a UML class diagram. As in the Graphviz image there is
+ * one flat cluster per aggregate (the innermost namespace), labelled with
+ * the aggregate's path below the workspace. Edges carry the cardinality at
+ * the part end and, for a composition, "1" at the whole: a part belongs to
+ * exactly one whole.
  */
 export function relationGraph(map: ODSRelationMap): Graph {
 	const groups = new Map<string, GraphGroup>();
@@ -67,6 +69,7 @@ export function relationGraph(map: ODSRelationMap): Graph {
 			label: e.label,
 			directed: false,
 			dashed: false,
+			sourceLabel: e.relation === "includes" ? "1" : undefined,
 			targetLabel: e.cardinality,
 		})),
 	};

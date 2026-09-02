@@ -26,13 +26,29 @@ an **interactive** toggle that swaps the static image for a Svelte Flow graph: p
 nodes, and click one to open its page. The graph is laid out with dagre from the same core map
 the static image is drawn from, so the two never disagree.
 
-The options panel in the interactive view picks how edges attach, how they are drawn, and the
-figure **style**. *Cards* draws nodes as cards inside shaded namespace clusters; *Sketch* draws
-them as ellipses in the spirit of a hand-drawn context map, with one solid organic outline round
-the whole map and dashed boundaries between groups computed as a Voronoi tessellation of the
-node centres, plus a muted label per group. The backdrop is an SVG layer under the nodes that
-pans and zooms with the viewport and reshapes as nodes are dragged. Arrows, labels, port badges
-and colours are the same in both styles, and the choice is remembered per browser.
+The options panel in the interactive view picks how edges attach and how they are drawn, and
+on the context map the figure **style**. *Cards* draws contexts as cards inside shaded namespace
+clusters; *Sketch* draws them as ellipses in the spirit of a hand-drawn context map, with one
+solid organic outline round the whole map and dashed boundaries between subdomains computed as
+a Voronoi tessellation of the node centres, plus a muted label per subdomain. A domain is the
+union of its subdomains' cells: its border is drawn thicker and solid, and the domain name runs
+along that border like a map boundary label. On the context map a node can be dragged out of
+its cluster and the backdrop follows it. The backdrop is an SVG layer under the nodes that pans
+and zooms with the viewport.
+
+The other two maps are always drawn in their UML form, so the style control is absent there.
+The **consumable map** is a component diagram: each aggregate or service is a «component» box
+with the component icon, its provided consumables are lollipops on its left edge labelled with
+the pattern they are offered under, the consumables it uses are sockets on its right edge
+labelled with its own protection pattern, and each consumption is an assembly connector from
+socket to lollipop named after the consumable. The **relation map** is a class diagram: three
+compartments per class (stereotype and name, attributes with `{id}` markers, an empty
+operations compartment), composition with a filled diamond and "1" at the whole for
+`includes`, a navigable association for `references` and a dashed dependency for `uses`, with
+the cardinality at the far end and the role at the midpoint. Arrows, labels, port badges and
+colours carry over from the static images; every edge is animated so the direction reads. A
+collapsible **legend** at the top left indexes only the abbreviations, line styles and node
+marks the current diagram shows. Every choice is remembered per browser.
 
 ## Component library
 

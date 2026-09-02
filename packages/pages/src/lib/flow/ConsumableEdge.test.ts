@@ -8,7 +8,7 @@ import { diagramOptions } from "./options.svelte";
 
 installXyflowTestEnv();
 
-const { slotId, provider } = vi.hoisted(() => ({
+const { slotId, provider, consumer } = vi.hoisted(() => ({
 	slotId: "#/b/provides/reserve_pet",
 	provider: (): Box => ({
 		x: 300,
@@ -16,6 +16,23 @@ const { slotId, provider } = vi.hoisted(() => ({
 		w: 120,
 		h: 60,
 		handles: [{ id: "#/b/provides/reserve_pet", x: -11, y: 23, w: 22, h: 22 }],
+	}),
+	/** The consumer with its socket for the same consumable on its right edge. */
+	consumer: (): Box => ({
+		x: 0,
+		y: 0,
+		w: 100,
+		h: 50,
+		handles: [
+			{
+				id: "#/b/provides/reserve_pet",
+				type: "source",
+				x: 89,
+				y: 14,
+				w: 22,
+				h: 22,
+			},
+		],
 	}),
 }));
 // Hoisted with the mock: the factory reads the map when the module under test loads.
@@ -34,6 +51,7 @@ const edge = (props: Record<string, unknown> = {}) =>
 		type: "consumable",
 		label: "Reserve Pet",
 		targetHandleId: slotId,
+		sourceHandleId: slotId,
 		...props,
 	});
 const pathD = (c: Element) => c.querySelector("path")?.getAttribute("d") ?? "";
@@ -45,7 +63,37 @@ const portAt = (el: Element | null) => [
 const port = (c: Element, which: string) =>
 	c.querySelector(`.port.${which}`) as HTMLElement | null;
 
-describe("ConsumableEdge", () => {
+describe("ConsumableEdge as an assembly connector", () => {
+	it("runs from the socket's rim to the lollipop's rim with no arrowhead and no port badges, in both handle modes", async () => {
+		diagramOptions.set({ handles: "fixed", edges: "straight" });
+		boxes["#/a"] = consumer();
+		const { container } = edge({
+			data: {
+				sourceLabel: "anti-corruption-layer",
+				targetLabel: "open-host-service",
+			},
+		});
+		await waitFor(() => expect(container.querySelector("path")).toBeTruthy());
+		// Socket centre (100,25) plus the port radius; lollipop centre (300,54) less it.
+		expect(pathD(container)).toBe(
+			`M ${100 + 2 * PORT_RADIUS},25L ${300 - 2 * PORT_RADIUS},54`,
+		);
+		expect(container.querySelector("path")).toHaveClass("assembly");
+		expect(container.querySelector("path")?.getAttribute("marker-end")).toBe(
+			null,
+		);
+		expect(container.querySelector(".port")).toBeNull();
+		diagramOptions.set({ handles: "floating" });
+		await waitFor(() => expect(diagramOptions.handles).toBe("floating"));
+		expect(pathD(container).startsWith(`M ${100 + 2 * PORT_RADIUS},25`)).toBe(
+			true,
+		);
+		boxes["#/a"] = { x: 0, y: 0, w: 100, h: 50 };
+		diagramOptions.set({ handles: "fixed", edges: "bezier" });
+	});
+});
+
+describe("ConsumableEdge without a measured socket", () => {
 	it("lands on the slot handle's rim, names the consumable and draws the consumer pattern as a port", async () => {
 		diagramOptions.set({ handles: "fixed", edges: "bezier" });
 		const { container } = edge({

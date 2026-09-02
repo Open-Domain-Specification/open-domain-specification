@@ -10,6 +10,6 @@ const { Story } = defineMeta({
 });
 </script>
 
-<Story name="Operation with pattern ports" args={{ label: "Reserve Pet", data: { sourceLabel: "anti-corruption-layer", targetLabel: "open-host-service" } }} />
+<Story name="Assembly connector with fallback pattern ports" args={{ label: "Reserve Pet", data: { sourceLabel: "anti-corruption-layer", targetLabel: "open-host-service" } }} />
 <Story name="Event, conformist consumer" args={{ label: "Pet Status Changed", data: { sourceLabel: "conformist", targetLabel: "published-language" } }} />
 <Story name="No patterns" args={{ label: "Get Pet Summary" }} />

@@ -91,14 +91,23 @@ describe("consumableGraph", () => {
 				pattern: undefined,
 			},
 		]);
-		// The layout sizes by attribute rows, so each slot mirrors into one.
+		// The provider also consumes its own event: one socket, once.
+		expect(pet.requires).toEqual([
+			{ id: changed.id, name: "Pet Status Changed", pattern: "conformist" },
+		]);
+		// The layout sizes by attribute rows, so each slot and socket mirrors into one.
 		expect(pet.attributes).toEqual([
 			{ name: "Reserve Pet", type: "operation", identity: false },
 			{ name: "Pet Status Changed", type: "event", identity: false },
+			{ name: "Pet Status Changed", type: "requires", identity: false },
 		]);
 		expect(checkout.icon).toBe(ICONS.service);
 		expect(checkout.groupPath).toBeUndefined();
 		expect(checkout.slots).toEqual([]);
+		expect(checkout.requires).toEqual([
+			{ id: reserve.id, name: "Reserve Pet", pattern: "anti-corruption-layer" },
+			{ id: changed.id, name: "Pet Status Changed", pattern: undefined },
+		]);
 		// Clusters nest per namespace level, workspace included, as the image draws them.
 		expect(pet.groupId).toBe("cluster:catalog");
 		expect(checkout.groupId).toBe("cluster:ws");
@@ -113,9 +122,10 @@ describe("consumableGraph", () => {
 				type: "consumable",
 				source: consumer.id,
 				target: provider.id,
+				sourceHandle: reserve.id,
 				targetHandle: reserve.id,
 				label: "Reserve Pet",
-				directed: true,
+				directed: false,
 				sourceLabel: "anti-corruption-layer",
 				targetLabel: "open-host-service",
 			},
@@ -124,9 +134,10 @@ describe("consumableGraph", () => {
 				type: "consumable",
 				source: consumer.id,
 				target: provider.id,
+				sourceHandle: changed.id,
 				targetHandle: changed.id,
 				label: "Pet Status Changed",
-				directed: true,
+				directed: false,
 				sourceLabel: undefined,
 				targetLabel: undefined,
 			},
@@ -135,9 +146,10 @@ describe("consumableGraph", () => {
 				type: "consumable",
 				source: provider.id,
 				target: provider.id,
+				sourceHandle: changed.id,
 				targetHandle: changed.id,
 				label: "Pet Status Changed",
-				directed: true,
+				directed: false,
 				sourceLabel: "conformist",
 				targetLabel: undefined,
 			},

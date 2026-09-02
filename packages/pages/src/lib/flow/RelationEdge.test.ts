@@ -36,12 +36,12 @@ const cardinality = (c: Element) =>
 	c.querySelector(".port.cardinality") as HTMLElement | null;
 
 describe("RelationEdge", () => {
-	it("draws includes as a composition: solid line with a filled diamond at the source and the cardinality port at the target", async () => {
+	it('draws includes as a composition: solid line with a filled diamond at the whole, "1" there and the cardinality port at the part', async () => {
 		diagramOptions.set({ handles: "fixed", edges: "bezier" });
 		const { container } = edge({
 			type: "relation-includes",
 			label: "has",
-			data: { targetLabel: "*" },
+			data: { sourceLabel: "1", targetLabel: "*" },
 		});
 		await waitFor(() => expect(edgePath(container)).toBeTruthy());
 		const path = edgePath(container) as SVGElement;
@@ -53,12 +53,19 @@ describe("RelationEdge", () => {
 			container.querySelector("marker#e-diamond .marker-fill"),
 		).toBeTruthy();
 		expect(container.querySelector(".edge-label")).toHaveTextContent("has");
-		const card = cardinality(container) as HTMLElement;
+		const card = container.querySelector(
+			".port.cardinality.target",
+		) as HTMLElement;
 		expect(card.querySelector(".port-label")).toHaveTextContent("*");
-		// No port at the source, so the line starts on the handle; the target end stops at the port's rim.
+		const whole = container.querySelector(
+			".port.cardinality.source",
+		) as HTMLElement;
+		expect(whole.querySelector(".port-label")).toHaveTextContent("1");
+		// Both ends carry a multiplicity, so the line runs from rim to rim.
 		const d = path.getAttribute("d") ?? "";
-		expect(d.startsWith("M10,20")).toBe(true);
+		expect(d.startsWith(`M${10 + 2 * PORT_RADIUS},20`)).toBe(true);
 		expect(d.endsWith(`${200 - 2 * PORT_RADIUS},80`)).toBe(true);
+		expect(portAt(whole)).toEqual([10 + PORT_RADIUS, 20]);
 		expect(portAt(card)).toEqual([200 - PORT_RADIUS, 80]);
 	});
 
@@ -71,7 +78,10 @@ describe("RelationEdge", () => {
 		expect(refPath.getAttribute("marker-start")).toBeNull();
 		expect(refPath.getAttribute("style")).not.toContain("dasharray");
 		expect(ref.container.querySelector(".edge-label")).toBeNull();
+		// No multiplicities: the line runs handle to handle.
+		expect(refPath.getAttribute("d")?.startsWith("M10,20")).toBe(true);
 		expect(refPath.getAttribute("d")?.endsWith("200,80")).toBe(true);
+		expect(ref.container.querySelector(".port")).toBeNull();
 
 		const uses = edge();
 		await waitFor(() => expect(edgePath(uses.container)).toBeTruthy());

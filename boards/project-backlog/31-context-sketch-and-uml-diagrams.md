@@ -6,7 +6,7 @@ agent: claude
 live: true
 status: Delegated to a Fable subagent
 progress: 10
-updatedAt: 2026-09-03T11:00:00.000Z
+updatedAt: 2026-09-03T11:40:00.000Z
 ---
 # Sketch only for the context map, domain borders, and proper UML for the other two maps
 
@@ -19,8 +19,12 @@ Three changes to the interactive diagrams. First, the sketch style applies to th
 - [ ] Domain regions: union of subdomain Voronoi regions, thick border, label along the border path; layout keeps subdomains of a domain adjacent
 - [ ] Consumable map as a UML component diagram
 - [ ] Relation map as a UML class diagram
+- [ ] Legend panel top-left listing only the abbreviations, stereotypes, line styles and node marks present in the diagram, collapsible
+- [ ] Edges twice as thick and animated, markers scaled to match
+- [ ] Edge colour contrasts with cluster shading in both themes (consumable map lines were too dim)
 - [ ] Unit coverage 100, e2e updated, stories, docs
 
 ## Comments
 
 - **claude** (2026-09-03T11:00:00.000Z): Raised from the request after the sketch style landed. Delegated to a Fable subagent.
+- **claude** (2026-09-03T14:30:00.000Z): Done. `flow/kind.ts` derives the map kind from the graph; the style select and sketch backdrop are context-only and context nodes have no parent extent. `voronoi.ts` adds domain borders (Voronoi edges between different domains, thick solid) with the domain name on a `textPath` along the longest straight segment, on the domain's side. ConsumableNode is a «component» with lollipop target handles and socket source handles, edges are assembly connectors (no arrowhead); RelationNode has three compartments and includes carries "1" at the whole. Added `flow/legend.ts` + `LegendPanel.svelte`, `flow-nodes.ts` (pure node/edge building), edge stroke 2px in `--fg` at 0.7 with every edge animated. Layout test asserts each domain's cells form one connected region. Aggregation omitted: the core has no such relation.

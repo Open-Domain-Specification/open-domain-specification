@@ -41,3 +41,17 @@ describe("DiagramOptionsPanel reflects stored choices", () => {
 		diagramOptions.set({ handles: "fixed", edges: "bezier" });
 	});
 });
+
+describe("DiagramOptionsPanel per diagram kind", () => {
+	it("offers the style select for the context map only", () => {
+		const consumable = render(Harness, { kind: "consumable" });
+		expect(consumable.queryByLabelText("Diagram style")).toBeNull();
+		expect(consumable.getByLabelText("Edge style")).toBeInTheDocument();
+		consumable.unmount();
+		const relation = render(Harness, { kind: "relation" });
+		expect(relation.queryByLabelText("Diagram style")).toBeNull();
+		relation.unmount();
+		render(Harness, { kind: "context" });
+		expect(screen.getByLabelText("Diagram style")).toBeInTheDocument();
+	});
+});

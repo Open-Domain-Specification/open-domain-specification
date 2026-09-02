@@ -8,7 +8,13 @@ import { Handle, Position } from "@xyflow/svelte";
  * full name as a tooltip; it stays visible when the handles float, because
  * edges still land on it. Plain handles hide when `floating`.
  */
-export type Port = { id?: string; label?: string; title?: string };
+export type Port = {
+	id?: string;
+	label?: string;
+	title?: string;
+	/** A UML interface: lollipop (provided) or socket (required); stays visible when floating. */
+	shape?: "lollipop" | "socket";
+};
 let {
 	floating = false,
 	target = {},
@@ -19,7 +25,13 @@ let {
 	source?: Port | false;
 } = $props();
 const classOf = (port: Port) =>
-	port.label ? "port-handle" : floating ? "handle-hidden" : "";
+	[
+		port.label && "port-handle",
+		port.shape,
+		!port.label && !port.shape && floating && "handle-hidden",
+	]
+		.filter(Boolean)
+		.join(" ");
 </script>
 
 {#snippet handle(type: "target" | "source", position: Position, port: Port)}

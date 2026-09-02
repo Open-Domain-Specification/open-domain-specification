@@ -21,5 +21,5 @@ const { Story } = defineMeta({
 </script>
 
 <Story name="Context map" args={{ graph: contextGraph(ODSContextMap.fromWorkspace(workspace)) }} />
-<Story name="Consumable map" args={{ graph: consumableGraph(ODSConsumableMap.fromBoundedContext(bc)) }} />
-<Story name="Relation map" args={{ graph: relationGraph(ODSRelationMap.fromAggregate(aggregate)) }} />
+<Story name="Consumable map (UML component diagram)" args={{ graph: consumableGraph(ODSConsumableMap.fromBoundedContext(bc)) }} />
+<Story name="Relation map (UML class diagram)" args={{ graph: relationGraph(ODSRelationMap.fromAggregate(aggregate)) }} />

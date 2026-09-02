@@ -28,13 +28,20 @@ export function installXyflowTestEnv(): void {
 	});
 }
 
-/** A placed, sized node for the internal-node mock; `handles` are its target handles. */
+/** A placed, sized node for the internal-node mock; `handles` are its target handles unless typed `source`. */
 export type Box = {
 	x: number;
 	y: number;
 	w: number;
 	h: number;
-	handles?: { id: string; x: number; y: number; w: number; h: number }[];
+	handles?: {
+		id: string;
+		x: number;
+		y: number;
+		w: number;
+		h: number;
+		type?: "source" | "target";
+	}[];
 };
 
 /**
@@ -49,22 +56,24 @@ export function mockInternalNodeBoxes(boxes: Record<string, Box | undefined>) {
 			get current() {
 				const b = boxes[id];
 				if (!b) return undefined;
+				const of = (type: "source" | "target") => {
+					const list = (b.handles ?? [])
+						.filter((h) => (h.type ?? "target") === type)
+						.map((h) => ({
+							id: h.id,
+							x: h.x,
+							y: h.y,
+							width: h.w,
+							height: h.h,
+						}));
+					return list.length ? list : null;
+				};
 				return {
 					data: {},
 					internals: {
 						positionAbsolute: { x: b.x, y: b.y },
 						handleBounds: b.handles
-							? {
-									target: b.handles.length
-										? b.handles.map((h) => ({
-												id: h.id,
-												x: h.x,
-												y: h.y,
-												width: h.w,
-												height: h.h,
-											}))
-										: null,
-								}
+							? { source: of("source"), target: of("target") }
 							: undefined,
 					},
 					measured: { width: b.w, height: b.h },

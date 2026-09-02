@@ -21,6 +21,42 @@ export type EdgeEndpoints = {
 /** What an edge needs of an internal node: where it is and how big it measured. */
 export type MeasuredNode = Parameters<typeof rectOf>[0];
 
+type HandleBox = {
+	id?: string | null;
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+};
+
+/** An internal node with its measured handles, as `useInternalNode` returns them. */
+export type HandleNode = {
+	internals: {
+		positionAbsolute: { x: number; y: number };
+		handleBounds?: {
+			source?: HandleBox[] | null;
+			target?: HandleBox[] | null;
+		};
+	};
+};
+
+/**
+ * Centre of the node's `kind` handle named `id`, in flow coordinates, once
+ * the node and that handle are measured; undefined until then or when the
+ * edge names no handle.
+ */
+export function handlePoint(
+	node: HandleNode | undefined,
+	kind: "source" | "target",
+	id: string | null | undefined,
+): { x: number; y: number } | undefined {
+	if (!node || !id) return undefined;
+	const h = node.internals.handleBounds?.[kind]?.find((h) => h.id === id);
+	if (!h) return undefined;
+	const at = node.internals.positionAbsolute;
+	return { x: at.x + h.x + h.width / 2, y: at.y + h.y + h.height / 2 };
+}
+
 /** Radius of a port badge or port handle, in flow pixels. */
 export const PORT_RADIUS = 11;
 
