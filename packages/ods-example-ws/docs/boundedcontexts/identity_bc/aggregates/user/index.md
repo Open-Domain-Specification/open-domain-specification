@@ -20,6 +20,9 @@ Petstore user record
 | [User](entities/user/index.md) | has-status | User - UserStatus | uses |
 
 
+## Commands
+> No commands.
+
 ## Events
 | Name | Description | Attributes |
 | --- | --- | --- |

@@ -174,6 +174,37 @@ const petDeletedPublished = petAgg.publishes(petDeletedEvent, {
 	pattern: "published-language",
 });
 
+// Commands
+const registerPetCmd = petAgg.addCommand("RegisterPet", {
+	description: "Add a new pet to the catalog",
+});
+registerPetCmd.addAttribute("name", { type: "string" });
+registerPetCmd.addAttribute("category", {
+	type: "Category",
+	valueobject: categoryVO,
+});
+registerPetCmd.addAttribute("photoUrls", {
+	type: "PhotoUrl[]",
+	valueobject: photoUrlVO,
+});
+registerPetCmd.raises(petRegisteredEvent);
+
+const changePetStatusCmd = petAgg.addCommand("ChangePetStatus", {
+	description: "Move a pet between available, pending and sold",
+});
+changePetStatusCmd.addAttribute("petId", { type: "int64", identity: true });
+changePetStatusCmd.addAttribute("status", {
+	type: "PetStatus",
+	valueobject: petStatusVO,
+});
+changePetStatusCmd.raises(petStatusChangedEvent);
+
+const removePetCmd = petAgg.addCommand("RemovePet", {
+	description: "Remove a pet from the catalog",
+});
+removePetCmd.addAttribute("petId", { type: "int64", identity: true });
+removePetCmd.raises(petDeletedEvent);
+
 // Service: PetApp (open-host)
 const petApp = catalogBC.addService("PetApp", {
 	description: "Open-host service for /pet endpoints",
@@ -184,6 +215,7 @@ const _addPetOp = petApp.provides("AddPet", {
 	description: "POST /pet",
 	type: "operation",
 	pattern: "open-host-service",
+	command: registerPetCmd,
 });
 const _updatePetOp = petApp.provides("UpdatePet", {
 	description: "PUT /pet",
@@ -215,6 +247,7 @@ const _deletePetOp = petApp.provides("DeletePet", {
 	description: "DELETE /pet/{petId}",
 	type: "operation",
 	pattern: "open-host-service",
+	command: removePetCmd,
 });
 
 // Internal ACL-friendly read
@@ -266,16 +299,16 @@ orderAgg.addInvariant("DeliverOnlyWhenApproved", {
 });
 
 // Aggregate events
-const _orderPlacedEvent = orderAgg.addEvent("OrderPlaced", {
+const orderPlacedEvent = orderAgg.addEvent("OrderPlaced", {
 	description: "Order created (status=placed)",
 });
-_orderPlacedEvent.addAttribute("orderId", { type: "int64", identity: true });
-_orderPlacedEvent.addAttribute("petId", { type: "int64" });
-_orderPlacedEvent.addAttribute("quantity", {
+orderPlacedEvent.addAttribute("orderId", { type: "int64", identity: true });
+orderPlacedEvent.addAttribute("petId", { type: "int64" });
+orderPlacedEvent.addAttribute("quantity", {
 	type: "Quantity",
 	valueobject: quantityVO,
 });
-const _orderPlacedPublished = orderAgg.publishes(_orderPlacedEvent, {
+const _orderPlacedPublished = orderAgg.publishes(orderPlacedEvent, {
 	pattern: "published-language",
 });
 const orderApprovedEvent = orderAgg.addEvent("OrderApproved", {
@@ -297,6 +330,29 @@ const orderDeletedPublished = orderAgg.publishes(orderDeletedEvent, {
 	pattern: "published-language",
 });
 
+// Commands
+const placeOrderCmd = orderAgg.addCommand("PlaceOrder", {
+	description: "Place an order for one pet",
+});
+placeOrderCmd.addAttribute("petId", { type: "int64" });
+placeOrderCmd.addAttribute("quantity", {
+	type: "Quantity",
+	valueobject: quantityVO,
+});
+placeOrderCmd.raises(orderPlacedEvent);
+
+const approveOrderCmd = orderAgg.addCommand("ApproveOrder", {
+	description: "Approve a placed order once the pet is available",
+});
+approveOrderCmd.addAttribute("orderId", { type: "int64", identity: true });
+approveOrderCmd.raises(orderApprovedEvent);
+
+const deliverOrderCmd = orderAgg.addCommand("DeliverOrder", {
+	description: "Mark an approved order as delivered",
+});
+deliverOrderCmd.addAttribute("orderId", { type: "int64", identity: true });
+deliverOrderCmd.raises(orderDeliveredEvent);
+
 // Service: OrderApp
 const orderApp = salesBC.addService("OrderApp", {
 	description: "Open-host service for /store/order endpoints",
@@ -307,6 +363,7 @@ const _placeOrderOp = orderApp.provides("PlaceOrder", {
 	description: "POST /store/order",
 	type: "operation",
 	pattern: "open-host-service",
+	command: placeOrderCmd,
 });
 const _getOrderByIdOp = orderApp.provides("GetOrderById", {
 	description: "GET /store/order/{orderId}",

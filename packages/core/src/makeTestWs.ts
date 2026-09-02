@@ -187,6 +187,11 @@ export function makeRichTestWs() {
 		description: "Raised when an order is placed",
 		pattern: "published-language",
 	});
+	const placeOrderCommand = orderAgg.addCommand("Place Order", {
+		description: "Places a new order",
+	});
+	placeOrderCommand.addAttribute("Lines", { type: "OrderLine[]" });
+	placeOrderCommand.raises(orderPlacedEvent);
 	const orderApp = orderingBc.addService("Order App", {
 		description: "Order application service",
 		type: "application",
@@ -195,6 +200,7 @@ export function makeRichTestWs() {
 		description: "Places an order",
 		type: "operation",
 		pattern: "open-host-service",
+		command: placeOrderCommand,
 	});
 
 	const billing = ws.addDomain("Billing", {
@@ -246,6 +252,7 @@ export function makeRichTestWs() {
 		money,
 		orderPlacedEvent,
 		orderPlaced,
+		placeOrderCommand,
 		orderApp,
 		placeOrder,
 		billing,

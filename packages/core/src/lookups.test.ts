@@ -43,6 +43,17 @@ describe("Workspace ref lookups", () => {
 		expect(() => ws.getEventByRefOrThrow("#/nope")).toThrow(/Event/);
 	});
 
+	it("resolves commands, the events they raise, and the consumables exposing them", () => {
+		expect(ws.getCommandByRef(fixture.placeOrderCommand.ref)).toBe(
+			fixture.placeOrderCommand,
+		);
+		expect(fixture.placeOrderCommand.raisedEvents).toEqual([
+			fixture.orderPlacedEvent,
+		]);
+		expect(fixture.placeOrder.command).toBe(fixture.placeOrderCommand);
+		expect(() => ws.getCommandByRefOrThrow("#/nope")).toThrow(/Command/);
+	});
+
 	it("resolves teams and derives what they own", () => {
 		expect(ws.getTeamByRef(teamRef("sales_team").$ref)).toBe(fixture.salesTeam);
 		expect(fixture.salesTeam.boundedcontexts).toEqual([fixture.orderingBc]);

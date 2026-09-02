@@ -310,6 +310,18 @@ export class Workspace
 		return invariant;
 	}
 
+	getCommandByRef(ref: string): Command | undefined {
+		return this.findAggregateMember((it) => it.commands, ref);
+	}
+
+	getCommandByRefOrThrow(ref: string): Command {
+		const command = this.getCommandByRef(ref);
+		if (!command) {
+			throw new Error(`Command with ref ${ref} not found`);
+		}
+		return command;
+	}
+
 	getEventByRef(ref: string): DomainEvent | undefined {
 		return this.findAggregateMember((it) => it.events, ref);
 	}
@@ -720,6 +732,7 @@ export class Aggregate
 	entities = new Map<string, Entity>();
 	valueobjects = new Map<string, ValueObject>();
 	events = new Map<string, DomainEvent>();
+	commands = new Map<string, Command>();
 	boundedcontext: BoundedContext;
 	consumptions: Consumption[] = [];
 
@@ -787,6 +800,10 @@ export class Aggregate
 		return new DomainEvent(this, name, attributes);
 	}
 
+	addCommand(name: string, attributes: CommandAttributes): Command {
+		return new Command(this, name, attributes);
+	}
+
 	/**
 	 * Exposes a domain event to other contexts as an event consumable named
 	 * after the event.
@@ -818,6 +835,7 @@ export class Aggregate
 			valueobjects: asRecords(this.valueobjects),
 			invariants: asRecords(this.invariants),
 			events: asRecords(this.events),
+			commands: asRecords(this.commands),
 		};
 	}
 
@@ -832,6 +850,8 @@ export type ConsumableAttributes = {
 	type: ods.ConsumableType;
 	/** For event consumables: the domain event being published. */
 	event?: DomainEvent;
+	/** For operation consumables: the command being exposed. */
+	command?: Command;
 	id?: string;
 };
 
@@ -844,6 +864,7 @@ export class Consumable
 	pattern?: UpstreamRole;
 	type: ods.ConsumableType;
 	event?: DomainEvent;
+	command?: Command;
 	provider: Aggregate | Service;
 	consumptions: Consumption[] = [];
 
@@ -866,6 +887,7 @@ export class Consumable
 		this.pattern = attributes.pattern;
 		this.type = attributes.type;
 		this.event = attributes.event;
+		this.command = attributes.command;
 		this.provider = provider;
 		provider.consumables.set(this.id, this);
 	}
@@ -881,6 +903,7 @@ export class Consumable
 			pattern: this.pattern,
 			type: this.type,
 			event: this.event && { $ref: this.event.ref },
+			command: this.command && { $ref: this.command.ref },
 		};
 	}
 }
@@ -1421,6 +1444,66 @@ export class DomainEvent
 			name: this.name,
 			description: this.description,
 			attributes: asRecords(this.attributes),
+		};
+	}
+}
+
+export type CommandAttributes = {
+	description: string;
+	id?: string;
+};
+
+export class Command
+	implements Visitable, SchemaConvertible<ods.CommandSchema>, AttributeOwner
+{
+	id: string;
+	name: string;
+	description: string;
+	attributes = new Map<string, Attribute>();
+	/** The events this command may raise. */
+	raisedEvents: DomainEvent[] = [];
+	aggregate: Aggregate;
+
+	get path(): string {
+		return `${this.aggregate.path}/commands/${this.id}`;
+	}
+
+	get ref(): string {
+		return `#/${this.path}`;
+	}
+
+	constructor(
+		aggregate: Aggregate,
+		name: string,
+		attributes: CommandAttributes,
+	) {
+		this.id = attributes.id || snakeCase(name);
+		this.name = name;
+		this.description = attributes.description;
+		this.aggregate = aggregate;
+		this.aggregate.commands.set(this.id, this);
+	}
+
+	addAttribute(name: string, options: AttributeOptions): Attribute {
+		return new Attribute(this, name, options);
+	}
+
+	/** Declares an event this command may raise. */
+	raises(event: DomainEvent): this {
+		if (!this.raisedEvents.includes(event)) this.raisedEvents.push(event);
+		return this;
+	}
+
+	accept(v: Visitor) {
+		return v.visitCommand(this);
+	}
+
+	toSchema(): ods.CommandSchema {
+		return {
+			name: this.name,
+			description: this.description,
+			attributes: asRecords(this.attributes),
+			raises: this.raisedEvents.map((it) => ({ $ref: it.ref })),
 		};
 	}
 }

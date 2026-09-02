@@ -1,5 +1,6 @@
 import {
 	type Aggregate,
+	type Command,
 	type Consumable,
 	type Consumption,
 	type DomainEvent,
@@ -39,6 +40,13 @@ const eventSection = (event: DomainEvent) => [
 	event.name,
 	event.description,
 	attributeListMd(event.attributes),
+];
+
+const commandSection = (command: Command) => [
+	command.name,
+	command.description,
+	attributeListMd(command.attributes),
+	command.raisedEvents.map((it) => it.name).join(", ") || "-",
 ];
 
 const invariantSection = (invariant: Invariant) => [
@@ -94,6 +102,16 @@ ${markdownTable(
 		it.relation,
 	]),
 )}
+
+## Commands
+${
+	aggregate.commands.size > 0
+		? markdownTable(
+				["Name", "Description", "Attributes", "Raises"],
+				Array.from(aggregate.commands.values()).map(commandSection),
+			)
+		: "> No commands."
+}
 
 ## Events
 ${

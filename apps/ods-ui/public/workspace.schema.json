@@ -6,6 +6,12 @@
             "additionalProperties": false,
             "description": "Represents an aggregate in the Open Domain Specification (ODS).",
             "properties": {
+                "commands": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/CommandSchema"
+                    },
+                    "type": "object"
+                },
                 "consumes": {
                     "items": {
                         "$ref": "#/definitions/ConsumptionSchema"
@@ -50,6 +56,7 @@
                 }
             },
             "required": [
+                "commands",
                 "consumes",
                 "description",
                 "entities",
@@ -167,10 +174,65 @@
             "title": "BoundedContext",
             "type": "object"
         },
+        "CommandSchema": {
+            "additionalProperties": false,
+            "description": "An intention to change the state of an aggregate.",
+            "properties": {
+                "attributes": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/AttributeSchema"
+                    },
+                    "type": "object"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "raises": {
+                    "description": "The domain events this command may raise.",
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "attributes",
+                "description",
+                "name",
+                "raises"
+            ],
+            "title": "Command",
+            "type": "object"
+        },
         "ConsumableSchema": {
             "additionalProperties": false,
             "description": "Represents a consumable in the Open Domain Specification (ODS).",
             "properties": {
+                "command": {
+                    "additionalProperties": false,
+                    "description": "For operation consumables: the command being exposed.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
                 "description": {
                     "type": "string"
                 },

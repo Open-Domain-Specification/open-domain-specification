@@ -26,6 +26,14 @@ Order for a single pet
 | [Order](entities/order/index.md) | is-complete | Order - CompleteFlag | uses |
 
 
+## Commands
+| Name | Description | Attributes | Raises |
+| --- | --- | --- | --- |
+| PlaceOrder | Place an order for one pet | petId: `int64`, quantity: `Quantity` | OrderPlaced |
+| ApproveOrder | Approve a placed order once the pet is available | **orderId**: `int64` | OrderApproved |
+| DeliverOrder | Mark an approved order as delivered | **orderId**: `int64` | OrderDelivered |
+
+
 ## Events
 | Name | Description | Attributes |
 | --- | --- | --- |

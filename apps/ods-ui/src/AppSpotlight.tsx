@@ -4,6 +4,7 @@ import {
 	type Aggregate,
 	type BoundedContext,
 	boundedContextNamespace,
+	type Command,
 	type Consumable,
 	type Domain,
 	type DomainEvent,
@@ -150,6 +151,20 @@ class SpotlightCollector extends AbstractVisitor {
 			group: "Entities",
 		});
 		super.visitEntity(node);
+	}
+
+	visitCommand(node: Command) {
+		this.actions.push({
+			id: node.ref,
+			label: `${aggregateLabel(node.aggregate)} / ${node.name}`,
+			description: node.description,
+			onClick: () => {
+				this.navigator(node.aggregate.ref);
+			},
+			leftSection: Icons.Operations,
+			group: "Commands",
+		});
+		super.visitCommand(node);
 	}
 
 	visitDomainEvent(node: DomainEvent) {

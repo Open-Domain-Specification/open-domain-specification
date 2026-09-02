@@ -50,6 +50,18 @@ describe("schema round-trip", () => {
 		);
 	});
 
+	it("re-links commands to the events they raise and to exposing consumables", () => {
+		const command = rebuilt.getCommandByRefOrThrow(
+			"#/boundedcontexts/ordering_bc/aggregates/order/commands/place_order",
+		);
+		expect(command.raisedEvents.map((it) => it.name)).toEqual(["Order Placed"]);
+		expect(command.attributes.get("lines")?.type).toBe("OrderLine[]");
+		const consumable = rebuilt.getConsumableByRefOrThrow(
+			"#/boundedcontexts/ordering_bc/services/order_app/provides/place_order",
+		);
+		expect(consumable.command).toBe(command);
+	});
+
 	it("re-links entity relations across aggregates", () => {
 		const invoice = rebuilt.getEntityByRefOrThrow(
 			"#/boundedcontexts/invoicing_bc/aggregates/invoice/entities/invoice",

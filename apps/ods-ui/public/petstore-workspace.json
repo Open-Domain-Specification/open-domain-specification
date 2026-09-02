@@ -237,6 +237,76 @@
               "description": "Pet removed from catalog",
               "attributes": {}
             }
+          },
+          "commands": {
+            "register_pet": {
+              "name": "RegisterPet",
+              "description": "Add a new pet to the catalog",
+              "attributes": {
+                "name": {
+                  "name": "name",
+                  "type": "string"
+                },
+                "category": {
+                  "name": "category",
+                  "type": "Category",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+                  }
+                },
+                "photo_urls": {
+                  "name": "photoUrls",
+                  "type": "PhotoUrl[]",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/photo_url"
+                  }
+                }
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_registered"
+                }
+              ]
+            },
+            "change_pet_status": {
+              "name": "ChangePetStatus",
+              "description": "Move a pet between available, pending and sold",
+              "attributes": {
+                "pet_id": {
+                  "name": "petId",
+                  "type": "int64",
+                  "identity": true
+                },
+                "status": {
+                  "name": "status",
+                  "type": "PetStatus",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+                  }
+                }
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_status_changed"
+                }
+              ]
+            },
+            "remove_pet": {
+              "name": "RemovePet",
+              "description": "Remove a pet from the catalog",
+              "attributes": {
+                "pet_id": {
+                  "name": "petId",
+                  "type": "int64",
+                  "identity": true
+                }
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_deleted"
+                }
+              ]
+            }
           }
         }
       },
@@ -250,7 +320,10 @@
               "name": "AddPet",
               "description": "POST /pet",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "command": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/commands/register_pet"
+              }
             },
             "update_pet": {
               "name": "UpdatePet",
@@ -286,7 +359,10 @@
               "name": "DeletePet",
               "description": "DELETE /pet/{petId}",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "command": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/commands/remove_pet"
+              }
             },
             "get_pet_summary": {
               "name": "GetPetSummary",
@@ -460,6 +536,62 @@
               "description": "Order deleted via DELETE /store/order/{orderId}",
               "attributes": {}
             }
+          },
+          "commands": {
+            "place_order": {
+              "name": "PlaceOrder",
+              "description": "Place an order for one pet",
+              "attributes": {
+                "pet_id": {
+                  "name": "petId",
+                  "type": "int64"
+                },
+                "quantity": {
+                  "name": "quantity",
+                  "type": "Quantity",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
+                  }
+                }
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_placed"
+                }
+              ]
+            },
+            "approve_order": {
+              "name": "ApproveOrder",
+              "description": "Approve a placed order once the pet is available",
+              "attributes": {
+                "order_id": {
+                  "name": "orderId",
+                  "type": "int64",
+                  "identity": true
+                }
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_approved"
+                }
+              ]
+            },
+            "deliver_order": {
+              "name": "DeliverOrder",
+              "description": "Mark an approved order as delivered",
+              "attributes": {
+                "order_id": {
+                  "name": "orderId",
+                  "type": "int64",
+                  "identity": true
+                }
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_delivered"
+                }
+              ]
+            }
           }
         }
       },
@@ -473,7 +605,10 @@
               "name": "PlaceOrder",
               "description": "POST /store/order",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "command": {
+                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/commands/place_order"
+              }
             },
             "get_order_by_id": {
               "name": "GetOrderById",
@@ -581,7 +716,8 @@
               "description": "Inventory counts changed",
               "attributes": {}
             }
-          }
+          },
+          "commands": {}
         }
       },
       "services": {
@@ -717,7 +853,8 @@
               "description": "Logout via /user/logout",
               "attributes": {}
             }
-          }
+          },
+          "commands": {}
         }
       },
       "services": {

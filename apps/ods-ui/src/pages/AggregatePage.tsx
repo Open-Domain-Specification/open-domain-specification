@@ -99,6 +99,20 @@ export function _AggregatePage(props: { aggregate: Aggregate }) {
 				/>
 
 				<AccordionItems
+					title={"Commands"}
+					items={Array.from(props.aggregate.commands.values()).map((it) => ({
+						id: it.ref,
+						name: it.name,
+						description: it.raisedEvents.length
+							? `${it.description} Raises: ${it.raisedEvents.map((e) => e.name).join(", ")}.`
+							: it.description,
+						icon: Icons.Operations,
+						endSlot: <AttributeList attributes={it.attributes} />,
+					}))}
+					emptyMessage={"No commands defined."}
+				/>
+
+				<AccordionItems
 					title={"Events"}
 					items={Array.from(props.aggregate.events.values()).map((it) => ({
 						id: it.ref,
@@ -176,6 +190,17 @@ export function _AggregatePage(props: { aggregate: Aggregate }) {
 									icon: Icons.Consumer,
 									onClick: () => scrollToNavigable(it.consumable),
 								})),
+							},
+							{
+								title: "Commands",
+								items: Array.from(props.aggregate.commands.values()).map(
+									(command) => ({
+										ref: command.ref,
+										name: command.name,
+										icon: Icons.Operations,
+										onClick: () => scrollToNavigable(command),
+									}),
+								),
 							},
 							{
 								title: "Events",

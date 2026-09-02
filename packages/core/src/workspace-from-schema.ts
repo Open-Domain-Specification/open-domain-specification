@@ -4,6 +4,7 @@ import {
 	type AttributeSchema,
 	aggregateRef,
 	type BoundedContextSchema,
+	commandRef,
 	entityRef,
 	eventRef,
 	type ServiceSchema,
@@ -39,6 +40,9 @@ function addProvides(
 			event:
 				consumableSchema.event &&
 				workspace.getEventByRefOrThrow(consumableSchema.event.$ref),
+			command:
+				consumableSchema.command &&
+				workspace.getCommandByRefOrThrow(consumableSchema.command.$ref),
 		});
 	}
 }
@@ -172,6 +176,14 @@ function addBoundedContext(
 		)) {
 			aggregate.addEvent(eventSchema.name, { ...eventSchema, id: eventId });
 		}
+		for (const [commandId, commandSchema] of Object.entries(
+			aggregateSchema.commands,
+		)) {
+			aggregate.addCommand(commandSchema.name, {
+				...commandSchema,
+				id: commandId,
+			});
+		}
 	}
 
 	return boundedcontext;
@@ -233,6 +245,18 @@ function linkReferences(
 					eventSchema.attributes,
 					workspace,
 				);
+			}
+
+			for (const [commandId, commandSchema] of Object.entries(
+				aggregateSchema.commands,
+			)) {
+				const command = workspace.getCommandByRefOrThrow(
+					commandRef(boundedcontextId, aggregateId, commandId).$ref,
+				);
+				addAttributes(command, commandSchema.attributes, workspace);
+				for (const { $ref } of commandSchema.raises) {
+					command.raises(workspace.getEventByRefOrThrow($ref));
+				}
 			}
 
 			for (const [entityId, entitySchema] of Object.entries(

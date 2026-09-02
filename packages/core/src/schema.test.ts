@@ -162,6 +162,7 @@ describe("Workspace Edge Cases", () => {
 			visitInvariant: vi.fn(),
 			visitContextRelationship: vi.fn(),
 			visitDomainEvent: vi.fn(),
+			visitCommand: vi.fn(),
 		};
 
 		workspace.accept(mockVisitor);

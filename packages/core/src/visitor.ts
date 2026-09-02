@@ -2,6 +2,7 @@ import type { Visitable } from "./visitable";
 import type {
 	Aggregate,
 	BoundedContext,
+	Command,
 	Consumable,
 	Consumption,
 	ContextRelationship,
@@ -31,6 +32,7 @@ export interface Visitor {
 	visitConsumption(node: Consumption): void;
 	visitContextRelationship(node: ContextRelationship): void;
 	visitDomainEvent(node: DomainEvent): void;
+	visitCommand(node: Command): void;
 }
 
 export type AbstractVisitorOptions = {
@@ -174,9 +176,22 @@ export abstract class AbstractVisitor implements Visitor {
 		for (const event of node.events.values()) {
 			event.accept(this);
 		}
+		for (const command of node.commands.values()) {
+			command.accept(this);
+		}
 		if (this.followConsumptions) {
 			for (const cons of node.consumptions) cons.accept(this);
 		}
+		this.after(node);
+	}
+
+	/**
+	 * Visits a Command node. Commands are leaves; the events they raise are
+	 * reached through their aggregate.
+	 * @param node - The Command node to visit.
+	 */
+	visitCommand(node: Command): void {
+		this.before(node);
 		this.after(node);
 	}
 

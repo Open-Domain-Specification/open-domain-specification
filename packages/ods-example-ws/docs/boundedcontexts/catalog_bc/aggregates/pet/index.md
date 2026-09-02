@@ -26,6 +26,14 @@ A pet listed in the store
 | [Pet](entities/pet/index.md) | has-status | Pet - PetStatus | uses |
 
 
+## Commands
+| Name | Description | Attributes | Raises |
+| --- | --- | --- | --- |
+| RegisterPet | Add a new pet to the catalog | name: `string`, category: `Category`, photoUrls: `PhotoUrl[]` | PetRegistered |
+| ChangePetStatus | Move a pet between available, pending and sold | **petId**: `int64`, status: `PetStatus` | PetStatusChanged |
+| RemovePet | Remove a pet from the catalog | **petId**: `int64` | PetDeleted |
+
+
 ## Events
 | Name | Description | Attributes |
 | --- | --- | --- |

@@ -16,6 +16,9 @@ Materialized view: { available: number, pending: number, sold: number }
 ## Relationships
 
 
+## Commands
+> No commands.
+
 ## Events
 | Name | Description | Attributes |
 | --- | --- | --- |

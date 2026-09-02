@@ -47,8 +47,9 @@ Workspace
 │       ├── Entities
 │       ├── Value Objects
 │       ├── Invariants
+│       ├── Commands (with attributes; raise Domain Events)
 │       ├── Domain Events (with attributes)
-│       ├── Consumables (an event consumable publishes a domain event)
+│       ├── Consumables (an event consumable publishes a domain event; an operation may expose a command)
 │       └── Consumptions
 ├── Team                                    (owns bounded contexts)
 └── Context Relationship                    (upstream-downstream, customer-supplier, partnership, shared-kernel, separate-ways)

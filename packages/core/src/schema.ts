@@ -24,6 +24,18 @@ export interface DomainEventSchema {
 }
 
 /**
+ * @title Command
+ * @description An intention to change the state of an aggregate.
+ */
+export interface CommandSchema {
+	name: string;
+	description: string;
+	attributes: { [attribute: string]: AttributeSchema };
+	/** The domain events this command may raise. */
+	raises: { $ref: string }[];
+}
+
+/**
  * @title Aggregate
  * @description Represents an aggregate in the Open Domain Specification (ODS).
  */
@@ -34,6 +46,7 @@ export interface AggregateSchema {
 	valueobjects: { [valueobject: string]: ValueObjectSchema };
 	invariants: { [invariant: string]: InvariantSchema };
 	events: { [event: string]: DomainEventSchema };
+	commands: { [command: string]: CommandSchema };
 	provides: { [consumable: string]: ConsumableSchema };
 	consumes: ConsumptionSchema[];
 }
@@ -88,6 +101,8 @@ export interface ConsumableSchema {
 	pattern?: UpstreamRole;
 	/** For event consumables: the domain event being published. */
 	event?: { $ref: string };
+	/** For operation consumables: the command being exposed. */
+	command?: { $ref: string };
 }
 
 /**
@@ -352,6 +367,18 @@ export function eventRef(
 
 	return {
 		$ref: `${$ref}/events/${event}`,
+	};
+}
+
+export function commandRef(
+	boundedcontext: string,
+	aggregate: string,
+	command: string,
+) {
+	const { $ref } = aggregateRef(boundedcontext, aggregate);
+
+	return {
+		$ref: `${$ref}/commands/${command}`,
 	};
 }
 
