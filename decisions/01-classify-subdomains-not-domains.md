@@ -17,11 +17,8 @@ subdomains could not be expressed. See board card 02.
 - `SubdomainSchema.type` becomes required, with values `core | supporting | generic`.
 - `DomainSchema.type` is removed. A domain is a grouping of subdomains and
   carries no classification of its own.
-- `Workspace.fromSchema` migrates legacy documents: a subdomain without a
-  `type` inherits its parent domain's legacy `type`, falling back to
-  `supporting` when neither is present.
-- The `DomainType` TypeScript alias is kept as a deprecated alias of
-  `SubdomainType` so existing imports keep compiling.
+- No backwards compatibility is provided: documents written against the old
+  schema must be updated by hand.
 
 ## Consequences
 

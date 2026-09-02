@@ -173,6 +173,7 @@ exports[`Visitor Example > should compile  1`] = `
   "name": "eCommerce",
   "odsVersion": "1.0.0",
   "primaryColor": "#0ea5e9",
+  "relationships": [],
   "version": "0.1.0",
 }
 `;

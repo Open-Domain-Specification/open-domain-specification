@@ -24,10 +24,7 @@ rename above the context broke every ref beneath it. See board card 01.
 - The DSL keeps `subdomain.addBoundedcontext(...)` as a convenience that
   creates the context on the workspace and links it; the primary API is
   `workspace.addBoundedContext(name, { subdomains: [...] })`.
-- `Workspace.fromSchema` migrates legacy documents by hoisting nested
-  contexts to the workspace, linking them to their former parent subdomain,
-  and rewriting legacy refs. If two legacy contexts share an id the second
-  is suffixed with its subdomain id.
+- No backwards compatibility is provided for the old nested shape.
 - For visual namespacing (context map clusters, breadcrumbs) a context is
   shown under its first linked subdomain, its *primary* subdomain.
 

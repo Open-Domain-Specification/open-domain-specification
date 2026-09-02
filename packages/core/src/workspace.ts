@@ -2,9 +2,10 @@ import type { Debugger } from "debug";
 import { getDebug } from "./debug";
 import type * as ods from "./schema";
 import {
-	type ConsumptionPattern,
+	type DownstreamRole,
 	type EntityRelationType,
 	RelationType,
+	type UpstreamRole,
 } from "./schema";
 import type { Visitable } from "./visitable";
 import type { Visitor } from "./visitor";
@@ -60,6 +61,7 @@ export class Workspace
 	version: string;
 	domains = new Map<string, Domain>();
 	boundedcontexts = new Map<string, BoundedContext>();
+	relationships: ContextRelationship[] = [];
 
 	get path(): string {
 		return `${this.id}`;
@@ -86,6 +88,12 @@ export class Workspace
 		attributes: BoundedContextAttributes,
 	): BoundedContext {
 		return new BoundedContext(this, name, attributes);
+	}
+
+	addRelationship(
+		attributes: ContextRelationshipAttributes,
+	): ContextRelationship {
+		return new ContextRelationship(this, attributes);
 	}
 
 	accept(v: Visitor) {
@@ -320,6 +328,7 @@ export class Workspace
 			primaryColor: this.primaryColor,
 			domains: asRecords(this.domains),
 			boundedcontexts: asRecords(this.boundedcontexts),
+			relationships: asArray(this.relationships),
 			homepage: this.homepage,
 			logoUrl: this.logoUrl,
 		};
@@ -499,6 +508,59 @@ export class BoundedContext
 	serves(subdomain: Subdomain): this {
 		this.subdomains.add(subdomain);
 		return this;
+	}
+
+	/** Declares this context upstream of another. */
+	upstreamOf(
+		downstream: BoundedContext,
+		options: DirectedRelationshipOptions = {},
+	): ContextRelationship {
+		return this.workspace.addRelationship({
+			type: options.type ?? "upstream-downstream",
+			upstream: this,
+			downstream,
+			upstreamRoles: options.upstreamRoles ?? [],
+			downstreamRoles: options.downstreamRoles ?? [],
+			description: options.description,
+		});
+	}
+
+	/** Declares this context downstream of another. */
+	downstreamOf(
+		upstream: BoundedContext,
+		options: DirectedRelationshipOptions = {},
+	): ContextRelationship {
+		return upstream.upstreamOf(this, options);
+	}
+
+	partnerOf(other: BoundedContext, description?: string): ContextRelationship {
+		return this.symmetricWith("partnership", other, description);
+	}
+
+	sharesKernelWith(
+		other: BoundedContext,
+		description?: string,
+	): ContextRelationship {
+		return this.symmetricWith("shared-kernel", other, description);
+	}
+
+	separateWaysFrom(
+		other: BoundedContext,
+		description?: string,
+	): ContextRelationship {
+		return this.symmetricWith("separate-ways", other, description);
+	}
+
+	private symmetricWith(
+		type: ods.SymmetricRelationshipType,
+		other: BoundedContext,
+		description?: string,
+	): ContextRelationship {
+		return this.workspace.addRelationship({
+			type,
+			participants: [this, other],
+			description,
+		});
 	}
 
 	addService(name: string, attributes: ServiceAttributes): Service {
@@ -704,7 +766,7 @@ export class Aggregate
 
 export type ConsumableAttributes = {
 	description: string;
-	pattern: ods.ConsumablePattern;
+	pattern?: UpstreamRole;
 	type: ods.ConsumableType;
 	id?: string;
 };
@@ -715,7 +777,7 @@ export class Consumable
 	id: string;
 	name: string;
 	description: string;
-	pattern: ods.ConsumablePattern;
+	pattern?: UpstreamRole;
 	type: ods.ConsumableType;
 	provider: Aggregate | Service;
 	consumptions: Consumption[] = [];
@@ -1013,7 +1075,7 @@ export class EntityRelation
 }
 
 export type ConsumptionAttributes = {
-	pattern: ConsumptionPattern;
+	pattern?: DownstreamRole;
 };
 
 export class Consumption
@@ -1021,7 +1083,7 @@ export class Consumption
 {
 	consumer: Aggregate | Service;
 	consumable: Consumable;
-	pattern: ConsumptionPattern;
+	pattern?: DownstreamRole;
 
 	constructor(
 		consumer: Aggregate | Service,
@@ -1043,6 +1105,100 @@ export class Consumption
 		return {
 			consumable: { $ref: this.consumable.ref },
 			pattern: this.pattern,
+		};
+	}
+}
+
+export type DirectedRelationshipOptions = {
+	type?: ods.DirectedRelationshipType;
+	upstreamRoles?: UpstreamRole[];
+	downstreamRoles?: DownstreamRole[];
+	description?: string;
+};
+
+export type ContextRelationshipAttributes =
+	| {
+			type: ods.DirectedRelationshipType;
+			upstream: BoundedContext;
+			downstream: BoundedContext;
+			upstreamRoles?: UpstreamRole[];
+			downstreamRoles?: DownstreamRole[];
+			description?: string;
+	  }
+	| {
+			type: ods.SymmetricRelationshipType;
+			participants: [BoundedContext, BoundedContext];
+			description?: string;
+	  };
+
+const DIRECTED_RELATIONSHIP_TYPES: ReadonlySet<ods.ContextRelationshipType> =
+	new Set<ods.ContextRelationshipType>([
+		"upstream-downstream",
+		"customer-supplier",
+	]);
+
+export function isDirectedRelationshipType(
+	type: ods.ContextRelationshipType,
+): type is ods.DirectedRelationshipType {
+	return DIRECTED_RELATIONSHIP_TYPES.has(type);
+}
+
+/**
+ * A strategic relationship between two bounded contexts. For directed types
+ * `source` is the upstream context and `target` the downstream one; for
+ * symmetric types the order carries no meaning.
+ */
+export class ContextRelationship
+	implements Visitable, SchemaConvertible<ods.ContextRelationshipSchema>
+{
+	workspace: Workspace;
+	type: ods.ContextRelationshipType;
+	source: BoundedContext;
+	target: BoundedContext;
+	upstreamRoles: UpstreamRole[];
+	downstreamRoles: DownstreamRole[];
+	description?: string;
+
+	constructor(workspace: Workspace, attributes: ContextRelationshipAttributes) {
+		this.workspace = workspace;
+		this.type = attributes.type;
+		this.description = attributes.description;
+		if ("participants" in attributes) {
+			[this.source, this.target] = attributes.participants;
+			this.upstreamRoles = [];
+			this.downstreamRoles = [];
+		} else {
+			this.source = attributes.upstream;
+			this.target = attributes.downstream;
+			this.upstreamRoles = attributes.upstreamRoles ?? [];
+			this.downstreamRoles = attributes.downstreamRoles ?? [];
+		}
+		workspace.relationships.push(this);
+	}
+
+	involves(bc: BoundedContext): boolean {
+		return this.source === bc || this.target === bc;
+	}
+
+	accept(v: Visitor) {
+		return v.visitContextRelationship(this);
+	}
+
+	toSchema(): ods.ContextRelationshipSchema {
+		if (isDirectedRelationshipType(this.type)) {
+			return {
+				type: this.type,
+				upstream: { $ref: this.source.ref },
+				downstream: { $ref: this.target.ref },
+				upstreamRoles: this.upstreamRoles,
+				downstreamRoles: this.downstreamRoles,
+				description: this.description,
+			};
+		}
+		return {
+			type: this.type,
+			participants: [{ $ref: this.source.ref }, { $ref: this.target.ref }],
+			description: this.description,
 		};
 	}
 }

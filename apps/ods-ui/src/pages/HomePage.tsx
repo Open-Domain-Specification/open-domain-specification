@@ -5,6 +5,7 @@ import {
 } from "@open-domain-specification/core";
 import { contextMapToDigraph } from "@open-domain-specification/graphviz";
 import { ConsumptionTable } from "../components/ConsumptionTable.tsx";
+import { ContextRelationshipTable } from "../components/ContextRelationshipTable.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
 import { Graphviz } from "../components/Graphviz.tsx";
 import { PageNavigation } from "../components/PageNavigation.tsx";
@@ -34,7 +35,14 @@ export function HomePage() {
 				/>
 
 				<Stack>
-					<PageSubtitle title={"Relationships"} />
+					<PageSubtitle title={"Context Relationships"} />
+					<ContextRelationshipTable
+						map={ODSContextMap.fromWorkspace(workspace)}
+					/>
+				</Stack>
+
+				<Stack>
+					<PageSubtitle title={"Consumptions"} />
 					<ConsumptionTable
 						graph={ODSConsumptionGraph.fromWorkspace(workspace)}
 					/>

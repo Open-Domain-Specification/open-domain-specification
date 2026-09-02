@@ -22,7 +22,14 @@ Open-host service for /pet endpoints
 
 
 
-## Relationships
+## Context Relationships
+| Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
+| --- | --- | --- | --- | --- |
+| Catalog BC | customer-supplier | Sales BC | open-host-service | anti-corruption-layer |
+| Catalog BC | upstream-downstream (implied) | Inventory BC | published-language | conformist |
+
+
+## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
 | [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |

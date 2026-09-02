@@ -12,7 +12,14 @@ Projection for /store/inventory (status→count)
 
 
 
-## Relationships
+## Context Relationships
+| Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
+| --- | --- | --- | --- | --- |
+| Catalog BC | upstream-downstream (implied) | Inventory BC | published-language | conformist |
+| Sales BC | upstream-downstream (implied) | Inventory BC | published-language | conformist |
+
+
+## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
 | [InventoryQuery](../../../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | InventoryProjection | InventoryUpdated | published-language |

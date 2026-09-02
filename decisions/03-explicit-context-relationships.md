@@ -31,14 +31,15 @@ cannot sensibly sit on a consumption. See board card 05.
   between two contexts with no explicit relationship produce an *implied*
   upstream/downstream edge whose roles are collected from the consumable and
   consumption patterns.
-- `Workspace.fromSchema` migrates legacy patterns: `shared-kernel`,
-  `customer-supplier`, `partnership` and `separate-ways` on a consumable or
-  consumption become a relationship between the provider's and consumer's
-  contexts, and the field is dropped.
+- The DSL exposes `bc.upstreamOf`, `bc.downstreamOf`, `bc.partnerOf`,
+  `bc.sharesKernelWith` and `bc.separateWaysFrom`, all delegating to
+  `workspace.addRelationship`.
+- No backwards compatibility is provided for the old pattern values.
 
 ## Consequences
 
 - Breaking schema change; `odsVersion` bumps.
 - Contexts with no consumptions now still appear on the context map.
 - Graphviz renders symmetric relationships without arrowheads and
-  upstream/downstream with an arrow from upstream to downstream.
+  upstream/downstream with an arrow from upstream to downstream. Implied
+  edges are dashed.

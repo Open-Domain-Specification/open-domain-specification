@@ -8,6 +8,7 @@ import {
 import { contextMapToDigraph } from "@open-domain-specification/graphviz";
 import { useParams } from "react-router-dom";
 import { ConsumptionTable } from "../components/ConsumptionTable.tsx";
+import { ContextRelationshipTable } from "../components/ContextRelationshipTable.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
 import { Graphviz } from "../components/Graphviz.tsx";
@@ -38,7 +39,14 @@ export function _SubdomainPage(props: { subdomain: Subdomain }) {
 			/>
 
 			<Stack>
-				<PageSubtitle title={"Relationships"} />
+				<PageSubtitle title={"Context Relationships"} />
+				<ContextRelationshipTable
+					map={ODSContextMap.fromSubdomain(props.subdomain)}
+				/>
+			</Stack>
+
+			<Stack>
+				<PageSubtitle title={"Consumptions"} />
 				<ConsumptionTable
 					graph={ODSConsumptionGraph.fromSubdomain(props.subdomain)}
 				/>

@@ -22,7 +22,7 @@
         },
         "inventory": {
           "name": "Inventory",
-          "type": "core",
+          "type": "supporting",
           "description": "Aggregated availability by status"
         }
       }
@@ -33,7 +33,7 @@
       "subdomains": {
         "users": {
           "name": "Users",
-          "type": "supporting",
+          "type": "generic",
           "description": "User records and login/logout"
         }
       }
@@ -371,6 +371,9 @@
       "subdomains": [
         {
           "$ref": "#/domains/petstore_commerce/subdomains/inventory"
+        },
+        {
+          "$ref": "#/domains/petstore_commerce/subdomains/catalog"
         }
       ],
       "aggregates": {
@@ -590,6 +593,36 @@
       }
     }
   },
+  "relationships": [
+    {
+      "type": "customer-supplier",
+      "upstream": {
+        "$ref": "#/boundedcontexts/catalog_bc"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/sales_bc"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Sales needs pet availability; Catalog commits to the summary contract"
+    },
+    {
+      "type": "separate-ways",
+      "participants": [
+        {
+          "$ref": "#/boundedcontexts/identity_bc"
+        },
+        {
+          "$ref": "#/boundedcontexts/sales_bc"
+        }
+      ],
+      "description": "Orders are anonymous in Petstore v3; no integration by design"
+    }
+  ],
   "homepage": "https://petstore.swagger.io/",
   "logoUrl": "https://petstore.swagger.io/favicon-32x32.png"
 }

@@ -29,7 +29,8 @@ Responsibilities
 - Bounded contexts encapsulate consistent models. They belong to the workspace and list the subdomains they serve (one context may serve several).
 - Aggregates enforce invariants across entities and value objects.
 - Services provide operations that coordinate domain behavior.
-- Consumables and consumptions model inter-context communication.
+- Consumables and consumptions model inter-context communication; each carries a role (open-host-service / published-language upstream, conformist / anti-corruption-layer downstream).
+- Context relationships (upstream-downstream, customer-supplier, partnership, shared-kernel, separate-ways) are declared explicitly on the workspace; consumptions between contexts with no declared relationship imply an upstream-downstream one.
 - Schema adherence: Never invent fields or values not defined in the schema. Use only the types, enums, and relations provided.
 - Structural integrity: Always respect the hierarchy:
 

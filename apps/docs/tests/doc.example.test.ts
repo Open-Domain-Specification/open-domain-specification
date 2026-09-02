@@ -21,7 +21,10 @@ DDD workspace for an eCommerce platform example
 ## Domains
 > No domains.
 
-## Relationships
+## Context Relationships
+
+
+## Consumptions
 	
 
 `;

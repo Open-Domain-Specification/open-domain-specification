@@ -1,5 +1,4 @@
 import { getDebug } from "./debug";
-import { migrateWorkspaceSchema } from "./migrate";
 import {
 	type AggregateSchema,
 	aggregateRef,
@@ -193,10 +192,44 @@ function linkReferences(
 	}
 }
 
+function addRelationships(
+	workspace: Workspace,
+	workspaceSchema: WorkspaceSchema,
+) {
+	for (const relationship of workspaceSchema.relationships) {
+		if ("participants" in relationship) {
+			workspace.addRelationship({
+				type: relationship.type,
+				participants: [
+					workspace.getBoundedContextByRefOrThrow(
+						relationship.participants[0].$ref,
+					),
+					workspace.getBoundedContextByRefOrThrow(
+						relationship.participants[1].$ref,
+					),
+				],
+				description: relationship.description,
+			});
+		} else {
+			workspace.addRelationship({
+				type: relationship.type,
+				upstream: workspace.getBoundedContextByRefOrThrow(
+					relationship.upstream.$ref,
+				),
+				downstream: workspace.getBoundedContextByRefOrThrow(
+					relationship.downstream.$ref,
+				),
+				upstreamRoles: relationship.upstreamRoles,
+				downstreamRoles: relationship.downstreamRoles,
+				description: relationship.description,
+			});
+		}
+	}
+}
+
 export function getWorkspaceFromSchema(
-	rawWorkspaceSchema: WorkspaceSchema,
+	workspaceSchema: WorkspaceSchema,
 ): Workspace {
-	const workspaceSchema = migrateWorkspaceSchema(rawWorkspaceSchema);
 	debug(`Creating workspace from schema: ${workspaceSchema.name}`);
 	const workspace = new WorkspaceModel(workspaceSchema.name, {
 		id: workspaceSchema.id,
@@ -215,6 +248,7 @@ export function getWorkspaceFromSchema(
 		addBoundedContext(workspace, id, boundedcontextSchema);
 	}
 	linkReferences(workspace, workspaceSchema);
+	addRelationships(workspace, workspaceSchema);
 
 	return workspace;
 }

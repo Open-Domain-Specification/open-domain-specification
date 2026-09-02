@@ -1,7 +1,7 @@
 import objectHash from "object-hash";
 import { ODSConsumptionGraph } from "./consumption-graph";
 import { contextMemberNamespace, type ODSNamespace } from "./namespace";
-import type { ConsumablePattern, ConsumptionPattern } from "./schema";
+import type { DownstreamRole, UpstreamRole } from "./schema";
 import type {
 	Aggregate,
 	BoundedContext,
@@ -139,7 +139,7 @@ export type ODSConsumptionMapNodeSlot = {
 
 export type ODSConsumptionMapEdge = {
 	source: ODSConsumptionMapNode;
-	sourcePattern: ConsumptionPattern;
+	sourcePattern?: DownstreamRole;
 	target: ODSConsumptionMapNodeSlot;
-	targetPattern: ConsumablePattern;
+	targetPattern?: UpstreamRole;
 };

@@ -1,23 +1,20 @@
 import { Badge } from "@mantine/core";
-import type { ConsumptionPattern } from "@open-domain-specification/core";
+import type { DownstreamRole } from "@open-domain-specification/core";
 import { useIsMobile } from "../hooks/useIsMobile.ts";
 
-const abbreviatedPatterns: Record<ConsumptionPattern, string> = {
-	"customer-supplier": "C/s",
-	"separate-ways": "SW",
-	conformist: "C",
+const abbreviatedRoles: Record<DownstreamRole, string> = {
+	conformist: "CF",
 	"anti-corruption-layer": "ACL",
-	partnership: "P",
 };
 
-export function ConsumptionPatternBadge(props: {
-	pattern: ConsumptionPattern;
-}) {
+/** The downstream role a consumer adopts; renders nothing when unset. */
+export function ConsumptionPatternBadge(props: { pattern?: DownstreamRole }) {
 	const isMobile = useIsMobile();
+	if (!props.pattern) return null;
 
 	return (
 		<Badge size={isMobile ? "sm" : "md"} variant={"default"}>
-			{isMobile ? abbreviatedPatterns[props.pattern] : props.pattern}
+			{isMobile ? abbreviatedRoles[props.pattern] : props.pattern}
 		</Badge>
 	);
 }

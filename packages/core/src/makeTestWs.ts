@@ -208,6 +208,14 @@ export function makeRichTestWs() {
 		pattern: "anti-corruption-layer",
 	});
 
+	const reportingBc = ws.addBoundedContext("Reporting BC", {
+		description: "Reporting bounded context, serves no subdomain",
+	});
+	const salesReportsPartnership = reportingBc.partnerOf(
+		orderingBc,
+		"Reporting and ordering plan releases together",
+	);
+
 	return {
 		ws,
 		sales,
@@ -228,5 +236,7 @@ export function makeRichTestWs() {
 		invoiceConsumesOrderPlaced,
 		invoiceApp,
 		invoiceAppConsumesPlaceOrder,
+		reportingBc,
+		salesReportsPartnership,
 	};
 }

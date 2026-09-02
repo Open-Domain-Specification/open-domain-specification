@@ -593,6 +593,36 @@
       }
     }
   },
+  "relationships": [
+    {
+      "type": "customer-supplier",
+      "upstream": {
+        "$ref": "#/boundedcontexts/catalog_bc"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/sales_bc"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Sales needs pet availability; Catalog commits to the summary contract"
+    },
+    {
+      "type": "separate-ways",
+      "participants": [
+        {
+          "$ref": "#/boundedcontexts/identity_bc"
+        },
+        {
+          "$ref": "#/boundedcontexts/sales_bc"
+        }
+      ],
+      "description": "Orders are anonymous in Petstore v3; no integration by design"
+    }
+  ],
   "homepage": "https://petstore.swagger.io/",
   "logoUrl": "https://petstore.swagger.io/favicon-32x32.png"
 }

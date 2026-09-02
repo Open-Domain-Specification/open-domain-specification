@@ -91,7 +91,7 @@ exports[`Consumable Example > should compile  1`] = `
 </a>
 </g>
 <g id="a_edge1&#45;taillabel"><a xlink:title="conformist">
-<text xml:space="preserve" text-anchor="middle" x="151" y="-157.28" font-family="sans-serif" font-size="10.00">C</text>
+<text xml:space="preserve" text-anchor="middle" x="151" y="-157.28" font-family="sans-serif" font-size="10.00">CF</text>
 </a>
 </g>
 </g>

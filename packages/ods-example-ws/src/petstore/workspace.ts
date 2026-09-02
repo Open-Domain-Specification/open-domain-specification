@@ -268,6 +268,26 @@ const _deleteOrderOp = orderApp.provides("DeleteOrder", {
 orderApp.consumes(getPetSummaryOp, { pattern: "anti-corruption-layer" });
 
 /* =======================
+   CONTEXT RELATIONSHIPS
+   ======================= */
+
+// Sales is a customer of Catalog: it can ask for changes to the pet summary
+// contract, and protects itself with an anti-corruption layer.
+salesBC.downstreamOf(catalogBC, {
+	type: "customer-supplier",
+	upstreamRoles: ["open-host-service"],
+	downstreamRoles: ["anti-corruption-layer"],
+	description:
+		"Sales needs pet availability; Catalog commits to the summary contract",
+});
+
+// Identity is deliberately kept apart from Sales: orders carry no user link.
+identityBC.separateWaysFrom(
+	salesBC,
+	"Orders are anonymous in Petstore v3; no integration by design",
+);
+
+/* =======================
    INVENTORY — Projection & Service
    ======================= */
 

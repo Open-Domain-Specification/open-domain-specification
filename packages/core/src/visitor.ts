@@ -4,6 +4,7 @@ import type {
 	BoundedContext,
 	Consumable,
 	Consumption,
+	ContextRelationship,
 	Domain,
 	Entity,
 	EntityRelation,
@@ -27,6 +28,7 @@ export interface Visitor {
 	visitValueObject(node: ValueObject): void;
 	visitEntityRelation(node: EntityRelation): void;
 	visitConsumption(node: Consumption): void;
+	visitContextRelationship(node: ContextRelationship): void;
 }
 
 export type AbstractVisitorOptions = {
@@ -84,6 +86,9 @@ export abstract class AbstractVisitor implements Visitor {
 		// ones that serve none so nothing is skipped.
 		for (const bc of node.boundedcontexts.values()) {
 			if (!this.mark(bc)) bc.accept(this);
+		}
+		for (const relationship of node.relationships) {
+			relationship.accept(this);
 		}
 		this.after(node);
 	}
@@ -222,6 +227,16 @@ export abstract class AbstractVisitor implements Visitor {
 		if (this.followRelations && !this.mark(node.target)) {
 			node.target.accept(this);
 		}
+		this.after(node);
+	}
+
+	/**
+	 * Visits a ContextRelationship node. Relationships are leaves; their
+	 * contexts are reached through the workspace.
+	 * @param node - The ContextRelationship node to visit.
+	 */
+	visitContextRelationship(node: ContextRelationship): void {
+		this.before(node);
 		this.after(node);
 	}
 

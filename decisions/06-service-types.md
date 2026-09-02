@@ -15,13 +15,12 @@ board card 10.
 ## Decision
 
 - `ServiceType` narrows to `application | domain`.
-- Legacy `infrastructure` services are migrated to `application` with a debug
-  note; the original type is preserved in the description suffix
-  `(formerly infrastructure)` so nothing is silently lost.
+- No backwards compatibility: documents using `infrastructure` must be
+  updated by hand.
 - Repositories and factories are not modelled. They are mechanisms for
   obtaining aggregates, not domain concepts, and add noise to a map meant for
   business and technical readers alike.
 
 ## Consequences
 
-- Breaking for documents that used `infrastructure`, handled by migration.
+- Breaking for documents that used `infrastructure`.

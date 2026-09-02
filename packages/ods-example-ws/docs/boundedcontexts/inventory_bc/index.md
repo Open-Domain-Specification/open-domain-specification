@@ -23,7 +23,14 @@ Open-host service for /store/inventory
 
 
 
-## Relationships
+## Context Relationships
+| Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
+| --- | --- | --- | --- | --- |
+| Catalog BC | upstream-downstream (implied) | Inventory BC | published-language | conformist |
+| Sales BC | upstream-downstream (implied) | Inventory BC | published-language | conformist |
+
+
+## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
 | [InventoryQuery](services/inventory_query/index.md) | conformist | InventoryProjection | InventoryUpdated | published-language |

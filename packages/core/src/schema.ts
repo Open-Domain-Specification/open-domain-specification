@@ -25,11 +25,11 @@ export interface BoundedContextSchema {
 	services: { [service: string]: ServiceSchema };
 }
 
-export type ConsumablePattern =
-	| "open-host-service"
-	| "published-language"
-	| "shared-kernel"
-	| "customer-supplier";
+/** How an upstream context exposes what it provides. */
+export type UpstreamRole = "open-host-service" | "published-language";
+
+/** How a downstream context protects itself from what it consumes. */
+export type DownstreamRole = "conformist" | "anti-corruption-layer";
 
 export type ConsumableType = "event" | "operation";
 
@@ -41,15 +41,9 @@ export interface ConsumableSchema {
 	name: string;
 	description: string;
 	type: ConsumableType;
-	pattern: ConsumablePattern;
+	/** The upstream role this consumable is offered under. */
+	pattern?: UpstreamRole;
 }
-
-export type ConsumptionPattern =
-	| "conformist"
-	| "anti-corruption-layer"
-	| "customer-supplier"
-	| "partnership"
-	| "separate-ways";
 
 /**
  * @title Consumption
@@ -57,8 +51,62 @@ export type ConsumptionPattern =
  */
 export interface ConsumptionSchema {
 	consumable: { $ref: string };
-	pattern: ConsumptionPattern;
+	/** The downstream role the consumer adopts for this consumable. */
+	pattern?: DownstreamRole;
 }
+
+/**
+ * Relationships with a clear upstream and downstream side. `customer-supplier`
+ * is an upstream/downstream relationship where the downstream team has a say
+ * in the upstream's planning.
+ */
+export type DirectedRelationshipType =
+	| "upstream-downstream"
+	| "customer-supplier";
+
+/**
+ * Relationships without a direction: teams share a kernel, work as partners,
+ * or deliberately do not integrate at all.
+ */
+export type SymmetricRelationshipType =
+	| "partnership"
+	| "shared-kernel"
+	| "separate-ways";
+
+export type ContextRelationshipType =
+	| DirectedRelationshipType
+	| SymmetricRelationshipType;
+
+/**
+ * @title DirectedContextRelationship
+ * @description An upstream/downstream relationship between two bounded contexts.
+ */
+export interface DirectedContextRelationshipSchema {
+	type: DirectedRelationshipType;
+	upstream: { $ref: string };
+	downstream: { $ref: string };
+	upstreamRoles: UpstreamRole[];
+	downstreamRoles: DownstreamRole[];
+	description?: string;
+}
+
+/**
+ * @title SymmetricContextRelationship
+ * @description A relationship between two bounded contexts with no upstream or downstream side.
+ */
+export interface SymmetricContextRelationshipSchema {
+	type: SymmetricRelationshipType;
+	participants: [{ $ref: string }, { $ref: string }];
+	description?: string;
+}
+
+/**
+ * @title ContextRelationship
+ * @description A strategic relationship between two bounded contexts.
+ */
+export type ContextRelationshipSchema =
+	| DirectedContextRelationshipSchema
+	| SymmetricContextRelationshipSchema;
 
 /**
  * Strategic classification of a subdomain: the part of the problem space
@@ -66,9 +114,6 @@ export interface ConsumptionSchema {
  * (supporting), or can buy off the shelf (generic).
  */
 export type SubdomainType = "core" | "supporting" | "generic";
-
-/** @deprecated Classification moved to subdomains. Use {@link SubdomainType}. */
-export type DomainType = SubdomainType;
 
 /**
  * @title Domain
@@ -169,6 +214,7 @@ export interface WorkspaceSchema {
 	boundedcontexts: {
 		[boundedcontext: string]: BoundedContextSchema;
 	};
+	relationships: ContextRelationshipSchema[];
 }
 
 export function domainRef(domain: string) {

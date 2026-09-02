@@ -20,10 +20,10 @@ export function ConsumptionTable(props: { graph: ODSConsumptionGraph }) {
 							key={consumption.consumer.ref + consumption.consumable.ref}
 						>
 							<Table.Td>{consumption.consumer.name}</Table.Td>
-							<Table.Td>{consumption.pattern}</Table.Td>
+							<Table.Td>{consumption.pattern ?? "-"}</Table.Td>
 							<Table.Td>{consumption.consumable.provider.name}</Table.Td>
 							<Table.Td>{consumption.consumable.name}</Table.Td>
-							<Table.Td>{consumption.consumable.pattern}</Table.Td>
+							<Table.Td>{consumption.consumable.pattern ?? "-"}</Table.Td>
 						</Table.Tr>
 					))}
 				</Table.Tbody>

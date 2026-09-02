@@ -8,12 +8,12 @@ import { pathToConsumableMapSvg, pathToIndexMd } from "./lib/paths";
 import type { Options } from "./options";
 
 const consumableSection = (consumable: Consumable) => `
-### (${consumable.type}) - ${consumable.name} [${consumable.pattern}]
+### (${consumable.type}) - ${consumable.name} ${consumable.pattern ? `[${consumable.pattern}]` : ""}
 ${consumable.description}
 `;
 
 const consumptionSection = (consumption: Consumption) => `
-### ${consumption.consumable.name} [${consumption.pattern}]
+### ${consumption.consumable.name} ${consumption.pattern ? `[${consumption.pattern}]` : ""}
 ${consumption.consumable.description}
 - **Provider**: [${consumption.consumable.provider.name}](${pathToIndexMd(consumption.consumable.provider.path, consumption.consumer.path)})
 `;

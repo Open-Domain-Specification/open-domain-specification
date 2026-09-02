@@ -18,6 +18,7 @@ describe("Workspace Schema Validation", () => {
 				},
 			},
 			boundedcontexts: {},
+			relationships: [],
 		};
 
 		const workspace = Workspace.fromSchema(schema);
@@ -40,6 +41,7 @@ describe("Workspace Schema Validation", () => {
 			primaryColor: "#123456",
 			domains: {},
 			boundedcontexts: {},
+			relationships: [],
 		};
 
 		const workspace = Workspace.fromSchema(schema);
@@ -60,6 +62,7 @@ describe("Workspace Schema Validation", () => {
 			version: "0.1.0",
 			domains: {},
 			boundedcontexts: {},
+			relationships: [],
 		};
 
 		const workspace = Workspace.fromSchema(schema);
@@ -154,6 +157,7 @@ describe("Workspace Edge Cases", () => {
 			visitConsumption: vi.fn(),
 			visitConsumable: vi.fn(),
 			visitInvariant: vi.fn(),
+			visitContextRelationship: vi.fn(),
 		};
 
 		workspace.accept(mockVisitor);

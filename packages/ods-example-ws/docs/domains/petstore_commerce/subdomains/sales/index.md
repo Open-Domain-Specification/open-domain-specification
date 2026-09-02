@@ -12,7 +12,15 @@ Owns Order aggregate & order-facing operations
 
 
 
-## Relationships
+## Context Relationships
+| Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
+| --- | --- | --- | --- | --- |
+| Catalog BC | customer-supplier | Sales BC | open-host-service | anti-corruption-layer |
+| Identity BC | separate-ways | Sales BC | - | - |
+| Sales BC | upstream-downstream (implied) | Inventory BC | published-language | conformist |
+
+
+## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
 | [OrderApp](../../../../boundedcontexts/sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |

@@ -2,9 +2,11 @@ import {
 	type Aggregate,
 	type BoundedContext,
 	ODSConsumptionGraph,
+	ODSContextMap,
 	type Service,
 } from "@open-domain-specification/core";
 import { contextBreadcrumbsMd } from "./breadcrumbs.md";
+import { contextRelationshipsMd } from "./context-relationships.md";
 import { markdownTable } from "./lib/markdown-table";
 import { pathToContextMapSvg, pathToIndexMd } from "./lib/paths";
 import type { Options } from "./options";
@@ -61,16 +63,19 @@ ${
 		: "> No services."
 }
 
-## Relationships
+## Context Relationships
+${contextRelationshipsMd(ODSContextMap.fromBoundedContext(boundedcontext))}
+
+## Consumptions
 ${markdownTable(
 	["Consumer", "Consumed As", "Provider", "Consumable", "Provided As"],
 	ODSConsumptionGraph.fromBoundedContext(boundedcontext).consumptions.map(
 		(it) => [
 			`[${it.consumer.name}](${pathToIndexMd(it.consumer.path, boundedcontext.path)})`,
-			it.pattern,
+			it.pattern ?? "-",
 			it.consumable.provider.name,
 			it.consumable.name,
-			it.consumable.pattern,
+			it.consumable.pattern ?? "-",
 		],
 	),
 )}

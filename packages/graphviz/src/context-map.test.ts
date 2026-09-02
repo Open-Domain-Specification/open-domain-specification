@@ -4,7 +4,7 @@ import { contextMapToDigraph } from "./context-map";
 
 describe("ContextMap", () => {
 	it("should create a new ContextMap", () => {
-		const odsContextMap = new ODSContextMap([]);
+		const odsContextMap = new ODSContextMap([], [], []);
 		const a1 = odsContextMap.addNode({
 			id: "a1",
 			name: "A1",
@@ -40,8 +40,10 @@ describe("ContextMap", () => {
 		odsContextMap.addEdge({
 			source: a1,
 			target: a2,
-			sourcePattern: "conformist",
-			targetPattern: "open-host-service",
+			type: "customer-supplier",
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["conformist"],
+			implied: false,
 		});
 
 		expect(contextMapToDigraph(odsContextMap).toDot()).toMatchInlineSnapshot(`
@@ -87,15 +89,18 @@ describe("ContextMap", () => {
 			      ];
 			    }
 			  }
-			  "a2" -> "a1" [
+			  "a1" -> "a2" [
+			    label = "C/S";
+			    tooltip = "customer-supplier";
+			    dir = "forward";
+			    style = "solid";
 			    color = "black";
-			    taillabel = "C";
-			    headlabel = "OHS";
-			    tailtooltip = "conformist";
-			    headtooltip = "open-host-service";
+			    taillabel = "OHS";
+			    headlabel = "CF";
+			    tailtooltip = "open-host-service";
+			    headtooltip = "conformist";
 			    fontsize = 10;
 			    labeldistance = 0;
-			    label = "";
 			    fontname = "sans-serif";
 			  ];
 			}"

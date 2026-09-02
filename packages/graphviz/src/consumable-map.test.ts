@@ -100,7 +100,7 @@ describe("ConsumableMap", () => {
 			  }
 			  "a1" -> "a2" [
 			    color = "black";
-			    taillabel = "C";
+			    taillabel = "CF";
 			    headlabel = "OHS";
 			    tailtooltip = "conformist";
 			    headtooltip = "open-host-service";

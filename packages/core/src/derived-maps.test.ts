@@ -29,16 +29,53 @@ describe("ODSConsumptionGraph", () => {
 describe("ODSContextMap", () => {
 	const f = makeRichTestWs();
 
-	it("has one node per bounded context and one edge per consuming pair, provider as source", () => {
+	it("has a node for every context in scope, even ones with no consumptions", () => {
 		const map = ODSContextMap.fromWorkspace(f.ws);
 		expect(Array.from(map.nodes.keys()).sort()).toEqual(
-			[f.orderingBc.ref, f.invoicingBc.ref].sort(),
+			[f.orderingBc.ref, f.invoicingBc.ref, f.reportingBc.ref].sort(),
 		);
-		expect(map.edges.size).toBe(2);
-		for (const edge of map.edges.values()) {
-			expect(edge.source.id).toBe(f.orderingBc.ref);
-			expect(edge.target.id).toBe(f.invoicingBc.ref);
-		}
+	});
+
+	it("draws one implied upstream/downstream edge per consuming pair, merging roles", () => {
+		const map = ODSContextMap.fromWorkspace(f.ws);
+		const implied = Array.from(map.edges.values()).filter((e) => e.implied);
+		expect(implied).toHaveLength(1);
+		const [edge] = implied;
+		expect(edge.source.id).toBe(f.orderingBc.ref);
+		expect(edge.target.id).toBe(f.invoicingBc.ref);
+		expect(edge.type).toBe("upstream-downstream");
+		expect(edge.upstreamRoles.sort()).toEqual([
+			"open-host-service",
+			"published-language",
+		]);
+		expect(edge.downstreamRoles.sort()).toEqual([
+			"anti-corruption-layer",
+			"conformist",
+		]);
+	});
+
+	it("draws declared relationships as-is", () => {
+		const map = ODSContextMap.fromWorkspace(f.ws);
+		const declared = Array.from(map.edges.values()).filter((e) => !e.implied);
+		expect(declared).toHaveLength(1);
+		expect(declared[0].type).toBe("partnership");
+		expect(declared[0].description).toBe(
+			"Reporting and ordering plan releases together",
+		);
+	});
+
+	it("suppresses the implied edge when the pair has a declared relationship", () => {
+		const { ws, orderingBc, invoicingBc } = makeRichTestWs();
+		invoicingBc.downstreamOf(orderingBc, {
+			type: "customer-supplier",
+			upstreamRoles: ["open-host-service"],
+		});
+		const map = ODSContextMap.fromWorkspace(ws);
+		const edges = Array.from(map.edges.values());
+		expect(edges.filter((e) => e.implied)).toHaveLength(0);
+		expect(edges.find((e) => e.type === "customer-supplier")?.source.id).toBe(
+			orderingBc.ref,
+		);
 	});
 
 	it("nests nodes under workspace, domain and subdomain namespaces", () => {
@@ -49,11 +86,16 @@ describe("ODSContextMap", () => {
 			f.sales.ref,
 			f.ordering.ref,
 		]);
+		expect(map.nodes.get(f.reportingBc.ref)?.namespace).toEqual([
+			{ id: f.ws.id, name: f.ws.name },
+		]);
 	});
 
-	it("includes inbound consumptions when scoped to the provider context", () => {
+	it("scoped to one context, shows that context and its neighbours", () => {
 		const map = ODSContextMap.fromBoundedContext(f.orderingBc);
-		expect(map.nodes.size).toBe(2);
+		expect(Array.from(map.nodes.keys()).sort()).toEqual(
+			[f.orderingBc.ref, f.invoicingBc.ref, f.reportingBc.ref].sort(),
+		);
 		expect(map.edges.size).toBe(2);
 	});
 });

@@ -12,6 +12,12 @@ Owns User aggregate & user endpoints
 
 
 
-## Relationships
+## Context Relationships
+| Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
+| --- | --- | --- | --- | --- |
+| Identity BC | separate-ways | Sales BC | - | - |
+
+
+## Consumptions
 	
 	

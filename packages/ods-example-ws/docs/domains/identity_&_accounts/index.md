@@ -13,6 +13,12 @@ User records and login/logout
 
 
 
-## Relationships
+## Context Relationships
+| Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
+| --- | --- | --- | --- | --- |
+| Identity BC | separate-ways | Sales BC | - | - |
+
+
+## Consumptions
 
 	

@@ -104,15 +104,6 @@
             "title": "BoundedContext",
             "type": "object"
         },
-        "ConsumablePattern": {
-            "enum": [
-                "customer-supplier",
-                "open-host-service",
-                "published-language",
-                "shared-kernel"
-            ],
-            "type": "string"
-        },
         "ConsumableSchema": {
             "additionalProperties": false,
             "description": "Represents a consumable in the Open Domain Specification (ODS).",
@@ -124,7 +115,8 @@
                     "type": "string"
                 },
                 "pattern": {
-                    "$ref": "#/definitions/ConsumablePattern"
+                    "$ref": "#/definitions/UpstreamRole",
+                    "description": "The upstream role this consumable is offered under."
                 },
                 "type": {
                     "$ref": "#/definitions/ConsumableType"
@@ -133,7 +125,6 @@
             "required": [
                 "description",
                 "name",
-                "pattern",
                 "type"
             ],
             "title": "Consumable",
@@ -143,16 +134,6 @@
             "enum": [
                 "event",
                 "operation"
-            ],
-            "type": "string"
-        },
-        "ConsumptionPattern": {
-            "enum": [
-                "anti-corruption-layer",
-                "conformist",
-                "customer-supplier",
-                "partnership",
-                "separate-ways"
             ],
             "type": "string"
         },
@@ -173,15 +154,92 @@
                     "type": "object"
                 },
                 "pattern": {
-                    "$ref": "#/definitions/ConsumptionPattern"
+                    "$ref": "#/definitions/DownstreamRole",
+                    "description": "The downstream role the consumer adopts for this consumable."
                 }
             },
             "required": [
-                "consumable",
-                "pattern"
+                "consumable"
             ],
             "title": "Consumption",
             "type": "object"
+        },
+        "ContextRelationshipSchema": {
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/DirectedContextRelationshipSchema"
+                },
+                {
+                    "$ref": "#/definitions/SymmetricContextRelationshipSchema"
+                }
+            ],
+            "description": "A strategic relationship between two bounded contexts.",
+            "title": "ContextRelationship"
+        },
+        "DirectedContextRelationshipSchema": {
+            "additionalProperties": false,
+            "description": "An upstream/downstream relationship between two bounded contexts.",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "downstream": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
+                "downstreamRoles": {
+                    "items": {
+                        "$ref": "#/definitions/DownstreamRole"
+                    },
+                    "type": "array"
+                },
+                "type": {
+                    "$ref": "#/definitions/DirectedRelationshipType"
+                },
+                "upstream": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
+                "upstreamRoles": {
+                    "items": {
+                        "$ref": "#/definitions/UpstreamRole"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "downstream",
+                "downstreamRoles",
+                "type",
+                "upstream",
+                "upstreamRoles"
+            ],
+            "title": "DirectedContextRelationship",
+            "type": "object"
+        },
+        "DirectedRelationshipType": {
+            "description": "Relationships with a clear upstream and downstream side. `customer-supplier`\nis an upstream/downstream relationship where the downstream team has a say\nin the upstream's planning.",
+            "enum": [
+                "customer-supplier",
+                "upstream-downstream"
+            ],
+            "type": "string"
         },
         "DomainSchema": {
             "additionalProperties": false,
@@ -207,6 +265,14 @@
             ],
             "title": "Domain",
             "type": "object"
+        },
+        "DownstreamRole": {
+            "description": "How a downstream context protects itself from what it consumes.",
+            "enum": [
+                "anti-corruption-layer",
+                "conformist"
+            ],
+            "type": "string"
         },
         "EntityRelationSchema": {
             "additionalProperties": false,
@@ -365,6 +431,72 @@
             ],
             "type": "string"
         },
+        "SymmetricContextRelationshipSchema": {
+            "additionalProperties": false,
+            "description": "A relationship between two bounded contexts with no upstream or downstream side.",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "participants": {
+                    "items": [
+                        {
+                            "additionalProperties": false,
+                            "properties": {
+                                "$ref": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "$ref"
+                            ],
+                            "type": "object"
+                        },
+                        {
+                            "additionalProperties": false,
+                            "properties": {
+                                "$ref": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "$ref"
+                            ],
+                            "type": "object"
+                        }
+                    ],
+                    "maxItems": 2,
+                    "minItems": 2,
+                    "type": "array"
+                },
+                "type": {
+                    "$ref": "#/definitions/SymmetricRelationshipType"
+                }
+            },
+            "required": [
+                "participants",
+                "type"
+            ],
+            "title": "SymmetricContextRelationship",
+            "type": "object"
+        },
+        "SymmetricRelationshipType": {
+            "description": "Relationships without a direction: teams share a kernel, work as partners,\nor deliberately do not integrate at all.",
+            "enum": [
+                "partnership",
+                "separate-ways",
+                "shared-kernel"
+            ],
+            "type": "string"
+        },
+        "UpstreamRole": {
+            "description": "How an upstream context exposes what it provides.",
+            "enum": [
+                "open-host-service",
+                "published-language"
+            ],
+            "type": "string"
+        },
         "ValueObjectSchema": {
             "additionalProperties": false,
             "description": "Represents a value object in the Open Domain Specification (ODS).",
@@ -427,6 +559,12 @@
         "primaryColor": {
             "type": "string"
         },
+        "relationships": {
+            "items": {
+                "$ref": "#/definitions/ContextRelationshipSchema"
+            },
+            "type": "array"
+        },
         "version": {
             "type": "string"
         }
@@ -438,6 +576,7 @@
         "id",
         "name",
         "odsVersion",
+        "relationships",
         "version"
     ],
     "title": "Workspace",

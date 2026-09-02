@@ -1,9 +1,11 @@
 import {
 	type Domain,
 	ODSConsumptionGraph,
+	ODSContextMap,
 	type Workspace,
 } from "@open-domain-specification/core";
 import { breadcrumbsMd } from "./breadcrumbs.md";
+import { contextRelationshipsMd } from "./context-relationships.md";
 import { markdownTable } from "./lib/markdown-table";
 import { pathToContextMapSvg, pathToIndexMd } from "./lib/paths";
 import type { Options } from "./options";
@@ -31,15 +33,18 @@ ${
 		: "> No domains."
 }
 
-## Relationships
+## Context Relationships
+${contextRelationshipsMd(ODSContextMap.fromWorkspace(workspace))}
+
+## Consumptions
 ${markdownTable(
 	["Consumer", "Consumed As", "Provider", "Consumable", "Provided As"],
 	ODSConsumptionGraph.fromWorkspace(workspace).consumptions.map((it) => [
 		`[${it.consumer.name}](${pathToIndexMd(it.consumer.path, workspace.path)})`,
-		it.pattern,
+		it.pattern ?? "-",
 		it.consumable.provider.name,
 		it.consumable.name,
-		it.consumable.pattern,
+		it.consumable.pattern ?? "-",
 	]),
 )}	
 

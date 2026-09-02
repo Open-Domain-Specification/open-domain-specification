@@ -8,6 +8,7 @@ import {
 import { contextMapToDigraph } from "@open-domain-specification/graphviz";
 import { useParams } from "react-router-dom";
 import { ConsumptionTable } from "../components/ConsumptionTable.tsx";
+import { ContextRelationshipTable } from "../components/ContextRelationshipTable.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
 import { Graphviz } from "../components/Graphviz.tsx";
@@ -48,7 +49,14 @@ export function _BoundedContextPage(props: { boundedcontext: BoundedContext }) {
 			/>
 
 			<Stack>
-				<PageSubtitle title={"Relationships"} />
+				<PageSubtitle title={"Context Relationships"} />
+				<ContextRelationshipTable
+					map={ODSContextMap.fromBoundedContext(props.boundedcontext)}
+				/>
+			</Stack>
+
+			<Stack>
+				<PageSubtitle title={"Consumptions"} />
 				<ConsumptionTable
 					graph={ODSConsumptionGraph.fromBoundedContext(props.boundedcontext)}
 				/>
