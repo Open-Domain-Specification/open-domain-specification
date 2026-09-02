@@ -15,10 +15,6 @@ export const sections = [
 		ODSConsumableMap,
 		ODSContextMap,
 	} from "@open-domain-specification/core";
-	import {
-		consumableMapToDigraph,
-		contextMapToDigraph,
-	} from "@open-domain-specification/graphviz";
 	import Chip from "../atoms/Chip.svelte";
 	import Dim from "../atoms/Dim.svelte";
 	import Empty from "../atoms/Empty.svelte";
@@ -117,8 +113,6 @@ export const sections = [
 	{/if}
 	<DiagramFigure
 		caption="{bc.name} context map"
-		dot={contextMapToDigraph(contextMap).toDot()}
-		nodeCount={contextMap.nodes.size}
 		emptyText="No neighbouring contexts yet."
 		graph={contextGraph(contextMap)}
 	/>
@@ -165,8 +159,6 @@ export const sections = [
 >
 	<DiagramFigure
 		caption="{bc.name} consumable map"
-		dot={consumableMapToDigraph(consumableMap).toDot()}
-		nodeCount={consumableMap.nodes.size}
 		emptyText="Provides and consumes nothing yet."
 		graph={consumableGraph(consumableMap)}
 	/>

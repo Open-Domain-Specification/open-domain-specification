@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { ORDER_REF, openInteractiveDiagram } from "./helpers";
 
-/** The interactive relation map draws UML class boxes and connectors, as the Graphviz image does. */
+/** The interactive relation map draws UML class boxes and connectors, per relation kind. */
 
 const SHIPMENT_REF = "#/boundedcontexts/fulfilment_bc/aggregates/shipment";
 

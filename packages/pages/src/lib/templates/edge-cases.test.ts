@@ -16,7 +16,6 @@ import {
 } from "@open-domain-specification/core";
 import { render, waitFor } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
-import { dotToSvg } from "../../graphviz";
 import { edgeCaseModel } from "../fixtures";
 import Harness from "../Page.harness.svelte";
 
@@ -186,7 +185,6 @@ describe("templates render the alternate branches the petstore fixture never hit
 			workspace: ws,
 			fileLabel: "sizeless.ts",
 			diagnostics: ws.validate(),
-			renderDot: dotToSvg,
 		};
 		const { container } = render(Harness, {
 			model: sizelessModel,
@@ -261,7 +259,6 @@ describe("templates render the alternate branches the petstore fixture never hit
 			workspace: nameless,
 			fileLabel: "nameless.ts",
 			diagnostics: nameless.validate(),
-			renderDot: dotToSvg,
 		};
 		const { container } = render(Harness, {
 			model: namelessModel,
@@ -273,5 +270,60 @@ describe("templates render the alternate branches the petstore fixture never hit
 		await waitFor(() => {
 			expect(container.querySelectorAll("figcaption")).toHaveLength(2);
 		});
+	});
+
+	it("figure captions cope with a nameless domain, subdomain, aggregate and service", () => {
+		const ws = new Workspace("Nameless Captions", {
+			odsVersion: "1.0.0",
+			description: "Exercises the missing-name fallback in figure captions.",
+			version: "0.0.1",
+		});
+		// biome-ignore lint/suspicious/noExplicitAny: exercises the missing-name fallback branch
+		const noName = undefined as any;
+		const domain = ws.addDomain(noName, {
+			description: "d",
+			id: "nameless_domain",
+		});
+		const subdomain = domain.addSubdomain(noName, {
+			description: "d",
+			id: "nameless_subdomain",
+			type: "core",
+		});
+		const bc = ws.addBoundedContext("Context", { description: "d" });
+		bc.serves(subdomain);
+		const aggregate = bc.addAggregate(noName, {
+			description: "d",
+			id: "nameless_aggregate",
+		});
+		const root = aggregate.addRootEntity("Root", { description: "d" });
+		const line = aggregate.addValueObject("Line", { description: "d" });
+		root.includes(line, "lines");
+		const service = bc.addService(noName, {
+			description: "d",
+			id: "nameless_service",
+			type: "application",
+		});
+		const op = aggregate.provides("Op", {
+			type: "operation",
+			description: "d",
+		});
+		service.consumes(op, {});
+		const namelessModel = {
+			workspace: ws,
+			fileLabel: "nameless-captions.ts",
+			diagnostics: ws.validate(),
+		};
+		for (const [ref, caption] of [
+			[domain.ref, "context map"],
+			[subdomain.ref, "context map"],
+			[aggregate.ref, "relation map"],
+			[service.ref, "consumable map"],
+		]) {
+			const { container } = render(Harness, { model: namelessModel, ref });
+			const captions = [...container.querySelectorAll("figcaption")].map(
+				(c) => c.textContent,
+			);
+			expect(captions.join("|")).toContain(caption);
+		}
 	});
 });

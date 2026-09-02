@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import type {
 	HostMessage,
 	WebviewMessage,
@@ -131,18 +131,19 @@ export class DetailPanel implements vscode.Disposable {
 
 	private shell(): string {
 		const webview = this.panel!.webview;
-		const appDir = vscode.Uri.joinPath(
-			this.extensionUri,
-			"media",
-			"app",
-			"assets",
-		);
+		const appDir = vscode.Uri.joinPath(this.extensionUri, "media", "app");
 		const media = (name: string) =>
 			webview.asWebviewUri(vscode.Uri.joinPath(appDir, name));
-		const files = readdirSync(appDir.fsPath);
-		// Vite names the entry chunk index-<hash>; the build copies it into media/app.
-		const script = files.find((f) => /^index-.*\.js$/.test(f));
-		const style = files.find((f) => /^index-.*\.css$/.test(f));
+		// Vite's index.html names the current entry chunk and stylesheet.
+		let html = "";
+		try {
+			html = readFileSync(
+				vscode.Uri.joinPath(appDir, "index.html").fsPath,
+				"utf8",
+			);
+		} catch {}
+		const script = html.match(/src="\.\/(assets\/index-[^"]+\.js)"/)?.[1];
+		const style = html.match(/href="\.\/(assets\/index-[^"]+\.css)"/)?.[1];
 		if (!script || !style)
 			throw new Error(
 				`Pages app bundle not found in ${appDir.fsPath}; rebuild the extension.`,

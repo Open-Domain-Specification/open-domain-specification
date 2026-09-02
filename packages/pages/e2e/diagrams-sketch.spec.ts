@@ -1,17 +1,19 @@
 import { expect, test } from "@playwright/test";
 import { openInteractiveDiagram } from "./helpers";
 
-/** The sketch style on the workspace context map: ellipse nodes over a Voronoi backdrop. */
+/** The sketch style on the workspace context map, the default: ellipse nodes over a Voronoi backdrop. */
 
-test("switching to sketch draws ellipses over the backdrop and cards come back", async ({
+test("the sketch style is the default, cards can be chosen, and sketch comes back", async ({
 	page,
 }) => {
 	const flow = await openInteractiveDiagram(page, "Context map");
-	await expect(flow.locator(".context-node").first()).toBeVisible();
-	await expect(flow.locator(".cluster-node").first()).toBeVisible();
-	await expect(flow.locator(".sketch-backdrop")).toHaveCount(0);
+	await expect(flow.locator(".context-node.sketch").first()).toBeVisible();
+	await expect(flow.locator(".cluster-node")).toHaveCount(0);
 
 	const panel = flow.locator(".diagram-options");
+	await panel.getByLabel("Diagram style").selectOption("cards");
+	await expect(flow.locator(".cluster-node").first()).toBeVisible();
+	await expect(flow.locator(".sketch-backdrop")).toHaveCount(0);
 	await panel.getByLabel("Diagram style").selectOption("sketch");
 
 	// The backdrop sits under the nodes: one solid blob, dashed boundaries clipped to it, a label per group.
@@ -97,8 +99,6 @@ test("switching to sketch draws ellipses over the backdrop and cards come back",
 
 	// The choice sticks, and cards return on switching back.
 	await page.reload();
-	const figure = page.locator("figure.diagram", { hasText: "Context map" });
-	await figure.getByRole("button", { name: "interactive" }).click();
 	await expect(flow.locator(".context-node.sketch").first()).toBeVisible();
 	await flow
 		.locator(".diagram-options")
@@ -107,4 +107,50 @@ test("switching to sketch draws ellipses over the backdrop and cards come back",
 	await expect(flow.locator(".sketch-backdrop")).toHaveCount(0);
 	await expect(flow.locator(".context-node.sketch")).toHaveCount(0);
 	await expect(flow.locator(".cluster-node").first()).toBeVisible();
+});
+
+test("in the cards style the cluster boxes follow a dragged node", async ({
+	page,
+}) => {
+	const flow = await openInteractiveDiagram(page, "Context map");
+	await page.setViewportSize({ width: 1600, height: 1200 });
+	await flow
+		.locator(".diagram-options")
+		.getByLabel("Diagram style")
+		.selectOption("cards");
+	await expect(flow.locator(".cluster-node").first()).toBeVisible();
+	// The outermost cluster wraps every node; drag one far beyond its right edge.
+	const workspace = flow.locator('.cluster-node[data-depth="0"]');
+	const before = (await workspace.boundingBox())!;
+	const legend = (await flow.locator(".diagram-legend").boundingBox())!;
+	let box: { x: number; y: number; width: number; height: number } | undefined;
+	for (const n of await flow.locator(".context-node").all()) {
+		const b = (await n.boundingBox())!;
+		if (b.x > legend.x + legend.width || b.y > legend.y + legend.height) {
+			box = b;
+			break;
+		}
+	}
+	if (!box) throw new Error("every node sits under the legend");
+	await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(
+		box.x + box.width / 2 + 500,
+		box.y + box.height / 2 + 300,
+		{ steps: 8 },
+	);
+	// The box grows during the drag, not only after it.
+	await expect
+		.poll(async () => (await workspace.boundingBox())!.width)
+		.toBeGreaterThan(before.width);
+	await page.mouse.up();
+	const after = (await workspace.boundingBox())!;
+	expect(after.width).toBeGreaterThan(before.width + 200);
+	expect(after.height).toBeGreaterThan(before.height + 100);
+	// The node stays inside the refitted box.
+	const dragged = flow.locator(".svelte-flow__node", {
+		has: page.locator(".context-node"),
+	});
+	const moved = (await dragged.first().boundingBox())!;
+	expect(moved.x + moved.width).toBeLessThanOrEqual(after.x + after.width + 1);
 });

@@ -1,7 +1,6 @@
 <script lang="ts">
 import { type Node, ViewportPortal } from "@xyflow/svelte";
-import type { GraphNode } from "./graph";
-import { nodeSize } from "./layout";
+import { absoluteBox } from "./cluster-fit";
 import {
 	type Backdrop,
 	EMPTY_BACKDROP,
@@ -27,29 +26,15 @@ let {
 	groupLabels: Map<string, string>;
 	padding?: number;
 } = $props();
-/** Absolute position of a node: Svelte Flow keeps children relative to their parent. */
-const absolute = (n: Node): { x: number; y: number } => {
-	const parent = n.parentId
-		? nodes.find((p) => p.id === n.parentId)
-		: undefined;
-	if (!parent) return n.position;
-	const o = absolute(parent);
-	return { x: o.x + n.position.x, y: o.y + n.position.y };
-};
 const boxes = $derived<SketchNode[]>(
 	nodes
 		.filter((n) => n.type !== "cluster")
-		.map((n) => {
-			const fallback = nodeSize(n.data as unknown as GraphNode);
-			return {
-				id: n.id,
-				...absolute(n),
-				width: n.measured?.width ?? fallback.width,
-				height: n.measured?.height ?? fallback.height,
-				groupId: n.parentId,
-				domainId: nodes.find((p) => p.id === n.parentId)?.parentId,
-			};
-		}),
+		.map((n) => ({
+			id: n.id,
+			...absoluteBox(nodes, n),
+			groupId: n.parentId,
+			domainId: nodes.find((p) => p.id === n.parentId)?.parentId,
+		})),
 );
 /**
  * A cheap fingerprint of the boxes' identity and rounded geometry: Svelte

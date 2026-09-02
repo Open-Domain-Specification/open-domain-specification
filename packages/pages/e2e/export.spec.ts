@@ -61,7 +61,9 @@ test("assets load without console errors", async ({ page }) => {
 	await page.goto("/");
 	await page.getByRole("link", { name: WORKSPACE_NAME }).click();
 	await expect(page.locator("main h1")).toContainText(WORKSPACE_NAME);
-	await expect(page.locator("figure.diagram svg")).toBeVisible();
+	await expect(
+		page.locator("figure.diagram .svelte-flow__node").first(),
+	).toBeVisible();
 
 	expect(problems.filter((p) => !/favicon/.test(p))).toEqual([]);
 });

@@ -9,7 +9,6 @@ export const sections = [
 
 <script lang="ts">
 	import { ODSContextMap } from "@open-domain-specification/core";
-	import { contextMapToDigraph } from "@open-domain-specification/graphviz";
 	import Chip from "../atoms/Chip.svelte";
 	import Dim from "../atoms/Dim.svelte";
 	import Empty from "../atoms/Empty.svelte";
@@ -60,7 +59,7 @@ export const sections = [
 	lead="Bounded contexts are where models live. The map shows which context is upstream of which and how they protect themselves."
 	problems={contexts.flatMap((bc) => model.diagnostics.filter((d) => d.ref === bc.ref))}
 >
-	<DiagramFigure caption="Context map" dot={contextMapToDigraph(contextMap).toDot()} nodeCount={contextMap.nodes.size} emptyText="No bounded contexts yet." graph={contextGraph(contextMap)} />
+	<DiagramFigure caption="Context map" emptyText="No bounded contexts yet." graph={contextGraph(contextMap)} />
 	{#if contexts.length}
 		<table>
 			<thead><tr><th>Context</th><th>Serves</th><th>Team</th><th>Aggregates</th><th>Services</th></tr></thead>

@@ -9,7 +9,6 @@ import type {
 
 describe("package entry point", () => {
 	it("re-exports the public API", () => {
-		expect(pages.dotToSvg).toBeTypeOf("function");
 		expect(pages.resolvePage).toBeTypeOf("function");
 		expect(pages.pageRefs).toBeTypeOf("function");
 		expect(pages.consumableIcon).toBeTypeOf("function");

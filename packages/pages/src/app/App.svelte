@@ -1,7 +1,6 @@
 <script lang="ts">
 import { Workspace } from "@open-domain-specification/core";
 import { onMount, untrack } from "svelte";
-import { dotToSvg } from "../graphviz";
 import ModelProvider from "../lib/ModelProvider.svelte";
 import type { Model } from "../lib/model";
 import Sidebar from "../lib/organisms/Sidebar.svelte";
@@ -36,7 +35,6 @@ function load(w: WorkspacePayload): Model {
 		workspace,
 		fileLabel: w.fileLabel,
 		diagnostics: w.diagnostics ?? workspace.validate(),
-		renderDot: dotToSvg,
 	};
 }
 

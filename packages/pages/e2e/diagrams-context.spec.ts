@@ -1,12 +1,17 @@
 import { expect, test } from "@playwright/test";
 import { openInteractiveDiagram } from "./helpers";
 
-/** The interactive context map on the workspace page shows what the Graphviz image shows. */
+/** The interactive context map on the workspace page shows clusters, stereotypes and roles. */
 
 test("the interactive context map draws context nodes with stereotypes and roles", async ({
 	page,
 }) => {
 	const flow = await openInteractiveDiagram(page, "Context map");
+	// The cards style shows the cluster regions this test checks; sketch is the default.
+	await flow
+		.locator(".diagram-options")
+		.getByLabel("Diagram style")
+		.selectOption("cards");
 	await expect(flow.locator(".context-node").first()).toBeVisible();
 	// Every context carries its domain/subdomain cluster path and a colour band.
 	const first = flow.locator(".context-node").first();

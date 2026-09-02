@@ -8,6 +8,7 @@ import {
 	SvelteFlow,
 } from "@xyflow/svelte";
 import "@xyflow/svelte/dist/style.css";
+import { fitClusters } from "../flow/cluster-fit";
 import DiagramOptionsPanel from "../flow/DiagramOptionsPanel.svelte";
 import { flowEdges, flowNodes, groupLabels } from "../flow/flow-nodes";
 import type { Graph } from "../flow/graph";
@@ -23,7 +24,8 @@ import SketchBackdrop from "../flow/SketchBackdrop.svelte";
  * A pannable, zoomable version of a figure. Nodes are refs, so clicking one
  * navigates. The map's kind decides the style: only the context map takes
  * the sketch backdrop, and only there can a node be dragged out of its
- * cluster, the backdrop following it.
+ * cluster, the backdrop (or, in the cards style, the cluster boxes)
+ * following it.
  */
 let { graph, direction = "LR" }: { graph: Graph; direction?: "LR" | "TB" } =
 	$props();
@@ -42,10 +44,14 @@ $effect(() => {
 	});
 	edges = flowEdges(positioned);
 });
+/** Free maps refit their cluster boxes round the nodes as one is dragged. */
+const refit = () => {
+	if (kind === "context") nodes = fitClusters(nodes);
+};
 </script>
 
 <div class="interactive">
-	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={0.2} colorMode="system" nodesConnectable={false} elementsSelectable={false} onnodeclick={({ node }) => { location.hash = node.id; }}>
+	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={0.2} colorMode="system" nodesConnectable={false} elementsSelectable={false} onnodeclick={({ node }) => { location.hash = node.id; }} onnodedrag={refit} onnodedragstop={refit}>
 		<Background />
 		{#if sketch}<SketchBackdrop {nodes} groupLabels={labels} />{/if}
 		<Controls showLock={false} />

@@ -92,7 +92,7 @@ export function consumableGraph(map: ODSConsumableMap): Graph {
 		return {
 			id: n.id,
 			type: "consumable",
-			label: n.name,
+			label: n.name ?? n.id,
 			description: n.description,
 			icon: n.type === "service" ? ICONS.service : ICONS.aggregate,
 			groupPath: groupPathOf(n.namespace),

@@ -40,6 +40,7 @@ describe("static site export", () => {
 		expect(html).toContain("window.__ODS__=");
 		expect(html).toContain(`"fileLabel":"petstore.json"`);
 		expect(html).toContain(workspace.name);
-		expect(html).toMatch(/<script type="module"[^>]*src="\.\/assets\//);
+		expect(html).toMatch(/<script defer src="\.\/assets\//);
+		expect(html).not.toContain("crossorigin");
 	});
 });

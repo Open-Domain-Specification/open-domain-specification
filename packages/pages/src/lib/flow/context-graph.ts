@@ -42,7 +42,7 @@ function contextNode(n: ODSContextMapNode): ContextNodeData {
 	return {
 		id: n.id,
 		type: "context",
-		label: n.name,
+		label: n.name ?? n.id,
 		icon: ICONS.boundedcontext,
 		groupPath: groupPathOf(n.namespace),
 		groupId: deepestGroup(n.namespace),

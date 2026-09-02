@@ -6,8 +6,6 @@ export type Model = {
 	workspace: Workspace;
 	fileLabel: string;
 	diagnostics: Diagnostic[];
-	/** Renders DOT to SVG; the wasm build in the browser, the same in Node. */
-	renderDot: (dot: string) => Promise<string>;
 };
 
 const KEY = Symbol("ods-model");

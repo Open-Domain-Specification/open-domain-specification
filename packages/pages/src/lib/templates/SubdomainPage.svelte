@@ -8,7 +8,6 @@ export const sections = [
 
 <script lang="ts">
 	import { ODSContextMap, type Subdomain } from "@open-domain-specification/core";
-	import { contextMapToDigraph } from "@open-domain-specification/graphviz";
 	import Chip from "../atoms/Chip.svelte";
 	import Empty from "../atoms/Empty.svelte";
 	import Card from "../molecules/Card.svelte";
@@ -66,8 +65,6 @@ export const sections = [
 <Section id="map" title="Context map" lead="The contexts serving this subdomain and their neighbours.">
 	<DiagramFigure
 		caption="{s.name} context map"
-		dot={contextMapToDigraph(contextMap).toDot()}
-		nodeCount={contextMap.nodes.size}
 		emptyText="No bounded context serves this subdomain yet."
 		graph={contextGraph(contextMap)}
 	/>

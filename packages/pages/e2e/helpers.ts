@@ -36,9 +36,8 @@ export async function servePetstore(page: Page): Promise<void> {
 }
 
 /**
- * Serves the petstore, navigates to `ref` and switches the diagram whose
- * caption contains `title` into its interactive view, returning the
- * `.svelte-flow` locator once the toggle has been clicked.
+ * Serves the petstore, navigates to `ref` and scrolls to the diagram whose
+ * caption contains `title`, returning its `.svelte-flow` locator.
  */
 export async function openInteractiveDiagram(
 	page: Page,
@@ -49,6 +48,5 @@ export async function openInteractiveDiagram(
 	await page.goto(viewerAt(ref));
 	const figure = page.locator("figure.diagram", { hasText: title });
 	await figure.scrollIntoViewIfNeeded();
-	await figure.getByRole("button", { name: "interactive" }).click();
 	return figure.locator(".svelte-flow");
 }

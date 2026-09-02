@@ -1,4 +1,3 @@
-export { dotToSvg } from "./graphviz";
 export {
 	consumableIcon,
 	ICONS,

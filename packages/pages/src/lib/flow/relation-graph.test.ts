@@ -51,6 +51,13 @@ describe("relationGraph", () => {
 		expect(vo.icon).not.toBe(entity.icon);
 	});
 
+	it("labels a nameless node with its ref", () => {
+		const [n] = relationGraph(
+			mapOf([node({ id: "#/nameless", name: undefined })]),
+		).nodes;
+		expect(n.label).toBe("#/nameless");
+	});
+
 	it("carries attributes with identity and the cluster path", () => {
 		const [n] = relationGraph(
 			mapOf([

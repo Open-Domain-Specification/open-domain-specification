@@ -21,19 +21,20 @@ Three hosts feed it:
   over `postMessage`, and follows the app's navigation in its tree view. The tree replaces the
   sidebar there.
 
-Diagrams come from the bundled Graphviz wasm build, rendered in the browser. Every figure has
-an **interactive** toggle that swaps the static image for a Svelte Flow graph: pan, zoom, drag
-nodes, and click one to open its page. The graph is laid out with dagre from the same core map
-the static image is drawn from, so the two never disagree.
+Every figure is a Svelte Flow graph rendered in the browser: pan, zoom, drag nodes, and click
+one to open its page. The graph is laid out with dagre from the core map for that element. The
+`@open-domain-specification/graphviz` package still renders the same maps as DOT for use
+outside the pages.
 
-The options panel in the interactive view picks how edges attach and how they are drawn, and
+The options panel on each figure picks how edges attach and how they are drawn, and
 on the context map the figure **style**. *Cards* draws contexts as cards inside shaded namespace
-clusters; *Sketch* draws them as ellipses in the spirit of a hand-drawn context map, with one
+clusters; *Sketch*, the default, draws them as ellipses in the spirit of a hand-drawn context map, with one
 solid organic outline round the whole map and dashed boundaries between subdomains computed as
 a Voronoi tessellation of the node centres, plus a muted label per subdomain. A domain is the
 union of its subdomains' cells: its border is drawn thicker and solid, and the domain name runs
 along that border like a map boundary label. On the context map a node can be dragged out of
-its cluster and the backdrop follows it. The backdrop is an SVG layer under the nodes that pans
+its cluster: the backdrop follows it, and in the cards style the cluster boxes refit round
+their members as it moves. The backdrop is an SVG layer under the nodes that pans
 and zooms with the viewport.
 
 The other two maps are always drawn in their UML form, so the style control is absent there.
@@ -46,15 +47,14 @@ compartments per class (stereotype and name, attributes with `{id}` markers, an 
 operations compartment), composition with a filled diamond and "1" at the whole for
 `includes`, a navigable association for `references` and a dashed dependency for `uses`, with
 the cardinality at the far end and the role at the midpoint. Arrows, labels, port badges and
-colours carry over from the static images; every edge is animated so the direction reads. A
+colours follow the page theme; every edge is animated so the direction reads. A
 collapsible **legend** at the top left indexes only the abbreviations, line styles and node
 marks the current diagram shows. Every choice is remembered per browser.
 
 ## Component library
 
 The library follows atomic design under `src/lib`: atoms (icon, chip, ref link, markdown),
-molecules (cards, tables, fact rows), organisms (section, page header, diagram figure with
-lightbox, sidebar, table of contents) and one template per element page. Run Storybook to
+molecules (cards, tables, fact rows), organisms (section, page header, diagram figure, sidebar, table of contents) and one template per element page. Run Storybook to
 browse it against the petstore example:
 
 ```bash
@@ -71,7 +71,7 @@ Two suites run separately. `npm run test:unit` runs vitest under jsdom with cove
 at 100 percent over the library, the app shell and the package entries. `npm run test:e2e`
 builds the package and runs Playwright against the real bundle: the viewer's import paths, browsing
 and navigation, a static export served from a folder, the embedded webview protocol with a
-simulated VS Code bridge, and the diagram lightbox and interactive toggle.
+simulated VS Code bridge, and the interactive diagrams.
 
 ## Static site from code
 

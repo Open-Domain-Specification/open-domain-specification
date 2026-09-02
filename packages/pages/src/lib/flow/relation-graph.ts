@@ -46,7 +46,7 @@ export function relationGraph(map: ODSRelationMap): Graph {
 		nodes: [...map.nodes.values()].map((n) => ({
 			id: n.id,
 			type: "relation",
-			label: n.name,
+			label: n.name ?? n.id,
 			icon: n.type === "valueobject" ? ICONS.valueobject : ICONS.entity,
 			groupPath: groupPathOf(n.namespace),
 			groupId: n.namespace.length

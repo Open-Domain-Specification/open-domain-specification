@@ -1,7 +1,6 @@
 import { Workspace } from "@open-domain-specification/core";
 import { render } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
-import { dotToSvg } from "../../graphviz";
 import { petstoreModel } from "../fixtures";
 import Harness from "./Sidebar.harness.svelte";
 
@@ -60,7 +59,6 @@ describe("Sidebar", () => {
 			workspace,
 			fileLabel: "no-names.ts",
 			diagnostics: workspace.validate(),
-			renderDot: dotToSvg,
 		};
 		const { container } = render(Harness, { model, current: "#" });
 		expect(linkFor(container, team.ref)).toBeTruthy();

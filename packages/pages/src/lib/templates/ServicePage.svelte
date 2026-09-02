@@ -4,7 +4,6 @@ export const sections = [{ id: "integration", label: "Integration" }];
 
 <script lang="ts">
 	import { ODSConsumableMap, type Service } from "@open-domain-specification/core";
-	import { consumableMapToDigraph } from "@open-domain-specification/graphviz";
 	import Chip from "../atoms/Chip.svelte";
 	import RefLink from "../atoms/RefLink.svelte";
 	import ConsumesTable from "../molecules/ConsumesTable.svelte";
@@ -43,7 +42,7 @@ export const sections = [{ id: "integration", label: "Integration" }];
 	lead="Operations this service opens to other contexts, and the consumables it depends on."
 	problems={problemsUnder(model, s.ref)}
 >
-	<DiagramFigure caption="{s.name} consumable map" dot={consumableMapToDigraph(consumableMap).toDot()} nodeCount={consumableMap.nodes.size} emptyText="Depends on nothing outside itself." graph={consumableGraph(consumableMap)} />
+	<DiagramFigure caption="{s.name} consumable map" emptyText="Depends on nothing outside itself." graph={consumableGraph(consumableMap)} />
 	<h3>Provides</h3>
 	<ProvidesTable consumables={s.consumables.values()} />
 	<h3>Consumes</h3>

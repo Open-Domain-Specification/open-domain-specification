@@ -35,6 +35,11 @@ const edge = (overrides: Partial<ODSContextMapEdge>): ODSContextMapEdge => ({
 });
 
 describe("contextGraph", () => {
+	it("labels a nameless context with its ref", () => {
+		const [n] = contextGraph(mapOf([node({ name: undefined })])).nodes;
+		expect(n.label).toBe("#/boundedcontexts/x");
+	});
+
 	it("nests a group per namespace level, workspace included", () => {
 		const g = contextGraph(
 			mapOf([

@@ -155,6 +155,15 @@ describe("consumableGraph", () => {
 			},
 		]);
 	});
+	it("labels a nameless node with its ref", () => {
+		const nameless = {
+			...map,
+			nodes: new Map([[provider.id, { ...provider, name: undefined }]]),
+			edges: new Map(),
+		} as unknown as ODSConsumableMap;
+		expect(consumableGraph(nameless).nodes[0].label).toBe(provider.id);
+	});
+
 	it("has no group for a node with an empty namespace", () => {
 		const lone = { ...consumer, id: "#/lone", namespace: [] };
 		const g = consumableGraph({

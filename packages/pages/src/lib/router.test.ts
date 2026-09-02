@@ -56,3 +56,54 @@ describe("createRouter", () => {
 		}
 	});
 });
+
+describe("createRouter link delegation", () => {
+	const click = (a: HTMLAnchorElement, init: MouseEventInit = {}) => {
+		const e = new MouseEvent("click", {
+			bubbles: true,
+			cancelable: true,
+			button: 0,
+			...init,
+		});
+		a.dispatchEvent(e);
+		return e;
+	};
+	const anchor = (href: string) => {
+		const a = document.createElement("a");
+		a.href = href;
+		a.textContent = "link";
+		document.body.appendChild(a);
+		return a;
+	};
+	afterEach(() => {
+		document.body.innerHTML = "";
+	});
+
+	it("navigates route anchors itself so the webview host cannot swallow them", () => {
+		location.hash = "";
+		const router = createRouter();
+		const e = click(anchor("#/domains/sales"));
+		expect(e.defaultPrevented).toBe(true);
+		expect(location.hash).toBe("#/domains/sales");
+		window.dispatchEvent(new HashChangeEvent("hashchange"));
+		expect(router.ref).toBe("#/domains/sales");
+	});
+
+	it("leaves section anchors and modified clicks to the browser", () => {
+		location.hash = "";
+		createRouter();
+		expect(click(anchor("#overview")).defaultPrevented).toBe(false);
+		expect(
+			click(anchor("#/domains/sales"), { metaKey: true }).defaultPrevented,
+		).toBe(false);
+		expect(location.hash).toBe("");
+	});
+
+	it("treats a bare '#' anchor as the workspace", () => {
+		location.hash = "#/domains/sales";
+		const router = createRouter();
+		click(anchor("#"));
+		window.dispatchEvent(new HashChangeEvent("hashchange"));
+		expect(router.ref).toBe("#");
+	});
+});

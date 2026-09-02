@@ -12,7 +12,7 @@ export default defineConfig({
 		include: ["src/**/*.{test,spec}.ts"],
 		exclude: ["node_modules", "dist", "app", "e2e"],
 		setupFiles: ["src/lib/test-setup.ts"],
-		// The every-page suites render hundreds of pages with wasm diagrams; under a full-repo run they need more than the default.
+		// The every-page suites render hundreds of pages with Svelte Flow diagrams; under a full-repo run they need more than the default.
 		testTimeout: 30_000,
 		watch: false,
 		clearMocks: true,

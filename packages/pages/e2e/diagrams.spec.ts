@@ -6,7 +6,7 @@ import {
 	viewerAt,
 } from "./helpers";
 
-/** The relation map on the Order aggregate: static SVG, lightbox and the interactive view. */
+/** The relation map on the Order aggregate: the Svelte Flow figure, node navigation and the options panel. */
 
 test.beforeEach(async ({ page }) => {
 	await servePetstore(page);
@@ -17,48 +17,21 @@ test.beforeEach(async ({ page }) => {
 const relationMap = (page: import("@playwright/test").Page) =>
 	page.locator("figure.diagram").first();
 
-test("renders the relation map as an svg", async ({ page }) => {
+test("renders the relation map as a Svelte Flow figure with no static image or toggle", async ({
+	page,
+}) => {
 	const figure = relationMap(page);
-
 	await expect(figure).toContainText("relation map");
-	await expect(figure.locator(".canvas svg")).toBeVisible();
-});
-
-test("opens the diagram in a lightbox and closes it again", async ({
-	page,
-}) => {
-	const canvas = relationMap(page).locator(".canvas");
-	await canvas.scrollIntoViewIfNeeded();
-	await canvas.click();
-
-	const modal = page.locator("#diagram-modal");
-	await expect(modal).toBeVisible();
-	await expect(modal.locator("svg")).toBeVisible();
-
-	await canvas.press("Escape");
-	await expect(modal).toHaveCount(0);
-
-	await canvas.click();
-	await expect(modal).toBeVisible();
-	// The centred figure covers the middle of the backdrop; click its margin.
-	await modal.locator(".modal-backdrop").click({ position: { x: 4, y: 4 } });
-	await expect(modal).toHaveCount(0);
-});
-
-test("toggles between the interactive view and the static svg", async ({
-	page,
-}) => {
-	const flow = await openInteractiveDiagram(page, "relation map", ORDER_REF);
+	const flow = figure.locator(".svelte-flow");
 	await expect(flow).toBeVisible();
 	await expect(flow.locator(".svelte-flow__node").first()).toBeVisible();
 	expect(await flow.locator(".svelte-flow__node").count()).toBeGreaterThan(1);
 	expect(await flow.locator(".svelte-flow__edge").count()).toBeGreaterThan(0);
-
-	const figure = relationMap(page);
-	await figure.getByRole("button", { name: "static" }).click();
-
-	await expect(figure.locator(".canvas svg")).toBeVisible();
-	await expect(flow).toHaveCount(0);
+	await expect(figure.getByRole("button", { name: "static" })).toHaveCount(0);
+	await expect(figure.getByRole("button", { name: "interactive" })).toHaveCount(
+		0,
+	);
+	await expect(figure.locator(".canvas > svg")).toHaveCount(0);
 });
 
 test("clicking an interactive node navigates to that element", async ({
@@ -93,9 +66,7 @@ test("the options panel switches handles and edge styles", async ({ page }) => {
 	await panel.getByLabel("Handle placement").selectOption("fixed");
 	await expect(flow.locator(".handle-hidden")).toHaveCount(0);
 	await page.reload();
-	const figure = relationMap(page);
-	await figure.getByRole("button", { name: "interactive" }).click();
 	await expect(
-		flow.locator(".diagram-options").getByLabel("Edge style"),
+		relationMap(page).locator(".diagram-options").getByLabel("Edge style"),
 	).toHaveValue("bezier");
 });

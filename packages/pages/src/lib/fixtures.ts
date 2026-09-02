@@ -3,7 +3,6 @@ import northbank from "../../../../models/northbank/.ods/northbank.json";
 import petstore from "../../../../models/petstore/.ods/petstore.json";
 import rivermart from "../../../../models/rivermart/.ods/rivermart.json";
 import streamline from "../../../../models/streamline/.ods/streamline.json";
-import { dotToSvg } from "../graphviz";
 import type { Model } from "./model";
 
 /** The petstore example as a model, for stories and component tests. */
@@ -15,7 +14,6 @@ export function petstoreModel(): Model {
 		workspace,
 		fileLabel: "petstore.json",
 		diagnostics: workspace.validate(),
-		renderDot: dotToSvg,
 	};
 }
 
@@ -152,7 +150,6 @@ export function edgeCaseModel(): Model {
 		workspace,
 		fileLabel: "edge-cases.ts",
 		diagnostics: workspace.validate(),
-		renderDot: dotToSvg,
 	};
 }
 
@@ -173,7 +170,6 @@ export function emptyWorkspaceModel(): Model {
 		workspace,
 		fileLabel: "empty.ts",
 		diagnostics: workspace.validate(),
-		renderDot: dotToSvg,
 	};
 }
 
@@ -187,7 +183,6 @@ export function referenceModels(): Model[] {
 			workspace,
 			fileLabel: `${workspace.id}.json`,
 			diagnostics: workspace.validate(),
-			renderDot: dotToSvg,
 		};
 	});
 }

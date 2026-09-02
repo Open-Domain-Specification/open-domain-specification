@@ -1,7 +1,7 @@
 /**
  * Viewer preferences for the interactive diagrams: where edges attach to
- * nodes, how they are drawn, and whether nodes are cards in shaded clusters
- * or sketch-style ellipses over a Voronoi backdrop, and whether the legend
+ * nodes, how they are drawn, and whether nodes are sketch-style ellipses over
+ * a Voronoi backdrop (the default) or cards in shaded clusters, and whether the legend
  * is collapsed. Remembered per browser so a choice sticks across pages and
  * visits.
  */
@@ -29,7 +29,7 @@ const KEY = "ods-diagram-options";
 const DEFAULTS: DiagramOptions = {
 	handles: "fixed",
 	edges: "bezier",
-	style: "cards",
+	style: "sketch",
 	legendCollapsed: false,
 };
 

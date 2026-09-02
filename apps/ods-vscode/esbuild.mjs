@@ -1,4 +1,4 @@
-import { copyFileSync, cpSync } from "node:fs";
+import { copyFileSync, cpSync, rmSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,10 +21,12 @@ copyFileSync(
 // vsce wants a licence beside the manifest; the repo keeps a single one at the root.
 copyFileSync(join(here, "../../LICENSE.md"), join(here, "LICENSE.md"));
 
-// The webview hosts the pages app; copy its Vite build into media/app.
+// The webview hosts the pages app; replace media/app with its Vite build so
+// hashed chunks from earlier builds cannot linger beside the current entry.
 const pagesPkg = dirname(
 	require.resolve("@open-domain-specification/pages/package.json"),
 );
+rmSync(join(here, "media/app"), { recursive: true, force: true });
 cpSync(join(pagesPkg, "app"), join(here, "media/app"), { recursive: true });
 
 /** @type {import("esbuild").BuildOptions} */

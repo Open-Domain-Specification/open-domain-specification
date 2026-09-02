@@ -4,7 +4,7 @@ import {
 	ODSRelationMap,
 } from "@open-domain-specification/core";
 import { fireEvent, render, waitFor } from "@testing-library/svelte";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { petstoreModel } from "../fixtures";
 import { consumableGraph, contextGraph, relationGraph } from "../flow/graph";
 import { diagramOptions } from "../flow/options.svelte";
@@ -14,6 +14,8 @@ import InteractiveDiagram from "./InteractiveDiagram.svelte";
 installXyflowTestEnv();
 
 const { workspace } = petstoreModel();
+// The suite reads the cards style unless a test says otherwise; sketch is the shipped default.
+beforeAll(() => diagramOptions.set({ style: "cards" }));
 const sales = workspace.boundedcontexts.get("sales_bc")!;
 const order = sales.aggregates.get("order")!;
 
@@ -196,5 +198,46 @@ describe("sketch style", () => {
 		expect(container.querySelectorAll(".cluster-node").length).toBe(
 			graph.groups?.length,
 		);
+	});
+});
+
+describe("dragging a node in the cards style", () => {
+	it("refits the cluster boxes round their members as a node moves", async () => {
+		diagramOptions.set({ style: "cards" });
+		const graph = contextGraph(ODSContextMap.fromWorkspace(workspace));
+		const { container } = render(InteractiveDiagram, { graph });
+		await waitFor(() => {
+			expect(container.querySelectorAll(".context-node").length).toBe(
+				graph.nodes.length,
+			);
+		});
+		const cluster = container.querySelector(
+			'.svelte-flow__node[data-id^="cluster:"]',
+		) as HTMLElement;
+		const before = cluster.getAttribute("style");
+		const node = container.querySelector(
+			'.svelte-flow__node[data-id^="#/"]',
+		) as HTMLElement;
+		// d3-drag reads the window off the event and listens there for the rest of the gesture.
+		const win = node.ownerDocument.defaultView as Window & typeof globalThis;
+		// jsdom rejects `view` in the init, yet d3-drag reads the window off the event; define it after.
+		const mouse = (target: EventTarget, type: string, x: number, y: number) => {
+			const e = new win.MouseEvent(type, {
+				bubbles: true,
+				cancelable: true,
+				button: 0,
+				clientX: x,
+				clientY: y,
+			});
+			Object.defineProperty(e, "view", { value: win });
+			target.dispatchEvent(e);
+		};
+		mouse(node, "mousedown", 10, 10);
+		mouse(win, "mousemove", 600, 400);
+		mouse(win, "mousemove", 900, 700);
+		mouse(win, "mouseup", 900, 700);
+		await waitFor(() => {
+			expect(cluster.getAttribute("style")).not.toBe(before);
+		});
 	});
 });
