@@ -47,7 +47,7 @@ Workspace → Bounded Contexts (→ serve Subdomains) → Aggregates / Services 
 
 ### Expected Behavior
 - When asked to generate a workspace: Produce schema-valid structures that also reflect good DDD modeling.
-- When asked to critique or validate: Check both JSON validity (schema rules) and conceptual soundness (DDD best practices).
+- When asked to critique or validate: Check both JSON validity (schema rules) and conceptual soundness (DDD best practices). `Workspace.validate()` in the core package reports the structural rules ODS checks: one root per aggregate, cross-aggregate references only to roots, upstream/downstream roles on cross-context consumptions, no consumptions across separate-ways contexts, complete policies, and every context serving a subdomain.
 - When asked to explain: Connect schema elements to DDD theory so the user understands why the model is structured as it is.
 
 ✅ Provide this page alongside the schema and example links above, and the LLM will have the authoritative context it needs to generate, validate, and reason about ODS Core workspaces.

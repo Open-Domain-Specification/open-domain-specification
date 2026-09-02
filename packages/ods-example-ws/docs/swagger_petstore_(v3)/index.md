@@ -20,6 +20,9 @@ Users and sessions per Petstore API
 
 
 
+## Diagnostics
+> No diagnostics.
+
 ## Teams
 | Team | Owns |
 | --- | --- |

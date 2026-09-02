@@ -23,6 +23,9 @@ DDD workspace for an eCommerce platform example
 ## Domains
 > No domains.
 
+## Diagnostics
+> No diagnostics.
+
 ## Teams
 > No teams.
 

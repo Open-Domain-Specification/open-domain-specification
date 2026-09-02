@@ -22,6 +22,21 @@ ${domain.description}
 
 `;
 
+const diagnosticsSection = (workspace: Workspace) => {
+	const diagnostics = workspace.validate();
+	return diagnostics.length > 0
+		? markdownTable(
+				["Severity", "Rule", "Message", "Element"],
+				diagnostics.map((d) => [
+					d.severity,
+					d.rule,
+					d.message,
+					`\`${d.ref.replace(/^#\//, "")}\``,
+				]),
+			)
+		: "> No diagnostics.";
+};
+
 export const workspaceMd = (workspace: Workspace, options?: Options) => `
 ${options?.breadcrumbs ? breadcrumbsMd(workspace) : ""}
 # ${workspace.name}
@@ -39,6 +54,9 @@ ${
 				.join("")
 		: "> No domains."
 }
+
+## Diagnostics
+${diagnosticsSection(workspace)}
 
 ## Teams
 ${

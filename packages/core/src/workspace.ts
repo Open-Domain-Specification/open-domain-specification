@@ -8,6 +8,7 @@ import {
 	RelationType,
 	type UpstreamRole,
 } from "./schema";
+import { type Diagnostic, validateWorkspace } from "./validate";
 import type { Visitable } from "./visitable";
 import type { Visitor } from "./visitor";
 import { getWorkspaceFromSchema } from "./workspace-from-schema";
@@ -505,6 +506,11 @@ export class Workspace
 
 	static fromSchema(workspace: ods.WorkspaceSchema): Workspace {
 		return getWorkspaceFromSchema(workspace);
+	}
+
+	/** Checks the model against the DDD rules ODS can verify structurally. */
+	validate(): Diagnostic[] {
+		return validateWorkspace(this);
 	}
 }
 

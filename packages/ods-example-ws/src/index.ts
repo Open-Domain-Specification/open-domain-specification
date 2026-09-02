@@ -3,6 +3,10 @@ import path from "node:path";
 import { toDoc } from "@open-domain-specification/doc";
 import { workspace } from "./petstore/workspace.ts";
 
+for (const d of workspace.validate()) {
+	console.log(`[${d.severity}] ${d.rule}: ${d.message} (${d.ref})`);
+}
+
 toDoc(workspace).then((res) => {
 	for (const [file, content] of Object.entries(res)) {
 		const _file = path.join("docs", file);

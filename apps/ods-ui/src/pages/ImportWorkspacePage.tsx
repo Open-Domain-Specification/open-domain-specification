@@ -25,6 +25,24 @@ const intro = `\
 Use the **Open Domain Specification (ODS)** to model, document, and communicate your domain design using proven Domain-Driven Design patterns.
 `;
 
+/** One line and a colour that say how a freshly loaded workspace validated. */
+function summarizeDiagnostics(workspace: Workspace): {
+	message: string;
+	color: "green" | "yellow" | "red";
+} {
+	const diagnostics = workspace.validate();
+	const errors = diagnostics.filter((d) => d.severity === "error").length;
+	const warnings = diagnostics.length - errors;
+	const loaded = `Loaded ${workspace.name} v${workspace.version}`;
+	if (diagnostics.length === 0) {
+		return { message: `${loaded}; no diagnostics`, color: "green" };
+	}
+	return {
+		message: `${loaded}; ${errors} error(s), ${warnings} warning(s). See Diagnostics on the home page.`,
+		color: errors > 0 ? "red" : "yellow",
+	};
+}
+
 export function ImportWorkspacePage() {
 	const windowSize = useWindowSize();
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -46,6 +64,15 @@ export function ImportWorkspacePage() {
 		getInitialValueInEffect: true,
 	});
 
+	/** Loads the workspace and tells the user how it validated. */
+	function loadAndReport(workspace: Workspace) {
+		loadWorkspace(workspace);
+		showNotification({
+			title: "Workspace Loaded",
+			...summarizeDiagnostics(workspace),
+		});
+	}
+
 	const [fileState, handleImportFromFile] = useAsyncFn(
 		async (payload: File | null) => {
 			const text = await payload?.text();
@@ -54,13 +81,7 @@ export function ImportWorkspacePage() {
 
 			const data = JSON.parse(text);
 
-			loadWorkspace(Workspace.fromSchema(data));
-
-			showNotification({
-				title: "Workspace Loaded",
-				message: `Loaded workspace: ${data.name} v${data.version}`,
-				color: "green",
-			});
+			loadAndReport(Workspace.fromSchema(data));
 		},
 		[],
 	);
@@ -76,13 +97,7 @@ export function ImportWorkspacePage() {
 
 			const data = await response.json();
 
-			loadWorkspace(Workspace.fromSchema(data));
-
-			showNotification({
-				title: "Workspace Loaded",
-				message: `Loaded workspace: ${data.name} v${data.version}`,
-				color: "green",
-			});
+			loadAndReport(Workspace.fromSchema(data));
 		},
 		[setUrl],
 	);

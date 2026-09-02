@@ -6,6 +6,7 @@ import {
 import { contextMapToDigraph } from "@open-domain-specification/graphviz";
 import { ConsumptionTable } from "../components/ConsumptionTable.tsx";
 import { ContextRelationshipTable } from "../components/ContextRelationshipTable.tsx";
+import { DiagnosticsTable } from "../components/DiagnosticsTable.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
 import { Graphviz } from "../components/Graphviz.tsx";
 import { PageNavigation } from "../components/PageNavigation.tsx";
@@ -33,6 +34,11 @@ export function HomePage() {
 						ODSContextMap.fromWorkspace(workspace),
 					).toDot()}
 				/>
+
+				<Stack>
+					<PageSubtitle title={"Diagnostics"} />
+					<DiagnosticsTable diagnostics={workspace.validate()} />
+				</Stack>
 
 				<Stack>
 					<PageSubtitle title={"Context Relationships"} />
