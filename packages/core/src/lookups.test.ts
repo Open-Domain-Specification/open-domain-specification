@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeRichTestWs } from "./makeTestWs";
+import { teamRef } from "./schema";
 import { Workspace } from "./workspace";
 
 describe("Workspace ref lookups", () => {
@@ -25,6 +26,12 @@ describe("Workspace ref lookups", () => {
 		expect(
 			ws.getInvariantByRef(`${fixture.orderAgg.ref}/invariants/non_empty`),
 		).toBeDefined();
+	});
+
+	it("resolves teams and derives what they own", () => {
+		expect(ws.getTeamByRef(teamRef("sales_team").$ref)).toBe(fixture.salesTeam);
+		expect(fixture.salesTeam.boundedcontexts).toEqual([fixture.orderingBc]);
+		expect(() => ws.getTeamByRefOrThrow("#/teams/nope")).toThrow(/Team/);
 	});
 
 	it("dispatches polymorphic lookups on the ref shape", () => {

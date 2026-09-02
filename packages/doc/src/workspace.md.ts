@@ -9,6 +9,7 @@ import { contextRelationshipsMd } from "./context-relationships.md";
 import { markdownTable } from "./lib/markdown-table";
 import { pathToContextMapSvg, pathToIndexMd } from "./lib/paths";
 import type { Options } from "./options";
+import { teamLinkMd } from "./team.md";
 
 const domainSection = (domain: Domain) => `
 
@@ -31,6 +32,19 @@ ${
 				.map(([_name, domain]) => domainSection(domain))
 				.join("")
 		: "> No domains."
+}
+
+## Teams
+${
+	workspace.teams.size > 0
+		? markdownTable(
+				["Team", "Owns"],
+				Array.from(workspace.teams.values()).map((team) => [
+					teamLinkMd(team),
+					team.boundedcontexts.map((bc) => bc.name).join(", ") || "-",
+				]),
+			)
+		: "> No teams."
 }
 
 ## Context Relationships

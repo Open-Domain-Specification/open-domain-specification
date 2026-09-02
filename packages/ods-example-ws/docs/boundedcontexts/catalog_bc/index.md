@@ -3,6 +3,8 @@
 # Catalog BC
 Owns Pet aggregate & pet-facing operations
 
+**Owned by:** Pet Shop Team
+
 ## Serves
 - [Petstore Commerce / Catalog](../../domains/petstore_commerce/subdomains/catalog/index.md) (core)
 

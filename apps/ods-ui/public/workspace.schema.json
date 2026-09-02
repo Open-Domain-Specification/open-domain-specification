@@ -96,6 +96,19 @@
                         "type": "object"
                     },
                     "type": "array"
+                },
+                "team": {
+                    "additionalProperties": false,
+                    "description": "The team that owns this context.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 }
             },
             "required": [
@@ -493,6 +506,26 @@
             ],
             "type": "string"
         },
+        "TeamSchema": {
+            "additionalProperties": false,
+            "description": "A team that owns one or more bounded contexts.",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "homepage": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "Team",
+            "type": "object"
+        },
         "UpstreamRole": {
             "description": "How an upstream context exposes what it provides.",
             "enum": [
@@ -569,6 +602,12 @@
             },
             "type": "array"
         },
+        "teams": {
+            "additionalProperties": {
+                "$ref": "#/definitions/TeamSchema"
+            },
+            "type": "object"
+        },
         "version": {
             "type": "string"
         }
@@ -581,6 +620,7 @@
         "name",
         "odsVersion",
         "relationships",
+        "teams",
         "version"
     ],
     "title": "Workspace",

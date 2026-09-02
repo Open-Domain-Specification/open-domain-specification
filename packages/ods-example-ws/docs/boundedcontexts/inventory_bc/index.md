@@ -3,6 +3,8 @@
 # Inventory BC
 Projection for /store/inventory (status→count)
 
+**Owned by:** Pet Shop Team
+
 ## Serves
 - [Petstore Commerce / Inventory](../../domains/petstore_commerce/subdomains/inventory/index.md) (supporting)
 - [Petstore Commerce / Catalog](../../domains/petstore_commerce/subdomains/catalog/index.md) (core)

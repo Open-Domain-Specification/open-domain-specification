@@ -19,6 +19,7 @@ describe("Workspace Schema Validation", () => {
 			},
 			boundedcontexts: {},
 			relationships: [],
+			teams: {},
 		};
 
 		const workspace = Workspace.fromSchema(schema);
@@ -42,6 +43,7 @@ describe("Workspace Schema Validation", () => {
 			domains: {},
 			boundedcontexts: {},
 			relationships: [],
+			teams: {},
 		};
 
 		const workspace = Workspace.fromSchema(schema);
@@ -63,6 +65,7 @@ describe("Workspace Schema Validation", () => {
 			domains: {},
 			boundedcontexts: {},
 			relationships: [],
+			teams: {},
 		};
 
 		const workspace = Workspace.fromSchema(schema);

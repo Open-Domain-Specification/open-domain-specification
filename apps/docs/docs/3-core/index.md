@@ -49,6 +49,7 @@ Workspace
 │       ├── Invariants
 │       ├── Consumables
 │       └── Consumptions
+├── Team                                    (owns bounded contexts)
 └── Context Relationship                    (upstream-downstream, customer-supplier, partnership, shared-kernel, separate-ways)
 ```
 

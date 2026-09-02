@@ -55,8 +55,13 @@ const SYMMETRIC_EDGE_COLORS: Partial<Record<ContextRelationshipType, string>> =
 
 /** A big ball of mud is drawn as an irregular, muddy blob. */
 function nodeAttributes(node: ODSContextMapNode): NodeAttributesObject {
+	const lines = [
+		node.name,
+		node.bigBallOfMud && "(big ball of mud)",
+		node.team && `[${node.team.name}]`,
+	].filter(Boolean);
 	return {
-		label: node.bigBallOfMud ? `${node.name}\n(big ball of mud)` : node.name,
+		label: lines.join("\n"),
 		shape: node.bigBallOfMud ? "doubleoctagon" : "egg",
 		tooltip: node.description,
 		width: 1.5,

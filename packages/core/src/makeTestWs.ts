@@ -138,6 +138,11 @@ export function makeRichTestWs() {
 		primaryColor: "#123456",
 	});
 
+	const salesTeam = ws.addTeam("Sales Team", {
+		description: "Owns ordering",
+		homepage: "https://example.com/sales",
+	});
+
 	const sales = ws.addDomain("Sales", {
 		description: "Sales domain",
 	});
@@ -148,6 +153,7 @@ export function makeRichTestWs() {
 	const orderingBc = ordering.addBoundedcontext("Ordering BC", {
 		description: "Ordering bounded context",
 	});
+	orderingBc.ownedBy(salesTeam);
 	const orderAgg = orderingBc.addAggregate("Order", {
 		description: "Order aggregate",
 	});
@@ -219,6 +225,7 @@ export function makeRichTestWs() {
 
 	return {
 		ws,
+		salesTeam,
 		sales,
 		ordering,
 		orderingBc,

@@ -3,6 +3,8 @@
 # Sales BC
 Owns Order aggregate & order-facing operations
 
+**Owned by:** Orders Team
+
 ## Serves
 - [Petstore Commerce / Sales](../../domains/petstore_commerce/subdomains/sales/index.md) (core)
 

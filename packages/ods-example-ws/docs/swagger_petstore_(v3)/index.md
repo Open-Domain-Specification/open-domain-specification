@@ -18,6 +18,14 @@ Users and sessions per Petstore API
 
 
 
+## Teams
+| Team | Owns |
+| --- | --- |
+| Pet Shop Team | Catalog BC, Inventory BC |
+| Orders Team | Sales BC |
+| [Platform Team](https://petstore.swagger.io/#/user) | Identity BC |
+
+
 ## Context Relationships
 | Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |

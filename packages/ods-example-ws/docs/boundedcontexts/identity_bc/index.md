@@ -5,6 +5,8 @@
 
 Owns User aggregate & user endpoints. Legacy: user status is an untyped int and login is a GET
 
+**Owned by:** [Platform Team](https://petstore.swagger.io/#/user)
+
 ## Serves
 - [Identity & Accounts / Users](../../domains/identity_&_accounts/subdomains/users/index.md) (generic)
 

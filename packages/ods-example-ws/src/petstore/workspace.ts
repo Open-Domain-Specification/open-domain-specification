@@ -45,25 +45,44 @@ const usersSD = identity.addSubdomain("Users", {
 });
 
 /* =======================
+   TEAMS
+   ======================= */
+
+const petShopTeam = workspace.addTeam("Pet Shop Team", {
+	description: "Owns the catalog and the inventory projection",
+});
+const ordersTeam = workspace.addTeam("Orders Team", {
+	description: "Owns order taking and fulfilment",
+});
+const platformTeam = workspace.addTeam("Platform Team", {
+	description: "Runs the legacy user store",
+	homepage: "https://petstore.swagger.io/#/user",
+});
+
+/* =======================
    BOUNDED CONTEXTS
    ======================= */
 
 const catalogBC = catalogSD.addBoundedcontext("Catalog BC", {
 	description: "Owns Pet aggregate & pet-facing operations",
+	team: petShopTeam,
 });
 const salesBC = salesSD.addBoundedcontext("Sales BC", {
 	description: "Owns Order aggregate & order-facing operations",
+	team: ordersTeam,
 });
 // A context may serve several subdomains: the inventory projection is
 // built from catalog data as well as sales, so it serves both.
 const inventoryBC = workspace.addBoundedContext("Inventory BC", {
 	description: "Projection for /store/inventory (status→count)",
 	subdomains: [inventorySD, catalogSD],
+	team: petShopTeam,
 });
 const identityBC = usersSD.addBoundedcontext("Identity BC", {
 	description:
 		"Owns User aggregate & user endpoints. Legacy: user status is an untyped int and login is a GET",
 	bigBallOfMud: true,
+	team: platformTeam,
 });
 
 /* =======================

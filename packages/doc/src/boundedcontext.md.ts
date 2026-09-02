@@ -10,6 +10,7 @@ import { contextRelationshipsMd } from "./context-relationships.md";
 import { markdownTable } from "./lib/markdown-table";
 import { pathToContextMapSvg, pathToIndexMd } from "./lib/paths";
 import type { Options } from "./options";
+import { teamLinkMd } from "./team.md";
 
 const aggregateSection = (aggregate: Aggregate) => `
 ### [${aggregate.name}](${pathToIndexMd(aggregate.path, aggregate.boundedcontext.path)})
@@ -31,6 +32,7 @@ ${options?.breadcrumbs ? contextBreadcrumbsMd(boundedcontext) : ""}
 # ${boundedcontext.name}
 ${boundedcontext.bigBallOfMud ? "> ⚠️ **Big ball of mud.** This context's model is not coherent; neighbours should protect themselves with an anti-corruption layer.\n\n" : ""}${boundedcontext.description}
 
+${boundedcontext.team ? `**Owned by:** ${teamLinkMd(boundedcontext.team)}\n` : ""}
 ## Serves
 ${
 	boundedcontext.subdomains.size > 0

@@ -91,6 +91,15 @@ describe("ODSContextMap", () => {
 		]);
 	});
 
+	it("carries the owning team on the node", () => {
+		const map = ODSContextMap.fromWorkspace(f.ws);
+		expect(map.nodes.get(f.orderingBc.ref)?.team).toEqual({
+			id: f.salesTeam.ref,
+			name: "Sales Team",
+		});
+		expect(map.nodes.get(f.reportingBc.ref)?.team).toBeUndefined();
+	});
+
 	it("flags big-ball-of-mud contexts on their node", () => {
 		const map = ODSContextMap.fromWorkspace(f.ws);
 		expect(map.nodes.get(f.reportingBc.ref)?.bigBallOfMud).toBe(true);

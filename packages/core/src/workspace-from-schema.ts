@@ -67,6 +67,13 @@ function addDomains(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 	}
 }
 
+function addTeams(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
+	for (const [id, teamSchema] of Object.entries(workspaceSchema.teams)) {
+		debug(`Adding team: ${teamSchema.name}`);
+		workspace.addTeam(teamSchema.name, { ...teamSchema, id });
+	}
+}
+
 function addBoundedContext(
 	workspace: Workspace,
 	id: string,
@@ -78,6 +85,9 @@ function addBoundedContext(
 		{
 			...boundedcontextSchema,
 			id,
+			team:
+				boundedcontextSchema.team &&
+				workspace.getTeamByRefOrThrow(boundedcontextSchema.team.$ref),
 			subdomains: boundedcontextSchema.subdomains.map(({ $ref }) =>
 				workspace.getSubdomainByRefOrThrow($ref),
 			),
@@ -242,6 +252,7 @@ export function getWorkspaceFromSchema(
 	});
 
 	addDomains(workspace, workspaceSchema);
+	addTeams(workspace, workspaceSchema);
 	for (const [id, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {

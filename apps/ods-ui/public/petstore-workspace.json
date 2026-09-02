@@ -48,6 +48,9 @@
           "$ref": "#/domains/petstore_commerce/subdomains/catalog"
         }
       ],
+      "team": {
+        "$ref": "#/teams/pet_shop_team"
+      },
       "aggregates": {
         "pet": {
           "name": "Pet",
@@ -223,6 +226,9 @@
           "$ref": "#/domains/petstore_commerce/subdomains/sales"
         }
       ],
+      "team": {
+        "$ref": "#/teams/orders_team"
+      },
       "aggregates": {
         "order": {
           "name": "Order",
@@ -376,6 +382,9 @@
           "$ref": "#/domains/petstore_commerce/subdomains/catalog"
         }
       ],
+      "team": {
+        "$ref": "#/teams/pet_shop_team"
+      },
       "aggregates": {
         "inventory_projection": {
           "name": "InventoryProjection",
@@ -471,6 +480,9 @@
         }
       ],
       "bigBallOfMud": true,
+      "team": {
+        "$ref": "#/teams/platform_team"
+      },
       "aggregates": {
         "user": {
           "name": "User",
@@ -624,6 +636,21 @@
       "description": "Orders are anonymous in Petstore v3; no integration by design"
     }
   ],
+  "teams": {
+    "pet_shop_team": {
+      "name": "Pet Shop Team",
+      "description": "Owns the catalog and the inventory projection"
+    },
+    "orders_team": {
+      "name": "Orders Team",
+      "description": "Owns order taking and fulfilment"
+    },
+    "platform_team": {
+      "name": "Platform Team",
+      "description": "Runs the legacy user store",
+      "homepage": "https://petstore.swagger.io/#/user"
+    }
+  },
   "homepage": "https://petstore.swagger.io/",
   "logoUrl": "https://petstore.swagger.io/favicon-32x32.png"
 }

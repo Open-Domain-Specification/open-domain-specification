@@ -13,6 +13,16 @@ export interface AggregateSchema {
 }
 
 /**
+ * @title Team
+ * @description A team that owns one or more bounded contexts.
+ */
+export interface TeamSchema {
+	name: string;
+	description?: string;
+	homepage?: string;
+}
+
+/**
  * @title BoundedContext
  * @description Represents a bounded context in the Open Domain Specification (ODS).
  */
@@ -26,6 +36,8 @@ export interface BoundedContextSchema {
 	 * neighbours know to protect themselves from it.
 	 */
 	bigBallOfMud?: boolean;
+	/** The team that owns this context. */
+	team?: { $ref: string };
 	aggregates: { [aggregate: string]: AggregateSchema };
 	services: { [service: string]: ServiceSchema };
 }
@@ -220,6 +232,15 @@ export interface WorkspaceSchema {
 		[boundedcontext: string]: BoundedContextSchema;
 	};
 	relationships: ContextRelationshipSchema[];
+	teams: {
+		[team: string]: TeamSchema;
+	};
+}
+
+export function teamRef(team: string) {
+	return {
+		$ref: `#/teams/${team}`,
+	};
 }
 
 export function domainRef(domain: string) {

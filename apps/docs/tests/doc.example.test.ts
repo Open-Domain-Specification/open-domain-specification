@@ -21,6 +21,9 @@ DDD workspace for an eCommerce platform example
 ## Domains
 > No domains.
 
+## Teams
+> No teams.
+
 ## Context Relationships
 
 

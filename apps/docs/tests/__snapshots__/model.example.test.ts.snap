@@ -72,6 +72,7 @@ exports[`Visitor Example > should compile  1`] = `
           "$ref": "#/domains/content/subdomains/publishing",
         },
       ],
+      "team": undefined,
     },
     "ordering": {
       "aggregates": {
@@ -142,6 +143,7 @@ exports[`Visitor Example > should compile  1`] = `
           "$ref": "#/domains/commerce/subdomains/sales",
         },
       ],
+      "team": undefined,
     },
   },
   "description": "DDD workspace for an eCommerce platform example",
@@ -176,6 +178,7 @@ exports[`Visitor Example > should compile  1`] = `
   "odsVersion": "1.0.0",
   "primaryColor": "#0ea5e9",
   "relationships": [],
+  "teams": {},
   "version": "0.1.0",
 }
 `;

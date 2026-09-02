@@ -22,6 +22,7 @@ function contextNode(bc: BoundedContext): ODSContextMapNode {
 		description: bc.description,
 		namespace: boundedContextNamespace(bc),
 		bigBallOfMud: bc.bigBallOfMud,
+		team: bc.team && { id: bc.team.ref, name: bc.team.name },
 	};
 }
 
@@ -154,6 +155,7 @@ export type ODSContextMapNode = {
 	description?: string;
 	namespace: ODSContextMapNamespace[];
 	bigBallOfMud?: boolean;
+	team?: { id: string; name: string };
 };
 
 /**

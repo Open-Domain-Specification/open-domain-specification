@@ -29,6 +29,11 @@ export function _BoundedContextPage(props: { boundedcontext: BoundedContext }) {
 			description={props.boundedcontext.description}
 		>
 			<Group gap={"xs"}>
+				{props.boundedcontext.team && (
+					<Badge color={"grape"} variant={"light"}>
+						{props.boundedcontext.team.name}
+					</Badge>
+				)}
 				{props.boundedcontext.bigBallOfMud && (
 					<Badge color={"red"} variant={"light"}>
 						big ball of mud

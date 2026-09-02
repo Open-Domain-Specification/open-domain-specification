@@ -62,6 +62,7 @@ export class Workspace
 	domains = new Map<string, Domain>();
 	boundedcontexts = new Map<string, BoundedContext>();
 	relationships: ContextRelationship[] = [];
+	teams = new Map<string, Team>();
 
 	get path(): string {
 		return `${this.id}`;
@@ -94,6 +95,24 @@ export class Workspace
 		attributes: ContextRelationshipAttributes,
 	): ContextRelationship {
 		return new ContextRelationship(this, attributes);
+	}
+
+	addTeam(name: string, attributes: TeamAttributes = {}): Team {
+		return new Team(this, name, attributes);
+	}
+
+	getTeamByRef(ref: string): Team | undefined {
+		for (const team of this.teams.values()) {
+			if (team.ref === ref) return team;
+		}
+	}
+
+	getTeamByRefOrThrow(ref: string): Team {
+		const team = this.getTeamByRef(ref);
+		if (!team) {
+			throw new Error(`Team with ref ${ref} not found`);
+		}
+		return team;
 	}
 
 	accept(v: Visitor) {
@@ -329,6 +348,7 @@ export class Workspace
 			domains: asRecords(this.domains),
 			boundedcontexts: asRecords(this.boundedcontexts),
 			relationships: asArray(this.relationships),
+			teams: asRecords(this.teams),
 			homepage: this.homepage,
 			logoUrl: this.logoUrl,
 		};
@@ -459,6 +479,8 @@ export type BoundedContextAttributes = {
 	subdomains?: Subdomain[];
 	/** See {@link ods.BoundedContextSchema.bigBallOfMud}. */
 	bigBallOfMud?: boolean;
+	/** The team that owns this context. */
+	team?: Team;
 	id?: string;
 };
 
@@ -473,6 +495,7 @@ export class BoundedContext
 	workspace: Workspace;
 	subdomains = new Set<Subdomain>();
 	bigBallOfMud: boolean;
+	team?: Team;
 
 	get path(): string {
 		return `boundedcontexts/${this.id}`;
@@ -502,6 +525,7 @@ export class BoundedContext
 		this.description = attributes.description;
 		this.workspace = workspace;
 		this.bigBallOfMud = attributes.bigBallOfMud ?? false;
+		this.team = attributes.team;
 		this.workspace.boundedcontexts.set(this.id, this);
 		for (const subdomain of attributes.subdomains ?? []) {
 			this.serves(subdomain);
@@ -511,6 +535,11 @@ export class BoundedContext
 	/** Links this context to a subdomain it serves. */
 	serves(subdomain: Subdomain): this {
 		this.subdomains.add(subdomain);
+		return this;
+	}
+
+	ownedBy(team: Team): this {
+		this.team = team;
 		return this;
 	}
 
@@ -585,6 +614,7 @@ export class BoundedContext
 			description: this.description,
 			subdomains: Array.from(this.subdomains, (it) => ({ $ref: it.ref })),
 			bigBallOfMud: this.bigBallOfMud || undefined,
+			team: this.team && { $ref: this.team.ref },
 			aggregates: asRecords(this.aggregates),
 			services: asRecords(this.services),
 		};
@@ -1204,6 +1234,52 @@ export class ContextRelationship
 			type: this.type,
 			participants: [{ $ref: this.source.ref }, { $ref: this.target.ref }],
 			description: this.description,
+		};
+	}
+}
+
+export type TeamAttributes = {
+	description?: string;
+	homepage?: string;
+	id?: string;
+};
+
+export class Team implements SchemaConvertible<ods.TeamSchema> {
+	id: string;
+	name: string;
+	description?: string;
+	homepage?: string;
+	workspace: Workspace;
+
+	get path(): string {
+		return `teams/${this.id}`;
+	}
+
+	get ref(): string {
+		return `#/${this.path}`;
+	}
+
+	/** The contexts this team owns, derived from the workspace. */
+	get boundedcontexts(): BoundedContext[] {
+		return Array.from(this.workspace.boundedcontexts.values()).filter(
+			(bc) => bc.team === this,
+		);
+	}
+
+	constructor(workspace: Workspace, name: string, attributes: TeamAttributes) {
+		this.id = attributes.id || snakeCase(name);
+		this.name = name;
+		this.description = attributes.description;
+		this.homepage = attributes.homepage;
+		this.workspace = workspace;
+		this.workspace.teams.set(this.id, this);
+	}
+
+	toSchema(): ods.TeamSchema {
+		return {
+			name: this.name,
+			description: this.description,
+			homepage: this.homepage,
 		};
 	}
 }
