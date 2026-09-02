@@ -1,0 +1,46 @@
+{
+	"name": "@open-domain-specification/skill",
+	"version": "0.1.9",
+	"description": "An installable agent skill for authoring Open Domain Specification (ODS) workspaces",
+	"author": "Jonathan Turnock <jonathan.turnock@outlook.com>",
+	"homepage": "https://docs.open-ds.io/docs/ai-skill/",
+	"license": "ISC",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"module": "dist/index.mjs",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Open-Domain-Specification/open-domain-specification.git"
+	},
+	"publishConfig": {
+		"registry": "https://registry.npmjs.org/",
+		"access": "public"
+	},
+	"files": [
+		"src",
+		"dist",
+		"skill"
+	],
+	"scripts": {
+		"clean": "npx rimraf dist src/bundle.generated.ts",
+		"generate": "node scripts/generate.mts",
+		"build": "npm run generate && tsc --project tsconfig.json && tsup src/index.ts --format cjs,esm --dts --sourcemap --out-dir dist",
+		"test": "vitest run --config vitest.config.ts",
+		"depcheck": "npx depcheck"
+	},
+	"keywords": [
+		"domain-driven-design",
+		"ddd",
+		"open-domain-specification",
+		"ods",
+		"agent-skill",
+		"claude-code"
+	],
+	"devDependencies": {
+		"@open-domain-specification/core": "^0.1.9",
+		"@types/node": "^24.2.1",
+		"tsup": "^8.5.0",
+		"typescript": "^5.9.2",
+		"vitest": "^3.2.4"
+	}
+}

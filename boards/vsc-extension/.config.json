@@ -15,7 +15,15 @@
       "id": "doing",
       "name": "In Progress",
       "color": "#5cd68a",
-      "wip": 3
+      "wip": 3,
+      "exit": [
+        {
+          "id": "clean-code-swept",
+          "label": "Clean code review & refactor sweep",
+          "field": "clean-code-swept",
+          "check": "= true"
+        }
+      ]
     },
     {
       "id": "review",
@@ -54,5 +62,11 @@
       "color": "#c9a227"
     }
   },
-  "fields": []
+  "fields": [
+    {
+      "id": "clean-code-swept",
+      "label": "Clean Code Swept",
+      "type": "boolean"
+    }
+  ]
 }

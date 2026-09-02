@@ -17,6 +17,9 @@ Always reference these instructions first and fallback to search or bash command
 - Start ODS UI application: `cd apps/ods-ui && npm run start` -- runs on http://localhost:5173
 - Start example workspace docs: `cd packages/ods-example-ws && npm run serve` -- runs on random port (displays in output)
 
+### Build Order Notes
+- `packages/skill` generates `skill/references/model-reference.md` and `skill/references/validation-rules.md` from `packages/core/dist` during its build and embeds the bundle into `src/bundle.generated.ts`. Lerna builds core first; if you build the skill package alone, build core beforehand. The generated reference files are committed; run `npm run generate -w @open-domain-specification/skill` after changing the schema or a validation rule and commit the result.
+
 ### Known Build Issues and Workarounds
 There are no currently known issues and the project is healthy.
 

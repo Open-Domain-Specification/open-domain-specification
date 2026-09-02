@@ -126,9 +126,12 @@ them, and preserve any existing value you do not recognise rather than dropping 
 2. While working: keep `live: true`, a current `status`, and `progress`.
 3. Tick checklist items `- [x]` as you finish them, and journal meaningful
    progress to `## Comments` (see "Journal your work").
-4. When done: set `column: review` (a human moves it to `done`), set
+4. Before moving to review: run a clean-code review sweep (`clean-code-review`
+   skill) and, for anything it flags, loop the `refactor` skill until clean.
+   Then set `clean-code-swept: true` and record it under `## Gates`.
+5. When done: set `column: review` (a human moves it to `done`), set
    `live: false`, and remove `status`/`progress`.
-5. Always bump `updatedAt` on every change.
+6. Always bump `updatedAt` on every change.
 
 ## Workflow gates
 
