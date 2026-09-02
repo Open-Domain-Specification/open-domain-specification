@@ -45,7 +45,7 @@
 	],
 	"scripts": {
 		"clean": "npx rimraf dist app storybook-static assets/codicons",
-		"build": "node scripts/codicons.mjs && tsc --project tsconfig.json && tsup src/index.ts src/site.ts --format cjs,esm --dts --sourcemap --shims --out-dir dist && vite build",
+		"build": "node scripts/codicons.mjs && tsc --project tsconfig.json && tsup src/index.ts src/site.ts --format cjs,esm --dts --sourcemap --out-dir dist && vite build",
 		"test": "npm run test:unit",
 		"depcheck": "npx depcheck",
 		"check": "svelte-check --tsconfig ./tsconfig.app.json",

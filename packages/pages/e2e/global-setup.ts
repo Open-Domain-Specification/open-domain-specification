@@ -21,6 +21,7 @@ export default async function globalSetup() {
 		name: "Second Workspace",
 	});
 	await exportSite({
+		appDir: join(__dirname, "../app"),
 		sources: [
 			{
 				workspace: petstore,

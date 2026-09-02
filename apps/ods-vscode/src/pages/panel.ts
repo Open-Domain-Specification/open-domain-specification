@@ -22,6 +22,13 @@ export class DetailPanel implements vscode.Disposable {
 	private readonly opened = new vscode.EventEmitter<Location>();
 	/** Fires whenever a page is shown, so the tree can follow. */
 	readonly onDidOpen = this.opened.event;
+	private readonly received = new vscode.EventEmitter<WebviewMessage>();
+	/**
+	 * Test seam: every message the webview posts, before it is acted on. Lets an
+	 * integration test observe the real app booting and routing inside VS Code.
+	 */
+	readonly onDidReceiveWebviewMessage: vscode.Event<WebviewMessage> =
+		this.received.event;
 
 	constructor(
 		private readonly extensionUri: vscode.Uri,
@@ -68,29 +75,28 @@ export class DetailPanel implements vscode.Disposable {
 			this.panel = undefined;
 			this.ready = false;
 		});
-		this.panel.webview.onDidReceiveMessage(
-			(msg: WebviewMessage) => {
-				if (!this.current) return;
-				switch (msg.type) {
-					case "ready":
-						this.ready = true;
-						this.send();
-						break;
-					case "navigated":
-						if (msg.ref && msg.ref !== this.current.ref) {
-							this.current = { file: this.current.file, ref: msg.ref };
-							this.opened.fire(this.current);
-						}
-						break;
-					case "reveal":
-						void vscode.commands.executeCommand("ods.revealInJson", {
-							file: this.current.file,
-							ref: msg.ref,
-						});
-						break;
-				}
-			},
-		);
+		this.panel.webview.onDidReceiveMessage((msg: WebviewMessage) => {
+			this.received.fire(msg);
+			if (!this.current) return;
+			switch (msg.type) {
+				case "ready":
+					this.ready = true;
+					this.send();
+					break;
+				case "navigated":
+					if (msg.ref && msg.ref !== this.current.ref) {
+						this.current = { file: this.current.file, ref: msg.ref };
+						this.opened.fire(this.current);
+					}
+					break;
+				case "reveal":
+					void vscode.commands.executeCommand("ods.revealInJson", {
+						file: this.current.file,
+						ref: msg.ref,
+					});
+					break;
+			}
+		});
 		this.panel.webview.html = this.shell();
 	}
 
@@ -173,5 +179,6 @@ export class DetailPanel implements vscode.Disposable {
 		this.panel?.dispose();
 		for (const s of this.subscriptions) s.dispose();
 		this.opened.dispose();
+		this.received.dispose();
 	}
 }

@@ -20,6 +20,7 @@ describe("static site export", () => {
 	beforeAll(async () => {
 		outDir = await mkdtemp(join(tmpdir(), "ods-site-"));
 		result = await exportSite({
+			appDir: join(__dirname, "../app"),
 			sources: [
 				{
 					workspace,

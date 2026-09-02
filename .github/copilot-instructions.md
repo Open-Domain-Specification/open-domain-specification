@@ -111,6 +111,12 @@ npm run test:unit              # Vitest with 100% coverage thresholds
 npm run test:e2e               # Playwright over the built app and a static export
 ```
 
+### VS Code extension integration
+```bash
+cd apps/ods-vscode
+npm run test:vscode            # Mocha inside a real Extension Development Host
+```
+
 ## Important File Locations
 
 ### Core Domain Model

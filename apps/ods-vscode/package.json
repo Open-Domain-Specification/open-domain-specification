@@ -165,25 +165,30 @@
 		]
 	},
 	"scripts": {
-		"clean": "npx rimraf dist schema.json",
+		"clean": "npx rimraf dist out schema.json",
 		"build": "tsc --noEmit && node esbuild.mjs",
 		"watch": "node esbuild.mjs --watch",
 		"dev": "node esbuild.mjs && node dev.mjs",
 		"package": "vsce package --no-dependencies",
 		"test": "vitest run",
+		"test:vscode": "npm run build && tsc -p tsconfig.test.json && vscode-test",
 		"depcheck": "npx depcheck"
 	},
 	"dependencies": {
 		"@open-domain-specification/core": "^0.1.9",
-		"jsonc-parser": "^3.3.1",
 		"@open-domain-specification/pages": "^0.1.9",
-		"@open-domain-specification/skill": "^0.1.9"
+		"@open-domain-specification/skill": "^0.1.9",
+		"jsonc-parser": "^3.3.1"
 	},
 	"devDependencies": {
+		"@types/mocha": "^10.0.10",
 		"@types/node": "^24.2.1",
 		"@types/vscode": "^1.90.0",
+		"@vscode/test-cli": "^0.0.15",
+		"@vscode/test-electron": "^3.1.0",
 		"@vscode/vsce": "^3.9.2",
 		"esbuild": "^0.28.2",
+		"mocha": "^12.0.0",
 		"typescript": "^5.9.2",
 		"vitest": "^3.2.4"
 	}

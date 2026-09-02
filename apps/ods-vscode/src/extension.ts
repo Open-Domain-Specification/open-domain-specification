@@ -9,7 +9,18 @@ import { type ModelNode, ModelTree } from "./tree";
 
 type RefTarget = { file: ModelNode["file"]; ref?: string };
 
-export async function activate(context: vscode.ExtensionContext) {
+/**
+ * Test seam: what `activate` resolves to, so an integration test running in a
+ * real VS Code window can reach the loaded project and the webview host.
+ */
+export type OdsTestApi = {
+	project: OdsProject;
+	panel: DetailPanel;
+};
+
+export async function activate(
+	context: vscode.ExtensionContext,
+): Promise<OdsTestApi> {
 	const project = new OdsProject(context.extensionUri);
 	const diagnostics = new OdsDiagnostics(project);
 	const tree = new ModelTree(project, diagnostics);
@@ -100,6 +111,8 @@ export async function activate(context: vscode.ExtensionContext) {
 					exportSite({
 						sources,
 						outDir: outDir.fsPath,
+						appDir: vscode.Uri.joinPath(context.extensionUri, "media", "app")
+							.fsPath,
 					}),
 			);
 			const open = "Open in Browser";
@@ -135,6 +148,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	await project.reload();
 	void promptWhenSkillStale(context);
+
+	return { project, panel: pages };
 }
 
 async function pickFolder(

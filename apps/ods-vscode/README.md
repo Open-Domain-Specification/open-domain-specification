@@ -31,3 +31,8 @@ Run the "Run ODS Extension" launch configuration from the repository root. It bu
 npm run build -w ods-vscode
 npm run package -w ods-vscode
 ```
+
+
+## Testing
+
+`npm test` runs the unit suite. `npm run test:vscode` builds the extension, downloads VS Code into `.vscode-test/` on first run, opens the example workspace in an Extension Development Host and drives the commands from Mocha inside it; the webview is verified by the messages the real pages bundle posts back.

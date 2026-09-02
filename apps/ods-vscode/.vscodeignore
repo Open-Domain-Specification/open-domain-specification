@@ -1,7 +1,11 @@
 src/**
 node_modules/**
+out/**
+.vscode-test/**
 esbuild.mjs
 dev.mjs
 tsconfig.json
+tsconfig.test.json
+.vscode-test.mjs
 vitest.config.ts
 **/*.map
