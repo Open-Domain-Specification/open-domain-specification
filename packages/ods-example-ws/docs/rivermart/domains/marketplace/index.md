@@ -24,6 +24,7 @@ Which seller's offer wins the buy box. Core: this decision drives price, speed a
 | Offers | upstream-downstream | Search | published-language | conformist |
 | Seller Onboarding | upstream-downstream | Offers | published-language | conformist |
 | Offers | customer-supplier | Cart & Checkout | open-host-service | anti-corruption-layer |
+| Offers | upstream-downstream | Order Management | open-host-service | conformist |
 | Seller Onboarding | upstream-downstream | Fraud | published-language | anti-corruption-layer |
 | Fraud | upstream-downstream | Seller Onboarding | published-language | anti-corruption-layer |
 | Seller Onboarding | upstream-downstream | Advertising | published-language | conformist |
@@ -32,7 +33,9 @@ Which seller's offer wins the buy box. Core: this decision drives price, speed a
 | Fraud | upstream-downstream (implied) | Order Management | published-language | anti-corruption-layer |
 | Warehouse | upstream-downstream (implied) | Order Management | published-language | anti-corruption-layer |
 | Order Management | upstream-downstream (implied) | Warehouse | published-language | anti-corruption-layer |
+| Vendor Purchasing (legacy) | upstream-downstream (implied) | Warehouse | published-language | anti-corruption-layer |
 | Payments | upstream-downstream (implied) | Order Management | open-host-service | anti-corruption-layer |
+| Order Management | upstream-downstream (implied) | Payments | published-language | anti-corruption-layer |
 | Warehouse | upstream-downstream (implied) | Payments | published-language | anti-corruption-layer |
 | Last Mile | upstream-downstream (implied) | Order Management | published-language | anti-corruption-layer |
 | Warehouse | upstream-downstream (implied) | Last Mile | published-language | - |
@@ -50,8 +53,14 @@ Which seller's offer wins the buy box. Core: this decision drives price, speed a
 | [Order](../../boundedcontexts/order_management/aggregates/order/index.md) | anti-corruption-layer | RiskAssessment | OrderRiskFlagged | published-language |
 | [Order](../../boundedcontexts/order_management/aggregates/order/index.md) | anti-corruption-layer | FulfilmentOrder | ShipmentDispatched | published-language |
 | [FulfilmentOrder](../../boundedcontexts/warehouse/aggregates/fulfilment_order/index.md) | anti-corruption-layer | Order | ReturnRequested | published-language |
+| [FulfilmentOrder](../../boundedcontexts/warehouse/aggregates/fulfilment_order/index.md) | anti-corruption-layer | Order | OrderCancelled | published-language |
 | [Order](../../boundedcontexts/order_management/aggregates/order/index.md) | anti-corruption-layer | FulfilmentOrder | ReturnReceived | published-language |
+| [Order](../../boundedcontexts/order_management/aggregates/order/index.md) | anti-corruption-layer | InventoryPosition | StockShort | published-language |
+| [InventoryPosition](../../boundedcontexts/warehouse/aggregates/inventory_position/index.md) | anti-corruption-layer | Order | OrderPlaced | published-language |
+| [InventoryPosition](../../boundedcontexts/warehouse/aggregates/inventory_position/index.md) | anti-corruption-layer | Order | OrderCancelled | published-language |
+| [InventoryPosition](../../boundedcontexts/warehouse/aggregates/inventory_position/index.md) | anti-corruption-layer | PurchaseOrder | PurchaseOrderReceived | published-language |
 | [Order](../../boundedcontexts/order_management/aggregates/order/index.md) | anti-corruption-layer | Payment | RefundPayment | open-host-service |
+| [Payment](../../boundedcontexts/payments/aggregates/payment/index.md) | anti-corruption-layer | Order | OrderPlaced | published-language |
 | [Payment](../../boundedcontexts/payments/aggregates/payment/index.md) | anti-corruption-layer | FulfilmentOrder | ShipmentDispatched | published-language |
 | [Order](../../boundedcontexts/order_management/aggregates/order/index.md) | anti-corruption-layer | DeliveryRoute | ParcelDelivered | published-language |
 | [DeliveryRoute](../../boundedcontexts/last_mile/aggregates/delivery_route/index.md) | - | FulfilmentOrder | ShipmentDispatched | published-language |

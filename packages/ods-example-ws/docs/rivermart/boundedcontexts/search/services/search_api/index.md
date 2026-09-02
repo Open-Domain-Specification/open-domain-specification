@@ -18,4 +18,8 @@ The results page endpoint
 Sponsored slots for a query, merged into organic results by Search
 - **Provider**: [AdsAPI](../../../advertising/services/ads_api/index.md)
 
+### RecordAdClick [conformist]
+The results page reports a click on a sponsored slot; this is the moment the seller is charged
+- **Provider**: [AdsAPI](../../../advertising/services/ads_api/index.md)
+
 	

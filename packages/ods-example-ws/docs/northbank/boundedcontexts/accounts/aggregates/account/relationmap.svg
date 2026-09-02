@@ -22,26 +22,39 @@
 <!-- #/boundedcontexts/accounts/aggregates/account/entities/account -->
 <g id="node1" class="node">
 <title>#/boundedcontexts/accounts/aggregates/account/entities/account</title>
-<g id="a_node1"><a xlink:title="A current or savings account">
-<polygon fill="white" stroke="none" points="161.79,-472 16,-472 16,-310 161.79,-310 161.79,-472"/>
-<polygon fill="none" stroke="black" points="16,-442 16,-472 161.79,-472 161.79,-442 16,-442"/>
-<text xml:space="preserve" text-anchor="start" x="63.2" y="-459" font-family="sans-serif" font-size="10.00">«root entity»</text>
-<text xml:space="preserve" text-anchor="start" x="71.12" y="-449" font-family="sans-serif" font-weight="bold" font-size="10.00">Account</text>
-<polygon fill="none" stroke="black" points="16,-420 16,-442 161.79,-442 161.79,-420 16,-420"/>
-<text xml:space="preserve" text-anchor="start" x="21" y="-428" font-family="sans-serif" font-size="10.00">{id} accountId: string</text>
-<polygon fill="none" stroke="black" points="16,-398 16,-420 161.79,-420 161.79,-398 16,-398"/>
-<text xml:space="preserve" text-anchor="start" x="21" y="-406" font-family="sans-serif" font-size="10.00">productCode: &#39;current&#39; | &#39;savings&#39;</text>
-<polygon fill="none" stroke="black" points="16,-376 16,-398 161.79,-398 161.79,-376 16,-376"/>
-<text xml:space="preserve" text-anchor="start" x="21" y="-384" font-family="sans-serif" font-size="10.00">iban: IBAN</text>
-<polygon fill="none" stroke="black" points="16,-354 16,-376 161.79,-376 161.79,-354 16,-354"/>
-<text xml:space="preserve" text-anchor="start" x="21" y="-362" font-family="sans-serif" font-size="10.00">accountNumber: AccountNumber</text>
-<g id="a_node1_9"><a xlink:title="Posted balance less pending card authorisations">
-<polygon fill="none" stroke="black" points="16,-332 16,-354 161.79,-354 161.79,-332 16,-332"/>
-<text xml:space="preserve" text-anchor="start" x="21" y="-340" font-family="sans-serif" font-size="10.00">availableBalance: Money</text>
+<g id="a_node1"><a xlink:title="A current account on the new platform. Savings accounts are Sovereign rows until they are migrated">
+<polygon fill="white" stroke="none" points="161.79,-480 16,-480 16,-274 161.79,-274 161.79,-480"/>
+<polygon fill="none" stroke="black" points="16,-450 16,-480 161.79,-480 161.79,-450 16,-450"/>
+<text xml:space="preserve" text-anchor="start" x="63.2" y="-467" font-family="sans-serif" font-size="10.00">«root entity»</text>
+<text xml:space="preserve" text-anchor="start" x="71.12" y="-457" font-family="sans-serif" font-weight="bold" font-size="10.00">Account</text>
+<polygon fill="none" stroke="black" points="16,-428 16,-450 161.79,-450 161.79,-428 16,-428"/>
+<text xml:space="preserve" text-anchor="start" x="21" y="-436" font-family="sans-serif" font-size="10.00">{id} accountId: string</text>
+<g id="a_node1_45"><a xlink:title="Only current accounts live here; savings stay on Sovereign until the hollowing&#45;out moves them">
+<polygon fill="none" stroke="black" points="16,-406 16,-428 161.79,-428 161.79,-406 16,-406"/>
+<text xml:space="preserve" text-anchor="start" x="21" y="-414" font-family="sans-serif" font-size="10.00">productCode: &#39;current&#39;</text>
 </a>
 </g>
-<polygon fill="none" stroke="black" points="16,-310 16,-332 161.79,-332 161.79,-310 16,-310"/>
-<text xml:space="preserve" text-anchor="start" x="21" y="-318" font-family="sans-serif" font-size="10.00">status: AccountStatus</text>
+<polygon fill="none" stroke="black" points="16,-384 16,-406 161.79,-406 161.79,-384 16,-384"/>
+<text xml:space="preserve" text-anchor="start" x="21" y="-392" font-family="sans-serif" font-size="10.00">iban: IBAN</text>
+<polygon fill="none" stroke="black" points="16,-362 16,-384 161.79,-384 161.79,-362 16,-362"/>
+<text xml:space="preserve" text-anchor="start" x="21" y="-370" font-family="sans-serif" font-size="10.00">accountNumber: AccountNumber</text>
+<g id="a_node1_46"><a xlink:title="What the ledger has posted to this account">
+<polygon fill="none" stroke="black" points="16,-340 16,-362 161.79,-362 161.79,-340 16,-340"/>
+<text xml:space="preserve" text-anchor="start" x="21" y="-348" font-family="sans-serif" font-size="10.00">postedBalance: Money</text>
+</a>
+</g>
+<g id="a_node1_47"><a xlink:title="Card authorisations approved but not yet captured; a hold placed on CardAuthorised and released when the capture posts">
+<polygon fill="none" stroke="black" points="16,-318 16,-340 161.79,-340 161.79,-318 16,-318"/>
+<text xml:space="preserve" text-anchor="start" x="21" y="-326" font-family="sans-serif" font-size="10.00">pendingAuthorisations: Money</text>
+</a>
+</g>
+<g id="a_node1_48"><a xlink:title="Posted balance less pending card authorisations">
+<polygon fill="none" stroke="black" points="16,-296 16,-318 161.79,-318 161.79,-296 16,-296"/>
+<text xml:space="preserve" text-anchor="start" x="21" y="-304" font-family="sans-serif" font-size="10.00">availableBalance: Money</text>
+</a>
+</g>
+<polygon fill="none" stroke="black" points="16,-274 16,-296 161.79,-296 161.79,-274 16,-274"/>
+<text xml:space="preserve" text-anchor="start" x="21" y="-282" font-family="sans-serif" font-size="10.00">status: AccountStatus</text>
 </a>
 </g>
 </g>
@@ -63,10 +76,10 @@
 <!-- #/boundedcontexts/accounts/aggregates/account/entities/account&#45;&gt;#/boundedcontexts/accounts/aggregates/account/entities/mandate -->
 <g id="edge1" class="edge">
 <title>#/boundedcontexts/accounts/aggregates/account/entities/account&#45;&gt;#/boundedcontexts/accounts/aggregates/account/entities/mandate</title>
-<path fill="none" stroke="black" d="M170.7,-302.7C173.74,-299.74 176.77,-296.83 179.79,-294 212.62,-263.19 221.91,-256.5 258.31,-230 262.46,-226.97 266.81,-223.92 271.22,-220.89"/>
-<polygon fill="black" stroke="black" points="170.75,-302.65 169.31,-309.72 162.24,-311.11 163.68,-304.04 170.75,-302.65"/>
-<text xml:space="preserve" text-anchor="middle" x="210.05" y="-297" font-family="sans-serif" font-size="10.00">operated&#45;under</text>
-<text xml:space="preserve" text-anchor="middle" x="263.61" y="-230.82" font-family="sans-serif" font-size="10.00">1..*</text>
+<path fill="none" stroke="black" d="M170.97,-299.72C173.93,-297.1 176.87,-294.52 179.79,-292 213.42,-262.92 222.16,-255.9 258.31,-230 262.49,-227.01 266.85,-223.97 271.27,-220.96"/>
+<polygon fill="black" stroke="black" points="171.1,-299.61 169.3,-306.59 162.17,-307.62 163.96,-300.64 171.1,-299.61"/>
+<text xml:space="preserve" text-anchor="middle" x="210.05" y="-295" font-family="sans-serif" font-size="10.00">operated&#45;under</text>
+<text xml:space="preserve" text-anchor="middle" x="263.61" y="-230.86" font-family="sans-serif" font-size="10.00">1..*</text>
 </g>
 <!-- #/boundedcontexts/accounts/aggregates/account/valueobjects/iban -->
 <g id="node3" class="node">
@@ -84,10 +97,10 @@
 <!-- #/boundedcontexts/accounts/aggregates/account/entities/account&#45;&gt;#/boundedcontexts/accounts/aggregates/account/valueobjects/iban -->
 <g id="edge7" class="edge">
 <title>#/boundedcontexts/accounts/aggregates/account/entities/account&#45;&gt;#/boundedcontexts/accounts/aggregates/account/valueobjects/iban</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M161.7,-351.44C191.46,-335.24 226.42,-316.47 258.31,-300 260.91,-298.66 263.57,-297.3 266.26,-295.93"/>
-<polygon fill="black" stroke="black" points="274.99,-291.52 268.09,-300.04 271.62,-293.22 266.07,-296.02 266.07,-296.02 266.07,-296.02 271.62,-293.22 264.04,-292.01 274.99,-291.52"/>
-<text xml:space="preserve" text-anchor="middle" x="210.05" y="-342.32" font-family="sans-serif" font-size="10.00">identified&#45;by</text>
-<text xml:space="preserve" text-anchor="middle" x="266.8" y="-299.75" font-family="sans-serif" font-size="10.00">1</text>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M161.72,-343.4C194.28,-328.16 232.5,-310.28 264.21,-295.45"/>
+<polygon fill="black" stroke="black" points="273.16,-291.26 266.01,-299.58 269.73,-292.86 264.1,-295.5 264.1,-295.5 264.1,-295.5 269.73,-292.86 262.19,-291.42 273.16,-291.26"/>
+<text xml:space="preserve" text-anchor="middle" x="210.05" y="-337.33" font-family="sans-serif" font-size="10.00">identified&#45;by</text>
+<text xml:space="preserve" text-anchor="middle" x="264.63" y="-299.25" font-family="sans-serif" font-size="10.00">1</text>
 </g>
 <!-- #/boundedcontexts/accounts/aggregates/account/valueobjects/account_number -->
 <g id="node4" class="node">
@@ -107,10 +120,10 @@
 <!-- #/boundedcontexts/accounts/aggregates/account/entities/account&#45;&gt;#/boundedcontexts/accounts/aggregates/account/valueobjects/account_number -->
 <g id="edge8" class="edge">
 <title>#/boundedcontexts/accounts/aggregates/account/entities/account&#45;&gt;#/boundedcontexts/accounts/aggregates/account/valueobjects/account_number</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M161.72,-377.5C199.62,-370.37 245.2,-361.81 279.24,-355.41"/>
-<polygon fill="black" stroke="black" points="288.67,-353.64 279.67,-359.91 284.95,-354.33 278.84,-355.48 278.84,-355.48 278.84,-355.48 284.95,-354.33 278.01,-351.06 288.67,-353.64"/>
-<text xml:space="preserve" text-anchor="middle" x="210.05" y="-376.85" font-family="sans-serif" font-size="10.00">numbered</text>
-<text xml:space="preserve" text-anchor="middle" x="277.68" y="-359.15" font-family="sans-serif" font-size="10.00">1</text>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M161.72,-367.7C199.46,-362.81 244.8,-356.94 278.8,-352.54"/>
+<polygon fill="black" stroke="black" points="288.66,-351.26 279.32,-357.01 284.91,-351.75 278.74,-352.55 278.74,-352.55 278.74,-352.55 284.91,-351.75 278.16,-348.08 288.66,-351.26"/>
+<text xml:space="preserve" text-anchor="middle" x="210.05" y="-368.19" font-family="sans-serif" font-size="10.00">numbered</text>
+<text xml:space="preserve" text-anchor="middle" x="277.2" y="-356.14" font-family="sans-serif" font-size="10.00">1</text>
 </g>
 <!-- #/boundedcontexts/accounts/aggregates/account/valueobjects/money -->
 <g id="node5" class="node">
@@ -130,15 +143,15 @@
 <!-- #/boundedcontexts/accounts/aggregates/account/entities/account&#45;&gt;#/boundedcontexts/accounts/aggregates/account/valueobjects/money -->
 <g id="edge9" class="edge">
 <title>#/boundedcontexts/accounts/aggregates/account/entities/account&#45;&gt;#/boundedcontexts/accounts/aggregates/account/valueobjects/money</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M161.72,-405.1C194.37,-411.51 232.71,-419.04 264.47,-425.27"/>
-<polygon fill="black" stroke="black" points="274.21,-427.19 263.53,-429.68 270.5,-426.46 264.4,-425.26 264.4,-425.26 264.4,-425.26 270.5,-426.46 265.26,-420.84 274.21,-427.19"/>
-<text xml:space="preserve" text-anchor="middle" x="210.05" y="-423.09" font-family="sans-serif" font-size="10.00">balance</text>
-<text xml:space="preserve" text-anchor="middle" x="260.84" y="-428.02" font-family="sans-serif" font-size="10.00">1</text>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M161.72,-395.3C194.51,-403.66 233.04,-413.47 264.88,-421.59"/>
+<polygon fill="black" stroke="black" points="274.22,-423.97 263.42,-425.86 270.56,-423.03 264.53,-421.5 264.53,-421.5 264.53,-421.5 270.56,-423.03 265.64,-417.14 274.22,-423.97"/>
+<text xml:space="preserve" text-anchor="middle" x="210.05" y="-417.76" font-family="sans-serif" font-size="10.00">balance</text>
+<text xml:space="preserve" text-anchor="middle" x="260.67" y="-424.06" font-family="sans-serif" font-size="10.00">1</text>
 </g>
 <!-- #/boundedcontexts/accounts/aggregates/account/valueobjects/overdraft_limit -->
 <g id="node6" class="node">
 <title>#/boundedcontexts/accounts/aggregates/account/valueobjects/overdraft_limit</title>
-<g id="a_node6"><a xlink:title="How far below zero the available balance may go; zero for savings">
+<g id="a_node6"><a xlink:title="How far below zero the available balance may go">
 <polygon fill="white" stroke="none" points="368.89,-545 291.69,-545 291.69,-493 368.89,-493 368.89,-545"/>
 <polygon fill="none" stroke="black" points="291.69,-515 291.69,-545 368.89,-545 368.89,-515 291.69,-515"/>
 <text xml:space="preserve" text-anchor="start" x="301" y="-532" font-family="sans-serif" font-size="10.00">«value object»</text>
@@ -151,10 +164,10 @@
 <!-- #/boundedcontexts/accounts/aggregates/account/entities/account&#45;&gt;#/boundedcontexts/accounts/aggregates/account/valueobjects/overdraft_limit -->
 <g id="edge10" class="edge">
 <title>#/boundedcontexts/accounts/aggregates/account/entities/account&#45;&gt;#/boundedcontexts/accounts/aggregates/account/valueobjects/overdraft_limit</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M161.62,-431.57C191.36,-448.14 226.33,-467.3 258.31,-484 265.93,-487.98 274.07,-492.11 282.01,-496.07"/>
-<polygon fill="black" stroke="black" points="290.83,-500.44 279.87,-500.03 287.44,-498.76 281.87,-496 281.87,-496 281.87,-496 287.44,-498.76 283.86,-491.96 290.83,-500.44"/>
-<text xml:space="preserve" text-anchor="middle" x="210.05" y="-477.27" font-family="sans-serif" font-size="10.00">overdraft</text>
-<text xml:space="preserve" text-anchor="middle" x="276.92" y="-497.62" font-family="sans-serif" font-size="10.00">1</text>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M161.39,-424.82C190.95,-443.96 225.85,-465.75 258.31,-484 265.8,-488.21 273.88,-492.46 281.8,-496.47"/>
+<polygon fill="black" stroke="black" points="290.6,-500.86 279.64,-500.42 287.22,-499.17 281.65,-496.39 281.65,-496.39 281.65,-496.39 287.22,-499.17 283.66,-492.37 290.6,-500.86"/>
+<text xml:space="preserve" text-anchor="middle" x="210.05" y="-476.23" font-family="sans-serif" font-size="10.00">overdraft</text>
+<text xml:space="preserve" text-anchor="middle" x="276.7" y="-498.01" font-family="sans-serif" font-size="10.00">1</text>
 </g>
 <!-- #/boundedcontexts/accounts/aggregates/account/valueobjects/account_status -->
 <g id="node7" class="node">
@@ -172,10 +185,10 @@
 <!-- #/boundedcontexts/accounts/aggregates/account/entities/account&#45;&gt;#/boundedcontexts/accounts/aggregates/account/valueobjects/account_status -->
 <g id="edge11" class="edge">
 <title>#/boundedcontexts/accounts/aggregates/account/entities/account&#45;&gt;#/boundedcontexts/accounts/aggregates/account/valueobjects/account_status</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M160.67,-471.8C188.9,-500.54 223.05,-531.35 258.31,-554 260.13,-555.17 261.99,-556.33 263.89,-557.47"/>
-<polygon fill="black" stroke="black" points="272.54,-562.45 261.62,-561.36 269.26,-560.56 263.87,-557.46 263.87,-557.46 263.87,-557.46 269.26,-560.56 266.11,-553.56 272.54,-562.45"/>
-<text xml:space="preserve" text-anchor="middle" x="210.05" y="-542.6" font-family="sans-serif" font-size="10.00">has&#45;status</text>
-<text xml:space="preserve" text-anchor="middle" x="258.65" y="-558.77" font-family="sans-serif" font-size="10.00">1</text>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M161.77,-469.68C167.71,-476.36 173.75,-482.87 179.79,-489 211.58,-521.28 220.28,-529.37 258.31,-554 260.12,-555.18 261.99,-556.34 263.88,-557.49"/>
+<polygon fill="black" stroke="black" points="272.51,-562.48 261.6,-561.37 269.24,-560.59 263.86,-557.48 263.86,-557.48 263.86,-557.48 269.24,-560.59 266.11,-553.58 272.51,-562.48"/>
+<text xml:space="preserve" text-anchor="middle" x="210.05" y="-543.88" font-family="sans-serif" font-size="10.00">has&#45;status</text>
+<text xml:space="preserve" text-anchor="middle" x="258.63" y="-558.77" font-family="sans-serif" font-size="10.00">1</text>
 </g>
 <!-- #/boundedcontexts/customer_&amp;_kyc/aggregates/customer/entities/customer -->
 <g id="node8" class="node">

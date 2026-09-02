@@ -1,7 +1,7 @@
 
 
 # Accounts
-Current and savings accounts, mandates, overdrafts, status
+Current accounts on the 2019 platform: mandates, overdrafts, holds, status. Savings remain on Sovereign
 
 **Owned by:** Accounts Team
 
@@ -36,8 +36,8 @@ The documented account API for channels, cards and lending
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
 | AccountRef | - | **accountId**: `string` | AccountFrozen, AccountClosed, FreezeAccount, GetAvailableBalance |
-| AccountOpened | What reporting and the ledger learn about a new account | **accountId**: `string`, iban: `IBAN`, customerId: `string`, productCode: `'current' | 'savings'` | AccountOpened |
-| OpenAccount | - | customerId: `string`, productCode: `'current' | 'savings'` | OpenAccount |
+| AccountOpened | What reporting and the ledger learn about a new account | **accountId**: `string`, iban: `IBAN`, customerId: `string`, productCode: `'current'` | AccountOpened |
+| OpenAccount | - | customerId: `string`, productCode: `'current'` | OpenAccount |
 
 
 ## Policies
@@ -47,6 +47,7 @@ The documented account API for channels, cards and lending
 | --- | --- | --- | --- |
 | Update balance on posting | Every posting to an account recomputes its available balance | EntryPosted | UpdateBalance |
 | Freeze on fraud case | An opened case freezes the account the same second | FraudCaseOpened | FreezeAccount |
+| Hold on card authorisation | Every approved authorisation places a hold on its account the same second, so the available balance is what the merchant has not yet captured | CardAuthorised | PlaceHold |
 
 
 ## Context Relationships
@@ -55,6 +56,8 @@ The documented account API for channels, cards and lending
 | Customer & KYC | upstream-downstream | Accounts | published-language | conformist |
 | Fraud | upstream-downstream | Accounts | published-language | anti-corruption-layer |
 | Accounts | upstream-downstream | Cards | open-host-service | anti-corruption-layer |
+| Cards | upstream-downstream | Accounts | published-language | anti-corruption-layer |
+| Accounts | upstream-downstream | Payments Hub | open-host-service | anti-corruption-layer |
 | Accounts | upstream-downstream | Branch & Contact Centre | open-host-service | conformist |
 | Accounts | upstream-downstream | Regulatory Reporting | published-language | conformist |
 | Accounts | shared-kernel | Ledger | - | - |
@@ -67,6 +70,7 @@ The documented account API for channels, cards and lending
 ## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
+| [PaymentInstruction](../payments_hub/aggregates/payment_instruction/index.md) | anti-corruption-layer | AccountServicing | GetAvailableBalance | open-host-service |
 | [Card](../cards/aggregates/card/index.md) | anti-corruption-layer | AccountServicing | GetAvailableBalance | open-host-service |
 | [ServiceRequest](../branch_&_contact_centre/aggregates/service_request/index.md) | conformist | AccountServicing | GetAvailableBalance | open-host-service |
 | [RegulatoryReturn](../regulatory_reporting/aggregates/regulatory_return/index.md) | conformist | Account | AccountOpened | published-language |
@@ -77,6 +81,7 @@ The documented account API for channels, cards and lending
 | [Account](aggregates/account/index.md) | anti-corruption-layer | FraudCase | FraudCaseOpened | published-language |
 | [FraudCase](../fraud/aggregates/fraud_case/index.md) | anti-corruption-layer | Card | CardAuthorised | published-language |
 | [Card](../cards/aggregates/card/index.md) | anti-corruption-layer | TransactionScorer | ScoreTransaction | open-host-service |
-| [Card](../cards/aggregates/card/index.md) | anti-corruption-layer | FraudCase | TransactionFlagged | published-language |
+| [Card](../cards/aggregates/card/index.md) | anti-corruption-layer | TransactionScorer | TransactionFlagged | published-language |
+| [Account](aggregates/account/index.md) | anti-corruption-layer | Card | CardAuthorised | published-language |
 
 

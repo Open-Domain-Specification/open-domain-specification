@@ -53,6 +53,7 @@ One report code for one period and its lines
 | Cards | upstream-downstream (implied) | Fraud | published-language | anti-corruption-layer |
 | Accounts | upstream-downstream (implied) | Cards | open-host-service | anti-corruption-layer |
 | Fraud | upstream-downstream (implied) | Cards | open-host-service, published-language | anti-corruption-layer |
+| Cards | upstream-downstream (implied) | Accounts | published-language | anti-corruption-layer |
 | Ledger | upstream-downstream (implied) | Lending | open-host-service | anti-corruption-layer |
 
 
@@ -69,7 +70,8 @@ One report code for one period and its lines
 | [FraudCase](../fraud/aggregates/fraud_case/index.md) | anti-corruption-layer | Card | CardAuthorised | published-language |
 | [Card](../cards/aggregates/card/index.md) | anti-corruption-layer | AccountServicing | GetAvailableBalance | open-host-service |
 | [Card](../cards/aggregates/card/index.md) | anti-corruption-layer | TransactionScorer | ScoreTransaction | open-host-service |
-| [Card](../cards/aggregates/card/index.md) | anti-corruption-layer | FraudCase | TransactionFlagged | published-language |
+| [Card](../cards/aggregates/card/index.md) | anti-corruption-layer | TransactionScorer | TransactionFlagged | published-language |
+| [Account](../accounts/aggregates/account/index.md) | anti-corruption-layer | Card | CardAuthorised | published-language |
 | [RegulatoryReturn](aggregates/regulatory_return/index.md) | conformist | Loan | LoanDisbursed | published-language |
 | [Loan](../lending/aggregates/loan/index.md) | anti-corruption-layer | JournalEntry | PostEntry | open-host-service |
 | [RegulatoryReturn](aggregates/regulatory_return/index.md) | anti-corruption-layer | SavingsAccountRecord | NightlyBatchCompleted | published-language |

@@ -26,7 +26,7 @@ The journey of one approved order to its owner. Attempts live inside it because 
 ## Services
 
 ### [DispatchPlanner](services/dispatch_planner/index.md)
-Chooses ship dates across pending shipments so pets of one category travel together
+Chooses ship dates across planned shipments so orders approved on the same day leave together; it only needs orderIds and dates, which is all OrderApproved gives it
 
 
 

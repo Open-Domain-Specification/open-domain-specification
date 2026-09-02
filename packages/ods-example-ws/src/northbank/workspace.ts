@@ -187,8 +187,11 @@ const sanctionsBC = sanctionsSD.addBoundedcontext("Sanctions Screening", {
 	description: "Names against lists, with a match score",
 	team: financialCrimeTeam,
 });
+// The new platform holds current accounts; savings are still on Sovereign
+// (below, in the same subdomain) until the hollowing-out moves them across.
 const accountsBC = accountsSD.addBoundedcontext("Accounts", {
-	description: "Current and savings accounts, mandates, overdrafts, status",
+	description:
+		"Current accounts on the 2019 platform: mandates, overdrafts, holds, status. Savings remain on Sovereign",
 	team: accountsTeam,
 });
 const ledgerBC = ledgerSD.addBoundedcontext("Ledger", {
@@ -292,11 +295,14 @@ customer.uses(dateOfBirthVO, "born-on", "1");
 customer.uses(addressVO, "lives-at", "1");
 customer.uses(kycStatusVO, "has-status", "1");
 
+// Constrains the Customer, not the date: a date of birth is not itself adult
+// or not; the rule is about the person on the day they are onboarded.
 customerAgg
 	.addInvariant("AdultOnly", {
-		description: "A customer is eighteen or over; no exceptions",
+		description:
+			"A customer is eighteen or over on the day onboarding starts, computed from the date of birth; no exceptions",
 	})
-	.constrains(dateOfBirthVO);
+	.constrains(customer);
 customerAgg
 	.addInvariant("VerifiedNeedsDocument", {
 		description:
@@ -550,7 +556,8 @@ const accountAgg = accountsBC.addAggregate("Account", {
 		"One product with its mandates, limit and status; the rules about balance and status are checked here",
 });
 const account = accountAgg.addRootEntity("Account", {
-	description: "A current or savings account",
+	description:
+		"A current account on the new platform. Savings accounts are Sovereign rows until they are migrated",
 });
 const mandate = accountAgg.addEntity("Mandate", {
 	description:
@@ -569,8 +576,7 @@ accountNumberVO.addAttribute("sortCode", { type: "string" });
 accountNumberVO.addAttribute("number", { type: "string" });
 const accountMoney = money(accountAgg);
 const overdraftVO = accountAgg.addValueObject("OverdraftLimit", {
-	description:
-		"How far below zero the available balance may go; zero for savings",
+	description: "How far below zero the available balance may go",
 });
 overdraftVO.addAttribute("limit", { type: "Money", valueobject: accountMoney });
 const accountStatusVO = accountAgg.addValueObject("AccountStatus", {
@@ -578,11 +584,26 @@ const accountStatusVO = accountAgg.addValueObject("AccountStatus", {
 });
 accountStatusVO.addAttribute("value", { type: "'open' | 'frozen' | 'closed'" });
 account.addAttribute("accountId", { type: "string", identity: true });
-account.addAttribute("productCode", { type: "'current' | 'savings'" });
+account.addAttribute("productCode", {
+	type: "'current'",
+	description:
+		"Only current accounts live here; savings stay on Sovereign until the hollowing-out moves them",
+});
 account.addAttribute("iban", { type: "IBAN", valueobject: ibanVO });
 account.addAttribute("accountNumber", {
 	type: "AccountNumber",
 	valueobject: accountNumberVO,
+});
+account.addAttribute("postedBalance", {
+	type: "Money",
+	valueobject: accountMoney,
+	description: "What the ledger has posted to this account",
+});
+const pendingAuthorisations = account.addAttribute("pendingAuthorisations", {
+	type: "Money",
+	valueobject: accountMoney,
+	description:
+		"Card authorisations approved but not yet captured; a hold placed on CardAuthorised and released when the capture posts",
 });
 const availableBalance = account.addAttribute("availableBalance", {
 	type: "Money",
@@ -616,6 +637,12 @@ accountAgg
 	})
 	.constrains(availableBalance, overdraftVO);
 accountAgg
+	.addInvariant("AvailableIsPostedLessHolds", {
+		description:
+			"Available balance equals posted balance less pending authorisations, always; the three are updated as one",
+	})
+	.constrains(availableBalance, pendingAuthorisations);
+accountAgg
 	.addInvariant("FrozenAcceptsNoDebits", {
 		description:
 			"A frozen account accepts no debits until Financial Crime unfreezes it",
@@ -643,14 +670,10 @@ accountOpenedSchema.addAttribute("accountId", {
 });
 accountOpenedSchema.addAttribute("iban", { type: "IBAN", valueobject: ibanVO });
 accountOpenedSchema.addAttribute("customerId", { type: "string" });
-accountOpenedSchema.addAttribute("productCode", {
-	type: "'current' | 'savings'",
-});
+accountOpenedSchema.addAttribute("productCode", { type: "'current'" });
 const openAccountSchema = accountsBC.addSchema("OpenAccount");
 openAccountSchema.addAttribute("customerId", { type: "string" });
-openAccountSchema.addAttribute("productCode", {
-	type: "'current' | 'savings'",
-});
+openAccountSchema.addAttribute("productCode", { type: "'current'" });
 
 const accountOpened = accountAgg.provides("AccountOpened", {
 	description: "A product exists for a verified customer",
@@ -686,7 +709,14 @@ accountAgg
 	})
 	.raises(accountClosed);
 const updateBalance = accountAgg.provides("UpdateBalance", {
-	description: "Recompute the available balance from a ledger posting",
+	description:
+		"Recompute posted and available balances from a ledger posting, releasing the hold the posting captures",
+	type: "operation",
+	internal: true,
+});
+const placeHold = accountAgg.provides("PlaceHold", {
+	description:
+		"Add an approved card authorisation to pending authorisations, so the available balance drops before the capture posts",
 	type: "operation",
 	internal: true,
 });
@@ -742,9 +772,34 @@ const entry = entryAgg.addRootEntity("JournalEntry", {
 	description: "One balanced movement of money",
 });
 const posting = entryAgg.addEntity("Posting", {
-	description: "A debit or credit of an amount to one account",
+	description: "A debit or credit of an amount to one ledger account",
 });
 const ledgerMoney = money(entryAgg);
+// The shared kernel's second type, declared here as the ledger's own value
+// object: the same library as Accounts' AccountNumber.
+const ledgerAccountNumberVO = entryAgg.addValueObject("AccountNumber", {
+	description:
+		"Sort code and eight-digit number; the shared kernel library, so it is the same value Accounts holds",
+});
+ledgerAccountNumberVO.addAttribute("sortCode", { type: "string" });
+ledgerAccountNumberVO.addAttribute("number", { type: "string" });
+// A posting goes to a ledger account, not to an Accounts product: a customer's
+// account number or a nominal such as the loan book or scheme suspense.
+// Otherwise a disbursement (debit loan book, credit customer) could not balance.
+const ledgerAccountVO = entryAgg.addValueObject("LedgerAccount", {
+	description:
+		"Where a posting lands: a customer account by its AccountNumber, or a nominal from the chart of accounts (loan book, scheme suspense, fee income)",
+});
+ledgerAccountVO.addAttribute("kind", { type: "'customer' | 'nominal'" });
+ledgerAccountVO.addAttribute("accountNumber", {
+	type: "AccountNumber",
+	valueobject: ledgerAccountNumberVO,
+	description: "Set when kind is customer",
+});
+ledgerAccountVO.addAttribute("nominalCode", {
+	type: "string",
+	description: "Set when kind is nominal, e.g. LOAN-BOOK, SCHEME-SUSPENSE",
+});
 const directionVO = entryAgg.addValueObject("PostingDirection", {
 	description: "debit or credit",
 });
@@ -761,7 +816,10 @@ entry.addAttribute("reversalOf", {
 	description: "The entry this one reverses, if any",
 });
 posting.addAttribute("postingId", { type: "string", identity: true });
-posting.addAttribute("accountId", { type: "string" });
+posting.addAttribute("ledgerAccount", {
+	type: "LedgerAccount",
+	valueobject: ledgerAccountVO,
+});
 posting.addAttribute("amount", { type: "Money", valueobject: ledgerMoney });
 posting.addAttribute("direction", {
 	type: "PostingDirection",
@@ -771,7 +829,7 @@ entry.includes(posting, "made-of", "1..*");
 entry.uses(valueDateVO, "valued-on", "1");
 posting.uses(ledgerMoney, "of", "1");
 posting.uses(directionVO, "as", "1");
-posting.references(account, "to-account", "1");
+posting.uses(ledgerAccountVO, "to", "1");
 
 entryAgg
 	.addInvariant("EntryBalances", {
@@ -800,7 +858,7 @@ const postEntrySchema = ledgerBC.addSchema("PostEntry", {
 	description: "The postings a caller wants made, as one balanced entry",
 });
 postEntrySchema.addAttribute("postings", {
-	type: "{accountId, amount, direction}[]",
+	type: "{ledgerAccount, amount, direction}[]",
 });
 postEntrySchema.addAttribute("valueDate", {
 	type: "ValueDate",
@@ -809,7 +867,7 @@ postEntrySchema.addAttribute("valueDate", {
 const entryPostedSchema = ledgerBC.addSchema("EntryPosted");
 entryPostedSchema.addAttribute("entryId", { type: "string", identity: true });
 entryPostedSchema.addAttribute("postings", {
-	type: "{accountId, amount, direction}[]",
+	type: "{ledgerAccount, amount, direction}[]",
 });
 
 const entryPosted = entryAgg.provides("EntryPosted", {
@@ -843,7 +901,20 @@ const importBatch = entryAgg
 	.raises(entryPosted);
 
 ledgerBC.addTerm("Posting", {
-	definition: "One side of a movement: a debit or credit to one account",
+	definition: "One side of a movement: a debit or credit to one ledger account",
+	embodiedBy: posting,
+});
+// "Account" means something different here from the Accounts platform's product.
+ledgerBC.addTerm("Account", {
+	definition:
+		"A ledger account: a customer's account number or a nominal such as the loan book or scheme suspense. Not the Accounts platform's product, which is one kind of it",
+	aliases: ["Ledger account", "Nominal"],
+	embodiedBy: ledgerAccountVO,
+});
+ledgerBC.addTerm("Posted balance", {
+	definition:
+		"The sum of postings to an account. What the ledger means by balance; Accounts subtracts holds from it to get the available one",
+	aliases: ["Balance"],
 	embodiedBy: posting,
 });
 ledgerBC.addTerm("Entry", {
@@ -922,10 +993,19 @@ instructionAgg
 		description: "The amount is greater than zero",
 	})
 	.constrains(paymentAmount);
+// A rule across instructions, not inside one: the hub checks it when it
+// creates the instruction, over the account's instructions for the day.
 instructionAgg
 	.addInvariant("DailyLimit", {
 		description:
-			"Instructions from one account never exceed the daily limit in total",
+			"Instructions from one account never exceed the daily limit in total; checked at initiation over the day's instructions for the payer account, since no single instruction can know the others",
+	})
+	.constrains(paymentAmount);
+// DISCOVERY: Payments Hub lead. "The account has to cover it."
+instructionAgg
+	.addInvariant("FundsAvailableAtInitiation", {
+		description:
+			"An instruction is created only if the payer's available balance, read through AccountServicing, covers the amount; the overdraft itself is Accounts' rule at posting",
 	})
 	.constrains(paymentAmount);
 instructionAgg
@@ -996,12 +1076,18 @@ const paymentRejected = instructionAgg.provides("PaymentRejected", {
 });
 instructionAgg
 	.provides("InitiatePayment", {
-		description: "Create an instruction from a channel",
+		description:
+			"Create an instruction from a channel, once AccountServicing confirms the available balance covers it and the daily limit holds",
 		type: "operation",
 		pattern: "open-host-service",
 		schema: initiatePaymentSchema,
 	})
 	.raises(paymentInitiated);
+// The funds check is a read of Accounts' documented API, translated: the hub
+// keeps its own notion of "covered" rather than Accounts' balance model.
+instructionAgg.consumes(getAvailableBalance, {
+	pattern: "anti-corruption-layer",
+});
 const submitPayment = instructionAgg
 	.provides("SubmitPayment", {
 		description: "Mark cleared and hand to the gateway",
@@ -1034,6 +1120,12 @@ paymentsBC.addTerm("Payee", {
 	definition: "Who gets paid: a name and an IBAN",
 	aliases: ["Beneficiary"],
 	embodiedBy: payeeVO,
+});
+// The hub's own word for the customer: the same record Customer & KYC verifies.
+paymentsBC.addTerm("Party", {
+	definition:
+		"Either side of an instruction, payer or payee. The payer is a Customer & KYC customer; the payee may be anyone with an IBAN",
+	embodiedBy: instruction,
 });
 paymentsBC.addTerm("Settlement", {
 	definition: "The scheme's confirmation that the money moved",
@@ -1210,13 +1302,20 @@ const fraudCaseSchema = fraudBC.addSchema("FraudCaseOpened");
 fraudCaseSchema.addAttribute("caseId", { type: "string", identity: true });
 fraudCaseSchema.addAttribute("accountId", { type: "string" });
 
-const transactionFlagged = fraudCaseAgg.provides("TransactionFlagged", {
+// The verdicts belong to the scorer, not the case: a cleared transaction
+// opens no case, so the FraudCase aggregate cannot be what raises it.
+const transactionScorer = fraudBC.addService("TransactionScorer", {
+	description:
+		"The bank's own model; a domain service because it reads across every customer's history",
+	type: "domain",
+});
+const transactionFlagged = transactionScorer.provides("TransactionFlagged", {
 	description: "Above threshold; the caller stops the transaction",
 	type: "event",
 	pattern: "published-language",
 	schema: transactionVerdictSchema,
 });
-const transactionCleared = fraudCaseAgg.provides("TransactionCleared", {
+const transactionCleared = transactionScorer.provides("TransactionCleared", {
 	description: "Below threshold; the caller proceeds",
 	type: "event",
 	pattern: "published-language",
@@ -1241,11 +1340,6 @@ fraudCaseAgg.provides("CloseCase", {
 	internal: true,
 });
 
-const transactionScorer = fraudBC.addService("TransactionScorer", {
-	description:
-		"The bank's own model; a domain service because it reads across every customer's history",
-	type: "domain",
-});
 const scoreTransaction = transactionScorer
 	.provides("ScoreTransaction", {
 		description: "Score synchronously; callers wait on the verdict",
@@ -1364,9 +1458,12 @@ card.uses(cardStatusVO, "has-status", "1");
 cardAuthorisation.uses(cardMoney, "of", "1");
 card.references(account, "on-account", "1");
 
+// A construction rule: the stored value is a token and four digits, on which
+// Luhn cannot be run, so the check happens once, before tokenisation.
 cardAgg
 	.addInvariant("PanLuhnValid", {
-		description: "The full card number passes the Luhn check",
+		description:
+			"A PAN value is only ever created from a full number that passed the Luhn check; the token and last four are never re-checked because they cannot be",
 	})
 	.constrains(panVO);
 cardAgg
@@ -1379,10 +1476,12 @@ cardAgg
 		description: "Past expiry, nothing authorises",
 	})
 	.constrains(expiryVO, cardAuthorisation);
+// The balance lives in Accounts, so this is a check at authorisation time
+// through the ACL (GetAvailableBalance), not a rule Cards can hold on its own.
 cardAgg
 	.addInvariant("AuthWithinAvailableBalance", {
 		description:
-			"An authorisation never exceeds the account's available balance",
+			"An authorisation is approved only if the available balance read from AccountServicing at that moment covers it; Accounts then holds the amount",
 	})
 	.constrains(cardAuthorisation);
 
@@ -1400,12 +1499,24 @@ const cardEventSchema = cardsBC.addSchema("CardEvent", {
 });
 cardEventSchema.addAttribute("cardId", { type: "string", identity: true });
 cardEventSchema.addAttribute("accountId", { type: "string" });
+const cardAuthorisedSchema = cardsBC.addSchema("CardAuthorised", {
+	description:
+		"Card, account and the authorised amount; Accounts needs the amount to place the hold",
+});
+cardAuthorisedSchema.addAttribute("cardId", { type: "string", identity: true });
+cardAuthorisedSchema.addAttribute("accountId", { type: "string" });
+cardAuthorisedSchema.addAttribute("authorisationId", { type: "string" });
+cardAuthorisedSchema.addAttribute("amount", {
+	type: "Money",
+	valueobject: cardMoney,
+});
 
 const cardAuthorised = cardAgg.provides("CardAuthorised", {
-	description: "A merchant's request was approved",
+	description:
+		"A merchant's request was approved; Accounts holds the amount and Fraud monitors",
 	type: "event",
 	pattern: "published-language",
-	schema: cardEventSchema,
+	schema: cardAuthorisedSchema,
 });
 const cardBlocked = cardAgg.provides("CardBlocked", {
 	description: "The card authorises nothing until unblocked",
@@ -1446,6 +1557,16 @@ cardsBC
 	.on(transactionFlagged)
 	.then(blockCard);
 fraudCaseAgg.consumes(cardAuthorised, { pattern: "anti-corruption-layer" });
+// DISCOVERY: Accounts Team lead. "Our balance is ledger balance less pending
+// card authorisations": Accounts must hear every authorisation to hold it.
+accountAgg.consumes(cardAuthorised, { pattern: "anti-corruption-layer" });
+accountsBC
+	.addPolicy("Hold on card authorisation", {
+		description:
+			"Every approved authorisation places a hold on its account the same second, so the available balance is what the merchant has not yet captured",
+	})
+	.on(cardAuthorised)
+	.then(placeHold);
 
 cardsBC.addTerm("PAN", {
 	definition: "The card number; held as a token and the last four digits",
@@ -1498,9 +1619,12 @@ application.uses(applicationMoney, "requests", "1");
 application.uses(termVO, "over", "1");
 application.uses(decisionVO, "decided", "0..1");
 application.references(customer, "made-by", "1");
+// A rule across applications, so it is checked when SubmitApplication runs,
+// over the customer's applications; one instance cannot see the others.
 applicationAgg
 	.addInvariant("OneOpenApplicationPerCustomer", {
-		description: "A customer has at most one open application",
+		description:
+			"A customer has at most one open application; SubmitApplication refuses a second while one is open",
 	})
 	.constrains(application);
 
@@ -1716,7 +1840,8 @@ lendingBC.addTerm("Drawdown", {
 	embodiedBy: disburse,
 });
 lendingBC.addTerm("Arrears", {
-	definition: "At least one installment missed",
+	definition:
+		"At least one installment missed; the regulatory notice follows (IssueArrearsNotice). Notice intervals and forbearance are servicing detail left out (DISCOVERY section 8)",
 	embodiedBy: loanStatusVO,
 });
 
@@ -1876,11 +2001,14 @@ regReturn.includes(reportLine, "made-of", "1..*");
 regReturn.uses(periodVO, "for-period", "1");
 reportLine.uses(reportMoney, "of", "1");
 
+// The ledger is another context, so this is a precondition of filing: a
+// reconciliation run before FileReturn, not a rule one line can hold alone.
 returnAgg
 	.addInvariant("LinesReconcileToLedger", {
-		description: "Every line reconciles to ledger postings for the period",
+		description:
+			"A return is filed only when every line has been reconciled to the ledger postings for its period; FileReturn refuses an unreconciled line",
 	})
-	.constrains(reportLine);
+	.constrains(reportLine, regReturn);
 returnAgg
 	.addInvariant("PeriodClosedBeforeFiling", {
 		description: "A return is filed only for a closed period",
@@ -2015,6 +2143,19 @@ channelsBC
 channelsBC.addTerm("Request", {
 	definition: "One customer ask tracked to an outcome",
 	aliases: ["Ticket"],
+	embodiedBy: requestAgg,
+});
+// The branches' own words, defined where they are spoken rather than only
+// as aliases on another context's terms.
+channelsBC.addTerm("Member", {
+	definition:
+		"What branch staff call a customer, from the mutual days. The same record as Customer & KYC's Customer, read through GetCustomer",
+	aliases: ["Customer"],
+	embodiedBy: request.attributes.get("customerId")!,
+});
+channelsBC.addTerm("Balance", {
+	definition:
+		"What the screen shows: the available balance as returned by GetAvailableBalance at the moment of the call, never recomputed here",
 	embodiedBy: requestAgg,
 });
 channelsBC.addTerm("Returned payment", {
@@ -2153,6 +2294,17 @@ paymentsBC.downstreamOf(schemeBC, {
 cardsBC.downstreamOf(accountsBC, {
 	upstreamRoles: ["open-host-service"],
 	downstreamRoles: ["anti-corruption-layer"],
+	description: "The balance check at authorisation time",
+});
+accountsBC.downstreamOf(cardsBC, {
+	upstreamRoles: ["published-language"],
+	downstreamRoles: ["anti-corruption-layer"],
+	description: "Every authorisation becomes a hold on the account",
+});
+paymentsBC.downstreamOf(accountsBC, {
+	upstreamRoles: ["open-host-service"],
+	downstreamRoles: ["anti-corruption-layer"],
+	description: "The funds check before an instruction exists",
 });
 channelsBC.downstreamOf(accountsBC, {
 	upstreamRoles: ["open-host-service"],

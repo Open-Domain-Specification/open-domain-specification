@@ -350,36 +350,49 @@
 <!-- #/boundedcontexts/accounts/aggregates/account/entities/account -->
 <g id="node16" class="node">
 <title>#/boundedcontexts/accounts/aggregates/account/entities/account</title>
-<g id="a_node16"><a xlink:title="A current or savings account">
-<polygon fill="white" stroke="none" points="390.74,-691 244.95,-691 244.95,-529 390.74,-529 390.74,-691"/>
-<polygon fill="none" stroke="black" points="244.95,-661 244.95,-691 390.74,-691 390.74,-661 244.95,-661"/>
-<text xml:space="preserve" text-anchor="start" x="292.16" y="-678" font-family="sans-serif" font-size="10.00">«root entity»</text>
-<text xml:space="preserve" text-anchor="start" x="300.07" y="-668" font-family="sans-serif" font-weight="bold" font-size="10.00">Account</text>
+<g id="a_node16"><a xlink:title="A current account on the new platform. Savings accounts are Sovereign rows until they are migrated">
+<polygon fill="white" stroke="none" points="390.74,-713 244.95,-713 244.95,-507 390.74,-507 390.74,-713"/>
+<polygon fill="none" stroke="black" points="244.95,-683 244.95,-713 390.74,-713 390.74,-683 244.95,-683"/>
+<text xml:space="preserve" text-anchor="start" x="292.16" y="-700" font-family="sans-serif" font-size="10.00">«root entity»</text>
+<text xml:space="preserve" text-anchor="start" x="300.07" y="-690" font-family="sans-serif" font-weight="bold" font-size="10.00">Account</text>
+<polygon fill="none" stroke="black" points="244.95,-661 244.95,-683 390.74,-683 390.74,-661 244.95,-661"/>
+<text xml:space="preserve" text-anchor="start" x="249.95" y="-669" font-family="sans-serif" font-size="10.00">{id} accountId: string</text>
+<g id="a_node16_60"><a xlink:title="Only current accounts live here; savings stay on Sovereign until the hollowing&#45;out moves them">
 <polygon fill="none" stroke="black" points="244.95,-639 244.95,-661 390.74,-661 390.74,-639 244.95,-639"/>
-<text xml:space="preserve" text-anchor="start" x="249.95" y="-647" font-family="sans-serif" font-size="10.00">{id} accountId: string</text>
-<polygon fill="none" stroke="black" points="244.95,-617 244.95,-639 390.74,-639 390.74,-617 244.95,-617"/>
-<text xml:space="preserve" text-anchor="start" x="249.95" y="-625" font-family="sans-serif" font-size="10.00">productCode: &#39;current&#39; | &#39;savings&#39;</text>
-<polygon fill="none" stroke="black" points="244.95,-595 244.95,-617 390.74,-617 390.74,-595 244.95,-595"/>
-<text xml:space="preserve" text-anchor="start" x="249.95" y="-603" font-family="sans-serif" font-size="10.00">iban: IBAN</text>
-<polygon fill="none" stroke="black" points="244.95,-573 244.95,-595 390.74,-595 390.74,-573 244.95,-573"/>
-<text xml:space="preserve" text-anchor="start" x="249.95" y="-581" font-family="sans-serif" font-size="10.00">accountNumber: AccountNumber</text>
-<g id="a_node16_14"><a xlink:title="Posted balance less pending card authorisations">
-<polygon fill="none" stroke="black" points="244.95,-551 244.95,-573 390.74,-573 390.74,-551 244.95,-551"/>
-<text xml:space="preserve" text-anchor="start" x="249.95" y="-559" font-family="sans-serif" font-size="10.00">availableBalance: Money</text>
+<text xml:space="preserve" text-anchor="start" x="249.95" y="-647" font-family="sans-serif" font-size="10.00">productCode: &#39;current&#39;</text>
 </a>
 </g>
+<polygon fill="none" stroke="black" points="244.95,-617 244.95,-639 390.74,-639 390.74,-617 244.95,-617"/>
+<text xml:space="preserve" text-anchor="start" x="249.95" y="-625" font-family="sans-serif" font-size="10.00">iban: IBAN</text>
+<polygon fill="none" stroke="black" points="244.95,-595 244.95,-617 390.74,-617 390.74,-595 244.95,-595"/>
+<text xml:space="preserve" text-anchor="start" x="249.95" y="-603" font-family="sans-serif" font-size="10.00">accountNumber: AccountNumber</text>
+<g id="a_node16_61"><a xlink:title="What the ledger has posted to this account">
+<polygon fill="none" stroke="black" points="244.95,-573 244.95,-595 390.74,-595 390.74,-573 244.95,-573"/>
+<text xml:space="preserve" text-anchor="start" x="249.95" y="-581" font-family="sans-serif" font-size="10.00">postedBalance: Money</text>
+</a>
+</g>
+<g id="a_node16_62"><a xlink:title="Card authorisations approved but not yet captured; a hold placed on CardAuthorised and released when the capture posts">
+<polygon fill="none" stroke="black" points="244.95,-551 244.95,-573 390.74,-573 390.74,-551 244.95,-551"/>
+<text xml:space="preserve" text-anchor="start" x="249.95" y="-559" font-family="sans-serif" font-size="10.00">pendingAuthorisations: Money</text>
+</a>
+</g>
+<g id="a_node16_63"><a xlink:title="Posted balance less pending card authorisations">
 <polygon fill="none" stroke="black" points="244.95,-529 244.95,-551 390.74,-551 390.74,-529 244.95,-529"/>
-<text xml:space="preserve" text-anchor="start" x="249.95" y="-537" font-family="sans-serif" font-size="10.00">status: AccountStatus</text>
+<text xml:space="preserve" text-anchor="start" x="249.95" y="-537" font-family="sans-serif" font-size="10.00">availableBalance: Money</text>
+</a>
+</g>
+<polygon fill="none" stroke="black" points="244.95,-507 244.95,-529 390.74,-529 390.74,-507 244.95,-507"/>
+<text xml:space="preserve" text-anchor="start" x="249.95" y="-515" font-family="sans-serif" font-size="10.00">status: AccountStatus</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/lending/aggregates/loan/entities/loan&#45;&gt;#/boundedcontexts/accounts/aggregates/account/entities/account -->
 <g id="edge16" class="edge">
 <title>#/boundedcontexts/lending/aggregates/loan/entities/loan&#45;&gt;#/boundedcontexts/accounts/aggregates/account/entities/account</title>
-<path fill="none" stroke="black" d="M106.73,-851.14C143.21,-809.27 195.8,-748.91 239.24,-699.06"/>
-<polygon fill="black" stroke="black" points="245.61,-691.75 242.43,-702.25 243.12,-694.61 239.04,-699.29 239.04,-699.29 239.04,-699.29 243.12,-694.61 235.65,-696.34 245.61,-691.75"/>
+<path fill="none" stroke="black" d="M106.73,-851.14C142.87,-809.66 194.83,-750.03 238.04,-700.44"/>
+<polygon fill="black" stroke="black" points="244.37,-693.18 241.19,-703.68 241.88,-696.03 237.8,-700.72 237.8,-700.72 237.8,-700.72 241.88,-696.03 234.4,-697.76 244.37,-693.18"/>
 <text xml:space="preserve" text-anchor="middle" x="150.36" y="-826.69" font-family="sans-serif" font-size="10.00">disbursed&#45;to</text>
-<text xml:space="preserve" text-anchor="middle" x="242.26" y="-702.25" font-family="sans-serif" font-size="10.00">1</text>
+<text xml:space="preserve" text-anchor="middle" x="241.02" y="-703.68" font-family="sans-serif" font-size="10.00">1</text>
 </g>
 <!-- #/boundedcontexts/lending/aggregates/loan/entities/installment -->
 <g id="node12" class="node">
@@ -432,8 +445,8 @@
 <!-- #/boundedcontexts/accounts/aggregates/account/entities/account&#45;&gt;#/boundedcontexts/accounts/aggregates/account/entities/mandate -->
 <g id="edge17" class="edge">
 <title>#/boundedcontexts/accounts/aggregates/account/entities/account&#45;&gt;#/boundedcontexts/accounts/aggregates/account/entities/mandate</title>
-<path fill="none" stroke="black" d="M397.04,-519.72C434.56,-480.12 481.83,-435.19 530.32,-402 534.89,-398.87 539.7,-395.78 544.6,-392.78"/>
-<polygon fill="black" stroke="black" points="397.04,-519.73 395.85,-526.84 388.83,-528.48 390.02,-521.37 397.04,-519.73"/>
+<path fill="none" stroke="black" d="M399.34,-517.31C436.47,-478.3 482.81,-434.52 530.32,-402 534.89,-398.87 539.7,-395.78 544.6,-392.78"/>
+<polygon fill="black" stroke="black" points="399.44,-517.2 398.23,-524.31 391.21,-525.93 392.41,-518.82 399.44,-517.2"/>
 <text xml:space="preserve" text-anchor="middle" x="490.06" y="-460.67" font-family="sans-serif" font-size="10.00">operated&#45;under</text>
 <text xml:space="preserve" text-anchor="middle" x="536.35" y="-402.3" font-family="sans-serif" font-size="10.00">1..*</text>
 </g>
@@ -507,7 +520,7 @@
 <!-- #/boundedcontexts/accounts/aggregates/account/valueobjects/overdraft_limit -->
 <g id="node21" class="node">
 <title>#/boundedcontexts/accounts/aggregates/account/valueobjects/overdraft_limit</title>
-<g id="a_node21"><a xlink:title="How far below zero the available balance may go; zero for savings">
+<g id="a_node21"><a xlink:title="How far below zero the available balance may go">
 <polygon fill="white" stroke="none" points="655,-717 577.8,-717 577.8,-665 655,-665 655,-717"/>
 <polygon fill="none" stroke="black" points="577.8,-687 577.8,-717 655,-717 655,-687 577.8,-687"/>
 <text xml:space="preserve" text-anchor="start" x="587.11" y="-704" font-family="sans-serif" font-size="10.00">«value object»</text>

@@ -7,15 +7,15 @@
 <svg width="2330pt" height="194pt"
  viewBox="0.00 0.00 2330.00 194.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 190.25)">
-<polygon fill="white" stroke="none" points="-4,4 -4,-190.25 2325.58,-190.25 2325.58,4 -4,4"/>
+<polygon fill="white" stroke="none" points="-4,4 -4,-190.25 2326.35,-190.25 2326.35,4 -4,4"/>
 <!-- #/boundedcontexts/payments_hub/policies/submit_to_scheme -->
 <g id="node1" class="node">
 <title>#/boundedcontexts/payments_hub/policies/submit_to_scheme</title>
 <g id="a_node1"><a xlink:title="A submitted instruction goes to the gateway">
-<polygon fill="#e1bee7" stroke="black" points="1120.36,-107.63 1038.7,-107.63 1038.7,-71.63 1126.36,-71.63 1126.36,-101.63 1120.36,-107.63"/>
-<polyline fill="none" stroke="black" points="1120.36,-107.63 1120.36,-101.63"/>
-<polyline fill="none" stroke="black" points="1126.36,-101.63 1120.36,-101.63"/>
-<text xml:space="preserve" text-anchor="middle" x="1082.53" y="-86.63" font-family="sans-serif" font-size="10.00">Submit to scheme</text>
+<polygon fill="#e1bee7" stroke="black" points="1121.12,-107.63 1039.46,-107.63 1039.46,-71.63 1127.12,-71.63 1127.12,-101.63 1121.12,-107.63"/>
+<polyline fill="none" stroke="black" points="1121.12,-107.63 1121.12,-101.63"/>
+<polyline fill="none" stroke="black" points="1127.12,-101.63 1121.12,-101.63"/>
+<text xml:space="preserve" text-anchor="middle" x="1083.29" y="-86.63" font-family="sans-serif" font-size="10.00">Submit to scheme</text>
 </a>
 </g>
 </g>
@@ -23,212 +23,212 @@
 <g id="node3" class="node">
 <title>#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/submit_to_scheme</title>
 <g id="a_node3"><a xlink:title="Send a submission and await the response">
-<polygon fill="#bbdefb" stroke="black" points="1251.66,-107.63 1162.36,-107.63 1162.36,-71.63 1251.66,-71.63 1251.66,-107.63"/>
-<text xml:space="preserve" text-anchor="middle" x="1207.01" y="-92.63" font-family="sans-serif" font-size="10.00">SubmitToScheme</text>
-<text xml:space="preserve" text-anchor="middle" x="1207.01" y="-80.63" font-family="sans-serif" font-size="10.00">(SchemeMessage)</text>
+<polygon fill="#bbdefb" stroke="black" points="1252.43,-107.63 1163.12,-107.63 1163.12,-71.63 1252.43,-71.63 1252.43,-107.63"/>
+<text xml:space="preserve" text-anchor="middle" x="1207.78" y="-92.63" font-family="sans-serif" font-size="10.00">SubmitToScheme</text>
+<text xml:space="preserve" text-anchor="middle" x="1207.78" y="-80.63" font-family="sans-serif" font-size="10.00">(SchemeMessage)</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/payments_hub/policies/submit_to_scheme&#45;&gt;#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/submit_to_scheme -->
 <g id="edge4" class="edge">
 <title>#/boundedcontexts/payments_hub/policies/submit_to_scheme&#45;&gt;#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/submit_to_scheme</title>
-<path fill="none" stroke="black" d="M1126.71,-89.63C1134.48,-89.63 1142.68,-89.63 1150.74,-89.63"/>
-<polygon fill="black" stroke="black" points="1150.46,-93.13 1160.46,-89.63 1150.46,-86.13 1150.46,-93.13"/>
+<path fill="none" stroke="black" d="M1127.48,-89.63C1135.25,-89.63 1143.44,-89.63 1151.5,-89.63"/>
+<polygon fill="black" stroke="black" points="1151.23,-93.13 1161.23,-89.63 1151.23,-86.13 1151.23,-93.13"/>
 </g>
 <!-- #/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_submitted -->
 <g id="node2" class="node">
 <title>#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_submitted</title>
 <g id="a_node2"><a xlink:title="Cleared and ready for the scheme">
-<ellipse fill="#ffe0b2" stroke="black" cx="931.29" cy="-89.63" rx="71.4" ry="22.63"/>
-<text xml:space="preserve" text-anchor="middle" x="931.29" y="-92.63" font-family="sans-serif" font-size="10.00">PaymentSubmitted</text>
-<text xml:space="preserve" text-anchor="middle" x="931.29" y="-80.63" font-family="sans-serif" font-size="10.00">(PaymentInstruction)</text>
+<ellipse fill="#ffe0b2" stroke="black" cx="932.06" cy="-89.63" rx="71.4" ry="22.63"/>
+<text xml:space="preserve" text-anchor="middle" x="932.06" y="-92.63" font-family="sans-serif" font-size="10.00">PaymentSubmitted</text>
+<text xml:space="preserve" text-anchor="middle" x="932.06" y="-80.63" font-family="sans-serif" font-size="10.00">(PaymentInstruction)</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_submitted&#45;&gt;#/boundedcontexts/payments_hub/policies/submit_to_scheme -->
 <g id="edge1" class="edge">
 <title>#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_submitted&#45;&gt;#/boundedcontexts/payments_hub/policies/submit_to_scheme</title>
-<path fill="none" stroke="black" d="M1002.98,-89.63C1010.98,-89.63 1019.05,-89.63 1026.8,-89.63"/>
-<polygon fill="black" stroke="black" points="1026.77,-93.13 1036.77,-89.63 1026.77,-86.13 1026.77,-93.13"/>
+<path fill="none" stroke="black" d="M1003.74,-89.63C1011.75,-89.63 1019.81,-89.63 1027.57,-89.63"/>
+<polygon fill="black" stroke="black" points="1027.54,-93.13 1037.54,-89.63 1027.54,-86.13 1027.54,-93.13"/>
 </g>
 <!-- #/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_settlement_confirmed -->
 <g id="node4" class="node">
 <title>#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_settlement_confirmed</title>
 <g id="a_node4"><a xlink:title="The scheme settled the payment">
-<ellipse fill="#ffe0b2" stroke="black" cx="1382.24" cy="-22.63" rx="94.57" ry="22.63"/>
-<text xml:space="preserve" text-anchor="middle" x="1382.24" y="-25.63" font-family="sans-serif" font-size="10.00">SchemeSettlementConfirmed</text>
-<text xml:space="preserve" text-anchor="middle" x="1382.24" y="-13.63" font-family="sans-serif" font-size="10.00">(SchemeMessage)</text>
+<ellipse fill="#ffe0b2" stroke="black" cx="1383" cy="-22.63" rx="94.57" ry="22.63"/>
+<text xml:space="preserve" text-anchor="middle" x="1383" y="-25.63" font-family="sans-serif" font-size="10.00">SchemeSettlementConfirmed</text>
+<text xml:space="preserve" text-anchor="middle" x="1383" y="-13.63" font-family="sans-serif" font-size="10.00">(SchemeMessage)</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/submit_to_scheme&#45;&gt;#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_settlement_confirmed -->
 <g id="edge2" class="edge">
 <title>#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/submit_to_scheme&#45;&gt;#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_settlement_confirmed</title>
-<path fill="none" stroke="black" d="M1251.72,-72.72C1272.58,-64.66 1297.87,-54.87 1320.55,-46.1"/>
-<polygon fill="black" stroke="black" points="1321.62,-49.44 1329.69,-42.57 1319.1,-42.91 1321.62,-49.44"/>
+<path fill="none" stroke="black" d="M1252.49,-72.72C1273.34,-64.66 1298.63,-54.87 1321.31,-46.1"/>
+<polygon fill="black" stroke="black" points="1322.39,-49.44 1330.45,-42.57 1319.86,-42.91 1322.39,-49.44"/>
 </g>
 <!-- #/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_rejected -->
 <g id="node5" class="node">
 <title>#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_rejected</title>
 <g id="a_node5"><a xlink:title="The scheme refused the message">
-<ellipse fill="#ffe0b2" stroke="black" cx="1382.24" cy="-96.63" rx="63.15" ry="22.63"/>
-<text xml:space="preserve" text-anchor="middle" x="1382.24" y="-99.63" font-family="sans-serif" font-size="10.00">SchemeRejected</text>
-<text xml:space="preserve" text-anchor="middle" x="1382.24" y="-87.63" font-family="sans-serif" font-size="10.00">(SchemeMessage)</text>
+<ellipse fill="#ffe0b2" stroke="black" cx="1383" cy="-96.63" rx="63.15" ry="22.63"/>
+<text xml:space="preserve" text-anchor="middle" x="1383" y="-99.63" font-family="sans-serif" font-size="10.00">SchemeRejected</text>
+<text xml:space="preserve" text-anchor="middle" x="1383" y="-87.63" font-family="sans-serif" font-size="10.00">(SchemeMessage)</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/submit_to_scheme&#45;&gt;#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_rejected -->
 <g id="edge3" class="edge">
 <title>#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/submit_to_scheme&#45;&gt;#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_rejected</title>
-<path fill="none" stroke="black" d="M1251.72,-91.39C1268.74,-92.08 1288.7,-92.89 1307.79,-93.66"/>
-<polygon fill="black" stroke="black" points="1307.57,-97.15 1317.71,-94.06 1307.86,-90.16 1307.57,-97.15"/>
+<path fill="none" stroke="black" d="M1252.49,-91.39C1269.5,-92.08 1289.47,-92.89 1308.56,-93.66"/>
+<polygon fill="black" stroke="black" points="1308.34,-97.15 1318.47,-94.06 1308.62,-90.16 1308.34,-97.15"/>
 </g>
 <!-- #/boundedcontexts/payments_hub/policies/confirm_settlement -->
 <g id="node6" class="node">
 <title>#/boundedcontexts/payments_hub/policies/confirm_settlement</title>
 <g id="a_node6"><a xlink:title="The scheme&#39;s confirmation settles the instruction">
-<polygon fill="#e1bee7" stroke="black" points="1611.67,-40.63 1524.19,-40.63 1524.19,-4.63 1617.67,-4.63 1617.67,-34.63 1611.67,-40.63"/>
-<polyline fill="none" stroke="black" points="1611.67,-40.63 1611.67,-34.63"/>
-<polyline fill="none" stroke="black" points="1617.67,-34.63 1611.67,-34.63"/>
-<text xml:space="preserve" text-anchor="middle" x="1570.93" y="-19.63" font-family="sans-serif" font-size="10.00">Confirm settlement</text>
+<polygon fill="#e1bee7" stroke="black" points="1612.44,-40.63 1524.95,-40.63 1524.95,-4.63 1618.44,-4.63 1618.44,-34.63 1612.44,-40.63"/>
+<polyline fill="none" stroke="black" points="1612.44,-40.63 1612.44,-34.63"/>
+<polyline fill="none" stroke="black" points="1618.44,-34.63 1612.44,-34.63"/>
+<text xml:space="preserve" text-anchor="middle" x="1571.7" y="-19.63" font-family="sans-serif" font-size="10.00">Confirm settlement</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_settlement_confirmed&#45;&gt;#/boundedcontexts/payments_hub/policies/confirm_settlement -->
 <g id="edge5" class="edge">
 <title>#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_settlement_confirmed&#45;&gt;#/boundedcontexts/payments_hub/policies/confirm_settlement</title>
-<path fill="none" stroke="black" d="M1477.13,-22.63C1489.26,-22.63 1501.38,-22.63 1512.67,-22.63"/>
-<polygon fill="black" stroke="black" points="1512.58,-26.13 1522.58,-22.63 1512.58,-19.13 1512.58,-26.13"/>
+<path fill="none" stroke="black" d="M1477.9,-22.63C1490.03,-22.63 1502.15,-22.63 1513.43,-22.63"/>
+<polygon fill="black" stroke="black" points="1513.34,-26.13 1523.34,-22.63 1513.34,-19.13 1513.34,-26.13"/>
 </g>
 <!-- #/boundedcontexts/payments_hub/policies/reject_on_scheme_refusal -->
 <g id="node9" class="node">
 <title>#/boundedcontexts/payments_hub/policies/reject_on_scheme_refusal</title>
 <g id="a_node9"><a xlink:title="A refused message rejects the instruction">
-<polygon fill="#e1bee7" stroke="black" points="1623.05,-117.63 1512.81,-117.63 1512.81,-81.63 1629.05,-81.63 1629.05,-111.63 1623.05,-117.63"/>
-<polyline fill="none" stroke="black" points="1623.05,-117.63 1623.05,-111.63"/>
-<polyline fill="none" stroke="black" points="1629.05,-111.63 1623.05,-111.63"/>
-<text xml:space="preserve" text-anchor="middle" x="1570.93" y="-96.63" font-family="sans-serif" font-size="10.00">Reject on scheme refusal</text>
+<polygon fill="#e1bee7" stroke="black" points="1623.81,-117.63 1513.58,-117.63 1513.58,-81.63 1629.81,-81.63 1629.81,-111.63 1623.81,-117.63"/>
+<polyline fill="none" stroke="black" points="1623.81,-117.63 1623.81,-111.63"/>
+<polyline fill="none" stroke="black" points="1629.81,-111.63 1623.81,-111.63"/>
+<text xml:space="preserve" text-anchor="middle" x="1571.7" y="-96.63" font-family="sans-serif" font-size="10.00">Reject on scheme refusal</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_rejected&#45;&gt;#/boundedcontexts/payments_hub/policies/reject_on_scheme_refusal -->
 <g id="edge8" class="edge">
 <title>#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_rejected&#45;&gt;#/boundedcontexts/payments_hub/policies/reject_on_scheme_refusal</title>
-<path fill="none" stroke="black" d="M1445.66,-97.63C1463.49,-97.92 1483.01,-98.23 1501.18,-98.52"/>
-<polygon fill="black" stroke="black" points="1501.03,-102.02 1511.09,-98.68 1501.15,-95.02 1501.03,-102.02"/>
+<path fill="none" stroke="black" d="M1446.43,-97.63C1464.25,-97.92 1483.77,-98.23 1501.95,-98.52"/>
+<polygon fill="black" stroke="black" points="1501.8,-102.02 1511.85,-98.68 1501.91,-95.02 1501.8,-102.02"/>
 </g>
 <!-- #/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/confirm_settlement -->
 <g id="node7" class="node">
 <title>#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/confirm_settlement</title>
 <g id="a_node7"><a xlink:title="Record the scheme&#39;s confirmation">
-<polygon fill="#bbdefb" stroke="black" points="1766.03,-40.63 1665.05,-40.63 1665.05,-4.63 1766.03,-4.63 1766.03,-40.63"/>
-<text xml:space="preserve" text-anchor="middle" x="1715.54" y="-25.63" font-family="sans-serif" font-size="10.00">ConfirmSettlement</text>
-<text xml:space="preserve" text-anchor="middle" x="1715.54" y="-13.63" font-family="sans-serif" font-size="10.00">(PaymentInstruction)</text>
+<polygon fill="#bbdefb" stroke="black" points="1766.79,-40.63 1665.81,-40.63 1665.81,-4.63 1766.79,-4.63 1766.79,-40.63"/>
+<text xml:space="preserve" text-anchor="middle" x="1716.3" y="-25.63" font-family="sans-serif" font-size="10.00">ConfirmSettlement</text>
+<text xml:space="preserve" text-anchor="middle" x="1716.3" y="-13.63" font-family="sans-serif" font-size="10.00">(PaymentInstruction)</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/payments_hub/policies/confirm_settlement&#45;&gt;#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/confirm_settlement -->
 <g id="edge7" class="edge">
 <title>#/boundedcontexts/payments_hub/policies/confirm_settlement&#45;&gt;#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/confirm_settlement</title>
-<path fill="none" stroke="black" d="M1617.84,-22.63C1629.19,-22.63 1641.53,-22.63 1653.48,-22.63"/>
-<polygon fill="black" stroke="black" points="1653.26,-26.13 1663.26,-22.63 1653.26,-19.13 1653.26,-26.13"/>
+<path fill="none" stroke="black" d="M1618.6,-22.63C1629.96,-22.63 1642.3,-22.63 1654.25,-22.63"/>
+<polygon fill="black" stroke="black" points="1654.03,-26.13 1664.03,-22.63 1654.03,-19.13 1654.03,-26.13"/>
 </g>
 <!-- #/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_settled -->
 <g id="node8" class="node">
 <title>#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_settled</title>
 <g id="a_node8"><a xlink:title="The scheme confirmed; the ledger posts">
-<ellipse fill="#ffe0b2" stroke="black" cx="1873.43" cy="-22.63" rx="71.4" ry="22.63"/>
-<text xml:space="preserve" text-anchor="middle" x="1873.43" y="-25.63" font-family="sans-serif" font-size="10.00">PaymentSettled</text>
-<text xml:space="preserve" text-anchor="middle" x="1873.43" y="-13.63" font-family="sans-serif" font-size="10.00">(PaymentInstruction)</text>
+<ellipse fill="#ffe0b2" stroke="black" cx="1874.2" cy="-22.63" rx="71.4" ry="22.63"/>
+<text xml:space="preserve" text-anchor="middle" x="1874.2" y="-25.63" font-family="sans-serif" font-size="10.00">PaymentSettled</text>
+<text xml:space="preserve" text-anchor="middle" x="1874.2" y="-13.63" font-family="sans-serif" font-size="10.00">(PaymentInstruction)</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/confirm_settlement&#45;&gt;#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_settled -->
 <g id="edge6" class="edge">
 <title>#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/confirm_settlement&#45;&gt;#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_settled</title>
-<path fill="none" stroke="black" d="M1766.29,-22.63C1773.92,-22.63 1781.97,-22.63 1790.08,-22.63"/>
-<polygon fill="black" stroke="black" points="1790.04,-26.13 1800.04,-22.63 1790.04,-19.13 1790.04,-26.13"/>
+<path fill="none" stroke="black" d="M1767.06,-22.63C1774.69,-22.63 1782.74,-22.63 1790.85,-22.63"/>
+<polygon fill="black" stroke="black" points="1790.81,-26.13 1800.81,-22.63 1790.81,-19.13 1790.81,-26.13"/>
 </g>
 <!-- #/boundedcontexts/payments_hub/policies/post_on_settlement -->
 <g id="node12" class="node">
 <title>#/boundedcontexts/payments_hub/policies/post_on_settlement</title>
 <g id="a_node12"><a xlink:title="A settled instruction posts to the ledger">
-<polygon fill="#e1bee7" stroke="black" points="2064.17,-40.63 1980.84,-40.63 1980.84,-4.63 2070.17,-4.63 2070.17,-34.63 2064.17,-40.63"/>
-<polyline fill="none" stroke="black" points="2064.17,-40.63 2064.17,-34.63"/>
-<polyline fill="none" stroke="black" points="2070.17,-34.63 2064.17,-34.63"/>
-<text xml:space="preserve" text-anchor="middle" x="2025.5" y="-19.63" font-family="sans-serif" font-size="10.00">Post on settlement</text>
+<polygon fill="#e1bee7" stroke="black" points="2064.93,-40.63 1981.6,-40.63 1981.6,-4.63 2070.93,-4.63 2070.93,-34.63 2064.93,-40.63"/>
+<polyline fill="none" stroke="black" points="2064.93,-40.63 2064.93,-34.63"/>
+<polyline fill="none" stroke="black" points="2070.93,-34.63 2064.93,-34.63"/>
+<text xml:space="preserve" text-anchor="middle" x="2026.27" y="-19.63" font-family="sans-serif" font-size="10.00">Post on settlement</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_settled&#45;&gt;#/boundedcontexts/payments_hub/policies/post_on_settlement -->
 <g id="edge11" class="edge">
 <title>#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_settled&#45;&gt;#/boundedcontexts/payments_hub/policies/post_on_settlement</title>
-<path fill="none" stroke="black" d="M1945.07,-22.63C1953.24,-22.63 1961.49,-22.63 1969.41,-22.63"/>
-<polygon fill="black" stroke="black" points="1969.23,-26.13 1979.23,-22.63 1969.23,-19.13 1969.23,-26.13"/>
+<path fill="none" stroke="black" d="M1945.84,-22.63C1954.01,-22.63 1962.25,-22.63 1970.18,-22.63"/>
+<polygon fill="black" stroke="black" points="1969.99,-26.13 1979.99,-22.63 1969.99,-19.13 1969.99,-26.13"/>
 </g>
 <!-- #/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/reject_payment -->
 <g id="node10" class="node">
 <title>#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/reject_payment</title>
 <g id="a_node10"><a xlink:title="Reject a flagged or scheme&#45;refused instruction">
-<polygon fill="#bbdefb" stroke="black" points="1766.03,-148.63 1665.05,-148.63 1665.05,-112.63 1766.03,-112.63 1766.03,-148.63"/>
-<text xml:space="preserve" text-anchor="middle" x="1715.54" y="-133.63" font-family="sans-serif" font-size="10.00">RejectPayment</text>
-<text xml:space="preserve" text-anchor="middle" x="1715.54" y="-121.63" font-family="sans-serif" font-size="10.00">(PaymentInstruction)</text>
+<polygon fill="#bbdefb" stroke="black" points="1766.79,-148.63 1665.81,-148.63 1665.81,-112.63 1766.79,-112.63 1766.79,-148.63"/>
+<text xml:space="preserve" text-anchor="middle" x="1716.3" y="-133.63" font-family="sans-serif" font-size="10.00">RejectPayment</text>
+<text xml:space="preserve" text-anchor="middle" x="1716.3" y="-121.63" font-family="sans-serif" font-size="10.00">(PaymentInstruction)</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/payments_hub/policies/reject_on_scheme_refusal&#45;&gt;#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/reject_payment -->
 <g id="edge10" class="edge">
 <title>#/boundedcontexts/payments_hub/policies/reject_on_scheme_refusal&#45;&gt;#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/reject_payment</title>
-<path fill="none" stroke="black" d="M1629.52,-112.15C1637.51,-113.88 1645.73,-115.67 1653.78,-117.42"/>
-<polygon fill="black" stroke="black" points="1652.98,-120.83 1663.5,-119.53 1654.47,-113.99 1652.98,-120.83"/>
+<path fill="none" stroke="black" d="M1630.29,-112.15C1638.28,-113.88 1646.5,-115.67 1654.54,-117.42"/>
+<polygon fill="black" stroke="black" points="1653.75,-120.83 1664.27,-119.53 1655.24,-113.99 1653.75,-120.83"/>
 </g>
 <!-- #/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_rejected -->
 <g id="node11" class="node">
 <title>#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_rejected</title>
 <g id="a_node11"><a xlink:title="Flagged or refused by the scheme">
-<ellipse fill="#ffe0b2" stroke="black" cx="1873.43" cy="-130.63" rx="71.4" ry="22.63"/>
-<text xml:space="preserve" text-anchor="middle" x="1873.43" y="-133.63" font-family="sans-serif" font-size="10.00">PaymentRejected</text>
-<text xml:space="preserve" text-anchor="middle" x="1873.43" y="-121.63" font-family="sans-serif" font-size="10.00">(PaymentInstruction)</text>
+<ellipse fill="#ffe0b2" stroke="black" cx="1874.2" cy="-130.63" rx="71.4" ry="22.63"/>
+<text xml:space="preserve" text-anchor="middle" x="1874.2" y="-133.63" font-family="sans-serif" font-size="10.00">PaymentRejected</text>
+<text xml:space="preserve" text-anchor="middle" x="1874.2" y="-121.63" font-family="sans-serif" font-size="10.00">(PaymentInstruction)</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/reject_payment&#45;&gt;#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_rejected -->
 <g id="edge9" class="edge">
 <title>#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/reject_payment&#45;&gt;#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_rejected</title>
-<path fill="none" stroke="black" d="M1766.29,-130.63C1773.92,-130.63 1781.97,-130.63 1790.08,-130.63"/>
-<polygon fill="black" stroke="black" points="1790.04,-134.13 1800.04,-130.63 1790.04,-127.13 1790.04,-134.13"/>
+<path fill="none" stroke="black" d="M1767.06,-130.63C1774.69,-130.63 1782.74,-130.63 1790.85,-130.63"/>
+<polygon fill="black" stroke="black" points="1790.81,-134.13 1800.81,-130.63 1790.81,-127.13 1790.81,-134.13"/>
 </g>
 <!-- #/boundedcontexts/ledger/aggregates/journal_entry/provides/post_entry -->
 <g id="node13" class="node">
 <title>#/boundedcontexts/ledger/aggregates/journal_entry/provides/post_entry</title>
 <g id="a_node13"><a xlink:title="Post a balanced entry">
-<polygon fill="#bbdefb" stroke="black" points="2180.48,-40.63 2106.17,-40.63 2106.17,-4.63 2180.48,-4.63 2180.48,-40.63"/>
-<text xml:space="preserve" text-anchor="middle" x="2143.32" y="-25.63" font-family="sans-serif" font-size="10.00">PostEntry</text>
-<text xml:space="preserve" text-anchor="middle" x="2143.32" y="-13.63" font-family="sans-serif" font-size="10.00">(JournalEntry)</text>
+<polygon fill="#bbdefb" stroke="black" points="2181.25,-40.63 2106.93,-40.63 2106.93,-4.63 2181.25,-4.63 2181.25,-40.63"/>
+<text xml:space="preserve" text-anchor="middle" x="2144.09" y="-25.63" font-family="sans-serif" font-size="10.00">PostEntry</text>
+<text xml:space="preserve" text-anchor="middle" x="2144.09" y="-13.63" font-family="sans-serif" font-size="10.00">(JournalEntry)</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/payments_hub/policies/post_on_settlement&#45;&gt;#/boundedcontexts/ledger/aggregates/journal_entry/provides/post_entry -->
 <g id="edge13" class="edge">
 <title>#/boundedcontexts/payments_hub/policies/post_on_settlement&#45;&gt;#/boundedcontexts/ledger/aggregates/journal_entry/provides/post_entry</title>
-<path fill="none" stroke="black" d="M2070.62,-22.63C2078.44,-22.63 2086.61,-22.63 2094.52,-22.63"/>
-<polygon fill="black" stroke="black" points="2094.35,-26.13 2104.35,-22.63 2094.35,-19.13 2094.35,-26.13"/>
+<path fill="none" stroke="black" d="M2071.39,-22.63C2079.2,-22.63 2087.38,-22.63 2095.29,-22.63"/>
+<polygon fill="black" stroke="black" points="2095.11,-26.13 2105.11,-22.63 2095.11,-19.13 2095.11,-26.13"/>
 </g>
 <!-- #/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted -->
 <g id="node14" class="node">
 <title>#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted</title>
 <g id="a_node14"><a xlink:title="Money moved; balances and reports follow">
-<ellipse fill="#ffe0b2" stroke="black" cx="2269.03" cy="-22.63" rx="52.55" ry="22.63"/>
-<text xml:space="preserve" text-anchor="middle" x="2269.03" y="-25.63" font-family="sans-serif" font-size="10.00">EntryPosted</text>
-<text xml:space="preserve" text-anchor="middle" x="2269.03" y="-13.63" font-family="sans-serif" font-size="10.00">(JournalEntry)</text>
+<ellipse fill="#ffe0b2" stroke="black" cx="2269.8" cy="-22.63" rx="52.55" ry="22.63"/>
+<text xml:space="preserve" text-anchor="middle" x="2269.8" y="-25.63" font-family="sans-serif" font-size="10.00">EntryPosted</text>
+<text xml:space="preserve" text-anchor="middle" x="2269.8" y="-13.63" font-family="sans-serif" font-size="10.00">(JournalEntry)</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/ledger/aggregates/journal_entry/provides/post_entry&#45;&gt;#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted -->
 <g id="edge12" class="edge">
 <title>#/boundedcontexts/ledger/aggregates/journal_entry/provides/post_entry&#45;&gt;#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted</title>
-<path fill="none" stroke="black" d="M2180.77,-22.63C2188.41,-22.63 2196.68,-22.63 2204.98,-22.63"/>
-<polygon fill="black" stroke="black" points="2204.75,-26.13 2214.75,-22.63 2204.75,-19.13 2204.75,-26.13"/>
+<path fill="none" stroke="black" d="M2181.54,-22.63C2189.18,-22.63 2197.45,-22.63 2205.75,-22.63"/>
+<polygon fill="black" stroke="black" points="2205.51,-26.13 2215.51,-22.63 2205.51,-19.13 2205.51,-26.13"/>
 </g>
 <!-- #/boundedcontexts/payments_hub/policies/score_on_initiation -->
 <g id="node15" class="node">
@@ -273,99 +273,99 @@
 <path fill="none" stroke="black" d="M143.17,-126.63C151.16,-126.63 159.22,-126.63 166.98,-126.63"/>
 <polygon fill="black" stroke="black" points="166.97,-130.13 176.97,-126.63 166.97,-123.13 166.97,-130.13"/>
 </g>
-<!-- #/boundedcontexts/fraud/aggregates/fraud_case/provides/transaction_flagged -->
+<!-- #/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged -->
 <g id="node18" class="node">
-<title>#/boundedcontexts/fraud/aggregates/fraud_case/provides/transaction_flagged</title>
+<title>#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged</title>
 <g id="a_node18"><a xlink:title="Above threshold; the caller stops the transaction">
-<ellipse fill="#ffe0b2" stroke="black" cx="504.12" cy="-163.63" rx="67.47" ry="22.63"/>
-<text xml:space="preserve" text-anchor="middle" x="504.12" y="-166.63" font-family="sans-serif" font-size="10.00">TransactionFlagged</text>
-<text xml:space="preserve" text-anchor="middle" x="504.12" y="-154.63" font-family="sans-serif" font-size="10.00">(FraudCase)</text>
+<ellipse fill="#ffe0b2" stroke="black" cx="504.5" cy="-163.63" rx="67.85" ry="22.63"/>
+<text xml:space="preserve" text-anchor="middle" x="504.5" y="-166.63" font-family="sans-serif" font-size="10.00">TransactionFlagged</text>
+<text xml:space="preserve" text-anchor="middle" x="504.5" y="-154.63" font-family="sans-serif" font-size="10.00">(TransactionScorer)</text>
 </a>
 </g>
 </g>
-<!-- #/boundedcontexts/fraud/services/transaction_scorer/provides/score_transaction&#45;&gt;#/boundedcontexts/fraud/aggregates/fraud_case/provides/transaction_flagged -->
+<!-- #/boundedcontexts/fraud/services/transaction_scorer/provides/score_transaction&#45;&gt;#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged -->
 <g id="edge15" class="edge">
-<title>#/boundedcontexts/fraud/services/transaction_scorer/provides/score_transaction&#45;&gt;#/boundedcontexts/fraud/aggregates/fraud_case/provides/transaction_flagged</title>
-<path fill="none" stroke="black" d="M400.95,-138.33C412.73,-141.25 425.55,-144.43 438.02,-147.51"/>
-<polygon fill="black" stroke="black" points="436.83,-150.82 447.38,-149.83 438.51,-144.03 436.83,-150.82"/>
+<title>#/boundedcontexts/fraud/services/transaction_scorer/provides/score_transaction&#45;&gt;#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged</title>
+<path fill="none" stroke="black" d="M401.07,-138.33C412.88,-141.25 425.74,-144.43 438.24,-147.51"/>
+<polygon fill="black" stroke="black" points="437.07,-150.83 447.62,-149.83 438.75,-144.03 437.07,-150.83"/>
 </g>
-<!-- #/boundedcontexts/fraud/aggregates/fraud_case/provides/transaction_cleared -->
+<!-- #/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_cleared -->
 <g id="node19" class="node">
-<title>#/boundedcontexts/fraud/aggregates/fraud_case/provides/transaction_cleared</title>
+<title>#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_cleared</title>
 <g id="a_node19"><a xlink:title="Below threshold; the caller proceeds">
-<ellipse fill="#ffe0b2" stroke="black" cx="504.12" cy="-89.63" rx="66.68" ry="22.63"/>
-<text xml:space="preserve" text-anchor="middle" x="504.12" y="-92.63" font-family="sans-serif" font-size="10.00">TransactionCleared</text>
-<text xml:space="preserve" text-anchor="middle" x="504.12" y="-80.63" font-family="sans-serif" font-size="10.00">(FraudCase)</text>
+<ellipse fill="#ffe0b2" stroke="black" cx="504.5" cy="-89.63" rx="67.85" ry="22.63"/>
+<text xml:space="preserve" text-anchor="middle" x="504.5" y="-92.63" font-family="sans-serif" font-size="10.00">TransactionCleared</text>
+<text xml:space="preserve" text-anchor="middle" x="504.5" y="-80.63" font-family="sans-serif" font-size="10.00">(TransactionScorer)</text>
 </a>
 </g>
 </g>
-<!-- #/boundedcontexts/fraud/services/transaction_scorer/provides/score_transaction&#45;&gt;#/boundedcontexts/fraud/aggregates/fraud_case/provides/transaction_cleared -->
+<!-- #/boundedcontexts/fraud/services/transaction_scorer/provides/score_transaction&#45;&gt;#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_cleared -->
 <g id="edge16" class="edge">
-<title>#/boundedcontexts/fraud/services/transaction_scorer/provides/score_transaction&#45;&gt;#/boundedcontexts/fraud/aggregates/fraud_case/provides/transaction_cleared</title>
-<path fill="none" stroke="black" d="M400.95,-114.92C412.86,-111.97 425.84,-108.76 438.44,-105.64"/>
-<polygon fill="black" stroke="black" points="439.04,-109.1 447.9,-103.3 437.36,-102.3 439.04,-109.1"/>
+<title>#/boundedcontexts/fraud/services/transaction_scorer/provides/score_transaction&#45;&gt;#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_cleared</title>
+<path fill="none" stroke="black" d="M401.07,-114.92C412.88,-112.01 425.74,-108.83 438.24,-105.74"/>
+<polygon fill="black" stroke="black" points="438.75,-109.22 447.62,-103.43 437.07,-102.43 438.75,-109.22"/>
 </g>
 <!-- #/boundedcontexts/payments_hub/policies/reject_on_flag -->
 <g id="node22" class="node">
 <title>#/boundedcontexts/payments_hub/policies/reject_on_flag</title>
 <g id="a_node22"><a xlink:title="A flagged instruction is rejected, never submitted">
-<polygon fill="#e1bee7" stroke="black" points="803.44,-181.63 737.35,-181.63 737.35,-145.63 809.44,-145.63 809.44,-175.63 803.44,-181.63"/>
-<polyline fill="none" stroke="black" points="803.44,-181.63 803.44,-175.63"/>
-<polyline fill="none" stroke="black" points="809.44,-175.63 803.44,-175.63"/>
-<text xml:space="preserve" text-anchor="middle" x="773.4" y="-160.63" font-family="sans-serif" font-size="10.00">Reject on flag</text>
+<polygon fill="#e1bee7" stroke="black" points="804.21,-181.63 738.12,-181.63 738.12,-145.63 810.21,-145.63 810.21,-175.63 804.21,-181.63"/>
+<polyline fill="none" stroke="black" points="804.21,-181.63 804.21,-175.63"/>
+<polyline fill="none" stroke="black" points="810.21,-175.63 804.21,-175.63"/>
+<text xml:space="preserve" text-anchor="middle" x="774.17" y="-160.63" font-family="sans-serif" font-size="10.00">Reject on flag</text>
 </a>
 </g>
 </g>
-<!-- #/boundedcontexts/fraud/aggregates/fraud_case/provides/transaction_flagged&#45;&gt;#/boundedcontexts/payments_hub/policies/reject_on_flag -->
+<!-- #/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged&#45;&gt;#/boundedcontexts/payments_hub/policies/reject_on_flag -->
 <g id="edge21" class="edge">
-<title>#/boundedcontexts/fraud/aggregates/fraud_case/provides/transaction_flagged&#45;&gt;#/boundedcontexts/payments_hub/policies/reject_on_flag</title>
-<path fill="none" stroke="black" d="M571.87,-163.63C619.79,-163.63 683.15,-163.63 725.72,-163.63"/>
-<polygon fill="black" stroke="black" points="725.63,-167.13 735.63,-163.63 725.63,-160.13 725.63,-167.13"/>
+<title>#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged&#45;&gt;#/boundedcontexts/payments_hub/policies/reject_on_flag</title>
+<path fill="none" stroke="black" d="M572.7,-163.63C620.68,-163.63 684.01,-163.63 726.54,-163.63"/>
+<polygon fill="black" stroke="black" points="726.44,-167.13 736.44,-163.63 726.44,-160.13 726.44,-167.13"/>
 </g>
 <!-- #/boundedcontexts/payments_hub/policies/submit_on_clear -->
 <g id="node20" class="node">
 <title>#/boundedcontexts/payments_hub/policies/submit_on_clear</title>
 <g id="a_node20"><a xlink:title="A cleared instruction is submitted">
-<polygon fill="#e1bee7" stroke="black" points="680.91,-107.63 607.59,-107.63 607.59,-71.63 686.91,-71.63 686.91,-101.63 680.91,-107.63"/>
-<polyline fill="none" stroke="black" points="680.91,-107.63 680.91,-101.63"/>
-<polyline fill="none" stroke="black" points="686.91,-101.63 680.91,-101.63"/>
-<text xml:space="preserve" text-anchor="middle" x="647.25" y="-86.63" font-family="sans-serif" font-size="10.00">Submit on clear</text>
+<polygon fill="#e1bee7" stroke="black" points="681.68,-107.63 608.36,-107.63 608.36,-71.63 687.68,-71.63 687.68,-101.63 681.68,-107.63"/>
+<polyline fill="none" stroke="black" points="681.68,-107.63 681.68,-101.63"/>
+<polyline fill="none" stroke="black" points="687.68,-101.63 681.68,-101.63"/>
+<text xml:space="preserve" text-anchor="middle" x="648.02" y="-86.63" font-family="sans-serif" font-size="10.00">Submit on clear</text>
 </a>
 </g>
 </g>
-<!-- #/boundedcontexts/fraud/aggregates/fraud_case/provides/transaction_cleared&#45;&gt;#/boundedcontexts/payments_hub/policies/submit_on_clear -->
+<!-- #/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_cleared&#45;&gt;#/boundedcontexts/payments_hub/policies/submit_on_clear -->
 <g id="edge18" class="edge">
-<title>#/boundedcontexts/fraud/aggregates/fraud_case/provides/transaction_cleared&#45;&gt;#/boundedcontexts/payments_hub/policies/submit_on_clear</title>
-<path fill="none" stroke="black" d="M571.14,-89.63C579.43,-89.63 587.8,-89.63 595.8,-89.63"/>
-<polygon fill="black" stroke="black" points="595.68,-93.13 605.68,-89.63 595.68,-86.13 595.68,-93.13"/>
+<title>#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_cleared&#45;&gt;#/boundedcontexts/payments_hub/policies/submit_on_clear</title>
+<path fill="none" stroke="black" d="M572.53,-89.63C580.59,-89.63 588.72,-89.63 596.5,-89.63"/>
+<polygon fill="black" stroke="black" points="596.45,-93.13 606.45,-89.63 596.45,-86.13 596.45,-93.13"/>
 </g>
 <!-- #/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/submit_payment -->
 <g id="node21" class="node">
 <title>#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/submit_payment</title>
 <g id="a_node21"><a xlink:title="Mark cleared and hand to the gateway">
-<polygon fill="#bbdefb" stroke="black" points="823.89,-107.63 722.91,-107.63 722.91,-71.63 823.89,-71.63 823.89,-107.63"/>
-<text xml:space="preserve" text-anchor="middle" x="773.4" y="-92.63" font-family="sans-serif" font-size="10.00">SubmitPayment</text>
-<text xml:space="preserve" text-anchor="middle" x="773.4" y="-80.63" font-family="sans-serif" font-size="10.00">(PaymentInstruction)</text>
+<polygon fill="#bbdefb" stroke="black" points="824.66,-107.63 723.68,-107.63 723.68,-71.63 824.66,-71.63 824.66,-107.63"/>
+<text xml:space="preserve" text-anchor="middle" x="774.17" y="-92.63" font-family="sans-serif" font-size="10.00">SubmitPayment</text>
+<text xml:space="preserve" text-anchor="middle" x="774.17" y="-80.63" font-family="sans-serif" font-size="10.00">(PaymentInstruction)</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/payments_hub/policies/submit_on_clear&#45;&gt;#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/submit_payment -->
 <g id="edge20" class="edge">
 <title>#/boundedcontexts/payments_hub/policies/submit_on_clear&#45;&gt;#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/submit_payment</title>
-<path fill="none" stroke="black" d="M687.19,-89.63C694.83,-89.63 703.01,-89.63 711.17,-89.63"/>
-<polygon fill="black" stroke="black" points="711.13,-93.13 721.13,-89.63 711.13,-86.13 711.13,-93.13"/>
+<path fill="none" stroke="black" d="M687.96,-89.63C695.59,-89.63 703.78,-89.63 711.94,-89.63"/>
+<polygon fill="black" stroke="black" points="711.89,-93.13 721.89,-89.63 711.89,-86.13 711.89,-93.13"/>
 </g>
 <!-- #/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/submit_payment&#45;&gt;#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_submitted -->
 <g id="edge19" class="edge">
 <title>#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/submit_payment&#45;&gt;#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_submitted</title>
-<path fill="none" stroke="black" d="M824.15,-89.63C831.78,-89.63 839.83,-89.63 847.94,-89.63"/>
-<polygon fill="black" stroke="black" points="847.91,-93.13 857.91,-89.63 847.9,-86.13 847.91,-93.13"/>
+<path fill="none" stroke="black" d="M824.92,-89.63C832.55,-89.63 840.6,-89.63 848.71,-89.63"/>
+<polygon fill="black" stroke="black" points="848.67,-93.13 858.67,-89.63 848.67,-86.13 848.67,-93.13"/>
 </g>
 <!-- #/boundedcontexts/payments_hub/policies/reject_on_flag&#45;&gt;#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/reject_payment -->
 <g id="edge22" class="edge">
 <title>#/boundedcontexts/payments_hub/policies/reject_on_flag&#45;&gt;#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/reject_payment</title>
-<path fill="none" stroke="black" d="M809.87,-163.63C867.05,-163.63 983.15,-163.63 1081.53,-163.63 1081.53,-163.63 1081.53,-163.63 1383.24,-163.63 1478.04,-163.63 1587.35,-150.08 1653.67,-140.35"/>
-<polygon fill="black" stroke="black" points="1653.87,-143.86 1663.24,-138.92 1652.83,-136.93 1653.87,-143.86"/>
+<path fill="none" stroke="black" d="M810.63,-163.63C867.81,-163.63 983.92,-163.63 1082.29,-163.63 1082.29,-163.63 1082.29,-163.63 1384,-163.63 1478.81,-163.63 1588.12,-150.08 1654.44,-140.35"/>
+<polygon fill="black" stroke="black" points="1654.63,-143.86 1664.01,-138.92 1653.6,-136.93 1654.63,-143.86"/>
 </g>
 </g>
 </svg>

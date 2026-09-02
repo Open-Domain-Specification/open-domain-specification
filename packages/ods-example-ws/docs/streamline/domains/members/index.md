@@ -26,6 +26,7 @@ Accounts and sign-in
 | --- | --- | --- | --- | --- |
 | Households & Profiles | upstream-downstream | Recommendations | published-language | conformist |
 | Billing & Plans | customer-supplier | Playback | open-host-service | anti-corruption-layer |
+| Billing & Plans | upstream-downstream | Ads Tier | open-host-service | anti-corruption-layer |
 | Identity | upstream-downstream | Households & Profiles | published-language | conformist |
 | Households & Profiles | upstream-downstream | Billing & Plans | published-language | conformist |
 | Disc Rental (legacy) | upstream-downstream | Billing & Plans | published-language | anti-corruption-layer |
@@ -38,6 +39,7 @@ Accounts and sign-in
 | [TasteProfile](../../boundedcontexts/recommendations/aggregates/taste_profile/index.md) | conformist | Household | ProfileCreated | published-language |
 | [Household](../../boundedcontexts/households_&_profiles/aggregates/household/index.md) | conformist | Account | AccountCreated | published-language |
 | [PlaybackSession](../../boundedcontexts/playback/aggregates/playback_session/index.md) | anti-corruption-layer | Subscription | GetEntitlement | open-host-service |
+| [AdBreak](../../boundedcontexts/ads_tier/aggregates/ad_break/index.md) | anti-corruption-layer | Subscription | GetEntitlement | open-host-service |
 | [Subscription](../../boundedcontexts/billing_&_plans/aggregates/subscription/index.md) | anti-corruption-layer | RentalQueue | DiscRentalInvoiced | published-language |
 
 	

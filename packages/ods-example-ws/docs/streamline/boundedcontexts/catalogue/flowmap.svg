@@ -11,7 +11,7 @@
 <!-- #/boundedcontexts/catalogue/policies/request_encode_on_master -->
 <g id="node1" class="node">
 <title>#/boundedcontexts/catalogue/policies/request_encode_on_master</title>
-<g id="a_node1"><a xlink:title="A delivered master is queued for encoding">
+<g id="a_node1"><a xlink:title="A delivered master is matched to the title by productionId (and the episode by masterEpisodeNumber) and queued for encoding under that titleId">
 <polygon fill="#e1bee7" stroke="black" points="320.21,-40.63 205.52,-40.63 205.52,-4.63 326.21,-4.63 326.21,-34.63 320.21,-40.63"/>
 <polyline fill="none" stroke="black" points="320.21,-40.63 320.21,-34.63"/>
 <polyline fill="none" stroke="black" points="326.21,-34.63 320.21,-34.63"/>

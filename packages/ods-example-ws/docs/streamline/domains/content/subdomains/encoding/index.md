@@ -16,8 +16,7 @@ Jobs that turn a master into a ladder of renditions
 | Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |
 | Studio Production | upstream-downstream | Encoding | published-language | conformist |
-| Encoding | upstream-downstream | Catalogue | published-language | anti-corruption-layer |
-| Encoding | customer-supplier | Catalogue | open-host-service | anti-corruption-layer |
+| Encoding | customer-supplier | Catalogue | open-host-service, published-language | anti-corruption-layer |
 | Encoding | upstream-downstream | Edge Delivery | published-language | conformist |
 
 

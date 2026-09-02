@@ -47,6 +47,7 @@ A pod of slots at a position in a session
 | --- | --- | --- | --- | --- |
 | Playback | upstream-downstream | Ads Tier | published-language | anti-corruption-layer |
 | Ads Tier | upstream-downstream | Playback | open-host-service | anti-corruption-layer |
+| Billing & Plans | upstream-downstream | Ads Tier | open-host-service | anti-corruption-layer |
 | Ads Tier | separate-ways | Recommendations | - | - |
 | Catalogue | upstream-downstream (implied) | Playback | open-host-service | anti-corruption-layer |
 | Edge Delivery | upstream-downstream (implied) | Playback | open-host-service | conformist |
@@ -73,5 +74,6 @@ A pod of slots at a position in a session
 | [Subscription](../billing_&_plans/aggregates/subscription/index.md) | conformist | Household | HouseholdCreated | published-language |
 | [Household](../households_&_profiles/aggregates/household/index.md) | conformist | Account | AccountCreated | published-language |
 | [Subscription](../billing_&_plans/aggregates/subscription/index.md) | anti-corruption-layer | RentalQueue | DiscRentalInvoiced | published-language |
+| [AdBreak](aggregates/ad_break/index.md) | anti-corruption-layer | Subscription | GetEntitlement | open-host-service |
 
 

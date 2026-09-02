@@ -16,28 +16,28 @@
 </g>
 <g id="clust2" class="cluster namespace">
 <title>#/domains/content</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="51,-188 51,-608 646,-608 646,-188 51,-188"/>
-<text xml:space="preserve" text-anchor="middle" x="348.5" y="-595" font-family="sans-serif" font-size="10.00">Content</text>
+<polygon fill="lightgrey" stroke="lightgrey" points="50,-188 50,-608 646,-608 646,-188 50,-188"/>
+<text xml:space="preserve" text-anchor="middle" x="348" y="-595" font-family="sans-serif" font-size="10.00">Content</text>
 </g>
 <g id="clust3" class="cluster namespace">
 <title>#/domains/content/subdomains/studio_production</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="100,-472 100,-580 334,-580 334,-472 100,-472"/>
-<text xml:space="preserve" text-anchor="middle" x="217" y="-567" font-family="sans-serif" font-size="10.00">Studio Production</text>
+<polygon fill="lightgrey" stroke="lightgrey" points="230,-472 230,-580 464,-580 464,-472 230,-472"/>
+<text xml:space="preserve" text-anchor="middle" x="347" y="-567" font-family="sans-serif" font-size="10.00">Studio Production</text>
 </g>
 <g id="clust4" class="cluster namespace">
 <title>#/domains/content/subdomains/licensing</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="396,-334 396,-442 638,-442 638,-334 396,-334"/>
-<text xml:space="preserve" text-anchor="middle" x="517" y="-429" font-family="sans-serif" font-size="10.00">Licensing</text>
+<polygon fill="lightgrey" stroke="lightgrey" points="140,-334 140,-442 382,-442 382,-334 140,-334"/>
+<text xml:space="preserve" text-anchor="middle" x="261" y="-429" font-family="sans-serif" font-size="10.00">Licensing</text>
 </g>
 <g id="clust5" class="cluster namespace">
 <title>#/domains/content/subdomains/catalogue</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="155,-196 155,-304 325,-304 325,-196 155,-196"/>
-<text xml:space="preserve" text-anchor="middle" x="240" y="-291" font-family="sans-serif" font-size="10.00">Catalogue</text>
+<polygon fill="lightgrey" stroke="lightgrey" points="176,-196 176,-304 346,-304 346,-196 176,-196"/>
+<text xml:space="preserve" text-anchor="middle" x="261" y="-291" font-family="sans-serif" font-size="10.00">Catalogue</text>
 </g>
 <g id="clust6" class="cluster namespace">
 <title>#/domains/content/subdomains/encoding</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="140,-334 140,-442 376,-442 376,-334 140,-334"/>
-<text xml:space="preserve" text-anchor="middle" x="258" y="-429" font-family="sans-serif" font-size="10.00">Encoding</text>
+<polygon fill="lightgrey" stroke="lightgrey" points="402,-334 402,-442 638,-442 638,-334 402,-334"/>
+<text xml:space="preserve" text-anchor="middle" x="520" y="-429" font-family="sans-serif" font-size="10.00">Encoding</text>
 </g>
 <g id="clust7" class="cluster namespace">
 <title>#/domains/viewing</title>
@@ -68,9 +68,9 @@
 <g id="node1" class="node">
 <title>#/boundedcontexts/studio_production</title>
 <g id="a_node1"><a xlink:title="Productions, episodes and delivered masters">
-<polygon fill="white" stroke="black" points="227.12,-480.1 233.82,-480.3 240.45,-480.59 246.98,-480.98 253.4,-481.47 259.66,-482.05 265.75,-482.73 271.64,-483.5 277.31,-484.35 282.75,-485.29 287.92,-486.32 292.82,-487.43 297.42,-488.62 301.71,-489.88 305.68,-491.21 309.32,-492.61 312.61,-494.08 315.56,-495.6 318.15,-497.18 320.39,-498.82 322.27,-500.5 323.79,-502.22 324.95,-503.98 325.77,-505.77 326.23,-507.59 326.36,-509.44 326.15,-511.3 325.62,-513.17 324.78,-515.06 323.64,-516.94 322.21,-518.83 320.51,-520.7 318.55,-522.56 316.34,-524.41 313.89,-526.23 311.24,-528.02 308.38,-529.78 305.33,-531.5 302.11,-533.18 298.73,-534.82 295.21,-536.4 291.56,-537.92 287.79,-539.39 283.91,-540.79 279.94,-542.12 275.89,-543.38 271.76,-544.57 267.57,-545.68 263.33,-546.71 259.03,-547.65 254.7,-548.5 250.33,-549.27 245.94,-549.95 241.52,-550.53 237.09,-551.02 232.64,-551.41 228.18,-551.7 223.71,-551.9 219.24,-552 214.76,-552 210.29,-551.9 205.82,-551.7 201.36,-551.41 196.91,-551.02 192.48,-550.53 188.06,-549.95 183.67,-549.27 179.3,-548.5 174.97,-547.65 170.67,-546.71 166.43,-545.68 162.24,-544.57 158.11,-543.38 154.06,-542.12 150.09,-540.79 146.21,-539.39 142.44,-537.92 138.79,-536.4 135.27,-534.82 131.89,-533.18 128.67,-531.5 125.62,-529.78 122.76,-528.02 120.11,-526.23 117.66,-524.41 115.45,-522.56 113.49,-520.7 111.79,-518.83 110.36,-516.94 109.22,-515.06 108.38,-513.17 107.85,-511.3 107.64,-509.44 107.77,-507.59 108.23,-505.77 109.05,-503.98 110.21,-502.22 111.73,-500.5 113.61,-498.82 115.85,-497.18 118.44,-495.6 121.39,-494.08 124.68,-492.61 128.32,-491.21 132.29,-489.88 136.58,-488.62 141.18,-487.43 146.08,-486.32 151.25,-485.29 156.69,-484.35 162.36,-483.5 168.25,-482.73 174.34,-482.05 180.6,-481.47 187.02,-480.98 193.55,-480.59 200.18,-480.3 206.88,-480.1 213.62,-480 220.38,-480 227.12,-480.1"/>
-<text xml:space="preserve" text-anchor="middle" x="217" y="-520.2" font-family="sans-serif" font-size="14.00">Studio Production</text>
-<text xml:space="preserve" text-anchor="middle" x="217" y="-503.4" font-family="sans-serif" font-size="14.00">[Studio Technology Team]</text>
+<polygon fill="white" stroke="black" points="357.12,-480.1 363.82,-480.3 370.45,-480.59 376.98,-480.98 383.4,-481.47 389.66,-482.05 395.75,-482.73 401.64,-483.5 407.31,-484.35 412.75,-485.29 417.92,-486.32 422.82,-487.43 427.42,-488.62 431.71,-489.88 435.68,-491.21 439.32,-492.61 442.61,-494.08 445.56,-495.6 448.15,-497.18 450.39,-498.82 452.27,-500.5 453.79,-502.22 454.95,-503.98 455.77,-505.77 456.23,-507.59 456.36,-509.44 456.15,-511.3 455.62,-513.17 454.78,-515.06 453.64,-516.94 452.21,-518.83 450.51,-520.7 448.55,-522.56 446.34,-524.41 443.89,-526.23 441.24,-528.02 438.38,-529.78 435.33,-531.5 432.11,-533.18 428.73,-534.82 425.21,-536.4 421.56,-537.92 417.79,-539.39 413.91,-540.79 409.94,-542.12 405.89,-543.38 401.76,-544.57 397.57,-545.68 393.33,-546.71 389.03,-547.65 384.7,-548.5 380.33,-549.27 375.94,-549.95 371.52,-550.53 367.09,-551.02 362.64,-551.41 358.18,-551.7 353.71,-551.9 349.24,-552 344.76,-552 340.29,-551.9 335.82,-551.7 331.36,-551.41 326.91,-551.02 322.48,-550.53 318.06,-549.95 313.67,-549.27 309.3,-548.5 304.97,-547.65 300.67,-546.71 296.43,-545.68 292.24,-544.57 288.11,-543.38 284.06,-542.12 280.09,-540.79 276.21,-539.39 272.44,-537.92 268.79,-536.4 265.27,-534.82 261.89,-533.18 258.67,-531.5 255.62,-529.78 252.76,-528.02 250.11,-526.23 247.66,-524.41 245.45,-522.56 243.49,-520.7 241.79,-518.83 240.36,-516.94 239.22,-515.06 238.38,-513.17 237.85,-511.3 237.64,-509.44 237.77,-507.59 238.23,-505.77 239.05,-503.98 240.21,-502.22 241.73,-500.5 243.61,-498.82 245.85,-497.18 248.44,-495.6 251.39,-494.08 254.68,-492.61 258.32,-491.21 262.29,-489.88 266.58,-488.62 271.18,-487.43 276.08,-486.32 281.25,-485.29 286.69,-484.35 292.36,-483.5 298.25,-482.73 304.34,-482.05 310.6,-481.47 317.02,-480.98 323.55,-480.59 330.18,-480.3 336.88,-480.1 343.62,-480 350.38,-480 357.12,-480.1"/>
+<text xml:space="preserve" text-anchor="middle" x="347" y="-520.2" font-family="sans-serif" font-size="14.00">Studio Production</text>
+<text xml:space="preserve" text-anchor="middle" x="347" y="-503.4" font-family="sans-serif" font-size="14.00">[Studio Technology Team]</text>
 </a>
 </g>
 </g>
@@ -78,9 +78,9 @@
 <g id="node3" class="node">
 <title>#/boundedcontexts/catalogue</title>
 <g id="a_node3"><a xlink:title="What members can see, where and when">
-<polygon fill="white" stroke="black" points="247.09,-204.1 251.78,-204.3 256.43,-204.59 261.01,-204.98 265.5,-205.47 269.89,-206.05 274.16,-206.73 278.29,-207.5 282.26,-208.35 286.07,-209.29 289.69,-210.32 293.12,-211.43 296.35,-212.62 299.35,-213.88 302.13,-215.21 304.68,-216.61 306.99,-218.08 309.06,-219.6 310.88,-221.18 312.44,-222.82 313.76,-224.5 314.82,-226.22 315.64,-227.98 316.21,-229.77 316.54,-231.59 316.62,-233.44 316.48,-235.3 316.11,-237.17 315.52,-239.06 314.72,-240.94 313.72,-242.83 312.53,-244.7 311.15,-246.56 309.6,-248.41 307.89,-250.23 306.03,-252.02 304.02,-253.78 301.89,-255.5 299.63,-257.18 297.27,-258.82 294.8,-260.4 292.24,-261.92 289.6,-263.39 286.88,-264.79 284.1,-266.12 281.26,-267.38 278.37,-268.57 275.43,-269.68 272.46,-270.71 269.45,-271.65 266.42,-272.5 263.36,-273.27 260.28,-273.95 257.18,-274.53 254.08,-275.02 250.96,-275.41 247.83,-275.7 244.7,-275.9 241.57,-276 238.43,-276 235.3,-275.9 232.17,-275.7 229.04,-275.41 225.92,-275.02 222.82,-274.53 219.72,-273.95 216.64,-273.27 213.58,-272.5 210.55,-271.65 207.54,-270.71 204.57,-269.68 201.63,-268.57 198.74,-267.38 195.9,-266.12 193.12,-264.79 190.4,-263.39 187.76,-261.92 185.2,-260.4 182.73,-258.82 180.37,-257.18 178.11,-255.5 175.98,-253.78 173.97,-252.02 172.11,-250.23 170.4,-248.41 168.85,-246.56 167.47,-244.7 166.28,-242.83 165.28,-240.94 164.48,-239.06 163.89,-237.17 163.52,-235.3 163.38,-233.44 163.46,-231.59 163.79,-229.77 164.36,-227.98 165.18,-226.22 166.24,-224.5 167.56,-222.82 169.12,-221.18 170.94,-219.6 173.01,-218.08 175.32,-216.61 177.87,-215.21 180.65,-213.88 183.65,-212.62 186.88,-211.43 190.31,-210.32 193.93,-209.29 197.74,-208.35 201.71,-207.5 205.84,-206.73 210.11,-206.05 214.5,-205.47 218.99,-204.98 223.57,-204.59 228.22,-204.3 232.91,-204.1 237.63,-204 242.37,-204 247.09,-204.1"/>
-<text xml:space="preserve" text-anchor="middle" x="240" y="-244.2" font-family="sans-serif" font-size="14.00">Catalogue</text>
-<text xml:space="preserve" text-anchor="middle" x="240" y="-227.4" font-family="sans-serif" font-size="14.00">[Catalogue Team]</text>
+<polygon fill="white" stroke="black" points="268.09,-204.1 272.78,-204.3 277.43,-204.59 282.01,-204.98 286.5,-205.47 290.89,-206.05 295.16,-206.73 299.29,-207.5 303.26,-208.35 307.07,-209.29 310.69,-210.32 314.12,-211.43 317.35,-212.62 320.35,-213.88 323.13,-215.21 325.68,-216.61 327.99,-218.08 330.06,-219.6 331.88,-221.18 333.44,-222.82 334.76,-224.5 335.82,-226.22 336.64,-227.98 337.21,-229.77 337.54,-231.59 337.62,-233.44 337.48,-235.3 337.11,-237.17 336.52,-239.06 335.72,-240.94 334.72,-242.83 333.53,-244.7 332.15,-246.56 330.6,-248.41 328.89,-250.23 327.03,-252.02 325.02,-253.78 322.89,-255.5 320.63,-257.18 318.27,-258.82 315.8,-260.4 313.24,-261.92 310.6,-263.39 307.88,-264.79 305.1,-266.12 302.26,-267.38 299.37,-268.57 296.43,-269.68 293.46,-270.71 290.45,-271.65 287.42,-272.5 284.36,-273.27 281.28,-273.95 278.18,-274.53 275.08,-275.02 271.96,-275.41 268.83,-275.7 265.7,-275.9 262.57,-276 259.43,-276 256.3,-275.9 253.17,-275.7 250.04,-275.41 246.92,-275.02 243.82,-274.53 240.72,-273.95 237.64,-273.27 234.58,-272.5 231.55,-271.65 228.54,-270.71 225.57,-269.68 222.63,-268.57 219.74,-267.38 216.9,-266.12 214.12,-264.79 211.4,-263.39 208.76,-261.92 206.2,-260.4 203.73,-258.82 201.37,-257.18 199.11,-255.5 196.98,-253.78 194.97,-252.02 193.11,-250.23 191.4,-248.41 189.85,-246.56 188.47,-244.7 187.28,-242.83 186.28,-240.94 185.48,-239.06 184.89,-237.17 184.52,-235.3 184.38,-233.44 184.46,-231.59 184.79,-229.77 185.36,-227.98 186.18,-226.22 187.24,-224.5 188.56,-222.82 190.12,-221.18 191.94,-219.6 194.01,-218.08 196.32,-216.61 198.87,-215.21 201.65,-213.88 204.65,-212.62 207.88,-211.43 211.31,-210.32 214.93,-209.29 218.74,-208.35 222.71,-207.5 226.84,-206.73 231.11,-206.05 235.5,-205.47 239.99,-204.98 244.57,-204.59 249.22,-204.3 253.91,-204.1 258.63,-204 263.37,-204 268.09,-204.1"/>
+<text xml:space="preserve" text-anchor="middle" x="261" y="-244.2" font-family="sans-serif" font-size="14.00">Catalogue</text>
+<text xml:space="preserve" text-anchor="middle" x="261" y="-227.4" font-family="sans-serif" font-size="14.00">[Catalogue Team]</text>
 </a>
 </g>
 </g>
@@ -88,17 +88,17 @@
 <g id="edge1" class="edge">
 <title>#/boundedcontexts/studio_production&#45;&gt;#/boundedcontexts/catalogue</title>
 <g id="a_edge1"><a xlink:title="upstream&#45;downstream">
-<path fill="none" stroke="black" d="M154,-484.48C137.97,-473.46 122.76,-459.35 113.78,-442 91.71,-399.37 92.13,-376.84 113.78,-334 127.93,-306 154.93,-284.35 180.34,-269.02"/>
-<polygon fill="black" stroke="black" points="181.75,-272.25 188.66,-264.22 178.25,-266.19 181.75,-272.25"/>
+<path fill="none" stroke="black" d="M237.47,-508.45C191.58,-499.63 142.36,-480.89 113.78,-442 85.36,-403.32 90.61,-376.04 113.78,-334 131.28,-302.24 164.7,-279.83 195.28,-264.97"/>
+<polygon fill="black" stroke="black" points="196.54,-268.25 204.14,-260.86 193.6,-261.9 196.54,-268.25"/>
 </a>
 </g>
 <text xml:space="preserve" text-anchor="middle" x="122.39" y="-375" font-family="sans-serif" font-size="10.00">U/D</text>
 <g id="a_edge1&#45;headlabel"><a xlink:title="anti&#45;corruption&#45;layer">
-<text xml:space="preserve" text-anchor="middle" x="189.97" y="-260.46" font-family="sans-serif" font-size="10.00">ACL</text>
+<text xml:space="preserve" text-anchor="middle" x="205.51" y="-257.22" font-family="sans-serif" font-size="10.00">ACL</text>
 </a>
 </g>
 <g id="a_edge1&#45;taillabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="154" y="-481.48" font-family="sans-serif" font-size="10.00">PL</text>
+<text xml:space="preserve" text-anchor="middle" x="237.47" y="-505.45" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
 </g>
@@ -106,9 +106,9 @@
 <g id="node4" class="node">
 <title>#/boundedcontexts/encoding</title>
 <g id="a_node4"><a xlink:title="Jobs that turn a master into a ladder of renditions">
-<polygon fill="white" stroke="black" points="268.16,-342.1 274.89,-342.3 281.56,-342.59 288.12,-342.98 294.56,-343.47 300.85,-344.05 306.97,-344.73 312.89,-345.5 318.59,-346.35 324.04,-347.29 329.24,-348.32 334.16,-349.43 338.78,-350.62 343.09,-351.88 347.08,-353.21 350.73,-354.61 354.04,-356.08 357,-357.6 359.61,-359.18 361.86,-360.82 363.74,-362.5 365.27,-364.22 366.44,-365.98 367.25,-367.77 367.72,-369.59 367.85,-371.44 367.64,-373.3 367.11,-375.17 366.26,-377.06 365.12,-378.94 363.68,-380.83 361.97,-382.7 360,-384.56 357.78,-386.41 355.33,-388.23 352.66,-390.02 349.79,-391.78 346.73,-393.5 343.49,-395.18 340.1,-396.82 336.56,-398.4 332.89,-399.92 329.1,-401.39 325.21,-402.79 321.22,-404.12 317.15,-405.38 313.01,-406.57 308.8,-407.68 304.53,-408.71 300.22,-409.65 295.87,-410.5 291.48,-411.27 287.07,-411.95 282.63,-412.53 278.18,-413.02 273.71,-413.41 269.23,-413.7 264.74,-413.9 260.25,-414 255.75,-414 251.26,-413.9 246.77,-413.7 242.29,-413.41 237.82,-413.02 233.37,-412.53 228.93,-411.95 224.52,-411.27 220.13,-410.5 215.78,-409.65 211.47,-408.71 207.2,-407.68 202.99,-406.57 198.85,-405.38 194.78,-404.12 190.79,-402.79 186.9,-401.39 183.11,-399.92 179.44,-398.4 175.9,-396.82 172.51,-395.18 169.27,-393.5 166.21,-391.78 163.34,-390.02 160.67,-388.23 158.22,-386.41 156,-384.56 154.03,-382.7 152.32,-380.83 150.88,-378.94 149.74,-377.06 148.89,-375.17 148.36,-373.3 148.15,-371.44 148.28,-369.59 148.75,-367.77 149.56,-365.98 150.73,-364.22 152.26,-362.5 154.14,-360.82 156.39,-359.18 159,-357.6 161.96,-356.08 165.27,-354.61 168.92,-353.21 172.91,-351.88 177.22,-350.62 181.84,-349.43 186.76,-348.32 191.96,-347.29 197.41,-346.35 203.11,-345.5 209.03,-344.73 215.15,-344.05 221.44,-343.47 227.88,-342.98 234.44,-342.59 241.11,-342.3 247.84,-342.1 254.61,-342 261.39,-342 268.16,-342.1"/>
-<text xml:space="preserve" text-anchor="middle" x="258" y="-382.2" font-family="sans-serif" font-size="14.00">Encoding</text>
-<text xml:space="preserve" text-anchor="middle" x="258" y="-365.4" font-family="sans-serif" font-size="14.00">[Media Engineering Team]</text>
+<polygon fill="white" stroke="black" points="530.16,-342.1 536.89,-342.3 543.56,-342.59 550.12,-342.98 556.56,-343.47 562.85,-344.05 568.97,-344.73 574.89,-345.5 580.59,-346.35 586.04,-347.29 591.24,-348.32 596.16,-349.43 600.78,-350.62 605.09,-351.88 609.08,-353.21 612.73,-354.61 616.04,-356.08 619,-357.6 621.61,-359.18 623.86,-360.82 625.74,-362.5 627.27,-364.22 628.44,-365.98 629.25,-367.77 629.72,-369.59 629.85,-371.44 629.64,-373.3 629.11,-375.17 628.26,-377.06 627.12,-378.94 625.68,-380.83 623.97,-382.7 622,-384.56 619.78,-386.41 617.33,-388.23 614.66,-390.02 611.79,-391.78 608.73,-393.5 605.49,-395.18 602.1,-396.82 598.56,-398.4 594.89,-399.92 591.1,-401.39 587.21,-402.79 583.22,-404.12 579.15,-405.38 575.01,-406.57 570.8,-407.68 566.53,-408.71 562.22,-409.65 557.87,-410.5 553.48,-411.27 549.07,-411.95 544.63,-412.53 540.18,-413.02 535.71,-413.41 531.23,-413.7 526.74,-413.9 522.25,-414 517.75,-414 513.26,-413.9 508.77,-413.7 504.29,-413.41 499.82,-413.02 495.37,-412.53 490.93,-411.95 486.52,-411.27 482.13,-410.5 477.78,-409.65 473.47,-408.71 469.2,-407.68 464.99,-406.57 460.85,-405.38 456.78,-404.12 452.79,-402.79 448.9,-401.39 445.11,-399.92 441.44,-398.4 437.9,-396.82 434.51,-395.18 431.27,-393.5 428.21,-391.78 425.34,-390.02 422.67,-388.23 420.22,-386.41 418,-384.56 416.03,-382.7 414.32,-380.83 412.88,-378.94 411.74,-377.06 410.89,-375.17 410.36,-373.3 410.15,-371.44 410.28,-369.59 410.75,-367.77 411.56,-365.98 412.73,-364.22 414.26,-362.5 416.14,-360.82 418.39,-359.18 421,-357.6 423.96,-356.08 427.27,-354.61 430.92,-353.21 434.91,-351.88 439.22,-350.62 443.84,-349.43 448.76,-348.32 453.96,-347.29 459.41,-346.35 465.11,-345.5 471.03,-344.73 477.15,-344.05 483.44,-343.47 489.88,-342.98 496.44,-342.59 503.11,-342.3 509.84,-342.1 516.61,-342 523.39,-342 530.16,-342.1"/>
+<text xml:space="preserve" text-anchor="middle" x="520" y="-382.2" font-family="sans-serif" font-size="14.00">Encoding</text>
+<text xml:space="preserve" text-anchor="middle" x="520" y="-365.4" font-family="sans-serif" font-size="14.00">[Media Engineering Team]</text>
 </a>
 </g>
 </g>
@@ -116,17 +116,17 @@
 <g id="edge2" class="edge">
 <title>#/boundedcontexts/studio_production&#45;&gt;#/boundedcontexts/encoding</title>
 <g id="a_edge2"><a xlink:title="The delivery spec is the industry format; translating it would be pointless">
-<path fill="none" stroke="black" d="M227.67,-479.62C232.67,-463.02 238.7,-443.01 244.07,-425.22"/>
-<polygon fill="black" stroke="black" points="247.42,-426.23 246.95,-415.65 240.71,-424.21 247.42,-426.23"/>
+<path fill="none" stroke="black" d="M389.32,-481.73C414.02,-462.32 445.28,-437.74 471.04,-417.49"/>
+<polygon fill="black" stroke="black" points="473.01,-420.39 478.71,-411.46 468.68,-414.89 473.01,-420.39"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="middle" x="244.88" y="-453" font-family="sans-serif" font-size="10.00">U/D</text>
+<text xml:space="preserve" text-anchor="middle" x="436.92" y="-453" font-family="sans-serif" font-size="10.00">U/D</text>
 <g id="a_edge2&#45;headlabel"><a xlink:title="conformist">
-<text xml:space="preserve" text-anchor="middle" x="247.39" y="-411.2" font-family="sans-serif" font-size="10.00">CF</text>
+<text xml:space="preserve" text-anchor="middle" x="479.9" y="-407.52" font-family="sans-serif" font-size="10.00">CF</text>
 </a>
 </g>
 <g id="a_edge2&#45;taillabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="227.67" y="-476.62" font-family="sans-serif" font-size="10.00">PL</text>
+<text xml:space="preserve" text-anchor="middle" x="389.32" y="-478.73" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
 </g>
@@ -134,9 +134,9 @@
 <g id="node2" class="node">
 <title>#/boundedcontexts/licensing</title>
 <g id="a_node2"><a xlink:title="Deals with licensors and the windows inside them">
-<polygon fill="white" stroke="black" points="527.5,-342.1 534.44,-342.3 541.32,-342.59 548.1,-342.98 554.75,-343.47 561.24,-344.05 567.56,-344.73 573.67,-345.5 579.56,-346.35 585.19,-347.29 590.56,-348.32 595.63,-349.43 600.4,-350.62 604.86,-351.88 608.97,-353.21 612.75,-354.61 616.16,-356.08 619.22,-357.6 621.91,-359.18 624.23,-360.82 626.18,-362.5 627.76,-364.22 628.97,-365.98 629.81,-367.77 630.29,-369.59 630.42,-371.44 630.21,-373.3 629.66,-375.17 628.78,-377.06 627.6,-378.94 626.12,-380.83 624.35,-382.7 622.32,-384.56 620.03,-386.41 617.49,-388.23 614.74,-390.02 611.77,-391.78 608.61,-393.5 605.27,-395.18 601.77,-396.82 598.12,-398.4 594.33,-399.92 590.42,-401.39 586.4,-402.79 582.28,-404.12 578.07,-405.38 573.79,-406.57 569.45,-407.68 565.05,-408.71 560.59,-409.65 556.1,-410.5 551.57,-411.27 547.02,-411.95 542.43,-412.53 537.83,-413.02 533.22,-413.41 528.59,-413.7 523.96,-413.9 519.32,-414 514.68,-414 510.04,-413.9 505.41,-413.7 500.78,-413.41 496.17,-413.02 491.57,-412.53 486.98,-411.95 482.43,-411.27 477.9,-410.5 473.41,-409.65 468.95,-408.71 464.55,-407.68 460.21,-406.57 455.93,-405.38 451.72,-404.12 447.6,-402.79 443.58,-401.39 439.67,-399.92 435.88,-398.4 432.23,-396.82 428.73,-395.18 425.39,-393.5 422.23,-391.78 419.26,-390.02 416.51,-388.23 413.97,-386.41 411.68,-384.56 409.65,-382.7 407.88,-380.83 406.4,-378.94 405.22,-377.06 404.34,-375.17 403.79,-373.3 403.58,-371.44 403.71,-369.59 404.19,-367.77 405.03,-365.98 406.24,-364.22 407.82,-362.5 409.77,-360.82 412.09,-359.18 414.78,-357.6 417.84,-356.08 421.25,-354.61 425.03,-353.21 429.14,-351.88 433.6,-350.62 438.37,-349.43 443.44,-348.32 448.81,-347.29 454.44,-346.35 460.33,-345.5 466.44,-344.73 472.76,-344.05 479.25,-343.47 485.9,-342.98 492.68,-342.59 499.56,-342.3 506.5,-342.1 513.5,-342 520.5,-342 527.5,-342.1"/>
-<text xml:space="preserve" text-anchor="middle" x="517" y="-382.2" font-family="sans-serif" font-size="14.00">Licensing</text>
-<text xml:space="preserve" text-anchor="middle" x="517" y="-365.4" font-family="sans-serif" font-size="14.00">[Content Acquisition Team]</text>
+<polygon fill="white" stroke="black" points="271.5,-342.1 278.44,-342.3 285.32,-342.59 292.1,-342.98 298.75,-343.47 305.24,-344.05 311.56,-344.73 317.67,-345.5 323.56,-346.35 329.19,-347.29 334.56,-348.32 339.63,-349.43 344.4,-350.62 348.86,-351.88 352.97,-353.21 356.75,-354.61 360.16,-356.08 363.22,-357.6 365.91,-359.18 368.23,-360.82 370.18,-362.5 371.76,-364.22 372.97,-365.98 373.81,-367.77 374.29,-369.59 374.42,-371.44 374.21,-373.3 373.66,-375.17 372.78,-377.06 371.6,-378.94 370.12,-380.83 368.35,-382.7 366.32,-384.56 364.03,-386.41 361.49,-388.23 358.74,-390.02 355.77,-391.78 352.61,-393.5 349.27,-395.18 345.77,-396.82 342.12,-398.4 338.33,-399.92 334.42,-401.39 330.4,-402.79 326.28,-404.12 322.07,-405.38 317.79,-406.57 313.45,-407.68 309.05,-408.71 304.59,-409.65 300.1,-410.5 295.57,-411.27 291.02,-411.95 286.43,-412.53 281.83,-413.02 277.22,-413.41 272.59,-413.7 267.96,-413.9 263.32,-414 258.68,-414 254.04,-413.9 249.41,-413.7 244.78,-413.41 240.17,-413.02 235.57,-412.53 230.98,-411.95 226.43,-411.27 221.9,-410.5 217.41,-409.65 212.95,-408.71 208.55,-407.68 204.21,-406.57 199.93,-405.38 195.72,-404.12 191.6,-402.79 187.58,-401.39 183.67,-399.92 179.88,-398.4 176.23,-396.82 172.73,-395.18 169.39,-393.5 166.23,-391.78 163.26,-390.02 160.51,-388.23 157.97,-386.41 155.68,-384.56 153.65,-382.7 151.88,-380.83 150.4,-378.94 149.22,-377.06 148.34,-375.17 147.79,-373.3 147.58,-371.44 147.71,-369.59 148.19,-367.77 149.03,-365.98 150.24,-364.22 151.82,-362.5 153.77,-360.82 156.09,-359.18 158.78,-357.6 161.84,-356.08 165.25,-354.61 169.03,-353.21 173.14,-351.88 177.6,-350.62 182.37,-349.43 187.44,-348.32 192.81,-347.29 198.44,-346.35 204.33,-345.5 210.44,-344.73 216.76,-344.05 223.25,-343.47 229.9,-342.98 236.68,-342.59 243.56,-342.3 250.5,-342.1 257.5,-342 264.5,-342 271.5,-342.1"/>
+<text xml:space="preserve" text-anchor="middle" x="261" y="-382.2" font-family="sans-serif" font-size="14.00">Licensing</text>
+<text xml:space="preserve" text-anchor="middle" x="261" y="-365.4" font-family="sans-serif" font-size="14.00">[Content Acquisition Team]</text>
 </a>
 </g>
 </g>
@@ -144,17 +144,17 @@
 <g id="edge3" class="edge">
 <title>#/boundedcontexts/licensing&#45;&gt;#/boundedcontexts/catalogue</title>
 <g id="a_edge3"><a xlink:title="upstream&#45;downstream">
-<path fill="none" stroke="black" d="M452.52,-346.37C425.44,-333.41 393.63,-318.09 365,-304 342.79,-293.07 318.48,-280.87 297.24,-270.14"/>
-<polygon fill="black" stroke="black" points="298.94,-267.07 288.43,-265.68 295.78,-273.32 298.94,-267.07"/>
+<path fill="none" stroke="black" d="M261,-341.62C261,-325.09 261,-305.2 261,-287.48"/>
+<polygon fill="black" stroke="black" points="264.5,-287.71 261,-277.71 257.5,-287.71 264.5,-287.71"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="middle" x="411.03" y="-315" font-family="sans-serif" font-size="10.00">U/D</text>
+<text xml:space="preserve" text-anchor="middle" x="269.61" y="-315" font-family="sans-serif" font-size="10.00">U/D</text>
 <g id="a_edge3&#45;headlabel"><a xlink:title="anti&#45;corruption&#45;layer">
-<text xml:space="preserve" text-anchor="middle" x="287.08" y="-262" font-family="sans-serif" font-size="10.00">ACL</text>
+<text xml:space="preserve" text-anchor="middle" x="261" y="-273.2" font-family="sans-serif" font-size="10.00">ACL</text>
 </a>
 </g>
 <g id="a_edge3&#45;taillabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="452.52" y="-343.37" font-family="sans-serif" font-size="10.00">PL</text>
+<text xml:space="preserve" text-anchor="middle" x="261" y="-338.62" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
 </g>
@@ -169,20 +169,20 @@
 </g>
 </g>
 <!-- #/boundedcontexts/catalogue&#45;&gt;#/boundedcontexts/playback -->
-<g id="edge7" class="edge">
+<g id="edge6" class="edge">
 <title>#/boundedcontexts/catalogue&#45;&gt;#/boundedcontexts/playback</title>
-<g id="a_edge7"><a xlink:title="upstream&#45;downstream">
-<path fill="none" stroke="black" d="M259.22,-204.6C274.11,-177.95 294.83,-140.88 310.84,-112.23"/>
-<polygon fill="black" stroke="black" points="313.73,-114.24 315.55,-103.8 307.62,-110.83 313.73,-114.24"/>
+<g id="a_edge6"><a xlink:title="upstream&#45;downstream">
+<path fill="none" stroke="black" d="M276.15,-204.19C287.55,-178 303.26,-141.92 315.58,-113.61"/>
+<polygon fill="black" stroke="black" points="318.73,-115.14 319.52,-104.57 312.32,-112.34 318.73,-115.14"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="middle" x="287.6" y="-171" font-family="sans-serif" font-size="10.00">U/D</text>
-<g id="a_edge7&#45;headlabel"><a xlink:title="anti&#45;corruption&#45;layer">
-<text xml:space="preserve" text-anchor="middle" x="316.29" y="-99.48" font-family="sans-serif" font-size="10.00">ACL</text>
+<text xml:space="preserve" text-anchor="middle" x="299.98" y="-171" font-family="sans-serif" font-size="10.00">U/D</text>
+<g id="a_edge6&#45;headlabel"><a xlink:title="anti&#45;corruption&#45;layer">
+<text xml:space="preserve" text-anchor="middle" x="320.12" y="-100.18" font-family="sans-serif" font-size="10.00">ACL</text>
 </a>
 </g>
-<g id="a_edge7&#45;taillabel"><a xlink:title="open&#45;host&#45;service">
-<text xml:space="preserve" text-anchor="middle" x="259.22" y="-201.6" font-family="sans-serif" font-size="10.00">OHS</text>
+<g id="a_edge6&#45;taillabel"><a xlink:title="open&#45;host&#45;service">
+<text xml:space="preserve" text-anchor="middle" x="276.15" y="-201.19" font-family="sans-serif" font-size="10.00">OHS</text>
 </a>
 </g>
 </g>
@@ -197,56 +197,38 @@
 </g>
 </g>
 <!-- #/boundedcontexts/catalogue&#45;&gt;#/boundedcontexts/recommendations -->
-<g id="edge8" class="edge">
+<g id="edge7" class="edge">
 <title>#/boundedcontexts/catalogue&#45;&gt;#/boundedcontexts/recommendations</title>
-<g id="a_edge8"><a xlink:title="upstream&#45;downstream">
-<path fill="none" stroke="black" d="M217.4,-205.01C199.64,-178.28 174.78,-140.88 155.62,-112.06"/>
-<polygon fill="black" stroke="black" points="158.65,-110.3 150.2,-103.9 152.82,-114.17 158.65,-110.3"/>
+<g id="a_edge7"><a xlink:title="upstream&#45;downstream">
+<path fill="none" stroke="black" d="M234.53,-205.41C213.17,-178.32 183.01,-140.05 160.06,-110.94"/>
+<polygon fill="black" stroke="black" points="163.07,-109.1 154.13,-103.42 157.57,-113.44 163.07,-109.1"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="middle" x="208.83" y="-171" font-family="sans-serif" font-size="10.00">U/D</text>
-<g id="a_edge8&#45;headlabel"><a xlink:title="conformist">
-<text xml:space="preserve" text-anchor="middle" x="149.36" y="-99.64" font-family="sans-serif" font-size="10.00">CF</text>
+<text xml:space="preserve" text-anchor="middle" x="222.44" y="-171" font-family="sans-serif" font-size="10.00">U/D</text>
+<g id="a_edge7&#45;headlabel"><a xlink:title="conformist">
+<text xml:space="preserve" text-anchor="middle" x="153.19" y="-99.23" font-family="sans-serif" font-size="10.00">CF</text>
 </a>
 </g>
-<g id="a_edge8&#45;taillabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="217.4" y="-202.01" font-family="sans-serif" font-size="10.00">PL</text>
+<g id="a_edge7&#45;taillabel"><a xlink:title="published&#45;language">
+<text xml:space="preserve" text-anchor="middle" x="234.53" y="-202.41" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/encoding&#45;&gt;#/boundedcontexts/catalogue -->
 <g id="edge4" class="edge">
 <title>#/boundedcontexts/encoding&#45;&gt;#/boundedcontexts/catalogue</title>
-<g id="a_edge4"><a xlink:title="Completions come back as events">
-<path fill="none" stroke="black" d="M218.47,-343.28C213.71,-337.36 209.56,-330.88 206.78,-324 201.45,-310.83 204.18,-296.47 209.89,-283.45"/>
-<polygon fill="black" stroke="black" points="212.93,-285.2 214.32,-274.69 206.68,-282.03 212.93,-285.2"/>
+<g id="a_edge4"><a xlink:title="Catalogue is the caller of SubmitEncode and the main reader of EncodingCompleted; it is consulted on both contracts">
+<path fill="none" stroke="black" d="M460.58,-345.8C417.53,-323.2 359.7,-292.83 317.38,-270.6"/>
+<polygon fill="black" stroke="black" points="319.06,-267.53 308.58,-265.98 315.81,-273.73 319.06,-267.53"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="middle" x="215.39" y="-315" font-family="sans-serif" font-size="10.00">U/D</text>
+<text xml:space="preserve" text-anchor="middle" x="421.2" y="-315" font-family="sans-serif" font-size="10.00">C/S</text>
 <g id="a_edge4&#45;headlabel"><a xlink:title="anti&#45;corruption&#45;layer">
-<text xml:space="preserve" text-anchor="middle" x="215.01" y="-270.34" font-family="sans-serif" font-size="10.00">ACL</text>
+<text xml:space="preserve" text-anchor="middle" x="307.24" y="-262.28" font-family="sans-serif" font-size="10.00">ACL</text>
 </a>
 </g>
-<g id="a_edge4&#45;taillabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="218.47" y="-340.28" font-family="sans-serif" font-size="10.00">PL</text>
-</a>
-</g>
-</g>
-<!-- #/boundedcontexts/encoding&#45;&gt;#/boundedcontexts/catalogue -->
-<g id="edge5" class="edge">
-<title>#/boundedcontexts/encoding&#45;&gt;#/boundedcontexts/catalogue</title>
-<g id="a_edge5"><a xlink:title="Catalogue is the caller of SubmitEncode and is consulted on its contract">
-<path fill="none" stroke="black" d="M253.32,-341.62C251.13,-325.09 248.5,-305.2 246.15,-287.48"/>
-<polygon fill="black" stroke="black" points="249.64,-287.15 244.86,-277.7 242.7,-288.07 249.64,-287.15"/>
-</a>
-</g>
-<text xml:space="preserve" text-anchor="middle" x="258.12" y="-315" font-family="sans-serif" font-size="10.00">C/S</text>
-<g id="a_edge5&#45;headlabel"><a xlink:title="anti&#45;corruption&#45;layer">
-<text xml:space="preserve" text-anchor="middle" x="244.66" y="-273.2" font-family="sans-serif" font-size="10.00">ACL</text>
-</a>
-</g>
-<g id="a_edge5&#45;taillabel"><a xlink:title="open&#45;host&#45;service">
-<text xml:space="preserve" text-anchor="middle" x="253.32" y="-338.62" font-family="sans-serif" font-size="10.00">OHS</text>
+<g id="a_edge4&#45;taillabel"><a xlink:title="open&#45;host&#45;service, published&#45;language">
+<text xml:space="preserve" text-anchor="middle" x="460.58" y="-342.8" font-family="sans-serif" font-size="10.00">OHS+PL</text>
 </a>
 </g>
 </g>
@@ -261,20 +243,20 @@
 </g>
 </g>
 <!-- #/boundedcontexts/encoding&#45;&gt;#/boundedcontexts/edge_delivery -->
-<g id="edge6" class="edge">
+<g id="edge5" class="edge">
 <title>#/boundedcontexts/encoding&#45;&gt;#/boundedcontexts/edge_delivery</title>
-<g id="a_edge6"><a xlink:title="upstream&#45;downstream">
-<path fill="none" stroke="black" d="M339.38,-350.45C370.18,-339.87 399.26,-329.03 405,-324 469.67,-267.32 507.12,-171.25 524.67,-114.6"/>
-<polygon fill="black" stroke="black" points="527.95,-115.85 527.48,-105.27 521.25,-113.84 527.95,-115.85"/>
+<g id="a_edge5"><a xlink:title="upstream&#45;downstream">
+<path fill="none" stroke="black" d="M521.95,-341.67C525.02,-286 530.99,-177.85 534.42,-115.79"/>
+<polygon fill="black" stroke="black" points="537.91,-116.08 534.96,-105.9 530.92,-115.7 537.91,-116.08"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="middle" x="504.92" y="-237" font-family="sans-serif" font-size="10.00">U/D</text>
-<g id="a_edge6&#45;headlabel"><a xlink:title="conformist">
-<text xml:space="preserve" text-anchor="middle" x="527.92" y="-100.82" font-family="sans-serif" font-size="10.00">CF</text>
+<text xml:space="preserve" text-anchor="middle" x="538.8" y="-237" font-family="sans-serif" font-size="10.00">U/D</text>
+<g id="a_edge5&#45;headlabel"><a xlink:title="conformist">
+<text xml:space="preserve" text-anchor="middle" x="535.05" y="-101.39" font-family="sans-serif" font-size="10.00">CF</text>
 </a>
 </g>
-<g id="a_edge6&#45;taillabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="339.38" y="-347.45" font-family="sans-serif" font-size="10.00">PL</text>
+<g id="a_edge5&#45;taillabel"><a xlink:title="published&#45;language">
+<text xml:space="preserve" text-anchor="middle" x="521.95" y="-338.67" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
 </g>

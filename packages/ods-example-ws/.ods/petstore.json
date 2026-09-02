@@ -100,11 +100,39 @@
             },
             "change_pet_status": {
               "name": "ChangePetStatus",
-              "description": "Move a pet between available, pending and sold",
+              "description": "Move a pet between available, pending and sold; the catalogue's own edits, e.g. relisting",
               "type": "operation",
               "internal": true,
               "schema": {
                 "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_status_changed"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
+                }
+              ]
+            },
+            "reserve_pet": {
+              "name": "ReservePet",
+              "description": "available → pending: the pet is held for an approved order; issued by Sales on approval",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
+                }
+              ]
+            },
+            "mark_pet_sold": {
+              "name": "MarkPetSold",
+              "description": "pending → sold: the pet has gone to its owner; issued by Sales on delivery",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
               },
               "raises": [
                 {
@@ -256,10 +284,10 @@
             },
             "sold_not_reopen": {
               "name": "SoldNotReopen",
-              "description": "Once sold, a pet does not revert to available without an explicit policy, so a buyer is never undercut",
+              "description": "Once sold, a pet does not revert to available without an explicit policy, so a buyer is never undercut. Constrains the Pet because the transition is the pet's, not the status value's",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet"
                 }
               ]
             }
@@ -312,6 +340,20 @@
                 "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
               }
             },
+            "upload_image": {
+              "name": "UploadImage",
+              "description": "POST /pet/{petId}/uploadImage; adds a PhotoUrl, so it is a profile update",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_updated"
+                }
+              ]
+            },
             "delete_pet": {
               "name": "DeletePet",
               "description": "DELETE /pet/{petId}",
@@ -360,7 +402,7 @@
         },
         "available": {
           "name": "Available",
-          "definition": "A pet that can be ordered; it becomes pending once an order is placed",
+          "definition": "A pet that can be ordered; it becomes pending when Sales approves an order for it (ReservePet) and sold when that order is delivered (MarkPetSold)",
           "embodiedBy": {
             "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
           }
@@ -613,7 +655,7 @@
             },
             "quantity": {
               "name": "Quantity",
-              "description": "How many of the pet are ordered",
+              "description": "The v3 API's quantity field, kept for the wire shape. A Pet is an individual animal, so the invariant below pins it to 1",
               "attributes": {
                 "value": {
                   "name": "value",
@@ -635,9 +677,9 @@
             }
           },
           "invariants": {
-            "quantity_positive": {
-              "name": "QuantityPositive",
-              "description": "Quantity must be > 0; an order for nothing is a mistake, not an order",
+            "one_animal_per_order": {
+              "name": "OneAnimalPerOrder",
+              "description": "Quantity is exactly 1: a Pet is one animal with one status, so it cannot be sold five times. The API's quantity field is accepted but never exceeds one",
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
@@ -646,22 +688,22 @@
             },
             "approve_only_when_available": {
               "name": "ApproveOnlyWhenAvailable",
-              "description": "Approve only if Pet.status == available",
+              "description": "Move to approved only after the catalogue's summary reported the pet available; the catalogue's status itself is outside this aggregate, so the check is a read through the ACL, not a shared invariant",
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status"
-                },
-                {
-                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
                 }
               ]
             },
             "deliver_only_when_approved": {
               "name": "DeliverOnlyWhenApproved",
-              "description": "Deliver only from approved, so nothing ships that was never checked",
+              "description": "Deliver only from approved and only once a ship date is set, so nothing is marked delivered that was never checked or never dispatched",
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status"
+                },
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/ship_date"
                 }
               ]
             }
@@ -718,6 +760,18 @@
                 "$ref": "#/boundedcontexts/catalog_bc/services/pet_app/provides/get_pet_summary"
               },
               "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/reserve_pet"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/mark_pet_sold"
+              },
+              "pattern": "anti-corruption-layer"
             }
           ]
         }
@@ -725,7 +779,7 @@
       "policies": {
         "approve_when_pet_available": {
           "name": "Approve when pet available",
-          "description": "When a pet becomes available and an order for it is placed, approve the order",
+          "description": "On OrderPlaced, or on PetStatusChanged to available, look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest",
           "on": [
             {
               "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
@@ -739,17 +793,52 @@
               "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/approve_order"
             }
           ]
+        },
+        "reserve_pet_on_approval": {
+          "name": "Reserve pet on approval",
+          "description": "When an order is approved, hold its pet (available → pending) so nobody else can be approved for the same animal",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_approved"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/reserve_pet"
+            }
+          ]
+        },
+        "mark_pet_sold_on_delivery": {
+          "name": "Mark pet sold on delivery",
+          "description": "When an order is delivered, the pet is sold (pending → sold)",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_delivered"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/mark_pet_sold"
+            }
+          ]
         }
       },
       "glossary": {
         "order": {
           "name": "Order",
-          "definition": "A customer's request to buy one pet in a given quantity",
+          "definition": "A customer's request to buy one pet; placed, then approved, then delivered",
           "aliases": [
             "Purchase"
           ],
           "embodiedBy": {
             "$ref": "#/boundedcontexts/sales_bc/aggregates/order"
+          }
+        },
+        "pet": {
+          "name": "Pet",
+          "definition": "Only the identity of a catalogue pet; Sales holds no pet attributes and asks the catalogue for availability",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/sales_bc/aggregates/order/entities/order/attributes/pet_id"
           }
         },
         "approval": {
@@ -1132,7 +1221,7 @@
       "services": {
         "dispatch_planner": {
           "name": "DispatchPlanner",
-          "description": "Chooses ship dates across pending shipments so pets of one category travel together",
+          "description": "Chooses ship dates across planned shipments so orders approved on the same day leave together; it only needs orderIds and dates, which is all OrderApproved gives it",
           "type": "domain",
           "provides": {
             "plan_dispatch": {

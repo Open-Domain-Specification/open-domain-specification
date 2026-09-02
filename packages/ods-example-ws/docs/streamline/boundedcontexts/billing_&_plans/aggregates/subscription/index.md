@@ -11,7 +11,7 @@ A household on a plan, and its invoices
 | Type | Name | Description | Attributes |
 | --- | --- | --- | --- |
 | Entity (Root) | **Subscription** | The household's current arrangement | **subscriptionId**: `string`, householdId: `string`, status: `'active' | 'dunning' | 'lapsed'`, plan: `Plan` |
-| Entity | Invoice | One period's charge; an entity because it is numbered and paid | **invoiceId**: `string`, amount: `Money`, paid: `boolean` |
+| Entity | Invoice | One period's charge; an entity because it is numbered and paid | **invoiceId**: `string`, lines: `{source: 'subscription' | 'discs', amount: Money}[]`, amount: `Money`, paid: `boolean` |
 | Value Object | Plan | A tier: price, concurrent streams, ad-supported or not | tier: `'basic-with-ads' | 'standard' | 'premium'`, price: `Money`, maxStreams: `int`, adSupported: `boolean` |
 | Value Object | Money | An amount in a currency: minor units and an ISO 4217 code | amountMinor: `int64`, currency: `ISO 4217 code` |
 | Value Object | BillingPeriod | The month an invoice covers | from: `date`, to: `date` |
@@ -29,8 +29,8 @@ A household on a plan, and its invoices
 ## Invariants
 | Name | Description | Constrains |
 | --- | --- | --- |
-| OneActiveSubscriptionPerHousehold | A household has at most one active subscription | Subscription |
-| InvoiceAmountEqualsPlanPrice | An invoice charges exactly the plan price for its period | Invoice, Plan |
+| OneActiveSubscriptionPerHousehold | A household has at most one active subscription; enforced by StartSubscription on householdId, since one subscription cannot see another | Subscription.householdId |
+| SubscriptionLineEqualsPlanPrice | The subscription line on an invoice is exactly the plan price for its period; other lines of business (the disc charge) add their own lines and the total is their sum | Invoice, Plan |
 | NoEntitlementWhenLapsed | A lapsed subscription entitles nothing | Subscription |
 
 
@@ -46,6 +46,7 @@ A household on a plan, and its invoices
 | StartDunning | operation | yes | - | Retry the charge over a grace period | - | - |
 | LapseSubscription | operation | yes | - | End entitlement after dunning fails | - | SubscriptionLapsed |
 | AddInvoiceLine | operation | yes | - | Add a charge from another line of business to the household's bill | - | - |
+| RegisterHousehold | operation | yes | - | Record a household with no plan yet, so StartSubscription can find it and one-subscription-per-household can be checked | - | - |
 
 
 ## Consumes

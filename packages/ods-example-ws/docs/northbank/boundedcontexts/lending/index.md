@@ -15,7 +15,7 @@ Applications, agreements, loans and schedules
 | --- | --- | --- | --- |
 | **Loan** | Money lent under a signed agreement, repaid by a schedule | - | Loan |
 | **Drawdown** | Paying the principal to the customer. The ledger calls it a posting | Disbursement | Disburse |
-| **Arrears** | At least one installment missed | - | LoanStatus |
+| **Arrears** | At least one installment missed; the regulatory notice follows (IssueArrearsNotice). Notice intervals and forbearance are servicing detail left out (DISCOVERY section 8) | - | LoanStatus |
 
 
 ## Aggregates

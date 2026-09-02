@@ -449,9 +449,10 @@
                   "name": "buyBoxPriceMinor",
                   "type": "int64"
                 },
-                "prime_eligible": {
-                  "name": "primeEligible",
-                  "type": "boolean"
+                "next_day_eligible": {
+                  "name": "nextDayEligible",
+                  "type": "boolean",
+                  "description": "The badge: the buy box offer ships from a RiverMart warehouse, so next-day is the default"
                 }
               },
               "relations": []
@@ -492,6 +493,12 @@
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/advertising/services/ads_api/provides/get_sponsored_results"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/advertising/services/ads_api/provides/record_ad_click"
               },
               "pattern": "conformist"
             }
@@ -567,7 +574,7 @@
       "aggregates": {
         "offer": {
           "name": "Offer",
-          "description": "One seller's price and stock for one SKU",
+          "description": "One seller's price and stock for one SKU. RiverMart's own retail arm is one more seller here and wins the buy box on the same rules",
           "provides": {
             "offer_published": {
               "name": "OfferPublished",
@@ -670,6 +677,16 @@
                   "valueobject": {
                     "$ref": "#/boundedcontexts/offers/aggregates/offer/valueobjects/condition"
                   }
+                },
+                "fulfilled_by_river_mart": {
+                  "name": "fulfilledByRiverMart",
+                  "type": "boolean",
+                  "description": "Stock is in a RiverMart warehouse, so the offer carries the next-day promise"
+                },
+                "seller_rating": {
+                  "name": "sellerRating",
+                  "type": "int 0..100",
+                  "description": "The marketplace's rolling score for the seller, weighed against price and delivery in the buy box"
                 }
               },
               "relations": [
@@ -732,10 +749,13 @@
             },
             "one_active_offer_per_seller_sku": {
               "name": "OneActiveOfferPerSellerSku",
-              "description": "A seller has at most one active offer per SKU, so the buy box compares like with like",
+              "description": "A seller has at most one active offer per SKU, so the buy box compares like with like. Enforced by PublishOffer over the seller's existing offers, since one Offer cannot see another",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer"
+                  "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer/attributes/seller_id"
+                },
+                {
+                  "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer/attributes/sku"
                 }
               ]
             }
@@ -840,7 +860,7 @@
         },
         "offer": {
           "name": "Offer",
-          "definition": "A seller's price, stock and condition for one SKU",
+          "definition": "A seller's price, stock and condition for one SKU; first-party retail is a seller like any other for this purpose",
           "embodiedBy": {
             "$ref": "#/boundedcontexts/offers/aggregates/offer"
           }
@@ -1118,6 +1138,13 @@
           "embodiedBy": {
             "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account"
           }
+        },
+        "vendor": {
+          "name": "Vendor",
+          "definition": "Not a seller. A wholesale supplier to first-party retail, handled by Vendor Purchasing; the two accounts were never unified and will not be",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)"
+          }
         }
       },
       "schemas": {
@@ -1177,6 +1204,12 @@
                   "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/provides/cart_checked_out"
                 }
               ]
+            },
+            "reopen_cart": {
+              "name": "ReopenCart",
+              "description": "Unfreeze a checked-out cart after a declined payment so the customer can try again",
+              "type": "operation",
+              "internal": true
             }
           },
           "consumes": [],
@@ -1358,6 +1391,12 @@
             },
             {
               "consumable": {
+                "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_declined"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
                 "$ref": "#/boundedcontexts/identity/services/identity_api/provides/get_customer"
               },
               "pattern": "conformist"
@@ -1391,6 +1430,20 @@
           "then": [
             {
               "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/place_order"
+            }
+          ]
+        },
+        "reopen_cart_on_decline": {
+          "name": "Reopen cart on decline",
+          "description": "A declined hold leaves the cart open so the customer can try another instrument",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_declined"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/provides/reopen_cart"
             }
           ]
         }
@@ -1542,6 +1595,12 @@
                   "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_completed"
                 }
               ]
+            },
+            "hold_for_stock": {
+              "name": "HoldForStock",
+              "description": "Put the order into awaiting-stock when no site could reserve for it; it is retried when stock is received or cancelled by the customer",
+              "type": "operation",
+              "internal": true
             }
           },
           "consumes": [
@@ -1560,6 +1619,12 @@
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/return_received"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_short"
               },
               "pattern": "anti-corruption-layer"
             },
@@ -1830,11 +1895,11 @@
             },
             "order_status": {
               "name": "OrderStatus",
-              "description": "placed, cancelled, partially-shipped, shipped, completed",
+              "description": "placed, awaiting-stock, cancelled, partially-shipped, shipped, completed",
               "attributes": {
                 "value": {
                   "name": "value",
-                  "type": "'placed' | 'cancelled' | 'partially-shipped' | 'shipped' | 'completed'"
+                  "type": "'placed' | 'awaiting-stock' | 'cancelled' | 'partially-shipped' | 'shipped' | 'completed'"
                 }
               },
               "relations": []
@@ -1939,6 +2004,20 @@
           "then": [
             {
               "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/record_shipment"
+            }
+          ]
+        },
+        "hold_on_stock_short": {
+          "name": "Hold on stock short",
+          "description": "When no site can reserve for the order it waits as awaiting-stock rather than silently stalling",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_short"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/hold_for_stock"
             }
           ]
         },
@@ -2154,9 +2233,21 @@
                   "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/refund_issued"
                 }
               ]
+            },
+            "attach_order": {
+              "name": "AttachOrder",
+              "description": "Record the order id on the payment intent so captures and refunds can find it",
+              "type": "operation",
+              "internal": true
             }
           },
           "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
+              },
+              "pattern": "anti-corruption-layer"
+            },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/shipment_dispatched"
@@ -2334,6 +2425,20 @@
       },
       "services": {},
       "policies": {
+        "attach_order_to_payment": {
+          "name": "Attach order to payment",
+          "description": "Every placed order is linked to the hold that paid for it",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/attach_order"
+            }
+          ]
+        },
         "capture_on_dispatch": {
           "name": "Capture on dispatch",
           "description": "Charge for each shipment as it leaves",
@@ -2668,6 +2773,12 @@
           "name": "InventoryPosition",
           "description": "How much of a SKU one site holds and how much is promised",
           "provides": {
+            "release_reservation": {
+              "name": "ReleaseReservation",
+              "description": "Drop the reservation held for a cancelled order so the stock is available again",
+              "type": "operation",
+              "internal": true
+            },
             "stock_reserved": {
               "name": "StockReserved",
               "description": "Stock is held for an order at a site",
@@ -2725,6 +2836,12 @@
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_cancelled"
               },
               "pattern": "anti-corruption-layer"
             },
@@ -2848,6 +2965,12 @@
               "type": "operation",
               "internal": true
             },
+            "void_pick_tasks": {
+              "name": "VoidPickTasks",
+              "description": "Mark every pending pick task of a cancelled order voided so nothing is picked or packed for it",
+              "type": "operation",
+              "internal": true
+            },
             "dispatch": {
               "name": "Dispatch",
               "description": "Hand a packed package to the carrier",
@@ -2875,6 +2998,12 @@
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/return_requested"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_cancelled"
               },
               "pattern": "anti-corruption-layer"
             }
@@ -2934,6 +3063,11 @@
                 "quantity": {
                   "name": "quantity",
                   "type": "int"
+                },
+                "status": {
+                  "name": "status",
+                  "type": "'pending' | 'picked' | 'voided'",
+                  "description": "pending until the picker scans it; voided when the order is cancelled first"
                 }
               },
               "relations": []
@@ -2957,6 +3091,14 @@
                 }
               },
               "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/entities/pick_task"
+                  },
+                  "relation": "references",
+                  "label": "packs",
+                  "cardinality": "1..*"
+                },
                 {
                   "target": {
                     "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/valueobjects/tracking_label"
@@ -2988,10 +3130,13 @@
           "invariants": {
             "dispatch_only_when_picked": {
               "name": "DispatchOnlyWhenPicked",
-              "description": "A package is dispatched only when every pick task in it is complete",
+              "description": "A package is dispatched only when every pick task packed into it has status picked",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/entities/fulfilment_order"
+                  "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/entities/package"
+                },
+                {
+                  "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/entities/pick_task/attributes/status"
                 }
               ]
             }
@@ -3042,6 +3187,23 @@
             }
           ]
         },
+        "release_on_cancellation": {
+          "name": "Release on cancellation",
+          "description": "A cancelled order gives its stock back and its pick tasks are voided before a picker reaches them",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_cancelled"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/release_reservation"
+            },
+            {
+              "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/void_pick_tasks"
+            }
+          ]
+        },
         "book_in_vendor_deliveries": {
           "name": "Book in vendor deliveries",
           "description": "The legacy export is translated into stock receipts",
@@ -3076,6 +3238,13 @@
           ],
           "embodiedBy": {
             "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/entities/package"
+          }
+        },
+        "fulfilment_order": {
+          "name": "Fulfilment order",
+          "definition": "The warehouse's own work record for one customer order at one site. 'Order' alone is ambiguous here: customer order (Orders), purchase order (VPS) or this",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order"
           }
         }
       },
@@ -3223,28 +3392,21 @@
             },
             "stop": {
               "name": "Stop",
-              "description": "One address and the packages to hand over there",
+              "description": "One address and the parcels to hand over there",
               "root": false,
               "attributes": {
                 "sequence": {
                   "name": "sequence",
                   "type": "int"
-                },
-                "label": {
-                  "name": "label",
-                  "type": "TrackingLabel",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/valueobjects/tracking_label"
-                  }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/valueobjects/tracking_label"
+                    "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/entities/parcel"
                   },
-                  "relation": "uses",
-                  "label": "delivers",
+                  "relation": "includes",
+                  "label": "hands-over",
                   "cardinality": "1..*"
                 },
                 {
@@ -3254,6 +3416,34 @@
                   "relation": "uses",
                   "label": "proven-by",
                   "cardinality": "0..1"
+                }
+              ]
+            },
+            "parcel": {
+              "name": "Parcel",
+              "description": "One labelled item to hand over at a stop; the warehouse's package once it is on a van",
+              "root": false,
+              "attributes": {
+                "label": {
+                  "name": "label",
+                  "type": "TrackingLabel",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/valueobjects/tracking_label"
+                  }
+                },
+                "order_id": {
+                  "name": "orderId",
+                  "type": "string"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/valueobjects/tracking_label"
+                  },
+                  "relation": "uses",
+                  "label": "scanned-as",
+                  "cardinality": "1"
                 }
               ]
             }
@@ -3319,9 +3509,19 @@
       "glossary": {
         "stop": {
           "name": "Stop",
-          "definition": "One address on a route, however many packages go there",
+          "definition": "One address on a route, however many parcels go there",
           "embodiedBy": {
             "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/entities/stop"
+          }
+        },
+        "parcel": {
+          "name": "Parcel",
+          "definition": "The labelled item handed over at a stop. Orders calls it a shipment and the warehouse a package; the label is the one thing all three agree on",
+          "aliases": [
+            "Package"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/entities/parcel"
           }
         }
       },
@@ -3388,6 +3588,12 @@
               "schema": {
                 "$ref": "#/boundedcontexts/advertising/schemas/ad_clicked"
               }
+            },
+            "slots_awarded": {
+              "name": "SlotsAwarded",
+              "description": "An auction chose the winners for one results page; nothing is charged until a click",
+              "type": "event",
+              "internal": true
             },
             "campaign_launched": {
               "name": "CampaignLaunched",
@@ -3563,7 +3769,7 @@
               "internal": true,
               "raises": [
                 {
-                  "$ref": "#/boundedcontexts/advertising/aggregates/campaign/provides/ad_clicked"
+                  "$ref": "#/boundedcontexts/advertising/aggregates/campaign/provides/slots_awarded"
                 }
               ]
             }
@@ -3591,9 +3797,30 @@
               "description": "Sponsored slots for a query, merged into organic results by Search",
               "pattern": "open-host-service",
               "type": "operation"
+            },
+            "record_ad_click": {
+              "name": "RecordAdClick",
+              "description": "The results page reports a click on a sponsored slot; this is the moment the seller is charged",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/advertising/schemas/ad_clicked"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/advertising/aggregates/campaign/provides/ad_clicked"
+                }
+              ]
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalogue/services/catalogue_api/provides/get_product"
+              },
+              "pattern": "conformist"
+            }
+          ]
         }
       },
       "policies": {
@@ -3897,7 +4124,18 @@
       },
       "services": {},
       "policies": {},
-      "glossary": {},
+      "glossary": {
+        "purchase_order": {
+          "name": "Purchase order",
+          "definition": "An order RiverMart places with a wholesale vendor; the second of the three meanings of 'order' on a warehouse floor",
+          "aliases": [
+            "PO"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)/aggregates/purchase_order"
+          }
+        }
+      },
       "schemas": {
         "purchase_order_received": {
           "name": "PurchaseOrderReceived",
@@ -3991,7 +4229,18 @@
         }
       },
       "policies": {},
-      "glossary": {},
+      "glossary": {
+        "customer": {
+          "name": "Customer",
+          "definition": "The account record. Orders and Cases say customer too but carry only the customerId; nothing about a person lives outside Identity",
+          "aliases": [
+            "Account"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/identity/aggregates/customer_account"
+          }
+        }
+      },
       "schemas": {}
     }
   },
@@ -4118,6 +4367,70 @@
       "downstreamRoles": [
         "conformist"
       ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/offers"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/order_management"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "Order lines carry the offer id they were bought from; Orders never reads Offers back, so the coupling is identity only"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/payments"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/order_management"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Refunds are requested through the payments API"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/order_management"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/payments"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "The order id is attached to the payment on OrderPlaced so captures at dispatch can find it"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/catalogue"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/advertising"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "Ad groups advertise catalogue products by id"
     },
     {
       "type": "upstream-downstream",

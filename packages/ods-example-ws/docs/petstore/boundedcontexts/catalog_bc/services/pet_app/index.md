@@ -13,6 +13,7 @@ Open-host service for /pet endpoints
 | UpdatePet | operation | no | open-host-service | PUT /pet | - | PetUpdated |
 | FindPetsByStatus | operation | no | open-host-service | GET /pet/findByStatus?status=available|pending|sold | - | - |
 | GetPetById | operation | no | open-host-service | GET /pet/{petId} | [PetId](../../index.md#schemas) | - |
+| UploadImage | operation | no | open-host-service | POST /pet/{petId}/uploadImage; adds a PhotoUrl, so it is a profile update | [PetId](../../index.md#schemas) | PetUpdated |
 | DeletePet | operation | no | open-host-service | DELETE /pet/{petId} | [PetId](../../index.md#schemas) | PetDeleted |
 | GetPetSummary | operation | no | open-host-service | Slim {id,name,status} read offered to other contexts, so Sales can check availability without coupling to the full Pet | [PetId](../../index.md#schemas) | - |
 

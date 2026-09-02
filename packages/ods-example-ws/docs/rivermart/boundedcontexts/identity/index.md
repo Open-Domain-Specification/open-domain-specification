@@ -11,7 +11,10 @@ Customer accounts
 ![contextmap](./contextmap.svg)
 
 ## Glossary
-> No glossary terms.
+| Term | Definition | Aliases | Embodied by |
+| --- | --- | --- | --- |
+| **Customer** | The account record. Orders and Cases say customer too but carry only the customerId; nothing about a person lives outside Identity | Account | CustomerAccount |
+
 
 ## Aggregates
 

@@ -39,6 +39,7 @@ A seller's budget and the ad groups that spend it
 | Name | Type | Internal | Pattern | Description | Schema | Raises |
 | --- | --- | --- | --- | --- | --- | --- |
 | AdClicked | event | no | published-language | A sponsored result was clicked and the bid charged | [AdClicked](../../index.md#schemas) | - |
+| SlotsAwarded | event | yes | - | An auction chose the winners for one results page; nothing is charged until a click | - | - |
 | CampaignLaunched | event | yes | - | A campaign began spending | - | - |
 | PauseSellerCampaigns | operation | yes | - | Stop every campaign of a seller | - | - |
 

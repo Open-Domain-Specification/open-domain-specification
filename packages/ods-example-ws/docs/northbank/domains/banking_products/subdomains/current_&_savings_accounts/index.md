@@ -8,7 +8,7 @@ The account is the relationship; where the Fair Treatment Rules bite
 ## Bounded Contexts
 
 ### [Accounts](../../../../boundedcontexts/accounts/index.md)
-Current and savings accounts, mandates, overdrafts, status
+Current accounts on the 2019 platform: mandates, overdrafts, holds, status. Savings remain on Sovereign
 
 
 ### [Sovereign Core (legacy)](../../../../boundedcontexts/sovereign_core_(legacy)/index.md)
@@ -22,6 +22,8 @@ The 1989 COBOL core that still holds savings accounts and runs the nightly batch
 | Customer & KYC | upstream-downstream | Accounts | published-language | conformist |
 | Fraud | upstream-downstream | Accounts | published-language | anti-corruption-layer |
 | Accounts | upstream-downstream | Cards | open-host-service | anti-corruption-layer |
+| Cards | upstream-downstream | Accounts | published-language | anti-corruption-layer |
+| Accounts | upstream-downstream | Payments Hub | open-host-service | anti-corruption-layer |
 | Accounts | upstream-downstream | Branch & Contact Centre | open-host-service | conformist |
 | Accounts | upstream-downstream | Regulatory Reporting | published-language | conformist |
 | Sovereign Core (legacy) | upstream-downstream | Ledger | published-language | anti-corruption-layer |
@@ -35,6 +37,7 @@ The 1989 COBOL core that still holds savings accounts and runs the nightly batch
 ## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
+| [PaymentInstruction](../../../../boundedcontexts/payments_hub/aggregates/payment_instruction/index.md) | anti-corruption-layer | AccountServicing | GetAvailableBalance | open-host-service |
 | [Card](../../../../boundedcontexts/cards/aggregates/card/index.md) | anti-corruption-layer | AccountServicing | GetAvailableBalance | open-host-service |
 | [ServiceRequest](../../../../boundedcontexts/branch_&_contact_centre/aggregates/service_request/index.md) | conformist | AccountServicing | GetAvailableBalance | open-host-service |
 | [RegulatoryReturn](../../../../boundedcontexts/regulatory_reporting/aggregates/regulatory_return/index.md) | conformist | Account | AccountOpened | published-language |
@@ -46,6 +49,7 @@ The 1989 COBOL core that still holds savings accounts and runs the nightly batch
 | [Account](../../../../boundedcontexts/accounts/aggregates/account/index.md) | anti-corruption-layer | FraudCase | FraudCaseOpened | published-language |
 | [FraudCase](../../../../boundedcontexts/fraud/aggregates/fraud_case/index.md) | anti-corruption-layer | Card | CardAuthorised | published-language |
 | [Card](../../../../boundedcontexts/cards/aggregates/card/index.md) | anti-corruption-layer | TransactionScorer | ScoreTransaction | open-host-service |
-| [Card](../../../../boundedcontexts/cards/aggregates/card/index.md) | anti-corruption-layer | FraudCase | TransactionFlagged | published-language |
+| [Card](../../../../boundedcontexts/cards/aggregates/card/index.md) | anti-corruption-layer | TransactionScorer | TransactionFlagged | published-language |
+| [Account](../../../../boundedcontexts/accounts/aggregates/account/index.md) | anti-corruption-layer | Card | CardAuthorised | published-language |
 	
 	

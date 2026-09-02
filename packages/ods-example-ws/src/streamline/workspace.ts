@@ -247,6 +247,14 @@ budgetVO.addAttribute("approvedOn", { type: "date" });
 production.addAttribute("productionId", { type: "string", identity: true });
 production.addAttribute("workingTitle", { type: "string" });
 production.addAttribute("greenlitOn", { type: "date" });
+// DISCOVERY: Head of Studio Technology, peer review. The phase is what
+// "before the shoot" is measured against; without it the invariant named
+// something the model did not hold.
+const productionPhase = production.addAttribute("phase", {
+	type: "'development' | 'shooting' | 'post' | 'delivered'",
+	description:
+		"Where the production is; shooting cannot begin in development without an approved budget",
+});
 const episodeNumber = studioEpisode.addAttribute("episodeNumber", {
 	type: "int",
 	identity: true,
@@ -259,9 +267,10 @@ budgetVO.uses(budgetMoney, "amount", "1");
 
 productionAgg
 	.addInvariant("BudgetApprovedBeforeShoot", {
-		description: "No shoot starts before the budget is approved",
+		description:
+			"The phase cannot move to shooting until the budget carries an approval date",
 	})
-	.constrains(budgetVO, production);
+	.constrains(budgetVO, productionPhase);
 productionAgg
 	.addInvariant("EpisodeNumbersUnique", {
 		description:
@@ -320,8 +329,16 @@ studioBC.addTerm("Master", {
 	embodiedBy: masterDelivered,
 });
 studioBC.addTerm("Slate", {
-	definition: "Everything commissioned or licensed for a period",
+	definition:
+		"In the studio, the originals commissioned for a period. The company-wide slate also includes Licensing's windows; this term covers only the studio's half",
 	embodiedBy: productionAgg,
+});
+// The same word as the catalogue's Episode, meaning a different thing; both
+// contexts define it so the collision is visible from either side.
+studioBC.addTerm("Episode", {
+	definition:
+		"A production artefact keyed by number within the production: a runtime and a master. The catalogue's episode is what a member plays",
+	embodiedBy: studioEpisode,
 });
 
 /* =======================
@@ -459,11 +476,35 @@ title.addAttribute("titleId", { type: "string", identity: true });
 title.addAttribute("name", { type: "string" });
 title.addAttribute("kind", { type: "'film' | 'series'" });
 title.addAttribute("rating", { type: "MaturityRating", valueobject: ratingVO });
+// DISCOVERY: Catalogue Team lead, peer review. The correlation keys: a
+// delivered master names a production and an episode number, and the
+// catalogue must find its own title and episode from them. Licensed titles
+// have no production; their masters arrive through the licensor.
+title.addAttribute("productionId", {
+	type: "string",
+	description:
+		"The studio production behind an original, or absent for a licensed title; how MasterDelivered is matched to a title",
+});
+title.addAttribute("playableRenditionSet", {
+	type: "string",
+	description:
+		"For a film, the encoding job whose renditions it plays; a series plays through its episodes",
+});
 season.addAttribute("seasonNumber", { type: "int", identity: true });
 catalogueEpisode.addAttribute("episodeId", { type: "string", identity: true });
+catalogueEpisode.addAttribute("masterEpisodeNumber", {
+	type: "int",
+	description:
+		"The studio's episode number for this episode; how a master is matched to it",
+});
 catalogueEpisode.addAttribute("playableRenditionSet", {
 	type: "string",
 	description: "The encoding job whose renditions this episode plays",
+});
+catalogueEpisode.addAttribute("rating", {
+	type: "MaturityRating",
+	valueobject: ratingVO,
+	description: "An episode may be rated above its series",
 });
 title.includes(season, "has-seasons", "*");
 season.includes(catalogueEpisode, "has-episodes", "1..*");
@@ -471,11 +512,12 @@ title.uses(artworkVO, "shown-with", "1");
 title.uses(ratingVO, "rated", "1");
 title.uses(availabilityVO, "available", "*");
 catalogueEpisode.uses(artworkVO, "shown-with", "0..1");
+catalogueEpisode.uses(ratingVO, "rated", "0..1");
 
 titleAgg
 	.addInvariant("PublishedTitleHasPlayableAsset", {
 		description:
-			"A title is published only when at least one episode has a completed encode",
+			"A title is published only when it (a film) or at least one of its episodes (a series) has a completed encode",
 	})
 	.constrains(title, catalogueEpisode);
 titleAgg
@@ -696,7 +738,8 @@ titleAgg.consumes(windowExpired, { pattern: "anti-corruption-layer" });
 titleAgg.consumes(submitEncode, { pattern: "anti-corruption-layer" });
 catalogueBC
 	.addPolicy("Request encode on master", {
-		description: "A delivered master is queued for encoding",
+		description:
+			"A delivered master is matched to the title by productionId (and the episode by masterEpisodeNumber) and queued for encoding under that titleId",
 	})
 	.on(masterDelivered)
 	.then(submitEncode);
@@ -744,8 +787,29 @@ manifestVO.addAttribute("renditionIds", { type: "string[]" });
 manifestVO.addAttribute("edgeUrl", { type: "string (URL)" });
 session.addAttribute("sessionId", { type: "string", identity: true });
 session.addAttribute("profileId", { type: "string" });
+// DISCOVERY: peer review. The household is what entitlement and the stream
+// limit are about, and a series is watched an episode at a time, so both
+// identities belong on the session.
+const sessionHousehold = session.addAttribute("householdId", {
+	type: "string",
+	description:
+		"The paying unit the profile belongs to; what entitlement is checked for",
+});
 session.addAttribute("titleId", { type: "string" });
-session.addAttribute("deviceId", { type: "string" });
+session.addAttribute("episodeId", {
+	type: "string",
+	description:
+		"Absent for a film; for a series, the episode being played and bookmarked",
+});
+const sessionDevice = session.addAttribute("deviceId", {
+	type: "string",
+	description: "The individual unit (an installation), not the partner model",
+});
+session.addAttribute("deviceModelId", {
+	type: "string",
+	description:
+		"The partner model the unit is an instance of; what certification is checked against",
+});
 session.addAttribute("bookmark", { type: "Bookmark", valueobject: bookmarkVO });
 session.uses(bookmarkVO, "resumes-at", "1");
 session.uses(manifestVO, "streams-from", "1");
@@ -757,12 +821,15 @@ sessionAgg
 			"A session starts only with a current entitlement from billing",
 	})
 	.constrains(session);
+// One session cannot see its siblings, so the limit is checked at start:
+// GetEntitlement returns the plan's stream count and Playback counts the
+// household's open sessions before it creates another.
 sessionAgg
 	.addInvariant("WithinStreamLimit", {
 		description:
-			"A household never has more concurrent sessions than its plan allows",
+			"A session starts only if the household's open sessions are fewer than the plan's stream count from GetEntitlement; checked at StartPlayback because a session cannot see its siblings",
 	})
-	.constrains(session);
+	.constrains(sessionHousehold);
 sessionAgg
 	.addInvariant("BookmarkWithinRuntime", {
 		description: "The resume point never exceeds the title's runtime",
@@ -771,8 +838,11 @@ sessionAgg
 
 const startPlaybackSchema = playbackBC.addSchema("StartPlayback");
 startPlaybackSchema.addAttribute("profileId", { type: "string" });
+startPlaybackSchema.addAttribute("householdId", { type: "string" });
 startPlaybackSchema.addAttribute("titleId", { type: "string" });
+startPlaybackSchema.addAttribute("episodeId", { type: "string" });
 startPlaybackSchema.addAttribute("deviceId", { type: "string" });
+startPlaybackSchema.addAttribute("deviceModelId", { type: "string" });
 const playbackStoppedSchema = playbackBC.addSchema("PlaybackStopped", {
 	description: "The fact personalisation learns from",
 });
@@ -782,6 +852,7 @@ playbackStoppedSchema.addAttribute("sessionId", {
 });
 playbackStoppedSchema.addAttribute("profileId", { type: "string" });
 playbackStoppedSchema.addAttribute("titleId", { type: "string" });
+playbackStoppedSchema.addAttribute("episodeId", { type: "string" });
 playbackStoppedSchema.addAttribute("watchedSeconds", { type: "int" });
 playbackStoppedSchema.addAttribute("completed", { type: "boolean" });
 
@@ -849,6 +920,12 @@ playbackBC.addTerm("Bookmark", {
 	definition: "Where playback resumes",
 	aliases: ["Resume point"],
 	embodiedBy: bookmarkVO,
+});
+// Devices' Device is a partner model; the player's device is one unit.
+playbackBC.addTerm("Device", {
+	definition:
+		"The individual unit a session runs on. Devices' Device is the partner model it is an instance of, which is what certification is about",
+	embodiedBy: sessionDevice,
 });
 
 /* =======================
@@ -1089,6 +1166,15 @@ ranker.provides("RankRows", {
 	type: "operation",
 	internal: true,
 });
+// DISCOVERY: Head of Personalisation ("we consume ... new titles"), peer
+// review. The candidate pool is what the ranker orders; a title enters it when
+// published and its availability decides which profiles may be shown it.
+const addCandidate = ranker.provides("AddCandidate", {
+	description:
+		"Add or refresh a title in the candidate pool with the countries it is live in",
+	type: "operation",
+	internal: true,
+});
 const recsApi = recsBC.addService("RecommendationsAPI", {
 	description: "What the apps call for the home screen",
 	type: "application",
@@ -1100,7 +1186,15 @@ recsApi.provides("GetHomepageRows", {
 });
 
 tasteAgg.consumes(playbackStopped, { pattern: "anti-corruption-layer" });
-tasteAgg.consumes(titlePublished, { pattern: "conformist" });
+ranker.consumes(titlePublished, { pattern: "conformist" });
+ranker.consumes(availabilityChanged, { pattern: "conformist" });
+recsBC
+	.addPolicy("Add candidate on publish", {
+		description:
+			"A published title joins the candidate pool; an availability change updates where it may be recommended",
+	})
+	.on(titlePublished, availabilityChanged)
+	.then(addCandidate);
 // DELIBERATE (internal-consumable): Personalisation reads the player's
 // bookmark updates, which Playback declares internal. The dependency was never agreed.
 tasteAgg.consumes(bookmarkUpdated, { pattern: "anti-corruption-layer" });
@@ -1169,9 +1263,9 @@ householdAgg
 householdAgg
 	.addInvariant("KidsProfileMaturityCapped", {
 		description:
-			"A kids profile's maturity cap cannot be raised without the PIN",
+			"A kids profile's maturity cap cannot be raised without the PIN; the profile's kids flag is what makes the rule apply",
 	})
-	.constrains(maturityVO, pinVO);
+	.constrains(profile, maturityVO, pinVO);
 
 const householdCreatedSchema = householdsBC.addSchema("HouseholdCreated");
 householdCreatedSchema.addAttribute("householdId", {
@@ -1261,27 +1355,45 @@ const periodVO = subscriptionAgg.addValueObject("BillingPeriod", {
 periodVO.addAttribute("from", { type: "date" });
 periodVO.addAttribute("to", { type: "date" });
 subscription.addAttribute("subscriptionId", { type: "string", identity: true });
-subscription.addAttribute("householdId", { type: "string" });
+const subscriptionHousehold = subscription.addAttribute("householdId", {
+	type: "string",
+});
 subscription.addAttribute("status", {
 	type: "'active' | 'dunning' | 'lapsed'",
 });
 subscription.addAttribute("plan", { type: "Plan", valueobject: planVO });
 invoice.addAttribute("invoiceId", { type: "string", identity: true });
-invoice.addAttribute("amount", { type: "Money", valueobject: planMoney });
+invoice.addAttribute("lines", {
+	type: "{source: 'subscription' | 'discs', amount: Money}[]",
+	description: "The subscription line plus any line another business adds",
+});
+invoice.addAttribute("amount", {
+	type: "Money",
+	valueobject: planMoney,
+	description: "The sum of the lines",
+});
 invoice.addAttribute("paid", { type: "boolean" });
 subscription.includes(invoice, "billed-by", "*");
 subscription.uses(planVO, "on-plan", "1");
 invoice.uses(periodVO, "covers", "1");
 invoice.uses(planMoney, "charges", "1");
 
+// One Subscription cannot see its siblings, so the rule is enforced where a
+// subscription is created: StartSubscription refuses a household that already
+// has an active one, keyed on householdId.
 subscriptionAgg
 	.addInvariant("OneActiveSubscriptionPerHousehold", {
-		description: "A household has at most one active subscription",
+		description:
+			"A household has at most one active subscription; enforced by StartSubscription on householdId, since one subscription cannot see another",
 	})
-	.constrains(subscription);
+	.constrains(subscriptionHousehold);
+// DISCOVERY: Commerce lead, peer review. "Equals the plan price" was said of
+// the subscription line; the disc export adds a separate line, so the invoice
+// total is the sum of its lines.
 subscriptionAgg
-	.addInvariant("InvoiceAmountEqualsPlanPrice", {
-		description: "An invoice charges exactly the plan price for its period",
+	.addInvariant("SubscriptionLineEqualsPlanPrice", {
+		description:
+			"The subscription line on an invoice is exactly the plan price for its period; other lines of business (the disc charge) add their own lines and the total is their sum",
 	})
 	.constrains(invoice, planVO);
 subscriptionAgg
@@ -1361,7 +1473,22 @@ const addInvoiceLine = subscriptionAgg.provides("AddInvoiceLine", {
 	internal: true,
 });
 
+// DISCOVERY: event storming ("Billing awaits plan"), peer review. The
+// consumption had no reaction; this is what billing does with a new household.
+const registerHousehold = subscriptionAgg.provides("RegisterHousehold", {
+	description:
+		"Record a household with no plan yet, so StartSubscription can find it and one-subscription-per-household can be checked",
+	type: "operation",
+	internal: true,
+});
 subscriptionAgg.consumes(householdCreated, { pattern: "conformist" });
+billingBC
+	.addPolicy("Await plan on household", {
+		description:
+			"A new household is registered in billing until it picks a plan",
+	})
+	.on(householdCreated)
+	.then(registerHousehold);
 billingBC
 	.addPolicy("Dun on failed payment", {
 		description:
@@ -1422,6 +1549,12 @@ identityApi.provides("SignIn", {
 	type: "operation",
 	pattern: "open-host-service",
 });
+// The other side of the Account / Household collision, recorded here too.
+identityBC.addTerm("Account", {
+	definition:
+		"The login: an email and credentials. Members say account for the household; that is Households' Household",
+	embodiedBy: accountAgg,
+});
 
 householdAgg.consumes(accountCreated, { pattern: "conformist" });
 householdsBC
@@ -1451,11 +1584,21 @@ const advertiserVO = breakAgg.addValueObject("Advertiser", {
 });
 advertiserVO.addAttribute("name", { type: "string" });
 const frequencyCapVO = breakAgg.addValueObject("FrequencyCap", {
-	description: "How often one creative may be shown to a household",
+	description:
+		"The creative's rule for how often one household may see it in a day. The break carries the rule; PrepareBreaks applies it against the household's impressions so far today, which a single break cannot hold",
 });
 frequencyCapVO.addAttribute("maxPerDay", { type: "int" });
 adBreak.addAttribute("breakId", { type: "string", identity: true });
 adBreak.addAttribute("sessionId", { type: "string" });
+// DISCOVERY: Ads Team lead ("we work with plan and country"), peer review.
+// The plan is what the ad-supported rule reads, so the break records it.
+adBreak.addAttribute("householdId", { type: "string" });
+const breakPlanTier = adBreak.addAttribute("planTier", {
+	type: "'basic-with-ads' | 'standard' | 'premium'",
+	description:
+		"The household's plan at the time the breaks were prepared, from GetEntitlement",
+});
+adBreak.addAttribute("country", { type: "ISO 3166 code" });
 adBreak.addAttribute("positionSeconds", { type: "int" });
 adSlot.addAttribute("slotId", { type: "string", identity: true });
 adSlot.addAttribute("creativeId", { type: "string" });
@@ -1476,9 +1619,10 @@ breakAgg
 	.constrains(adSlot);
 breakAgg
 	.addInvariant("AdsOnlyOnAdSupportedPlan", {
-		description: "Breaks exist only for sessions on the ad-supported plan",
+		description:
+			"Breaks exist only for sessions whose planTier is ad-supported; the tier comes from billing's entitlement answer",
 	})
-	.constrains(adBreak);
+	.constrains(breakPlanTier);
 
 const resolveBreakSchema = adsBC.addSchema("ResolveAdBreak");
 resolveBreakSchema.addAttribute("sessionId", { type: "string" });
@@ -1503,7 +1647,8 @@ const resolveAdBreak = breakAgg.provides("ResolveAdBreak", {
 	schema: resolveBreakSchema,
 });
 const prepareBreaks = breakAgg.provides("PrepareBreaks", {
-	description: "Plan the breaks for a session by plan and country",
+	description:
+		"Plan the breaks for a session by plan and country: ask billing for the household's plan, skip if it is not ad-supported, and fill slots within each creative's daily cap",
 	type: "operation",
 	internal: true,
 });
@@ -1516,6 +1661,8 @@ breakAgg
 	.raises(impressionRecorded);
 
 breakAgg.consumes(playbackStarted, { pattern: "anti-corruption-layer" });
+// The plan is billing's fact; Ads asks for it the same way Playback does.
+breakAgg.consumes(getEntitlement, { pattern: "anti-corruption-layer" });
 adsBC
 	.addPolicy("Prepare breaks on start", {
 		description:
@@ -1592,17 +1739,15 @@ catalogueBC.downstreamOf(licensingBC, {
 	upstreamRoles: ["published-language"],
 	downstreamRoles: ["anti-corruption-layer"],
 });
-catalogueBC.downstreamOf(encodingBC, {
-	upstreamRoles: ["published-language"],
-	downstreamRoles: ["anti-corruption-layer"],
-	description: "Completions come back as events",
-});
+// One relationship for both exchanges: Catalogue calls SubmitEncode and
+// reacts to EncodingCompleted, translating both, and is consulted on both
+// contracts. Two declarations in the same direction said less than this one.
 encodingBC.upstreamOf(catalogueBC, {
 	type: "customer-supplier",
-	upstreamRoles: ["open-host-service"],
+	upstreamRoles: ["open-host-service", "published-language"],
 	downstreamRoles: ["anti-corruption-layer"],
 	description:
-		"Catalogue is the caller of SubmitEncode and is consulted on its contract",
+		"Catalogue is the caller of SubmitEncode and the main reader of EncodingCompleted; it is consulted on both contracts",
 });
 edgeBC.downstreamOf(encodingBC, {
 	upstreamRoles: ["published-language"],
@@ -1637,10 +1782,18 @@ adsBC.downstreamOf(playbackBC, {
 	upstreamRoles: ["published-language"],
 	downstreamRoles: ["anti-corruption-layer"],
 });
+// Playback and Ads are each downstream of the other: the start event flows
+// one way, the break lookup the other. Two directed relationships say that
+// honestly; neither side owns the other's contract.
 playbackBC.downstreamOf(adsBC, {
 	upstreamRoles: ["open-host-service"],
 	downstreamRoles: ["anti-corruption-layer"],
 	description: "Breaks are resolved when reached",
+});
+adsBC.downstreamOf(billingBC, {
+	upstreamRoles: ["open-host-service"],
+	downstreamRoles: ["anti-corruption-layer"],
+	description: "The household's plan decides whether there are breaks at all",
 });
 householdsBC.downstreamOf(identityBC, {
 	upstreamRoles: ["published-language"],

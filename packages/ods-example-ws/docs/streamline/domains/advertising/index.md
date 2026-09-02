@@ -18,6 +18,7 @@ Breaks, slots, impressions. Supporting today; may become core
 | --- | --- | --- | --- | --- |
 | Playback | upstream-downstream | Ads Tier | published-language | anti-corruption-layer |
 | Ads Tier | upstream-downstream | Playback | open-host-service | anti-corruption-layer |
+| Billing & Plans | upstream-downstream | Ads Tier | open-host-service | anti-corruption-layer |
 | Ads Tier | separate-ways | Recommendations | - | - |
 | Catalogue | upstream-downstream (implied) | Playback | open-host-service | anti-corruption-layer |
 | Edge Delivery | upstream-downstream (implied) | Playback | open-host-service | conformist |
@@ -44,5 +45,6 @@ Breaks, slots, impressions. Supporting today; may become core
 | [Subscription](../../boundedcontexts/billing_&_plans/aggregates/subscription/index.md) | conformist | Household | HouseholdCreated | published-language |
 | [Household](../../boundedcontexts/households_&_profiles/aggregates/household/index.md) | conformist | Account | AccountCreated | published-language |
 | [Subscription](../../boundedcontexts/billing_&_plans/aggregates/subscription/index.md) | anti-corruption-layer | RentalQueue | DiscRentalInvoiced | published-language |
+| [AdBreak](../../boundedcontexts/ads_tier/aggregates/ad_break/index.md) | anti-corruption-layer | Subscription | GetEntitlement | open-host-service |
 
 	

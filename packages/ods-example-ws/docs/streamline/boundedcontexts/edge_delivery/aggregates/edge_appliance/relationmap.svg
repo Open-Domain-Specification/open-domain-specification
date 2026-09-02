@@ -26,7 +26,7 @@
 <text xml:space="preserve" text-anchor="start" x="21" y="-99" font-family="sans-serif" font-size="10.00">{id} applianceId: string</text>
 <polygon fill="none" stroke="black" points="16,-69 16,-91 120.58,-91 120.58,-69 16,-69"/>
 <text xml:space="preserve" text-anchor="start" x="21" y="-77" font-family="sans-serif" font-size="10.00">ispName: string</text>
-<g id="a_node1_7"><a xlink:title="A cache region; not a licensing territory">
+<g id="a_node1_36"><a xlink:title="A cache region; not a licensing territory">
 <polygon fill="none" stroke="black" points="16,-47 16,-69 120.58,-69 120.58,-47 16,-47"/>
 <text xml:space="preserve" text-anchor="start" x="21" y="-55" font-family="sans-serif" font-size="10.00">region: string</text>
 </a>

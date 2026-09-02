@@ -44,9 +44,14 @@ An intent to take money and everything done against it. Captures and refunds mus
 | AuthorisePayment | operation | no | open-host-service | Hold the cart total on the customer's instrument | [AuthorisePayment](../../index.md#schemas) | PaymentAuthorised, PaymentDeclined |
 | CapturePayment | operation | no | open-host-service | Take the money for one shipment; charging at dispatch keeps cancelled orders free | [PaymentRef](../../index.md#schemas) | PaymentCaptured |
 | RefundPayment | operation | no | open-host-service | Return money for a received return | [PaymentRef](../../index.md#schemas) | RefundIssued |
+| AttachOrder | operation | yes | - | Record the order id on the payment intent so captures and refunds can find it | - | - |
 
 
 ## Consumes
+
+### OrderPlaced [anti-corruption-layer]
+A paid-for order exists
+- **Provider**: [Order](../../../order_management/aggregates/order/index.md)
 
 ### ShipmentDispatched [anti-corruption-layer]
 A package left the dock

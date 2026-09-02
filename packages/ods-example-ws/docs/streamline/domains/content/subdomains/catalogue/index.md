@@ -17,8 +17,7 @@ What members can see, where and when
 | --- | --- | --- | --- | --- |
 | Studio Production | upstream-downstream | Catalogue | published-language | anti-corruption-layer |
 | Licensing | upstream-downstream | Catalogue | published-language | anti-corruption-layer |
-| Encoding | upstream-downstream | Catalogue | published-language | anti-corruption-layer |
-| Encoding | customer-supplier | Catalogue | open-host-service | anti-corruption-layer |
+| Encoding | customer-supplier | Catalogue | open-host-service, published-language | anti-corruption-layer |
 | Catalogue | upstream-downstream | Playback | open-host-service | anti-corruption-layer |
 | Catalogue | upstream-downstream | Recommendations | published-language | conformist |
 | Studio Production | upstream-downstream (implied) | Encoding | published-language | conformist |
@@ -28,7 +27,8 @@ What members can see, where and when
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
 | [PlaybackSession](../../../../boundedcontexts/playback/aggregates/playback_session/index.md) | anti-corruption-layer | CatalogueAPI | GetTitle | open-host-service |
-| [TasteProfile](../../../../boundedcontexts/recommendations/aggregates/taste_profile/index.md) | conformist | Title | TitlePublished | published-language |
+| [Ranker](../../../../boundedcontexts/recommendations/services/ranker/index.md) | conformist | Title | TitlePublished | published-language |
+| [Ranker](../../../../boundedcontexts/recommendations/services/ranker/index.md) | conformist | Title | TitleAvailabilityChanged | published-language |
 | [Title](../../../../boundedcontexts/catalogue/aggregates/title/index.md) | anti-corruption-layer | Production | MasterDelivered | published-language |
 | [Title](../../../../boundedcontexts/catalogue/aggregates/title/index.md) | anti-corruption-layer | EncodingJob | EncodingCompleted | published-language |
 | [EncodingJob](../../../../boundedcontexts/encoding/aggregates/encoding_job/index.md) | conformist | Production | MasterDelivered | published-language |

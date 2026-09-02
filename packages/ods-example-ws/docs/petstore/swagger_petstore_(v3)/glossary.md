@@ -8,14 +8,15 @@
 | --- | --- | --- | --- |
 | **Pet** | An animal listed for sale in the store | - | Pet |
 | **Category** | The kind of animal a pet is, such as Dogs or Cats | Species | Category |
-| **Available** | A pet that can be ordered; it becomes pending once an order is placed | - | PetStatus |
+| **Available** | A pet that can be ordered; it becomes pending when Sales approves an order for it (ReservePet) and sold when that order is delivered (MarkPetSold) | - | PetStatus |
 
 
 ## [Sales BC](../boundedcontexts/sales_bc/index.md)
 
 | Term | Definition | Aliases | Embodied by |
 | --- | --- | --- | --- |
-| **Order** | A customer's request to buy one pet in a given quantity | Purchase | Order |
+| **Order** | A customer's request to buy one pet; placed, then approved, then delivered | Purchase | Order |
+| **Pet** | Only the identity of a catalogue pet; Sales holds no pet attributes and asks the catalogue for availability | - | petId |
 | **Approval** | Confirmation that the ordered pet is available and reserved | - | ApproveOrder |
 
 

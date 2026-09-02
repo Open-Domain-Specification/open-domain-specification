@@ -11,8 +11,10 @@ Postings that balance; the whole entry posts or nothing does
 | Type | Name | Description | Attributes |
 | --- | --- | --- | --- |
 | Entity (Root) | **JournalEntry** | One balanced movement of money | **entryId**: `string`, postedAt: `date-time`, reversalOf: `string` |
-| Entity | Posting | A debit or credit of an amount to one account | **postingId**: `string`, accountId: `string`, amount: `Money`, direction: `PostingDirection` |
+| Entity | Posting | A debit or credit of an amount to one ledger account | **postingId**: `string`, ledgerAccount: `LedgerAccount`, amount: `Money`, direction: `PostingDirection` |
 | Value Object | Money | Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation | amountMinor: `int64`, currency: `ISO 4217 code` |
+| Value Object | AccountNumber | Sort code and eight-digit number; the shared kernel library, so it is the same value Accounts holds | sortCode: `string`, number: `string` |
+| Value Object | LedgerAccount | Where a posting lands: a customer account by its AccountNumber, or a nominal from the chart of accounts (loan book, scheme suspense, fee income) | kind: `'customer' | 'nominal'`, accountNumber: `AccountNumber`, nominalCode: `string` |
 | Value Object | PostingDirection | debit or credit | value: `'debit' | 'credit'` |
 | Value Object | ValueDate | The date the money counts from, which may differ from the posting date | value: `date` |
 
@@ -23,18 +25,7 @@ Postings that balance; the whole entry posts or nothing does
 | [JournalEntry](entities/journal_entry/index.md) | made-of | JournalEntry - Posting | includes | 1..* |
 | [Posting](entities/posting/index.md) | of | JournalEntry - Money | uses | 1 |
 | [Posting](entities/posting/index.md) | as | JournalEntry - PostingDirection | uses | 1 |
-| [Posting](entities/posting/index.md) | to-account | Account - Account | references | 1 |
-| [Account](../../../accounts/aggregates/account/entities/account/index.md) | operated-under | Account - Mandate | includes | 1..* |
-| [Mandate](../../../accounts/aggregates/account/entities/mandate/index.md) | held-by | Customer - Customer | references | 1 |
-| [Customer](../../../customer_&_kyc/aggregates/customer/entities/customer/index.md) | verified-by | Customer - IdentityDocument | includes | * |
-| [Customer](../../../customer_&_kyc/aggregates/customer/entities/customer/index.md) | born-on | Customer - DateOfBirth | uses | 1 |
-| [Customer](../../../customer_&_kyc/aggregates/customer/entities/customer/index.md) | lives-at | Customer - Address | uses | 1 |
-| [Customer](../../../customer_&_kyc/aggregates/customer/entities/customer/index.md) | has-status | Customer - KycStatus | uses | 1 |
-| [Account](../../../accounts/aggregates/account/entities/account/index.md) | identified-by | Account - IBAN | uses | 1 |
-| [Account](../../../accounts/aggregates/account/entities/account/index.md) | numbered | Account - AccountNumber | uses | 1 |
-| [Account](../../../accounts/aggregates/account/entities/account/index.md) | balance | Account - Money | uses | 1 |
-| [Account](../../../accounts/aggregates/account/entities/account/index.md) | overdraft | Account - OverdraftLimit | uses | 1 |
-| [Account](../../../accounts/aggregates/account/entities/account/index.md) | has-status | Account - AccountStatus | uses | 1 |
+| [Posting](entities/posting/index.md) | to | JournalEntry - LedgerAccount | uses | 1 |
 | [JournalEntry](entities/journal_entry/index.md) | valued-on | JournalEntry - ValueDate | uses | 1 |
 
 

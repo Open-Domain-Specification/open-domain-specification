@@ -182,7 +182,9 @@ petRoot.uses(tagVO, "tagged-with", "*");
 petRoot.uses(photoUrlVO, "has-photo", "1..*");
 petRoot.uses(petStatusVO, "has-status", "1");
 
-// Invariants name the rule and point at what it constrains: an attribute here, a value object below.
+// Invariants name the rule and point at what it constrains: an attribute here,
+// the root entity below (a lifecycle rule belongs to the thing with the
+// lifecycle, not to the immutable status value), value objects in Sales.
 petAgg
 	.addInvariant("NameRequired", {
 		description:
@@ -192,9 +194,9 @@ petAgg
 petAgg
 	.addInvariant("SoldNotReopen", {
 		description:
-			"Once sold, a pet does not revert to available without an explicit policy, so a buyer is never undercut",
+			"Once sold, a pet does not revert to available without an explicit policy, so a buyer is never undercut. Constrains the Pet because the transition is the pet's, not the status value's",
 	})
-	.constrains(petStatusVO);
+	.constrains(petRoot);
 
 // Schemas: the payload shapes this context publishes. They belong to the
 // context, not the aggregate, because several consumables share them.
@@ -262,10 +264,32 @@ const petDeleted = petAgg.provides("PetDeleted", {
 // Only the catalog moves a pet between statuses; `raises` links it to the fact it produces.
 petAgg
 	.provides("ChangePetStatus", {
-		description: "Move a pet between available, pending and sold",
+		description:
+			"Move a pet between available, pending and sold; the catalogue's own edits, e.g. relisting",
 		type: "operation",
 		internal: true,
 		schema: petStatusChangedSchema,
+	})
+	.raises(petStatusChanged);
+// The two transitions Sales drives are offered as open-host operations, so
+// the pet lifecycle (available → pending → sold) is walked by the order
+// lifecycle (placed → approved → delivered) rather than left informal.
+const reservePet = petAgg
+	.provides("ReservePet", {
+		description:
+			"available → pending: the pet is held for an approved order; issued by Sales on approval",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: petIdSchema,
+	})
+	.raises(petStatusChanged);
+const markPetSold = petAgg
+	.provides("MarkPetSold", {
+		description:
+			"pending → sold: the pet has gone to its owner; issued by Sales on delivery",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: petIdSchema,
 	})
 	.raises(petStatusChanged);
 
@@ -302,6 +326,15 @@ petApp.provides("GetPetById", {
 	schema: petIdSchema,
 });
 petApp
+	.provides("UploadImage", {
+		description:
+			"POST /pet/{petId}/uploadImage; adds a PhotoUrl, so it is a profile update",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: petIdSchema,
+	})
+	.raises(petUpdated);
+petApp
 	.provides("DeletePet", {
 		description: "DELETE /pet/{petId}",
 		type: "operation",
@@ -331,7 +364,7 @@ catalogBC.addTerm("Category", {
 });
 catalogBC.addTerm("Available", {
 	definition:
-		"A pet that can be ordered; it becomes pending once an order is placed",
+		"A pet that can be ordered; it becomes pending when Sales approves an order for it (ReservePet) and sold when that order is delivered (MarkPetSold)",
 	embodiedBy: petStatusVO,
 });
 
@@ -339,7 +372,8 @@ catalogBC.addTerm("Available", {
    SALES: Order aggregate, OrderApp service
    Demonstrates: a cross-aggregate `references` relation to another context's
    root, an invariant that constrains two value objects, an anti-corruption
-   consumption, and a policy that reacts to events from two contexts.
+   consumption, a policy that reacts to events from two contexts, and policies
+   that issue another context's open-host operations.
    ======================= */
 
 const orderAgg = salesBC.addAggregate("Order", {
@@ -357,7 +391,8 @@ orderStatusVO.addAttribute("value", {
 	type: "'placed' | 'approved' | 'delivered'",
 });
 const quantityVO = orderAgg.addValueObject("Quantity", {
-	description: "How many of the pet are ordered",
+	description:
+		"The v3 API's quantity field, kept for the wire shape. A Pet is an individual animal, so the invariant below pins it to 1",
 });
 quantityVO.addAttribute("value", { type: "int > 0" });
 const shipDateVO = orderAgg.addValueObject("ShipDate", {
@@ -367,7 +402,7 @@ const shipDateVO = orderAgg.addValueObject("ShipDate", {
 shipDateVO.addAttribute("value", { type: "date-time" });
 
 orderRoot.addAttribute("id", { type: "int64", identity: true });
-orderRoot.addAttribute("petId", {
+const orderPetId = orderRoot.addAttribute("petId", {
 	type: "int64",
 	description:
 		"Identity of the Pet root in Catalog; only the id crosses the boundary",
@@ -393,24 +428,28 @@ orderRoot.uses(shipDateVO, "ships-on", "0..1");
 orderRoot.references(petRoot, "for-pet", "1");
 
 orderAgg
-	.addInvariant("QuantityPositive", {
+	.addInvariant("OneAnimalPerOrder", {
 		description:
-			"Quantity must be > 0; an order for nothing is a mistake, not an order",
+			"Quantity is exactly 1: a Pet is one animal with one status, so it cannot be sold five times. The API's quantity field is accepted but never exceeds one",
 	})
 	.constrains(quantityVO);
-// An invariant may span aggregates when the rule genuinely does: approval
-// depends on the pet's status, so both value objects are named.
+// An invariant only names things inside its own aggregate: Sales cannot
+// enforce a rule over the catalogue's PetStatus. What it can enforce is that
+// its own status only moves to approved after the availability check the
+// ACL made through GetPetSummary; the policy below is where that check runs.
 orderAgg
 	.addInvariant("ApproveOnlyWhenAvailable", {
-		description: "Approve only if Pet.status == available",
+		description:
+			"Move to approved only after the catalogue's summary reported the pet available; the catalogue's status itself is outside this aggregate, so the check is a read through the ACL, not a shared invariant",
 	})
-	.constrains(orderStatusVO, petStatusVO);
+	.constrains(orderStatusVO);
+// An invariant that names two value objects, because the rule reads both.
 orderAgg
 	.addInvariant("DeliverOnlyWhenApproved", {
 		description:
-			"Deliver only from approved, so nothing ships that was never checked",
+			"Deliver only from approved and only once a ship date is set, so nothing is marked delivered that was never checked or never dispatched",
 	})
-	.constrains(orderStatusVO);
+	.constrains(orderStatusVO, shipDateVO);
 
 const orderPlacedSchema = salesBC.addSchema("OrderPlaced");
 orderPlacedSchema.addAttribute("orderId", { type: "int64", identity: true });
@@ -508,21 +547,50 @@ orderApp
 // Anti-corruption layer: OrderApp translates the catalog's summary into its
 // own notion of availability rather than adopting the catalog's model.
 orderApp.consumes(getPetSummaryOp, { pattern: "anti-corruption-layer" });
+// The same ACL issues the two catalogue transitions Sales is responsible for.
+orderApp.consumes(reservePet, { pattern: "anti-corruption-layer" });
+orderApp.consumes(markPetSold, { pattern: "anti-corruption-layer" });
 
 // A policy is "when this happens, do that". It may react to events from
-// several contexts, but issues an operation of its own context here.
+// several contexts, but issues an operation of its own context here. Either
+// trigger carries a petId; the policy finds the placed orders for that pet
+// (GetOrderById's store, keyed by petId) and asks GetPetSummary before approving.
 salesBC
 	.addPolicy("Approve when pet available", {
 		description:
-			"When a pet becomes available and an order for it is placed, approve the order",
+			"On OrderPlaced, or on PetStatusChanged to available, look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest",
 	})
 	.on(petStatusChanged, orderPlaced)
 	.then(approveOrder);
+// Policies that issue another context's open-host operations: the order
+// lifecycle drives the pet lifecycle, which is why Sales is the customer.
+salesBC
+	.addPolicy("Reserve pet on approval", {
+		description:
+			"When an order is approved, hold its pet (available → pending) so nobody else can be approved for the same animal",
+	})
+	.on(orderApproved)
+	.then(reservePet);
+salesBC
+	.addPolicy("Mark pet sold on delivery", {
+		description: "When an order is delivered, the pet is sold (pending → sold)",
+	})
+	.on(orderDelivered)
+	.then(markPetSold);
 
 salesBC.addTerm("Order", {
-	definition: "A customer's request to buy one pet in a given quantity",
+	definition:
+		"A customer's request to buy one pet; placed, then approved, then delivered",
 	aliases: ["Purchase"],
 	embodiedBy: orderAgg,
+});
+// The same word means different things in different contexts, and the
+// glossary is where that is written down: in Catalog a Pet is the animal with
+// its photos and tags; in Sales it is only an identity to check and reserve.
+salesBC.addTerm("Pet", {
+	definition:
+		"Only the identity of a catalogue pet; Sales holds no pet attributes and asks the catalogue for availability",
+	embodiedBy: orderPetId,
 });
 salesBC.addTerm("Approval", {
 	definition: "Confirmation that the ordered pet is available and reserved",
@@ -617,7 +685,7 @@ shipmentAgg
 // logic belongs to no single Shipment.
 const dispatchPlanner = fulfilmentBC.addService("DispatchPlanner", {
 	description:
-		"Chooses ship dates across pending shipments so pets of one category travel together",
+		"Chooses ship dates across planned shipments so orders approved on the same day leave together; it only needs orderIds and dates, which is all OrderApproved gives it",
 	type: "domain",
 });
 const planDispatch = dispatchPlanner

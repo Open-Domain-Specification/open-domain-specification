@@ -17,7 +17,7 @@ The order with its lines, the shipments that carry them and the returns that und
 | Entity | Shipment | A customer-visible group of lines travelling together. An entity here because the customer tracks it by order, not by warehouse | **shipmentId**: `string`, tracking: `TrackingReference` |
 | Value Object | Money | An amount in a currency: minor units and an ISO 4217 code | amountMinor: `int64`, currency: `ISO 4217 code` |
 | Value Object | Address | Where it ships; a value because the same address on two orders is the same place | lines: `string[]`, postcode: `string`, country: `ISO 3166 code` |
-| Value Object | OrderStatus | placed, cancelled, partially-shipped, shipped, completed | value: `'placed' | 'cancelled' | 'partially-shipped' | 'shipped' | 'completed'` |
+| Value Object | OrderStatus | placed, awaiting-stock, cancelled, partially-shipped, shipped, completed | value: `'placed' | 'awaiting-stock' | 'cancelled' | 'partially-shipped' | 'shipped' | 'completed'` |
 | Value Object | TrackingReference | The carrier reference the customer sees | value: `string` |
 
 
@@ -60,6 +60,7 @@ The order with its lines, the shipments that carry them and the returns that und
 | RecordShipment | operation | yes | - | Attach a warehouse dispatch to the order as a customer-visible shipment | - | - |
 | RequestReturn | operation | no | open-host-service | Open a return for some lines | [ReturnRequested](../../index.md#schemas) | ReturnRequested |
 | CompleteOrder | operation | yes | - | Close the order once every shipment is delivered | - | OrderCompleted |
+| HoldForStock | operation | yes | - | Put the order into awaiting-stock when no site could reserve for it; it is retried when stock is received or cancelled by the customer | - | - |
 
 
 ## Consumes
@@ -75,6 +76,10 @@ A package left the dock
 ### ReturnReceived [anti-corruption-layer]
 A return arrived and was graded
 - **Provider**: [FulfilmentOrder](../../../warehouse/aggregates/fulfilment_order/index.md)
+
+### StockShort [anti-corruption-layer]
+No site could cover the order; it waits or is split
+- **Provider**: [InventoryPosition](../../../warehouse/aggregates/inventory_position/index.md)
 
 ### RefundPayment [anti-corruption-layer]
 Return money for a received return

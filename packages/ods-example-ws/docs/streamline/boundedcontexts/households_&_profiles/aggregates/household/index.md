@@ -29,7 +29,7 @@ The paying unit and the people in it; profile rules are checked across the house
 | --- | --- | --- |
 | MaxFiveProfiles | A household has at most five profiles | Household |
 | OnePrimaryProfile | Exactly one profile is primary | Profile |
-| KidsProfileMaturityCapped | A kids profile's maturity cap cannot be raised without the PIN | MaturitySetting, ProfilePin |
+| KidsProfileMaturityCapped | A kids profile's maturity cap cannot be raised without the PIN; the profile's kids flag is what makes the rule apply | Profile, MaturitySetting, ProfilePin |
 
 
 ## Provides

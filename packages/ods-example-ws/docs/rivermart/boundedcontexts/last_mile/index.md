@@ -13,7 +13,8 @@ Delivery routes, stops and proof of delivery
 ## Glossary
 | Term | Definition | Aliases | Embodied by |
 | --- | --- | --- | --- |
-| **Stop** | One address on a route, however many packages go there | - | Stop |
+| **Stop** | One address on a route, however many parcels go there | - | Stop |
+| **Parcel** | The labelled item handed over at a stop. Orders calls it a shipment and the warehouse a package; the label is the one thing all three agree on | Package | Parcel |
 
 
 ## Aggregates
@@ -54,7 +55,9 @@ A driver's day: an ordered list of stops
 | Seller Onboarding | upstream-downstream (implied) | Fraud | published-language | anti-corruption-layer |
 | Fraud | upstream-downstream (implied) | Seller Onboarding | published-language | anti-corruption-layer |
 | Warehouse | upstream-downstream (implied) | Order Management | published-language | anti-corruption-layer |
+| Vendor Purchasing (legacy) | upstream-downstream (implied) | Warehouse | published-language | anti-corruption-layer |
 | Payments | upstream-downstream (implied) | Order Management | open-host-service | anti-corruption-layer |
+| Order Management | upstream-downstream (implied) | Payments | published-language | anti-corruption-layer |
 | Warehouse | upstream-downstream (implied) | Payments | published-language | anti-corruption-layer |
 
 
@@ -71,7 +74,13 @@ A driver's day: an ordered list of stops
 | [SellerAccount](../seller_onboarding/aggregates/seller_account/index.md) | anti-corruption-layer | RiskAssessment | SellerRiskFlagged | published-language |
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | FulfilmentOrder | ShipmentDispatched | published-language |
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | FulfilmentOrder | ReturnReceived | published-language |
+| [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | InventoryPosition | StockShort | published-language |
+| [InventoryPosition](../warehouse/aggregates/inventory_position/index.md) | anti-corruption-layer | Order | OrderPlaced | published-language |
+| [InventoryPosition](../warehouse/aggregates/inventory_position/index.md) | anti-corruption-layer | Order | OrderCancelled | published-language |
+| [InventoryPosition](../warehouse/aggregates/inventory_position/index.md) | anti-corruption-layer | PurchaseOrder | PurchaseOrderReceived | published-language |
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | Payment | RefundPayment | open-host-service |
+| [Payment](../payments/aggregates/payment/index.md) | anti-corruption-layer | Order | OrderPlaced | published-language |
 | [Payment](../payments/aggregates/payment/index.md) | anti-corruption-layer | FulfilmentOrder | ShipmentDispatched | published-language |
+| [FulfilmentOrder](../warehouse/aggregates/fulfilment_order/index.md) | anti-corruption-layer | Order | OrderCancelled | published-language |
 
 

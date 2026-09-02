@@ -34,8 +34,6 @@ A suspected fraud and the alerts behind it
 ## Provides
 | Name | Type | Internal | Pattern | Description | Schema | Raises |
 | --- | --- | --- | --- | --- | --- | --- |
-| TransactionFlagged | event | no | published-language | Above threshold; the caller stops the transaction | [TransactionVerdict](../../index.md#schemas) | - |
-| TransactionCleared | event | no | published-language | Below threshold; the caller proceeds | [TransactionVerdict](../../index.md#schemas) | - |
 | FraudCaseOpened | event | no | published-language | An investigation began; the account is frozen | [FraudCaseOpened](../../index.md#schemas) | - |
 | OpenCase | operation | yes | - | Open a case with the flagged transaction as its first alert | - | FraudCaseOpened |
 | CloseCase | operation | yes | - | Confirm or dismiss | - | - |
@@ -44,7 +42,7 @@ A suspected fraud and the alerts behind it
 ## Consumes
 
 ### CardAuthorised [anti-corruption-layer]
-A merchant's request was approved
+A merchant's request was approved; Accounts holds the amount and Fraud monitors
 - **Provider**: [Card](../../../cards/aggregates/card/index.md)
 
 	

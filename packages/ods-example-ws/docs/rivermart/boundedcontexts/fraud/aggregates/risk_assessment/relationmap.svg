@@ -24,7 +24,7 @@
 <text xml:space="preserve" text-anchor="start" x="37.18" y="-95" font-family="sans-serif" font-weight="bold" font-size="10.00">RiskAssessment</text>
 <polygon fill="none" stroke="black" points="16,-66 16,-88 126.7,-88 126.7,-66 16,-66"/>
 <text xml:space="preserve" text-anchor="start" x="21" y="-74" font-family="sans-serif" font-size="10.00">{id} assessmentId: string</text>
-<g id="a_node1_3"><a xlink:title="An order id or a seller id">
+<g id="a_node1_11"><a xlink:title="An order id or a seller id">
 <polygon fill="none" stroke="black" points="16,-44 16,-66 126.7,-66 126.7,-44 16,-44"/>
 <text xml:space="preserve" text-anchor="start" x="21" y="-52" font-family="sans-serif" font-size="10.00">subjectId: string</text>
 </a>

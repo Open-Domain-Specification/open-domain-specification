@@ -10,7 +10,7 @@ The searchable documents. A projection: it holds copies, never the truth
 ## Entities and Value Objects
 | Type | Name | Description | Attributes |
 | --- | --- | --- | --- |
-| Entity (Root) | **SearchDocument** | One indexed product with the fields ranking needs | **productId**: `string`, buyBoxPriceMinor: `int64`, primeEligible: `boolean` |
+| Entity (Root) | **SearchDocument** | One indexed product with the fields ranking needs | **productId**: `string`, buyBoxPriceMinor: `int64`, nextDayEligible: `boolean` |
 
 
 ## Relationships

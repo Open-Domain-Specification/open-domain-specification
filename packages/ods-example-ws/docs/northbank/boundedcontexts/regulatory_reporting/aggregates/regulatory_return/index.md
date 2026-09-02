@@ -27,7 +27,7 @@ One report code for one period and its lines
 ## Invariants
 | Name | Description | Constrains |
 | --- | --- | --- |
-| LinesReconcileToLedger | Every line reconciles to ledger postings for the period | ReportLine |
+| LinesReconcileToLedger | A return is filed only when every line has been reconciled to the ledger postings for its period; FileReturn refuses an unreconciled line | ReportLine, RegulatoryReturn |
 | PeriodClosedBeforeFiling | A return is filed only for a closed period | ReportingPeriod |
 | FiledOnceOnly | A return is filed once; corrections are a new return | RegulatoryReturn |
 

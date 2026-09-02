@@ -2,7 +2,7 @@
 
 
 # DispatchPlanner
-Chooses ship dates across pending shipments so pets of one category travel together
+Chooses ship dates across planned shipments so orders approved on the same day leave together; it only needs orderIds and dates, which is all OrderApproved gives it
 
 ![consumablemap](./consumablemap.svg)
 

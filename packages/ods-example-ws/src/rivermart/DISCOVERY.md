@@ -28,12 +28,18 @@ only have one active offer per SKU, otherwise the comparison is meaningless. Whe
 Services suspends a seller we pull every one of their offers, immediately, no batch. The
 catalogue sends us events when products appear or disappear and we keep our own SKU list
 from them; we don't want their whole product model in our tables. Checkout is our biggest
-customer for reads and they get a say when we change the offer API."
+customer for reads and they get a say when we change the offer API. Our own retail arm is
+just another seller in our tables; it wins the buy box on the same rules or it doesn't. The
+delivery promise on an offer comes from whether the stock is in one of our warehouses, and
+the seller rating is a score we keep ourselves."
 
 Recorded as: the Offers context serving the core "Offers & Buy Box" subdomain; the Offer
-aggregate with `PricePositive` and `OneActiveOfferPerSellerSku`; the BuyBoxService domain
-service; the `WithdrawSellerOffers` policy on `SellerSuspended`; an anti-corruption
-consumption of catalogue events; customer-supplier towards Cart & Checkout.
+aggregate with `fulfilledByRiverMart` and `sellerRating` beside price, `PricePositive` and
+`OneActiveOfferPerSellerSku` (a uniqueness rule that `PublishOffer` enforces, since one
+offer cannot see another); the BuyBoxService domain service; the `WithdrawSellerOffers`
+policy on `SellerSuspended`; an anti-corruption consumption of catalogue events;
+customer-supplier towards Cart & Checkout. First-party retail is a seller id in Offers, not
+a context of its own.
 
 ### Head of Catalogue
 
@@ -56,18 +62,21 @@ or the buy box changes because we show the buy box price in results. We take tho
 exactly as published; if the format changes we change with it."
 
 Ads: "We run a second-price auction for the sponsored slots on every results page. Search
-calls us for the slots and merges them into the organic results. Campaigns belong to
-sellers, have a daily budget, and no bid may exceed it. When a seller is suspended their
-campaigns pause the same moment."
+calls us for the slots and merges them into the organic results, and tells us when one of
+them is clicked; the click is what the seller pays for, never the impression. Campaigns
+belong to sellers, have a daily budget, and no bid may exceed it. When a seller is suspended
+their campaigns pause the same moment."
 
 Both: "We used to break each other. Now we plan the results page as one product and
 release together. Neither of us changes it alone."
 
 Recorded as: Search with a projection aggregate (SearchIndex), the Ranker domain service and
 a conformist stance to Catalogue and Offers; Advertising with the Campaign aggregate,
-`BidWithinBudget`, the AuctionService and the `PauseSellerCampaigns` policy; a partnership
-between Search and Advertising, with Search consuming `GetSponsoredResults` as a conformist
-because partners do not translate each other.
+`BidWithinBudget`, the AuctionService (which awards slots and charges nothing) and
+`RecordAdClick`, the open-host operation the results page calls, which is what raises
+`AdClicked`; the `PauseSellerCampaigns` policy; a partnership between Search and
+Advertising, with Search consuming `GetSponsoredResults` and `RecordAdClick` as a
+conformist because partners do not translate each other.
 
 ### Head of Seller Services
 
@@ -94,7 +103,8 @@ Recorded as: Cart & Checkout serving "Ordering"; Cart aggregate with CartLine `i
 `LineQuantityAtLeastOne` and `MaxFiftyLines`; the CheckoutOrchestrator application service
 consuming `AuthorisePayment` and `PlaceOrder` through anti-corruption layers; the two
 policies that chain `CartCheckedOut` to `AuthorisePayment` and `PaymentAuthorised` to
-`PlaceOrder`. The wishlist was modelled as found (see section 7).
+`PlaceOrder`, and a third, "Reopen cart on decline", for the failure path ("the cart stays
+open"). The wishlist was modelled as found (see section 7).
 
 ### Orders Team lead
 
@@ -105,12 +115,16 @@ total is the sum of the lines, a line is in at most one shipment, you can't retu
 was shipped, and you cancel only before anything ships; after that it's a return. The
 warehouse tells us about dispatches and received returns, delivery tells us about
 handovers, fraud tells us about flags, and each of those is an automatic reaction on our
-side. We call Payments to refund once the warehouse has graded a return."
+side. If the warehouse can't cover an order we hold it as awaiting stock rather than let it
+sit as placed forever; the customer sees that. We call Payments to refund once the
+warehouse has graded a return."
 
 Recorded as: the Order aggregate with OrderLine, Shipment, Return and ReturnLine as
 `includes`; four invariants; policies "Record dispatch", "Complete on delivery", "Refund on
-received return" and "Cancel flagged orders"; anti-corruption consumptions of Warehouse,
-Last Mile, Fraud and Payments; the glossary entries for Order, Shipment and Return.
+received return", "Cancel flagged orders" and "Hold on stock short"; anti-corruption
+consumptions of Warehouse, Last Mile, Fraud and Payments; the glossary entries for Order,
+Shipment and Return. Orders is downstream of Payments for the refund call and of Offers for
+the offer id each line carries; both are on the map.
 
 ### Payments engineering lead
 
@@ -123,8 +137,9 @@ nothing special about us."
 
 Recorded as: Payments as a generic subdomain; the Payment aggregate with Authorisation,
 Capture and Refund `includes`; three invariants; the open-host operations and
-published-language events; the "Capture on dispatch" policy; customer-supplier with Cart &
-Checkout.
+published-language events; the "Capture on dispatch" policy and "Attach order to payment",
+because the hold is taken against a cart and the order id only exists afterwards;
+customer-supplier with Cart & Checkout.
 
 ### Trust & Safety lead
 
@@ -143,15 +158,19 @@ downstream.
 never dispatch a package until every pick task in it is done. Stock lives as a position per
 SKU per site, with reservations against it, and reserved can never exceed on hand; that
 would be overselling. We translate customer orders into our own shape and we translate the
-VPS export the same way. Nobody touches VPS's tables directly any more. The label, the
-barcode and the scan events, is a shared library with Logistics; a label printed here is
+VPS export the same way. Nobody touches VPS's tables directly any more. When Orders cancels,
+fraud or customer, we give the reservation back and void the pick tasks the same minute;
+that is the guarantee we asked for, that a flagged order is never picked. A pick task is
+pending until the picker scans it, and a package knows which tasks went into it. The label,
+the barcode and the scan events, is a shared library with Logistics; a label printed here is
 scanned there, so the format has to be one thing."
 
 Recorded as: Warehousing as a core subdomain; InventoryPosition with Reservation `includes`
-and `ReservedWithinOnHand`; FulfilmentOrder with PickTask and Package `includes` and
-`DispatchOnlyWhenPicked`; policies "Reserve on order", "Pick on reservation", "Book in vendor
-deliveries" and "Expect requested returns"; anti-corruption layers towards Orders and Vendor
-Purchasing; shared kernel with Last Mile.
+and `ReservedWithinOnHand`; FulfilmentOrder with PickTask (with a status) and Package
+`includes`, Package referencing the tasks packed into it, and `DispatchOnlyWhenPicked` over
+the two; policies "Reserve on order", "Pick on reservation", "Release on cancellation", "Book
+in vendor deliveries" and "Expect requested returns"; anti-corruption layers towards Orders
+and Vendor Purchasing; shared kernel with Last Mile; the glossary entry "Fulfilment order".
 
 ### Warehouse shift lead (site 4, Rotherham)
 
@@ -171,9 +190,10 @@ go there. We record delivery with proof: photo, signature or safe place. We read
 warehouse dispatch feed to put packages on tomorrow's routes. Do we conform to their format
 or translate it? Honestly, both, depending on who wrote the code. We've never agreed."
 
-Recorded as: Last Mile as supporting; DeliveryRoute with Stop `includes`, ProofOfDelivery,
-`MaxStopsPerRoute`; the "Route dispatched packages" policy; and the consumption of
-`ShipmentDispatched` left without a downstream role, on purpose (section 7).
+Recorded as: Last Mile as supporting; DeliveryRoute with Stop and Parcel `includes`,
+ProofOfDelivery, `MaxStopsPerRoute`; the "Route dispatched packages" policy; the glossary
+entry "Parcel"; and the consumption of `ShipmentDispatched` left without a downstream role,
+on purpose (section 7).
 
 ### Customer Service operations manager
 
@@ -195,7 +215,9 @@ export of received vendor stock, which every site reads. I can describe the expo
 describe the rest."
 
 Recorded as: Vendor Purchasing (legacy) flagged as a big ball of mud with one aggregate and
-one published event, `PurchaseOrderReceived`, with the export's shape as its schema.
+one published event, `PurchaseOrderReceived`, with the export's shape as its schema; a
+"Purchase order" glossary entry, and a "Vendor" entry in Seller Onboarding that says what a
+vendor is not.
 
 ### Platform Team lead
 
@@ -203,7 +225,8 @@ one published event, `PurchaseOrderReceived`, with the export's shape as its sch
 is. Nothing special."
 
 Recorded as: Identity as generic; IdentityAPI with `RegisterCustomer` and `GetCustomer`;
-conformist consumptions from Checkout and Customer Service.
+conformist consumptions from Checkout and Customer Service; the "Customer" glossary entry
+that says only this context holds the record.
 
 ## 3. Event storming
 
@@ -219,10 +242,12 @@ marked every place two people disagreed about a word. The main timeline, condens
 | OfferPublished / OfferWithdrawn | PublishOffer / WithdrawSellerOffers | Recompute buy box |
 | BuyBoxAwarded | AwardBuyBox | Search reindexes price |
 | CartCheckedOut | Checkout | Authorise on checkout |
-| PaymentAuthorised / PaymentDeclined | AuthorisePayment | Place order on authorisation |
-| OrderPlaced | PlaceOrder | Warehouse reserves; Fraud scores order |
+| PaymentAuthorised / PaymentDeclined | AuthorisePayment | Place order on authorisation / Reopen cart on decline |
+| OrderPlaced | PlaceOrder | Warehouse reserves; Fraud scores order; Payments attaches the order id |
 | OrderRiskFlagged | ScoreOrder | Cancel flagged orders |
-| StockReserved / StockShort | ReserveStock | Pick on reservation |
+| OrderCancelled | CancelOrder | Warehouse releases the reservation and voids pick tasks |
+| StockReserved / StockShort | ReserveStock | Pick on reservation / Orders holds as awaiting-stock |
+| SlotsAwarded (internal) / AdClicked | RunAuction / RecordAdClick (Search reports the click) | Budget spend, inside Advertising |
 | ShipmentDispatched | Dispatch | Orders records shipment; Payments captures; Last Mile routes |
 | ParcelDelivered / DeliveryAttemptFailed | RecordDelivery | Orders completes; CS opens case |
 | ReturnRequested | RequestReturn | Warehouse expects return |
@@ -235,6 +260,20 @@ marked every place two people disagreed about a word. The main timeline, condens
 Every row is a `provides` with `raises` and, where a reaction is automatic, a policy in the
 reacting context. Events that other contexts react to carry a schema; events that only their
 own context uses are `internal`.
+
+The wall was not this tidy. The table is the happy path; the red hotspot stickies, each of
+which is now somewhere in the model, were:
+
+- A payment declined after the cart was frozen (Checkout: "the cart stays open"; now a policy).
+- No site able to reserve for an order (Warehouse: "it waits or is split"; now `StockShort`
+  puts the order into awaiting-stock in Orders).
+- A fraud flag arriving after the warehouse had already reserved (Fulfilment and Trust &
+  Safety disagreed on who guaranteed no pick; now `OrderCancelled` releases and voids).
+- Order lines copied onto cases (Customer Service; left in as the deliberate
+  `cross-aggregate-reference`, section 7).
+- Who translates the dispatch feed (Logistics; left in as the deliberate `role-coherence`
+  warning, section 7).
+- Charging on impression versus on click (Ads and Search; the auction awards, the click pays).
 
 ## 4. Language collisions
 
@@ -253,7 +292,9 @@ Pink stickies from the wall, each of which became a context boundary or a glossa
   Recorded as aliases on the Catalogue's Product term so the correction is visible.
 - **Seller / Vendor.** Different businesses; separate ways.
 - **Customer.** Identity's account versus the case's customer versus the order's customer.
-  Only Identity holds the record; the others carry the id.
+  Only Identity holds the record; the others carry the id. A "Customer" entry in Identity's
+  glossary says so.
+- **Parcel.** Now an entity in Last Mile, so the three words are three entities as claimed.
 
 ## 5. Classification
 
@@ -295,7 +336,12 @@ to integrate.
   2015.
 - Fraud and Orders, and Fraud and Seller Onboarding, are upstream of each other in both
   directions (facts one way, verdicts the other). We kept both directed relationships rather
-  than inventing a partnership that neither team recognised.
+  than inventing a partnership that neither team recognised. Orders and Payments are the same
+  shape: the order id goes to Payments on `OrderPlaced`, refunds come back through the
+  payments API.
+- Every `references` across a context boundary has a relationship on the map: Orders to
+  Offers (the offer id on a line) and Advertising to Catalogue (the products an ad group
+  advertises), both conformist because only an id crosses.
 
 ## 7. Validation and what we left in
 
@@ -317,5 +363,86 @@ Deliberately not modelled, either because it is infrastructure or because no int
 reached it: tax calculation, customer notifications (email, push), the membership programme,
 pricing automation for first-party stock, product reviews and questions, gift cards and
 promotions, returns transport, carrier integrations beyond RiverMart's own stations, data
-warehousing and analytics, and everything inside Vendor Purchasing beyond its export. Each
-would be a further discovery session with its own owner.
+warehousing and analytics, seller settlement (commission, payouts and their reconciliation,
+which sits with Finance Technology and was not interviewed), seller ratings and the reviews
+that feed them, and everything inside Vendor Purchasing beyond its export. Each would be a
+further discovery session with its own owner.
+
+## 9. Peer review
+
+An independent review of the model was taken as a second opinion after the first draft.
+Each finding is listed with the outcome, the reason, and what changed. The three deliberate
+diagnostics of section 7 are untouched and `validate()` still returns exactly them.
+
+Accepted
+
+- Warehouse ignored `OrderCancelled`, so a flagged order reserved a moment earlier would
+  still be picked, against the guarantee in the brief. Changed: InventoryPosition and
+  FulfilmentOrder consume `OrderCancelled`; the policy "Release on cancellation" issues
+  `ReleaseReservation` and `VoidPickTasks`. The Head of Fulfilment interview now says so.
+- `StockShort` was raised and consumed by nobody, leaving an order in limbo. Changed: Orders
+  consumes it, "Hold on stock short" issues `HoldForStock`, and `OrderStatus` gains
+  `awaiting-stock`; the Orders Team lead interview and the event table were updated.
+- `PaymentDeclined` was raised and never handled although the Checkout lead said "the cart
+  stays open". Changed: CheckoutOrchestrator consumes it and "Reopen cart on decline"
+  issues `ReopenCart`.
+- `RunAuction` raised `AdClicked`, which charged sellers on impression. Changed: the auction
+  raises the internal `SlotsAwarded`; `RecordAdClick` on AdsAPI, called by Search's results
+  page, is what raises `AdClicked`. The Ads interview now says the click is what is paid for.
+- Orders issued `RefundPayment` with no Orders–Payments relationship on the map. Changed:
+  Orders is downstream of Payments (open host, ACL).
+- `OrderLine references Offer` and `AdGroup references Product` crossed contexts with no
+  relationship declared. Changed: Orders downstream of Offers and Advertising downstream of
+  Catalogue, both conformist because only an id crosses; AdsAPI consumes `GetProduct`.
+- `DispatchOnlyWhenPicked` could not be evaluated: PickTask had no status and Package did
+  not know its tasks. Changed: `PickTask.status` (pending, picked, voided), Package
+  `references` the tasks packed into it, and the invariant constrains both.
+- `PaymentIntent.orderId` had no way to be filled, since the hold precedes the order.
+  Changed: Payments consumes `OrderPlaced` and "Attach order to payment" issues
+  `AttachOrder`; Payments is downstream of Orders on the map.
+- `primeEligible` on SearchDocument was another company's word for a programme the record
+  leaves out. Changed: `nextDayEligible`, described as the badge the brief talks about.
+- The warehouse's three meanings of "order" had one glossary entry. Changed: "Fulfilment
+  order" in Warehouse and "Purchase order" in Vendor Purchasing.
+- Section 4 said "parcel" was an entity in Last Mile; it was not. Changed: a `Parcel` entity
+  under Stop carrying the label and order id, and a "Parcel" glossary entry.
+- Section 4 said only Identity holds the customer record; Identity had no glossary. Changed:
+  a "Customer" entry in Identity.
+- "Vendor" was absent from Seller Onboarding's language although the separation is the
+  most settled policy in the company. Changed: a "Vendor" entry that says what it is not.
+
+Partially accepted
+
+- The buy box inputs the Head of Marketplace named (delivery promise, seller rating) had no
+  element. Changed: `fulfilledByRiverMart` and `sellerRating` on Offer, with the source of
+  the rating (reviews) named in section 8 as out of scope; no rating context was invented.
+- First-party retail had no place in Offers. Accepted that it needed saying, not that it
+  needs a context: RiverMart's retail arm is a seller id in Offers, now stated on the
+  aggregate, the glossary and in the interview.
+- `OneActiveOfferPerSellerSku` cannot be enforced by one Offer instance. ODS invariants
+  belong to an aggregate, so it stays, now constraining the (sellerId, sku) pair and saying
+  `PublishOffer` enforces it over the seller's existing offers.
+- The event storming table was a sterile happy path. Changed: the hotspots from the wall are
+  listed under it, and the failure rows (decline, stock short, cancellation, click) added.
+  The half-day session stands; the table was always described as condensed.
+- No settlement, commission or tax stakeholder was interviewed. True; section 8 now names
+  seller settlement as a gap with its owner rather than leaving it implicit. Modelling it
+  is a further engagement, not a fix to this one.
+
+Rejected
+
+- Customer-supplier with open-host-service and an anti-corruption layer is a confusion: the
+  upstream role says how the API is offered, the downstream role whether it is translated,
+  and the relationship type whether the downstream is consulted. They are three independent
+  answers to the playbook's questions and each context gave them.
+- Partnership contradicted by a conformist consumption: in ODS the downstream role on a
+  consumption is only the translate-or-not stance; "take it as-is" inside a partnership is
+  the honest one and the type carries the symmetry.
+- Wishlist belongs outside Cart & Checkout: it is the deliberate `aggregate-root` case,
+  modelled as found in the Checkout Team's system; where it goes is that team's call.
+- Order is a god aggregate: the Orders Team lead gave the reason (a return must check what
+  was shipped; the customer tracks by order) and the brief asked us to settle what a
+  shipment is. Contention is per order, not global, and was not raised by the team.
+- The interviews read like a textbook: the quoted speech is plain ("we take it as
+  published", "nothing special about us"); the DDD terms appear only in the "Recorded as"
+  lines, which is where they belong.

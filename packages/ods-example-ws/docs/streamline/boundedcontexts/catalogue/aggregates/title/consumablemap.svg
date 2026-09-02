@@ -61,18 +61,18 @@
 </g>
 <g id="clust11" class="cluster namespace">
 <title>#/domains/personalisation</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="141,-748 141,-1000 375,-1000 375,-748 141,-748"/>
-<text xml:space="preserve" text-anchor="middle" x="258" y="-987" font-family="sans-serif" font-size="10.00">Personalisation</text>
+<polygon fill="lightgrey" stroke="lightgrey" points="84,-748 84,-1000 318,-1000 318,-748 84,-748"/>
+<text xml:space="preserve" text-anchor="middle" x="201" y="-987" font-family="sans-serif" font-size="10.00">Personalisation</text>
 </g>
 <g id="clust12" class="cluster namespace">
 <title>#/domains/personalisation/subdomains/recommendations</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="161,-768 161,-960 355,-960 355,-768 161,-768"/>
-<text xml:space="preserve" text-anchor="middle" x="258" y="-947" font-family="sans-serif" font-size="10.00">Recommendations</text>
+<polygon fill="lightgrey" stroke="lightgrey" points="104,-768 104,-960 298,-960 298,-768 104,-768"/>
+<text xml:space="preserve" text-anchor="middle" x="201" y="-947" font-family="sans-serif" font-size="10.00">Recommendations</text>
 </g>
 <g id="clust13" class="cluster namespace">
 <title>#/boundedcontexts/recommendations</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="181,-788 181,-920 335,-920 335,-788 181,-788"/>
-<text xml:space="preserve" text-anchor="middle" x="258" y="-907" font-family="sans-serif" font-size="10.00">Recommendations</text>
+<polygon fill="lightgrey" stroke="lightgrey" points="124,-788 124,-920 278,-920 278,-788 124,-788"/>
+<text xml:space="preserve" text-anchor="middle" x="201" y="-907" font-family="sans-serif" font-size="10.00">Recommendations</text>
 </g>
 <!-- #/boundedcontexts/catalogue/aggregates/title -->
 <g id="node1" class="node">
@@ -93,16 +93,16 @@
 </g>
 </g>
 <!-- #/boundedcontexts/catalogue/aggregates/title&#45;&gt;#/boundedcontexts/studio_production/aggregates/production -->
-<g id="edge2" class="edge">
+<g id="edge3" class="edge">
 <title>#/boundedcontexts/catalogue/aggregates/title&#45;&gt;#/boundedcontexts/studio_production/aggregates/production</title>
 <path fill="none" stroke="black" d="M200.83,-552.52C160.3,-541.77 108.7,-520.64 83,-480 18.03,-377.28 106.34,-232.61 156.93,-164.01"/>
 <polygon fill="black" stroke="black" points="159.69,-166.16 162.89,-156.06 154.09,-161.96 159.69,-166.16"/>
 <text xml:space="preserve" text-anchor="middle" x="126.49" y="-341" font-family="sans-serif" font-size="10.00">MasterDelivered</text>
-<g id="a_edge2&#45;headlabel"><a xlink:title="published&#45;language">
+<g id="a_edge3&#45;headlabel"><a xlink:title="published&#45;language">
 <text xml:space="preserve" text-anchor="middle" x="163.8" y="-151.85" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
-<g id="a_edge2&#45;taillabel"><a xlink:title="anti&#45;corruption&#45;layer">
+<g id="a_edge3&#45;taillabel"><a xlink:title="anti&#45;corruption&#45;layer">
 <text xml:space="preserve" text-anchor="middle" x="200.83" y="-549.52" font-family="sans-serif" font-size="10.00">ACL</text>
 </a>
 </g>
@@ -117,31 +117,31 @@
 </g>
 </g>
 <!-- #/boundedcontexts/catalogue/aggregates/title&#45;&gt;#/boundedcontexts/encoding/aggregates/encoding_job -->
-<g id="edge3" class="edge">
+<g id="edge4" class="edge">
 <title>#/boundedcontexts/catalogue/aggregates/title&#45;&gt;#/boundedcontexts/encoding/aggregates/encoding_job</title>
 <path fill="none" stroke="black" d="M201.47,-550.43C144.18,-535.2 68.64,-506.69 103.79,-468 116.28,-454.25 170.42,-468.38 187,-460 219.49,-443.57 246.49,-412.21 264.69,-386.38"/>
 <polygon fill="black" stroke="black" points="267.39,-388.63 270.14,-378.4 261.61,-384.68 267.39,-388.63"/>
 <text xml:space="preserve" text-anchor="middle" x="144.9" y="-471" font-family="sans-serif" font-size="10.00">EncodingCompleted</text>
-<g id="a_edge3&#45;headlabel"><a xlink:title="published&#45;language">
+<g id="a_edge4&#45;headlabel"><a xlink:title="published&#45;language">
 <text xml:space="preserve" text-anchor="middle" x="270.99" y="-374.15" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
-<g id="a_edge3&#45;taillabel"><a xlink:title="anti&#45;corruption&#45;layer">
+<g id="a_edge4&#45;taillabel"><a xlink:title="anti&#45;corruption&#45;layer">
 <text xml:space="preserve" text-anchor="middle" x="201.47" y="-547.43" font-family="sans-serif" font-size="10.00">ACL</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/catalogue/aggregates/title&#45;&gt;#/boundedcontexts/encoding/aggregates/encoding_job -->
-<g id="edge7" class="edge">
+<g id="edge8" class="edge">
 <title>#/boundedcontexts/catalogue/aggregates/title&#45;&gt;#/boundedcontexts/encoding/aggregates/encoding_job</title>
 <path fill="none" stroke="black" d="M253.41,-527.93C251.69,-513.16 249.96,-495.77 249.12,-480 247.43,-448.3 257.93,-414.08 268.72,-388.03"/>
 <polygon fill="black" stroke="black" points="271.8,-389.71 272.56,-379.15 265.38,-386.94 271.8,-389.71"/>
 <text xml:space="preserve" text-anchor="middle" x="278.56" y="-471" font-family="sans-serif" font-size="10.00">SubmitEncode</text>
-<g id="a_edge7&#45;headlabel"><a xlink:title="open&#45;host&#45;service">
+<g id="a_edge8&#45;headlabel"><a xlink:title="open&#45;host&#45;service">
 <text xml:space="preserve" text-anchor="middle" x="273.16" y="-374.76" font-family="sans-serif" font-size="10.00">OHS</text>
 </a>
 </g>
-<g id="a_edge7&#45;taillabel"><a xlink:title="anti&#45;corruption&#45;layer">
+<g id="a_edge8&#45;taillabel"><a xlink:title="anti&#45;corruption&#45;layer">
 <text xml:space="preserve" text-anchor="middle" x="253.41" y="-524.93" font-family="sans-serif" font-size="10.00">ACL</text>
 </a>
 </g>
@@ -156,71 +156,86 @@
 </g>
 </g>
 <!-- #/boundedcontexts/catalogue/aggregates/title&#45;&gt;#/boundedcontexts/licensing/aggregates/license_deal -->
-<g id="edge5" class="edge">
+<g id="edge6" class="edge">
 <title>#/boundedcontexts/catalogue/aggregates/title&#45;&gt;#/boundedcontexts/licensing/aggregates/license_deal</title>
 <path fill="none" stroke="black" d="M293.39,-533.15C315.7,-514.37 345.15,-489.69 371.37,-468 408.42,-437.35 450.88,-402.73 481.25,-378.04"/>
 <polygon fill="black" stroke="black" points="483.14,-381.01 488.7,-371.99 478.73,-375.58 483.14,-381.01"/>
 <text xml:space="preserve" text-anchor="middle" x="419.68" y="-471" font-family="sans-serif" font-size="10.00">LicenseWindowOpened</text>
-<g id="a_edge5&#45;headlabel"><a xlink:title="published&#45;language">
+<g id="a_edge6&#45;headlabel"><a xlink:title="published&#45;language">
 <text xml:space="preserve" text-anchor="middle" x="489.87" y="-368.04" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
-<g id="a_edge5&#45;taillabel"><a xlink:title="anti&#45;corruption&#45;layer">
+<g id="a_edge6&#45;taillabel"><a xlink:title="anti&#45;corruption&#45;layer">
 <text xml:space="preserve" text-anchor="middle" x="293.39" y="-530.15" font-family="sans-serif" font-size="10.00">ACL</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/catalogue/aggregates/title&#45;&gt;#/boundedcontexts/licensing/aggregates/license_deal -->
-<g id="edge6" class="edge">
+<g id="edge7" class="edge">
 <title>#/boundedcontexts/catalogue/aggregates/title&#45;&gt;#/boundedcontexts/licensing/aggregates/license_deal</title>
 <path fill="none" stroke="black" d="M315.72,-555.34C365.16,-545.85 435,-525.01 478,-480 500.85,-456.08 511.83,-420.15 517.11,-391.36"/>
 <polygon fill="black" stroke="black" points="520.52,-392.25 518.68,-381.82 513.61,-391.12 520.52,-392.25"/>
 <text xml:space="preserve" text-anchor="middle" x="536.25" y="-471" font-family="sans-serif" font-size="10.00">LicenseWindowExpired</text>
-<g id="a_edge6&#45;headlabel"><a xlink:title="published&#45;language">
+<g id="a_edge7&#45;headlabel"><a xlink:title="published&#45;language">
 <text xml:space="preserve" text-anchor="middle" x="518.93" y="-377.32" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
-<g id="a_edge6&#45;taillabel"><a xlink:title="anti&#45;corruption&#45;layer">
+<g id="a_edge7&#45;taillabel"><a xlink:title="anti&#45;corruption&#45;layer">
 <text xml:space="preserve" text-anchor="middle" x="315.72" y="-552.34" font-family="sans-serif" font-size="10.00">ACL</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/encoding/aggregates/encoding_job&#45;&gt;#/boundedcontexts/studio_production/aggregates/production -->
-<g id="edge4" class="edge">
+<g id="edge5" class="edge">
 <title>#/boundedcontexts/encoding/aggregates/encoding_job&#45;&gt;#/boundedcontexts/studio_production/aggregates/production</title>
 <path fill="none" stroke="black" d="M274.06,-308.94C256.33,-271.04 227.64,-209.72 208.31,-168.41"/>
 <polygon fill="black" stroke="black" points="211.54,-167.05 204.13,-159.48 205.2,-170.02 211.54,-167.05"/>
 <text xml:space="preserve" text-anchor="middle" x="284.73" y="-251" font-family="sans-serif" font-size="10.00">MasterDelivered</text>
-<g id="a_edge4&#45;headlabel"><a xlink:title="published&#45;language">
+<g id="a_edge5&#45;headlabel"><a xlink:title="published&#45;language">
 <text xml:space="preserve" text-anchor="middle" x="203.49" y="-155.11" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
-<g id="a_edge4&#45;taillabel"><a xlink:title="conformist">
+<g id="a_edge5&#45;taillabel"><a xlink:title="conformist">
 <text xml:space="preserve" text-anchor="middle" x="274.06" y="-305.94" font-family="sans-serif" font-size="10.00">CF</text>
 </a>
 </g>
 </g>
-<!-- #/boundedcontexts/recommendations/aggregates/taste_profile -->
+<!-- #/boundedcontexts/recommendations/services/ranker -->
 <g id="node5" class="node">
-<title>#/boundedcontexts/recommendations/aggregates/taste_profile</title>
-<g id="a_node5"><a xlink:title="What one profile has watched and what it is inferred to like">
-<polygon fill="white" stroke="black" points="263.32,-808.1 266.84,-808.3 270.33,-808.59 273.76,-808.98 277.13,-809.47 280.42,-810.05 283.63,-810.73 286.72,-811.5 289.71,-812.35 292.56,-813.29 295.28,-814.32 297.85,-815.43 300.27,-816.62 302.53,-817.88 304.62,-819.21 306.53,-820.61 308.26,-822.08 309.81,-823.6 311.17,-825.18 312.35,-826.82 313.34,-828.5 314.14,-830.22 314.75,-831.98 315.18,-833.77 315.42,-835.59 315.49,-837.44 315.38,-839.3 315.1,-841.17 314.66,-843.06 314.06,-844.94 313.31,-846.83 312.41,-848.7 311.38,-850.56 310.22,-852.41 308.94,-854.23 307.54,-856.02 306.03,-857.78 304.43,-859.5 302.74,-861.18 300.96,-862.82 299.11,-864.4 297.19,-865.92 295.21,-867.39 293.17,-868.79 291.09,-870.12 288.96,-871.38 286.79,-872.57 284.58,-873.68 282.35,-874.71 280.1,-875.65 277.82,-876.5 275.52,-877.27 273.21,-877.95 270.89,-878.53 268.56,-879.02 266.22,-879.41 263.88,-879.7 261.53,-879.9 259.18,-880 256.82,-880 254.47,-879.9 252.12,-879.7 249.78,-879.41 247.44,-879.02 245.11,-878.53 242.79,-877.95 240.48,-877.27 238.18,-876.5 235.9,-875.65 233.65,-874.71 231.42,-873.68 229.21,-872.57 227.04,-871.38 224.91,-870.12 222.83,-868.79 220.79,-867.39 218.81,-865.92 216.89,-864.4 215.04,-862.82 213.26,-861.18 211.57,-859.5 209.97,-857.78 208.46,-856.02 207.06,-854.23 205.78,-852.41 204.62,-850.56 203.59,-848.7 202.69,-846.83 201.94,-844.94 201.34,-843.06 200.9,-841.17 200.62,-839.3 200.51,-837.44 200.58,-835.59 200.82,-833.77 201.25,-831.98 201.86,-830.22 202.66,-828.5 203.65,-826.82 204.83,-825.18 206.19,-823.6 207.74,-822.08 209.47,-820.61 211.38,-819.21 213.47,-817.88 215.73,-816.62 218.15,-815.43 220.72,-814.32 223.44,-813.29 226.29,-812.35 229.28,-811.5 232.37,-810.73 235.58,-810.05 238.87,-809.47 242.24,-808.98 245.67,-808.59 249.16,-808.3 252.68,-808.1 256.22,-808 259.78,-808 263.32,-808.1"/>
-<text xml:space="preserve" text-anchor="middle" x="258" y="-839.8" font-family="sans-serif" font-size="14.00">TasteProfile</text>
+<title>#/boundedcontexts/recommendations/services/ranker</title>
+<g id="a_node5"><a xlink:title="Orders candidate titles into rows for a profile; a domain service because it reads across every taste profile&#39;s affinities">
+<polygon fill="white" stroke="black" points="206.32,-808.1 209.84,-808.3 213.33,-808.59 216.76,-808.98 220.13,-809.47 223.42,-810.05 226.63,-810.73 229.72,-811.5 232.71,-812.35 235.56,-813.29 238.28,-814.32 240.85,-815.43 243.27,-816.62 245.53,-817.88 247.62,-819.21 249.53,-820.61 251.26,-822.08 252.81,-823.6 254.17,-825.18 255.35,-826.82 256.34,-828.5 257.14,-830.22 257.75,-831.98 258.18,-833.77 258.42,-835.59 258.49,-837.44 258.38,-839.3 258.1,-841.17 257.66,-843.06 257.06,-844.94 256.31,-846.83 255.41,-848.7 254.38,-850.56 253.22,-852.41 251.94,-854.23 250.54,-856.02 249.03,-857.78 247.43,-859.5 245.74,-861.18 243.96,-862.82 242.11,-864.4 240.19,-865.92 238.21,-867.39 236.17,-868.79 234.09,-870.12 231.96,-871.38 229.79,-872.57 227.58,-873.68 225.35,-874.71 223.1,-875.65 220.82,-876.5 218.52,-877.27 216.21,-877.95 213.89,-878.53 211.56,-879.02 209.22,-879.41 206.88,-879.7 204.53,-879.9 202.18,-880 199.82,-880 197.47,-879.9 195.12,-879.7 192.78,-879.41 190.44,-879.02 188.11,-878.53 185.79,-877.95 183.48,-877.27 181.18,-876.5 178.9,-875.65 176.65,-874.71 174.42,-873.68 172.21,-872.57 170.04,-871.38 167.91,-870.12 165.83,-868.79 163.79,-867.39 161.81,-865.92 159.89,-864.4 158.04,-862.82 156.26,-861.18 154.57,-859.5 152.97,-857.78 151.46,-856.02 150.06,-854.23 148.78,-852.41 147.62,-850.56 146.59,-848.7 145.69,-846.83 144.94,-844.94 144.34,-843.06 143.9,-841.17 143.62,-839.3 143.51,-837.44 143.58,-835.59 143.82,-833.77 144.25,-831.98 144.86,-830.22 145.66,-828.5 146.65,-826.82 147.83,-825.18 149.19,-823.6 150.74,-822.08 152.47,-820.61 154.38,-819.21 156.47,-817.88 158.73,-816.62 161.15,-815.43 163.72,-814.32 166.44,-813.29 169.29,-812.35 172.28,-811.5 175.37,-810.73 178.58,-810.05 181.87,-809.47 185.24,-808.98 188.67,-808.59 192.16,-808.3 195.68,-808.1 199.22,-808 202.78,-808 206.32,-808.1"/>
+<text xml:space="preserve" text-anchor="middle" x="201" y="-839.8" font-family="sans-serif" font-size="14.00">Ranker</text>
 </a>
 </g>
 </g>
-<!-- #/boundedcontexts/recommendations/aggregates/taste_profile&#45;&gt;#/boundedcontexts/catalogue/aggregates/title -->
+<!-- #/boundedcontexts/recommendations/services/ranker&#45;&gt;#/boundedcontexts/catalogue/aggregates/title -->
 <g id="edge1" class="edge">
-<title>#/boundedcontexts/recommendations/aggregates/taste_profile&#45;&gt;#/boundedcontexts/catalogue/aggregates/title</title>
-<path fill="none" stroke="black" d="M258,-807.51C258,-757.63 258,-666.72 258,-611.5"/>
-<polygon fill="black" stroke="black" points="261.5,-611.79 258,-601.79 254.5,-611.79 261.5,-611.79"/>
-<text xml:space="preserve" text-anchor="middle" x="287.17" y="-731" font-family="sans-serif" font-size="10.00">TitlePublished</text>
+<title>#/boundedcontexts/recommendations/services/ranker&#45;&gt;#/boundedcontexts/catalogue/aggregates/title</title>
+<path fill="none" stroke="black" d="M177.75,-810.2C164.44,-787.42 151.82,-756.21 159.67,-728 172.61,-681.49 202.8,-634.98 226.34,-603.62"/>
+<polygon fill="black" stroke="black" points="228.88,-606.06 232.17,-595.99 223.32,-601.81 228.88,-606.06"/>
+<text xml:space="preserve" text-anchor="middle" x="188.83" y="-731" font-family="sans-serif" font-size="10.00">TitlePublished</text>
 <g id="a_edge1&#45;headlabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="258" y="-597.28" font-family="sans-serif" font-size="10.00">PL</text>
+<text xml:space="preserve" text-anchor="middle" x="233.09" y="-591.79" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
 <g id="a_edge1&#45;taillabel"><a xlink:title="conformist">
-<text xml:space="preserve" text-anchor="middle" x="258" y="-804.51" font-family="sans-serif" font-size="10.00">CF</text>
+<text xml:space="preserve" text-anchor="middle" x="177.75" y="-807.2" font-family="sans-serif" font-size="10.00">CF</text>
+</a>
+</g>
+</g>
+<!-- #/boundedcontexts/recommendations/services/ranker&#45;&gt;#/boundedcontexts/catalogue/aggregates/title -->
+<g id="edge2" class="edge">
+<title>#/boundedcontexts/recommendations/services/ranker&#45;&gt;#/boundedcontexts/catalogue/aggregates/title</title>
+<path fill="none" stroke="black" d="M211.01,-807.91C216.46,-788.07 223.07,-762.77 228,-740 237.41,-696.5 245.75,-646.41 251.23,-610.99"/>
+<polygon fill="black" stroke="black" points="254.63,-611.95 252.68,-601.53 247.71,-610.89 254.63,-611.95"/>
+<text xml:space="preserve" text-anchor="middle" x="281.08" y="-731" font-family="sans-serif" font-size="10.00">TitleAvailabilityChanged</text>
+<g id="a_edge2&#45;headlabel"><a xlink:title="published&#45;language">
+<text xml:space="preserve" text-anchor="middle" x="252.91" y="-597.03" font-family="sans-serif" font-size="10.00">PL</text>
+</a>
+</g>
+<g id="a_edge2&#45;taillabel"><a xlink:title="conformist">
+<text xml:space="preserve" text-anchor="middle" x="211.01" y="-804.91" font-family="sans-serif" font-size="10.00">CF</text>
 </a>
 </g>
 </g>

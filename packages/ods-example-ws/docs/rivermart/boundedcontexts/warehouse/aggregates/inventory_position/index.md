@@ -22,6 +22,7 @@ How much of a SKU one site holds and how much is promised
 | [InventoryPosition](entities/inventory_position/index.md) | stored-in | InventoryPosition - Bin | uses | 1..* |
 | [FulfilmentOrder](../fulfilment_order/entities/fulfilment_order/index.md) | picks | FulfilmentOrder - PickTask | includes | 1..* |
 | [FulfilmentOrder](../fulfilment_order/entities/fulfilment_order/index.md) | packed-into | FulfilmentOrder - Package | includes | * |
+| [Package](../fulfilment_order/entities/package/index.md) | packs | FulfilmentOrder - PickTask | references | 1..* |
 | [Package](../fulfilment_order/entities/package/index.md) | labelled | FulfilmentOrder - TrackingLabel | uses | 1 |
 | [FulfilmentOrder](../fulfilment_order/entities/fulfilment_order/index.md) | fulfils | Order - Order | references | 1 |
 | [Order](../../../order_management/aggregates/order/entities/order/index.md) | has-lines | Order - OrderLine | includes | 1..* |
@@ -48,6 +49,7 @@ How much of a SKU one site holds and how much is promised
 ## Provides
 | Name | Type | Internal | Pattern | Description | Schema | Raises |
 | --- | --- | --- | --- | --- | --- | --- |
+| ReleaseReservation | operation | yes | - | Drop the reservation held for a cancelled order so the stock is available again | - | - |
 | StockReserved | event | no | published-language | Stock is held for an order at a site | [StockReserved](../../index.md#schemas) | - |
 | StockShort | event | no | published-language | No site could cover the order; it waits or is split | [StockReserved](../../index.md#schemas) | - |
 | StockReceived | event | yes | - | A vendor delivery was booked in | - | - |
@@ -59,6 +61,10 @@ How much of a SKU one site holds and how much is promised
 
 ### OrderPlaced [anti-corruption-layer]
 A paid-for order exists
+- **Provider**: [Order](../../../order_management/aggregates/order/index.md)
+
+### OrderCancelled [anti-corruption-layer]
+The order was cancelled before shipment
 - **Provider**: [Order](../../../order_management/aggregates/order/index.md)
 
 ### PurchaseOrderReceived [anti-corruption-layer]

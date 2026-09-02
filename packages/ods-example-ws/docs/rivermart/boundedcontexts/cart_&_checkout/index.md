@@ -47,6 +47,7 @@ Drives a checkout through payment authorisation and order placement; an applicat
 | --- | --- | --- | --- |
 | Authorise on checkout | A checked-out cart is paid for before anything else happens | CartCheckedOut | AuthorisePayment |
 | Place order on authorisation | Once funds are held the order becomes real | PaymentAuthorised | PlaceOrder |
+| Reopen cart on decline | A declined hold leaves the cart open so the customer can try another instrument | PaymentDeclined | ReopenCart |
 
 
 ## Context Relationships
@@ -56,16 +57,18 @@ Drives a checkout through payment authorisation and order placement; an applicat
 | Payments | customer-supplier | Cart & Checkout | open-host-service | anti-corruption-layer |
 | Order Management | customer-supplier | Cart & Checkout | open-host-service | anti-corruption-layer |
 | Identity | upstream-downstream | Cart & Checkout | open-host-service | conformist |
-| Warehouse | upstream-downstream (implied) | Payments | published-language | anti-corruption-layer |
-| Order Management | upstream-downstream (implied) | Warehouse | published-language | anti-corruption-layer |
+| Order Management | upstream-downstream (implied) | Payments | published-language | anti-corruption-layer |
 | Fraud | upstream-downstream (implied) | Order Management | published-language | anti-corruption-layer |
 | Order Management | upstream-downstream (implied) | Fraud | published-language | anti-corruption-layer |
 | Seller Onboarding | upstream-downstream (implied) | Fraud | published-language | anti-corruption-layer |
 | Fraud | upstream-downstream (implied) | Seller Onboarding | published-language | anti-corruption-layer |
 | Warehouse | upstream-downstream (implied) | Order Management | published-language | anti-corruption-layer |
+| Order Management | upstream-downstream (implied) | Warehouse | published-language | anti-corruption-layer |
+| Vendor Purchasing (legacy) | upstream-downstream (implied) | Warehouse | published-language | anti-corruption-layer |
 | Payments | upstream-downstream (implied) | Order Management | open-host-service | anti-corruption-layer |
 | Last Mile | upstream-downstream (implied) | Order Management | published-language | anti-corruption-layer |
 | Warehouse | upstream-downstream (implied) | Last Mile | published-language | - |
+| Warehouse | upstream-downstream (implied) | Payments | published-language | anti-corruption-layer |
 
 
 ## Consumptions
@@ -73,18 +76,25 @@ Drives a checkout through payment authorisation and order placement; an applicat
 | --- | --- | --- | --- | --- |
 | [CheckoutOrchestrator](services/checkout_orchestrator/index.md) | anti-corruption-layer | OfferAPI | GetOffer | open-host-service |
 | [CheckoutOrchestrator](services/checkout_orchestrator/index.md) | anti-corruption-layer | Payment | AuthorisePayment | open-host-service |
-| [Payment](../payments/aggregates/payment/index.md) | anti-corruption-layer | FulfilmentOrder | ShipmentDispatched | published-language |
-| [FulfilmentOrder](../warehouse/aggregates/fulfilment_order/index.md) | anti-corruption-layer | Order | ReturnRequested | published-language |
+| [Payment](../payments/aggregates/payment/index.md) | anti-corruption-layer | Order | OrderPlaced | published-language |
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | RiskAssessment | OrderRiskFlagged | published-language |
 | [RiskAssessment](../fraud/aggregates/risk_assessment/index.md) | anti-corruption-layer | Order | OrderPlaced | published-language |
 | [RiskAssessment](../fraud/aggregates/risk_assessment/index.md) | anti-corruption-layer | SellerAccount | SellerActivated | published-language |
 | [SellerAccount](../seller_onboarding/aggregates/seller_account/index.md) | anti-corruption-layer | RiskAssessment | SellerRiskFlagged | published-language |
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | FulfilmentOrder | ShipmentDispatched | published-language |
+| [FulfilmentOrder](../warehouse/aggregates/fulfilment_order/index.md) | anti-corruption-layer | Order | ReturnRequested | published-language |
+| [FulfilmentOrder](../warehouse/aggregates/fulfilment_order/index.md) | anti-corruption-layer | Order | OrderCancelled | published-language |
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | FulfilmentOrder | ReturnReceived | published-language |
+| [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | InventoryPosition | StockShort | published-language |
+| [InventoryPosition](../warehouse/aggregates/inventory_position/index.md) | anti-corruption-layer | Order | OrderPlaced | published-language |
+| [InventoryPosition](../warehouse/aggregates/inventory_position/index.md) | anti-corruption-layer | Order | OrderCancelled | published-language |
+| [InventoryPosition](../warehouse/aggregates/inventory_position/index.md) | anti-corruption-layer | PurchaseOrder | PurchaseOrderReceived | published-language |
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | Payment | RefundPayment | open-host-service |
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | DeliveryRoute | ParcelDelivered | published-language |
 | [DeliveryRoute](../last_mile/aggregates/delivery_route/index.md) | - | FulfilmentOrder | ShipmentDispatched | published-language |
+| [Payment](../payments/aggregates/payment/index.md) | anti-corruption-layer | FulfilmentOrder | ShipmentDispatched | published-language |
 | [CheckoutOrchestrator](services/checkout_orchestrator/index.md) | anti-corruption-layer | Order | PlaceOrder | open-host-service |
+| [CheckoutOrchestrator](services/checkout_orchestrator/index.md) | anti-corruption-layer | Payment | PaymentDeclined | published-language |
 | [CheckoutOrchestrator](services/checkout_orchestrator/index.md) | conformist | IdentityAPI | GetCustomer | open-host-service |
 
 

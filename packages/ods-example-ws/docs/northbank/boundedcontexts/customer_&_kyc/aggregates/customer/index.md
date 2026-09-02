@@ -32,7 +32,7 @@ A verified person and the documents that verify them
 ## Invariants
 | Name | Description | Constrains |
 | --- | --- | --- |
-| AdultOnly | A customer is eighteen or over; no exceptions | DateOfBirth |
+| AdultOnly | A customer is eighteen or over on the day onboarding starts, computed from the date of birth; no exceptions | Customer |
 | VerifiedNeedsDocument | A verified customer has at least one identity document on file | KycStatus, IdentityDocument |
 | DocumentNotExpired | A document past its expiry does not count towards verification | IdentityDocument.expiresOn |
 

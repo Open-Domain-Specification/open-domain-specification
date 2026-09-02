@@ -20,4 +20,12 @@ Open-host service for /store/order endpoints
 Slim {id,name,status} read offered to other contexts, so Sales can check availability without coupling to the full Pet
 - **Provider**: [PetApp](../../../catalog_bc/services/pet_app/index.md)
 
+### ReservePet [anti-corruption-layer]
+available → pending: the pet is held for an approved order; issued by Sales on approval
+- **Provider**: [Pet](../../../catalog_bc/aggregates/pet/index.md)
+
+### MarkPetSold [anti-corruption-layer]
+pending → sold: the pet has gone to its owner; issued by Sales on delivery
+- **Provider**: [Pet](../../../catalog_bc/aggregates/pet/index.md)
+
 	

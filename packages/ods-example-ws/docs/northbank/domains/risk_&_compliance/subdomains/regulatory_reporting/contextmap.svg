@@ -51,8 +51,8 @@
 </g>
 <g id="clust9" class="cluster namespace">
 <title>#/domains/banking_products/subdomains/cards</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="232,-24 232,-132 370,-132 370,-24 232,-24"/>
-<text xml:space="preserve" text-anchor="middle" x="301" y="-119" font-family="sans-serif" font-size="10.00">Cards</text>
+<polygon fill="lightgrey" stroke="lightgrey" points="95,-24 95,-132 233,-132 233,-24 95,-24"/>
+<text xml:space="preserve" text-anchor="middle" x="164" y="-119" font-family="sans-serif" font-size="10.00">Cards</text>
 </g>
 <g id="clust10" class="cluster namespace">
 <title>#/domains/credit</title>
@@ -66,13 +66,13 @@
 </g>
 <g id="clust12" class="cluster namespace">
 <title>#/domains/customer</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="709,-366.7 709,-510.7 959,-510.7 959,-366.7 709,-366.7"/>
-<text xml:space="preserve" text-anchor="middle" x="834" y="-497.7" font-family="sans-serif" font-size="10.00">Customer</text>
+<polygon fill="lightgrey" stroke="lightgrey" points="778,-366.7 778,-510.7 1028,-510.7 1028,-366.7 778,-366.7"/>
+<text xml:space="preserve" text-anchor="middle" x="903" y="-497.7" font-family="sans-serif" font-size="10.00">Customer</text>
 </g>
 <g id="clust13" class="cluster namespace">
 <title>#/domains/customer/subdomains/onboarding_&amp;_kyc</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="717,-374.7 717,-482.7 951,-482.7 951,-374.7 717,-374.7"/>
-<text xml:space="preserve" text-anchor="middle" x="834" y="-469.7" font-family="sans-serif" font-size="10.00">Onboarding &amp; KYC</text>
+<polygon fill="lightgrey" stroke="lightgrey" points="786,-374.7 786,-482.7 1020,-482.7 1020,-374.7 786,-374.7"/>
+<text xml:space="preserve" text-anchor="middle" x="903" y="-469.7" font-family="sans-serif" font-size="10.00">Onboarding &amp; KYC</text>
 </g>
 <!-- #/boundedcontexts/regulatory_reporting -->
 <g id="node1" class="node">
@@ -98,9 +98,9 @@
 <g id="node9" class="node">
 <title>#/boundedcontexts/customer_&amp;_kyc</title>
 <g id="a_node9"><a xlink:title="Verified customers, their documents and their consents">
-<polygon fill="white" stroke="black" points="844.12,-382.8 850.82,-382.99 857.45,-383.29 863.98,-383.68 870.4,-384.17 876.66,-384.75 882.75,-385.43 888.64,-386.19 894.31,-387.05 899.75,-387.99 904.92,-389.02 909.82,-390.13 914.42,-391.31 918.71,-392.57 922.68,-393.91 926.32,-395.31 929.61,-396.77 932.56,-398.3 935.15,-399.88 937.39,-401.51 939.27,-403.19 940.79,-404.92 941.95,-406.68 942.77,-408.47 943.23,-410.29 943.36,-412.13 943.15,-414 942.62,-415.87 941.78,-417.75 940.64,-419.64 939.21,-421.52 937.51,-423.4 935.55,-425.26 933.34,-427.1 930.89,-428.93 928.24,-430.72 925.38,-432.48 922.33,-434.2 919.11,-435.88 915.73,-437.51 912.21,-439.1 908.56,-440.62 904.79,-442.09 900.91,-443.49 896.94,-444.82 892.89,-446.08 888.76,-447.27 884.57,-448.38 880.33,-449.4 876.03,-450.35 871.7,-451.2 867.33,-451.97 862.94,-452.64 858.52,-453.23 854.09,-453.71 849.64,-454.11 845.18,-454.4 840.71,-454.6 836.24,-454.7 831.76,-454.7 827.29,-454.6 822.82,-454.4 818.36,-454.11 813.91,-453.71 809.48,-453.23 805.06,-452.64 800.67,-451.97 796.3,-451.2 791.97,-450.35 787.67,-449.4 783.43,-448.38 779.24,-447.27 775.11,-446.08 771.06,-444.82 767.09,-443.49 763.21,-442.09 759.44,-440.62 755.79,-439.1 752.27,-437.51 748.89,-435.88 745.67,-434.2 742.62,-432.48 739.76,-430.72 737.11,-428.93 734.66,-427.1 732.45,-425.26 730.49,-423.4 728.79,-421.52 727.36,-419.64 726.22,-417.75 725.38,-415.87 724.85,-414 724.64,-412.13 724.77,-410.29 725.23,-408.47 726.05,-406.68 727.21,-404.92 728.73,-403.19 730.61,-401.51 732.85,-399.88 735.44,-398.3 738.39,-396.77 741.68,-395.31 745.32,-393.91 749.29,-392.57 753.58,-391.31 758.18,-390.13 763.08,-389.02 768.25,-387.99 773.69,-387.05 779.36,-386.19 785.25,-385.43 791.34,-384.75 797.6,-384.17 804.02,-383.68 810.55,-383.29 817.18,-382.99 823.88,-382.8 830.62,-382.7 837.38,-382.7 844.12,-382.8"/>
-<text xml:space="preserve" text-anchor="middle" x="834" y="-422.9" font-family="sans-serif" font-size="14.00">Customer &amp; KYC</text>
-<text xml:space="preserve" text-anchor="middle" x="834" y="-406.1" font-family="sans-serif" font-size="14.00">[Customer Platform Team]</text>
+<polygon fill="white" stroke="black" points="913.12,-382.8 919.82,-382.99 926.45,-383.29 932.98,-383.68 939.4,-384.17 945.66,-384.75 951.75,-385.43 957.64,-386.19 963.31,-387.05 968.75,-387.99 973.92,-389.02 978.82,-390.13 983.42,-391.31 987.71,-392.57 991.68,-393.91 995.32,-395.31 998.61,-396.77 1001.56,-398.3 1004.15,-399.88 1006.39,-401.51 1008.27,-403.19 1009.79,-404.92 1010.95,-406.68 1011.77,-408.47 1012.23,-410.29 1012.36,-412.13 1012.15,-414 1011.62,-415.87 1010.78,-417.75 1009.64,-419.64 1008.21,-421.52 1006.51,-423.4 1004.55,-425.26 1002.34,-427.1 999.89,-428.93 997.24,-430.72 994.38,-432.48 991.33,-434.2 988.11,-435.88 984.73,-437.51 981.21,-439.1 977.56,-440.62 973.79,-442.09 969.91,-443.49 965.94,-444.82 961.89,-446.08 957.76,-447.27 953.57,-448.38 949.33,-449.4 945.03,-450.35 940.7,-451.2 936.33,-451.97 931.94,-452.64 927.52,-453.23 923.09,-453.71 918.64,-454.11 914.18,-454.4 909.71,-454.6 905.24,-454.7 900.76,-454.7 896.29,-454.6 891.82,-454.4 887.36,-454.11 882.91,-453.71 878.48,-453.23 874.06,-452.64 869.67,-451.97 865.3,-451.2 860.97,-450.35 856.67,-449.4 852.43,-448.38 848.24,-447.27 844.11,-446.08 840.06,-444.82 836.09,-443.49 832.21,-442.09 828.44,-440.62 824.79,-439.1 821.27,-437.51 817.89,-435.88 814.67,-434.2 811.62,-432.48 808.76,-430.72 806.11,-428.93 803.66,-427.1 801.45,-425.26 799.49,-423.4 797.79,-421.52 796.36,-419.64 795.22,-417.75 794.38,-415.87 793.85,-414 793.64,-412.13 793.77,-410.29 794.23,-408.47 795.05,-406.68 796.21,-404.92 797.73,-403.19 799.61,-401.51 801.85,-399.88 804.44,-398.3 807.39,-396.77 810.68,-395.31 814.32,-393.91 818.29,-392.57 822.58,-391.31 827.18,-390.13 832.08,-389.02 837.25,-387.99 842.69,-387.05 848.36,-386.19 854.25,-385.43 860.34,-384.75 866.6,-384.17 873.02,-383.68 879.55,-383.29 886.18,-382.99 892.88,-382.8 899.62,-382.7 906.38,-382.7 913.12,-382.8"/>
+<text xml:space="preserve" text-anchor="middle" x="903" y="-422.9" font-family="sans-serif" font-size="14.00">Customer &amp; KYC</text>
+<text xml:space="preserve" text-anchor="middle" x="903" y="-406.1" font-family="sans-serif" font-size="14.00">[Customer Platform Team]</text>
 </a>
 </g>
 </g>
@@ -108,17 +108,17 @@
 <g id="edge7" class="edge">
 <title>#/boundedcontexts/sanctions_screening&#45;&gt;#/boundedcontexts/customer_&amp;_kyc</title>
 <g id="a_edge7"><a xlink:title="upstream&#45;downstream">
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M1046.22,-102.8C1003.5,-166.19 911.39,-302.87 863.8,-373.48"/>
-<polygon fill="black" stroke="black" points="860.92,-371.48 858.24,-381.73 866.73,-375.4 860.92,-371.48"/>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M1052.58,-103.49C1022.43,-166.83 958.26,-301.63 924.61,-372.31"/>
+<polygon fill="black" stroke="black" points="921.47,-370.77 920.33,-381.3 927.79,-373.78 921.47,-370.77"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="middle" x="994.89" y="-243.7" font-family="sans-serif" font-size="10.00">U/D</text>
+<text xml:space="preserve" text-anchor="middle" x="1019.18" y="-243.7" font-family="sans-serif" font-size="10.00">U/D</text>
 <g id="a_edge7&#45;headlabel"><a xlink:title="anti&#45;corruption&#45;layer">
-<text xml:space="preserve" text-anchor="middle" x="857.39" y="-379.99" font-family="sans-serif" font-size="10.00">ACL</text>
+<text xml:space="preserve" text-anchor="middle" x="919.68" y="-379.67" font-family="sans-serif" font-size="10.00">ACL</text>
 </a>
 </g>
 <g id="a_edge7&#45;taillabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="1046.22" y="-99.8" font-family="sans-serif" font-size="10.00">PL</text>
+<text xml:space="preserve" text-anchor="middle" x="1052.58" y="-100.49" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
 </g>
@@ -135,7 +135,7 @@
 <!-- #/boundedcontexts/accounts -->
 <g id="node5" class="node">
 <title>#/boundedcontexts/accounts</title>
-<g id="a_node5"><a xlink:title="Current and savings accounts, mandates, overdrafts, status">
+<g id="a_node5"><a xlink:title="Current accounts on the 2019 platform: mandates, overdrafts, holds, status. Savings remain on Sovereign">
 <polygon fill="white" stroke="black" points="112.86,-210.8 117.4,-210.99 121.89,-211.29 126.31,-211.68 130.66,-212.17 134.9,-212.75 139.03,-213.43 143.02,-214.19 146.86,-215.05 150.54,-215.99 154.05,-217.02 157.37,-218.13 160.48,-219.31 163.39,-220.57 166.08,-221.91 168.55,-223.31 170.78,-224.77 172.78,-226.3 174.53,-227.88 176.05,-229.51 177.32,-231.19 178.35,-232.92 179.14,-234.68 179.69,-236.47 180.01,-238.29 180.09,-240.13 179.95,-242 179.59,-243.87 179.02,-245.75 178.25,-247.64 177.28,-249.52 176.13,-251.4 174.8,-253.26 173.3,-255.1 171.65,-256.93 169.85,-258.72 167.91,-260.48 165.84,-262.2 163.66,-263.88 161.37,-265.51 158.99,-267.1 156.51,-268.62 153.96,-270.09 151.33,-271.49 148.64,-272.82 145.9,-274.08 143.1,-275.27 140.26,-276.38 137.39,-277.4 134.48,-278.35 131.54,-279.2 128.58,-279.97 125.61,-280.64 122.61,-281.23 119.61,-281.71 116.6,-282.11 113.57,-282.4 110.55,-282.6 107.52,-282.7 104.48,-282.7 101.45,-282.6 98.43,-282.4 95.4,-282.11 92.39,-281.71 89.39,-281.23 86.39,-280.64 83.42,-279.97 80.46,-279.2 77.52,-278.35 74.61,-277.4 71.74,-276.38 68.9,-275.27 66.1,-274.08 63.36,-272.82 60.67,-271.49 58.04,-270.09 55.49,-268.62 53.01,-267.1 50.63,-265.51 48.34,-263.88 46.16,-262.2 44.09,-260.48 42.15,-258.72 40.35,-256.93 38.7,-255.1 37.2,-253.26 35.87,-251.4 34.72,-249.52 33.75,-247.64 32.98,-245.75 32.41,-243.87 32.05,-242 31.91,-240.13 31.99,-238.29 32.31,-236.47 32.86,-234.68 33.65,-232.92 34.68,-231.19 35.95,-229.51 37.47,-227.88 39.22,-226.3 41.22,-224.77 43.45,-223.31 45.92,-221.91 48.61,-220.57 51.52,-219.31 54.63,-218.13 57.95,-217.02 61.46,-215.99 65.14,-215.05 68.98,-214.19 72.97,-213.43 77.1,-212.75 81.34,-212.17 85.69,-211.68 90.11,-211.29 94.6,-210.99 99.14,-210.8 103.71,-210.7 108.29,-210.7 112.86,-210.8"/>
 <text xml:space="preserve" text-anchor="middle" x="106" y="-250.9" font-family="sans-serif" font-size="14.00">Accounts</text>
 <text xml:space="preserve" text-anchor="middle" x="106" y="-234.1" font-family="sans-serif" font-size="14.00">[Accounts Team]</text>
@@ -146,17 +146,17 @@
 <g id="edge9" class="edge">
 <title>#/boundedcontexts/fraud&#45;&gt;#/boundedcontexts/accounts</title>
 <g id="a_edge9"><a xlink:title="upstream&#45;downstream">
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M543.16,-95.6C499.79,-116 436.75,-143.4 379,-160 359.41,-165.63 217.12,-182.93 198,-190 184.6,-194.96 170.98,-201.93 158.49,-209.27"/>
-<polygon fill="black" stroke="black" points="156.75,-206.23 150.02,-214.42 160.38,-212.21 156.75,-206.23"/>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M521.08,-86.01C439.27,-105.7 306.26,-141.73 198,-190 185.35,-195.64 172.31,-202.69 160.16,-209.85"/>
+<polygon fill="black" stroke="black" points="158.69,-206.65 151.94,-214.82 162.31,-212.65 158.69,-206.65"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="middle" x="339.17" y="-171" font-family="sans-serif" font-size="10.00">U/D</text>
+<text xml:space="preserve" text-anchor="middle" x="258.91" y="-171" font-family="sans-serif" font-size="10.00">U/D</text>
 <g id="a_edge9&#45;headlabel"><a xlink:title="anti&#45;corruption&#45;layer">
-<text xml:space="preserve" text-anchor="middle" x="148.73" y="-212.2" font-family="sans-serif" font-size="10.00">ACL</text>
+<text xml:space="preserve" text-anchor="middle" x="150.64" y="-212.6" font-family="sans-serif" font-size="10.00">ACL</text>
 </a>
 </g>
 <g id="a_edge9&#45;taillabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="543.16" y="-92.6" font-family="sans-serif" font-size="10.00">PL</text>
+<text xml:space="preserve" text-anchor="middle" x="521.08" y="-83.01" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
 </g>
@@ -164,9 +164,9 @@
 <g id="node7" class="node">
 <title>#/boundedcontexts/cards</title>
 <g id="a_node7"><a xlink:title="Issued cards and their authorisations, via CardCo">
-<polygon fill="white" stroke="black" points="306.64,-32.1 310.37,-32.3 314.06,-32.59 317.7,-32.98 321.27,-33.47 324.76,-34.05 328.15,-34.73 331.43,-35.5 334.59,-36.35 337.62,-37.29 340.5,-38.32 343.22,-39.43 345.79,-40.62 348.18,-41.88 350.39,-43.21 352.41,-44.61 354.25,-46.08 355.89,-47.6 357.33,-49.18 358.58,-50.82 359.63,-52.5 360.47,-54.22 361.12,-55.98 361.57,-57.77 361.83,-59.59 361.9,-61.44 361.79,-63.3 361.49,-65.17 361.03,-67.06 360.39,-68.94 359.59,-70.83 358.65,-72.7 357.55,-74.56 356.32,-76.41 354.96,-78.23 353.48,-80.02 351.89,-81.78 350.19,-83.5 348.4,-85.18 346.52,-86.82 344.56,-88.4 342.52,-89.92 340.42,-91.39 338.26,-92.79 336.05,-94.12 333.79,-95.38 331.5,-96.57 329.16,-97.68 326.8,-98.71 324.41,-99.65 322,-100.5 319.56,-101.27 317.12,-101.95 314.66,-102.53 312.19,-103.02 309.71,-103.41 307.23,-103.7 304.74,-103.9 302.25,-104 299.75,-104 297.26,-103.9 294.77,-103.7 292.29,-103.41 289.81,-103.02 287.34,-102.53 284.88,-101.95 282.44,-101.27 280,-100.5 277.59,-99.65 275.2,-98.71 272.84,-97.68 270.5,-96.57 268.21,-95.38 265.95,-94.12 263.74,-92.79 261.58,-91.39 259.48,-89.92 257.44,-88.4 255.48,-86.82 253.6,-85.18 251.81,-83.5 250.11,-81.78 248.52,-80.02 247.04,-78.23 245.68,-76.41 244.45,-74.56 243.35,-72.7 242.41,-70.83 241.61,-68.94 240.97,-67.06 240.51,-65.17 240.21,-63.3 240.1,-61.44 240.17,-59.59 240.43,-57.77 240.88,-55.98 241.53,-54.22 242.37,-52.5 243.42,-50.82 244.67,-49.18 246.11,-47.6 247.75,-46.08 249.59,-44.61 251.61,-43.21 253.82,-41.88 256.21,-40.62 258.78,-39.43 261.5,-38.32 264.38,-37.29 267.41,-36.35 270.57,-35.5 273.85,-34.73 277.24,-34.05 280.73,-33.47 284.3,-32.98 287.94,-32.59 291.63,-32.3 295.36,-32.1 299.12,-32 302.88,-32 306.64,-32.1"/>
-<text xml:space="preserve" text-anchor="middle" x="301" y="-72.2" font-family="sans-serif" font-size="14.00">Cards</text>
-<text xml:space="preserve" text-anchor="middle" x="301" y="-55.4" font-family="sans-serif" font-size="14.00">[Cards Team]</text>
+<polygon fill="white" stroke="black" points="169.64,-32.1 173.37,-32.3 177.06,-32.59 180.7,-32.98 184.27,-33.47 187.76,-34.05 191.15,-34.73 194.43,-35.5 197.59,-36.35 200.62,-37.29 203.5,-38.32 206.22,-39.43 208.79,-40.62 211.18,-41.88 213.39,-43.21 215.41,-44.61 217.25,-46.08 218.89,-47.6 220.33,-49.18 221.58,-50.82 222.63,-52.5 223.47,-54.22 224.12,-55.98 224.57,-57.77 224.83,-59.59 224.9,-61.44 224.79,-63.3 224.49,-65.17 224.03,-67.06 223.39,-68.94 222.59,-70.83 221.65,-72.7 220.55,-74.56 219.32,-76.41 217.96,-78.23 216.48,-80.02 214.89,-81.78 213.19,-83.5 211.4,-85.18 209.52,-86.82 207.56,-88.4 205.52,-89.92 203.42,-91.39 201.26,-92.79 199.05,-94.12 196.79,-95.38 194.5,-96.57 192.16,-97.68 189.8,-98.71 187.41,-99.65 185,-100.5 182.56,-101.27 180.12,-101.95 177.66,-102.53 175.19,-103.02 172.71,-103.41 170.23,-103.7 167.74,-103.9 165.25,-104 162.75,-104 160.26,-103.9 157.77,-103.7 155.29,-103.41 152.81,-103.02 150.34,-102.53 147.88,-101.95 145.44,-101.27 143,-100.5 140.59,-99.65 138.2,-98.71 135.84,-97.68 133.5,-96.57 131.21,-95.38 128.95,-94.12 126.74,-92.79 124.58,-91.39 122.48,-89.92 120.44,-88.4 118.48,-86.82 116.6,-85.18 114.81,-83.5 113.11,-81.78 111.52,-80.02 110.04,-78.23 108.68,-76.41 107.45,-74.56 106.35,-72.7 105.41,-70.83 104.61,-68.94 103.97,-67.06 103.51,-65.17 103.21,-63.3 103.1,-61.44 103.17,-59.59 103.43,-57.77 103.88,-55.98 104.53,-54.22 105.37,-52.5 106.42,-50.82 107.67,-49.18 109.11,-47.6 110.75,-46.08 112.59,-44.61 114.61,-43.21 116.82,-41.88 119.21,-40.62 121.78,-39.43 124.5,-38.32 127.38,-37.29 130.41,-36.35 133.57,-35.5 136.85,-34.73 140.24,-34.05 143.73,-33.47 147.3,-32.98 150.94,-32.59 154.63,-32.3 158.36,-32.1 162.12,-32 165.88,-32 169.64,-32.1"/>
+<text xml:space="preserve" text-anchor="middle" x="164" y="-72.2" font-family="sans-serif" font-size="14.00">Cards</text>
+<text xml:space="preserve" text-anchor="middle" x="164" y="-55.4" font-family="sans-serif" font-size="14.00">[Cards Team]</text>
 </a>
 </g>
 </g>
@@ -174,17 +174,17 @@
 <g id="edge12" class="edge">
 <title>#/boundedcontexts/fraud&#45;&gt;#/boundedcontexts/cards</title>
 <g id="a_edge12"><a xlink:title="upstream&#45;downstream">
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M499.9,-68C458.16,-68 410.28,-68 371.96,-68"/>
-<polygon fill="black" stroke="black" points="372.41,-64.5 362.41,-68 372.41,-71.5 372.41,-64.5"/>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M499.88,-68C419.66,-68 307.62,-68 235.44,-68"/>
+<polygon fill="black" stroke="black" points="235.72,-64.5 225.72,-68 235.72,-71.5 235.72,-64.5"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="middle" x="430.1" y="-74" font-family="sans-serif" font-size="10.00">U/D</text>
+<text xml:space="preserve" text-anchor="middle" x="361.6" y="-74" font-family="sans-serif" font-size="10.00">U/D</text>
 <g id="a_edge12&#45;headlabel"><a xlink:title="anti&#45;corruption&#45;layer">
-<text xml:space="preserve" text-anchor="middle" x="360.9" y="-65" font-family="sans-serif" font-size="10.00">ACL</text>
+<text xml:space="preserve" text-anchor="middle" x="224.21" y="-65" font-family="sans-serif" font-size="10.00">ACL</text>
 </a>
 </g>
 <g id="a_edge12&#45;taillabel"><a xlink:title="open&#45;host&#45;service, published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="499.9" y="-65" font-family="sans-serif" font-size="10.00">OHS+PL</text>
+<text xml:space="preserve" text-anchor="middle" x="499.88" y="-65" font-family="sans-serif" font-size="10.00">OHS+PL</text>
 </a>
 </g>
 </g>
@@ -245,20 +245,20 @@
 </g>
 </g>
 <!-- #/boundedcontexts/ledger&#45;&gt;#/boundedcontexts/lending -->
-<g id="edge13" class="edge">
+<g id="edge14" class="edge">
 <title>#/boundedcontexts/ledger&#45;&gt;#/boundedcontexts/lending</title>
-<g id="a_edge13"><a xlink:title="upstream&#45;downstream">
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M449.39,-409.08C534.86,-399.66 655.97,-382.65 697,-358.7 724.71,-342.52 747.57,-314.54 763.44,-290.71"/>
-<polygon fill="black" stroke="black" points="766.31,-292.72 768.78,-282.42 760.42,-288.93 766.31,-292.72"/>
+<g id="a_edge14"><a xlink:title="upstream&#45;downstream">
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M449.04,-407.26C503.16,-398.78 572.46,-383.94 630,-358.7 673.03,-339.82 716.3,-308.34 746.66,-283.72"/>
+<polygon fill="black" stroke="black" points="748.59,-286.66 754.09,-277.6 744.14,-281.25 748.59,-286.66"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="middle" x="721.55" y="-349.7" font-family="sans-serif" font-size="10.00">U/D</text>
-<g id="a_edge13&#45;headlabel"><a xlink:title="anti&#45;corruption&#45;layer">
-<text xml:space="preserve" text-anchor="middle" x="769.6" y="-278.15" font-family="sans-serif" font-size="10.00">ACL</text>
+<text xml:space="preserve" text-anchor="middle" x="662.13" y="-349.7" font-family="sans-serif" font-size="10.00">U/D</text>
+<g id="a_edge14&#45;headlabel"><a xlink:title="anti&#45;corruption&#45;layer">
+<text xml:space="preserve" text-anchor="middle" x="755.26" y="-273.64" font-family="sans-serif" font-size="10.00">ACL</text>
 </a>
 </g>
-<g id="a_edge13&#45;taillabel"><a xlink:title="open&#45;host&#45;service">
-<text xml:space="preserve" text-anchor="middle" x="449.39" y="-406.08" font-family="sans-serif" font-size="10.00">OHS</text>
+<g id="a_edge14&#45;taillabel"><a xlink:title="open&#45;host&#45;service">
+<text xml:space="preserve" text-anchor="middle" x="449.04" y="-404.26" font-family="sans-serif" font-size="10.00">OHS</text>
 </a>
 </g>
 </g>
@@ -266,7 +266,7 @@
 <g id="edge2" class="edge">
 <title>#/boundedcontexts/accounts&#45;&gt;#/boundedcontexts/regulatory_reporting</title>
 <g id="a_edge2"><a xlink:title="upstream&#45;downstream">
-<path fill="none" stroke="black" d="M147.46,-214.79C162.61,-205.12 180.36,-195.53 198,-190 231.36,-179.54 320.12,-182.4 355,-180 426.93,-175.04 444.8,-172.14 516.78,-168 538.56,-166.75 692.46,-167.38 713,-160 742.98,-149.23 771.6,-128.11 793.37,-108.92"/>
+<path fill="none" stroke="black" d="M147.48,-214.84C162.63,-205.17 180.38,-195.58 198,-190 231.85,-179.28 481.33,-169.95 516.78,-168 538.57,-166.8 692.46,-167.38 713,-160 742.98,-149.23 771.6,-128.11 793.37,-108.92"/>
 <polygon fill="black" stroke="black" points="795.48,-111.73 800.54,-102.42 790.78,-106.54 795.48,-111.73"/>
 </a>
 </g>
@@ -276,7 +276,7 @@
 </a>
 </g>
 <g id="a_edge2&#45;taillabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="147.46" y="-211.79" font-family="sans-serif" font-size="10.00">PL</text>
+<text xml:space="preserve" text-anchor="middle" x="147.48" y="-211.84" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
 </g>
@@ -284,17 +284,17 @@
 <g id="edge11" class="edge">
 <title>#/boundedcontexts/accounts&#45;&gt;#/boundedcontexts/cards</title>
 <g id="a_edge11"><a xlink:title="upstream&#45;downstream">
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M141.31,-213.7C175.45,-182.76 227.05,-136.01 262.29,-104.07"/>
-<polygon fill="black" stroke="black" points="264.26,-107.02 269.32,-97.71 259.56,-101.83 264.26,-107.02"/>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M99.19,-210.33C97.86,-196.85 97.89,-181.5 101.78,-168 107.9,-146.77 120.06,-125.69 132.02,-108.48"/>
+<polygon fill="black" stroke="black" points="134.72,-110.73 137.72,-100.57 129.04,-106.64 134.72,-110.73"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="middle" x="194.65" y="-171" font-family="sans-serif" font-size="10.00">U/D</text>
+<text xml:space="preserve" text-anchor="middle" x="110.39" y="-171" font-family="sans-serif" font-size="10.00">U/D</text>
 <g id="a_edge11&#45;headlabel"><a xlink:title="anti&#45;corruption&#45;layer">
-<text xml:space="preserve" text-anchor="middle" x="270.44" y="-93.69" font-family="sans-serif" font-size="10.00">ACL</text>
+<text xml:space="preserve" text-anchor="middle" x="138.61" y="-96.34" font-family="sans-serif" font-size="10.00">ACL</text>
 </a>
 </g>
 <g id="a_edge11&#45;taillabel"><a xlink:title="open&#45;host&#45;service">
-<text xml:space="preserve" text-anchor="middle" x="141.31" y="-210.7" font-family="sans-serif" font-size="10.00">OHS</text>
+<text xml:space="preserve" text-anchor="middle" x="99.19" y="-207.33" font-family="sans-serif" font-size="10.00">OHS</text>
 </a>
 </g>
 </g>
@@ -350,17 +350,35 @@
 <g id="edge10" class="edge">
 <title>#/boundedcontexts/cards&#45;&gt;#/boundedcontexts/fraud</title>
 <g id="a_edge10"><a xlink:title="upstream&#45;downstream">
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M360.9,-68C397.5,-68 445.39,-68 488.48,-68"/>
-<polygon fill="black" stroke="black" points="488.39,-71.5 498.39,-68 488.39,-64.5 488.39,-71.5"/>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M224.21,-68C292.41,-68 404.93,-68 488.54,-68"/>
+<polygon fill="black" stroke="black" points="488.36,-71.5 498.36,-68 488.36,-64.5 488.36,-71.5"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="middle" x="430.1" y="-74" font-family="sans-serif" font-size="10.00">U/D</text>
+<text xml:space="preserve" text-anchor="middle" x="361.6" y="-74" font-family="sans-serif" font-size="10.00">U/D</text>
 <g id="a_edge10&#45;headlabel"><a xlink:title="anti&#45;corruption&#45;layer">
-<text xml:space="preserve" text-anchor="middle" x="499.9" y="-65" font-family="sans-serif" font-size="10.00">ACL</text>
+<text xml:space="preserve" text-anchor="middle" x="499.88" y="-65" font-family="sans-serif" font-size="10.00">ACL</text>
 </a>
 </g>
 <g id="a_edge10&#45;taillabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="360.9" y="-65" font-family="sans-serif" font-size="10.00">PL</text>
+<text xml:space="preserve" text-anchor="middle" x="224.21" y="-65" font-family="sans-serif" font-size="10.00">PL</text>
+</a>
+</g>
+</g>
+<!-- #/boundedcontexts/cards&#45;&gt;#/boundedcontexts/accounts -->
+<g id="edge13" class="edge">
+<title>#/boundedcontexts/cards&#45;&gt;#/boundedcontexts/accounts</title>
+<g id="a_edge13"><a xlink:title="upstream&#45;downstream">
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M152.76,-103.24C143.71,-130.82 130.9,-169.85 120.97,-200.08"/>
+<polygon fill="black" stroke="black" points="117.72,-198.76 117.93,-209.35 124.38,-200.94 117.72,-198.76"/>
+</a>
+</g>
+<text xml:space="preserve" text-anchor="middle" x="138.42" y="-171" font-family="sans-serif" font-size="10.00">U/D</text>
+<g id="a_edge13&#45;headlabel"><a xlink:title="anti&#45;corruption&#45;layer">
+<text xml:space="preserve" text-anchor="middle" x="117.46" y="-207.79" font-family="sans-serif" font-size="10.00">ACL</text>
+</a>
+</g>
+<g id="a_edge13&#45;taillabel"><a xlink:title="published&#45;language">
+<text xml:space="preserve" text-anchor="middle" x="152.76" y="-100.24" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
 </g>
@@ -386,17 +404,17 @@
 <g id="edge6" class="edge">
 <title>#/boundedcontexts/customer_&amp;_kyc&#45;&gt;#/boundedcontexts/accounts</title>
 <g id="a_edge6"><a xlink:title="upstream&#45;downstream">
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M733.66,-398.87C641.34,-382.32 500.44,-359.01 377,-346.7 357.19,-344.72 216.24,-346.68 198,-338.7 173.48,-327.97 151.86,-307.52 135.75,-288.72"/>
-<polygon fill="black" stroke="black" points="138.54,-286.61 129.48,-281.13 133.14,-291.07 138.54,-286.61"/>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M831,-388.87C787.94,-373.14 731.72,-355.17 680,-346.7 653.57,-342.37 222.69,-349.08 198,-338.7 173.33,-328.32 151.7,-307.89 135.62,-289.02"/>
+<polygon fill="black" stroke="black" points="138.41,-286.9 129.37,-281.38 132.99,-291.34 138.41,-286.9"/>
 </a>
 </g>
-<text xml:space="preserve" text-anchor="middle" x="486.24" y="-349.7" font-family="sans-serif" font-size="10.00">U/D</text>
+<text xml:space="preserve" text-anchor="middle" x="738.67" y="-349.7" font-family="sans-serif" font-size="10.00">U/D</text>
 <g id="a_edge6&#45;headlabel"><a xlink:title="conformist">
-<text xml:space="preserve" text-anchor="middle" x="128.52" y="-276.96" font-family="sans-serif" font-size="10.00">CF</text>
+<text xml:space="preserve" text-anchor="middle" x="128.41" y="-277.21" font-family="sans-serif" font-size="10.00">CF</text>
 </a>
 </g>
 <g id="a_edge6&#45;taillabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="733.66" y="-395.87" font-family="sans-serif" font-size="10.00">PL</text>
+<text xml:space="preserve" text-anchor="middle" x="831" y="-385.87" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
 </g>

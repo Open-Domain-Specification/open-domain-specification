@@ -47,7 +47,7 @@ A customer asking for an amount over a term, and the decision on it
 ## Invariants
 | Name | Description | Constrains |
 | --- | --- | --- |
-| OneOpenApplicationPerCustomer | A customer has at most one open application | LoanApplication |
+| OneOpenApplicationPerCustomer | A customer has at most one open application; SubmitApplication refuses a second while one is open | LoanApplication |
 
 
 ## Provides

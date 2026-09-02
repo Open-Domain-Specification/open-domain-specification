@@ -12,7 +12,7 @@ The warehouse's view of an order: what to pick, how to pack, when it left
 | --- | --- | --- | --- |
 | Entity (Root) | **FulfilmentOrder** | Work to do for one order at one site | **fulfilmentOrderId**: `string`, orderId: `string` |
 | Entity | Package | A box that leaves the dock | **packageId**: `string`, label: `TrackingLabel` |
-| Entity | PickTask | One SKU and quantity for a picker to collect | sku: `string`, quantity: `int` |
+| Entity | PickTask | One SKU and quantity for a picker to collect | sku: `string`, quantity: `int`, status: `'pending' | 'picked' | 'voided'` |
 | Value Object | TrackingLabel | Carrier barcode and scan vocabulary. Part of the kernel shared with Last Mile: one library, one format | barcode: `string`, carrier: `string` |
 
 
@@ -23,6 +23,7 @@ The warehouse's view of an order: what to pick, how to pack, when it left
 | [InventoryPosition](../inventory_position/entities/inventory_position/index.md) | stored-in | InventoryPosition - Bin | uses | 1..* |
 | [FulfilmentOrder](entities/fulfilment_order/index.md) | picks | FulfilmentOrder - PickTask | includes | 1..* |
 | [FulfilmentOrder](entities/fulfilment_order/index.md) | packed-into | FulfilmentOrder - Package | includes | * |
+| [Package](entities/package/index.md) | packs | FulfilmentOrder - PickTask | references | 1..* |
 | [Package](entities/package/index.md) | labelled | FulfilmentOrder - TrackingLabel | uses | 1 |
 | [FulfilmentOrder](entities/fulfilment_order/index.md) | fulfils | Order - Order | references | 1 |
 | [Order](../../../order_management/aggregates/order/entities/order/index.md) | has-lines | Order - OrderLine | includes | 1..* |
@@ -43,7 +44,7 @@ The warehouse's view of an order: what to pick, how to pack, when it left
 ## Invariants
 | Name | Description | Constrains |
 | --- | --- | --- |
-| DispatchOnlyWhenPicked | A package is dispatched only when every pick task in it is complete | FulfilmentOrder |
+| DispatchOnlyWhenPicked | A package is dispatched only when every pick task packed into it has status picked | Package, PickTask.status |
 
 
 ## Provides
@@ -52,6 +53,7 @@ The warehouse's view of an order: what to pick, how to pack, when it left
 | ShipmentDispatched | event | no | published-language | A package left the dock | [ShipmentDispatched](../../index.md#schemas) | - |
 | ReturnReceived | event | no | published-language | A return arrived and was graded | [ReturnReceived](../../index.md#schemas) | - |
 | CreatePickTasks | operation | yes | - | Turn a reservation into work for pickers | - | - |
+| VoidPickTasks | operation | yes | - | Mark every pending pick task of a cancelled order voided so nothing is picked or packed for it | - | - |
 | Dispatch | operation | yes | - | Hand a packed package to the carrier | - | ShipmentDispatched |
 | ReceiveReturn | operation | yes | - | Grade a returned item and restock or scrap it | - | ReturnReceived |
 
@@ -60,6 +62,10 @@ The warehouse's view of an order: what to pick, how to pack, when it left
 
 ### ReturnRequested [anti-corruption-layer]
 The customer wants to send lines back
+- **Provider**: [Order](../../../order_management/aggregates/order/index.md)
+
+### OrderCancelled [anti-corruption-layer]
+The order was cancelled before shipment
 - **Provider**: [Order](../../../order_management/aggregates/order/index.md)
 
 	

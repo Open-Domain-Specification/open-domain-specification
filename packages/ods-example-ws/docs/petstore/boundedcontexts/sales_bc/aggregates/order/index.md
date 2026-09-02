@@ -12,7 +12,7 @@ Order for a single pet
 | --- | --- | --- | --- |
 | Entity (Root) | **Order** | The customer's request to buy one pet | **id**: `int64`, petId: `int64`, quantity: `Quantity`, shipDate: `ShipDate`, status: `OrderStatus` |
 | Value Object | OrderStatus | Where the order is in its lifecycle | value: `'placed' | 'approved' | 'delivered'` |
-| Value Object | Quantity | How many of the pet are ordered | value: `int > 0` |
+| Value Object | Quantity | The v3 API's quantity field, kept for the wire shape. A Pet is an individual animal, so the invariant below pins it to 1 | value: `int > 0` |
 | Value Object | ShipDate | When the order ships; set by Fulfilment once dispatch is planned | value: `date-time` |
 
 
@@ -32,9 +32,9 @@ Order for a single pet
 ## Invariants
 | Name | Description | Constrains |
 | --- | --- | --- |
-| QuantityPositive | Quantity must be > 0; an order for nothing is a mistake, not an order | Quantity |
-| ApproveOnlyWhenAvailable | Approve only if Pet.status == available | OrderStatus, PetStatus |
-| DeliverOnlyWhenApproved | Deliver only from approved, so nothing ships that was never checked | OrderStatus |
+| OneAnimalPerOrder | Quantity is exactly 1: a Pet is one animal with one status, so it cannot be sold five times. The API's quantity field is accepted but never exceeds one | Quantity |
+| ApproveOnlyWhenAvailable | Move to approved only after the catalogue's summary reported the pet available; the catalogue's status itself is outside this aggregate, so the check is a read through the ACL, not a shared invariant | OrderStatus |
+| DeliverOnlyWhenApproved | Deliver only from approved and only once a ship date is set, so nothing is marked delivered that was never checked or never dispatched | OrderStatus, ShipDate |
 
 
 ## Provides

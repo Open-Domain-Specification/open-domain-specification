@@ -87,7 +87,10 @@ network changes. The bookmark, the resume point, is ours; the player updates it 
 seconds and that update is internal, it's not a business fact. Stopped is a business fact:
 profile, title, how much was watched, whether it finished. Devices: we don't start a session
 on a device that isn't certified against the current SDK; we plan releases with the devices
-team as one. On the ads plan we ask the ads service for the breaks before we start."
+team as one. On the ads plan we tell the ads service a session has started, and when the
+player reaches a break we ask them what goes in it." (An earlier draft of this summary
+said the breaks were asked for before the start; the Ads lead's account is the one both
+teams confirmed, and the model follows it.)
 
 Recorded as: Playback as core; PlaybackSession with Bookmark and StreamManifest; invariants
 `SessionNeedsEntitlement`, `WithinStreamLimit`, `BookmarkWithinRuntime`; the
@@ -139,7 +142,8 @@ household on account" policy; glossary Household (alias Account) recording the c
 
 "A subscription is a household on a plan. One active subscription per household, no
 exceptions. A plan is a tier: price, how many streams at once, whether it's ad-supported.
-Each period we invoice, and the invoice amount equals the plan price, full stop. If the
+Each period we invoice, and the subscription line on the invoice equals the plan price, full
+stop; anything else on the bill, like the disc charge, is its own line. If the
 charge fails we start dunning; if dunning fails the subscription lapses and there's no
 entitlement. Playback asks us for entitlement and they're our main customer; they get
 consulted on changes. The disc business posts a monthly charge to us through an export; we
@@ -147,9 +151,9 @@ translate it into an invoice line. We would happily buy all of this."
 
 Recorded as: Billing & Plans as generic; Subscription with Invoice `includes`, Plan, Price
 and BillingPeriod; invariants `OneActiveSubscriptionPerHousehold`,
-`InvoiceAmountEqualsPlanPrice`, `NoEntitlementWhenLapsed`; `GetEntitlement` as an open
-host; policies "Dun on failed payment" and "Add disc charge to bill"; customer-supplier
-towards Playback; anti-corruption consumption of the legacy event.
+`SubscriptionLineEqualsPlanPrice`, `NoEntitlementWhenLapsed`; `GetEntitlement` as an open
+host; policies "Await plan on household", "Dun on failed payment" and "Add disc charge to
+bill"; customer-supplier towards Playback; anti-corruption consumption of the legacy event.
 
 ### Partner Devices lead
 
@@ -201,9 +205,9 @@ to connect them. The connected timeline, condensed:
 | EncodeQueued (internal) | SubmitEncode | Plan ladder |
 | EncodingCompleted | CompleteJob | Catalogue publishes; Edge pre-positions |
 | LicenseWindowOpened / Expired | OpenWindow / ExpireWindow | Catalogue updates availability / unpublishes |
-| TitlePublished / TitleAvailabilityChanged | PublishTitle / UpdateAvailability | Recommendations adds candidate |
+| TitlePublished / TitleAvailabilityChanged | PublishTitle / UpdateAvailability | Recommendations adds candidate ("Add candidate on publish") |
 | AccountCreated | CreateAccount | Create household |
-| HouseholdCreated | CreateHousehold | Billing awaits plan |
+| HouseholdCreated | CreateHousehold | Billing awaits plan ("Await plan on household") |
 | ProfileCreated | CreateProfile | Recommendations creates taste profile |
 | SubscriptionActivated / Lapsed | StartSubscription / LapseSubscription | (entitlement read on play) |
 | PaymentFailed (internal) | ChargeRenewal | Start dunning |
@@ -261,8 +265,10 @@ to connect them. The connected timeline, condensed:
   Encoding conforms to the studio's delivery spec; Catalogue translates everything;
   Recommendations conforms to Catalogue and Households but translates Playback; Billing
   translates the legacy export; Households conforms to Identity.
-- Encoding and Catalogue are upstream of each other (requests one way, completions the
-  other); both directed relationships are kept.
+- Encoding is upstream of Catalogue for both exchanges (Catalogue calls `SubmitEncode` and
+  reads `EncodingCompleted`); one customer-supplier relationship carries both roles.
+- Playback and Ads Tier are each downstream of the other: the start event flows to Ads,
+  the break lookup and the plan check flow back. Ads also asks Billing for the plan.
 
 ## 7. Validation and what we left in
 
@@ -282,3 +288,94 @@ Search, artwork personalisation, subtitles and dubbing, DRM licence servers, con
 moderation and ratings boards, advertiser billing, the data platform, marketing and
 notifications, the studio's scheduling and payroll, and everything inside StreamLine Discs
 beyond its monthly export. Each is a further session with its own owner.
+
+## 9. Peer review
+
+An independent review of the model was taken as a second opinion. Each finding is listed
+with the outcome. The three deliberate problems in section 7 were out of bounds for the
+review and are unchanged; the workspace still reports exactly those three.
+
+Accepted
+
+- Missing episode identity in Playback: a series is watched an episode at a time, and the
+  bookmark is per episode. Changed: `episodeId` (absent for a film) on PlaybackSession,
+  `StartPlayback` and `PlaybackStopped`.
+- Invoice invariant contradicted the disc policy: "invoice equals plan price" and "add the
+  disc charge as a line" cannot both hold. The Commerce lead's summary was the thing at
+  fault (the rule is about the subscription line); it is corrected above. Changed: the
+  invariant is `SubscriptionLineEqualsPlanPrice`, Invoice has `lines` and `amount` is
+  their sum.
+- Master-to-title correlation: `Request encode on master` received a productionId and
+  episode number and issued a titleId with nothing to map between them. Changed: Title has
+  `productionId` (absent for licensed titles), Episode has `masterEpisodeNumber`, and the
+  policy says how it matches.
+- `BudgetApprovedBeforeShoot` constrained a shoot the model did not hold. Changed:
+  Production has a `phase` attribute and the invariant constrains it with the budget.
+- `AdsOnlyOnAdSupportedPlan` constrained a plan AdBreak did not carry. Changed: AdBreak
+  records `householdId`, `planTier` and `country`; Ads asks Billing's `GetEntitlement` for
+  the plan (a new consumption and relationship), which is what "we work with plan and
+  country" needs.
+- Catalogue episodes had no rating although the interview names the rating as what makes
+  them different from the studio's. Changed: Episode has a rating (`0..1`) and the
+  invariant text says an episode may be rated above its series.
+- Inert consumptions: `TitleAvailabilityChanged` was consumed by nobody, Recommendations
+  consumed `TitlePublished` with no policy, Billing consumed `HouseholdCreated` with no
+  policy. Changed: the Ranker consumes both catalogue events with an "Add candidate on
+  publish" policy issuing `AddCandidate`; Billing has "Await plan on household" issuing
+  `RegisterHousehold`. The event storming table now names both.
+- Two Encoding→Catalogue relationships in the same direction: section 6 said "upstream of
+  each other", which the code never was. Changed: one customer-supplier relationship
+  carrying both upstream roles; section 6 corrected.
+- Glossary gaps: Studio had no `Episode`, Identity no `Account`, Playback no `Device`
+  although each side of those collisions was named in section 4. Changed: all three terms
+  added, each pointing at its counterpart; the session distinguishes `deviceId` (a unit)
+  from `deviceModelId` (what certification is about).
+- A film needed a dummy season and episode to be playable. Changed: Title has its own
+  `playableRenditionSet` for films and `PublishedTitleHasPlayableAsset` covers both cases.
+- `KidsProfileMaturityCapped` did not name the profile whose kids flag makes it apply.
+  Changed: it constrains Profile as well as the two value objects.
+- `Slate` was defined as everything commissioned or licensed but embodied only by
+  Production. Changed: the definition now says it is the studio's half of the slate.
+
+Partially accepted
+
+- `WithinStreamLimit` on a single session: a session cannot count its siblings. The rule is
+  real and is enforced at start, using the stream count `GetEntitlement` returns. Changed:
+  PlaybackSession has `householdId`, the invariant constrains it and says where the check
+  runs. No new "lease" aggregate: that is a design choice for the Playback team.
+- `OneActiveSubscriptionPerHousehold` on a single subscription: same shape. Changed: the
+  invariant constrains `householdId` and says `StartSubscription` enforces it. No
+  BillingAccount root was invented; the Commerce lead described none.
+- Playback and Ads are mutually downstream, and the Playback summary said breaks were asked
+  for before the start. The two interviews disagreed and the record hid it. The Ads lead's
+  sequence (start event, then resolve each break when reached) is what both teams confirmed,
+  so the Playback summary is corrected and the two directed relationships are kept with a
+  comment saying why.
+- Daily frequency cap cannot be enforced by one break. Accepted that the break only carries
+  the rule; the value object and `PrepareBreaks` now say the check runs against the
+  household's impressions that day. No ad decisioning service was added; the Ads lead
+  described none.
+
+Rejected
+
+- Cross-context `references` from PlaybackSession and Signal to Title: `references` is the
+  DSL's way of holding another root's identity and is exactly what the cross-aggregate rule
+  permits; both entities also carry a scalar `titleId`.
+- Billing should not conform to Households, and cannot be customer-supplier with Playback,
+  because it is generic: generic classifies the subdomain (buy rather than build), not the
+  integration stance; the Commerce team is internal, said Playback is consulted, and
+  consumes a three-field event with nothing to translate.
+- Physical Rental does not belong in the Viewing domain: the disc business is the other way
+  members watch the slate; a domain of its own for a two-person legacy line would fragment
+  the problem space.
+- Title is a "god aggregate" and availability should be split out for write contention:
+  the Catalogue lead put availability with the title because the licence rule is checked
+  there, and the brief says scale is not a modelling problem for this engagement.
+- The interviews are ventriloquised and frictionless: section 2 says they are composites in
+  the voice of the role, and the frictions are in the record (the bookmark dispute, the ads
+  refusal, the 2019 revert, the half-written rule, and now the Playback/Ads disagreement).
+- DRM licensing is an unexamined hole: section 8 leaves it out deliberately, with an owner
+  for the next session.
+- "We would happily buy all of this" is unrealistic at 41 countries: it is the Commerce
+  lead's stance on differentiation, which is what the classification asks, not a claim that
+  the work is small.

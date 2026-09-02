@@ -43,7 +43,8 @@ A customer telling the bank to pay a payee an amount on a date
 | --- | --- | --- |
 | PayerNotPayee | The payer and payee accounts differ | Payee |
 | AmountPositive | The amount is greater than zero | PaymentInstruction.amount |
-| DailyLimit | Instructions from one account never exceed the daily limit in total | PaymentInstruction.amount |
+| DailyLimit | Instructions from one account never exceed the daily limit in total; checked at initiation over the day's instructions for the payer account, since no single instruction can know the others | PaymentInstruction.amount |
+| FundsAvailableAtInitiation | An instruction is created only if the payer's available balance, read through AccountServicing, covers the amount; the overdraft itself is Accounts' rule at posting | PaymentInstruction.amount |
 | CutOffRespected | A same-day instruction is initiated before the scheme cut-off | ExecutionDate |
 | FlaggedNeverSubmitted | A flagged instruction is rejected; it never reaches a scheme | PaymentStatus |
 
@@ -55,13 +56,17 @@ A customer telling the bank to pay a payee an amount on a date
 | PaymentSubmitted | event | yes | - | Cleared and ready for the scheme | - | - |
 | PaymentSettled | event | no | published-language | The scheme confirmed; the ledger posts | [PaymentEvent](../../index.md#schemas) | - |
 | PaymentRejected | event | no | published-language | Flagged or refused by the scheme | [PaymentEvent](../../index.md#schemas) | - |
-| InitiatePayment | operation | no | open-host-service | Create an instruction from a channel | [InitiatePayment](../../index.md#schemas) | PaymentInitiated |
+| InitiatePayment | operation | no | open-host-service | Create an instruction from a channel, once AccountServicing confirms the available balance covers it and the daily limit holds | [InitiatePayment](../../index.md#schemas) | PaymentInitiated |
 | SubmitPayment | operation | yes | - | Mark cleared and hand to the gateway | - | PaymentSubmitted |
 | ConfirmSettlement | operation | yes | - | Record the scheme's confirmation | - | PaymentSettled |
 | RejectPayment | operation | yes | - | Reject a flagged or scheme-refused instruction | - | PaymentRejected |
 
 
 ## Consumes
+
+### GetAvailableBalance [anti-corruption-layer]
+Posted balance less pending authorisations
+- **Provider**: [AccountServicing](../../../accounts/services/account_servicing/index.md)
 
 ### SubmitToScheme [conformist]
 Send a submission and await the response
@@ -85,10 +90,10 @@ Score synchronously; callers wait on the verdict
 
 ### TransactionFlagged [anti-corruption-layer]
 Above threshold; the caller stops the transaction
-- **Provider**: [FraudCase](../../../fraud/aggregates/fraud_case/index.md)
+- **Provider**: [TransactionScorer](../../../fraud/services/transaction_scorer/index.md)
 
 ### TransactionCleared [anti-corruption-layer]
 Below threshold; the caller proceeds
-- **Provider**: [FraudCase](../../../fraud/aggregates/fraud_case/index.md)
+- **Provider**: [TransactionScorer](../../../fraud/services/transaction_scorer/index.md)
 
 	

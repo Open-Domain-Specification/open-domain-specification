@@ -1,7 +1,7 @@
 
 
 # Offer
-One seller's price and stock for one SKU
+One seller's price and stock for one SKU. RiverMart's own retail arm is one more seller here and wins the buy box on the same rules
 
 ![contextmap](./relationmap.svg)
 
@@ -10,7 +10,7 @@ One seller's price and stock for one SKU
 ## Entities and Value Objects
 | Type | Name | Description | Attributes |
 | --- | --- | --- | --- |
-| Entity (Root) | **Offer** | The seller's terms for a SKU | **offerId**: `string`, sellerId: `string`, sku: `string`, price: `Money`, availableQuantity: `int`, condition: `Condition` |
+| Entity (Root) | **Offer** | The seller's terms for a SKU | **offerId**: `string`, sellerId: `string`, sku: `string`, price: `Money`, availableQuantity: `int`, condition: `Condition`, fulfilledByRiverMart: `boolean`, sellerRating: `int 0..100` |
 | Value Object | Money | An amount in a currency: minor units and an ISO 4217 code | amountMinor: `int64`, currency: `ISO 4217 code` |
 | Value Object | Condition | new, used-like-new, used-good; buyers filter on it | value: `'new' | 'used-like-new' | 'used-good'` |
 
@@ -26,7 +26,7 @@ One seller's price and stock for one SKU
 | Name | Description | Constrains |
 | --- | --- | --- |
 | PricePositive | An offer's price is greater than zero | Offer.price |
-| OneActiveOfferPerSellerSku | A seller has at most one active offer per SKU, so the buy box compares like with like | Offer |
+| OneActiveOfferPerSellerSku | A seller has at most one active offer per SKU, so the buy box compares like with like. Enforced by PublishOffer over the seller's existing offers, since one Offer cannot see another | Offer.sellerId, Offer.sku |
 
 
 ## Provides

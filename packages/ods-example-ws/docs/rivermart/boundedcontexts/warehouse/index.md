@@ -15,6 +15,7 @@ Stock positions, reservations, picking and dispatch
 | --- | --- | --- | --- |
 | **On hand** | Physically present stock, whether or not reserved | Stock | InventoryPosition |
 | **Package** | A box with one tracking label | Parcel | Package |
+| **Fulfilment order** | The warehouse's own work record for one customer order at one site. 'Order' alone is ambiguous here: customer order (Orders), purchase order (VPS) or this | - | FulfilmentOrder |
 
 
 ## Aggregates
@@ -47,6 +48,7 @@ The warehouse's view of an order: what to pick, how to pack, when it left
 | Reserve on order | Every placed order gets stock held immediately | OrderPlaced | ReserveStock |
 | Pick on reservation | Held stock becomes pick tasks | StockReserved | CreatePickTasks |
 | Expect requested returns | A requested return is graded on arrival | ReturnRequested | ReceiveReturn |
+| Release on cancellation | A cancelled order gives its stock back and its pick tasks are voided before a picker reaches them | OrderCancelled | ReleaseReservation, VoidPickTasks |
 | Book in vendor deliveries | The legacy export is translated into stock receipts | PurchaseOrderReceived | ReceiveStock |
 
 
@@ -64,12 +66,14 @@ The warehouse's view of an order: what to pick, how to pack, when it left
 | Seller Onboarding | upstream-downstream (implied) | Fraud | published-language | anti-corruption-layer |
 | Fraud | upstream-downstream (implied) | Seller Onboarding | published-language | anti-corruption-layer |
 | Payments | upstream-downstream (implied) | Order Management | open-host-service | anti-corruption-layer |
+| Order Management | upstream-downstream (implied) | Payments | published-language | anti-corruption-layer |
 | Last Mile | upstream-downstream (implied) | Order Management | published-language | anti-corruption-layer |
 
 
 ## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
+| [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | InventoryPosition | StockShort | published-language |
 | [InventoryPosition](aggregates/inventory_position/index.md) | anti-corruption-layer | Order | OrderPlaced | published-language |
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | RiskAssessment | OrderRiskFlagged | published-language |
 | [RiskAssessment](../fraud/aggregates/risk_assessment/index.md) | anti-corruption-layer | Order | OrderPlaced | published-language |
@@ -80,8 +84,11 @@ The warehouse's view of an order: what to pick, how to pack, when it left
 | [DeliveryRoute](../last_mile/aggregates/delivery_route/index.md) | - | FulfilmentOrder | ShipmentDispatched | published-language |
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | FulfilmentOrder | ReturnReceived | published-language |
 | [FulfilmentOrder](aggregates/fulfilment_order/index.md) | anti-corruption-layer | Order | ReturnRequested | published-language |
+| [FulfilmentOrder](aggregates/fulfilment_order/index.md) | anti-corruption-layer | Order | OrderCancelled | published-language |
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | Payment | RefundPayment | open-host-service |
+| [Payment](../payments/aggregates/payment/index.md) | anti-corruption-layer | Order | OrderPlaced | published-language |
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | DeliveryRoute | ParcelDelivered | published-language |
+| [InventoryPosition](aggregates/inventory_position/index.md) | anti-corruption-layer | Order | OrderCancelled | published-language |
 | [InventoryPosition](aggregates/inventory_position/index.md) | anti-corruption-layer | PurchaseOrder | PurchaseOrderReceived | published-language |
 
 

@@ -340,7 +340,7 @@ catalogueApi
 		schema: productRefSchema,
 	})
 	.raises(productRetired);
-catalogueApi.provides("GetProduct", {
+const getProduct = catalogueApi.provides("GetProduct", {
 	description: "Read one product with its variants",
 	type: "operation",
 	pattern: "open-host-service",
@@ -371,7 +371,11 @@ const searchDoc = indexAgg.addRootEntity("SearchDocument", {
 });
 searchDoc.addAttribute("productId", { type: "string", identity: true });
 searchDoc.addAttribute("buyBoxPriceMinor", { type: "int64" });
-searchDoc.addAttribute("primeEligible", { type: "boolean" });
+searchDoc.addAttribute("nextDayEligible", {
+	type: "boolean",
+	description:
+		"The badge: the buy box offer ships from a RiverMart warehouse, so next-day is the default",
+});
 
 const documentIndexed = indexAgg.provides("DocumentIndexed", {
 	description: "A document was (re)written into the index",
@@ -440,7 +444,8 @@ searchBC.addTerm("Relevance", {
    ======================= */
 
 const offerAgg = offersBC.addAggregate("Offer", {
-	description: "One seller's price and stock for one SKU",
+	description:
+		"One seller's price and stock for one SKU. RiverMart's own retail arm is one more seller here and wins the buy box on the same rules",
 });
 const offer = offerAgg.addRootEntity("Offer", {
 	description: "The seller's terms for a SKU",
@@ -453,13 +458,26 @@ conditionVO.addAttribute("value", {
 	type: "'new' | 'used-like-new' | 'used-good'",
 });
 offer.addAttribute("offerId", { type: "string", identity: true });
-offer.addAttribute("sellerId", { type: "string" });
-offer.addAttribute("sku", { type: "string" });
+const offerSellerId = offer.addAttribute("sellerId", { type: "string" });
+const offerSku = offer.addAttribute("sku", { type: "string" });
 offer.addAttribute("price", { type: "Money", valueobject: offerMoney });
 offer.addAttribute("availableQuantity", { type: "int" });
 offer.addAttribute("condition", {
 	type: "Condition",
 	valueobject: conditionVO,
+});
+// The other two buy box inputs the Head of Marketplace named. The delivery
+// promise follows from whether the stock sits in a RiverMart warehouse; the
+// seller rating is a rolling score the marketplace keeps (reviews are out of scope).
+offer.addAttribute("fulfilledByRiverMart", {
+	type: "boolean",
+	description:
+		"Stock is in a RiverMart warehouse, so the offer carries the next-day promise",
+});
+offer.addAttribute("sellerRating", {
+	type: "int 0..100",
+	description:
+		"The marketplace's rolling score for the seller, weighed against price and delivery in the buy box",
 });
 offer.uses(offerMoney, "priced-at", "1");
 offer.uses(conditionVO, "in-condition", "1");
@@ -469,12 +487,15 @@ offerAgg
 		description: "An offer's price is greater than zero",
 	})
 	.constrains(offer.attributes.get("price")!);
+// A uniqueness rule across offers: no single Offer can see the others, so
+// PublishOffer enforces it by looking up the seller's offers for the SKU
+// before creating a new one. The invariant names the pair that must be unique.
 offerAgg
 	.addInvariant("OneActiveOfferPerSellerSku", {
 		description:
-			"A seller has at most one active offer per SKU, so the buy box compares like with like",
+			"A seller has at most one active offer per SKU, so the buy box compares like with like. Enforced by PublishOffer over the seller's existing offers, since one Offer cannot see another",
 	})
-	.constrains(offer);
+	.constrains(offerSellerId, offerSku);
 
 const offerPublishedSchema = offersBC.addSchema("OfferPublished");
 offerPublishedSchema.addAttribute("offerId", {
@@ -567,7 +588,8 @@ offersBC.addTerm("Buy Box", {
 	embodiedBy: buyBoxService,
 });
 offersBC.addTerm("Offer", {
-	definition: "A seller's price, stock and condition for one SKU",
+	definition:
+		"A seller's price, stock and condition for one SKU; first-party retail is a seller like any other for this purpose",
 	embodiedBy: offerAgg,
 });
 
@@ -683,6 +705,12 @@ sellerBC.addTerm("Seller", {
 	aliases: ["Merchant", "3P"],
 	embodiedBy: sellerAgg,
 });
+// Recorded as its own term, not an alias, so the 2015 decision stays visible.
+sellerBC.addTerm("Vendor", {
+	definition:
+		"Not a seller. A wholesale supplier to first-party retail, handled by Vendor Purchasing; the two accounts were never unified and will not be",
+	embodiedBy: vendorBC,
+});
 
 offerAgg.consumes(sellerActivated, { pattern: "conformist" });
 offerAgg.consumes(sellerSuspended, { pattern: "conformist" });
@@ -761,6 +789,14 @@ cartAgg
 		schema: cartCheckedOutSchema,
 	})
 	.raises(cartCheckedOut);
+// "If the hold fails the customer sees an error and the cart stays open":
+// the frozen cart is reopened, which is a change to the cart, so it is an operation.
+const reopenCart = cartAgg.provides("ReopenCart", {
+	description:
+		"Unfreeze a checked-out cart after a declined payment so the customer can try again",
+	type: "operation",
+	internal: true,
+});
 
 // DELIBERATE (aggregate-root): both entities are marked root. Someone
 // modelled Wishlist and WishlistItem as peers; the rule reports two roots.
@@ -827,10 +863,11 @@ addressVO.addAttribute("lines", { type: "string[]" });
 addressVO.addAttribute("postcode", { type: "string" });
 addressVO.addAttribute("country", { type: "ISO 3166 code" });
 const orderStatusVO = orderAgg.addValueObject("OrderStatus", {
-	description: "placed, cancelled, partially-shipped, shipped, completed",
+	description:
+		"placed, awaiting-stock, cancelled, partially-shipped, shipped, completed",
 });
 orderStatusVO.addAttribute("value", {
-	type: "'placed' | 'cancelled' | 'partially-shipped' | 'shipped' | 'completed'",
+	type: "'placed' | 'awaiting-stock' | 'cancelled' | 'partially-shipped' | 'shipped' | 'completed'",
 });
 const trackingRefVO = orderAgg.addValueObject("TrackingReference", {
 	description: "The carrier reference the customer sees",
@@ -979,6 +1016,13 @@ const completeOrder = orderAgg
 		internal: true,
 	})
 	.raises(orderCompleted);
+// The warehouse's StockShort is not the end of the order: it waits, visibly.
+const holdForStock = orderAgg.provides("HoldForStock", {
+	description:
+		"Put the order into awaiting-stock when no site could reserve for it; it is retried when stock is received or cancelled by the customer",
+	type: "operation",
+	internal: true,
+});
 
 const orderApi = orderBC.addService("OrderAPI", {
 	description: "Read access to orders for the storefront and agents",
@@ -1156,6 +1200,33 @@ cartBC
 	})
 	.on(paymentAuthorised)
 	.then(placeOrder);
+checkoutOrchestrator.consumes(paymentDeclined, {
+	pattern: "anti-corruption-layer",
+});
+cartBC
+	.addPolicy("Reopen cart on decline", {
+		description:
+			"A declined hold leaves the cart open so the customer can try another instrument",
+	})
+	.on(paymentDeclined)
+	.then(reopenCart);
+
+// The intent is authorised against a cart; the order id only exists after
+// PlaceOrder, and captures at dispatch arrive by order id, so Payments
+// attaches it when the order is placed.
+const attachOrder = paymentAgg.provides("AttachOrder", {
+	description:
+		"Record the order id on the payment intent so captures and refunds can find it",
+	type: "operation",
+	internal: true,
+});
+paymentAgg.consumes(orderPlaced, { pattern: "anti-corruption-layer" });
+paymentsBC
+	.addPolicy("Attach order to payment", {
+		description: "Every placed order is linked to the hold that paid for it",
+	})
+	.on(orderPlaced)
+	.then(attachOrder);
 
 /* =======================
    FRAUD
@@ -1312,6 +1383,14 @@ inventoryAgg
 			"Reservations never exceed stock on hand; overselling is a broken promise",
 	})
 	.constrains(onHand, reservation);
+// The other half of "never pick a flagged order": a cancelled order gives
+// its reservation back, and its pick tasks are voided below.
+const releaseReservation = inventoryAgg.provides("ReleaseReservation", {
+	description:
+		"Drop the reservation held for a cancelled order so the stock is available again",
+	type: "operation",
+	internal: true,
+});
 
 const fulfilmentOrderAgg = warehouseBC.addAggregate("FulfilmentOrder", {
 	description:
@@ -1339,6 +1418,11 @@ fulfilmentOrder.addAttribute("fulfilmentOrderId", {
 fulfilmentOrder.addAttribute("orderId", { type: "string" });
 pickTask.addAttribute("sku", { type: "string" });
 pickTask.addAttribute("quantity", { type: "int" });
+const pickStatus = pickTask.addAttribute("status", {
+	type: "'pending' | 'picked' | 'voided'",
+	description:
+		"pending until the picker scans it; voided when the order is cancelled first",
+});
 packageEntity.addAttribute("packageId", { type: "string", identity: true });
 packageEntity.addAttribute("label", {
 	type: "TrackingLabel",
@@ -1346,14 +1430,17 @@ packageEntity.addAttribute("label", {
 });
 fulfilmentOrder.includes(pickTask, "picks", "1..*");
 fulfilmentOrder.includes(packageEntity, "packed-into", "*");
+// A package knows which pick tasks went into it, which is what the
+// invariant below reads. Inside one aggregate a reference is enough.
+packageEntity.references(pickTask, "packs", "1..*");
 packageEntity.uses(trackingLabelVO, "labelled", "1");
 fulfilmentOrder.references(order, "fulfils", "1");
 fulfilmentOrderAgg
 	.addInvariant("DispatchOnlyWhenPicked", {
 		description:
-			"A package is dispatched only when every pick task in it is complete",
+			"A package is dispatched only when every pick task packed into it has status picked",
 	})
-	.constrains(fulfilmentOrder);
+	.constrains(packageEntity, pickStatus);
 
 const stockReservedSchema = warehouseBC.addSchema("StockReserved");
 stockReservedSchema.addAttribute("orderId", { type: "string", identity: true });
@@ -1430,6 +1517,12 @@ const createPickTasks = fulfilmentOrderAgg.provides("CreatePickTasks", {
 	type: "operation",
 	internal: true,
 });
+const voidPickTasks = fulfilmentOrderAgg.provides("VoidPickTasks", {
+	description:
+		"Mark every pending pick task of a cancelled order voided so nothing is picked or packed for it",
+	type: "operation",
+	internal: true,
+});
 fulfilmentOrderAgg
 	.provides("Dispatch", {
 		description: "Hand a packed package to the carrier",
@@ -1467,6 +1560,20 @@ warehouseBC
 	})
 	.on(returnRequested)
 	.then(receiveReturn);
+// The guarantee the warehouse asked for: a cancellation (fraud or customer)
+// releases the reservation and voids the pick tasks, so a flagged order that
+// was reserved a moment earlier is never picked.
+inventoryAgg.consumes(orderCancelled, { pattern: "anti-corruption-layer" });
+fulfilmentOrderAgg.consumes(orderCancelled, {
+	pattern: "anti-corruption-layer",
+});
+warehouseBC
+	.addPolicy("Release on cancellation", {
+		description:
+			"A cancelled order gives its stock back and its pick tasks are voided before a picker reaches them",
+	})
+	.on(orderCancelled)
+	.then(releaseReservation, voidPickTasks);
 
 warehouseBC.addTerm("On hand", {
 	definition: "Physically present stock, whether or not reserved",
@@ -1478,10 +1585,17 @@ warehouseBC.addTerm("Package", {
 	aliases: ["Parcel"],
 	embodiedBy: packageEntity,
 });
+// "Order means three things in this building"; the shift lead says which.
+warehouseBC.addTerm("Fulfilment order", {
+	definition:
+		"The warehouse's own work record for one customer order at one site. 'Order' alone is ambiguous here: customer order (Orders), purchase order (VPS) or this",
+	embodiedBy: fulfilmentOrderAgg,
+});
 
 // Order, payments and customer service react to warehouse facts.
 orderAgg.consumes(shipmentDispatched, { pattern: "anti-corruption-layer" });
 orderAgg.consumes(returnReceived, { pattern: "anti-corruption-layer" });
+orderAgg.consumes(stockShort, { pattern: "anti-corruption-layer" });
 orderAgg.consumes(refundPayment, { pattern: "anti-corruption-layer" });
 orderBC
 	.addPolicy("Record dispatch", {
@@ -1489,6 +1603,13 @@ orderBC
 	})
 	.on(shipmentDispatched)
 	.then(recordShipment);
+orderBC
+	.addPolicy("Hold on stock short", {
+		description:
+			"When no site can reserve for the order it waits as awaiting-stock rather than silently stalling",
+	})
+	.on(stockShort)
+	.then(holdForStock);
 orderBC
 	.addPolicy("Refund on received return", {
 		description: "Money goes back once the warehouse has graded the return",
@@ -1516,7 +1637,13 @@ const route = routeAgg.addRootEntity("DeliveryRoute", {
 	description: "One vehicle, one date, one sequence of stops",
 });
 const stop = routeAgg.addEntity("Stop", {
-	description: "One address and the packages to hand over there",
+	description: "One address and the parcels to hand over there",
+});
+// Logistics says parcel and means the thing at a stop: the third of the
+// three words (shipment, package, parcel), each an entity in its own context.
+const parcel = routeAgg.addEntity("Parcel", {
+	description:
+		"One labelled item to hand over at a stop; the warehouse's package once it is on a van",
 });
 const lastMileLabelVO = routeAgg.addValueObject("TrackingLabel", {
 	description:
@@ -1531,12 +1658,14 @@ proofVO.addAttribute("capturedAt", { type: "date-time" });
 route.addAttribute("routeId", { type: "string", identity: true });
 route.addAttribute("date", { type: "date" });
 stop.addAttribute("sequence", { type: "int" });
-stop.addAttribute("label", {
+parcel.addAttribute("label", {
 	type: "TrackingLabel",
 	valueobject: lastMileLabelVO,
 });
+parcel.addAttribute("orderId", { type: "string" });
 route.includes(stop, "visits", "1..*");
-stop.uses(lastMileLabelVO, "delivers", "1..*");
+stop.includes(parcel, "hands-over", "1..*");
+parcel.uses(lastMileLabelVO, "scanned-as", "1");
 stop.uses(proofVO, "proven-by", "0..1");
 routeAgg
 	.addInvariant("MaxStopsPerRoute", {
@@ -1594,8 +1723,14 @@ lastMileBC
 	.then(assignParcel);
 
 lastMileBC.addTerm("Stop", {
-	definition: "One address on a route, however many packages go there",
+	definition: "One address on a route, however many parcels go there",
 	embodiedBy: stop,
+});
+lastMileBC.addTerm("Parcel", {
+	definition:
+		"The labelled item handed over at a stop. Orders calls it a shipment and the warehouse a package; the label is the one thing all three agree on",
+	aliases: ["Package"],
+	embodiedBy: parcel,
 });
 
 orderAgg.consumes(parcelDelivered, { pattern: "anti-corruption-layer" });
@@ -1664,6 +1799,12 @@ const adClicked = campaignAgg.provides("AdClicked", {
 	pattern: "published-language",
 	schema: adClickedSchema,
 });
+const slotsAwarded = campaignAgg.provides("SlotsAwarded", {
+	description:
+		"An auction chose the winners for one results page; nothing is charged until a click",
+	type: "event",
+	internal: true,
+});
 const campaignLaunched = campaignAgg.provides("CampaignLaunched", {
 	description: "A campaign began spending",
 	type: "event",
@@ -1680,13 +1821,15 @@ const auction = adsBC.addService("AuctionService", {
 		"Runs the second-price auction for the sponsored slots on a results page",
 	type: "domain",
 });
+// Pay per click: the auction awards slots, and only a click, reported by the
+// results page, charges the second price.
 auction
 	.provides("RunAuction", {
 		description: "Pick winners for a query's sponsored slots",
 		type: "operation",
 		internal: true,
 	})
-	.raises(adClicked);
+	.raises(slotsAwarded);
 
 const adsApi = adsBC.addService("AdsAPI", {
 	description:
@@ -1706,6 +1849,17 @@ const getSponsoredResults = adsApi.provides("GetSponsoredResults", {
 	type: "operation",
 	pattern: "open-host-service",
 });
+const recordAdClick = adsApi
+	.provides("RecordAdClick", {
+		description:
+			"The results page reports a click on a sponsored slot; this is the moment the seller is charged",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: adClickedSchema,
+	})
+	.raises(adClicked);
+// Ad groups advertise catalogue products; the ids are checked against the product API.
+adsApi.consumes(getProduct, { pattern: "conformist" });
 
 campaignAgg.consumes(sellerSuspended, { pattern: "conformist" });
 adsBC
@@ -1717,8 +1871,9 @@ adsBC
 	.then(pauseCampaigns);
 
 // Partnership: search and ads tune the results page together, so Search
-// takes the sponsored slots as-is.
+// takes the sponsored slots as-is and reports clicks on them the same way.
 searchApi.consumes(getSponsoredResults, { pattern: "conformist" });
+searchApi.consumes(recordAdClick, { pattern: "conformist" });
 
 adsBC.addTerm("Sponsored slot", {
 	definition:
@@ -1835,6 +1990,13 @@ const purchaseOrderReceived = purchaseOrderAgg.provides(
 	},
 );
 
+vendorBC.addTerm("Purchase order", {
+	definition:
+		"An order RiverMart places with a wholesale vendor; the second of the three meanings of 'order' on a warehouse floor",
+	aliases: ["PO"],
+	embodiedBy: purchaseOrderAgg,
+});
+
 inventoryAgg.consumes(purchaseOrderReceived, {
 	pattern: "anti-corruption-layer",
 });
@@ -1882,6 +2044,14 @@ const getCustomer = identityApi.provides("GetCustomer", {
 checkoutOrchestrator.consumes(getCustomer, { pattern: "conformist" });
 caseAgg.consumes(getCustomer, { pattern: "conformist" });
 
+// "Customer" is said in three contexts; only this one holds the record.
+identityBC.addTerm("Customer", {
+	definition:
+		"The account record. Orders and Cases say customer too but carry only the customerId; nothing about a person lives outside Identity",
+	aliases: ["Account"],
+	embodiedBy: customerAgg,
+});
+
 /* =======================
    CONTEXT RELATIONSHIPS
    DISCOVERY section 6: each type chosen from the playbook's questions (who
@@ -1928,6 +2098,28 @@ cartBC.downstreamOf(orderBC, {
 cartBC.downstreamOf(identityBC, {
 	upstreamRoles: ["open-host-service"],
 	downstreamRoles: ["conformist"],
+});
+orderBC.downstreamOf(offersBC, {
+	upstreamRoles: ["open-host-service"],
+	downstreamRoles: ["conformist"],
+	description:
+		"Order lines carry the offer id they were bought from; Orders never reads Offers back, so the coupling is identity only",
+});
+orderBC.downstreamOf(paymentsBC, {
+	upstreamRoles: ["open-host-service"],
+	downstreamRoles: ["anti-corruption-layer"],
+	description: "Refunds are requested through the payments API",
+});
+paymentsBC.downstreamOf(orderBC, {
+	upstreamRoles: ["published-language"],
+	downstreamRoles: ["anti-corruption-layer"],
+	description:
+		"The order id is attached to the payment on OrderPlaced so captures at dispatch can find it",
+});
+adsBC.downstreamOf(catalogueBC, {
+	upstreamRoles: ["open-host-service"],
+	downstreamRoles: ["conformist"],
+	description: "Ad groups advertise catalogue products by id",
 });
 warehouseBC.downstreamOf(orderBC, {
 	upstreamRoles: ["published-language"],

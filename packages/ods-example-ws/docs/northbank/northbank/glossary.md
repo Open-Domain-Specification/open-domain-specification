@@ -24,7 +24,9 @@
 
 | Term | Definition | Aliases | Embodied by |
 | --- | --- | --- | --- |
-| **Posting** | One side of a movement: a debit or credit to one account | - | Posting |
+| **Posting** | One side of a movement: a debit or credit to one ledger account | - | Posting |
+| **Account** | A ledger account: a customer's account number or a nominal such as the loan book or scheme suspense. Not the Accounts platform's product, which is one kind of it | Ledger account, Nominal | LedgerAccount |
+| **Posted balance** | The sum of postings to an account. What the ledger means by balance; Accounts subtracts holds from it to get the available one | Balance | Posting |
 | **Entry** | A balanced set of postings. Lending calls the disbursement one a drawdown | Journal | JournalEntry |
 | **Value date** | The date money counts from, which may differ from when it was posted | - | ValueDate |
 
@@ -35,6 +37,7 @@
 | --- | --- | --- | --- |
 | **Instruction** | A customer's request to pay. Cards say payment and mean a card transaction; branches say transfer | Payment, Transfer | PaymentInstruction |
 | **Payee** | Who gets paid: a name and an IBAN | Beneficiary | Payee |
+| **Party** | Either side of an instruction, payer or payee. The payer is a Customer & KYC customer; the payee may be anyone with an IBAN | - | PaymentInstruction |
 | **Settlement** | The scheme's confirmation that the money moved | - | PaymentSettled |
 
 
@@ -53,7 +56,7 @@
 | --- | --- | --- | --- |
 | **Loan** | Money lent under a signed agreement, repaid by a schedule | - | Loan |
 | **Drawdown** | Paying the principal to the customer. The ledger calls it a posting | Disbursement | Disburse |
-| **Arrears** | At least one installment missed | - | LoanStatus |
+| **Arrears** | At least one installment missed; the regulatory notice follows (IssueArrearsNotice). Notice intervals and forbearance are servicing detail left out (DISCOVERY section 8) | - | LoanStatus |
 
 
 ## [Credit Decisioning](../boundedcontexts/credit_decisioning/index.md)
@@ -85,6 +88,8 @@
 | Term | Definition | Aliases | Embodied by |
 | --- | --- | --- | --- |
 | **Request** | One customer ask tracked to an outcome | Ticket | ServiceRequest |
+| **Member** | What branch staff call a customer, from the mutual days. The same record as Customer & KYC's Customer, read through GetCustomer | Customer | - |
+| **Balance** | What the screen shows: the available balance as returned by GetAvailableBalance at the moment of the call, never recomputed here | - | ServiceRequest |
 | **Returned payment** | A payment sent back by the payee's bank. Not a regulatory return | - | ServiceRequest |
 
 

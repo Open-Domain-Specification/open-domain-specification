@@ -67,7 +67,7 @@
 <!-- #/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity -->
 <g id="node3" class="node">
 <title>#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity</title>
-<g id="a_node3"><a xlink:title="How many of the pet are ordered">
+<g id="a_node3"><a xlink:title="The v3 API&#39;s quantity field, kept for the wire shape. A Pet is an individual animal, so the invariant below pins it to 1">
 <polygon fill="white" stroke="none" points="304.9,-466 236.31,-466 236.31,-414 304.9,-414 304.9,-466"/>
 <polygon fill="none" stroke="black" points="236.31,-436 236.31,-466 304.9,-466 304.9,-436 236.31,-436"/>
 <text xml:space="preserve" text-anchor="start" x="241.31" y="-453" font-family="sans-serif" font-size="10.00">«value object»</text>

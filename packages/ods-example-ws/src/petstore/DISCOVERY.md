@@ -57,12 +57,79 @@ modelled as an aggregate. User keeps the legacy shape as found.
 
 PetApp, OrderApp, InventoryQuery and UserApp are the application services (the API layer);
 DispatchPlanner is the domain service. Events are published language with schemas; the
-operations that only their own context uses are internal. Three policies: approve an order
-when its pet is available (reacting to events from two contexts), plan dispatch on
-approval, and deliver the order in Sales when Fulfilment reports delivery (a policy issuing
-another context's operation).
+operations that only their own context uses are internal. Five policies: approve an order
+when its pet is available (reacting to events from two contexts), reserve the pet on
+approval and mark it sold on delivery (Sales issuing Catalog's open-host operations, so the
+order lifecycle walks the pet lifecycle), plan dispatch on approval, and deliver the order
+in Sales when Fulfilment reports delivery (a policy issuing another context's operation).
 
 ## Validation
 
 Zero diagnostics. The petstore is the clean reference; the stress models carry the
 deliberate problems.
+
+## 9. Peer review
+
+An independent review of the model was taken as a second opinion. Each finding is listed
+with the outcome; the model, and where the narrative was at fault this record, were changed
+for the accepted ones. The petstore still validates clean.
+
+Accepted
+
+- Cross-context invariant: `ApproveOnlyWhenAvailable` constrained Catalog's `PetStatus`
+  from inside `Order`. An aggregate cannot enforce a rule over another context's value.
+  Changed: it constrains `OrderStatus` only and says the availability check is a read
+  through the ACL (`GetPetSummary`) made by the approval policy.
+- Quantity against an individual animal: `Quantity > 0` on an order for one `Pet` with one
+  status was a contradiction copied from the v3 schema. Changed: `QuantityPositive` became
+  `OneAnimalPerOrder` (quantity is exactly 1) and the `Order` and `Quantity` descriptions
+  say why the field is kept.
+- Orphaned `pending`: the glossary said a pet becomes pending once ordered, but nothing in
+  the model moved it. Changed: Catalog offers `ReservePet` (available → pending) and
+  `MarkPetSold` (pending → sold) as open-host operations; Sales issues them from two new
+  policies on `OrderApproved` and `OrderDelivered`, consumed through the same ACL. The
+  `Available` term now names the two transitions.
+- DispatchPlanner grouped shipments by pet category, which Fulfilment never receives.
+  Changed: it groups orders approved on the same day, which `OrderApproved` does give it.
+
+Partially accepted
+
+- Policy correlation: `Approve when pet available` could not say how a `PetStatusChanged`
+  led to an `orderId`. The DSL does not model correlation, so the description now says the
+  policy looks up placed orders for the petId and confirms availability before approving.
+- Lifecycle invariants on value objects: `SoldNotReopen` now constrains the `Pet` root,
+  because the transition belongs to the entity. `DeliverOnlyWhenApproved` stays on value
+  objects, now `OrderStatus` and `ShipDate`, since it genuinely reads both; that keeps the
+  "invariant over two value objects" demonstration honest.
+- Missing v3 endpoints: `UploadImage` was added to PetApp because `PhotoUrl` already exists
+  and it is a real profile change. The user endpoints were not added: Identity is modelled
+  at its boundary only, by design.
+- "Pet" as a homonym: accepted that the glossary only listed synonyms. A `Pet` term was added
+  to Sales, embodied by `Order.petId`, saying that in Sales a pet is an identity to check
+  and reserve, nothing more. The status vocabularies are now linked by the two new policies
+  rather than left informal.
+
+Rejected
+
+- Fulfilment is invented: the brief says "deliver it" and asks for every element once; a
+  partnership needs two contexts owned by one team, and Fulfilment is where child entities
+  and a domain service naturally live.
+- Fulfilment's policy issuing Sales' `DeliverOrder` is a violation: it is the pattern the
+  DSL exists to show (a policy issuing another context's open-host operation) inside a
+  declared partnership. Kept.
+- Checklist architecture: that is the brief. The petstore is the demonstration reference,
+  and the test suite asserts each relationship type exactly once.
+- Inventory as a micro-context, the shared kernel and the customer-supplier ACL are
+  contrived: each is a deliberate demonstration written up in the discovery record, and the
+  ACL is justified by Sales keeping its own notion of availability.
+- Inventory should not serve the Catalog subdomain: `/store/inventory` is a count of pet
+  statuses, which is catalogue lifecycle information; it is the deliberate example of a
+  context serving two subdomains.
+- Identity is not a big ball of mud: the brief says nobody wants to touch it and it is
+  modelled at its boundary only, which is exactly what the flag means in ODS. Kept.
+- InventoryProjection should not be an aggregate: ODS has no projection element; the
+  description says it is a materialised view rebuilt as one unit.
+- Category has an id so it is an entity: it is reference data compared by value (id and
+  name together), which is the Swagger shape; no pet owns or edits a category.
+- The discovery record is synthetic: it says so in its first paragraph. The source is a
+  specification, not a client, and the record does not pretend otherwise.

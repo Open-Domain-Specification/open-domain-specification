@@ -44,7 +44,7 @@ The documented read API for titles
 
 | Name | Description | On | Then |
 | --- | --- | --- | --- |
-| Request encode on master | A delivered master is queued for encoding | MasterDelivered | SubmitEncode |
+| Request encode on master | A delivered master is matched to the title by productionId (and the episode by masterEpisodeNumber) and queued for encoding under that titleId | MasterDelivered | SubmitEncode |
 | Publish on encode | A completed encode makes the title publishable | EncodingCompleted | PublishTitle |
 | Update availability on window | An opened window changes where the title is live | LicenseWindowOpened | UpdateAvailability |
 | Unpublish on expiry | An expired window takes the title down that day | LicenseWindowExpired | UnpublishTitle |
@@ -55,8 +55,7 @@ The documented read API for titles
 | --- | --- | --- | --- | --- |
 | Studio Production | upstream-downstream | Catalogue | published-language | anti-corruption-layer |
 | Licensing | upstream-downstream | Catalogue | published-language | anti-corruption-layer |
-| Encoding | upstream-downstream | Catalogue | published-language | anti-corruption-layer |
-| Encoding | customer-supplier | Catalogue | open-host-service | anti-corruption-layer |
+| Encoding | customer-supplier | Catalogue | open-host-service, published-language | anti-corruption-layer |
 | Catalogue | upstream-downstream | Playback | open-host-service | anti-corruption-layer |
 | Catalogue | upstream-downstream | Recommendations | published-language | conformist |
 | Studio Production | upstream-downstream (implied) | Encoding | published-language | conformist |
@@ -66,7 +65,8 @@ The documented read API for titles
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
 | [PlaybackSession](../playback/aggregates/playback_session/index.md) | anti-corruption-layer | CatalogueAPI | GetTitle | open-host-service |
-| [TasteProfile](../recommendations/aggregates/taste_profile/index.md) | conformist | Title | TitlePublished | published-language |
+| [Ranker](../recommendations/services/ranker/index.md) | conformist | Title | TitlePublished | published-language |
+| [Ranker](../recommendations/services/ranker/index.md) | conformist | Title | TitleAvailabilityChanged | published-language |
 | [Title](aggregates/title/index.md) | anti-corruption-layer | Production | MasterDelivered | published-language |
 | [Title](aggregates/title/index.md) | anti-corruption-layer | EncodingJob | EncodingCompleted | published-language |
 | [EncodingJob](../encoding/aggregates/encoding_job/index.md) | conformist | Production | MasterDelivered | published-language |

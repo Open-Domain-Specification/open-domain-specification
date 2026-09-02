@@ -13,7 +13,9 @@ Balanced, immutable journal entries
 ## Glossary
 | Term | Definition | Aliases | Embodied by |
 | --- | --- | --- | --- |
-| **Posting** | One side of a movement: a debit or credit to one account | - | Posting |
+| **Posting** | One side of a movement: a debit or credit to one ledger account | - | Posting |
+| **Account** | A ledger account: a customer's account number or a nominal such as the loan book or scheme suspense. Not the Accounts platform's product, which is one kind of it | Ledger account, Nominal | LedgerAccount |
+| **Posted balance** | The sum of postings to an account. What the ledger means by balance; Accounts subtracts holds from it to get the available one | Balance | Posting |
 | **Entry** | A balanced set of postings. Lending calls the disbursement one a drawdown | Journal | JournalEntry |
 | **Value date** | The date money counts from, which may differ from when it was posted | - | ValueDate |
 
@@ -31,8 +33,8 @@ Postings that balance; the whole entry posts or nothing does
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| PostEntry | The postings a caller wants made, as one balanced entry | postings: `{accountId, amount, direction}[]`, valueDate: `ValueDate` | PostEntry, ReverseEntry |
-| EntryPosted | - | **entryId**: `string`, postings: `{accountId, amount, direction}[]` | EntryPosted |
+| PostEntry | The postings a caller wants made, as one balanced entry | postings: `{ledgerAccount, amount, direction}[]`, valueDate: `ValueDate` | PostEntry, ReverseEntry |
+| EntryPosted | - | **entryId**: `string`, postings: `{ledgerAccount, amount, direction}[]` | EntryPosted |
 
 
 ## Policies

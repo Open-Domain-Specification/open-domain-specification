@@ -47,6 +47,7 @@ Read access to orders for the storefront and agents
 | --- | --- | --- | --- |
 | Cancel flagged orders | A flagged order is cancelled before the warehouse picks it | OrderRiskFlagged | CancelOrder |
 | Record dispatch | A dispatched package appears on the order as a shipment | ShipmentDispatched | RecordShipment |
+| Hold on stock short | When no site can reserve for the order it waits as awaiting-stock rather than silently stalling | StockShort | HoldForStock |
 | Refund on received return | Money goes back once the warehouse has graded the return | ReturnReceived | RefundPayment |
 | Complete on delivery | When the last package is delivered the order is done | ParcelDelivered | CompleteOrder |
 
@@ -55,6 +56,9 @@ Read access to orders for the storefront and agents
 | Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |
 | Order Management | customer-supplier | Cart & Checkout | open-host-service | anti-corruption-layer |
+| Offers | upstream-downstream | Order Management | open-host-service | conformist |
+| Payments | upstream-downstream | Order Management | open-host-service | anti-corruption-layer |
+| Order Management | upstream-downstream | Payments | published-language | anti-corruption-layer |
 | Order Management | upstream-downstream | Warehouse | published-language | anti-corruption-layer |
 | Warehouse | upstream-downstream | Order Management | published-language | anti-corruption-layer |
 | Order Management | upstream-downstream | Fraud | published-language | anti-corruption-layer |
@@ -63,7 +67,7 @@ Read access to orders for the storefront and agents
 | Order Management | customer-supplier | Customer Service | open-host-service | anti-corruption-layer |
 | Seller Onboarding | upstream-downstream (implied) | Fraud | published-language | anti-corruption-layer |
 | Fraud | upstream-downstream (implied) | Seller Onboarding | published-language | anti-corruption-layer |
-| Payments | upstream-downstream (implied) | Order Management | open-host-service | anti-corruption-layer |
+| Vendor Purchasing (legacy) | upstream-downstream (implied) | Warehouse | published-language | anti-corruption-layer |
 | Warehouse | upstream-downstream (implied) | Payments | published-language | anti-corruption-layer |
 | Warehouse | upstream-downstream (implied) | Last Mile | published-language | - |
 
@@ -72,8 +76,11 @@ Read access to orders for the storefront and agents
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
 | [Case](../customer_service/aggregates/case/index.md) | anti-corruption-layer | OrderAPI | GetOrder | open-host-service |
+| [Payment](../payments/aggregates/payment/index.md) | anti-corruption-layer | Order | OrderPlaced | published-language |
 | [RiskAssessment](../fraud/aggregates/risk_assessment/index.md) | anti-corruption-layer | Order | OrderPlaced | published-language |
 | [InventoryPosition](../warehouse/aggregates/inventory_position/index.md) | anti-corruption-layer | Order | OrderPlaced | published-language |
+| [InventoryPosition](../warehouse/aggregates/inventory_position/index.md) | anti-corruption-layer | Order | OrderCancelled | published-language |
+| [FulfilmentOrder](../warehouse/aggregates/fulfilment_order/index.md) | anti-corruption-layer | Order | OrderCancelled | published-language |
 | [FulfilmentOrder](../warehouse/aggregates/fulfilment_order/index.md) | anti-corruption-layer | Order | ReturnRequested | published-language |
 | [CheckoutOrchestrator](../cart_&_checkout/services/checkout_orchestrator/index.md) | anti-corruption-layer | Order | PlaceOrder | open-host-service |
 | [Case](../customer_service/aggregates/case/index.md) | anti-corruption-layer | Order | RequestReturn | open-host-service |
@@ -82,6 +89,8 @@ Read access to orders for the storefront and agents
 | [SellerAccount](../seller_onboarding/aggregates/seller_account/index.md) | anti-corruption-layer | RiskAssessment | SellerRiskFlagged | published-language |
 | [Order](aggregates/order/index.md) | anti-corruption-layer | FulfilmentOrder | ShipmentDispatched | published-language |
 | [Order](aggregates/order/index.md) | anti-corruption-layer | FulfilmentOrder | ReturnReceived | published-language |
+| [Order](aggregates/order/index.md) | anti-corruption-layer | InventoryPosition | StockShort | published-language |
+| [InventoryPosition](../warehouse/aggregates/inventory_position/index.md) | anti-corruption-layer | PurchaseOrder | PurchaseOrderReceived | published-language |
 | [Order](aggregates/order/index.md) | anti-corruption-layer | Payment | RefundPayment | open-host-service |
 | [Payment](../payments/aggregates/payment/index.md) | anti-corruption-layer | FulfilmentOrder | ShipmentDispatched | published-language |
 | [Order](aggregates/order/index.md) | anti-corruption-layer | DeliveryRoute | ParcelDelivered | published-language |

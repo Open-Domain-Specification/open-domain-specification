@@ -166,6 +166,11 @@
                 "greenlit_on": {
                   "name": "greenlitOn",
                   "type": "date"
+                },
+                "phase": {
+                  "name": "phase",
+                  "type": "'development' | 'shooting' | 'post' | 'delivered'",
+                  "description": "Where the production is; shooting cannot begin in development without an approved budget"
                 }
               },
               "relations": [
@@ -256,13 +261,13 @@
           "invariants": {
             "budget_approved_before_shoot": {
               "name": "BudgetApprovedBeforeShoot",
-              "description": "No shoot starts before the budget is approved",
+              "description": "The phase cannot move to shooting until the budget carries an approval date",
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/studio_production/aggregates/production/valueobjects/budget"
                 },
                 {
-                  "$ref": "#/boundedcontexts/studio_production/aggregates/production/entities/production"
+                  "$ref": "#/boundedcontexts/studio_production/aggregates/production/entities/production/attributes/phase"
                 }
               ]
             },
@@ -316,9 +321,16 @@
         },
         "slate": {
           "name": "Slate",
-          "definition": "Everything commissioned or licensed for a period",
+          "definition": "In the studio, the originals commissioned for a period. The company-wide slate also includes Licensing's windows; this term covers only the studio's half",
           "embodiedBy": {
             "$ref": "#/boundedcontexts/studio_production/aggregates/production"
+          }
+        },
+        "episode": {
+          "name": "Episode",
+          "definition": "A production artefact keyed by number within the production: a runtime and a master. The catalogue's episode is what a member plays",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/studio_production/aggregates/production/entities/episode"
           }
         }
       },
@@ -726,6 +738,16 @@
                   "valueobject": {
                     "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/maturity_rating"
                   }
+                },
+                "production_id": {
+                  "name": "productionId",
+                  "type": "string",
+                  "description": "The studio production behind an original, or absent for a licensed title; how MasterDelivered is matched to a title"
+                },
+                "playable_rendition_set": {
+                  "name": "playableRenditionSet",
+                  "type": "string",
+                  "description": "For a film, the encoding job whose renditions it plays; a series plays through its episodes"
                 }
               },
               "relations": [
@@ -795,10 +817,23 @@
                   "type": "string",
                   "identity": true
                 },
+                "master_episode_number": {
+                  "name": "masterEpisodeNumber",
+                  "type": "int",
+                  "description": "The studio's episode number for this episode; how a master is matched to it"
+                },
                 "playable_rendition_set": {
                   "name": "playableRenditionSet",
                   "type": "string",
                   "description": "The encoding job whose renditions this episode plays"
+                },
+                "rating": {
+                  "name": "rating",
+                  "type": "MaturityRating",
+                  "description": "An episode may be rated above its series",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/maturity_rating"
+                  }
                 }
               },
               "relations": [
@@ -808,6 +843,14 @@
                   },
                   "relation": "uses",
                   "label": "shown-with",
+                  "cardinality": "0..1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/maturity_rating"
+                  },
+                  "relation": "uses",
+                  "label": "rated",
                   "cardinality": "0..1"
                 }
               ]
@@ -863,7 +906,7 @@
           "invariants": {
             "published_title_has_playable_asset": {
               "name": "PublishedTitleHasPlayableAsset",
-              "description": "A title is published only when at least one episode has a completed encode",
+              "description": "A title is published only when it (a film) or at least one of its episodes (a series) has a completed encode",
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
@@ -916,7 +959,7 @@
       "policies": {
         "request_encode_on_master": {
           "name": "Request encode on master",
-          "description": "A delivered master is queued for encoding",
+          "description": "A delivered master is matched to the title by productionId (and the episode by masterEpisodeNumber) and queued for encoding under that titleId",
           "on": [
             {
               "$ref": "#/boundedcontexts/studio_production/aggregates/production/provides/master_delivered"
@@ -1411,13 +1454,29 @@
                   "name": "profileId",
                   "type": "string"
                 },
+                "household_id": {
+                  "name": "householdId",
+                  "type": "string",
+                  "description": "The paying unit the profile belongs to; what entitlement is checked for"
+                },
                 "title_id": {
                   "name": "titleId",
                   "type": "string"
                 },
+                "episode_id": {
+                  "name": "episodeId",
+                  "type": "string",
+                  "description": "Absent for a film; for a series, the episode being played and bookmarked"
+                },
                 "device_id": {
                   "name": "deviceId",
-                  "type": "string"
+                  "type": "string",
+                  "description": "The individual unit (an installation), not the partner model"
+                },
+                "device_model_id": {
+                  "name": "deviceModelId",
+                  "type": "string",
+                  "description": "The partner model the unit is an instance of; what certification is checked against"
                 },
                 "bookmark": {
                   "name": "bookmark",
@@ -1495,10 +1554,10 @@
             },
             "within_stream_limit": {
               "name": "WithinStreamLimit",
-              "description": "A household never has more concurrent sessions than its plan allows",
+              "description": "A session starts only if the household's open sessions are fewer than the plan's stream count from GetEntitlement; checked at StartPlayback because a session cannot see its siblings",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/entities/playback_session"
+                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/entities/playback_session/attributes/household_id"
                 }
               ]
             },
@@ -1548,6 +1607,13 @@
           "embodiedBy": {
             "$ref": "#/boundedcontexts/playback/aggregates/playback_session/valueobjects/bookmark"
           }
+        },
+        "device": {
+          "name": "Device",
+          "definition": "The individual unit a session runs on. Devices' Device is the partner model it is an instance of, which is what certification is about",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/playback/aggregates/playback_session/entities/playback_session/attributes/device_id"
+          }
         }
       },
       "schemas": {
@@ -1558,12 +1624,24 @@
               "name": "profileId",
               "type": "string"
             },
+            "household_id": {
+              "name": "householdId",
+              "type": "string"
+            },
             "title_id": {
               "name": "titleId",
               "type": "string"
             },
+            "episode_id": {
+              "name": "episodeId",
+              "type": "string"
+            },
             "device_id": {
               "name": "deviceId",
+              "type": "string"
+            },
+            "device_model_id": {
+              "name": "deviceModelId",
               "type": "string"
             }
           }
@@ -1583,6 +1661,10 @@
             },
             "title_id": {
               "name": "titleId",
+              "type": "string"
+            },
+            "episode_id": {
+              "name": "episodeId",
               "type": "string"
             },
             "watched_seconds": {
@@ -2028,12 +2110,6 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/title_published"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
                 "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/bookmark_updated"
               },
               "pattern": "anti-corruption-layer"
@@ -2165,9 +2241,28 @@
               "description": "Build the home screen rows for a profile",
               "type": "operation",
               "internal": true
+            },
+            "add_candidate": {
+              "name": "AddCandidate",
+              "description": "Add or refresh a title in the candidate pool with the countries it is live in",
+              "type": "operation",
+              "internal": true
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/title_published"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/title_availability_changed"
+              },
+              "pattern": "conformist"
+            }
+          ]
         },
         "recommendations_api": {
           "name": "RecommendationsAPI",
@@ -2185,6 +2280,23 @@
         }
       },
       "policies": {
+        "add_candidate_on_publish": {
+          "name": "Add candidate on publish",
+          "description": "A published title joins the candidate pool; an availability change updates where it may be recommended",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/title_published"
+            },
+            {
+              "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/title_availability_changed"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/recommendations/services/ranker/provides/add_candidate"
+            }
+          ]
+        },
         "record_signal_on_stop": {
           "name": "Record signal on stop",
           "description": "Every stopped session becomes a signal on the profile's taste",
@@ -2408,8 +2520,11 @@
             },
             "kids_profile_maturity_capped": {
               "name": "KidsProfileMaturityCapped",
-              "description": "A kids profile's maturity cap cannot be raised without the PIN",
+              "description": "A kids profile's maturity cap cannot be raised without the PIN; the profile's kids flag is what makes the rule apply",
               "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/profile"
+                },
                 {
                   "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/valueobjects/maturity_setting"
                 },
@@ -2592,6 +2707,12 @@
               "description": "Add a charge from another line of business to the household's bill",
               "type": "operation",
               "internal": true
+            },
+            "register_household": {
+              "name": "RegisterHousehold",
+              "description": "Record a household with no plan yet, so StartSubscription can find it and one-subscription-per-household can be checked",
+              "type": "operation",
+              "internal": true
             }
           },
           "consumes": [
@@ -2664,9 +2785,15 @@
                   "type": "string",
                   "identity": true
                 },
+                "lines": {
+                  "name": "lines",
+                  "type": "{source: 'subscription' | 'discs', amount: Money}[]",
+                  "description": "The subscription line plus any line another business adds"
+                },
                 "amount": {
                   "name": "amount",
                   "type": "Money",
+                  "description": "The sum of the lines",
                   "valueobject": {
                     "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/money"
                   }
@@ -2757,16 +2884,16 @@
           "invariants": {
             "one_active_subscription_per_household": {
               "name": "OneActiveSubscriptionPerHousehold",
-              "description": "A household has at most one active subscription",
+              "description": "A household has at most one active subscription; enforced by StartSubscription on householdId, since one subscription cannot see another",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/entities/subscription"
+                  "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/entities/subscription/attributes/household_id"
                 }
               ]
             },
-            "invoice_amount_equals_plan_price": {
-              "name": "InvoiceAmountEqualsPlanPrice",
-              "description": "An invoice charges exactly the plan price for its period",
+            "subscription_line_equals_plan_price": {
+              "name": "SubscriptionLineEqualsPlanPrice",
+              "description": "The subscription line on an invoice is exactly the plan price for its period; other lines of business (the disc charge) add their own lines and the total is their sum",
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/entities/invoice"
@@ -2790,6 +2917,20 @@
       },
       "services": {},
       "policies": {
+        "await_plan_on_household": {
+          "name": "Await plan on household",
+          "description": "A new household is registered in billing until it picks a plan",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/household_created"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/provides/register_household"
+            }
+          ]
+        },
         "dun_on_failed_payment": {
           "name": "Dun on failed payment",
           "description": "A failed renewal starts the grace period, not an immediate lapse",
@@ -2940,7 +3081,15 @@
         }
       },
       "policies": {},
-      "glossary": {},
+      "glossary": {
+        "account": {
+          "name": "Account",
+          "definition": "The login: an email and credentials. Members say account for the household; that is Households' Household",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/identity/aggregates/account"
+          }
+        }
+      },
       "schemas": {
         "account_created": {
           "name": "AccountCreated",
@@ -2994,7 +3143,7 @@
             },
             "prepare_breaks": {
               "name": "PrepareBreaks",
-              "description": "Plan the breaks for a session by plan and country",
+              "description": "Plan the breaks for a session by plan and country: ask billing for the household's plan, skip if it is not ad-supported, and fill slots within each creative's daily cap",
               "type": "operation",
               "internal": true
             },
@@ -3016,6 +3165,12 @@
                 "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_started"
               },
               "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/provides/get_entitlement"
+              },
+              "pattern": "anti-corruption-layer"
             }
           ],
           "entities": {
@@ -3032,6 +3187,19 @@
                 "session_id": {
                   "name": "sessionId",
                   "type": "string"
+                },
+                "household_id": {
+                  "name": "householdId",
+                  "type": "string"
+                },
+                "plan_tier": {
+                  "name": "planTier",
+                  "type": "'basic-with-ads' | 'standard' | 'premium'",
+                  "description": "The household's plan at the time the breaks were prepared, from GetEntitlement"
+                },
+                "country": {
+                  "name": "country",
+                  "type": "ISO 3166 code"
                 },
                 "position_seconds": {
                   "name": "positionSeconds",
@@ -3102,7 +3270,7 @@
             },
             "frequency_cap": {
               "name": "FrequencyCap",
-              "description": "How often one creative may be shown to a household",
+              "description": "The creative's rule for how often one household may see it in a day. The break carries the rule; PrepareBreaks applies it against the household's impressions so far today, which a single break cannot hold",
               "attributes": {
                 "max_per_day": {
                   "name": "maxPerDay",
@@ -3136,10 +3304,10 @@
             },
             "ads_only_on_ad_supported_plan": {
               "name": "AdsOnlyOnAdSupportedPlan",
-              "description": "Breaks exist only for sessions on the ad-supported plan",
+              "description": "Breaks exist only for sessions whose planTier is ad-supported; the tier comes from billing's entitlement answer",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/entities/ad_break"
+                  "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/entities/ad_break/attributes/plan_tier"
                 }
               ]
             }
@@ -3334,22 +3502,6 @@
       ]
     },
     {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/encoding"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/catalogue"
-      },
-      "upstreamRoles": [
-        "published-language"
-      ],
-      "downstreamRoles": [
-        "anti-corruption-layer"
-      ],
-      "description": "Completions come back as events"
-    },
-    {
       "type": "customer-supplier",
       "upstream": {
         "$ref": "#/boundedcontexts/encoding"
@@ -3358,12 +3510,13 @@
         "$ref": "#/boundedcontexts/catalogue"
       },
       "upstreamRoles": [
-        "open-host-service"
+        "open-host-service",
+        "published-language"
       ],
       "downstreamRoles": [
         "anti-corruption-layer"
       ],
-      "description": "Catalogue is the caller of SubmitEncode and is consulted on its contract"
+      "description": "Catalogue is the caller of SubmitEncode and the main reader of EncodingCompleted; it is consulted on both contracts"
     },
     {
       "type": "upstream-downstream",
@@ -3487,6 +3640,22 @@
         "anti-corruption-layer"
       ],
       "description": "Breaks are resolved when reached"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/billing_&_plans"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/ads_tier"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "The household's plan decides whether there are breaks at all"
     },
     {
       "type": "upstream-downstream",

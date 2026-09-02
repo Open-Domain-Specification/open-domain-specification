@@ -11,7 +11,8 @@ A driver's day: an ordered list of stops
 | Type | Name | Description | Attributes |
 | --- | --- | --- | --- |
 | Entity (Root) | **DeliveryRoute** | One vehicle, one date, one sequence of stops | **routeId**: `string`, date: `date` |
-| Entity | Stop | One address and the packages to hand over there | sequence: `int`, label: `TrackingLabel` |
+| Entity | Parcel | One labelled item to hand over at a stop; the warehouse's package once it is on a van | label: `TrackingLabel`, orderId: `string` |
+| Entity | Stop | One address and the parcels to hand over there | sequence: `int` |
 | Value Object | TrackingLabel | The same barcode and scan vocabulary the warehouse prints; the shared kernel means both contexts read one format | barcode: `string` |
 | Value Object | ProofOfDelivery | Photo, signature or safe-place note | kind: `'photo' | 'signature' | 'safe-place'`, capturedAt: `date-time` |
 
@@ -20,7 +21,8 @@ A driver's day: an ordered list of stops
 | Source | Description | Target | Relation | Cardinality |
 | --- | --- | --- | --- | --- |
 | [DeliveryRoute](entities/delivery_route/index.md) | visits | DeliveryRoute - Stop | includes | 1..* |
-| [Stop](entities/stop/index.md) | delivers | DeliveryRoute - TrackingLabel | uses | 1..* |
+| [Stop](entities/stop/index.md) | hands-over | DeliveryRoute - Parcel | includes | 1..* |
+| [Parcel](entities/parcel/index.md) | scanned-as | DeliveryRoute - TrackingLabel | uses | 1 |
 | [Stop](entities/stop/index.md) | proven-by | DeliveryRoute - ProofOfDelivery | uses | 0..1 |
 
 

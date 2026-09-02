@@ -140,7 +140,7 @@
 <text xml:space="preserve" text-anchor="start" x="610.46" y="-89" font-family="sans-serif" font-weight="bold" font-size="10.00">Variant</text>
 <polygon fill="none" stroke="black" points="572.82,-60 572.82,-82 681.44,-82 681.44,-60 572.82,-60"/>
 <text xml:space="preserve" text-anchor="start" x="577.82" y="-68" font-family="sans-serif" font-size="10.00">{id} sku: string</text>
-<g id="a_node6_4"><a xlink:title="What distinguishes it, e.g. &#39;Blue / L&#39;">
+<g id="a_node6_18"><a xlink:title="What distinguishes it, e.g. &#39;Blue / L&#39;">
 <polygon fill="none" stroke="black" points="572.82,-38 572.82,-60 681.44,-60 681.44,-38 572.82,-38"/>
 <text xml:space="preserve" text-anchor="start" x="577.82" y="-46" font-family="sans-serif" font-size="10.00">option: string</text>
 </a>

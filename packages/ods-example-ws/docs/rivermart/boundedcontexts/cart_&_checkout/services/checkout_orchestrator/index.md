@@ -23,6 +23,10 @@ Hold the cart total on the customer's instrument
 Create the order from a checked-out cart
 - **Provider**: [Order](../../../order_management/aggregates/order/index.md)
 
+### PaymentDeclined [anti-corruption-layer]
+The provider refused; checkout shows an error
+- **Provider**: [Payment](../../../payments/aggregates/payment/index.md)
+
 ### GetCustomer [conformist]
 Read a customer's profile
 - **Provider**: [IdentityAPI](../../../identity/services/identity_api/index.md)

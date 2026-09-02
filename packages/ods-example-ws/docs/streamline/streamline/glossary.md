@@ -7,7 +7,8 @@
 | Term | Definition | Aliases | Embodied by |
 | --- | --- | --- | --- |
 | **Master** | The finished file for one film or episode, to the delivery spec | Mezzanine | MasterDelivered |
-| **Slate** | Everything commissioned or licensed for a period | - | Production |
+| **Slate** | In the studio, the originals commissioned for a period. The company-wide slate also includes Licensing's windows; this term covers only the studio's half | - | Production |
+| **Episode** | A production artefact keyed by number within the production: a runtime and a master. The catalogue's episode is what a member plays | - | Episode |
 
 
 ## [Licensing](../boundedcontexts/licensing/index.md)
@@ -41,6 +42,7 @@
 | --- | --- | --- | --- |
 | **Session** | One profile watching one title on one device | - | PlaybackSession |
 | **Bookmark** | Where playback resumes | Resume point | Bookmark |
+| **Device** | The individual unit a session runs on. Devices' Device is the partner model it is an instance of, which is what certification is about | - | deviceId |
 
 
 ## [Edge Delivery](../boundedcontexts/edge_delivery/index.md)
@@ -80,6 +82,13 @@
 | --- | --- | --- | --- |
 | **Plan** | A tier with a price, a stream limit and whether it carries ads | - | Plan |
 | **Entitlement** | The right to stream, derived from an active subscription | - | GetEntitlement |
+
+
+## [Identity](../boundedcontexts/identity/index.md)
+
+| Term | Definition | Aliases | Embodied by |
+| --- | --- | --- | --- |
+| **Account** | The login: an email and credentials. Members say account for the household; that is Households' Household | - | Account |
 
 
 ## [Ads Tier](../boundedcontexts/ads_tier/index.md)

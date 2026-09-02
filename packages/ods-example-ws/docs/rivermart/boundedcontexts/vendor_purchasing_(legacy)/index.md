@@ -13,7 +13,10 @@ The 2009 purchasing system for first-party stock. Batch jobs, shared tables, no 
 ![contextmap](./contextmap.svg)
 
 ## Glossary
-> No glossary terms.
+| Term | Definition | Aliases | Embodied by |
+| --- | --- | --- | --- |
+| **Purchase order** | An order RiverMart places with a wholesale vendor; the second of the three meanings of 'order' on a warehouse floor | PO | PurchaseOrder |
+
 
 ## Aggregates
 

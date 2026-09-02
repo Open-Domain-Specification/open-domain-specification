@@ -9,7 +9,7 @@ Runs the second-price auction for the sponsored slots on a results page
 ## Provides
 | Name | Type | Internal | Pattern | Description | Schema | Raises |
 | --- | --- | --- | --- | --- | --- | --- |
-| RunAuction | operation | yes | - | Pick winners for a query's sponsored slots | - | AdClicked |
+| RunAuction | operation | yes | - | Pick winners for a query's sponsored slots | - | SlotsAwarded |
 
 
 ## Consumes

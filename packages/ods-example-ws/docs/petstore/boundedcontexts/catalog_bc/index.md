@@ -15,7 +15,7 @@ Owns the Pet aggregate and the pet-facing operations
 | --- | --- | --- | --- |
 | **Pet** | An animal listed for sale in the store | - | Pet |
 | **Category** | The kind of animal a pet is, such as Dogs or Cats | Species | Category |
-| **Available** | A pet that can be ordered; it becomes pending once an order is placed | - | PetStatus |
+| **Available** | A pet that can be ordered; it becomes pending when Sales approves an order for it (ReservePet) and sold when that order is delivered (MarkPetSold) | - | PetStatus |
 
 
 ## Aggregates
@@ -38,7 +38,7 @@ Open-host service for /pet endpoints
 | PetRegistered | What the outside learns when a pet joins the catalog | **petId**: `int64`, name: `string`, category: `Category` | PetRegistered |
 | PetStatusChanged | - | **petId**: `int64`, from: `PetStatus`, to: `PetStatus` | PetStatusChanged, ChangePetStatus |
 | RegisterPet | Request body for adding a pet | name: `string`, category: `Category` | AddPet |
-| PetId | Identifies one pet; shared by every consumable that only needs the id | **petId**: `int64` | PetUpdated, PetDeleted, GetPetById, DeletePet, GetPetSummary |
+| PetId | Identifies one pet; shared by every consumable that only needs the id | **petId**: `int64` | PetUpdated, PetDeleted, ReservePet, MarkPetSold, GetPetById, UploadImage, DeletePet, GetPetSummary |
 
 
 ## Policies
@@ -58,5 +58,7 @@ Open-host service for /pet endpoints
 | [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Pet | PetRegistered | published-language |
 | [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Pet | PetStatusChanged | published-language |
 | [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Pet | PetDeleted | published-language |
+| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | Pet | ReservePet | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | Pet | MarkPetSold | open-host-service |
 
 

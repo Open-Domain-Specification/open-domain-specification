@@ -30,7 +30,7 @@ A pet listed in the store. One aggregate because a pet's photos, tags and status
 | Name | Description | Constrains |
 | --- | --- | --- |
 | NameRequired | Pet.name must be non-empty, because the storefront lists pets by name | Pet.name |
-| SoldNotReopen | Once sold, a pet does not revert to available without an explicit policy, so a buyer is never undercut | PetStatus |
+| SoldNotReopen | Once sold, a pet does not revert to available without an explicit policy, so a buyer is never undercut. Constrains the Pet because the transition is the pet's, not the status value's | Pet |
 
 
 ## Provides
@@ -40,7 +40,9 @@ A pet listed in the store. One aggregate because a pet's photos, tags and status
 | PetUpdated | event | no | published-language | Pet profile updated | [PetId](../../index.md#schemas) | - |
 | PetStatusChanged | event | no | published-language | Pet status changed (available|pending|sold) | [PetStatusChanged](../../index.md#schemas) | - |
 | PetDeleted | event | no | published-language | Pet removed from catalog | [PetId](../../index.md#schemas) | - |
-| ChangePetStatus | operation | yes | - | Move a pet between available, pending and sold | [PetStatusChanged](../../index.md#schemas) | PetStatusChanged |
+| ChangePetStatus | operation | yes | - | Move a pet between available, pending and sold; the catalogue's own edits, e.g. relisting | [PetStatusChanged](../../index.md#schemas) | PetStatusChanged |
+| ReservePet | operation | no | open-host-service | available → pending: the pet is held for an approved order; issued by Sales on approval | [PetId](../../index.md#schemas) | PetStatusChanged |
+| MarkPetSold | operation | no | open-host-service | pending → sold: the pet has gone to its owner; issued by Sales on delivery | [PetId](../../index.md#schemas) | PetStatusChanged |
 
 
 ## Consumes

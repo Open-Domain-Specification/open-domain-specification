@@ -14,13 +14,13 @@ Sellers' offers on catalogue products and the buy box award
 | Term | Definition | Aliases | Embodied by |
 | --- | --- | --- | --- |
 | **Buy Box** | The default offer a customer adds to cart for a SKU | Featured Offer | BuyBoxService |
-| **Offer** | A seller's price, stock and condition for one SKU | - | Offer |
+| **Offer** | A seller's price, stock and condition for one SKU; first-party retail is a seller like any other for this purpose | - | Offer |
 
 
 ## Aggregates
 
 ### [Offer](aggregates/offer/index.md)
-One seller's price and stock for one SKU
+One seller's price and stock for one SKU. RiverMart's own retail arm is one more seller here and wins the buy box on the same rules
 
 
 	
@@ -59,12 +59,15 @@ Seller-facing and internal offer endpoints
 | Offers | upstream-downstream | Search | published-language | conformist |
 | Seller Onboarding | upstream-downstream | Offers | published-language | conformist |
 | Offers | customer-supplier | Cart & Checkout | open-host-service | anti-corruption-layer |
+| Offers | upstream-downstream | Order Management | open-host-service | conformist |
 | Fraud | upstream-downstream (implied) | Seller Onboarding | published-language | anti-corruption-layer |
 | Order Management | upstream-downstream (implied) | Fraud | published-language | anti-corruption-layer |
 | Fraud | upstream-downstream (implied) | Order Management | published-language | anti-corruption-layer |
 | Warehouse | upstream-downstream (implied) | Order Management | published-language | anti-corruption-layer |
 | Order Management | upstream-downstream (implied) | Warehouse | published-language | anti-corruption-layer |
+| Vendor Purchasing (legacy) | upstream-downstream (implied) | Warehouse | published-language | anti-corruption-layer |
 | Payments | upstream-downstream (implied) | Order Management | open-host-service | anti-corruption-layer |
+| Order Management | upstream-downstream (implied) | Payments | published-language | anti-corruption-layer |
 | Warehouse | upstream-downstream (implied) | Payments | published-language | anti-corruption-layer |
 | Last Mile | upstream-downstream (implied) | Order Management | published-language | anti-corruption-layer |
 | Warehouse | upstream-downstream (implied) | Last Mile | published-language | - |
@@ -84,8 +87,14 @@ Seller-facing and internal offer endpoints
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | RiskAssessment | OrderRiskFlagged | published-language |
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | FulfilmentOrder | ShipmentDispatched | published-language |
 | [FulfilmentOrder](../warehouse/aggregates/fulfilment_order/index.md) | anti-corruption-layer | Order | ReturnRequested | published-language |
+| [FulfilmentOrder](../warehouse/aggregates/fulfilment_order/index.md) | anti-corruption-layer | Order | OrderCancelled | published-language |
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | FulfilmentOrder | ReturnReceived | published-language |
+| [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | InventoryPosition | StockShort | published-language |
+| [InventoryPosition](../warehouse/aggregates/inventory_position/index.md) | anti-corruption-layer | Order | OrderPlaced | published-language |
+| [InventoryPosition](../warehouse/aggregates/inventory_position/index.md) | anti-corruption-layer | Order | OrderCancelled | published-language |
+| [InventoryPosition](../warehouse/aggregates/inventory_position/index.md) | anti-corruption-layer | PurchaseOrder | PurchaseOrderReceived | published-language |
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | Payment | RefundPayment | open-host-service |
+| [Payment](../payments/aggregates/payment/index.md) | anti-corruption-layer | Order | OrderPlaced | published-language |
 | [Payment](../payments/aggregates/payment/index.md) | anti-corruption-layer | FulfilmentOrder | ShipmentDispatched | published-language |
 | [Order](../order_management/aggregates/order/index.md) | anti-corruption-layer | DeliveryRoute | ParcelDelivered | published-language |
 | [DeliveryRoute](../last_mile/aggregates/delivery_route/index.md) | - | FulfilmentOrder | ShipmentDispatched | published-language |

@@ -13,7 +13,8 @@ Owns the Order aggregate and the order-facing operations
 ## Glossary
 | Term | Definition | Aliases | Embodied by |
 | --- | --- | --- | --- |
-| **Order** | A customer's request to buy one pet in a given quantity | Purchase | Order |
+| **Order** | A customer's request to buy one pet; placed, then approved, then delivered | Purchase | Order |
+| **Pet** | Only the identity of a catalogue pet; Sales holds no pet attributes and asks the catalogue for availability | - | petId |
 | **Approval** | Confirmation that the ordered pet is available and reserved | - | ApproveOrder |
 
 
@@ -44,7 +45,9 @@ Open-host service for /store/order endpoints
 
 | Name | Description | On | Then |
 | --- | --- | --- | --- |
-| Approve when pet available | When a pet becomes available and an order for it is placed, approve the order | PetStatusChanged, OrderPlaced | ApproveOrder |
+| Approve when pet available | On OrderPlaced, or on PetStatusChanged to available, look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest | PetStatusChanged, OrderPlaced | ApproveOrder |
+| Reserve pet on approval | When an order is approved, hold its pet (available → pending) so nobody else can be approved for the same animal | OrderApproved | ReservePet |
+| Mark pet sold on delivery | When an order is delivered, the pet is sold (pending → sold) | OrderDelivered | MarkPetSold |
 
 
 ## Context Relationships
@@ -60,6 +63,8 @@ Open-host service for /store/order endpoints
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
 | [OrderApp](services/order_app/index.md) | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [OrderApp](services/order_app/index.md) | anti-corruption-layer | Pet | ReservePet | open-host-service |
+| [OrderApp](services/order_app/index.md) | anti-corruption-layer | Pet | MarkPetSold | open-host-service |
 | [Shipment](../fulfilment_bc/aggregates/shipment/index.md) | conformist | Order | OrderApproved | published-language |
 | [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Order | OrderApproved | published-language |
 | [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Order | OrderDelivered | published-language |

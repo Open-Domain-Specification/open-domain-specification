@@ -46,11 +46,13 @@ The documented product API used by sellers and internal contexts
 | --- | --- | --- | --- | --- |
 | Catalogue | upstream-downstream | Offers | published-language | anti-corruption-layer |
 | Catalogue | upstream-downstream | Search | published-language | conformist |
+| Catalogue | upstream-downstream | Advertising | open-host-service | conformist |
 
 
 ## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
+| [AdsAPI](../advertising/services/ads_api/index.md) | conformist | CatalogueAPI | GetProduct | open-host-service |
 | [SearchIndex](../search/aggregates/search_index/index.md) | conformist | Product | ProductListed | published-language |
 | [Offer](../offers/aggregates/offer/index.md) | anti-corruption-layer | Product | ProductListed | published-language |
 | [SearchIndex](../search/aggregates/search_index/index.md) | conformist | Product | ProductRetired | published-language |

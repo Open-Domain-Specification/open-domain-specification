@@ -42,6 +42,8 @@ Getting a sold pet to its owner. Supporting: needed, but a courier could do it j
 | [InventoryProjection](../../boundedcontexts/inventory_bc/aggregates/inventory_projection/index.md) | conformist | Pet | PetRegistered | published-language |
 | [InventoryProjection](../../boundedcontexts/inventory_bc/aggregates/inventory_projection/index.md) | conformist | Pet | PetStatusChanged | published-language |
 | [InventoryProjection](../../boundedcontexts/inventory_bc/aggregates/inventory_projection/index.md) | conformist | Pet | PetDeleted | published-language |
+| [OrderApp](../../boundedcontexts/sales_bc/services/order_app/index.md) | anti-corruption-layer | Pet | ReservePet | open-host-service |
+| [OrderApp](../../boundedcontexts/sales_bc/services/order_app/index.md) | anti-corruption-layer | Pet | MarkPetSold | open-host-service |
 | [InventoryQuery](../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | - | InventoryProjection | InventoryUpdated | published-language |
 | [InventoryProjection](../../boundedcontexts/inventory_bc/aggregates/inventory_projection/index.md) | conformist | Order | OrderApproved | published-language |
 | [Shipment](../../boundedcontexts/fulfilment_bc/aggregates/shipment/index.md) | conformist | Order | OrderApproved | published-language |

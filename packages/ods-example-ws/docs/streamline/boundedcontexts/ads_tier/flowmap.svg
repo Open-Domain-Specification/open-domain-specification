@@ -22,7 +22,7 @@
 <!-- #/boundedcontexts/ads_tier/aggregates/ad_break/provides/prepare_breaks -->
 <g id="node3" class="node">
 <title>#/boundedcontexts/ads_tier/aggregates/ad_break/provides/prepare_breaks</title>
-<g id="a_node3"><a xlink:title="Plan the breaks for a session by plan and country">
+<g id="a_node3"><a xlink:title="Plan the breaks for a session by plan and country: ask billing for the household&#39;s plan, skip if it is not ad&#45;supported, and fill slots within each creative&#39;s daily cap">
 <polygon fill="#bbdefb" stroke="black" points="380.76,-40.63 306.46,-40.63 306.46,-4.63 380.76,-4.63 380.76,-40.63"/>
 <text xml:space="preserve" text-anchor="middle" x="343.61" y="-25.63" font-family="sans-serif" font-size="10.00">PrepareBreaks</text>
 <text xml:space="preserve" text-anchor="middle" x="343.61" y="-13.63" font-family="sans-serif" font-size="10.00">(AdBreak)</text>

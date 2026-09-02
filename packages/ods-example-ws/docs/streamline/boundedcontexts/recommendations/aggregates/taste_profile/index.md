@@ -23,6 +23,7 @@ What one profile has watched and what it is inferred to like
 | [Title](../../../catalogue/aggregates/title/entities/title/index.md) | has-seasons | Title - Season | includes | * |
 | [Season](../../../catalogue/aggregates/title/entities/season/index.md) | has-episodes | Title - Episode | includes | 1..* |
 | [Episode](../../../catalogue/aggregates/title/entities/episode/index.md) | shown-with | Title - Artwork | uses | 0..1 |
+| [Episode](../../../catalogue/aggregates/title/entities/episode/index.md) | rated | Title - MaturityRating | uses | 0..1 |
 | [Title](../../../catalogue/aggregates/title/entities/title/index.md) | shown-with | Title - Artwork | uses | 1 |
 | [Title](../../../catalogue/aggregates/title/entities/title/index.md) | rated | Title - MaturityRating | uses | 1 |
 | [Title](../../../catalogue/aggregates/title/entities/title/index.md) | available | Title - Availability | uses | * |
@@ -47,10 +48,6 @@ What one profile has watched and what it is inferred to like
 ### PlaybackStopped [anti-corruption-layer]
 A session ended, with how much was watched
 - **Provider**: [PlaybackSession](../../../playback/aggregates/playback_session/index.md)
-
-### TitlePublished [conformist]
-Members can now see the title somewhere
-- **Provider**: [Title](../../../catalogue/aggregates/title/index.md)
 
 ### BookmarkUpdated [anti-corruption-layer]
 The resume point moved; a player detail, not a business fact

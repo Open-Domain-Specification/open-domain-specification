@@ -32,7 +32,8 @@ An issued card and its authorisations; the checks on a card need both
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
 | CardAuthorisationRequest | CardCo's format, translated on the way in | panToken: `string`, merchant: `string`, amount: `Money` | AuthoriseCard |
-| CardEvent | Card and account; shared by the card events | **cardId**: `string`, accountId: `string` | CardAuthorised, CardBlocked, BlockCard |
+| CardEvent | Card and account; shared by the card events | **cardId**: `string`, accountId: `string` | CardBlocked, BlockCard |
+| CardAuthorised | Card, account and the authorised amount; Accounts needs the amount to place the hold | **cardId**: `string`, accountId: `string`, authorisationId: `string`, amount: `Money` | CardAuthorised |
 
 
 ## Policies
@@ -49,6 +50,7 @@ An issued card and its authorisations; the checks on a card need both
 | Fraud | customer-supplier | Cards | open-host-service, published-language | anti-corruption-layer |
 | Cards | upstream-downstream | Fraud | published-language | anti-corruption-layer |
 | Accounts | upstream-downstream | Cards | open-host-service | anti-corruption-layer |
+| Cards | upstream-downstream | Accounts | published-language | anti-corruption-layer |
 | Cards | upstream-downstream | Branch & Contact Centre | open-host-service | conformist |
 
 
@@ -56,9 +58,10 @@ An issued card and its authorisations; the checks on a card need both
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
 | [FraudCase](../fraud/aggregates/fraud_case/index.md) | anti-corruption-layer | Card | CardAuthorised | published-language |
+| [Account](../accounts/aggregates/account/index.md) | anti-corruption-layer | Card | CardAuthorised | published-language |
 | [ServiceRequest](../branch_&_contact_centre/aggregates/service_request/index.md) | conformist | Card | BlockCard | open-host-service |
 | [Card](aggregates/card/index.md) | anti-corruption-layer | AccountServicing | GetAvailableBalance | open-host-service |
 | [Card](aggregates/card/index.md) | anti-corruption-layer | TransactionScorer | ScoreTransaction | open-host-service |
-| [Card](aggregates/card/index.md) | anti-corruption-layer | FraudCase | TransactionFlagged | published-language |
+| [Card](aggregates/card/index.md) | anti-corruption-layer | TransactionScorer | TransactionFlagged | published-language |
 
 

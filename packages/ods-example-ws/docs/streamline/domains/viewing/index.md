@@ -40,6 +40,7 @@ The disc-by-post business, kept alive by decision rather than investment
 | Studio Production | upstream-downstream (implied) | Encoding | published-language | conformist |
 | Households & Profiles | upstream-downstream (implied) | Billing & Plans | published-language | conformist |
 | Identity | upstream-downstream (implied) | Households & Profiles | published-language | conformist |
+| Billing & Plans | upstream-downstream (implied) | Ads Tier | open-host-service | anti-corruption-layer |
 
 
 ## Consumptions
@@ -58,5 +59,6 @@ The disc-by-post business, kept alive by decision rather than investment
 | [Household](../../boundedcontexts/households_&_profiles/aggregates/household/index.md) | conformist | Account | AccountCreated | published-language |
 | [Subscription](../../boundedcontexts/billing_&_plans/aggregates/subscription/index.md) | anti-corruption-layer | RentalQueue | DiscRentalInvoiced | published-language |
 | [PlaybackSession](../../boundedcontexts/playback/aggregates/playback_session/index.md) | anti-corruption-layer | AdBreak | ResolveAdBreak | open-host-service |
+| [AdBreak](../../boundedcontexts/ads_tier/aggregates/ad_break/index.md) | anti-corruption-layer | Subscription | GetEntitlement | open-host-service |
 
 	

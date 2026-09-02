@@ -11,7 +11,10 @@ Accounts and sign-in
 ![contextmap](./contextmap.svg)
 
 ## Glossary
-> No glossary terms.
+| Term | Definition | Aliases | Embodied by |
+| --- | --- | --- | --- |
+| **Account** | The login: an email and credentials. Members say account for the household; that is Households' Household | - | Account |
+
 
 ## Aggregates
 

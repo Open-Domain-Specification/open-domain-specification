@@ -43,16 +43,16 @@ An issued card and its authorisations; the checks on a card need both
 ## Invariants
 | Name | Description | Constrains |
 | --- | --- | --- |
-| PanLuhnValid | The full card number passes the Luhn check | PAN |
+| PanLuhnValid | A PAN value is only ever created from a full number that passed the Luhn check; the token and last four are never re-checked because they cannot be | PAN |
 | NoAuthOnBlockedCard | A blocked card authorises nothing | CardStatus, Authorisation |
 | ExpiredCardNoAuth | Past expiry, nothing authorises | Expiry, Authorisation |
-| AuthWithinAvailableBalance | An authorisation never exceeds the account's available balance | Authorisation |
+| AuthWithinAvailableBalance | An authorisation is approved only if the available balance read from AccountServicing at that moment covers it; Accounts then holds the amount | Authorisation |
 
 
 ## Provides
 | Name | Type | Internal | Pattern | Description | Schema | Raises |
 | --- | --- | --- | --- | --- | --- | --- |
-| CardAuthorised | event | no | published-language | A merchant's request was approved | [CardEvent](../../index.md#schemas) | - |
+| CardAuthorised | event | no | published-language | A merchant's request was approved; Accounts holds the amount and Fraud monitors | [CardAuthorised](../../index.md#schemas) | - |
 | CardBlocked | event | no | published-language | The card authorises nothing until unblocked | [CardEvent](../../index.md#schemas) | - |
 | AuthoriseCard | operation | no | open-host-service | Approve or decline a merchant's request from CardCo | [CardAuthorisationRequest](../../index.md#schemas) | CardAuthorised |
 | BlockCard | operation | no | open-host-service | Block a card; issued by fraud or by a customer through a channel | [CardEvent](../../index.md#schemas) | CardBlocked |
@@ -71,6 +71,6 @@ Score synchronously; callers wait on the verdict
 
 ### TransactionFlagged [anti-corruption-layer]
 Above threshold; the caller stops the transaction
-- **Provider**: [FraudCase](../../../fraud/aggregates/fraud_case/index.md)
+- **Provider**: [TransactionScorer](../../../fraud/services/transaction_scorer/index.md)
 
 	

@@ -39,6 +39,7 @@ What a customer intends to buy. Lines are part of it: a line outside a cart is n
 | CartCheckedOut | event | no | published-language | The customer confirmed the basket; payment and order follow | [CartCheckedOut](../../index.md#schemas) | - |
 | AddToCart | operation | no | open-host-service | Add or increase a line | - | - |
 | Checkout | operation | no | open-host-service | Freeze the cart and start the purchase | [CartCheckedOut](../../index.md#schemas) | CartCheckedOut |
+| ReopenCart | operation | yes | - | Unfreeze a checked-out cart after a declined payment so the customer can try again | - | - |
 
 
 ## Consumes

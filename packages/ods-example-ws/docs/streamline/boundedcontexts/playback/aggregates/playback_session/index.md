@@ -10,7 +10,7 @@ One profile watching one title on one device
 ## Entities and Value Objects
 | Type | Name | Description | Attributes |
 | --- | --- | --- | --- |
-| Entity (Root) | **PlaybackSession** | The unit playback rules are stated about | **sessionId**: `string`, profileId: `string`, titleId: `string`, deviceId: `string`, bookmark: `Bookmark` |
+| Entity (Root) | **PlaybackSession** | The unit playback rules are stated about | **sessionId**: `string`, profileId: `string`, householdId: `string`, titleId: `string`, episodeId: `string`, deviceId: `string`, deviceModelId: `string`, bookmark: `Bookmark` |
 | Value Object | Bookmark | The resume point; updated every few seconds, kept inside the player | positionSeconds: `int` |
 | Value Object | StreamManifest | The renditions and the edge to fetch from, in the format shared with Edge Delivery | renditionIds: `string[]`, edgeUrl: `string (URL)` |
 
@@ -24,6 +24,7 @@ One profile watching one title on one device
 | [Title](../../../catalogue/aggregates/title/entities/title/index.md) | has-seasons | Title - Season | includes | * |
 | [Season](../../../catalogue/aggregates/title/entities/season/index.md) | has-episodes | Title - Episode | includes | 1..* |
 | [Episode](../../../catalogue/aggregates/title/entities/episode/index.md) | shown-with | Title - Artwork | uses | 0..1 |
+| [Episode](../../../catalogue/aggregates/title/entities/episode/index.md) | rated | Title - MaturityRating | uses | 0..1 |
 | [Title](../../../catalogue/aggregates/title/entities/title/index.md) | shown-with | Title - Artwork | uses | 1 |
 | [Title](../../../catalogue/aggregates/title/entities/title/index.md) | rated | Title - MaturityRating | uses | 1 |
 | [Title](../../../catalogue/aggregates/title/entities/title/index.md) | available | Title - Availability | uses | * |
@@ -33,7 +34,7 @@ One profile watching one title on one device
 | Name | Description | Constrains |
 | --- | --- | --- |
 | SessionNeedsEntitlement | A session starts only with a current entitlement from billing | PlaybackSession |
-| WithinStreamLimit | A household never has more concurrent sessions than its plan allows | PlaybackSession |
+| WithinStreamLimit | A session starts only if the household's open sessions are fewer than the plan's stream count from GetEntitlement; checked at StartPlayback because a session cannot see its siblings | PlaybackSession.householdId |
 | BookmarkWithinRuntime | The resume point never exceeds the title's runtime | Bookmark |
 
 

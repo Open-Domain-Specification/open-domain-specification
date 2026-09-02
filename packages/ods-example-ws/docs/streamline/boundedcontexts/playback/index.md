@@ -15,6 +15,7 @@ Sessions, manifests and bitrate selection
 | --- | --- | --- | --- |
 | **Session** | One profile watching one title on one device | - | PlaybackSession |
 | **Bookmark** | Where playback resumes | Resume point | Bookmark |
+| **Device** | The individual unit a session runs on. Devices' Device is the partner model it is an instance of, which is what certification is about | - | deviceId |
 
 
 ## Aggregates
@@ -34,8 +35,8 @@ Picks the rung as the network changes; a domain service because it reasons over 
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| StartPlayback | - | profileId: `string`, titleId: `string`, deviceId: `string` | StartPlayback |
-| PlaybackStopped | The fact personalisation learns from | **sessionId**: `string`, profileId: `string`, titleId: `string`, watchedSeconds: `int`, completed: `boolean` | PlaybackStopped |
+| StartPlayback | - | profileId: `string`, householdId: `string`, titleId: `string`, episodeId: `string`, deviceId: `string`, deviceModelId: `string` | StartPlayback |
+| PlaybackStopped | The fact personalisation learns from | **sessionId**: `string`, profileId: `string`, titleId: `string`, episodeId: `string`, watchedSeconds: `int`, completed: `boolean` | PlaybackStopped |
 
 
 ## Policies
@@ -56,6 +57,7 @@ Picks the rung as the network changes; a domain service because it reasons over 
 | Households & Profiles | upstream-downstream (implied) | Billing & Plans | published-language | conformist |
 | Identity | upstream-downstream (implied) | Households & Profiles | published-language | conformist |
 | Disc Rental (legacy) | upstream-downstream (implied) | Billing & Plans | published-language | anti-corruption-layer |
+| Billing & Plans | upstream-downstream (implied) | Ads Tier | open-host-service | anti-corruption-layer |
 
 
 ## Consumptions
@@ -74,5 +76,6 @@ Picks the rung as the network changes; a domain service because it reasons over 
 | [Household](../households_&_profiles/aggregates/household/index.md) | conformist | Account | AccountCreated | published-language |
 | [Subscription](../billing_&_plans/aggregates/subscription/index.md) | anti-corruption-layer | RentalQueue | DiscRentalInvoiced | published-language |
 | [PlaybackSession](aggregates/playback_session/index.md) | anti-corruption-layer | AdBreak | ResolveAdBreak | open-host-service |
+| [AdBreak](../ads_tier/aggregates/ad_break/index.md) | anti-corruption-layer | Subscription | GetEntitlement | open-host-service |
 
 
