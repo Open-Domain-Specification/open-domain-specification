@@ -464,12 +464,13 @@
     },
     "identity_bc": {
       "name": "Identity BC",
-      "description": "Owns User aggregate & user endpoints",
+      "description": "Owns User aggregate & user endpoints. Legacy: user status is an untyped int and login is a GET",
       "subdomains": [
         {
           "$ref": "#/domains/identity_&_accounts/subdomains/users"
         }
       ],
+      "bigBallOfMud": true,
       "aggregates": {
         "user": {
           "name": "User",

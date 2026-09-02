@@ -210,6 +210,7 @@ export function makeRichTestWs() {
 
 	const reportingBc = ws.addBoundedContext("Reporting BC", {
 		description: "Reporting bounded context, serves no subdomain",
+		bigBallOfMud: true,
 	});
 	const salesReportsPartnership = reportingBc.partnerOf(
 		orderingBc,

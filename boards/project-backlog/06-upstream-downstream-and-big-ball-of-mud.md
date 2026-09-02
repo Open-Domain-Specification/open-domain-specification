@@ -1,8 +1,9 @@
 ---
-column: backlog
+column: review
 labels: [ddd, backend]
 priority: med
-updatedAt: 2026-09-02T12:00:00.000Z
+updatedAt: 2026-09-02T12:11:46.000Z
+live: false
 ---
 # Add upstream/downstream direction and Big Ball of Mud marker to the context map
 
@@ -10,6 +11,10 @@ The context map has no explicit upstream/downstream direction and no way to mark
 
 ## Checklist
 
-- [ ] Add direction to relationship edges
-- [ ] Add a `bigBallOfMud` (or similar) flag on BoundedContext
-- [ ] Render direction arrows and BBoM styling in packages/graphviz/src/context-map.ts
+- [x] Add direction to relationship edges
+- [x] Add a `bigBallOfMud` (or similar) flag on BoundedContext
+- [x] Render direction arrows and BBoM styling in packages/graphviz/src/context-map.ts
+
+## Comments
+
+- **claude** (2026-09-02T12:11:46.000Z): Direction landed with card 05 (directed edges carry upstream/downstream and graphviz draws the arrow only for directed types). This card adds the bigBallOfMud flag: packages/core/src/schema.ts:22-27, model attribute and toSchema in packages/core/src/workspace.ts:455-590, carried on ODSContextMapNode (packages/core/src/context-map.ts:18-25,150-156). Graphviz draws a muddy dashed double-octagon via nodeAttributes (packages/graphviz/src/context-map.ts:41-55); UI shows a red badge on the context page (apps/ods-ui/src/pages/BoundedContextPage.tsx:30-35); doc page gets a warning banner (packages/doc/src/boundedcontext.md.ts:32). Petstore marks Identity BC. Build and 104 tests green, examples regenerated. Six-agent audit: nothing above 0.5.

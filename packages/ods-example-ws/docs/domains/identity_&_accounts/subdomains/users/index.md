@@ -8,7 +8,7 @@ User records and login/logout
 ## Bounded Contexts
 
 ### [Identity BC](../../../../boundedcontexts/identity_bc/index.md)
-Owns User aggregate & user endpoints
+Owns User aggregate & user endpoints. Legacy: user status is an untyped int and login is a GET
 
 
 

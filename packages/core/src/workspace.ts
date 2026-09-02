@@ -457,6 +457,8 @@ export type BoundedContextAttributes = {
 	description: string;
 	/** The subdomains this context serves. */
 	subdomains?: Subdomain[];
+	/** See {@link ods.BoundedContextSchema.bigBallOfMud}. */
+	bigBallOfMud?: boolean;
 	id?: string;
 };
 
@@ -470,6 +472,7 @@ export class BoundedContext
 	aggregates = new Map<string, Aggregate>();
 	workspace: Workspace;
 	subdomains = new Set<Subdomain>();
+	bigBallOfMud: boolean;
 
 	get path(): string {
 		return `boundedcontexts/${this.id}`;
@@ -498,6 +501,7 @@ export class BoundedContext
 		this.name = name;
 		this.description = attributes.description;
 		this.workspace = workspace;
+		this.bigBallOfMud = attributes.bigBallOfMud ?? false;
 		this.workspace.boundedcontexts.set(this.id, this);
 		for (const subdomain of attributes.subdomains ?? []) {
 			this.serves(subdomain);
@@ -580,6 +584,7 @@ export class BoundedContext
 			name: this.name,
 			description: this.description,
 			subdomains: Array.from(this.subdomains, (it) => ({ $ref: it.ref })),
+			bigBallOfMud: this.bigBallOfMud || undefined,
 			aggregates: asRecords(this.aggregates),
 			services: asRecords(this.services),
 		};

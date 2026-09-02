@@ -91,6 +91,12 @@ describe("ODSContextMap", () => {
 		]);
 	});
 
+	it("flags big-ball-of-mud contexts on their node", () => {
+		const map = ODSContextMap.fromWorkspace(f.ws);
+		expect(map.nodes.get(f.reportingBc.ref)?.bigBallOfMud).toBe(true);
+		expect(map.nodes.get(f.orderingBc.ref)?.bigBallOfMud).toBe(false);
+	});
+
 	it("scoped to one context, shows that context and its neighbours", () => {
 		const map = ODSContextMap.fromBoundedContext(f.orderingBc);
 		expect(Array.from(map.nodes.keys()).sort()).toEqual(

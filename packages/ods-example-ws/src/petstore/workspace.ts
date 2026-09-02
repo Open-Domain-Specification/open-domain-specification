@@ -61,7 +61,9 @@ const inventoryBC = workspace.addBoundedContext("Inventory BC", {
 	subdomains: [inventorySD, catalogSD],
 });
 const identityBC = usersSD.addBoundedcontext("Identity BC", {
-	description: "Owns User aggregate & user endpoints",
+	description:
+		"Owns User aggregate & user endpoints. Legacy: user status is an untyped int and login is a GET",
+	bigBallOfMud: true,
 });
 
 /* =======================

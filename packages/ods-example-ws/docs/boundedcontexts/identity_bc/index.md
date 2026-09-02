@@ -1,7 +1,9 @@
 
 
 # Identity BC
-Owns User aggregate & user endpoints
+> ⚠️ **Big ball of mud.** This context's model is not coherent; neighbours should protect themselves with an anti-corruption layer.
+
+Owns User aggregate & user endpoints. Legacy: user status is an untyped int and login is a GET
 
 ## Serves
 - [Identity & Accounts / Users](../../domains/identity_&_accounts/subdomains/users/index.md) (generic)

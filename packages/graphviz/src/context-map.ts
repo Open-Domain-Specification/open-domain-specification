@@ -11,6 +11,7 @@ import {
 	Edge,
 	type EdgeAttributesObject,
 	Node,
+	type NodeAttributesObject,
 	Subgraph,
 	toDot,
 } from "ts-graphviz";
@@ -51,6 +52,20 @@ const SYMMETRIC_EDGE_COLORS: Partial<Record<ContextRelationshipType, string>> =
 		"shared-kernel": "brown",
 		"separate-ways": "grey",
 	};
+
+/** A big ball of mud is drawn as an irregular, muddy blob. */
+function nodeAttributes(node: ODSContextMapNode): NodeAttributesObject {
+	return {
+		label: node.bigBallOfMud ? `${node.name}\n(big ball of mud)` : node.name,
+		shape: node.bigBallOfMud ? "doubleoctagon" : "egg",
+		tooltip: node.description,
+		width: 1.5,
+		height: 1,
+		fillcolor: node.bigBallOfMud ? "#d7ccc8" : "white",
+		style: node.bigBallOfMud ? "filled,dashed" : "filled,solid",
+		fontname: "sans-serif",
+	};
+}
 
 /** Graphviz attributes that express one context-map edge. */
 function edgeAttributes(edge: ODSContextMapEdge): EdgeAttributesObject {
@@ -125,18 +140,7 @@ export function contextMapToDigraph(contextMap: ODSContextMap): {
 		}
 
 		debug(`Creating node ${id} in subgraph ${nid}`);
-		nodes[id] =
-			nodes[id] ||
-			new Node(id, {
-				label: node.name,
-				shape: "egg",
-				tooltip: node.description,
-				width: 1.5,
-				height: 1,
-				fillcolor: "white",
-				style: "filled,solid",
-				fontname: "sans-serif",
-			});
+		nodes[id] = nodes[id] || new Node(id, nodeAttributes(node));
 
 		debug(`Adding node ${id} to subgraph ${nid}`);
 		_subgraphs[_subgraphs.length - 1].addNode(nodes[id]);

@@ -65,6 +65,10 @@
                     },
                     "type": "object"
                 },
+                "bigBallOfMud": {
+                    "description": "Marks a context whose model is not coherent (typically legacy) so that\nneighbours know to protect themselves from it.",
+                    "type": "boolean"
+                },
                 "description": {
                     "type": "string"
                 },

@@ -21,6 +21,11 @@ export interface BoundedContextSchema {
 	description: string;
 	/** The subdomains this context serves; a context may serve several. */
 	subdomains: { $ref: string }[];
+	/**
+	 * Marks a context whose model is not coherent (typically legacy) so that
+	 * neighbours know to protect themselves from it.
+	 */
+	bigBallOfMud?: boolean;
 	aggregates: { [aggregate: string]: AggregateSchema };
 	services: { [service: string]: ServiceSchema };
 }

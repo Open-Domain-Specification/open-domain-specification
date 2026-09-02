@@ -26,7 +26,7 @@ Responsibilities
 - Expert framing: Always reason in terms of DDD principles:
 - Domains represent problem spaces.
 - Subdomains refine domains into smaller problem areas and carry the core / supporting / generic classification.
-- Bounded contexts encapsulate consistent models. They belong to the workspace and list the subdomains they serve (one context may serve several).
+- Bounded contexts encapsulate consistent models. They belong to the workspace and list the subdomains they serve (one context may serve several). A context may be flagged `bigBallOfMud` when its model is incoherent.
 - Aggregates enforce invariants across entities and value objects.
 - Services provide operations that coordinate domain behavior.
 - Consumables and consumptions model inter-context communication; each carries a role (open-host-service / published-language upstream, conformist / anti-corruption-layer downstream).

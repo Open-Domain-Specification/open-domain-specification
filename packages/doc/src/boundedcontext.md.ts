@@ -29,7 +29,7 @@ export const boundedcontextMd = (
 ) => `
 ${options?.breadcrumbs ? contextBreadcrumbsMd(boundedcontext) : ""}
 # ${boundedcontext.name}
-${boundedcontext.description}
+${boundedcontext.bigBallOfMud ? "> ⚠️ **Big ball of mud.** This context's model is not coherent; neighbours should protect themselves with an anti-corruption layer.\n\n" : ""}${boundedcontext.description}
 
 ## Serves
 ${

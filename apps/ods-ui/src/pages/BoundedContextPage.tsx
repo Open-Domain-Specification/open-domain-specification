@@ -29,6 +29,11 @@ export function _BoundedContextPage(props: { boundedcontext: BoundedContext }) {
 			description={props.boundedcontext.description}
 		>
 			<Group gap={"xs"}>
+				{props.boundedcontext.bigBallOfMud && (
+					<Badge color={"red"} variant={"light"}>
+						big ball of mud
+					</Badge>
+				)}
 				{Array.from(props.boundedcontext.subdomains).map((subdomain) => (
 					<Badge
 						key={subdomain.ref}

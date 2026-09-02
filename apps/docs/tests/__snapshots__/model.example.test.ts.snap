@@ -41,6 +41,7 @@ exports[`Visitor Example > should compile  1`] = `
           },
         },
       },
+      "bigBallOfMud": undefined,
       "description": "Site content retrieval/rendering",
       "name": "CMS",
       "services": {
@@ -110,6 +111,7 @@ exports[`Visitor Example > should compile  1`] = `
           },
         },
       },
+      "bigBallOfMud": undefined,
       "description": "Checkout flow and orders",
       "name": "Ordering",
       "services": {
