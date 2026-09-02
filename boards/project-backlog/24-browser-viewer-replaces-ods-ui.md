@@ -1,8 +1,12 @@
 ---
-column: backlog
+column: doing
 labels: [frontend, breaking, docs]
 priority: high
-updatedAt: 2026-09-02T17:15:00.000Z
+agent: claude
+live: true
+status: All pages ported, export and webview on the bundle, ods-ui deleted; clean-code sweep pending
+progress: 90
+updatedAt: 2026-09-02T19:30:00.000Z
 ---
 # Svelte app: viewer, static export and webview from one bundle; ods-ui deleted
 
@@ -10,13 +14,19 @@ Port the page renderer in `@open-domain-specification/pages` to a client-only Sv
 
 ## Checklist
 
-- [ ] Vite plus Svelte build in `packages/pages`; component library organised by atomic design (atoms, molecules, organisms, page templates) mirroring the element pages and the theme in `page.css`
-- [ ] Storybook for the library with a story per component fed by the petstore example, wired into the package scripts
-- [ ] Hash router, sidebar navigation, table of contents, diagram lightbox and ref links as components
-- [ ] Graphviz wasm and core validate running in the browser; diagnostics also accepted as input
-- [ ] Viewer entry with the import screen ported from ods-ui
-- [ ] Static export writes the bundle, the workspace JSON and `index.html`; the per-page generator and string renderer are removed
-- [ ] Extension webview mounts the bundle; panel shell, `page.js` and the message bridge move into the app
-- [ ] Component tests with vitest and jsdom, including the every-ref coverage test on the petstore example
-- [ ] Delete `apps/ods-ui`, docs section 6-ods-ui, deploy workflow and README links; docs page for the app
-- [ ] Root build and all tests green
+- [x] Vite plus Svelte build in `packages/pages`; component library organised by atomic design (atoms, molecules, organisms, page templates) mirroring the element pages and the theme in `page.css`
+- [x] Storybook for the library with a story per component fed by the petstore example, wired into the package scripts
+- [x] Hash router, sidebar navigation, table of contents, diagram lightbox and ref links as components
+- [x] Graphviz wasm and core validate running in the browser; diagnostics also accepted as input
+- [x] Viewer entry with the import screen ported from ods-ui
+- [x] Static export writes the bundle, the workspace JSON and `index.html`; the per-page generator and string renderer are removed
+- [x] Extension webview mounts the bundle; panel shell, `page.js` and the message bridge move into the app
+- [x] Component tests with vitest and jsdom, including the every-ref coverage test on the petstore example
+- [x] Delete `apps/ods-ui`, docs section 6-ods-ui, deploy workflow and README links; docs page for the app
+- [x] Root build and all tests green
+
+## Comments
+
+- **claude** (2026-09-02T17:30:00.000Z): Picked up the card. First slice: toolchain in packages/pages (Vite, Svelte 5, Storybook with Svelte CSF, jsdom tests), the atoms and molecules the workspace page needs, the workspace page template, a hash-routed viewer entry that loads the petstore, and stories for the atoms. The string renderer stays until every page is ported.
+- **claude** (2026-09-02T18:10:00.000Z): First slice landed in packages/pages. Toolchain: packages/pages/vite.config.ts:1-12 builds the client app to app/, packages/pages/vitest.config.ts:1-20 runs component tests under jsdom, packages/pages/.storybook/main.ts:1-9 wires Storybook 10 with Svelte CSF stories, and the root biome.json:40-52 turns off the unused-import rules that misfire on Svelte templates. Library: model context in packages/pages/src/lib/model.ts:1-40; atoms (Icon, Chip, IdChip, RefLink, Empty, Dim, Markdown) in packages/pages/src/lib/atoms; molecules (Card, Problems, ContextPill, TeamLine, SubdomainCard) in packages/pages/src/lib/molecules; organisms (Section, PageHeader, DiagramFigure with lightbox, Toc, Sidebar) in packages/pages/src/lib/organisms; the workspace page template at packages/pages/src/lib/templates/WorkspacePage.svelte:1-110. Refs double as hash routes, so RefLink emits the ref as href and packages/pages/src/lib/router.svelte.ts:1-25 reads the hash. packages/pages/src/lib/Page.svelte:1-50 resolves the owning page, scrolls to leaf refs, and falls back to the string renderer for pages not yet ported, so every ref works during the migration. Viewer entry at packages/pages/src/app/App.svelte:1-35 and the import screen (URL query, URL form, file upload, remembered URL) at packages/pages/src/app/ImportScreen.svelte:1-80. Stories for Chip, RefLink, Markdown, SubdomainCard and WorkspacePage; component test at packages/pages/src/lib/templates/WorkspacePage.test.ts:1-20. Verified in a browser: the Svelte workspace page is visually identical to the string one, and a leaf entity ref routes to the fallback page. svelte-check clean, 101 tests green, Vite and Storybook builds green. Next: port domain, subdomain, context, aggregate, service and the element pages, then the export, the webview and the ods-ui deletion.
+- **claude** (2026-09-02T19:30:00.000Z): Second slice. Every page is a Svelte template under packages/pages/src/lib/templates (domain, subdomain, context, aggregate, service, entity, value object, invariant, schema, policy, term, consumable, team) with a story each; the dispatcher at packages/pages/src/lib/Page.svelte:1-95 picks the template from the resolved target and the string renderer, its tests and page.js are deleted. Pure helpers moved to packages/pages/src/lib/icons.ts:1-45 and packages/pages/src/lib/resolve.ts:1-95, which the tsup entry packages/pages/src/index.ts:1-10 exposes to the extension. The export at packages/pages/src/site.ts:1-60 now copies the Vite bundle and inlines the workspaces into index.html via `window.__ODS__`; multi-file exports show a picker (packages/pages/src/app/WorkspacePicker.svelte:1-20). The extension panel at apps/ods-vscode/src/pages/panel.ts:1-150 hosts the bundle from media/app with a `ready`/`model`/`navigate`/`navigated` handshake defined in packages/pages/src/app/host.ts:1-30; the host bundle shrank from 1.1 MB to 231 KB as the wasm moved into the webview bundle. apps/ods-ui, its docs section and the root Mantine and shiki dependencies are deleted; README.md:19-58, .github/copilot-instructions.md:17-110 and apps/docs/docs/6-viewer.md:1-15 plus apps/docs/docs/8-pages.md:1-60 describe the new shape. The every-ref test at packages/pages/src/lib/Page.test.ts:1-25 renders all 96 petstore pages through the dispatcher under jsdom. Verified in a browser from the built export: workspace, context, aggregate and entity pages render identically to before. Not verified: the webview inside a real VS Code window. Root build and all tests green.

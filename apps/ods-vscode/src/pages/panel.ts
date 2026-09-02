@@ -1,23 +1,19 @@
-import {
-	diagramModal,
-	dotToSvg,
-	esc,
-	renderPage,
-	tocList,
-} from "@open-domain-specification/pages";
+import { readdirSync } from "node:fs";
 import * as vscode from "vscode";
 import type { OdsDiagnostics } from "../diagnostics";
 import type { OdsProject, WorkspaceFile } from "../project";
 
 type Location = { file: WorkspaceFile; ref: string };
 
-/** One reusable webview that shows the page for whichever element was last opened. */
+/**
+ * One reusable webview hosting the shared pages app. The extension feeds it the
+ * workspace and diagnostics over postMessage; the app owns routing and reports
+ * every navigation back so the tree can follow.
+ */
 export class DetailPanel implements vscode.Disposable {
 	private panel?: vscode.WebviewPanel;
 	private current?: Location;
-	private readonly history: Location[] = [];
-	private readonly forward: Location[] = [];
-	private renderGeneration = 0;
+	private ready = false;
 	private readonly subscriptions: vscode.Disposable[] = [];
 	private readonly opened = new vscode.EventEmitter<Location>();
 	/** Fires whenever a page is shown, so the tree can follow. */
@@ -30,23 +26,19 @@ export class DetailPanel implements vscode.Disposable {
 	) {
 		this.subscriptions.push(
 			project.onDidChange(() => {
-				if (this.current) void this.render();
+				if (this.current) this.send();
 			}),
 		);
 	}
 
-	async open(
-		location: Location,
-		opts: { record?: boolean } = {},
-	): Promise<void> {
-		if (opts.record !== false && this.current) {
-			this.history.push(this.current);
-			this.forward.length = 0;
-		}
+	async open(location: Location): Promise<void> {
+		const sameFile =
+			this.current?.file.uri.toString() === location.file.uri.toString();
 		this.current = location;
 		this.ensurePanel();
-		await this.render();
-		this.opened.fire(location);
+		if (sameFile && this.ready)
+			this.post({ type: "navigate", ref: location.ref });
+		else this.send();
 	}
 
 	private ensurePanel(): void {
@@ -70,30 +62,22 @@ export class DetailPanel implements vscode.Disposable {
 		);
 		this.panel.onDidDispose(() => {
 			this.panel = undefined;
+			this.ready = false;
 		});
 		this.panel.webview.onDidReceiveMessage(
 			(msg: { type: string; ref?: string }) => {
 				if (!this.current) return;
 				switch (msg.type) {
-					case "navigate":
-						if (msg.ref) void this.navigateRef(msg.ref);
+					case "ready":
+						this.ready = true;
+						this.send();
 						break;
-					case "back": {
-						const prev = this.history.pop();
-						if (prev) {
-							this.forward.push(this.current);
-							void this.open(prev, { record: false });
+					case "navigated":
+						if (msg.ref && msg.ref !== this.current.ref) {
+							this.current = { file: this.current.file, ref: msg.ref };
+							this.opened.fire(this.current);
 						}
 						break;
-					}
-					case "forward": {
-						const next = this.forward.pop();
-						if (next) {
-							this.history.push(this.current);
-							void this.open(next, { record: false });
-						}
-						break;
-					}
 					case "reveal":
 						void vscode.commands.executeCommand("ods.revealInJson", {
 							file: this.current.file,
@@ -103,82 +87,75 @@ export class DetailPanel implements vscode.Disposable {
 				}
 			},
 		);
+		this.panel.webview.html = this.shell();
 	}
 
-	/** Refs from the page are local to the current file until card 07 adds file-qualified refs. */
-	private async navigateRef(ref: string): Promise<void> {
-		if (!this.current) return;
-		await this.open({ file: this.current.file, ref });
+	private post(msg: unknown): void {
+		void this.panel?.webview.postMessage(msg);
 	}
 
-	private async render(): Promise<void> {
+	/** Sends the current file's workspace and diagnostics; the app re-renders in place. */
+	private send(): void {
 		if (!this.panel || !this.current) return;
 		const { file, ref } = this.current;
 		const live = this.project.files.get(file.uri.toString());
-		const generation = ++this.renderGeneration;
 		if (!live?.workspace) {
 			this.panel.title = "Unavailable";
-			this.panel.webview.html = this.shell(
-				"Unavailable",
-				`<p class="empty">${esc(live ? (live.error ?? "Workspace not loaded.") : `${file.relativePath} is no longer in the .ods folder.`)}</p>`,
-				[],
-				undefined,
-			);
+			this.post({ type: "model", workspaces: [], ref });
 			return;
 		}
-		const page = await renderPage({
-			workspace: live.workspace,
+		this.panel.title = live.workspace.name;
+		this.post({
+			type: "model",
+			workspaces: [
+				{
+					schema: live.workspace.toSchema(),
+					fileLabel: live.relativePath,
+					diagnostics: this.diagnostics.byFile.get(live.uri.toString()) ?? [],
+				},
+			],
 			ref,
-			fileLabel: live.relativePath,
-			diagnostics: this.diagnostics.byFile.get(live.uri.toString()) ?? [],
-			svg: dotToSvg,
 		});
-		// A later navigation may have finished first; never overwrite it with an older page.
-		if (generation !== this.renderGeneration || !this.panel) return;
-		this.panel.title = page.title;
-		this.panel.webview.html = this.shell(
-			page.title,
-			page.body,
-			page.sections,
-			page.anchor,
-		);
+		this.opened.fire(this.current);
 	}
 
-	private shell(
-		title: string,
-		body: string,
-		sections: { id: string; label: string }[],
-		anchor: string | undefined,
-	): string {
+	private shell(): string {
 		const webview = this.panel!.webview;
-		const media = (p: string) =>
-			webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", p));
+		const appDir = vscode.Uri.joinPath(
+			this.extensionUri,
+			"media",
+			"app",
+			"assets",
+		);
+		const media = (name: string) =>
+			webview.asWebviewUri(vscode.Uri.joinPath(appDir, name));
+		const files = readdirSync(appDir.fsPath);
+		const script = files.find((f) => /^index-.*\.js$/.test(f));
+		const style = files.find((f) => /^index-.*\.css$/.test(f));
 		const nonce = Math.random().toString(36).slice(2);
-		const canBack = this.history.length > 0;
-		const canForward = this.forward.length > 0;
 		return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; img-src ${webview.cspSource} data:; script-src 'nonce-${nonce}';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; img-src ${webview.cspSource} data:; script-src 'nonce-${nonce}' 'wasm-unsafe-eval';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="${media("codicons/codicon.css")}">
-<link rel="stylesheet" href="${media("page.css")}">
-<title>${esc(title)}</title>
+${style ? `<link rel="stylesheet" href="${media(style)}">` : ""}
+<title>ODS</title>
 </head>
-<body data-anchor="${anchor ? esc(anchor) : ""}">
+<body>
 <div class="toolbar">
-	<button class="icon" data-action="back" ${canBack ? "" : "disabled"} title="Back"><i class="codicon codicon-arrow-left"></i></button>
-	<button class="icon" data-action="forward" ${canForward ? "" : "disabled"} title="Forward"><i class="codicon codicon-arrow-right"></i></button>
 	<span class="spacer"></span>
 	<button class="icon" data-action="reveal" title="Reveal in JSON"><i class="codicon codicon-go-to-file"></i></button>
 </div>
-<div class="layout">
-	<main>${body}</main>
-	${tocList(sections)}
-</div>
-${diagramModal()}
-<script nonce="${nonce}" src="${media("page.js")}"></script>
+<div id="app"></div>
+<script nonce="${nonce}">
+	// The app acquires the VS Code API itself; this shell only forwards the toolbar and says hello.
+	window.__ODS__ = { workspaces: [] };
+	document.querySelector('[data-action="reveal"]').addEventListener("click", () => {
+		window.postMessage({ type: "toolbar", action: "reveal" }, "*");
+	});
+</script>
+<script type="module" nonce="${nonce}" src="${script ? media(script) : ""}"></script>
 </body>
 </html>`;
 	}

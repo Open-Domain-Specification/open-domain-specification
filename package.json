@@ -23,9 +23,5 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.2.0",
 		"lerna": "^8.2.3"
-	},
-	"dependencies": {
-		"@mantine/code-highlight": "^8.2.5",
-		"shiki": "^3.9.2"
 	}
 }

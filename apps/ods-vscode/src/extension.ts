@@ -1,4 +1,3 @@
-import { dotToSvg } from "@open-domain-specification/pages";
 import { exportSite } from "@open-domain-specification/pages/site";
 import * as vscode from "vscode";
 import { OdsDiagnostics, rangeOfRef } from "./diagnostics";
@@ -101,12 +100,11 @@ export async function activate(context: vscode.ExtensionContext) {
 					exportSite({
 						sources,
 						outDir: outDir.fsPath,
-						svg: dotToSvg,
 					}),
 			);
 			const open = "Open in Browser";
 			const choice = await vscode.window.showInformationMessage(
-				`Exported ${result.pages} pages to ${vscode.workspace.asRelativePath(outDir)}.`,
+				`Exported ${result.workspaces} workspace${result.workspaces === 1 ? "" : "s"} to ${vscode.workspace.asRelativePath(outDir)}.`,
 				open,
 			);
 			if (choice === open)

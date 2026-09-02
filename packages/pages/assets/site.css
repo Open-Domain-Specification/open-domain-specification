@@ -117,3 +117,8 @@
 		border-bottom: 1px solid var(--vscode-panel-border);
 	}
 }
+
+/* Inside the VS Code webview the tree view is the navigation, so the sidebar is dropped. */
+.site.embedded {
+	grid-template-columns: minmax(0, 1fr);
+}

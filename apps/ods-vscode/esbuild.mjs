@@ -18,13 +18,11 @@ copyFileSync(
 	join(here, "schema.json"),
 );
 
-// The webview pages' stylesheet, script and codicons come from the pages
-// package; copy its asset folder into media/ so the extension carries one copy.
-const pagesAssets = join(
-	dirname(require.resolve("@open-domain-specification/pages/package.json")),
-	"assets",
+// The webview hosts the pages app; copy its Vite build into media/app.
+const pagesPkg = dirname(
+	require.resolve("@open-domain-specification/pages/package.json"),
 );
-cpSync(pagesAssets, join(here, "media"), { recursive: true });
+cpSync(join(pagesPkg, "app"), join(here, "media/app"), { recursive: true });
 
 /** @type {import("esbuild").BuildOptions} */
 const options = {

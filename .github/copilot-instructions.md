@@ -14,7 +14,7 @@ Always reference these instructions first and fallback to search or bash command
 
 ### Development Servers
 - Start documentation site: `cd apps/docs && npm run start` -- runs on http://localhost:3000
-- Start ODS UI application: `cd apps/ods-ui && npm run start` -- runs on http://localhost:5173
+- Start the pages viewer: `cd packages/pages && npm run dev` -- runs on http://localhost:5173; `npm run storybook` for the component library
 - Start example workspace docs: `cd packages/ods-example-ws && npm run serve` -- runs on random port (displays in output)
 
 ### Build Order Notes
@@ -31,7 +31,7 @@ There are no currently known issues and the project is healthy.
    - `npm install` (wait 5+ minutes)
    - `npm run test` (verify all pass)
    - `cd apps/docs && npm run start` then verify http://localhost:3000 loads correctly
-   - `cd apps/ods-ui && npm run start` then verify http://localhost:5173 loads correctly
+   - `cd packages/pages && npm run dev` then verify http://localhost:5173 loads the import screen
    - Stop both servers before proceeding
 
 2. **Package Build Validation**:
@@ -53,7 +53,6 @@ There are no currently known issues and the project is healthy.
 
 ### Applications (`apps/`)
 - **docs**: Docusaurus documentation site using Node.js, React, and Markdown
-- **ods-ui**: React + Vite web application for interactive browsing of ODS workspaces
 
 ### Packages (`packages/`)
 - **core**: Main TypeScript library providing domain model, visitor patterns, and schema conversion
@@ -102,11 +101,12 @@ npm run start                  # Development server (port 3000)
 npm run build                  # Production build
 ```
 
-### ODS UI
+### Pages (viewer, static export, webview)
 ```bash
-cd apps/ods-ui  
-npm run start                    # Development server (port 5173)
-npm run build                  # Production build
+cd packages/pages
+npm run dev                    # Viewer dev server (port 5173)
+npm run storybook              # Component library
+npm run build                  # Library plus app bundle
 ```
 
 ## Important File Locations

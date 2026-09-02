@@ -1,8 +1,9 @@
 export { dotToSvg } from "./graphviz";
-export { diagramModal, esc, ICONS, icon, tocList } from "./html";
 export {
-	type RenderedPage,
-	type RenderInput,
-	renderPage,
-	resolvePage,
-} from "./render";
+	consumableIcon,
+	ICONS,
+	RELATIONSHIP,
+	SERVICE_TYPE,
+	SUBDOMAIN_TYPE,
+} from "./lib/icons";
+export { pageRefs, resolvePage } from "./lib/resolve";
