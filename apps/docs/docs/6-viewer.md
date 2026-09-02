@@ -9,5 +9,5 @@ Every element has a page, addressed by its ref in the URL hash, so links into a 
 be shared: `#/boundedcontexts/sales_bc/aggregates/order` opens the Order aggregate.
 
 The viewer, the static site export and the extension's detail panel are one Svelte app from
-the pages package. See the [Pages](8-pages.md) section for the component library and the
-export.
+the pages package; `apps/ods-ui` is the deployable copy that open-ds.io publishes. See the
+[Pages](8-pages.md) section for the component library and the export.
