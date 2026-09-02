@@ -10,17 +10,14 @@ import {
 } from "@xyflow/svelte";
 import "@xyflow/svelte/dist/style.css";
 import DiagramOptionsPanel from "../flow/DiagramOptionsPanel.svelte";
-import FloatingEdge from "../flow/FloatingEdge.svelte";
 import type { Graph } from "../flow/graph";
 import { layout } from "../flow/layout";
-import OdsNode from "../flow/OdsNode.svelte";
 import { diagramOptions } from "../flow/options.svelte";
+import { edgeTypes, nodeTypes } from "../flow/registry";
 
 /** A pannable, zoomable version of a figure. Nodes are refs, so clicking one navigates. */
 let { graph, direction = "LR" }: { graph: Graph; direction?: "LR" | "TB" } =
 	$props();
-const nodeTypes = { ods: OdsNode };
-const edgeTypes = { floating: FloatingEdge };
 /** Built-in edge types draw between the fixed handles; "default" is Svelte Flow's bezier. */
 const BUILT_IN = {
 	bezier: "default",
@@ -42,7 +39,7 @@ $effect(() => {
 	const type = edgeType;
 	nodes = positioned.nodes.map((n) => ({
 		id: n.id,
-		type: "ods",
+		type: n.type ?? "ods",
 		// layout() places every node it was given, so the lookup cannot miss.
 		position: positioned.positions.get(n.id)!,
 		data: { ...n, floating },
@@ -50,7 +47,7 @@ $effect(() => {
 	}));
 	edges = positioned.edges.map((e) => ({
 		id: e.id,
-		type,
+		type: e.type ?? type,
 		source: e.source,
 		target: e.target,
 		label: e.label,

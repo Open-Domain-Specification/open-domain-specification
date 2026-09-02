@@ -1,10 +1,3 @@
-import type {
-	ODSConsumableMap,
-	ODSContextMap,
-	ODSRelationMap,
-} from "@open-domain-specification/core";
-import { ICONS } from "../icons";
-
 /**
  * A host-neutral graph the interactive diagram draws. Each core map converts
  * to it, so one Svelte Flow organism serves every figure. Node ids are refs,
@@ -12,6 +5,8 @@ import { ICONS } from "../icons";
  */
 export type GraphNode = {
 	id: string;
+	/** Component to draw with, from the registry; defaults to the generic card node. */
+	type?: string;
 	label: string;
 	icon: string;
 	/** Cluster path shown as a subtitle, e.g. "Petstore Commerce / Sales". */
@@ -24,6 +19,8 @@ export type GraphNode = {
 
 export type GraphEdge = {
 	id: string;
+	/** Component to draw with, from the registry; defaults to the option-driven edge. */
+	type?: string;
 	source: string;
 	target: string;
 	label?: string;
@@ -37,7 +34,8 @@ export type GraphEdge = {
 
 export type Graph = { nodes: GraphNode[]; edges: GraphEdge[] };
 
-const groupOf = (ns: { name: string }[]) =>
+/** Cluster path below the workspace as a subtitle, e.g. "Petstore Commerce / Sales". */
+export const groupOf = (ns: { name: string }[]) =>
 	ns
 		.slice(1)
 		.map((n) => n.name)
@@ -48,85 +46,6 @@ const SYMMETRIC = new Set(["partnership", "shared-kernel", "separate-ways"]);
 /** Relationship types with no upstream or downstream side. */
 export const isSymmetricRelationship = (type: string) => SYMMETRIC.has(type);
 
-export function contextGraph(map: ODSContextMap): Graph {
-	return {
-		nodes: [...map.nodes.values()].map((n) => ({
-			id: n.id,
-			label: n.name,
-			icon: ICONS.boundedcontext,
-			group: groupOf(n.namespace),
-			chips: [
-				...(n.team ? [n.team.name] : []),
-				...(n.bigBallOfMud ? ["big ball of mud"] : []),
-			],
-			tone: n.bigBallOfMud ? "warn" : "",
-		})),
-		edges: [...map.edges.entries()].map(([id, e]) => ({
-			id,
-			source: e.source.id,
-			target: e.target.id,
-			label: e.type,
-			dashed: e.implied,
-			directed: !isSymmetricRelationship(e.type),
-			sourceLabel: e.upstreamRoles.join(", ") || undefined,
-			targetLabel: e.downstreamRoles.join(", ") || undefined,
-		})),
-	};
-}
-
-export function consumableGraph(map: ODSConsumableMap): Graph {
-	return {
-		nodes: [...map.nodes.values()].map((n) => ({
-			id: n.id,
-			label: n.name,
-			icon: n.type === "service" ? ICONS.service : ICONS.aggregate,
-			group: groupOf(n.namespace),
-		})),
-		edges: [...map.edges.entries()].map(([id, e]) => ({
-			id,
-			source: e.source.id,
-			target: e.target.node.id,
-			label: e.target.name,
-			directed: true,
-			sourceLabel: e.sourcePattern,
-			targetLabel: e.targetPattern,
-		})),
-	};
-}
-
-export function relationGraph(map: ODSRelationMap): Graph {
-	return {
-		nodes: [...map.nodes.values()].map((n) => ({
-			id: n.id,
-			label: n.name,
-			icon: n.type === "valueobject" ? ICONS.valueobject : ICONS.entity,
-			group: groupOf(n.namespace),
-			chips:
-				n.type === "entity_root"
-					? ["root"]
-					: n.type === "valueobject"
-						? ["value object"]
-						: [],
-			attributes: n.attributes.map((a) => ({
-				name: a.name,
-				type: a.type,
-				identity: a.identity,
-			})),
-			tone:
-				n.type === "entity_root"
-					? "core"
-					: n.type === "valueobject"
-						? "muted"
-						: "",
-		})),
-		edges: [...map.edges.entries()].map(([id, e]) => ({
-			id,
-			source: e.source.id,
-			target: e.target.id,
-			label: e.label,
-			directed: true,
-			dashed: e.relation === "references",
-			targetLabel: e.cardinality,
-		})),
-	};
-}
+export { consumableGraph } from "./consumable-graph";
+export { contextGraph } from "./context-graph";
+export { relationGraph } from "./relation-graph";
