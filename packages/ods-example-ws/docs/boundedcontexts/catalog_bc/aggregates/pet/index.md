@@ -18,12 +18,12 @@ A pet listed in the store
 
 
 ## Relationships
-| Source | Description | Target | Relation |
-| --- | --- | --- | --- |
-| [Pet](entities/pet/index.md) | categorized-as | Pet - Category | uses |
-| [Pet](entities/pet/index.md) | tagged-with | Pet - Tag | uses |
-| [Pet](entities/pet/index.md) | has-photo | Pet - PhotoUrl | uses |
-| [Pet](entities/pet/index.md) | has-status | Pet - PetStatus | uses |
+| Source | Description | Target | Relation | Cardinality |
+| --- | --- | --- | --- | --- |
+| [Pet](entities/pet/index.md) | categorized-as | Pet - Category | uses | 0..1 |
+| [Pet](entities/pet/index.md) | tagged-with | Pet - Tag | uses | * |
+| [Pet](entities/pet/index.md) | has-photo | Pet - PhotoUrl | uses | 1..* |
+| [Pet](entities/pet/index.md) | has-status | Pet - PetStatus | uses | 1 |
 
 
 ## Commands

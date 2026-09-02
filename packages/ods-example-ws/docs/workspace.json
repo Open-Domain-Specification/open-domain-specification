@@ -148,28 +148,32 @@
                     "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
                   },
                   "relation": "uses",
-                  "label": "categorized-as"
+                  "label": "categorized-as",
+                  "cardinality": "0..1"
                 },
                 {
                   "target": {
                     "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/tag"
                   },
                   "relation": "uses",
-                  "label": "tagged-with"
+                  "label": "tagged-with",
+                  "cardinality": "*"
                 },
                 {
                   "target": {
                     "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/photo_url"
                   },
                   "relation": "uses",
-                  "label": "has-photo"
+                  "label": "has-photo",
+                  "cardinality": "1..*"
                 },
                 {
                   "target": {
                     "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
                   },
                   "relation": "uses",
-                  "label": "has-status"
+                  "label": "has-status",
+                  "cardinality": "1"
                 }
               ]
             }
@@ -583,28 +587,40 @@
                     "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status"
                   },
                   "relation": "uses",
-                  "label": "has-status"
+                  "label": "has-status",
+                  "cardinality": "1"
                 },
                 {
                   "target": {
                     "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
                   },
                   "relation": "uses",
-                  "label": "has-quantity"
+                  "label": "has-quantity",
+                  "cardinality": "1"
                 },
                 {
                   "target": {
                     "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/ship_date"
                   },
                   "relation": "uses",
-                  "label": "ships-on"
+                  "label": "ships-on",
+                  "cardinality": "0..1"
                 },
                 {
                   "target": {
                     "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/complete_flag"
                   },
                   "relation": "uses",
-                  "label": "is-complete"
+                  "label": "is-complete",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet"
+                  },
+                  "relation": "references",
+                  "label": "for-pet",
+                  "cardinality": "1"
                 }
               ]
             }

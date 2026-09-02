@@ -92,6 +92,7 @@ describe("RelationMap", () => {
 			    arrowhead = "normal";
 			    arrowtail = "none";
 			    style = "dashed";
+			    headlabel = "";
 			  ];
 			}"
 		`);

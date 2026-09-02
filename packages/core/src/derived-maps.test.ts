@@ -142,6 +142,15 @@ describe("ODSRelationMap", () => {
 		expect(ODSRelationGraph.fromWorkspace(f.ws).relations).toHaveLength(3);
 	});
 
+	it("carries cardinality on relation edges", () => {
+		const map = ODSRelationMap.fromWorkspace(f.ws);
+		const cardinalities = Array.from(map.edges.values()).map(
+			(e) => `${e.source.name} -> ${e.target.name}: ${e.cardinality ?? "-"}`,
+		);
+		expect(cardinalities).toContain("Order -> Order Line: 1..*");
+		expect(cardinalities).toContain("Invoice -> Order: -");
+	});
+
 	it("types nodes as root entity, entity or value object", () => {
 		const map = ODSRelationMap.fromWorkspace(f.ws);
 		expect(map.nodes.get(f.order.ref)?.type).toBe("entity_root");

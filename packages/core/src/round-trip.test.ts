@@ -113,5 +113,9 @@ describe("schema round-trip", () => {
 		expect(invoice.relations[0].target.name).toBe("Order");
 		expect(invoice.relations[0].relation).toBe("references");
 		expect(invoice.relations[0].label).toBe("bills");
+		const order = rebuilt.getEntityByRefOrThrow(
+			"#/boundedcontexts/ordering_bc/aggregates/order/entities/order",
+		);
+		expect(order.relations[0].cardinality).toBe("1..*");
 	});
 });

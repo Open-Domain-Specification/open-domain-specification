@@ -141,6 +141,7 @@ export function relationMapToDigraph(contextMap: ODSRelationMap): {
 				fontsize: 10,
 				...RelationArrowProps[edge.relation],
 				label: edge.label,
+				headlabel: edge.cardinality ?? "",
 			});
 		debug(`Adding edge ${id} from ${sourceNode.id} to ${targetNode.id}`);
 		g.addEdge(edges[id]);

@@ -234,10 +234,14 @@ export enum RelationType {
 	Uses = "uses",
 }
 
+/** How many targets one source relates to, in UML multiplicity notation. */
+export type RelationCardinality = "1" | "0..1" | "*" | "1..*";
+
 export interface EntityRelationSchema {
 	target: { $ref: string };
 	relation: EntityRelationType;
 	label?: string;
+	cardinality?: RelationCardinality;
 }
 
 /**

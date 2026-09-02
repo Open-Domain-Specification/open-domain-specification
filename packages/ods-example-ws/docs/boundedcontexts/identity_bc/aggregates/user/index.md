@@ -15,9 +15,9 @@ Petstore user record
 
 
 ## Relationships
-| Source | Description | Target | Relation |
-| --- | --- | --- | --- |
-| [User](entities/user/index.md) | has-status | User - UserStatus | uses |
+| Source | Description | Target | Relation | Cardinality |
+| --- | --- | --- | --- | --- |
+| [User](entities/user/index.md) | has-status | User - UserStatus | uses | - |
 
 
 ## Commands

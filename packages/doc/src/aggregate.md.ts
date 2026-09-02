@@ -98,12 +98,13 @@ ${
 
 ## Relationships
 ${markdownTable(
-	["Source", "Description", "Target", "Relation"],
+	["Source", "Description", "Target", "Relation", "Cardinality"],
 	ODSRelationGraph.fromAggregate(aggregate).relations.map((it) => [
 		`[${it.source.name}](${pathToIndexMd(it.source.path, aggregate.path)})`,
 		it.label || "-",
 		`${it.target.aggregate.name} - ${it.target.name}`,
 		it.relation,
+		it.cardinality ?? "-",
 	]),
 )}
 

@@ -1,6 +1,6 @@
 import objectHash from "object-hash";
 import { aggregateNamespace, type ODSNamespace } from "./namespace";
-import type { EntityRelationType } from "./schema";
+import type { EntityRelationType, RelationCardinality } from "./schema";
 import { AbstractVisitor } from "./visitor";
 import {
 	type Aggregate,
@@ -114,6 +114,7 @@ export class ODSRelationMap {
 				target: targetNode,
 				relation: relation.relation,
 				label: relation.label || "",
+				cardinality: relation.cardinality,
 			});
 		}
 	}
@@ -162,4 +163,5 @@ export type ODSRelationMapEdge = {
 	target: ODSRelationMapNode;
 	relation: EntityRelationType;
 	label: string;
+	cardinality?: RelationCardinality;
 };

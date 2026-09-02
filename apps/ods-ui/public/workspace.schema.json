@@ -454,6 +454,9 @@
         "EntityRelationSchema": {
             "additionalProperties": false,
             "properties": {
+                "cardinality": {
+                    "$ref": "#/definitions/RelationCardinality"
+                },
                 "label": {
                     "type": "string"
                 },
@@ -645,6 +648,16 @@
             ],
             "title": "Policy",
             "type": "object"
+        },
+        "RelationCardinality": {
+            "description": "How many targets one source relates to, in UML multiplicity notation.",
+            "enum": [
+                "*",
+                "0..1",
+                "1",
+                "1..*"
+            ],
+            "type": "string"
         },
         "ServiceSchema": {
             "additionalProperties": false,

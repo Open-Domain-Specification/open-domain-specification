@@ -132,10 +132,10 @@ petRoot.addAttribute("photoUrls", {
 petRoot.addAttribute("tags", { type: "Tag[]", valueobject: tagVO });
 petRoot.addAttribute("status", { type: "PetStatus", valueobject: petStatusVO });
 
-petRoot.uses(categoryVO, "categorized-as");
-petRoot.uses(tagVO, "tagged-with");
-petRoot.uses(photoUrlVO, "has-photo");
-petRoot.uses(petStatusVO, "has-status");
+petRoot.uses(categoryVO, "categorized-as", "0..1");
+petRoot.uses(tagVO, "tagged-with", "*");
+petRoot.uses(photoUrlVO, "has-photo", "1..*");
+petRoot.uses(petStatusVO, "has-status", "1");
 
 petAgg
 	.addInvariant("NameRequired", {
@@ -350,10 +350,12 @@ orderRoot.addAttribute("complete", {
 	valueobject: completeFlagVO,
 });
 
-orderRoot.uses(orderStatusVO, "has-status");
-orderRoot.uses(quantityVO, "has-quantity");
-orderRoot.uses(shipDateVO, "ships-on");
-orderRoot.uses(completeFlagVO, "is-complete");
+orderRoot.uses(orderStatusVO, "has-status", "1");
+orderRoot.uses(quantityVO, "has-quantity", "1");
+orderRoot.uses(shipDateVO, "ships-on", "0..1");
+orderRoot.uses(completeFlagVO, "is-complete", "1");
+// Cross-aggregate reference by identity to the Pet root
+orderRoot.references(petRoot, "for-pet", "1");
 
 orderAgg
 	.addInvariant("QuantityPositive", {

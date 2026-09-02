@@ -170,8 +170,8 @@ export function makeRichTestWs() {
 	money.addAttribute("Currency", { type: "ISO 4217" });
 	order.addAttribute("Order Id", { type: "OrderId", identity: true });
 	order.addAttribute("Total", { type: "Money", valueobject: money });
-	order.includes(orderLine, "has lines");
-	orderLine.uses(money, "priced in");
+	order.includes(orderLine, "has lines", "1..*");
+	orderLine.uses(money, "priced in", "1");
 	const nonEmpty = orderAgg
 		.addInvariant("Non-empty", {
 			description: "An order has at least one line",

@@ -4,6 +4,7 @@ import type * as ods from "./schema";
 import {
 	type DownstreamRole,
 	type EntityRelationType,
+	type RelationCardinality,
 	RelationType,
 	type UpstreamRole,
 } from "./schema";
@@ -1100,24 +1101,39 @@ export class Entity
 		return this.addRelation(target, attributes);
 	}
 
-	uses(target: Entity | ValueObject, label: string) {
+	uses(
+		target: Entity | ValueObject,
+		label: string,
+		cardinality?: RelationCardinality,
+	) {
 		this.addRelation(target, {
 			label,
 			relation: RelationType.Uses,
+			cardinality,
 		});
 	}
 
-	includes(target: Entity | ValueObject, label: string) {
+	includes(
+		target: Entity | ValueObject,
+		label: string,
+		cardinality?: RelationCardinality,
+	) {
 		this.addRelation(target, {
 			label,
 			relation: RelationType.Includes,
+			cardinality,
 		});
 	}
 
-	references(target: Entity | ValueObject, label: string) {
+	references(
+		target: Entity | ValueObject,
+		label: string,
+		cardinality?: RelationCardinality,
+	) {
 		this.addRelation(target, {
 			label,
 			relation: RelationType.References,
+			cardinality,
 		});
 	}
 
@@ -1189,24 +1205,39 @@ export class ValueObject
 		return this.addRelation(target, attributes);
 	}
 
-	uses(target: Entity | ValueObject, label: string) {
+	uses(
+		target: Entity | ValueObject,
+		label: string,
+		cardinality?: RelationCardinality,
+	) {
 		this.addRelation(target, {
 			label,
 			relation: RelationType.Uses,
+			cardinality,
 		});
 	}
 
-	includes(target: Entity | ValueObject, label: string) {
+	includes(
+		target: Entity | ValueObject,
+		label: string,
+		cardinality?: RelationCardinality,
+	) {
 		this.addRelation(target, {
 			label,
 			relation: RelationType.Includes,
+			cardinality,
 		});
 	}
 
-	references(target: Entity | ValueObject, label: string) {
+	references(
+		target: Entity | ValueObject,
+		label: string,
+		cardinality?: RelationCardinality,
+	) {
 		this.addRelation(target, {
 			label,
 			relation: RelationType.References,
+			cardinality,
 		});
 	}
 
@@ -1292,6 +1323,7 @@ export class Invariant
 export type EntityRelationAttributes = {
 	label?: string;
 	relation: EntityRelationType;
+	cardinality?: RelationCardinality;
 };
 
 export class EntityRelation
@@ -1301,6 +1333,7 @@ export class EntityRelation
 	target: Entity | ValueObject;
 	label?: string;
 	relation: EntityRelationType;
+	cardinality?: RelationCardinality;
 
 	constructor(
 		source: Entity | ValueObject,
@@ -1311,6 +1344,7 @@ export class EntityRelation
 		this.target = target;
 		this.label = attributes.label;
 		this.relation = attributes.relation;
+		this.cardinality = attributes.cardinality;
 		source.relations.push(this);
 	}
 
@@ -1323,6 +1357,7 @@ export class EntityRelation
 			target: { $ref: this.target.ref },
 			relation: this.relation,
 			label: this.label,
+			cardinality: this.cardinality,
 		};
 	}
 }

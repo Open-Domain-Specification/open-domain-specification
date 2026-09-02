@@ -58,6 +58,7 @@
 <path fill="none" stroke="black" stroke-dasharray="5,2" d="M94.6,-128.84C102.06,-122.26 111.01,-115.18 120,-110 142.58,-96.98 169.7,-86.72 192.6,-79.4"/>
 <polygon fill="black" stroke="black" points="193.5,-82.79 202.02,-76.49 191.43,-76.1 193.5,-82.79"/>
 <text xml:space="preserve" text-anchor="middle" x="148.87" y="-113" font-family="Times,serif" font-size="10.00">categorized&#45;as</text>
+<text xml:space="preserve" text-anchor="middle" x="203.46" y="-73.04" font-family="Times,serif" font-size="10.00">0..1</text>
 </g>
 <!-- #/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/tag -->
 <g id="node3" class="node">
@@ -74,6 +75,7 @@
 <path fill="none" stroke="black" stroke-dasharray="5,2" d="M102.38,-139.14C108.15,-137.61 114.25,-136.13 120,-135 148.01,-129.48 180.06,-125.63 204.25,-123.21"/>
 <polygon fill="black" stroke="black" points="204.31,-126.72 213.93,-122.29 203.64,-119.76 204.31,-126.72"/>
 <text xml:space="preserve" text-anchor="middle" x="148.87" y="-138" font-family="Times,serif" font-size="10.00">tagged&#45;with</text>
+<text xml:space="preserve" text-anchor="middle" x="215.43" y="-119.14" font-family="Times,serif" font-size="10.00">*</text>
 </g>
 <!-- #/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/photo_url -->
 <g id="node4" class="node">
@@ -90,6 +92,7 @@
 <path fill="none" stroke="black" stroke-dasharray="5,2" d="M102.26,-151.28C125.3,-155.03 159.54,-160.61 188.32,-165.3"/>
 <polygon fill="black" stroke="black" points="187.53,-168.72 197.96,-166.87 188.65,-161.81 187.53,-168.72"/>
 <text xml:space="preserve" text-anchor="middle" x="148.87" y="-165.92" font-family="Times,serif" font-size="10.00">has&#45;photo</text>
+<text xml:space="preserve" text-anchor="middle" x="199.45" y="-164.11" font-family="Times,serif" font-size="10.00">1..*</text>
 </g>
 <!-- #/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status -->
 <g id="node5" class="node">
@@ -106,6 +109,7 @@
 <path fill="none" stroke="black" stroke-dasharray="5,2" d="M99.04,-165.39C105.6,-170.16 112.89,-175.06 120,-179 143.91,-192.24 172.15,-203.84 195.41,-212.42"/>
 <polygon fill="black" stroke="black" points="194.03,-215.64 204.62,-215.75 196.41,-209.06 194.03,-215.64"/>
 <text xml:space="preserve" text-anchor="middle" x="148.87" y="-207.69" font-family="Times,serif" font-size="10.00">has&#45;status</text>
+<text xml:space="preserve" text-anchor="middle" x="206.05" y="-213.26" font-family="Times,serif" font-size="10.00">1</text>
 </g>
 </g>
 </svg>
