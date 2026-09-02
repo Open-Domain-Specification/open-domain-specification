@@ -1,0 +1,3628 @@
+{
+  "$schema": "./schema.json",
+  "id": "streamline",
+  "name": "StreamLine",
+  "description": "A fictional streaming service: studio production, licensing, catalogue, encoding, playback and edge delivery, recommendations, households and profiles, billing and plans, devices, an ads tier and a legacy disc business.",
+  "version": "1.0.0",
+  "odsVersion": "1.0.0",
+  "primaryColor": "#e11d48",
+  "domains": {
+    "content": {
+      "name": "Content",
+      "description": "Making, licensing and preparing the slate",
+      "subdomains": {
+        "studio_production": {
+          "name": "Studio Production",
+          "type": "core",
+          "description": "Originals from greenlight to delivered master. Core: the exclusive part of the slate"
+        },
+        "licensing": {
+          "name": "Licensing",
+          "type": "core",
+          "description": "Third-party titles by territory and window. Core: exclusive windows are fought over"
+        },
+        "catalogue": {
+          "name": "Catalogue",
+          "type": "supporting",
+          "description": "Titles, seasons, episodes, availability. Supporting: must be excellent and boring"
+        },
+        "encoding": {
+          "name": "Encoding",
+          "type": "core",
+          "description": "Per-title ladders and renditions. Core: a real quality and cost advantage"
+        }
+      }
+    },
+    "viewing": {
+      "name": "Viewing",
+      "description": "Playing the slate on anything, anywhere",
+      "subdomains": {
+        "playback": {
+          "name": "Playback",
+          "type": "core",
+          "description": "Sessions, manifests, bitrate selection. Core: \"we play them perfectly\""
+        },
+        "edge_delivery": {
+          "name": "Edge Delivery",
+          "type": "core",
+          "description": "Caches inside ISPs. Core: why a stream starts in under a second"
+        },
+        "devices": {
+          "name": "Devices",
+          "type": "supporting",
+          "description": "Partner device registration and certification"
+        },
+        "physical_rental": {
+          "name": "Physical Rental",
+          "type": "supporting",
+          "description": "The disc-by-post business, kept alive by decision rather than investment"
+        }
+      }
+    },
+    "personalisation": {
+      "name": "Personalisation",
+      "description": "A different home screen for every profile",
+      "subdomains": {
+        "recommendations": {
+          "name": "Recommendations",
+          "type": "core",
+          "description": "Ranking rows per profile. Core: the strongest lever on retention"
+        }
+      }
+    },
+    "members": {
+      "name": "Members",
+      "description": "Households, plans, sign-in",
+      "subdomains": {
+        "households_&_profiles": {
+          "name": "Households & Profiles",
+          "type": "supporting",
+          "description": "The paying unit and the people in it"
+        },
+        "billing_&_plans": {
+          "name": "Billing & Plans",
+          "type": "generic",
+          "description": "Plans, subscriptions, invoices, entitlement. Generic: \"we would happily buy all of this\""
+        },
+        "identity": {
+          "name": "Identity",
+          "type": "generic",
+          "description": "Accounts and sign-in"
+        }
+      }
+    },
+    "advertising": {
+      "name": "Advertising",
+      "description": "Filling ad breaks on the cheaper plan",
+      "subdomains": {
+        "ads_tier": {
+          "name": "Ads Tier",
+          "type": "supporting",
+          "description": "Breaks, slots, impressions. Supporting today; may become core"
+        }
+      }
+    }
+  },
+  "boundedcontexts": {
+    "studio_production": {
+      "name": "Studio Production",
+      "description": "Productions, episodes and delivered masters",
+      "subdomains": [
+        {
+          "$ref": "#/domains/content/subdomains/studio_production"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/studio_technology_team"
+      },
+      "aggregates": {
+        "production": {
+          "name": "Production",
+          "description": "One original from greenlight to delivered masters",
+          "provides": {
+            "production_greenlit": {
+              "name": "ProductionGreenlit",
+              "description": "The slate gained a title; scheduling is out of scope here",
+              "type": "event",
+              "internal": true
+            },
+            "master_delivered": {
+              "name": "MasterDelivered",
+              "description": "A finished master is in the delivery bucket",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/studio_production/schemas/master_delivered"
+              }
+            },
+            "greenlight": {
+              "name": "Greenlight",
+              "description": "Commission the production",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/studio_production/aggregates/production/provides/production_greenlit"
+                }
+              ]
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "production": {
+              "name": "Production",
+              "description": "A commissioned film or series",
+              "root": true,
+              "attributes": {
+                "production_id": {
+                  "name": "productionId",
+                  "type": "string",
+                  "identity": true
+                },
+                "working_title": {
+                  "name": "workingTitle",
+                  "type": "string"
+                },
+                "greenlit_on": {
+                  "name": "greenlitOn",
+                  "type": "date"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/studio_production/aggregates/production/entities/episode"
+                  },
+                  "relation": "includes",
+                  "label": "made-of",
+                  "cardinality": "1..*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/studio_production/aggregates/production/valueobjects/budget"
+                  },
+                  "relation": "uses",
+                  "label": "funded-by",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "episode": {
+              "name": "Episode",
+              "description": "A production artefact: a number, a runtime and eventually a master. Not the catalogue's episode",
+              "root": false,
+              "attributes": {
+                "episode_number": {
+                  "name": "episodeNumber",
+                  "type": "int",
+                  "identity": true
+                },
+                "runtime_minutes": {
+                  "name": "runtimeMinutes",
+                  "type": "int"
+                },
+                "master_uri": {
+                  "name": "masterUri",
+                  "type": "string (URI)"
+                }
+              },
+              "relations": []
+            }
+          },
+          "valueobjects": {
+            "budget": {
+              "name": "Budget",
+              "description": "Approved spend; a value because two productions with the same figures have the same budget",
+              "attributes": {
+                "approved": {
+                  "name": "approved",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/studio_production/aggregates/production/valueobjects/money"
+                  }
+                },
+                "approved_on": {
+                  "name": "approvedOn",
+                  "type": "date"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/studio_production/aggregates/production/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "amount",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "money": {
+              "name": "Money",
+              "description": "An amount in a currency: minor units and an ISO 4217 code",
+              "attributes": {
+                "amount_minor": {
+                  "name": "amountMinor",
+                  "type": "int64"
+                },
+                "currency": {
+                  "name": "currency",
+                  "type": "ISO 4217 code"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "budget_approved_before_shoot": {
+              "name": "BudgetApprovedBeforeShoot",
+              "description": "No shoot starts before the budget is approved",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/studio_production/aggregates/production/valueobjects/budget"
+                },
+                {
+                  "$ref": "#/boundedcontexts/studio_production/aggregates/production/entities/production"
+                }
+              ]
+            },
+            "episode_numbers_unique": {
+              "name": "EpisodeNumbersUnique",
+              "description": "Episode numbers within a production are unique; the delivery spec keys on them",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/studio_production/aggregates/production/entities/episode/attributes/episode_number"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {
+        "studio_portal": {
+          "name": "StudioPortal",
+          "description": "The documented delivery portal; external post houses use it too",
+          "type": "application",
+          "provides": {
+            "submit_delivery": {
+              "name": "SubmitDelivery",
+              "description": "Upload a master against a production and episode",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/studio_production/schemas/master_delivered"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/studio_production/aggregates/production/provides/master_delivered"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {},
+      "glossary": {
+        "master": {
+          "name": "Master",
+          "definition": "The finished file for one film or episode, to the delivery spec",
+          "aliases": [
+            "Mezzanine"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/studio_production/aggregates/production/provides/master_delivered"
+          }
+        },
+        "slate": {
+          "name": "Slate",
+          "definition": "Everything commissioned or licensed for a period",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/studio_production/aggregates/production"
+          }
+        }
+      },
+      "schemas": {
+        "master_delivered": {
+          "name": "MasterDelivered",
+          "description": "The delivery spec: what the catalogue and the encoder learn about a master",
+          "attributes": {
+            "production_id": {
+              "name": "productionId",
+              "type": "string",
+              "identity": true
+            },
+            "episode_number": {
+              "name": "episodeNumber",
+              "type": "int"
+            },
+            "mezzanine_uri": {
+              "name": "mezzanineUri",
+              "type": "string (URI)"
+            },
+            "runtime_minutes": {
+              "name": "runtimeMinutes",
+              "type": "int"
+            }
+          }
+        }
+      }
+    },
+    "licensing": {
+      "name": "Licensing",
+      "description": "Deals with licensors and the windows inside them",
+      "subdomains": [
+        {
+          "$ref": "#/domains/content/subdomains/licensing"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/content_acquisition_team"
+      },
+      "aggregates": {
+        "license_deal": {
+          "name": "LicenseDeal",
+          "description": "A deal with a licensor and the windows inside it; windows are checked against each other, so they live together",
+          "provides": {
+            "license_window_opened": {
+              "name": "LicenseWindowOpened",
+              "description": "A title may be shown in these countries from today",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/licensing/schemas/license_window"
+              }
+            },
+            "license_window_expired": {
+              "name": "LicenseWindowExpired",
+              "description": "The title must come down in these countries today",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/licensing/schemas/license_window"
+              }
+            },
+            "open_window": {
+              "name": "OpenWindow",
+              "description": "Start a window on its start date",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/provides/license_window_opened"
+                }
+              ]
+            },
+            "expire_window": {
+              "name": "ExpireWindow",
+              "description": "End a window on its end date",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/provides/license_window_expired"
+                }
+              ]
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "license_deal": {
+              "name": "LicenseDeal",
+              "description": "One contract with one licensor for a term",
+              "root": true,
+              "attributes": {
+                "deal_id": {
+                  "name": "dealId",
+                  "type": "string",
+                  "identity": true
+                },
+                "licensor": {
+                  "name": "licensor",
+                  "type": "string"
+                },
+                "term_start": {
+                  "name": "termStart",
+                  "type": "date"
+                },
+                "term_end": {
+                  "name": "termEnd",
+                  "type": "date"
+                },
+                "fee": {
+                  "name": "fee",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/valueobjects/money"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/entities/window"
+                  },
+                  "relation": "includes",
+                  "label": "grants",
+                  "cardinality": "1..*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "costs",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "window": {
+              "name": "Window",
+              "description": "A territory, a start, an end and whether StreamLine is exclusive",
+              "root": false,
+              "attributes": {
+                "window_id": {
+                  "name": "windowId",
+                  "type": "string",
+                  "identity": true
+                },
+                "title_id": {
+                  "name": "titleId",
+                  "type": "string"
+                },
+                "start": {
+                  "name": "start",
+                  "type": "date"
+                },
+                "end": {
+                  "name": "end",
+                  "type": "date"
+                },
+                "exclusive": {
+                  "name": "exclusive",
+                  "type": "boolean"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/valueobjects/territory"
+                  },
+                  "relation": "uses",
+                  "label": "covers",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "territory": {
+              "name": "Territory",
+              "description": "A set of countries a window covers. Not a cache region",
+              "attributes": {
+                "countries": {
+                  "name": "countries",
+                  "type": "ISO 3166 code[]"
+                }
+              },
+              "relations": []
+            },
+            "money": {
+              "name": "Money",
+              "description": "An amount in a currency: minor units and an ISO 4217 code",
+              "attributes": {
+                "amount_minor": {
+                  "name": "amountMinor",
+                  "type": "int64"
+                },
+                "currency": {
+                  "name": "currency",
+                  "type": "ISO 4217 code"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "window_within_term": {
+              "name": "WindowWithinTerm",
+              "description": "A window never extends past the deal term",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/entities/window"
+                }
+              ]
+            },
+            "no_overlapping_windows_per_territory": {
+              "name": "NoOverlappingWindowsPerTerritory",
+              "description": "Two windows for the same title and territory never overlap",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/entities/window"
+                },
+                {
+                  "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/valueobjects/territory"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {},
+      "policies": {},
+      "glossary": {
+        "window": {
+          "name": "Window",
+          "definition": "The period and territory in which a licensed title may be shown",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/entities/window"
+          }
+        },
+        "territory": {
+          "name": "Territory",
+          "definition": "The countries a window covers. Edge Delivery's 'region' is something else",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/valueobjects/territory"
+          }
+        }
+      },
+      "schemas": {
+        "license_window": {
+          "name": "LicenseWindow",
+          "description": "Title, territories and dates; used by both window events",
+          "attributes": {
+            "title_id": {
+              "name": "titleId",
+              "type": "string",
+              "identity": true
+            },
+            "territory": {
+              "name": "territory",
+              "type": "Territory",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/valueobjects/territory"
+              }
+            },
+            "start": {
+              "name": "start",
+              "type": "date"
+            },
+            "end": {
+              "name": "end",
+              "type": "date"
+            }
+          }
+        }
+      }
+    },
+    "catalogue": {
+      "name": "Catalogue",
+      "description": "What members can see, where and when",
+      "subdomains": [
+        {
+          "$ref": "#/domains/content/subdomains/catalogue"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/catalogue_team"
+      },
+      "aggregates": {
+        "title": {
+          "name": "Title",
+          "description": "A film or series as members see it, with seasons, episodes, artwork, rating and availability",
+          "provides": {
+            "title_published": {
+              "name": "TitlePublished",
+              "description": "Members can now see the title somewhere",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/catalogue/schemas/title_ref"
+              }
+            },
+            "title_availability_changed": {
+              "name": "TitleAvailabilityChanged",
+              "description": "Where and when a title is live changed",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/catalogue/schemas/title_availability_changed"
+              }
+            },
+            "title_unpublished": {
+              "name": "TitleUnpublished",
+              "description": "The title came down everywhere",
+              "type": "event",
+              "internal": true
+            },
+            "publish_title": {
+              "name": "PublishTitle",
+              "description": "Make a title visible once it has an encode and a rating",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/title_published"
+                }
+              ]
+            },
+            "update_availability": {
+              "name": "UpdateAvailability",
+              "description": "Recompute availability from windows",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/title_availability_changed"
+                }
+              ]
+            },
+            "unpublish_title": {
+              "name": "UnpublishTitle",
+              "description": "Take a title down the day its last window expires",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/title_unpublished"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/studio_production/aggregates/production/provides/master_delivered"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/encoding_completed"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/provides/license_window_opened"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/provides/license_window_expired"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/submit_encode"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ],
+          "entities": {
+            "title": {
+              "name": "Title",
+              "description": "One film or series",
+              "root": true,
+              "attributes": {
+                "title_id": {
+                  "name": "titleId",
+                  "type": "string",
+                  "identity": true
+                },
+                "name": {
+                  "name": "name",
+                  "type": "string"
+                },
+                "kind": {
+                  "name": "kind",
+                  "type": "'film' | 'series'"
+                },
+                "rating": {
+                  "name": "rating",
+                  "type": "MaturityRating",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/maturity_rating"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/season"
+                  },
+                  "relation": "includes",
+                  "label": "has-seasons",
+                  "cardinality": "*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/artwork"
+                  },
+                  "relation": "uses",
+                  "label": "shown-with",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/maturity_rating"
+                  },
+                  "relation": "uses",
+                  "label": "rated",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/availability"
+                  },
+                  "relation": "uses",
+                  "label": "available",
+                  "cardinality": "*"
+                }
+              ]
+            },
+            "season": {
+              "name": "Season",
+              "description": "A numbered group of episodes",
+              "root": false,
+              "attributes": {
+                "season_number": {
+                  "name": "seasonNumber",
+                  "type": "int",
+                  "identity": true
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/episode"
+                  },
+                  "relation": "includes",
+                  "label": "has-episodes",
+                  "cardinality": "1..*"
+                }
+              ]
+            },
+            "episode": {
+              "name": "Episode",
+              "description": "What a member plays; carries artwork and a rating, unlike the studio's episode",
+              "root": false,
+              "attributes": {
+                "episode_id": {
+                  "name": "episodeId",
+                  "type": "string",
+                  "identity": true
+                },
+                "playable_rendition_set": {
+                  "name": "playableRenditionSet",
+                  "type": "string",
+                  "description": "The encoding job whose renditions this episode plays"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/artwork"
+                  },
+                  "relation": "uses",
+                  "label": "shown-with",
+                  "cardinality": "0..1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "artwork": {
+              "name": "Artwork",
+              "description": "Images by aspect ratio",
+              "attributes": {
+                "images": {
+                  "name": "images",
+                  "type": "{ratio, uri}[]"
+                }
+              },
+              "relations": []
+            },
+            "maturity_rating": {
+              "name": "MaturityRating",
+              "description": "The rating shown and enforced by profile maturity settings",
+              "attributes": {
+                "scheme": {
+                  "name": "scheme",
+                  "type": "string"
+                },
+                "value": {
+                  "name": "value",
+                  "type": "string"
+                }
+              },
+              "relations": []
+            },
+            "availability": {
+              "name": "Availability",
+              "description": "Countries and dates a title is live, derived from licence windows or studio ownership",
+              "attributes": {
+                "countries": {
+                  "name": "countries",
+                  "type": "ISO 3166 code[]"
+                },
+                "from": {
+                  "name": "from",
+                  "type": "date"
+                },
+                "until": {
+                  "name": "until",
+                  "type": "date"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "published_title_has_playable_asset": {
+              "name": "PublishedTitleHasPlayableAsset",
+              "description": "A title is published only when at least one episode has a completed encode",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
+                },
+                {
+                  "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/episode"
+                }
+              ]
+            },
+            "rating_required_before_publish": {
+              "name": "RatingRequiredBeforePublish",
+              "description": "No rating, no publish; profiles enforce maturity on it",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/maturity_rating"
+                }
+              ]
+            },
+            "availability_matches_licence": {
+              "name": "AvailabilityMatchesLicence",
+              "description": "Availability in a country never exceeds a licence window or studio ownership",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/availability"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {
+        "catalogue_api": {
+          "name": "CatalogueAPI",
+          "description": "The documented read API for titles",
+          "type": "application",
+          "provides": {
+            "get_title": {
+              "name": "GetTitle",
+              "description": "Read a title with seasons, episodes and availability",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/catalogue/schemas/title_ref"
+              }
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {
+        "request_encode_on_master": {
+          "name": "Request encode on master",
+          "description": "A delivered master is queued for encoding",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/studio_production/aggregates/production/provides/master_delivered"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/submit_encode"
+            }
+          ]
+        },
+        "publish_on_encode": {
+          "name": "Publish on encode",
+          "description": "A completed encode makes the title publishable",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/encoding_completed"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/publish_title"
+            }
+          ]
+        },
+        "update_availability_on_window": {
+          "name": "Update availability on window",
+          "description": "An opened window changes where the title is live",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/provides/license_window_opened"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/update_availability"
+            }
+          ]
+        },
+        "unpublish_on_expiry": {
+          "name": "Unpublish on expiry",
+          "description": "An expired window takes the title down that day",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/provides/license_window_expired"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/unpublish_title"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "title": {
+          "name": "Title",
+          "definition": "A film or series as a member sees it",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/catalogue/aggregates/title"
+          }
+        },
+        "episode": {
+          "name": "Episode",
+          "definition": "What a member plays, with artwork and a rating. The studio's episode is the production artefact behind it",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/episode"
+          }
+        },
+        "availability": {
+          "name": "Availability",
+          "definition": "The countries and dates a title is live",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/availability"
+          }
+        }
+      },
+      "schemas": {
+        "title_ref": {
+          "name": "TitleRef",
+          "description": "Identifies one title, optionally one episode",
+          "attributes": {
+            "title_id": {
+              "name": "titleId",
+              "type": "string",
+              "identity": true
+            },
+            "episode_id": {
+              "name": "episodeId",
+              "type": "string"
+            }
+          }
+        },
+        "title_availability_changed": {
+          "name": "TitleAvailabilityChanged",
+          "attributes": {
+            "title_id": {
+              "name": "titleId",
+              "type": "string",
+              "identity": true
+            },
+            "availability": {
+              "name": "availability",
+              "type": "Availability",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/availability"
+              }
+            }
+          }
+        }
+      }
+    },
+    "encoding": {
+      "name": "Encoding",
+      "description": "Jobs that turn a master into a ladder of renditions",
+      "subdomains": [
+        {
+          "$ref": "#/domains/content/subdomains/encoding"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/media_engineering_team"
+      },
+      "aggregates": {
+        "encoding_job": {
+          "name": "EncodingJob",
+          "description": "One source in, a ladder of renditions out",
+          "provides": {
+            "encode_queued": {
+              "name": "EncodeQueued",
+              "description": "A job is waiting for a ladder plan",
+              "type": "event",
+              "internal": true
+            },
+            "encoding_completed": {
+              "name": "EncodingCompleted",
+              "description": "All renditions are available",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/encoding/schemas/encoding_completed"
+              }
+            },
+            "submit_encode": {
+              "name": "SubmitEncode",
+              "description": "Queue a master for encoding",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/encoding/schemas/submit_encode"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/encode_queued"
+                }
+              ]
+            },
+            "complete_job": {
+              "name": "CompleteJob",
+              "description": "Record the finished renditions",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/encoding_completed"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/studio_production/aggregates/production/provides/master_delivered"
+              },
+              "pattern": "conformist"
+            }
+          ],
+          "entities": {
+            "encoding_job": {
+              "name": "EncodingJob",
+              "description": "The unit of work for one master",
+              "root": true,
+              "attributes": {
+                "job_id": {
+                  "name": "jobId",
+                  "type": "string",
+                  "identity": true
+                },
+                "title_id": {
+                  "name": "titleId",
+                  "type": "string"
+                },
+                "source_uri": {
+                  "name": "sourceUri",
+                  "type": "string (URI)"
+                },
+                "status": {
+                  "name": "status",
+                  "type": "'queued' | 'running' | 'completed' | 'failed'"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/entities/rendition"
+                  },
+                  "relation": "includes",
+                  "label": "produces",
+                  "cardinality": "*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/valueobjects/ladder"
+                  },
+                  "relation": "uses",
+                  "label": "planned-as",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "rendition": {
+              "name": "Rendition",
+              "description": "One codec, bitrate and resolution; an entity because each is addressed by the player",
+              "root": false,
+              "attributes": {
+                "rendition_id": {
+                  "name": "renditionId",
+                  "type": "string",
+                  "identity": true
+                },
+                "codec": {
+                  "name": "codec",
+                  "type": "string"
+                },
+                "bitrate_kbps": {
+                  "name": "bitrateKbps",
+                  "type": "int"
+                },
+                "height": {
+                  "name": "height",
+                  "type": "int"
+                }
+              },
+              "relations": []
+            }
+          },
+          "valueobjects": {
+            "ladder": {
+              "name": "Ladder",
+              "description": "The planned rungs: bitrate and resolution pairs chosen for this title's content",
+              "attributes": {
+                "rungs": {
+                  "name": "rungs",
+                  "type": "{bitrateKbps, height}[]"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "ladder_has_lowest_rung": {
+              "name": "LadderHasLowestRung",
+              "description": "Every ladder has a rung under 300 kbit/s so a stream starts on a bad network",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/valueobjects/ladder"
+                }
+              ]
+            },
+            "renditions_match_ladder": {
+              "name": "RenditionsMatchLadder",
+              "description": "A completed job has exactly one rendition per planned rung",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/entities/rendition"
+                },
+                {
+                  "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/valueobjects/ladder"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {
+        "per_title_ladder_planner": {
+          "name": "PerTitleLadderPlanner",
+          "description": "Analyses the source and chooses rungs; a domain service because it compares against every previous title",
+          "type": "domain",
+          "provides": {
+            "plan_ladder": {
+              "name": "PlanLadder",
+              "description": "Choose the ladder for a queued job",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {
+        "plan_ladder_on_queue": {
+          "name": "Plan ladder on queue",
+          "description": "Every queued job gets a per-title ladder before it runs",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/encode_queued"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/encoding/services/per_title_ladder_planner/provides/plan_ladder"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "ladder": {
+          "name": "Ladder",
+          "definition": "The set of bitrate and resolution rungs a title is encoded at",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/valueobjects/ladder"
+          }
+        },
+        "rendition": {
+          "name": "Rendition",
+          "definition": "One encoded version of a title. Older documents say profile, which collides with member profiles",
+          "aliases": [
+            "Profile"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/entities/rendition"
+          }
+        }
+      },
+      "schemas": {
+        "submit_encode": {
+          "name": "SubmitEncode",
+          "attributes": {
+            "title_id": {
+              "name": "titleId",
+              "type": "string"
+            },
+            "source_uri": {
+              "name": "sourceUri",
+              "type": "string (URI)"
+            }
+          }
+        },
+        "encoding_completed": {
+          "name": "EncodingCompleted",
+          "description": "The rendition list the catalogue and the edge react to",
+          "attributes": {
+            "job_id": {
+              "name": "jobId",
+              "type": "string",
+              "identity": true
+            },
+            "title_id": {
+              "name": "titleId",
+              "type": "string"
+            },
+            "rendition_ids": {
+              "name": "renditionIds",
+              "type": "string[]"
+            }
+          }
+        }
+      }
+    },
+    "playback": {
+      "name": "Playback",
+      "description": "Sessions, manifests and bitrate selection",
+      "subdomains": [
+        {
+          "$ref": "#/domains/viewing/subdomains/playback"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/playback_team"
+      },
+      "aggregates": {
+        "playback_session": {
+          "name": "PlaybackSession",
+          "description": "One profile watching one title on one device",
+          "provides": {
+            "playback_started": {
+              "name": "PlaybackStarted",
+              "description": "A session began; the ads tier prepares breaks",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/catalogue/schemas/title_ref"
+              }
+            },
+            "playback_stopped": {
+              "name": "PlaybackStopped",
+              "description": "A session ended, with how much was watched",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/playback/schemas/playback_stopped"
+              }
+            },
+            "bookmark_updated": {
+              "name": "BookmarkUpdated",
+              "description": "The resume point moved; a player detail, not a business fact",
+              "type": "event",
+              "internal": true
+            },
+            "start_playback": {
+              "name": "StartPlayback",
+              "description": "Check entitlement and device, build the manifest, start",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/playback/schemas/start_playback"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_started"
+                }
+              ]
+            },
+            "stop_playback": {
+              "name": "StopPlayback",
+              "description": "End the session and report what was watched",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_stopped"
+                }
+              ]
+            },
+            "record_heartbeat": {
+              "name": "RecordHeartbeat",
+              "description": "The player reports position every few seconds",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/bookmark_updated"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalogue/services/catalogue_api/provides/get_title"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/edge_delivery/aggregates/edge_appliance/provides/resolve_edge"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/devices/aggregates/device/provides/device_certified"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/provides/get_entitlement"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/provides/resolve_ad_break"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ],
+          "entities": {
+            "playback_session": {
+              "name": "PlaybackSession",
+              "description": "The unit playback rules are stated about",
+              "root": true,
+              "attributes": {
+                "session_id": {
+                  "name": "sessionId",
+                  "type": "string",
+                  "identity": true
+                },
+                "profile_id": {
+                  "name": "profileId",
+                  "type": "string"
+                },
+                "title_id": {
+                  "name": "titleId",
+                  "type": "string"
+                },
+                "device_id": {
+                  "name": "deviceId",
+                  "type": "string"
+                },
+                "bookmark": {
+                  "name": "bookmark",
+                  "type": "Bookmark",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/playback/aggregates/playback_session/valueobjects/bookmark"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/playback/aggregates/playback_session/valueobjects/bookmark"
+                  },
+                  "relation": "uses",
+                  "label": "resumes-at",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/playback/aggregates/playback_session/valueobjects/stream_manifest"
+                  },
+                  "relation": "uses",
+                  "label": "streams-from",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
+                  },
+                  "relation": "references",
+                  "label": "plays",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "bookmark": {
+              "name": "Bookmark",
+              "description": "The resume point; updated every few seconds, kept inside the player",
+              "attributes": {
+                "position_seconds": {
+                  "name": "positionSeconds",
+                  "type": "int"
+                }
+              },
+              "relations": []
+            },
+            "stream_manifest": {
+              "name": "StreamManifest",
+              "description": "The renditions and the edge to fetch from, in the format shared with Edge Delivery",
+              "attributes": {
+                "rendition_ids": {
+                  "name": "renditionIds",
+                  "type": "string[]"
+                },
+                "edge_url": {
+                  "name": "edgeUrl",
+                  "type": "string (URL)"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "session_needs_entitlement": {
+              "name": "SessionNeedsEntitlement",
+              "description": "A session starts only with a current entitlement from billing",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/entities/playback_session"
+                }
+              ]
+            },
+            "within_stream_limit": {
+              "name": "WithinStreamLimit",
+              "description": "A household never has more concurrent sessions than its plan allows",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/entities/playback_session"
+                }
+              ]
+            },
+            "bookmark_within_runtime": {
+              "name": "BookmarkWithinRuntime",
+              "description": "The resume point never exceeds the title's runtime",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/valueobjects/bookmark"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {
+        "adaptive_bitrate_selector": {
+          "name": "AdaptiveBitrateSelector",
+          "description": "Picks the rung as the network changes; a domain service because it reasons over the whole ladder, not one session",
+          "type": "domain",
+          "provides": {
+            "select_rendition": {
+              "name": "SelectRendition",
+              "description": "Choose the next segment's rendition",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {},
+      "glossary": {
+        "session": {
+          "name": "Session",
+          "definition": "One profile watching one title on one device",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/playback/aggregates/playback_session"
+          }
+        },
+        "bookmark": {
+          "name": "Bookmark",
+          "definition": "Where playback resumes",
+          "aliases": [
+            "Resume point"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/playback/aggregates/playback_session/valueobjects/bookmark"
+          }
+        }
+      },
+      "schemas": {
+        "start_playback": {
+          "name": "StartPlayback",
+          "attributes": {
+            "profile_id": {
+              "name": "profileId",
+              "type": "string"
+            },
+            "title_id": {
+              "name": "titleId",
+              "type": "string"
+            },
+            "device_id": {
+              "name": "deviceId",
+              "type": "string"
+            }
+          }
+        },
+        "playback_stopped": {
+          "name": "PlaybackStopped",
+          "description": "The fact personalisation learns from",
+          "attributes": {
+            "session_id": {
+              "name": "sessionId",
+              "type": "string",
+              "identity": true
+            },
+            "profile_id": {
+              "name": "profileId",
+              "type": "string"
+            },
+            "title_id": {
+              "name": "titleId",
+              "type": "string"
+            },
+            "watched_seconds": {
+              "name": "watchedSeconds",
+              "type": "int"
+            },
+            "completed": {
+              "name": "completed",
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "edge_delivery": {
+      "name": "Edge Delivery",
+      "description": "Appliances in ISPs and what they cache",
+      "subdomains": [
+        {
+          "$ref": "#/domains/viewing/subdomains/edge_delivery"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/edge_delivery_team"
+      },
+      "aggregates": {
+        "edge_appliance": {
+          "name": "EdgeAppliance",
+          "description": "A cache box in an ISP and what it holds",
+          "provides": {
+            "asset_prepositioned": {
+              "name": "AssetPrepositioned",
+              "description": "A rendition was pushed to an appliance ahead of demand",
+              "type": "event",
+              "internal": true
+            },
+            "resolve_edge": {
+              "name": "ResolveEdge",
+              "description": "Which appliance a client should fetch from",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/edge_delivery/schemas/resolve_edge"
+              }
+            },
+            "preposition_asset": {
+              "name": "PrepositionAsset",
+              "description": "Push a rendition to appliances predicted to need it",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/edge_delivery/aggregates/edge_appliance/provides/asset_prepositioned"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/encoding_completed"
+              },
+              "pattern": "conformist"
+            }
+          ],
+          "entities": {
+            "edge_appliance": {
+              "name": "EdgeAppliance",
+              "description": "One box, one ISP, one region",
+              "root": true,
+              "attributes": {
+                "appliance_id": {
+                  "name": "applianceId",
+                  "type": "string",
+                  "identity": true
+                },
+                "isp_name": {
+                  "name": "ispName",
+                  "type": "string"
+                },
+                "region": {
+                  "name": "region",
+                  "type": "string",
+                  "description": "A cache region; not a licensing territory"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/edge_delivery/aggregates/edge_appliance/entities/cached_asset"
+                  },
+                  "relation": "includes",
+                  "label": "caches",
+                  "cardinality": "*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/edge_delivery/aggregates/edge_appliance/valueobjects/capacity"
+                  },
+                  "relation": "uses",
+                  "label": "sized",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "cached_asset": {
+              "name": "CachedAsset",
+              "description": "One rendition on disk with its last hit time",
+              "root": false,
+              "attributes": {
+                "rendition_id": {
+                  "name": "renditionId",
+                  "type": "string",
+                  "identity": true
+                },
+                "bytes": {
+                  "name": "bytes",
+                  "type": "int64"
+                },
+                "last_hit_at": {
+                  "name": "lastHitAt",
+                  "type": "date-time"
+                }
+              },
+              "relations": []
+            }
+          },
+          "valueobjects": {
+            "capacity": {
+              "name": "Capacity",
+              "description": "Disk bytes available for cache",
+              "attributes": {
+                "bytes": {
+                  "name": "bytes",
+                  "type": "int64"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "cached_bytes_within_capacity": {
+              "name": "CachedBytesWithinCapacity",
+              "description": "Cached bytes never exceed capacity; pre-positioning evicts",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/edge_delivery/aggregates/edge_appliance/entities/cached_asset"
+                },
+                {
+                  "$ref": "#/boundedcontexts/edge_delivery/aggregates/edge_appliance/valueobjects/capacity"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {},
+      "policies": {
+        "preposition_on_encode": {
+          "name": "Preposition on encode",
+          "description": "New renditions are pushed to appliances by predicted popularity",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/encoding_completed"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/edge_delivery/aggregates/edge_appliance/provides/preposition_asset"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "appliance": {
+          "name": "Appliance",
+          "definition": "A cache box installed in an ISP's network",
+          "aliases": [
+            "Open cache box"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/edge_delivery/aggregates/edge_appliance"
+          }
+        },
+        "region": {
+          "name": "Region",
+          "definition": "A group of appliances by network geography. Not a licensing territory",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/edge_delivery/aggregates/edge_appliance/entities/edge_appliance"
+          }
+        }
+      },
+      "schemas": {
+        "resolve_edge": {
+          "name": "ResolveEdge",
+          "attributes": {
+            "client_ip": {
+              "name": "clientIp",
+              "type": "string"
+            },
+            "rendition_ids": {
+              "name": "renditionIds",
+              "type": "string[]"
+            }
+          }
+        }
+      }
+    },
+    "devices": {
+      "name": "Devices",
+      "description": "Partner device models and their certification",
+      "subdomains": [
+        {
+          "$ref": "#/domains/viewing/subdomains/devices"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/partner_devices_team"
+      },
+      "aggregates": {
+        "device": {
+          "name": "Device",
+          "description": "A partner device model and its certifications",
+          "provides": {
+            "device_registered": {
+              "name": "DeviceRegistered",
+              "description": "A partner submitted a model",
+              "type": "event",
+              "internal": true
+            },
+            "device_certified": {
+              "name": "DeviceCertified",
+              "description": "A model passed against an SDK version; Playback may use it",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/devices/schemas/device_certified"
+              }
+            },
+            "register_device": {
+              "name": "RegisterDevice",
+              "description": "Submit a model with its capabilities",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/devices/aggregates/device/provides/device_registered"
+                }
+              ]
+            },
+            "certify": {
+              "name": "Certify",
+              "description": "Run the certification suite against an SDK",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/devices/aggregates/device/provides/device_certified"
+                }
+              ]
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "device": {
+              "name": "Device",
+              "description": "One model from one partner",
+              "root": true,
+              "attributes": {
+                "device_id": {
+                  "name": "deviceId",
+                  "type": "string",
+                  "identity": true
+                },
+                "partner": {
+                  "name": "partner",
+                  "type": "string"
+                },
+                "model": {
+                  "name": "model",
+                  "type": "string"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/devices/aggregates/device/entities/certification"
+                  },
+                  "relation": "includes",
+                  "label": "certified-by",
+                  "cardinality": "*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/devices/aggregates/device/valueobjects/capability"
+                  },
+                  "relation": "uses",
+                  "label": "capable-of",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "certification": {
+              "name": "Certification",
+              "description": "A pass or fail against one SDK version",
+              "root": false,
+              "attributes": {
+                "sdk_version": {
+                  "name": "sdkVersion",
+                  "type": "string",
+                  "identity": true
+                },
+                "passed": {
+                  "name": "passed",
+                  "type": "boolean"
+                },
+                "certified_on": {
+                  "name": "certifiedOn",
+                  "type": "date"
+                }
+              },
+              "relations": []
+            }
+          },
+          "valueobjects": {
+            "capability": {
+              "name": "Capability",
+              "description": "Codecs, DRM level and maximum resolution",
+              "attributes": {
+                "codecs": {
+                  "name": "codecs",
+                  "type": "string[]"
+                },
+                "drm_level": {
+                  "name": "drmLevel",
+                  "type": "string"
+                },
+                "max_height": {
+                  "name": "maxHeight",
+                  "type": "int"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "certified_before_playback": {
+              "name": "CertifiedBeforePlayback",
+              "description": "A device plays only with a passed certification against the current SDK",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/devices/aggregates/device/entities/certification"
+                }
+              ]
+            },
+            "capabilities_declared": {
+              "name": "CapabilitiesDeclared",
+              "description": "A device is registered with its capabilities or not at all",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/devices/aggregates/device/valueobjects/capability"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {},
+      "policies": {
+        "recertify_on_sdk_release": {
+          "name": "Recertify on SDK release",
+          "description": "When a new SDK ships, every certified device should be recertified",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/devices/aggregates/device/provides/device_certified"
+            }
+          ],
+          "then": []
+        }
+      },
+      "glossary": {
+        "device": {
+          "name": "Device",
+          "definition": "A partner device model, not an individual unit",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/devices/aggregates/device"
+          }
+        }
+      },
+      "schemas": {
+        "device_certified": {
+          "name": "DeviceCertified",
+          "attributes": {
+            "device_id": {
+              "name": "deviceId",
+              "type": "string",
+              "identity": true
+            },
+            "sdk_version": {
+              "name": "sdkVersion",
+              "type": "string"
+            },
+            "capability": {
+              "name": "capability",
+              "type": "Capability",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/devices/aggregates/device/valueobjects/capability"
+              }
+            }
+          }
+        }
+      }
+    },
+    "recommendations": {
+      "name": "Recommendations",
+      "description": "Taste profiles and the ranker behind the home screen",
+      "subdomains": [
+        {
+          "$ref": "#/domains/personalisation/subdomains/recommendations"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/personalisation_team"
+      },
+      "aggregates": {
+        "taste_profile": {
+          "name": "TasteProfile",
+          "description": "What one profile has watched and what it is inferred to like",
+          "provides": {
+            "record_signal": {
+              "name": "RecordSignal",
+              "description": "Add a viewing signal from a stopped session",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_stopped"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/title_published"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/bookmark_updated"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/profile_created"
+              },
+              "pattern": "conformist"
+            }
+          ],
+          "entities": {
+            "taste_profile": {
+              "name": "TasteProfile",
+              "description": "One per member profile",
+              "root": true,
+              "attributes": {
+                "profile_id": {
+                  "name": "profileId",
+                  "type": "string",
+                  "identity": true
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/recommendations/aggregates/taste_profile/entities/signal"
+                  },
+                  "relation": "includes",
+                  "label": "built-from",
+                  "cardinality": "*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/recommendations/aggregates/taste_profile/valueobjects/affinity"
+                  },
+                  "relation": "uses",
+                  "label": "leans-to",
+                  "cardinality": "*"
+                }
+              ]
+            },
+            "signal": {
+              "name": "Signal",
+              "description": "One viewing fact with a weight and a time; an entity because signals decay and are audited",
+              "root": false,
+              "attributes": {
+                "signal_id": {
+                  "name": "signalId",
+                  "type": "string",
+                  "identity": true
+                },
+                "title_id": {
+                  "name": "titleId",
+                  "type": "string"
+                },
+                "kind": {
+                  "name": "kind",
+                  "type": "'watched' | 'completed' | 'abandoned' | 'rated'"
+                },
+                "weight": {
+                  "name": "weight",
+                  "type": "float"
+                },
+                "at": {
+                  "name": "at",
+                  "type": "date-time"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
+                  },
+                  "relation": "references",
+                  "label": "about",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "affinity": {
+              "name": "Affinity",
+              "description": "A genre or theme and how strongly the profile leans to it",
+              "attributes": {
+                "genre": {
+                  "name": "genre",
+                  "type": "string"
+                },
+                "score": {
+                  "name": "score",
+                  "type": "float 0..1"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "signals_from_own_profile_only": {
+              "name": "SignalsFromOwnProfileOnly",
+              "description": "A taste profile holds signals from its own profile, never another in the household",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/recommendations/aggregates/taste_profile/entities/signal"
+                }
+              ]
+            },
+            "no_advertising_signals": {
+              "name": "NoAdvertisingSignals",
+              "description": "No signal originates from the ads tier; a public commitment",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/recommendations/aggregates/taste_profile/entities/signal"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {
+        "ranker": {
+          "name": "Ranker",
+          "description": "Orders candidate titles into rows for a profile; a domain service because it reads across every taste profile's affinities",
+          "type": "domain",
+          "provides": {
+            "rank_rows": {
+              "name": "RankRows",
+              "description": "Build the home screen rows for a profile",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": []
+        },
+        "recommendations_api": {
+          "name": "RecommendationsAPI",
+          "description": "What the apps call for the home screen",
+          "type": "application",
+          "provides": {
+            "get_homepage_rows": {
+              "name": "GetHomepageRows",
+              "description": "Rows for a profile, ranked",
+              "pattern": "open-host-service",
+              "type": "operation"
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {
+        "record_signal_on_stop": {
+          "name": "Record signal on stop",
+          "description": "Every stopped session becomes a signal on the profile's taste",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_stopped"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/recommendations/aggregates/taste_profile/provides/record_signal"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "row": {
+          "name": "Row",
+          "definition": "A horizontal list on the home screen, ranked for one profile",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/recommendations/services/ranker"
+          }
+        },
+        "signal": {
+          "name": "Signal",
+          "definition": "One viewing fact that shapes a taste profile",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/recommendations/aggregates/taste_profile/entities/signal"
+          }
+        }
+      },
+      "schemas": {}
+    },
+    "households_&_profiles": {
+      "name": "Households & Profiles",
+      "description": "The paying unit and up to five profiles",
+      "subdomains": [
+        {
+          "$ref": "#/domains/members/subdomains/households_&_profiles"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/member_experience_team"
+      },
+      "aggregates": {
+        "household": {
+          "name": "Household",
+          "description": "The paying unit and the people in it; profile rules are checked across the household",
+          "provides": {
+            "household_created": {
+              "name": "HouseholdCreated",
+              "description": "A new paying unit exists, without a plan yet",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/households_&_profiles/schemas/household_created"
+              }
+            },
+            "profile_created": {
+              "name": "ProfileCreated",
+              "description": "A profile exists; personalisation starts a taste profile",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/households_&_profiles/schemas/profile_created"
+              }
+            },
+            "create_household": {
+              "name": "CreateHousehold",
+              "description": "Create the household and its primary profile for a new account",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/household_created"
+                },
+                {
+                  "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/profile_created"
+                }
+              ]
+            },
+            "create_profile": {
+              "name": "CreateProfile",
+              "description": "Add a profile, within the limit",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/households_&_profiles/schemas/profile_created"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/profile_created"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/identity/aggregates/account/provides/account_created"
+              },
+              "pattern": "conformist"
+            }
+          ],
+          "entities": {
+            "household": {
+              "name": "Household",
+              "description": "One paying unit",
+              "root": true,
+              "attributes": {
+                "household_id": {
+                  "name": "householdId",
+                  "type": "string",
+                  "identity": true
+                },
+                "account_id": {
+                  "name": "accountId",
+                  "type": "string"
+                },
+                "country": {
+                  "name": "country",
+                  "type": "ISO 3166 code"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/profile"
+                  },
+                  "relation": "includes",
+                  "label": "has-profiles",
+                  "cardinality": "1..*"
+                }
+              ]
+            },
+            "profile": {
+              "name": "Profile",
+              "description": "One person's viewing identity",
+              "root": false,
+              "attributes": {
+                "profile_id": {
+                  "name": "profileId",
+                  "type": "string",
+                  "identity": true
+                },
+                "name": {
+                  "name": "name",
+                  "type": "string"
+                },
+                "kids": {
+                  "name": "kids",
+                  "type": "boolean"
+                },
+                "primary": {
+                  "name": "primary",
+                  "type": "boolean"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/valueobjects/maturity_setting"
+                  },
+                  "relation": "uses",
+                  "label": "limited-to",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/valueobjects/profile_pin"
+                  },
+                  "relation": "uses",
+                  "label": "locked-by",
+                  "cardinality": "0..1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "maturity_setting": {
+              "name": "MaturitySetting",
+              "description": "The highest rating a profile may play",
+              "attributes": {
+                "max_rating": {
+                  "name": "maxRating",
+                  "type": "string"
+                }
+              },
+              "relations": []
+            },
+            "profile_pin": {
+              "name": "ProfilePin",
+              "description": "Four digits that unlock a profile or raise a maturity cap",
+              "attributes": {
+                "hash": {
+                  "name": "hash",
+                  "type": "string"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "max_five_profiles": {
+              "name": "MaxFiveProfiles",
+              "description": "A household has at most five profiles",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/household"
+                }
+              ]
+            },
+            "one_primary_profile": {
+              "name": "OnePrimaryProfile",
+              "description": "Exactly one profile is primary",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/profile"
+                }
+              ]
+            },
+            "kids_profile_maturity_capped": {
+              "name": "KidsProfileMaturityCapped",
+              "description": "A kids profile's maturity cap cannot be raised without the PIN",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/valueobjects/maturity_setting"
+                },
+                {
+                  "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/valueobjects/profile_pin"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {},
+      "policies": {
+        "create_household_on_account": {
+          "name": "Create household on account",
+          "description": "Every new account gets a household and a primary profile",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/identity/aggregates/account/provides/account_created"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/create_household"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "household": {
+          "name": "Household",
+          "definition": "The paying unit and its profiles. Identity's account is the login, not this",
+          "aliases": [
+            "Account"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household"
+          }
+        },
+        "profile": {
+          "name": "Profile",
+          "definition": "One person's viewing identity within a household",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/profile"
+          }
+        }
+      },
+      "schemas": {
+        "household_created": {
+          "name": "HouseholdCreated",
+          "attributes": {
+            "household_id": {
+              "name": "householdId",
+              "type": "string",
+              "identity": true
+            },
+            "account_id": {
+              "name": "accountId",
+              "type": "string"
+            },
+            "country": {
+              "name": "country",
+              "type": "ISO 3166 code"
+            }
+          }
+        },
+        "profile_created": {
+          "name": "ProfileCreated",
+          "attributes": {
+            "profile_id": {
+              "name": "profileId",
+              "type": "string",
+              "identity": true
+            },
+            "household_id": {
+              "name": "householdId",
+              "type": "string"
+            },
+            "kids": {
+              "name": "kids",
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "billing_&_plans": {
+      "name": "Billing & Plans",
+      "description": "Subscriptions, invoices and entitlement",
+      "subdomains": [
+        {
+          "$ref": "#/domains/members/subdomains/billing_&_plans"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/commerce_team"
+      },
+      "aggregates": {
+        "subscription": {
+          "name": "Subscription",
+          "description": "A household on a plan, and its invoices",
+          "provides": {
+            "subscription_activated": {
+              "name": "SubscriptionActivated",
+              "description": "A household is paying",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/billing_&_plans/schemas/subscription_ref"
+              }
+            },
+            "subscription_lapsed": {
+              "name": "SubscriptionLapsed",
+              "description": "Dunning failed; entitlement ends",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/billing_&_plans/schemas/subscription_ref"
+              }
+            },
+            "payment_failed": {
+              "name": "PaymentFailed",
+              "description": "A renewal charge bounced",
+              "type": "event",
+              "internal": true
+            },
+            "start_subscription": {
+              "name": "StartSubscription",
+              "description": "Put a household on a plan",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/billing_&_plans/schemas/subscription_ref"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/provides/subscription_activated"
+                }
+              ]
+            },
+            "get_entitlement": {
+              "name": "GetEntitlement",
+              "description": "Whether a household may stream, and how many at once",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/billing_&_plans/schemas/entitlement_request"
+              }
+            },
+            "charge_renewal": {
+              "name": "ChargeRenewal",
+              "description": "Invoice and charge the next period",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/provides/payment_failed"
+                }
+              ]
+            },
+            "start_dunning": {
+              "name": "StartDunning",
+              "description": "Retry the charge over a grace period",
+              "type": "operation",
+              "internal": true
+            },
+            "lapse_subscription": {
+              "name": "LapseSubscription",
+              "description": "End entitlement after dunning fails",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/provides/subscription_lapsed"
+                }
+              ]
+            },
+            "add_invoice_line": {
+              "name": "AddInvoiceLine",
+              "description": "Add a charge from another line of business to the household's bill",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/household_created"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/disc_rental_(legacy)/aggregates/rental_queue/provides/disc_rental_invoiced"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ],
+          "entities": {
+            "subscription": {
+              "name": "Subscription",
+              "description": "The household's current arrangement",
+              "root": true,
+              "attributes": {
+                "subscription_id": {
+                  "name": "subscriptionId",
+                  "type": "string",
+                  "identity": true
+                },
+                "household_id": {
+                  "name": "householdId",
+                  "type": "string"
+                },
+                "status": {
+                  "name": "status",
+                  "type": "'active' | 'dunning' | 'lapsed'"
+                },
+                "plan": {
+                  "name": "plan",
+                  "type": "Plan",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/plan"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/entities/invoice"
+                  },
+                  "relation": "includes",
+                  "label": "billed-by",
+                  "cardinality": "*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/plan"
+                  },
+                  "relation": "uses",
+                  "label": "on-plan",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "invoice": {
+              "name": "Invoice",
+              "description": "One period's charge; an entity because it is numbered and paid",
+              "root": false,
+              "attributes": {
+                "invoice_id": {
+                  "name": "invoiceId",
+                  "type": "string",
+                  "identity": true
+                },
+                "amount": {
+                  "name": "amount",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/money"
+                  }
+                },
+                "paid": {
+                  "name": "paid",
+                  "type": "boolean"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/billing_period"
+                  },
+                  "relation": "uses",
+                  "label": "covers",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "charges",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "plan": {
+              "name": "Plan",
+              "description": "A tier: price, concurrent streams, ad-supported or not",
+              "attributes": {
+                "tier": {
+                  "name": "tier",
+                  "type": "'basic-with-ads' | 'standard' | 'premium'"
+                },
+                "price": {
+                  "name": "price",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/money"
+                  }
+                },
+                "max_streams": {
+                  "name": "maxStreams",
+                  "type": "int"
+                },
+                "ad_supported": {
+                  "name": "adSupported",
+                  "type": "boolean"
+                }
+              },
+              "relations": []
+            },
+            "money": {
+              "name": "Money",
+              "description": "An amount in a currency: minor units and an ISO 4217 code",
+              "attributes": {
+                "amount_minor": {
+                  "name": "amountMinor",
+                  "type": "int64"
+                },
+                "currency": {
+                  "name": "currency",
+                  "type": "ISO 4217 code"
+                }
+              },
+              "relations": []
+            },
+            "billing_period": {
+              "name": "BillingPeriod",
+              "description": "The month an invoice covers",
+              "attributes": {
+                "from": {
+                  "name": "from",
+                  "type": "date"
+                },
+                "to": {
+                  "name": "to",
+                  "type": "date"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "one_active_subscription_per_household": {
+              "name": "OneActiveSubscriptionPerHousehold",
+              "description": "A household has at most one active subscription",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/entities/subscription"
+                }
+              ]
+            },
+            "invoice_amount_equals_plan_price": {
+              "name": "InvoiceAmountEqualsPlanPrice",
+              "description": "An invoice charges exactly the plan price for its period",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/entities/invoice"
+                },
+                {
+                  "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/plan"
+                }
+              ]
+            },
+            "no_entitlement_when_lapsed": {
+              "name": "NoEntitlementWhenLapsed",
+              "description": "A lapsed subscription entitles nothing",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/entities/subscription"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {},
+      "policies": {
+        "dun_on_failed_payment": {
+          "name": "Dun on failed payment",
+          "description": "A failed renewal starts the grace period, not an immediate lapse",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/provides/payment_failed"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/provides/start_dunning"
+            }
+          ]
+        },
+        "add_disc_charge_to_bill": {
+          "name": "Add disc charge to bill",
+          "description": "The legacy export is translated into an invoice line on the household",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/disc_rental_(legacy)/aggregates/rental_queue/provides/disc_rental_invoiced"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/provides/add_invoice_line"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "plan": {
+          "name": "Plan",
+          "definition": "A tier with a price, a stream limit and whether it carries ads",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/plan"
+          }
+        },
+        "entitlement": {
+          "name": "Entitlement",
+          "definition": "The right to stream, derived from an active subscription",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/provides/get_entitlement"
+          }
+        }
+      },
+      "schemas": {
+        "subscription_ref": {
+          "name": "SubscriptionRef",
+          "attributes": {
+            "subscription_id": {
+              "name": "subscriptionId",
+              "type": "string",
+              "identity": true
+            },
+            "household_id": {
+              "name": "householdId",
+              "type": "string"
+            }
+          }
+        },
+        "entitlement_request": {
+          "name": "EntitlementRequest",
+          "description": "What Playback asks: which household, for how many streams",
+          "attributes": {
+            "household_id": {
+              "name": "householdId",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "identity": {
+      "name": "Identity",
+      "description": "Accounts and sign-in",
+      "subdomains": [
+        {
+          "$ref": "#/domains/members/subdomains/identity"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/identity_team"
+      },
+      "aggregates": {
+        "account": {
+          "name": "Account",
+          "description": "A login",
+          "provides": {
+            "account_created": {
+              "name": "AccountCreated",
+              "description": "Someone signed up",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/identity/schemas/account_created"
+              }
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "account": {
+              "name": "Account",
+              "description": "Email and credentials",
+              "root": true,
+              "attributes": {
+                "account_id": {
+                  "name": "accountId",
+                  "type": "string",
+                  "identity": true
+                },
+                "email": {
+                  "name": "email",
+                  "type": "string"
+                }
+              },
+              "relations": []
+            }
+          },
+          "valueobjects": {},
+          "invariants": {}
+        }
+      },
+      "services": {
+        "identity_api": {
+          "name": "IdentityAPI",
+          "description": "Sign-up and sign-in",
+          "type": "application",
+          "provides": {
+            "create_account": {
+              "name": "CreateAccount",
+              "description": "Sign up",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/identity/aggregates/account/provides/account_created"
+                }
+              ]
+            },
+            "sign_in": {
+              "name": "SignIn",
+              "description": "Authenticate",
+              "pattern": "open-host-service",
+              "type": "operation"
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {},
+      "glossary": {},
+      "schemas": {
+        "account_created": {
+          "name": "AccountCreated",
+          "attributes": {
+            "account_id": {
+              "name": "accountId",
+              "type": "string",
+              "identity": true
+            },
+            "country": {
+              "name": "country",
+              "type": "ISO 3166 code"
+            }
+          }
+        }
+      }
+    },
+    "ads_tier": {
+      "name": "Ads Tier",
+      "description": "Breaks, slots and impressions for the ad-supported plan",
+      "subdomains": [
+        {
+          "$ref": "#/domains/advertising/subdomains/ads_tier"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/ads_team"
+      },
+      "aggregates": {
+        "ad_break": {
+          "name": "AdBreak",
+          "description": "A pod of slots at a position in a session",
+          "provides": {
+            "ad_impression_recorded": {
+              "name": "AdImpressionRecorded",
+              "description": "A creative was shown",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/ads_tier/schemas/ad_impression_recorded"
+              }
+            },
+            "resolve_ad_break": {
+              "name": "ResolveAdBreak",
+              "description": "The slots for a break the player has reached",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/ads_tier/schemas/resolve_ad_break"
+              }
+            },
+            "prepare_breaks": {
+              "name": "PrepareBreaks",
+              "description": "Plan the breaks for a session by plan and country",
+              "type": "operation",
+              "internal": true
+            },
+            "record_impression": {
+              "name": "RecordImpression",
+              "description": "The player confirmed a creative played",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/provides/ad_impression_recorded"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_started"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ],
+          "entities": {
+            "ad_break": {
+              "name": "AdBreak",
+              "description": "One break in one session",
+              "root": true,
+              "attributes": {
+                "break_id": {
+                  "name": "breakId",
+                  "type": "string",
+                  "identity": true
+                },
+                "session_id": {
+                  "name": "sessionId",
+                  "type": "string"
+                },
+                "position_seconds": {
+                  "name": "positionSeconds",
+                  "type": "int"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/entities/ad_slot"
+                  },
+                  "relation": "includes",
+                  "label": "filled-by",
+                  "cardinality": "1..*"
+                }
+              ]
+            },
+            "ad_slot": {
+              "name": "AdSlot",
+              "description": "One creative in the break",
+              "root": false,
+              "attributes": {
+                "slot_id": {
+                  "name": "slotId",
+                  "type": "string",
+                  "identity": true
+                },
+                "creative_id": {
+                  "name": "creativeId",
+                  "type": "string"
+                },
+                "duration_seconds": {
+                  "name": "durationSeconds",
+                  "type": "int"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/valueobjects/advertiser"
+                  },
+                  "relation": "uses",
+                  "label": "paid-by",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/valueobjects/frequency_cap"
+                  },
+                  "relation": "uses",
+                  "label": "capped",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "advertiser": {
+              "name": "Advertiser",
+              "description": "Who paid for the creative",
+              "attributes": {
+                "name": {
+                  "name": "name",
+                  "type": "string"
+                }
+              },
+              "relations": []
+            },
+            "frequency_cap": {
+              "name": "FrequencyCap",
+              "description": "How often one creative may be shown to a household",
+              "attributes": {
+                "max_per_day": {
+                  "name": "maxPerDay",
+                  "type": "int"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "break_duration_cap": {
+              "name": "BreakDurationCap",
+              "description": "A break is at most ninety seconds",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/entities/ad_break"
+                },
+                {
+                  "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/entities/ad_slot"
+                }
+              ]
+            },
+            "no_repeat_creative_within_break": {
+              "name": "NoRepeatCreativeWithinBreak",
+              "description": "A creative appears at most once per break",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/entities/ad_slot"
+                }
+              ]
+            },
+            "ads_only_on_ad_supported_plan": {
+              "name": "AdsOnlyOnAdSupportedPlan",
+              "description": "Breaks exist only for sessions on the ad-supported plan",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/entities/ad_break"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {},
+      "policies": {
+        "prepare_breaks_on_start": {
+          "name": "Prepare breaks on start",
+          "description": "Breaks are planned when the session starts, before the first one is reached",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_started"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/provides/prepare_breaks"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "pod": {
+          "name": "Pod",
+          "definition": "A break's worth of slots. The player says break",
+          "aliases": [
+            "Break"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break"
+          }
+        },
+        "impression": {
+          "name": "Impression",
+          "definition": "One creative shown once",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/provides/ad_impression_recorded"
+          }
+        }
+      },
+      "schemas": {
+        "resolve_ad_break": {
+          "name": "ResolveAdBreak",
+          "attributes": {
+            "session_id": {
+              "name": "sessionId",
+              "type": "string"
+            },
+            "position_seconds": {
+              "name": "positionSeconds",
+              "type": "int"
+            }
+          }
+        },
+        "ad_impression_recorded": {
+          "name": "AdImpressionRecorded",
+          "description": "What advertiser billing consumes; out of scope here",
+          "attributes": {
+            "slot_id": {
+              "name": "slotId",
+              "type": "string",
+              "identity": true
+            },
+            "creative_id": {
+              "name": "creativeId",
+              "type": "string"
+            },
+            "at": {
+              "name": "at",
+              "type": "date-time"
+            }
+          }
+        }
+      }
+    },
+    "disc_rental_(legacy)": {
+      "name": "Disc Rental (legacy)",
+      "description": "StreamLine Discs: a 2009 monolith with its own accounts and a monthly charge export. Modelled at its edge only",
+      "subdomains": [
+        {
+          "$ref": "#/domains/viewing/subdomains/physical_rental"
+        }
+      ],
+      "bigBallOfMud": true,
+      "team": {
+        "$ref": "#/teams/legacy_operations_team"
+      },
+      "aggregates": {
+        "rental_queue": {
+          "name": "RentalQueue",
+          "description": "As far as anyone knows, the central table",
+          "provides": {
+            "disc_rental_invoiced": {
+              "name": "DiscRentalInvoiced",
+              "description": "The monthly disc charge for a member",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/disc_rental_(legacy)/schemas/disc_rental_invoiced"
+              }
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "rental_queue": {
+              "name": "RentalQueue",
+              "description": "A member's ordered list of discs",
+              "root": true,
+              "attributes": {
+                "legacy_account_id": {
+                  "name": "legacyAccountId",
+                  "type": "string",
+                  "identity": true
+                }
+              },
+              "relations": []
+            }
+          },
+          "valueobjects": {},
+          "invariants": {}
+        }
+      },
+      "services": {},
+      "policies": {},
+      "glossary": {},
+      "schemas": {
+        "disc_rental_invoiced": {
+          "name": "DiscRentalInvoiced",
+          "description": "The monthly export's shape",
+          "attributes": {
+            "legacy_account_id": {
+              "name": "legacyAccountId",
+              "type": "string",
+              "identity": true
+            },
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            }
+          }
+        }
+      }
+    }
+  },
+  "relationships": [
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/studio_production"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/catalogue"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/studio_production"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/encoding"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "The delivery spec is the industry format; translating it would be pointless"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/licensing"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/catalogue"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/encoding"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/catalogue"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Completions come back as events"
+    },
+    {
+      "type": "customer-supplier",
+      "upstream": {
+        "$ref": "#/boundedcontexts/encoding"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/catalogue"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Catalogue is the caller of SubmitEncode and is consulted on its contract"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/encoding"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/edge_delivery"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/catalogue"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/playback"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/catalogue"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/recommendations"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/playback"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/recommendations"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Stopped sessions become signals; see the internal-consumable error for the bookmark feed"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/households_&_profiles"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/recommendations"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "customer-supplier",
+      "upstream": {
+        "$ref": "#/boundedcontexts/billing_&_plans"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/playback"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Entitlement is asked before every start; Playback is consulted on the contract"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/playback"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/ads_tier"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/ads_tier"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/playback"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Breaks are resolved when reached"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/identity"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/households_&_profiles"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/households_&_profiles"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/billing_&_plans"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/disc_rental_(legacy)"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/billing_&_plans"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "The monthly export is translated; nothing else of Discs is touched"
+    },
+    {
+      "type": "shared-kernel",
+      "participants": [
+        {
+          "$ref": "#/boundedcontexts/playback"
+        },
+        {
+          "$ref": "#/boundedcontexts/edge_delivery"
+        }
+      ],
+      "description": "Manifest and segment formats are one library; the 2019 split was reverted"
+    },
+    {
+      "type": "partnership",
+      "participants": [
+        {
+          "$ref": "#/boundedcontexts/playback"
+        },
+        {
+          "$ref": "#/boundedcontexts/devices"
+        }
+      ],
+      "description": "Player and device SDK ship as one release; certification is joint"
+    },
+    {
+      "type": "separate-ways",
+      "participants": [
+        {
+          "$ref": "#/boundedcontexts/ads_tier"
+        },
+        {
+          "$ref": "#/boundedcontexts/recommendations"
+        }
+      ],
+      "description": "Advertising is never a ranking signal and recommendations never reach ads"
+    }
+  ],
+  "teams": {
+    "studio_technology_team": {
+      "name": "Studio Technology Team",
+      "description": "Production tracking and master delivery"
+    },
+    "content_acquisition_team": {
+      "name": "Content Acquisition Team",
+      "description": "Licence deals, windows, territories"
+    },
+    "catalogue_team": {
+      "name": "Catalogue Team",
+      "description": "Titles, availability, artwork"
+    },
+    "media_engineering_team": {
+      "name": "Media Engineering Team",
+      "description": "The encoding pipeline"
+    },
+    "playback_team": {
+      "name": "Playback Team",
+      "description": "The player and sessions; co-owns the format library with Edge Delivery"
+    },
+    "edge_delivery_team": {
+      "name": "Edge Delivery Team",
+      "description": "Appliances in ISPs"
+    },
+    "partner_devices_team": {
+      "name": "Partner Devices Team",
+      "description": "Device registration and certification; releases with Playback"
+    },
+    "personalisation_team": {
+      "name": "Personalisation Team",
+      "description": "Recommendations and ranking"
+    },
+    "member_experience_team": {
+      "name": "Member Experience Team",
+      "description": "Households, profiles, parental controls"
+    },
+    "commerce_team": {
+      "name": "Commerce Team",
+      "description": "Plans, subscriptions, invoices"
+    },
+    "identity_team": {
+      "name": "Identity Team",
+      "description": "Accounts and sign-in"
+    },
+    "ads_team": {
+      "name": "Ads Team",
+      "description": "Ad breaks and impressions"
+    },
+    "legacy_operations_team": {
+      "name": "Legacy Operations Team",
+      "description": "Keeps StreamLine Discs running"
+    }
+  }
+}

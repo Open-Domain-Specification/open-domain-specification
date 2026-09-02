@@ -1,6 +1,9 @@
 import { Workspace } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
+import { workspace as northbank } from "./northbank/workspace";
 import { workspace } from "./petstore/workspace";
+import { workspace as rivermart } from "./rivermart/workspace";
+import { workspace as streamline } from "./streamline/workspace";
 
 describe("Swagger Petstore Example Workspace", () => {
 	it("should create a valid workspace", () => {
@@ -56,12 +59,12 @@ describe("Swagger Petstore Example Workspace", () => {
 		expect(Object.keys(schema.domains).length).toBe(2);
 	});
 
-	it("should have subdomains for Catalog, Sales, Inventory, and Users", () => {
+	it("should have subdomains for Catalog, Sales, Inventory, Fulfilment and Users", () => {
 		const commerceDomain = workspace.getDomainByRef(
 			"#/domains/petstore_commerce",
 		);
 		expect(commerceDomain).toBeDefined();
-		expect(commerceDomain?.subdomains.size).toBe(3); // Catalog, Sales, Inventory
+		expect(commerceDomain?.subdomains.size).toBe(4); // Catalog, Sales, Inventory, Fulfilment
 
 		const catalogSubdomain = workspace.getSubdomainByRefOrThrow(
 			"#/domains/petstore_commerce/subdomains/catalog",
@@ -242,6 +245,42 @@ describe("Swagger Petstore Example Workspace", () => {
 		expect(userApp.consumables.has("logout")).toBe(true);
 		expect(userApp.consumables.has("get_user_by_username")).toBe(true);
 	});
+
+	it("demonstrates every relationship type exactly once", () => {
+		const types = workspace.relationships.map((r) => r.type).sort();
+		expect(types).toEqual([
+			"customer-supplier",
+			"partnership",
+			"separate-ways",
+			"shared-kernel",
+			"upstream-downstream",
+		]);
+	});
+
+	it("demonstrates both service kinds and every relation kind", () => {
+		const serviceTypes = new Set<string>();
+		const relationTypes = new Set<string>();
+		for (const bc of workspace.boundedcontexts.values()) {
+			for (const service of bc.services.values())
+				serviceTypes.add(service.type);
+			for (const aggregate of bc.aggregates.values()) {
+				for (const entity of aggregate.entities.values()) {
+					for (const relation of entity.relations)
+						relationTypes.add(relation.relation);
+				}
+			}
+		}
+		expect([...serviceTypes].sort()).toEqual(["application", "domain"]);
+		expect([...relationTypes].sort()).toEqual([
+			"includes",
+			"references",
+			"uses",
+		]);
+	});
+
+	it("validates clean: the demonstration reference has no diagnostics", () => {
+		expect(workspace.validate()).toEqual([]);
+	});
 });
 
 describe("Swagger Petstore schema round-trip", () => {
@@ -249,5 +288,149 @@ describe("Swagger Petstore schema round-trip", () => {
 		const schema = workspace.toSchema();
 		const rebuilt = Workspace.fromSchema(JSON.parse(JSON.stringify(schema)));
 		expect(rebuilt.toSchema()).toEqual(schema);
+	});
+});
+
+/**
+ * The fake-organisation stress models. Each plants exactly three structural
+ * problems, chosen so that the three workspaces together exercise every rule
+ * in the catalog; see the DELIBERATE comments in each workspace file and
+ * section 7 of its DISCOVERY.md.
+ */
+const referenceModels: Array<{
+	workspace: Workspace;
+	id: string;
+	name: string;
+	minContexts: number;
+	deliberate: Array<{ rule: string; severity: "error" | "warning" }>;
+}> = [
+	{
+		workspace: rivermart,
+		id: "rivermart",
+		name: "RiverMart",
+		minContexts: 12,
+		deliberate: [
+			{ rule: "aggregate-root", severity: "error" },
+			{ rule: "cross-aggregate-reference", severity: "error" },
+			{ rule: "role-coherence", severity: "warning" },
+		],
+	},
+	{
+		workspace: streamline,
+		id: "streamline",
+		name: "StreamLine",
+		minContexts: 12,
+		deliberate: [
+			{ rule: "internal-consumable", severity: "error" },
+			{ rule: "schema-context", severity: "error" },
+			{ rule: "policy-complete", severity: "warning" },
+		],
+	},
+	{
+		workspace: northbank,
+		id: "northbank",
+		name: "NorthBank",
+		minContexts: 12,
+		deliberate: [
+			{ rule: "separate-ways", severity: "error" },
+			{ rule: "consumable-kind", severity: "error" },
+			{ rule: "context-serves-subdomain", severity: "warning" },
+		],
+	},
+];
+
+describe.each(referenceModels)(
+	"$name reference workspace",
+	({ workspace: ws, id, minContexts, deliberate }) => {
+		it("builds with its id and enough contexts to stress the pages", () => {
+			expect(ws.id).toBe(id);
+			expect(ws.boundedcontexts.size).toBeGreaterThanOrEqual(minContexts);
+			expect(ws.relationships.length).toBeGreaterThan(minContexts);
+		});
+
+		it("uses every relationship type and has one big ball of mud", () => {
+			const types = new Set(ws.relationships.map((r) => r.type));
+			expect([...types].sort()).toEqual([
+				"customer-supplier",
+				"partnership",
+				"separate-ways",
+				"shared-kernel",
+				"upstream-downstream",
+			]);
+			const legacy = [...ws.boundedcontexts.values()].filter(
+				(bc) => bc.bigBallOfMud,
+			);
+			expect(legacy).toHaveLength(1);
+		});
+
+		it("gives every context a team", () => {
+			for (const bc of ws.boundedcontexts.values()) {
+				expect(bc.team, `${bc.name} has no team`).toBeDefined();
+			}
+		});
+
+		it("has a glossary, policies and schemas on cross-context events", () => {
+			const contexts = [...ws.boundedcontexts.values()];
+			expect(contexts.some((bc) => bc.glossary.size > 0)).toBe(true);
+			expect(
+				contexts.reduce((n, bc) => n + bc.policies.size, 0),
+			).toBeGreaterThan(5);
+			for (const bc of contexts) {
+				for (const provider of [
+					...bc.aggregates.values(),
+					...bc.services.values(),
+				]) {
+					for (const c of provider.consumables.values()) {
+						const consumedElsewhere = c.consumptions.some(
+							(it) => it.consumer.boundedcontext !== bc,
+						);
+						if (c.type === "event" && consumedElsewhere && !c.internal) {
+							expect(c.schema, `${c.name} has no schema`).toBeDefined();
+						}
+					}
+				}
+			}
+		});
+
+		it("validate() returns exactly the deliberate problems", () => {
+			const diagnostics = ws
+				.validate()
+				.map(({ rule, severity }) => ({ rule, severity }))
+				.sort((a, b) => a.rule.localeCompare(b.rule));
+			expect(diagnostics).toEqual(
+				[...deliberate].sort((a, b) => a.rule.localeCompare(b.rule)),
+			);
+		});
+
+		it("round-trips through Workspace.fromSchema", () => {
+			const schema = ws.toSchema();
+			const rebuilt = Workspace.fromSchema(JSON.parse(JSON.stringify(schema)));
+			expect(rebuilt.toSchema()).toEqual(schema);
+			expect(rebuilt.validate()).toEqual(ws.validate());
+		});
+	},
+);
+
+describe("reference workspaces together", () => {
+	it("cover every validation rule between them", () => {
+		const rules = new Set(
+			referenceModels.flatMap((m) => m.deliberate.map((d) => d.rule)),
+		);
+		expect([...rules].sort()).toEqual([
+			"aggregate-root",
+			"consumable-kind",
+			"context-serves-subdomain",
+			"cross-aggregate-reference",
+			"internal-consumable",
+			"policy-complete",
+			"role-coherence",
+			"schema-context",
+			"separate-ways",
+		]);
+	});
+
+	it("have distinct ids", () => {
+		const ids = [workspace, rivermart, streamline, northbank].map((w) => w.id);
+		expect(new Set(ids).size).toBe(4);
 	});
 });

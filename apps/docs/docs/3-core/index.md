@@ -73,6 +73,27 @@ the ids, so a document round-trips regardless of how its names are spelled.
 Refs never embed the domain or subdomain of a bounded context, so renaming
 those never breaks a ref.
 
+## Reference models
+
+The `ods-example-ws` package in the repository holds four workspaces written
+with the DSL, each generated into a `.ods/*.json` file and used by the viewer,
+the export and the test fixtures:
+
+- **Swagger Petstore** is the demonstration reference. Every feature of the
+  model appears once, descriptions say why each choice was made, and it
+  validates clean. Read this one first.
+- **RiverMart**, a fictional online marketplace, **StreamLine**, a fictional
+  streaming service, and **NorthBank**, a fictional retail bank, are stress
+  models: large enough to exercise the pages, the diagrams and the validation,
+  with a legacy big ball of mud, shared kernels and partnerships, deep
+  aggregates, and a few deliberate structural problems so diagnostics have
+  something to show. Between them the three trigger every rule in the catalog.
+
+Each fictional organisation comes with a `BRIEF.md` describing the business
+and a `DISCOVERY.md` recording the interviews and event-storming session the
+model was drawn from, so every context, relationship, invariant and policy
+can be traced back to something someone said.
+
 ## Installation
 
 ```bash

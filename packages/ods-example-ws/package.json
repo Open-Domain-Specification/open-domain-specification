@@ -6,7 +6,7 @@
 	"scripts": {
 		"clean": "npx rimraf docs .ods",
 		"build": "node src/index.ts",
-		"serve": "docsify serve ./docs",
+		"serve": "docsify serve ./docs/petstore",
 		"test": "vitest run --config vitest.config.ts",
 		"npx depcheck": "npx depcheck"
 	},
