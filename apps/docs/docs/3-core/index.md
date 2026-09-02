@@ -44,14 +44,13 @@ Workspace
 │   │   ├── Consumables
 │   │   └── Consumptions
 │   ├── Glossary Term                       (ubiquitous language, optionally embodied by an element)
-│   ├── Policy                              (on Domain Events → then Commands)
+│   ├── Schema                              (payload shape with attributes, shared by consumables)
+│   ├── Policy                              (on event consumables → then operation consumables)
 │   └── Aggregate
 │       ├── Entities (with attributes)
 │       ├── Value Objects (with attributes)
 │       ├── Invariants
-│       ├── Commands (with attributes; raise Domain Events)
-│       ├── Domain Events (with attributes)
-│       ├── Consumables (an event consumable publishes a domain event; an operation may expose a command)
+│       ├── Consumables (event or operation; may be internal, carry a schema, and operations raise events)
 │       └── Consumptions
 ├── Team                                    (owns bounded contexts)
 └── Context Relationship                    (upstream-downstream, customer-supplier, partnership, shared-kernel, separate-ways)

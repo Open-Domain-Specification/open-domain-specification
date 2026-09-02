@@ -172,11 +172,11 @@ describe("ODSRelationMap", () => {
 describe("ODSFlowMap", () => {
 	const f = makeRichTestWs();
 
-	it("joins events, policies and commands, following what commands raise", () => {
+	it("joins event consumables, policies and operations, following what operations raise", () => {
 		const map = ODSFlowMap.fromBoundedContext(f.invoicingBc);
-		expect(map.nodes.get(f.orderPlacedEvent.ref)?.type).toBe("event");
+		expect(map.nodes.get(f.orderPlaced.ref)?.type).toBe("event");
 		expect(map.nodes.get(f.invoiceOnOrderPlaced.ref)?.type).toBe("policy");
-		expect(map.nodes.get(f.raiseInvoiceCommand.ref)?.type).toBe("command");
+		expect(map.nodes.get(f.raiseInvoice.ref)?.type).toBe("command");
 		const edges = Array.from(map.edges.values()).map(
 			(e) => `${e.source.name} -> ${e.target.name}`,
 		);
@@ -187,9 +187,9 @@ describe("ODSFlowMap", () => {
 		]);
 	});
 
-	it("leaves out commands no policy issues", () => {
+	it("leaves out operations no policy issues", () => {
 		const map = ODSFlowMap.fromWorkspace(f.ws);
-		expect(map.nodes.has(f.placeOrderCommand.ref)).toBe(false);
+		expect(map.nodes.has(f.placeOrder.ref)).toBe(false);
 		expect(map.nodes.size).toBe(4);
 	});
 });

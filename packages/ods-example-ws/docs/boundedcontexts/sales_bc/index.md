@@ -31,6 +31,14 @@ Open-host service for /store/order endpoints
 
 
 
+## Schemas
+| Name | Description | Attributes | Used by |
+| --- | --- | --- | --- |
+| OrderPlaced | - | **orderId**: `int64`, petId: `int64`, quantity: `Quantity` | OrderPlaced |
+| PlaceOrder | Request body for placing an order | petId: `int64`, quantity: `Quantity` | PlaceOrder |
+| OrderId | - | **orderId**: `int64` | OrderApproved, OrderDelivered, OrderDeleted, ApproveOrder, DeliverOrder |
+
+
 ## Policies
 ![flowmap](./flowmap.svg)
 

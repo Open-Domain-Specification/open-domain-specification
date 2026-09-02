@@ -11,6 +11,7 @@ import {
 	VscSymbolEvent,
 	VscSymbolMethod,
 	VscSymbolNamespace,
+	VscSymbolStructure,
 	VscSymbolVariable,
 	VscTypeHierarchy,
 } from "react-icons/vsc";
@@ -27,6 +28,7 @@ export const Icons = {
 	Invariants: <VscShield />,
 	Policy: <VscSymbolBoolean />,
 	Term: <VscBook />,
+	Schema: <VscSymbolStructure />,
 	Service: <VscTypeHierarchy />,
 	Provider: <VscDebugStepInto />,
 	Consumer: <VscDebugStepOut />,

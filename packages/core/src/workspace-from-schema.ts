@@ -4,12 +4,11 @@ import {
 	type AttributeSchema,
 	aggregateRef,
 	type BoundedContextSchema,
-	commandRef,
 	entityRef,
-	eventRef,
 	invariantRef,
 	policyRef,
 	type ServiceSchema,
+	schemaRef,
 	serviceRef,
 	termRef,
 	valueObjectRef,
@@ -26,10 +25,7 @@ import { Workspace as WorkspaceModel } from "./workspace";
 
 const debug = getDebug("get-workspace-from-schema");
 
-/**
- * Consumables are added in the second pass because an event consumable
- * refers to a domain event that may live on another aggregate.
- */
+/** Consumables are added in the second pass because their schema must already exist. */
 function addProvides(
 	provider: Aggregate | Service,
 	schema: AggregateSchema | ServiceSchema,
@@ -37,16 +33,31 @@ function addProvides(
 ) {
 	for (const [id, consumableSchema] of Object.entries(schema.provides)) {
 		debug(`Adding consumable: ${consumableSchema.name} to ${provider.name}`);
+		const { raises: _raises, schema: schemaRef, ...rest } = consumableSchema;
 		provider.addConsumable(consumableSchema.name, {
-			...consumableSchema,
+			...rest,
 			id,
-			event:
-				consumableSchema.event &&
-				workspace.getEventByRefOrThrow(consumableSchema.event.$ref),
-			command:
-				consumableSchema.command &&
-				workspace.getCommandByRefOrThrow(consumableSchema.command.$ref),
+			schema: schemaRef && workspace.getSchemaByRefOrThrow(schemaRef.$ref),
 		});
+	}
+}
+
+/** Raises links consumables to consumables, so it runs once every consumable exists. */
+function linkRaises(
+	provider: Aggregate | Service,
+	schema: AggregateSchema | ServiceSchema,
+	workspace: Workspace,
+) {
+	for (const [id, consumableSchema] of Object.entries(schema.provides)) {
+		if (!consumableSchema.raises?.length) continue;
+		const consumable = workspace.getConsumableByRefOrThrow(
+			`${provider.ref}/provides/${id}`,
+		);
+		consumable.raises(
+			...consumableSchema.raises.map(({ $ref }) =>
+				workspace.getConsumableByRefOrThrow($ref),
+			),
+		);
 	}
 }
 
@@ -161,6 +172,15 @@ function addBoundedContext(
 		});
 	}
 
+	for (const [schemaId, schemaSchema] of Object.entries(
+		boundedcontextSchema.schemas,
+	)) {
+		boundedcontext.addSchema(schemaSchema.name, {
+			...schemaSchema,
+			id: schemaId,
+		});
+	}
+
 	for (const [aggregateId, aggregateSchema] of Object.entries(
 		boundedcontextSchema.aggregates,
 	)) {
@@ -191,19 +211,6 @@ function addBoundedContext(
 			aggregate.addValueObject(valueobjectSchema.name, {
 				...valueobjectSchema,
 				id: valueobjectId,
-			});
-		}
-		for (const [eventId, eventSchema] of Object.entries(
-			aggregateSchema.events,
-		)) {
-			aggregate.addEvent(eventSchema.name, { ...eventSchema, id: eventId });
-		}
-		for (const [commandId, commandSchema] of Object.entries(
-			aggregateSchema.commands,
-		)) {
-			aggregate.addCommand(commandSchema.name, {
-				...commandSchema,
-				id: commandId,
 			});
 		}
 	}
@@ -248,39 +255,28 @@ function linkReferences(
 		addProvides(provider, schema, workspace);
 	}
 	for (const { provider, schema } of providersOf(workspace, workspaceSchema)) {
+		linkRaises(provider, schema, workspace);
 		addConsumes(provider, schema, workspace);
 	}
 
 	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
+		for (const [schemaId, schemaSchema] of Object.entries(
+			boundedcontextSchema.schemas,
+		)) {
+			addAttributes(
+				workspace.getSchemaByRefOrThrow(
+					schemaRef(boundedcontextId, schemaId).$ref,
+				),
+				schemaSchema.attributes,
+				workspace,
+			);
+		}
+
 		for (const [aggregateId, aggregateSchema] of Object.entries(
 			boundedcontextSchema.aggregates,
 		)) {
-			for (const [eventId, eventSchema] of Object.entries(
-				aggregateSchema.events,
-			)) {
-				addAttributes(
-					workspace.getEventByRefOrThrow(
-						eventRef(boundedcontextId, aggregateId, eventId).$ref,
-					),
-					eventSchema.attributes,
-					workspace,
-				);
-			}
-
-			for (const [commandId, commandSchema] of Object.entries(
-				aggregateSchema.commands,
-			)) {
-				const command = workspace.getCommandByRefOrThrow(
-					commandRef(boundedcontextId, aggregateId, commandId).$ref,
-				);
-				addAttributes(command, commandSchema.attributes, workspace);
-				for (const { $ref } of commandSchema.raises) {
-					command.raises(workspace.getEventByRefOrThrow($ref));
-				}
-			}
-
 			for (const [entityId, entitySchema] of Object.entries(
 				aggregateSchema.entities,
 			)) {
@@ -342,7 +338,7 @@ function linkGlossary(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 	}
 }
 
-/** Policies join events and commands that may live in any context. */
+/** Policies join consumables that may live in any context. */
 function linkPolicies(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
@@ -355,12 +351,12 @@ function linkPolicies(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 			);
 			policy.on(
 				...policySchema.on.map(({ $ref }) =>
-					workspace.getEventByRefOrThrow($ref),
+					workspace.getConsumableByRefOrThrow($ref),
 				),
 			);
 			policy.then(
 				...policySchema.then.map(({ $ref }) =>
-					workspace.getCommandByRefOrThrow($ref),
+					workspace.getConsumableByRefOrThrow($ref),
 				),
 			);
 		}

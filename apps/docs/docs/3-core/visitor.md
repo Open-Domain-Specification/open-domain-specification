@@ -20,8 +20,7 @@ interface Visitor {
   visitEntity(node: Entity): void;
   visitValueObject(node: ValueObject): void;
   visitEntityRelation(node: EntityRelation): void;
-  visitDomainEvent(node: DomainEvent): void;
-  visitCommand(node: Command): void;
+  visitDataSchema(node: DataSchema): void;
   visitPolicy(node: Policy): void;
   visitGlossaryTerm(node: GlossaryTerm): void;
   visitContextRelationship(node: ContextRelationship): void;

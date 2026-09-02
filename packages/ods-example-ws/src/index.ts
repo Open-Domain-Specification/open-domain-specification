@@ -22,4 +22,16 @@ toDoc(workspace).then((res) => {
 		JSON.stringify(workspace.toSchema(), null, 2),
 		"utf-8",
 	);
+
+	// The same model as a .ods folder, which is what the VS Code extension opens.
+	fs.mkdirSync(".ods", { recursive: true });
+	fs.writeFileSync(
+		".ods/petstore.json",
+		JSON.stringify(
+			{ $schema: "./schema.json", ...workspace.toSchema() },
+			null,
+			2,
+		),
+		"utf-8",
+	);
 });

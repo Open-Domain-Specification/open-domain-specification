@@ -15,7 +15,9 @@ severity, a rule id, a message and the ref of the element concerned.
 | `cross-aggregate-reference` | error | relations into another aggregate are `references` to its root |
 | `role-coherence` | warning | consumables and consumptions crossing contexts declare their roles |
 | `separate-ways` | error | contexts that declared separate ways do not exchange consumables |
-| `policy-complete` | warning | a policy reacts to at least one event and issues at least one command |
+| `internal-consumable` | error | an internal consumable is not consumed, reacted to or issued from another context |
+| `consumable-kind` | error | policies react to events and issue operations; only operations raise, and only events |
+| `policy-complete` | warning | a policy reacts to at least one event and issues at least one operation |
 | `context-serves-subdomain` | warning | every context serves a subdomain |
 
 The UI reports the counts when a workspace is loaded and lists the

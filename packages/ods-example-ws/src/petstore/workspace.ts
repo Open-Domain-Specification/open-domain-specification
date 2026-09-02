@@ -149,87 +149,85 @@ petAgg
 	})
 	.constrains(petStatusVO);
 
-// Aggregate events (published-language)
-const petRegisteredEvent = petAgg.addEvent("PetRegistered", {
-	description: "A new pet was registered",
+// Payload schemas (published language of the catalog)
+const petRegisteredSchema = catalogBC.addSchema("PetRegistered", {
+	description: "What the outside learns when a pet joins the catalog",
 });
-petRegisteredEvent.addAttribute("petId", { type: "int64", identity: true });
-petRegisteredEvent.addAttribute("name", { type: "string" });
-petRegisteredEvent.addAttribute("category", {
+petRegisteredSchema.addAttribute("petId", { type: "int64", identity: true });
+petRegisteredSchema.addAttribute("name", { type: "string" });
+petRegisteredSchema.addAttribute("category", {
 	type: "Category",
 	valueobject: categoryVO,
 });
-petRegisteredEvent.addAttribute("status", {
+petRegisteredSchema.addAttribute("status", {
 	type: "PetStatus",
 	valueobject: petStatusVO,
 });
-const petRegisteredPublished = petAgg.publishes(petRegisteredEvent, {
-	pattern: "published-language",
-});
-const _petUpdatedEvent = petAgg.addEvent("PetUpdated", {
-	description: "Pet profile updated",
-});
-const _petUpdatedPublished = petAgg.publishes(_petUpdatedEvent, {
-	pattern: "published-language",
-});
-const petStatusChangedEvent = petAgg.addEvent("PetStatusChanged", {
-	description: "Pet status changed (available|pending|sold)",
-});
-petStatusChangedEvent.addAttribute("petId", { type: "int64", identity: true });
-petStatusChangedEvent.addAttribute("from", {
+const petStatusChangedSchema = catalogBC.addSchema("PetStatusChanged");
+petStatusChangedSchema.addAttribute("petId", { type: "int64", identity: true });
+petStatusChangedSchema.addAttribute("from", {
 	type: "PetStatus",
 	valueobject: petStatusVO,
 });
-petStatusChangedEvent.addAttribute("to", {
+petStatusChangedSchema.addAttribute("to", {
 	type: "PetStatus",
 	valueobject: petStatusVO,
 });
-const petStatusChangedPublished = petAgg.publishes(petStatusChangedEvent, {
-	pattern: "published-language",
+const registerPetSchema = catalogBC.addSchema("RegisterPet", {
+	description: "Request body for adding a pet",
 });
-const _petPhotoUploadedEvent = petAgg.addEvent("PetPhotoUploaded", {
-	description: "Photo added via upload",
-});
-const _petPhotoUploadedPublished = petAgg.publishes(_petPhotoUploadedEvent, {
-	pattern: "published-language",
-});
-const petDeletedEvent = petAgg.addEvent("PetDeleted", {
-	description: "Pet removed from catalog",
-});
-const petDeletedPublished = petAgg.publishes(petDeletedEvent, {
-	pattern: "published-language",
-});
-
-// Commands
-const registerPetCmd = petAgg.addCommand("RegisterPet", {
-	description: "Add a new pet to the catalog",
-});
-registerPetCmd.addAttribute("name", { type: "string" });
-registerPetCmd.addAttribute("category", {
+registerPetSchema.addAttribute("name", { type: "string" });
+registerPetSchema.addAttribute("category", {
 	type: "Category",
 	valueobject: categoryVO,
 });
-registerPetCmd.addAttribute("photoUrls", {
+registerPetSchema.addAttribute("photoUrls", {
 	type: "PhotoUrl[]",
 	valueobject: photoUrlVO,
 });
-registerPetCmd.raises(petRegisteredEvent);
+const petIdSchema = catalogBC.addSchema("PetId", {
+	description: "Identifies one pet",
+});
+petIdSchema.addAttribute("petId", { type: "int64", identity: true });
 
-const changePetStatusCmd = petAgg.addCommand("ChangePetStatus", {
-	description: "Move a pet between available, pending and sold",
+// Events the Pet aggregate publishes (published-language)
+const petRegistered = petAgg.provides("PetRegistered", {
+	description: "A new pet was registered",
+	type: "event",
+	pattern: "published-language",
+	schema: petRegisteredSchema,
 });
-changePetStatusCmd.addAttribute("petId", { type: "int64", identity: true });
-changePetStatusCmd.addAttribute("status", {
-	type: "PetStatus",
-	valueobject: petStatusVO,
+const petUpdated = petAgg.provides("PetUpdated", {
+	description: "Pet profile updated",
+	type: "event",
+	pattern: "published-language",
 });
-changePetStatusCmd.raises(petStatusChangedEvent);
+const petStatusChanged = petAgg.provides("PetStatusChanged", {
+	description: "Pet status changed (available|pending|sold)",
+	type: "event",
+	pattern: "published-language",
+	schema: petStatusChangedSchema,
+});
+const petPhotoUploaded = petAgg.provides("PetPhotoUploaded", {
+	description: "Photo added via upload",
+	type: "event",
+	pattern: "published-language",
+});
+const petDeleted = petAgg.provides("PetDeleted", {
+	description: "Pet removed from catalog",
+	type: "event",
+	pattern: "published-language",
+});
 
-const removePetCmd = petAgg.addCommand("RemovePet", {
-	description: "Remove a pet from the catalog",
-});
-removePetCmd.addAttribute("petId", { type: "int64", identity: true });
-removePetCmd.raises(petDeletedEvent);
+// Internal operation: only the catalog itself moves a pet between statuses
+const _changePetStatus = petAgg
+	.provides("ChangePetStatus", {
+		description: "Move a pet between available, pending and sold",
+		type: "operation",
+		internal: true,
+		schema: petStatusChangedSchema,
+	})
+	.raises(petStatusChanged);
 
 // Service: PetApp (open-host)
 const petApp = catalogBC.addService("PetApp", {
@@ -237,17 +235,21 @@ const petApp = catalogBC.addService("PetApp", {
 	type: "application",
 });
 
-const _addPetOp = petApp.provides("AddPet", {
-	description: "POST /pet",
-	type: "operation",
-	pattern: "open-host-service",
-	command: registerPetCmd,
-});
-const _updatePetOp = petApp.provides("UpdatePet", {
-	description: "PUT /pet",
-	type: "operation",
-	pattern: "open-host-service",
-});
+const _addPetOp = petApp
+	.provides("AddPet", {
+		description: "POST /pet",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: registerPetSchema,
+	})
+	.raises(petRegistered);
+const _updatePetOp = petApp
+	.provides("UpdatePet", {
+		description: "PUT /pet",
+		type: "operation",
+		pattern: "open-host-service",
+	})
+	.raises(petUpdated);
 const _findByStatusOp = petApp.provides("FindPetsByStatus", {
 	description: "GET /pet/findByStatus?status=available|pending|sold",
 	type: "operation",
@@ -263,22 +265,27 @@ const _getPetByIdOp = petApp.provides("GetPetById", {
 	type: "operation",
 	pattern: "open-host-service",
 });
-const _uploadImageOp = petApp.provides("UploadPetImage", {
-	description:
-		"POST /pet/{petId}/uploadImage (multipart: additionalMetadata, file)",
-	type: "operation",
-	pattern: "open-host-service",
-});
-const _deletePetOp = petApp.provides("DeletePet", {
-	description: "DELETE /pet/{petId}",
-	type: "operation",
-	pattern: "open-host-service",
-	command: removePetCmd,
-});
+const _uploadImageOp = petApp
+	.provides("UploadPetImage", {
+		description:
+			"POST /pet/{petId}/uploadImage (multipart: additionalMetadata, file)",
+		type: "operation",
+		pattern: "open-host-service",
+	})
+	.raises(petPhotoUploaded);
+const _deletePetOp = petApp
+	.provides("DeletePet", {
+		description: "DELETE /pet/{petId}",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: petIdSchema,
+	})
+	.raises(petDeleted);
 
 // Internal ACL-friendly read
 const getPetSummaryOp = petApp.provides("GetPetSummary", {
-	description: "Internal: {id,name,status} for ACL checks",
+	description:
+		"Slim {id,name,status} read offered to other contexts for ACL checks",
 	type: "operation",
 	pattern: "open-host-service",
 });
@@ -373,60 +380,68 @@ orderAgg
 	})
 	.constrains(orderStatusVO);
 
-// Aggregate events
-const orderPlacedEvent = orderAgg.addEvent("OrderPlaced", {
+// Payload schemas
+const orderPlacedSchema = salesBC.addSchema("OrderPlaced");
+orderPlacedSchema.addAttribute("orderId", { type: "int64", identity: true });
+orderPlacedSchema.addAttribute("petId", { type: "int64" });
+orderPlacedSchema.addAttribute("quantity", {
+	type: "Quantity",
+	valueobject: quantityVO,
+});
+const placeOrderSchema = salesBC.addSchema("PlaceOrder", {
+	description: "Request body for placing an order",
+});
+placeOrderSchema.addAttribute("petId", { type: "int64" });
+placeOrderSchema.addAttribute("quantity", {
+	type: "Quantity",
+	valueobject: quantityVO,
+});
+const orderIdSchema = salesBC.addSchema("OrderId");
+orderIdSchema.addAttribute("orderId", { type: "int64", identity: true });
+
+// Events the Order aggregate publishes
+const orderPlaced = orderAgg.provides("OrderPlaced", {
 	description: "Order created (status=placed)",
-});
-orderPlacedEvent.addAttribute("orderId", { type: "int64", identity: true });
-orderPlacedEvent.addAttribute("petId", { type: "int64" });
-orderPlacedEvent.addAttribute("quantity", {
-	type: "Quantity",
-	valueobject: quantityVO,
-});
-const _orderPlacedPublished = orderAgg.publishes(orderPlacedEvent, {
+	type: "event",
 	pattern: "published-language",
+	schema: orderPlacedSchema,
 });
-const orderApprovedEvent = orderAgg.addEvent("OrderApproved", {
+const orderApproved = orderAgg.provides("OrderApproved", {
 	description: "Order approved (status=approved)",
-});
-const orderApprovedPublished = orderAgg.publishes(orderApprovedEvent, {
+	type: "event",
 	pattern: "published-language",
+	schema: orderIdSchema,
 });
-const orderDeliveredEvent = orderAgg.addEvent("OrderDelivered", {
+const orderDelivered = orderAgg.provides("OrderDelivered", {
 	description: "Order delivered (status=delivered)",
-});
-const orderDeliveredPublished = orderAgg.publishes(orderDeliveredEvent, {
+	type: "event",
 	pattern: "published-language",
+	schema: orderIdSchema,
 });
-const orderDeletedEvent = orderAgg.addEvent("OrderDeleted", {
+const orderDeleted = orderAgg.provides("OrderDeleted", {
 	description: "Order deleted via DELETE /store/order/{orderId}",
-});
-const orderDeletedPublished = orderAgg.publishes(orderDeletedEvent, {
+	type: "event",
 	pattern: "published-language",
+	schema: orderIdSchema,
 });
 
-// Commands
-const placeOrderCmd = orderAgg.addCommand("PlaceOrder", {
-	description: "Place an order for one pet",
-});
-placeOrderCmd.addAttribute("petId", { type: "int64" });
-placeOrderCmd.addAttribute("quantity", {
-	type: "Quantity",
-	valueobject: quantityVO,
-});
-placeOrderCmd.raises(orderPlacedEvent);
-
-const approveOrderCmd = orderAgg.addCommand("ApproveOrder", {
-	description: "Approve a placed order once the pet is available",
-});
-approveOrderCmd.addAttribute("orderId", { type: "int64", identity: true });
-approveOrderCmd.raises(orderApprovedEvent);
-
-const deliverOrderCmd = orderAgg.addCommand("DeliverOrder", {
-	description: "Mark an approved order as delivered",
-});
-deliverOrderCmd.addAttribute("orderId", { type: "int64", identity: true });
-deliverOrderCmd.raises(orderDeliveredEvent);
+// Internal operations: the order lifecycle is driven from inside sales
+const approveOrder = orderAgg
+	.provides("ApproveOrder", {
+		description: "Approve a placed order once the pet is available",
+		type: "operation",
+		internal: true,
+		schema: orderIdSchema,
+	})
+	.raises(orderApproved);
+const _deliverOrder = orderAgg
+	.provides("DeliverOrder", {
+		description: "Mark an approved order as delivered",
+		type: "operation",
+		internal: true,
+		schema: orderIdSchema,
+	})
+	.raises(orderDelivered);
 
 // Service: OrderApp
 const orderApp = salesBC.addService("OrderApp", {
@@ -434,22 +449,26 @@ const orderApp = salesBC.addService("OrderApp", {
 	type: "application",
 });
 
-const _placeOrderOp = orderApp.provides("PlaceOrder", {
-	description: "POST /store/order",
-	type: "operation",
-	pattern: "open-host-service",
-	command: placeOrderCmd,
-});
+const _placeOrderOp = orderApp
+	.provides("PlaceOrder", {
+		description: "POST /store/order",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: placeOrderSchema,
+	})
+	.raises(orderPlaced);
 const _getOrderByIdOp = orderApp.provides("GetOrderById", {
 	description: "GET /store/order/{orderId}",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const _deleteOrderOp = orderApp.provides("DeleteOrder", {
-	description: "DELETE /store/order/{orderId}",
-	type: "operation",
-	pattern: "open-host-service",
-});
+const _deleteOrderOp = orderApp
+	.provides("DeleteOrder", {
+		description: "DELETE /store/order/{orderId}",
+		type: "operation",
+		pattern: "open-host-service",
+	})
+	.raises(orderDeleted);
 
 // Ubiquitous language of sales
 salesBC.addTerm("Order", {
@@ -459,7 +478,7 @@ salesBC.addTerm("Order", {
 });
 salesBC.addTerm("Approval", {
 	definition: "Confirmation that the ordered pet is available and reserved",
-	embodiedBy: approveOrderCmd,
+	embodiedBy: approveOrder,
 });
 
 // OrderApp depends on Catalog for status checks
@@ -491,8 +510,8 @@ salesBC
 		description:
 			"When a pet becomes available and an order for it is placed, approve the order",
 	})
-	.on(petStatusChangedEvent, orderPlacedEvent)
-	.then(approveOrderCmd);
+	.on(petStatusChanged, orderPlaced)
+	.then(approveOrder);
 
 /* =======================
    INVENTORY — Projection & Service
@@ -508,31 +527,27 @@ const _invView = inventoryAgg.addRootEntity("InventoryView", {
 	description: "Status→count map for /store/inventory",
 });
 
-// Command that rebuilds the projection
-const recountInventoryCmd = inventoryAgg.addCommand("RecountInventory", {
-	description: "Recompute the status→count map from catalog and sales facts",
-});
-
-// Projection event
-const inventoryUpdatedEvent = inventoryAgg.addEvent("InventoryUpdated", {
+// Projection event and the internal operation that rebuilds it
+const inventoryUpdated = inventoryAgg.provides("InventoryUpdated", {
 	description: "Inventory counts changed",
+	type: "event",
+	pattern: "published-language",
 });
-const inventoryUpdatedPublished = inventoryAgg.publishes(
-	inventoryUpdatedEvent,
-	{
-		pattern: "published-language",
-	},
-);
-
-recountInventoryCmd.raises(inventoryUpdatedEvent);
+const recountInventory = inventoryAgg
+	.provides("RecountInventory", {
+		description: "Recompute the status→count map from catalog and sales facts",
+		type: "operation",
+		internal: true,
+	})
+	.raises(inventoryUpdated);
 
 // Inventory listens to Catalog & Sales events (conformist)
-inventoryAgg.consumes(petRegisteredPublished, { pattern: "conformist" });
-inventoryAgg.consumes(petDeletedPublished, { pattern: "conformist" });
-inventoryAgg.consumes(petStatusChangedPublished, { pattern: "conformist" });
-inventoryAgg.consumes(orderApprovedPublished, { pattern: "conformist" });
-inventoryAgg.consumes(orderDeliveredPublished, { pattern: "conformist" });
-inventoryAgg.consumes(orderDeletedPublished, { pattern: "conformist" });
+inventoryAgg.consumes(petRegistered, { pattern: "conformist" });
+inventoryAgg.consumes(petDeleted, { pattern: "conformist" });
+inventoryAgg.consumes(petStatusChanged, { pattern: "conformist" });
+inventoryAgg.consumes(orderApproved, { pattern: "conformist" });
+inventoryAgg.consumes(orderDelivered, { pattern: "conformist" });
+inventoryAgg.consumes(orderDeleted, { pattern: "conformist" });
 
 inventoryBC.addTerm("Availability", {
 	definition:
@@ -547,14 +562,14 @@ inventoryBC
 		description: "Keep the availability projection current",
 	})
 	.on(
-		petRegisteredEvent,
-		petDeletedEvent,
-		petStatusChangedEvent,
-		orderApprovedEvent,
-		orderDeliveredEvent,
-		orderDeletedEvent,
+		petRegistered,
+		petDeleted,
+		petStatusChanged,
+		orderApproved,
+		orderDelivered,
+		orderDeleted,
 	)
-	.then(recountInventoryCmd);
+	.then(recountInventory);
 
 // Service: InventoryQuery
 const inventoryQuery = inventoryBC.addService("InventoryQuery", {
@@ -569,7 +584,7 @@ const _getInventoryOp = inventoryQuery.provides("GetInventory", {
 });
 
 // Service consumes its own projection's update to drive re-query/push, if desired
-inventoryQuery.consumes(inventoryUpdatedPublished, { pattern: "conformist" });
+inventoryQuery.consumes(inventoryUpdated, { pattern: "conformist" });
 
 /* =======================
    IDENTITY — Aggregate & Service
@@ -601,37 +616,18 @@ userRoot.addAttribute("userStatus", {
 
 userRoot.uses(userStatusVO, "has-status");
 
-// User events
-const _userRegisteredEvent = userAgg.addEvent("UserRegistered", {
-	description: "New user created",
-});
-const _userRegisteredPublished = userAgg.publishes(_userRegisteredEvent, {
-	pattern: "published-language",
-});
-const _userUpdatedEvent = userAgg.addEvent("UserUpdated", {
-	description: "User fields updated",
-});
-const _userUpdatedPublished = userAgg.publishes(_userUpdatedEvent, {
-	pattern: "published-language",
-});
-const _userDeletedEvent = userAgg.addEvent("UserDeleted", {
-	description: "User removed",
-});
-const _userDeletedPublished = userAgg.publishes(_userDeletedEvent, {
-	pattern: "published-language",
-});
-const _userLoggedInEvent = userAgg.addEvent("UserLoggedIn", {
-	description: "Login via /user/login",
-});
-const _userLoggedInPublished = userAgg.publishes(_userLoggedInEvent, {
-	pattern: "published-language",
-});
-const _userLoggedOutEvent = userAgg.addEvent("UserLoggedOut", {
-	description: "Logout via /user/logout",
-});
-const _userLoggedOutPublished = userAgg.publishes(_userLoggedOutEvent, {
-	pattern: "published-language",
-});
+// Events the User aggregate publishes
+const userEvent = (name: string, description: string) =>
+	userAgg.provides(name, {
+		description,
+		type: "event",
+		pattern: "published-language",
+	});
+const userRegistered = userEvent("UserRegistered", "New user created");
+const userUpdated = userEvent("UserUpdated", "User fields updated");
+const userDeleted = userEvent("UserDeleted", "User removed");
+const userLoggedIn = userEvent("UserLoggedIn", "Login via /user/login");
+const userLoggedOut = userEvent("UserLoggedOut", "Logout via /user/logout");
 
 // Service: UserApp
 const userApp = identityBC.addService("UserApp", {
@@ -639,43 +635,57 @@ const userApp = identityBC.addService("UserApp", {
 	type: "application",
 });
 
-const _createUserOp = userApp.provides("CreateUser", {
-	description: "POST /user",
-	type: "operation",
-	pattern: "open-host-service",
-});
-const _createUsersWithArrayOp = userApp.provides("CreateUsersWithArray", {
-	description: "POST /user/createWithArray",
-	type: "operation",
-	pattern: "open-host-service",
-});
-const _createUsersWithListOp = userApp.provides("CreateUsersWithList", {
-	description: "POST /user/createWithList",
-	type: "operation",
-	pattern: "open-host-service",
-});
-const _loginOp = userApp.provides("Login", {
-	description: "GET /user/login?username=&password=",
-	type: "operation",
-	pattern: "open-host-service",
-});
-const _logoutOp = userApp.provides("Logout", {
-	description: "GET /user/logout",
-	type: "operation",
-	pattern: "open-host-service",
-});
+const _createUserOp = userApp
+	.provides("CreateUser", {
+		description: "POST /user",
+		type: "operation",
+		pattern: "open-host-service",
+	})
+	.raises(userRegistered);
+const _createUsersWithArrayOp = userApp
+	.provides("CreateUsersWithArray", {
+		description: "POST /user/createWithArray",
+		type: "operation",
+		pattern: "open-host-service",
+	})
+	.raises(userRegistered);
+const _createUsersWithListOp = userApp
+	.provides("CreateUsersWithList", {
+		description: "POST /user/createWithList",
+		type: "operation",
+		pattern: "open-host-service",
+	})
+	.raises(userRegistered);
+const _loginOp = userApp
+	.provides("Login", {
+		description: "GET /user/login?username=&password=",
+		type: "operation",
+		pattern: "open-host-service",
+	})
+	.raises(userLoggedIn);
+const _logoutOp = userApp
+	.provides("Logout", {
+		description: "GET /user/logout",
+		type: "operation",
+		pattern: "open-host-service",
+	})
+	.raises(userLoggedOut);
 const _getUserByUsernameOp = userApp.provides("GetUserByUsername", {
 	description: "GET /user/{username}",
 	type: "operation",
 	pattern: "open-host-service",
 });
-const _updateUserOp = userApp.provides("UpdateUser", {
-	description: "PUT /user/{username}",
-	type: "operation",
-	pattern: "open-host-service",
-});
-const _deleteUserOp = userApp.provides("DeleteUser", {
-	description: "DELETE /user/{username}",
-	type: "operation",
-	pattern: "open-host-service",
-});
+const _updateUserOp = userApp
+	.provides("UpdateUser", {
+		description: "PUT /user/{username}",
+		type: "operation",
+		pattern: "open-host-service",
+	})
+	.raises(userUpdated);
+const _deleteUserOp = userApp
+	.provides("DeleteUser", {
+		description: "DELETE /user/{username}",
+		type: "operation",
+		pattern: "open-host-service",
+	})
+	.raises(userDeleted);

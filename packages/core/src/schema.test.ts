@@ -161,8 +161,7 @@ describe("Workspace Edge Cases", () => {
 			visitConsumable: vi.fn(),
 			visitInvariant: vi.fn(),
 			visitContextRelationship: vi.fn(),
-			visitDomainEvent: vi.fn(),
-			visitCommand: vi.fn(),
+			visitDataSchema: vi.fn(),
 			visitPolicy: vi.fn(),
 			visitGlossaryTerm: vi.fn(),
 		};

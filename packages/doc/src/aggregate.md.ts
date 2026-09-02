@@ -1,10 +1,7 @@
 import {
 	type Aggregate,
-	type Command,
-	type Consumable,
 	type Consumption,
 	constrainableLabel,
-	type DomainEvent,
 	type Entity,
 	type Invariant,
 	ODSRelationGraph,
@@ -12,6 +9,7 @@ import {
 } from "@open-domain-specification/core";
 import { attributeListMd } from "./attributes.md";
 import { contextBreadcrumbsMd } from "./breadcrumbs.md";
+import { providesTableMd } from "./consumables.md";
 import { markdownTable } from "./lib/markdown-table";
 import {
 	pathToConsumableMapSvg,
@@ -32,24 +30,6 @@ const entitySection = (entity: Entity) => [
 	entity.root ? `**${entity.name}**` : entity.name,
 	entity.description,
 	attributeListMd(entity.attributes),
-];
-
-const consumableSection = (consumable: Consumable) => `
-### (${consumable.type}) - ${consumable.name} ${consumable.pattern ? `[${consumable.pattern}]` : ""}
-${consumable.description}
-`;
-
-const eventSection = (event: DomainEvent) => [
-	event.name,
-	event.description,
-	attributeListMd(event.attributes),
-];
-
-const commandSection = (command: Command) => [
-	command.name,
-	command.description,
-	attributeListMd(command.attributes),
-	command.raisedEvents.map((it) => it.name).join(", ") || "-",
 ];
 
 const invariantSection = (invariant: Invariant) => [
@@ -108,26 +88,6 @@ ${markdownTable(
 	]),
 )}
 
-## Commands
-${
-	aggregate.commands.size > 0
-		? markdownTable(
-				["Name", "Description", "Attributes", "Raises"],
-				Array.from(aggregate.commands.values()).map(commandSection),
-			)
-		: "> No commands."
-}
-
-## Events
-${
-	aggregate.events.size > 0
-		? markdownTable(
-				["Name", "Description", "Attributes"],
-				Array.from(aggregate.events.values()).map(eventSection),
-			)
-		: "> No domain events."
-}
-
 ## Invariants
 ${
 	aggregate.invariants.size > 0
@@ -139,13 +99,7 @@ ${
 }
 
 ## Provides
-${
-	aggregate.consumables.size > 0
-		? Array.from(aggregate.consumables.entries())
-				.map(([_name, consumable]) => consumableSection(consumable))
-				.join("")
-		: "> No consumables."
-}
+${providesTableMd(aggregate.consumables, aggregate.path)}
 
 ## Consumes
 ${

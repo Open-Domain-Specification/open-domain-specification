@@ -30,30 +30,47 @@ order
 	.addInvariant("Non-empty", { description: "An order has at least one line" })
 	.constrains(line);
 
-// Commands raise domain events; both carry attributes.
-const placed = order.addEvent("OrderPlaced", {
-	description: "An order was placed",
+// A context declares the payload shapes of its messages once, as schemas.
+const orderSummary = ordering.addSchema("Order Summary", {
+	description: "What the outside world learns about an order",
 });
-placed.addAttribute("orderId", { type: "OrderId", identity: true });
-const place = order
-	.addCommand("PlaceOrder", { description: "Place a new order" })
-	.raises(placed);
+orderSummary.addAttribute("orderId", { type: "OrderId", identity: true });
+orderSummary.addAttribute("total", { type: "Money", valueobject: money });
 
-// An operation consumable exposes a command; an event consumable publishes an event.
+// An aggregate provides event consumables; an operation consumable lists the
+// events it raises. Both may point at a schema.
+const placed = order.provides("Order Placed", {
+	description: "An order was placed",
+	type: "event",
+	pattern: "published-language",
+	schema: orderSummary,
+});
 ordering
 	.addService("Checkout", { description: "", type: "application" })
-	.provides("PlaceOrder", {
+	.provides("Place Order", {
 		description: "POST /orders",
 		type: "operation",
 		pattern: "open-host-service",
-		command: place,
-	});
-order.publishes(placed, { pattern: "published-language" });
+		schema: orderSummary,
+	})
+	.raises(placed);
 
-// Policies react to events with commands, even across contexts.
+// An internal consumable never leaves its context.
+const lineAdded = order.provides("Line Added", {
+	description: "",
+	type: "event",
+	internal: true,
+});
+
+// Policies react to events with operations, even across contexts.
 const billing = ws.addBoundedContext("Billing", { description: "" });
-const invoice = billing.addAggregate("Invoice", { description: "" });
-const raise = invoice.addCommand("RaiseInvoice", { description: "" });
+const raise = billing
+	.addAggregate("Invoice", { description: "" })
+	.provides("Raise Invoice", {
+		description: "",
+		type: "operation",
+		internal: true,
+	});
 billing
 	.addPolicy("Invoice on order placed", { description: "" })
 	.on(placed)
@@ -67,36 +84,61 @@ ordering.addTerm("Order", {
 });
 
 describe("Tactical design", () => {
-	it("walks the flow from event to policy to command", () => {
+	it("walks the flow from event to policy to operation", () => {
 		const edges = Array.from(
 			ODSFlowMap.fromBoundedContext(billing).edges.values(),
 		);
 		expect(
 			edges.map((e) => `${e.source.name} -> ${e.target.name}`),
 		).toMatchInlineSnapshot(`
-				[
-				  "OrderPlaced -> Invoice on order placed",
-				  "Invoice on order placed -> RaiseInvoice",
-				]
-			`);
+			[
+			  "Order Placed -> Invoice on order placed",
+			  "Invoice on order placed -> Raise Invoice",
+			]
+		`);
 	});
 
-	it("serialises attributes, refs and the glossary", () => {
+	it("serialises consumables, schemas and the glossary", () => {
 		const schema = ws.toSchema();
 		expect(
-			schema.boundedcontexts.ordering.aggregates.order.entities.order.attributes
-				.total,
+			schema.boundedcontexts.ordering.aggregates.order.provides.order_placed,
 		).toMatchInlineSnapshot(`
-				{
-				  "description": undefined,
-				  "identity": undefined,
-				  "name": "total",
-				  "type": "Money",
-				  "valueobject": {
-				    "$ref": "#/boundedcontexts/ordering/aggregates/order/valueobjects/money",
-				  },
-				}
-			`);
+			{
+			  "description": "An order was placed",
+			  "internal": undefined,
+			  "name": "Order Placed",
+			  "pattern": "published-language",
+			  "raises": undefined,
+			  "schema": {
+			    "$ref": "#/boundedcontexts/ordering/schemas/order_summary",
+			  },
+			  "type": "event",
+			}
+		`);
+		expect(
+			schema.boundedcontexts.ordering.services.checkout.provides.place_order
+				.raises,
+		).toMatchInlineSnapshot(`
+			[
+			  {
+			    "$ref": "#/boundedcontexts/ordering/aggregates/order/provides/order_placed",
+			  },
+			]
+		`);
+		expect(
+			schema.boundedcontexts.ordering.schemas.order_summary.attributes.total,
+		).toMatchInlineSnapshot(`
+			{
+			  "description": undefined,
+			  "identity": undefined,
+			  "name": "total",
+			  "type": "Money",
+			  "valueobject": {
+			    "$ref": "#/boundedcontexts/ordering/aggregates/order/valueobjects/money",
+			  },
+			}
+		`);
+		expect(lineAdded.internal).toBe(true);
 		expect(
 			schema.boundedcontexts.ordering.glossary.order.embodiedBy?.$ref,
 		).toBe("#/boundedcontexts/ordering/aggregates/order");

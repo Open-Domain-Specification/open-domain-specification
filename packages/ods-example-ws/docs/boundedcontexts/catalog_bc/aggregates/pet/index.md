@@ -26,24 +26,6 @@ A pet listed in the store
 | [Pet](entities/pet/index.md) | has-status | Pet - PetStatus | uses | 1 |
 
 
-## Commands
-| Name | Description | Attributes | Raises |
-| --- | --- | --- | --- |
-| RegisterPet | Add a new pet to the catalog | name: `string`, category: `Category`, photoUrls: `PhotoUrl[]` | PetRegistered |
-| ChangePetStatus | Move a pet between available, pending and sold | **petId**: `int64`, status: `PetStatus` | PetStatusChanged |
-| RemovePet | Remove a pet from the catalog | **petId**: `int64` | PetDeleted |
-
-
-## Events
-| Name | Description | Attributes |
-| --- | --- | --- |
-| PetRegistered | A new pet was registered | **petId**: `int64`, name: `string`, category: `Category`, status: `PetStatus` |
-| PetUpdated | Pet profile updated | - |
-| PetStatusChanged | Pet status changed (available|pending|sold) | **petId**: `int64`, from: `PetStatus`, to: `PetStatus` |
-| PetPhotoUploaded | Photo added via upload | - |
-| PetDeleted | Pet removed from catalog | - |
-
-
 ## Invariants
 | Name | Description | Constrains |
 | --- | --- | --- |
@@ -52,21 +34,14 @@ A pet listed in the store
 
 
 ## Provides
-
-### (event) - PetRegistered [published-language]
-A new pet was registered
-
-### (event) - PetUpdated [published-language]
-Pet profile updated
-
-### (event) - PetStatusChanged [published-language]
-Pet status changed (available|pending|sold)
-
-### (event) - PetPhotoUploaded [published-language]
-Photo added via upload
-
-### (event) - PetDeleted [published-language]
-Pet removed from catalog
+| Name | Type | Internal | Pattern | Description | Schema | Raises |
+| --- | --- | --- | --- | --- | --- | --- |
+| PetRegistered | event | no | published-language | A new pet was registered | [PetRegistered](../../index.md#schemas) | - |
+| PetUpdated | event | no | published-language | Pet profile updated | - | - |
+| PetStatusChanged | event | no | published-language | Pet status changed (available|pending|sold) | [PetStatusChanged](../../index.md#schemas) | - |
+| PetPhotoUploaded | event | no | published-language | Photo added via upload | - | - |
+| PetDeleted | event | no | published-language | Pet removed from catalog | - | - |
+| ChangePetStatus | operation | yes | - | Move a pet between available, pending and sold | [PetStatusChanged](../../index.md#schemas) | PetStatusChanged |
 
 
 ## Consumes

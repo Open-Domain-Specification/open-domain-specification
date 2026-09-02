@@ -4,7 +4,7 @@
 	"description": "",
 	"type": "module",
 	"scripts": {
-		"clean": "npx rimraf docs",
+		"clean": "npx rimraf docs .ods",
 		"build": "node src/index.ts",
 		"serve": "docsify serve ./docs",
 		"test": "vitest run --config vitest.config.ts",

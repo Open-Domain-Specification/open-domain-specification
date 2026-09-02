@@ -54,12 +54,16 @@ const orderAgg = orderingBC.addAggregate("Order", {
 const orderEntity = orderAgg.addRootEntity("Order", {
 	description: "Order header",
 });
+orderEntity.addAttribute("id", { type: "OrderId", identity: true });
+orderEntity.addAttribute("placedAt", { type: "Instant" });
 
 const moneyVO = orderAgg.addValueObject("Money", {
 	description: "Amount + currency",
 });
+moneyVO.addAttribute("amount", { type: "Decimal" });
+moneyVO.addAttribute("currency", { type: "ISO 4217" });
 
-orderEntity.uses(moneyVO, "totals");
+orderEntity.uses(moneyVO, "totals", "1");
 
 orderAgg.addInvariant("TotalsNonNegative", {
 	description: "Order totals must be >= 0",

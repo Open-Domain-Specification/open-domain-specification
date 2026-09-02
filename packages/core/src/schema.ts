@@ -1,6 +1,6 @@
 /**
  * @title Attribute
- * @description A named, typed property of an entity, value object, event or command.
+ * @description A named, typed property of an entity, value object or schema.
  */
 export interface AttributeSchema {
 	name: string;
@@ -14,25 +14,13 @@ export interface AttributeSchema {
 }
 
 /**
- * @title DomainEvent
- * @description Something that happened in the domain that other parts care about.
+ * @title DataSchema
+ * @description A named payload shape owned by a bounded context, shared by the consumables that carry it.
  */
-export interface DomainEventSchema {
+export interface DataSchemaSchema {
 	name: string;
-	description: string;
+	description?: string;
 	attributes: { [attribute: string]: AttributeSchema };
-}
-
-/**
- * @title Command
- * @description An intention to change the state of an aggregate.
- */
-export interface CommandSchema {
-	name: string;
-	description: string;
-	attributes: { [attribute: string]: AttributeSchema };
-	/** The domain events this command may raise. */
-	raises: { $ref: string }[];
 }
 
 /**
@@ -45,8 +33,6 @@ export interface AggregateSchema {
 	entities: { [entity: string]: EntitySchema };
 	valueobjects: { [valueobject: string]: ValueObjectSchema };
 	invariants: { [invariant: string]: InvariantSchema };
-	events: { [event: string]: DomainEventSchema };
-	commands: { [command: string]: CommandSchema };
 	provides: { [consumable: string]: ConsumableSchema };
 	consumes: ConsumptionSchema[];
 }
@@ -80,9 +66,9 @@ export interface GlossaryTermSchema {
 export interface PolicySchema {
 	name: string;
 	description: string;
-	/** The domain events that trigger this policy. */
+	/** The event consumables that trigger this policy. */
 	on: { $ref: string }[];
-	/** The commands this policy issues. */
+	/** The operation consumables this policy issues. */
 	then: { $ref: string }[];
 }
 
@@ -106,6 +92,8 @@ export interface BoundedContextSchema {
 	services: { [service: string]: ServiceSchema };
 	policies: { [policy: string]: PolicySchema };
 	glossary: { [term: string]: GlossaryTermSchema };
+	/** Payload shapes this context publishes or accepts, referenced by its consumables. */
+	schemas: { [schema: string]: DataSchemaSchema };
 }
 
 /** How an upstream context exposes what it provides. */
@@ -124,12 +112,18 @@ export interface ConsumableSchema {
 	name: string;
 	description: string;
 	type: ConsumableType;
-	/** The upstream role this consumable is offered under. */
+	/** The upstream role this consumable is offered under. Absent on internal consumables. */
 	pattern?: UpstreamRole;
-	/** For event consumables: the domain event being published. */
-	event?: { $ref: string };
-	/** For operation consumables: the command being exposed. */
-	command?: { $ref: string };
+	/**
+	 * True when the consumable stays inside its context: an event only local
+	 * policies react to, or an operation only local callers issue. Internal
+	 * consumables may not be consumed from another context.
+	 */
+	internal?: boolean;
+	/** The payload shape, one of the context's schemas. */
+	schema?: { $ref: string };
+	/** For operations: the event consumables this operation may raise. */
+	raises?: { $ref: string }[];
 }
 
 /**
@@ -300,6 +294,8 @@ export interface ValueObjectSchema {
  * @description Represents a workspace in the Open Domain Specification (ODS).
  */
 export interface WorkspaceSchema {
+	/** Location of the JSON schema this document conforms to, usually the schema.json beside it. Ignored by the loader. */
+	$schema?: string;
 	id: string;
 	odsVersion: `${number}.${number}.${number}`;
 	name: string;
@@ -414,27 +410,11 @@ export function invariantRef(
 	};
 }
 
-export function eventRef(
-	boundedcontext: string,
-	aggregate: string,
-	event: string,
-) {
-	const { $ref } = aggregateRef(boundedcontext, aggregate);
+export function schemaRef(boundedcontext: string, schema: string) {
+	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
-		$ref: `${$ref}/events/${event}`,
-	};
-}
-
-export function commandRef(
-	boundedcontext: string,
-	aggregate: string,
-	command: string,
-) {
-	const { $ref } = aggregateRef(boundedcontext, aggregate);
-
-	return {
-		$ref: `${$ref}/commands/${command}`,
+		$ref: `${$ref}/schemas/${schema}`,
 	};
 }
 

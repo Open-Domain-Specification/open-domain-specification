@@ -1,4 +1,5 @@
 {
+  "$schema": "./schema.json",
   "id": "swagger_petstore_(v3)",
   "name": "Swagger Petstore (v3)",
   "description": "DDD/ODS model for Swagger Petstore v3. Inventory is a projection returning a status→count map; Orders use placed|approved|delivered.",

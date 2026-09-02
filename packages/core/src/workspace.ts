@@ -306,15 +306,14 @@ export class Workspace
 
 	/**
 	 * Resolves an attribute ref (`<owner ref>/attributes/<id>`) by first
-	 * resolving its owner, which may be an entity, value object, event or command.
+	 * resolving its owner, which may be an entity, value object or schema.
 	 */
 	getAttributeByRef(ref: string): Attribute | undefined {
 		const [ownerRef, attributeId] = ref.split("/attributes/");
 		if (!attributeId) return undefined;
 		const owner =
 			this.getEntityOrValueobjectByRef(ownerRef) ??
-			this.getEventByRef(ownerRef) ??
-			this.getCommandByRef(ownerRef);
+			this.getSchemaByRef(ownerRef);
 		return owner?.attributes.get(attributeId);
 	}
 
@@ -396,10 +395,8 @@ export class Workspace
 				return this.getValueObjectByRef(ref);
 			case "invariants":
 				return this.getInvariantByRef(ref);
-			case "events":
-				return this.getEventByRef(ref);
-			case "commands":
-				return this.getCommandByRef(ref);
+			case "schemas":
+				return this.getSchemaByRef(ref);
 			case "provides":
 				return this.getConsumableByRef(ref);
 			case "policies":
@@ -444,28 +441,21 @@ export class Workspace
 		return policy;
 	}
 
-	getCommandByRef(ref: string): Command | undefined {
-		return this.findAggregateMember((it) => it.commands, ref);
-	}
-
-	getCommandByRefOrThrow(ref: string): Command {
-		const command = this.getCommandByRef(ref);
-		if (!command) {
-			throw new Error(`Command with ref ${ref} not found`);
+	getSchemaByRef(ref: string): DataSchema | undefined {
+		this.debug(`Searching for schema with ref: ${ref}`);
+		for (const boundedContext of this.boundedcontexts.values()) {
+			for (const schema of boundedContext.schemas.values()) {
+				if (schema.ref === ref) return schema;
+			}
 		}
-		return command;
 	}
 
-	getEventByRef(ref: string): DomainEvent | undefined {
-		return this.findAggregateMember((it) => it.events, ref);
-	}
-
-	getEventByRefOrThrow(ref: string): DomainEvent {
-		const event = this.getEventByRef(ref);
-		if (!event) {
-			throw new Error(`Event with ref ${ref} not found`);
+	getSchemaByRefOrThrow(ref: string): DataSchema {
+		const schema = this.getSchemaByRef(ref);
+		if (!schema) {
+			throw new Error(`Schema with ref ${ref} not found`);
 		}
-		return event;
+		return schema;
 	}
 
 	getConsumableByRef(ref: string): Consumable | undefined {
@@ -649,6 +639,7 @@ export class BoundedContext
 	aggregates = new Map<string, Aggregate>();
 	policies = new Map<string, Policy>();
 	glossary = new Map<string, GlossaryTerm>();
+	schemas = new Map<string, DataSchema>();
 	workspace: Workspace;
 	subdomains = new Set<Subdomain>();
 	bigBallOfMud: boolean;
@@ -769,6 +760,11 @@ export class BoundedContext
 		return new GlossaryTerm(this, name, attributes);
 	}
 
+	/** Declares a payload shape consumables of this context can carry. */
+	addSchema(name: string, attributes: DataSchemaAttributes = {}): DataSchema {
+		return new DataSchema(this, name, attributes);
+	}
+
 	accept(v: Visitor) {
 		return v.visitBoundedContext(this);
 	}
@@ -784,6 +780,7 @@ export class BoundedContext
 			services: asRecords(this.services),
 			policies: asRecords(this.policies),
 			glossary: asRecords(this.glossary),
+			schemas: asRecords(this.schemas),
 		};
 	}
 }
@@ -878,8 +875,6 @@ export class Aggregate
 	invariants = new Map<string, Invariant>();
 	entities = new Map<string, Entity>();
 	valueobjects = new Map<string, ValueObject>();
-	events = new Map<string, DomainEvent>();
-	commands = new Map<string, Command>();
 	boundedcontext: BoundedContext;
 	consumptions: Consumption[] = [];
 
@@ -943,30 +938,6 @@ export class Aggregate
 		return new ValueObject(this, name, attributes);
 	}
 
-	addEvent(name: string, attributes: DomainEventAttributes): DomainEvent {
-		return new DomainEvent(this, name, attributes);
-	}
-
-	addCommand(name: string, attributes: CommandAttributes): Command {
-		return new Command(this, name, attributes);
-	}
-
-	/**
-	 * Exposes a domain event to other contexts as an event consumable named
-	 * after the event.
-	 */
-	publishes(
-		event: DomainEvent,
-		attributes: Partial<Omit<ConsumableAttributes, "type" | "event">> = {},
-	): Consumable {
-		return this.addConsumable(event.name, {
-			...attributes,
-			description: attributes.description ?? event.description,
-			type: "event",
-			event,
-		});
-	}
-
 	accept(v: Visitor) {
 		return v.visitAggregate(this);
 	}
@@ -980,8 +951,6 @@ export class Aggregate
 			entities: asRecords(this.entities),
 			valueobjects: asRecords(this.valueobjects),
 			invariants: asRecords(this.invariants),
-			events: asRecords(this.events),
-			commands: asRecords(this.commands),
 		};
 	}
 }
@@ -990,10 +959,10 @@ export type ConsumableAttributes = {
 	description: string;
 	pattern?: UpstreamRole;
 	type: ods.ConsumableType;
-	/** For event consumables: the domain event being published. */
-	event?: DomainEvent;
-	/** For operation consumables: the command being exposed. */
-	command?: Command;
+	/** Stays inside the context; never offered to other contexts. */
+	internal?: boolean;
+	/** The payload shape, one of the context's schemas. */
+	schema?: DataSchema;
 	id?: string;
 };
 
@@ -1005,8 +974,10 @@ export class Consumable
 	description: string;
 	pattern?: UpstreamRole;
 	type: ods.ConsumableType;
-	event?: DomainEvent;
-	command?: Command;
+	internal: boolean;
+	schema?: DataSchema;
+	/** For operations: the event consumables this operation may raise. */
+	raisedEvents: Consumable[] = [];
 	provider: Aggregate | Service;
 	consumptions: Consumption[] = [];
 
@@ -1028,10 +999,23 @@ export class Consumable
 		this.description = attributes.description;
 		this.pattern = attributes.pattern;
 		this.type = attributes.type;
-		this.event = attributes.event;
-		this.command = attributes.command;
+		this.internal = attributes.internal ?? false;
+		this.schema = attributes.schema;
 		this.provider = provider;
 		provider.consumables.set(this.id, this);
+	}
+
+	/** Declares an event consumable this operation may raise. */
+	raises(...events: Consumable[]): this {
+		for (const event of events) {
+			if (!this.raisedEvents.includes(event)) this.raisedEvents.push(event);
+		}
+		return this;
+	}
+
+	/** The bounded context this consumable belongs to, through its provider. */
+	get boundedcontext(): BoundedContext {
+		return this.provider.boundedcontext;
 	}
 
 	accept(v: Visitor) {
@@ -1044,8 +1028,11 @@ export class Consumable
 			description: this.description,
 			pattern: this.pattern,
 			type: this.type,
-			event: this.event && { $ref: this.event.ref },
-			command: this.command && { $ref: this.command.ref },
+			internal: this.internal || undefined,
+			schema: this.schema && { $ref: this.schema.ref },
+			raises: this.raisedEvents.length
+				? this.raisedEvents.map((it) => ({ $ref: it.ref }))
+				: undefined,
 		};
 	}
 }
@@ -1601,22 +1588,23 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 	}
 }
 
-export type DomainEventAttributes = {
-	description: string;
+export type DataSchemaAttributes = {
+	description?: string;
 	id?: string;
 };
 
-export class DomainEvent
-	implements Visitable, SchemaConvertible<ods.DomainEventSchema>, AttributeOwner
+/** A payload shape owned by a bounded context and carried by its consumables. */
+export class DataSchema
+	implements Visitable, SchemaConvertible<ods.DataSchemaSchema>, AttributeOwner
 {
 	id: string;
 	name: string;
-	description: string;
+	description?: string;
 	attributes = new Map<string, Attribute>();
-	aggregate: Aggregate;
+	boundedcontext: BoundedContext;
 
 	get path(): string {
-		return `${this.aggregate.path}/events/${this.id}`;
+		return `${this.boundedcontext.path}/schemas/${this.id}`;
 	}
 
 	get ref(): string {
@@ -1624,90 +1612,41 @@ export class DomainEvent
 	}
 
 	constructor(
-		aggregate: Aggregate,
+		boundedcontext: BoundedContext,
 		name: string,
-		attributes: DomainEventAttributes,
+		attributes: DataSchemaAttributes,
 	) {
 		this.id = attributes.id || snakeCase(name);
 		this.name = name;
 		this.description = attributes.description;
-		this.aggregate = aggregate;
-		this.aggregate.events.set(this.id, this);
-	}
-
-	addAttribute(name: string, attributes: AttributeOptions): Attribute {
-		return new Attribute(this, name, attributes);
-	}
-
-	accept(v: Visitor) {
-		return v.visitDomainEvent(this);
-	}
-
-	toSchema(): ods.DomainEventSchema {
-		return {
-			name: this.name,
-			description: this.description,
-			attributes: asRecords(this.attributes),
-		};
-	}
-}
-
-export type CommandAttributes = {
-	description: string;
-	id?: string;
-};
-
-export class Command
-	implements Visitable, SchemaConvertible<ods.CommandSchema>, AttributeOwner
-{
-	id: string;
-	name: string;
-	description: string;
-	attributes = new Map<string, Attribute>();
-	/** The events this command may raise. */
-	raisedEvents: DomainEvent[] = [];
-	aggregate: Aggregate;
-
-	get path(): string {
-		return `${this.aggregate.path}/commands/${this.id}`;
-	}
-
-	get ref(): string {
-		return `#/${this.path}`;
-	}
-
-	constructor(
-		aggregate: Aggregate,
-		name: string,
-		attributes: CommandAttributes,
-	) {
-		this.id = attributes.id || snakeCase(name);
-		this.name = name;
-		this.description = attributes.description;
-		this.aggregate = aggregate;
-		this.aggregate.commands.set(this.id, this);
+		this.boundedcontext = boundedcontext;
+		this.boundedcontext.schemas.set(this.id, this);
 	}
 
 	addAttribute(name: string, options: AttributeOptions): Attribute {
 		return new Attribute(this, name, options);
 	}
 
-	/** Declares an event this command may raise. */
-	raises(event: DomainEvent): this {
-		if (!this.raisedEvents.includes(event)) this.raisedEvents.push(event);
-		return this;
+	/** Consumables across the workspace that carry this schema. */
+	get consumables(): Consumable[] {
+		const out: Consumable[] = [];
+		for (const bc of this.boundedcontext.workspace.boundedcontexts.values()) {
+			for (const p of [...bc.aggregates.values(), ...bc.services.values()])
+				for (const c of p.consumables.values())
+					if (c.schema === this) out.push(c);
+		}
+		return out;
 	}
 
 	accept(v: Visitor) {
-		return v.visitCommand(this);
+		return v.visitDataSchema(this);
 	}
 
-	toSchema(): ods.CommandSchema {
+	toSchema(): ods.DataSchemaSchema {
 		return {
 			name: this.name,
 			description: this.description,
 			attributes: asRecords(this.attributes),
-			raises: this.raisedEvents.map((it) => ({ $ref: it.ref })),
 		};
 	}
 }
@@ -1718,16 +1657,19 @@ export type PolicyAttributes = {
 };
 
 /**
- * A reaction that lives in a bounded context: when any of its events happen,
- * it issues its commands. Events and commands may belong to other contexts.
+ * A reaction that lives in a bounded context: when any of its event
+ * consumables happen, it issues its operation consumables. Either side may
+ * belong to another context.
  */
 export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 	id: string;
 	name: string;
 	description: string;
 	boundedcontext: BoundedContext;
-	events: DomainEvent[] = [];
-	commands: Command[] = [];
+	/** Event consumables that trigger the policy. */
+	events: Consumable[] = [];
+	/** Operation consumables the policy issues. */
+	commands: Consumable[] = [];
 
 	get path(): string {
 		return `${this.boundedcontext.path}/policies/${this.id}`;
@@ -1749,16 +1691,16 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 		this.boundedcontext.policies.set(this.id, this);
 	}
 
-	/** Adds a triggering event. */
-	on(...events: DomainEvent[]): this {
+	/** Adds a triggering event consumable. */
+	on(...events: Consumable[]): this {
 		for (const event of events) {
 			if (!this.events.includes(event)) this.events.push(event);
 		}
 		return this;
 	}
 
-	/** Adds a command to issue. */
-	then(...commands: Command[]): this {
+	/** Adds an operation consumable to issue. */
+	then(...commands: Consumable[]): this {
 		for (const command of commands) {
 			if (!this.commands.includes(command)) this.commands.push(command);
 		}

@@ -32,6 +32,15 @@ Open-host service for /pet endpoints
 
 
 
+## Schemas
+| Name | Description | Attributes | Used by |
+| --- | --- | --- | --- |
+| PetRegistered | What the outside learns when a pet joins the catalog | **petId**: `int64`, name: `string`, category: `Category`, status: `PetStatus` | PetRegistered |
+| PetStatusChanged | - | **petId**: `int64`, from: `PetStatus`, to: `PetStatus` | PetStatusChanged, ChangePetStatus |
+| RegisterPet | Request body for adding a pet | name: `string`, category: `Category`, photoUrls: `PhotoUrl[]` | AddPet |
+| PetId | Identifies one pet | **petId**: `int64` | DeletePet |
+
+
 ## Policies
 > No policies.
 

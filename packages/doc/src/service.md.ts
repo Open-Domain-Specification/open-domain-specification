@@ -1,16 +1,8 @@
-import type {
-	Consumable,
-	Consumption,
-	Service,
-} from "@open-domain-specification/core";
+import type { Consumption, Service } from "@open-domain-specification/core";
 import { contextBreadcrumbsMd } from "./breadcrumbs.md";
+import { providesTableMd } from "./consumables.md";
 import { pathToConsumableMapSvg, pathToIndexMd } from "./lib/paths";
 import type { Options } from "./options";
-
-const consumableSection = (consumable: Consumable) => `
-### (${consumable.type}) - ${consumable.name} ${consumable.pattern ? `[${consumable.pattern}]` : ""}
-${consumable.description}
-`;
 
 const consumptionSection = (consumption: Consumption) => `
 ### ${consumption.consumable.name} ${consumption.pattern ? `[${consumption.pattern}]` : ""}
@@ -27,13 +19,7 @@ ${service.description}
 ![consumablemap](${pathToConsumableMapSvg(service.path, service.path)})
 
 ## Provides
-${
-	service.consumables.size > 0
-		? Array.from(service.consumables.entries())
-				.map(([_name, consumable]) => consumableSection(consumable))
-				.join("")
-		: "> No consumables."
-}
+${providesTableMd(service.consumables, service.path)}
 
 ## Consumes
 ${

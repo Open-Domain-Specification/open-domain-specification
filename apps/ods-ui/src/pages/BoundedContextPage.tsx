@@ -12,6 +12,7 @@ import {
 } from "@open-domain-specification/graphviz";
 import { useParams } from "react-router-dom";
 import { AccordionItems } from "../components/AccordionItems.tsx";
+import { AttributeList } from "../components/AttributeList.tsx";
 import { ConsumptionTable } from "../components/ConsumptionTable.tsx";
 import { ContextRelationshipTable } from "../components/ContextRelationshipTable.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
@@ -26,6 +27,7 @@ import { Icons } from "../Icons.tsx";
 import { ContextRelationshipsHelp } from "../modals/ContextRelationshipsHelp.tsx";
 import { GlossaryHelp } from "../modals/GlossaryHelp.tsx";
 import { PoliciesHelp } from "../modals/PoliciesHelp.tsx";
+import { SchemasHelp } from "../modals/SchemasHelp.tsx";
 
 export function _BoundedContextPage(props: { boundedcontext: BoundedContext }) {
 	const nav = useRefNavigate();
@@ -107,6 +109,21 @@ export function _BoundedContextPage(props: { boundedcontext: BoundedContext }) {
 				rightSection={<PoliciesHelp />}
 			/>
 
+			<AccordionItems
+				title={"Schemas"}
+				items={Array.from(props.boundedcontext.schemas.values()).map((it) => ({
+					id: it.ref,
+					name: it.name,
+					description: it.consumables.length
+						? `${it.description ?? ""} Carried by: ${it.consumables.map((c) => c.name).join(", ")}.`
+						: it.description,
+					icon: Icons.Schema,
+					endSlot: <AttributeList attributes={it.attributes} />,
+				}))}
+				emptyMessage={"No schemas defined."}
+				rightSection={<SchemasHelp />}
+			/>
+
 			<Stack>
 				<PageSubtitle
 					title={"Context Relationships"}
@@ -155,6 +172,16 @@ export function _BoundedContextPage(props: { boundedcontext: BoundedContext }) {
 									ref: policy.ref,
 									name: policy.name,
 									icon: Icons.Policy,
+								}),
+							),
+						},
+						{
+							title: "Schemas",
+							items: Array.from(props.boundedcontext.schemas.values()).map(
+								(schema) => ({
+									ref: schema.ref,
+									name: schema.name,
+									icon: Icons.Schema,
 								}),
 							),
 						},

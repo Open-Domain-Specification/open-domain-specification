@@ -97,7 +97,7 @@ const roleCoherence: Rule = (workspace) => {
 		) {
 			continue;
 		}
-		if (!consumable.pattern) {
+		if (!consumable.pattern && !consumable.internal) {
 			diagnostics.push({
 				severity: "warning",
 				rule: "role-coherence",
@@ -144,6 +144,124 @@ const separateWays: Rule = (workspace) => {
 	return diagnostics;
 };
 
+/** An internal consumable never leaves its context. */
+const internalConsumable: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const consumption of consumptionsOf(workspace)) {
+		const { consumable, consumer } = consumption;
+		if (
+			consumable.internal &&
+			consumable.provider.boundedcontext !== consumer.boundedcontext
+		) {
+			diagnostics.push({
+				severity: "error",
+				rule: "internal-consumable",
+				message: `"${consumer.name}" consumes "${consumable.name}" from "${consumable.provider.boundedcontext.name}", but it is internal to that context`,
+				ref: consumer.ref,
+			});
+		}
+	}
+	for (const bc of workspace.boundedcontexts.values()) {
+		for (const policy of bc.policies.values()) {
+			for (const event of policy.events) {
+				if (event.internal && event.provider.boundedcontext !== bc) {
+					diagnostics.push({
+						severity: "error",
+						rule: "internal-consumable",
+						message: `Policy "${policy.name}" reacts to "${event.name}", which is internal to "${event.provider.boundedcontext.name}"`,
+						ref: policy.ref,
+					});
+				}
+			}
+			for (const command of policy.commands) {
+				if (command.internal && command.provider.boundedcontext !== bc) {
+					diagnostics.push({
+						severity: "error",
+						rule: "internal-consumable",
+						message: `Policy "${policy.name}" issues "${command.name}", which is internal to "${command.provider.boundedcontext.name}"`,
+						ref: policy.ref,
+					});
+				}
+			}
+		}
+	}
+	return diagnostics;
+};
+
+/** A consumable's payload is one of its own context's schemas. */
+const schemaContext: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const bc of workspace.boundedcontexts.values()) {
+		for (const p of [...bc.aggregates.values(), ...bc.services.values()]) {
+			for (const c of p.consumables.values()) {
+				if (c.schema && c.schema.boundedcontext !== bc) {
+					diagnostics.push({
+						severity: "error",
+						rule: "schema-context",
+						message: `"${c.name}" carries schema "${c.schema.name}" from "${c.schema.boundedcontext.name}"; a payload belongs to the context that publishes it`,
+						ref: c.ref,
+					});
+				}
+				if (c.internal && c.pattern) {
+					diagnostics.push({
+						severity: "warning",
+						rule: "internal-consumable",
+						message: `"${c.name}" is internal but declares the upstream role "${c.pattern}", which only matters to other contexts`,
+						ref: c.ref,
+					});
+				}
+			}
+		}
+	}
+	return diagnostics;
+};
+
+/** Policies react to events and issue operations; operations raise events. */
+const consumableKinds: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const bc of workspace.boundedcontexts.values()) {
+		for (const policy of bc.policies.values()) {
+			for (const c of policy.events.filter((c) => c.type !== "event")) {
+				diagnostics.push({
+					severity: "error",
+					rule: "consumable-kind",
+					message: `Policy "${policy.name}" reacts to "${c.name}", which is an operation, not an event`,
+					ref: policy.ref,
+				});
+			}
+			for (const c of policy.commands.filter((c) => c.type !== "operation")) {
+				diagnostics.push({
+					severity: "error",
+					rule: "consumable-kind",
+					message: `Policy "${policy.name}" issues "${c.name}", which is an event, not an operation`,
+					ref: policy.ref,
+				});
+			}
+		}
+		for (const p of [...bc.aggregates.values(), ...bc.services.values()]) {
+			for (const c of p.consumables.values()) {
+				if (c.type === "event" && c.raisedEvents.length) {
+					diagnostics.push({
+						severity: "error",
+						rule: "consumable-kind",
+						message: `"${c.name}" is an event but declares raises; only operations raise events`,
+						ref: c.ref,
+					});
+				}
+				for (const e of c.raisedEvents.filter((e) => e.type !== "event")) {
+					diagnostics.push({
+						severity: "error",
+						rule: "consumable-kind",
+						message: `"${c.name}" raises "${e.name}", which is an operation, not an event`,
+						ref: c.ref,
+					});
+				}
+			}
+		}
+	}
+	return diagnostics;
+};
+
 /** A policy reacts to something and does something. */
 const policyComplete: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -184,6 +302,9 @@ const RULES: Rule[] = [
 	crossAggregateReference,
 	roleCoherence,
 	separateWays,
+	internalConsumable,
+	schemaContext,
+	consumableKinds,
 	policyComplete,
 	contextServesSubdomain,
 ];

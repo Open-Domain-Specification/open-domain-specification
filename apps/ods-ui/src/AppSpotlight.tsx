@@ -4,10 +4,9 @@ import {
 	type Aggregate,
 	type BoundedContext,
 	boundedContextNamespace,
-	type Command,
 	type Consumable,
+	type DataSchema,
 	type Domain,
-	type DomainEvent,
 	type Entity,
 	type GlossaryTerm,
 	type Invariant,
@@ -155,20 +154,6 @@ class SpotlightCollector extends AbstractVisitor {
 		super.visitEntity(node);
 	}
 
-	visitCommand(node: Command) {
-		this.actions.push({
-			id: node.ref,
-			label: `${aggregateLabel(node.aggregate)} / ${node.name}`,
-			description: node.description,
-			onClick: () => {
-				this.navigator(node.aggregate.ref);
-			},
-			leftSection: Icons.Operations,
-			group: "Commands",
-		});
-		super.visitCommand(node);
-	}
-
 	visitGlossaryTerm(node: GlossaryTerm) {
 		this.actions.push({
 			id: node.ref,
@@ -197,18 +182,18 @@ class SpotlightCollector extends AbstractVisitor {
 		super.visitPolicy(node);
 	}
 
-	visitDomainEvent(node: DomainEvent) {
+	visitDataSchema(node: DataSchema) {
 		this.actions.push({
 			id: node.ref,
-			label: `${aggregateLabel(node.aggregate)} / ${node.name}`,
+			label: `${contextLabel(node.boundedcontext)} / ${node.name}`,
 			description: node.description,
 			onClick: () => {
-				this.navigator(node.aggregate.ref);
+				this.navigator(node.boundedcontext.ref);
 			},
-			leftSection: Icons.Events,
-			group: "Events",
+			leftSection: Icons.Schema,
+			group: "Schemas",
 		});
-		super.visitDomainEvent(node);
+		super.visitDataSchema(node);
 	}
 
 	visitValueObject(node: ValueObject) {

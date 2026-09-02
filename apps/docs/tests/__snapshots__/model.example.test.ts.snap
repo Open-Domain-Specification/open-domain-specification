@@ -6,7 +6,6 @@ exports[`Visitor Example > should compile  1`] = `
     "cms": {
       "aggregates": {
         "article": {
-          "commands": {},
           "consumes": [],
           "description": "Renderable content unit",
           "entities": {
@@ -27,7 +26,6 @@ exports[`Visitor Example > should compile  1`] = `
               "root": true,
             },
           },
-          "events": {},
           "invariants": {
             "slug_format_valid": {
               "constrains": [],
@@ -52,6 +50,7 @@ exports[`Visitor Example > should compile  1`] = `
       "glossary": {},
       "name": "CMS",
       "policies": {},
+      "schemas": {},
       "services": {
         "content_renderer": {
           "consumes": [
@@ -66,11 +65,12 @@ exports[`Visitor Example > should compile  1`] = `
           "name": "ContentRenderer",
           "provides": {
             "get_article": {
-              "command": undefined,
               "description": "Fetch article/page content by slug",
-              "event": undefined,
+              "internal": undefined,
               "name": "GetArticle",
               "pattern": "open-host-service",
+              "raises": undefined,
+              "schema": undefined,
               "type": "operation",
             },
           },
@@ -87,7 +87,6 @@ exports[`Visitor Example > should compile  1`] = `
     "ordering": {
       "aggregates": {
         "order": {
-          "commands": {},
           "consumes": [],
           "description": "Immutable record of a purchase",
           "entities": {
@@ -108,7 +107,6 @@ exports[`Visitor Example > should compile  1`] = `
               "root": true,
             },
           },
-          "events": {},
           "invariants": {
             "totals_non_negative": {
               "constrains": [],
@@ -133,6 +131,7 @@ exports[`Visitor Example > should compile  1`] = `
       "glossary": {},
       "name": "Ordering",
       "policies": {},
+      "schemas": {},
       "services": {
         "checkout_app": {
           "consumes": [
@@ -147,11 +146,12 @@ exports[`Visitor Example > should compile  1`] = `
           "name": "CheckoutApp",
           "provides": {
             "place_order": {
-              "command": undefined,
               "description": "Create an order from a valid checkout",
-              "event": undefined,
+              "internal": undefined,
               "name": "PlaceOrder",
               "pattern": "open-host-service",
+              "raises": undefined,
+              "schema": undefined,
               "type": "operation",
             },
           },

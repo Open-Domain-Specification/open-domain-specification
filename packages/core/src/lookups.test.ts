@@ -28,38 +28,38 @@ describe("Workspace ref lookups", () => {
 		).toBeDefined();
 	});
 
-	it("resolves domain events and links published consumables to them", () => {
-		expect(ws.getEventByRef(fixture.orderPlacedEvent.ref)).toBe(
-			fixture.orderPlacedEvent,
+	it("resolves schemas and the consumables that carry them", () => {
+		expect(ws.getSchemaByRef(fixture.orderSummary.ref)).toBe(
+			fixture.orderSummary,
 		);
-		expect(fixture.orderPlaced.event).toBe(fixture.orderPlacedEvent);
+		expect(fixture.orderPlaced.schema).toBe(fixture.orderSummary);
 		expect(fixture.orderPlaced.type).toBe("event");
-		expect(fixture.orderPlacedEvent.attributes.get("total")?.valueobject).toBe(
+		expect(fixture.orderSummary.consumables).toEqual([fixture.orderPlaced]);
+		expect(fixture.orderSummary.attributes.get("total")?.valueobject).toBe(
 			fixture.money,
 		);
-		expect(fixture.orderPlacedEvent.attributes.get("order_id")?.identity).toBe(
+		expect(fixture.orderSummary.attributes.get("order_id")?.identity).toBe(
 			true,
 		);
-		expect(() => ws.getEventByRefOrThrow("#/nope")).toThrow(/Event/);
+		expect(() => ws.getSchemaByRefOrThrow("#/nope")).toThrow(/Schema/);
 	});
 
-	it("resolves commands, the events they raise, and the consumables exposing them", () => {
-		expect(ws.getCommandByRef(fixture.placeOrderCommand.ref)).toBe(
-			fixture.placeOrderCommand,
+	it("resolves operations and the events they raise", () => {
+		expect(ws.getConsumableByRef(fixture.placeOrder.ref)).toBe(
+			fixture.placeOrder,
 		);
-		expect(fixture.placeOrderCommand.raisedEvents).toEqual([
-			fixture.orderPlacedEvent,
-		]);
-		expect(fixture.placeOrder.command).toBe(fixture.placeOrderCommand);
-		expect(() => ws.getCommandByRefOrThrow("#/nope")).toThrow(/Command/);
+		expect(fixture.placeOrder.raisedEvents).toEqual([fixture.orderPlaced]);
+		expect(fixture.placeOrder.schema).toBe(fixture.orderRequest);
+		expect(fixture.invoiceRaised.internal).toBe(true);
+		expect(fixture.orderPlaced.internal).toBe(false);
 	});
 
 	it("resolves attributes by ref through their owner", () => {
 		const total = fixture.order.attributes.get("total");
 		expect(ws.getAttributeByRef(total?.ref ?? "")).toBe(total);
 		expect(
-			ws.getAttributeByRef(`${fixture.orderPlacedEvent.ref}/attributes/total`),
-		).toBe(fixture.orderPlacedEvent.attributes.get("total"));
+			ws.getAttributeByRef(`${fixture.orderSummary.ref}/attributes/total`),
+		).toBe(fixture.orderSummary.attributes.get("total"));
 		expect(ws.getAttributeByRef(fixture.order.ref)).toBeUndefined();
 		expect(() => ws.getAttributeByRefOrThrow("#/x/attributes/y")).toThrow(
 			/Attribute/,
@@ -83,11 +83,9 @@ describe("Workspace ref lookups", () => {
 		expect(ws.getPolicyByRef(fixture.invoiceOnOrderPlaced.ref)).toBe(
 			fixture.invoiceOnOrderPlaced,
 		);
-		expect(fixture.invoiceOnOrderPlaced.events).toEqual([
-			fixture.orderPlacedEvent,
-		]);
+		expect(fixture.invoiceOnOrderPlaced.events).toEqual([fixture.orderPlaced]);
 		expect(fixture.invoiceOnOrderPlaced.commands).toEqual([
-			fixture.raiseInvoiceCommand,
+			fixture.raiseInvoice,
 		]);
 		expect(() => ws.getPolicyByRefOrThrow("#/nope")).toThrow(/Policy/);
 	});
@@ -109,8 +107,8 @@ describe("Workspace ref lookups", () => {
 			fixture.order,
 			fixture.money,
 			fixture.nonEmpty,
-			fixture.orderPlacedEvent,
-			fixture.placeOrderCommand,
+			fixture.orderSummary,
+			fixture.placeOrder,
 			fixture.orderPlaced,
 			fixture.invoiceOnOrderPlaced,
 			fixture.orderTerm,

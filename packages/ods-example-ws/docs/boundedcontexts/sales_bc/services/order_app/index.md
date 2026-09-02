@@ -7,21 +7,17 @@ Open-host service for /store/order endpoints
 ![consumablemap](./consumablemap.svg)
 
 ## Provides
-
-### (operation) - PlaceOrder [open-host-service]
-POST /store/order
-
-### (operation) - GetOrderById [open-host-service]
-GET /store/order/{orderId}
-
-### (operation) - DeleteOrder [open-host-service]
-DELETE /store/order/{orderId}
+| Name | Type | Internal | Pattern | Description | Schema | Raises |
+| --- | --- | --- | --- | --- | --- | --- |
+| PlaceOrder | operation | no | open-host-service | POST /store/order | [PlaceOrder](../../index.md#schemas) | OrderPlaced |
+| GetOrderById | operation | no | open-host-service | GET /store/order/{orderId} | - | - |
+| DeleteOrder | operation | no | open-host-service | DELETE /store/order/{orderId} | - | OrderDeleted |
 
 
 ## Consumes
 
 ### GetPetSummary [anti-corruption-layer]
-Internal: {id,name,status} for ACL checks
+Slim {id,name,status} read offered to other contexts for ACL checks
 - **Provider**: [PetApp](../../../catalog_bc/services/pet_app/index.md)
 
 	

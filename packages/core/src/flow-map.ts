@@ -1,22 +1,18 @@
-import {
-	aggregateNamespace,
-	contextMemberNamespace,
-	type ODSNamespace,
-} from "./namespace";
+import { contextMemberNamespace, type ODSNamespace } from "./namespace";
 import { ScopeManager } from "./scope-manager";
 import {
 	BoundedContext,
-	type Command,
-	type DomainEvent,
+	type Consumable,
 	type Policy,
 	type Workspace,
 } from "./workspace";
 
 /**
- * The reactive flow through a scope, walked from its policies: the events a
- * policy reacts to, the commands it issues, and the events those commands
- * raise. Elements reached this way are included even when they live in
- * another context; commands no policy issues are not.
+ * The reactive flow through a scope, walked from its policies: the event
+ * consumables a policy reacts to, the operation consumables it issues, and
+ * the events those operations raise. Consumables reached this way are
+ * included even when they live in another context; operations no policy
+ * issues are not.
  */
 export class ODSFlowMap {
 	readonly nodes = new Map<string, ODSFlowMapNode>();
@@ -55,23 +51,23 @@ export class ODSFlowMap {
 		}
 	}
 
-	private addEvent(event: DomainEvent): ODSFlowMapNode {
+	private addEvent(event: Consumable): ODSFlowMapNode {
 		return this.addNode({
 			id: event.ref,
 			name: event.name,
 			description: event.description,
 			type: "event",
-			namespace: aggregateNamespace(event.aggregate),
+			namespace: providerNamespace(event),
 		});
 	}
 
-	private addCommand(command: Command): ODSFlowMapNode {
+	private addCommand(command: Consumable): ODSFlowMapNode {
 		const node = this.addNode({
 			id: command.ref,
 			name: command.name,
 			description: command.description,
 			type: "command",
-			namespace: aggregateNamespace(command.aggregate),
+			namespace: providerNamespace(command),
 		});
 		for (const event of command.raisedEvents) {
 			this.addEdge({ source: node, target: this.addEvent(event) });
@@ -96,6 +92,12 @@ export class ODSFlowMap {
 			ScopeManager.fromBoundedContext(boundedcontext),
 		);
 	}
+}
+
+/** The provider's namespace extended with the provider itself, so consumables cluster under it. */
+function providerNamespace(consumable: Consumable): ODSNamespace[] {
+	const p = consumable.provider;
+	return [...contextMemberNamespace(p), { id: p.ref, name: p.name }];
 }
 
 export type ODSFlowMapNode = {

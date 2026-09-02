@@ -38,28 +38,36 @@ describe("schema round-trip", () => {
 		expect(consumption.consumable.provider.name).toBe("Order");
 	});
 
-	it("re-links published consumables to their event and attributes to value objects", () => {
+	it("re-links consumables to their schema and schema attributes to value objects", () => {
 		const consumable = rebuilt.getConsumableByRefOrThrow(
 			"#/boundedcontexts/ordering_bc/aggregates/order/provides/order_placed",
 		);
-		expect(consumable.event?.ref).toBe(
-			"#/boundedcontexts/ordering_bc/aggregates/order/events/order_placed",
+		expect(consumable.schema?.ref).toBe(
+			"#/boundedcontexts/ordering_bc/schemas/order_summary",
 		);
-		expect(consumable.event?.attributes.get("total")?.valueobject?.name).toBe(
+		expect(consumable.schema?.attributes.get("total")?.valueobject?.name).toBe(
 			"Money",
 		);
+		expect(consumable.internal).toBe(false);
 	});
 
-	it("re-links commands to the events they raise and to exposing consumables", () => {
-		const command = rebuilt.getCommandByRefOrThrow(
-			"#/boundedcontexts/ordering_bc/aggregates/order/commands/place_order",
-		);
-		expect(command.raisedEvents.map((it) => it.name)).toEqual(["Order Placed"]);
-		expect(command.attributes.get("lines")?.type).toBe("OrderLine[]");
-		const consumable = rebuilt.getConsumableByRefOrThrow(
+	it("re-links operations to the events they raise and keeps internal flags", () => {
+		const placeOrder = rebuilt.getConsumableByRefOrThrow(
 			"#/boundedcontexts/ordering_bc/services/order_app/provides/place_order",
 		);
-		expect(consumable.command).toBe(command);
+		expect(placeOrder.raisedEvents.map((it) => it.name)).toEqual([
+			"Order Placed",
+		]);
+		expect(placeOrder.schema?.attributes.get("lines")?.type).toBe(
+			"OrderLine[]",
+		);
+		const raiseInvoice = rebuilt.getConsumableByRefOrThrow(
+			"#/boundedcontexts/invoicing_bc/aggregates/invoice/provides/raise_invoice",
+		);
+		expect(raiseInvoice.internal).toBe(true);
+		expect(raiseInvoice.raisedEvents.map((it) => it.name)).toEqual([
+			"Invoice Raised",
+		]);
 	});
 
 	it("keeps attributes on entities and value objects", () => {
@@ -84,12 +92,12 @@ describe("schema round-trip", () => {
 		]);
 	});
 
-	it("re-links policies to events and commands across contexts", () => {
+	it("re-links policies to consumables across contexts", () => {
 		const policy = rebuilt.getPolicyByRefOrThrow(
 			"#/boundedcontexts/invoicing_bc/policies/invoice_on_order_placed",
 		);
 		expect(policy.events.map((it) => it.ref)).toEqual([
-			"#/boundedcontexts/ordering_bc/aggregates/order/events/order_placed",
+			"#/boundedcontexts/ordering_bc/aggregates/order/provides/order_placed",
 		]);
 		expect(policy.commands.map((it) => it.name)).toEqual(["Raise Invoice"]);
 	});

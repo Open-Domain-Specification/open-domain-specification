@@ -16,25 +16,14 @@ Materialized view: { available: number, pending: number, sold: number }
 ## Relationships
 
 
-## Commands
-| Name | Description | Attributes | Raises |
-| --- | --- | --- | --- |
-| RecountInventory | Recompute the status→count map from catalog and sales facts | - | InventoryUpdated |
-
-
-## Events
-| Name | Description | Attributes |
-| --- | --- | --- |
-| InventoryUpdated | Inventory counts changed | - |
-
-
 ## Invariants
 > No invariants.
 
 ## Provides
-
-### (event) - InventoryUpdated [published-language]
-Inventory counts changed
+| Name | Type | Internal | Pattern | Description | Schema | Raises |
+| --- | --- | --- | --- | --- | --- | --- |
+| InventoryUpdated | event | no | published-language | Inventory counts changed | - | - |
+| RecountInventory | operation | yes | - | Recompute the status→count map from catalog and sales facts | - | InventoryUpdated |
 
 
 ## Consumes

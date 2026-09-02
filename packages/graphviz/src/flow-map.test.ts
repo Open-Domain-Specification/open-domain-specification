@@ -10,8 +10,18 @@ function makeWorkspace() {
 	});
 	const bc = ws.addBoundedContext("Ordering", { description: "" });
 	const order = bc.addAggregate("Order", { description: "" });
-	const placed = order.addEvent("OrderPlaced", { description: "" });
-	const approve = order.addCommand("ApproveOrder", { description: "" });
+	const placed = order.provides("OrderPlaced", {
+		type: "event",
+		pattern: "published-language",
+		description: "",
+	});
+	const approve = order
+		.provides("ApproveOrder", {
+			type: "operation",
+			internal: true,
+			description: "",
+		})
+		.raises(placed);
 	bc.addPolicy("Auto approve", { description: "" }).on(placed).then(approve);
 	return { ws, bc };
 }

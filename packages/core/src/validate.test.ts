@@ -93,6 +93,56 @@ describe("Workspace.validate", () => {
 		expect(rulesOf(ws)).toContain("error:separate-ways");
 	});
 
+	it("flags internal consumables consumed or joined from another context", () => {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const evt = up
+			.addService("S", { description: "", type: "application" })
+			.provides("Happened", { description: "", type: "event", internal: true });
+		down
+			.addService("T", { description: "", type: "application" })
+			.consumes(evt, { pattern: "conformist" });
+		down.addPolicy("React", { description: "" }).on(evt);
+		const rules = ws.validate().filter((d) => d.rule === "internal-consumable");
+		expect(rules).toHaveLength(2);
+		// Internal consumables are exempt from the upstream-role warning.
+		expect(rulesOf(ws)).not.toContain("warning:role-coherence");
+	});
+
+	it("keeps payload schemas inside the publishing context", () => {
+		const ws = emptyWorkspace();
+		const a = ws.addBoundedContext("A", { description: "" });
+		const b = ws.addBoundedContext("B", { description: "" });
+		const shape = a.addSchema("Shape");
+		b.addService("S", { description: "", type: "application" }).provides("Op", {
+			description: "",
+			type: "operation",
+			internal: true,
+			pattern: "open-host-service",
+			schema: shape,
+		});
+		expect(rulesOf(ws)).toContain("error:schema-context");
+		expect(rulesOf(ws)).toContain("warning:internal-consumable");
+	});
+
+	it("checks consumable kinds on policies and raises", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const svc = bc.addService("S", { description: "", type: "application" });
+		const evt = svc.provides("Evt", { description: "", type: "event" });
+		const op = svc.provides("Op", { description: "", type: "operation" });
+		bc.addPolicy("Backwards", { description: "" }).on(op).then(evt);
+		evt.raises(op);
+		const rules = ws.validate().filter((d) => d.rule === "consumable-kind");
+		expect(rules.map((d) => d.message)).toEqual([
+			expect.stringContaining("is an operation, not an event"),
+			expect.stringContaining("is an event, not an operation"),
+			expect.stringContaining("declares raises"),
+			expect.stringContaining('raises "Op", which is an operation'),
+		]);
+	});
+
 	it("warns about incomplete policies", () => {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("BC", { description: "" });

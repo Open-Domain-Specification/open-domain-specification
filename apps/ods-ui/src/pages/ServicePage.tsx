@@ -8,7 +8,7 @@ import { consumableMapToDigraph } from "@open-domain-specification/graphviz";
 import { useParams } from "react-router-dom";
 import { AccordionItems } from "../components/AccordionItems.tsx";
 import { ConsumableAccordionLabel } from "../components/ConsumableAccordionLabel.tsx";
-import { ConsumableTargetBadge } from "../components/ConsumableTargetBadge.tsx";
+import { ConsumableDetails } from "../components/ConsumableDetails.tsx";
 import { ConsumptionAccordionLabel } from "../components/ConsumptionAccordionLabel.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
@@ -49,7 +49,7 @@ export function _ServicePage(props: { service: Service }) {
 						name: <ConsumableAccordionLabel consumable={it} />,
 						description: it.description,
 						icon: it.type === "event" ? Icons.Events : Icons.Operations,
-						endSlot: <ConsumableTargetBadge consumable={it} />,
+						endSlot: <ConsumableDetails consumable={it} />,
 					}))}
 					emptyMessage={"This service does not provide any consumables."}
 					rightSection={<ProvidesHelp />}

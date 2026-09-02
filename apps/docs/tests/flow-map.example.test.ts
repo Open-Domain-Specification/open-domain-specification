@@ -10,14 +10,30 @@ const ws = new Workspace("eCommerce", {
 });
 const ordering = ws.addBoundedContext("Ordering", { description: "" });
 const order = ordering.addAggregate("Order", { description: "" });
-const placed = order.addEvent("OrderPlaced", { description: "" });
-const approved = order.addEvent("OrderApproved", { description: "" });
+const placed = order.provides("Order Placed", {
+	description: "",
+	type: "event",
+	pattern: "published-language",
+});
+const approved = order.provides("Order Approved", {
+	description: "",
+	type: "event",
+	internal: true,
+});
 const approve = order
-	.addCommand("ApproveOrder", { description: "" })
+	.provides("Approve Order", {
+		description: "",
+		type: "operation",
+		internal: true,
+	})
 	.raises(approved);
 const ship = ordering
 	.addAggregate("Shipment", { description: "" })
-	.addCommand("CreateShipment", { description: "" });
+	.provides("Create Shipment", {
+		description: "",
+		type: "operation",
+		internal: true,
+	});
 
 ordering
 	.addPolicy("Auto approve", { description: "" })
@@ -29,7 +45,7 @@ ordering
 	.then(ship);
 
 describe("Flow map", () => {
-	it("renders the event → policy → command chain", async () => {
+	it("renders the event → policy → operation chain", async () => {
 		const digraph = flowMapToDigraph(ODSFlowMap.fromBoundedContext(ordering));
 		const svg = await digraph.toSVG();
 		writeFileSync("static/img/flow-map-example.svg", svg);

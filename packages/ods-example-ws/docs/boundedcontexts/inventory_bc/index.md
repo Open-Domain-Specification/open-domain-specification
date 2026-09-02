@@ -31,6 +31,9 @@ Open-host service for /store/inventory
 
 
 
+## Schemas
+> No schemas.
+
 ## Policies
 ![flowmap](./flowmap.svg)
 

@@ -31,23 +31,6 @@ Order for a single pet
 | [Pet](../../../catalog_bc/aggregates/pet/entities/pet/index.md) | has-status | Pet - PetStatus | uses | 1 |
 
 
-## Commands
-| Name | Description | Attributes | Raises |
-| --- | --- | --- | --- |
-| PlaceOrder | Place an order for one pet | petId: `int64`, quantity: `Quantity` | OrderPlaced |
-| ApproveOrder | Approve a placed order once the pet is available | **orderId**: `int64` | OrderApproved |
-| DeliverOrder | Mark an approved order as delivered | **orderId**: `int64` | OrderDelivered |
-
-
-## Events
-| Name | Description | Attributes |
-| --- | --- | --- |
-| OrderPlaced | Order created (status=placed) | **orderId**: `int64`, petId: `int64`, quantity: `Quantity` |
-| OrderApproved | Order approved (status=approved) | - |
-| OrderDelivered | Order delivered (status=delivered) | - |
-| OrderDeleted | Order deleted via DELETE /store/order/{orderId} | - |
-
-
 ## Invariants
 | Name | Description | Constrains |
 | --- | --- | --- |
@@ -57,18 +40,14 @@ Order for a single pet
 
 
 ## Provides
-
-### (event) - OrderPlaced [published-language]
-Order created (status=placed)
-
-### (event) - OrderApproved [published-language]
-Order approved (status=approved)
-
-### (event) - OrderDelivered [published-language]
-Order delivered (status=delivered)
-
-### (event) - OrderDeleted [published-language]
-Order deleted via DELETE /store/order/{orderId}
+| Name | Type | Internal | Pattern | Description | Schema | Raises |
+| --- | --- | --- | --- | --- | --- | --- |
+| OrderPlaced | event | no | published-language | Order created (status=placed) | [OrderPlaced](../../index.md#schemas) | - |
+| OrderApproved | event | no | published-language | Order approved (status=approved) | [OrderId](../../index.md#schemas) | - |
+| OrderDelivered | event | no | published-language | Order delivered (status=delivered) | [OrderId](../../index.md#schemas) | - |
+| OrderDeleted | event | no | published-language | Order deleted via DELETE /store/order/{orderId} | [OrderId](../../index.md#schemas) | - |
+| ApproveOrder | operation | yes | - | Approve a placed order once the pet is available | [OrderId](../../index.md#schemas) | OrderApproved |
+| DeliverOrder | operation | yes | - | Mark an approved order as delivered | [OrderId](../../index.md#schemas) | OrderDelivered |
 
 
 ## Consumes

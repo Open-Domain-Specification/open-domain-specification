@@ -2,12 +2,11 @@ import type { Visitable } from "./visitable";
 import type {
 	Aggregate,
 	BoundedContext,
-	Command,
 	Consumable,
 	Consumption,
 	ContextRelationship,
+	DataSchema,
 	Domain,
-	DomainEvent,
 	Entity,
 	EntityRelation,
 	GlossaryTerm,
@@ -33,8 +32,7 @@ export interface Visitor {
 	visitEntityRelation(node: EntityRelation): void;
 	visitConsumption(node: Consumption): void;
 	visitContextRelationship(node: ContextRelationship): void;
-	visitDomainEvent(node: DomainEvent): void;
-	visitCommand(node: Command): void;
+	visitDataSchema(node: DataSchema): void;
 	visitPolicy(node: Policy): void;
 	visitGlossaryTerm(node: GlossaryTerm): void;
 }
@@ -149,6 +147,10 @@ export abstract class AbstractVisitor implements Visitor {
 			term.accept(this);
 		}
 
+		for (const schema of node.schemas.values()) {
+			schema.accept(this);
+		}
+
 		this.after(node);
 	}
 
@@ -162,8 +164,8 @@ export abstract class AbstractVisitor implements Visitor {
 	}
 
 	/**
-	 * Visits a Policy node. Policies are leaves; the events and commands they
-	 * join are reached through their aggregates.
+	 * Visits a Policy node. Policies are leaves; the consumables they join are
+	 * reached through their providers.
 	 * @param node - The Policy node to visit.
 	 */
 	visitPolicy(node: Policy): void {
@@ -204,12 +206,6 @@ export abstract class AbstractVisitor implements Visitor {
 		for (const valueObject of node.valueobjects.values()) {
 			valueObject.accept(this);
 		}
-		for (const event of node.events.values()) {
-			event.accept(this);
-		}
-		for (const command of node.commands.values()) {
-			command.accept(this);
-		}
 		if (this.followConsumptions) {
 			for (const cons of node.consumptions) cons.accept(this);
 		}
@@ -217,20 +213,11 @@ export abstract class AbstractVisitor implements Visitor {
 	}
 
 	/**
-	 * Visits a Command node. Commands are leaves; the events they raise are
-	 * reached through their aggregate.
-	 * @param node - The Command node to visit.
+	 * Visits a DataSchema node. Schemas are leaves; the consumables that carry
+	 * them are reached through their providers.
+	 * @param node - The DataSchema node to visit.
 	 */
-	visitCommand(node: Command): void {
-		this.before(node);
-		this.after(node);
-	}
-
-	/**
-	 * Visits a DomainEvent node. Events are leaves.
-	 * @param node - The DomainEvent node to visit.
-	 */
-	visitDomainEvent(node: DomainEvent): void {
+	visitDataSchema(node: DataSchema): void {
 		this.before(node);
 		this.after(node);
 	}

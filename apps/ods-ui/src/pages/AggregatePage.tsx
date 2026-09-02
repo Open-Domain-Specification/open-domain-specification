@@ -14,7 +14,7 @@ import { AccordionItems } from "../components/AccordionItems.tsx";
 import { AttributeList } from "../components/AttributeList.tsx";
 import { ConstrainsBadges } from "../components/ConstrainsBadges.tsx";
 import { ConsumableAccordionLabel } from "../components/ConsumableAccordionLabel.tsx";
-import { ConsumableTargetBadge } from "../components/ConsumableTargetBadge.tsx";
+import { ConsumableDetails } from "../components/ConsumableDetails.tsx";
 import { ConsumptionAccordionLabel } from "../components/ConsumptionAccordionLabel.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
@@ -25,9 +25,7 @@ import { useWorkspace } from "../context/WorkspaceContext.tsx";
 import { useRefNavigate } from "../hooks/useRefNavigate.ts";
 import { useScrollToNavigable } from "../hooks/useScrollToNavigable.ts";
 import { Icons } from "../Icons.tsx";
-import { CommandsHelp } from "../modals/CommandsHelp.tsx";
 import { EntitiesAndValueObjectsHelp } from "../modals/EntitiesAndValueObjectsHelp.tsx";
-import { EventsHelp } from "../modals/EventsHelp.tsx";
 import { InvariantsHelp } from "../modals/InvariantsHelp.tsx";
 import { ProvidesHelp } from "../modals/ProvidesHelp.tsx";
 
@@ -79,7 +77,7 @@ export function _AggregatePage(props: { aggregate: Aggregate }) {
 						name: <ConsumableAccordionLabel consumable={it} />,
 						description: it.description,
 						icon: it.type === "event" ? Icons.Events : Icons.Operations,
-						endSlot: <ConsumableTargetBadge consumable={it} />,
+						endSlot: <ConsumableDetails consumable={it} />,
 					}))}
 					emptyMessage={"This aggregate does not provide any consumables."}
 					rightSection={<ProvidesHelp />}
@@ -101,34 +99,6 @@ export function _AggregatePage(props: { aggregate: Aggregate }) {
 						};
 					})}
 					emptyMessage={"This aggregate does not consume anything."}
-				/>
-
-				<AccordionItems
-					title={"Commands"}
-					items={Array.from(props.aggregate.commands.values()).map((it) => ({
-						id: it.ref,
-						name: it.name,
-						description: it.raisedEvents.length
-							? `${it.description} Raises: ${it.raisedEvents.map((e) => e.name).join(", ")}.`
-							: it.description,
-						icon: Icons.Operations,
-						endSlot: <AttributeList attributes={it.attributes} />,
-					}))}
-					emptyMessage={"No commands defined."}
-					rightSection={<CommandsHelp />}
-				/>
-
-				<AccordionItems
-					title={"Events"}
-					items={Array.from(props.aggregate.events.values()).map((it) => ({
-						id: it.ref,
-						name: it.name,
-						description: it.description,
-						icon: Icons.Events,
-						endSlot: <AttributeList attributes={it.attributes} />,
-					}))}
-					emptyMessage={"No domain events defined."}
-					rightSection={<EventsHelp />}
 				/>
 
 				<AccordionItems
@@ -198,28 +168,6 @@ export function _AggregatePage(props: { aggregate: Aggregate }) {
 									icon: Icons.Consumer,
 									onClick: () => scrollToNavigable(it.consumable),
 								})),
-							},
-							{
-								title: "Commands",
-								items: Array.from(props.aggregate.commands.values()).map(
-									(command) => ({
-										ref: command.ref,
-										name: command.name,
-										icon: Icons.Operations,
-										onClick: () => scrollToNavigable(command),
-									}),
-								),
-							},
-							{
-								title: "Events",
-								items: Array.from(props.aggregate.events.values()).map(
-									(event) => ({
-										ref: event.ref,
-										name: event.name,
-										icon: Icons.Events,
-										onClick: () => scrollToNavigable(event),
-									}),
-								),
 							},
 							{
 								title: "Entities",

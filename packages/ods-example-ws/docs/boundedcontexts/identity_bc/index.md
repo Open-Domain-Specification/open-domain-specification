@@ -29,6 +29,9 @@ Open-host service for /user endpoints
 
 
 
+## Schemas
+> No schemas.
+
 ## Policies
 > No policies.
 

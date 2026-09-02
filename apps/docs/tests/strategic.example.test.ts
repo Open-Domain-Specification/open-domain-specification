@@ -50,8 +50,11 @@ accounts.separateWaysFrom(shipping);
 
 // ... or implied from consumptions between contexts with no declaration.
 const orderAgg = ordering.addAggregate("Order", { description: "" });
-const placed = orderAgg.addEvent("OrderPlaced", { description: "" });
-const published = orderAgg.publishes(placed, { pattern: "published-language" });
+const published = orderAgg.provides("Order Placed", {
+	description: "",
+	type: "event",
+	pattern: "published-language",
+});
 accounts
 	.addService("Notifier", { description: "", type: "application" })
 	.consumes(published, { pattern: "anti-corruption-layer" });

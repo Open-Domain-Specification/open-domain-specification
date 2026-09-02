@@ -61,45 +61,50 @@
               "description": "A new pet was registered",
               "pattern": "published-language",
               "type": "event",
-              "event": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_registered"
+              "schema": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_registered"
               }
             },
             "pet_updated": {
               "name": "PetUpdated",
               "description": "Pet profile updated",
               "pattern": "published-language",
-              "type": "event",
-              "event": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_updated"
-              }
+              "type": "event"
             },
             "pet_status_changed": {
               "name": "PetStatusChanged",
               "description": "Pet status changed (available|pending|sold)",
               "pattern": "published-language",
               "type": "event",
-              "event": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_status_changed"
+              "schema": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_status_changed"
               }
             },
             "pet_photo_uploaded": {
               "name": "PetPhotoUploaded",
               "description": "Photo added via upload",
               "pattern": "published-language",
-              "type": "event",
-              "event": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_photo_uploaded"
-              }
+              "type": "event"
             },
             "pet_deleted": {
               "name": "PetDeleted",
               "description": "Pet removed from catalog",
               "pattern": "published-language",
-              "type": "event",
-              "event": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_deleted"
-              }
+              "type": "event"
+            },
+            "change_pet_status": {
+              "name": "ChangePetStatus",
+              "description": "Move a pet between available, pending and sold",
+              "type": "operation",
+              "internal": true,
+              "schema": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_status_changed"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
+                }
+              ]
             }
           },
           "consumes": [],
@@ -256,147 +261,6 @@
                 }
               ]
             }
-          },
-          "events": {
-            "pet_registered": {
-              "name": "PetRegistered",
-              "description": "A new pet was registered",
-              "attributes": {
-                "pet_id": {
-                  "name": "petId",
-                  "type": "int64",
-                  "identity": true
-                },
-                "name": {
-                  "name": "name",
-                  "type": "string"
-                },
-                "category": {
-                  "name": "category",
-                  "type": "Category",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
-                  }
-                },
-                "status": {
-                  "name": "status",
-                  "type": "PetStatus",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
-                  }
-                }
-              }
-            },
-            "pet_updated": {
-              "name": "PetUpdated",
-              "description": "Pet profile updated",
-              "attributes": {}
-            },
-            "pet_status_changed": {
-              "name": "PetStatusChanged",
-              "description": "Pet status changed (available|pending|sold)",
-              "attributes": {
-                "pet_id": {
-                  "name": "petId",
-                  "type": "int64",
-                  "identity": true
-                },
-                "from": {
-                  "name": "from",
-                  "type": "PetStatus",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
-                  }
-                },
-                "to": {
-                  "name": "to",
-                  "type": "PetStatus",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
-                  }
-                }
-              }
-            },
-            "pet_photo_uploaded": {
-              "name": "PetPhotoUploaded",
-              "description": "Photo added via upload",
-              "attributes": {}
-            },
-            "pet_deleted": {
-              "name": "PetDeleted",
-              "description": "Pet removed from catalog",
-              "attributes": {}
-            }
-          },
-          "commands": {
-            "register_pet": {
-              "name": "RegisterPet",
-              "description": "Add a new pet to the catalog",
-              "attributes": {
-                "name": {
-                  "name": "name",
-                  "type": "string"
-                },
-                "category": {
-                  "name": "category",
-                  "type": "Category",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
-                  }
-                },
-                "photo_urls": {
-                  "name": "photoUrls",
-                  "type": "PhotoUrl[]",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/photo_url"
-                  }
-                }
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_registered"
-                }
-              ]
-            },
-            "change_pet_status": {
-              "name": "ChangePetStatus",
-              "description": "Move a pet between available, pending and sold",
-              "attributes": {
-                "pet_id": {
-                  "name": "petId",
-                  "type": "int64",
-                  "identity": true
-                },
-                "status": {
-                  "name": "status",
-                  "type": "PetStatus",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
-                  }
-                }
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_status_changed"
-                }
-              ]
-            },
-            "remove_pet": {
-              "name": "RemovePet",
-              "description": "Remove a pet from the catalog",
-              "attributes": {
-                "pet_id": {
-                  "name": "petId",
-                  "type": "int64",
-                  "identity": true
-                }
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_deleted"
-                }
-              ]
-            }
           }
         }
       },
@@ -411,15 +275,25 @@
               "description": "POST /pet",
               "pattern": "open-host-service",
               "type": "operation",
-              "command": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/commands/register_pet"
-              }
+              "schema": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/register_pet"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_registered"
+                }
+              ]
             },
             "update_pet": {
               "name": "UpdatePet",
               "description": "PUT /pet",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_updated"
+                }
+              ]
             },
             "find_pets_by_status": {
               "name": "FindPetsByStatus",
@@ -443,20 +317,30 @@
               "name": "UploadPetImage",
               "description": "POST /pet/{petId}/uploadImage (multipart: additionalMetadata, file)",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_photo_uploaded"
+                }
+              ]
             },
             "delete_pet": {
               "name": "DeletePet",
               "description": "DELETE /pet/{petId}",
               "pattern": "open-host-service",
               "type": "operation",
-              "command": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/commands/remove_pet"
-              }
+              "schema": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_deleted"
+                }
+              ]
             },
             "get_pet_summary": {
               "name": "GetPetSummary",
-              "description": "Internal: {id,name,status} for ACL checks",
+              "description": "Slim {id,name,status} read offered to other contexts for ACL checks",
               "pattern": "open-host-service",
               "type": "operation"
             }
@@ -490,6 +374,96 @@
             "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
           }
         }
+      },
+      "schemas": {
+        "pet_registered": {
+          "name": "PetRegistered",
+          "description": "What the outside learns when a pet joins the catalog",
+          "attributes": {
+            "pet_id": {
+              "name": "petId",
+              "type": "int64",
+              "identity": true
+            },
+            "name": {
+              "name": "name",
+              "type": "string"
+            },
+            "category": {
+              "name": "category",
+              "type": "Category",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+              }
+            },
+            "status": {
+              "name": "status",
+              "type": "PetStatus",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+              }
+            }
+          }
+        },
+        "pet_status_changed": {
+          "name": "PetStatusChanged",
+          "attributes": {
+            "pet_id": {
+              "name": "petId",
+              "type": "int64",
+              "identity": true
+            },
+            "from": {
+              "name": "from",
+              "type": "PetStatus",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+              }
+            },
+            "to": {
+              "name": "to",
+              "type": "PetStatus",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+              }
+            }
+          }
+        },
+        "register_pet": {
+          "name": "RegisterPet",
+          "description": "Request body for adding a pet",
+          "attributes": {
+            "name": {
+              "name": "name",
+              "type": "string"
+            },
+            "category": {
+              "name": "category",
+              "type": "Category",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+              }
+            },
+            "photo_urls": {
+              "name": "photoUrls",
+              "type": "PhotoUrl[]",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/photo_url"
+              }
+            }
+          }
+        },
+        "pet_id": {
+          "name": "PetId",
+          "description": "Identifies one pet",
+          "attributes": {
+            "pet_id": {
+              "name": "petId",
+              "type": "int64",
+              "identity": true
+            }
+          }
+        }
       }
     },
     "sales_bc": {
@@ -513,8 +487,8 @@
               "description": "Order created (status=placed)",
               "pattern": "published-language",
               "type": "event",
-              "event": {
-                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_placed"
+              "schema": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/order_placed"
               }
             },
             "order_approved": {
@@ -522,8 +496,8 @@
               "description": "Order approved (status=approved)",
               "pattern": "published-language",
               "type": "event",
-              "event": {
-                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_approved"
+              "schema": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
               }
             },
             "order_delivered": {
@@ -531,8 +505,8 @@
               "description": "Order delivered (status=delivered)",
               "pattern": "published-language",
               "type": "event",
-              "event": {
-                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_delivered"
+              "schema": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
               }
             },
             "order_deleted": {
@@ -540,9 +514,37 @@
               "description": "Order deleted via DELETE /store/order/{orderId}",
               "pattern": "published-language",
               "type": "event",
-              "event": {
-                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_deleted"
+              "schema": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
               }
+            },
+            "approve_order": {
+              "name": "ApproveOrder",
+              "description": "Approve a placed order once the pet is available",
+              "type": "operation",
+              "internal": true,
+              "schema": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_approved"
+                }
+              ]
+            },
+            "deliver_order": {
+              "name": "DeliverOrder",
+              "description": "Mark an approved order as delivered",
+              "type": "operation",
+              "internal": true,
+              "schema": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_delivered"
+                }
+              ]
             }
           },
           "consumes": [],
@@ -711,101 +713,6 @@
                 }
               ]
             }
-          },
-          "events": {
-            "order_placed": {
-              "name": "OrderPlaced",
-              "description": "Order created (status=placed)",
-              "attributes": {
-                "order_id": {
-                  "name": "orderId",
-                  "type": "int64",
-                  "identity": true
-                },
-                "pet_id": {
-                  "name": "petId",
-                  "type": "int64"
-                },
-                "quantity": {
-                  "name": "quantity",
-                  "type": "Quantity",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
-                  }
-                }
-              }
-            },
-            "order_approved": {
-              "name": "OrderApproved",
-              "description": "Order approved (status=approved)",
-              "attributes": {}
-            },
-            "order_delivered": {
-              "name": "OrderDelivered",
-              "description": "Order delivered (status=delivered)",
-              "attributes": {}
-            },
-            "order_deleted": {
-              "name": "OrderDeleted",
-              "description": "Order deleted via DELETE /store/order/{orderId}",
-              "attributes": {}
-            }
-          },
-          "commands": {
-            "place_order": {
-              "name": "PlaceOrder",
-              "description": "Place an order for one pet",
-              "attributes": {
-                "pet_id": {
-                  "name": "petId",
-                  "type": "int64"
-                },
-                "quantity": {
-                  "name": "quantity",
-                  "type": "Quantity",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
-                  }
-                }
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_placed"
-                }
-              ]
-            },
-            "approve_order": {
-              "name": "ApproveOrder",
-              "description": "Approve a placed order once the pet is available",
-              "attributes": {
-                "order_id": {
-                  "name": "orderId",
-                  "type": "int64",
-                  "identity": true
-                }
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_approved"
-                }
-              ]
-            },
-            "deliver_order": {
-              "name": "DeliverOrder",
-              "description": "Mark an approved order as delivered",
-              "attributes": {
-                "order_id": {
-                  "name": "orderId",
-                  "type": "int64",
-                  "identity": true
-                }
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_delivered"
-                }
-              ]
-            }
           }
         }
       },
@@ -820,9 +727,14 @@
               "description": "POST /store/order",
               "pattern": "open-host-service",
               "type": "operation",
-              "command": {
-                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/commands/place_order"
-              }
+              "schema": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/place_order"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_placed"
+                }
+              ]
             },
             "get_order_by_id": {
               "name": "GetOrderById",
@@ -834,7 +746,12 @@
               "name": "DeleteOrder",
               "description": "DELETE /store/order/{orderId}",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_deleted"
+                }
+              ]
             }
           },
           "consumes": [
@@ -853,15 +770,15 @@
           "description": "When a pet becomes available and an order for it is placed, approve the order",
           "on": [
             {
-              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_status_changed"
+              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
             },
             {
-              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_placed"
+              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_placed"
             }
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/commands/approve_order"
+              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/approve_order"
             }
           ]
         }
@@ -881,7 +798,57 @@
           "name": "Approval",
           "definition": "Confirmation that the ordered pet is available and reserved",
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/sales_bc/aggregates/order/commands/approve_order"
+            "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/approve_order"
+          }
+        }
+      },
+      "schemas": {
+        "order_placed": {
+          "name": "OrderPlaced",
+          "attributes": {
+            "order_id": {
+              "name": "orderId",
+              "type": "int64",
+              "identity": true
+            },
+            "pet_id": {
+              "name": "petId",
+              "type": "int64"
+            },
+            "quantity": {
+              "name": "quantity",
+              "type": "Quantity",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
+              }
+            }
+          }
+        },
+        "place_order": {
+          "name": "PlaceOrder",
+          "description": "Request body for placing an order",
+          "attributes": {
+            "pet_id": {
+              "name": "petId",
+              "type": "int64"
+            },
+            "quantity": {
+              "name": "quantity",
+              "type": "Quantity",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
+              }
+            }
+          }
+        },
+        "order_id": {
+          "name": "OrderId",
+          "attributes": {
+            "order_id": {
+              "name": "orderId",
+              "type": "int64",
+              "identity": true
+            }
           }
         }
       }
@@ -909,10 +876,18 @@
               "name": "InventoryUpdated",
               "description": "Inventory counts changed",
               "pattern": "published-language",
-              "type": "event",
-              "event": {
-                "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection/events/inventory_updated"
-              }
+              "type": "event"
+            },
+            "recount_inventory": {
+              "name": "RecountInventory",
+              "description": "Recompute the status→count map from catalog and sales facts",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection/provides/inventory_updated"
+                }
+              ]
             }
           },
           "consumes": [
@@ -963,26 +938,7 @@
             }
           },
           "valueobjects": {},
-          "invariants": {},
-          "events": {
-            "inventory_updated": {
-              "name": "InventoryUpdated",
-              "description": "Inventory counts changed",
-              "attributes": {}
-            }
-          },
-          "commands": {
-            "recount_inventory": {
-              "name": "RecountInventory",
-              "description": "Recompute the status→count map from catalog and sales facts",
-              "attributes": {},
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection/events/inventory_updated"
-                }
-              ]
-            }
-          }
+          "invariants": {}
         }
       },
       "services": {
@@ -1014,27 +970,27 @@
           "description": "Keep the availability projection current",
           "on": [
             {
-              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_registered"
+              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_registered"
             },
             {
-              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_deleted"
+              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_deleted"
             },
             {
-              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_status_changed"
+              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
             },
             {
-              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_approved"
+              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_approved"
             },
             {
-              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_delivered"
+              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_delivered"
             },
             {
-              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_deleted"
+              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_deleted"
             }
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection/commands/recount_inventory"
+              "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection/provides/recount_inventory"
             }
           ]
         }
@@ -1050,7 +1006,8 @@
             "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection"
           }
         }
-      }
+      },
+      "schemas": {}
     },
     "identity_bc": {
       "name": "Identity BC",
@@ -1073,46 +1030,31 @@
               "name": "UserRegistered",
               "description": "New user created",
               "pattern": "published-language",
-              "type": "event",
-              "event": {
-                "$ref": "#/boundedcontexts/identity_bc/aggregates/user/events/user_registered"
-              }
+              "type": "event"
             },
             "user_updated": {
               "name": "UserUpdated",
               "description": "User fields updated",
               "pattern": "published-language",
-              "type": "event",
-              "event": {
-                "$ref": "#/boundedcontexts/identity_bc/aggregates/user/events/user_updated"
-              }
+              "type": "event"
             },
             "user_deleted": {
               "name": "UserDeleted",
               "description": "User removed",
               "pattern": "published-language",
-              "type": "event",
-              "event": {
-                "$ref": "#/boundedcontexts/identity_bc/aggregates/user/events/user_deleted"
-              }
+              "type": "event"
             },
             "user_logged_in": {
               "name": "UserLoggedIn",
               "description": "Login via /user/login",
               "pattern": "published-language",
-              "type": "event",
-              "event": {
-                "$ref": "#/boundedcontexts/identity_bc/aggregates/user/events/user_logged_in"
-              }
+              "type": "event"
             },
             "user_logged_out": {
               "name": "UserLoggedOut",
               "description": "Logout via /user/logout",
               "pattern": "published-language",
-              "type": "event",
-              "event": {
-                "$ref": "#/boundedcontexts/identity_bc/aggregates/user/events/user_logged_out"
-              }
+              "type": "event"
             }
           },
           "consumes": [],
@@ -1175,35 +1117,7 @@
               "relations": []
             }
           },
-          "invariants": {},
-          "events": {
-            "user_registered": {
-              "name": "UserRegistered",
-              "description": "New user created",
-              "attributes": {}
-            },
-            "user_updated": {
-              "name": "UserUpdated",
-              "description": "User fields updated",
-              "attributes": {}
-            },
-            "user_deleted": {
-              "name": "UserDeleted",
-              "description": "User removed",
-              "attributes": {}
-            },
-            "user_logged_in": {
-              "name": "UserLoggedIn",
-              "description": "Login via /user/login",
-              "attributes": {}
-            },
-            "user_logged_out": {
-              "name": "UserLoggedOut",
-              "description": "Logout via /user/logout",
-              "attributes": {}
-            }
-          },
-          "commands": {}
+          "invariants": {}
         }
       },
       "services": {
@@ -1216,31 +1130,56 @@
               "name": "CreateUser",
               "description": "POST /user",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/identity_bc/aggregates/user/provides/user_registered"
+                }
+              ]
             },
             "create_users_with_array": {
               "name": "CreateUsersWithArray",
               "description": "POST /user/createWithArray",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/identity_bc/aggregates/user/provides/user_registered"
+                }
+              ]
             },
             "create_users_with_list": {
               "name": "CreateUsersWithList",
               "description": "POST /user/createWithList",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/identity_bc/aggregates/user/provides/user_registered"
+                }
+              ]
             },
             "login": {
               "name": "Login",
               "description": "GET /user/login?username=&password=",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/identity_bc/aggregates/user/provides/user_logged_in"
+                }
+              ]
             },
             "logout": {
               "name": "Logout",
               "description": "GET /user/logout",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/identity_bc/aggregates/user/provides/user_logged_out"
+                }
+              ]
             },
             "get_user_by_username": {
               "name": "GetUserByUsername",
@@ -1252,20 +1191,31 @@
               "name": "UpdateUser",
               "description": "PUT /user/{username}",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/identity_bc/aggregates/user/provides/user_updated"
+                }
+              ]
             },
             "delete_user": {
               "name": "DeleteUser",
               "description": "DELETE /user/{username}",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/identity_bc/aggregates/user/provides/user_deleted"
+                }
+              ]
             }
           },
           "consumes": []
         }
       },
       "policies": {},
-      "glossary": {}
+      "glossary": {},
+      "schemas": {}
     }
   },
   "relationships": [

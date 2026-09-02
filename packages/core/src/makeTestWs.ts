@@ -126,8 +126,9 @@ export function makeTestWs() {
 
 /**
  * A fixture with distinct descriptions, a root entity, entity relations,
- * an aggregate-level event and an aggregate consumption, so that
- * round-trips and derived maps exercise every reference kind.
+ * schemas, a published event, internal event and operation pairs joined by
+ * raises and a policy, and an aggregate consumption, so that round-trips and
+ * derived maps exercise every reference kind.
  */
 export function makeRichTestWs() {
 	const ws = new Workspace("Rich WS", {
@@ -177,42 +178,40 @@ export function makeRichTestWs() {
 			description: "An order has at least one line",
 		})
 		.constrains(orderLine, order.attributes.get("total") as Attribute);
-	const orderPlacedEvent = orderAgg.addEvent("Order Placed", {
-		description: "Raised when an order is placed",
+	const orderSummary = orderingBc.addSchema("Order Summary", {
+		description: "What the outside learns about an order",
 	});
-	orderPlacedEvent.addAttribute("Order Id", {
-		type: "OrderId",
-		identity: true,
-	});
-	orderPlacedEvent.addAttribute("Total", {
+	orderSummary.addAttribute("Order Id", { type: "OrderId", identity: true });
+	orderSummary.addAttribute("Total", {
 		type: "Money",
 		description: "Order total",
 		valueobject: money,
 	});
-	const orderPlaced = orderAgg.publishes(orderPlacedEvent, {
+	const orderPlaced = orderAgg.provides("Order Placed", {
 		description: "Raised when an order is placed",
+		type: "event",
 		pattern: "published-language",
+		schema: orderSummary,
 	});
 	const orderTerm = orderingBc.addTerm("Order", {
 		definition: "A customer's request to buy one or more items",
 		aliases: ["Purchase order"],
 		embodiedBy: orderAgg,
 	});
-	const placeOrderCommand = orderAgg.addCommand("Place Order", {
-		description: "Places a new order",
-	});
-	placeOrderCommand.addAttribute("Lines", { type: "OrderLine[]" });
-	placeOrderCommand.raises(orderPlacedEvent);
+	const orderRequest = orderingBc.addSchema("Order Request");
+	orderRequest.addAttribute("Lines", { type: "OrderLine[]" });
 	const orderApp = orderingBc.addService("Order App", {
 		description: "Order application service",
 		type: "application",
 	});
-	const placeOrder = orderApp.provides("Place Order", {
-		description: "Places an order",
-		type: "operation",
-		pattern: "open-host-service",
-		command: placeOrderCommand,
-	});
+	const placeOrder = orderApp
+		.provides("Place Order", {
+			description: "Places an order",
+			type: "operation",
+			pattern: "open-host-service",
+			schema: orderRequest,
+		})
+		.raises(orderPlaced);
 
 	const billing = ws.addDomain("Billing", {
 		description: "Billing domain",
@@ -234,20 +233,24 @@ export function makeRichTestWs() {
 	const invoiceConsumesOrderPlaced = invoiceAgg.consumes(orderPlaced, {
 		pattern: "conformist",
 	});
-	const invoiceRaisedEvent = invoiceAgg.addEvent("Invoice Raised", {
+	const invoiceRaised = invoiceAgg.provides("Invoice Raised", {
 		description: "An invoice was raised",
+		type: "event",
+		internal: true,
 	});
-	const raiseInvoiceCommand = invoiceAgg
-		.addCommand("Raise Invoice", {
+	const raiseInvoice = invoiceAgg
+		.provides("Raise Invoice", {
 			description: "Raises an invoice for an order",
+			type: "operation",
+			internal: true,
 		})
-		.raises(invoiceRaisedEvent);
+		.raises(invoiceRaised);
 	const invoiceOnOrderPlaced = invoicingBc
 		.addPolicy("Invoice on order placed", {
 			description: "When an order is placed, raise an invoice",
 		})
-		.on(orderPlacedEvent)
-		.then(raiseInvoiceCommand);
+		.on(orderPlaced)
+		.then(raiseInvoice);
 	const invoiceApp = invoicingBc.addService("Invoice App", {
 		description: "Invoice application service",
 		type: "application",
@@ -276,9 +279,9 @@ export function makeRichTestWs() {
 		orderLine,
 		money,
 		nonEmpty,
-		orderPlacedEvent,
+		orderSummary,
+		orderRequest,
 		orderPlaced,
-		placeOrderCommand,
 		orderTerm,
 		orderApp,
 		placeOrder,
@@ -288,8 +291,8 @@ export function makeRichTestWs() {
 		invoiceAgg,
 		invoice,
 		invoiceConsumesOrderPlaced,
-		invoiceRaisedEvent,
-		raiseInvoiceCommand,
+		invoiceRaised,
+		raiseInvoice,
 		invoiceOnOrderPlaced,
 		invoiceApp,
 		invoiceAppConsumesPlaceOrder,

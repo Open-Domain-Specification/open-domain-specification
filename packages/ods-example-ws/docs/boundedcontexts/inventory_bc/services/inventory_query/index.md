@@ -7,9 +7,9 @@ Open-host service for /store/inventory
 ![consumablemap](./consumablemap.svg)
 
 ## Provides
-
-### (operation) - GetInventory [open-host-service]
-GET /store/inventory → { [status]: count }
+| Name | Type | Internal | Pattern | Description | Schema | Raises |
+| --- | --- | --- | --- | --- | --- | --- |
+| GetInventory | operation | no | open-host-service | GET /store/inventory → { [status]: count } | - | - |
 
 
 ## Consumes

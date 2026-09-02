@@ -1,11 +1,13 @@
 import {
 	type Aggregate,
 	type BoundedContext,
+	type DataSchema,
 	ODSConsumptionGraph,
 	ODSContextMap,
 	type Policy,
 	type Service,
 } from "@open-domain-specification/core";
+import { attributeListMd } from "./attributes.md";
 import { contextBreadcrumbsMd } from "./breadcrumbs.md";
 import { contextRelationshipsMd } from "./context-relationships.md";
 import { glossaryTableMd } from "./glossary.md";
@@ -29,6 +31,13 @@ const policySection = (policy: Policy) => [
 	policy.description,
 	policy.events.map((it) => it.name).join(", ") || "-",
 	policy.commands.map((it) => it.name).join(", ") || "-",
+];
+
+const schemaSection = (schema: DataSchema) => [
+	schema.name,
+	schema.description ?? "-",
+	attributeListMd(schema.attributes),
+	schema.consumables.map((it) => it.name).join(", ") || "-",
 ];
 
 const serviceSection = (service: Service) => `
@@ -79,6 +88,16 @@ ${
 				.map(([_name, service]) => serviceSection(service))
 				.join("")
 		: "> No services."
+}
+
+## Schemas
+${
+	boundedcontext.schemas.size > 0
+		? markdownTable(
+				["Name", "Description", "Attributes", "Used by"],
+				Array.from(boundedcontext.schemas.values()).map(schemaSection),
+			)
+		: "> No schemas."
 }
 
 ## Policies
