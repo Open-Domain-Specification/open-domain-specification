@@ -255,7 +255,12 @@ export interface InvariantSchema {
 	constrains: { $ref: string }[];
 }
 
-export type ServiceType = "application" | "domain" | "infrastructure";
+/**
+ * Application services orchestrate use cases and expose them to the outside;
+ * domain services hold domain logic that belongs to no single aggregate.
+ * Infrastructure is an implementation concern and is not modelled.
+ */
+export type ServiceType = "application" | "domain";
 
 /**
  * @title Service

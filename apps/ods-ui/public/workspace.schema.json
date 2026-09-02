@@ -696,10 +696,10 @@
             "type": "object"
         },
         "ServiceType": {
+            "description": "Application services orchestrate use cases and expose them to the outside;\ndomain services hold domain logic that belongs to no single aggregate.\nInfrastructure is an implementation concern and is not modelled.",
             "enum": [
                 "application",
-                "domain",
-                "infrastructure"
+                "domain"
             ],
             "type": "string"
         },

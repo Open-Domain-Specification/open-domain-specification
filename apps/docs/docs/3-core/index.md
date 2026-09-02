@@ -40,7 +40,7 @@ Workspace
 ├── Domain                                  (problem space)
 │   └── Subdomain (core/supporting/generic)
 ├── Bounded Context                         (solution space; serves one or more subdomains)
-│   ├── Service (application/domain/infrastructure)
+│   ├── Service (application/domain)
 │   │   ├── Consumables
 │   │   └── Consumptions
 │   ├── Glossary Term                       (ubiquitous language, optionally embodied by an element)
