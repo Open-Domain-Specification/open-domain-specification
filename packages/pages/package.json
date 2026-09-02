@@ -1,0 +1,68 @@
+{
+	"name": "@open-domain-specification/pages",
+	"version": "0.1.9",
+	"description": "HTML page renderer and static site generator for Open Domain Specification workspaces.",
+	"author": "Jonathan Turnock <jonathan.turnock@outlook.com>",
+	"homepage": "https://docs.open-ds.io/docs/pages/",
+	"license": "ISC",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"module": "dist/index.mjs",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.js"
+		},
+		"./site": {
+			"types": "./dist/site.d.ts",
+			"import": "./dist/site.mjs",
+			"require": "./dist/site.js"
+		},
+		"./assets/*": "./assets/*",
+		"./package.json": "./package.json"
+	},
+	"typesVersions": {
+		"*": {
+			"site": ["dist/site.d.ts"]
+		}
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Open-Domain-Specification/open-domain-specification.git"
+	},
+	"publishConfig": {
+		"registry": "https://registry.npmjs.org/",
+		"access": "public"
+	},
+	"files": [
+		"src",
+		"dist",
+		"assets"
+	],
+	"scripts": {
+		"clean": "npx rimraf dist assets/codicons",
+		"build": "node scripts/codicons.mjs && tsc --project tsconfig.json && tsup src/index.ts src/site.ts --format cjs,esm --dts --sourcemap --shims --out-dir dist",
+		"test": "vitest run --config vitest.config.ts",
+		"depcheck": "npx depcheck"
+	},
+	"keywords": [
+		"domain-driven-design",
+		"ddd",
+		"open-domain-specification",
+		"ods"
+	],
+	"dependencies": {
+		"@hpcc-js/wasm-graphviz": "^1.11.0",
+		"@open-domain-specification/core": "^0.1.9",
+		"@open-domain-specification/graphviz": "^0.1.9",
+		"marked": "^18.0.11"
+	},
+	"devDependencies": {
+		"@types/node": "^24.0.0",
+		"@vscode/codicons": "0.0.46-24",
+		"tsup": "^8.5.0",
+		"typescript": "^5.8.3",
+		"vitest": "^3.2.4"
+	}
+}
