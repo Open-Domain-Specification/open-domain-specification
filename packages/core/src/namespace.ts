@@ -1,4 +1,4 @@
-import type { Aggregate, BoundedContext, Service } from "./workspace";
+import type { Aggregate, BoundedContext, Policy, Service } from "./workspace";
 
 export type ODSNamespace = {
 	id: string;
@@ -28,7 +28,7 @@ export function boundedContextNamespace(bc: BoundedContext): ODSNamespace[] {
  * service or aggregate that lives inside it.
  */
 export function contextMemberNamespace(
-	member: Aggregate | Service,
+	member: Aggregate | Service | Policy,
 ): ODSNamespace[] {
 	return [
 		...boundedContextNamespace(member.boundedcontext),

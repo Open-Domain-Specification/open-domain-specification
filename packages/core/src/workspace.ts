@@ -349,6 +349,29 @@ export class Workspace
 		return target;
 	}
 
+	private *policies(): Iterable<Policy> {
+		for (const boundedContext of this.boundedcontexts.values()) {
+			yield* boundedContext.policies.values();
+		}
+	}
+
+	getPolicyByRef(ref: string): Policy | undefined {
+		this.debug(`Searching for policy with ref: ${ref}`);
+		for (const policy of this.policies()) {
+			if (policy.ref === ref) {
+				return policy;
+			}
+		}
+	}
+
+	getPolicyByRefOrThrow(ref: string): Policy {
+		const policy = this.getPolicyByRef(ref);
+		if (!policy) {
+			throw new Error(`Policy with ref ${ref} not found`);
+		}
+		return policy;
+	}
+
 	getCommandByRef(ref: string): Command | undefined {
 		return this.findAggregateMember((it) => it.commands, ref);
 	}
@@ -547,6 +570,7 @@ export class BoundedContext
 	description: string;
 	services = new Map<string, Service>();
 	aggregates = new Map<string, Aggregate>();
+	policies = new Map<string, Policy>();
 	workspace: Workspace;
 	subdomains = new Set<Subdomain>();
 	bigBallOfMud: boolean;
@@ -659,6 +683,10 @@ export class BoundedContext
 		return new Aggregate(this, name, attributes);
 	}
 
+	addPolicy(name: string, attributes: PolicyAttributes): Policy {
+		return new Policy(this, name, attributes);
+	}
+
 	accept(v: Visitor) {
 		return v.visitBoundedContext(this);
 	}
@@ -672,6 +700,7 @@ export class BoundedContext
 			team: this.team && { $ref: this.team.ref },
 			aggregates: asRecords(this.aggregates),
 			services: asRecords(this.services),
+			policies: asRecords(this.policies),
 		};
 	}
 }
@@ -1579,6 +1608,73 @@ export class Command
 			description: this.description,
 			attributes: asRecords(this.attributes),
 			raises: this.raisedEvents.map((it) => ({ $ref: it.ref })),
+		};
+	}
+}
+
+export type PolicyAttributes = {
+	description: string;
+	id?: string;
+};
+
+/**
+ * A reaction that lives in a bounded context: when any of its events happen,
+ * it issues its commands. Events and commands may belong to other contexts.
+ */
+export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
+	id: string;
+	name: string;
+	description: string;
+	boundedcontext: BoundedContext;
+	events: DomainEvent[] = [];
+	commands: Command[] = [];
+
+	get path(): string {
+		return `${this.boundedcontext.path}/policies/${this.id}`;
+	}
+
+	get ref(): string {
+		return `#/${this.path}`;
+	}
+
+	constructor(
+		boundedcontext: BoundedContext,
+		name: string,
+		attributes: PolicyAttributes,
+	) {
+		this.id = attributes.id || snakeCase(name);
+		this.name = name;
+		this.description = attributes.description;
+		this.boundedcontext = boundedcontext;
+		this.boundedcontext.policies.set(this.id, this);
+	}
+
+	/** Adds a triggering event. */
+	on(...events: DomainEvent[]): this {
+		for (const event of events) {
+			if (!this.events.includes(event)) this.events.push(event);
+		}
+		return this;
+	}
+
+	/** Adds a command to issue. */
+	then(...commands: Command[]): this {
+		for (const command of commands) {
+			if (!this.commands.includes(command)) this.commands.push(command);
+		}
+		return this;
+	}
+
+	accept(v: Visitor) {
+		return v.visitPolicy(this);
+	}
+
+	toSchema(): ods.PolicySchema {
+		return {
+			name: this.name,
+			description: this.description,
+			on: this.events.map((it) => ({ $ref: it.ref })),
+			then: this.commands.map((it) => ({ $ref: it.ref })),
 		};
 	}
 }

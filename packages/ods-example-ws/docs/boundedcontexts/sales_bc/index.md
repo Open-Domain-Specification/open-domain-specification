@@ -24,6 +24,14 @@ Open-host service for /store/order endpoints
 
 
 
+## Policies
+![flowmap](./flowmap.svg)
+
+| Name | Description | On | Then |
+| --- | --- | --- | --- |
+| Approve when pet available | When a pet becomes available and an order for it is placed, approve the order | PetStatusChanged, OrderPlaced | ApproveOrder |
+
+
 ## Context Relationships
 | Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |

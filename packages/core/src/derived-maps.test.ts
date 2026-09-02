@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ODSConsumableMap } from "./consumable-map";
 import { ODSConsumptionGraph } from "./consumption-graph";
 import { ODSContextMap } from "./context-map";
+import { ODSFlowMap } from "./flow-map";
 import { makeRichTestWs } from "./makeTestWs";
 import { ODSRelationGraph, ODSRelationMap } from "./relation-map";
 
@@ -156,5 +157,30 @@ describe("ODSRelationMap", () => {
 		);
 		// invoice -> order, then order -> line -> money are followed
 		expect(map.edges.size).toBe(3);
+	});
+});
+
+describe("ODSFlowMap", () => {
+	const f = makeRichTestWs();
+
+	it("joins events, policies and commands, following what commands raise", () => {
+		const map = ODSFlowMap.fromBoundedContext(f.invoicingBc);
+		expect(map.nodes.get(f.orderPlacedEvent.ref)?.type).toBe("event");
+		expect(map.nodes.get(f.invoiceOnOrderPlaced.ref)?.type).toBe("policy");
+		expect(map.nodes.get(f.raiseInvoiceCommand.ref)?.type).toBe("command");
+		const edges = Array.from(map.edges.values()).map(
+			(e) => `${e.source.name} -> ${e.target.name}`,
+		);
+		expect(edges).toEqual([
+			"Order Placed -> Invoice on order placed",
+			"Raise Invoice -> Invoice Raised",
+			"Invoice on order placed -> Raise Invoice",
+		]);
+	});
+
+	it("leaves out commands no policy issues", () => {
+		const map = ODSFlowMap.fromWorkspace(f.ws);
+		expect(map.nodes.has(f.placeOrderCommand.ref)).toBe(false);
+		expect(map.nodes.size).toBe(4);
 	});
 });

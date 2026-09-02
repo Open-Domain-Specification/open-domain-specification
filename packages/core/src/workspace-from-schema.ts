@@ -8,6 +8,7 @@ import {
 	entityRef,
 	eventRef,
 	invariantRef,
+	policyRef,
 	type ServiceSchema,
 	serviceRef,
 	valueObjectRef,
@@ -137,6 +138,15 @@ function addBoundedContext(
 		boundedcontext.addService(serviceSchema.name, {
 			...serviceSchema,
 			id: serviceId,
+		});
+	}
+
+	for (const [policyId, policySchema] of Object.entries(
+		boundedcontextSchema.policies,
+	)) {
+		boundedcontext.addPolicy(policySchema.name, {
+			...policySchema,
+			id: policyId,
 		});
 	}
 
@@ -305,6 +315,31 @@ function linkReferences(
 	}
 }
 
+/** Policies join events and commands that may live in any context. */
+function linkPolicies(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
+		workspaceSchema.boundedcontexts,
+	)) {
+		for (const [policyId, policySchema] of Object.entries(
+			boundedcontextSchema.policies,
+		)) {
+			const policy = workspace.getPolicyByRefOrThrow(
+				policyRef(boundedcontextId, policyId).$ref,
+			);
+			policy.on(
+				...policySchema.on.map(({ $ref }) =>
+					workspace.getEventByRefOrThrow($ref),
+				),
+			);
+			policy.then(
+				...policySchema.then.map(({ $ref }) =>
+					workspace.getCommandByRefOrThrow($ref),
+				),
+			);
+		}
+	}
+}
+
 function addRelationships(
 	workspace: Workspace,
 	workspaceSchema: WorkspaceSchema,
@@ -362,6 +397,7 @@ export function getWorkspaceFromSchema(
 		addBoundedContext(workspace, id, boundedcontextSchema);
 	}
 	linkReferences(workspace, workspaceSchema);
+	linkPolicies(workspace, workspaceSchema);
 	addRelationships(workspace, workspaceSchema);
 
 	return workspace;

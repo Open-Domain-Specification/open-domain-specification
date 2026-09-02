@@ -2,12 +2,14 @@ import {
 	type BoundedContext,
 	ODSConsumableMap,
 	ODSContextMap,
+	ODSFlowMap,
 	ODSRelationMap,
 	type Workspace,
 } from "@open-domain-specification/core";
 import {
 	consumableMapToDigraph,
 	contextMapToDigraph,
+	flowMapToDigraph,
 	relationMapToDigraph,
 } from "@open-domain-specification/graphviz";
 import { aggergateMd } from "./aggregate.md";
@@ -16,6 +18,7 @@ import { domainMd } from "./domain.md";
 import {
 	pathToConsumableMapSvg,
 	pathToContextMapSvg,
+	pathToFlowMapSvg,
 	pathToIndexMd,
 	pathToRelationMapSvg,
 } from "./lib/paths";
@@ -82,6 +85,12 @@ export async function toDoc(
 		docs[pathToContextMapSvg(boundedcontext.path)] = await contextMapToDigraph(
 			ODSContextMap.fromBoundedContext(boundedcontext),
 		).toSVG();
+
+		if (boundedcontext.policies.size > 0) {
+			docs[pathToFlowMapSvg(boundedcontext.path)] = await flowMapToDigraph(
+				ODSFlowMap.fromBoundedContext(boundedcontext),
+			).toSVG();
+		}
 
 		for (const [_, service] of boundedcontext.services.entries()) {
 			docs[pathToIndexMd(service.path)] = serviceMd(service, options);

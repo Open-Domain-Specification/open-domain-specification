@@ -43,6 +43,7 @@ Workspace
 │   ├── Service (application/domain/infrastructure)
 │   │   ├── Consumables
 │   │   └── Consumptions
+│   ├── Policy                              (on Domain Events → then Commands)
 │   └── Aggregate
 │       ├── Entities (with attributes)
 │       ├── Value Objects (with attributes)

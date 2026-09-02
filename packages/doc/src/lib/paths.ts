@@ -11,6 +11,10 @@ export function pathToContextMapSvg(ref: string, relativeRef?: string): string {
 	return `${getRelativePath(ref, relativeRef)}/contextmap.svg`;
 }
 
+export function pathToFlowMapSvg(ref: string, relativeRef?: string): string {
+	return `${getRelativePath(ref, relativeRef)}/flowmap.svg`;
+}
+
 export function pathToRelationMapSvg(
 	ref: string,
 	relativeRef?: string,

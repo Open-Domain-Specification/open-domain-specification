@@ -454,7 +454,8 @@
           },
           "consumes": []
         }
-      }
+      },
+      "policies": {}
     },
     "sales_bc": {
       "name": "Sales BC",
@@ -794,6 +795,25 @@
             }
           ]
         }
+      },
+      "policies": {
+        "approve_when_pet_available": {
+          "name": "Approve when pet available",
+          "description": "When a pet becomes available and an order for it is placed, approve the order",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_status_changed"
+            },
+            {
+              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_placed"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/commands/approve_order"
+            }
+          ]
+        }
       }
     },
     "inventory_bc": {
@@ -880,7 +900,18 @@
               "attributes": {}
             }
           },
-          "commands": {}
+          "commands": {
+            "recount_inventory": {
+              "name": "RecountInventory",
+              "description": "Recompute the status→count map from catalog and sales facts",
+              "attributes": {},
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection/events/inventory_updated"
+                }
+              ]
+            }
+          }
         }
       },
       "services": {
@@ -902,6 +933,37 @@
                 "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection/provides/inventory_updated"
               },
               "pattern": "conformist"
+            }
+          ]
+        }
+      },
+      "policies": {
+        "recount_on_stock_change": {
+          "name": "Recount on stock change",
+          "description": "Keep the availability projection current",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_registered"
+            },
+            {
+              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_deleted"
+            },
+            {
+              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/events/pet_status_changed"
+            },
+            {
+              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_approved"
+            },
+            {
+              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_delivered"
+            },
+            {
+              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/events/order_deleted"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection/commands/recount_inventory"
             }
           ]
         }
@@ -1113,7 +1175,8 @@
           },
           "consumes": []
         }
-      }
+      },
+      "policies": {}
     }
   },
   "relationships": [

@@ -84,6 +84,16 @@ describe("schema round-trip", () => {
 		]);
 	});
 
+	it("re-links policies to events and commands across contexts", () => {
+		const policy = rebuilt.getPolicyByRefOrThrow(
+			"#/boundedcontexts/invoicing_bc/policies/invoice_on_order_placed",
+		);
+		expect(policy.events.map((it) => it.ref)).toEqual([
+			"#/boundedcontexts/ordering_bc/aggregates/order/events/order_placed",
+		]);
+		expect(policy.commands.map((it) => it.name)).toEqual(["Raise Invoice"]);
+	});
+
 	it("re-links entity relations across aggregates", () => {
 		const invoice = rebuilt.getEntityByRefOrThrow(
 			"#/boundedcontexts/invoicing_bc/aggregates/invoice/entities/invoice",

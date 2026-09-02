@@ -229,6 +229,20 @@ export function makeRichTestWs() {
 	const invoiceConsumesOrderPlaced = invoiceAgg.consumes(orderPlaced, {
 		pattern: "conformist",
 	});
+	const invoiceRaisedEvent = invoiceAgg.addEvent("Invoice Raised", {
+		description: "An invoice was raised",
+	});
+	const raiseInvoiceCommand = invoiceAgg
+		.addCommand("Raise Invoice", {
+			description: "Raises an invoice for an order",
+		})
+		.raises(invoiceRaisedEvent);
+	const invoiceOnOrderPlaced = invoicingBc
+		.addPolicy("Invoice on order placed", {
+			description: "When an order is placed, raise an invoice",
+		})
+		.on(orderPlacedEvent)
+		.then(raiseInvoiceCommand);
 	const invoiceApp = invoicingBc.addService("Invoice App", {
 		description: "Invoice application service",
 		type: "application",
@@ -268,6 +282,9 @@ export function makeRichTestWs() {
 		invoiceAgg,
 		invoice,
 		invoiceConsumesOrderPlaced,
+		invoiceRaisedEvent,
+		raiseInvoiceCommand,
+		invoiceOnOrderPlaced,
 		invoiceApp,
 		invoiceAppConsumesPlaceOrder,
 		reportingBc,

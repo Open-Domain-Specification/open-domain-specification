@@ -17,7 +17,10 @@ Materialized view: { available: number, pending: number, sold: number }
 
 
 ## Commands
-> No commands.
+| Name | Description | Attributes | Raises |
+| --- | --- | --- | --- |
+| RecountInventory | Recompute the status→count map from catalog and sales facts | - | InventoryUpdated |
+
 
 ## Events
 | Name | Description | Attributes |

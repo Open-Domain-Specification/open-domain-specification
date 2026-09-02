@@ -49,6 +49,7 @@ exports[`Visitor Example > should compile  1`] = `
       "bigBallOfMud": undefined,
       "description": "Site content retrieval/rendering",
       "name": "CMS",
+      "policies": {},
       "services": {
         "content_renderer": {
           "consumes": [
@@ -127,6 +128,7 @@ exports[`Visitor Example > should compile  1`] = `
       "bigBallOfMud": undefined,
       "description": "Checkout flow and orders",
       "name": "Ordering",
+      "policies": {},
       "services": {
         "checkout_app": {
           "consumes": [

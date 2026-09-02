@@ -3,12 +3,17 @@ import {
 	type BoundedContext,
 	ODSConsumptionGraph,
 	ODSContextMap,
+	type Policy,
 	type Service,
 } from "@open-domain-specification/core";
 import { contextBreadcrumbsMd } from "./breadcrumbs.md";
 import { contextRelationshipsMd } from "./context-relationships.md";
 import { markdownTable } from "./lib/markdown-table";
-import { pathToContextMapSvg, pathToIndexMd } from "./lib/paths";
+import {
+	pathToContextMapSvg,
+	pathToFlowMapSvg,
+	pathToIndexMd,
+} from "./lib/paths";
 import type { Options } from "./options";
 import { teamLinkMd } from "./team.md";
 
@@ -17,6 +22,13 @@ const aggregateSection = (aggregate: Aggregate) => `
 ${aggregate.description}
 
 `;
+
+const policySection = (policy: Policy) => [
+	policy.name,
+	policy.description,
+	policy.events.map((it) => it.name).join(", ") || "-",
+	policy.commands.map((it) => it.name).join(", ") || "-",
+];
 
 const serviceSection = (service: Service) => `
 ### [${service.name}](${pathToIndexMd(service.path, service.boundedcontext.path)})
@@ -63,6 +75,18 @@ ${
 				.map(([_name, service]) => serviceSection(service))
 				.join("")
 		: "> No services."
+}
+
+## Policies
+${
+	boundedcontext.policies.size > 0
+		? `![flowmap](${pathToFlowMapSvg(boundedcontext.path, boundedcontext.path)})
+
+${markdownTable(
+	["Name", "Description", "On", "Then"],
+	Array.from(boundedcontext.policies.values()).map(policySection),
+)}`
+		: "> No policies."
 }
 
 ## Context Relationships

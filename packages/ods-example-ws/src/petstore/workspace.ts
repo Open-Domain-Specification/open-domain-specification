@@ -456,6 +456,15 @@ identityBC.separateWaysFrom(
 	"Orders are anonymous in Petstore v3; no integration by design",
 );
 
+// Policy: a placed order is approved as soon as its pet is available
+salesBC
+	.addPolicy("Approve when pet available", {
+		description:
+			"When a pet becomes available and an order for it is placed, approve the order",
+	})
+	.on(petStatusChangedEvent, orderPlacedEvent)
+	.then(approveOrderCmd);
+
 /* =======================
    INVENTORY — Projection & Service
    ======================= */
@@ -470,6 +479,11 @@ const _invView = inventoryAgg.addRootEntity("InventoryView", {
 	description: "Status→count map for /store/inventory",
 });
 
+// Command that rebuilds the projection
+const recountInventoryCmd = inventoryAgg.addCommand("RecountInventory", {
+	description: "Recompute the status→count map from catalog and sales facts",
+});
+
 // Projection event
 const inventoryUpdatedEvent = inventoryAgg.addEvent("InventoryUpdated", {
 	description: "Inventory counts changed",
@@ -481,6 +495,8 @@ const inventoryUpdatedPublished = inventoryAgg.publishes(
 	},
 );
 
+recountInventoryCmd.raises(inventoryUpdatedEvent);
+
 // Inventory listens to Catalog & Sales events (conformist)
 inventoryAgg.consumes(petRegisteredPublished, { pattern: "conformist" });
 inventoryAgg.consumes(petDeletedPublished, { pattern: "conformist" });
@@ -488,6 +504,21 @@ inventoryAgg.consumes(petStatusChangedPublished, { pattern: "conformist" });
 inventoryAgg.consumes(orderApprovedPublished, { pattern: "conformist" });
 inventoryAgg.consumes(orderDeliveredPublished, { pattern: "conformist" });
 inventoryAgg.consumes(orderDeletedPublished, { pattern: "conformist" });
+
+// Policy: any stock-affecting fact triggers a recount
+inventoryBC
+	.addPolicy("Recount on stock change", {
+		description: "Keep the availability projection current",
+	})
+	.on(
+		petRegisteredEvent,
+		petDeletedEvent,
+		petStatusChangedEvent,
+		orderApprovedEvent,
+		orderDeliveredEvent,
+		orderDeletedEvent,
+	)
+	.then(recountInventoryCmd);
 
 // Service: InventoryQuery
 const inventoryQuery = inventoryBC.addService("InventoryQuery", {

@@ -4,9 +4,14 @@ import {
 	boundedcontextRef,
 	ODSConsumptionGraph,
 	ODSContextMap,
+	ODSFlowMap,
 } from "@open-domain-specification/core";
-import { contextMapToDigraph } from "@open-domain-specification/graphviz";
+import {
+	contextMapToDigraph,
+	flowMapToDigraph,
+} from "@open-domain-specification/graphviz";
 import { useParams } from "react-router-dom";
+import { AccordionItems } from "../components/AccordionItems.tsx";
 import { ConsumptionTable } from "../components/ConsumptionTable.tsx";
 import { ContextRelationshipTable } from "../components/ContextRelationshipTable.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
@@ -58,6 +63,27 @@ export function _BoundedContextPage(props: { boundedcontext: BoundedContext }) {
 				).toDot()}
 			/>
 
+			{props.boundedcontext.policies.size > 0 && (
+				<Graphviz
+					title={`${props.boundedcontext.name} Flow Map`}
+					height={"40vh"}
+					dot={flowMapToDigraph(
+						ODSFlowMap.fromBoundedContext(props.boundedcontext),
+					).toDot()}
+				/>
+			)}
+
+			<AccordionItems
+				title={"Policies"}
+				items={Array.from(props.boundedcontext.policies.values()).map((it) => ({
+					id: it.ref,
+					name: it.name,
+					description: `${it.description} On: ${it.events.map((e) => e.name).join(", ") || "-"}. Then: ${it.commands.map((c) => c.name).join(", ") || "-"}.`,
+					icon: Icons.Policy,
+				}))}
+				emptyMessage={"No policies defined."}
+			/>
+
 			<Stack>
 				<PageSubtitle title={"Context Relationships"} />
 				<ContextRelationshipTable
@@ -83,6 +109,16 @@ export function _BoundedContextPage(props: { boundedcontext: BoundedContext }) {
 									name: aggregate.name,
 									icon: Icons.Aggregate,
 									onClick: () => nav(aggregate.ref),
+								}),
+							),
+						},
+						{
+							title: "Policies",
+							items: Array.from(props.boundedcontext.policies.values()).map(
+								(policy) => ({
+									ref: policy.ref,
+									name: policy.name,
+									icon: Icons.Policy,
 								}),
 							),
 						},

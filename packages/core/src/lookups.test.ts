@@ -79,6 +79,19 @@ describe("Workspace ref lookups", () => {
 		);
 	});
 
+	it("resolves policies and what they join", () => {
+		expect(ws.getPolicyByRef(fixture.invoiceOnOrderPlaced.ref)).toBe(
+			fixture.invoiceOnOrderPlaced,
+		);
+		expect(fixture.invoiceOnOrderPlaced.events).toEqual([
+			fixture.orderPlacedEvent,
+		]);
+		expect(fixture.invoiceOnOrderPlaced.commands).toEqual([
+			fixture.raiseInvoiceCommand,
+		]);
+		expect(() => ws.getPolicyByRefOrThrow("#/nope")).toThrow(/Policy/);
+	});
+
 	it("resolves teams and derives what they own", () => {
 		expect(ws.getTeamByRef(teamRef("sales_team").$ref)).toBe(fixture.salesTeam);
 		expect(fixture.salesTeam.boundedcontexts).toEqual([fixture.orderingBc]);
@@ -136,15 +149,17 @@ describe("Workspace ref lookups", () => {
 	it("uses the JSON object keys as ids when loading from schema", () => {
 		const { ws } = makeRichTestWs();
 		const schema = JSON.parse(JSON.stringify(ws.toSchema()));
-		schema.boundedcontexts.renamed_key = schema.boundedcontexts.invoicing_bc;
-		delete schema.boundedcontexts.invoicing_bc;
+		schema.boundedcontexts.renamed_key = schema.boundedcontexts.reporting_bc;
+		delete schema.boundedcontexts.reporting_bc;
 		schema.boundedcontexts.renamed_key.subdomains = [];
+		// nothing else may point at the old key
+		schema.relationships = [];
 		const rebuilt = Workspace.fromSchema(schema);
 		expect(
 			rebuilt.getBoundedContextByRef("#/boundedcontexts/renamed_key")?.name,
-		).toBe("Invoicing BC");
+		).toBe("Reporting BC");
 		expect(
-			rebuilt.getBoundedContextByRef("#/boundedcontexts/invoicing_bc"),
+			rebuilt.getBoundedContextByRef("#/boundedcontexts/reporting_bc"),
 		).toBeUndefined();
 	});
 });

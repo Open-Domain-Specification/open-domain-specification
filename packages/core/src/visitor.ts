@@ -11,6 +11,7 @@ import type {
 	Entity,
 	EntityRelation,
 	Invariant,
+	Policy,
 	Service,
 	Subdomain,
 	ValueObject,
@@ -33,6 +34,7 @@ export interface Visitor {
 	visitContextRelationship(node: ContextRelationship): void;
 	visitDomainEvent(node: DomainEvent): void;
 	visitCommand(node: Command): void;
+	visitPolicy(node: Policy): void;
 }
 
 export type AbstractVisitorOptions = {
@@ -137,6 +139,20 @@ export abstract class AbstractVisitor implements Visitor {
 			aggregate.accept(this);
 		}
 
+		for (const policy of node.policies.values()) {
+			policy.accept(this);
+		}
+
+		this.after(node);
+	}
+
+	/**
+	 * Visits a Policy node. Policies are leaves; the events and commands they
+	 * join are reached through their aggregates.
+	 * @param node - The Policy node to visit.
+	 */
+	visitPolicy(node: Policy): void {
+		this.before(node);
 		this.after(node);
 	}
 

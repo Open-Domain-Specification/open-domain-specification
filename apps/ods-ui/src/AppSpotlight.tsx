@@ -10,6 +10,7 @@ import {
 	type DomainEvent,
 	type Entity,
 	type Invariant,
+	type Policy,
 	type Service,
 	type Subdomain,
 	type ValueObject,
@@ -165,6 +166,20 @@ class SpotlightCollector extends AbstractVisitor {
 			group: "Commands",
 		});
 		super.visitCommand(node);
+	}
+
+	visitPolicy(node: Policy) {
+		this.actions.push({
+			id: node.ref,
+			label: `${contextLabel(node.boundedcontext)} / ${node.name}`,
+			description: node.description,
+			onClick: () => {
+				this.navigator(node.boundedcontext.ref);
+			},
+			leftSection: Icons.Policy,
+			group: "Policies",
+		});
+		super.visitPolicy(node);
 	}
 
 	visitDomainEvent(node: DomainEvent) {

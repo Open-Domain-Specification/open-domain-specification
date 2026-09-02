@@ -25,6 +25,14 @@ Open-host service for /store/inventory
 
 
 
+## Policies
+![flowmap](./flowmap.svg)
+
+| Name | Description | On | Then |
+| --- | --- | --- | --- |
+| Recount on stock change | Keep the availability projection current | PetRegistered, PetDeleted, PetStatusChanged, OrderApproved, OrderDelivered, OrderDeleted | RecountInventory |
+
+
 ## Context Relationships
 | Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |

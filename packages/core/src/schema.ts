@@ -62,6 +62,19 @@ export interface TeamSchema {
 }
 
 /**
+ * @title Policy
+ * @description A reaction: when these events happen, issue these commands.
+ */
+export interface PolicySchema {
+	name: string;
+	description: string;
+	/** The domain events that trigger this policy. */
+	on: { $ref: string }[];
+	/** The commands this policy issues. */
+	then: { $ref: string }[];
+}
+
+/**
  * @title BoundedContext
  * @description Represents a bounded context in the Open Domain Specification (ODS).
  */
@@ -79,6 +92,7 @@ export interface BoundedContextSchema {
 	team?: { $ref: string };
 	aggregates: { [aggregate: string]: AggregateSchema };
 	services: { [service: string]: ServiceSchema };
+	policies: { [policy: string]: PolicySchema };
 }
 
 /** How an upstream context exposes what it provides. */
@@ -315,6 +329,14 @@ export function serviceRef(boundedcontext: string, service: string) {
 
 	return {
 		$ref: `${$ref}/services/${service}`,
+	};
+}
+
+export function policyRef(boundedcontext: string, policy: string) {
+	const { $ref } = boundedcontextRef(boundedcontext);
+
+	return {
+		$ref: `${$ref}/policies/${policy}`,
 	};
 }
 
