@@ -3,6 +3,7 @@ import type { NodeProps } from "@xyflow/svelte";
 import { type ContextNodeData, clusterHue } from "./context-graph";
 import NodeHandles from "./NodeHandles.svelte";
 import NodeHead from "./NodeHead.svelte";
+import { sketchClass } from "./node-class";
 
 /**
  * A bounded context on the context map: name, team in brackets and the
@@ -21,7 +22,7 @@ const band = $derived(
 );
 </script>
 
-<div class={`flow-card context-node ${data.bigBallOfMud ? "mud" : ""} ${data.sketch ? "sketch" : ""}`} style={band} title={data.description ?? data.id} data-cluster={data.cluster}>
+<div class={`flow-card context-node ${data.bigBallOfMud ? "mud" : ""} ${sketchClass(data)}`} style={band} title={data.description ?? data.id} data-cluster={data.cluster}>
 	<NodeHandles floating={data.floating} />
 	<NodeHead icon={data.icon} name={data.label} subtitle={data.groupPath} />
 	{#if data.bigBallOfMud}<div class="mud-label">(big ball of mud)</div>{/if}

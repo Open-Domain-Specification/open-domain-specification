@@ -1,17 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { servePetstore, viewerAt } from "./helpers";
+import { openInteractiveDiagram } from "./helpers";
 
 /** The interactive context map on the workspace page shows what the Graphviz image shows. */
 
 test("the interactive context map draws context nodes with stereotypes and roles", async ({
 	page,
 }) => {
-	await servePetstore(page);
-	await page.goto(viewerAt());
-	const figure = page.locator("figure.diagram", { hasText: "Context map" });
-	await figure.scrollIntoViewIfNeeded();
-	await figure.getByRole("button", { name: "interactive" }).click();
-	const flow = figure.locator(".svelte-flow");
+	const flow = await openInteractiveDiagram(page, "Context map");
 	await expect(flow.locator(".context-node").first()).toBeVisible();
 	// Every context carries its domain/subdomain cluster path and a colour band.
 	const first = flow.locator(".context-node").first();

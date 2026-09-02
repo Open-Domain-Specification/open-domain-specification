@@ -1,8 +1,9 @@
 import { render, waitFor } from "@testing-library/svelte";
 import type { Node } from "@xyflow/svelte";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { installXyflowTestEnv } from "../xyflow-test-env";
 import Harness from "./SketchBackdrop.harness.svelte";
+import * as voronoi from "./voronoi";
 
 installXyflowTestEnv();
 
@@ -81,5 +82,38 @@ describe("SketchBackdrop", () => {
 		);
 		expect(container.querySelector(".blob")?.getAttribute("d")).toBe("");
 		expect(container.querySelectorAll(".region-label").length).toBe(0);
+	});
+	it("recomputes only when a re-render actually changes the boxes' geometry", async () => {
+		const spy = vi.spyOn(voronoi, "sketchBackdrop");
+		spy.mockClear();
+		const { container, rerender } = render(Harness, {
+			nodes,
+			groupLabels: labels,
+		});
+		await waitFor(() =>
+			expect(container.querySelector(".blob")?.getAttribute("d")).toMatch(/^M/),
+		);
+		expect(spy).toHaveBeenCalledTimes(1);
+
+		// A fresh array with the same ids and positions: no real move, no recompute.
+		await rerender({
+			nodes: nodes.map((n) => ({ ...n })),
+			groupLabels: labels,
+		});
+		await waitFor(() =>
+			expect(container.querySelector(".blob")?.getAttribute("d")).toMatch(/^M/),
+		);
+		expect(spy).toHaveBeenCalledTimes(1);
+
+		// Moving a node changes its rounded position, so the backdrop recomputes.
+		await rerender({
+			nodes: nodes.map((n) =>
+				n.id === "#/a" ? { ...n, position: { x: 40, y: 40 } } : n,
+			),
+			groupLabels: labels,
+		});
+		await waitFor(() => expect(spy).toHaveBeenCalledTimes(2));
+
+		spy.mockRestore();
 	});
 });

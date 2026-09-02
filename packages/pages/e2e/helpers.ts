@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 /** Shared fixtures: the example workspace, served to the viewer over an intercepted URL. */
 
@@ -33,4 +33,22 @@ export async function servePetstore(page: Page): Promise<void> {
 			body: PETSTORE_JSON,
 		}),
 	);
+}
+
+/**
+ * Serves the petstore, navigates to `ref` and switches the diagram whose
+ * caption contains `title` into its interactive view, returning the
+ * `.svelte-flow` locator once the toggle has been clicked.
+ */
+export async function openInteractiveDiagram(
+	page: Page,
+	title: string,
+	ref = "",
+): Promise<Locator> {
+	await servePetstore(page);
+	await page.goto(viewerAt(ref));
+	const figure = page.locator("figure.diagram", { hasText: title });
+	await figure.scrollIntoViewIfNeeded();
+	await figure.getByRole("button", { name: "interactive" }).click();
+	return figure.locator(".svelte-flow");
 }

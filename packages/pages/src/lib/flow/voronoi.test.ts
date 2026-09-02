@@ -1,18 +1,22 @@
 import { describe, expect, it } from "vitest";
 import {
+	internals,
+	type Point,
+	type SketchNode,
+	sketchBackdrop,
+} from "./voronoi";
+
+const {
 	centre,
 	convexHull,
 	ellipsePoints,
 	groupBoundaries,
 	groupLabels,
 	outerBlob,
-	type Point,
 	paddedBounds,
 	resample,
-	type SketchNode,
-	sketchBackdrop,
 	smoothPath,
-} from "./voronoi";
+} = internals;
 
 const box = (
 	id: string,

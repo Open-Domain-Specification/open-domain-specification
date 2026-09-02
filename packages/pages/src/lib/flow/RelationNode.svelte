@@ -2,6 +2,7 @@
 import type { NodeProps } from "@xyflow/svelte";
 import type { GraphNode } from "./graph";
 import NodeHandles from "./NodeHandles.svelte";
+import { sketchClass } from "./node-class";
 
 /**
  * A UML class box for the relation map: a stereotype line and the name in the
@@ -18,7 +19,7 @@ const tone = $derived(data.tone ?? "");
 const stereotype = $derived(`«${data.chips?.[0] ?? "entity"}»`);
 </script>
 
-<div class={`flow-card relation-node ${tone} ${data.sketch ? "sketch" : ""}`} title={data.id}>
+<div class={`flow-card relation-node ${tone} ${sketchClass(data)}`} title={data.id}>
 	<NodeHandles floating={data.floating} />
 	<div class="head">
 		<span class="stereotype">{stereotype}</span>

@@ -1,26 +1,14 @@
 import { expect, test } from "@playwright/test";
-import { servePetstore, viewerAt } from "./helpers";
+import { openInteractiveDiagram } from "./helpers";
 
 /** The consumable map on the Sales context: providers with slots, consumptions to slots. */
 
 const SALES = "#/boundedcontexts/sales_bc";
 
-test.beforeEach(async ({ page }) => {
-	await servePetstore(page);
-	await page.goto(viewerAt(SALES));
-	await expect(page.locator("main h1")).toContainText("Sales");
-});
-
-const consumableFigure = (page: import("@playwright/test").Page) =>
-	page.locator("figure.diagram", { hasText: "consumable map" }).first();
-
 test("draws providers with a slot per consumable, each with its own handle", async ({
 	page,
 }) => {
-	const figure = consumableFigure(page);
-	await figure.scrollIntoViewIfNeeded();
-	await figure.getByRole("button", { name: "interactive" }).click();
-	const flow = figure.locator(".svelte-flow");
+	const flow = await openInteractiveDiagram(page, "consumable map", SALES);
 	await expect(flow.locator(".consumable-node").first()).toBeVisible();
 	const pet = flow.locator(
 		'.svelte-flow__node[data-id="#/boundedcontexts/catalog_bc/aggregates/pet"]',
@@ -57,10 +45,7 @@ test("draws providers with a slot per consumable, each with its own handle", asy
 test("labels each consumption with the consumable and the consumer pattern as a port", async ({
 	page,
 }) => {
-	const figure = consumableFigure(page);
-	await figure.scrollIntoViewIfNeeded();
-	await figure.getByRole("button", { name: "interactive" }).click();
-	const flow = figure.locator(".svelte-flow");
+	const flow = await openInteractiveDiagram(page, "consumable map", SALES);
 	const edge = flow
 		.locator(".svelte-flow__edge", { hasText: "ReservePet" })
 		.first();
@@ -84,10 +69,7 @@ test("labels each consumption with the consumable and the consumer pattern as a 
 });
 
 test("keeps the slot as the target end in floating mode", async ({ page }) => {
-	const figure = consumableFigure(page);
-	await figure.scrollIntoViewIfNeeded();
-	await figure.getByRole("button", { name: "interactive" }).click();
-	const flow = figure.locator(".svelte-flow");
+	const flow = await openInteractiveDiagram(page, "consumable map", SALES);
 	const path = flow
 		.locator(".svelte-flow__edge", { hasText: "ReservePet" })
 		.first()

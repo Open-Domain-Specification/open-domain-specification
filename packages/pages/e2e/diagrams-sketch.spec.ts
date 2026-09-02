@@ -1,17 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { servePetstore, viewerAt } from "./helpers";
+import { openInteractiveDiagram } from "./helpers";
 
 /** The sketch style on the workspace context map: ellipse nodes over a Voronoi backdrop. */
 
 test("switching to sketch draws ellipses over the backdrop and cards come back", async ({
 	page,
 }) => {
-	await servePetstore(page);
-	await page.goto(viewerAt());
-	const figure = page.locator("figure.diagram", { hasText: "Context map" });
-	await figure.scrollIntoViewIfNeeded();
-	await figure.getByRole("button", { name: "interactive" }).click();
-	const flow = figure.locator(".svelte-flow");
+	const flow = await openInteractiveDiagram(page, "Context map");
 	await expect(flow.locator(".context-node").first()).toBeVisible();
 	await expect(flow.locator(".cluster-node").first()).toBeVisible();
 	await expect(flow.locator(".sketch-backdrop")).toHaveCount(0);
@@ -54,6 +49,7 @@ test("switching to sketch draws ellipses over the backdrop and cards come back",
 
 	// The choice sticks, and cards return on switching back.
 	await page.reload();
+	const figure = page.locator("figure.diagram", { hasText: "Context map" });
 	await figure.getByRole("button", { name: "interactive" }).click();
 	await expect(flow.locator(".context-node.sketch").first()).toBeVisible();
 	await flow

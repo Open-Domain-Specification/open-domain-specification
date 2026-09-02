@@ -4,6 +4,7 @@ import Icon from "../atoms/Icon.svelte";
 import { type ConsumableNodeData, slotIcon } from "./consumable-graph";
 import NodeHandles from "./NodeHandles.svelte";
 import NodeHead from "./NodeHead.svelte";
+import { sketchClass } from "./node-class";
 import { roleLabel } from "./roles";
 
 /**
@@ -21,7 +22,7 @@ let {
 } = $props();
 </script>
 
-<div class={`flow-card consumable-node ${data.sketch ? "sketch" : ""}`} title={data.description ?? data.id}>
+<div class={`flow-card consumable-node ${sketchClass(data)}`} title={data.description ?? data.id}>
 	<NodeHead icon={data.icon} name={data.label} subtitle={data.groupPath} />
 	{#if data.slots.length}
 		<ul class="slots">

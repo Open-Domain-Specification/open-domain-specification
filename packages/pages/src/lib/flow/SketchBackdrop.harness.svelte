@@ -15,6 +15,10 @@ let {
 } = $props();
 // svelte-ignore state_referenced_locally
 let nodes = $state.raw<Node[]>(initial);
+// Sync from a re-render's `initial`, without undoing a drag done through `bind:nodes` below.
+$effect(() => {
+	nodes = initial;
+});
 </script>
 
 <div style="height: 320px">

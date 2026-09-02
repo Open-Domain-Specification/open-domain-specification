@@ -1,4 +1,5 @@
 import { Delaunay } from "d3-delaunay";
+import { centre as centreOf } from "./floating";
 
 /**
  * Geometry for the sketch backdrop: a Voronoi tessellation of the node
@@ -31,17 +32,26 @@ export type Backdrop = {
 	labels: GroupLabel[];
 };
 
+/** Points sampled round each node's padded ellipse. */
+const ELLIPSE_STEPS = 12;
+/** The blob's perimeter resample step, as a multiple of the node padding. */
+const BLOB_RESAMPLE_FACTOR = 1.5;
+/** Vertical gap between a group's lowest node and its label. */
+const LABEL_GAP = 18;
+/** The Voronoi clip bounds' padding, as a multiple of the node padding. */
+const BOUNDARY_BOUNDS_FACTOR = 2;
+
 const EPS = 1e-6;
 const same = (p: Point, q: Point) =>
 	Math.abs(p[0] - q[0]) < EPS && Math.abs(p[1] - q[1]) < EPS;
 
-export const centre = (n: SketchNode): Point => [
-	n.x + n.width / 2,
-	n.y + n.height / 2,
-];
+const centre = (n: SketchNode): Point => {
+	const c = centreOf(n);
+	return [c.x, c.y];
+};
 
 /** The bounding box of every node, grown by `padding` on each side. */
-export function paddedBounds(
+function paddedBounds(
 	nodes: SketchNode[],
 	padding: number,
 ): [number, number, number, number] {
@@ -62,7 +72,7 @@ const cross = (o: Point, a: Point, b: Point) =>
 	(a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
 
 /** Convex hull by monotone chain, counter-clockwise, no repeated closing point. */
-export function convexHull(points: Point[]): Point[] {
+function convexHull(points: Point[]): Point[] {
 	const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
 	if (sorted.length < 3) return sorted;
 	const lower: Point[] = [];
@@ -90,10 +100,10 @@ export function convexHull(points: Point[]): Point[] {
  * Points on an ellipse hugging the node's padded box, so the hull around a
  * node bends round it instead of squaring off at the corners.
  */
-export function ellipsePoints(
+function ellipsePoints(
 	n: SketchNode,
 	padding: number,
-	steps = 12,
+	steps = ELLIPSE_STEPS,
 ): Point[] {
 	const [cx, cy] = centre(n);
 	const rx = n.width / 2 + padding;
@@ -111,7 +121,7 @@ export function ellipsePoints(
  * through them bends evenly instead of overshooting at a sharp corner
  * between a long side and a short one.
  */
-export function resample(points: Point[], step: number): Point[] {
+function resample(points: Point[], step: number): Point[] {
 	if (points.length < 3) return points;
 	const out: Point[] = [];
 	let carry = 0;
@@ -130,9 +140,9 @@ export function resample(points: Point[], step: number): Point[] {
 }
 
 /** The outer blob's control points: the hull of every node's padded ellipse. */
-export function outerBlob(nodes: SketchNode[], padding: number): Point[] {
+function outerBlob(nodes: SketchNode[], padding: number): Point[] {
 	const hull = convexHull(nodes.flatMap((n) => ellipsePoints(n, padding)));
-	return resample(hull, padding * 1.5);
+	return resample(hull, padding * BLOB_RESAMPLE_FACTOR);
 }
 
 const f = (v: number) => Math.round(v * 100) / 100;
@@ -141,7 +151,7 @@ const f = (v: number) => Math.round(v * 100) / 100;
  * A closed Catmull-Rom spline through the points as cubic Bézier commands.
  * Fewer than three points give a plain closed polyline (a dot or a line).
  */
-export function smoothPath(points: Point[]): string {
+function smoothPath(points: Point[]): string {
 	if (points.length === 0) return "";
 	if (points.length < 3)
 		return `${points.map((p, i) => `${i ? "L" : "M"}${f(p[0])} ${f(p[1])}`).join(" ")} Z`;
@@ -192,7 +202,7 @@ function cells(
  * The Voronoi edges separating nodes of different groups: the boundaries
  * drawn dashed between subdomains. Each is the edge two adjacent cells share.
  */
-export function groupBoundaries(
+function groupBoundaries(
 	nodes: SketchNode[],
 	bounds: [number, number, number, number],
 ): Segment[] {
@@ -217,7 +227,7 @@ export function groupBoundaries(
  * the lowest of them, so it never lands on a node and stays in the group's
  * own cells, which reach at least halfway to the nearest neighbour.
  */
-export function groupLabels(nodes: SketchNode[], gap = 18): GroupLabel[] {
+function groupLabels(nodes: SketchNode[], gap = LABEL_GAP): GroupLabel[] {
 	const acc = new Map<string, { n: number; x: number; bottom: number }>();
 	for (const n of nodes) {
 		if (!n.groupId) continue;
@@ -247,10 +257,23 @@ const segmentsPath = (segments: Segment[]) =>
 /** Everything the backdrop draws for the given nodes; empty paths for no nodes. */
 export function sketchBackdrop(nodes: SketchNode[], padding: number): Backdrop {
 	if (nodes.length === 0) return { blob: "", boundaries: "", labels: [] };
-	const bounds = paddedBounds(nodes, padding * 2);
+	const bounds = paddedBounds(nodes, padding * BOUNDARY_BOUNDS_FACTOR);
 	return {
 		blob: smoothPath(outerBlob(nodes, padding)),
 		boundaries: segmentsPath(groupBoundaries(nodes, bounds)),
 		labels: groupLabels(nodes),
 	};
 }
+
+/** Geometry helpers, exposed only for `voronoi.test.ts`'s direct unit coverage. */
+export const internals = {
+	centre,
+	paddedBounds,
+	convexHull,
+	ellipsePoints,
+	resample,
+	outerBlob,
+	smoothPath,
+	groupBoundaries,
+	groupLabels,
+};

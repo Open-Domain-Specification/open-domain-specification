@@ -6,7 +6,10 @@ export type Rect = { x: number; y: number; width: number; height: number };
 /** Where an edge leaves or enters a rectangle when aimed at another rectangle's centre. */
 export type Anchor = { x: number; y: number; position: Position };
 
-const centre = (r: Rect) => ({ x: r.x + r.width / 2, y: r.y + r.height / 2 });
+export const centre = (r: Rect) => ({
+	x: r.x + r.width / 2,
+	y: r.y + r.height / 2,
+});
 
 /**
  * Point on the border of `from` along the line towards the centre of `to`,

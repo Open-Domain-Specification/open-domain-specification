@@ -1,28 +1,15 @@
 import { expect, test } from "@playwright/test";
-import { ORDER_REF, servePetstore, viewerAt } from "./helpers";
+import { ORDER_REF, openInteractiveDiagram } from "./helpers";
 
 /** The interactive relation map draws UML class boxes and connectors, as the Graphviz image does. */
 
 const SHIPMENT_REF = "#/boundedcontexts/fulfilment_bc/aggregates/shipment";
 
-async function openInteractive(
-	page: import("@playwright/test").Page,
-	ref: string,
-) {
-	await servePetstore(page);
-	await page.goto(viewerAt(ref));
-	const figure = page.locator("figure.diagram").first();
-	await figure.scrollIntoViewIfNeeded();
-	await figure.getByRole("button", { name: "interactive" }).click();
-	const flow = figure.locator(".svelte-flow");
-	await expect(flow.locator(".relation-node").first()).toBeVisible();
-	return flow;
-}
-
 test("draws each element as a UML class box with stereotype, attributes and cluster path", async ({
 	page,
 }) => {
-	const flow = await openInteractive(page, ORDER_REF);
+	const flow = await openInteractiveDiagram(page, "relation map", ORDER_REF);
+	await expect(flow.locator(".relation-node").first()).toBeVisible();
 
 	const order = flow.locator('.svelte-flow__node[data-id$="/entities/order"]');
 	await expect(order.locator(".relation-node")).toHaveClass(/core/);
@@ -50,7 +37,7 @@ test("draws each element as a UML class box with stereotype, attributes and clus
 test("draws uses as a dashed dependency and references as an association, with label and cardinality", async ({
 	page,
 }) => {
-	const flow = await openInteractive(page, ORDER_REF);
+	const flow = await openInteractiveDiagram(page, "relation map", ORDER_REF);
 
 	const uses = flow.locator(".svelte-flow__edge-path.uses").first();
 	await expect(uses).toBeVisible();
@@ -75,7 +62,7 @@ test("draws uses as a dashed dependency and references as an association, with l
 test("draws includes as a composition with a filled diamond at the whole", async ({
 	page,
 }) => {
-	const flow = await openInteractive(page, SHIPMENT_REF);
+	const flow = await openInteractiveDiagram(page, "relation map", SHIPMENT_REF);
 
 	const includes = flow.locator(".svelte-flow__edge-path.includes").first();
 	await expect(includes).toBeVisible();
@@ -93,7 +80,7 @@ test("draws includes as a composition with a filled diamond at the whole", async
 test("relation edges float and restyle through the options panel", async ({
 	page,
 }) => {
-	const flow = await openInteractive(page, ORDER_REF);
+	const flow = await openInteractiveDiagram(page, "relation map", ORDER_REF);
 	const panel = flow.locator(".diagram-options");
 	await panel.getByLabel("Handle placement").selectOption("floating");
 	await expect(

@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { ORDER_REF, servePetstore, viewerAt } from "./helpers";
+import {
+	ORDER_REF,
+	openInteractiveDiagram,
+	servePetstore,
+	viewerAt,
+} from "./helpers";
 
 /** The relation map on the Order aggregate: static SVG, lightbox and the interactive view. */
 
@@ -43,16 +48,13 @@ test("opens the diagram in a lightbox and closes it again", async ({
 test("toggles between the interactive view and the static svg", async ({
 	page,
 }) => {
-	const figure = relationMap(page);
-	await figure.scrollIntoViewIfNeeded();
-	await figure.getByRole("button", { name: "interactive" }).click();
-
-	const flow = figure.locator(".svelte-flow");
+	const flow = await openInteractiveDiagram(page, "relation map", ORDER_REF);
 	await expect(flow).toBeVisible();
 	await expect(flow.locator(".svelte-flow__node").first()).toBeVisible();
 	expect(await flow.locator(".svelte-flow__node").count()).toBeGreaterThan(1);
 	expect(await flow.locator(".svelte-flow__edge").count()).toBeGreaterThan(0);
 
+	const figure = relationMap(page);
 	await figure.getByRole("button", { name: "static" }).click();
 
 	await expect(figure.locator(".canvas svg")).toBeVisible();
@@ -62,11 +64,9 @@ test("toggles between the interactive view and the static svg", async ({
 test("clicking an interactive node navigates to that element", async ({
 	page,
 }) => {
-	const figure = relationMap(page);
-	await figure.scrollIntoViewIfNeeded();
-	await figure.getByRole("button", { name: "interactive" }).click();
+	const flow = await openInteractiveDiagram(page, "relation map", ORDER_REF);
 
-	const node = figure
+	const node = flow
 		.locator(`.svelte-flow__node[data-id$="/valueobjects/order_status"]`)
 		.first();
 	await expect(node).toBeVisible();
@@ -79,12 +79,7 @@ test("clicking an interactive node navigates to that element", async ({
 });
 
 test("the options panel switches handles and edge styles", async ({ page }) => {
-	await servePetstore(page);
-	await page.goto(viewerAt("#/boundedcontexts/sales_bc/aggregates/order"));
-	const figure = page.locator("#boundary figure.diagram");
-	await figure.scrollIntoViewIfNeeded();
-	await figure.getByRole("button", { name: "interactive" }).click();
-	const flow = figure.locator(".svelte-flow");
+	const flow = await openInteractiveDiagram(page, "relation map", ORDER_REF);
 	await expect(flow.locator(".svelte-flow__edge").first()).toBeVisible();
 	const panel = flow.locator(".diagram-options");
 	await expect(panel).toBeVisible();
@@ -98,6 +93,7 @@ test("the options panel switches handles and edge styles", async ({ page }) => {
 	await panel.getByLabel("Handle placement").selectOption("fixed");
 	await expect(flow.locator(".handle-hidden")).toHaveCount(0);
 	await page.reload();
+	const figure = relationMap(page);
 	await figure.getByRole("button", { name: "interactive" }).click();
 	await expect(
 		flow.locator(".diagram-options").getByLabel("Edge style"),

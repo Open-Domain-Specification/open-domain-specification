@@ -2,7 +2,7 @@
 import { type Node, ViewportPortal } from "@xyflow/svelte";
 import type { GraphNode } from "./graph";
 import { nodeSize } from "./layout";
-import { type SketchNode, sketchBackdrop } from "./voronoi";
+import { type Backdrop, type SketchNode, sketchBackdrop } from "./voronoi";
 
 /**
  * The sketch style's backdrop, drawn in flow coordinates under the nodes: a
@@ -42,7 +42,32 @@ const boxes = $derived<SketchNode[]>(
 			};
 		}),
 );
-const backdrop = $derived(sketchBackdrop(boxes, padding));
+/**
+ * A cheap fingerprint of the boxes' identity and rounded geometry: Svelte
+ * Flow hands `nodes` a fresh array on every drag frame, even ones where
+ * nothing moved, so comparing `boxes` by reference would recompute the
+ * backdrop far more often than it actually changes.
+ */
+const fingerprint = $derived(
+	boxes
+		.map(
+			(b) =>
+				`${b.id}:${Math.round(b.x)}:${Math.round(b.y)}:${Math.round(b.width)}:${Math.round(b.height)}`,
+		)
+		.join("|"),
+);
+let lastFingerprint = "";
+let lastPadding: number | undefined;
+let cachedBackdrop: Backdrop = { blob: "", boundaries: "", labels: [] };
+/** Recomputed only when the fingerprint or padding actually changes. */
+const backdrop = $derived.by(() => {
+	if (fingerprint !== lastFingerprint || padding !== lastPadding) {
+		lastFingerprint = fingerprint;
+		lastPadding = padding;
+		cachedBackdrop = sketchBackdrop(boxes, padding);
+	}
+	return cachedBackdrop;
+});
 const clipId = `sketch-clip-${Math.random().toString(36).slice(2, 8)}`;
 </script>
 
