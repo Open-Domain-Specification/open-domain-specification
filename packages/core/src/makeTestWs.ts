@@ -123,3 +123,110 @@ export function makeTestWs() {
 		d2Sd1Bc1S1Ag1Vo1,
 	};
 }
+
+/**
+ * A fixture with distinct descriptions, a root entity, entity relations,
+ * an aggregate-level event and an aggregate consumption, so that
+ * round-trips and derived maps exercise every reference kind.
+ */
+export function makeRichTestWs() {
+	const ws = new Workspace("Rich WS", {
+		odsVersion: "1.0.0",
+		description: "Rich fixture",
+		version: "1.2.3",
+		homepage: "https://example.com",
+		primaryColor: "#123456",
+	});
+
+	const sales = ws.addDomain("Sales", {
+		description: "Sales domain",
+		type: "core",
+	});
+	const ordering = sales.addSubdomain("Ordering", {
+		description: "Ordering subdomain",
+	});
+	const orderingBc = ordering.addBoundedcontext("Ordering BC", {
+		description: "Ordering bounded context",
+	});
+	const orderAgg = orderingBc.addAggregate("Order", {
+		description: "Order aggregate",
+	});
+	const order = orderAgg.addRootEntity("Order", {
+		description: "Order root",
+	});
+	const orderLine = orderAgg.addEntity("Order Line", {
+		description: "A line on the order",
+	});
+	const money = orderAgg.addValueObject("Money", {
+		description: "Amount and currency",
+	});
+	order.includes(orderLine, "has lines");
+	orderLine.uses(money, "priced in");
+	orderAgg.addInvariant("Non-empty", {
+		description: "An order has at least one line",
+	});
+	const orderPlaced = orderAgg.provides("Order Placed", {
+		description: "Raised when an order is placed",
+		type: "event",
+		pattern: "published-language",
+	});
+	const orderApp = orderingBc.addService("Order App", {
+		description: "Order application service",
+		type: "application",
+	});
+	const placeOrder = orderApp.provides("Place Order", {
+		description: "Places an order",
+		type: "operation",
+		pattern: "open-host-service",
+	});
+
+	const billing = ws.addDomain("Billing", {
+		description: "Billing domain",
+		type: "supporting",
+	});
+	const invoicing = billing.addSubdomain("Invoicing", {
+		description: "Invoicing subdomain",
+	});
+	const invoicingBc = invoicing.addBoundedcontext("Invoicing BC", {
+		description: "Invoicing bounded context",
+	});
+	const invoiceAgg = invoicingBc.addAggregate("Invoice", {
+		description: "Invoice aggregate",
+	});
+	const invoice = invoiceAgg.addRootEntity("Invoice", {
+		description: "Invoice root",
+	});
+	invoice.references(order, "bills");
+	const invoiceConsumesOrderPlaced = invoiceAgg.consumes(orderPlaced, {
+		pattern: "conformist",
+	});
+	const invoiceApp = invoicingBc.addService("Invoice App", {
+		description: "Invoice application service",
+		type: "application",
+	});
+	const invoiceAppConsumesPlaceOrder = invoiceApp.consumes(placeOrder, {
+		pattern: "anti-corruption-layer",
+	});
+
+	return {
+		ws,
+		sales,
+		ordering,
+		orderingBc,
+		orderAgg,
+		order,
+		orderLine,
+		money,
+		orderPlaced,
+		orderApp,
+		placeOrder,
+		billing,
+		invoicing,
+		invoicingBc,
+		invoiceAgg,
+		invoice,
+		invoiceConsumesOrderPlaced,
+		invoiceApp,
+		invoiceAppConsumesPlaceOrder,
+	};
+}

@@ -1,3 +1,4 @@
+import { Workspace } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { workspace } from "./petstore/workspace";
 
@@ -237,5 +238,13 @@ describe("Swagger Petstore Example Workspace", () => {
 		expect(userApp.consumables.has("login")).toBe(true);
 		expect(userApp.consumables.has("logout")).toBe(true);
 		expect(userApp.consumables.has("get_user_by_username")).toBe(true);
+	});
+});
+
+describe("Swagger Petstore schema round-trip", () => {
+	it("rebuilds an identical schema from its own JSON output", () => {
+		const schema = workspace.toSchema();
+		const rebuilt = Workspace.fromSchema(JSON.parse(JSON.stringify(schema)));
+		expect(rebuilt.toSchema()).toEqual(schema);
 	});
 });

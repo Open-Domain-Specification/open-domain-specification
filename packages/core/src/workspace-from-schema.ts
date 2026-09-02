@@ -40,7 +40,10 @@ export function getWorkspaceFromSchema(
 			debug(
 				`Adding subdomain: ${subdomainSchema.name} (${subdomainId}) to domain: ${domainSchema.name}`,
 			);
-			const subdomain = domain.addSubdomain(subdomainSchema.name, domainSchema);
+			const subdomain = domain.addSubdomain(
+				subdomainSchema.name,
+				subdomainSchema,
+			);
 
 			for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 				subdomainSchema.boundedcontexts,
