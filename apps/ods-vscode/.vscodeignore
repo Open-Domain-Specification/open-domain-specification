@@ -1,0 +1,7 @@
+src/**
+node_modules/**
+esbuild.mjs
+dev.mjs
+tsconfig.json
+vitest.config.ts
+**/*.map

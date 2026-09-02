@@ -1,0 +1,180 @@
+{
+	"name": "ods-vscode",
+	"displayName": "Open Domain Specification",
+	"description": "Author Open Domain Specification workspaces from a .ods folder",
+	"version": "0.1.9",
+	"private": true,
+	"publisher": "open-domain-specification",
+	"license": "ISC",
+	"engines": {
+		"vscode": "^1.90.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"main": "./dist/extension.js",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Open-Domain-Specification/open-domain-specification.git"
+	},
+	"activationEvents": [
+		"workspaceContains:.ods/*.json",
+		"onStartupFinished"
+	],
+	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "ods",
+					"title": "Domain Model",
+					"icon": "media/activity.svg"
+				}
+			]
+		},
+		"views": {
+			"ods": [
+				{
+					"id": "odsModel",
+					"name": "Workspaces",
+					"icon": "media/activity.svg"
+				}
+			]
+		},
+		"viewsWelcome": [
+			{
+				"view": "odsModel",
+				"contents": "No workspace files found in the .ods folder.\n[Create Workspace](command:ods.createWorkspace)"
+			}
+		],
+		"commands": [
+			{
+				"command": "ods.createWorkspace",
+				"title": "Create Workspace",
+				"category": "ODS",
+				"icon": "$(add)"
+			},
+			{
+				"command": "ods.refresh",
+				"title": "Reload Workspaces",
+				"category": "ODS",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "ods.revealInJson",
+				"title": "Reveal in JSON",
+				"category": "ODS",
+				"icon": "$(go-to-file)"
+			},
+			{
+				"command": "ods.writeSchema",
+				"title": "Write schema.json",
+				"category": "ODS"
+			},
+			{
+				"command": "ods.openPage",
+				"title": "Open Page",
+				"category": "ODS",
+				"icon": "$(open-preview)"
+			},
+			{
+				"command": "ods.search",
+				"title": "Search Domain Model",
+				"category": "ODS",
+				"icon": "$(search)"
+			}
+		],
+		"menus": {
+			"view/title": [
+				{
+					"command": "ods.search",
+					"when": "view == odsModel",
+					"group": "navigation@0"
+				},
+				{
+					"command": "ods.createWorkspace",
+					"when": "view == odsModel",
+					"group": "navigation@1"
+				},
+				{
+					"command": "ods.refresh",
+					"when": "view == odsModel",
+					"group": "navigation@2"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "ods.revealInJson",
+					"when": "view == odsModel && viewItem =~ /ref/",
+					"group": "inline"
+				},
+				{
+					"command": "ods.openPage",
+					"when": "view == odsModel && viewItem =~ /ref/",
+					"group": "inline@0"
+				}
+			],
+			"commandPalette": [
+				{
+					"command": "ods.revealInJson",
+					"when": "false"
+				},
+				{
+					"command": "ods.openPage",
+					"when": "false"
+				}
+			]
+		},
+		"configuration": {
+			"title": "Open Domain Specification",
+			"properties": {
+				"ods.folder": {
+					"type": "string",
+					"default": ".ods",
+					"description": "Folder, relative to each workspace folder, that holds the workspace JSON files.",
+					"scope": "resource"
+				}
+			}
+		},
+		"jsonValidation": [
+			{
+				"fileMatch": [
+					"**/.ods/**/*.json",
+					"!**/.ods/**/schema.json"
+				],
+				"url": "./schema.json"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "ods.search",
+				"key": "ctrl+alt+o",
+				"mac": "cmd+alt+o"
+			}
+		]
+	},
+	"scripts": {
+		"clean": "npx rimraf dist schema.json",
+		"build": "tsc --noEmit && node esbuild.mjs",
+		"watch": "node esbuild.mjs --watch",
+		"dev": "node esbuild.mjs && node dev.mjs",
+		"package": "vsce package --no-dependencies",
+		"test": "vitest run",
+		"depcheck": "npx depcheck"
+	},
+	"dependencies": {
+		"@open-domain-specification/core": "^0.1.9",
+		"jsonc-parser": "^3.3.1",
+		"@open-domain-specification/graphviz": "^0.1.9",
+		"@hpcc-js/wasm-graphviz": "^1.11.0",
+		"marked": "^18.0.11"
+	},
+	"devDependencies": {
+		"@types/node": "^24.2.1",
+		"@types/vscode": "^1.90.0",
+		"@vscode/vsce": "^3.9.2",
+		"esbuild": "^0.28.2",
+		"typescript": "^5.9.2",
+		"vitest": "^3.2.4",
+		"@vscode/codicons": "0.0.46-24"
+	}
+}
