@@ -21,6 +21,12 @@
                     },
                     "type": "object"
                 },
+                "events": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/DomainEventSchema"
+                    },
+                    "type": "object"
+                },
                 "invariants": {
                     "additionalProperties": {
                         "$ref": "#/definitions/InvariantSchema"
@@ -47,12 +53,52 @@
                 "consumes",
                 "description",
                 "entities",
+                "events",
                 "invariants",
                 "name",
                 "provides",
                 "valueobjects"
             ],
             "title": "Aggregate",
+            "type": "object"
+        },
+        "AttributeSchema": {
+            "additionalProperties": false,
+            "description": "A named, typed property of an entity, value object, event or command.",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "identity": {
+                    "description": "True when this attribute is (part of) the identity of an entity.",
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "description": "Free-form type name, e.g. `string`, `Money`, `Date`.",
+                    "type": "string"
+                },
+                "valueobject": {
+                    "additionalProperties": false,
+                    "description": "The value object that models this attribute's type, when there is one.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                }
+            },
+            "required": [
+                "name",
+                "type"
+            ],
+            "title": "Attribute",
             "type": "object"
         },
         "BoundedContextSchema": {
@@ -127,6 +173,19 @@
             "properties": {
                 "description": {
                     "type": "string"
+                },
+                "event": {
+                    "additionalProperties": false,
+                    "description": "For event consumables: the domain event being published.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 },
                 "name": {
                     "type": "string"
@@ -257,6 +316,31 @@
                 "upstream-downstream"
             ],
             "type": "string"
+        },
+        "DomainEventSchema": {
+            "additionalProperties": false,
+            "description": "Something that happened in the domain that other parts care about.",
+            "properties": {
+                "attributes": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/AttributeSchema"
+                    },
+                    "type": "object"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "attributes",
+                "description",
+                "name"
+            ],
+            "title": "DomainEvent",
+            "type": "object"
         },
         "DomainSchema": {
             "additionalProperties": false,

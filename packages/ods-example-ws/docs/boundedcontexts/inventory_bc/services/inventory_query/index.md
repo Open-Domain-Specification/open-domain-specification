@@ -15,7 +15,7 @@ GET /store/inventory → { [status]: count }
 ## Consumes
 
 ### InventoryUpdated [conformist]
-Inventory counts changed
+undefined
 - **Provider**: [InventoryProjection](../../aggregates/inventory_projection/index.md)
 
 	

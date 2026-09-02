@@ -261,15 +261,21 @@ export class Workspace
 		return entityOrValueObject;
 	}
 
-	getEntityByRef(ref: string): Entity | undefined {
-		this.debug(`Searching for entity with ref: ${ref}`);
+	/** Finds a member of any aggregate by ref, given how to pick the member map. */
+	private findAggregateMember<T extends { ref: string }>(
+		members: (aggregate: Aggregate) => Map<string, T>,
+		ref: string,
+	): T | undefined {
+		this.debug(`Searching aggregates for ref: ${ref}`);
 		for (const aggregate of this.aggregates()) {
-			for (const entity of aggregate.entities.values()) {
-				if (entity.ref === ref) {
-					return entity;
-				}
+			for (const member of members(aggregate).values()) {
+				if (member.ref === ref) return member;
 			}
 		}
+	}
+
+	getEntityByRef(ref: string): Entity | undefined {
+		return this.findAggregateMember((it) => it.entities, ref);
 	}
 
 	getEntityByRefOrThrow(ref: string): Entity {
@@ -281,14 +287,7 @@ export class Workspace
 	}
 
 	getValueObjectByRef(ref: string): ValueObject | undefined {
-		this.debug(`Searching for value object with ref: ${ref}`);
-		for (const aggregate of this.aggregates()) {
-			for (const valueObject of aggregate.valueobjects.values()) {
-				if (valueObject.ref === ref) {
-					return valueObject;
-				}
-			}
-		}
+		return this.findAggregateMember((it) => it.valueobjects, ref);
 	}
 
 	getValueObjectByRefOrThrow(ref: string): ValueObject {
@@ -300,14 +299,7 @@ export class Workspace
 	}
 
 	getInvariantByRef(ref: string): Invariant | undefined {
-		this.debug(`Searching for invariant with ref: ${ref}`);
-		for (const aggregate of this.aggregates()) {
-			for (const invariant of aggregate.invariants.values()) {
-				if (invariant.ref === ref) {
-					return invariant;
-				}
-			}
-		}
+		return this.findAggregateMember((it) => it.invariants, ref);
 	}
 
 	getInvariantByRefOrThrow(ref: string): Invariant {
@@ -316,6 +308,18 @@ export class Workspace
 			throw new Error(`Invariant with ref ${ref} not found`);
 		}
 		return invariant;
+	}
+
+	getEventByRef(ref: string): DomainEvent | undefined {
+		return this.findAggregateMember((it) => it.events, ref);
+	}
+
+	getEventByRefOrThrow(ref: string): DomainEvent {
+		const event = this.getEventByRef(ref);
+		if (!event) {
+			throw new Error(`Event with ref ${ref} not found`);
+		}
+		return event;
 	}
 
 	getConsumableByRef(ref: string): Consumable | undefined {
@@ -715,6 +719,7 @@ export class Aggregate
 	invariants = new Map<string, Invariant>();
 	entities = new Map<string, Entity>();
 	valueobjects = new Map<string, ValueObject>();
+	events = new Map<string, DomainEvent>();
 	boundedcontext: BoundedContext;
 	consumptions: Consumption[] = [];
 
@@ -778,6 +783,27 @@ export class Aggregate
 		return new ValueObject(this, name, attributes);
 	}
 
+	addEvent(name: string, attributes: DomainEventAttributes): DomainEvent {
+		return new DomainEvent(this, name, attributes);
+	}
+
+	/**
+	 * Exposes a domain event to other contexts as an event consumable named
+	 * after the event.
+	 */
+	publishes(
+		event: DomainEvent,
+		attributes: Omit<ConsumableAttributes, "type" | "event"> = {
+			description: event.description,
+		},
+	): Consumable {
+		return this.addConsumable(event.name, {
+			...attributes,
+			type: "event",
+			event,
+		});
+	}
+
 	accept(v: Visitor) {
 		return v.visitAggregate(this);
 	}
@@ -791,6 +817,7 @@ export class Aggregate
 			entities: asRecords(this.entities),
 			valueobjects: asRecords(this.valueobjects),
 			invariants: asRecords(this.invariants),
+			events: asRecords(this.events),
 		};
 	}
 
@@ -803,6 +830,8 @@ export type ConsumableAttributes = {
 	description: string;
 	pattern?: UpstreamRole;
 	type: ods.ConsumableType;
+	/** For event consumables: the domain event being published. */
+	event?: DomainEvent;
 	id?: string;
 };
 
@@ -814,6 +843,7 @@ export class Consumable
 	description: string;
 	pattern?: UpstreamRole;
 	type: ods.ConsumableType;
+	event?: DomainEvent;
 	provider: Aggregate | Service;
 	consumptions: Consumption[] = [];
 
@@ -835,6 +865,7 @@ export class Consumable
 		this.description = attributes.description;
 		this.pattern = attributes.pattern;
 		this.type = attributes.type;
+		this.event = attributes.event;
 		this.provider = provider;
 		provider.consumables.set(this.id, this);
 	}
@@ -849,6 +880,7 @@ export class Consumable
 			description: this.description,
 			pattern: this.pattern,
 			type: this.type,
+			event: this.event && { $ref: this.event.ref },
 		};
 	}
 }
@@ -1280,6 +1312,115 @@ export class Team implements SchemaConvertible<ods.TeamSchema> {
 			name: this.name,
 			description: this.description,
 			homepage: this.homepage,
+		};
+	}
+}
+
+export type AttributeOptions = {
+	type: string;
+	description?: string;
+	identity?: boolean;
+	valueobject?: ValueObject;
+	id?: string;
+};
+
+/** Anything that carries a list of attributes. */
+export interface AttributeOwner {
+	path: string;
+	attributes: Map<string, Attribute>;
+	addAttribute(name: string, options: AttributeOptions): Attribute;
+}
+
+export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
+	id: string;
+	name: string;
+	type: string;
+	description?: string;
+	identity: boolean;
+	valueobject?: ValueObject;
+	owner: AttributeOwner;
+
+	get path(): string {
+		return `${this.owner.path}/attributes/${this.id}`;
+	}
+
+	get ref(): string {
+		return `#/${this.path}`;
+	}
+
+	constructor(
+		owner: AttributeOwner,
+		name: string,
+		attributes: AttributeOptions,
+	) {
+		this.id = attributes.id || snakeCase(name);
+		this.name = name;
+		this.type = attributes.type;
+		this.description = attributes.description;
+		this.identity = attributes.identity ?? false;
+		this.valueobject = attributes.valueobject;
+		this.owner = owner;
+		this.owner.attributes.set(this.id, this);
+	}
+
+	toSchema(): ods.AttributeSchema {
+		return {
+			name: this.name,
+			type: this.type,
+			description: this.description,
+			identity: this.identity || undefined,
+			valueobject: this.valueobject && { $ref: this.valueobject.ref },
+		};
+	}
+}
+
+export type DomainEventAttributes = {
+	description: string;
+	id?: string;
+};
+
+export class DomainEvent
+	implements Visitable, SchemaConvertible<ods.DomainEventSchema>, AttributeOwner
+{
+	id: string;
+	name: string;
+	description: string;
+	attributes = new Map<string, Attribute>();
+	aggregate: Aggregate;
+
+	get path(): string {
+		return `${this.aggregate.path}/events/${this.id}`;
+	}
+
+	get ref(): string {
+		return `#/${this.path}`;
+	}
+
+	constructor(
+		aggregate: Aggregate,
+		name: string,
+		attributes: DomainEventAttributes,
+	) {
+		this.id = attributes.id || snakeCase(name);
+		this.name = name;
+		this.description = attributes.description;
+		this.aggregate = aggregate;
+		this.aggregate.events.set(this.id, this);
+	}
+
+	addAttribute(name: string, attributes: AttributeOptions): Attribute {
+		return new Attribute(this, name, attributes);
+	}
+
+	accept(v: Visitor) {
+		return v.visitDomainEvent(this);
+	}
+
+	toSchema(): ods.DomainEventSchema {
+		return {
+			name: this.name,
+			description: this.description,
+			attributes: asRecords(this.attributes),
 		};
 	}
 }

@@ -1,9 +1,11 @@
 import { getDebug } from "./debug";
 import {
 	type AggregateSchema,
+	type AttributeSchema,
 	aggregateRef,
 	type BoundedContextSchema,
 	entityRef,
+	eventRef,
 	type ServiceSchema,
 	serviceRef,
 	valueObjectRef,
@@ -11,6 +13,7 @@ import {
 } from "./schema";
 import type {
 	Aggregate,
+	AttributeOwner,
 	BoundedContext,
 	Service,
 	Workspace,
@@ -19,13 +22,24 @@ import { Workspace as WorkspaceModel } from "./workspace";
 
 const debug = getDebug("get-workspace-from-schema");
 
+/**
+ * Consumables are added in the second pass because an event consumable
+ * refers to a domain event that may live on another aggregate.
+ */
 function addProvides(
 	provider: Aggregate | Service,
 	schema: AggregateSchema | ServiceSchema,
+	workspace: Workspace,
 ) {
 	for (const [id, consumableSchema] of Object.entries(schema.provides)) {
 		debug(`Adding consumable: ${consumableSchema.name} to ${provider.name}`);
-		provider.addConsumable(consumableSchema.name, { ...consumableSchema, id });
+		provider.addConsumable(consumableSchema.name, {
+			...consumableSchema,
+			id,
+			event:
+				consumableSchema.event &&
+				workspace.getEventByRefOrThrow(consumableSchema.event.$ref),
+		});
 	}
 }
 
@@ -42,6 +56,23 @@ function addConsumes(
 			consumption.consumable.$ref,
 		);
 		consumer.addConsumption(consumable, consumption);
+	}
+}
+
+/** Attributes may point at value objects, so they are added in the second pass. */
+function addAttributes(
+	owner: AttributeOwner,
+	attributes: Record<string, AttributeSchema>,
+	workspace: Workspace,
+) {
+	for (const [id, attributeSchema] of Object.entries(attributes)) {
+		owner.addAttribute(attributeSchema.name, {
+			...attributeSchema,
+			id,
+			valueobject:
+				attributeSchema.valueobject &&
+				workspace.getValueObjectByRefOrThrow(attributeSchema.valueobject.$ref),
+		});
 	}
 }
 
@@ -98,11 +129,10 @@ function addBoundedContext(
 		boundedcontextSchema.services,
 	)) {
 		debug(`Adding service: ${serviceSchema.name} to ${boundedcontext.name}`);
-		const service = boundedcontext.addService(serviceSchema.name, {
+		boundedcontext.addService(serviceSchema.name, {
 			...serviceSchema,
 			id: serviceId,
 		});
-		addProvides(service, serviceSchema);
 	}
 
 	for (const [aggregateId, aggregateSchema] of Object.entries(
@@ -137,39 +167,73 @@ function addBoundedContext(
 				id: valueobjectId,
 			});
 		}
-		addProvides(aggregate, aggregateSchema);
+		for (const [eventId, eventSchema] of Object.entries(
+			aggregateSchema.events,
+		)) {
+			aggregate.addEvent(eventSchema.name, { ...eventSchema, id: eventId });
+		}
 	}
 
 	return boundedcontext;
 }
 
+/** Every service and aggregate, paired with its schema. */
+function* providersOf(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
+		workspaceSchema.boundedcontexts,
+	)) {
+		for (const [serviceId, schema] of Object.entries(
+			boundedcontextSchema.services,
+		)) {
+			const provider = workspace.getServiceByRefOrThrow(
+				serviceRef(boundedcontextId, serviceId).$ref,
+			);
+			yield { provider, schema };
+		}
+		for (const [aggregateId, schema] of Object.entries(
+			boundedcontextSchema.aggregates,
+		)) {
+			const provider = workspace.getAggregateByRefOrThrow(
+				aggregateRef(boundedcontextId, aggregateId).$ref,
+			);
+			yield { provider, schema };
+		}
+	}
+}
+
 /**
  * Second pass: everything that points at another node by `$ref` can only be
- * resolved once every node exists.
+ * resolved once every node exists. Consumables come before consumptions
+ * because a consumption points at a consumable.
  */
 function linkReferences(
 	workspace: Workspace,
 	workspaceSchema: WorkspaceSchema,
 ) {
+	for (const { provider, schema } of providersOf(workspace, workspaceSchema)) {
+		addProvides(provider, schema, workspace);
+	}
+	for (const { provider, schema } of providersOf(workspace, workspaceSchema)) {
+		addConsumes(provider, schema, workspace);
+	}
+
 	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
-		for (const [serviceId, serviceSchema] of Object.entries(
-			boundedcontextSchema.services,
-		)) {
-			const service = workspace.getServiceByRefOrThrow(
-				serviceRef(boundedcontextId, serviceId).$ref,
-			);
-			addConsumes(service, serviceSchema, workspace);
-		}
-
 		for (const [aggregateId, aggregateSchema] of Object.entries(
 			boundedcontextSchema.aggregates,
 		)) {
-			const aggregate = workspace.getAggregateByRefOrThrow(
-				aggregateRef(boundedcontextId, aggregateId).$ref,
-			);
-			addConsumes(aggregate, aggregateSchema, workspace);
+			for (const [eventId, eventSchema] of Object.entries(
+				aggregateSchema.events,
+			)) {
+				addAttributes(
+					workspace.getEventByRefOrThrow(
+						eventRef(boundedcontextId, aggregateId, eventId).$ref,
+					),
+					eventSchema.attributes,
+					workspace,
+				);
+			}
 
 			for (const [entityId, entitySchema] of Object.entries(
 				aggregateSchema.entities,

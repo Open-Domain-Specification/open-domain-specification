@@ -161,6 +161,7 @@ describe("Workspace Edge Cases", () => {
 			visitConsumable: vi.fn(),
 			visitInvariant: vi.fn(),
 			visitContextRelationship: vi.fn(),
+			visitDomainEvent: vi.fn(),
 		};
 
 		workspace.accept(mockVisitor);

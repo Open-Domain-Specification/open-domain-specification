@@ -26,6 +26,15 @@ Order for a single pet
 | [Order](entities/order/index.md) | is-complete | Order - CompleteFlag | uses |
 
 
+## Events
+| Name | Description | Attributes |
+| --- | --- | --- |
+| OrderPlaced | Order created (status=placed) | **orderId**: `int64`, petId: `int64`, quantity: `Quantity` |
+| OrderApproved | Order approved (status=approved) | - |
+| OrderDelivered | Order delivered (status=delivered) | - |
+| OrderDeleted | Order deleted via DELETE /store/order/{orderId} | - |
+
+
 ## Invariants
 | Name | Description |
 | --- | --- |
@@ -37,16 +46,16 @@ Order for a single pet
 ## Provides
 
 ### (event) - OrderPlaced [published-language]
-Order created (status=placed)
+undefined
 
 ### (event) - OrderApproved [published-language]
-Order approved (status=approved)
+undefined
 
 ### (event) - OrderDelivered [published-language]
-Order delivered (status=delivered)
+undefined
 
 ### (event) - OrderDeleted [published-language]
-Order deleted via DELETE /store/order/{orderId}
+undefined
 
 
 ## Consumes

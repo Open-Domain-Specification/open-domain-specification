@@ -11,6 +11,7 @@ import {
 } from "@open-domain-specification/graphviz";
 import { useParams } from "react-router-dom";
 import { AccordionItems } from "../components/AccordionItems.tsx";
+import { AttributeList } from "../components/AttributeList.tsx";
 import { ConsumableAccordionLabel } from "../components/ConsumableAccordionLabel.tsx";
 import { ConsumptionAccordionLabel } from "../components/ConsumptionAccordionLabel.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
@@ -23,6 +24,7 @@ import { useRefNavigate } from "../hooks/useRefNavigate.ts";
 import { useScrollToNavigable } from "../hooks/useScrollToNavigable.ts";
 import { Icons } from "../Icons.tsx";
 import { EntitiesAndValueObjectsHelp } from "../modals/EntitiesAndValueObjectsHelp.tsx";
+import { EventsHelp } from "../modals/EventsHelp.tsx";
 import { InvariantsHelp } from "../modals/InvariantsHelp.tsx";
 import { ProvidesHelp } from "../modals/ProvidesHelp.tsx";
 
@@ -97,6 +99,19 @@ export function _AggregatePage(props: { aggregate: Aggregate }) {
 				/>
 
 				<AccordionItems
+					title={"Events"}
+					items={Array.from(props.aggregate.events.values()).map((it) => ({
+						id: it.ref,
+						name: it.name,
+						description: it.description,
+						icon: Icons.Events,
+						endSlot: <AttributeList attributes={it.attributes} />,
+					}))}
+					emptyMessage={"No domain events defined."}
+					rightSection={<EventsHelp />}
+				/>
+
+				<AccordionItems
 					title={"Entities"}
 					items={
 						Array.from(props.aggregate.entities.values())?.map((it) => ({
@@ -161,6 +176,17 @@ export function _AggregatePage(props: { aggregate: Aggregate }) {
 									icon: Icons.Consumer,
 									onClick: () => scrollToNavigable(it.consumable),
 								})),
+							},
+							{
+								title: "Events",
+								items: Array.from(props.aggregate.events.values()).map(
+									(event) => ({
+										ref: event.ref,
+										name: event.name,
+										icon: Icons.Events,
+										onClick: () => scrollToNavigable(event),
+									}),
+								),
 							},
 							{
 								title: "Entities",

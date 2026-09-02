@@ -26,6 +26,16 @@ A pet listed in the store
 | [Pet](entities/pet/index.md) | has-status | Pet - PetStatus | uses |
 
 
+## Events
+| Name | Description | Attributes |
+| --- | --- | --- |
+| PetRegistered | A new pet was registered | **petId**: `int64`, name: `string`, category: `Category`, status: `PetStatus` |
+| PetUpdated | Pet profile updated | - |
+| PetStatusChanged | Pet status changed (available|pending|sold) | **petId**: `int64`, from: `PetStatus`, to: `PetStatus` |
+| PetPhotoUploaded | Photo added via upload | - |
+| PetDeleted | Pet removed from catalog | - |
+
+
 ## Invariants
 | Name | Description |
 | --- | --- |
@@ -36,19 +46,19 @@ A pet listed in the store
 ## Provides
 
 ### (event) - PetRegistered [published-language]
-A new pet was registered
+undefined
 
 ### (event) - PetUpdated [published-language]
-Pet profile updated
+undefined
 
 ### (event) - PetStatusChanged [published-language]
-Pet status changed (available|pending|sold)
+undefined
 
 ### (event) - PetPhotoUploaded [published-language]
-Photo added via upload
+undefined
 
 ### (event) - PetDeleted [published-language]
-Pet removed from catalog
+undefined
 
 
 ## Consumes

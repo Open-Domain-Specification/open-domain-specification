@@ -38,6 +38,18 @@ describe("schema round-trip", () => {
 		expect(consumption.consumable.provider.name).toBe("Order");
 	});
 
+	it("re-links published consumables to their event and attributes to value objects", () => {
+		const consumable = rebuilt.getConsumableByRefOrThrow(
+			"#/boundedcontexts/ordering_bc/aggregates/order/provides/order_placed",
+		);
+		expect(consumable.event?.ref).toBe(
+			"#/boundedcontexts/ordering_bc/aggregates/order/events/order_placed",
+		);
+		expect(consumable.event?.attributes.get("total")?.valueobject?.name).toBe(
+			"Money",
+		);
+	});
+
 	it("re-links entity relations across aggregates", () => {
 		const invoice = rebuilt.getEntityByRefOrThrow(
 			"#/boundedcontexts/invoicing_bc/aggregates/invoice/entities/invoice",

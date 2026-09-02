@@ -124,29 +124,53 @@ petAgg.addInvariant("SoldNotReopen", {
 });
 
 // Aggregate events (published-language)
-const petRegisteredEvt = petAgg.provides("PetRegistered", {
+const petRegisteredEvent = petAgg.addEvent("PetRegistered", {
 	description: "A new pet was registered",
-	type: "event",
+});
+petRegisteredEvent.addAttribute("petId", { type: "int64", identity: true });
+petRegisteredEvent.addAttribute("name", { type: "string" });
+petRegisteredEvent.addAttribute("category", {
+	type: "Category",
+	valueobject: categoryVO,
+});
+petRegisteredEvent.addAttribute("status", {
+	type: "PetStatus",
+	valueobject: petStatusVO,
+});
+const petRegisteredPublished = petAgg.publishes(petRegisteredEvent, {
 	pattern: "published-language",
 });
-const _petUpdatedEvt = petAgg.provides("PetUpdated", {
+const _petUpdatedEvent = petAgg.addEvent("PetUpdated", {
 	description: "Pet profile updated",
-	type: "event",
+});
+const _petUpdatedPublished = petAgg.publishes(_petUpdatedEvent, {
 	pattern: "published-language",
 });
-const petStatusChangedEvt = petAgg.provides("PetStatusChanged", {
+const petStatusChangedEvent = petAgg.addEvent("PetStatusChanged", {
 	description: "Pet status changed (available|pending|sold)",
-	type: "event",
+});
+petStatusChangedEvent.addAttribute("petId", { type: "int64", identity: true });
+petStatusChangedEvent.addAttribute("from", {
+	type: "PetStatus",
+	valueobject: petStatusVO,
+});
+petStatusChangedEvent.addAttribute("to", {
+	type: "PetStatus",
+	valueobject: petStatusVO,
+});
+const petStatusChangedPublished = petAgg.publishes(petStatusChangedEvent, {
 	pattern: "published-language",
 });
-const _petPhotoUploadedEvt = petAgg.provides("PetPhotoUploaded", {
+const _petPhotoUploadedEvent = petAgg.addEvent("PetPhotoUploaded", {
 	description: "Photo added via upload",
-	type: "event",
+});
+const _petPhotoUploadedPublished = petAgg.publishes(_petPhotoUploadedEvent, {
 	pattern: "published-language",
 });
-const petDeletedEvt = petAgg.provides("PetDeleted", {
+const petDeletedEvent = petAgg.addEvent("PetDeleted", {
 	description: "Pet removed from catalog",
-	type: "event",
+});
+const petDeletedPublished = petAgg.publishes(petDeletedEvent, {
 	pattern: "published-language",
 });
 
@@ -242,24 +266,34 @@ orderAgg.addInvariant("DeliverOnlyWhenApproved", {
 });
 
 // Aggregate events
-const _orderPlacedEvt = orderAgg.provides("OrderPlaced", {
+const _orderPlacedEvent = orderAgg.addEvent("OrderPlaced", {
 	description: "Order created (status=placed)",
-	type: "event",
+});
+_orderPlacedEvent.addAttribute("orderId", { type: "int64", identity: true });
+_orderPlacedEvent.addAttribute("petId", { type: "int64" });
+_orderPlacedEvent.addAttribute("quantity", {
+	type: "Quantity",
+	valueobject: quantityVO,
+});
+const _orderPlacedPublished = orderAgg.publishes(_orderPlacedEvent, {
 	pattern: "published-language",
 });
-const orderApprovedEvt = orderAgg.provides("OrderApproved", {
+const orderApprovedEvent = orderAgg.addEvent("OrderApproved", {
 	description: "Order approved (status=approved)",
-	type: "event",
+});
+const orderApprovedPublished = orderAgg.publishes(orderApprovedEvent, {
 	pattern: "published-language",
 });
-const orderDeliveredEvt = orderAgg.provides("OrderDelivered", {
+const orderDeliveredEvent = orderAgg.addEvent("OrderDelivered", {
 	description: "Order delivered (status=delivered)",
-	type: "event",
+});
+const orderDeliveredPublished = orderAgg.publishes(orderDeliveredEvent, {
 	pattern: "published-language",
 });
-const orderDeletedEvt = orderAgg.provides("OrderDeleted", {
+const orderDeletedEvent = orderAgg.addEvent("OrderDeleted", {
 	description: "Order deleted via DELETE /store/order/{orderId}",
-	type: "event",
+});
+const orderDeletedPublished = orderAgg.publishes(orderDeletedEvent, {
 	pattern: "published-language",
 });
 
@@ -323,19 +357,23 @@ const _invView = inventoryAgg.addRootEntity("InventoryView", {
 });
 
 // Projection event
-const inventoryUpdatedEvt = inventoryAgg.provides("InventoryUpdated", {
+const inventoryUpdatedEvent = inventoryAgg.addEvent("InventoryUpdated", {
 	description: "Inventory counts changed",
-	type: "event",
-	pattern: "published-language",
 });
+const inventoryUpdatedPublished = inventoryAgg.publishes(
+	inventoryUpdatedEvent,
+	{
+		pattern: "published-language",
+	},
+);
 
 // Inventory listens to Catalog & Sales events (conformist)
-inventoryAgg.consumes(petRegisteredEvt, { pattern: "conformist" });
-inventoryAgg.consumes(petDeletedEvt, { pattern: "conformist" });
-inventoryAgg.consumes(petStatusChangedEvt, { pattern: "conformist" });
-inventoryAgg.consumes(orderApprovedEvt, { pattern: "conformist" });
-inventoryAgg.consumes(orderDeliveredEvt, { pattern: "conformist" });
-inventoryAgg.consumes(orderDeletedEvt, { pattern: "conformist" });
+inventoryAgg.consumes(petRegisteredPublished, { pattern: "conformist" });
+inventoryAgg.consumes(petDeletedPublished, { pattern: "conformist" });
+inventoryAgg.consumes(petStatusChangedPublished, { pattern: "conformist" });
+inventoryAgg.consumes(orderApprovedPublished, { pattern: "conformist" });
+inventoryAgg.consumes(orderDeliveredPublished, { pattern: "conformist" });
+inventoryAgg.consumes(orderDeletedPublished, { pattern: "conformist" });
 
 // Service: InventoryQuery
 const inventoryQuery = inventoryBC.addService("InventoryQuery", {
@@ -350,7 +388,7 @@ const _getInventoryOp = inventoryQuery.provides("GetInventory", {
 });
 
 // Service consumes its own projection's update to drive re-query/push, if desired
-inventoryQuery.consumes(inventoryUpdatedEvt, { pattern: "conformist" });
+inventoryQuery.consumes(inventoryUpdatedPublished, { pattern: "conformist" });
 
 /* =======================
    IDENTITY — Aggregate & Service
@@ -373,29 +411,34 @@ const userStatusVO = userAgg.addValueObject("UserStatus", {
 userRoot.uses(userStatusVO, "has-status");
 
 // User events
-const _userRegisteredEvt = userAgg.provides("UserRegistered", {
+const _userRegisteredEvent = userAgg.addEvent("UserRegistered", {
 	description: "New user created",
-	type: "event",
+});
+const _userRegisteredPublished = userAgg.publishes(_userRegisteredEvent, {
 	pattern: "published-language",
 });
-const _userUpdatedEvt = userAgg.provides("UserUpdated", {
+const _userUpdatedEvent = userAgg.addEvent("UserUpdated", {
 	description: "User fields updated",
-	type: "event",
+});
+const _userUpdatedPublished = userAgg.publishes(_userUpdatedEvent, {
 	pattern: "published-language",
 });
-const _userDeletedEvt = userAgg.provides("UserDeleted", {
+const _userDeletedEvent = userAgg.addEvent("UserDeleted", {
 	description: "User removed",
-	type: "event",
+});
+const _userDeletedPublished = userAgg.publishes(_userDeletedEvent, {
 	pattern: "published-language",
 });
-const _userLoggedInEvt = userAgg.provides("UserLoggedIn", {
+const _userLoggedInEvent = userAgg.addEvent("UserLoggedIn", {
 	description: "Login via /user/login",
-	type: "event",
+});
+const _userLoggedInPublished = userAgg.publishes(_userLoggedInEvent, {
 	pattern: "published-language",
 });
-const _userLoggedOutEvt = userAgg.provides("UserLoggedOut", {
+const _userLoggedOutEvent = userAgg.addEvent("UserLoggedOut", {
 	description: "Logout via /user/logout",
-	type: "event",
+});
+const _userLoggedOutPublished = userAgg.publishes(_userLoggedOutEvent, {
 	pattern: "published-language",
 });
 

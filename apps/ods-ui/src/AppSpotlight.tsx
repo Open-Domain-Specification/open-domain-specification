@@ -6,6 +6,7 @@ import {
 	boundedContextNamespace,
 	type Consumable,
 	type Domain,
+	type DomainEvent,
 	type Entity,
 	type Invariant,
 	type Service,
@@ -149,6 +150,20 @@ class SpotlightCollector extends AbstractVisitor {
 			group: "Entities",
 		});
 		super.visitEntity(node);
+	}
+
+	visitDomainEvent(node: DomainEvent) {
+		this.actions.push({
+			id: node.ref,
+			label: `${aggregateLabel(node.aggregate)} / ${node.name}`,
+			description: node.description,
+			onClick: () => {
+				this.navigator(node.aggregate.ref);
+			},
+			leftSection: Icons.Events,
+			group: "Events",
+		});
+		super.visitDomainEvent(node);
 	}
 
 	visitValueObject(node: ValueObject) {

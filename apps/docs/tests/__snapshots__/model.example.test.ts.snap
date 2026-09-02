@@ -24,6 +24,7 @@ exports[`Visitor Example > should compile  1`] = `
               "root": true,
             },
           },
+          "events": {},
           "invariants": {
             "slug_format_valid": {
               "description": "Slug must be lowercase, dash-separated",
@@ -59,6 +60,7 @@ exports[`Visitor Example > should compile  1`] = `
           "provides": {
             "get_article": {
               "description": "Fetch article/page content by slug",
+              "event": undefined,
               "name": "GetArticle",
               "pattern": "open-host-service",
               "type": "operation",
@@ -95,6 +97,7 @@ exports[`Visitor Example > should compile  1`] = `
               "root": true,
             },
           },
+          "events": {},
           "invariants": {
             "totals_non_negative": {
               "description": "Order totals must be >= 0",
@@ -130,6 +133,7 @@ exports[`Visitor Example > should compile  1`] = `
           "provides": {
             "place_order": {
               "description": "Create an order from a valid checkout",
+              "event": undefined,
               "name": "PlaceOrder",
               "pattern": "open-host-service",
               "type": "operation",

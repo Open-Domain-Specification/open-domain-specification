@@ -2,11 +2,13 @@ import {
 	type Aggregate,
 	type Consumable,
 	type Consumption,
+	type DomainEvent,
 	type Entity,
 	type Invariant,
 	ODSRelationGraph,
 	type ValueObject,
 } from "@open-domain-specification/core";
+import { attributeListMd } from "./attributes.md";
 import { contextBreadcrumbsMd } from "./breadcrumbs.md";
 import { markdownTable } from "./lib/markdown-table";
 import {
@@ -32,6 +34,12 @@ const consumableSection = (consumable: Consumable) => `
 ### (${consumable.type}) - ${consumable.name} ${consumable.pattern ? `[${consumable.pattern}]` : ""}
 ${consumable.description}
 `;
+
+const eventSection = (event: DomainEvent) => [
+	event.name,
+	event.description,
+	attributeListMd(event.attributes),
+];
 
 const invariantSection = (invariant: Invariant) => [
 	invariant.name,
@@ -86,6 +94,16 @@ ${markdownTable(
 		it.relation,
 	]),
 )}
+
+## Events
+${
+	aggregate.events.size > 0
+		? markdownTable(
+				["Name", "Description", "Attributes"],
+				Array.from(aggregate.events.values()).map(eventSection),
+			)
+		: "> No domain events."
+}
 
 ## Invariants
 ${

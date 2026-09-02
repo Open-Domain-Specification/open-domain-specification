@@ -28,6 +28,21 @@ describe("Workspace ref lookups", () => {
 		).toBeDefined();
 	});
 
+	it("resolves domain events and links published consumables to them", () => {
+		expect(ws.getEventByRef(fixture.orderPlacedEvent.ref)).toBe(
+			fixture.orderPlacedEvent,
+		);
+		expect(fixture.orderPlaced.event).toBe(fixture.orderPlacedEvent);
+		expect(fixture.orderPlaced.type).toBe("event");
+		expect(fixture.orderPlacedEvent.attributes.get("total")?.valueobject).toBe(
+			fixture.money,
+		);
+		expect(fixture.orderPlacedEvent.attributes.get("order_id")?.identity).toBe(
+			true,
+		);
+		expect(() => ws.getEventByRefOrThrow("#/nope")).toThrow(/Event/);
+	});
+
 	it("resolves teams and derives what they own", () => {
 		expect(ws.getTeamByRef(teamRef("sales_team").$ref)).toBe(fixture.salesTeam);
 		expect(fixture.salesTeam.boundedcontexts).toEqual([fixture.orderingBc]);

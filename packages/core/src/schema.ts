@@ -1,4 +1,29 @@
 /**
+ * @title Attribute
+ * @description A named, typed property of an entity, value object, event or command.
+ */
+export interface AttributeSchema {
+	name: string;
+	/** Free-form type name, e.g. `string`, `Money`, `Date`. */
+	type: string;
+	description?: string;
+	/** True when this attribute is (part of) the identity of an entity. */
+	identity?: boolean;
+	/** The value object that models this attribute's type, when there is one. */
+	valueobject?: { $ref: string };
+}
+
+/**
+ * @title DomainEvent
+ * @description Something that happened in the domain that other parts care about.
+ */
+export interface DomainEventSchema {
+	name: string;
+	description: string;
+	attributes: { [attribute: string]: AttributeSchema };
+}
+
+/**
  * @title Aggregate
  * @description Represents an aggregate in the Open Domain Specification (ODS).
  */
@@ -8,6 +33,7 @@ export interface AggregateSchema {
 	entities: { [entity: string]: EntitySchema };
 	valueobjects: { [valueobject: string]: ValueObjectSchema };
 	invariants: { [invariant: string]: InvariantSchema };
+	events: { [event: string]: DomainEventSchema };
 	provides: { [consumable: string]: ConsumableSchema };
 	consumes: ConsumptionSchema[];
 }
@@ -60,6 +86,8 @@ export interface ConsumableSchema {
 	type: ConsumableType;
 	/** The upstream role this consumable is offered under. */
 	pattern?: UpstreamRole;
+	/** For event consumables: the domain event being published. */
+	event?: { $ref: string };
 }
 
 /**
@@ -312,6 +340,18 @@ export function invariantRef(
 
 	return {
 		$ref: `${$ref}/invariants/${invariant}`,
+	};
+}
+
+export function eventRef(
+	boundedcontext: string,
+	aggregate: string,
+	event: string,
+) {
+	const { $ref } = aggregateRef(boundedcontext, aggregate);
+
+	return {
+		$ref: `${$ref}/events/${event}`,
 	};
 }
 

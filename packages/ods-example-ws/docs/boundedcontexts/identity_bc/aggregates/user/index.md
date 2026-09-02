@@ -20,25 +20,35 @@ Petstore user record
 | [User](entities/user/index.md) | has-status | User - UserStatus | uses |
 
 
+## Events
+| Name | Description | Attributes |
+| --- | --- | --- |
+| UserRegistered | New user created | - |
+| UserUpdated | User fields updated | - |
+| UserDeleted | User removed | - |
+| UserLoggedIn | Login via /user/login | - |
+| UserLoggedOut | Logout via /user/logout | - |
+
+
 ## Invariants
 > No invariants.
 
 ## Provides
 
 ### (event) - UserRegistered [published-language]
-New user created
+undefined
 
 ### (event) - UserUpdated [published-language]
-User fields updated
+undefined
 
 ### (event) - UserDeleted [published-language]
-User removed
+undefined
 
 ### (event) - UserLoggedIn [published-language]
-Login via /user/login
+undefined
 
 ### (event) - UserLoggedOut [published-language]
-Logout via /user/logout
+undefined
 
 
 ## Consumes

@@ -171,9 +171,20 @@ export function makeRichTestWs() {
 	orderAgg.addInvariant("Non-empty", {
 		description: "An order has at least one line",
 	});
-	const orderPlaced = orderAgg.provides("Order Placed", {
+	const orderPlacedEvent = orderAgg.addEvent("Order Placed", {
 		description: "Raised when an order is placed",
-		type: "event",
+	});
+	orderPlacedEvent.addAttribute("Order Id", {
+		type: "OrderId",
+		identity: true,
+	});
+	orderPlacedEvent.addAttribute("Total", {
+		type: "Money",
+		description: "Order total",
+		valueobject: money,
+	});
+	const orderPlaced = orderAgg.publishes(orderPlacedEvent, {
+		description: "Raised when an order is placed",
 		pattern: "published-language",
 	});
 	const orderApp = orderingBc.addService("Order App", {
@@ -233,6 +244,7 @@ export function makeRichTestWs() {
 		order,
 		orderLine,
 		money,
+		orderPlacedEvent,
 		orderPlaced,
 		orderApp,
 		placeOrder,

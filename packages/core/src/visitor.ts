@@ -6,6 +6,7 @@ import type {
 	Consumption,
 	ContextRelationship,
 	Domain,
+	DomainEvent,
 	Entity,
 	EntityRelation,
 	Invariant,
@@ -29,6 +30,7 @@ export interface Visitor {
 	visitEntityRelation(node: EntityRelation): void;
 	visitConsumption(node: Consumption): void;
 	visitContextRelationship(node: ContextRelationship): void;
+	visitDomainEvent(node: DomainEvent): void;
 }
 
 export type AbstractVisitorOptions = {
@@ -169,9 +171,21 @@ export abstract class AbstractVisitor implements Visitor {
 		for (const valueObject of node.valueobjects.values()) {
 			valueObject.accept(this);
 		}
+		for (const event of node.events.values()) {
+			event.accept(this);
+		}
 		if (this.followConsumptions) {
 			for (const cons of node.consumptions) cons.accept(this);
 		}
+		this.after(node);
+	}
+
+	/**
+	 * Visits a DomainEvent node. Events are leaves.
+	 * @param node - The DomainEvent node to visit.
+	 */
+	visitDomainEvent(node: DomainEvent): void {
+		this.before(node);
 		this.after(node);
 	}
 

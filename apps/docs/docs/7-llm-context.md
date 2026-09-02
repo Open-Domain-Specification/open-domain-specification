@@ -27,7 +27,7 @@ Responsibilities
 - Domains represent problem spaces.
 - Subdomains refine domains into smaller problem areas and carry the core / supporting / generic classification.
 - Bounded contexts encapsulate consistent models. They belong to the workspace and list the subdomains they serve (one context may serve several). A context may be flagged `bigBallOfMud` when its model is incoherent, and may reference the team (workspace `teams`) that owns it.
-- Aggregates enforce invariants across entities and value objects.
+- Aggregates enforce invariants across entities and value objects, and raise domain events (each with typed attributes). An aggregate publishes an event to other contexts through an event consumable that references it.
 - Services provide operations that coordinate domain behavior.
 - Consumables and consumptions model inter-context communication; each carries a role (open-host-service / published-language upstream, conformist / anti-corruption-layer downstream).
 - Context relationships (upstream-downstream, customer-supplier, partnership, shared-kernel, separate-ways) are declared explicitly on the workspace; consumptions between contexts with no declared relationship imply an upstream-downstream one.
