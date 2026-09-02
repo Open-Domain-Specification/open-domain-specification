@@ -231,11 +231,21 @@
           "invariants": {
             "name_required": {
               "name": "NameRequired",
-              "description": "Pet.name must be non-empty"
+              "description": "Pet.name must be non-empty",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet/attributes/name"
+                }
+              ]
             },
             "sold_not_reopen": {
               "name": "SoldNotReopen",
-              "description": "Once sold, do not revert to available without explicit policy"
+              "description": "Once sold, do not revert to available without explicit policy",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+                }
+              ]
             }
           },
           "events": {
@@ -621,15 +631,33 @@
           "invariants": {
             "quantity_positive": {
               "name": "QuantityPositive",
-              "description": "Quantity must be > 0"
+              "description": "Quantity must be > 0",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
+                }
+              ]
             },
             "approve_only_when_available": {
               "name": "ApproveOnlyWhenAvailable",
-              "description": "Approve only if Pet.status == available"
+              "description": "Approve only if Pet.status == available",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status"
+                },
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+                }
+              ]
             },
             "deliver_only_when_approved": {
               "name": "DeliverOnlyWhenApproved",
-              "description": "Deliver only from approved"
+              "description": "Deliver only from approved",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status"
+                }
+              ]
             }
           },
           "events": {

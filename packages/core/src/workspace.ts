@@ -310,6 +310,45 @@ export class Workspace
 		return invariant;
 	}
 
+	/**
+	 * Resolves an attribute ref (`<owner ref>/attributes/<id>`) by first
+	 * resolving its owner, which may be an entity, value object, event or command.
+	 */
+	getAttributeByRef(ref: string): Attribute | undefined {
+		const [ownerRef, attributeId] = ref.split("/attributes/");
+		if (!attributeId) return undefined;
+		const owner =
+			this.getEntityOrValueobjectByRef(ownerRef) ??
+			this.getEventByRef(ownerRef) ??
+			this.getCommandByRef(ownerRef);
+		return owner?.attributes.get(attributeId);
+	}
+
+	getAttributeByRefOrThrow(ref: string): Attribute {
+		const attribute = this.getAttributeByRef(ref);
+		if (!attribute) {
+			throw new Error(`Attribute with ref ${ref} not found`);
+		}
+		return attribute;
+	}
+
+	/** Resolves any ref an invariant may constrain. */
+	getConstrainableByRef(ref: string): Constrainable | undefined {
+		return ref.includes("/attributes/")
+			? this.getAttributeByRef(ref)
+			: this.getEntityOrValueobjectByRef(ref);
+	}
+
+	getConstrainableByRefOrThrow(ref: string): Constrainable {
+		const target = this.getConstrainableByRef(ref);
+		if (!target) {
+			throw new Error(
+				`Entity, Value Object or Attribute with ref ${ref} not found`,
+			);
+		}
+		return target;
+	}
+
 	getCommandByRef(ref: string): Command | undefined {
 		return this.findAggregateMember((it) => it.commands, ref);
 	}
@@ -1100,6 +1139,16 @@ export type InvariantAttributes = {
 	description: string;
 	id?: string;
 };
+/** What an invariant can be declared over. */
+export type Constrainable = Entity | ValueObject | Attribute;
+
+/** "Owner.attribute" for an attribute, the element's name otherwise. */
+export function constrainableLabel(target: Constrainable): string {
+	return target instanceof Attribute
+		? `${target.owner.name}.${target.name}`
+		: target.name;
+}
+
 export class Invariant
 	implements Visitable, SchemaConvertible<ods.InvariantSchema>
 {
@@ -1107,6 +1156,8 @@ export class Invariant
 	name: string;
 	description: string;
 	aggregate: Aggregate;
+	/** The elements this invariant constrains. */
+	targets: Constrainable[] = [];
 
 	get path(): string {
 		return `${this.aggregate.path}/invariants/${this.id}`;
@@ -1128,6 +1179,14 @@ export class Invariant
 		this.aggregate.invariants.set(this.id, this);
 	}
 
+	/** Declares an element this invariant constrains. */
+	constrains(...targets: Constrainable[]): this {
+		for (const target of targets) {
+			if (!this.targets.includes(target)) this.targets.push(target);
+		}
+		return this;
+	}
+
 	accept(v: Visitor) {
 		return v.visitInvariant(this);
 	}
@@ -1136,6 +1195,7 @@ export class Invariant
 		return {
 			name: this.name,
 			description: this.description,
+			constrains: this.targets.map((it) => ({ $ref: it.ref })),
 		};
 	}
 }
@@ -1363,6 +1423,7 @@ export type AttributeOptions = {
 
 /** Anything that carries a list of attributes. */
 export interface AttributeOwner {
+	name: string;
 	path: string;
 	attributes: Map<string, Attribute>;
 	addAttribute(name: string, options: AttributeOptions): Attribute;

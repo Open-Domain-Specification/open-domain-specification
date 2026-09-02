@@ -44,11 +44,11 @@ Order for a single pet
 
 
 ## Invariants
-| Name | Description |
-| --- | --- |
-| QuantityPositive | Quantity must be > 0 |
-| ApproveOnlyWhenAvailable | Approve only if Pet.status == available |
-| DeliverOnlyWhenApproved | Deliver only from approved |
+| Name | Description | Constrains |
+| --- | --- | --- |
+| QuantityPositive | Quantity must be > 0 | Quantity |
+| ApproveOnlyWhenAvailable | Approve only if Pet.status == available | OrderStatus, PetStatus |
+| DeliverOnlyWhenApproved | Deliver only from approved | OrderStatus |
 
 
 ## Provides

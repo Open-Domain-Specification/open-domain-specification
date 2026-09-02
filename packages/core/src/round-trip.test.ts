@@ -74,6 +74,16 @@ describe("schema round-trip", () => {
 		expect(Array.from(money.attributes.keys())).toEqual(["amount", "currency"]);
 	});
 
+	it("re-links invariants to the elements they constrain", () => {
+		const invariant = rebuilt.getInvariantByRefOrThrow(
+			"#/boundedcontexts/ordering_bc/aggregates/order/invariants/non_empty",
+		);
+		expect(invariant.targets.map((it) => it.ref)).toEqual([
+			"#/boundedcontexts/ordering_bc/aggregates/order/entities/order_line",
+			"#/boundedcontexts/ordering_bc/aggregates/order/entities/order/attributes/total",
+		]);
+	});
+
 	it("re-links entity relations across aggregates", () => {
 		const invoice = rebuilt.getEntityByRefOrThrow(
 			"#/boundedcontexts/invoicing_bc/aggregates/invoice/entities/invoice",

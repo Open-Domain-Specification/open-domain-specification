@@ -7,6 +7,7 @@ import {
 	commandRef,
 	entityRef,
 	eventRef,
+	invariantRef,
 	type ServiceSchema,
 	serviceRef,
 	valueObjectRef,
@@ -286,6 +287,18 @@ function linkReferences(
 						workspace.getEntityOrValueobjectByRefOrThrow(relation.target.$ref),
 						relation,
 					);
+				}
+			}
+
+			// Invariants come last: they may constrain attributes added just above.
+			for (const [invariantId, invariantSchema] of Object.entries(
+				aggregateSchema.invariants,
+			)) {
+				const invariant = workspace.getInvariantByRefOrThrow(
+					invariantRef(boundedcontextId, aggregateId, invariantId).$ref,
+				);
+				for (const { $ref } of invariantSchema.constrains) {
+					invariant.constrains(workspace.getConstrainableByRefOrThrow($ref));
 				}
 			}
 		}

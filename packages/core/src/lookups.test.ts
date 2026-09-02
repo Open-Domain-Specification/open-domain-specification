@@ -54,6 +54,31 @@ describe("Workspace ref lookups", () => {
 		expect(() => ws.getCommandByRefOrThrow("#/nope")).toThrow(/Command/);
 	});
 
+	it("resolves attributes by ref through their owner", () => {
+		const total = fixture.order.attributes.get("total");
+		expect(ws.getAttributeByRef(total?.ref ?? "")).toBe(total);
+		expect(
+			ws.getAttributeByRef(`${fixture.orderPlacedEvent.ref}/attributes/total`),
+		).toBe(fixture.orderPlacedEvent.attributes.get("total"));
+		expect(ws.getAttributeByRef(fixture.order.ref)).toBeUndefined();
+		expect(() => ws.getAttributeByRefOrThrow("#/x/attributes/y")).toThrow(
+			/Attribute/,
+		);
+	});
+
+	it("resolves what an invariant constrains", () => {
+		expect(fixture.nonEmpty.targets).toEqual([
+			fixture.orderLine,
+			fixture.order.attributes.get("total"),
+		]);
+		expect(ws.getConstrainableByRef(fixture.orderLine.ref)).toBe(
+			fixture.orderLine,
+		);
+		expect(() => ws.getConstrainableByRefOrThrow("#/nope")).toThrow(
+			/Entity, Value Object or Attribute/,
+		);
+	});
+
 	it("resolves teams and derives what they own", () => {
 		expect(ws.getTeamByRef(teamRef("sales_team").$ref)).toBe(fixture.salesTeam);
 		expect(fixture.salesTeam.boundedcontexts).toEqual([fixture.orderingBc]);

@@ -137,12 +137,17 @@ petRoot.uses(tagVO, "tagged-with");
 petRoot.uses(photoUrlVO, "has-photo");
 petRoot.uses(petStatusVO, "has-status");
 
-petAgg.addInvariant("NameRequired", {
-	description: "Pet.name must be non-empty",
-});
-petAgg.addInvariant("SoldNotReopen", {
-	description: "Once sold, do not revert to available without explicit policy",
-});
+petAgg
+	.addInvariant("NameRequired", {
+		description: "Pet.name must be non-empty",
+	})
+	.constrains(petRoot.attributes.get("name")!);
+petAgg
+	.addInvariant("SoldNotReopen", {
+		description:
+			"Once sold, do not revert to available without explicit policy",
+	})
+	.constrains(petStatusVO);
 
 // Aggregate events (published-language)
 const petRegisteredEvent = petAgg.addEvent("PetRegistered", {
@@ -334,15 +339,21 @@ orderRoot.uses(quantityVO, "has-quantity");
 orderRoot.uses(shipDateVO, "ships-on");
 orderRoot.uses(completeFlagVO, "is-complete");
 
-orderAgg.addInvariant("QuantityPositive", {
-	description: "Quantity must be > 0",
-});
-orderAgg.addInvariant("ApproveOnlyWhenAvailable", {
-	description: "Approve only if Pet.status == available",
-});
-orderAgg.addInvariant("DeliverOnlyWhenApproved", {
-	description: "Deliver only from approved",
-});
+orderAgg
+	.addInvariant("QuantityPositive", {
+		description: "Quantity must be > 0",
+	})
+	.constrains(quantityVO);
+orderAgg
+	.addInvariant("ApproveOnlyWhenAvailable", {
+		description: "Approve only if Pet.status == available",
+	})
+	.constrains(orderStatusVO, petStatusVO);
+orderAgg
+	.addInvariant("DeliverOnlyWhenApproved", {
+		description: "Deliver only from approved",
+	})
+	.constrains(orderStatusVO);
 
 // Aggregate events
 const orderPlacedEvent = orderAgg.addEvent("OrderPlaced", {

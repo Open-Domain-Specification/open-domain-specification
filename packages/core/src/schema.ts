@@ -220,6 +220,8 @@ export interface EntityRelationSchema {
 export interface InvariantSchema {
 	name: string;
 	description: string;
+	/** The entities, value objects or attributes this invariant constrains. */
+	constrains: { $ref: string }[];
 }
 
 export type ServiceType = "application" | "domain" | "infrastructure";

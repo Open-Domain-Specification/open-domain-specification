@@ -512,6 +512,22 @@
             "additionalProperties": false,
             "description": "Represents an invariant in the Open Domain Specification (ODS).",
             "properties": {
+                "constrains": {
+                    "description": "The entities, value objects or attributes this invariant constrains.",
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
                 "description": {
                     "type": "string"
                 },
@@ -520,6 +536,7 @@
                 }
             },
             "required": [
+                "constrains",
                 "description",
                 "name"
             ],

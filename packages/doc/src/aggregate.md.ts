@@ -3,6 +3,7 @@ import {
 	type Command,
 	type Consumable,
 	type Consumption,
+	constrainableLabel,
 	type DomainEvent,
 	type Entity,
 	type Invariant,
@@ -54,6 +55,7 @@ const commandSection = (command: Command) => [
 const invariantSection = (invariant: Invariant) => [
 	invariant.name,
 	invariant.description,
+	invariant.targets.map(constrainableLabel).join(", ") || "-",
 ];
 
 const consumptionSection = (consumption: Consumption) => `
@@ -129,7 +131,7 @@ ${
 ${
 	aggregate.invariants.size > 0
 		? markdownTable(
-				["Name", "Description"],
+				["Name", "Description", "Constrains"],
 				Array.from(aggregate.invariants.values()).map(invariantSection),
 			)
 		: "> No invariants."

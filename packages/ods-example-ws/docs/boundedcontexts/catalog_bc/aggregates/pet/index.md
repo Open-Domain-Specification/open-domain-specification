@@ -45,10 +45,10 @@ A pet listed in the store
 
 
 ## Invariants
-| Name | Description |
-| --- | --- |
-| NameRequired | Pet.name must be non-empty |
-| SoldNotReopen | Once sold, do not revert to available without explicit policy |
+| Name | Description | Constrains |
+| --- | --- | --- |
+| NameRequired | Pet.name must be non-empty | Pet.name |
+| SoldNotReopen | Once sold, do not revert to available without explicit policy | PetStatus |
 
 
 ## Provides

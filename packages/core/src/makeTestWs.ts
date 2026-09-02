@@ -1,4 +1,4 @@
-import { Workspace } from "./workspace";
+import { type Attribute, Workspace } from "./workspace";
 
 export function makeTestWs() {
 	const ws = new Workspace("WS", {
@@ -172,9 +172,11 @@ export function makeRichTestWs() {
 	order.addAttribute("Total", { type: "Money", valueobject: money });
 	order.includes(orderLine, "has lines");
 	orderLine.uses(money, "priced in");
-	orderAgg.addInvariant("Non-empty", {
-		description: "An order has at least one line",
-	});
+	const nonEmpty = orderAgg
+		.addInvariant("Non-empty", {
+			description: "An order has at least one line",
+		})
+		.constrains(orderLine, order.attributes.get("total") as Attribute);
 	const orderPlacedEvent = orderAgg.addEvent("Order Placed", {
 		description: "Raised when an order is placed",
 	});
@@ -254,6 +256,7 @@ export function makeRichTestWs() {
 		order,
 		orderLine,
 		money,
+		nonEmpty,
 		orderPlacedEvent,
 		orderPlaced,
 		placeOrderCommand,

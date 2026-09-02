@@ -12,6 +12,7 @@ import {
 import { useParams } from "react-router-dom";
 import { AccordionItems } from "../components/AccordionItems.tsx";
 import { AttributeList } from "../components/AttributeList.tsx";
+import { ConstrainsBadges } from "../components/ConstrainsBadges.tsx";
 import { ConsumableAccordionLabel } from "../components/ConsumableAccordionLabel.tsx";
 import { ConsumptionAccordionLabel } from "../components/ConsumptionAccordionLabel.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
@@ -62,6 +63,7 @@ export function _AggregatePage(props: { aggregate: Aggregate }) {
 							name: it.name,
 							description: it.description,
 							icon: Icons.Invariants,
+							endSlot: <ConstrainsBadges targets={it.targets} />,
 						})) || []
 					}
 					emptyMessage={"No invariants defined."}
