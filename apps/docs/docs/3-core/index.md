@@ -62,6 +62,18 @@ the *solution space* and are owned by the workspace, each linked to the
 subdomains it serves, so one context can span several subdomains and one
 subdomain can be served by several contexts.
 
+## Identity and refs
+
+Every element has an `id` that becomes its key in the JSON document and the
+last segment of its ref, for example `#/boundedcontexts/sales/aggregates/order`.
+When you omit `id` in the DSL it is derived from the name (`"Order Line"`
+becomes `order_line`); pass `id` explicitly when a name is likely to change
+and other elements point at it. When a document is loaded, the JSON keys are
+the ids, so a document round-trips regardless of how its names are spelled.
+
+Refs never embed the domain or subdomain of a bounded context, so renaming
+those never breaks a ref.
+
 ## Installation
 
 ```bash

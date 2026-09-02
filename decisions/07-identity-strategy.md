@@ -22,9 +22,9 @@ board card 15.
 - Decision 02 already removed domain and subdomain names from every
   context-owned ref, so the blast radius of a rename is now limited to the
   element itself and its descendants.
-- A `Workspace.validate()` diagnostic (card 14) warns when an element's id is
-  name-derived and referenced from elsewhere, nudging authors toward explicit
-  ids where it matters.
+- No diagnostic nudges authors toward explicit ids: it would need every
+  element to remember whether its id was given or derived, and the JSON keys
+  already make the id visible wherever it matters.
 
 ## Consequences
 

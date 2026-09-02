@@ -176,6 +176,24 @@ describe("Workspace ref lookups", () => {
 		expect(ws.getDomainByRef("#/domains/stable")).toBe(domain);
 	});
 
+	it("keeps refs stable across renames when ids are explicit", () => {
+		const { ws } = makeRichTestWs();
+		const bc = ws.addBoundedContext("Old Name", {
+			description: "",
+			id: "stable_bc",
+		});
+		const agg = bc.addAggregate("Old Aggregate", {
+			description: "",
+			id: "agg",
+		});
+		const before = agg.ref;
+		bc.name = "New Name";
+		agg.name = "New Aggregate";
+		expect(agg.ref).toBe(before);
+		expect(ws.getAggregateByRef(before)).toBe(agg);
+		expect(ws.toSchema().boundedcontexts.stable_bc.name).toBe("New Name");
+	});
+
 	it("uses the JSON object keys as ids when loading from schema", () => {
 		const { ws } = makeRichTestWs();
 		const schema = JSON.parse(JSON.stringify(ws.toSchema()));
