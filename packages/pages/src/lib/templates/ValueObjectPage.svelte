@@ -18,6 +18,7 @@ export const sections = [
 	import Fact from "../molecules/Fact.svelte";
 	import { ICONS, problemsUnder, useModel } from "../model";
 	import AttributesSection from "../organisms/AttributesSection.svelte";
+	import InvariantsSection from "../organisms/InvariantsSection.svelte";
 	import LanguageSection from "../organisms/LanguageSection.svelte";
 	import PageHeader from "../organisms/PageHeader.svelte";
 	import Section from "../organisms/Section.svelte";
@@ -74,12 +75,6 @@ export const sections = [
 	{/if}
 </Section>
 
-<Section id="invariants" title="Constrained by" lead="Invariants that name this value object.">
-	{#each invariants as i}
-		<Card ref={i.ref} name={i.name} icon={ICONS.invariant} description={i.description} />
-	{:else}
-		<Empty text="No invariant names this value object." />
-	{/each}
-</Section>
+<InvariantsSection {invariants} lead="Invariants that name this value object." emptyText="No invariant names this value object." />
 
 <LanguageSection target={v} />

@@ -1,7 +1,7 @@
 <script module lang="ts">
 import { defineMeta } from "@storybook/addon-svelte-csf";
+import { petstoreModel } from "../fixtures";
 import ModelProvider from "../ModelProvider.svelte";
-import { petstoreModel } from "../stories";
 import TermPage from "./TermPage.svelte";
 
 const model = petstoreModel();

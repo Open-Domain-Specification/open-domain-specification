@@ -17,6 +17,7 @@ export const sections = [
 	import Fact from "../molecules/Fact.svelte";
 	import { ICONS, problemsUnder, useModel } from "../model";
 	import AttributesSection from "../organisms/AttributesSection.svelte";
+	import InvariantsSection from "../organisms/InvariantsSection.svelte";
 	import LanguageSection from "../organisms/LanguageSection.svelte";
 	import PageHeader from "../organisms/PageHeader.svelte";
 	import Section from "../organisms/Section.svelte";
@@ -75,12 +76,6 @@ export const sections = [
 	{#if !e.relations.length && !incoming.length}<Empty text="No relations." />{/if}
 </Section>
 
-<Section id="invariants" title="Constrained by" lead="Invariants that name this entity explicitly. The root enforces them on every change.">
-	{#each invariants as i}
-		<Card ref={i.ref} name={i.name} icon={ICONS.invariant} description={i.description} />
-	{:else}
-		<Empty text="No invariant names this entity." />
-	{/each}
-</Section>
+<InvariantsSection {invariants} lead="Invariants that name this entity explicitly. The root enforces them on every change." emptyText="No invariant names this entity." />
 
 <LanguageSection target={e} />

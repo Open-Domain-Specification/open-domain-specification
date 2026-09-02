@@ -1,8 +1,8 @@
 import { render } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
+import { petstoreModel } from "./fixtures";
 import Harness from "./Page.harness.svelte";
 import { pageRefs } from "./resolve";
-import { petstoreModel } from "./stories";
 
 const model = petstoreModel();
 

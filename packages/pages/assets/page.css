@@ -16,6 +16,9 @@
 	--generic: var(--vscode-charts-green, #89d185);
 	--warn: var(--vscode-editorWarning-foreground, #cca700);
 	--error: var(--vscode-editorError-foreground, #f14c4c);
+	--bg: var(--vscode-editor-background);
+	--fg: var(--vscode-foreground);
+	--mono: var(--vscode-editor-font-family);
 }
 
 * {
@@ -428,7 +431,8 @@ table.attrs td.k {
 	padding: 8px;
 	max-height: 60vh;
 }
-.diagram svg {
+/* The static Graphviz SVG only; Svelte Flow draws its own SVGs deeper in the canvas. */
+.diagram .canvas > svg {
 	max-width: 100%;
 	height: auto;
 	display: block;

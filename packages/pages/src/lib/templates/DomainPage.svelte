@@ -12,6 +12,7 @@ export const sections = [
 	import Grid from "../molecules/Grid.svelte";
 	import SubdomainCard from "../molecules/SubdomainCard.svelte";
 	import { ICONS, problemsUnder, useModel } from "../model";
+	import { contextGraph } from "../flow/graph";
 	import DiagramFigure from "../organisms/DiagramFigure.svelte";
 	import PageHeader from "../organisms/PageHeader.svelte";
 	import Section from "../organisms/Section.svelte";
@@ -54,5 +55,6 @@ export const sections = [
 		dot={contextMapToDigraph(contextMap).toDot()}
 		nodeCount={contextMap.nodes.size}
 		emptyText="No contexts serve this domain yet."
+		graph={contextGraph(contextMap)}
 	/>
 </Section>

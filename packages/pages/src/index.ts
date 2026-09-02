@@ -7,3 +7,4 @@ export {
 	SUBDOMAIN_TYPE,
 } from "./lib/icons";
 export { pageRefs, resolvePage } from "./lib/resolve";
+export type * from "./protocol";

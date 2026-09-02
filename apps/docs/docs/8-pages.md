@@ -21,7 +21,10 @@ Three hosts feed it:
   over `postMessage`, and follows the app's navigation in its tree view. The tree replaces the
   sidebar there.
 
-Diagrams come from the bundled Graphviz wasm build, rendered in the browser.
+Diagrams come from the bundled Graphviz wasm build, rendered in the browser. Every figure has
+an **interactive** toggle that swaps the static image for a Svelte Flow graph: pan, zoom, drag
+nodes, and click one to open its page. The graph is laid out with dagre from the same core map
+the static image is drawn from, so the two never disagree.
 
 ## Component library
 

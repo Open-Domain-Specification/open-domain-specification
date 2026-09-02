@@ -11,6 +11,7 @@ export const sections = [{ id: "integration", label: "Integration" }];
 	import Fact from "../molecules/Fact.svelte";
 	import ProvidesTable from "../molecules/ProvidesTable.svelte";
 	import { ICONS, problemsUnder, SERVICE_TYPE, useModel } from "../model";
+	import { consumableGraph } from "../flow/graph";
 	import DiagramFigure from "../organisms/DiagramFigure.svelte";
 	import PageHeader from "../organisms/PageHeader.svelte";
 	import Section from "../organisms/Section.svelte";
@@ -42,7 +43,7 @@ export const sections = [{ id: "integration", label: "Integration" }];
 	lead="Operations this service opens to other contexts, and the consumables it depends on."
 	problems={problemsUnder(model, s.ref)}
 >
-	<DiagramFigure caption="{s.name} consumable map" dot={consumableMapToDigraph(consumableMap).toDot()} nodeCount={consumableMap.nodes.size} emptyText="Depends on nothing outside itself." />
+	<DiagramFigure caption="{s.name} consumable map" dot={consumableMapToDigraph(consumableMap).toDot()} nodeCount={consumableMap.nodes.size} emptyText="Depends on nothing outside itself." graph={consumableGraph(consumableMap)} />
 	<h3>Provides</h3>
 	<ProvidesTable consumables={s.consumables.values()} />
 	<h3>Consumes</h3>

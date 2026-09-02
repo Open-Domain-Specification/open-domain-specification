@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
-import { petstoreModel } from "../stories";
+import { petstoreModel } from "../fixtures";
 import Harness from "./WorkspacePage.harness.svelte";
 
 describe("WorkspacePage", () => {

@@ -21,6 +21,7 @@ export const sections = [
 	import Grid from "../molecules/Grid.svelte";
 	import StructureCard from "../molecules/StructureCard.svelte";
 	import { ICONS, nameOf, problemsUnder, useModel } from "../model";
+	import { consumableGraph, relationGraph } from "../flow/graph";
 	import DiagramFigure from "../organisms/DiagramFigure.svelte";
 	import PageHeader from "../organisms/PageHeader.svelte";
 	import Section from "../organisms/Section.svelte";
@@ -61,7 +62,7 @@ export const sections = [
 	lead="Everything inside changes together, in one transaction, through the root. References to other aggregates are by identity only."
 	problems={model.diagnostics.filter((d) => d.ref === a.ref)}
 >
-	<DiagramFigure caption="{a.name} relation map" dot={relationMapToDigraph(relationMap).toDot()} nodeCount={relationMap.nodes.size} emptyText="No entities or value objects yet." />
+	<DiagramFigure caption="{a.name} relation map" dot={relationMapToDigraph(relationMap).toDot()} nodeCount={relationMap.nodes.size} emptyText="No entities or value objects yet." graph={relationGraph(relationMap)} />
 </Section>
 
 <Section
@@ -122,7 +123,7 @@ export const sections = [
 </Section>
 
 <Section id="integration" title="Integration" lead="What this aggregate relies on from elsewhere.">
-	<DiagramFigure caption="{a.name} consumable map" dot={consumableMapToDigraph(consumableMap).toDot()} nodeCount={consumableMap.nodes.size} emptyText="Depends on nothing outside itself." />
+	<DiagramFigure caption="{a.name} consumable map" dot={consumableMapToDigraph(consumableMap).toDot()} nodeCount={consumableMap.nodes.size} emptyText="Depends on nothing outside itself." graph={consumableGraph(consumableMap)} />
 	<h3>Consumes</h3>
 	<ConsumesTable consumptions={a.consumptions} />
 </Section>

@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
 import type { Diagnostic, Workspace } from "@open-domain-specification/core";
+import type { Bootstrap } from "./protocol";
 
 /**
  * Static site export: the built app bundle beside the workspaces, inlined into
@@ -22,17 +23,8 @@ export type SiteResult = { workspaces: number; indexPath: string };
 /** The Vite build output shipped with the package. */
 const APP_DIR = path.resolve(__dirname, "../app");
 
-/** What the app reads from `window.__ODS__` when a host hands it workspaces up front. */
-export type SiteBootstrap = {
-	workspaces: {
-		schema: unknown;
-		fileLabel: string;
-		diagnostics: Diagnostic[];
-	}[];
-};
-
 /** The built `index.html` with the bootstrap inlined before the app script. */
-export async function bootstrapHtml(bootstrap: SiteBootstrap): Promise<string> {
+export async function bootstrapHtml(bootstrap: Bootstrap): Promise<string> {
 	const html = await fs.readFile(path.join(APP_DIR, "index.html"), "utf8");
 	const json = JSON.stringify(bootstrap).replace(/</g, "\\u003c");
 	return html.replace(

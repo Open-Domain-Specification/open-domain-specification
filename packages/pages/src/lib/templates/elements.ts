@@ -10,7 +10,7 @@ import type {
 
 /* ---------- shared lookups across the workspace ---------- */
 
-export function* aggregatesOf(ws: Workspace): Iterable<Aggregate> {
+function* aggregatesOf(ws: Workspace): Iterable<Aggregate> {
 	for (const bc of ws.boundedcontexts.values()) yield* bc.aggregates.values();
 }
 

@@ -2,14 +2,14 @@ import objectHash from "object-hash";
 import { ODSConsumptionGraph } from "./consumption-graph";
 import { contextMemberNamespace, type ODSNamespace } from "./namespace";
 import type { DownstreamRole, UpstreamRole } from "./schema";
-import type {
-	Aggregate,
-	BoundedContext,
-	Consumption,
-	Domain,
+import {
+	type Aggregate,
+	type BoundedContext,
+	type Consumption,
+	type Domain,
 	Service,
-	Subdomain,
-	Workspace,
+	type Subdomain,
+	type Workspace,
 } from "./workspace";
 
 /** A consumer or provider node; both are services or aggregates. */
@@ -18,6 +18,7 @@ function memberNode(member: Aggregate | Service): ODSConsumptionMapNode {
 		id: member.ref,
 		name: member.name,
 		description: member.description,
+		type: member instanceof Service ? "service" : "aggregate",
 		namespace: contextMemberNamespace(member),
 	};
 }
@@ -127,6 +128,7 @@ export type ODSConsumptionMapNode = {
 	id: string;
 	name: string;
 	description?: string;
+	type: "aggregate" | "service";
 	namespace: ODSCosumptionMapNamespace[];
 };
 

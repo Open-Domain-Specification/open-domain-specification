@@ -12,6 +12,6 @@ export function petstoreModel(): Model {
 		workspace,
 		fileLabel: "petstore.json",
 		diagnostics: workspace.validate(),
-		svg: dotToSvg,
+		renderDot: dotToSvg,
 	};
 }

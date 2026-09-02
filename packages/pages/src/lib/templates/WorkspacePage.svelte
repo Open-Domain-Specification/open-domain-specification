@@ -22,6 +22,7 @@ export const sections = [
 	import SubdomainCard from "../molecules/SubdomainCard.svelte";
 	import TeamLine from "../molecules/TeamLine.svelte";
 	import { ICONS, problemsUnder, useModel } from "../model";
+	import { contextGraph } from "../flow/graph";
 	import DiagramFigure from "../organisms/DiagramFigure.svelte";
 	import PageHeader from "../organisms/PageHeader.svelte";
 	import Section from "../organisms/Section.svelte";
@@ -59,7 +60,7 @@ export const sections = [
 	lead="Bounded contexts are where models live. The map shows which context is upstream of which and how they protect themselves."
 	problems={contexts.flatMap((bc) => model.diagnostics.filter((d) => d.ref === bc.ref))}
 >
-	<DiagramFigure caption="Context map" dot={contextMapToDigraph(contextMap).toDot()} nodeCount={contextMap.nodes.size} emptyText="No bounded contexts yet." />
+	<DiagramFigure caption="Context map" dot={contextMapToDigraph(contextMap).toDot()} nodeCount={contextMap.nodes.size} emptyText="No bounded contexts yet." graph={contextGraph(contextMap)} />
 	{#if contexts.length}
 		<table>
 			<thead><tr><th>Context</th><th>Serves</th><th>Team</th><th>Aggregates</th><th>Services</th></tr></thead>

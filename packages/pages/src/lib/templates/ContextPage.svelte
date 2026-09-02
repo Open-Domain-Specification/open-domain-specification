@@ -42,6 +42,7 @@ export const sections = [
 		SERVICE_TYPE,
 		useModel,
 	} from "../model";
+	import { consumableGraph, contextGraph, isSymmetricRelationship } from "../flow/graph";
 	import DiagramFigure from "../organisms/DiagramFigure.svelte";
 	import PageHeader from "../organisms/PageHeader.svelte";
 	import Section from "../organisms/Section.svelte";
@@ -61,9 +62,8 @@ export const sections = [
 	const contextMap = $derived(ODSContextMap.fromBoundedContext(bc));
 	const consumableMap = $derived(ODSConsumableMap.fromBoundedContext(bc));
 
-	const symmetric = (type: string) => type === "partnership" || type === "shared-kernel" || type === "separate-ways";
 	const directionOf = (r: (typeof relationships)[number]) =>
-		symmetric(r.type) ? "with" : r.source === bc ? "upstream of" : "downstream of";
+		isSymmetricRelationship(r.type) ? "with" : r.source === bc ? "upstream of" : "downstream of";
 	const count = (kind: "operation" | "event", a: (typeof aggregates)[number]) =>
 		[...a.consumables.values()].filter((c) => c.type === kind).length;
 </script>
@@ -118,6 +118,7 @@ export const sections = [
 		dot={contextMapToDigraph(contextMap).toDot()}
 		nodeCount={contextMap.nodes.size}
 		emptyText="No neighbouring contexts yet."
+		graph={contextGraph(contextMap)}
 	/>
 </Section>
 
@@ -165,6 +166,7 @@ export const sections = [
 		dot={consumableMapToDigraph(consumableMap).toDot()}
 		nodeCount={consumableMap.nodes.size}
 		emptyText="Provides and consumes nothing yet."
+		graph={consumableGraph(consumableMap)}
 	/>
 	<h3>Provides</h3>
 	<ProvidesTable consumables={provides} />

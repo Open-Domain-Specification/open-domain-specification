@@ -1,4 +1,4 @@
-dist
-app
-storybook-static
-assets/codicons
+/dist
+/app
+/storybook-static
+/assets/codicons

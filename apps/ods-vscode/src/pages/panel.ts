@@ -1,4 +1,8 @@
 import { readdirSync } from "node:fs";
+import type {
+	HostMessage,
+	WebviewMessage,
+} from "@open-domain-specification/pages";
 import * as vscode from "vscode";
 import type { OdsDiagnostics } from "../diagnostics";
 import type { OdsProject, WorkspaceFile } from "../project";
@@ -65,7 +69,7 @@ export class DetailPanel implements vscode.Disposable {
 			this.ready = false;
 		});
 		this.panel.webview.onDidReceiveMessage(
-			(msg: { type: string; ref?: string }) => {
+			(msg: WebviewMessage) => {
 				if (!this.current) return;
 				switch (msg.type) {
 					case "ready":
@@ -81,7 +85,7 @@ export class DetailPanel implements vscode.Disposable {
 					case "reveal":
 						void vscode.commands.executeCommand("ods.revealInJson", {
 							file: this.current.file,
-							ref: msg.ref ?? this.current.ref,
+							ref: msg.ref,
 						});
 						break;
 				}
@@ -90,7 +94,7 @@ export class DetailPanel implements vscode.Disposable {
 		this.panel.webview.html = this.shell();
 	}
 
-	private post(msg: unknown): void {
+	private post(msg: HostMessage): void {
 		void this.panel?.webview.postMessage(msg);
 	}
 
@@ -130,8 +134,13 @@ export class DetailPanel implements vscode.Disposable {
 		const media = (name: string) =>
 			webview.asWebviewUri(vscode.Uri.joinPath(appDir, name));
 		const files = readdirSync(appDir.fsPath);
+		// Vite names the entry chunk index-<hash>; the build copies it into media/app.
 		const script = files.find((f) => /^index-.*\.js$/.test(f));
 		const style = files.find((f) => /^index-.*\.css$/.test(f));
+		if (!script || !style)
+			throw new Error(
+				`Pages app bundle not found in ${appDir.fsPath}; rebuild the extension.`,
+			);
 		const nonce = Math.random().toString(36).slice(2);
 		return `<!DOCTYPE html>
 <html lang="en">
@@ -139,7 +148,7 @@ export class DetailPanel implements vscode.Disposable {
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; font-src ${webview.cspSource}; img-src ${webview.cspSource} data:; script-src 'nonce-${nonce}' 'wasm-unsafe-eval';">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-${style ? `<link rel="stylesheet" href="${media(style)}">` : ""}
+<link rel="stylesheet" href="${media(style)}">
 <title>ODS</title>
 </head>
 <body>
@@ -155,7 +164,7 @@ ${style ? `<link rel="stylesheet" href="${media(style)}">` : ""}
 		window.postMessage({ type: "toolbar", action: "reveal" }, "*");
 	});
 </script>
-<script type="module" nonce="${nonce}" src="${script ? media(script) : ""}"></script>
+<script type="module" nonce="${nonce}" src="${media(script)}"></script>
 </body>
 </html>`;
 	}

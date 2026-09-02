@@ -15,6 +15,7 @@ export const sections = [
 	import Grid from "../molecules/Grid.svelte";
 	import TeamLine from "../molecules/TeamLine.svelte";
 	import { ICONS, problemsUnder, SUBDOMAIN_TYPE, useModel } from "../model";
+	import { contextGraph } from "../flow/graph";
 	import DiagramFigure from "../organisms/DiagramFigure.svelte";
 	import PageHeader from "../organisms/PageHeader.svelte";
 	import Section from "../organisms/Section.svelte";
@@ -68,5 +69,6 @@ export const sections = [
 		dot={contextMapToDigraph(contextMap).toDot()}
 		nodeCount={contextMap.nodes.size}
 		emptyText="No bounded context serves this subdomain yet."
+		graph={contextGraph(contextMap)}
 	/>
 </Section>

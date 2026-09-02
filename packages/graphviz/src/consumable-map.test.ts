@@ -9,6 +9,7 @@ describe("ConsumableMap", () => {
 			id: "a1",
 			name: "A1",
 			description: "A1 Description",
+			type: "aggregate",
 			namespace: [
 				{
 					id: "root",
@@ -25,6 +26,7 @@ describe("ConsumableMap", () => {
 			id: "a2",
 			name: "A2",
 			description: "A2 Description",
+			type: "aggregate",
 			namespace: [
 				{
 					id: "root",
