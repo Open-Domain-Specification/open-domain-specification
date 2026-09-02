@@ -8,12 +8,11 @@
 		"build": "node src/generate.ts",
 		"serve": "docsify serve ./docs",
 		"test": "vitest run --config vitest.config.ts",
-		"npx depcheck": "npx depcheck"
+		"depcheck": "npx depcheck"
 	},
 	"private": true,
 	"dependencies": {
 		"@open-domain-specification/core": "^0.1.9",
-		"@open-domain-specification/doc": "^0.1.9",
 		"@open-domain-specification/model-tools": "^0.1.9",
 		"docsify-cli": "^4.4.4"
 	},

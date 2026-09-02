@@ -1,0 +1,7 @@
+# depcheck does not parse .svelte files, where graphviz, marked and the Storybook CSF addon are imported.
+ignores:
+  - "@open-domain-specification/graphviz"
+  - marked
+  - "@storybook/addon-svelte-csf"
+  - "@vitest/coverage-v8"
+  - "@types/node"
