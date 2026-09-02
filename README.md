@@ -50,7 +50,7 @@ Compile the workspace to a JSON file
 ```ts
 import {writeFileSync} from "fs";
 
-writeFileSync("workspace.json", JSON.stringify(ws.toSchema(), null, 2));
+writeFileSync("workspace.json", JSON.stringify(workspace.toSchema(), null, 2));
 ```
 
 ### Explore
