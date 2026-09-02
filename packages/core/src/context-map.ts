@@ -1,5 +1,5 @@
 import objectHash from "object-hash";
-import { ODSConsumptionGraph } from "./consuption-graph";
+import { ODSConsumptionGraph } from "./consumption-graph";
 import type { ConsumablePattern, ConsumptionPattern } from "./schema";
 import type {
 	BoundedContext,
