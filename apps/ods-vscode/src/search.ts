@@ -1,6 +1,6 @@
 import type { Workspace } from "@open-domain-specification/core";
+import { ICONS } from "@open-domain-specification/pages";
 import * as vscode from "vscode";
-import { ICONS } from "./pages/html";
 import type { OdsProject, WorkspaceFile } from "./project";
 
 type Hit = vscode.QuickPickItem & { file: WorkspaceFile; ref: string };

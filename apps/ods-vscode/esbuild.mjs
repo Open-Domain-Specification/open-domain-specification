@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync } from "node:fs";
+import { copyFileSync, cpSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,12 +18,13 @@ copyFileSync(
 	join(here, "schema.json"),
 );
 
-// Codicons for the webview pages: the stylesheet and its font travel in media/.
-const codicons = dirname(require.resolve("@vscode/codicons/package.json"));
-mkdirSync(join(here, "media/codicons"), { recursive: true });
-for (const f of ["codicon.css", "codicon.ttf"]) {
-	copyFileSync(join(codicons, "dist", f), join(here, "media/codicons", f));
-}
+// The webview pages' stylesheet, script and codicons come from the pages
+// package; copy its asset folder into media/ so the extension carries one copy.
+const pagesAssets = join(
+	dirname(require.resolve("@open-domain-specification/pages/package.json")),
+	"assets",
+);
+cpSync(pagesAssets, join(here, "media"), { recursive: true });
 
 /** @type {import("esbuild").BuildOptions} */
 const options = {

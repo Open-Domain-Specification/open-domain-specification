@@ -1,8 +1,11 @@
+import { dotToSvg } from "@open-domain-specification/pages";
+import { exportSite } from "@open-domain-specification/pages/site";
 import * as vscode from "vscode";
 import { OdsDiagnostics, rangeOfRef } from "./diagnostics";
 import { DetailPanel } from "./pages/panel";
 import { OdsProject, odsFolderOf } from "./project";
 import { showSearch } from "./search";
+import { installSkillCommand, promptWhenSkillStale } from "./skill";
 import { type ModelNode, ModelTree } from "./tree";
 
 type RefTarget = { file: ModelNode["file"]; ref?: string };
@@ -67,6 +70,48 @@ export async function activate(context: vscode.ExtensionContext) {
 				await project.ensureSchema(odsFolderOf(folder));
 			}
 		}),
+		vscode.commands.registerCommand("ods.installSkill", async () =>
+			installSkillCommand(await pickFolder({ optional: true })),
+		),
+		vscode.commands.registerCommand("ods.exportSite", async () => {
+			const folder = await pickFolder();
+			if (!folder) return;
+			const sources = project.workspaces.flatMap((f) =>
+				f.workspace && f.uri.fsPath.startsWith(folder.uri.fsPath)
+					? [
+							{
+								workspace: f.workspace,
+								fileLabel: f.relativePath,
+								diagnostics: diagnostics.byFile.get(f.uri.toString()) ?? [],
+							},
+						]
+					: [],
+			);
+			if (sources.length === 0) {
+				vscode.window.showErrorMessage("No ODS workspaces to export.");
+				return;
+			}
+			const outDir = vscode.Uri.joinPath(folder.uri, "ods-site");
+			const result = await vscode.window.withProgress(
+				{
+					location: vscode.ProgressLocation.Notification,
+					title: "Exporting domain model site",
+				},
+				() =>
+					exportSite({
+						sources,
+						outDir: outDir.fsPath,
+						svg: dotToSvg,
+					}),
+			);
+			const open = "Open in Browser";
+			const choice = await vscode.window.showInformationMessage(
+				`Exported ${result.pages} pages to ${vscode.workspace.asRelativePath(outDir)}.`,
+				open,
+			);
+			if (choice === open)
+				await vscode.env.openExternal(vscode.Uri.file(result.indexPath));
+		}),
 		vscode.commands.registerCommand("ods.createWorkspace", async () => {
 			const folder = await pickFolder();
 			if (!folder) return;
@@ -91,14 +136,18 @@ export async function activate(context: vscode.ExtensionContext) {
 	);
 
 	await project.reload();
+	void promptWhenSkillStale(context);
 }
 
-async function pickFolder(): Promise<vscode.WorkspaceFolder | undefined> {
+async function pickFolder(
+	options: { optional?: boolean } = {},
+): Promise<vscode.WorkspaceFolder | undefined> {
 	const folders = vscode.workspace.workspaceFolders ?? [];
 	if (folders.length === 0) {
-		vscode.window.showErrorMessage(
-			"Open a folder before creating an ODS workspace.",
-		);
+		if (!options.optional)
+			vscode.window.showErrorMessage(
+				"Open a folder before creating an ODS workspace.",
+			);
 		return undefined;
 	}
 	if (folders.length === 1) return folders[0];

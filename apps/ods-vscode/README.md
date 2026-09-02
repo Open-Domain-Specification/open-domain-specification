@@ -17,6 +17,12 @@ Authors Open Domain Specification (ODS) workspaces from JSON files in a `.ods` f
 - Problems from the core validation rules mapped to the element's position in the JSON file.
 - Create Workspace command, which writes the file and `schema.json`.
 
+## Install the AI skill
+
+`ODS: Install AI Skill` writes the `@open-domain-specification/skill` bundle into the skill folders of the agents you pick: Claude Code (`.claude/skills`), Agent Skills (`.agents/skills`) and Codex (`.codex/skills`), in the project or in your user folder. The skill teaches an agent to detect whether the model is authored as JSON or with the TypeScript DSL, to interview you in plain language before modelling, and to validate every change. Optionally the command appends a pointer paragraph to `AGENTS.md` or `.github/copilot-instructions.md` for agents that read rules files instead. When the extension carries a newer skill than the one installed in a project, it offers an update once.
+
+`ODS: Export Static Site` renders every element page into an `ods-site` folder beside `.ods`, with a sidebar navigation and a light/dark theme, and offers to open it in the browser. The pages are the same ones the extension shows; they come from the `@open-domain-specification/pages` package.
+
 ## Development
 
 Run the "Run ODS Extension" launch configuration from the repository root. It builds the extension and opens the example workspace package.

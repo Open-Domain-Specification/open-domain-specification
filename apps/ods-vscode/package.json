@@ -81,6 +81,18 @@
 				"title": "Search Domain Model",
 				"category": "ODS",
 				"icon": "$(search)"
+			},
+			{
+				"command": "ods.exportSite",
+				"title": "Export Static Site",
+				"category": "ODS",
+				"icon": "$(globe)"
+			},
+			{
+				"command": "ods.installSkill",
+				"title": "Install AI Skill",
+				"category": "ODS",
+				"icon": "$(sparkle)"
 			}
 		],
 		"menus": {
@@ -164,9 +176,8 @@
 	"dependencies": {
 		"@open-domain-specification/core": "^0.1.9",
 		"jsonc-parser": "^3.3.1",
-		"@open-domain-specification/graphviz": "^0.1.9",
-		"@hpcc-js/wasm-graphviz": "^1.11.0",
-		"marked": "^18.0.11"
+		"@open-domain-specification/pages": "^0.1.9",
+		"@open-domain-specification/skill": "^0.1.9"
 	},
 	"devDependencies": {
 		"@types/node": "^24.2.1",
@@ -174,7 +185,6 @@
 		"@vscode/vsce": "^3.9.2",
 		"esbuild": "^0.28.2",
 		"typescript": "^5.9.2",
-		"vitest": "^3.2.4",
-		"@vscode/codicons": "0.0.46-24"
+		"vitest": "^3.2.4"
 	}
 }

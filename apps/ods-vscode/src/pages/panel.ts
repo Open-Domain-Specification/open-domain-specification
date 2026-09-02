@@ -1,9 +1,13 @@
+import {
+	diagramModal,
+	dotToSvg,
+	esc,
+	renderPage,
+	tocList,
+} from "@open-domain-specification/pages";
 import * as vscode from "vscode";
 import type { OdsDiagnostics } from "../diagnostics";
 import type { OdsProject, WorkspaceFile } from "../project";
-import { dotToSvg } from "./graphviz";
-import { esc } from "./html";
-import { renderPage } from "./render";
 
 type Location = { file: WorkspaceFile; ref: string };
 
@@ -171,15 +175,9 @@ export class DetailPanel implements vscode.Disposable {
 </div>
 <div class="layout">
 	<main>${body}</main>
-	<aside class="toc"><p class="toc-title">On this page</p><ul>${sections.map((s) => `<li><a href="#${s.id}" data-section="${s.id}">${s.label}</a></li>`).join("")}</ul></aside>
+	${tocList(sections)}
 </div>
-<div id="diagram-modal" class="modal" hidden>
-	<div class="modal-backdrop"></div>
-	<div class="modal-content">
-		<button class="icon modal-close" title="Close"><i class="codicon codicon-close"></i></button>
-		<div class="modal-body"></div>
-	</div>
-</div>
+${diagramModal()}
 <script nonce="${nonce}" src="${media("page.js")}"></script>
 </body>
 </html>`;

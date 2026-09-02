@@ -1,5 +1,8 @@
 (() => {
-	const vscode = acquireVsCodeApi();
+	// Inside the extension the host owns navigation; in the static site export
+	// the same script runs with plain hrefs and no message bridge.
+	const vscode =
+		typeof acquireVsCodeApi === "function" ? acquireVsCodeApi() : undefined;
 
 	const modal = document.getElementById("diagram-modal");
 	const modalBody = modal?.querySelector(".modal-body");
@@ -16,13 +19,13 @@
 
 	document.addEventListener("click", (event) => {
 		const ref = event.target.closest("a.ref");
-		if (ref) {
+		if (ref && vscode) {
 			event.preventDefault();
 			vscode.postMessage({ type: "navigate", ref: ref.dataset.ref });
 			return;
 		}
 		const button = event.target.closest("button[data-action]");
-		if (button) {
+		if (button && vscode) {
 			vscode.postMessage({ type: button.dataset.action });
 			return;
 		}
@@ -49,7 +52,9 @@
 	});
 
 	// Scroll to the element the ref pointed at, when it lives below the page's own element.
-	const anchor = document.body.dataset.anchor;
+	const anchor =
+		document.body.dataset.anchor ||
+		(vscode ? "" : decodeURIComponent(location.hash.slice(1)));
 	if (anchor) {
 		const el = document.getElementById(anchor);
 		if (el) {
