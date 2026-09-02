@@ -22,7 +22,8 @@ let nodes = $derived.by<Node[]>(() =>
 	positioned.nodes.map((n) => ({
 		id: n.id,
 		type: "ods",
-		position: positioned.positions.get(n.id) ?? { x: 0, y: 0 },
+		// layout() places every node it was given, so the lookup cannot miss.
+		position: positioned.positions.get(n.id)!,
 		data: n,
 		draggable: true,
 	})),

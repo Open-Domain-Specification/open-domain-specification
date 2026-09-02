@@ -107,6 +107,8 @@ cd packages/pages
 npm run dev                    # Viewer dev server (port 5173)
 npm run storybook              # Component library
 npm run build                  # Library plus app bundle
+npm run test:unit              # Vitest with 100% coverage thresholds
+npm run test:e2e               # Playwright over the built app and a static export
 ```
 
 ## Important File Locations

@@ -2,3 +2,6 @@
 /app
 /storybook-static
 /assets/codicons
+/coverage
+/e2e/.export
+/test-results

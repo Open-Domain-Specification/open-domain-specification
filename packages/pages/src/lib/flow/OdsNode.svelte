@@ -5,9 +5,10 @@ import type { GraphNode } from "./graph";
 
 /** A graph node styled like the page cards, with an optional attribute compartment. */
 let { data }: NodeProps & { data: GraphNode } = $props();
+const tone = $derived(data.tone ?? "");
 </script>
 
-<div class="ods-node {data.tone ?? ''}" title={data.id}>
+<div class={`ods-node ${tone}`} title={data.id}>
 	<Handle type="target" position={Position.Left} />
 	<div class="head"><Icon name={data.icon} /> <strong>{data.label}</strong></div>
 	{#if data.group}<div class="group">{data.group}</div>{/if}
@@ -17,7 +18,7 @@ let { data }: NodeProps & { data: GraphNode } = $props();
 	{#if data.attributes?.length}
 		<ul class="attrs">
 			{#each data.attributes as a}
-				<li>{#if a.identity}<Icon name="key" /> {/if}{a.name}: <span class="type">{a.type}</span></li>
+				<li>{#if a.identity}<Icon name="key" /> {/if}<span class="name">{a.name}</span>: <span class="type">{a.type}</span></li>
 			{/each}
 		</ul>
 	{/if}

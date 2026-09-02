@@ -66,6 +66,8 @@ export const sections = [
 		isSymmetricRelationship(r.type) ? "with" : r.source === bc ? "upstream of" : "downstream of";
 	const count = (kind: "operation" | "event", a: (typeof aggregates)[number]) =>
 		[...a.consumables.values()].filter((c) => c.type === kind).length;
+	const countsLine = (a: (typeof aggregates)[number]) =>
+		`${a.entities.size} entities · ${a.valueobjects.size} value objects · ${a.invariants.size} invariants · ${count("operation", a)} operations · ${count("event", a)} events`;
 </script>
 
 <PageHeader
@@ -137,7 +139,7 @@ export const sections = [
 					{#snippet meta()}
 						{#if root}<Icon name="key" /> {root.name}{:else}<Chip label="no root" tone="warn" />{/if}
 					{/snippet}
-					<p class="counts">{a.entities.size} entities · {a.valueobjects.size} value objects · {a.invariants.size} invariants · {count("operation", a)} operations · {count("event", a)} events</p>
+					<p class="counts">{countsLine(a)}</p>
 				</Card>
 			{/each}
 		</Grid>

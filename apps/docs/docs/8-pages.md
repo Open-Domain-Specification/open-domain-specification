@@ -41,6 +41,14 @@ npm run storybook
 `page.css` styles everything and reads the VS Code theme variables; `site.css` defines those
 variables for light and dark outside the editor.
 
+## Tests
+
+Two suites run separately. `npm run test:unit` runs vitest under jsdom with coverage enforced
+at 100 percent over the library, the app shell and the package entries. `npm run test:e2e`
+builds the package and runs Playwright against the real bundle: the viewer's import paths, browsing
+and navigation, a static export served from a folder, the embedded webview protocol with a
+simulated VS Code bridge, and the diagram lightbox and interactive toggle.
+
 ## Static site from code
 
 ```ts
