@@ -45,7 +45,7 @@ $effect(() => {
 </script>
 
 <div class="interactive">
-	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={0.2} colorMode="system" onnodeclick={({ node }) => { location.hash = node.id; }}>
+	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={0.2} colorMode="system" nodesConnectable={false} elementsSelectable={false} onnodeclick={({ node }) => { location.hash = node.id; }}>
 		<Background />
 		{#if sketch}<SketchBackdrop {nodes} groupLabels={labels} />{/if}
 		<Controls showLock={false} />

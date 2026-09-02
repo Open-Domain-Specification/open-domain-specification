@@ -8,6 +8,7 @@ import {
 } from "./voronoi";
 
 const {
+	cells,
 	centre,
 	convexHull,
 	domainBoundaries,
@@ -148,23 +149,20 @@ describe("outerBlob and smoothPath", () => {
 describe("groupBoundaries", () => {
 	it("keeps only the Voronoi edges between different groups", () => {
 		const bounds = paddedBounds(quad, 20);
-		const segs = groupBoundaries(quad, bounds);
+		const segs = groupBoundaries(quad, cells(quad, bounds));
 		// The two rows are different groups: one horizontal line across the middle, in two pieces.
 		expect(segs.length).toBe(2);
 		for (const s of segs) {
 			expect(s.a[1]).toBeCloseTo(175);
 			expect(s.b[1]).toBeCloseTo(175);
 		}
-		expect(
-			groupBoundaries(
-				quad.map((n) => ({ ...n, groupId: "same" })),
-				bounds,
-			),
-		).toEqual([]);
+		const sameGroup = quad.map((n) => ({ ...n, groupId: "same" }));
+		expect(groupBoundaries(sameGroup, cells(sameGroup, bounds))).toEqual([]);
 	});
 	it("draws nothing for fewer than two nodes", () => {
-		expect(groupBoundaries([quad[0]], paddedBounds([quad[0]], 20))).toEqual([]);
-		expect(groupBoundaries([], [0, 0, 1, 1])).toEqual([]);
+		const one = [quad[0]];
+		expect(groupBoundaries(one, cells(one, paddedBounds(one, 20)))).toEqual([]);
+		expect(groupBoundaries([], cells([], [0, 0, 1, 1]))).toEqual([]);
 	});
 });
 
@@ -204,7 +202,7 @@ const twoDomains: SketchNode[] = [
 describe("domainBoundaries", () => {
 	it("keeps only the Voronoi edges between different domains, a loose node counting as none", () => {
 		const bounds = paddedBounds(twoDomains, 20);
-		const segs = domainBoundaries(twoDomains, bounds);
+		const segs = domainBoundaries(twoDomains, cells(twoDomains, bounds));
 		// d1|d2 is one vertical line in two pieces; d2 against the loose node is another, and the loose
 		// node's cell can also touch d1's cells through the corner region only when they share an edge.
 		expect(segs.length).toBeGreaterThanOrEqual(4);
@@ -212,12 +210,8 @@ describe("domainBoundaries", () => {
 		expect(vertical.length).toBe(2);
 		for (const s of vertical) expect(s.b[0]).toBeCloseTo(250);
 		// Same-domain and same-group edges never appear.
-		expect(
-			domainBoundaries(
-				twoDomains.map((n) => ({ ...n, domainId: "one" })),
-				bounds,
-			),
-		).toEqual([]);
+		const sameDomain = twoDomains.map((n) => ({ ...n, domainId: "one" }));
+		expect(domainBoundaries(sameDomain, cells(sameDomain, bounds))).toEqual([]);
 	});
 });
 
@@ -243,7 +237,7 @@ describe("sharedEdge", () => {
 describe("domainBorders", () => {
 	it("gives each domain its longest straight border segment, oriented left to right with the name on the domain's side", () => {
 		const bounds = paddedBounds(twoDomains, 20);
-		const borders = domainBorders(twoDomains, bounds);
+		const borders = domainBorders(twoDomains, cells(twoDomains, bounds));
 		expect(borders.map((b) => b.id)).toEqual(["d1", "d2"]);
 		const d1 = borders[0];
 		const d2 = borders[1];
@@ -259,21 +253,24 @@ describe("domainBorders", () => {
 		// Without the loose node both share the vertical line, walked in opposite directions so each
 		// name stays on its own side; a vertical segment never reads right to left, so neither flips.
 		const pair = twoDomains.slice(0, 4);
-		const [p1, p2] = domainBorders(pair, paddedBounds(pair, 20));
+		const pairBounds = paddedBounds(pair, 20);
+		const [p1, p2] = domainBorders(pair, cells(pair, pairBounds));
 		const ys = (p: string) =>
 			p.match(/[ML]\S+ (\S+)/g)?.map((m) => Number(m.split(" ")[1])) ?? [];
 		expect(p2.labelPath).toMatch(/^M250 /);
 		expect(p1.below).toBe(false);
 		expect(p2.below).toBe(false);
 		expect(ys(p1.labelPath)).toEqual([...ys(p2.labelPath)].reverse());
-		expect(domainBorders([quad[0]], paddedBounds([quad[0]], 20))).toEqual([]);
+		const one = [quad[0]];
+		expect(domainBorders(one, cells(one, paddedBounds(one, 20)))).toEqual([]);
 	});
 	it("flips a run that would read right to left and hangs the name below it", () => {
 		const stacked: SketchNode[] = [
 			{ ...box("a", 0, 0, "s1"), domainId: "top" },
 			{ ...box("b", 0, 300, "s2"), domainId: "bottom" },
 		];
-		const borders = domainBorders(stacked, paddedBounds(stacked, 20));
+		const stackedBounds = paddedBounds(stacked, 20);
+		const borders = domainBorders(stacked, cells(stacked, stackedBounds));
 		// The horizontal line between them: "top" is above so its name sits above, read left to right;
 		// "bottom" would read right to left, so it is flipped and hangs below.
 		expect(borders.find((b) => b.id === "top")).toMatchObject({ below: false });

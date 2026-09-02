@@ -19,3 +19,6 @@ export function diagramKind(graph: Pick<Graph, "nodes">): DiagramKind {
 /** Whether the sketch style applies: only the context map has one. */
 export const sketchApplies = (kind: DiagramKind, style: string) =>
 	kind === "context" && style === "sketch";
+
+/** Whether the diagram kind offers a sketch style at all: only the context map does. */
+export const hasSketchStyle = (kind: DiagramKind) => kind === "context";

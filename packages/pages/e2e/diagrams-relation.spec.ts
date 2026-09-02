@@ -51,9 +51,13 @@ test("draws uses as a dashed dependency and references as an association, with l
 }) => {
 	const flow = await openInteractiveDiagram(page, "relation map", ORDER_REF);
 
+	// The short dash comes from the "dashed" class (paired with matching keyframes in
+	// page.css so the animation loops without a jump), not an inline dasharray.
 	const uses = flow.locator(".svelte-flow__edge-path.uses").first();
 	await expect(uses).toBeVisible();
-	await expect(uses).toHaveAttribute("style", /stroke-dasharray/);
+	await expect(uses).toHaveClass(/dashed/);
+	await expect(uses).not.toHaveAttribute("style", /stroke-dasharray/);
+	await expect(uses).toHaveCSS("stroke-dasharray", "6px, 3px");
 	await expect(uses).toHaveAttribute("marker-end", /vee/);
 	await expect(uses).toHaveCSS("stroke-width", "2px");
 	await expect(flow.locator(".svelte-flow__edge").first()).toHaveClass(
@@ -62,7 +66,9 @@ test("draws uses as a dashed dependency and references as an association, with l
 
 	const references = flow.locator(".svelte-flow__edge-path.references").first();
 	await expect(references).toBeVisible();
+	await expect(references).not.toHaveClass(/dashed/);
 	await expect(references).not.toHaveAttribute("style", /stroke-dasharray/);
+	await expect(references).toHaveCSS("stroke-dasharray", "20px, 4px");
 	await expect(references).toHaveAttribute("marker-end", /vee/);
 
 	await expect(

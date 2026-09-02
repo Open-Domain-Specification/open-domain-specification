@@ -1,6 +1,12 @@
 <script lang="ts">
 import { BaseEdge, type EdgeProps, useInternalNode } from "@xyflow/svelte";
-import { edgeEndpoints, edgePath, padEndpoints, portCentre } from "./edge-path";
+import {
+	DASHED_EDGE_CLASS,
+	edgeEndpoints,
+	edgePath,
+	padEndpoints,
+	portCentre,
+} from "./edge-path";
 import PortBadge from "./PortBadge.svelte";
 
 /**
@@ -61,8 +67,8 @@ const path = $derived(
 	<BaseEdge
 		{id}
 		path={path[0]}
-		class={`relation-edge ${relation}`}
-		style={`stroke: var(--fg); stroke-opacity: 0.7;${dashed ? " stroke-dasharray: 6 4;" : ""}`}
+		class={`relation-edge ${relation}${dashed ? ` ${DASHED_EDGE_CLASS}` : ""}`}
+		style="stroke: var(--fg); stroke-opacity: 0.7;"
 		markerStart={diamond ? `url(#${id}-diamond)` : undefined}
 		markerEnd={diamond ? undefined : `url(#${id}-vee)`}
 	/>

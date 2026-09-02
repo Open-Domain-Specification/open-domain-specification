@@ -242,10 +242,9 @@ function sharedEdge(cell: Point[], other: Point[]): Segment {
  */
 function boundariesBy(
 	nodes: SketchNode[],
-	bounds: [number, number, number, number],
+	{ polygons, neighbors }: Cells,
 	key: (n: SketchNode) => string | undefined,
 ): Segment[] {
-	const { polygons, neighbors } = cells(nodes, bounds);
 	const out: Segment[] = [];
 	polygons.forEach((cell, i) => {
 		for (const j of neighbors(i)) {
@@ -257,16 +256,12 @@ function boundariesBy(
 }
 
 /** The Voronoi edges separating nodes of different groups: the dashed subdomain lines. */
-const groupBoundaries = (
-	nodes: SketchNode[],
-	bounds: [number, number, number, number],
-) => boundariesBy(nodes, bounds, (n) => n.groupId);
+const groupBoundaries = (nodes: SketchNode[], cells: Cells) =>
+	boundariesBy(nodes, cells, (n) => n.groupId);
 
 /** The Voronoi edges separating nodes of different domains: the thick domain borders. */
-const domainBoundaries = (
-	nodes: SketchNode[],
-	bounds: [number, number, number, number],
-) => boundariesBy(nodes, bounds, (n) => n.domainId);
+const domainBoundaries = (nodes: SketchNode[], cells: Cells) =>
+	boundariesBy(nodes, cells, (n) => n.domainId);
 
 /**
  * The border of each domain: its Voronoi boundary segments oriented so the
@@ -277,9 +272,8 @@ const domainBoundaries = (
  */
 function domainBorders(
 	nodes: SketchNode[],
-	bounds: [number, number, number, number],
+	{ polygons, neighbors }: Cells,
 ): DomainBorder[] {
-	const { polygons, neighbors } = cells(nodes, bounds);
 	const segments = new Map<string, Segment[]>();
 	polygons.forEach((cell, i) => {
 		const domain = nodes[i].domainId;
@@ -341,11 +335,12 @@ const segmentsPath = (segments: Segment[]) =>
 export function sketchBackdrop(nodes: SketchNode[], padding: number): Backdrop {
 	if (nodes.length === 0) return EMPTY_BACKDROP;
 	const bounds = paddedBounds(nodes, padding * BOUNDARY_BOUNDS_FACTOR);
+	const nodeCells = cells(nodes, bounds);
 	return {
 		blob: smoothPath(outerBlob(nodes, padding)),
-		boundaries: segmentsPath(groupBoundaries(nodes, bounds)),
-		domainBorders: segmentsPath(domainBoundaries(nodes, bounds)),
-		domains: domainBorders(nodes, bounds),
+		boundaries: segmentsPath(groupBoundaries(nodes, nodeCells)),
+		domainBorders: segmentsPath(domainBoundaries(nodes, nodeCells)),
+		domains: domainBorders(nodes, nodeCells),
 		labels: groupLabels(nodes),
 	};
 }
@@ -360,6 +355,7 @@ export const internals = {
 	outerBlob,
 	smoothPath,
 	sharedEdge,
+	cells,
 	groupBoundaries,
 	domainBoundaries,
 	domainBorders,

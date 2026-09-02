@@ -474,8 +474,12 @@ table.attrs td.k {
 	text-align: center;
 	clip-path: none;
 }
-.svelte-flow .flow-card.sketch .head { justify-content: center; }
-.svelte-flow .flow-card.sketch.context-node { border-top-width: 5px; }
+.svelte-flow .flow-card.sketch .head {
+	justify-content: center;
+}
+.svelte-flow .flow-card.sketch.context-node {
+	border-top-width: 5px;
+}
 .flow-card .head {
 	display: flex;
 	gap: 6px;
@@ -491,15 +495,45 @@ table.attrs td.k {
 /* Edges: the theme foreground at 0.7 rather than Svelte Flow's grey, so lines stand out from
    both the page and the shaded clusters in either theme (the context map's SK/SW colours
    override inline); twice Svelte Flow's stroke, and every edge animates along its dash
-   pattern so the flow direction reads. Solid edges get a long dash with a small gap; dashed
-   ones set their own short pattern inline, which wins over this. */
+   pattern so the flow direction reads. Svelte Flow's own `dashdraw` keyframes animate
+   stroke-dashoffset from 10 to 0, which only loops without a visible jump when the dash
+   pattern's total length (dash plus gap) is itself 10; overriding just the dash array, as
+   this used to, leaves the offset travelling a distance that no longer matches the pattern,
+   so the line appears to skip once a cycle. These keyframes replace Svelte Flow's instead of
+   layering on top of them, each sized so the offset distance equals its own pattern length,
+   and timed to the same 20px/s rate Svelte Flow's default moves at so every edge reads at the
+   same speed. Solid edges get a long dash with a small gap; the `dashed` class shortens both,
+   set on the edge wrapper for an implied context relationship or on the path itself for a
+   "uses" dependency, whichever the component that draws it controls. */
 .svelte-flow .svelte-flow__edge-path {
 	stroke: var(--fg);
 	stroke-opacity: 0.7;
 	stroke-width: 2;
 }
 .svelte-flow .svelte-flow__edge.animated .svelte-flow__edge-path {
-	stroke-dasharray: 24 3;
+	stroke-dasharray: 20 4;
+	animation: flow-dashdraw 1.2s linear infinite;
+}
+.svelte-flow .svelte-flow__edge.animated.dashed .svelte-flow__edge-path,
+.svelte-flow .svelte-flow__edge.animated .svelte-flow__edge-path.dashed {
+	stroke-dasharray: 6 3;
+	animation: flow-dashdraw-short 0.45s linear infinite;
+}
+@keyframes flow-dashdraw {
+	from {
+		stroke-dashoffset: 24;
+	}
+	to {
+		stroke-dashoffset: 0;
+	}
+}
+@keyframes flow-dashdraw-short {
+	from {
+		stroke-dashoffset: 9;
+	}
+	to {
+		stroke-dashoffset: 0;
+	}
 }
 /* Edge text: the midpoint label and the stereotype, haloed so lines never cross it. */
 .svelte-flow .edge-label {
@@ -535,12 +569,19 @@ table.attrs td.k {
 .svelte-flow .svelte-flow__edge-label.port {
 	pointer-events: none;
 }
-/* Fixed handles are small dots in the card colours. */
+/* Fixed handles are small dots in the card colours. The diagrams are read-only: a handle only
+   ever receives an edge Svelte Flow lays out, so it must never start one, and it takes on the
+   node's own pointer cursor rather than the library's crosshair. `isConnectable={false}` on the
+   Handle (NodeHandles.svelte) already drops Svelte Flow's own connection-indicator class, whose
+   `pointer-events: all` is what lets a drag begin; this reasserts both explicitly so a click
+   still lands on the node underneath. */
 .svelte-flow .svelte-flow__handle {
 	width: 6px;
 	height: 6px;
 	background: var(--card);
 	border: 1px solid var(--border);
+	cursor: pointer;
+	pointer-events: none;
 }
 .svelte-flow .svelte-flow__handle.port-handle {
 	width: auto;
@@ -558,7 +599,9 @@ table.attrs td.k {
 	background: var(--card);
 	opacity: 1;
 }
-.svelte-flow .svelte-flow__handle.lollipop { left: -22px; }
+.svelte-flow .svelte-flow__handle.lollipop {
+	left: -22px;
+}
 .svelte-flow .svelte-flow__handle.socket {
 	right: -22px;
 	border-right-color: transparent;
@@ -572,9 +615,15 @@ table.attrs td.k {
 	width: 12px;
 	border-top: 1.5px solid var(--fg);
 }
-.svelte-flow .svelte-flow__handle.lollipop::before { left: 100%; }
-.svelte-flow .svelte-flow__handle.socket::before { right: 100%; }
-.svelte-flow .svelte-flow__handle.socket .port-label { margin-right: 4px; }
+.svelte-flow .svelte-flow__handle.lollipop::before {
+	left: 100%;
+}
+.svelte-flow .svelte-flow__handle.socket::before {
+	right: 100%;
+}
+.svelte-flow .svelte-flow__handle.socket .port-label {
+	margin-right: 4px;
+}
 /* Hidden while the handles float: the edge finds its own end, but the handle keeps its measurement. */
 .svelte-flow .svelte-flow__handle.handle-hidden {
 	opacity: 0;

@@ -12,6 +12,7 @@ const graph: Graph = {
 		{ id: "#/a", type: "context", label: "A", icon: "x", groupId: "g:dom" },
 		{ id: "#/b", type: "context", label: "B", icon: "x", groupId: "g:ws" },
 		{ id: "#/c", type: "context", label: "C", icon: "x" },
+		{ id: "#/d", type: "consumable", label: "D", icon: "x" },
 	],
 	edges: [
 		{
@@ -41,8 +42,9 @@ describe("flowNodes", () => {
 			"#/a",
 			"#/b",
 			"#/c",
+			"#/d",
 		]);
-		const [ws, dom, a, , c] = nodes;
+		const [ws, dom, a, , c, d] = nodes;
 		expect(ws).toMatchObject({
 			type: "cluster",
 			extent: undefined,
@@ -62,6 +64,12 @@ describe("flowNodes", () => {
 			draggable: true,
 			data: { label: "A", floating: false, sketch: false },
 		});
+		// Only context nodes carry the sketch flag; other node types get floating alone.
+		expect(d).toMatchObject({
+			type: "consumable",
+			data: { label: "D", floating: false },
+		});
+		expect((d.data as { sketch?: boolean }).sketch).toBeUndefined();
 		expect(c.parentId).toBeUndefined();
 		expect(c.extent).toBeUndefined();
 		// A child's position is relative to its parent's box.
@@ -87,7 +95,7 @@ describe("flowNodes", () => {
 		expect(nodes[2].data).toMatchObject({ floating: true, sketch: true });
 	});
 	it("handles a graph without groups", () => {
-		const bare = layout({ nodes: graph.nodes.slice(2), edges: [] });
+		const bare = layout({ nodes: graph.nodes.slice(2, 3), edges: [] });
 		expect(flowNodes(bare, opts)).toHaveLength(1);
 		expect(depthOf(bare, undefined)).toBe(0);
 		expect(groupLabels(bare).size).toBe(0);
@@ -107,7 +115,7 @@ describe("flowEdges", () => {
 			targetHandle: "t",
 			label: "U/D",
 			animated: true,
-			style: "stroke-dasharray: 5 4",
+			class: "dashed",
 			data: { sourceLabel: "OHS", targetLabel: undefined },
 		});
 		expect(e.markerEnd).toMatchObject({
@@ -119,7 +127,7 @@ describe("flowEdges", () => {
 		expect(f).toMatchObject({
 			animated: true,
 			markerEnd: undefined,
-			style: undefined,
+			class: undefined,
 		});
 	});
 });

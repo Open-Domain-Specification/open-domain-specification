@@ -45,6 +45,9 @@ describe("RelationNode", () => {
 			"Sales / Order",
 		);
 		expect(container.querySelector(".handle-hidden")).toBeNull();
+		// Relation nodes only ever navigate on click; their handles never start a connection.
+		for (const handle of container.querySelectorAll(".svelte-flow__handle"))
+			expect(handle).not.toHaveClass("connectable");
 	});
 
 	it("keeps an empty compartment, defaults the stereotype and hides handles when floating", async () => {

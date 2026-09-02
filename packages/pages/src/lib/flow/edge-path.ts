@@ -60,6 +60,16 @@ export function handlePoint(
 /** Radius of a port badge or port handle, in flow pixels. */
 export const PORT_RADIUS = 11;
 
+/**
+ * Class that shortens an animated edge's dash pattern, paired in `page.css`
+ * with keyframes sized to that shorter pattern so the dash animation loops
+ * without a jump. `flowEdges` sets it on the edge itself for an implied
+ * context relationship; a component that picks its own dashed look, such as
+ * `RelationEdge`'s "uses" dependency, sets it on the rendered path instead.
+ * Either spot matches the shared stylesheet rule.
+ */
+export const DASHED_EDGE_CLASS = "dashed";
+
 /** Path string plus the label point, as every Svelte Flow path helper returns. */
 export type EdgePath = [string, number, number, number, number];
 

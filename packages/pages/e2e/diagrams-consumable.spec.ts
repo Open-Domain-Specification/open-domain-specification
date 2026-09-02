@@ -145,3 +145,35 @@ test("keeps the lollipop as the target end in floating mode", async ({
 		.getByLabel("Handle placement")
 		.selectOption("fixed");
 });
+
+test("a lollipop shows the node's pointer cursor and cannot be dragged into a connection", async ({
+	page,
+}) => {
+	const flow = await openInteractiveDiagram(page, "consumable map", SALES);
+	const pet = flow.locator(
+		'.svelte-flow__node[data-id="#/boundedcontexts/catalog_bc/aggregates/pet"]',
+	);
+	const port = pet
+		.locator('.slot.provided[data-slot$="/provides/reserve_pet"]')
+		.locator(".svelte-flow__handle.target");
+	await expect(port).toBeVisible();
+	// `pointer-events: none` is the whole point: the port intercepts nothing, so the cluster
+	// region stacked beneath it fields the actual hit-test. Force the hover past that check and
+	// read the cursor Svelte Flow's own crosshair rule would otherwise have won.
+	await port.hover({ force: true });
+	await expect(port).toHaveCSS("cursor", "pointer");
+	// A read-only port: dragging from it must never start Svelte Flow's connection line.
+	const box = (await port.boundingBox())!;
+	await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(
+		box.x + box.width / 2 + 120,
+		box.y + box.height / 2 + 80,
+		{
+			steps: 8,
+		},
+	);
+	await expect(flow.locator(".svelte-flow__connectionline")).toHaveCount(0);
+	await page.mouse.up();
+	await expect(flow.locator(".svelte-flow__connectionline")).toHaveCount(0);
+});

@@ -1,4 +1,5 @@
 import { type Edge, MarkerType, type Node } from "@xyflow/svelte";
+import { DASHED_EDGE_CLASS } from "./edge-path";
 import type { Positioned } from "./layout";
 
 /** What shapes the Svelte Flow nodes beyond the layout: the options and the map's freedoms. */
@@ -69,7 +70,8 @@ export function flowNodes(
 			position: relativeTo(positioned, n.id, n.groupId),
 			parentId: n.groupId,
 			extent: n.groupId && !free ? ("parent" as const) : undefined,
-			data: { ...n, floating, sketch },
+			data:
+				n.type === "context" ? { ...n, floating, sketch } : { ...n, floating },
 			draggable: true,
 		})),
 	];
@@ -80,8 +82,10 @@ const ARROW_SIZE = 9;
 
 /**
  * The Svelte Flow edges for a graph. Every edge animates so the flow reads;
- * the stylesheet gives solid edges a long dash with a small gap and dashed
- * ones keep their short dashes here. Directed edges get an arrowhead.
+ * the stylesheet gives solid edges a long dash with a small gap, and an
+ * implied one the `DASHED_EDGE_CLASS` class to shorten it, keyed to
+ * keyframes sized for that shorter pattern so the animation still loops
+ * without a jump. Directed edges get an arrowhead.
  */
 export function flowEdges(positioned: Positioned): Edge[] {
 	return positioned.edges.map((e) => ({
@@ -101,7 +105,7 @@ export function flowEdges(positioned: Positioned): Edge[] {
 					color: "var(--fg)",
 				}
 			: undefined,
-		style: e.dashed ? "stroke-dasharray: 5 4" : undefined,
+		class: e.dashed ? DASHED_EDGE_CLASS : undefined,
 		data: { sourceLabel: e.sourceLabel, targetLabel: e.targetLabel },
 	}));
 }

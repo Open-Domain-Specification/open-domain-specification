@@ -1,6 +1,6 @@
 <script lang="ts">
 import { Panel } from "@xyflow/svelte";
-import type { DiagramKind } from "./kind";
+import { type DiagramKind, hasSketchStyle } from "./kind";
 import {
 	type DiagramStyle,
 	diagramOptions,
@@ -37,7 +37,7 @@ const apply = () => diagramOptions.set({ handles, edges, style });
 			<option value="smoothstep">Smooth step</option>
 		</select>
 	</label>
-	{#if kind === "context"}
+	{#if hasSketchStyle(kind)}
 		<label>
 			<span>Style</span>
 			<select aria-label="Diagram style" bind:value={style} onchange={apply}>

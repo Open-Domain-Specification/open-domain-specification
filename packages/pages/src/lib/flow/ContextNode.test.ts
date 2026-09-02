@@ -39,6 +39,13 @@ describe("ContextNode", () => {
 		expect(node.querySelector(".svelte-flow__handle.source")).toBeTruthy();
 		expect(node.querySelector(".handle-hidden")).toBeNull();
 		expect(node.querySelector(".port-handle")).toBeNull();
+		// The map is read-only: neither handle may start a connection.
+		expect(node.querySelector(".svelte-flow__handle.target")).not.toHaveClass(
+			"connectable",
+		);
+		expect(node.querySelector(".svelte-flow__handle.source")).not.toHaveClass(
+			"connectable",
+		);
 	});
 	it("marks a big ball of mud, falls back to the ref as title and hides floating handles", () => {
 		const { container } = context({

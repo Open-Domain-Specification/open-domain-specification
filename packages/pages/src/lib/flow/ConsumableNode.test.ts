@@ -48,6 +48,10 @@ describe("ConsumableNode", () => {
 		);
 		expect(socket.querySelector(".port-label")?.textContent).toBe("CF");
 		expect(socket.getAttribute("title")).toBe("conformist");
+		// Read-only diagram: a socket never starts a connection, so it carries neither of
+		// Svelte Flow's own connectable classes.
+		expect(socket).not.toHaveClass("connectable");
+		expect(socket).not.toHaveClass("connectionindicator");
 		const plain = sockets[1].querySelector(".socket") as HTMLElement;
 		expect(plain).not.toHaveClass("port-handle");
 		expect(plain.getAttribute("title")).toBe("Plain");
@@ -94,7 +98,8 @@ describe("ConsumableNode", () => {
 		expect(slots[1].getAttribute("title")).toBe(
 			`${base.id}/provides/pet_status_changed`,
 		);
-		// Each slot carries its own target handle, named by the consumable's ref.
+		// Each slot carries its own target handle, named by the consumable's ref; none of them
+		// are connectable, so a drag can never start from a lollipop or socket.
 		for (const slot of slots) {
 			const handle = slot.querySelector(
 				".svelte-flow__handle.target",
@@ -102,6 +107,7 @@ describe("ConsumableNode", () => {
 			expect(handle.getAttribute("data-handleid")).toBe(
 				slot.getAttribute("data-slot"),
 			);
+			expect(handle).not.toHaveClass("connectable");
 		}
 		// Every slot is a lollipop; one with a pattern is a labelled port, one without a plain ball.
 		const port = slots[0].querySelector(".port-handle") as HTMLElement;
@@ -120,6 +126,9 @@ describe("ConsumableNode", () => {
 			1,
 		);
 		expect(node.querySelector(".handle-hidden")).toBeNull();
+		expect(node.querySelector(".svelte-flow__handle.source")).not.toHaveClass(
+			"connectable",
+		);
 	});
 	it("omits the slot list and group when there are none, falls back to the ref as title and hides floating handles but not ports", () => {
 		const { container } = consumable({
@@ -139,6 +148,9 @@ describe("ConsumableNode", () => {
 		expect(node.getAttribute("title")).toBe(base.id);
 		expect(node.querySelectorAll(".handle-hidden")).toHaveLength(1);
 		expect(node.querySelector(".port-handle")).not.toHaveClass("handle-hidden");
+		// Floating or fixed, a port is never connectable.
+		expect(node.querySelector(".port-handle")).not.toHaveClass("connectable");
+		expect(node.querySelector(".handle-hidden")).not.toHaveClass("connectable");
 		const { container: bare } = consumable(base);
 		expect(bare.querySelector(".slots")).toBeNull();
 	});

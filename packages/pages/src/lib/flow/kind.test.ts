@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { diagramKind, sketchApplies } from "./kind";
+import { diagramKind, hasSketchStyle, sketchApplies } from "./kind";
 
 const graph = (type?: string) => ({
 	nodes: type ? [{ id: "#/a", type, label: "A", icon: "x" }] : [],
@@ -21,5 +21,13 @@ describe("sketchApplies", () => {
 		expect(sketchApplies("context", "cards")).toBe(false);
 		expect(sketchApplies("consumable", "sketch")).toBe(false);
 		expect(sketchApplies("relation", "sketch")).toBe(false);
+	});
+});
+
+describe("hasSketchStyle", () => {
+	it("is true only for the context map", () => {
+		expect(hasSketchStyle("context")).toBe(true);
+		expect(hasSketchStyle("consumable")).toBe(false);
+		expect(hasSketchStyle("relation")).toBe(false);
 	});
 });

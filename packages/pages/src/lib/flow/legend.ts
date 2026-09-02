@@ -1,3 +1,8 @@
+import type {
+	ContextRelationshipType,
+	DownstreamRole,
+	UpstreamRole,
+} from "@open-domain-specification/core";
 import {
 	DOWNSTREAM_ROLE_LABELS,
 	RELATIONSHIP_LABELS,
@@ -17,13 +22,13 @@ import { roleLabel } from "./roles";
 export type LegendEntry = { mark: string; name: string };
 
 /** Full names behind the abbreviations the label tables produce. */
-const ROLE_NAMES: Record<string, string> = {
+const ROLE_NAMES: Record<UpstreamRole | DownstreamRole, string> = {
 	"open-host-service": "Open host service",
 	"published-language": "Published language",
 	conformist: "Conformist",
 	"anti-corruption-layer": "Anti-corruption layer",
 };
-const STEREOTYPE_NAMES: Record<string, string> = {
+const STEREOTYPE_NAMES: Record<ContextRelationshipType, string> = {
 	"upstream-downstream": "Upstream/downstream",
 	"customer-supplier": "Customer/supplier",
 	partnership: "Partnership",
@@ -33,16 +38,18 @@ const STEREOTYPE_NAMES: Record<string, string> = {
 
 /** Abbreviation to full name for every role, from the graphviz label tables. */
 const ROLES = new Map(
-	Object.entries({ ...UPSTREAM_ROLE_LABELS, ...DOWNSTREAM_ROLE_LABELS }).map(
-		([role, label]) => [label, ROLE_NAMES[role]],
-	),
+	(
+		Object.entries({
+			...UPSTREAM_ROLE_LABELS,
+			...DOWNSTREAM_ROLE_LABELS,
+		}) as [UpstreamRole | DownstreamRole, string][]
+	).map(([role, label]) => [label, ROLE_NAMES[role]]),
 );
 /** Stereotype label to full name, from the graphviz label table. */
 const STEREOTYPES = new Map(
-	Object.entries(RELATIONSHIP_LABELS).map(([type, label]) => [
-		label,
-		STEREOTYPE_NAMES[type],
-	]),
+	(
+		Object.entries(RELATIONSHIP_LABELS) as [ContextRelationshipType, string][]
+	).map(([type, label]) => [label, STEREOTYPE_NAMES[type]]),
 );
 
 /** Every "+"-joined end label of the edges, split into single abbreviations, in first-seen order. */

@@ -49,6 +49,7 @@ describe("RelationEdge", () => {
 		expect(path.getAttribute("marker-start")).toBe("url(#e-diamond)");
 		expect(path.getAttribute("marker-end")).toBeNull();
 		expect(path.getAttribute("style")).not.toContain("dasharray");
+		expect(path).not.toHaveClass("dashed");
 		expect(
 			container.querySelector("marker#e-diamond .marker-fill"),
 		).toBeTruthy();
@@ -77,6 +78,7 @@ describe("RelationEdge", () => {
 		expect(refPath.getAttribute("marker-end")).toBe("url(#e-vee)");
 		expect(refPath.getAttribute("marker-start")).toBeNull();
 		expect(refPath.getAttribute("style")).not.toContain("dasharray");
+		expect(refPath).not.toHaveClass("dashed");
 		expect(ref.container.querySelector(".edge-label")).toBeNull();
 		// No multiplicities: the line runs handle to handle.
 		expect(refPath.getAttribute("d")?.startsWith("M10,20")).toBe(true);
@@ -87,7 +89,10 @@ describe("RelationEdge", () => {
 		await waitFor(() => expect(edgePath(uses.container)).toBeTruthy());
 		const usesPath = edgePath(uses.container) as SVGElement;
 		expect(usesPath).toHaveClass("uses");
-		expect(usesPath.getAttribute("style")).toContain("stroke-dasharray");
+		// The short dash pattern comes from the "dashed" class, paired with matching
+		// keyframes in page.css, not an inline dasharray that would fight the animation.
+		expect(usesPath).toHaveClass("dashed");
+		expect(usesPath.getAttribute("style")).not.toContain("dasharray");
 		expect(usesPath.getAttribute("marker-end")).toBe("url(#e-vee)");
 		expect(cardinality(uses.container)).toBeNull();
 	});
