@@ -195,6 +195,7 @@ export interface EntitySchema {
 	root?: boolean;
 	name: string;
 	description: string;
+	attributes: { [attribute: string]: AttributeSchema };
 	relations: EntityRelationSchema[];
 }
 
@@ -252,6 +253,7 @@ export interface SubdomainSchema {
 export interface ValueObjectSchema {
 	name: string;
 	description: string;
+	attributes: { [attribute: string]: AttributeSchema };
 	relations: EntityRelationSchema[];
 }
 

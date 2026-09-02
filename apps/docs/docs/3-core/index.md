@@ -44,8 +44,8 @@ Workspace
 │   │   ├── Consumables
 │   │   └── Consumptions
 │   └── Aggregate
-│       ├── Entities
-│       ├── Value Objects
+│       ├── Entities (with attributes)
+│       ├── Value Objects (with attributes)
 │       ├── Invariants
 │       ├── Commands (with attributes; raise Domain Events)
 │       ├── Domain Events (with attributes)

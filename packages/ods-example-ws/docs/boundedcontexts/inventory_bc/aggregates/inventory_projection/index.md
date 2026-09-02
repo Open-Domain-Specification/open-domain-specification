@@ -8,9 +8,9 @@ Materialized view: { available: number, pending: number, sold: number }
 ![consumablemap](./consumablemap.svg)
 
 ## Entities and Value Objects
-| Type | Name | Description |
-| --- | --- | --- |
-| Entity (Root) | **InventoryView** | Status→count map for /store/inventory |
+| Type | Name | Description | Attributes |
+| --- | --- | --- | --- |
+| Entity (Root) | **InventoryView** | Status→count map for /store/inventory | - |
 
 
 ## Relationships

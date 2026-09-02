@@ -62,6 +62,18 @@ describe("schema round-trip", () => {
 		expect(consumable.command).toBe(command);
 	});
 
+	it("keeps attributes on entities and value objects", () => {
+		const order = rebuilt.getEntityByRefOrThrow(
+			"#/boundedcontexts/ordering_bc/aggregates/order/entities/order",
+		);
+		expect(order.attributes.get("order_id")?.identity).toBe(true);
+		expect(order.attributes.get("total")?.valueobject?.name).toBe("Money");
+		const money = rebuilt.getValueObjectByRefOrThrow(
+			"#/boundedcontexts/ordering_bc/aggregates/order/valueobjects/money",
+		);
+		expect(Array.from(money.attributes.keys())).toEqual(["amount", "currency"]);
+	});
+
 	it("re-links entity relations across aggregates", () => {
 		const invoice = rebuilt.getEntityByRefOrThrow(
 			"#/boundedcontexts/invoicing_bc/aggregates/invoice/entities/invoice",

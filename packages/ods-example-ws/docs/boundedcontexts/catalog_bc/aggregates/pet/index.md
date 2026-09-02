@@ -8,13 +8,13 @@ A pet listed in the store
 ![consumablemap](./consumablemap.svg)
 
 ## Entities and Value Objects
-| Type | Name | Description |
-| --- | --- | --- |
-| Entity (Root) | **Pet** | Pet root entity |
-| Value Object | Category | { id?: number, name?: string } |
-| Value Object | Tag | { id?: number, name?: string } |
-| Value Object | PhotoUrl | string (URL) |
-| Value Object | PetStatus | 'available' | 'pending' | 'sold' |
+| Type | Name | Description | Attributes |
+| --- | --- | --- | --- |
+| Entity (Root) | **Pet** | Pet root entity | **id**: `int64`, name: `string`, category: `Category`, photoUrls: `PhotoUrl[]`, tags: `Tag[]`, status: `PetStatus` |
+| Value Object | Category | The kind of animal, e.g. Dogs | id: `int64`, name: `string` |
+| Value Object | Tag | Free-form label on a pet | id: `int64`, name: `string` |
+| Value Object | PhotoUrl | Where a photo of the pet can be fetched | url: `string (URL)` |
+| Value Object | PetStatus | Where the pet is in its sales lifecycle | value: `'available' | 'pending' | 'sold'` |
 
 
 ## Relationships

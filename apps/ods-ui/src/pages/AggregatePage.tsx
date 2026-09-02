@@ -130,9 +130,10 @@ export function _AggregatePage(props: { aggregate: Aggregate }) {
 					items={
 						Array.from(props.aggregate.entities.values())?.map((it) => ({
 							id: it.ref,
-							name: it.name,
+							name: it.root ? `${it.name} (root)` : it.name,
 							description: it.description,
 							icon: Icons.Entity,
+							endSlot: <AttributeList attributes={it.attributes} />,
 						})) || []
 					}
 					emptyMessage={"No entities defined."}
@@ -147,6 +148,7 @@ export function _AggregatePage(props: { aggregate: Aggregate }) {
 							name: it.name,
 							description: it.description,
 							icon: Icons.ValueObject,
+							endSlot: <AttributeList attributes={it.attributes} />,
 						})) || []
 					}
 					emptyMessage={"No value objects defined."}

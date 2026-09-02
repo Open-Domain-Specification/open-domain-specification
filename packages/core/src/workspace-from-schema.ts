@@ -265,6 +265,7 @@ function linkReferences(
 				const entity = workspace.getEntityByRefOrThrow(
 					entityRef(boundedcontextId, aggregateId, entityId).$ref,
 				);
+				addAttributes(entity, entitySchema.attributes, workspace);
 				for (const relation of entitySchema.relations) {
 					entity.addRelation(
 						workspace.getEntityOrValueobjectByRefOrThrow(relation.target.$ref),
@@ -279,6 +280,7 @@ function linkReferences(
 				const valueobject = workspace.getValueObjectByRefOrThrow(
 					valueObjectRef(boundedcontextId, aggregateId, valueobjectId).$ref,
 				);
+				addAttributes(valueobject, valueobjectSchema.attributes, workspace);
 				for (const relation of valueobjectSchema.relations) {
 					valueobject.addRelation(
 						workspace.getEntityOrValueobjectByRefOrThrow(relation.target.$ref),

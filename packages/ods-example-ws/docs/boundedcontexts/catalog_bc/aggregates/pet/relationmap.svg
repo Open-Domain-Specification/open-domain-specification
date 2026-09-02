@@ -46,7 +46,7 @@
 <!-- #/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category -->
 <g id="node2" class="node">
 <title>#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category</title>
-<g id="a_node2"><a xlink:title="{ id?: number, name?: string }">
+<g id="a_node2"><a xlink:title="The kind of animal, e.g. Dogs">
 <ellipse fill="white" stroke="black" stroke-dasharray="5,2" cx="242.73" cy="-66" rx="46.43" ry="18"/>
 <text xml:space="preserve" text-anchor="middle" x="242.73" y="-61.8" font-family="sans-serif" font-size="14.00">Category</text>
 </a>
@@ -62,7 +62,7 @@
 <!-- #/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/tag -->
 <g id="node3" class="node">
 <title>#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/tag</title>
-<g id="a_node3"><a xlink:title="{ id?: number, name?: string }">
+<g id="a_node3"><a xlink:title="Free&#45;form label on a pet">
 <ellipse fill="white" stroke="black" stroke-dasharray="5,2" cx="242.73" cy="-120" rx="27" ry="18"/>
 <text xml:space="preserve" text-anchor="middle" x="242.73" y="-115.8" font-family="sans-serif" font-size="14.00">Tag</text>
 </a>
@@ -78,7 +78,7 @@
 <!-- #/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/photo_url -->
 <g id="node4" class="node">
 <title>#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/photo_url</title>
-<g id="a_node4"><a xlink:title="string (URL)">
+<g id="a_node4"><a xlink:title="Where a photo of the pet can be fetched">
 <ellipse fill="white" stroke="black" stroke-dasharray="5,2" cx="242.73" cy="-174" rx="46.45" ry="18"/>
 <text xml:space="preserve" text-anchor="middle" x="242.73" y="-169.8" font-family="sans-serif" font-size="14.00">PhotoUrl</text>
 </a>
@@ -94,7 +94,7 @@
 <!-- #/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status -->
 <g id="node5" class="node">
 <title>#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status</title>
-<g id="a_node5"><a xlink:title="&#39;available&#39; | &#39;pending&#39; | &#39;sold&#39;">
+<g id="a_node5"><a xlink:title="Where the pet is in its sales lifecycle">
 <ellipse fill="white" stroke="black" stroke-dasharray="5,2" cx="242.73" cy="-228" rx="46.99" ry="18"/>
 <text xml:space="preserve" text-anchor="middle" x="242.73" y="-223.8" font-family="sans-serif" font-size="14.00">PetStatus</text>
 </a>

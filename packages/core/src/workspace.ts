@@ -914,11 +914,14 @@ export type EntityAttributes = {
 	id?: string;
 };
 
-export class Entity implements Visitable, SchemaConvertible<ods.EntitySchema> {
+export class Entity
+	implements Visitable, SchemaConvertible<ods.EntitySchema>, AttributeOwner
+{
 	id: string;
 	name: string;
 	description: string;
 	root: boolean;
+	attributes = new Map<string, Attribute>();
 	relations = [] as EntityRelation[];
 	aggregate: Aggregate;
 
@@ -941,6 +944,10 @@ export class Entity implements Visitable, SchemaConvertible<ods.EntitySchema> {
 		this.root = attributes.root || false;
 		this.aggregate = aggregate;
 		this.aggregate.entities.set(this.id, this);
+	}
+
+	addAttribute(name: string, options: AttributeOptions): Attribute {
+		return new Attribute(this, name, options);
 	}
 
 	addRelation(
@@ -987,6 +994,7 @@ export class Entity implements Visitable, SchemaConvertible<ods.EntitySchema> {
 			name: this.name,
 			description: this.description,
 			root: this.root,
+			attributes: asRecords(this.attributes),
 			relations: asArray(this.relations),
 		};
 	}
@@ -1002,11 +1010,12 @@ export type ValueObjectAttributes = {
 };
 
 export class ValueObject
-	implements Visitable, SchemaConvertible<ods.ValueObjectSchema>
+	implements Visitable, SchemaConvertible<ods.ValueObjectSchema>, AttributeOwner
 {
 	id: string;
 	name: string;
 	description: string;
+	attributes = new Map<string, Attribute>();
 	relations = [] as EntityRelation[];
 	aggregate: Aggregate;
 
@@ -1028,6 +1037,10 @@ export class ValueObject
 		this.description = attributes.description;
 		this.aggregate = aggregate;
 		this.aggregate.valueobjects.set(this.id, this);
+	}
+
+	addAttribute(name: string, options: AttributeOptions): Attribute {
+		return new Attribute(this, name, options);
 	}
 
 	addRelation(
@@ -1073,6 +1086,7 @@ export class ValueObject
 		return {
 			name: this.name,
 			description: this.description,
+			attributes: asRecords(this.attributes),
 			relations: asArray(this.relations),
 		};
 	}

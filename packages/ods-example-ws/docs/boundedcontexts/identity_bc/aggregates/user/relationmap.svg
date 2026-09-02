@@ -37,7 +37,7 @@
 <!-- #/boundedcontexts/identity_bc/aggregates/user/entities/user -->
 <g id="node1" class="node">
 <title>#/boundedcontexts/identity_bc/aggregates/user/entities/user</title>
-<g id="a_node1"><a xlink:title="username, firstName, lastName, email, password, phone, userStatus(int)">
+<g id="a_node1"><a xlink:title="A registered user of the store">
 <polygon fill="white" stroke="black" points="102,-84 48,-84 48,-48 102,-48 102,-84"/>
 <text xml:space="preserve" text-anchor="middle" x="75" y="-61.8" font-family="sans-serif" font-size="14.00">User</text>
 </a>
@@ -46,7 +46,7 @@
 <!-- #/boundedcontexts/identity_bc/aggregates/user/valueobjects/user_status -->
 <g id="node2" class="node">
 <title>#/boundedcontexts/identity_bc/aggregates/user/valueobjects/user_status</title>
-<g id="a_node2"><a xlink:title="int (per Petstore v3 model)">
+<g id="a_node2"><a xlink:title="Untyped int per the Petstore v3 model">
 <ellipse fill="white" stroke="black" stroke-dasharray="5,2" cx="230.32" cy="-66" rx="52.88" ry="18"/>
 <text xml:space="preserve" text-anchor="middle" x="230.32" y="-61.8" font-family="sans-serif" font-size="14.00">UserStatus</text>
 </a>

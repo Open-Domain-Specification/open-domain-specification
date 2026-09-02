@@ -103,6 +103,45 @@
               "name": "Pet",
               "description": "Pet root entity",
               "root": true,
+              "attributes": {
+                "id": {
+                  "name": "id",
+                  "type": "int64",
+                  "identity": true
+                },
+                "name": {
+                  "name": "name",
+                  "type": "string"
+                },
+                "category": {
+                  "name": "category",
+                  "type": "Category",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+                  }
+                },
+                "photo_urls": {
+                  "name": "photoUrls",
+                  "type": "PhotoUrl[]",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/photo_url"
+                  }
+                },
+                "tags": {
+                  "name": "tags",
+                  "type": "Tag[]",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/tag"
+                  }
+                },
+                "status": {
+                  "name": "status",
+                  "type": "PetStatus",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+                  }
+                }
+              },
               "relations": [
                 {
                   "target": {
@@ -138,22 +177,54 @@
           "valueobjects": {
             "category": {
               "name": "Category",
-              "description": "{ id?: number, name?: string }",
+              "description": "The kind of animal, e.g. Dogs",
+              "attributes": {
+                "id": {
+                  "name": "id",
+                  "type": "int64"
+                },
+                "name": {
+                  "name": "name",
+                  "type": "string"
+                }
+              },
               "relations": []
             },
             "tag": {
               "name": "Tag",
-              "description": "{ id?: number, name?: string }",
+              "description": "Free-form label on a pet",
+              "attributes": {
+                "id": {
+                  "name": "id",
+                  "type": "int64"
+                },
+                "name": {
+                  "name": "name",
+                  "type": "string"
+                }
+              },
               "relations": []
             },
             "photo_url": {
               "name": "PhotoUrl",
-              "description": "string (URL)",
+              "description": "Where a photo of the pet can be fetched",
+              "attributes": {
+                "url": {
+                  "name": "url",
+                  "type": "string (URL)"
+                }
+              },
               "relations": []
             },
             "pet_status": {
               "name": "PetStatus",
-              "description": "'available' | 'pending' | 'sold'",
+              "description": "Where the pet is in its sales lifecycle",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "'available' | 'pending' | 'sold'"
+                }
+              },
               "relations": []
             }
           },
@@ -430,6 +501,45 @@
               "name": "Order",
               "description": "Order root entity",
               "root": true,
+              "attributes": {
+                "id": {
+                  "name": "id",
+                  "type": "int64",
+                  "identity": true
+                },
+                "pet_id": {
+                  "name": "petId",
+                  "type": "int64"
+                },
+                "quantity": {
+                  "name": "quantity",
+                  "type": "Quantity",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
+                  }
+                },
+                "ship_date": {
+                  "name": "shipDate",
+                  "type": "ShipDate",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/ship_date"
+                  }
+                },
+                "status": {
+                  "name": "status",
+                  "type": "OrderStatus",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status"
+                  }
+                },
+                "complete": {
+                  "name": "complete",
+                  "type": "CompleteFlag",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/complete_flag"
+                  }
+                }
+              },
               "relations": [
                 {
                   "target": {
@@ -465,22 +575,46 @@
           "valueobjects": {
             "order_status": {
               "name": "OrderStatus",
-              "description": "'placed' | 'approved' | 'delivered'",
+              "description": "Where the order is in its lifecycle",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "'placed' | 'approved' | 'delivered'"
+                }
+              },
               "relations": []
             },
             "quantity": {
               "name": "Quantity",
-              "description": "int > 0",
+              "description": "How many of the pet are ordered",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "int > 0"
+                }
+              },
               "relations": []
             },
             "ship_date": {
               "name": "ShipDate",
-              "description": "date-time",
+              "description": "When the order ships",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "date-time"
+                }
+              },
               "relations": []
             },
             "complete_flag": {
               "name": "CompleteFlag",
-              "description": "boolean",
+              "description": "Whether the order is complete",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "boolean"
+                }
+              },
               "relations": []
             }
           },
@@ -705,6 +839,7 @@
               "name": "InventoryView",
               "description": "Status→count map for /store/inventory",
               "root": true,
+              "attributes": {},
               "relations": []
             }
           },
@@ -806,8 +941,38 @@
           "entities": {
             "user": {
               "name": "User",
-              "description": "username, firstName, lastName, email, password, phone, userStatus(int)",
+              "description": "A registered user of the store",
               "root": true,
+              "attributes": {
+                "username": {
+                  "name": "username",
+                  "type": "string",
+                  "identity": true
+                },
+                "first_name": {
+                  "name": "firstName",
+                  "type": "string"
+                },
+                "last_name": {
+                  "name": "lastName",
+                  "type": "string"
+                },
+                "email": {
+                  "name": "email",
+                  "type": "string"
+                },
+                "phone": {
+                  "name": "phone",
+                  "type": "string"
+                },
+                "user_status": {
+                  "name": "userStatus",
+                  "type": "UserStatus",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/identity_bc/aggregates/user/valueobjects/user_status"
+                  }
+                }
+              },
               "relations": [
                 {
                   "target": {
@@ -822,7 +987,13 @@
           "valueobjects": {
             "user_status": {
               "name": "UserStatus",
-              "description": "int (per Petstore v3 model)",
+              "description": "Untyped int per the Petstore v3 model",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "int"
+                }
+              },
               "relations": []
             }
           },

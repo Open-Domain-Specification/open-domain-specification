@@ -23,12 +23,14 @@ const valueObjectSection = (valueObject: ValueObject) => [
 	"Value Object",
 	valueObject.name,
 	valueObject.description,
+	attributeListMd(valueObject.attributes),
 ];
 
 const entitySection = (entity: Entity) => [
 	entity.root ? "Entity (Root)" : "Entity",
 	entity.root ? `**${entity.name}**` : entity.name,
 	entity.description,
+	attributeListMd(entity.attributes),
 ];
 
 const consumableSection = (consumable: Consumable) => `
@@ -73,7 +75,7 @@ ${aggregate.description}
 ${
 	aggregate.entities.size > 0 || aggregate.valueobjects.size > 0
 		? markdownTable(
-				["Type", "Name", "Description"],
+				["Type", "Name", "Description", "Attributes"],
 				[
 					...Array.from(aggregate.entities.values())
 						.sort((a, b) =>

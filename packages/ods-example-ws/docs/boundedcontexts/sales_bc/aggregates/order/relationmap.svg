@@ -46,7 +46,7 @@
 <!-- #/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status -->
 <g id="node2" class="node">
 <title>#/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status</title>
-<g id="a_node2"><a xlink:title="&#39;placed&#39; | &#39;approved&#39; | &#39;delivered&#39;">
+<g id="a_node2"><a xlink:title="Where the order is in its lifecycle">
 <ellipse fill="white" stroke="black" stroke-dasharray="5,2" cx="253.19" cy="-66" rx="57.17" ry="18"/>
 <text xml:space="preserve" text-anchor="middle" x="253.19" y="-61.8" font-family="sans-serif" font-size="14.00">OrderStatus</text>
 </a>
@@ -62,7 +62,7 @@
 <!-- #/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity -->
 <g id="node3" class="node">
 <title>#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity</title>
-<g id="a_node3"><a xlink:title="int &gt; 0">
+<g id="a_node3"><a xlink:title="How many of the pet are ordered">
 <ellipse fill="white" stroke="black" stroke-dasharray="5,2" cx="253.19" cy="-120" rx="44.83" ry="18"/>
 <text xml:space="preserve" text-anchor="middle" x="253.19" y="-115.8" font-family="sans-serif" font-size="14.00">Quantity</text>
 </a>
@@ -78,7 +78,7 @@
 <!-- #/boundedcontexts/sales_bc/aggregates/order/valueobjects/ship_date -->
 <g id="node4" class="node">
 <title>#/boundedcontexts/sales_bc/aggregates/order/valueobjects/ship_date</title>
-<g id="a_node4"><a xlink:title="date&#45;time">
+<g id="a_node4"><a xlink:title="When the order ships">
 <ellipse fill="white" stroke="black" stroke-dasharray="5,2" cx="253.19" cy="-174" rx="46.98" ry="18"/>
 <text xml:space="preserve" text-anchor="middle" x="253.19" y="-169.8" font-family="sans-serif" font-size="14.00">ShipDate</text>
 </a>
@@ -94,7 +94,7 @@
 <!-- #/boundedcontexts/sales_bc/aggregates/order/valueobjects/complete_flag -->
 <g id="node5" class="node">
 <title>#/boundedcontexts/sales_bc/aggregates/order/valueobjects/complete_flag</title>
-<g id="a_node5"><a xlink:title="boolean">
+<g id="a_node5"><a xlink:title="Whether the order is complete">
 <ellipse fill="white" stroke="black" stroke-dasharray="5,2" cx="253.19" cy="-228" rx="65.75" ry="18"/>
 <text xml:space="preserve" text-anchor="middle" x="253.19" y="-223.8" font-family="sans-serif" font-size="14.00">CompleteFlag</text>
 </a>

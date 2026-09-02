@@ -166,6 +166,10 @@ export function makeRichTestWs() {
 	const money = orderAgg.addValueObject("Money", {
 		description: "Amount and currency",
 	});
+	money.addAttribute("Amount", { type: "decimal" });
+	money.addAttribute("Currency", { type: "ISO 4217" });
+	order.addAttribute("Order Id", { type: "OrderId", identity: true });
+	order.addAttribute("Total", { type: "Money", valueobject: money });
 	order.includes(orderLine, "has lines");
 	orderLine.uses(money, "priced in");
 	orderAgg.addInvariant("Non-empty", {

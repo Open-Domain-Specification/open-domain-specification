@@ -99,17 +99,38 @@ const petRoot = petAgg.addRootEntity("Pet", {
 });
 
 const categoryVO = petAgg.addValueObject("Category", {
-	description: "{ id?: number, name?: string }",
+	description: "The kind of animal, e.g. Dogs",
 });
+categoryVO.addAttribute("id", { type: "int64" });
+categoryVO.addAttribute("name", { type: "string" });
+
 const tagVO = petAgg.addValueObject("Tag", {
-	description: "{ id?: number, name?: string }",
+	description: "Free-form label on a pet",
 });
+tagVO.addAttribute("id", { type: "int64" });
+tagVO.addAttribute("name", { type: "string" });
+
 const photoUrlVO = petAgg.addValueObject("PhotoUrl", {
-	description: "string (URL)",
+	description: "Where a photo of the pet can be fetched",
 });
+photoUrlVO.addAttribute("url", { type: "string (URL)" });
+
 const petStatusVO = petAgg.addValueObject("PetStatus", {
-	description: "'available' | 'pending' | 'sold'",
+	description: "Where the pet is in its sales lifecycle",
 });
+petStatusVO.addAttribute("value", {
+	type: "'available' | 'pending' | 'sold'",
+});
+
+petRoot.addAttribute("id", { type: "int64", identity: true });
+petRoot.addAttribute("name", { type: "string" });
+petRoot.addAttribute("category", { type: "Category", valueobject: categoryVO });
+petRoot.addAttribute("photoUrls", {
+	type: "PhotoUrl[]",
+	valueobject: photoUrlVO,
+});
+petRoot.addAttribute("tags", { type: "Tag[]", valueobject: tagVO });
+petRoot.addAttribute("status", { type: "PetStatus", valueobject: petStatusVO });
 
 petRoot.uses(categoryVO, "categorized-as");
 petRoot.uses(tagVO, "tagged-with");
@@ -271,16 +292,41 @@ const orderRoot = orderAgg.addRootEntity("Order", {
 });
 
 const orderStatusVO = orderAgg.addValueObject("OrderStatus", {
-	description: "'placed' | 'approved' | 'delivered'",
+	description: "Where the order is in its lifecycle",
+});
+orderStatusVO.addAttribute("value", {
+	type: "'placed' | 'approved' | 'delivered'",
 });
 const quantityVO = orderAgg.addValueObject("Quantity", {
-	description: "int > 0",
+	description: "How many of the pet are ordered",
 });
+quantityVO.addAttribute("value", { type: "int > 0" });
 const shipDateVO = orderAgg.addValueObject("ShipDate", {
-	description: "date-time",
+	description: "When the order ships",
 });
+shipDateVO.addAttribute("value", { type: "date-time" });
 const completeFlagVO = orderAgg.addValueObject("CompleteFlag", {
-	description: "boolean",
+	description: "Whether the order is complete",
+});
+completeFlagVO.addAttribute("value", { type: "boolean" });
+
+orderRoot.addAttribute("id", { type: "int64", identity: true });
+orderRoot.addAttribute("petId", { type: "int64" });
+orderRoot.addAttribute("quantity", {
+	type: "Quantity",
+	valueobject: quantityVO,
+});
+orderRoot.addAttribute("shipDate", {
+	type: "ShipDate",
+	valueobject: shipDateVO,
+});
+orderRoot.addAttribute("status", {
+	type: "OrderStatus",
+	valueobject: orderStatusVO,
+});
+orderRoot.addAttribute("complete", {
+	type: "CompleteFlag",
+	valueobject: completeFlagVO,
 });
 
 orderRoot.uses(orderStatusVO, "has-status");
@@ -457,12 +503,22 @@ const userAgg = identityBC.addAggregate("User", {
 });
 
 const userRoot = userAgg.addRootEntity("User", {
-	description:
-		"username, firstName, lastName, email, password, phone, userStatus(int)",
+	description: "A registered user of the store",
 });
 
 const userStatusVO = userAgg.addValueObject("UserStatus", {
-	description: "int (per Petstore v3 model)",
+	description: "Untyped int per the Petstore v3 model",
+});
+userStatusVO.addAttribute("value", { type: "int" });
+
+userRoot.addAttribute("username", { type: "string", identity: true });
+userRoot.addAttribute("firstName", { type: "string" });
+userRoot.addAttribute("lastName", { type: "string" });
+userRoot.addAttribute("email", { type: "string" });
+userRoot.addAttribute("phone", { type: "string" });
+userRoot.addAttribute("userStatus", {
+	type: "UserStatus",
+	valueobject: userStatusVO,
 });
 
 userRoot.uses(userStatusVO, "has-status");

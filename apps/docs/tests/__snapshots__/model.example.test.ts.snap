@@ -11,6 +11,7 @@ exports[`Visitor Example > should compile  1`] = `
           "description": "Renderable content unit",
           "entities": {
             "article": {
+              "attributes": {},
               "description": "Article/page content",
               "name": "Article",
               "relations": [
@@ -36,6 +37,7 @@ exports[`Visitor Example > should compile  1`] = `
           "provides": {},
           "valueobjects": {
             "slug": {
+              "attributes": {},
               "description": "URL-safe identifier",
               "name": "Slug",
               "relations": [],
@@ -86,6 +88,7 @@ exports[`Visitor Example > should compile  1`] = `
           "description": "Immutable record of a purchase",
           "entities": {
             "order": {
+              "attributes": {},
               "description": "Order header",
               "name": "Order",
               "relations": [
@@ -111,6 +114,7 @@ exports[`Visitor Example > should compile  1`] = `
           "provides": {},
           "valueobjects": {
             "money": {
+              "attributes": {},
               "description": "Amount + currency",
               "name": "Money",
               "relations": [],

@@ -477,6 +477,12 @@
             "additionalProperties": false,
             "description": "Represents an entity in the Open Domain Specification (ODS).",
             "properties": {
+                "attributes": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/AttributeSchema"
+                    },
+                    "type": "object"
+                },
                 "description": {
                     "type": "string"
                 },
@@ -494,6 +500,7 @@
                 }
             },
             "required": [
+                "attributes",
                 "description",
                 "name",
                 "relations"
@@ -684,6 +691,12 @@
             "additionalProperties": false,
             "description": "Represents a value object in the Open Domain Specification (ODS).",
             "properties": {
+                "attributes": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/AttributeSchema"
+                    },
+                    "type": "object"
+                },
                 "description": {
                     "type": "string"
                 },
@@ -698,6 +711,7 @@
                 }
             },
             "required": [
+                "attributes",
                 "description",
                 "name",
                 "relations"

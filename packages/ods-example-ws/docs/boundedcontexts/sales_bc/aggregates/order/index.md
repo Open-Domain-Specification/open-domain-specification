@@ -8,13 +8,13 @@ Order for a single pet
 ![consumablemap](./consumablemap.svg)
 
 ## Entities and Value Objects
-| Type | Name | Description |
-| --- | --- | --- |
-| Entity (Root) | **Order** | Order root entity |
-| Value Object | OrderStatus | 'placed' | 'approved' | 'delivered' |
-| Value Object | Quantity | int > 0 |
-| Value Object | ShipDate | date-time |
-| Value Object | CompleteFlag | boolean |
+| Type | Name | Description | Attributes |
+| --- | --- | --- | --- |
+| Entity (Root) | **Order** | Order root entity | **id**: `int64`, petId: `int64`, quantity: `Quantity`, shipDate: `ShipDate`, status: `OrderStatus`, complete: `CompleteFlag` |
+| Value Object | OrderStatus | Where the order is in its lifecycle | value: `'placed' | 'approved' | 'delivered'` |
+| Value Object | Quantity | How many of the pet are ordered | value: `int > 0` |
+| Value Object | ShipDate | When the order ships | value: `date-time` |
+| Value Object | CompleteFlag | Whether the order is complete | value: `boolean` |
 
 
 ## Relationships

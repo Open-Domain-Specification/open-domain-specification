@@ -8,10 +8,10 @@ Petstore user record
 ![consumablemap](./consumablemap.svg)
 
 ## Entities and Value Objects
-| Type | Name | Description |
-| --- | --- | --- |
-| Entity (Root) | **User** | username, firstName, lastName, email, password, phone, userStatus(int) |
-| Value Object | UserStatus | int (per Petstore v3 model) |
+| Type | Name | Description | Attributes |
+| --- | --- | --- | --- |
+| Entity (Root) | **User** | A registered user of the store | **username**: `string`, firstName: `string`, lastName: `string`, email: `string`, phone: `string`, userStatus: `UserStatus` |
+| Value Object | UserStatus | Untyped int per the Petstore v3 model | value: `int` |
 
 
 ## Relationships
