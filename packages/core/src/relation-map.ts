@@ -27,6 +27,12 @@ function relationNode(node: Entity | ValueObject): ODSRelationMapNode {
 		description: node.description,
 		type: relationNodeType(node),
 		namespace: aggregateNamespace(node.aggregate),
+		attributes: [...node.attributes.values()].map((it) => ({
+			name: it.name,
+			type: it.type,
+			identity: it.identity,
+			description: it.description,
+		})),
 	};
 }
 
@@ -150,12 +156,22 @@ export class ODSRelationMap {
 
 export type ODSRelationMapNamespace = ODSNamespace;
 
+/** One row of a class diagram attribute compartment. */
+export type ODSRelationMapAttribute = {
+	name: string;
+	type: string;
+	identity: boolean;
+	description?: string;
+};
+
 export type ODSRelationMapNode = {
 	id: string;
 	name: string;
 	description?: string;
 	namespace: ODSRelationMapNamespace[];
 	type: "entity_root" | "entity" | "valueobject";
+	/** Attributes drawn in the node's compartment; empty when none are declared. */
+	attributes: ODSRelationMapAttribute[];
 };
 
 export type ODSRelationMapEdge = {

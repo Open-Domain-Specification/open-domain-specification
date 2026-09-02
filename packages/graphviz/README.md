@@ -6,7 +6,7 @@ A TypeScript library for generating Graphviz visualizations from Open Domain Spe
 
 - **Context Map Visualization**: Generate visual representations of bounded context relationships and patterns
 - **Consumable Map Visualization**: Visualize service consumption patterns and relationships
-- **Relation Map Visualization**: Create entity relationship diagrams with typed relationships
+- **Relation Map Visualization**: Draw entities and value objects as a UML class diagram with attribute compartments, UML arrows and cardinalities, plus PlantUML source export
 - **Multiple Output Formats**: Export diagrams as DOT format or SVG
 - **Namespace Support**: Organize nodes into hierarchical namespaces with visual clustering
 - **DDD Pattern Support**: Built-in styling for Domain-Driven Design patterns

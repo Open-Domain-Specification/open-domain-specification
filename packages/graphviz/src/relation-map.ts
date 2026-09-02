@@ -1,6 +1,7 @@
 import { Graphviz } from "@hpcc-js/wasm-graphviz";
 import {
 	type ODSRelationMap,
+	type ODSRelationMapEdge,
 	type ODSRelationMapNode,
 	RelationType,
 } from "@open-domain-specification/core";
@@ -13,153 +14,194 @@ import {
 	toDot,
 } from "ts-graphviz";
 import { getDebug } from "./debug";
+import {
+	escapeHtml,
+	FONT,
+	namespaceCluster,
+	STYLESHEET_ATTRIBUTE,
+} from "./theme";
 
-const stylesheet = `\
-.graph text {
-	font-family: sans-serif;
-	stroke: white;
-	paint-order: stroke;
-	stroke-width: 3;
-	stroke-linecap: square;
-}
+const debug = getDebug("relation-map");
 
-.namespace polygon {
-	fill-opacity: 0.3;
-	stroke: none;
-}
-`;
+/** UML stereotype shown above the class name. */
+const STEREOTYPES: Record<ODSRelationMapNode["type"], string> = {
+	entity_root: "root entity",
+	entity: "entity",
+	valueobject: "value object",
+};
 
-const RelationArrowProps: Record<RelationType, EdgeAttributesObject> = {
+/**
+ * UML arrow for each relation: `references` is a navigable association,
+ * `includes` a composition with the diamond on the whole, `uses` a dependency.
+ */
+const UML_ARROWS: Record<RelationType, EdgeAttributesObject> = {
 	[RelationType.References]: {
-		label: "«references»",
-		labeldistance: 0,
 		arrowhead: "vee",
 		arrowtail: "none",
-		style: "dashed",
+		style: "solid",
 	},
 	[RelationType.Includes]: {
-		label: "«includes»",
-		labeldistance: 0,
 		arrowhead: "none",
 		arrowtail: "diamond",
 		style: "solid",
 		dir: "both",
 	},
 	[RelationType.Uses]: {
-		label: "«uses»",
-		labeldistance: 0,
-		arrowhead: "normal",
+		arrowhead: "vee",
 		arrowtail: "none",
 		style: "dashed",
 	},
 };
 
-const debug = getDebug("relation-map");
+/** PlantUML connector for each relation, mirroring {@link UML_ARROWS}. */
+const PLANTUML_ARROWS: Record<RelationType, string> = {
+	[RelationType.References]: "-->",
+	[RelationType.Includes]: "*--",
+	[RelationType.Uses]: "..>",
+};
 
-function namespaceId(node: ODSRelationMapNode): string {
-	return node.namespace.map((it) => it.id).join("__");
+/** The aggregate is the innermost namespace; the rest is its context path. */
+function aggregateOf(node: ODSRelationMapNode) {
+	return node.namespace[node.namespace.length - 1];
 }
 
-export function relationMapToDigraph(contextMap: ODSRelationMap): {
+function clusterLabel(node: ODSRelationMapNode): string {
+	const [, ...path] = node.namespace;
+	return path.map((it) => it.name).join(" / ");
+}
+
+function attributeRow(attribute: ODSRelationMapNode["attributes"][number]) {
+	const text = `${attribute.identity ? "{id} " : ""}${attribute.name}: ${attribute.type}`;
+	const title = attribute.description
+		? ` TITLE="${escapeHtml(attribute.description)}"`
+		: "";
+	return `<TR><TD ALIGN="LEFT"${title}>${escapeHtml(text)}</TD></TR>`;
+}
+
+/** A UML class box: stereotype and name header, then an attribute compartment. */
+function classLabel(node: ODSRelationMapNode): string {
+	const header = `<TR><TD ALIGN="CENTER">«${STEREOTYPES[node.type]}»<BR/><B>${escapeHtml(node.name)}</B></TD></TR>`;
+	const compartment = node.attributes.length
+		? node.attributes.map(attributeRow).join("")
+		: `<TR><TD ALIGN="LEFT"> </TD></TR>`;
+	return `<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">${header}${compartment}</TABLE>>`;
+}
+
+function edgeAttributes(edge: ODSRelationMapEdge): EdgeAttributesObject {
+	return {
+		...UML_ARROWS[edge.relation],
+		label: edge.label,
+		headlabel: edge.cardinality ?? "",
+		labeldistance: 1.5,
+		fontsize: 10,
+		fontname: FONT,
+	};
+}
+
+function plantUmlAlias(node: ODSRelationMapNode): string {
+	return node.id.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
+function plantUmlClass(node: ODSRelationMapNode): string {
+	const body = node.attributes
+		.map(
+			(it) => `    ${it.identity ? "{field} {id} " : ""}${it.name}: ${it.type}`,
+		)
+		.join("\n");
+	return `  class "${node.name}" as ${plantUmlAlias(node)} <<${STEREOTYPES[node.type]}>> {\n${body}${body ? "\n" : ""}  }`;
+}
+
+function plantUmlEdge(edge: ODSRelationMapEdge): string {
+	const cardinality = edge.cardinality ? ` "${edge.cardinality}"` : "";
+	const label = edge.label ? ` : ${edge.label}` : "";
+	return `${plantUmlAlias(edge.source)} ${PLANTUML_ARROWS[edge.relation]}${cardinality} ${plantUmlAlias(edge.target)}${label}`;
+}
+
+/** PlantUML class diagram source for the map, one package per aggregate. */
+export function relationMapToPlantUML(relationMap: ODSRelationMap): string {
+	const packages = new Map<string, { label: string; classes: string[] }>();
+	for (const node of relationMap.nodes.values()) {
+		const aggregate = aggregateOf(node);
+		const group = packages.get(aggregate.id) ?? {
+			label: clusterLabel(node),
+			classes: [],
+		};
+		group.classes.push(plantUmlClass(node));
+		packages.set(aggregate.id, group);
+	}
+	const lines = [
+		"@startuml",
+		"hide empty members",
+		"skinparam classAttributeIconSize 0",
+	];
+	for (const group of packages.values()) {
+		lines.push(`package "${group.label}" {`, ...group.classes, "}");
+	}
+	for (const edge of relationMap.edges.values()) lines.push(plantUmlEdge(edge));
+	lines.push("@enduml");
+	return lines.join("\n");
+}
+
+/** Draws the relation map as a UML class diagram, one cluster per aggregate. */
+export function relationMapToDigraph(relationMap: ODSRelationMap): {
 	toDot: () => string;
 	toSVG: () => Promise<string>;
+	toPlantUML: () => string;
 } {
-	debug("Converting relation map to digraph");
-	const subgraphs: Record<string, Subgraph> = {};
-	const nodes: Record<string, Node> = {};
-	const edges: Record<string, Edge> = {};
+	debug("Converting relation map to class diagram");
+	const clusters = new Map<string, Subgraph>();
+	const nodes = new Map<string, Node>();
 
-	debug("Creating digraph");
 	const g = new Digraph({
 		layout: "dot",
 		rankdir: "LR",
-		stylesheet: `data:text/css,${encodeURIComponent(stylesheet)}`,
+		stylesheet: STYLESHEET_ATTRIBUTE,
 	});
 
-	debug("Creating subgraphs and nodes");
-	for (const [id, node] of contextMap.nodes.entries()) {
-		const nid = namespaceId(node);
-		debug(`Processing node ${id} with namespace ID ${nid}`);
-
-		debug(`Creating subgraph for namespace ${nid}`);
-		const _subgraphs: Subgraph[] = [];
-
-		for (const ns of node.namespace) {
-			subgraphs[ns.id] =
-				subgraphs[ns.id] ||
-				new Subgraph(ns.id, {
-					// @ts-expect-error
-					cluster: true,
-					class: "namespace",
-					label: ns.name,
-					style: "filled",
-					color: "lightgrey",
-					fontsize: 10,
-					fontname: "sans-serif",
-				});
-			_subgraphs.push(subgraphs[ns.id]);
-
-			debug(`Adding subgraph to parent subgraph or graph`);
-			if (_subgraphs.length > 1) {
-				_subgraphs[_subgraphs.length - 2].addSubgraph(subgraphs[ns.id]);
-			} else {
-				g.addSubgraph(subgraphs[ns.id]);
-			}
+	for (const [id, node] of relationMap.nodes) {
+		const aggregate = aggregateOf(node);
+		let cluster = clusters.get(aggregate.id);
+		if (!cluster) {
+			cluster = new Subgraph(
+				aggregate.id,
+				namespaceCluster(clusterLabel(node)),
+			);
+			clusters.set(aggregate.id, cluster);
+			g.addSubgraph(cluster);
 		}
 
-		debug(`Creating node ${id} in subgraph ${nid}`);
-		nodes[id] =
-			nodes[id] ||
-			new Node(id, {
-				label: node.name,
-				shape:
-					node.type === "entity_root"
-						? "box"
-						: node.type === "entity"
-							? "box"
-							: "ellipse",
-				tooltip: node.description,
-				fillcolor: "white",
-				style: node.type === "entity_root" ? "filled,solid" : "filled,dashed",
-				fontname: "sans-serif",
-			});
-
-		debug(`Adding node ${id} to subgraph ${nid}`);
-		_subgraphs[_subgraphs.length - 1].addNode(nodes[id]);
+		debug(`Creating class ${id} in ${aggregate.id}`);
+		const graphvizNode = new Node(id, {
+			label: classLabel(node),
+			shape: "plain",
+			tooltip: node.description,
+			fillcolor: "white",
+			style: "filled",
+			fontname: FONT,
+			fontsize: 10,
+		});
+		nodes.set(id, graphvizNode);
+		cluster.addNode(graphvizNode);
 	}
 
-	debug("Creating edges");
-	for (const [id, edge] of contextMap.edges) {
-		debug(`Processing edge ${id} from ${edge.source.id} to ${edge.target.id}`);
-		const sourceNode = nodes[edge.source.id];
-		const targetNode = nodes[edge.target.id];
-
-		debug(`Source node: ${sourceNode.id}, Target node: ${targetNode.id}`);
-		edges[id] =
-			edges[id] ||
-			new Edge([sourceNode, targetNode], {
-				fontsize: 10,
-				...RelationArrowProps[edge.relation],
-				label: edge.label,
-				headlabel: edge.cardinality ?? "",
-			});
-		debug(`Adding edge ${id} from ${sourceNode.id} to ${targetNode.id}`);
-		g.addEdge(edges[id]);
+	for (const [id, edge] of relationMap.edges) {
+		const source = nodes.get(edge.source.id);
+		const target = nodes.get(edge.target.id);
+		if (!source || !target) continue;
+		debug(`Adding edge ${id} from ${edge.source.id} to ${edge.target.id}`);
+		g.addEdge(new Edge([source, target], edgeAttributes(edge)));
 	}
 
 	debug(
-		`Digraph creation complete Total nodes: ${Object.keys(nodes).length}, Total edges: ${Object.keys(edges).length}`,
+		`Class diagram complete: ${nodes.size} classes, ${relationMap.edges.size} relations`,
 	);
 
 	return {
-		toDot: () => {
-			debug("Converting digraph to DOT format");
-			return toDot(g);
-		},
+		toDot: () => toDot(g),
 		toSVG: async () => {
-			debug("Loading Graphviz");
 			const graphviz = await Graphviz.load();
 			return graphviz.dot(toDot(g));
 		},
+		toPlantUML: () => relationMapToPlantUML(relationMap),
 	};
 }
