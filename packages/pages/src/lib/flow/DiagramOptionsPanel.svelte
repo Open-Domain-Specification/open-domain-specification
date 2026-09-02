@@ -1,15 +1,17 @@
 <script lang="ts">
 import { Panel } from "@xyflow/svelte";
 import {
+	type DiagramStyle,
 	diagramOptions,
 	type EdgeStyle,
 	type HandleMode,
 } from "./options.svelte";
 
-/** Top-right controls: how edges attach and how they are drawn. */
+/** Top-right controls: how edges attach, how they are drawn, and the figure style. */
 let handles = $state<HandleMode>(diagramOptions.handles);
 let edges = $state<EdgeStyle>(diagramOptions.edges);
-const apply = () => diagramOptions.set({ handles, edges });
+let style = $state<DiagramStyle>(diagramOptions.style);
+const apply = () => diagramOptions.set({ handles, edges, style });
 </script>
 
 <Panel position="top-right" class="diagram-options">
@@ -27,6 +29,13 @@ const apply = () => diagramOptions.set({ handles, edges });
 			<option value="straight">Straight</option>
 			<option value="step">Step</option>
 			<option value="smoothstep">Smooth step</option>
+		</select>
+	</label>
+	<label>
+		<span>Style</span>
+		<select aria-label="Diagram style" bind:value={style} onchange={apply}>
+			<option value="cards">Cards</option>
+			<option value="sketch">Sketch</option>
 		</select>
 	</label>
 </Panel>

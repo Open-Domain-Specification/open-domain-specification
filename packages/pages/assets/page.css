@@ -465,6 +465,19 @@ table.attrs td.k {
 	min-width: 120px;
 	cursor: pointer;
 }
+/* Sketch style: the same card as a hand-drawn ellipse over the Voronoi backdrop. */
+.svelte-flow .flow-card.sketch {
+	border-radius: 50%;
+	border-width: 2px;
+	border-color: var(--fg);
+	padding: 18px 32px;
+	text-align: center;
+	clip-path: none;
+}
+.svelte-flow .flow-card.sketch .head { justify-content: center; }
+.svelte-flow .flow-card.sketch.context-node { border-top-width: 5px; }
+.svelte-flow .flow-card.sketch.relation-node { padding: 14px 28px; }
+.svelte-flow .flow-card.sketch.consumable-node .slots { margin: 6px -20px 0; }
 .flow-card .head {
 	display: flex;
 	gap: 6px;

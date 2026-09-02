@@ -14,8 +14,9 @@ const base: ConsumableNodeData = {
 	icon: "symbol-structure",
 	slots: [],
 };
-const consumable = (data: ConsumableNodeData & { floating?: boolean }) =>
-	render(Harness, { node: ConsumableNode, type: "consumable", data });
+const consumable = (
+	data: ConsumableNodeData & { floating?: boolean; sketch?: boolean },
+) => render(Harness, { node: ConsumableNode, type: "consumable", data });
 
 describe("ConsumableNode", () => {
 	it("shows the name, cluster path and one slot per consumable with icon and a port handle carrying the pattern", () => {
@@ -92,5 +93,12 @@ describe("ConsumableNode", () => {
 		expect(node.querySelector(".port-handle")).not.toHaveClass("handle-hidden");
 		const { container: bare } = consumable(base);
 		expect(bare.querySelector(".slots")).toBeNull();
+	});
+});
+
+describe("ConsumableNode in sketch style", () => {
+	it("takes the sketch class for the ellipse style", () => {
+		const { container } = consumable({ ...base, sketch: true });
+		expect(container.querySelector(".consumable-node.sketch")).toBeTruthy();
 	});
 });

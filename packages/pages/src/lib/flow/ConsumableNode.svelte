@@ -12,14 +12,16 @@ import { roleLabel } from "./roles";
  * target handle so a consumption attaches to the exact consumable it uses.
  * A slot shows the event/operation icon, and its handle is a port carrying
  * the pattern it is offered under. `floating` hides the plain handles; the
- * consumable edge finds the slot port itself.
+ * consumable edge finds the slot port itself. `sketch` draws an ellipse.
  */
 let {
 	data,
-}: NodeProps & { data: ConsumableNodeData & { floating?: boolean } } = $props();
+}: NodeProps & {
+	data: ConsumableNodeData & { floating?: boolean; sketch?: boolean };
+} = $props();
 </script>
 
-<div class="flow-card consumable-node" title={data.description ?? data.id}>
+<div class={`flow-card consumable-node ${data.sketch ? "sketch" : ""}`} title={data.description ?? data.id}>
 	<NodeHead icon={data.icon} name={data.label} subtitle={data.groupPath} />
 	{#if data.slots.length}
 		<ul class="slots">

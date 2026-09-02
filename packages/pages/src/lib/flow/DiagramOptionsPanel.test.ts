@@ -13,13 +13,18 @@ describe("DiagramOptionsPanel", () => {
 			"Handle placement",
 		) as HTMLSelectElement;
 		const edges = screen.getByLabelText("Edge style") as HTMLSelectElement;
+		const style = screen.getByLabelText("Diagram style") as HTMLSelectElement;
 		await fireEvent.change(handles, { target: { value: "floating" } });
 		await fireEvent.change(edges, { target: { value: "smoothstep" } });
+		await fireEvent.change(style, { target: { value: "sketch" } });
 		expect(diagramOptions.handles).toBe("floating");
 		expect(diagramOptions.edges).toBe("smoothstep");
+		expect(diagramOptions.style).toBe("sketch");
 		await fireEvent.change(handles, { target: { value: "fixed" } });
 		await fireEvent.change(edges, { target: { value: "bezier" } });
+		await fireEvent.change(style, { target: { value: "cards" } });
 		expect(diagramOptions.handles).toBe("fixed");
+		expect(diagramOptions.style).toBe("cards");
 	});
 });
 

@@ -26,6 +26,14 @@ an **interactive** toggle that swaps the static image for a Svelte Flow graph: p
 nodes, and click one to open its page. The graph is laid out with dagre from the same core map
 the static image is drawn from, so the two never disagree.
 
+The options panel in the interactive view picks how edges attach, how they are drawn, and the
+figure **style**. *Cards* draws nodes as cards inside shaded namespace clusters; *Sketch* draws
+them as ellipses in the spirit of a hand-drawn context map, with one solid organic outline round
+the whole map and dashed boundaries between groups computed as a Voronoi tessellation of the
+node centres, plus a muted label per group. The backdrop is an SVG layer under the nodes that
+pans and zooms with the viewport and reshapes as nodes are dragged. Arrows, labels, port badges
+and colours are the same in both styles, and the choice is remembered per browser.
+
 ## Component library
 
 The library follows atomic design under `src/lib`: atoms (icon, chip, ref link, markdown),

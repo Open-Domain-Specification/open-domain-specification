@@ -9,28 +9,33 @@ describe("diagram options", () => {
 		const o = createDiagramOptions();
 		expect(o.handles).toBe("fixed");
 		expect(o.edges).toBe("bezier");
+		expect(o.style).toBe("cards");
 	});
 	it("remembers a choice and reads it back", () => {
 		localStorage.removeItem(KEY);
 		const o = createDiagramOptions();
 		o.set({ handles: "floating" });
 		o.set({ edges: "step" });
+		o.set({ style: "sketch" });
 		expect(JSON.parse(localStorage.getItem(KEY) ?? "{}")).toEqual({
 			handles: "floating",
 			edges: "step",
+			style: "sketch",
 		});
 		const again = createDiagramOptions();
 		expect(again.handles).toBe("floating");
 		expect(again.edges).toBe("step");
+		expect(again.style).toBe("sketch");
 	});
 	it("ignores unknown or corrupt stored values", () => {
 		localStorage.setItem(
 			KEY,
-			JSON.stringify({ handles: "diagonal", edges: "zigzag" }),
+			JSON.stringify({ handles: "diagonal", edges: "zigzag", style: "oil" }),
 		);
 		let o = createDiagramOptions();
 		expect(o.handles).toBe("fixed");
 		expect(o.edges).toBe("bezier");
+		expect(o.style).toBe("cards");
 		localStorage.setItem(KEY, "not json");
 		o = createDiagramOptions();
 		expect(o.handles).toBe("fixed");

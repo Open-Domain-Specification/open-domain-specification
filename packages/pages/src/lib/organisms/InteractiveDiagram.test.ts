@@ -125,3 +125,38 @@ describe("diagram options in the interactive view", () => {
 		});
 	});
 });
+
+describe("sketch style", () => {
+	it("draws ellipse nodes over the Voronoi backdrop and hides the clusters, then restores the cards", async () => {
+		diagramOptions.set({ style: "sketch" });
+		const graph = contextGraph(ODSContextMap.fromWorkspace(workspace));
+		const { container } = render(InteractiveDiagram, { graph });
+		await waitFor(() => {
+			expect(container.querySelectorAll(".context-node.sketch").length).toBe(
+				graph.nodes.length,
+			);
+		});
+		expect(container.querySelector(".cluster-node")).toBeNull();
+		const backdrop = container.querySelector(".sketch-backdrop") as SVGElement;
+		expect(backdrop).toBeTruthy();
+		expect(backdrop.querySelector(".blob")?.getAttribute("d")).toMatch(/^M/);
+		expect(backdrop.querySelector(".boundaries")?.getAttribute("d")).toContain(
+			" L",
+		);
+		const labels = [...backdrop.querySelectorAll(".region-label")].map(
+			(t) => t.textContent,
+		);
+		expect(labels.length).toBeGreaterThan(1);
+		for (const g of graph.groups ?? [])
+			if (graph.nodes.some((n) => n.groupId === g.id))
+				expect(labels).toContain(g.label);
+		diagramOptions.set({ style: "cards" });
+		await waitFor(() => {
+			expect(container.querySelector(".sketch-backdrop")).toBeNull();
+		});
+		expect(container.querySelector(".context-node.sketch")).toBeNull();
+		expect(container.querySelectorAll(".cluster-node").length).toBe(
+			graph.groups?.length,
+		);
+	});
+});

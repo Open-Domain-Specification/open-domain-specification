@@ -14,8 +14,9 @@ const base: ContextNodeData = {
 	icon: "boundedcontext",
 	bigBallOfMud: false,
 };
-const context = (data: ContextNodeData & { floating?: boolean }) =>
-	render(Harness, { node: ContextNode, type: "context", data });
+const context = (
+	data: ContextNodeData & { floating?: boolean; sketch?: boolean },
+) => render(Harness, { node: ContextNode, type: "context", data });
 
 describe("ContextNode", () => {
 	it("shows the name, team in brackets, cluster path and colour band, with plain handles on both sides", () => {
@@ -55,5 +56,10 @@ describe("ContextNode", () => {
 		expect(node.getAttribute("title")).toBe(base.id);
 		expect(node.getAttribute("style")).toBeFalsy();
 		expect(node.querySelectorAll(".handle-hidden").length).toBe(2);
+		expect(node.classList.contains("sketch")).toBe(false);
+	});
+	it("takes the sketch class for the ellipse style", () => {
+		const { container } = context({ ...base, sketch: true });
+		expect(container.querySelector(".context-node.sketch")).toBeTruthy();
 	});
 });

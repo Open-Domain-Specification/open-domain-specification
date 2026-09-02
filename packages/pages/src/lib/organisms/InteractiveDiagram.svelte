@@ -15,6 +15,7 @@ import { layout } from "../flow/layout";
 import { minimapNodeClass } from "../flow/minimap";
 import { diagramOptions } from "../flow/options.svelte";
 import { edgeTypes, nodeTypes } from "../flow/registry";
+import SketchBackdrop from "../flow/SketchBackdrop.svelte";
 
 /** A pannable, zoomable version of a figure. Nodes are refs, so clicking one navigates. */
 let { graph, direction = "LR" }: { graph: Graph; direction?: "LR" | "TB" } =
@@ -37,10 +38,13 @@ const relativeTo = (id: string, parent?: string) => {
 // Svelte Flow asks for raw state here; an effect rebuilds both arrays when the layout or options change.
 let nodes = $state.raw<Node[]>([]);
 let edges = $state.raw<Edge[]>([]);
+const groups = $derived(positioned.groups ?? []);
+const groupLabels = $derived(new Map(groups.map((g) => [g.id, g.label])));
 $effect(() => {
 	const floating = diagramOptions.handles === "floating";
+	const sketch = diagramOptions.style === "sketch";
 	// Groups first, parents before children, as Svelte Flow resolves parentId in array order.
-	const clusters: Node[] = (positioned.groups ?? []).map((g) => {
+	const clusters: Node[] = groups.map((g) => {
 		const box = positioned.positions.get(g.id)!;
 		return {
 			id: g.id,
@@ -52,6 +56,8 @@ $effect(() => {
 			height: box.height,
 			data: { label: g.label, depth: depthOf(g.id) - 1 },
 			zIndex: -1,
+			// The sketch backdrop draws the regions; the cluster stays for layout only.
+			hidden: sketch,
 			draggable: false,
 			selectable: false,
 			connectable: false,
@@ -65,7 +71,7 @@ $effect(() => {
 			position: relativeTo(n.id, n.groupId),
 			parentId: n.groupId,
 			extent: n.groupId ? ("parent" as const) : undefined,
-			data: { ...n, floating },
+			data: { ...n, floating, sketch },
 			draggable: true,
 		})),
 	];
@@ -88,6 +94,7 @@ $effect(() => {
 <div class="interactive">
 	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView minZoom={0.2} colorMode="system" onnodeclick={({ node }) => { location.hash = node.id; }}>
 		<Background />
+		{#if diagramOptions.style === "sketch"}<SketchBackdrop {nodes} {groupLabels} />{/if}
 		<Controls showLock={false} />
 		<MiniMap pannable zoomable width={120} height={80} nodeClass={minimapNodeClass} />
 		<DiagramOptionsPanel />

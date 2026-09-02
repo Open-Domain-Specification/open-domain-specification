@@ -7,16 +7,18 @@ import NodeHandles from "./NodeHandles.svelte";
  * A UML class box for the relation map: a stereotype line and the name in the
  * header, then an attribute compartment with {id} identity markers and types,
  * and the cluster path (the aggregate's context path) below. Mirrors the
- * Graphviz image; `floating` hides the fixed handles.
+ * Graphviz image; `floating` hides the fixed handles; `sketch` draws an ellipse.
  */
-let { data }: NodeProps & { data: GraphNode & { floating?: boolean } } =
+let {
+	data,
+}: NodeProps & { data: GraphNode & { floating?: boolean; sketch?: boolean } } =
 	$props();
 const tone = $derived(data.tone ?? "");
 // Guillemets are part of the text: mixed text and expression would compile to a nullish branch v8 never sees.
 const stereotype = $derived(`«${data.chips?.[0] ?? "entity"}»`);
 </script>
 
-<div class={`flow-card relation-node ${tone}`} title={data.id}>
+<div class={`flow-card relation-node ${tone} ${data.sketch ? "sketch" : ""}`} title={data.id}>
 	<NodeHandles floating={data.floating} />
 	<div class="head">
 		<span class="stereotype">{stereotype}</span>
