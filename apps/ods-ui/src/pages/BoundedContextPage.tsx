@@ -1,4 +1,4 @@
-import { AppShell, Badge, Group, Stack } from "@mantine/core";
+import { Anchor, AppShell, Badge, Group, Stack } from "@mantine/core";
 import {
 	type BoundedContext,
 	boundedcontextRef,
@@ -74,6 +74,24 @@ export function _BoundedContextPage(props: { boundedcontext: BoundedContext }) {
 			)}
 
 			<AccordionItems
+				title={"Glossary"}
+				items={Array.from(props.boundedcontext.glossary.values()).map((it) => ({
+					id: it.ref,
+					name: it.aliases.length
+						? `${it.name} (${it.aliases.join(", ")})`
+						: it.name,
+					description: it.definition,
+					icon: Icons.Term,
+					endSlot: it.embodiedBy && (
+						<Anchor onClick={() => nav(it.embodiedBy?.ref ?? "")}>
+							{it.embodiedBy.name}
+						</Anchor>
+					),
+				}))}
+				emptyMessage={"No glossary terms defined."}
+			/>
+
+			<AccordionItems
 				title={"Policies"}
 				items={Array.from(props.boundedcontext.policies.values()).map((it) => ({
 					id: it.ref,
@@ -109,6 +127,16 @@ export function _BoundedContextPage(props: { boundedcontext: BoundedContext }) {
 									name: aggregate.name,
 									icon: Icons.Aggregate,
 									onClick: () => nav(aggregate.ref),
+								}),
+							),
+						},
+						{
+							title: "Glossary",
+							items: Array.from(props.boundedcontext.glossary.values()).map(
+								(term) => ({
+									ref: term.ref,
+									name: term.name,
+									icon: Icons.Term,
 								}),
 							),
 						},

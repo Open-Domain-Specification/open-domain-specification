@@ -10,6 +10,13 @@ Owns Order aggregate & order-facing operations
 
 ![contextmap](./contextmap.svg)
 
+## Glossary
+| Term | Definition | Aliases | Embodied by |
+| --- | --- | --- | --- |
+| **Order** | A customer's request to buy one pet in a given quantity | Purchase | Order |
+| **Approval** | Confirmation that the ordered pet is available and reserved | - | ApproveOrder |
+
+
 ## Aggregates
 
 ### [Order](aggregates/order/index.md)

@@ -11,6 +11,12 @@ Projection for /store/inventory (status→count)
 
 ![contextmap](./contextmap.svg)
 
+## Glossary
+| Term | Definition | Aliases | Embodied by |
+| --- | --- | --- | --- |
+| **Availability** | How many pets are available, pending and sold right now; a projection, not a source of truth | Stock | InventoryProjection |
+
+
 ## Aggregates
 
 ### [InventoryProjection](aggregates/inventory_projection/index.md)

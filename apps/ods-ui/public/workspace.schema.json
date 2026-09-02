@@ -125,6 +125,12 @@
                 "description": {
                     "type": "string"
                 },
+                "glossary": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/GlossaryTermSchema"
+                    },
+                    "type": "object"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -173,6 +179,7 @@
             "required": [
                 "aggregates",
                 "description",
+                "glossary",
                 "name",
                 "policies",
                 "services",
@@ -513,6 +520,43 @@
                 "relations"
             ],
             "title": "Entity",
+            "type": "object"
+        },
+        "GlossaryTermSchema": {
+            "additionalProperties": false,
+            "description": "A term of the ubiquitous language of a bounded context.",
+            "properties": {
+                "aliases": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "definition": {
+                    "type": "string"
+                },
+                "embodiedBy": {
+                    "additionalProperties": false,
+                    "description": "The model element that embodies this term, when there is one.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "definition",
+                "name"
+            ],
+            "title": "GlossaryTerm",
             "type": "object"
         },
         "InvariantSchema": {

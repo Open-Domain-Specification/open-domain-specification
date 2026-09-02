@@ -7,7 +7,11 @@ import {
 import { breadcrumbsMd } from "./breadcrumbs.md";
 import { contextRelationshipsMd } from "./context-relationships.md";
 import { markdownTable } from "./lib/markdown-table";
-import { pathToContextMapSvg, pathToIndexMd } from "./lib/paths";
+import {
+	pathToContextMapSvg,
+	pathToGlossaryMd,
+	pathToIndexMd,
+} from "./lib/paths";
 import type { Options } from "./options";
 import { teamLinkMd } from "./team.md";
 
@@ -24,6 +28,8 @@ ${options?.breadcrumbs ? breadcrumbsMd(workspace) : ""}
 ${workspace.description}
 
 ![contextmap](${pathToContextMapSvg(workspace.path, workspace.path)})
+
+[Glossary](${pathToGlossaryMd(workspace.path, workspace.path)})
 
 ## Domains
 ${

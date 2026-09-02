@@ -178,14 +178,10 @@ export class Workspace
 	}
 
 	getServiceOrAggregateByRef(ref: string): Aggregate | Service | undefined {
-		switch (true) {
-			case Aggregate.isAggregateRef(ref):
-				return this.getAggregateByRef(ref);
-			case Service.isServiceRef(ref):
-				return this.getServiceByRef(ref);
-			default:
-				return undefined;
-		}
+		const target = this.getByRef(ref);
+		return target instanceof Aggregate || target instanceof Service
+			? target
+			: undefined;
 	}
 
 	getServiceOrAggregateByRefOrThrow(ref: string): Aggregate | Service {
@@ -243,14 +239,10 @@ export class Workspace
 	}
 
 	getEntityOrValueobjectByRef(ref: string): Entity | ValueObject | undefined {
-		switch (true) {
-			case Entity.isEntityRef(ref):
-				return this.getEntityByRef(ref);
-			case ValueObject.isValueObjectRef(ref):
-				return this.getValueObjectByRef(ref);
-			default:
-				return undefined;
-		}
+		const target = this.getByRef(ref);
+		return target instanceof Entity || target instanceof ValueObject
+			? target
+			: undefined;
 	}
 
 	getEntityOrValueobjectByRefOrThrow(ref: string): Entity | ValueObject {
@@ -334,9 +326,12 @@ export class Workspace
 
 	/** Resolves any ref an invariant may constrain. */
 	getConstrainableByRef(ref: string): Constrainable | undefined {
-		return ref.includes("/attributes/")
-			? this.getAttributeByRef(ref)
-			: this.getEntityOrValueobjectByRef(ref);
+		const target = this.getByRef(ref);
+		return target instanceof Entity ||
+			target instanceof ValueObject ||
+			target instanceof Attribute
+			? target
+			: undefined;
 	}
 
 	getConstrainableByRefOrThrow(ref: string): Constrainable {
@@ -345,6 +340,81 @@ export class Workspace
 			throw new Error(
 				`Entity, Value Object or Attribute with ref ${ref} not found`,
 			);
+		}
+		return target;
+	}
+
+	private *terms(): Iterable<GlossaryTerm> {
+		for (const boundedContext of this.boundedcontexts.values()) {
+			yield* boundedContext.glossary.values();
+		}
+	}
+
+	getTermByRef(ref: string): GlossaryTerm | undefined {
+		this.debug(`Searching for glossary term with ref: ${ref}`);
+		for (const term of this.terms()) {
+			if (term.ref === ref) {
+				return term;
+			}
+		}
+	}
+
+	getTermByRefOrThrow(ref: string): GlossaryTerm {
+		const term = this.getTermByRef(ref);
+		if (!term) {
+			throw new Error(`Glossary term with ref ${ref} not found`);
+		}
+		return term;
+	}
+
+	/**
+	 * Resolves any ref in the workspace. The segment before the id names the
+	 * collection, which is the single place ref shapes are interpreted; the
+	 * polymorphic lookups above narrow this result by type.
+	 */
+	getByRef(ref: string): Referenceable | undefined {
+		const segments = ref.split("/");
+		const kind = segments[segments.length - 2];
+		switch (kind) {
+			case "domains":
+				return this.getDomainByRef(ref);
+			case "subdomains":
+				return this.getSubdomainByRef(ref);
+			case "boundedcontexts":
+				return this.getBoundedContextByRef(ref);
+			case "teams":
+				return this.getTeamByRef(ref);
+			case "services":
+				return this.getServiceByRef(ref);
+			case "aggregates":
+				return this.getAggregateByRef(ref);
+			case "entities":
+				return this.getEntityByRef(ref);
+			case "valueobjects":
+				return this.getValueObjectByRef(ref);
+			case "invariants":
+				return this.getInvariantByRef(ref);
+			case "events":
+				return this.getEventByRef(ref);
+			case "commands":
+				return this.getCommandByRef(ref);
+			case "provides":
+				return this.getConsumableByRef(ref);
+			case "policies":
+				return this.getPolicyByRef(ref);
+			case "glossary":
+				return this.getTermByRef(ref);
+			case "attributes":
+				return this.getAttributeByRef(ref);
+			default:
+				return undefined;
+		}
+	}
+
+	getByRefOrThrow(ref: string): Referenceable {
+		const target = this.getByRef(ref);
+		if (!target) {
+			throw new Error(`Nothing found with ref ${ref}`);
 		}
 		return target;
 	}
@@ -571,6 +641,7 @@ export class BoundedContext
 	services = new Map<string, Service>();
 	aggregates = new Map<string, Aggregate>();
 	policies = new Map<string, Policy>();
+	glossary = new Map<string, GlossaryTerm>();
 	workspace: Workspace;
 	subdomains = new Set<Subdomain>();
 	bigBallOfMud: boolean;
@@ -687,6 +758,10 @@ export class BoundedContext
 		return new Policy(this, name, attributes);
 	}
 
+	addTerm(name: string, attributes: GlossaryTermAttributes): GlossaryTerm {
+		return new GlossaryTerm(this, name, attributes);
+	}
+
 	accept(v: Visitor) {
 		return v.visitBoundedContext(this);
 	}
@@ -701,6 +776,7 @@ export class BoundedContext
 			aggregates: asRecords(this.aggregates),
 			services: asRecords(this.services),
 			policies: asRecords(this.policies),
+			glossary: asRecords(this.glossary),
 		};
 	}
 }
@@ -777,10 +853,6 @@ export class Service
 			provides: asRecords(this.consumables),
 			consumes: asArray(this.consumptions),
 		};
-	}
-
-	static isServiceRef(ref: string): boolean {
-		return ref.startsWith("#/") && ref.includes("/services/");
 	}
 }
 
@@ -905,10 +977,6 @@ export class Aggregate
 			events: asRecords(this.events),
 			commands: asRecords(this.commands),
 		};
-	}
-
-	static isAggregateRef(ref: string): boolean {
-		return ref.startsWith("#/") && ref.includes("/aggregates/");
 	}
 }
 
@@ -1066,10 +1134,6 @@ export class Entity
 			relations: asArray(this.relations),
 		};
 	}
-
-	static isEntityRef(ref: string): boolean {
-		return ref.startsWith("#/") && ref.includes("/entities/");
-	}
 }
 
 export type ValueObjectAttributes = {
@@ -1157,10 +1221,6 @@ export class ValueObject
 			attributes: asRecords(this.attributes),
 			relations: asArray(this.relations),
 		};
-	}
-
-	static isValueObjectRef(ref: string): boolean {
-		return ref.startsWith("#/") && ref.includes("/valueobjects/");
 	}
 }
 
@@ -1675,6 +1735,73 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 			description: this.description,
 			on: this.events.map((it) => ({ $ref: it.ref })),
 			then: this.commands.map((it) => ({ $ref: it.ref })),
+		};
+	}
+}
+
+/** Anything in the workspace that can be pointed at by ref. */
+export interface Referenceable {
+	ref: string;
+	name: string;
+}
+
+export type GlossaryTermAttributes = {
+	definition: string;
+	aliases?: string[];
+	/** The model element that embodies this term. */
+	embodiedBy?: Referenceable;
+	id?: string;
+};
+
+/** A term of a bounded context's ubiquitous language. */
+export class GlossaryTerm
+	implements Visitable, SchemaConvertible<ods.GlossaryTermSchema>
+{
+	id: string;
+	name: string;
+	definition: string;
+	aliases: string[];
+	embodiedBy?: Referenceable;
+	boundedcontext: BoundedContext;
+
+	get path(): string {
+		return `${this.boundedcontext.path}/glossary/${this.id}`;
+	}
+
+	get ref(): string {
+		return `#/${this.path}`;
+	}
+
+	constructor(
+		boundedcontext: BoundedContext,
+		name: string,
+		attributes: GlossaryTermAttributes,
+	) {
+		this.id = attributes.id || snakeCase(name);
+		this.name = name;
+		this.definition = attributes.definition;
+		this.aliases = attributes.aliases ?? [];
+		this.embodiedBy = attributes.embodiedBy;
+		this.boundedcontext = boundedcontext;
+		this.boundedcontext.glossary.set(this.id, this);
+	}
+
+	/** Points the term at the model element that embodies it. */
+	embody(target: Referenceable): this {
+		this.embodiedBy = target;
+		return this;
+	}
+
+	accept(v: Visitor) {
+		return v.visitGlossaryTerm(this);
+	}
+
+	toSchema(): ods.GlossaryTermSchema {
+		return {
+			name: this.name,
+			definition: this.definition,
+			aliases: this.aliases.length ? this.aliases : undefined,
+			embodiedBy: this.embodiedBy && { $ref: this.embodiedBy.ref },
 		};
 	}
 }

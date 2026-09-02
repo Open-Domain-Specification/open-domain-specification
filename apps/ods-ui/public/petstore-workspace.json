@@ -455,7 +455,33 @@
           "consumes": []
         }
       },
-      "policies": {}
+      "policies": {},
+      "glossary": {
+        "pet": {
+          "name": "Pet",
+          "definition": "An animal listed for sale in the store",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet"
+          }
+        },
+        "category": {
+          "name": "Category",
+          "definition": "The kind of animal a pet is, such as Dogs or Cats",
+          "aliases": [
+            "Species"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+          }
+        },
+        "available": {
+          "name": "Available",
+          "definition": "A pet that can be ordered; it becomes pending once an order is placed",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+          }
+        }
+      }
     },
     "sales_bc": {
       "name": "Sales BC",
@@ -814,6 +840,25 @@
             }
           ]
         }
+      },
+      "glossary": {
+        "order": {
+          "name": "Order",
+          "definition": "A customer's request to buy one pet in a given quantity",
+          "aliases": [
+            "Purchase"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/sales_bc/aggregates/order"
+          }
+        },
+        "approval": {
+          "name": "Approval",
+          "definition": "Confirmation that the ordered pet is available and reserved",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/sales_bc/aggregates/order/commands/approve_order"
+          }
+        }
       }
     },
     "inventory_bc": {
@@ -966,6 +1011,18 @@
               "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection/commands/recount_inventory"
             }
           ]
+        }
+      },
+      "glossary": {
+        "availability": {
+          "name": "Availability",
+          "definition": "How many pets are available, pending and sold right now; a projection, not a source of truth",
+          "aliases": [
+            "Stock"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection"
+          }
         }
       }
     },
@@ -1176,7 +1233,8 @@
           "consumes": []
         }
       },
-      "policies": {}
+      "policies": {},
+      "glossary": {}
     }
   },
   "relationships": [

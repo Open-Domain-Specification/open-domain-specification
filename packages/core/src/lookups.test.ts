@@ -92,6 +92,36 @@ describe("Workspace ref lookups", () => {
 		expect(() => ws.getPolicyByRefOrThrow("#/nope")).toThrow(/Policy/);
 	});
 
+	it("resolves glossary terms and what embodies them", () => {
+		expect(ws.getTermByRef(fixture.orderTerm.ref)).toBe(fixture.orderTerm);
+		expect(fixture.orderTerm.embodiedBy).toBe(fixture.orderAgg);
+		expect(() => ws.getTermByRefOrThrow("#/nope")).toThrow(/Glossary term/);
+	});
+
+	it("resolves any ref by its shape", () => {
+		for (const element of [
+			fixture.sales,
+			fixture.ordering,
+			fixture.orderingBc,
+			fixture.salesTeam,
+			fixture.orderApp,
+			fixture.orderAgg,
+			fixture.order,
+			fixture.money,
+			fixture.nonEmpty,
+			fixture.orderPlacedEvent,
+			fixture.placeOrderCommand,
+			fixture.orderPlaced,
+			fixture.invoiceOnOrderPlaced,
+			fixture.orderTerm,
+			fixture.order.attributes.get("total"),
+		]) {
+			expect(ws.getByRef(element?.ref ?? "")).toBe(element);
+		}
+		expect(ws.getByRef("#/unknown/x")).toBeUndefined();
+		expect(() => ws.getByRefOrThrow("#/unknown/x")).toThrow(/Nothing found/);
+	});
+
 	it("resolves teams and derives what they own", () => {
 		expect(ws.getTeamByRef(teamRef("sales_team").$ref)).toBe(fixture.salesTeam);
 		expect(fixture.salesTeam.boundedcontexts).toEqual([fixture.orderingBc]);

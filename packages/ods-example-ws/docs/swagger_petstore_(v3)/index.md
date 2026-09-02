@@ -5,6 +5,8 @@ DDD/ODS model for Swagger Petstore v3. Inventory is a projection returning a sta
 
 ![contextmap](./contextmap.svg)
 
+[Glossary](./glossary.md)
+
 ## Domains
 
 

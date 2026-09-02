@@ -9,6 +9,7 @@ import {
 	type Domain,
 	type DomainEvent,
 	type Entity,
+	type GlossaryTerm,
 	type Invariant,
 	type Policy,
 	type Service,
@@ -166,6 +167,20 @@ class SpotlightCollector extends AbstractVisitor {
 			group: "Commands",
 		});
 		super.visitCommand(node);
+	}
+
+	visitGlossaryTerm(node: GlossaryTerm) {
+		this.actions.push({
+			id: node.ref,
+			label: `${contextLabel(node.boundedcontext)} / ${node.name}`,
+			description: node.definition,
+			onClick: () => {
+				this.navigator(node.boundedcontext.ref);
+			},
+			leftSection: Icons.Term,
+			group: "Glossary",
+		});
+		super.visitGlossaryTerm(node);
 	}
 
 	visitPolicy(node: Policy) {

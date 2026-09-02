@@ -1,4 +1,5 @@
 import {
+	VscBook,
 	VscDebugStepInto,
 	VscDebugStepOut,
 	VscLayers,
@@ -25,6 +26,7 @@ export const Icons = {
 	Operations: <VscPlay />,
 	Invariants: <VscShield />,
 	Policy: <VscSymbolBoolean />,
+	Term: <VscBook />,
 	Service: <VscTypeHierarchy />,
 	Provider: <VscDebugStepInto />,
 	Consumer: <VscDebugStepOut />,

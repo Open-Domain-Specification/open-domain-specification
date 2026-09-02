@@ -193,6 +193,11 @@ export function makeRichTestWs() {
 		description: "Raised when an order is placed",
 		pattern: "published-language",
 	});
+	const orderTerm = orderingBc.addTerm("Order", {
+		definition: "A customer's request to buy one or more items",
+		aliases: ["Purchase order"],
+		embodiedBy: orderAgg,
+	});
 	const placeOrderCommand = orderAgg.addCommand("Place Order", {
 		description: "Places a new order",
 	});
@@ -274,6 +279,7 @@ export function makeRichTestWs() {
 		orderPlacedEvent,
 		orderPlaced,
 		placeOrderCommand,
+		orderTerm,
 		orderApp,
 		placeOrder,
 		billing,

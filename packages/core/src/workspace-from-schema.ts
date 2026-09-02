@@ -11,6 +11,7 @@ import {
 	policyRef,
 	type ServiceSchema,
 	serviceRef,
+	termRef,
 	valueObjectRef,
 	type WorkspaceSchema,
 } from "./schema";
@@ -138,6 +139,16 @@ function addBoundedContext(
 		boundedcontext.addService(serviceSchema.name, {
 			...serviceSchema,
 			id: serviceId,
+		});
+	}
+
+	for (const [termId, termSchema] of Object.entries(
+		boundedcontextSchema.glossary,
+	)) {
+		boundedcontext.addTerm(termSchema.name, {
+			...termSchema,
+			id: termId,
+			embodiedBy: undefined,
 		});
 	}
 
@@ -315,6 +326,22 @@ function linkReferences(
 	}
 }
 
+/** A term may be embodied by any element, so it is linked once all exist. */
+function linkGlossary(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
+		workspaceSchema.boundedcontexts,
+	)) {
+		for (const [termId, termSchema] of Object.entries(
+			boundedcontextSchema.glossary,
+		)) {
+			if (!termSchema.embodiedBy) continue;
+			workspace
+				.getTermByRefOrThrow(termRef(boundedcontextId, termId).$ref)
+				.embody(workspace.getByRefOrThrow(termSchema.embodiedBy.$ref));
+		}
+	}
+}
+
 /** Policies join events and commands that may live in any context. */
 function linkPolicies(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
@@ -398,6 +425,7 @@ export function getWorkspaceFromSchema(
 	}
 	linkReferences(workspace, workspaceSchema);
 	linkPolicies(workspace, workspaceSchema);
+	linkGlossary(workspace, workspaceSchema);
 	addRelationships(workspace, workspaceSchema);
 
 	return workspace;

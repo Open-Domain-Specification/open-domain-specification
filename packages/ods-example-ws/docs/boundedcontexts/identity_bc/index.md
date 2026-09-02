@@ -12,6 +12,9 @@ Owns User aggregate & user endpoints. Legacy: user status is an untyped int and 
 
 ![contextmap](./contextmap.svg)
 
+## Glossary
+> No glossary terms.
+
 ## Aggregates
 
 ### [User](aggregates/user/index.md)

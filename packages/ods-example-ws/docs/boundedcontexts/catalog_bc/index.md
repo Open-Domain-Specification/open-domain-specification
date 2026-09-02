@@ -10,6 +10,14 @@ Owns Pet aggregate & pet-facing operations
 
 ![contextmap](./contextmap.svg)
 
+## Glossary
+| Term | Definition | Aliases | Embodied by |
+| --- | --- | --- | --- |
+| **Pet** | An animal listed for sale in the store | - | Pet |
+| **Category** | The kind of animal a pet is, such as Dogs or Cats | Species | Category |
+| **Available** | A pet that can be ordered; it becomes pending once an order is placed | - | PetStatus |
+
+
 ## Aggregates
 
 ### [Pet](aggregates/pet/index.md)

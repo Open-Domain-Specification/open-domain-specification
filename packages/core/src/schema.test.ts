@@ -164,6 +164,7 @@ describe("Workspace Edge Cases", () => {
 			visitDomainEvent: vi.fn(),
 			visitCommand: vi.fn(),
 			visitPolicy: vi.fn(),
+			visitGlossaryTerm: vi.fn(),
 		};
 
 		workspace.accept(mockVisitor);

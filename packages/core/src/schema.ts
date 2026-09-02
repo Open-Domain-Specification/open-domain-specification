@@ -62,6 +62,18 @@ export interface TeamSchema {
 }
 
 /**
+ * @title GlossaryTerm
+ * @description A term of the ubiquitous language of a bounded context.
+ */
+export interface GlossaryTermSchema {
+	name: string;
+	definition: string;
+	aliases?: string[];
+	/** The model element that embodies this term, when there is one. */
+	embodiedBy?: { $ref: string };
+}
+
+/**
  * @title Policy
  * @description A reaction: when these events happen, issue these commands.
  */
@@ -93,6 +105,7 @@ export interface BoundedContextSchema {
 	aggregates: { [aggregate: string]: AggregateSchema };
 	services: { [service: string]: ServiceSchema };
 	policies: { [policy: string]: PolicySchema };
+	glossary: { [term: string]: GlossaryTermSchema };
 }
 
 /** How an upstream context exposes what it provides. */
@@ -329,6 +342,14 @@ export function serviceRef(boundedcontext: string, service: string) {
 
 	return {
 		$ref: `${$ref}/services/${service}`,
+	};
+}
+
+export function termRef(boundedcontext: string, term: string) {
+	const { $ref } = boundedcontextRef(boundedcontext);
+
+	return {
+		$ref: `${$ref}/glossary/${term}`,
 	};
 }
 

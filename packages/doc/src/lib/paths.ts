@@ -22,6 +22,10 @@ export function pathToRelationMapSvg(
 	return `${getRelativePath(ref, relativeRef)}/relationmap.svg`;
 }
 
+export function pathToGlossaryMd(ref: string, relativeRef?: string): string {
+	return `${getRelativePath(ref, relativeRef)}/glossary.md`;
+}
+
 export function pathToIndexMd(ref: string, relativeRef?: string): string {
 	return `${getRelativePath(ref, relativeRef)}/index.md`;
 }

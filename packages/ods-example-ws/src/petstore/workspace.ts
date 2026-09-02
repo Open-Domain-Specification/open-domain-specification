@@ -283,6 +283,22 @@ const getPetSummaryOp = petApp.provides("GetPetSummary", {
 	pattern: "open-host-service",
 });
 
+// Ubiquitous language of the catalog
+catalogBC.addTerm("Pet", {
+	definition: "An animal listed for sale in the store",
+	embodiedBy: petAgg,
+});
+catalogBC.addTerm("Category", {
+	definition: "The kind of animal a pet is, such as Dogs or Cats",
+	aliases: ["Species"],
+	embodiedBy: categoryVO,
+});
+catalogBC.addTerm("Available", {
+	definition:
+		"A pet that can be ordered; it becomes pending once an order is placed",
+	embodiedBy: petStatusVO,
+});
+
 /* =======================
    SALES — Aggregate & Service
    ======================= */
@@ -433,6 +449,17 @@ const _deleteOrderOp = orderApp.provides("DeleteOrder", {
 	pattern: "open-host-service",
 });
 
+// Ubiquitous language of sales
+salesBC.addTerm("Order", {
+	definition: "A customer's request to buy one pet in a given quantity",
+	aliases: ["Purchase"],
+	embodiedBy: orderAgg,
+});
+salesBC.addTerm("Approval", {
+	definition: "Confirmation that the ordered pet is available and reserved",
+	embodiedBy: approveOrderCmd,
+});
+
 // OrderApp depends on Catalog for status checks
 orderApp.consumes(getPetSummaryOp, { pattern: "anti-corruption-layer" });
 
@@ -504,6 +531,13 @@ inventoryAgg.consumes(petStatusChangedPublished, { pattern: "conformist" });
 inventoryAgg.consumes(orderApprovedPublished, { pattern: "conformist" });
 inventoryAgg.consumes(orderDeliveredPublished, { pattern: "conformist" });
 inventoryAgg.consumes(orderDeletedPublished, { pattern: "conformist" });
+
+inventoryBC.addTerm("Availability", {
+	definition:
+		"How many pets are available, pending and sold right now; a projection, not a source of truth",
+	aliases: ["Stock"],
+	embodiedBy: inventoryAgg,
+});
 
 // Policy: any stock-affecting fact triggers a recount
 inventoryBC

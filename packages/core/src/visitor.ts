@@ -10,6 +10,7 @@ import type {
 	DomainEvent,
 	Entity,
 	EntityRelation,
+	GlossaryTerm,
 	Invariant,
 	Policy,
 	Service,
@@ -35,6 +36,7 @@ export interface Visitor {
 	visitDomainEvent(node: DomainEvent): void;
 	visitCommand(node: Command): void;
 	visitPolicy(node: Policy): void;
+	visitGlossaryTerm(node: GlossaryTerm): void;
 }
 
 export type AbstractVisitorOptions = {
@@ -143,6 +145,19 @@ export abstract class AbstractVisitor implements Visitor {
 			policy.accept(this);
 		}
 
+		for (const term of node.glossary.values()) {
+			term.accept(this);
+		}
+
+		this.after(node);
+	}
+
+	/**
+	 * Visits a GlossaryTerm node. Terms are leaves.
+	 * @param node - The GlossaryTerm node to visit.
+	 */
+	visitGlossaryTerm(node: GlossaryTerm): void {
+		this.before(node);
 		this.after(node);
 	}
 

@@ -1,4 +1,5 @@
 * [Swagger Petstore (v3)](/swagger_petstore_(v3)/index.md)
+	* [Glossary](/swagger_petstore_(v3)/glossary.md)
 	* [Petstore Commerce](/domains/petstore_commerce/index.md)
 		* [Catalog](/domains/petstore_commerce/subdomains/catalog/index.md)
 			* [Catalog BC](/boundedcontexts/catalog_bc/index.md)

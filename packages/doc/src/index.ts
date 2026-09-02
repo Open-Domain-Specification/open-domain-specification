@@ -15,10 +15,12 @@ import {
 import { aggergateMd } from "./aggregate.md";
 import { boundedcontextMd } from "./boundedcontext.md";
 import { domainMd } from "./domain.md";
+import { glossaryMd } from "./glossary.md";
 import {
 	pathToConsumableMapSvg,
 	pathToContextMapSvg,
 	pathToFlowMapSvg,
+	pathToGlossaryMd,
 	pathToIndexMd,
 	pathToRelationMapSvg,
 } from "./lib/paths";
@@ -41,6 +43,9 @@ export async function toDoc(
 	).toSVG();
 
 	sidebar.push(`* [${workspace.name}](/${pathToIndexMd(workspace.path)})`);
+
+	docs[pathToGlossaryMd(workspace.path)] = glossaryMd(workspace, options);
+	sidebar.push(`\t* [Glossary](/${pathToGlossaryMd(workspace.path)})`);
 
 	const contextSidebarEntry = (bc: BoundedContext, depth: number) =>
 		`${"\t".repeat(depth)}* [${bc.name}](/${pathToIndexMd(bc.path)})`;

@@ -8,6 +8,7 @@ import {
 } from "@open-domain-specification/core";
 import { contextBreadcrumbsMd } from "./breadcrumbs.md";
 import { contextRelationshipsMd } from "./context-relationships.md";
+import { glossaryTableMd } from "./glossary.md";
 import { markdownTable } from "./lib/markdown-table";
 import {
 	pathToContextMapSvg,
@@ -58,6 +59,9 @@ ${
 }
 
 ![contextmap](${pathToContextMapSvg(boundedcontext.path, boundedcontext.path)})
+
+## Glossary
+${glossaryTableMd(boundedcontext)}
 
 ## Aggregates
 ${

@@ -43,6 +43,7 @@ Workspace
 │   ├── Service (application/domain/infrastructure)
 │   │   ├── Consumables
 │   │   └── Consumptions
+│   ├── Glossary Term                       (ubiquitous language, optionally embodied by an element)
 │   ├── Policy                              (on Domain Events → then Commands)
 │   └── Aggregate
 │       ├── Entities (with attributes)

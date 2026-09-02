@@ -94,6 +94,16 @@ describe("schema round-trip", () => {
 		expect(policy.commands.map((it) => it.name)).toEqual(["Raise Invoice"]);
 	});
 
+	it("re-links glossary terms to what embodies them", () => {
+		const term = rebuilt.getTermByRefOrThrow(
+			"#/boundedcontexts/ordering_bc/glossary/order",
+		);
+		expect(term.aliases).toEqual(["Purchase order"]);
+		expect(term.embodiedBy?.ref).toBe(
+			"#/boundedcontexts/ordering_bc/aggregates/order",
+		);
+	});
+
 	it("re-links entity relations across aggregates", () => {
 		const invoice = rebuilt.getEntityByRefOrThrow(
 			"#/boundedcontexts/invoicing_bc/aggregates/invoice/entities/invoice",
