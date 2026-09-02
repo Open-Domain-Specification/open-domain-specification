@@ -39,19 +39,19 @@ Petstore user record
 ## Provides
 
 ### (event) - UserRegistered [published-language]
-undefined
+New user created
 
 ### (event) - UserUpdated [published-language]
-undefined
+User fields updated
 
 ### (event) - UserDeleted [published-language]
-undefined
+User removed
 
 ### (event) - UserLoggedIn [published-language]
-undefined
+Login via /user/login
 
 ### (event) - UserLoggedOut [published-language]
-undefined
+Logout via /user/logout
 
 
 ## Consumes

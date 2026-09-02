@@ -10,9 +10,27 @@ At the core of the visitor pattern is the `Visitor` interface, which defines met
 interface Visitor {
   visitWorkspace(node: Workspace): void;
   visitDomain(node: Domain): void;
-  ...
+  visitSubdomain(node: Subdomain): void;
+  visitBoundedContext(node: BoundedContext): void;
+  visitService(node: Service): void;
+  visitAggregate(node: Aggregate): void;
+  visitConsumable(node: Consumable): void;
+  visitConsumption(node: Consumption): void;
+  visitInvariant(node: Invariant): void;
+  visitEntity(node: Entity): void;
+  visitValueObject(node: ValueObject): void;
+  visitEntityRelation(node: EntityRelation): void;
+  visitDomainEvent(node: DomainEvent): void;
+  visitCommand(node: Command): void;
+  visitPolicy(node: Policy): void;
+  visitGlossaryTerm(node: GlossaryTerm): void;
+  visitContextRelationship(node: ContextRelationship): void;
 }
 ```
+
+A bounded context that serves several subdomains is visited once, and a
+context that serves none is visited from the workspace. Context
+relationships are visited after the contexts.
 
 ## AbstractVisitor Class
 

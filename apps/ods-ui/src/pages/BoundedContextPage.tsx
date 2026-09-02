@@ -23,6 +23,9 @@ import { PageSubtitle } from "../components/PageSubtitle.tsx";
 import { useWorkspace } from "../context/WorkspaceContext.tsx";
 import { useRefNavigate } from "../hooks/useRefNavigate.ts";
 import { Icons } from "../Icons.tsx";
+import { ContextRelationshipsHelp } from "../modals/ContextRelationshipsHelp.tsx";
+import { GlossaryHelp } from "../modals/GlossaryHelp.tsx";
+import { PoliciesHelp } from "../modals/PoliciesHelp.tsx";
 
 export function _BoundedContextPage(props: { boundedcontext: BoundedContext }) {
 	const nav = useRefNavigate();
@@ -89,6 +92,7 @@ export function _BoundedContextPage(props: { boundedcontext: BoundedContext }) {
 					),
 				}))}
 				emptyMessage={"No glossary terms defined."}
+				rightSection={<GlossaryHelp />}
 			/>
 
 			<AccordionItems
@@ -100,10 +104,14 @@ export function _BoundedContextPage(props: { boundedcontext: BoundedContext }) {
 					icon: Icons.Policy,
 				}))}
 				emptyMessage={"No policies defined."}
+				rightSection={<PoliciesHelp />}
 			/>
 
 			<Stack>
-				<PageSubtitle title={"Context Relationships"} />
+				<PageSubtitle
+					title={"Context Relationships"}
+					rightSection={<ContextRelationshipsHelp />}
+				/>
 				<ContextRelationshipTable
 					map={ODSContextMap.fromBoundedContext(props.boundedcontext)}
 				/>

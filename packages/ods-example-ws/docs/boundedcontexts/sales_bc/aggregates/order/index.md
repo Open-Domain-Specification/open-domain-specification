@@ -59,16 +59,16 @@ Order for a single pet
 ## Provides
 
 ### (event) - OrderPlaced [published-language]
-undefined
+Order created (status=placed)
 
 ### (event) - OrderApproved [published-language]
-undefined
+Order approved (status=approved)
 
 ### (event) - OrderDelivered [published-language]
-undefined
+Order delivered (status=delivered)
 
 ### (event) - OrderDeleted [published-language]
-undefined
+Order deleted via DELETE /store/order/{orderId}
 
 
 ## Consumes

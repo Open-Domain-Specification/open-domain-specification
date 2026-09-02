@@ -15,6 +15,7 @@ import { PageSubtitle } from "../components/PageSubtitle.tsx";
 import { useWorkspace } from "../context/WorkspaceContext.tsx";
 import { useRefNavigate } from "../hooks/useRefNavigate.ts";
 import { Icons } from "../Icons.tsx";
+import { ContextRelationshipsHelp } from "../modals/ContextRelationshipsHelp.tsx";
 
 export function HomePage() {
 	const { workspace } = useWorkspace();
@@ -41,7 +42,10 @@ export function HomePage() {
 				</Stack>
 
 				<Stack>
-					<PageSubtitle title={"Context Relationships"} />
+					<PageSubtitle
+						title={"Context Relationships"}
+						rightSection={<ContextRelationshipsHelp />}
+					/>
 					<ContextRelationshipTable
 						map={ODSContextMap.fromWorkspace(workspace)}
 					/>

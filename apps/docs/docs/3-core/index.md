@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-title: ODS Core
+title: Overview
 content_guide:
   purpose: To introduce the foundational concepts of ODS Core, its role in Domain-Driven Design (DDD), and how it fits into the broader Open Domain Specification (ODS) ecosystem.
   audience:
@@ -39,7 +39,7 @@ The ODS core follows a hierarchical structure aligned with Domain-Driven Design 
 Workspace
 ├── Domain                                  (problem space)
 │   └── Subdomain (core/supporting/generic)
-├── Bounded Context                         (solution space; serves one or more subdomains)
+├── Bounded Context                         (solution space; serves the subdomains it lists)
 │   ├── Service (application/domain)
 │   │   ├── Consumables
 │   │   └── Consumptions

@@ -54,19 +54,19 @@ A pet listed in the store
 ## Provides
 
 ### (event) - PetRegistered [published-language]
-undefined
+A new pet was registered
 
 ### (event) - PetUpdated [published-language]
-undefined
+Pet profile updated
 
 ### (event) - PetStatusChanged [published-language]
-undefined
+Pet status changed (available|pending|sold)
 
 ### (event) - PetPhotoUploaded [published-language]
-undefined
+Photo added via upload
 
 ### (event) - PetDeleted [published-language]
-undefined
+Pet removed from catalog
 
 
 ## Consumes

@@ -34,33 +34,33 @@ Materialized view: { available: number, pending: number, sold: number }
 ## Provides
 
 ### (event) - InventoryUpdated [published-language]
-undefined
+Inventory counts changed
 
 
 ## Consumes
 
 ### PetRegistered [conformist]
-undefined
+A new pet was registered
 - **Provider**: [Pet](../../../catalog_bc/aggregates/pet/index.md)
 
 ### PetDeleted [conformist]
-undefined
+Pet removed from catalog
 - **Provider**: [Pet](../../../catalog_bc/aggregates/pet/index.md)
 
 ### PetStatusChanged [conformist]
-undefined
+Pet status changed (available|pending|sold)
 - **Provider**: [Pet](../../../catalog_bc/aggregates/pet/index.md)
 
 ### OrderApproved [conformist]
-undefined
+Order approved (status=approved)
 - **Provider**: [Order](../../../sales_bc/aggregates/order/index.md)
 
 ### OrderDelivered [conformist]
-undefined
+Order delivered (status=delivered)
 - **Provider**: [Order](../../../sales_bc/aggregates/order/index.md)
 
 ### OrderDeleted [conformist]
-undefined
+Order deleted via DELETE /store/order/{orderId}
 - **Provider**: [Order](../../../sales_bc/aggregates/order/index.md)
 
 	

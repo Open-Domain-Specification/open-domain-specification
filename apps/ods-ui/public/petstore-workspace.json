@@ -58,6 +58,7 @@
           "provides": {
             "pet_registered": {
               "name": "PetRegistered",
+              "description": "A new pet was registered",
               "pattern": "published-language",
               "type": "event",
               "event": {
@@ -66,6 +67,7 @@
             },
             "pet_updated": {
               "name": "PetUpdated",
+              "description": "Pet profile updated",
               "pattern": "published-language",
               "type": "event",
               "event": {
@@ -74,6 +76,7 @@
             },
             "pet_status_changed": {
               "name": "PetStatusChanged",
+              "description": "Pet status changed (available|pending|sold)",
               "pattern": "published-language",
               "type": "event",
               "event": {
@@ -82,6 +85,7 @@
             },
             "pet_photo_uploaded": {
               "name": "PetPhotoUploaded",
+              "description": "Photo added via upload",
               "pattern": "published-language",
               "type": "event",
               "event": {
@@ -90,6 +94,7 @@
             },
             "pet_deleted": {
               "name": "PetDeleted",
+              "description": "Pet removed from catalog",
               "pattern": "published-language",
               "type": "event",
               "event": {
@@ -505,6 +510,7 @@
           "provides": {
             "order_placed": {
               "name": "OrderPlaced",
+              "description": "Order created (status=placed)",
               "pattern": "published-language",
               "type": "event",
               "event": {
@@ -513,6 +519,7 @@
             },
             "order_approved": {
               "name": "OrderApproved",
+              "description": "Order approved (status=approved)",
               "pattern": "published-language",
               "type": "event",
               "event": {
@@ -521,6 +528,7 @@
             },
             "order_delivered": {
               "name": "OrderDelivered",
+              "description": "Order delivered (status=delivered)",
               "pattern": "published-language",
               "type": "event",
               "event": {
@@ -529,6 +537,7 @@
             },
             "order_deleted": {
               "name": "OrderDeleted",
+              "description": "Order deleted via DELETE /store/order/{orderId}",
               "pattern": "published-language",
               "type": "event",
               "event": {
@@ -898,6 +907,7 @@
           "provides": {
             "inventory_updated": {
               "name": "InventoryUpdated",
+              "description": "Inventory counts changed",
               "pattern": "published-language",
               "type": "event",
               "event": {
@@ -1061,6 +1071,7 @@
           "provides": {
             "user_registered": {
               "name": "UserRegistered",
+              "description": "New user created",
               "pattern": "published-language",
               "type": "event",
               "event": {
@@ -1069,6 +1080,7 @@
             },
             "user_updated": {
               "name": "UserUpdated",
+              "description": "User fields updated",
               "pattern": "published-language",
               "type": "event",
               "event": {
@@ -1077,6 +1089,7 @@
             },
             "user_deleted": {
               "name": "UserDeleted",
+              "description": "User removed",
               "pattern": "published-language",
               "type": "event",
               "event": {
@@ -1085,6 +1098,7 @@
             },
             "user_logged_in": {
               "name": "UserLoggedIn",
+              "description": "Login via /user/login",
               "pattern": "published-language",
               "type": "event",
               "event": {
@@ -1093,6 +1107,7 @@
             },
             "user_logged_out": {
               "name": "UserLoggedOut",
+              "description": "Logout via /user/logout",
               "pattern": "published-language",
               "type": "event",
               "event": {

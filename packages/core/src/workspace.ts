@@ -957,12 +957,11 @@ export class Aggregate
 	 */
 	publishes(
 		event: DomainEvent,
-		attributes: Omit<ConsumableAttributes, "type" | "event"> = {
-			description: event.description,
-		},
+		attributes: Partial<Omit<ConsumableAttributes, "type" | "event">> = {},
 	): Consumable {
 		return this.addConsumable(event.name, {
 			...attributes,
+			description: attributes.description ?? event.description,
 			type: "event",
 			event,
 		});

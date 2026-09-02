@@ -10,8 +10,11 @@ A TypeScript library for generating comprehensive Markdown documentation from Op
 ## Features
 
 - **Hierarchical Documentation**: Generate complete documentation trees from workspace to aggregate level
-- **Embedded Visualizations**: Automatically include context maps, consumable maps, and relation maps as SVG diagrams
-- **Relationship Tables**: Generate tables showing consumption patterns and relationships between components
+- **Embedded Visualizations**: Automatically include context maps, consumable maps, relation maps and flow maps as SVG diagrams
+- **Relationship Tables**: Context relationships (declared and implied), consumptions, entity relations with cardinality
+- **Tactical Detail**: Attributes, commands, events, invariants and what they constrain, policies
+- **Glossary**: A per-context glossary on each context page and a workspace-wide glossary page
+- **Teams and Diagnostics**: Who owns each context, and the result of `workspace.validate()` on the workspace page
 - **Navigation Structure**: Create sidebar navigation with proper hierarchy and cross-linking
 - **Breadcrumb Navigation**: Optional breadcrumb trails for easy navigation
 - **Multiple Component Types**: Support for workspaces, domains, subdomains, bounded contexts, services, and aggregates
@@ -35,6 +38,6 @@ See the [Example Workspace](https://github.com/Open-Domain-Specification/open-do
 
 ### Sidebar Navigation
 
-The generated documentation includes a sidebar navigation structure that reflects the hierarchy of the ODS workspace. Each component type (workspace, domain, subdomain, bounded context, service, aggregate) has its own section in the sidebar.
+The generated documentation includes a sidebar navigation structure that reflects the hierarchy of the ODS workspace. Each component type (workspace, domain, subdomain, bounded context, service, aggregate) has its own section in the sidebar. A bounded context is listed under every subdomain it serves, and contexts that serve no subdomain are listed directly under the workspace. The glossary page sits under the workspace.
 
 This is crafted for ease of use with `Docsify` or similar documentation generators that support hierarchical navigation, however you can also create your own custom navigation structure based on the generated Markdown files.

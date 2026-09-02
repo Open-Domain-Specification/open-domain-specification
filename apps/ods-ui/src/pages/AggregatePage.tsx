@@ -14,6 +14,7 @@ import { AccordionItems } from "../components/AccordionItems.tsx";
 import { AttributeList } from "../components/AttributeList.tsx";
 import { ConstrainsBadges } from "../components/ConstrainsBadges.tsx";
 import { ConsumableAccordionLabel } from "../components/ConsumableAccordionLabel.tsx";
+import { ConsumableTargetBadge } from "../components/ConsumableTargetBadge.tsx";
 import { ConsumptionAccordionLabel } from "../components/ConsumptionAccordionLabel.tsx";
 import { GenericNotFoundContent } from "../components/GenericNotFoundContent.tsx";
 import { GenericWorkspacePage } from "../components/GenericWorkspacePage.tsx";
@@ -24,6 +25,7 @@ import { useWorkspace } from "../context/WorkspaceContext.tsx";
 import { useRefNavigate } from "../hooks/useRefNavigate.ts";
 import { useScrollToNavigable } from "../hooks/useScrollToNavigable.ts";
 import { Icons } from "../Icons.tsx";
+import { CommandsHelp } from "../modals/CommandsHelp.tsx";
 import { EntitiesAndValueObjectsHelp } from "../modals/EntitiesAndValueObjectsHelp.tsx";
 import { EventsHelp } from "../modals/EventsHelp.tsx";
 import { InvariantsHelp } from "../modals/InvariantsHelp.tsx";
@@ -77,6 +79,7 @@ export function _AggregatePage(props: { aggregate: Aggregate }) {
 						name: <ConsumableAccordionLabel consumable={it} />,
 						description: it.description,
 						icon: it.type === "event" ? Icons.Events : Icons.Operations,
+						endSlot: <ConsumableTargetBadge consumable={it} />,
 					}))}
 					emptyMessage={"This aggregate does not provide any consumables."}
 					rightSection={<ProvidesHelp />}
@@ -112,6 +115,7 @@ export function _AggregatePage(props: { aggregate: Aggregate }) {
 						endSlot: <AttributeList attributes={it.attributes} />,
 					}))}
 					emptyMessage={"No commands defined."}
+					rightSection={<CommandsHelp />}
 				/>
 
 				<AccordionItems
