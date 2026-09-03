@@ -20,10 +20,10 @@ A pet listed in the store. One aggregate because a pet's photos, tags and status
 ## Relationships
 | Source | Description | Target | Relation | Cardinality |
 | --- | --- | --- | --- | --- |
-| [Pet](entities/pet/index.md) | categorized-as | Pet - Category | uses | 0..1 |
-| [Pet](entities/pet/index.md) | tagged-with | Pet - Tag | uses | * |
-| [Pet](entities/pet/index.md) | has-photo | Pet - PhotoUrl | uses | 1..* |
-| [Pet](entities/pet/index.md) | has-status | Pet - PetStatus | uses | 1 |
+| [Pet - Pet](./index.md#entities-and-value-objects) | categorized-as | Pet - Category | uses | 0..1 |
+| [Pet - Pet](./index.md#entities-and-value-objects) | tagged-with | Pet - Tag | uses | * |
+| [Pet - Pet](./index.md#entities-and-value-objects) | has-photo | Pet - PhotoUrl | uses | 1..* |
+| [Pet - Pet](./index.md#entities-and-value-objects) | has-status | Pet - PetStatus | uses | 1 |
 
 
 ## Invariants

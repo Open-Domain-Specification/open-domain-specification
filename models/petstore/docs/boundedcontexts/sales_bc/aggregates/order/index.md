@@ -19,14 +19,14 @@ Order for a single pet
 ## Relationships
 | Source | Description | Target | Relation | Cardinality |
 | --- | --- | --- | --- | --- |
-| [Order](entities/order/index.md) | has-status | Order - OrderStatus | uses | 1 |
-| [Order](entities/order/index.md) | has-quantity | Order - Quantity | uses | 1 |
-| [Order](entities/order/index.md) | ships-on | Order - ShipDate | uses | 0..1 |
-| [Order](entities/order/index.md) | for-pet | Pet - Pet | references | 1 |
-| [Pet](../../../catalog_bc/aggregates/pet/entities/pet/index.md) | categorized-as | Pet - Category | uses | 0..1 |
-| [Pet](../../../catalog_bc/aggregates/pet/entities/pet/index.md) | tagged-with | Pet - Tag | uses | * |
-| [Pet](../../../catalog_bc/aggregates/pet/entities/pet/index.md) | has-photo | Pet - PhotoUrl | uses | 1..* |
-| [Pet](../../../catalog_bc/aggregates/pet/entities/pet/index.md) | has-status | Pet - PetStatus | uses | 1 |
+| [Order - Order](./index.md#entities-and-value-objects) | has-status | Order - OrderStatus | uses | 1 |
+| [Order - Order](./index.md#entities-and-value-objects) | has-quantity | Order - Quantity | uses | 1 |
+| [Order - Order](./index.md#entities-and-value-objects) | ships-on | Order - ShipDate | uses | 0..1 |
+| [Order - Order](./index.md#entities-and-value-objects) | for-pet | Pet - Pet | references | 1 |
+| [Pet - Pet](../../../catalog_bc/aggregates/pet/index.md#entities-and-value-objects) | categorized-as | Pet - Category | uses | 0..1 |
+| [Pet - Pet](../../../catalog_bc/aggregates/pet/index.md#entities-and-value-objects) | tagged-with | Pet - Tag | uses | * |
+| [Pet - Pet](../../../catalog_bc/aggregates/pet/index.md#entities-and-value-objects) | has-photo | Pet - PhotoUrl | uses | 1..* |
+| [Pet - Pet](../../../catalog_bc/aggregates/pet/index.md#entities-and-value-objects) | has-status | Pet - PetStatus | uses | 1 |
 
 
 ## Invariants
