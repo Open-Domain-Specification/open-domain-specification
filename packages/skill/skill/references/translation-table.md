@@ -17,9 +17,9 @@ element lives in a workspace file; `DSL` is the core call that creates it.
 | "the old system", "legacy", "nobody understands its schema" | big ball of mud | `"bigBallOfMud": true` | `bigBallOfMud: true` |
 | "A depends on B", "A calls B", "A reads B's data" | upstream-downstream (B upstream) | `relationships[]` `type: "upstream-downstream"` | `a.downstreamOf(b, {...})` |
 | "they ask us before changing", "we're their customer" | customer-supplier | `type: "customer-supplier"` | `a.downstreamOf(b, {type: "customer-supplier", ...})` |
-| "both teams change it together", "we release together" | partnership | `type: "partnership"`, `participants` | `a.partnerOf(b)` |
-| "we share the same tables / library / code" | shared kernel | `type: "shared-kernel"` | `a.sharesKernelWith(b)` |
-| "we deliberately don't integrate" | separate ways | `type: "separate-ways"` | `a.separateWaysFrom(b, why)` |
+| "both teams change it together", "we release together" | partnership | `type: "partnership"`, `participants` | `a.partnerOf(b, {description})` |
+| "we share the same tables / library / code" | shared kernel | `type: "shared-kernel"` | `a.sharesKernelWith(b, {description})` |
+| "we deliberately don't integrate" | separate ways | `type: "separate-ways"` | `a.separateWaysFrom(b, {description: why})` |
 | "we use their API as-is", "we take whatever they send" | conformist | consumption `pattern: "conformist"`; relationship `downstreamRoles` | `agg.consumes(c, {pattern: "conformist"})` |
 | "we copy and reshape their data", "we wrap their API" | anti-corruption layer | `pattern: "anti-corruption-layer"` | `agg.consumes(c, {pattern: "anti-corruption-layer"})` |
 | "we expose a documented API", "there's a REST endpoint" | open host service | operation `pattern: "open-host-service"`; relationship `upstreamRoles` | `svc.provides(name, {type: "operation", pattern: "open-host-service"})` |

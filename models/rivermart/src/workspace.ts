@@ -2191,18 +2191,48 @@ warehouseBC.downstreamOf(vendorBC, {
 
 // Shared kernel: one tracking label library and scan vocabulary, co-owned by
 // Fulfilment and Logistics, because a label printed in one is scanned in the other.
-warehouseBC.sharesKernelWith(
-	lastMileBC,
-	"TrackingLabel format and scan events are one shared library",
-);
+warehouseBC.sharesKernelWith(lastMileBC, {
+	description: "TrackingLabel format and scan events are one shared library",
+	disposition: "tolerated",
+	comments: [
+		{
+			text: "TrackingLabel and the scan event codes live in @rivermart/tracking, imported by both.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/rivermart/blob/main/packages/tracking/src/TrackingLabel.ts",
+				label: "packages/tracking/src/TrackingLabel.ts",
+			},
+		},
+		{
+			text: "The label format is a carrier standard, so neither side can own it; the kernel is the cheapest place to keep it in step.",
+			link: {
+				kind: "contract",
+				url: "https://github.com/example/rivermart/blob/main/docs/carrier-label-spec.md",
+				label: "Carrier label spec",
+			},
+		},
+	],
+});
 
 // Partnership: organic ranking and sponsored slots are tuned together and
 // released together; neither team changes the results page alone.
-searchBC.partnerOf(adsBC, "The results page is one product owned by two teams");
+searchBC.partnerOf(adsBC, {
+	description: "The results page is one product owned by two teams",
+	comments: [
+		{
+			text: "Organic ranking and sponsored slots are blended in one service; neither team deploys the results page alone.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/rivermart/blob/main/search/results/BlendedRanker.ts",
+				label: "search/results/BlendedRanker.ts",
+			},
+		},
+	],
+});
 
 // Separate ways: first-party vendors and third-party sellers are different
 // businesses with different contracts; integrating them was tried and abandoned.
-vendorBC.separateWaysFrom(
-	sellerBC,
-	"Vendors and sellers are kept apart by policy; no shared identity, no shared data",
-);
+vendorBC.separateWaysFrom(sellerBC, {
+	description:
+		"Vendors and sellers are kept apart by policy; no shared identity, no shared data",
+});

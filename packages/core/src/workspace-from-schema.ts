@@ -380,6 +380,8 @@ function addRelationships(
 					),
 				],
 				description: relationship.description,
+				comments: relationship.comments,
+				disposition: relationship.disposition,
 			});
 		} else {
 			workspace.addRelationship({
@@ -393,6 +395,8 @@ function addRelationships(
 				upstreamRoles: relationship.upstreamRoles,
 				downstreamRoles: relationship.downstreamRoles,
 				description: relationship.description,
+				comments: relationship.comments,
+				disposition: relationship.disposition,
 			});
 		}
 	}
