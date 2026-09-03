@@ -611,3 +611,42 @@ table.attrs td.k {
 .svelte-flow .svelte-flow__handle.handle-hidden {
 	opacity: 0;
 }
+/*
+ * Svelte Flow paints its controls, minimap and attribution from its own
+ * `--xy-*` variables, whose defaults are hardcoded light greys. Mapped onto
+ * the host editor's tokens so the overlays match the surrounding page in every
+ * VS Code theme rather than sitting on the canvas as white boxes.
+ */
+.interactive .svelte-flow {
+	--xy-controls-button-background-color: var(--card);
+	--xy-controls-button-background-color-hover: var(
+		--vscode-toolbar-hoverBackground,
+		var(--border)
+	);
+	--xy-controls-button-color: var(--fg);
+	--xy-controls-button-color-hover: var(--fg);
+	--xy-controls-button-border-color: var(--border);
+	--xy-minimap-background-color: var(--card);
+	--xy-minimap-mask-background-color: color-mix(
+		in srgb,
+		var(--bg) 60%,
+		transparent
+	);
+	--xy-minimap-node-background-color: var(--border);
+	--xy-attribution-background-color: transparent;
+}
+.interactive .svelte-flow .svelte-flow__controls {
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	overflow: hidden;
+}
+.interactive .svelte-flow .svelte-flow__minimap {
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+}
+.interactive .svelte-flow .svelte-flow__attribution,
+.interactive .svelte-flow .svelte-flow__attribution a {
+	font-size: 10px;
+	background: transparent;
+	color: var(--muted);
+}

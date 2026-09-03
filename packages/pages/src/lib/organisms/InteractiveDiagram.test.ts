@@ -244,3 +244,20 @@ describe("dragging a node in the cards style", () => {
 		});
 	});
 });
+
+describe("host theme", () => {
+	it("paints in the VS Code editor's colour mode, not the OS one, and follows a theme switch", async () => {
+		const { container } = render(InteractiveDiagram, {
+			graph: contextGraph(ODSContextMap.fromWorkspace(workspace)),
+		});
+		const flow = () => container.querySelector(".svelte-flow") as HTMLElement;
+		await waitFor(() => expect(flow()).toBeTruthy());
+		// No webview class: Svelte Flow keeps its own media-query mode.
+		expect(flow().classList.contains("dark")).toBe(false);
+		document.body.classList.add("vscode-dark");
+		await waitFor(() => expect(flow().classList.contains("dark")).toBe(true));
+		document.body.classList.replace("vscode-dark", "vscode-light");
+		await waitFor(() => expect(flow().classList.contains("light")).toBe(true));
+		document.body.classList.remove("vscode-light");
+	});
+});

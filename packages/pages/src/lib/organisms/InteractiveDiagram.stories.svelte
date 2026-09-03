@@ -8,6 +8,7 @@ import { defineMeta } from "@storybook/addon-svelte-csf";
 import { petstoreModel } from "../fixtures";
 import { consumableGraph, contextGraph, relationGraph } from "../flow/graph";
 import InteractiveDiagram from "./InteractiveDiagram.svelte";
+import ThemeHarness from "./InteractiveDiagram.theme.harness.svelte";
 
 const { workspace } = petstoreModel();
 const bc = [...workspace.boundedcontexts.values()][0];
@@ -23,3 +24,15 @@ const { Story } = defineMeta({
 <Story name="Context map" args={{ graph: contextGraph(ODSContextMap.fromWorkspace(workspace)) }} />
 <Story name="Consumable map (UML component diagram)" args={{ graph: consumableGraph(ODSConsumableMap.fromBoundedContext(bc)) }} />
 <Story name="Relation map (UML class diagram)" args={{ graph: relationGraph(ODSRelationMap.fromAggregate(aggregate)) }} />
+
+<!-- The controls and minimap take their colours from the host editor theme, not from the OS. -->
+<Story name="Dark VS Code theme">
+	{#snippet template(args)}
+		<ThemeHarness graph={args.graph} themeClass="vscode-dark" />
+	{/snippet}
+</Story>
+<Story name="Light VS Code theme">
+	{#snippet template(args)}
+		<ThemeHarness graph={args.graph} themeClass="vscode-light" />
+	{/snippet}
+</Story>
