@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.1.11](https://github.com/Open-Domain-Specification/open-domain-specification/compare/v0.1.10...v0.1.11) (2026-09-03)
+
+**Note:** Version bump only for package ods-vscode
+
+
+
+
+
 ## 0.1.10 (2026-09-03)
 
 **Note:** Version bump only for package ods-vscode

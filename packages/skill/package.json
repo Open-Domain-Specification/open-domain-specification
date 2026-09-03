@@ -1,6 +1,6 @@
 {
 	"name": "@open-domain-specification/skill",
-	"version": "0.1.10",
+	"version": "0.1.11",
 	"description": "An installable agent skill for authoring Open Domain Specification (ODS) workspaces",
 	"author": "Jonathan Turnock <jonathan.turnock@outlook.com>",
 	"homepage": "https://docs.open-ds.io/docs/ai-skill/",

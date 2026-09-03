@@ -2,7 +2,7 @@
 	"name": "ods-vscode",
 	"displayName": "Open Domain Specification",
 	"description": "Author Open Domain Specification workspaces from a .ods folder",
-	"version": "0.1.10",
+	"version": "0.1.11",
 	"private": true,
 	"publisher": "open-domain-specification",
 	"license": "ISC",
@@ -177,7 +177,7 @@
 	"dependencies": {
 		"@open-domain-specification/core": "^0.1.10",
 		"@open-domain-specification/pages": "^0.1.10",
-		"@open-domain-specification/skill": "^0.1.10",
+		"@open-domain-specification/skill": "^0.1.11",
 		"jsonc-parser": "^3.3.1"
 	},
 	"devDependencies": {
