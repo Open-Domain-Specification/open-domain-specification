@@ -34,7 +34,12 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Full history and the branch head (not the triggering sha) so a re-run
+      # after a failed publish sees the version commit lerna already pushed.
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -46,9 +51,10 @@ jobs:
       - name: Record the version before publishing
         id: before
         run: echo "version=$(node -p "require('./lerna.json').version")" >> "$GITHUB_OUTPUT"
-      # Builds every workspace (including the pages app that Cloudflare serves at
-      # open-ds.io and the extension bundle) and publishes the public packages.
-      - run: npm run publish
+      # Builds every workspace, cuts a version if commits warrant one, then
+      # publishes whatever the registry is missing (idempotent on re-runs). The
+      # script is not called "publish": npm would run it as a lifecycle hook.
+      - run: npm run release
         env:
           NPM_TOKEN: ${{secrets.NPM_TOKEN}}
       - name: Record the version after publishing
