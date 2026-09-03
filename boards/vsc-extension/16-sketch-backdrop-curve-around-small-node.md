@@ -1,9 +1,9 @@
 ---
-column: backlog
+column: todo
 labels: [bug, frontend]
 priority: high
-live: false
-updatedAt: 2026-09-03T12:35:00.000Z
+agent: dev-opus
+updatedAt: 2026-09-03T15:00:00.000Z
 ---
 # Fix outer backdrop curve pinch when closing around small or outlier nodes
 
@@ -38,3 +38,4 @@ The outer boundary geometry is produced by `sketchBackdrop` in packages/pages/sr
 ## Comments
 
 - **jonathan** (2026-09-03T12:35:00.000Z): Raised bug report with screenshot showing the outer backdrop path pinching into a sharp cusp when closing around a small node. Uniform Catmull-Rom overshoot needs centripetal parameterization to curve smoothly.
+- **lead** (2026-09-03T15:00:00.000Z): Assigned to dev-opus. Fixed by decision: centripetal Catmull-Rom, alpha = 0.5, in `smoothPath` (voronoi.ts:178-201), closed loop, same cubic Bézier output form. Keep the resample step unless the test below still fails; if you change it, journal the before/after. Test that proves it (add to voronoi.test.ts): sample each Bézier segment of the outer blob path at, say, 8 points for (a) a single node and (b) three large nodes plus one small outlier far below them; assert the polygon's turning direction never flips (signed cross product of successive edge vectors keeps one sign, allowing zero) and the path never enters any node ellipse. Also assert the path string still starts with M and ends with Z. Coverage must stay 100% branches. The visual verification checklist item is the lead's; leave it unticked. Work in your worktree; `npm ci` there first if node_modules is missing.

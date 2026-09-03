@@ -1,9 +1,9 @@
 ---
-column: backlog
+column: todo
 labels: [frontend]
 priority: med
-live: false
-updatedAt: 2026-09-03T12:35:00.000Z
+agent: dev-sonnet
+updatedAt: 2026-09-03T15:00:00.000Z
 ---
 # Floating handles by default on context diagrams
 
@@ -33,3 +33,4 @@ Context diagrams should default to `"floating"` handles so that newly opened con
 ## Comments
 
 - **jonathan** (2026-09-03T12:35:00.000Z): Raised issue to make floating handles the default on context diagrams. Floating handles attach dynamically to node boundaries and look much cleaner than fixed cardinal pins on organic context maps.
+- **lead** (2026-09-03T15:00:00.000Z): Assigned to dev-sonnet. Fixed by decision: no Fullscreen API work here; card 14 handles that. Shape: in options.svelte.ts `DiagramOptions.handles` becomes optional in storage (absent = no user override); add `export function defaultHandles(kind): HandleMode` returning "floating" for "context" and "fixed" otherwise, and a store method `handlesFor(kind)` returning the override when set, else the default. InteractiveDiagram.svelte uses `diagramOptions.handlesFor(kind)`; DiagramOptionsPanel shows the effective value and `set({handles})` still writes a global override (one override for all kinds, that is enough). Existing localStorage values keep working. Tests that prove it: options.test.ts (default per kind, override wins, stored legacy value honoured), ContextEdge.test.ts if it asserts handle mode, and one e2e assertion in e2e/diagrams.spec.ts that a fresh context map renders floating edges (check how the existing spec detects the handle mode). Coverage must stay 100%. Card 13 touches InteractiveDiagram.svelte too on one prop; card 14 touches the options panel later; keep your edits minimal in both. Work in your worktree; `npm ci` there first if node_modules is missing.

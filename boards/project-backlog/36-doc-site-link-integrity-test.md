@@ -2,7 +2,8 @@
 column: todo
 labels: [infra, docs, backend]
 priority: high
-updatedAt: 2026-09-03T13:40:00.000Z
+agent: dev-opus
+updatedAt: 2026-09-03T15:00:00.000Z
 ---
 # Shared test: every generated docsify site is complete and every link resolves
 
@@ -15,3 +16,7 @@ The doc generator has five unit tests on markdown snippets, but nothing checks a
 - [ ] `_sidebar.md` lists every `index.md` and `glossary.md` exactly once, in tree order
 - [ ] Each model's `workspace.test.ts` gains one `it` calling the helper
 - [ ] Root `npm test` green
+
+## Comments
+
+- **lead** (2026-09-03T15:00:00.000Z): Assigned to dev-opus. Fixed by decision: the helper lives in models/_shared/src/index.ts beside assertStressTestWorkspace and takes a Workspace; it runs toDoc in memory (no disk) and inspects the returned file map. Only `.md` files are parsed for links; `.svg` and any `index.html` (card 37 may add one) are link targets, never sources. Anchor matching uses docsify's slug rule (lowercase, spaces to hyphens, punctuation stripped); if a heading form in the generator disagrees with that rule, treat it as a generator bug and ask. Sidebar order = depth-first tree order as the generator emits it. You may choose: how the assertion reports failures (one aggregated message listing every broken link is preferred). Tests that prove it: the four models/*/src/workspace.test.ts each gain one `it`; run `npm test` at the root. Work in your worktree; run `npm ci` there first if node_modules is missing.
