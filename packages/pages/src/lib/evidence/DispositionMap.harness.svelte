@@ -45,13 +45,13 @@ import {
 const { sheets }: { sheets: FactSheetIndex } = $props();
 
 const model = useModel();
-const graph = $derived(contextGraph(ODSContextMap.fromWorkspace(model.workspace)));
+const graph = $derived(
+	contextGraph(ODSContextMap.fromWorkspace(model.workspace)),
+);
 const positioned = $derived(layout(graph, "LR"));
 
 /** The relationship an edge stands for, matched on its unordered pair of contexts. */
-const relationshipFor = (
-	edge: Edge,
-): ContextRelationship | undefined =>
+const relationshipFor = (edge: Edge): ContextRelationship | undefined =>
 	model.workspace.relationships.find(
 		(r) =>
 			(r.source.ref === edge.source && r.target.ref === edge.target) ||
@@ -142,13 +142,20 @@ const dispositions = $derived(
 		font-size: 11px;
 		fill: var(--fg);
 	}
+	/* The viewport portal and the edge-label layer are siblings with no z-index,
+	   so DOM order would draw labels through the card; lift it above both. */
 	.anchored {
 		position: absolute;
 		top: 0;
 		left: 0;
+		z-index: 10;
 		width: 420px;
 		max-width: 60vw;
+		max-height: 60vh;
+		overflow: auto;
 		font-size: 12px;
+		background: var(--card, var(--bg));
+		border-radius: var(--radius);
 		filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
 	}
 	.close {
