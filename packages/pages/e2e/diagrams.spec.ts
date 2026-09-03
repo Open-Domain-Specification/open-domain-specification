@@ -70,3 +70,37 @@ test("the options panel switches handles and edge styles", async ({ page }) => {
 		relationMap(page).locator(".diagram-options").getByLabel("Edge style"),
 	).toHaveValue("bezier");
 });
+
+test("the fullscreen toggle fills the viewport and Escape brings the figure back", async ({
+	page,
+}) => {
+	const flow = await openInteractiveDiagram(page, "relation map", ORDER_REF);
+	const box = page
+		.locator("figure.diagram", { hasText: "relation map" })
+		.locator(".interactive");
+	const viewport = await page.evaluate(() => [
+		window.innerWidth,
+		window.innerHeight,
+	]);
+	const embedded = (await box.boundingBox())!;
+	expect(embedded.height).toBeLessThan(viewport[1]);
+
+	await flow.getByRole("button", { name: "Enter fullscreen" }).click();
+	await expect(box).toHaveClass(/fullscreen/);
+	await expect
+		.poll(async () => {
+			const b = (await box.boundingBox())!;
+			return [b.x, b.y, b.width, b.height];
+		})
+		.toEqual([0, 0, viewport[0], viewport[1]]);
+	// The controls travel with the figure, so the diagram stays usable at full size.
+	await expect(flow.locator(".svelte-flow__minimap")).toBeVisible();
+	await expect(flow.locator(".diagram-options")).toBeVisible();
+	await expect(flow.locator(".svelte-flow__node").first()).toBeVisible();
+
+	await page.keyboard.press("Escape");
+	await expect(box).not.toHaveClass(/fullscreen/);
+	await expect
+		.poll(async () => (await box.boundingBox())!.height)
+		.toBe(embedded.height);
+});

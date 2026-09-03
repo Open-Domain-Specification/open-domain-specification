@@ -261,3 +261,43 @@ describe("host theme", () => {
 		document.body.classList.remove("vscode-light");
 	});
 });
+
+describe("fullscreen", () => {
+	it("turns the figure into an overlay, leaves on Escape, and leaves again when a node navigates", async () => {
+		diagramOptions.set({ style: "cards" });
+		const { container } = render(InteractiveDiagram, {
+			graph: contextGraph(ODSContextMap.fromWorkspace(workspace)),
+		});
+		const box = () => container.querySelector(".interactive") as HTMLElement;
+		await waitFor(() => expect(box()).toBeTruthy());
+		const button = () =>
+			container.querySelector("button.fullscreen") as HTMLButtonElement;
+		expect(box().classList.contains("fullscreen")).toBe(false);
+		// d3-drag swallows the first click after a gesture and only drops that guard on
+		// the next macrotask; the drag test above leaves it armed.
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		await fireEvent.click(button());
+		await waitFor(() =>
+			expect(box().classList.contains("fullscreen")).toBe(true),
+		);
+		await fireEvent.keyDown(window, { key: "Escape" });
+		await waitFor(() =>
+			expect(box().classList.contains("fullscreen")).toBe(false),
+		);
+
+		// Clicking through to another element must not leave the overlay behind.
+		await fireEvent.click(button());
+		await waitFor(() =>
+			expect(box().classList.contains("fullscreen")).toBe(true),
+		);
+		location.hash = "";
+		await fireEvent.click(
+			container.querySelector(`[data-id="${sales.ref}"]`) as HTMLElement,
+		);
+		expect(location.hash).toBe(sales.ref);
+		await waitFor(() =>
+			expect(box().classList.contains("fullscreen")).toBe(false),
+		);
+	});
+});
