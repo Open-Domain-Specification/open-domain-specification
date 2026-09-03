@@ -1,12 +1,16 @@
 <script lang="ts">
-import { isSymmetricRelationship, PATTERNS } from "@open-domain-specification/core";
+import {
+	isSymmetricRelationship,
+	PATTERNS,
+} from "@open-domain-specification/core";
 import Chip from "../atoms/Chip.svelte";
 import DispositionChip from "../atoms/DispositionChip.svelte";
 import Empty from "../atoms/Empty.svelte";
 import RefLink from "../atoms/RefLink.svelte";
-import { type EvidenceRow, health } from "../evidence/derive";
+import { type EvidenceRow, health, healthCounts } from "../evidence/derive";
 import { ICONS, useModel } from "../model";
 import CommentList from "../molecules/CommentList.svelte";
+import HealthSummary from "../molecules/HealthSummary.svelte";
 
 /**
  * The workspace read of the evidence layer (RFC-002 section 4.5): what is
@@ -21,27 +25,15 @@ import CommentList from "../molecules/CommentList.svelte";
 
 const model = useModel();
 const report = $derived(health(model.workspace));
-const refactorCount = $derived(
-	report.refactor.reduce((n, g) => n + g.rows.length, 0),
-);
+const counts = $derived(healthCounts(report));
 let showNoComments = $state(false);
-const noCommentsLabel = $derived(`No comments (${report.noComments.length})`);
+const noCommentsLabel = $derived(`No comments (${counts.noComments})`);
 </script>
 
 <div class="health-report">
-	<ul class="summary">
-		<li class:zero={refactorCount === 0}>
-			<strong>{refactorCount}</strong> to refactor
-		</li>
-		<li class:zero={report.tolerated.length === 0}>
-			<strong>{report.tolerated.length}</strong> tolerated
-		</li>
-		<li class:zero={report.noComments.length === 0}>
-			<strong>{report.noComments.length}</strong> with no comments
-		</li>
-	</ul>
+	<HealthSummary {counts} />
 
-	<h3>Refactor</h3>
+	<h3 id="refactor">Refactor</h3>
 	{#if report.refactor.length}
 		{#each report.refactor as group (group.context.ref)}
 			<h4><RefLink ref={group.context.ref} label={group.context.name} icon={ICONS.boundedcontext} /></h4>
@@ -53,7 +45,7 @@ const noCommentsLabel = $derived(`No comments (${report.noComments.length})`);
 		<Empty text="Nothing is marked for refactoring." />
 	{/if}
 
-	<h3>Tolerated</h3>
+	<h3 id="tolerated">Tolerated</h3>
 	{#if report.tolerated.length}
 		{#each report.tolerated as entry (entry.key)}
 			{@render intent(entry)}
@@ -62,7 +54,7 @@ const noCommentsLabel = $derived(`No comments (${report.noComments.length})`);
 		<Empty text="No compromises recorded." />
 	{/if}
 
-	<h3>
+	<h3 id="no-comments">
 		<button type="button" aria-expanded={showNoComments} onclick={() => { showNoComments = !showNoComments; }}>
 			<i class="codicon codicon-chevron-{showNoComments ? 'down' : 'right'}"></i>
 			<span>{noCommentsLabel}</span>
@@ -94,30 +86,6 @@ const noCommentsLabel = $derived(`No comments (${report.noComments.length})`);
 {/snippet}
 
 <style>
-	.summary {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--gap);
-		margin: 0 0 var(--gap);
-		padding: 0;
-		list-style: none;
-	}
-	.summary li {
-		flex: 1 1 120px;
-		padding: 8px 12px;
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		background: var(--card);
-		color: var(--muted);
-	}
-	.summary strong {
-		display: block;
-		font-size: 1.6em;
-		color: var(--fg);
-	}
-	.summary li.zero strong {
-		color: var(--muted);
-	}
 	h3 {
 		margin: 16px 0 4px;
 	}

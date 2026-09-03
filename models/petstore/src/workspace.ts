@@ -22,6 +22,9 @@ export const workspace = new Workspace("Swagger Petstore (v3)", {
 	homepage: "https://petstore.swagger.io/",
 	primaryColor: "#0ea5e9",
 	logoUrl: "https://petstore.swagger.io/favicon-32x32.png",
+	// Petstore is the demonstration model, so it holds itself to the evidence
+	// layer as well as the structure: every relationship says what backs it.
+	options: { rules: { commentsRequired: true } },
 });
 
 /* =======================
@@ -992,9 +995,37 @@ catalogBC.sharesKernelWith(inventoryBC, {
 salesBC.partnerOf(fulfilmentBC, {
 	description:
 		"Order lifecycle and shipment lifecycle are designed and released together",
+	comments: [
+		// Deliberately uncited: a comment does not need a link to be evidence,
+		// and the report has to read well when nobody has one to give.
+		{
+			text: "Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged.",
+		},
+		{
+			text: "DeliverOrder and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier.",
+		},
+	],
 });
 
 // separate-ways: orders carry no user link, so the two never integrate.
 identityBC.separateWaysFrom(salesBC, {
 	description: "Orders are anonymous in Petstore v3; no integration by design",
+	comments: [
+		{
+			text: "The order payload carries no user field and the Sales service holds no credentials for the Identity API, so nothing links an order to an account.",
+			link: {
+				kind: "contract",
+				url: "https://github.com/example/petstore/blob/main/sales/openapi.yaml",
+				label: "sales/openapi.yaml",
+			},
+		},
+		{
+			text: "Keeping the two apart is deliberate: checkout must work for a visitor who never signs in.",
+			link: {
+				kind: "adr",
+				url: "https://github.com/example/petstore/blob/main/docs/adr/007-anonymous-checkout.md",
+				label: "ADR-007 Anonymous checkout",
+			},
+		},
+	],
 });

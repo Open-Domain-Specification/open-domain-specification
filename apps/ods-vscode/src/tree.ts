@@ -8,6 +8,7 @@ import {
 	type Subdomain,
 	type Workspace,
 } from "@open-domain-specification/core";
+import { healthCountsOf } from "@open-domain-specification/pages";
 import * as vscode from "vscode";
 import type { OdsDiagnostics } from "./diagnostics";
 import type { OdsProject, WorkspaceFile } from "./project";
@@ -58,6 +59,17 @@ function group(
 	const node = new ModelNode(parent.file, label, icon, () => items, { parent });
 	for (const item of items) item.options.parent = node;
 	return node;
+}
+
+/**
+ * The health report's three counts as they read on the workspace node, or
+ * undefined when the model is clean on all three — a row of zeroes beside
+ * every file would be noise rather than a signal.
+ */
+export function healthDescription(ws: Workspace): string | undefined {
+	const { refactor, tolerated, noComments } = healthCountsOf(ws);
+	if (refactor + tolerated + noComments === 0) return undefined;
+	return `${refactor} to refactor, ${tolerated} tolerated, ${noComments} uncommented`;
 }
 
 /** Tree of every workspace: Domains, Bounded Contexts, Teams and Relationships per workspace root. */
@@ -208,7 +220,13 @@ export class ModelTree
 						),
 					),
 				].filter((n): n is ModelNode => !!n),
-			{ ref: "#", description: file.relativePath, expanded: true },
+			{
+				ref: "#",
+				description: [file.relativePath, healthDescription(ws)]
+					.filter(Boolean)
+					.join(" · "),
+				expanded: true,
+			},
 		);
 		return root;
 	}

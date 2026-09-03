@@ -52,6 +52,7 @@ export type WorkspaceAttributes = {
 	primaryColor?: string;
 	version: string;
 	id?: string;
+	options?: ods.WorkspaceOptionsSchema;
 };
 
 export class Workspace
@@ -66,6 +67,8 @@ export class Workspace
 	primaryColor?: string;
 	description: string;
 	version: string;
+	/** Switches for behaviour that is not part of the model, such as opt-in rules. */
+	options?: ods.WorkspaceOptionsSchema;
 	domains = new Map<string, Domain>();
 	boundedcontexts = new Map<string, BoundedContext>();
 	relationships: ContextRelationship[] = [];
@@ -85,6 +88,7 @@ export class Workspace
 		this.primaryColor = attributes.primaryColor;
 		this.description = attributes.description;
 		this.version = attributes.version;
+		this.options = attributes.options;
 	}
 
 	addDomain(name: string, attributes: DomainAttributes): Domain {
@@ -494,6 +498,7 @@ export class Workspace
 			description: this.description,
 			version: this.version,
 			odsVersion: this.odsVersion,
+			options: this.options,
 			primaryColor: this.primaryColor,
 			domains: asRecords(this.domains),
 			boundedcontexts: asRecords(this.boundedcontexts),

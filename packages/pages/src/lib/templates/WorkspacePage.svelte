@@ -4,6 +4,7 @@ export const sections = [
 	{ id: "solution", label: "Solution space" },
 	{ id: "teams", label: "Teams" },
 	{ id: "health", label: "Model health" },
+	{ id: "evidence-health", label: "Health" },
 ];
 </script>
 
@@ -15,13 +16,16 @@ export const sections = [
 	import Icon from "../atoms/Icon.svelte";
 	import Markdown from "../atoms/Markdown.svelte";
 	import RefLink from "../atoms/RefLink.svelte";
+	import { healthCountsOf } from "../evidence/derive";
 	import Card from "../molecules/Card.svelte";
 	import ContextPill from "../molecules/ContextPill.svelte";
+	import HealthSummary from "../molecules/HealthSummary.svelte";
 	import Problems from "../molecules/Problems.svelte";
 	import SubdomainCard from "../molecules/SubdomainCard.svelte";
 	import TeamLine from "../molecules/TeamLine.svelte";
 	import { ICONS, problemsUnder, useModel } from "../model";
 	import { contextGraph } from "../flow/graph";
+	import { HEALTH_REF } from "../resolve";
 	import DiagramFigure from "../organisms/DiagramFigure.svelte";
 	import PageHeader from "../organisms/PageHeader.svelte";
 	import Section from "../organisms/Section.svelte";
@@ -102,4 +106,13 @@ export const sections = [
 	{:else}
 		<p class="ok"><Icon name="pass" /> No structural problems found.</p>
 	{/if}
+</Section>
+
+<Section
+	id="evidence-health"
+	title="Health"
+	lead="What the architecture is not happy with, read off the evidence layer rather than the structure: what is marked for refactoring, what compromises are tolerated, and what nobody has written anything down about."
+>
+	<HealthSummary counts={healthCountsOf(ws)} />
+	<p><a href={HEALTH_REF}><Icon name="pulse" /> Open the full health report</a></p>
 </Section>

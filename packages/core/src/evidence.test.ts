@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { dispositionOf, intentsWithoutComments } from "./evidence";
+import {
+	dispositionOf,
+	intentsWithoutComments,
+	relationshipsWithoutComments,
+} from "./evidence";
 import type { Comment } from "./schema";
 import { type BoundedContext, type Consumable, Workspace } from "./workspace";
 
@@ -121,6 +125,33 @@ describe("intentsWithoutComments", () => {
 			consumption.comments.push({ text: "Documented too." });
 		}
 		expect(intentsWithoutComments(ws)).toEqual([]);
+	});
+});
+
+describe("relationshipsWithoutComments", () => {
+	it("lists the relationships nobody has written anything down about", () => {
+		const { ws, catalog, sales } = makeEvidenceWs();
+		catalog.upstreamOf(sales, { comments: [{ text: "Documented." }] });
+		const undocumented = ws.addRelationship({
+			type: "shared-kernel",
+			participants: [catalog, sales],
+		});
+
+		expect(relationshipsWithoutComments(ws)).toEqual([undocumented]);
+	});
+
+	it("is narrower than intentsWithoutComments: the uncommented consumption is not a relationship", () => {
+		const { ws, catalog, sales } = makeEvidenceWs();
+		catalog.upstreamOf(sales, { comments: [{ text: "Documented." }] });
+
+		// The one consumption carries no comments, so the wide reading sees it.
+		expect(intentsWithoutComments(ws)).toHaveLength(1);
+		expect(relationshipsWithoutComments(ws)).toEqual([]);
+	});
+
+	it("is empty for a workspace with no relationships at all", () => {
+		const { ws } = makeEvidenceWs();
+		expect(relationshipsWithoutComments(ws)).toEqual([]);
 	});
 });
 

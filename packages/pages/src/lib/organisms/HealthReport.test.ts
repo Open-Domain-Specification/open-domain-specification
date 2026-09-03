@@ -16,7 +16,8 @@ const counts = (container: HTMLElement) =>
 describe("HealthReport", () => {
 	it("counts what the architecture is unhappy with across the petstore", () => {
 		const { container } = show(petstoreModel());
-		expect(counts(container)).toEqual(["1", "1", "2"]);
+		// Petstore turns comments-required on, so its third count is zero.
+		expect(counts(container)).toEqual(["1", "1", "0"]);
 		expect(
 			screen.getByText(/The kernel has grown past the status enum/),
 		).toBeInTheDocument();
@@ -32,7 +33,7 @@ describe("HealthReport", () => {
 	});
 
 	it("keeps the no-comments list collapsed until it is asked for", async () => {
-		show(petstoreModel());
+		show(strategicPositionFixture(8).model);
 		const toggle = screen.getByRole("button", { name: /No comments \(2\)/ });
 		expect(toggle).toHaveAttribute("aria-expanded", "false");
 		expect(screen.queryByText("Nothing written down yet.")).toBeNull();

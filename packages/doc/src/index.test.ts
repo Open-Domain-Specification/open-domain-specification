@@ -275,10 +275,17 @@ describe("toDoc", () => {
 			.split("### Depended on by")[0];
 		expect(dependsOn).toContain("- **Catalog BC** (customer-supplier)");
 		expect(dependsOn).not.toContain("- **Inventory BC**");
-		// Sales ↔ Fulfilment and Identity ↔ Sales carry nothing, so nothing prints.
+		// Petstore turns comments-required on, so the symmetric pair is explained
+		// under its own group too — one of them without a citation to trail it.
 		const alongside = position.split("### Works alongside")[1];
-		expect(alongside).not.toContain("- **Fulfilment BC**");
-		expect(alongside).not.toContain("- **Identity BC**");
+		expect(alongside).toContain("- **Fulfilment BC** (partnership)");
+		expect(alongside).toContain(
+			"\t- Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged.\n",
+		);
+		expect(alongside).toContain("- **Identity BC** (separate-ways)");
+		expect(alongside).toContain(
+			"[ADR-007 Anonymous checkout](https://github.com/example/petstore/blob/main/docs/adr/007-anonymous-checkout.md)",
+		);
 	});
 
 	it("prints a consumable's comments beneath the Provides table that lists it", async () => {
@@ -389,5 +396,53 @@ describe("toDoc", () => {
 			  "swagger_petstore_(v3)/index.md",
 			]
 		`);
+	});
+
+	it("prints the health report on the workspace page, in the same three lists as the pages surface", async () => {
+		const docs = await toDoc(petstore);
+		const health = docs["swagger_petstore_(v3)/index.md"]
+			.split("## Health")[1]
+			.split("## Teams")[0];
+
+		const refactor = health.split("### Refactor")[1].split("### Tolerated")[0];
+		expect(refactor).toContain("**Catalog BC ↔ Inventory BC** (shared-kernel)");
+		expect(refactor).toContain(
+			"[ADR-014 Shrink the kernel](https://github.com/example/petstore/blob/main/docs/adr/014-shrink-the-kernel.md)",
+		);
+
+		const tolerated = health
+			.split("### Tolerated")[1]
+			.split("### No comments")[0];
+		expect(tolerated).toContain(
+			"**Sales BC → Inventory BC** (upstream-downstream)",
+		);
+		expect(tolerated).not.toContain("shared-kernel");
+
+		// Petstore turns comments-required on, so the third list is empty.
+		expect(health.split("### No comments")[1]).toContain(
+			"> Every relationship carries at least one comment.",
+		);
+	});
+
+	it("says so in each health list a workspace has nothing for", async () => {
+		const workspace = new Workspace("Quiet", {
+			odsVersion: "1.0.0",
+			description: "Two contexts, one unexplained relationship.",
+			version: "0.1.0",
+		});
+		const a = workspace.addBoundedContext("A", { description: "A." });
+		const b = workspace.addBoundedContext("B", { description: "B." });
+		a.upstreamOf(b);
+
+		const health = (await toDoc(workspace))["quiet/index.md"]
+			.split("## Health")[1]
+			.split("## Teams")[0];
+
+		expect(health).toContain("> Nothing is marked for refactoring.");
+		expect(health).toContain("> No compromises recorded.");
+		expect(health).toContain("**A → B** (upstream-downstream)");
+		expect(health).not.toContain(
+			"> Every relationship carries at least one comment.",
+		);
 	});
 });

@@ -10,6 +10,8 @@ import {
 	crossingConsumables,
 	hasEvidence,
 	health,
+	healthCounts,
+	healthCountsOf,
 	positionGroups,
 	relationshipLinks,
 } from "./derive";
@@ -30,8 +32,18 @@ describe("hasEvidence", () => {
 		expect(hasEvidence(ofType(model, "customer-supplier"))).toBe(true);
 		// Sales → Inventory is tolerated.
 		expect(hasEvidence(ofType(model, "upstream-downstream"))).toBe(true);
-		// Sales ↔ Fulfilment: by design, nothing said.
-		expect(hasEvidence(ofType(model, "partnership"))).toBe(false);
+		// Sales ↔ Fulfilment: by design, but the comments still count as evidence.
+		expect(hasEvidence(ofType(model, "partnership"))).toBe(true);
+		// A relationship with nothing said and nothing marked discloses nothing.
+		const workspace = new Workspace("Silent", {
+			id: "silent",
+			odsVersion: "1.0.0",
+			description: "One by-design relationship, nothing written down.",
+			version: "0.0.1",
+		});
+		const a = workspace.addBoundedContext("A", { description: "A." });
+		const b = workspace.addBoundedContext("B", { description: "B." });
+		expect(hasEvidence(a.upstreamOf(b))).toBe(false);
 	});
 });
 
@@ -94,10 +106,8 @@ describe("health", () => {
 		expect(report.tolerated.map((r) => r.relationship.type)).toEqual([
 			"upstream-downstream",
 		]);
-		expect(report.noComments.map((r) => r.relationship.type).sort()).toEqual([
-			"partnership",
-			"separate-ways",
-		]);
+		// Petstore turns comments-required on, so every relationship is explained.
+		expect(report.noComments).toEqual([]);
 	});
 
 	it("groups several refactor rows under the context that owns the change", () => {
@@ -128,6 +138,43 @@ describe("health", () => {
 			refactor: [],
 			tolerated: [],
 			noComments: [],
+		});
+	});
+});
+
+describe("healthCounts", () => {
+	it("flattens the refactor groups so the strip and the tree node agree", () => {
+		const { model } = strategicPositionFixture(8);
+		const report = health(model.workspace);
+		// Two refactor rows spread across two groups count as two, not as two groups.
+		expect(report.refactor.length).toBeGreaterThan(1);
+		expect(healthCounts(report)).toEqual({
+			refactor: 2,
+			tolerated: 2,
+			noComments: 2,
+		});
+	});
+
+	it("reads a workspace straight through, which is what every host calls", () => {
+		const { model } = petstoreSales();
+		expect(healthCountsOf(model.workspace)).toEqual({
+			refactor: 1,
+			tolerated: 1,
+			noComments: 0,
+		});
+	});
+
+	it("is all zeroes for a workspace with no relationships", () => {
+		const workspace = new Workspace("Bare", {
+			id: "bare",
+			odsVersion: "1.0.0",
+			description: "Nothing related to anything.",
+			version: "0.0.1",
+		});
+		expect(healthCountsOf(workspace)).toEqual({
+			refactor: 0,
+			tolerated: 0,
+			noComments: 0,
 		});
 	});
 });

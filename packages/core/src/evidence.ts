@@ -48,12 +48,18 @@ export function dispositionOf(element: {
 }
 
 /**
- * Every strategic intent nobody has written anything down about. The health
- * report's "no comments" list, and the `comments-required` rule, read this.
+ * Every strategic intent nobody has written anything down about, at every
+ * level the evidence layer reaches. This is the widest reading, and it is the
+ * reconciliation worklist the AI skill walks.
  *
  * Internal consumables never cross a context boundary, so they are not
  * strategic and are left out; everything else the model says about how two
  * contexts meet is in scope.
+ *
+ * The health report and the `comments-required` rule deliberately read the
+ * narrower {@link relationshipsWithoutComments} instead: one uncommented
+ * consumable is a gap in the notes, whereas one uncommented relationship is a
+ * strategic claim nobody has justified, and only the second is worth a warning.
  */
 export function intentsWithoutComments(
 	workspace: Workspace,
@@ -74,4 +80,19 @@ export function intentsWithoutComments(
 	}
 
 	return intents.filter((intent) => intent.comments.length === 0);
+}
+
+/**
+ * The relationships nobody has written anything down about: the "No comments"
+ * list on the health report, the third of the three counts the workspace node
+ * and the summary strip show, and what the `comments-required` rule warns on.
+ *
+ * A relationship is where the model makes a claim about how two teams meet, so
+ * an empty one is the gap a reader can actually act on. Consumables and
+ * consumptions are left to {@link intentsWithoutComments}.
+ */
+export function relationshipsWithoutComments(
+	workspace: Workspace,
+): ContextRelationship[] {
+	return workspace.relationships.filter((r) => r.comments.length === 0);
 }

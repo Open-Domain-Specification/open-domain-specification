@@ -15,6 +15,13 @@ import type {
  */
 export { relationshipTitle } from "@open-domain-specification/core";
 
+/**
+ * The health report's three counts. The extension's workspace tree node shows
+ * them beside the file name, so like `relationshipTitle` they are registered
+ * from a leaf module the extension can import without pulling in Svelte.
+ */
+export { type HealthCounts, healthCountsOf } from "../evidence/derive";
+
 /* ---------- shared lookups across the workspace ---------- */
 
 function* aggregatesOf(ws: Workspace): Iterable<Aggregate> {

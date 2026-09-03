@@ -709,6 +709,18 @@
             ],
             "type": "string"
         },
+        "RuleOptionsSchema": {
+            "additionalProperties": false,
+            "description": "Opt-in validation rules. A rule listed here is off unless the workspace turns it on.",
+            "properties": {
+                "commentsRequired": {
+                    "description": "Warn on every context relationship that carries no comments. Off by default.",
+                    "type": "boolean"
+                }
+            },
+            "title": "RuleOptions",
+            "type": "object"
+        },
         "ServiceSchema": {
             "additionalProperties": false,
             "description": "Represents a service in the Open Domain Specification (ODS).",
@@ -912,6 +924,17 @@
             ],
             "title": "ValueObject",
             "type": "object"
+        },
+        "WorkspaceOptionsSchema": {
+            "additionalProperties": false,
+            "description": "Per-workspace switches for behaviour that is not part of the model itself.",
+            "properties": {
+                "rules": {
+                    "$ref": "#/definitions/RuleOptionsSchema"
+                }
+            },
+            "title": "WorkspaceOptions",
+            "type": "object"
         }
     },
     "description": "Represents a workspace in the Open Domain Specification (ODS).",
@@ -950,6 +973,10 @@
         "odsVersion": {
             "pattern": "^[0-9]*\\.[0-9]*\\.[0-9]*$",
             "type": "string"
+        },
+        "options": {
+            "$ref": "#/definitions/WorkspaceOptionsSchema",
+            "description": "Switches for behaviour that is not part of the model, such as opt-in rules."
         },
         "primaryColor": {
             "type": "string"

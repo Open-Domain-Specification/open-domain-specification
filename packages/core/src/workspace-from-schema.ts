@@ -414,6 +414,7 @@ export function getWorkspaceFromSchema(
 		logoUrl: workspaceSchema.logoUrl,
 		primaryColor: workspaceSchema.primaryColor,
 		version: workspaceSchema.version,
+		options: workspaceSchema.options,
 	});
 
 	addDomains(workspace, workspaceSchema);
