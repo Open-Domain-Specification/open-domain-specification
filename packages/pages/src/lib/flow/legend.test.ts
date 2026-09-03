@@ -57,6 +57,39 @@ describe("legendEntries for the context map", () => {
 		for (const e of entries)
 			if (/^[A-Z/]+$/.test(e.mark)) expect(onEdges.has(e.mark)).toBe(true);
 	});
+	it("names one row per disposition mark the map draws, and never the unmarked default", () => {
+		const graph = contextGraph(
+			ODSContextMap.fromWorkspace(workspace),
+			workspace.relationships,
+		);
+		const entries = legendEntries(graph, "context");
+		const byMark = new Map(entries.map((e) => [e.mark, e]));
+		// The petstore has one tolerated and one refactor relationship.
+		expect(byMark.get("outlined badge")?.name).toBe("tolerated");
+		expect(byMark.get("warning badge")?.name).toBe("refactor");
+		expect(byMark.get("warning badge")?.title).toBeTruthy();
+		expect(byMark.has("filled badge")).toBe(false);
+
+		// Drawn without the workspace's relationships, the map marks nothing.
+		const unmarked = legendEntries(
+			contextGraph(ODSContextMap.fromWorkspace(workspace)),
+			"context",
+		);
+		expect(marks(unmarked)).not.toContain("warning badge");
+		expect(marks(unmarked)).not.toContain("outlined badge");
+	});
+	it("names only the marks present: a map of by-design intents gets no extra row", () => {
+		const byDesign = workspace.relationships.filter(
+			(r) => !r.disposition && r.type === "partnership",
+		);
+		expect(byDesign.length).toBeGreaterThan(0);
+		const entries = legendEntries(
+			contextGraph(ODSContextMap.fromWorkspace(workspace), byDesign),
+			"context",
+		);
+		expect(marks(entries)).not.toContain("outlined badge");
+		expect(marks(entries)).not.toContain("warning badge");
+	});
 	it("lists nothing the graph does not draw", () => {
 		const bare = legendEntries(
 			{

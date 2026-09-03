@@ -2,6 +2,7 @@
 import { type Edge, type Node, Position, SvelteFlow } from "@xyflow/svelte";
 import "@xyflow/svelte/dist/style.css";
 import type { Component } from "svelte";
+import type { ContextEdgeData } from "./flow-nodes";
 
 /**
  * One edge component inside a real flow: node `#/a` with a source handle at
@@ -28,7 +29,7 @@ let {
 	label?: string;
 	markerEnd?: string;
 	style?: string;
-	data?: { sourceLabel?: string; targetLabel?: string };
+	data?: ContextEdgeData;
 	sourcePosition?: Position;
 	targetPosition?: Position;
 	targetHandleId?: string | null;

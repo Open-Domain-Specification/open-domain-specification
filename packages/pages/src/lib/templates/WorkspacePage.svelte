@@ -63,7 +63,7 @@ export const sections = [
 	lead="Bounded contexts are where models live. The map shows which context is upstream of which and how they protect themselves."
 	problems={contexts.flatMap((bc) => model.diagnostics.filter((d) => d.ref === bc.ref))}
 >
-	<DiagramFigure caption="Context map" emptyText="No bounded contexts yet." graph={contextGraph(contextMap)} />
+	<DiagramFigure caption="Context map" emptyText="No bounded contexts yet." graph={contextGraph(contextMap, model.workspace.relationships)} />
 	{#if contexts.length}
 		<table>
 			<thead><tr><th>Context</th><th>Serves</th><th>Team</th><th>Aggregates</th><th>Services</th></tr></thead>

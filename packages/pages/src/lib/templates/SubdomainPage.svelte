@@ -66,6 +66,6 @@ export const sections = [
 	<DiagramFigure
 		caption="{s.name} context map"
 		emptyText="No bounded context serves this subdomain yet."
-		graph={contextGraph(contextMap)}
+		graph={contextGraph(contextMap, model.workspace.relationships)}
 	/>
 </Section>

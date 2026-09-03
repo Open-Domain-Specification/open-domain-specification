@@ -1,3 +1,5 @@
+import type { ContextRelationship } from "@open-domain-specification/core";
+
 /**
  * A host-neutral graph the interactive diagram draws. Each core map converts
  * to it, so one Svelte Flow organism serves every figure. Node ids are refs,
@@ -35,6 +37,12 @@ export type GraphEdge = {
 	/** Handle ids at each end, when a node offers more than one. */
 	sourceHandle?: string;
 	targetHandle?: string;
+	/**
+	 * The strategic intent this edge stands for, when the map knows it. It is
+	 * what the badges mark with their disposition and what the disclosure card
+	 * opens; an edge without one draws exactly as it always has.
+	 */
+	intent?: ContextRelationship;
 };
 
 /** A shaded region grouping nodes, nested through `parent`, as a Graphviz cluster. */

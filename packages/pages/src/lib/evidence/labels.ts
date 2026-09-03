@@ -1,7 +1,9 @@
 import type {
 	CommentLinkKind,
+	ContextRelationship,
 	Disposition,
 } from "@open-domain-specification/core";
+import { PATTERNS } from "@open-domain-specification/core";
 
 /**
  * How the evidence layer is worded. The schema is core's — comments and one
@@ -23,6 +25,18 @@ export const DISPOSITION_LABELS: Record<Disposition, string> = {
 	tolerated: "tolerated",
 	refactor: "refactor",
 };
+
+/**
+ * The one line a map badge discloses on hover: what the relationship's pattern
+ * means, then the first thing anyone wrote down about it. Saying so when
+ * nothing has been written is the point — an unexplained intent is the reader's
+ * cue that the map is a claim nobody has checked.
+ */
+export const intentSummary = (r: ContextRelationship): string =>
+	[
+		PATTERNS[r.type].summary,
+		r.comments[0]?.text ?? "No comments recorded yet.",
+	].join(" ");
 
 /** How a comment's link kind is worded next to the statement. */
 export const LINK_KIND_LABELS: Record<CommentLinkKind, string> = {

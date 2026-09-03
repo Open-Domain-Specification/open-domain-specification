@@ -26,7 +26,7 @@ const toggle = () => diagramOptions.set({ legendCollapsed: !collapsed });
 			<dl class="legend-terms">
 				{#each entries as entry (entry.mark)}
 					<dt>{entry.mark}</dt>
-					<dd>{entry.name}</dd>
+					<dd title={entry.title}>{entry.name}</dd>
 				{/each}
 			</dl>
 		{/if}

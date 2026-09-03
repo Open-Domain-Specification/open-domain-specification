@@ -1,5 +1,5 @@
 import { PATTERNS } from "@open-domain-specification/core";
-import { render, waitFor } from "@testing-library/svelte";
+import { fireEvent, render, waitFor } from "@testing-library/svelte";
 import { describe, expect, it, vi } from "vitest";
 import { type Box, installXyflowTestEnv } from "../xyflow-test-env";
 import ContextEdge from "./ContextEdge.svelte";
@@ -74,7 +74,10 @@ describe("ContextEdge", () => {
 		expect(container.querySelector("path")?.getAttribute("style")).toContain(
 			"stroke: rgb(141, 110, 99)",
 		);
-		expect(container.querySelector(".port")).toBeNull();
+		// A symmetric relationship gives neither side a role, so the stereotype is
+		// the only badge it draws.
+		expect(container.querySelector(".port.role")).toBeNull();
+		expect(container.querySelector(".port.stereotype")).toBeTruthy();
 		// No ports, so the line runs handle to handle.
 		expect(pathD(container).startsWith("M10,20")).toBe(true);
 		const { container: plain } = edge({ label: "" });
@@ -99,5 +102,91 @@ describe("ContextEdge", () => {
 		expect(missing.querySelector("path")).toBeNull();
 		boxes["#/b"] = { x: 300, y: 120, w: 120, h: 60 };
 		diagramOptions.set({ handles: "fixed" });
+	});
+});
+
+/**
+ * The evidence layer on the same edge (RFC-002 section 4.2). These were card
+ * 19's `DispositionEdge` cases; the marks now ride on the shipped edge, so
+ * they belong here.
+ */
+describe("ContextEdge disposition marks", () => {
+	const badges = (c: Element) => [...c.querySelectorAll<HTMLElement>(".port")];
+
+	it("marks every badge of a refactor intent and hovers to the pattern then the evidence", async () => {
+		diagramOptions.set({ handles: "fixed", edges: "bezier" });
+		const { container } = edge({
+			label: "U/D",
+			data: {
+				sourceLabel: "OHS",
+				targetLabel: "ACL",
+				disposition: "refactor",
+				summary: "Should become an event.",
+			},
+		});
+		await waitFor(() => expect(container.querySelector("path")).toBeTruthy());
+		const [stereotype, up, down] = badges(container);
+		for (const badge of [stereotype, up, down])
+			expect(badge).toHaveClass("refactor");
+		// The stereotype hovers to what is known; the roles name their patterns first.
+		expect(stereotype).toHaveAttribute("title", "Should become an event.");
+		expect(up).toHaveAttribute(
+			"title",
+			`Open Host Service — ${PATTERNS["open-host-service"].summary}\nShould become an event.`,
+		);
+		expect(down.querySelector(".port-label")?.textContent).toBe("ACL");
+	});
+
+	it("outlines a tolerated badge and leaves a by-design one exactly as it was", async () => {
+		const tolerated = edge({
+			label: "SK",
+			data: { disposition: "tolerated", summary: "Living with it." },
+		});
+		await waitFor(() =>
+			expect(tolerated.container.querySelector("path")).toBeTruthy(),
+		);
+		expect(badges(tolerated.container)[0]).toHaveClass("tolerated");
+		tolerated.unmount();
+
+		const plain = edge({
+			label: "U/D",
+			data: { sourceLabel: "PL", disposition: "by-design" },
+		});
+		await waitFor(() =>
+			expect(plain.container.querySelector("path")).toBeTruthy(),
+		);
+		const [, role] = badges(plain.container);
+		expect(role).not.toHaveClass("tolerated");
+		expect(role).not.toHaveClass("refactor");
+		// With no evidence summary the hover is just the pattern's own meaning.
+		expect(role).toHaveAttribute(
+			"title",
+			`Published Language — ${PATTERNS["published-language"].summary}`,
+		);
+	});
+
+	it("reports each badge's flow coordinates when it is clicked", async () => {
+		const onBadgeClick = vi.fn();
+		const { container } = edge({
+			label: "C/S",
+			data: { sourceLabel: "OHS", targetLabel: "ACL", onBadgeClick },
+		});
+		await waitFor(() => expect(container.querySelector("path")).toBeTruthy());
+		for (const badge of badges(container)) {
+			await fireEvent.click(badge.querySelector("button") as HTMLElement);
+			const [x, y] = portAt(badge);
+			expect(onBadgeClick).toHaveBeenLastCalledWith({ x, y });
+		}
+		expect(onBadgeClick).toHaveBeenCalledTimes(3);
+	});
+
+	it("leaves a badge with nothing to disclose inert, as it has always been", async () => {
+		const { container } = edge({ label: "P", data: { sourceLabel: "OHS" } });
+		await waitFor(() => expect(container.querySelector("path")).toBeTruthy());
+		for (const badge of badges(container)) {
+			expect(badge).not.toHaveClass("intent");
+			expect(badge.querySelector("button")).toBeNull();
+			expect(badge.querySelector("span.port-label")).toBeTruthy();
+		}
 	});
 });

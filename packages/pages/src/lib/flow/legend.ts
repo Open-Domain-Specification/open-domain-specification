@@ -1,4 +1,10 @@
-import { PATTERNS, type PatternNature } from "@open-domain-specification/core";
+import {
+	type Disposition,
+	dispositionOf,
+	PATTERNS,
+	type PatternNature,
+} from "@open-domain-specification/core";
+import { DISPOSITION_LABELS, DISPOSITION_SUMMARIES } from "../evidence/labels";
 import type { ConsumableNodeData } from "./consumable-graph";
 import type { ContextNodeData } from "./context-graph";
 import type { Graph } from "./graph";
@@ -10,7 +16,36 @@ import { roleLabel } from "./roles";
  * node mark, with the full name. Derived from the graph, so the legend
  * lists only what the current map actually draws.
  */
-export type LegendEntry = { mark: string; name: string };
+export type LegendEntry = {
+	mark: string;
+	name: string;
+	/** Longer explanation on hover, where the name alone is a bare word. */
+	title?: string;
+};
+
+/**
+ * The badge marks the evidence layer draws, in the order a reader meets them.
+ * `by-design` is the unmarked default and so is never a legend row: a filled
+ * badge is simply a badge.
+ */
+const MARKED: { disposition: Disposition; mark: string }[] = [
+	{ disposition: "tolerated", mark: "outlined badge" },
+	{ disposition: "refactor", mark: "warning badge" },
+];
+
+/** One row per disposition mark the map's edges actually carry. */
+function dispositionEntries(graph: Graph): LegendEntry[] {
+	const drawn = new Set(
+		graph.edges.flatMap((e) => (e.intent ? [dispositionOf(e.intent)] : [])),
+	);
+	return MARKED.filter(({ disposition }) => drawn.has(disposition)).map(
+		({ disposition, mark }) => ({
+			mark,
+			name: DISPOSITION_LABELS[disposition],
+			title: DISPOSITION_SUMMARIES[disposition],
+		}),
+	);
+}
 
 /** Mark to full name for the patterns of the given categories, from core's knowledge base. */
 const marksOf = (...categories: PatternNature["category"][]) =>
@@ -57,6 +92,7 @@ function contextLegend(graph: Graph): LegendEntry[] {
 		...(nodes.some((n) => n.cluster)
 			? [{ mark: "band", name: "Domain colour" }]
 			: []),
+		...dispositionEntries(graph),
 	];
 }
 

@@ -557,6 +557,28 @@ table.attrs td.k {
 .svelte-flow .svelte-flow__edge-label.port {
 	pointer-events: none;
 }
+/* The evidence marks (RFC-002 4.2): a badge over an intent marked for
+   refactoring takes the warning colour, a tolerated one is outlined instead of
+   filled, and a by-design one is left exactly as it is. A badge that discloses
+   its intent on click is a button and has to receive the pointer. */
+.svelte-flow .svelte-flow__edge-label.port.tolerated {
+	background: transparent;
+}
+.svelte-flow .svelte-flow__edge-label.port.refactor {
+	border-color: var(--warn);
+	color: var(--warn);
+}
+.svelte-flow .svelte-flow__edge-label.port.intent {
+	pointer-events: all;
+}
+.svelte-flow .svelte-flow__edge-label.port button.port-label {
+	font: inherit;
+	color: inherit;
+	background: none;
+	border: 0;
+	padding: 0;
+	cursor: pointer;
+}
 /* Fixed handles are small dots in the card colours. The diagrams are read-only: a handle only
    ever receives an edge Svelte Flow lays out, so it must never start one, and it takes on the
    node's own pointer cursor rather than the library's crosshair. `isConnectable={false}` on the

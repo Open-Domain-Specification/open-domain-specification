@@ -34,6 +34,30 @@ describe("LegendPanel", () => {
 		expect(diagramOptions.legendCollapsed).toBe(false);
 		expect(panel.querySelector("dl")).toBeTruthy();
 	});
+	it("names the disposition marks the map draws, each hovering to what it claims", () => {
+		diagramOptions.set({ legendCollapsed: false });
+		const { container } = render(Harness, {
+			graph: contextGraph(
+				ODSContextMap.fromWorkspace(workspace),
+				workspace.relationships,
+			),
+			kind: "context",
+		});
+		const panel = container.querySelector(".diagram-legend") as HTMLElement;
+		const rows = new Map(
+			[...panel.querySelectorAll("dt")].map((dt) => [
+				dt.textContent,
+				dt.nextElementSibling as HTMLElement,
+			]),
+		);
+		expect(rows.get("outlined badge")?.textContent).toBe("tolerated");
+		expect(rows.get("warning badge")?.textContent).toBe("refactor");
+		expect(rows.get("warning badge")?.getAttribute("title")).toContain(
+			"Should be removed or replaced",
+		);
+		// A term the graph does draw carries no tooltip of its own.
+		expect(rows.get("OHS")?.getAttribute("title")).toBeNull();
+	});
 	it("renders nothing for a graph with no terms", () => {
 		const { container } = render(Harness, {
 			graph: { nodes: [], edges: [] },

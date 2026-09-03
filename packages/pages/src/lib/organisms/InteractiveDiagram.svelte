@@ -11,6 +11,7 @@ import "@xyflow/svelte/dist/style.css";
 import { onDestroy } from "svelte";
 import { fitClusters } from "../flow/cluster-fit";
 import DiagramOptionsPanel from "../flow/DiagramOptionsPanel.svelte";
+import { createDisclosure, withDisclosure } from "../flow/disclosure.svelte";
 import { flowEdges, flowNodes, groupLabels } from "../flow/flow-nodes";
 import { createFullscreen } from "../flow/fullscreen.svelte";
 import type { Graph } from "../flow/graph";
@@ -22,6 +23,7 @@ import { diagramOptions } from "../flow/options.svelte";
 import { edgeTypes, nodeTypes } from "../flow/registry";
 import SketchBackdrop from "../flow/SketchBackdrop.svelte";
 import { hostColorMode } from "../flow/theme.svelte";
+import DisclosureCard from "./DisclosureCard.svelte";
 
 /**
  * A pannable, zoomable version of a figure. Nodes are refs, so clicking one
@@ -41,16 +43,20 @@ const sketch = $derived(sketchApplies(kind, diagramOptions.style));
 let nodes = $state.raw<Node[]>([]);
 let edges = $state.raw<Edge[]>([]);
 const labels = $derived(groupLabels(positioned));
+const disclosure = createDisclosure();
 $effect(() => {
 	nodes = flowNodes(positioned, {
 		floating: diagramOptions.handlesFor(kind) === "floating",
 		sketch,
 		free: kind === "context",
 	});
-	edges = flowEdges(positioned);
+	// The intent rides on the graph edge; only the click needs this component,
+	// which is the one place that can hold the open card.
+	edges = withDisclosure(flowEdges(positioned), positioned, disclosure);
 });
 const fullscreen = createFullscreen();
 onDestroy(fullscreen.stop);
+onDestroy(disclosure.stop);
 /** Free maps refit their cluster boxes round the nodes as one is dragged. */
 const refit = () => {
 	if (kind === "context") nodes = fitClusters(nodes);
@@ -65,6 +71,7 @@ const refit = () => {
 		<MiniMap pannable zoomable width={120} height={80} nodeClass={minimapNodeClass} />
 		<DiagramOptionsPanel {kind} {fullscreen} />
 		<LegendPanel {graph} {kind} />
+		<DisclosureCard {disclosure} />
 	</SvelteFlow>
 </div>
 
