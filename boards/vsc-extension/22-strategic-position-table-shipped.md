@@ -4,7 +4,7 @@ labels: [frontend, docs]
 priority: high
 agent: dev-sonnet
 clean-code-swept: true
-updatedAt: 2026-09-04T03:20:00.000Z
+updatedAt: 2026-09-04T05:30:00.000Z
 ---
 # Ship the grouped Strategic position table with descriptions (RFC-002 card B)
 
@@ -19,6 +19,8 @@ The context page's relationship table becomes the grouped table designed in card
 - [x] Storybook `Templates/ContextPage` story shows the grouped table
 
 ## Gates
+
+- [x] qa-automated — after merging develop (card 40): doc 17, petstore 18 incl. assertDocSite, pages 443 at 100% coverage (lead, 2026-09-04T05:30:00Z)
 
 - [x] clean-code-swept — self-scan (diff > 3 files, but budget-limited); no violation scored > 0.5; one deliberate small cross-package duplication noted in the journal (dev-sonnet, 2026-09-04T03:20:00.000Z)
 
@@ -36,3 +38,4 @@ The context page's relationship table becomes the grouped table designed in card
 - **dev-sonnet** (2026-09-04T03:20:00.000Z): Storybook `Templates/ContextPage` story (`packages/pages/src/lib/templates/ContextPage.stories.svelte`) needed no change — it renders `ContextPage` as-is, which now renders the grouped `StrategicPositionTable`; confirmed via `npm run build-storybook` completing clean.
 - **dev-sonnet** (2026-09-04T03:20:00.000Z): Housekeeping note for the lead, not part of this card's diff: this worktree's `npm ci` runs inside individual packages had left `node_modules/@open-domain-specification/model-tools` (and the sibling model packages) unlinked, so `models/*/generate.ts` was silently resolving `@open-domain-specification/doc` from the outer checkout instead of this worktree — a full `npm install` at the repo root fixed the symlinks. Mentioning it because it cost real time to diagnose and could bite another worktree agent.
 - **dev-sonnet** (2026-09-04T03:20:00.000Z): Clean-code self-scan done (diff spans 6 files + 2 new — over the sub-agent threshold, but scanned inline given the budget); nothing scored above 0.5. `clean-code-swept: true` recorded under Gates. Ready for review.
+- **lead** (2026-09-04T05:30:00.000Z): Reviewed packages/doc/src/strategic-position.md.ts and the ContextPage swap. Scoping the doc change to the bounded context page is right. Landing on develop.
