@@ -45,10 +45,15 @@ Open-host service for /pet endpoints
 > No policies.
 
 ## Context Relationships
-| Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
+### Depended on by
+| With | Description | Type | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |
-| Catalog BC | customer-supplier | Sales BC | open-host-service | anti-corruption-layer |
-| Catalog BC | shared-kernel | Inventory BC | - | - |
+| Sales BC | Sales needs pet availability; Catalog commits to the summary contract | customer-supplier | open-host-service | anti-corruption-layer |
+
+### Works alongside
+| With | Description | Type | Upstream Roles | Downstream Roles |
+| --- | --- | --- | --- | --- |
+| Inventory BC | PetStatus and its values are one shared definition | shared-kernel | - | - |
 
 
 ## Consumptions

@@ -46,9 +46,10 @@ Chooses ship dates across planned shipments so orders approved on the same day l
 
 
 ## Context Relationships
-| Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
+### Works alongside
+| With | Description | Type | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |
-| Sales BC | partnership | Fulfilment BC | - | - |
+| Sales BC | Order lifecycle and shipment lifecycle are designed and released together | partnership | - | - |
 
 
 ## Consumptions

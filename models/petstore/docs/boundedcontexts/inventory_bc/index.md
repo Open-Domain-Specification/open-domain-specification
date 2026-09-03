@@ -43,10 +43,15 @@ Open-host service for /store/inventory
 
 
 ## Context Relationships
-| Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
+### Depends on
+| With | Description | Type | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |
-| Sales BC | upstream-downstream | Inventory BC | published-language | conformist |
-| Catalog BC | shared-kernel | Inventory BC | - | - |
+| Sales BC | The projection counts orders as Sales reports them | upstream-downstream | published-language | conformist |
+
+### Works alongside
+| With | Description | Type | Upstream Roles | Downstream Roles |
+| --- | --- | --- | --- | --- |
+| Catalog BC | PetStatus and its values are one shared definition | shared-kernel | - | - |
 
 
 ## Consumptions

@@ -221,12 +221,30 @@ describe("templates render the alternate branches the petstore fixture never hit
 	});
 
 	it("ContextPage: unused schema chip, not-modelled term, and multi-role relationship", () => {
-		const text = renderRef(boundedcontextRef("main_context").$ref).textContent;
+		const container = renderRef(boundedcontextRef("main_context").$ref);
+		const text = container.textContent;
 		expect(text).toContain("unused");
-		expect(text).toContain("open-host-service");
-		expect(text).toContain("published-language");
-		expect(text).toContain("conformist");
-		expect(text).toContain("anti-corruption-layer");
+		// The strategic position table shows role abbreviations as chip text,
+		// with the full pattern name as the chip's tooltip.
+		const titles = [...container.querySelectorAll(".chip")].map((c) =>
+			c.getAttribute("title"),
+		);
+		expect(text).toContain("OHS");
+		expect(text).toContain("PL");
+		expect(text).toContain("CF");
+		expect(text).toContain("ACL");
+		expect(titles).toContain(
+			"The upstream side publishes a stable service contract for all comers.",
+		);
+		expect(titles).toContain(
+			"The upstream side publishes a shared interchange format for its messages.",
+		);
+		expect(titles).toContain(
+			"The downstream side adopts the upstream model as-is and does not translate.",
+		);
+		expect(titles).toContain(
+			"The downstream side translates at the boundary to keep its own model clean.",
+		);
 	});
 
 	it("ContextPage: copes with a context and a root entity that have no name", async () => {

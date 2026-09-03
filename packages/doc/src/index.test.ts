@@ -240,6 +240,26 @@ describe("toDoc", () => {
 		expect(workspaceDoc).toContain("Test Workspace");
 	});
 
+	it("groups a context's relationships by what they mean from there, with a Description column", async () => {
+		const docs = await toDoc(petstore);
+
+		const salesDoc = docs["boundedcontexts/sales_bc/index.md"];
+		expect(salesDoc).toContain("## Context Relationships");
+		expect(salesDoc).toContain("### Depends on");
+		expect(salesDoc).toContain("### Depended on by");
+		expect(salesDoc).toContain("### Works alongside");
+		expect(salesDoc).toContain(
+			"| With | Description | Type | Upstream Roles | Downstream Roles |",
+		);
+		// Sales depends on Catalog (customer-supplier), Inventory depends on
+		// Sales (upstream-downstream), and Sales works alongside Fulfilment
+		// (partnership) and Identity (separate-ways).
+		expect(salesDoc).toContain("Catalog");
+		expect(salesDoc).toContain("Inventory");
+		expect(salesDoc).toContain("Fulfilment");
+		expect(salesDoc).toContain("Identity");
+	});
+
 	it("snapshots the file list produced for the petstore reference workspace", async () => {
 		const docs = await toDoc(petstore);
 
