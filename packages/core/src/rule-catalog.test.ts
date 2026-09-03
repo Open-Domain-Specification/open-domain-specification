@@ -8,6 +8,8 @@ function everythingWrong(): Workspace {
 		odsVersion: "1.0.0",
 		description: "",
 		version: "0",
+		// comments-required is opt-in, so the fixture has to ask for it to trip it.
+		options: { rules: { commentsRequired: true } },
 	});
 	const a = ws.addBoundedContext("A", { description: "" });
 	const b = ws.addBoundedContext("B", { description: "" });

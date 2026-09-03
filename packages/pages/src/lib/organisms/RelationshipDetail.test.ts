@@ -112,7 +112,18 @@ describe("RelationshipDetail", () => {
 	});
 
 	it("says what is missing when nobody has written anything down", () => {
-		show(of("separate-ways"));
+		// Every petstore relationship is commented — it turns comments-required
+		// on — so the bare case needs a workspace of its own.
+		const workspace = new Workspace("Silent", {
+			id: "silent",
+			odsVersion: "1.0.0",
+			description: "Two contexts that go their separate ways, unexplained.",
+			version: "0.0.1",
+		});
+		const a = workspace.addBoundedContext("A", { description: "A." });
+		const b = workspace.addBoundedContext("B", { description: "B." });
+		const bare = a.separateWaysFrom(b);
+		show(bare, {}, { workspace, fileLabel: "silent.json", diagnostics: [] });
 		expect(
 			screen.getByText("No comments recorded for this relationship yet."),
 		).toBeInTheDocument();

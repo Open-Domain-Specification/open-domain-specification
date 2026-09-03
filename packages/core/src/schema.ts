@@ -342,6 +342,23 @@ export interface ValueObjectSchema {
 }
 
 /**
+ * @title RuleOptions
+ * @description Opt-in validation rules. A rule listed here is off unless the workspace turns it on.
+ */
+export interface RuleOptionsSchema {
+	/** Warn on every context relationship that carries no comments. Off by default. */
+	commentsRequired?: boolean;
+}
+
+/**
+ * @title WorkspaceOptions
+ * @description Per-workspace switches for behaviour that is not part of the model itself.
+ */
+export interface WorkspaceOptionsSchema {
+	rules?: RuleOptionsSchema;
+}
+
+/**
  * @title Workspace
  * @description Represents a workspace in the Open Domain Specification (ODS).
  */
@@ -356,6 +373,8 @@ export interface WorkspaceSchema {
 	primaryColor?: string;
 	description: string;
 	version: string;
+	/** Switches for behaviour that is not part of the model, such as opt-in rules. */
+	options?: WorkspaceOptionsSchema;
 	domains: {
 		[domain: string]: DomainSchema;
 	};

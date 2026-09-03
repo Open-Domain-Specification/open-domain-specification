@@ -6,6 +6,7 @@ import {
 	type ContextRelationship,
 	dispositionOf,
 	isSymmetricRelationship,
+	relationshipsWithoutComments,
 	type Workspace,
 } from "@open-domain-specification/core";
 
@@ -21,9 +22,6 @@ export type RowGroup = { id: string; label: string; rows: EvidenceRow[] };
  */
 export const hasEvidence = (r: ContextRelationship): boolean =>
 	r.comments.length > 0 || dispositionOf(r) !== "by-design";
-
-/** A relationship the reader can act on: it is either marked or unexplained. */
-const hasNoComments = (r: ContextRelationship) => r.comments.length === 0;
 
 /** The context on the other side of a relationship from `bc`. */
 export const counterpartOf = (
@@ -89,15 +87,47 @@ export type Health = {
 	noComments: EvidenceRow[];
 };
 
+/** The three numbers the summary strip, the workspace node and the tree all show. */
+export type HealthCounts = {
+	refactor: number;
+	tolerated: number;
+	noComments: number;
+};
+
+/** The counts behind a report, flattened out of its groups. */
+export function healthCounts(report: Health): HealthCounts {
+	return {
+		refactor: report.refactor.reduce((n, g) => n + g.rows.length, 0),
+		tolerated: report.tolerated.length,
+		noComments: report.noComments.length,
+	};
+}
+
+/**
+ * The three counts for a workspace. The workspace page's Health section, the
+ * report's summary strip and the extension's workspace tree node all read
+ * this, so none of them can drift from another.
+ */
+export const healthCountsOf = (workspace: Workspace): HealthCounts =>
+	healthCounts(health(workspace));
+
 /**
  * The workspace-level read of the evidence layer (RFC-002 section 4.5): what
  * is marked for refactoring, what is a tolerated compromise, and what carries
  * no comments at all. Refactor rows group by `source`, which for a directed
  * relationship is the upstream context and for a symmetric one is the first
  * participant — in both cases the side a reader goes to first.
+ *
+ * All three lists read relationships only, matching core's
+ * `relationshipsWithoutComments` and the `comments-required` rule, so the
+ * number on the page, the number on the tree node and the number of warnings
+ * in the Problems panel are the same number.
  */
 export function health(workspace: Workspace): Health {
 	const rows = workspace.relationships.map(row);
+	const bare = new Set<ContextRelationship>(
+		relationshipsWithoutComments(workspace),
+	);
 	const groups = new Map<BoundedContext, EvidenceRow[]>();
 	for (const x of rows.filter(
 		(x) => dispositionOf(x.relationship) === "refactor",
@@ -111,7 +141,7 @@ export function health(workspace: Workspace): Health {
 		tolerated: rows.filter(
 			(x) => dispositionOf(x.relationship) === "tolerated",
 		),
-		noComments: rows.filter((x) => hasNoComments(x.relationship)),
+		noComments: rows.filter((x) => bare.has(x.relationship)),
 	};
 }
 

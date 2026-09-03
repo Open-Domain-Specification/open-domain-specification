@@ -1,3 +1,4 @@
+import { relationshipsWithoutComments } from "./evidence";
 import {
 	type Aggregate,
 	type Consumption,
@@ -297,6 +298,21 @@ const contextServesSubdomain: Rule = (workspace) => {
 	return diagnostics;
 };
 
+/**
+ * Every context relationship carries at least one comment. Opt-in: a workspace
+ * asks for it with `options.rules.commentsRequired`, because a model that has
+ * not started on its evidence layer yet should not be buried in warnings.
+ */
+const commentsRequired: Rule = (workspace) => {
+	if (!workspace.options?.rules?.commentsRequired) return [];
+	return relationshipsWithoutComments(workspace).map((r) => ({
+		severity: "warning" as const,
+		rule: "comments-required",
+		message: `"${r.source.name}" and "${r.target.name}" are related as ${r.type}, but nothing is written down about the real system behind it`,
+		ref: r.ref,
+	}));
+};
+
 /** What a validation rule checks, in words a reader new to DDD can follow. */
 export type RuleDescription = {
 	/** The stable id carried by every diagnostic the rule emits. */
@@ -391,6 +407,15 @@ const RULES: CataloguedRule[] = [
 		why: "A context that serves no subdomain has no place in the problem-space view, so nobody can see which part of the business it exists for.",
 		fix: "Add the subdomain the context serves to its subdomains list.",
 		check: contextServesSubdomain,
+	},
+	{
+		rule: "comments-required",
+		severities: ["warning"],
+		summary:
+			"Every context relationship carries at least one comment. Opt-in: set options.rules.commentsRequired on the workspace.",
+		why: "A relationship is a claim about how two teams meet; without a note saying where that shows up in the real system, nobody can tell whether the map is still true.",
+		fix: "Add a comment to the relationship saying what backs it in the code, or turn options.rules.commentsRequired off while the evidence layer is still being written.",
+		check: commentsRequired,
 	},
 ];
 

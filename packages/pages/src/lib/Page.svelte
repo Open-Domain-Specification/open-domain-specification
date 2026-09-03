@@ -18,7 +18,7 @@ import {
 import { tick } from "svelte";
 import { useModel } from "./model";
 import Toc from "./organisms/Toc.svelte";
-import { resolvePage } from "./resolve";
+import { HEALTH_PAGE, resolvePage } from "./resolve";
 import AggregatePage, {
 	sections as aggregateSections,
 } from "./templates/AggregatePage.svelte";
@@ -34,6 +34,9 @@ import DomainPage, {
 import EntityPage, {
 	sections as entitySections,
 } from "./templates/EntityPage.svelte";
+import HealthPage, {
+	sections as healthSections,
+} from "./templates/HealthPage.svelte";
 import InvariantPage, {
 	sections as invariantSections,
 } from "./templates/InvariantPage.svelte";
@@ -87,7 +90,9 @@ $effect(() => {
 
 <div class="layout">
 	{#key page.pageRef}
-		{#if target instanceof Domain}
+		{#if target === HEALTH_PAGE}
+			<main><HealthPage /></main><Toc sections={healthSections} />
+		{:else if target instanceof Domain}
 			<main><DomainPage domain={target} /></main><Toc sections={domainSections} />
 		{:else if target instanceof Subdomain}
 			<main><SubdomainPage subdomain={target} /></main><Toc sections={subdomainSections} />

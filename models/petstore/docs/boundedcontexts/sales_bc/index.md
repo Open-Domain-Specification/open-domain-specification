@@ -74,6 +74,13 @@ Open-host service for /store/order endpoints
 | Fulfilment BC | Order lifecycle and shipment lifecycle are designed and released together | partnership | - | - |
 | Identity BC | Orders are anonymous in Petstore v3; no integration by design | separate-ways | - | - |
 
+- **Fulfilment BC** (partnership)
+	- Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged.
+	- DeliverOrder and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier.
+- **Identity BC** (separate-ways)
+	- The order payload carries no user field and the Sales service holds no credentials for the Identity API, so nothing links an order to an account. [sales/openapi.yaml](https://github.com/example/petstore/blob/main/sales/openapi.yaml)
+	- Keeping the two apart is deliberate: checkout must work for a visitor who never signs in. [ADR-007 Anonymous checkout](https://github.com/example/petstore/blob/main/docs/adr/007-anonymous-checkout.md)
+
 - `open-host-service` — **Open Host Service** (OHS). A public, stable protocol or API provided by an upstream context.
 - `anti-corruption-layer` — **Anti-Corruption Layer** (ACL). A translating boundary isolating a downstream model from external concepts.
 - `conformist` — **Conformist** (CF). Downstream adopts the upstream domain model without translation.

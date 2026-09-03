@@ -23,6 +23,20 @@ Users and sessions per Petstore API; kept as its own domain because it would be 
 ## Diagnostics
 > No diagnostics.
 
+## Health
+### Refactor
+- **Catalog BC ↔ Inventory BC** (shared-kernel)
+	- PetStatus and its values live in @petstore/kernel and both services compile against it. [packages/kernel/src/PetStatus.ts](https://github.com/example/petstore/blob/main/packages/kernel/src/PetStatus.ts)
+	- The kernel has grown past the status enum and now carries pricing rules; it should become a Published Language from Catalog. [ADR-014 Shrink the kernel](https://github.com/example/petstore/blob/main/docs/adr/014-shrink-the-kernel.md)
+
+### Tolerated
+- **Sales BC → Inventory BC** (upstream-downstream)
+	- The projection conforms to the Sales order events rather than translating them; accepted while Inventory stays read-only. [inventory/projection/OrderEventHandler.ts](https://github.com/example/petstore/blob/main/inventory/projection/OrderEventHandler.ts)
+
+### No comments
+> Every relationship carries at least one comment.
+
+
 ## Teams
 | Team | Owns |
 | --- | --- |

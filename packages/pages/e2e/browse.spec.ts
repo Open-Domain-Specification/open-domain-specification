@@ -51,6 +51,34 @@ test("table of contents entries scroll to their section", async ({ page }) => {
 	await expect(page.locator("#health")).toBeInViewport();
 });
 
+test("the workspace's health strip links out to the full report", async ({
+	page,
+}) => {
+	const strip = page.locator("#evidence-health .summary");
+	await expect(strip).toContainText("1 to refactor");
+	await expect(strip).toContainText("1 tolerated");
+
+	await page.getByRole("link", { name: /full health report/ }).click();
+
+	await expect(page).toHaveURL(/#\/health$/);
+	await expect(page.locator("main h1")).toContainText("Health");
+	await expect(page.locator("main .summary")).toContainText("1 to refactor");
+	// The refactor backlog, grouped under the context that owns the change.
+	await expect(page.locator("#refactor")).toBeVisible();
+	await expect(page.locator("main")).toContainText(
+		"The kernel has grown past the status enum",
+	);
+
+	// The no-comments list is a reconciliation to-do, so it starts collapsed.
+	const toggle = page.getByRole("button", { name: /No comments \(0\)/ });
+	await expect(toggle).toHaveAttribute("aria-expanded", "false");
+	await toggle.click();
+	await expect(toggle).toHaveAttribute("aria-expanded", "true");
+	await expect(page.locator("main")).toContainText(
+		"Every intent carries at least one comment.",
+	);
+});
+
 test("a ref link inside the page navigates", async ({ page }) => {
 	await page
 		.locator(`main a.ref[data-ref="#/teams/orders_team"]`)
