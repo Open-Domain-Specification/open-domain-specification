@@ -11,8 +11,20 @@ let {
 	examples?: Example[];
 } = $props();
 const KEY = "ods-viewer-url";
+
+function toAbsoluteUrl(raw?: string | null): string {
+	if (!raw?.trim()) return "";
+	try {
+		return new URL(raw.trim(), document.baseURI).href;
+	} catch {
+		return raw.trim();
+	}
+}
+
 let url = $state(
-	new URLSearchParams(location.search).get("url") ?? remembered(),
+	toAbsoluteUrl(
+		new URLSearchParams(location.search).get("url") ?? remembered(),
+	),
 );
 let error = $state<string | undefined>();
 let loading = $state(false);
@@ -26,17 +38,21 @@ function remembered(): string {
 }
 
 async function fromUrl() {
+	const target = toAbsoluteUrl(url);
+	url = target;
 	loading = true;
 	error = undefined;
 	try {
-		const res = await fetch(url);
+		const res = await fetch(target);
 		if (!res.ok)
-			throw new Error(`Failed to fetch workspace from ${url} (${res.status})`);
+			throw new Error(
+				`Failed to fetch workspace from ${target} (${res.status})`,
+			);
 		const schema = await res.json();
 		try {
-			localStorage.setItem(KEY, url);
+			localStorage.setItem(KEY, target);
 		} catch {}
-		onload(schema, url.split("/").pop() || url);
+		onload(schema, target.split("/").pop() || target);
 	} catch (e) {
 		error = e instanceof Error ? e.message : String(e);
 	} finally {
@@ -56,7 +72,7 @@ async function fromFile(e: Event) {
 }
 
 function fromExample(example: Example) {
-	url = example.url;
+	url = toAbsoluteUrl(example.url);
 	fromUrl();
 }
 
@@ -70,7 +86,17 @@ if (new URLSearchParams(location.search).get("url")) fromUrl();
 		<form onsubmit={(e) => { e.preventDefault(); fromUrl(); }}>
 			<label for="url">From a URL</label>
 			<div class="row">
-				<input id="url" type="url" bind:value={url} placeholder="https://example.com/.ods/petstore.json" readonly={loading} required />
+				<input
+					id="url"
+					type="url"
+					bind:value={url}
+					onchange={() => {
+						if (url) url = toAbsoluteUrl(url);
+					}}
+					placeholder="https://example.com/.ods/petstore.json"
+					readonly={loading}
+					required
+				/>
 				<button type="submit" disabled={loading}>{loading ? "Loading…" : "Load"}</button>
 			</div>
 			<p class="dim">The file is fetched directly from the URL by your browser, so it must allow cross-origin requests.</p>

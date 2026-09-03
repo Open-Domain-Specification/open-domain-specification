@@ -34,6 +34,20 @@ test("imports the workspace typed into the url form", async ({ page }) => {
 	await expect(page.locator("main h1")).toContainText(WORKSPACE_NAME);
 });
 
+test("imports the workspace from a relative url typed into the form", async ({
+	page,
+}) => {
+	await page.goto("/");
+
+	await expect(
+		page.getByRole("heading", { name: "Open a workspace" }),
+	).toBeVisible();
+	await page.getByLabel("From a URL").fill("./examples/petstore.json");
+	await page.getByRole("button", { name: "Load" }).click();
+
+	await expect(page.locator("main h1")).toContainText(WORKSPACE_NAME);
+});
+
 test("imports a workspace picked from disk", async ({ page }) => {
 	await page.goto("/");
 

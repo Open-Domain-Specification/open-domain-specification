@@ -132,6 +132,92 @@ describe("ImportScreen", () => {
 		);
 	});
 
+	it("loads from a submitted relative URL, resolving it to an absolute URL against the base URL", async () => {
+		const schema = { name: "streamline" };
+		vi.stubGlobal(
+			"fetch",
+			vi.fn().mockResolvedValue({ ok: true, json: async () => schema }),
+		);
+		const setItem = vi.fn();
+		vi.stubGlobal("localStorage", {
+			getItem: () => null,
+			setItem,
+		});
+		const onload = vi.fn();
+		render(ImportScreen, { onload });
+
+		const input = screen.getByLabelText("From a URL");
+		await fireEvent.input(input, {
+			target: { value: "./examples/streamline.json" },
+		});
+		await fireEvent.change(input);
+		await fireEvent.click(screen.getByRole("button", { name: /load/i }));
+		const expectedUrl = new URL("./examples/streamline.json", document.baseURI)
+			.href;
+		await waitFor(() =>
+			expect(onload).toHaveBeenCalledWith(schema, "streamline.json"),
+		);
+		expect(fetch).toHaveBeenCalledWith(expectedUrl);
+		expect(setItem).toHaveBeenCalledWith(KEY, expectedUrl);
+		expect(input).toHaveValue(expectedUrl);
+	});
+
+	it("dynamically resolves relative URLs on input change", async () => {
+		render(ImportScreen, { onload: vi.fn() });
+		const input = screen.getByLabelText("From a URL");
+		await fireEvent.input(input, {
+			target: { value: "./examples/streamline.json" },
+		});
+		await fireEvent.change(input);
+		const expected = new URL("./examples/streamline.json", document.baseURI)
+			.href;
+		expect(input).toHaveValue(expected);
+	});
+
+	it("dynamically resolves a remembered relative URL to the base URL", () => {
+		localStorage.setItem(KEY, "./examples/streamline.json");
+		render(ImportScreen, { onload: vi.fn() });
+		const expected = new URL("./examples/streamline.json", document.baseURI)
+			.href;
+		expect(screen.getByLabelText("From a URL")).toHaveValue(expected);
+	});
+
+	it("falls back to trimmed string when URL parsing throws", async () => {
+		render(ImportScreen, { onload: vi.fn() });
+		const input = screen.getByLabelText("From a URL");
+		await fireEvent.input(input, {
+			target: { value: "http://[invalid]" },
+		});
+		await fireEvent.change(input);
+		expect(input).toHaveValue("http://[invalid]");
+	});
+
+	it("trims whitespace around submitted URLs and ignores empty submissions", async () => {
+		const schema = { name: "petstore" };
+		const fetchFn = vi
+			.fn()
+			.mockResolvedValue({ ok: true, json: async () => schema });
+		vi.stubGlobal("fetch", fetchFn);
+		const onload = vi.fn();
+		render(ImportScreen, { onload });
+
+		const input = screen.getByLabelText("From a URL");
+		await fireEvent.input(input, {
+			target: { value: "   " },
+		});
+		await fireEvent.click(screen.getByRole("button", { name: /load/i }));
+		expect(fetchFn).not.toHaveBeenCalled();
+
+		await fireEvent.input(input, {
+			target: { value: "  https://example.com/petstore.json  " },
+		});
+		await fireEvent.click(screen.getByRole("button", { name: /load/i }));
+		await waitFor(() =>
+			expect(onload).toHaveBeenCalledWith(schema, "petstore.json"),
+		);
+		expect(fetchFn).toHaveBeenCalledWith("https://example.com/petstore.json");
+	});
+
 	it("shows an error message on a non-ok response", async () => {
 		vi.stubGlobal(
 			"fetch",
@@ -262,5 +348,33 @@ describe("ImportScreen examples", () => {
 		);
 		expect(fetch).toHaveBeenCalledWith(examples[0].url);
 		expect(screen.getByLabelText("From a URL")).toHaveValue(examples[0].url);
+	});
+
+	it("dynamically resolves relative example URLs to the base URL", async () => {
+		const relativeExamples = [
+			{
+				name: "StreamLine",
+				description: "A streaming service",
+				url: "./examples/streamline.json",
+			},
+		];
+		const schema = { name: "streamline" };
+		vi.stubGlobal(
+			"fetch",
+			vi.fn().mockResolvedValue({ ok: true, json: async () => schema }),
+		);
+		const onload = vi.fn();
+		render(ImportScreen, { onload, examples: relativeExamples });
+
+		const card = screen.getByRole("button", { name: /StreamLine/ });
+		await fireEvent.click(card);
+
+		const expected = new URL("./examples/streamline.json", document.baseURI)
+			.href;
+		await waitFor(() =>
+			expect(onload).toHaveBeenCalledWith(schema, "streamline.json"),
+		);
+		expect(fetch).toHaveBeenCalledWith(expected);
+		expect(screen.getByLabelText("From a URL")).toHaveValue(expected);
 	});
 });
