@@ -141,24 +141,31 @@ function ellipsePoints(
 }
 
 /**
- * Points every `step` along the closed polygon's perimeter, so the spline
- * through them bends evenly instead of overshooting at a sharp corner
- * between a long side and a short one.
+ * Points about every `step` along the closed polygon's perimeter, so the
+ * spline through them bends evenly instead of overshooting at a sharp corner
+ * between a long side and a short one. The step is stretched to a whole
+ * number of paces round the loop — at least three — so the chord that closes
+ * the loop is as long as all the others; a short closing chord next to a full
+ * one is exactly the uneven spacing that kinks the spline.
  */
 function resample(points: Point[], step: number): Point[] {
 	if (points.length < 3) return points;
+	const side = (i: number): [Point, Point, number] => {
+		const [a, b] = [points[i], points[(i + 1) % points.length]];
+		return [a, b, Math.hypot(b[0] - a[0], b[1] - a[1])];
+	};
+	const perimeter = points.reduce((sum, _, i) => sum + side(i)[2], 0);
+	const pace = perimeter / Math.max(3, Math.round(perimeter / step));
 	const out: Point[] = [];
 	let carry = 0;
 	for (let i = 0; i < points.length; i++) {
-		const a = points[i];
-		const b = points[(i + 1) % points.length];
-		const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-		for (let d = carry; d < len; d += step) {
+		const [a, b, len] = side(i);
+		for (let d = carry; d < len - EPS; d += pace) {
 			const t = d / len;
 			out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
 		}
-		carry = (carry - len) % step;
-		if (carry < 0) carry += step;
+		carry = (carry - len) % pace;
+		if (carry < 0) carry += pace;
 	}
 	return out;
 }
@@ -172,8 +179,42 @@ function outerBlob(nodes: SketchNode[], padding: number): Point[] {
 const f = (v: number) => Math.round(v * 100) / 100;
 
 /**
- * A closed Catmull-Rom spline through the points as cubic Bézier commands.
- * Fewer than three points give a plain closed polyline (a dot or a line).
+ * The knot spacing a centripetal Catmull-Rom spline gives a chord: its length
+ * to the power alpha = 1/2. Floored so coincident points cannot divide by
+ * zero — at that limit the control point lands on the knot itself.
+ */
+const knot = (p: Point, q: Point) =>
+	Math.max(Math.sqrt(Math.hypot(q[0] - p[0], q[1] - p[1])), EPS);
+
+/**
+ * One coordinate of the Bezier control point beside the knot `near` on the
+ * segment running `near` to `far`, with the tangent there pulled by `outer`,
+ * the knot on the segment's other side. `dNear` is the knot spacing of that
+ * outer chord and `dSeg` the segment's own. Barry and Goldman's non-uniform
+ * Catmull-Rom in Bezier form; at equal spacings it is `near + (far - outer) / 6`.
+ */
+const control = (
+	dNear: number,
+	dSeg: number,
+	outer: number,
+	near: number,
+	far: number,
+) =>
+	(dNear * dNear * far -
+		dSeg * dSeg * outer +
+		(2 * dNear * dNear + 3 * dNear * dSeg + dSeg * dSeg) * near) /
+	(3 * dNear * (dNear + dSeg));
+
+/**
+ * A closed centripetal (alpha = 1/2) Catmull-Rom spline through the points as
+ * cubic Bézier commands. Uniform Catmull-Rom scales each tangent by the span
+ * of its neighbours, so where a long chord meets a short one — the tangent
+ * bridging two clusters meeting the tight points round a small outlying node,
+ * or the short chord closing the loop — it overshoots and the curve doubles
+ * back into a cusp. Weighting the tangents by the square root of the chord
+ * lengths removes the overshoot, and so the cusps and self-intersections,
+ * whatever the spacing. Fewer than three points give a plain closed polyline
+ * (a dot or a line).
  */
 function smoothPath(points: Point[]): string {
 	if (points.length === 0) return "";
@@ -187,13 +228,14 @@ function smoothPath(points: Point[]): string {
 		const p1 = at(i);
 		const p2 = at(i + 1);
 		const p3 = at(i + 2);
+		const [d1, d2, d3] = [knot(p0, p1), knot(p1, p2), knot(p2, p3)];
 		const c1: Point = [
-			p1[0] + (p2[0] - p0[0]) / 6,
-			p1[1] + (p2[1] - p0[1]) / 6,
+			control(d1, d2, p0[0], p1[0], p2[0]),
+			control(d1, d2, p0[1], p1[1], p2[1]),
 		];
 		const c2: Point = [
-			p2[0] - (p3[0] - p1[0]) / 6,
-			p2[1] - (p3[1] - p1[1]) / 6,
+			control(d3, d2, p3[0], p2[0], p1[0]),
+			control(d3, d2, p3[1], p2[1], p1[1]),
 		];
 		d += ` C${f(c1[0])} ${f(c1[1])} ${f(c2[0])} ${f(c2[1])} ${f(p2[0])} ${f(p2[1])}`;
 	}
