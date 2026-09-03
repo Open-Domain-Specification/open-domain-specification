@@ -1,6 +1,6 @@
 # RFC-001: Context Relationship Narratives, Role Notes, and Interactive UI Popovers
 
-- **Status**: Proposed (revision 2, 2026-09-03: incorporates the tech lead review)
+- **Status**: Superseded by [RFC-002](rfc-002-intent-and-evidence.md) on 2026-09-03 after the product-owner review; kept for the knowledge base (section 4) and the review decisions
 - **Authors**: Jonathan Turnock, Antigravity
 - **Created**: 2026-09-03
 - **Related ADRs**: [decisions/03-explicit-context-relationships.md](../../decisions/03-explicit-context-relationships.md), [decisions/09-consumables-plus-schemas.md](../../decisions/09-consumables-plus-schemas.md), [decisions/12-one-renderer-three-hosts.md](../../decisions/12-one-renderer-three-hosts.md)
