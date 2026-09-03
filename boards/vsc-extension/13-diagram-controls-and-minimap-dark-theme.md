@@ -5,7 +5,7 @@ priority: high
 agent: dev-opus
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-03T18:30:00.000Z
+updatedAt: 2026-09-03T19:55:00.000Z
 ---
 # Diagram controls and minimap theme styling in dark mode
 
@@ -46,3 +46,4 @@ Even when dark mode is forced, Svelte Flow defaults use hardcoded colors rather 
 - **dev-opus** (2026-09-03T16:47:00.000Z): Left for the lead as instructed: the checklist item verifying the three VS Code themes headed. `apps/ods-vscode` has no theme coverage today — `apps/ods-vscode/src/test/extension.test.ts` never touches the theme classes — so I did not run `npm run test:vscode` for this card; nothing here changes the extension's own surface, only the pages bundle it embeds, and that bundle needs a rebuild before the visual check. Moving to review.
 - **lead** (2026-09-03T18:30:00.000Z): Reviewed: theme.svelte.ts light-before-dark ordering is correct for HC light, accepted. page.css:614-650 token mapping matches the decision. Landing on develop; the headed three-theme check follows in the extension after a rebuild.
 - **lead** (2026-09-03T19:20:00.000Z): The real-VS-Code suite (`npm run test:vscode`) would not start: VS Code is open on this machine and vscode-test refuses to run beside another instance. The headed three-theme check stays open until it can run; unit and e2e evidence recorded above.
+- **lead** (2026-09-03T19:55:00.000Z): Browser-side visual check with `vscode-dark` on the body: controls and minimap render dark with a 1px token border and the attribution is muted. The in-VS-Code three-theme check still waits on the extension suite being able to launch.

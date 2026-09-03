@@ -4,7 +4,7 @@ labels: [frontend]
 priority: med
 agent: dev-sonnet
 clean-code-swept: true
-updatedAt: 2026-09-03T18:20:00.000Z
+updatedAt: 2026-09-03T19:55:00.000Z
 ---
 # Floating handles by default on context diagrams
 
@@ -49,3 +49,4 @@ Context diagrams should default to `"floating"` handles so that newly opened con
   - LR/TB layout: floating-handle intersection math in edge-path.ts/floating.ts is direction-independent (works off node rects, not the layout's flow direction), so no separate LR/TB test was needed; InteractiveDiagram.test.ts's existing context-map case already covers rendering with floating handles applied by default.
   - Verified: `npm run check` (svelte-check) 0 errors/warnings; scoped vitest run for options.test.ts, ContextEdge.test.ts, DiagramOptionsPanel.test.ts, InteractiveDiagram.test.ts — 21/21 passing, 100% line/branch/function coverage on options.svelte.ts and InteractiveDiagram.svelte; `npx playwright test e2e/diagrams-context.spec.ts e2e/diagrams.spec.ts e2e/diagrams-sketch.spec.ts` — 6/6 passing. The full unit suite's `Page.test.ts`/`App.test.ts` large-model tests hit their 30s timeout under heavy parallel load on this machine (multiple concurrent agent worktrees), unrelated to this change — confirmed unaffected files, not a regression from this diff.
 - **lead** (2026-09-03T18:20:00.000Z): Reviewed: packages/pages/src/lib/flow/options.svelte.ts:37-40 `defaultHandles`, :79-82 `handlesFor`; InteractiveDiagram.svelte:41; e2e assertion in packages/pages/e2e/diagrams-context.spec.ts:10-14. Landing on develop.
+- **lead** (2026-09-03T19:55:00.000Z): Visual check: the petstore commerce context map opens with the handle selector on Floating and edges attaching along node rims.

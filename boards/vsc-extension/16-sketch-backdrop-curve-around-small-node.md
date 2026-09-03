@@ -5,7 +5,7 @@ priority: high
 agent: dev-opus
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-03T19:40:00.000Z
+updatedAt: 2026-09-03T19:55:00.000Z
 ---
 # Fix outer backdrop curve pinch when closing around small or outlier nodes
 
@@ -35,7 +35,7 @@ The outer boundary geometry is produced by `sketchBackdrop` in packages/pages/sr
 - [x] Implement centripetal Catmull-Rom parameterization (`alpha = 0.5`) in `smoothPath` in packages/pages/src/lib/flow/voronoi.ts:178-201
 - [x] Ensure resampled points around tight node hulls transition smoothly in packages/pages/src/lib/flow/voronoi.ts:148-164
 - [x] Maintain 100% test coverage in packages/pages/src/lib/flow/voronoi.test.ts
-- [ ] Visually verify smooth boundary rendering in packages/pages/src/lib/flow/SketchBackdrop.stories.svelte and the Petstore example
+- [x] Visually verify smooth boundary rendering in packages/pages/src/lib/flow/SketchBackdrop.stories.svelte and the Petstore example
 
 ## Gates
 
@@ -56,3 +56,4 @@ The outer boundary geometry is produced by `sketchBackdrop` in packages/pages/sr
 - **dev-opus** (2026-09-03T16:07:00.000Z): Clean-code sweep over the diff, three reviewers (SRP+KISS, DRY+naming, coupling+dead code). No finding above 0.5 from any of them, so nothing to refactor. The two sub-threshold notes, recorded for the record: `resample` measures each edge twice, once for the perimeter and once in the walk (voronoi.ts:151-171, O(n) on a hull of a few dozen points), and `control` is a general name carried by its doc comment (voronoi.ts:189-206).
 - **dev-opus** (2026-09-03T16:10:00.000Z): Moving to review. Final full-package run `npm run test:unit` in packages/pages: 48 of 49 files pass, 365 tests. The one red file is `src/lib/Page.test.ts`, two of its 117 tests hitting the 30s `testTimeout` — and a different two each run (RiverMart + StreamLine, then RiverMart + NorthBank), which is the signature of contention rather than a fault; that file on its own is 117/117 in 58s with the change and 117/117 in 46s without it. Everything else, `src/lib/flow/voronoi.test.ts` included, is green. Two things the lead will want to know about this worktree: it was branched from v0.1.11 and I reset it to develop head (0511a70) to get this card, and `lerna run build` reports success from the nx cache without writing any `dist`, so packages/core, packages/graphviz and the pages app all had to be built by hand before the suite could run. The visual check is left unticked for you.
 - **lead** (2026-09-03T19:40:00.000Z): Reviewed voronoi.ts:184-205 (`knot`, `control`, Barry-Goldman form verified) and the even-pace `resample`. Landing on develop; the visual check follows through the sketch e2e spec and Storybook.
+- **lead** (2026-09-03T19:55:00.000Z): Visual check: Playwright screenshot of the petstore commerce context map in sketch style; the outer blob rounds Identity BC at the bottom-left with no pinch or kink.
