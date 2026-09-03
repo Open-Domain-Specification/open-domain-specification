@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Swagger Petstore (v3)</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+</head>
+<body>
+	<div id="app"></div>
+	<script>
+		if (!location.hash) location.hash = "#/swagger_petstore_(v3)/index.md";
+		window.$docsify = {
+			name: "Swagger Petstore (v3)",
+			loadSidebar: true,
+			alias: { "/.*/_sidebar.md": "/_sidebar.md" },
+			relativePath: true,
+			subMaxLevel: 2
+		};
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>
+</body>
+</html>
