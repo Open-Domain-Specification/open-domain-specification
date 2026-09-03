@@ -1,4 +1,7 @@
-import { assertStressTestWorkspace } from "@open-domain-specification/model-tools";
+import {
+	assertDocSite,
+	assertStressTestWorkspace,
+} from "@open-domain-specification/model-tools";
 import { describe, expect, it } from "vitest";
 import { workspace } from "./workspace";
 
@@ -24,4 +27,10 @@ describe("StreamLine reference workspace", () => {
 	it("passes the shared stress-test assertions", () => {
 		assertStressTestWorkspace(workspace, deliberate);
 	});
+
+	// Rendering every diagram through graphviz-wasm takes tens of seconds on
+	// the larger models, so this one test gets a generous timeout.
+	it("generates a complete docsify site with no broken links", async () => {
+		await assertDocSite(workspace);
+	}, 60_000);
 });
