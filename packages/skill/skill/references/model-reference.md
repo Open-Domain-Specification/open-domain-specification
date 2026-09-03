@@ -19,6 +19,7 @@ Represents a workspace in the Open Domain Specification (ODS).
 | `logoUrl` | string | no |  |
 | `name` | string | yes |  |
 | `odsVersion` | string | yes |  |
+| `options` | [WorkspaceOptions](#workspaceoptions) | no | Switches for behaviour that is not part of the model, such as opt-in rules. |
 | `primaryColor` | string | no |  |
 | `relationships` | array of [ContextRelationship](#contextrelationship) | yes |  |
 | `teams` | map of id to [Team](#team) | yes |  |
@@ -239,6 +240,16 @@ A reaction: when these events happen, issue these commands.
 
 No other fields are allowed.
 
+## RuleOptions
+
+Opt-in validation rules. A rule listed here is off unless the workspace turns it on.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `commentsRequired` | boolean | no | Warn on every context relationship that carries no comments. Off by default. |
+
+No other fields are allowed.
+
 ## Service
 
 Represents a service in the Open Domain Specification (ODS).
@@ -301,6 +312,16 @@ Represents a value object in the Open Domain Specification (ODS).
 | `description` | string | yes |  |
 | `name` | string | yes |  |
 | `relations` | array of [EntityRelation](#entityrelation) | yes |  |
+
+No other fields are allowed.
+
+## WorkspaceOptions
+
+Per-workspace switches for behaviour that is not part of the model itself.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `rules` | [RuleOptions](#ruleoptions) | no |  |
 
 No other fields are allowed.
 

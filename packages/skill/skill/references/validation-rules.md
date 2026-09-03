@@ -75,3 +75,11 @@
 **Why it matters:** A context that serves no subdomain has no place in the problem-space view, so nobody can see which part of the business it exists for.
 
 **Usual fix:** Add the subdomain the context serves to its subdomains list.
+
+## `comments-required` (warning)
+
+**Requires:** Every context relationship carries at least one comment. Opt-in: set options.rules.commentsRequired on the workspace.
+
+**Why it matters:** A relationship is a claim about how two teams meet; without a note saying where that shows up in the real system, nobody can tell whether the map is still true.
+
+**Usual fix:** Add a comment to the relationship saying what backs it in the code, or turn options.rules.commentsRequired off while the evidence layer is still being written.
