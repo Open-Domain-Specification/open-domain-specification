@@ -173,6 +173,7 @@
 		"package": "vsce package --no-dependencies",
 		"test": "vitest run",
 		"test:vscode": "npm run build && tsc -p tsconfig.test.json && vscode-test",
+		"screenshots": "ODS_SCREENSHOTS=1 npm run test:vscode",
 		"depcheck": "npx depcheck"
 	},
 	"dependencies": {
