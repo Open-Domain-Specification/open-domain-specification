@@ -1,8 +1,8 @@
 ---
-column: review
+column: done
 labels: [ddd, backend, breaking]
 priority: high
-updatedAt: 2026-09-03T13:05:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 live: false
 ---
 # Decouple bounded contexts from subdomains

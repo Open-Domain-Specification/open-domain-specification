@@ -1,10 +1,10 @@
 ---
-column: review
+column: done
 labels: [ddd, backend, breaking, frontend, docs]
 priority: high
 agent: claude
 live: false
-updatedAt: 2026-09-03T13:05:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 ---
 # Consumables plus schemas: collapse events and commands back into provides
 

@@ -1,10 +1,10 @@
 ---
-column: review
+column: done
 labels: [docs, frontend]
 priority: high
 agent: claude
 live: false
-updatedAt: 2026-09-03T13:05:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 ---
 # Bring the docs site and UI help up to date with the new model
 

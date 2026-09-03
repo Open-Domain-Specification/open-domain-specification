@@ -1,8 +1,8 @@
 ---
-column: review
+column: done
 labels: [frontend]
 priority: medium
-updatedAt: 2026-09-03T13:05:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 live: false
 ---
 # Diagnostics from validate and JSON schema registration

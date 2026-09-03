@@ -1,11 +1,11 @@
 ---
-column: review
+column: done
 labels: [ddd, docs]
 priority: high
 agent: claude
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-03T13:05:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 ---
 # Reference domain models: a balanced canonical example plus fake-org stress tests
 

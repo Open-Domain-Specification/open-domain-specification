@@ -1,11 +1,11 @@
 ---
-column: review
+column: done
 labels: [frontend, breaking, docs]
 priority: high
 agent: claude
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-03T13:05:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 ---
 # Svelte app: viewer, static export and webview from one bundle; ods-ui deleted
 

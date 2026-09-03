@@ -1,8 +1,8 @@
 ---
-column: review
+column: done
 labels: [frontend]
 priority: high
-updatedAt: 2026-09-03T13:05:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 live: false
 ---
 # Detail pages: a rich webview per element in the spirit of ods-ui

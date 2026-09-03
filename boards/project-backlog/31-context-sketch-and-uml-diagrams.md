@@ -1,11 +1,11 @@
 ---
-column: review
+column: done
 labels: [frontend, ddd]
 priority: high
 agent: claude
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-03T13:05:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 ---
 # Sketch only for the context map, domain borders, and proper UML for the other two maps
 

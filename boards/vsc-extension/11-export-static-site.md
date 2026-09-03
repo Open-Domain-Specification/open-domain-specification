@@ -1,10 +1,10 @@
 ---
-column: review
+column: done
 labels: [frontend]
 priority: med
 agent: claude
 live: false
-updatedAt: 2026-09-03T13:05:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 ---
 # Export the model as a static site
 
