@@ -156,6 +156,30 @@ describe("ODS extension in a real VS Code window", function () {
 			);
 		});
 
+		it("opens a relationship's page from its row in the tree", async () => {
+			const file = petstoreFile(api);
+			const root = api.tree.getChildren()[0];
+			const relationships = api.tree
+				.getChildren(root)
+				.find((n) => n.label === "Relationships");
+			assert.ok(relationships, "the tree has no Relationships group");
+			const [first] = api.tree.getChildren(relationships);
+			assert.ok(first?.ref, "a relationship row carries no ref to open");
+			assert.match(first.ref, /^#\/relationships\//);
+
+			// Exactly what clicking the row does: the command its tree item carries.
+			const item = api.tree.getTreeItem(first);
+			assert.equal(item.command?.command, "ods.openPage");
+			await vscode.commands.executeCommand("ods.openPage", first);
+
+			const navigated = await log.waitFor(
+				(m) => m.type === "navigated" && m.ref === first.ref,
+				`{ type: "navigated", ref: "${first.ref}" }`,
+			);
+			assert.equal(navigated.type, "navigated");
+			assert.equal(first.file.relativePath, file.relativePath);
+		});
+
 		it("reuses the webview for a second ref in the same file", async () => {
 			const file = petstoreFile(api);
 			const readyCount = log.messages.filter((m) => m.type === "ready").length;

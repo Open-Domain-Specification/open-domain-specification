@@ -201,7 +201,8 @@ export class ModelTree
 									`${r.source.name} ${r.type === "partnership" || r.type === "shared-kernel" ? "and" : "to"} ${r.target.name}`,
 									"arrow-right",
 									undefined,
-									{ description: r.type },
+									// A relationship has a page of its own, so the row opens it.
+									{ ref: r.ref, description: r.type },
 								),
 						),
 					),

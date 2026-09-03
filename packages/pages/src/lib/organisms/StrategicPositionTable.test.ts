@@ -1,24 +1,26 @@
-import { PATTERNS, Workspace } from "@open-domain-specification/core";
+import {
+	type BoundedContext,
+	PATTERNS,
+	Workspace,
+} from "@open-domain-specification/core";
 import { fireEvent, render, screen, within } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
-import {
-	petstoreEvidence,
-	strategicPositionFixture,
-} from "../evidence/fixtures";
+import { strategicPositionFixture } from "../evidence/fixtures";
 import Harness from "../evidence/WithModel.harness.svelte";
+import { petstoreSales } from "../fixtures";
 import type { Model } from "../model";
 import StrategicPositionTable from "./StrategicPositionTable.svelte";
 
-const show = (f: ReturnType<typeof strategicPositionFixture>) =>
+const show = (f: { model: Model; context: BoundedContext }) =>
 	render(Harness, {
 		model: f.model,
 		component: StrategicPositionTable,
-		args: { context: f.context, sheets: f.sheets },
+		args: { context: f.context },
 	});
 
 describe("StrategicPositionTable", () => {
 	it("groups the petstore's Sales relationships by what they mean from Sales", () => {
-		const { container } = show(petstoreEvidence());
+		const { container } = show(petstoreSales());
 		const headings = [...container.querySelectorAll("tr.group th")].map(
 			(th) => th.textContent,
 		);
@@ -31,7 +33,7 @@ describe("StrategicPositionTable", () => {
 	});
 
 	it("prints the description the model already carries, and the role and type chips with their meaning", () => {
-		show(petstoreEvidence());
+		show(petstoreSales());
 		expect(
 			screen.getByText(
 				"Sales needs pet availability; Catalog commits to the summary contract",
@@ -48,7 +50,7 @@ describe("StrategicPositionTable", () => {
 	});
 
 	it("marks only the relationships that are not by design", () => {
-		const { container } = show(petstoreEvidence());
+		const { container } = show(petstoreSales());
 		// Sales→Inventory is tolerated; the other three Sales rows say nothing.
 		const chips = [...container.querySelectorAll("tr.position .chip")].filter(
 			(c) => c.textContent === "tolerated" || c.textContent === "refactor",
@@ -57,7 +59,7 @@ describe("StrategicPositionTable", () => {
 	});
 
 	it("expands one row in place into the relationship detail, and collapses it again", async () => {
-		const { container } = show(petstoreEvidence());
+		const { container } = show(petstoreSales());
 		const toggle = screen.getByRole("button", {
 			name: "Evidence for Catalog BC and Sales BC",
 		});
@@ -99,32 +101,18 @@ describe("StrategicPositionTable", () => {
 	});
 
 	it("says so when a relationship has no description, and when the context has none at all", () => {
-		const workspace = new Workspace("Bare", {
-			id: "bare",
-			odsVersion: "1.0.0",
-			description: "Two contexts, one undescribed relationship.",
-			version: "0.0.1",
-		});
-		const a = workspace.addBoundedContext("A", { description: "A." });
-		const b = workspace.addBoundedContext("B", { description: "B." });
-		const c = workspace.addBoundedContext("C", { description: "Alone." });
-		a.upstreamOf(b);
-		const model: Model = {
-			workspace,
-			fileLabel: "bare.json",
-			diagnostics: [],
-		};
+		const { model, a, c } = bareWorkspace();
 		render(Harness, {
 			model,
 			component: StrategicPositionTable,
-			args: { context: a, sheets: {} },
+			args: { context: a },
 		});
 		expect(screen.getByText("no description")).toBeInTheDocument();
 
 		render(Harness, {
 			model,
 			component: StrategicPositionTable,
-			args: { context: c, sheets: {} },
+			args: { context: c },
 		});
 		expect(
 			screen.getByText(
@@ -132,4 +120,56 @@ describe("StrategicPositionTable", () => {
 			),
 		).toBeInTheDocument();
 	});
+
+	it("leaves out the toggle and the disposition column when nothing is recorded", () => {
+		const { model, a } = bareWorkspace();
+		const { container } = render(Harness, {
+			model,
+			component: StrategicPositionTable,
+			args: { context: a },
+		});
+		expect(container.querySelectorAll("th.toggle")).toHaveLength(0);
+		expect(screen.queryByText("Disposition")).not.toBeInTheDocument();
+		expect(
+			container.querySelector("tr.group th")?.getAttribute("colspan"),
+		).toBe("5");
+	});
+
+	it("brings the toggle and the disposition column back as soon as one relationship carries a disposition", () => {
+		const { model, a, b } = bareWorkspace();
+		a.upstreamOf(b, { type: "customer-supplier", disposition: "tolerated" });
+		const { container } = render(Harness, {
+			model,
+			component: StrategicPositionTable,
+			args: { context: a },
+		});
+		expect(container.querySelectorAll("th.toggle")).toHaveLength(1);
+		expect(screen.getByText("Disposition")).toBeInTheDocument();
+		expect(container.querySelectorAll("td.toggle button")).toHaveLength(2);
+	});
 });
+
+/** Two joined contexts and a lonely one, with nothing written down anywhere. */
+function bareWorkspace(): {
+	model: Model;
+	a: BoundedContext;
+	b: BoundedContext;
+	c: BoundedContext;
+} {
+	const workspace = new Workspace("Bare", {
+		id: "bare",
+		odsVersion: "1.0.0",
+		description: "Two contexts, one undescribed relationship.",
+		version: "0.0.1",
+	});
+	const a = workspace.addBoundedContext("A", { description: "A." });
+	const b = workspace.addBoundedContext("B", { description: "B." });
+	const c = workspace.addBoundedContext("C", { description: "Alone." });
+	a.upstreamOf(b);
+	return {
+		model: { workspace, fileLabel: "bare.json", diagnostics: [] },
+		a,
+		b,
+		c,
+	};
+}

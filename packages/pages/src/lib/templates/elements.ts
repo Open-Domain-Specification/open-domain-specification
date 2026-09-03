@@ -8,6 +8,13 @@ import type {
 	Workspace,
 } from "@open-domain-specification/core";
 
+/**
+ * The relationship element's own page needs a name for it, and so do the
+ * hosts that list one. It lives in a leaf module because the extension reads
+ * it too; this is the registration every other element already has here.
+ */
+export { relationshipTitle } from "../relationship";
+
 /* ---------- shared lookups across the workspace ---------- */
 
 function* aggregatesOf(ws: Workspace): Iterable<Aggregate> {

@@ -50,10 +50,18 @@ Open-host service for /pet endpoints
 | --- | --- | --- | --- | --- |
 | Sales BC | Sales needs pet availability; Catalog commits to the summary contract | customer-supplier | open-host-service | anti-corruption-layer |
 
+- **Sales BC** (customer-supplier)
+	- Sales reads Catalog through PetSummaryClient, which maps the catalog payload onto the Sales order model. [sales/acl/PetSummaryClient.ts](https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts)
+	- The summary contract is versioned and published; Catalog will not break it without a major release. [catalog/openapi.yaml](https://github.com/example/petstore/blob/main/catalog/openapi.yaml)
+
 ### Works alongside
 | With | Description | Type | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |
 | Inventory BC | PetStatus and its values are one shared definition | shared-kernel | - | - |
+
+- **Inventory BC** (shared-kernel)
+	- PetStatus and its values live in @petstore/kernel and both services compile against it. [packages/kernel/src/PetStatus.ts](https://github.com/example/petstore/blob/main/packages/kernel/src/PetStatus.ts)
+	- The kernel has grown past the status enum and now carries pricing rules; it should become a Published Language from Catalog. [ADR-014 Shrink the kernel](https://github.com/example/petstore/blob/main/docs/adr/014-shrink-the-kernel.md)
 
 - `open-host-service` — **Open Host Service** (OHS). A public, stable protocol or API provided by an upstream context.
 - `anti-corruption-layer` — **Anti-Corruption Layer** (ACL). A translating boundary isolating a downstream model from external concepts.

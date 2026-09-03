@@ -1,11 +1,11 @@
 <script module lang="ts">
 import { defineMeta } from "@storybook/addon-svelte-csf";
+import { petstoreModel } from "../fixtures";
 import ModelProvider from "../ModelProvider.svelte";
 import Harness from "./DispositionMap.harness.svelte";
-import { petstoreEvidence } from "./fixtures";
 import Theme from "./Theme.harness.svelte";
 
-const { model, sheets } = petstoreEvidence();
+const model = petstoreModel();
 
 // Each story's body goes in a `template` snippet. Plain children of <Story>
 // are passed to the meta `component` as its own children instead of replacing
@@ -26,18 +26,18 @@ const { Story } = defineMeta({
 -->
 <Story name="Petstore">
 	{#snippet template()}
-		<ModelProvider {model}><Harness {sheets} /></ModelProvider>
+		<ModelProvider {model}><Harness /></ModelProvider>
 	{/snippet}
 </Story>
 
 <Story name="Light">
 	{#snippet template()}
-		<Theme mode="light"><ModelProvider {model}><Harness {sheets} /></ModelProvider></Theme>
+		<Theme mode="light"><ModelProvider {model}><Harness /></ModelProvider></Theme>
 	{/snippet}
 </Story>
 
 <Story name="Dark">
 	{#snippet template()}
-		<Theme mode="dark"><ModelProvider {model}><Harness {sheets} /></ModelProvider></Theme>
+		<Theme mode="dark"><ModelProvider {model}><Harness /></ModelProvider></Theme>
 	{/snippet}
 </Story>

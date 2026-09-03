@@ -16,6 +16,7 @@ type RefTarget = { file: ModelNode["file"]; ref?: string };
 export type OdsTestApi = {
 	project: OdsProject;
 	panel: DetailPanel;
+	tree: ModelTree;
 };
 
 export async function activate(
@@ -149,7 +150,7 @@ export async function activate(
 	await project.reload();
 	void promptWhenSkillStale(context);
 
-	return { project, panel: pages };
+	return { project, panel: pages, tree };
 }
 
 async function pickFolder(

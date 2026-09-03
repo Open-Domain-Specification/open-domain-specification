@@ -1,5 +1,5 @@
 import type { Workspace } from "@open-domain-specification/core";
-import { ICONS } from "@open-domain-specification/pages";
+import { ICONS, relationshipTitle } from "@open-domain-specification/pages";
 import * as vscode from "vscode";
 import type { OdsProject, WorkspaceFile } from "./project";
 
@@ -53,6 +53,15 @@ export function* searchIndex(file: WorkspaceFile): Iterable<Hit> {
 		detail: ws.description,
 	};
 	for (const t of ws.teams.values()) yield hit(file, "team", t, []);
+	// A relationship has no name or id of its own; it is named by its two ends.
+	for (const r of ws.relationships)
+		yield {
+			file,
+			ref: r.ref,
+			label: `$(${ICONS.relationship}) ${relationshipTitle(r)}`,
+			description: `${kindLabel.relationship} · ${r.type}`,
+			detail: r.description,
+		};
 	for (const d of ws.domains.values()) {
 		yield hit(file, "domain", d, []);
 		for (const s of d.subdomains.values())

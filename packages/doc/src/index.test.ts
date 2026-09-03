@@ -260,6 +260,52 @@ describe("toDoc", () => {
 		expect(salesDoc).toContain("Identity");
 	});
 
+	it("prints each relationship's comments under its group, statement then citation", async () => {
+		const docs = await toDoc(petstore);
+		const salesDoc = docs["boundedcontexts/sales_bc/index.md"];
+		const position = salesDoc.split("## Context Relationships")[1];
+
+		expect(position).toContain("- **Catalog BC** (customer-supplier)");
+		expect(position).toContain(
+			"\t- Sales reads Catalog through PetSummaryClient, which maps the catalog payload onto the Sales order model. [sales/acl/PetSummaryClient.ts](https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts)",
+		);
+		// The comments sit under their own group's table, not another's.
+		const dependsOn = position
+			.split("### Depends on")[1]
+			.split("### Depended on by")[0];
+		expect(dependsOn).toContain("- **Catalog BC** (customer-supplier)");
+		expect(dependsOn).not.toContain("- **Inventory BC**");
+		// Sales ↔ Fulfilment and Identity ↔ Sales carry nothing, so nothing prints.
+		const alongside = position.split("### Works alongside")[1];
+		expect(alongside).not.toContain("- **Fulfilment BC**");
+		expect(alongside).not.toContain("- **Identity BC**");
+	});
+
+	it("prints a consumable's comments beneath the Provides table that lists it", async () => {
+		const docs = await toDoc(petstore);
+		const petApp = docs["boundedcontexts/catalog_bc/services/pet_app/index.md"];
+		const provides = petApp.split("## Provides")[1].split("## Consumes")[0];
+
+		expect(provides).toContain("- **GetPetSummary**");
+		expect(provides).toContain(
+			"\t- The summary projection is the only Catalog read Sales is allowed to make. [GET /pets/{id}/summary](https://github.com/example/petstore/blob/main/catalog/openapi.yaml#/paths/~1pets~1{id}~1summary)",
+		);
+		// The bullets sit under the table, not inside it.
+		expect(provides.indexOf("| Name | Type |")).toBeLessThan(
+			provides.indexOf("- **GetPetSummary**"),
+		);
+	});
+
+	it("prints nothing beneath a Provides table whose consumables carry no comments", async () => {
+		const docs = await toDoc(petstore);
+		const shipment =
+			docs["boundedcontexts/fulfilment_bc/aggregates/shipment/index.md"];
+		const provides = shipment.split("## Provides")[1].split("## Consumes")[0];
+
+		expect(provides).toContain("| Name | Type |");
+		expect(provides).not.toContain("\n- **");
+	});
+
 	it("footnotes every pattern a context's relationship table names, and no others", async () => {
 		const docs = await toDoc(petstore);
 		const contextDoc = docs["boundedcontexts/sales_bc/index.md"];

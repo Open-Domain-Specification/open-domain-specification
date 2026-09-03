@@ -1,9 +1,9 @@
 <script lang="ts">
+import type { Disposition } from "@open-domain-specification/core";
 import { SvelteFlow } from "@xyflow/svelte";
 import type { Graph } from "../flow/graph";
 import type { DiagramKind } from "../flow/kind";
 import DispositionLegend from "./DispositionLegend.svelte";
-import type { Disposition } from "./fixtures";
 
 /** The legend only renders inside a flow. */
 let {

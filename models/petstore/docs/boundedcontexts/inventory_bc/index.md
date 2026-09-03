@@ -48,10 +48,17 @@ Open-host service for /store/inventory
 | --- | --- | --- | --- | --- |
 | Sales BC | The projection counts orders as Sales reports them | upstream-downstream | published-language | conformist |
 
+- **Sales BC** (upstream-downstream)
+	- The projection conforms to the Sales order events rather than translating them; accepted while Inventory stays read-only. [inventory/projection/OrderEventHandler.ts](https://github.com/example/petstore/blob/main/inventory/projection/OrderEventHandler.ts)
+
 ### Works alongside
 | With | Description | Type | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |
 | Catalog BC | PetStatus and its values are one shared definition | shared-kernel | - | - |
+
+- **Catalog BC** (shared-kernel)
+	- PetStatus and its values live in @petstore/kernel and both services compile against it. [packages/kernel/src/PetStatus.ts](https://github.com/example/petstore/blob/main/packages/kernel/src/PetStatus.ts)
+	- The kernel has grown past the status enum and now carries pricing rules; it should become a Published Language from Catalog. [ADR-014 Shrink the kernel](https://github.com/example/petstore/blob/main/docs/adr/014-shrink-the-kernel.md)
 
 - `conformist` — **Conformist** (CF). Downstream adopts the upstream domain model without translation.
 - `published-language` — **Published Language** (PL). A well-documented shared interchange format.

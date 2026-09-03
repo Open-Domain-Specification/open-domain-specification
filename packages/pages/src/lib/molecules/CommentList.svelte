@@ -1,10 +1,7 @@
 <script lang="ts">
+import type { Comment, CommentLink } from "@open-domain-specification/core";
 import Empty from "../atoms/Empty.svelte";
-import {
-	type Comment,
-	type CommentLink,
-	LINK_KIND_LABELS,
-} from "../evidence/fixtures";
+import { LINK_KIND_LABELS } from "../evidence/labels";
 
 /**
  * A comments: short grounded statements about the real system, each

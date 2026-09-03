@@ -4,8 +4,7 @@ import Chip from "../atoms/Chip.svelte";
 import Dim from "../atoms/Dim.svelte";
 import DispositionChip from "../atoms/DispositionChip.svelte";
 import Empty from "../atoms/Empty.svelte";
-import { counterpartOf, positionGroups } from "../evidence/derive";
-import type { CommentSheetIndex } from "../evidence/fixtures";
+import { counterpartOf, hasEvidence, positionGroups } from "../evidence/derive";
 import { roleLabel } from "../flow/roles";
 import { useModel } from "../model";
 import ContextPill from "../molecules/ContextPill.svelte";
@@ -21,23 +20,21 @@ import RelationshipDetail from "./RelationshipDetail.svelte";
  * expands in place into the full relationship detail. Expansion never
  * navigates: the detail is the same block a standalone relationship page
  * renders, drawn inside the table row.
+ *
+ * A context whose relationships carry nothing recorded has nothing to
+ * disclose, so the toggle column, the expandable detail row and the
+ * disposition column are all left out and only the plain position — who,
+ * what, which roles — is shown. One comment or one non-default disposition
+ * anywhere in this context's position brings all three back, for every row: a
+ * reader who can expand one row expects to be able to try the next.
  */
-/**
- * `sheets` is optional: without it, the table has nothing to disclose, so
- * the toggle column, the expandable detail row and the disposition column
- * are all left out and only the plain position — who, what, which roles —
- * is shown.
- */
-const {
-	context,
-	sheets,
-}: { context: BoundedContext; sheets?: CommentSheetIndex } = $props();
+const { context }: { context: BoundedContext } = $props();
 
 const model = useModel();
-const groups = $derived(
-	positionGroups(context, model.workspace.relationships, sheets),
+const groups = $derived(positionGroups(context, model.workspace.relationships));
+const withEvidence = $derived(
+	groups.some((g) => g.rows.some((row) => hasEvidence(row.relationship))),
 );
-const withEvidence = $derived(sheets !== undefined);
 let expanded = $state<string | undefined>(undefined);
 const toggle = (key: string) => {
 	expanded = expanded === key ? undefined : key;
@@ -83,11 +80,11 @@ const discloses = (r: { source: { name: string }; target: { name: string } }) =>
 						<td><Chip label={r.type} tone="muted" title={PATTERNS[r.type].summary} /></td>
 						<td>{#each r.upstreamRoles as role, i (role)}{#if i}{" "}{/if}<Chip label={roleLabel(role) as string} tone="muted" title={PATTERNS[role].summary} />{/each}</td>
 						<td>{#each r.downstreamRoles as role, i (role)}{#if i}{" "}{/if}<Chip label={roleLabel(role) as string} tone="muted" title={PATTERNS[role].summary} />{/each}</td>
-						{#if withEvidence}<td><DispositionChip disposition={entry.sheet?.disposition} /></td>{/if}
+						{#if withEvidence}<td><DispositionChip disposition={r.disposition} /></td>{/if}
 					</tr>
 					{#if withEvidence && expanded === entry.key}
 						<tr class="detail-row">
-							<td colspan="7"><RelationshipDetail relationship={r} sheets={sheets ?? {}} /></td>
+							<td colspan="7"><RelationshipDetail relationship={r} /></td>
 						</tr>
 					{/if}
 				{/each}

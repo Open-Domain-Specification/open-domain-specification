@@ -1,58 +1,8 @@
-import { PATTERNS } from "@open-domain-specification/core";
+import { dispositionOf, PATTERNS } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
-import {
-	PETSTORE_SHEETS,
-	petstoreEvidence,
-	relationshipKey,
-	sheetForRef,
-	sheetForRelationship,
-	strategicPositionFixture,
-} from "./fixtures";
+import { strategicPositionFixture } from "./fixtures";
 
-describe("evidence fixtures", () => {
-	it("keys a relationship by its two contexts and its type", () => {
-		const { model } = petstoreEvidence();
-		const [first] = model.workspace.relationships;
-		expect(relationshipKey(first)).toBe(
-			`${first.source.id}~${first.type}~${first.target.id}`,
-		);
-	});
-
-	it("gives four of the five petstore relationships a sheet and leaves one bare", () => {
-		const { model, sheets, context } = petstoreEvidence();
-		expect(context.id).toBe("sales_bc");
-		const found = model.workspace.relationships.map((r) =>
-			sheetForRelationship(sheets, r),
-		);
-		expect(found.filter(Boolean)).toHaveLength(4);
-		const bare = model.workspace.relationships.find(
-			(r) => r.type === "separate-ways",
-		);
-		expect(sheetForRelationship(sheets, bare!)).toBeUndefined();
-	});
-
-	it("gives the shared kernel a refactor sheet saying what it should become", () => {
-		const sheet = PETSTORE_SHEETS["catalog_bc~shared-kernel~inventory_bc"];
-		expect(sheet.disposition).toBe("refactor");
-		expect(sheet.comments.map((f) => f.link?.kind)).toContain("adr");
-	});
-
-	it("looks an element sheet up by its ref", () => {
-		const ref =
-			"#/boundedcontexts/catalog_bc/aggregates/pet/provides/reserve_pet";
-		expect(sheetForRef(PETSTORE_SHEETS, ref)?.disposition).toBe("refactor");
-		expect(sheetForRef(PETSTORE_SHEETS, "#/nothing")).toBeUndefined();
-	});
-
-	it("uses only patterns core's knowledge base can summarise", () => {
-		const { model } = petstoreEvidence();
-		for (const r of model.workspace.relationships) {
-			expect(PATTERNS[r.type].summary, r.type).toBeTruthy();
-			for (const role of [...r.upstreamRoles, ...r.downstreamRoles])
-				expect(PATTERNS[role].summary, role).toBeTruthy();
-		}
-	});
-
+describe("strategicPositionFixture", () => {
 	it("builds a hub with exactly the requested number of relationships", () => {
 		for (const n of [1, 3, 8]) {
 			const { model, context } = strategicPositionFixture(n);
@@ -63,14 +13,14 @@ describe("evidence fixtures", () => {
 		}
 	});
 
-	it("covers every disposition, including a relationship with no sheet, at eight", () => {
-		const { model, sheets } = strategicPositionFixture(8);
-		const found = model.workspace.relationships.map(
-			(r) => sheetForRelationship(sheets, r)?.disposition,
+	it("covers every disposition, and one relationship nobody wrote about, at eight", () => {
+		const { model } = strategicPositionFixture(8);
+		expect(new Set(model.workspace.relationships.map(dispositionOf))).toEqual(
+			new Set(["by-design", "tolerated", "refactor"]),
 		);
-		expect(new Set(found)).toEqual(
-			new Set(["by-design", "tolerated", "refactor", undefined]),
-		);
+		expect(
+			model.workspace.relationships.filter((r) => r.comments.length === 0),
+		).toHaveLength(2);
 	});
 
 	it("puts one relationship in each group by the third counterpart", () => {
@@ -84,5 +34,14 @@ describe("evidence fixtures", () => {
 		// The hub is downstream of the first and upstream of the second.
 		expect(model.workspace.relationships[0].target).toBe(context);
 		expect(model.workspace.relationships[1].source).toBe(context);
+	});
+
+	it("uses only patterns core's knowledge base can summarise", () => {
+		const { model } = strategicPositionFixture(8);
+		for (const r of model.workspace.relationships) {
+			expect(PATTERNS[r.type].summary, r.type).toBeTruthy();
+			for (const role of [...r.upstreamRoles, ...r.downstreamRoles])
+				expect(PATTERNS[role].summary, role).toBeTruthy();
+		}
 	});
 });

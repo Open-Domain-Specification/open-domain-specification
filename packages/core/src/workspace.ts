@@ -108,6 +108,11 @@ export class Workspace
 		return new Team(this, name, attributes);
 	}
 
+	/** The relationship a {@link ContextRelationship.ref} points at, if any. */
+	findRelationship(ref: string): ContextRelationship | undefined {
+		return this.relationships.find((r) => r.ref === ref);
+	}
+
 	getTeamByRef(ref: string): Team | undefined {
 		for (const team of this.teams.values()) {
 			if (team.ref === ref) return team;
@@ -1490,6 +1495,20 @@ export class ContextRelationship
 			this.downstreamRoles = attributes.downstreamRoles ?? [];
 		}
 		workspace.relationships.push(this);
+	}
+
+	/**
+	 * A relationship is the one model element with no id of its own, so its ref
+	 * is derived from what does identify it: the two contexts it joins and the
+	 * pattern that joins them. `~` separates the three parts because it is the
+	 * one ref-safe character no id can contain.
+	 */
+	get path(): string {
+		return `relationships/${this.source.id}~${this.type}~${this.target.id}`;
+	}
+
+	get ref(): string {
+		return `#/${this.path}`;
 	}
 
 	involves(bc: BoundedContext): boolean {

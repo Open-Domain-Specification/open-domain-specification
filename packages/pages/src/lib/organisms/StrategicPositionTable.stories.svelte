@@ -1,14 +1,12 @@
 <script module lang="ts">
 import { defineMeta } from "@storybook/addon-svelte-csf";
-import {
-	petstoreEvidence,
-	strategicPositionFixture,
-} from "../evidence/fixtures";
+import { strategicPositionFixture } from "../evidence/fixtures";
 import Theme from "../evidence/Theme.harness.svelte";
+import { petstoreSales } from "../fixtures";
 import ModelProvider from "../ModelProvider.svelte";
 import StrategicPositionTable from "./StrategicPositionTable.svelte";
 
-const petstore = petstoreEvidence();
+const petstore = petstoreSales();
 const one = strategicPositionFixture(1);
 const three = strategicPositionFixture(3);
 const eight = strategicPositionFixture(8);
@@ -27,7 +25,7 @@ const { Story } = defineMeta({
 <Story name="Petstore Sales">
 	{#snippet template()}
 		<ModelProvider model={petstore.model}>
-			<StrategicPositionTable context={petstore.context} sheets={petstore.sheets} />
+			<StrategicPositionTable context={petstore.context} />
 		</ModelProvider>
 	{/snippet}
 </Story>
@@ -35,7 +33,7 @@ const { Story } = defineMeta({
 <Story name="One relationship">
 	{#snippet template()}
 		<ModelProvider model={one.model}>
-			<StrategicPositionTable context={one.context} sheets={one.sheets} />
+			<StrategicPositionTable context={one.context} />
 		</ModelProvider>
 	{/snippet}
 </Story>
@@ -43,7 +41,7 @@ const { Story } = defineMeta({
 <Story name="Three relationships">
 	{#snippet template()}
 		<ModelProvider model={three.model}>
-			<StrategicPositionTable context={three.context} sheets={three.sheets} />
+			<StrategicPositionTable context={three.context} />
 		</ModelProvider>
 	{/snippet}
 </Story>
@@ -51,7 +49,7 @@ const { Story } = defineMeta({
 <Story name="Eight relationships">
 	{#snippet template()}
 		<ModelProvider model={eight.model}>
-			<StrategicPositionTable context={eight.context} sheets={eight.sheets} />
+			<StrategicPositionTable context={eight.context} />
 		</ModelProvider>
 	{/snippet}
 </Story>
@@ -60,7 +58,7 @@ const { Story } = defineMeta({
 	{#snippet template()}
 		<Theme mode="light">
 			<ModelProvider model={eight.model}>
-				<StrategicPositionTable context={eight.context} sheets={eight.sheets} />
+				<StrategicPositionTable context={eight.context} />
 			</ModelProvider>
 		</Theme>
 	{/snippet}
@@ -70,7 +68,7 @@ const { Story } = defineMeta({
 	{#snippet template()}
 		<Theme mode="dark">
 			<ModelProvider model={eight.model}>
-				<StrategicPositionTable context={eight.context} sheets={eight.sheets} />
+				<StrategicPositionTable context={eight.context} />
 			</ModelProvider>
 		</Theme>
 	{/snippet}

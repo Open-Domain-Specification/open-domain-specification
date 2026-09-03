@@ -5,10 +5,9 @@ import DispositionChip from "../atoms/DispositionChip.svelte";
 import Empty from "../atoms/Empty.svelte";
 import RefLink from "../atoms/RefLink.svelte";
 import { type EvidenceRow, health } from "../evidence/derive";
-import type { CommentSheetIndex } from "../evidence/fixtures";
-import { isSymmetricRelationship } from "../flow/graph";
 import { ICONS, useModel } from "../model";
 import CommentList from "../molecules/CommentList.svelte";
+import { isSymmetricRelationship } from "../relationship";
 
 /**
  * The workspace read of the evidence layer (RFC-002 section 4.5): what is
@@ -20,15 +19,14 @@ import CommentList from "../molecules/CommentList.svelte";
  * The no-comments section starts collapsed: it is a reconciliation to-do list
  * for the skill rather than something the architecture is unhappy about.
  */
-const { sheets }: { sheets: CommentSheetIndex } = $props();
 
 const model = useModel();
-const report = $derived(health(model.workspace, sheets));
+const report = $derived(health(model.workspace));
 const refactorCount = $derived(
 	report.refactor.reduce((n, g) => n + g.rows.length, 0),
 );
-let showNoFacts = $state(false);
-const noFactsLabel = $derived(`No comments (${report.noFacts.length})`);
+let showNoComments = $state(false);
+const noCommentsLabel = $derived(`No comments (${report.noComments.length})`);
 </script>
 
 <div class="health-report">
@@ -39,8 +37,8 @@ const noFactsLabel = $derived(`No comments (${report.noFacts.length})`);
 		<li class:zero={report.tolerated.length === 0}>
 			<strong>{report.tolerated.length}</strong> tolerated
 		</li>
-		<li class:zero={report.noFacts.length === 0}>
-			<strong>{report.noFacts.length}</strong> with no comments
+		<li class:zero={report.noComments.length === 0}>
+			<strong>{report.noComments.length}</strong> with no comments
 		</li>
 	</ul>
 
@@ -66,14 +64,14 @@ const noFactsLabel = $derived(`No comments (${report.noFacts.length})`);
 	{/if}
 
 	<h3>
-		<button type="button" aria-expanded={showNoFacts} onclick={() => { showNoFacts = !showNoFacts; }}>
-			<i class="codicon codicon-chevron-{showNoFacts ? 'down' : 'right'}"></i>
-			<span>{noFactsLabel}</span>
+		<button type="button" aria-expanded={showNoComments} onclick={() => { showNoComments = !showNoComments; }}>
+			<i class="codicon codicon-chevron-{showNoComments ? 'down' : 'right'}"></i>
+			<span>{noCommentsLabel}</span>
 		</button>
 	</h3>
-	{#if showNoFacts}
-		{#if report.noFacts.length}
-			{#each report.noFacts as entry (entry.key)}
+	{#if showNoComments}
+		{#if report.noComments.length}
+			{#each report.noComments as entry (entry.key)}
 				{@render intent(entry)}
 			{/each}
 		{:else}
@@ -90,9 +88,9 @@ const noFactsLabel = $derived(`No comments (${report.noFacts.length})`);
 			<span class="arrow">{isSymmetricRelationship(r.type) ? "↔" : "→"}</span>
 			<RefLink ref={r.target.ref} label={r.target.name} icon={ICONS.boundedcontext} />
 			<Chip label={r.type} tone="muted" title={PATTERNS[r.type].summary} />
-			<DispositionChip disposition={entry.sheet?.disposition} />
+			<DispositionChip disposition={r.disposition} />
 		</div>
-		<CommentList comments={entry.sheet?.comments ?? []} empty="Nothing written down yet." />
+		<CommentList comments={r.comments} empty="Nothing written down yet." />
 	</article>
 {/snippet}
 

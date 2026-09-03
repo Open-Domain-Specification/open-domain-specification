@@ -1,9 +1,10 @@
 import type { Workspace } from "@open-domain-specification/core";
 
-/** Every ref that owns a page: workspace, teams, domains, subdomains, contexts and everything inside them. */
+/** Every ref that owns a page: workspace, teams, domains, subdomains, contexts, their relationships and everything inside them. */
 export function pageRefs(ws: Workspace): string[] {
 	const refs = ["#"];
 	for (const t of ws.teams.values()) refs.push(t.ref);
+	for (const r of ws.relationships) refs.push(r.ref);
 	for (const d of ws.domains.values()) {
 		refs.push(d.ref);
 		for (const s of d.subdomains.values()) refs.push(s.ref);
@@ -45,6 +46,8 @@ const PAGE_PATTERNS: [
 	(ws: Workspace, m: RegExpMatchArray) => unknown,
 ][] = [
 	[/^#\/teams\/([^/]+)/, (ws, m) => ws.teams.get(m[1])],
+	// A relationship's ref is its whole identity, so match it entire.
+	[/^#\/relationships\/[^/]+$/, (ws, m) => ws.findRelationship(m[0])],
 	[
 		/^#\/domains\/([^/]+)\/subdomains\/([^/]+)/,
 		(ws, m) => ws.domains.get(m[1])?.subdomains.get(m[2]),
