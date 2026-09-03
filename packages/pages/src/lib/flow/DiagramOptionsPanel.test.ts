@@ -54,4 +54,18 @@ describe("DiagramOptionsPanel per diagram kind", () => {
 		render(Harness, { kind: "context" });
 		expect(screen.getByLabelText("Diagram style")).toBeInTheDocument();
 	});
+	it("shows the effective handle default per kind when there is no user override", () => {
+		diagramOptions.set({ handles: undefined });
+		const context = render(Harness, { kind: "context" });
+		expect(
+			(context.getByLabelText("Handle placement") as HTMLSelectElement).value,
+		).toBe("floating");
+		context.unmount();
+		const consumable = render(Harness, { kind: "consumable" });
+		expect(
+			(consumable.getByLabelText("Handle placement") as HTMLSelectElement)
+				.value,
+		).toBe("fixed");
+		consumable.unmount();
+	});
 });

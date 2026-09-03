@@ -38,7 +38,7 @@ let edges = $state.raw<Edge[]>([]);
 const labels = $derived(groupLabels(positioned));
 $effect(() => {
 	nodes = flowNodes(positioned, {
-		floating: diagramOptions.handles === "floating",
+		floating: diagramOptions.handlesFor(kind) === "floating",
 		sketch,
 		free: kind === "context",
 	});
