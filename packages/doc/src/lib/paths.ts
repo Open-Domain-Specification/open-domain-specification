@@ -11,11 +11,19 @@ export function pathToContextMapSvg(ref: string, relativeRef?: string): string {
 	return `${getRelativePath(ref, relativeRef)}/contextmap.svg`;
 }
 
+export function pathToFlowMapSvg(ref: string, relativeRef?: string): string {
+	return `${getRelativePath(ref, relativeRef)}/flowmap.svg`;
+}
+
 export function pathToRelationMapSvg(
 	ref: string,
 	relativeRef?: string,
 ): string {
 	return `${getRelativePath(ref, relativeRef)}/relationmap.svg`;
+}
+
+export function pathToGlossaryMd(ref: string, relativeRef?: string): string {
+	return `${getRelativePath(ref, relativeRef)}/glossary.md`;
 }
 
 export function pathToIndexMd(ref: string, relativeRef?: string): string {

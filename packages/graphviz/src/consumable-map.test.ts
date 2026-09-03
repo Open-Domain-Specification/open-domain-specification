@@ -9,6 +9,7 @@ describe("ConsumableMap", () => {
 			id: "a1",
 			name: "A1",
 			description: "A1 Description",
+			type: "aggregate",
 			namespace: [
 				{
 					id: "root",
@@ -25,6 +26,7 @@ describe("ConsumableMap", () => {
 			id: "a2",
 			name: "A2",
 			description: "A2 Description",
+			type: "aggregate",
 			namespace: [
 				{
 					id: "root",
@@ -41,6 +43,7 @@ describe("ConsumableMap", () => {
 			id: "a2-slot",
 			name: "A2 Slot",
 			description: "A2 Slot Description",
+			type: "operation",
 			node: a2,
 		});
 
@@ -100,7 +103,7 @@ describe("ConsumableMap", () => {
 			  }
 			  "a1" -> "a2" [
 			    color = "black";
-			    taillabel = "C";
+			    taillabel = "CF";
 			    headlabel = "OHS";
 			    tailtooltip = "conformist";
 			    headtooltip = "open-host-service";

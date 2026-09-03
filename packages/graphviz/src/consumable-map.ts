@@ -1,12 +1,11 @@
 import { Graphviz } from "@hpcc-js/wasm-graphviz";
 import type {
-	ConsumablePattern,
-	ConsumptionPattern,
 	ODSConsumableMap,
 	ODSConsumptionMapNode,
 } from "@open-domain-specification/core";
 import { Digraph, Edge, Node, Subgraph, toDot } from "ts-graphviz";
 import { getDebug } from "./debug";
+import { DOWNSTREAM_ROLE_LABELS, UPSTREAM_ROLE_LABELS } from "./role-labels";
 
 const stylesheet = `\
 .graph text {
@@ -28,21 +27,6 @@ const debug = getDebug("consumable-map");
 function namespaceId(node: ODSConsumptionMapNode): string {
 	return node.namespace.map((it) => it.id).join("__");
 }
-
-const CONUMPTION_PATTERN_LABELS: Record<ConsumptionPattern, string> = {
-	conformist: "C",
-	"customer-supplier": "C/s",
-	partnership: "P",
-	"anti-corruption-layer": "ACL",
-	"separate-ways": "SW",
-};
-
-const CONSUMABLE_PATTERN_LABEL: Record<ConsumablePattern, string> = {
-	"open-host-service": "OHS",
-	"shared-kernel": "SK",
-	"published-language": "PL",
-	"customer-supplier": "c/S",
-};
 
 export function consumableMapToDigraph(contextMap: ODSConsumableMap): {
 	toDot: () => string;
@@ -120,11 +104,15 @@ export function consumableMapToDigraph(contextMap: ODSConsumableMap): {
 		edges[id] =
 			edges[id] ||
 			new Edge([sourceNode, targetNode], {
-				color: edge.targetPattern === "shared-kernel" ? "brown" : "black",
-				taillabel: CONUMPTION_PATTERN_LABELS[edge.sourcePattern],
-				headlabel: CONSUMABLE_PATTERN_LABEL[edge.targetPattern],
-				tailtooltip: edge.sourcePattern,
-				headtooltip: edge.targetPattern,
+				color: "black",
+				taillabel: edge.sourcePattern
+					? DOWNSTREAM_ROLE_LABELS[edge.sourcePattern]
+					: "",
+				headlabel: edge.targetPattern
+					? UPSTREAM_ROLE_LABELS[edge.targetPattern]
+					: "",
+				tailtooltip: edge.sourcePattern ?? "",
+				headtooltip: edge.targetPattern ?? "",
 				fontsize: 10,
 				labeldistance: 0,
 				label: edge.target.name,

@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-title: ODS Core
+title: Overview
 content_guide:
   purpose: To introduce the foundational concepts of ODS Core, its role in Domain-Driven Design (DDD), and how it fits into the broader Open Domain Specification (ODS) ecosystem.
   audience:
@@ -37,19 +37,62 @@ The ODS core follows a hierarchical structure aligned with Domain-Driven Design 
 
 ```
 Workspace
-├── Domain (core/supporting/generic)
-│   └── Subdomain
-│       └── Bounded Context
-│           ├── Service (application/domain/infrastructure)
-│           │   ├── Consumables
-│           │   └── Consumptions
-│           └── Aggregate
-│               ├── Entities
-│               ├── Value Objects
-│               ├── Invariants
-│               ├── Consumables
-│               └── Consumptions
+├── Domain                                  (problem space)
+│   └── Subdomain (core/supporting/generic)
+├── Bounded Context                         (solution space; serves the subdomains it lists)
+│   ├── Service (application/domain)
+│   │   ├── Consumables
+│   │   └── Consumptions
+│   ├── Glossary Term                       (ubiquitous language, optionally embodied by an element)
+│   ├── Schema                              (payload shape with attributes, shared by consumables)
+│   ├── Policy                              (on event consumables → then operation consumables)
+│   └── Aggregate
+│       ├── Entities (with attributes)
+│       ├── Value Objects (with attributes)
+│       ├── Invariants
+│       ├── Consumables (event or operation; may be internal, carry a schema, and operations raise events)
+│       └── Consumptions
+├── Team                                    (owns bounded contexts)
+└── Context Relationship                    (upstream-downstream, customer-supplier, partnership, shared-kernel, separate-ways)
 ```
+
+Domains and subdomains describe the *problem space*. Bounded contexts describe
+the *solution space* and are owned by the workspace, each linked to the
+subdomains it serves, so one context can span several subdomains and one
+subdomain can be served by several contexts.
+
+## Identity and refs
+
+Every element has an `id` that becomes its key in the JSON document and the
+last segment of its ref, for example `#/boundedcontexts/sales/aggregates/order`.
+When you omit `id` in the DSL it is derived from the name (`"Order Line"`
+becomes `order_line`); pass `id` explicitly when a name is likely to change
+and other elements point at it. When a document is loaded, the JSON keys are
+the ids, so a document round-trips regardless of how its names are spelled.
+
+Refs never embed the domain or subdomain of a bounded context, so renaming
+those never breaks a ref.
+
+## Reference models
+
+The `models/` workspace folder in the repository holds four packages, each a
+workspace written with the DSL and generated into a `.ods/*.json` file used by
+the viewer, the export and the test fixtures:
+
+- **Swagger Petstore** is the demonstration reference. Every feature of the
+  model appears once, descriptions say why each choice was made, and it
+  validates clean. Read this one first.
+- **RiverMart**, a fictional online marketplace, **StreamLine**, a fictional
+  streaming service, and **NorthBank**, a fictional retail bank, are stress
+  models: large enough to exercise the pages, the diagrams and the validation,
+  with a legacy big ball of mud, shared kernels and partnerships, deep
+  aggregates, and a few deliberate structural problems so diagnostics have
+  something to show. Between them the three trigger every rule in the catalog.
+
+Each fictional organisation comes with a `BRIEF.md` describing the business
+and a `DISCOVERY.md` recording the interviews and event-storming session the
+model was drawn from, so every context, relationship, invariant and policy
+can be traced back to something someone said.
 
 ## Installation
 

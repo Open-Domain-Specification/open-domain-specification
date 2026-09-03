@@ -34,10 +34,10 @@ describe("toDoc", () => {
 
 		const commerce = workspace.addDomain("Commerce", {
 			description: "Core commerce capabilities",
-			type: "core",
 		});
 
 		const _sales = commerce.addSubdomain("Sales", {
+			type: "core",
 			description: "Sales functionality",
 		});
 
@@ -73,10 +73,10 @@ describe("toDoc", () => {
 
 		const commerce = workspace.addDomain("Commerce", {
 			description: "Core commerce capabilities",
-			type: "core",
 		});
 
 		const sales = commerce.addSubdomain("Sales", {
+			type: "core",
 			description: "Sales functionality",
 		});
 
@@ -97,30 +97,85 @@ describe("toDoc", () => {
 
 		// Should have service docs
 		expect(docs).toHaveProperty(
-			"domains/commerce/subdomains/sales/boundedcontexts/ordering/services/order_service/index.md",
+			"boundedcontexts/ordering/services/order_service/index.md",
 		);
 		expect(docs).toHaveProperty(
-			"domains/commerce/subdomains/sales/boundedcontexts/ordering/services/order_service/consumablemap.svg",
+			"boundedcontexts/ordering/services/order_service/consumablemap.svg",
 		);
 
 		// Should have aggregate docs
 		expect(docs).toHaveProperty(
-			"domains/commerce/subdomains/sales/boundedcontexts/ordering/aggregates/order/index.md",
+			"boundedcontexts/ordering/aggregates/order/index.md",
 		);
 		expect(docs).toHaveProperty(
-			"domains/commerce/subdomains/sales/boundedcontexts/ordering/aggregates/order/relationmap.svg",
+			"boundedcontexts/ordering/aggregates/order/relationmap.svg",
 		);
 		expect(docs).toHaveProperty(
-			"domains/commerce/subdomains/sales/boundedcontexts/ordering/aggregates/order/consumablemap.svg",
+			"boundedcontexts/ordering/aggregates/order/consumablemap.svg",
 		);
 
 		// Check that the bounded context doc contains services and aggregates
-		const boundedContextDoc =
-			docs[
-				"domains/commerce/subdomains/sales/boundedcontexts/ordering/index.md"
-			];
+		const boundedContextDoc = docs["boundedcontexts/ordering/index.md"];
 		expect(boundedContextDoc).toContain("OrderService");
 		expect(boundedContextDoc).toContain("Order");
+	});
+
+	it("renders provides, schemas and policies from consumables", async () => {
+		const workspace = new Workspace("Flow", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0.1.0",
+		});
+		const ordering = workspace.addBoundedContext("Ordering", {
+			description: "Order management",
+		});
+		const summary = ordering.addSchema("Order Summary", {
+			description: "What an order looks like",
+		});
+		summary.addAttribute("orderId", { type: "string", identity: true });
+		summary.addAttribute("total", { type: "number" });
+		const order = ordering.addAggregate("Order", { description: "" });
+		const placed = order.provides("Order Placed", {
+			type: "event",
+			pattern: "published-language",
+			description: "Raised when an order is placed",
+			schema: summary,
+		});
+		const approve = order
+			.provides("Approve Order", {
+				type: "operation",
+				internal: true,
+				description: "Approves an order",
+				schema: summary,
+			})
+			.raises(placed);
+		ordering
+			.addPolicy("Auto approve", { description: "" })
+			.on(placed)
+			.then(approve);
+
+		const docs = await toDoc(workspace);
+
+		const aggregateDoc =
+			docs["boundedcontexts/ordering/aggregates/order/index.md"];
+		expect(aggregateDoc).not.toContain("## Events");
+		expect(aggregateDoc).not.toContain("## Commands");
+		expect(aggregateDoc).toContain(
+			"| Order Placed | event | no | published-language | Raised when an order is placed | [Order Summary](../../index.md#schemas) | - |",
+		);
+		expect(aggregateDoc).toContain(
+			"| Approve Order | operation | yes | - | Approves an order | [Order Summary](../../index.md#schemas) | Order Placed |",
+		);
+
+		const contextDoc = docs["boundedcontexts/ordering/index.md"];
+		expect(contextDoc).toContain("## Schemas");
+		expect(contextDoc).toContain(
+			"| Order Summary | What an order looks like | **orderId**: `string`, total: `number` | Order Placed, Approve Order |",
+		);
+		expect(contextDoc).toContain(
+			"| Auto approve |  | Order Placed | Approve Order |",
+		);
+		expect(docs).toHaveProperty("boundedcontexts/ordering/flowmap.svg");
 	});
 
 	it("should handle workspace with options", async () => {

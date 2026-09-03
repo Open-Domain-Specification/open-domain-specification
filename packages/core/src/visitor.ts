@@ -4,10 +4,14 @@ import type {
 	BoundedContext,
 	Consumable,
 	Consumption,
+	ContextRelationship,
+	DataSchema,
 	Domain,
 	Entity,
 	EntityRelation,
+	GlossaryTerm,
 	Invariant,
+	Policy,
 	Service,
 	Subdomain,
 	ValueObject,
@@ -27,6 +31,10 @@ export interface Visitor {
 	visitValueObject(node: ValueObject): void;
 	visitEntityRelation(node: EntityRelation): void;
 	visitConsumption(node: Consumption): void;
+	visitContextRelationship(node: ContextRelationship): void;
+	visitDataSchema(node: DataSchema): void;
+	visitPolicy(node: Policy): void;
+	visitGlossaryTerm(node: GlossaryTerm): void;
 }
 
 export type AbstractVisitorOptions = {
@@ -80,6 +88,14 @@ export abstract class AbstractVisitor implements Visitor {
 		for (const domain of node.domains.values()) {
 			domain.accept(this);
 		}
+		// Contexts are reached through the subdomains they serve; visit the
+		// ones that serve none so nothing is skipped.
+		for (const bc of node.boundedcontexts.values()) {
+			if (!this.mark(bc)) bc.accept(this);
+		}
+		for (const relationship of node.relationships) {
+			relationship.accept(this);
+		}
 		this.after(node);
 	}
 
@@ -102,7 +118,8 @@ export abstract class AbstractVisitor implements Visitor {
 	visitSubdomain(node: Subdomain): void {
 		this.before(node);
 		for (const bc of node.boundedcontexts.values()) {
-			bc.accept(this);
+			// A context serving several subdomains is visited once.
+			if (!this.mark(bc)) bc.accept(this);
 		}
 		this.after(node);
 	}
@@ -122,6 +139,37 @@ export abstract class AbstractVisitor implements Visitor {
 			aggregate.accept(this);
 		}
 
+		for (const policy of node.policies.values()) {
+			policy.accept(this);
+		}
+
+		for (const term of node.glossary.values()) {
+			term.accept(this);
+		}
+
+		for (const schema of node.schemas.values()) {
+			schema.accept(this);
+		}
+
+		this.after(node);
+	}
+
+	/**
+	 * Visits a GlossaryTerm node. Terms are leaves.
+	 * @param node - The GlossaryTerm node to visit.
+	 */
+	visitGlossaryTerm(node: GlossaryTerm): void {
+		this.before(node);
+		this.after(node);
+	}
+
+	/**
+	 * Visits a Policy node. Policies are leaves; the consumables they join are
+	 * reached through their providers.
+	 * @param node - The Policy node to visit.
+	 */
+	visitPolicy(node: Policy): void {
+		this.before(node);
 		this.after(node);
 	}
 
@@ -161,6 +209,16 @@ export abstract class AbstractVisitor implements Visitor {
 		if (this.followConsumptions) {
 			for (const cons of node.consumptions) cons.accept(this);
 		}
+		this.after(node);
+	}
+
+	/**
+	 * Visits a DataSchema node. Schemas are leaves; the consumables that carry
+	 * them are reached through their providers.
+	 * @param node - The DataSchema node to visit.
+	 */
+	visitDataSchema(node: DataSchema): void {
+		this.before(node);
 		this.after(node);
 	}
 
@@ -216,6 +274,16 @@ export abstract class AbstractVisitor implements Visitor {
 		if (this.followRelations && !this.mark(node.target)) {
 			node.target.accept(this);
 		}
+		this.after(node);
+	}
+
+	/**
+	 * Visits a ContextRelationship node. Relationships are leaves; their
+	 * contexts are reached through the workspace.
+	 * @param node - The ContextRelationship node to visit.
+	 */
+	visitContextRelationship(node: ContextRelationship): void {
+		this.before(node);
 		this.after(node);
 	}
 

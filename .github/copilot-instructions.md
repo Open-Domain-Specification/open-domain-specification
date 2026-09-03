@@ -14,8 +14,11 @@ Always reference these instructions first and fallback to search or bash command
 
 ### Development Servers
 - Start documentation site: `cd apps/docs && npm run start` -- runs on http://localhost:3000
-- Start ODS UI application: `cd apps/ods-ui && npm run start` -- runs on http://localhost:5173
-- Start example workspace docs: `cd packages/ods-example-ws && npm run serve` -- runs on random port (displays in output)
+- Start the pages viewer: `cd packages/pages && npm run dev` -- runs on http://localhost:5173; `npm run storybook` for the component library
+- Start example workspace docs: `cd models/petstore && npm run serve` -- runs on random port (displays in output)
+
+### Build Order Notes
+- `packages/skill` generates `skill/references/model-reference.md` and `skill/references/validation-rules.md` from `packages/core/dist` during its build and embeds the bundle into `src/bundle.generated.ts`. Lerna builds core first; if you build the skill package alone, build core beforehand. The generated reference files are committed; run `npm run generate -w @open-domain-specification/skill` after changing the schema or a validation rule and commit the result.
 
 ### Known Build Issues and Workarounds
 There are no currently known issues and the project is healthy.
@@ -28,12 +31,12 @@ There are no currently known issues and the project is healthy.
    - `npm install` (wait 5+ minutes)
    - `npm run test` (verify all pass)
    - `cd apps/docs && npm run start` then verify http://localhost:3000 loads correctly
-   - `cd apps/ods-ui && npm run start` then verify http://localhost:5173 loads correctly
+   - `cd packages/pages && npm run dev` then verify http://localhost:5173 loads the import screen
    - Stop both servers before proceeding
 
 2. **Package Build Validation**:
-   - `npm run build` (note ods-example-ws failure is expected)
-   - `cd packages/ods-example-ws && npx tsx src/index.ts` (workaround for build issue)
+   - `npm run build`
+   - `cd models/petstore && npx tsx src/generate.ts` (regenerates `.ods/petstore.json` and `docs/` directly)
    - Verify all packages in `packages/*/dist/` have generated files
 
 3. **Code Quality Checks**:
@@ -50,13 +53,12 @@ There are no currently known issues and the project is healthy.
 
 ### Applications (`apps/`)
 - **docs**: Docusaurus documentation site using Node.js, React, and Markdown
-- **ods-ui**: React + Vite web application for interactive browsing of ODS workspaces
 
 ### Packages (`packages/`)
 - **core**: Main TypeScript library providing domain model, visitor patterns, and schema conversion
 - **graphviz**: Visualization library using Graphviz DOT format and SVG rendering  
 - **doc**: Markdown documentation generation from ODS workspaces
-- **ods-example-ws**: Example workspace demonstrating eCommerce domain modeling
+- **models/**: Reference workspaces (petstore, rivermart, streamline, northbank), each its own npm package authored with the DSL
 
 ### Configuration Files
 - **lerna.json**: Lerna monorepo configuration
@@ -99,11 +101,20 @@ npm run start                  # Development server (port 3000)
 npm run build                  # Production build
 ```
 
-### ODS UI
+### Pages (viewer, static export, webview)
 ```bash
-cd apps/ods-ui  
-npm run start                    # Development server (port 5173)
-npm run build                  # Production build
+cd packages/pages
+npm run dev                    # Viewer dev server (port 5173)
+npm run storybook              # Component library
+npm run build                  # Library plus app bundle
+npm run test:unit              # Vitest with 100% coverage thresholds
+npm run test:e2e               # Playwright over the built app and a static export
+```
+
+### VS Code extension integration
+```bash
+cd apps/ods-vscode
+npm run test:vscode            # Mocha inside a real Extension Development Host
 ```
 
 ## Important File Locations
@@ -115,8 +126,8 @@ npm run build                  # Production build
 
 ### Documentation Generation
 - `packages/doc/src/` - Markdown generation logic
-- `packages/ods-example-ws/src/eshop/` - Example domain models
-- `packages/ods-example-ws/docs/` - Generated documentation output
+- `models/<org>/src/workspace.ts` - Example domain models
+- `models/<org>/docs/` - Generated documentation output
 
 ### Configuration
 - Root `package.json` - Workspace and script definitions
@@ -126,7 +137,7 @@ npm run build                  # Production build
 ## Timing Expectations (NEVER CANCEL - wait for completion)
 
 - **npm install**: 5 minutes
-- **npm run build**: 50 seconds (with expected ods-example-ws failure)
+- **npm run build**: 50 seconds
 - **npm run test**: 4 seconds  
 - **npm run format**: 5 seconds
 - **Development server startup**: 10-15 seconds each

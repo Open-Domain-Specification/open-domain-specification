@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+		"target": "es2022",
+		"module": "commonjs",
+		"moduleResolution": "node",
+		"lib": ["es2022"],
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"noUnusedLocals": true,
+		"noEmit": true,
+		"types": ["node", "vscode"]
+	},
+	"include": ["src"],
+	"exclude": ["src/**/*.test.ts"]
+}

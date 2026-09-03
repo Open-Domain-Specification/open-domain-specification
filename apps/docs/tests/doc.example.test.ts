@@ -18,12 +18,30 @@ DDD workspace for an eCommerce platform example
 
 ![contextmap](./contextmap.svg)
 
+[Glossary](./glossary.md)
+
 ## Domains
 > No domains.
 
-## Relationships
+## Diagnostics
+> No diagnostics.
+
+## Teams
+> No teams.
+
+## Context Relationships
+
+
+## Consumptions
 	
 
+`;
+
+const glossaryMd = `
+
+# eCommerce Glossary
+
+> No glossary terms in any bounded context.
 `;
 
 const contextMap = `\
@@ -45,8 +63,10 @@ const contextMap = `\
 describe("Generate example documentation", () => {
 	it("should generate docs", async () => {
 		expect(await toDoc(ws)).toEqual({
-			"_sidebar.md": "* [eCommerce](/e_commerce/index.md)",
+			"_sidebar.md":
+				"* [eCommerce](/e_commerce/index.md)\n\t* [Glossary](/e_commerce/glossary.md)",
 			"e_commerce/contextmap.svg": contextMap,
+			"e_commerce/glossary.md": glossaryMd,
 			"e_commerce/index.md": wsMd,
 		});
 	});

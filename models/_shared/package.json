@@ -1,0 +1,24 @@
+{
+	"name": "@open-domain-specification/model-tools",
+	"version": "0.1.9",
+	"description": "Shared DSL helpers and generator for the reference model workspaces under models/",
+	"type": "module",
+	"private": true,
+	"main": "src/index.ts",
+	"types": "src/index.ts",
+	"scripts": {
+		"build": "tsc --noEmit -p tsconfig.json"
+	},
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"dependencies": {
+		"@open-domain-specification/core": "^0.1.9",
+		"@open-domain-specification/doc": "^0.1.9"
+	},
+	"devDependencies": {
+		"@types/node": "^24.2.1",
+		"typescript": "^5.9.2",
+		"vitest": "^3.2.4"
+	}
+}

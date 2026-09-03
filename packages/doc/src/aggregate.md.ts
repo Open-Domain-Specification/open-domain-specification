@@ -1,13 +1,15 @@
 import {
 	type Aggregate,
-	type Consumable,
 	type Consumption,
+	constrainableLabel,
 	type Entity,
 	type Invariant,
 	ODSRelationGraph,
 	type ValueObject,
 } from "@open-domain-specification/core";
-import { breadcrumbsMd } from "./breadcrumbs.md";
+import { attributeListMd } from "./attributes.md";
+import { contextBreadcrumbsMd } from "./breadcrumbs.md";
+import { providesTableMd } from "./consumables.md";
 import { markdownTable } from "./lib/markdown-table";
 import {
 	pathToConsumableMapSvg,
@@ -20,32 +22,30 @@ const valueObjectSection = (valueObject: ValueObject) => [
 	"Value Object",
 	valueObject.name,
 	valueObject.description,
+	attributeListMd(valueObject.attributes),
 ];
 
 const entitySection = (entity: Entity) => [
 	entity.root ? "Entity (Root)" : "Entity",
 	entity.root ? `**${entity.name}**` : entity.name,
 	entity.description,
+	attributeListMd(entity.attributes),
 ];
-
-const consumableSection = (consumable: Consumable) => `
-### (${consumable.type}) - ${consumable.name} [${consumable.pattern}]
-${consumable.description}
-`;
 
 const invariantSection = (invariant: Invariant) => [
 	invariant.name,
 	invariant.description,
+	invariant.targets.map(constrainableLabel).join(", ") || "-",
 ];
 
 const consumptionSection = (consumption: Consumption) => `
-### ${consumption.consumable.name} [${consumption.pattern}]
+### ${consumption.consumable.name} ${consumption.pattern ? `[${consumption.pattern}]` : ""}
 ${consumption.consumable.description}
 - **Provider**: [${consumption.consumable.provider.name}](${pathToIndexMd(consumption.consumable.provider.path, consumption.consumer.path)})
 `;
 
 export const aggergateMd = (aggregate: Aggregate, options?: Options) => `
-${options?.breadcrumbs ? breadcrumbsMd(aggregate.boundedcontext.subdomain.domain.workspace, aggregate.boundedcontext.subdomain.domain, aggregate.boundedcontext.subdomain, aggregate.boundedcontext) : ""}
+${options?.breadcrumbs ? contextBreadcrumbsMd(aggregate.boundedcontext) : ""}
 # ${aggregate.name}
 ${aggregate.description}
 
@@ -57,7 +57,7 @@ ${aggregate.description}
 ${
 	aggregate.entities.size > 0 || aggregate.valueobjects.size > 0
 		? markdownTable(
-				["Type", "Name", "Description"],
+				["Type", "Name", "Description", "Attributes"],
 				[
 					...Array.from(aggregate.entities.values())
 						.sort((a, b) =>
@@ -78,12 +78,13 @@ ${
 
 ## Relationships
 ${markdownTable(
-	["Source", "Description", "Target", "Relation"],
+	["Source", "Description", "Target", "Relation", "Cardinality"],
 	ODSRelationGraph.fromAggregate(aggregate).relations.map((it) => [
 		`[${it.source.name}](${pathToIndexMd(it.source.path, aggregate.path)})`,
 		it.label || "-",
 		`${it.target.aggregate.name} - ${it.target.name}`,
 		it.relation,
+		it.cardinality ?? "-",
 	]),
 )}
 
@@ -91,20 +92,14 @@ ${markdownTable(
 ${
 	aggregate.invariants.size > 0
 		? markdownTable(
-				["Name", "Description"],
+				["Name", "Description", "Constrains"],
 				Array.from(aggregate.invariants.values()).map(invariantSection),
 			)
 		: "> No invariants."
 }
 
 ## Provides
-${
-	aggregate.consumables.size > 0
-		? Array.from(aggregate.consumables.entries())
-				.map(([_name, consumable]) => consumableSection(consumable))
-				.join("")
-		: "> No consumables."
-}
+${providesTableMd(aggregate.consumables, aggregate.path)}
 
 ## Consumes
 ${

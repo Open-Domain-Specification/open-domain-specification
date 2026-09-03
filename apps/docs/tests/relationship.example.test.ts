@@ -15,20 +15,20 @@ const ws = new Workspace("eCommerce", {
 // === DOMAINS ===
 const commerce = ws.addDomain("Commerce", {
 	description: "Core commerce capabilities",
-	type: "core",
 });
 
 const content = ws.addDomain("Content", {
 	description: "Supporting site content",
-	type: "supporting",
 });
 
 // === SUBDOMAINS ===
 const sales = commerce.addSubdomain("Sales", {
+	type: "core",
 	description: "From cart to order",
 });
 
 const publishing = content.addSubdomain("Publishing", {
+	type: "supporting",
 	description: "Pages and articles",
 });
 
@@ -54,12 +54,16 @@ const orderAgg = orderingBC.addAggregate("Order", {
 const orderEntity = orderAgg.addRootEntity("Order", {
 	description: "Order header",
 });
+orderEntity.addAttribute("id", { type: "OrderId", identity: true });
+orderEntity.addAttribute("placedAt", { type: "Instant" });
 
 const moneyVO = orderAgg.addValueObject("Money", {
 	description: "Amount + currency",
 });
+moneyVO.addAttribute("amount", { type: "Decimal" });
+moneyVO.addAttribute("currency", { type: "ISO 4217" });
 
-orderEntity.uses(moneyVO, "totals");
+orderEntity.uses(moneyVO, "totals", "1");
 
 orderAgg.addInvariant("TotalsNonNegative", {
 	description: "Order totals must be >= 0",

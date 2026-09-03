@@ -1,21 +1,408 @@
 import { getDebug } from "./debug";
 import {
+	type AggregateSchema,
+	type AttributeSchema,
 	aggregateRef,
+	type BoundedContextSchema,
 	entityRef,
+	invariantRef,
+	policyRef,
+	type ServiceSchema,
+	schemaRef,
 	serviceRef,
+	termRef,
 	valueObjectRef,
 	type WorkspaceSchema,
 } from "./schema";
-import { Workspace } from "./workspace";
+import type {
+	Aggregate,
+	AttributeOwner,
+	BoundedContext,
+	Service,
+	Workspace,
+} from "./workspace";
+import { Workspace as WorkspaceModel } from "./workspace";
 
 const debug = getDebug("get-workspace-from-schema");
+
+/** Consumables are added in the second pass because their schema must already exist. */
+function addProvides(
+	provider: Aggregate | Service,
+	schema: AggregateSchema | ServiceSchema,
+	workspace: Workspace,
+) {
+	for (const [id, consumableSchema] of Object.entries(schema.provides)) {
+		debug(`Adding consumable: ${consumableSchema.name} to ${provider.name}`);
+		const { raises: _raises, schema: schemaRef, ...rest } = consumableSchema;
+		provider.addConsumable(consumableSchema.name, {
+			...rest,
+			id,
+			schema: schemaRef && workspace.getSchemaByRefOrThrow(schemaRef.$ref),
+		});
+	}
+}
+
+/** Raises links consumables to consumables, so it runs once every consumable exists. */
+function linkRaises(
+	provider: Aggregate | Service,
+	schema: AggregateSchema | ServiceSchema,
+	workspace: Workspace,
+) {
+	for (const [id, consumableSchema] of Object.entries(schema.provides)) {
+		if (!consumableSchema.raises?.length) continue;
+		const consumable = workspace.getConsumableByRefOrThrow(
+			`${provider.ref}/provides/${id}`,
+		);
+		consumable.raises(
+			...consumableSchema.raises.map(({ $ref }) =>
+				workspace.getConsumableByRefOrThrow($ref),
+			),
+		);
+	}
+}
+
+function addConsumes(
+	consumer: Aggregate | Service,
+	schema: AggregateSchema | ServiceSchema,
+	workspace: Workspace,
+) {
+	for (const consumption of schema.consumes) {
+		debug(
+			`Adding consumption: ${consumption.consumable.$ref} to ${consumer.name}`,
+		);
+		const consumable = workspace.getConsumableByRefOrThrow(
+			consumption.consumable.$ref,
+		);
+		consumer.addConsumption(consumable, consumption);
+	}
+}
+
+/** Attributes may point at value objects, so they are added in the second pass. */
+function addAttributes(
+	owner: AttributeOwner,
+	attributes: Record<string, AttributeSchema>,
+	workspace: Workspace,
+) {
+	for (const [id, attributeSchema] of Object.entries(attributes)) {
+		owner.addAttribute(attributeSchema.name, {
+			...attributeSchema,
+			id,
+			valueobject:
+				attributeSchema.valueobject &&
+				workspace.getValueObjectByRefOrThrow(attributeSchema.valueobject.$ref),
+		});
+	}
+}
+
+function addDomains(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
+	for (const [id, domainSchema] of Object.entries(workspaceSchema.domains)) {
+		debug(`Adding domain: ${domainSchema.name}`);
+		const domain = workspace.addDomain(domainSchema.name, {
+			...domainSchema,
+			id,
+		});
+
+		for (const [subdomainId, subdomainSchema] of Object.entries(
+			domainSchema.subdomains,
+		)) {
+			debug(
+				`Adding subdomain: ${subdomainSchema.name} to ${domainSchema.name}`,
+			);
+			domain.addSubdomain(subdomainSchema.name, {
+				...subdomainSchema,
+				id: subdomainId,
+			});
+		}
+	}
+}
+
+function addTeams(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
+	for (const [id, teamSchema] of Object.entries(workspaceSchema.teams)) {
+		debug(`Adding team: ${teamSchema.name}`);
+		workspace.addTeam(teamSchema.name, { ...teamSchema, id });
+	}
+}
+
+function addBoundedContext(
+	workspace: Workspace,
+	id: string,
+	boundedcontextSchema: BoundedContextSchema,
+): BoundedContext {
+	debug(`Adding bounded context: ${boundedcontextSchema.name}`);
+	const boundedcontext = workspace.addBoundedContext(
+		boundedcontextSchema.name,
+		{
+			...boundedcontextSchema,
+			id,
+			team:
+				boundedcontextSchema.team &&
+				workspace.getTeamByRefOrThrow(boundedcontextSchema.team.$ref),
+			subdomains: boundedcontextSchema.subdomains.map(({ $ref }) =>
+				workspace.getSubdomainByRefOrThrow($ref),
+			),
+		},
+	);
+
+	for (const [serviceId, serviceSchema] of Object.entries(
+		boundedcontextSchema.services,
+	)) {
+		debug(`Adding service: ${serviceSchema.name} to ${boundedcontext.name}`);
+		boundedcontext.addService(serviceSchema.name, {
+			...serviceSchema,
+			id: serviceId,
+		});
+	}
+
+	for (const [termId, termSchema] of Object.entries(
+		boundedcontextSchema.glossary,
+	)) {
+		boundedcontext.addTerm(termSchema.name, {
+			...termSchema,
+			id: termId,
+			embodiedBy: undefined,
+		});
+	}
+
+	for (const [policyId, policySchema] of Object.entries(
+		boundedcontextSchema.policies,
+	)) {
+		boundedcontext.addPolicy(policySchema.name, {
+			...policySchema,
+			id: policyId,
+		});
+	}
+
+	for (const [schemaId, schemaSchema] of Object.entries(
+		boundedcontextSchema.schemas,
+	)) {
+		boundedcontext.addSchema(schemaSchema.name, {
+			...schemaSchema,
+			id: schemaId,
+		});
+	}
+
+	for (const [aggregateId, aggregateSchema] of Object.entries(
+		boundedcontextSchema.aggregates,
+	)) {
+		debug(
+			`Adding aggregate: ${aggregateSchema.name} to ${boundedcontext.name}`,
+		);
+		const aggregate = boundedcontext.addAggregate(aggregateSchema.name, {
+			...aggregateSchema,
+			id: aggregateId,
+		});
+
+		for (const [invariantId, invariantSchema] of Object.entries(
+			aggregateSchema.invariants,
+		)) {
+			aggregate.addInvariant(invariantSchema.name, {
+				...invariantSchema,
+				id: invariantId,
+			});
+		}
+		for (const [entityId, entitySchema] of Object.entries(
+			aggregateSchema.entities,
+		)) {
+			aggregate.addEntity(entitySchema.name, { ...entitySchema, id: entityId });
+		}
+		for (const [valueobjectId, valueobjectSchema] of Object.entries(
+			aggregateSchema.valueobjects,
+		)) {
+			aggregate.addValueObject(valueobjectSchema.name, {
+				...valueobjectSchema,
+				id: valueobjectId,
+			});
+		}
+	}
+
+	return boundedcontext;
+}
+
+/** Every service and aggregate, paired with its schema. */
+function* providersOf(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
+		workspaceSchema.boundedcontexts,
+	)) {
+		for (const [serviceId, schema] of Object.entries(
+			boundedcontextSchema.services,
+		)) {
+			const provider = workspace.getServiceByRefOrThrow(
+				serviceRef(boundedcontextId, serviceId).$ref,
+			);
+			yield { provider, schema };
+		}
+		for (const [aggregateId, schema] of Object.entries(
+			boundedcontextSchema.aggregates,
+		)) {
+			const provider = workspace.getAggregateByRefOrThrow(
+				aggregateRef(boundedcontextId, aggregateId).$ref,
+			);
+			yield { provider, schema };
+		}
+	}
+}
+
+/**
+ * Second pass: everything that points at another node by `$ref` can only be
+ * resolved once every node exists. Consumables come before consumptions
+ * because a consumption points at a consumable.
+ */
+function linkReferences(
+	workspace: Workspace,
+	workspaceSchema: WorkspaceSchema,
+) {
+	for (const { provider, schema } of providersOf(workspace, workspaceSchema)) {
+		addProvides(provider, schema, workspace);
+	}
+	for (const { provider, schema } of providersOf(workspace, workspaceSchema)) {
+		linkRaises(provider, schema, workspace);
+		addConsumes(provider, schema, workspace);
+	}
+
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
+		workspaceSchema.boundedcontexts,
+	)) {
+		for (const [schemaId, schemaSchema] of Object.entries(
+			boundedcontextSchema.schemas,
+		)) {
+			addAttributes(
+				workspace.getSchemaByRefOrThrow(
+					schemaRef(boundedcontextId, schemaId).$ref,
+				),
+				schemaSchema.attributes,
+				workspace,
+			);
+		}
+
+		for (const [aggregateId, aggregateSchema] of Object.entries(
+			boundedcontextSchema.aggregates,
+		)) {
+			for (const [entityId, entitySchema] of Object.entries(
+				aggregateSchema.entities,
+			)) {
+				const entity = workspace.getEntityByRefOrThrow(
+					entityRef(boundedcontextId, aggregateId, entityId).$ref,
+				);
+				addAttributes(entity, entitySchema.attributes, workspace);
+				for (const relation of entitySchema.relations) {
+					entity.addRelation(
+						workspace.getEntityOrValueobjectByRefOrThrow(relation.target.$ref),
+						relation,
+					);
+				}
+			}
+
+			for (const [valueobjectId, valueobjectSchema] of Object.entries(
+				aggregateSchema.valueobjects,
+			)) {
+				const valueobject = workspace.getValueObjectByRefOrThrow(
+					valueObjectRef(boundedcontextId, aggregateId, valueobjectId).$ref,
+				);
+				addAttributes(valueobject, valueobjectSchema.attributes, workspace);
+				for (const relation of valueobjectSchema.relations) {
+					valueobject.addRelation(
+						workspace.getEntityOrValueobjectByRefOrThrow(relation.target.$ref),
+						relation,
+					);
+				}
+			}
+
+			// Invariants come last: they may constrain attributes added just above.
+			for (const [invariantId, invariantSchema] of Object.entries(
+				aggregateSchema.invariants,
+			)) {
+				const invariant = workspace.getInvariantByRefOrThrow(
+					invariantRef(boundedcontextId, aggregateId, invariantId).$ref,
+				);
+				for (const { $ref } of invariantSchema.constrains) {
+					invariant.constrains(workspace.getConstrainableByRefOrThrow($ref));
+				}
+			}
+		}
+	}
+}
+
+/** A term may be embodied by any element, so it is linked once all exist. */
+function linkGlossary(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
+		workspaceSchema.boundedcontexts,
+	)) {
+		for (const [termId, termSchema] of Object.entries(
+			boundedcontextSchema.glossary,
+		)) {
+			if (!termSchema.embodiedBy) continue;
+			workspace
+				.getTermByRefOrThrow(termRef(boundedcontextId, termId).$ref)
+				.embody(workspace.getByRefOrThrow(termSchema.embodiedBy.$ref));
+		}
+	}
+}
+
+/** Policies join consumables that may live in any context. */
+function linkPolicies(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
+		workspaceSchema.boundedcontexts,
+	)) {
+		for (const [policyId, policySchema] of Object.entries(
+			boundedcontextSchema.policies,
+		)) {
+			const policy = workspace.getPolicyByRefOrThrow(
+				policyRef(boundedcontextId, policyId).$ref,
+			);
+			policy.on(
+				...policySchema.on.map(({ $ref }) =>
+					workspace.getConsumableByRefOrThrow($ref),
+				),
+			);
+			policy.then(
+				...policySchema.then.map(({ $ref }) =>
+					workspace.getConsumableByRefOrThrow($ref),
+				),
+			);
+		}
+	}
+}
+
+function addRelationships(
+	workspace: Workspace,
+	workspaceSchema: WorkspaceSchema,
+) {
+	for (const relationship of workspaceSchema.relationships) {
+		if ("participants" in relationship) {
+			workspace.addRelationship({
+				type: relationship.type,
+				participants: [
+					workspace.getBoundedContextByRefOrThrow(
+						relationship.participants[0].$ref,
+					),
+					workspace.getBoundedContextByRefOrThrow(
+						relationship.participants[1].$ref,
+					),
+				],
+				description: relationship.description,
+			});
+		} else {
+			workspace.addRelationship({
+				type: relationship.type,
+				upstream: workspace.getBoundedContextByRefOrThrow(
+					relationship.upstream.$ref,
+				),
+				downstream: workspace.getBoundedContextByRefOrThrow(
+					relationship.downstream.$ref,
+				),
+				upstreamRoles: relationship.upstreamRoles,
+				downstreamRoles: relationship.downstreamRoles,
+				description: relationship.description,
+			});
+		}
+	}
+}
 
 export function getWorkspaceFromSchema(
 	workspaceSchema: WorkspaceSchema,
 ): Workspace {
 	debug(`Creating workspace from schema: ${workspaceSchema.name}`);
-	debug(workspaceSchema);
-	const workspace = new Workspace(workspaceSchema.name, {
+	const workspace = new WorkspaceModel(workspaceSchema.name, {
 		id: workspaceSchema.id,
 		odsVersion: workspaceSchema.odsVersion,
 		description: workspaceSchema.description,
@@ -25,216 +412,17 @@ export function getWorkspaceFromSchema(
 		version: workspaceSchema.version,
 	});
 
-	// Walk through the workspace schema and create the workspace structure
-	// with domains, subdomains, bounded contexts, services, aggregates, entities
-	// and value objects as defined in the schema.
-	for (const [domainId, domainSchema] of Object.entries(
-		workspaceSchema.domains,
+	addDomains(workspace, workspaceSchema);
+	addTeams(workspace, workspaceSchema);
+	for (const [id, boundedcontextSchema] of Object.entries(
+		workspaceSchema.boundedcontexts,
 	)) {
-		debug(`Adding domain: ${domainSchema.name} (${domainId})`);
-		const domain = workspace.addDomain(domainSchema.name, domainSchema);
-
-		for (const [subdomainId, subdomainSchema] of Object.entries(
-			domainSchema.subdomains,
-		)) {
-			debug(
-				`Adding subdomain: ${subdomainSchema.name} (${subdomainId}) to domain: ${domainSchema.name}`,
-			);
-			const subdomain = domain.addSubdomain(subdomainSchema.name, domainSchema);
-
-			for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
-				subdomainSchema.boundedcontexts,
-			)) {
-				debug(
-					`Adding bounded context: ${boundedcontextSchema.name} (${boundedcontextId}) to subdomain: ${subdomainSchema.name}`,
-				);
-				const boundedcontext = subdomain.addBoundedcontext(
-					boundedcontextSchema.name,
-					boundedcontextSchema,
-				);
-
-				for (const [serviceId, serviceSchema] of Object.entries(
-					boundedcontextSchema.services,
-				)) {
-					debug(
-						`Adding service: ${serviceSchema.name} (${serviceId}) to bounded context: ${boundedcontextSchema.name}`,
-					);
-					const service = boundedcontext.addService(
-						serviceSchema.name,
-						serviceSchema,
-					);
-
-					for (const [consumableId, consumableSchema] of Object.entries(
-						serviceSchema.provides,
-					)) {
-						debug(
-							`Adding consumable: ${consumableSchema.name} (${consumableId}) to service: ${serviceSchema.name}`,
-						);
-						service.addConsumable(consumableSchema.name, consumableSchema);
-					}
-				}
-
-				for (const [aggregateId, aggregateSchema] of Object.entries(
-					boundedcontextSchema.aggregates,
-				)) {
-					debug(
-						`Adding aggregate: ${aggregateSchema.name} (${aggregateId}) to bounded context: ${boundedcontextSchema.name}`,
-					);
-					const aggregate = boundedcontext.addAggregate(
-						aggregateSchema.name,
-						aggregateSchema,
-					);
-
-					for (const [invariantId, invariantSchema] of Object.entries(
-						aggregateSchema.invariants,
-					)) {
-						debug(
-							`Adding invariant: ${invariantSchema.name} (${invariantId}) to aggregate: ${aggregateSchema.name}`,
-						);
-						aggregate.addInvariant(invariantSchema.name, invariantSchema);
-					}
-
-					for (const [entityId, entitySchema] of Object.entries(
-						aggregateSchema.entities,
-					)) {
-						debug(
-							`Adding entity: ${entitySchema.name} (${entityId}) to aggregate: ${aggregateSchema.name}`,
-						);
-						aggregate.addEntity(entitySchema.name, entitySchema);
-					}
-
-					for (const [valueobjectId, valueobjectSchema] of Object.entries(
-						aggregateSchema.valueobjects,
-					)) {
-						debug(
-							`Adding value object: ${valueobjectSchema.name} (${valueobjectId}) to aggregate: ${aggregateSchema.name}`,
-						);
-						aggregate.addValueObject(valueobjectSchema.name, valueobjectSchema);
-					}
-
-					for (const [consumableId, consumableSchema] of Object.entries(
-						aggregateSchema.provides,
-					)) {
-						debug(
-							`Adding consumable: ${consumableSchema.name} (${consumableId}) to aggregate: ${aggregateSchema.name}`,
-						);
-						aggregate.addConsumable(consumableSchema.name, consumableSchema);
-					}
-				}
-			}
-		}
+		addBoundedContext(workspace, id, boundedcontextSchema);
 	}
-
-	// Walk through the workspace schema and create the relations
-	// between entities, value objects, and consumables as defined in the schema.
-	// By Resolving the References
-	debug(
-		`Adding relations and consumptions to workspace: ${workspaceSchema.name}`,
-	);
-
-	for (const [domainId, domainSchema] of Object.entries(
-		workspaceSchema.domains,
-	)) {
-		for (const [subdomainId, subdomainSchema] of Object.entries(
-			domainSchema.subdomains,
-		)) {
-			for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
-				subdomainSchema.boundedcontexts,
-			)) {
-				for (const [serviceId, serviceSchema] of Object.entries(
-					boundedcontextSchema.services,
-				)) {
-					for (const consumption of serviceSchema.consumes) {
-						debug(
-							`Adding consumption: ${consumption.consumable.$ref} to service: ${serviceSchema.name}`,
-						);
-						const consumer = workspace.getServiceByRefOrThrow(
-							serviceRef(domainId, subdomainId, boundedcontextId, serviceId)
-								.$ref,
-						);
-						const consumable = workspace.getConsumableByRefOrThrow(
-							consumption.consumable.$ref,
-						);
-
-						consumer.addConsumption(consumable, consumption);
-					}
-				}
-
-				for (const [aggregateId, aggregateSchema] of Object.entries(
-					boundedcontextSchema.aggregates,
-				)) {
-					for (const consumption of aggregateSchema.consumes) {
-						debug(
-							`Adding consumption: ${consumption.consumable.$ref} to aggregate: ${aggregateSchema.name}`,
-						);
-						const consumer = workspace.getAggregateByRefOrThrow(
-							aggregateRef(domainId, subdomainId, boundedcontextId, aggregateId)
-								.$ref,
-						);
-						const consumable = workspace.getConsumableByRefOrThrow(
-							consumption.consumable.$ref,
-						);
-
-						consumer.addConsumption(consumable, consumption);
-					}
-
-					for (const [entityId, entitySchema] of Object.entries(
-						aggregateSchema.entities,
-					)) {
-						debug(
-							`Adding relations for entity: ${entitySchema.name} (${entityId}) in aggregate: ${aggregateSchema.name}`,
-						);
-						const entity = workspace.getEntityByRefOrThrow(
-							entityRef(
-								domainId,
-								subdomainId,
-								boundedcontextId,
-								aggregateId,
-								entityId,
-							).$ref,
-						);
-
-						for (const relation of entitySchema.relations) {
-							debug(
-								`Adding relation: ${relation.relation} to target: ${relation.target.$ref} with label: ${relation.label} for entity: ${entitySchema.name}`,
-							);
-							const target = workspace.getEntityOrValueobjectByRefOrThrow(
-								relation.target.$ref,
-							);
-							entity.addRelation(target, relation);
-						}
-					}
-
-					for (const [valueobjectId, valueobjectSchema] of Object.entries(
-						aggregateSchema.valueobjects,
-					)) {
-						debug(
-							`Adding relations for value object: ${valueobjectSchema.name} (${valueobjectId}) in aggregate: ${aggregateSchema.name}`,
-						);
-						const valueobject = workspace.getValueObjectByRefOrThrow(
-							valueObjectRef(
-								domainId,
-								subdomainId,
-								boundedcontextId,
-								aggregateId,
-								valueobjectId,
-							).$ref,
-						);
-
-						for (const relation of valueobjectSchema.relations) {
-							debug(
-								`Adding relation: ${relation.relation} to target: ${relation.target.$ref} with label: ${relation.label} for value object: ${valueobjectSchema.name}`,
-							);
-							const target = workspace.getEntityOrValueobjectByRefOrThrow(
-								relation.target.$ref,
-							);
-							valueobject.addRelation(target, relation);
-						}
-					}
-				}
-			}
-		}
-	}
+	linkReferences(workspace, workspaceSchema);
+	linkPolicies(workspace, workspaceSchema);
+	linkGlossary(workspace, workspaceSchema);
+	addRelationships(workspace, workspaceSchema);
 
 	return workspace;
 }

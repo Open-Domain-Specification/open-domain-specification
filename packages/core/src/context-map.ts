@@ -1,14 +1,41 @@
-import objectHash from "object-hash";
-import { ODSConsumptionGraph } from "./consuption-graph";
-import type { ConsumablePattern, ConsumptionPattern } from "./schema";
+import { ODSConsumptionGraph } from "./consumption-graph";
+import { boundedContextNamespace, type ODSNamespace } from "./namespace";
 import type {
+	ContextRelationshipType,
+	DownstreamRole,
+	UpstreamRole,
+} from "./schema";
+import { ScopeManager } from "./scope-manager";
+import {
 	BoundedContext,
-	Consumption,
-	Domain,
-	Subdomain,
-	Workspace,
+	type Consumption,
+	type ContextRelationship,
+	type Domain,
+	type Subdomain,
+	type Workspace,
 } from "./workspace";
 
+function contextNode(bc: BoundedContext): ODSContextMapNode {
+	return {
+		id: bc.ref,
+		name: bc.name,
+		description: bc.description,
+		namespace: boundedContextNamespace(bc),
+		bigBallOfMud: bc.bigBallOfMud,
+		team: bc.team && { id: bc.team.ref, name: bc.team.name },
+	};
+}
+
+function pairKey(a: BoundedContext, b: BoundedContext): string {
+	return [a.ref, b.ref].sort().join("|");
+}
+
+/**
+ * The strategic map of bounded contexts in scope. Explicit relationships are
+ * drawn as declared; where two contexts exchange consumables without a
+ * declared relationship an *implied* upstream/downstream edge is drawn with
+ * the roles collected from the consumables and consumptions involved.
+ */
 export class ODSContextMap {
 	readonly nodes = new Map<string, ODSContextMapNode>();
 	readonly edges = new Map<string, ODSContextMapEdge>();
@@ -23,116 +50,125 @@ export class ODSContextMap {
 	}
 
 	addEdge(edge: ODSContextMapEdge) {
-		const id = objectHash(edge);
-
+		const id = `${edge.source.id}|${edge.target.id}|${edge.type}`;
 		const existingEdge = this.edges.get(id);
-
 		if (existingEdge) {
 			return existingEdge;
 		}
-
 		this.edges.set(id, edge);
-
 		return edge;
 	}
 
-	constructor(consumptions: Consumption[]) {
-		for (const consumption of consumptions) {
-			const sourceNode = this.addNode({
-				id: consumption.consumable.provider.boundedcontext.ref,
-				name: consumption.consumable.provider.boundedcontext.name,
-				description: consumption.consumable.provider.boundedcontext.description,
-				namespace: [
-					{
-						id: consumption.consumer.boundedcontext.subdomain.domain.workspace
-							.id,
-						name: consumption.consumer.boundedcontext.subdomain.domain.workspace
-							.name,
-					},
-					{
-						id: consumption.consumable.provider.boundedcontext.subdomain.domain
-							.ref,
-						name: consumption.consumable.provider.boundedcontext.subdomain
-							.domain.name,
-					},
-					{
-						id: consumption.consumable.provider.boundedcontext.subdomain.ref,
-						name: consumption.consumable.provider.boundedcontext.subdomain.name,
-					},
-				],
-			});
+	constructor(
+		contexts: BoundedContext[],
+		relationships: ContextRelationship[],
+		consumptions: Consumption[],
+	) {
+		for (const bc of contexts) this.addNode(contextNode(bc));
 
-			const targetNode = this.addNode({
-				id: consumption.consumer.boundedcontext.ref,
-				name: consumption.consumer.boundedcontext.name,
-				description: consumption.consumer.boundedcontext.description,
-				namespace: [
-					{
-						id: consumption.consumer.boundedcontext.subdomain.domain.workspace
-							.id,
-						name: consumption.consumer.boundedcontext.subdomain.domain.workspace
-							.name,
-					},
-					{
-						id: consumption.consumer.boundedcontext.subdomain.domain.ref,
-						name: consumption.consumer.boundedcontext.subdomain.domain.name,
-					},
-					{
-						id: consumption.consumer.boundedcontext.subdomain.ref,
-						name: consumption.consumer.boundedcontext.subdomain.name,
-					},
-				],
-			});
-
+		const declared = new Set<string>();
+		for (const relationship of relationships) {
+			declared.add(pairKey(relationship.source, relationship.target));
 			this.addEdge({
-				source: sourceNode,
-				target: targetNode,
-				sourcePattern: consumption.pattern,
-				targetPattern: consumption.consumable.pattern,
+				source: this.addNode(contextNode(relationship.source)),
+				target: this.addNode(contextNode(relationship.target)),
+				type: relationship.type,
+				upstreamRoles: relationship.upstreamRoles,
+				downstreamRoles: relationship.downstreamRoles,
+				description: relationship.description,
+				implied: false,
 			});
+		}
+
+		for (const consumption of consumptions) {
+			const upstream = consumption.consumable.provider.boundedcontext;
+			const downstream = consumption.consumer.boundedcontext;
+			if (
+				upstream === downstream ||
+				declared.has(pairKey(upstream, downstream))
+			) {
+				continue;
+			}
+			const edge = this.addEdge({
+				source: this.addNode(contextNode(upstream)),
+				target: this.addNode(contextNode(downstream)),
+				type: "upstream-downstream",
+				upstreamRoles: [],
+				downstreamRoles: [],
+				implied: true,
+			});
+			addRole(edge.upstreamRoles, consumption.consumable.pattern);
+			addRole(edge.downstreamRoles, consumption.pattern);
 		}
 	}
 
+	private static fromScope(scope: ScopeManager, consumptions: Consumption[]) {
+		const contexts = scope.scopes.filter(
+			(it): it is BoundedContext => it instanceof BoundedContext,
+		);
+		const workspace = contexts[0]?.workspace;
+		const relationships =
+			workspace?.relationships.filter((it) =>
+				contexts.some((bc) => it.involves(bc)),
+			) ?? [];
+		return new ODSContextMap(contexts, relationships, consumptions);
+	}
+
 	static fromWorkspace(workspace: Workspace) {
-		return new ODSContextMap(
+		return ODSContextMap.fromScope(
+			ScopeManager.fromWorkspace(workspace),
 			ODSConsumptionGraph.fromWorkspace(workspace).consumptions,
 		);
 	}
 
 	static fromDomain(domain: Domain) {
-		return new ODSContextMap(
+		return ODSContextMap.fromScope(
+			ScopeManager.fromDomain(domain),
 			ODSConsumptionGraph.fromDomain(domain).consumptions,
 		);
 	}
 
 	static fromSubdomain(subdomain: Subdomain) {
-		return new ODSContextMap(
+		return ODSContextMap.fromScope(
+			ScopeManager.fromSubdomain(subdomain),
 			ODSConsumptionGraph.fromSubdomain(subdomain).consumptions,
 		);
 	}
 
 	static fromBoundedContext(boundedcontext: BoundedContext) {
-		return new ODSContextMap(
+		return ODSContextMap.fromScope(
+			ScopeManager.fromBoundedContext(boundedcontext),
 			ODSConsumptionGraph.fromBoundedContext(boundedcontext).consumptions,
 		);
 	}
 }
 
-export type ODSContextMapNamespace = {
-	id: string;
-	name: string;
-};
+function addRole<R>(roles: R[], role: R | undefined) {
+	if (role !== undefined && !roles.includes(role)) roles.push(role);
+}
+
+export type ODSContextMapNamespace = ODSNamespace;
 
 export type ODSContextMapNode = {
 	id: string;
 	name: string;
 	description?: string;
 	namespace: ODSContextMapNamespace[];
+	bigBallOfMud?: boolean;
+	team?: { id: string; name: string };
 };
 
+/**
+ * For directed types `source` is upstream and `target` downstream; for
+ * symmetric types the two ends are interchangeable.
+ */
 export type ODSContextMapEdge = {
 	source: ODSContextMapNode;
-	sourcePattern: ConsumptionPattern;
 	target: ODSContextMapNode;
-	targetPattern: ConsumablePattern;
+	type: ContextRelationshipType;
+	upstreamRoles: UpstreamRole[];
+	downstreamRoles: DownstreamRole[];
+	description?: string;
+	/** True when derived from consumptions rather than declared. */
+	implied: boolean;
 };

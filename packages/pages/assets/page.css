@@ -1,0 +1,613 @@
+:root {
+	--gap: 12px;
+	--radius: 6px;
+	--border: var(
+		--vscode-panel-border,
+		var(--vscode-widget-border, rgba(128, 128, 128, 0.35))
+	);
+	--card: var(
+		--vscode-editorWidget-background,
+		var(--vscode-sideBar-background)
+	);
+	--muted: var(--vscode-descriptionForeground);
+	--accent: var(--vscode-textLink-foreground);
+	--core: var(--vscode-charts-purple, #b180d7);
+	--supporting: var(--vscode-charts-blue, #3794ff);
+	--generic: var(--vscode-charts-green, #89d185);
+	--warn: var(--vscode-editorWarning-foreground, #cca700);
+	--error: var(--vscode-editorError-foreground, #f14c4c);
+	--bg: var(--vscode-editor-background);
+	--fg: var(--vscode-foreground);
+	--mono: var(--vscode-editor-font-family);
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	padding: 0;
+	font-family: var(--vscode-font-family);
+	font-size: var(--vscode-font-size);
+	color: var(--vscode-foreground);
+	background: var(--vscode-editor-background);
+	line-height: 1.5;
+}
+
+a {
+	color: var(--accent);
+	text-decoration: none;
+}
+a:hover {
+	text-decoration: underline;
+}
+a.ref .codicon {
+	font-size: 0.95em;
+	vertical-align: -1px;
+	margin-right: 2px;
+}
+
+code,
+.id {
+	font-family: var(--vscode-editor-font-family);
+	font-size: 0.9em;
+}
+
+.toolbar {
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	display: flex;
+	gap: 4px;
+	padding: 4px 8px;
+	background: var(--vscode-editor-background);
+	border-bottom: 1px solid var(--border);
+}
+.toolbar .spacer {
+	flex: 1;
+}
+button.icon {
+	background: transparent;
+	color: var(--vscode-icon-foreground);
+	border: 0;
+	border-radius: 4px;
+	padding: 4px;
+	cursor: pointer;
+}
+button.icon:hover:not(:disabled) {
+	background: var(--vscode-toolbar-hoverBackground);
+}
+button.icon:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+.layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 200px;
+	gap: 32px;
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 16px 24px 64px;
+}
+@media (max-width: 900px) {
+	.layout {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.toc {
+		display: none;
+	}
+}
+
+.toc {
+	position: sticky;
+	top: 48px;
+	align-self: start;
+	font-size: 0.92em;
+}
+.toc-title {
+	margin: 8px 0;
+	color: var(--muted);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	font-size: 0.8em;
+}
+.toc ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	border-left: 1px solid var(--border);
+}
+.toc li a {
+	display: block;
+	padding: 3px 10px;
+	color: var(--muted);
+	border-left: 2px solid transparent;
+	margin-left: -1px;
+}
+.toc li a.active,
+.toc li a:hover {
+	color: var(--vscode-foreground);
+	border-left-color: var(--accent);
+	text-decoration: none;
+}
+
+/* header */
+.page-head {
+	margin-bottom: 24px;
+}
+.crumbs {
+	color: var(--muted);
+	font-size: 0.92em;
+	margin-bottom: 4px;
+}
+.crumbs .sep {
+	margin: 0 6px;
+}
+.crumbs .kind {
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	font-size: 0.85em;
+}
+h1 {
+	font-size: 1.7em;
+	font-weight: 600;
+	margin: 0 0 8px;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+}
+h1 .codicon {
+	font-size: 1.1em;
+	color: var(--accent);
+}
+h1 .id {
+	font-size: 0.55em;
+	font-weight: 400;
+	color: var(--muted);
+	background: var(--card);
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	padding: 1px 6px;
+}
+.facts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 32px;
+	margin: 12px 0 0;
+	padding: 12px 0 0;
+	border-top: 1px solid var(--border);
+}
+.facts div {
+	display: flex;
+	gap: 8px;
+	align-items: baseline;
+}
+.facts dt {
+	color: var(--muted);
+	font-size: 0.85em;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+.facts dd {
+	margin: 0;
+}
+
+/* sections */
+section {
+	margin: 0 0 40px;
+	scroll-margin-top: 48px;
+}
+section > header {
+	margin-bottom: 12px;
+	border-bottom: 1px solid var(--border);
+	padding-bottom: 6px;
+}
+h2 {
+	font-size: 1.25em;
+	font-weight: 600;
+	margin: 0;
+}
+h3 {
+	font-size: 1em;
+	font-weight: 600;
+	margin: 20px 0 8px;
+	color: var(--muted);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+.lead {
+	margin: 4px 0 0;
+	color: var(--muted);
+}
+.empty,
+.dim {
+	color: var(--muted);
+}
+.empty {
+	font-style: italic;
+	margin: 8px 0;
+}
+.ok {
+	color: var(--generic);
+}
+.md p {
+	margin: 4px 0 8px;
+}
+.md p:first-child {
+	margin-top: 0;
+}
+.md img {
+	max-width: 100%;
+	height: auto;
+	display: block;
+	margin: 8px auto;
+}
+
+/* cards */
+.grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: var(--gap);
+}
+.grid.wide {
+	grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+}
+.card {
+	background: var(--card);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: 12px 14px;
+	margin-bottom: var(--gap);
+	scroll-margin-top: 56px;
+}
+.grid .card {
+	margin-bottom: 0;
+}
+.card.highlight {
+	border-color: var(--core);
+	box-shadow: inset 3px 0 0 var(--core);
+}
+.card.flash {
+	animation: flash 1.6s ease-out;
+}
+@keyframes flash {
+	from {
+		background: color-mix(in srgb, var(--accent) 25%, var(--card));
+	}
+	to {
+		background: var(--card);
+	}
+}
+.card-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+.card-head .meta {
+	font-weight: 400;
+	font-size: 0.9em;
+	color: var(--muted);
+}
+.counts {
+	color: var(--muted);
+	font-size: 0.9em;
+	margin: 4px 0 0;
+}
+.policy {
+	margin-top: 6px;
+}
+
+/* chips */
+.chip {
+	display: inline-block;
+	font-size: 0.78em;
+	line-height: 1.6;
+	padding: 0 8px;
+	border-radius: 999px;
+	border: 1px solid var(--border);
+	color: var(--vscode-foreground);
+	vertical-align: middle;
+	white-space: nowrap;
+}
+.chip.core {
+	border-color: var(--core);
+	color: var(--core);
+}
+.chip.supporting {
+	border-color: var(--supporting);
+	color: var(--supporting);
+}
+.chip.generic {
+	border-color: var(--generic);
+	color: var(--generic);
+}
+.chip.warn {
+	border-color: var(--warn);
+	color: var(--warn);
+}
+.chip.muted {
+	color: var(--muted);
+}
+.pills {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: 4px;
+}
+.pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	background: var(--vscode-badge-background);
+	color: var(--vscode-badge-foreground);
+	border-radius: 999px;
+	padding: 1px 10px;
+	font-size: 0.92em;
+}
+.pill a {
+	color: inherit;
+}
+
+/* tables */
+table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 8px 0;
+	font-size: 0.95em;
+}
+th,
+td {
+	text-align: left;
+	padding: 6px 8px;
+	border-bottom: 1px solid var(--border);
+	vertical-align: top;
+}
+th {
+	color: var(--muted);
+	font-weight: 500;
+	font-size: 0.85em;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+table.attrs {
+	margin-top: 8px;
+}
+table.attrs td.k {
+	width: 20px;
+	color: var(--warn);
+}
+.relations {
+	margin: 8px 0 0;
+	padding-left: 18px;
+	color: var(--muted);
+}
+
+/* problems */
+.problems {
+	list-style: none;
+	margin: 0 0 12px;
+	padding: 0;
+}
+.problems li {
+	padding: 6px 10px;
+	border-left: 3px solid var(--warn);
+	background: var(--card);
+	margin-bottom: 4px;
+	border-radius: 0 4px 4px 0;
+}
+.problems li.error {
+	border-left-color: var(--error);
+}
+.problems li.error .codicon {
+	color: var(--error);
+}
+.problems li.warning .codicon {
+	color: var(--warn);
+}
+.problems .rule {
+	font-family: var(--vscode-editor-font-family);
+	font-size: 0.85em;
+	color: var(--muted);
+	margin-right: 6px;
+}
+
+/* diagrams */
+.diagram {
+	margin: 8px 0 16px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--vscode-editorWidget-background);
+	overflow: hidden;
+}
+.diagram .canvas {
+	overflow: hidden;
+}
+.diagram figcaption {
+	padding: 4px 10px;
+	font-size: 0.85em;
+	color: var(--muted);
+	border-top: 1px solid var(--border);
+}
+
+/* Interactive diagrams */
+/* The node card every diagram node builds on. */
+.flow-card {
+	background: var(--card);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: 8px 12px;
+	font-size: 12px;
+	color: var(--fg);
+	min-width: 120px;
+	cursor: pointer;
+}
+/* Sketch style: the same card as a hand-drawn ellipse over the Voronoi backdrop. */
+.svelte-flow .flow-card.sketch {
+	border-radius: 50%;
+	border-width: 2px;
+	border-color: var(--fg);
+	padding: 18px 32px;
+	text-align: center;
+	clip-path: none;
+}
+.svelte-flow .flow-card.sketch .head {
+	justify-content: center;
+}
+.svelte-flow .flow-card.sketch.context-node {
+	border-top-width: 5px;
+}
+.flow-card .head {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+	white-space: nowrap;
+}
+/* The cluster path under the name. */
+.flow-card .group {
+	color: var(--muted);
+	font-size: 11px;
+	white-space: nowrap;
+}
+/* Edges: the theme foreground at 0.7 rather than Svelte Flow's grey, so lines stand out from
+   both the page and the shaded clusters in either theme (the context map's SK/SW colours
+   override inline); twice Svelte Flow's stroke, and every edge animates along its dash
+   pattern so the flow direction reads. Svelte Flow's own `dashdraw` keyframes animate
+   stroke-dashoffset from 10 to 0, which only loops without a visible jump when the dash
+   pattern's total length (dash plus gap) is itself 10; overriding just the dash array, as
+   this used to, leaves the offset travelling a distance that no longer matches the pattern,
+   so the line appears to skip once a cycle. These keyframes replace Svelte Flow's instead of
+   layering on top of them, each sized so the offset distance equals its own pattern length,
+   and timed to the same 20px/s rate Svelte Flow's default moves at so every edge reads at the
+   same speed. Solid edges get a long dash with a small gap; the `dashed` class shortens both,
+   set on the edge wrapper for an implied context relationship or on the path itself for a
+   "uses" dependency, whichever the component that draws it controls. */
+.svelte-flow .svelte-flow__edge-path {
+	stroke: var(--fg);
+	stroke-opacity: 0.7;
+	stroke-width: 2;
+}
+.svelte-flow .svelte-flow__edge.animated .svelte-flow__edge-path {
+	stroke-dasharray: 20 4;
+	animation: flow-dashdraw 1.2s linear infinite;
+}
+.svelte-flow .svelte-flow__edge.animated.dashed .svelte-flow__edge-path,
+.svelte-flow .svelte-flow__edge.animated .svelte-flow__edge-path.dashed {
+	stroke-dasharray: 6 3;
+	animation: flow-dashdraw-short 0.45s linear infinite;
+}
+@keyframes flow-dashdraw {
+	from {
+		stroke-dashoffset: 24;
+	}
+	to {
+		stroke-dashoffset: 0;
+	}
+}
+@keyframes flow-dashdraw-short {
+	from {
+		stroke-dashoffset: 9;
+	}
+	to {
+		stroke-dashoffset: 0;
+	}
+}
+/* Edge text: the midpoint label and the stereotype, haloed so lines never cross it. */
+.svelte-flow .edge-label {
+	font-size: 11px;
+	fill: var(--fg);
+	paint-order: stroke;
+	stroke: var(--card);
+	stroke-width: 4px;
+	stroke-linejoin: round;
+	pointer-events: none;
+}
+/* Ports: where an edge meets a node, badged with that end's role, pattern or cardinality.
+   Edges draw theirs as edge labels, above every line; a node draws its own as a port handle. */
+.svelte-flow .svelte-flow__edge-label.port,
+.svelte-flow .svelte-flow__handle.port-handle {
+	box-sizing: border-box;
+	min-width: 22px;
+	height: 22px;
+	padding: 0 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 11px;
+	background: var(--card);
+	border: 1px solid var(--border);
+	color: var(--fg);
+	font-size: 9px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	line-height: 1;
+	white-space: nowrap;
+}
+.svelte-flow .svelte-flow__edge-label.port {
+	pointer-events: none;
+}
+/* Fixed handles are small dots in the card colours. The diagrams are read-only: a handle only
+   ever receives an edge Svelte Flow lays out, so it must never start one, and it takes on the
+   node's own pointer cursor rather than the library's crosshair. `isConnectable={false}` on the
+   Handle (NodeHandles.svelte) already drops Svelte Flow's own connection-indicator class, whose
+   `pointer-events: all` is what lets a drag begin; this reasserts both explicitly so a click
+   still lands on the node underneath. */
+.svelte-flow .svelte-flow__handle {
+	width: 6px;
+	height: 6px;
+	background: var(--card);
+	border: 1px solid var(--border);
+	cursor: pointer;
+	pointer-events: none;
+}
+.svelte-flow .svelte-flow__handle.port-handle {
+	width: auto;
+}
+/* UML interfaces on a component: a lollipop (ball on a stem) for a provided one on the left
+   edge, a socket (half circle on a stem) for a required one on the right, both pushed out
+   so the stem shows and both labelled with the pattern when there is one. */
+.svelte-flow .svelte-flow__handle.lollipop,
+.svelte-flow .svelte-flow__handle.socket {
+	box-sizing: border-box;
+	width: 22px;
+	min-width: 22px;
+	height: 22px;
+	border: 1.5px solid var(--fg);
+	background: var(--card);
+	opacity: 1;
+}
+.svelte-flow .svelte-flow__handle.lollipop {
+	left: -22px;
+}
+.svelte-flow .svelte-flow__handle.socket {
+	right: -22px;
+	border-right-color: transparent;
+	background: transparent;
+}
+.svelte-flow .svelte-flow__handle.lollipop::before,
+.svelte-flow .svelte-flow__handle.socket::before {
+	content: "";
+	position: absolute;
+	top: 50%;
+	width: 12px;
+	border-top: 1.5px solid var(--fg);
+}
+.svelte-flow .svelte-flow__handle.lollipop::before {
+	left: 100%;
+}
+.svelte-flow .svelte-flow__handle.socket::before {
+	right: 100%;
+}
+.svelte-flow .svelte-flow__handle.socket .port-label {
+	margin-right: 4px;
+}
+/* Hidden while the handles float: the edge finds its own end, but the handle keeps its measurement. */
+.svelte-flow .svelte-flow__handle.handle-hidden {
+	opacity: 0;
+}

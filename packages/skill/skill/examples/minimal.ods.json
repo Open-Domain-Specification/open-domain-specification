@@ -1,0 +1,145 @@
+{
+	"$schema": "./schema.json",
+	"id": "bookshop",
+	"name": "Bookshop",
+	"description": "A small online bookshop: a catalogue of titles and the orders customers place for them.",
+	"version": "0.1.0",
+	"odsVersion": "1.0.0",
+	"domains": {
+		"bookselling": {
+			"name": "Bookselling",
+			"description": "Everything involved in selling books online",
+			"subdomains": {
+				"sales": {
+					"name": "Sales",
+					"type": "core",
+					"description": "Taking and fulfilling orders"
+				}
+			}
+		}
+	},
+	"boundedcontexts": {
+		"orders": {
+			"name": "Orders",
+			"description": "Owns orders from placement to dispatch",
+			"subdomains": [{ "$ref": "#/domains/bookselling/subdomains/sales" }],
+			"team": { "$ref": "#/teams/shop_team" },
+			"aggregates": {
+				"order": {
+					"name": "Order",
+					"description": "One customer's request to buy some books",
+					"entities": {
+						"order": {
+							"name": "Order",
+							"description": "The order itself",
+							"root": true,
+							"attributes": {
+								"order_number": {
+									"name": "orderNumber",
+									"type": "order number",
+									"identity": true
+								},
+								"total": { "name": "total", "type": "money" }
+							},
+							"relations": [
+								{
+									"target": {
+										"$ref": "#/boundedcontexts/orders/aggregates/order/valueobjects/address"
+									},
+									"relation": "uses",
+									"label": "ships-to",
+									"cardinality": "1"
+								}
+							]
+						}
+					},
+					"valueobjects": {
+						"address": {
+							"name": "Address",
+							"description": "Where the order ships to",
+							"attributes": {
+								"lines": { "name": "lines", "type": "text" },
+								"postcode": { "name": "postcode", "type": "postcode" }
+							},
+							"relations": []
+						}
+					},
+					"invariants": {
+						"total_not_negative": {
+							"name": "Total not negative",
+							"description": "An order's total can never be below zero",
+							"constrains": [
+								{
+									"$ref": "#/boundedcontexts/orders/aggregates/order/entities/order/attributes/total"
+								}
+							]
+						}
+					},
+					"provides": {
+						"order_placed": {
+							"name": "OrderPlaced",
+							"description": "A customer placed an order",
+							"type": "event",
+							"pattern": "published-language",
+							"schema": {
+								"$ref": "#/boundedcontexts/orders/schemas/order_placed"
+							}
+						}
+					},
+					"consumes": []
+				}
+			},
+			"services": {
+				"order_api": {
+					"name": "Order API",
+					"description": "The endpoints the web shop calls",
+					"type": "application",
+					"provides": {
+						"place_order": {
+							"name": "PlaceOrder",
+							"description": "POST /orders",
+							"type": "operation",
+							"pattern": "open-host-service",
+							"raises": [
+								{
+									"$ref": "#/boundedcontexts/orders/aggregates/order/provides/order_placed"
+								}
+							]
+						}
+					},
+					"consumes": []
+				}
+			},
+			"policies": {},
+			"glossary": {
+				"order": {
+					"name": "Order",
+					"definition": "A customer's request to buy some books, paid up front",
+					"aliases": ["Purchase"],
+					"embodiedBy": { "$ref": "#/boundedcontexts/orders/aggregates/order" }
+				}
+			},
+			"schemas": {
+				"order_placed": {
+					"name": "OrderPlaced",
+					"description": "What other parts learn when an order is placed",
+					"attributes": {
+						"order_number": {
+							"name": "orderNumber",
+							"type": "order number",
+							"identity": true
+						},
+						"total": { "name": "total", "type": "money" }
+					}
+				}
+			}
+		}
+	},
+	"relationships": [],
+	"teams": {
+		"shop_team": {
+			"name": "Shop Team",
+			"description": "Runs the online shop"
+		}
+	}
+}

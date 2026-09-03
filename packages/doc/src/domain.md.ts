@@ -1,15 +1,17 @@
 import {
 	type Domain,
 	ODSConsumptionGraph,
+	ODSContextMap,
 	type Subdomain,
 } from "@open-domain-specification/core";
 import { breadcrumbsMd } from "./breadcrumbs.md";
+import { contextRelationshipsMd } from "./context-relationships.md";
 import { markdownTable } from "./lib/markdown-table";
 import { pathToContextMapSvg, pathToIndexMd } from "./lib/paths";
 import type { Options } from "./options";
 
 const subdomainSection = (subdomain: Subdomain) => `
-### [${subdomain.name}](${pathToIndexMd(subdomain.path, subdomain.domain.path)})
+### [${subdomain.name}](${pathToIndexMd(subdomain.path, subdomain.domain.path)}) (${subdomain.type})
 ${subdomain.description}
 
 `;
@@ -17,7 +19,7 @@ ${subdomain.description}
 export const domainMd = (domain: Domain, options?: Options) => `
 ${options?.breadcrumbs ? breadcrumbsMd(domain.workspace, domain) : ""}
 
-# ${domain.name} (${domain.type})
+# ${domain.name}
 ${domain.description}
 
 ![contextmap](${pathToContextMapSvg(domain.path, domain.path)})
@@ -31,15 +33,18 @@ ${
 		: "> No subdomains."
 }
 
-## Relationships
+## Context Relationships
+${contextRelationshipsMd(ODSContextMap.fromDomain(domain))}
+
+## Consumptions
 ${markdownTable(
 	["Consumer", "Consumed As", "Provider", "Consumable", "Provided As"],
 	ODSConsumptionGraph.fromDomain(domain).consumptions.map((it) => [
 		`[${it.consumer.name}](${pathToIndexMd(it.consumer.path, domain.path)})`,
-		it.pattern,
+		it.pattern ?? "-",
 		it.consumable.provider.name,
 		it.consumable.name,
-		it.consumable.pattern,
+		it.consumable.pattern ?? "-",
 	]),
 )}
 	

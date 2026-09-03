@@ -1,0 +1,5148 @@
+{
+  "$schema": "./schema.json",
+  "id": "northbank",
+  "name": "NorthBank",
+  "description": "A fictional retail bank: onboarding and KYC, consent, accounts and ledger, payments and schemes, cards, lending and credit decisioning, fraud, sanctions, regulatory reporting, branches and contact centre, and a legacy core.",
+  "version": "1.0.0",
+  "odsVersion": "1.0.0",
+  "primaryColor": "#1d4ed8",
+  "domains": {
+    "customer": {
+      "name": "Customer",
+      "description": "Knowing who the customer is, what they agreed to, and serving them",
+      "subdomains": {
+        "onboarding_&_kyc": {
+          "name": "Onboarding & KYC",
+          "type": "supporting",
+          "description": "Verifying identity before anything else. Regulated and necessary"
+        },
+        "consent": {
+          "name": "Consent",
+          "type": "supporting",
+          "description": "Purpose, scope, expiry, withdrawal. A first-class thing since the 2022 fine"
+        },
+        "branch_&_contact_centre": {
+          "name": "Branch & Contact Centre",
+          "type": "supporting",
+          "description": "Face-to-face and phone service"
+        }
+      }
+    },
+    "banking_products": {
+      "name": "Banking Products",
+      "description": "Accounts, the ledger beneath them, and cards",
+      "subdomains": {
+        "current_&_savings_accounts": {
+          "name": "Current & Savings Accounts",
+          "type": "core",
+          "description": "The account is the relationship; where the Fair Treatment Rules bite"
+        },
+        "ledger": {
+          "name": "Ledger",
+          "type": "supporting",
+          "description": "Double-entry postings. Must be perfect; not unique"
+        },
+        "cards": {
+          "name": "Cards",
+          "type": "generic",
+          "description": "Issuing and authorisation. \"We would outsource it if the contract allowed\""
+        }
+      }
+    },
+    "money_movement": {
+      "name": "Money Movement",
+      "description": "Instructions in, settlements out",
+      "subdomains": {
+        "payments": {
+          "name": "Payments",
+          "type": "supporting",
+          "description": "The hub between customers and the schemes"
+        },
+        "scheme_connectivity": {
+          "name": "Scheme Connectivity",
+          "type": "generic",
+          "description": "Gateways in the schemes' formats"
+        }
+      }
+    },
+    "credit": {
+      "name": "Credit",
+      "description": "Lending the bank's money well",
+      "subdomains": {
+        "lending": {
+          "name": "Lending",
+          "type": "core",
+          "description": "Origination and servicing. A below-market loss rate for fifteen years"
+        },
+        "credit_decisioning": {
+          "name": "Credit Decisioning",
+          "type": "core",
+          "description": "The bank's own scorecard and affordability rules"
+        }
+      }
+    },
+    "risk_&_compliance": {
+      "name": "Risk & Compliance",
+      "description": "Financial crime and the regulator",
+      "subdomains": {
+        "fraud": {
+          "name": "Fraud",
+          "type": "core",
+          "description": "Every missed flag is the bank's money"
+        },
+        "sanctions_screening": {
+          "name": "Sanctions Screening",
+          "type": "generic",
+          "description": "Bought lists, bought engine"
+        },
+        "regulatory_reporting": {
+          "name": "Regulatory Reporting",
+          "type": "supporting",
+          "description": "Returns to the PCA, reconciled to the ledger"
+        }
+      }
+    },
+    "platform": {
+      "name": "Platform",
+      "description": "Shared technical capabilities",
+      "subdomains": {
+        "identity_&_access": {
+          "name": "Identity & Access",
+          "type": "generic",
+          "description": "Login and step-up authentication. Vendor built; never placed on the capability map"
+        }
+      }
+    }
+  },
+  "boundedcontexts": {
+    "customer_&_kyc": {
+      "name": "Customer & KYC",
+      "description": "Verified customers, their documents and their consents",
+      "subdomains": [
+        {
+          "$ref": "#/domains/customer/subdomains/onboarding_&_kyc"
+        },
+        {
+          "$ref": "#/domains/customer/subdomains/consent"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/customer_platform_team"
+      },
+      "aggregates": {
+        "customer": {
+          "name": "Customer",
+          "description": "A verified person and the documents that verify them",
+          "provides": {
+            "onboarding_started": {
+              "name": "OnboardingStarted",
+              "description": "A prospective customer gave their details",
+              "type": "event",
+              "internal": true
+            },
+            "customer_verified": {
+              "name": "CustomerVerified",
+              "description": "KYC passed; accounts may be opened",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/schemas/customer_verified"
+              }
+            },
+            "verify_customer": {
+              "name": "VerifyCustomer",
+              "description": "Mark KYC as passed once documents and screening are clear",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/provides/customer_verified"
+                }
+              ]
+            },
+            "hold_onboarding": {
+              "name": "HoldOnboarding",
+              "description": "Stop everything until Financial Crime clears the match",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/provides/party_matched"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ],
+          "entities": {
+            "customer": {
+              "name": "Customer",
+              "description": "Someone the bank has verified",
+              "root": true,
+              "attributes": {
+                "customer_id": {
+                  "name": "customerId",
+                  "type": "string",
+                  "identity": true
+                },
+                "legal_name": {
+                  "name": "legalName",
+                  "type": "string"
+                },
+                "date_of_birth": {
+                  "name": "dateOfBirth",
+                  "type": "DateOfBirth",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/date_of_birth"
+                  }
+                },
+                "kyc_status": {
+                  "name": "kycStatus",
+                  "type": "KycStatus",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/kyc_status"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/identity_document"
+                  },
+                  "relation": "includes",
+                  "label": "verified-by",
+                  "cardinality": "*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/date_of_birth"
+                  },
+                  "relation": "uses",
+                  "label": "born-on",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/address"
+                  },
+                  "relation": "uses",
+                  "label": "lives-at",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/kyc_status"
+                  },
+                  "relation": "uses",
+                  "label": "has-status",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "identity_document": {
+              "name": "IdentityDocument",
+              "description": "A passport or licence checked during onboarding; kept for audit",
+              "root": false,
+              "attributes": {
+                "document_type": {
+                  "name": "documentType",
+                  "type": "'passport' | 'driving-licence'"
+                },
+                "number": {
+                  "name": "number",
+                  "type": "string",
+                  "identity": true
+                },
+                "expires_on": {
+                  "name": "expiresOn",
+                  "type": "date"
+                }
+              },
+              "relations": []
+            }
+          },
+          "valueobjects": {
+            "date_of_birth": {
+              "name": "DateOfBirth",
+              "description": "A date; the source of the age rule",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "date"
+                }
+              },
+              "relations": []
+            },
+            "address": {
+              "name": "Address",
+              "description": "Residential address, verified against the electoral roll",
+              "attributes": {
+                "lines": {
+                  "name": "lines",
+                  "type": "string[]"
+                },
+                "postcode": {
+                  "name": "postcode",
+                  "type": "string"
+                }
+              },
+              "relations": []
+            },
+            "kyc_status": {
+              "name": "KycStatus",
+              "description": "pending, held (sanctions match), verified",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "'pending' | 'held' | 'verified'"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "adult_only": {
+              "name": "AdultOnly",
+              "description": "A customer is eighteen or over on the day onboarding starts, computed from the date of birth; no exceptions",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+                }
+              ]
+            },
+            "verified_needs_document": {
+              "name": "VerifiedNeedsDocument",
+              "description": "A verified customer has at least one identity document on file",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/kyc_status"
+                },
+                {
+                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/identity_document"
+                }
+              ]
+            },
+            "document_not_expired": {
+              "name": "DocumentNotExpired",
+              "description": "A document past its expiry does not count towards verification",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/identity_document/attributes/expires_on"
+                }
+              ]
+            }
+          }
+        },
+        "consent": {
+          "name": "Consent",
+          "description": "One permission with a purpose, a scope and a lifetime; its own aggregate because it changes independently of the customer record",
+          "provides": {
+            "consent_given": {
+              "name": "ConsentGiven",
+              "description": "A permission now exists",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/schemas/consent_changed"
+              }
+            },
+            "consent_withdrawn": {
+              "name": "ConsentWithdrawn",
+              "description": "A permission ended; published the same second",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/schemas/consent_changed"
+              }
+            },
+            "give_consent": {
+              "name": "GiveConsent",
+              "description": "Record a permission",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/schemas/consent_changed"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/provides/consent_given"
+                }
+              ]
+            },
+            "withdraw_consent": {
+              "name": "WithdrawConsent",
+              "description": "End a permission, finally",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/schemas/consent_changed"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/provides/consent_withdrawn"
+                }
+              ]
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "consent": {
+              "name": "Consent",
+              "description": "A permission given, and possibly withdrawn, by a customer",
+              "root": true,
+              "attributes": {
+                "consent_id": {
+                  "name": "consentId",
+                  "type": "string",
+                  "identity": true
+                },
+                "customer_id": {
+                  "name": "customerId",
+                  "type": "string"
+                },
+                "given_at": {
+                  "name": "givenAt",
+                  "type": "date-time"
+                },
+                "withdrawn_at": {
+                  "name": "withdrawnAt",
+                  "type": "date-time"
+                },
+                "expires_at": {
+                  "name": "expiresAt",
+                  "type": "date-time"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/valueobjects/consent_purpose"
+                  },
+                  "relation": "uses",
+                  "label": "for",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/valueobjects/consent_scope"
+                  },
+                  "relation": "uses",
+                  "label": "covers",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+                  },
+                  "relation": "references",
+                  "label": "given-by",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "consent_purpose": {
+              "name": "ConsentPurpose",
+              "description": "marketing, data-sharing or open-banking; the purpose decides the rules",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "'marketing' | 'data-sharing' | 'open-banking'"
+                }
+              },
+              "relations": []
+            },
+            "consent_scope": {
+              "name": "ConsentScope",
+              "description": "Channels and data categories the permission covers",
+              "attributes": {
+                "channels": {
+                  "name": "channels",
+                  "type": "string[]"
+                },
+                "data_categories": {
+                  "name": "dataCategories",
+                  "type": "string[]"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "withdrawn_is_final": {
+              "name": "WithdrawnIsFinal",
+              "description": "A withdrawn consent is never reinstated; a new consent is given instead",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/entities/consent/attributes/withdrawn_at"
+                }
+              ]
+            },
+            "purpose_required": {
+              "name": "PurposeRequired",
+              "description": "A consent without a purpose is not a consent",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/valueobjects/consent_purpose"
+                }
+              ]
+            },
+            "open_banking_consent_expires": {
+              "name": "OpenBankingConsentExpires",
+              "description": "An open banking consent expires within twelve months of being given",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/entities/consent/attributes/expires_at"
+                },
+                {
+                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/valueobjects/consent_purpose"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {
+        "onboarding_app": {
+          "name": "OnboardingApp",
+          "description": "The onboarding journey and the customer read API",
+          "type": "application",
+          "provides": {
+            "start_onboarding": {
+              "name": "StartOnboarding",
+              "description": "Begin with name, date of birth, address and a document",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/provides/onboarding_started"
+                }
+              ]
+            },
+            "get_customer": {
+              "name": "GetCustomer",
+              "description": "Read a customer's verified details",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/schemas/customer_ref"
+              }
+            }
+          },
+          "consumes": []
+        },
+        "kyc_screening": {
+          "name": "KycScreening",
+          "description": "Runs sanctions and document checks; a domain service because it spans the customer and the screening result",
+          "type": "domain",
+          "provides": {
+            "screen_customer": {
+              "name": "ScreenCustomer",
+              "description": "Screen the prospective customer against sanctions lists",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/provides/screen_party"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
+        }
+      },
+      "policies": {
+        "screen_on_onboarding": {
+          "name": "Screen on onboarding",
+          "description": "Every prospective customer is screened before anything else",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/provides/onboarding_started"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/customer_&_kyc/services/kyc_screening/provides/screen_customer"
+            }
+          ]
+        },
+        "hold_on_sanctions_match": {
+          "name": "Hold on sanctions match",
+          "description": "A match holds onboarding until Financial Crime clears it",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/provides/party_matched"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/provides/hold_onboarding"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "customer": {
+          "name": "Customer",
+          "definition": "A verified person. Branches say member; payments say party",
+          "aliases": [
+            "Member",
+            "Party"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer"
+          }
+        },
+        "kyc": {
+          "name": "KYC",
+          "definition": "Know your customer: the verification that must pass before any account opens",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/kyc_status"
+          }
+        },
+        "consent": {
+          "name": "Consent",
+          "definition": "A permission with a purpose, a scope and a lifetime; withdrawal is final",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent"
+          }
+        }
+      },
+      "schemas": {
+        "customer_ref": {
+          "name": "CustomerRef",
+          "attributes": {
+            "customer_id": {
+              "name": "customerId",
+              "type": "string",
+              "identity": true
+            }
+          }
+        },
+        "customer_verified": {
+          "name": "CustomerVerified",
+          "attributes": {
+            "customer_id": {
+              "name": "customerId",
+              "type": "string",
+              "identity": true
+            },
+            "verified_at": {
+              "name": "verifiedAt",
+              "type": "date-time"
+            }
+          }
+        },
+        "consent_changed": {
+          "name": "ConsentChanged",
+          "description": "Used by both consent events; the contact centre acts on it the same day",
+          "attributes": {
+            "consent_id": {
+              "name": "consentId",
+              "type": "string",
+              "identity": true
+            },
+            "customer_id": {
+              "name": "customerId",
+              "type": "string"
+            },
+            "purpose": {
+              "name": "purpose",
+              "type": "ConsentPurpose",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/valueobjects/consent_purpose"
+              }
+            }
+          }
+        }
+      }
+    },
+    "sanctions_screening": {
+      "name": "Sanctions Screening",
+      "description": "Names against lists, with a match score",
+      "subdomains": [
+        {
+          "$ref": "#/domains/risk_&_compliance/subdomains/sanctions_screening"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/financial_crime_team"
+      },
+      "aggregates": {
+        "screening_result": {
+          "name": "ScreeningResult",
+          "description": "One name checked against the lists",
+          "provides": {
+            "party_matched": {
+              "name": "PartyMatched",
+              "description": "The name matched a list; the caller stops",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/sanctions_screening/schemas/party_matched"
+              }
+            },
+            "screen_party": {
+              "name": "ScreenParty",
+              "description": "Check a name, date of birth and country against the lists",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/sanctions_screening/schemas/screen_party"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/provides/party_matched"
+                }
+              ]
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "screening_result": {
+              "name": "ScreeningResult",
+              "description": "The outcome for one party",
+              "root": true,
+              "attributes": {
+                "result_id": {
+                  "name": "resultId",
+                  "type": "string",
+                  "identity": true
+                },
+                "party_name": {
+                  "name": "partyName",
+                  "type": "string"
+                },
+                "score": {
+                  "name": "score",
+                  "type": "MatchScore",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/valueobjects/match_score"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/valueobjects/match_score"
+                  },
+                  "relation": "uses",
+                  "label": "scored",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "match_score": {
+              "name": "MatchScore",
+              "description": "0 to 100; above the threshold is a match",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "int 0..100"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {}
+        }
+      },
+      "services": {},
+      "policies": {},
+      "glossary": {},
+      "schemas": {
+        "screen_party": {
+          "name": "ScreenParty",
+          "attributes": {
+            "name": {
+              "name": "name",
+              "type": "string"
+            },
+            "date_of_birth": {
+              "name": "dateOfBirth",
+              "type": "date"
+            },
+            "country": {
+              "name": "country",
+              "type": "ISO 3166 code"
+            }
+          }
+        },
+        "party_matched": {
+          "name": "PartyMatched",
+          "attributes": {
+            "result_id": {
+              "name": "resultId",
+              "type": "string",
+              "identity": true
+            },
+            "score": {
+              "name": "score",
+              "type": "MatchScore",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/valueobjects/match_score"
+              }
+            }
+          }
+        }
+      }
+    },
+    "accounts": {
+      "name": "Accounts",
+      "description": "Current accounts on the 2019 platform: mandates, overdrafts, holds, status. Savings remain on Sovereign",
+      "subdomains": [
+        {
+          "$ref": "#/domains/banking_products/subdomains/current_&_savings_accounts"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/accounts_team"
+      },
+      "aggregates": {
+        "account": {
+          "name": "Account",
+          "description": "One product with its mandates, limit and status; the rules about balance and status are checked here",
+          "provides": {
+            "account_opened": {
+              "name": "AccountOpened",
+              "description": "A product exists for a verified customer",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/accounts/schemas/account_opened"
+              }
+            },
+            "account_frozen": {
+              "name": "AccountFrozen",
+              "description": "Debits are blocked pending a fraud case",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/accounts/schemas/account_ref"
+              }
+            },
+            "account_closed": {
+              "name": "AccountClosed",
+              "description": "The account is closed at zero balance",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/accounts/schemas/account_ref"
+              }
+            },
+            "freeze_account": {
+              "name": "FreezeAccount",
+              "description": "Block debits; issued when Financial Crime opens a case",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/accounts/schemas/account_ref"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/account_frozen"
+                }
+              ]
+            },
+            "close_account": {
+              "name": "CloseAccount",
+              "description": "Close at zero balance",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/account_closed"
+                }
+              ]
+            },
+            "update_balance": {
+              "name": "UpdateBalance",
+              "description": "Recompute posted and available balances from a ledger posting, releasing the hold the posting captures",
+              "type": "operation",
+              "internal": true
+            },
+            "place_hold": {
+              "name": "PlaceHold",
+              "description": "Add an approved card authorisation to pending authorisations, so the available balance drops before the capture posts",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/provides/customer_verified"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/provides/fraud_case_opened"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/cards/aggregates/card/provides/card_authorised"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ],
+          "entities": {
+            "account": {
+              "name": "Account",
+              "description": "A current account on the new platform. Savings accounts are Sovereign rows until they are migrated",
+              "root": true,
+              "attributes": {
+                "account_id": {
+                  "name": "accountId",
+                  "type": "string",
+                  "identity": true
+                },
+                "product_code": {
+                  "name": "productCode",
+                  "type": "'current'",
+                  "description": "Only current accounts live here; savings stay on Sovereign until the hollowing-out moves them"
+                },
+                "iban": {
+                  "name": "iban",
+                  "type": "IBAN",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/iban"
+                  }
+                },
+                "account_number": {
+                  "name": "accountNumber",
+                  "type": "AccountNumber",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/account_number"
+                  }
+                },
+                "posted_balance": {
+                  "name": "postedBalance",
+                  "type": "Money",
+                  "description": "What the ledger has posted to this account",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/money"
+                  }
+                },
+                "pending_authorisations": {
+                  "name": "pendingAuthorisations",
+                  "type": "Money",
+                  "description": "Card authorisations approved but not yet captured; a hold placed on CardAuthorised and released when the capture posts",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/money"
+                  }
+                },
+                "available_balance": {
+                  "name": "availableBalance",
+                  "type": "Money",
+                  "description": "Posted balance less pending card authorisations",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/money"
+                  }
+                },
+                "status": {
+                  "name": "status",
+                  "type": "AccountStatus",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/account_status"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/mandate"
+                  },
+                  "relation": "includes",
+                  "label": "operated-under",
+                  "cardinality": "1..*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/iban"
+                  },
+                  "relation": "uses",
+                  "label": "identified-by",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/account_number"
+                  },
+                  "relation": "uses",
+                  "label": "numbered",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "balance",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/overdraft_limit"
+                  },
+                  "relation": "uses",
+                  "label": "overdraft",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/account_status"
+                  },
+                  "relation": "uses",
+                  "label": "has-status",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "mandate": {
+              "name": "Mandate",
+              "description": "A customer's authority to operate the account; an entity because it is granted and revoked over time",
+              "root": false,
+              "attributes": {
+                "customer_id": {
+                  "name": "customerId",
+                  "type": "string",
+                  "identity": true
+                },
+                "powers": {
+                  "name": "powers",
+                  "type": "'sole' | 'joint' | 'view-only'"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+                  },
+                  "relation": "references",
+                  "label": "held-by",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "iban": {
+              "name": "IBAN",
+              "description": "Country, check digits, bank and account identifiers; valid only if the mod-97 checksum holds",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "string (ISO 13616)"
+                }
+              },
+              "relations": []
+            },
+            "account_number": {
+              "name": "AccountNumber",
+              "description": "Sort code and eight-digit number; part of the shared kernel library",
+              "attributes": {
+                "sort_code": {
+                  "name": "sortCode",
+                  "type": "string"
+                },
+                "number": {
+                  "name": "number",
+                  "type": "string"
+                }
+              },
+              "relations": []
+            },
+            "money": {
+              "name": "Money",
+              "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
+              "attributes": {
+                "amount_minor": {
+                  "name": "amountMinor",
+                  "type": "int64"
+                },
+                "currency": {
+                  "name": "currency",
+                  "type": "ISO 4217 code"
+                }
+              },
+              "relations": []
+            },
+            "overdraft_limit": {
+              "name": "OverdraftLimit",
+              "description": "How far below zero the available balance may go",
+              "attributes": {
+                "limit": {
+                  "name": "limit",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/money"
+                  }
+                }
+              },
+              "relations": []
+            },
+            "account_status": {
+              "name": "AccountStatus",
+              "description": "open, frozen or closed",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "'open' | 'frozen' | 'closed'"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "iban_checksum_valid": {
+              "name": "IbanChecksumValid",
+              "description": "The IBAN's mod-97 checksum holds, or the account does not exist",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/iban"
+                }
+              ]
+            },
+            "balance_within_overdraft": {
+              "name": "BalanceWithinOverdraft",
+              "description": "The available balance never falls below minus the overdraft limit",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account/attributes/available_balance"
+                },
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/overdraft_limit"
+                }
+              ]
+            },
+            "available_is_posted_less_holds": {
+              "name": "AvailableIsPostedLessHolds",
+              "description": "Available balance equals posted balance less pending authorisations, always; the three are updated as one",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account/attributes/available_balance"
+                },
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account/attributes/pending_authorisations"
+                }
+              ]
+            },
+            "frozen_accepts_no_debits": {
+              "name": "FrozenAcceptsNoDebits",
+              "description": "A frozen account accepts no debits until Financial Crime unfreezes it",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/account_status"
+                }
+              ]
+            },
+            "closed_has_zero_balance": {
+              "name": "ClosedHasZeroBalance",
+              "description": "An account closes only at a zero balance",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/account_status"
+                },
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account/attributes/available_balance"
+                }
+              ]
+            },
+            "mandate_holder_is_verified": {
+              "name": "MandateHolderIsVerified",
+              "description": "Every mandate holder is a verified customer",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/mandate"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {
+        "account_servicing": {
+          "name": "AccountServicing",
+          "description": "The documented account API for channels, cards and lending",
+          "type": "application",
+          "provides": {
+            "open_account": {
+              "name": "OpenAccount",
+              "description": "Open a product for a verified customer",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/accounts/schemas/open_account"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/account_opened"
+                }
+              ]
+            },
+            "get_available_balance": {
+              "name": "GetAvailableBalance",
+              "description": "Posted balance less pending authorisations",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/accounts/schemas/account_ref"
+              }
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {
+        "update_balance_on_posting": {
+          "name": "Update balance on posting",
+          "description": "Every posting to an account recomputes its available balance",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/update_balance"
+            }
+          ]
+        },
+        "freeze_on_fraud_case": {
+          "name": "Freeze on fraud case",
+          "description": "An opened case freezes the account the same second",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/provides/fraud_case_opened"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/freeze_account"
+            }
+          ]
+        },
+        "hold_on_card_authorisation": {
+          "name": "Hold on card authorisation",
+          "description": "Every approved authorisation places a hold on its account the same second, so the available balance is what the merchant has not yet captured",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/cards/aggregates/card/provides/card_authorised"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/place_hold"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "account": {
+          "name": "Account",
+          "definition": "A current or savings product held by one or more verified customers",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/accounts/aggregates/account"
+          }
+        },
+        "balance": {
+          "name": "Balance",
+          "definition": "The available balance: posted balance less pending card authorisations. The ledger's balance is the posted one; the contact centre's is whatever the screen shows",
+          "aliases": [
+            "Available balance"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account/attributes/available_balance"
+          }
+        },
+        "mandate": {
+          "name": "Mandate",
+          "definition": "A customer's authority to operate an account. Not a card authorisation",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/mandate"
+          }
+        }
+      },
+      "schemas": {
+        "account_ref": {
+          "name": "AccountRef",
+          "attributes": {
+            "account_id": {
+              "name": "accountId",
+              "type": "string",
+              "identity": true
+            }
+          }
+        },
+        "account_opened": {
+          "name": "AccountOpened",
+          "description": "What reporting and the ledger learn about a new account",
+          "attributes": {
+            "account_id": {
+              "name": "accountId",
+              "type": "string",
+              "identity": true
+            },
+            "iban": {
+              "name": "iban",
+              "type": "IBAN",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/iban"
+              }
+            },
+            "customer_id": {
+              "name": "customerId",
+              "type": "string"
+            },
+            "product_code": {
+              "name": "productCode",
+              "type": "'current'"
+            }
+          }
+        },
+        "open_account": {
+          "name": "OpenAccount",
+          "attributes": {
+            "customer_id": {
+              "name": "customerId",
+              "type": "string"
+            },
+            "product_code": {
+              "name": "productCode",
+              "type": "'current'"
+            }
+          }
+        }
+      }
+    },
+    "ledger": {
+      "name": "Ledger",
+      "description": "Balanced, immutable journal entries",
+      "subdomains": [
+        {
+          "$ref": "#/domains/banking_products/subdomains/ledger"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/core_banking_team"
+      },
+      "aggregates": {
+        "journal_entry": {
+          "name": "JournalEntry",
+          "description": "Postings that balance; the whole entry posts or nothing does",
+          "provides": {
+            "entry_posted": {
+              "name": "EntryPosted",
+              "description": "Money moved; balances and reports follow",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/ledger/schemas/entry_posted"
+              }
+            },
+            "post_entry": {
+              "name": "PostEntry",
+              "description": "Post a balanced entry",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/ledger/schemas/post_entry"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
+                }
+              ]
+            },
+            "reverse_entry": {
+              "name": "ReverseEntry",
+              "description": "Post the opposite entry against an earlier one",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/ledger/schemas/post_entry"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
+                }
+              ]
+            },
+            "import_batch_postings": {
+              "name": "ImportBatchPostings",
+              "description": "Translate each line of Sovereign's batch file into an entry",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/sovereign_core_(legacy)/aggregates/savings_account_record/provides/nightly_batch_completed"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ],
+          "entities": {
+            "journal_entry": {
+              "name": "JournalEntry",
+              "description": "One balanced movement of money",
+              "root": true,
+              "attributes": {
+                "entry_id": {
+                  "name": "entryId",
+                  "type": "string",
+                  "identity": true
+                },
+                "posted_at": {
+                  "name": "postedAt",
+                  "type": "date-time"
+                },
+                "reversal_of": {
+                  "name": "reversalOf",
+                  "type": "string",
+                  "description": "The entry this one reverses, if any"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/entities/posting"
+                  },
+                  "relation": "includes",
+                  "label": "made-of",
+                  "cardinality": "1..*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/value_date"
+                  },
+                  "relation": "uses",
+                  "label": "valued-on",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "posting": {
+              "name": "Posting",
+              "description": "A debit or credit of an amount to one ledger account",
+              "root": false,
+              "attributes": {
+                "posting_id": {
+                  "name": "postingId",
+                  "type": "string",
+                  "identity": true
+                },
+                "ledger_account": {
+                  "name": "ledgerAccount",
+                  "type": "LedgerAccount",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/ledger_account"
+                  }
+                },
+                "amount": {
+                  "name": "amount",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/money"
+                  }
+                },
+                "direction": {
+                  "name": "direction",
+                  "type": "PostingDirection",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/posting_direction"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "of",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/posting_direction"
+                  },
+                  "relation": "uses",
+                  "label": "as",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/ledger_account"
+                  },
+                  "relation": "uses",
+                  "label": "to",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "money": {
+              "name": "Money",
+              "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
+              "attributes": {
+                "amount_minor": {
+                  "name": "amountMinor",
+                  "type": "int64"
+                },
+                "currency": {
+                  "name": "currency",
+                  "type": "ISO 4217 code"
+                }
+              },
+              "relations": []
+            },
+            "account_number": {
+              "name": "AccountNumber",
+              "description": "Sort code and eight-digit number; the shared kernel library, so it is the same value Accounts holds",
+              "attributes": {
+                "sort_code": {
+                  "name": "sortCode",
+                  "type": "string"
+                },
+                "number": {
+                  "name": "number",
+                  "type": "string"
+                }
+              },
+              "relations": []
+            },
+            "ledger_account": {
+              "name": "LedgerAccount",
+              "description": "Where a posting lands: a customer account by its AccountNumber, or a nominal from the chart of accounts (loan book, scheme suspense, fee income)",
+              "attributes": {
+                "kind": {
+                  "name": "kind",
+                  "type": "'customer' | 'nominal'"
+                },
+                "account_number": {
+                  "name": "accountNumber",
+                  "type": "AccountNumber",
+                  "description": "Set when kind is customer",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/account_number"
+                  }
+                },
+                "nominal_code": {
+                  "name": "nominalCode",
+                  "type": "string",
+                  "description": "Set when kind is nominal, e.g. LOAN-BOOK, SCHEME-SUSPENSE"
+                }
+              },
+              "relations": []
+            },
+            "posting_direction": {
+              "name": "PostingDirection",
+              "description": "debit or credit",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "'debit' | 'credit'"
+                }
+              },
+              "relations": []
+            },
+            "value_date": {
+              "name": "ValueDate",
+              "description": "The date the money counts from, which may differ from the posting date",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "date"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "entry_balances": {
+              "name": "EntryBalances",
+              "description": "The debits of an entry equal its credits, or it does not post",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/entities/posting"
+                }
+              ]
+            },
+            "at_least_two_postings": {
+              "name": "AtLeastTwoPostings",
+              "description": "An entry has at least two postings",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/entities/journal_entry"
+                }
+              ]
+            },
+            "single_currency_per_entry": {
+              "name": "SingleCurrencyPerEntry",
+              "description": "Every posting in an entry shares one currency",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/money"
+                }
+              ]
+            },
+            "immutable_once_posted": {
+              "name": "ImmutableOncePosted",
+              "description": "A posted entry is never changed; it is reversed by another entry",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/entities/journal_entry"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {},
+      "policies": {
+        "import_nightly_batch": {
+          "name": "Import nightly batch",
+          "description": "Each line of the batch file becomes a ledger entry",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/sovereign_core_(legacy)/aggregates/savings_account_record/provides/nightly_batch_completed"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/import_batch_postings"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "posting": {
+          "name": "Posting",
+          "definition": "One side of a movement: a debit or credit to one ledger account",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/entities/posting"
+          }
+        },
+        "account": {
+          "name": "Account",
+          "definition": "A ledger account: a customer's account number or a nominal such as the loan book or scheme suspense. Not the Accounts platform's product, which is one kind of it",
+          "aliases": [
+            "Ledger account",
+            "Nominal"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/ledger_account"
+          }
+        },
+        "posted_balance": {
+          "name": "Posted balance",
+          "definition": "The sum of postings to an account. What the ledger means by balance; Accounts subtracts holds from it to get the available one",
+          "aliases": [
+            "Balance"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/entities/posting"
+          }
+        },
+        "entry": {
+          "name": "Entry",
+          "definition": "A balanced set of postings. Lending calls the disbursement one a drawdown",
+          "aliases": [
+            "Journal"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry"
+          }
+        },
+        "value_date": {
+          "name": "Value date",
+          "definition": "The date money counts from, which may differ from when it was posted",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/value_date"
+          }
+        }
+      },
+      "schemas": {
+        "post_entry": {
+          "name": "PostEntry",
+          "description": "The postings a caller wants made, as one balanced entry",
+          "attributes": {
+            "postings": {
+              "name": "postings",
+              "type": "{ledgerAccount, amount, direction}[]"
+            },
+            "value_date": {
+              "name": "valueDate",
+              "type": "ValueDate",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/value_date"
+              }
+            }
+          }
+        },
+        "entry_posted": {
+          "name": "EntryPosted",
+          "attributes": {
+            "entry_id": {
+              "name": "entryId",
+              "type": "string",
+              "identity": true
+            },
+            "postings": {
+              "name": "postings",
+              "type": "{ledgerAccount, amount, direction}[]"
+            }
+          }
+        }
+      }
+    },
+    "payments_hub": {
+      "name": "Payments Hub",
+      "description": "Instructions scored, submitted, settled and posted",
+      "subdomains": [
+        {
+          "$ref": "#/domains/money_movement/subdomains/payments"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/payments_team"
+      },
+      "aggregates": {
+        "payment_instruction": {
+          "name": "PaymentInstruction",
+          "description": "A customer telling the bank to pay a payee an amount on a date",
+          "provides": {
+            "payment_initiated": {
+              "name": "PaymentInitiated",
+              "description": "A customer asked to pay; fraud scores it next",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/payments_hub/schemas/payment_event"
+              }
+            },
+            "payment_submitted": {
+              "name": "PaymentSubmitted",
+              "description": "Cleared and ready for the scheme",
+              "type": "event",
+              "internal": true
+            },
+            "payment_settled": {
+              "name": "PaymentSettled",
+              "description": "The scheme confirmed; the ledger posts",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/payments_hub/schemas/payment_event"
+              }
+            },
+            "payment_rejected": {
+              "name": "PaymentRejected",
+              "description": "Flagged or refused by the scheme",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/payments_hub/schemas/payment_event"
+              }
+            },
+            "initiate_payment": {
+              "name": "InitiatePayment",
+              "description": "Create an instruction from a channel, once AccountServicing confirms the available balance covers it and the daily limit holds",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/payments_hub/schemas/initiate_payment"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_initiated"
+                }
+              ]
+            },
+            "submit_payment": {
+              "name": "SubmitPayment",
+              "description": "Mark cleared and hand to the gateway",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_submitted"
+                }
+              ]
+            },
+            "confirm_settlement": {
+              "name": "ConfirmSettlement",
+              "description": "Record the scheme's confirmation",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_settled"
+                }
+              ]
+            },
+            "reject_payment": {
+              "name": "RejectPayment",
+              "description": "Reject a flagged or scheme-refused instruction",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_rejected"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/get_available_balance"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/submit_to_scheme"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_settlement_confirmed"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_rejected"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/post_entry"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/score_transaction"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_cleared"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ],
+          "entities": {
+            "payment_instruction": {
+              "name": "PaymentInstruction",
+              "description": "One instruction, from initiation to settlement or rejection",
+              "root": true,
+              "attributes": {
+                "instruction_id": {
+                  "name": "instructionId",
+                  "type": "string",
+                  "identity": true
+                },
+                "payer_account_id": {
+                  "name": "payerAccountId",
+                  "type": "string"
+                },
+                "amount": {
+                  "name": "amount",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/money"
+                  }
+                },
+                "status": {
+                  "name": "status",
+                  "type": "PaymentStatus",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payment_status"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payee"
+                  },
+                  "relation": "uses",
+                  "label": "to",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "of",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/execution_date"
+                  },
+                  "relation": "uses",
+                  "label": "on",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payment_status"
+                  },
+                  "relation": "uses",
+                  "label": "has-status",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
+                  },
+                  "relation": "references",
+                  "label": "from-account",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "payee": {
+              "name": "Payee",
+              "description": "Name and IBAN of who gets paid; a value because the same details are the same payee",
+              "attributes": {
+                "name": {
+                  "name": "name",
+                  "type": "string"
+                },
+                "iban": {
+                  "name": "iban",
+                  "type": "string (ISO 13616)"
+                }
+              },
+              "relations": []
+            },
+            "money": {
+              "name": "Money",
+              "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
+              "attributes": {
+                "amount_minor": {
+                  "name": "amountMinor",
+                  "type": "int64"
+                },
+                "currency": {
+                  "name": "currency",
+                  "type": "ISO 4217 code"
+                }
+              },
+              "relations": []
+            },
+            "execution_date": {
+              "name": "ExecutionDate",
+              "description": "When to send it; today means before the scheme cut-off",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "date"
+                }
+              },
+              "relations": []
+            },
+            "payment_status": {
+              "name": "PaymentStatus",
+              "description": "initiated, cleared, flagged, submitted, settled, rejected",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "'initiated' | 'cleared' | 'flagged' | 'submitted' | 'settled' | 'rejected'"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "payer_not_payee": {
+              "name": "PayerNotPayee",
+              "description": "The payer and payee accounts differ",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payee"
+                }
+              ]
+            },
+            "amount_positive": {
+              "name": "AmountPositive",
+              "description": "The amount is greater than zero",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction/attributes/amount"
+                }
+              ]
+            },
+            "daily_limit": {
+              "name": "DailyLimit",
+              "description": "Instructions from one account never exceed the daily limit in total; checked at initiation over the day's instructions for the payer account, since no single instruction can know the others",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction/attributes/amount"
+                }
+              ]
+            },
+            "funds_available_at_initiation": {
+              "name": "FundsAvailableAtInitiation",
+              "description": "An instruction is created only if the payer's available balance, read through AccountServicing, covers the amount; the overdraft itself is Accounts' rule at posting",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction/attributes/amount"
+                }
+              ]
+            },
+            "cut_off_respected": {
+              "name": "CutOffRespected",
+              "description": "A same-day instruction is initiated before the scheme cut-off",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/execution_date"
+                }
+              ]
+            },
+            "flagged_never_submitted": {
+              "name": "FlaggedNeverSubmitted",
+              "description": "A flagged instruction is rejected; it never reaches a scheme",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payment_status"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {},
+      "policies": {
+        "submit_to_scheme": {
+          "name": "Submit to scheme",
+          "description": "A submitted instruction goes to the gateway",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_submitted"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/submit_to_scheme"
+            }
+          ]
+        },
+        "confirm_settlement": {
+          "name": "Confirm settlement",
+          "description": "The scheme's confirmation settles the instruction",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_settlement_confirmed"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/confirm_settlement"
+            }
+          ]
+        },
+        "reject_on_scheme_refusal": {
+          "name": "Reject on scheme refusal",
+          "description": "A refused message rejects the instruction",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_rejected"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/reject_payment"
+            }
+          ]
+        },
+        "post_on_settlement": {
+          "name": "Post on settlement",
+          "description": "A settled instruction posts to the ledger",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_settled"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/post_entry"
+            }
+          ]
+        },
+        "score_on_initiation": {
+          "name": "Score on initiation",
+          "description": "Every instruction is scored before it goes anywhere",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_initiated"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/score_transaction"
+            }
+          ]
+        },
+        "submit_on_clear": {
+          "name": "Submit on clear",
+          "description": "A cleared instruction is submitted",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_cleared"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/submit_payment"
+            }
+          ]
+        },
+        "reject_on_flag": {
+          "name": "Reject on flag",
+          "description": "A flagged instruction is rejected, never submitted",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/reject_payment"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "instruction": {
+          "name": "Instruction",
+          "definition": "A customer's request to pay. Cards say payment and mean a card transaction; branches say transfer",
+          "aliases": [
+            "Payment",
+            "Transfer"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction"
+          }
+        },
+        "payee": {
+          "name": "Payee",
+          "definition": "Who gets paid: a name and an IBAN",
+          "aliases": [
+            "Beneficiary"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payee"
+          }
+        },
+        "party": {
+          "name": "Party",
+          "definition": "Either side of an instruction, payer or payee. The payer is a Customer & KYC customer; the payee may be anyone with an IBAN",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction"
+          }
+        },
+        "settlement": {
+          "name": "Settlement",
+          "definition": "The scheme's confirmation that the money moved",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_settled"
+          }
+        }
+      },
+      "schemas": {
+        "initiate_payment": {
+          "name": "InitiatePayment",
+          "attributes": {
+            "payer_account_id": {
+              "name": "payerAccountId",
+              "type": "string"
+            },
+            "payee": {
+              "name": "payee",
+              "type": "Payee",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payee"
+              }
+            },
+            "amount": {
+              "name": "amount",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/money"
+              }
+            },
+            "execution_date": {
+              "name": "executionDate",
+              "type": "ExecutionDate",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/execution_date"
+              }
+            }
+          }
+        },
+        "payment_event": {
+          "name": "PaymentEvent",
+          "description": "Instruction id, amount and payee; shared by the payment events",
+          "attributes": {
+            "instruction_id": {
+              "name": "instructionId",
+              "type": "string",
+              "identity": true
+            },
+            "payer_account_id": {
+              "name": "payerAccountId",
+              "type": "string"
+            },
+            "amount": {
+              "name": "amount",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/money"
+              }
+            },
+            "payee": {
+              "name": "payee",
+              "type": "Payee",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payee"
+              }
+            }
+          }
+        }
+      }
+    },
+    "scheme_gateway": {
+      "name": "Scheme Gateway",
+      "description": "ISO 20022 messages to and from the schemes",
+      "subdomains": [
+        {
+          "$ref": "#/domains/money_movement/subdomains/scheme_connectivity"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/scheme_connectivity_team"
+      },
+      "aggregates": {
+        "scheme_message": {
+          "name": "SchemeMessage",
+          "description": "One message to or from a scheme",
+          "provides": {
+            "scheme_settlement_confirmed": {
+              "name": "SchemeSettlementConfirmed",
+              "description": "The scheme settled the payment",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/scheme_gateway/schemas/scheme_settlement"
+              }
+            },
+            "scheme_rejected": {
+              "name": "SchemeRejected",
+              "description": "The scheme refused the message",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/scheme_gateway/schemas/scheme_settlement"
+              }
+            },
+            "submit_to_scheme": {
+              "name": "SubmitToScheme",
+              "description": "Send a submission and await the response",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/scheme_gateway/schemas/scheme_submission"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_settlement_confirmed"
+                },
+                {
+                  "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_rejected"
+                }
+              ]
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "scheme_message": {
+              "name": "SchemeMessage",
+              "description": "A submission or a response",
+              "root": true,
+              "attributes": {
+                "message_id": {
+                  "name": "messageId",
+                  "type": "string",
+                  "identity": true
+                },
+                "scheme_ref": {
+                  "name": "schemeRef",
+                  "type": "string"
+                },
+                "direction": {
+                  "name": "direction",
+                  "type": "'outbound' | 'inbound'"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/valueobjects/scheme_format"
+                  },
+                  "relation": "uses",
+                  "label": "formatted-as",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "scheme_format": {
+              "name": "SchemeFormat",
+              "description": "The ISO 20022 message type",
+              "attributes": {
+                "message_type": {
+                  "name": "messageType",
+                  "type": "'pacs.008' | 'pacs.002' | 'pain.001'"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {}
+        }
+      },
+      "services": {},
+      "policies": {},
+      "glossary": {},
+      "schemas": {
+        "scheme_submission": {
+          "name": "SchemeSubmission",
+          "description": "The scheme's format, not the bank's",
+          "attributes": {
+            "instruction_id": {
+              "name": "instructionId",
+              "type": "string",
+              "identity": true
+            },
+            "message_type": {
+              "name": "messageType",
+              "type": "SchemeFormat",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/valueobjects/scheme_format"
+              }
+            }
+          }
+        },
+        "scheme_settlement": {
+          "name": "SchemeSettlement",
+          "attributes": {
+            "instruction_id": {
+              "name": "instructionId",
+              "type": "string",
+              "identity": true
+            },
+            "scheme_ref": {
+              "name": "schemeRef",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "cards": {
+      "name": "Cards",
+      "description": "Issued cards and their authorisations, via CardCo",
+      "subdomains": [
+        {
+          "$ref": "#/domains/banking_products/subdomains/cards"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/cards_team"
+      },
+      "aggregates": {
+        "card": {
+          "name": "Card",
+          "description": "An issued card and its authorisations; the checks on a card need both",
+          "provides": {
+            "card_authorised": {
+              "name": "CardAuthorised",
+              "description": "A merchant's request was approved; Accounts holds the amount and Fraud monitors",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/cards/schemas/card_authorised"
+              }
+            },
+            "card_blocked": {
+              "name": "CardBlocked",
+              "description": "The card authorises nothing until unblocked",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/cards/schemas/card_event"
+              }
+            },
+            "authorise_card": {
+              "name": "AuthoriseCard",
+              "description": "Approve or decline a merchant's request from CardCo",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/cards/schemas/card_authorisation_request"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/cards/aggregates/card/provides/card_authorised"
+                }
+              ]
+            },
+            "block_card": {
+              "name": "BlockCard",
+              "description": "Block a card; issued by fraud or by a customer through a channel",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/cards/schemas/card_event"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/cards/aggregates/card/provides/card_blocked"
+                }
+              ]
+            },
+            "issue_card": {
+              "name": "IssueCard",
+              "description": "Issue a card on an account",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/get_available_balance"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/score_transaction"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ],
+          "entities": {
+            "card": {
+              "name": "Card",
+              "description": "One physical or virtual card on one account",
+              "root": true,
+              "attributes": {
+                "card_id": {
+                  "name": "cardId",
+                  "type": "string",
+                  "identity": true
+                },
+                "account_id": {
+                  "name": "accountId",
+                  "type": "string"
+                },
+                "pan": {
+                  "name": "pan",
+                  "type": "PAN",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/pan"
+                  }
+                },
+                "expiry": {
+                  "name": "expiry",
+                  "type": "Expiry",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/expiry"
+                  }
+                },
+                "status": {
+                  "name": "status",
+                  "type": "CardStatus",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/card_status"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/cards/aggregates/card/entities/authorisation"
+                  },
+                  "relation": "includes",
+                  "label": "authorised",
+                  "cardinality": "*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/pan"
+                  },
+                  "relation": "uses",
+                  "label": "numbered",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/expiry"
+                  },
+                  "relation": "uses",
+                  "label": "expires",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/card_status"
+                  },
+                  "relation": "uses",
+                  "label": "has-status",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
+                  },
+                  "relation": "references",
+                  "label": "on-account",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "authorisation": {
+              "name": "Authorisation",
+              "description": "A merchant's approved request to take an amount; an entity because it is later captured or expires",
+              "root": false,
+              "attributes": {
+                "authorisation_id": {
+                  "name": "authorisationId",
+                  "type": "string",
+                  "identity": true
+                },
+                "merchant": {
+                  "name": "merchant",
+                  "type": "string"
+                },
+                "amount": {
+                  "name": "amount",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/money"
+                  }
+                },
+                "at": {
+                  "name": "at",
+                  "type": "date-time"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "of",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "pan": {
+              "name": "PAN",
+              "description": "The card number, held as a token plus last four; the full number passes Luhn",
+              "attributes": {
+                "token": {
+                  "name": "token",
+                  "type": "string"
+                },
+                "last_four": {
+                  "name": "lastFour",
+                  "type": "string"
+                }
+              },
+              "relations": []
+            },
+            "expiry": {
+              "name": "Expiry",
+              "description": "Month and year after which nothing authorises",
+              "attributes": {
+                "month": {
+                  "name": "month",
+                  "type": "int 1..12"
+                },
+                "year": {
+                  "name": "year",
+                  "type": "int"
+                }
+              },
+              "relations": []
+            },
+            "card_status": {
+              "name": "CardStatus",
+              "description": "active, blocked, expired",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "'active' | 'blocked' | 'expired'"
+                }
+              },
+              "relations": []
+            },
+            "money": {
+              "name": "Money",
+              "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
+              "attributes": {
+                "amount_minor": {
+                  "name": "amountMinor",
+                  "type": "int64"
+                },
+                "currency": {
+                  "name": "currency",
+                  "type": "ISO 4217 code"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "pan_luhn_valid": {
+              "name": "PanLuhnValid",
+              "description": "A PAN value is only ever created from a full number that passed the Luhn check; the token and last four are never re-checked because they cannot be",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/pan"
+                }
+              ]
+            },
+            "no_auth_on_blocked_card": {
+              "name": "NoAuthOnBlockedCard",
+              "description": "A blocked card authorises nothing",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/card_status"
+                },
+                {
+                  "$ref": "#/boundedcontexts/cards/aggregates/card/entities/authorisation"
+                }
+              ]
+            },
+            "expired_card_no_auth": {
+              "name": "ExpiredCardNoAuth",
+              "description": "Past expiry, nothing authorises",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/expiry"
+                },
+                {
+                  "$ref": "#/boundedcontexts/cards/aggregates/card/entities/authorisation"
+                }
+              ]
+            },
+            "auth_within_available_balance": {
+              "name": "AuthWithinAvailableBalance",
+              "description": "An authorisation is approved only if the available balance read from AccountServicing at that moment covers it; Accounts then holds the amount",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/cards/aggregates/card/entities/authorisation"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {},
+      "policies": {
+        "block_on_flagged_card_transaction": {
+          "name": "Block on flagged card transaction",
+          "description": "A flag on a card-channel transaction blocks the card",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/cards/aggregates/card/provides/block_card"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "pan": {
+          "name": "PAN",
+          "definition": "The card number; held as a token and the last four digits",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/pan"
+          }
+        },
+        "authorisation": {
+          "name": "Authorisation",
+          "definition": "A merchant's approved request to take an amount. Not a mandate",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/cards/aggregates/card/entities/authorisation"
+          }
+        },
+        "payment": {
+          "name": "Payment",
+          "definition": "A card transaction. The Payments Hub's payment is an instruction to a payee",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/cards/aggregates/card/entities/authorisation"
+          }
+        }
+      },
+      "schemas": {
+        "card_authorisation_request": {
+          "name": "CardAuthorisationRequest",
+          "description": "CardCo's format, translated on the way in",
+          "attributes": {
+            "pan_token": {
+              "name": "panToken",
+              "type": "string"
+            },
+            "merchant": {
+              "name": "merchant",
+              "type": "string"
+            },
+            "amount": {
+              "name": "amount",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/money"
+              }
+            }
+          }
+        },
+        "card_event": {
+          "name": "CardEvent",
+          "description": "Card and account; shared by the card events",
+          "attributes": {
+            "card_id": {
+              "name": "cardId",
+              "type": "string",
+              "identity": true
+            },
+            "account_id": {
+              "name": "accountId",
+              "type": "string"
+            }
+          }
+        },
+        "card_authorised": {
+          "name": "CardAuthorised",
+          "description": "Card, account and the authorised amount; Accounts needs the amount to place the hold",
+          "attributes": {
+            "card_id": {
+              "name": "cardId",
+              "type": "string",
+              "identity": true
+            },
+            "account_id": {
+              "name": "accountId",
+              "type": "string"
+            },
+            "authorisation_id": {
+              "name": "authorisationId",
+              "type": "string"
+            },
+            "amount": {
+              "name": "amount",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/money"
+              }
+            }
+          }
+        }
+      }
+    },
+    "lending": {
+      "name": "Lending",
+      "description": "Applications, agreements, loans and schedules",
+      "subdomains": [
+        {
+          "$ref": "#/domains/credit/subdomains/lending"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/lending_team"
+      },
+      "aggregates": {
+        "loan_application": {
+          "name": "LoanApplication",
+          "description": "A customer asking for an amount over a term, and the decision on it",
+          "provides": {
+            "application_submitted": {
+              "name": "ApplicationSubmitted",
+              "description": "A customer asked for credit; decisioning runs",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/lending/schemas/application_submitted"
+              }
+            },
+            "loan_approved": {
+              "name": "LoanApproved",
+              "description": "Decisioning said yes; an offer follows (out of scope)",
+              "type": "event",
+              "internal": true
+            },
+            "application_declined": {
+              "name": "ApplicationDeclined",
+              "description": "Decisioning said no, with reasons",
+              "type": "event",
+              "internal": true
+            },
+            "submit_application": {
+              "name": "SubmitApplication",
+              "description": "Ask for an amount over a term",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/lending/schemas/application_submitted"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/lending/aggregates/loan_application/provides/application_submitted"
+                }
+              ]
+            },
+            "record_decision": {
+              "name": "RecordDecision",
+              "description": "Store decisioning's outcome and reasons",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/lending/aggregates/loan_application/provides/loan_approved"
+                },
+                {
+                  "$ref": "#/boundedcontexts/lending/aggregates/loan_application/provides/application_declined"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/get_customer"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/provides/decide"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/provides/decision_made"
+              },
+              "pattern": "conformist"
+            }
+          ],
+          "entities": {
+            "loan_application": {
+              "name": "LoanApplication",
+              "description": "One request for credit",
+              "root": true,
+              "attributes": {
+                "application_id": {
+                  "name": "applicationId",
+                  "type": "string",
+                  "identity": true
+                },
+                "customer_id": {
+                  "name": "customerId",
+                  "type": "string"
+                },
+                "requested": {
+                  "name": "requested",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan_application/valueobjects/money"
+                  }
+                },
+                "status": {
+                  "name": "status",
+                  "type": "'open' | 'decided' | 'withdrawn'"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan_application/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "requests",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan_application/valueobjects/term"
+                  },
+                  "relation": "uses",
+                  "label": "over",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan_application/valueobjects/decision"
+                  },
+                  "relation": "uses",
+                  "label": "decided",
+                  "cardinality": "0..1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+                  },
+                  "relation": "references",
+                  "label": "made-by",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "money": {
+              "name": "Money",
+              "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
+              "attributes": {
+                "amount_minor": {
+                  "name": "amountMinor",
+                  "type": "int64"
+                },
+                "currency": {
+                  "name": "currency",
+                  "type": "ISO 4217 code"
+                }
+              },
+              "relations": []
+            },
+            "term": {
+              "name": "Term",
+              "description": "Months to repay over",
+              "attributes": {
+                "months": {
+                  "name": "months",
+                  "type": "int"
+                }
+              },
+              "relations": []
+            },
+            "decision": {
+              "name": "Decision",
+              "description": "approved or declined, with the reasons the customer is entitled to",
+              "attributes": {
+                "outcome": {
+                  "name": "outcome",
+                  "type": "'approved' | 'declined'"
+                },
+                "reasons": {
+                  "name": "reasons",
+                  "type": "string[]"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "one_open_application_per_customer": {
+              "name": "OneOpenApplicationPerCustomer",
+              "description": "A customer has at most one open application; SubmitApplication refuses a second while one is open",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/lending/aggregates/loan_application/entities/loan_application"
+                }
+              ]
+            }
+          }
+        },
+        "loan": {
+          "name": "Loan",
+          "description": "A signed agreement, its schedule and its installments; the schedule is checked against the principal",
+          "provides": {
+            "loan_agreement_signed": {
+              "name": "LoanAgreementSigned",
+              "description": "The customer signed; disbursement may proceed",
+              "type": "event",
+              "internal": true
+            },
+            "loan_disbursed": {
+              "name": "LoanDisbursed",
+              "description": "The principal reached the account; the ledger posts and reporting counts it",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/lending/schemas/loan_event"
+              }
+            },
+            "installment_missed": {
+              "name": "InstallmentMissed",
+              "description": "A due installment was not paid",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/lending/schemas/loan_event"
+              }
+            },
+            "arrears_notice_issued": {
+              "name": "ArrearsNoticeIssued",
+              "description": "The customer was told the loan is in arrears",
+              "type": "event",
+              "internal": true
+            },
+            "sign_agreement": {
+              "name": "SignAgreement",
+              "description": "Record the signed agreement and create the loan",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/lending/schemas/loan_event"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/loan_agreement_signed"
+                }
+              ]
+            },
+            "disburse": {
+              "name": "Disburse",
+              "description": "Pay the principal into the customer's account",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/loan_disbursed"
+                }
+              ]
+            },
+            "mark_installment_missed": {
+              "name": "MarkInstallmentMissed",
+              "description": "Record a missed due date and move the loan into arrears",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/installment_missed"
+                }
+              ]
+            },
+            "issue_arrears_notice": {
+              "name": "IssueArrearsNotice",
+              "description": "Send the regulatory arrears notice",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/arrears_notice_issued"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/post_entry"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ],
+          "entities": {
+            "loan": {
+              "name": "Loan",
+              "description": "Money lent under a signed agreement",
+              "root": true,
+              "attributes": {
+                "loan_id": {
+                  "name": "loanId",
+                  "type": "string",
+                  "identity": true
+                },
+                "application_id": {
+                  "name": "applicationId",
+                  "type": "string"
+                },
+                "principal": {
+                  "name": "principal",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/money"
+                  }
+                },
+                "apr": {
+                  "name": "apr",
+                  "type": "InterestRate",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/interest_rate"
+                  }
+                },
+                "status": {
+                  "name": "status",
+                  "type": "LoanStatus",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/loan_status"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan/entities/repayment_schedule"
+                  },
+                  "relation": "includes",
+                  "label": "repaid-under",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "principal",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/interest_rate"
+                  },
+                  "relation": "uses",
+                  "label": "charged-at",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/loan_status"
+                  },
+                  "relation": "uses",
+                  "label": "has-status",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan_application/entities/loan_application"
+                  },
+                  "relation": "references",
+                  "label": "from-application",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
+                  },
+                  "relation": "references",
+                  "label": "disbursed-to",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "repayment_schedule": {
+              "name": "RepaymentSchedule",
+              "description": "The plan of installments; an entity because it is re-cut on arrears",
+              "root": false,
+              "attributes": {
+                "schedule_id": {
+                  "name": "scheduleId",
+                  "type": "string",
+                  "identity": true
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan/entities/installment"
+                  },
+                  "relation": "includes",
+                  "label": "due",
+                  "cardinality": "1..*"
+                }
+              ]
+            },
+            "installment": {
+              "name": "Installment",
+              "description": "One due payment",
+              "root": false,
+              "attributes": {
+                "due_on": {
+                  "name": "dueOn",
+                  "type": "date",
+                  "identity": true
+                },
+                "amount": {
+                  "name": "amount",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/money"
+                  }
+                },
+                "paid": {
+                  "name": "paid",
+                  "type": "boolean"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "of",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "money": {
+              "name": "Money",
+              "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
+              "attributes": {
+                "amount_minor": {
+                  "name": "amountMinor",
+                  "type": "int64"
+                },
+                "currency": {
+                  "name": "currency",
+                  "type": "ISO 4217 code"
+                }
+              },
+              "relations": []
+            },
+            "interest_rate": {
+              "name": "InterestRate",
+              "description": "Annual percentage rate, within the regulatory cap",
+              "attributes": {
+                "apr_percent": {
+                  "name": "aprPercent",
+                  "type": "decimal"
+                }
+              },
+              "relations": []
+            },
+            "loan_status": {
+              "name": "LoanStatus",
+              "description": "approved, signed, disbursed, in-arrears, repaid",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "'approved' | 'signed' | 'disbursed' | 'in-arrears' | 'repaid'"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "no_drawdown_before_signature": {
+              "name": "NoDrawdownBeforeSignature",
+              "description": "Nothing is disbursed before the agreement is signed",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/loan_status"
+                }
+              ]
+            },
+            "apr_within_cap": {
+              "name": "AprWithinCap",
+              "description": "The APR never exceeds the regulatory cap",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/interest_rate"
+                }
+              ]
+            },
+            "installments_sum_to_principal_plus_interest": {
+              "name": "InstallmentsSumToPrincipalPlusInterest",
+              "description": "The schedule's installments sum to principal plus interest",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/lending/aggregates/loan/entities/installment"
+                },
+                {
+                  "$ref": "#/boundedcontexts/lending/aggregates/loan/entities/repayment_schedule"
+                }
+              ]
+            },
+            "arrears_after_missed_installment": {
+              "name": "ArrearsAfterMissedInstallment",
+              "description": "A missed installment puts the loan in arrears",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/loan_status"
+                },
+                {
+                  "$ref": "#/boundedcontexts/lending/aggregates/loan/entities/installment"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {},
+      "policies": {
+        "escalate_arrears": {
+          "name": "Escalate arrears",
+          "description": "A missed installment triggers the arrears notice",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/installment_missed"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/arrears_notice_issued"
+            }
+          ]
+        },
+        "disburse_on_signature": {
+          "name": "Disburse on signature",
+          "description": "A signed agreement is disbursed",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/loan_agreement_signed"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/disburse"
+            }
+          ]
+        },
+        "post_disbursement": {
+          "name": "Post disbursement",
+          "description": "Disbursement is a ledger entry: debit loan book, credit the account",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/loan_disbursed"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/post_entry"
+            }
+          ]
+        },
+        "decide_on_submission": {
+          "name": "Decide on submission",
+          "description": "Every submitted application is sent for a decision",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/lending/aggregates/loan_application/provides/application_submitted"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/provides/decide"
+            }
+          ]
+        },
+        "record_decision": {
+          "name": "Record decision",
+          "description": "The outcome and reasons are stored on the application",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/provides/decision_made"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/lending/aggregates/loan_application/provides/record_decision"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "loan": {
+          "name": "Loan",
+          "definition": "Money lent under a signed agreement, repaid by a schedule",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/lending/aggregates/loan"
+          }
+        },
+        "drawdown": {
+          "name": "Drawdown",
+          "definition": "Paying the principal to the customer. The ledger calls it a posting",
+          "aliases": [
+            "Disbursement"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/disburse"
+          }
+        },
+        "arrears": {
+          "name": "Arrears",
+          "definition": "At least one installment missed; the regulatory notice follows (IssueArrearsNotice). Notice intervals and forbearance are servicing detail left out (DISCOVERY section 8)",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/loan_status"
+          }
+        }
+      },
+      "schemas": {
+        "application_submitted": {
+          "name": "ApplicationSubmitted",
+          "description": "What decisioning receives",
+          "attributes": {
+            "application_id": {
+              "name": "applicationId",
+              "type": "string",
+              "identity": true
+            },
+            "customer_id": {
+              "name": "customerId",
+              "type": "string"
+            },
+            "requested": {
+              "name": "requested",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/lending/aggregates/loan_application/valueobjects/money"
+              }
+            },
+            "term": {
+              "name": "term",
+              "type": "Term",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/lending/aggregates/loan_application/valueobjects/term"
+              }
+            }
+          }
+        },
+        "loan_event": {
+          "name": "LoanEvent",
+          "description": "Loan, account and amount; shared by the loan events",
+          "attributes": {
+            "loan_id": {
+              "name": "loanId",
+              "type": "string",
+              "identity": true
+            },
+            "account_id": {
+              "name": "accountId",
+              "type": "string"
+            },
+            "amount": {
+              "name": "amount",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/money"
+              }
+            }
+          }
+        }
+      }
+    },
+    "credit_decisioning": {
+      "name": "Credit Decisioning",
+      "description": "Bureau data, the scorecard and affordability",
+      "subdomains": [
+        {
+          "$ref": "#/domains/credit/subdomains/credit_decisioning"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/credit_risk_team"
+      },
+      "aggregates": {
+        "credit_decision": {
+          "name": "CreditDecision",
+          "description": "One decision and the evidence behind it, kept so it can be explained",
+          "provides": {
+            "decision_made": {
+              "name": "DecisionMade",
+              "description": "Yes or no, with reasons",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/credit_decisioning/schemas/decision_made"
+              }
+            },
+            "decide": {
+              "name": "Decide",
+              "description": "Pull the bureau, run the scorecard, check affordability",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/credit_decisioning/schemas/decision_request"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/provides/decision_made"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/get_customer"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ],
+          "entities": {
+            "credit_decision": {
+              "name": "CreditDecision",
+              "description": "The outcome for one application",
+              "root": true,
+              "attributes": {
+                "decision_id": {
+                  "name": "decisionId",
+                  "type": "string",
+                  "identity": true
+                },
+                "application_id": {
+                  "name": "applicationId",
+                  "type": "string"
+                },
+                "outcome": {
+                  "name": "outcome",
+                  "type": "'approved' | 'declined'"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/bureau_report"
+                  },
+                  "relation": "uses",
+                  "label": "based-on",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/affordability"
+                  },
+                  "relation": "uses",
+                  "label": "assessed",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/credit_score"
+                  },
+                  "relation": "uses",
+                  "label": "scored",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "bureau_report": {
+              "name": "BureauReport",
+              "description": "The external credit file at a moment in time",
+              "attributes": {
+                "bureau": {
+                  "name": "bureau",
+                  "type": "string"
+                },
+                "score": {
+                  "name": "score",
+                  "type": "int"
+                },
+                "pulled_at": {
+                  "name": "pulledAt",
+                  "type": "date-time"
+                }
+              },
+              "relations": []
+            },
+            "affordability": {
+              "name": "Affordability",
+              "description": "Monthly income, commitments and their ratio",
+              "attributes": {
+                "monthly_income_minor": {
+                  "name": "monthlyIncomeMinor",
+                  "type": "int64"
+                },
+                "monthly_commitments_minor": {
+                  "name": "monthlyCommitmentsMinor",
+                  "type": "int64"
+                },
+                "ratio": {
+                  "name": "ratio",
+                  "type": "decimal"
+                }
+              },
+              "relations": []
+            },
+            "credit_score": {
+              "name": "CreditScore",
+              "description": "The scorecard's output with the reason codes",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "int"
+                },
+                "reason_codes": {
+                  "name": "reasonCodes",
+                  "type": "string[]"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "affordability_ratio_cap": {
+              "name": "AffordabilityRatioCap",
+              "description": "Commitments over income at most forty-five percent for an approval",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/affordability"
+                }
+              ]
+            },
+            "decision_explained": {
+              "name": "DecisionExplained",
+              "description": "Every decision carries reason codes; the customer is entitled to them",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/credit_score"
+                }
+              ]
+            },
+            "bureau_report_fresh": {
+              "name": "BureauReportFresh",
+              "description": "The bureau report is no older than thirty days",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/bureau_report"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {
+        "scorecard": {
+          "name": "Scorecard",
+          "description": "The bank's own model; a domain service because it is tuned across the whole book",
+          "type": "domain",
+          "provides": {
+            "score_application": {
+              "name": "ScoreApplication",
+              "description": "Run the scorecard over an application and its bureau report",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {},
+      "glossary": {
+        "scorecard": {
+          "name": "Scorecard",
+          "definition": "The bank's own credit model",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/credit_decisioning/services/scorecard"
+          }
+        },
+        "decline_reason": {
+          "name": "Decline reason",
+          "definition": "A code the customer is entitled to see when refused",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/credit_score"
+          }
+        }
+      },
+      "schemas": {
+        "decision_request": {
+          "name": "DecisionRequest",
+          "attributes": {
+            "application_id": {
+              "name": "applicationId",
+              "type": "string",
+              "identity": true
+            },
+            "customer_id": {
+              "name": "customerId",
+              "type": "string"
+            },
+            "requested_minor": {
+              "name": "requestedMinor",
+              "type": "int64"
+            },
+            "term_months": {
+              "name": "termMonths",
+              "type": "int"
+            }
+          }
+        },
+        "decision_made": {
+          "name": "DecisionMade",
+          "attributes": {
+            "application_id": {
+              "name": "applicationId",
+              "type": "string",
+              "identity": true
+            },
+            "outcome": {
+              "name": "outcome",
+              "type": "'approved' | 'declined'"
+            },
+            "score": {
+              "name": "score",
+              "type": "CreditScore",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/credit_score"
+              }
+            }
+          }
+        }
+      }
+    },
+    "fraud": {
+      "name": "Fraud",
+      "description": "The transaction scorer and fraud cases",
+      "subdomains": [
+        {
+          "$ref": "#/domains/risk_&_compliance/subdomains/fraud"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/financial_crime_team"
+      },
+      "aggregates": {
+        "fraud_case": {
+          "name": "FraudCase",
+          "description": "A suspected fraud and the alerts behind it",
+          "provides": {
+            "fraud_case_opened": {
+              "name": "FraudCaseOpened",
+              "description": "An investigation began; the account is frozen",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/fraud/schemas/fraud_case_opened"
+              }
+            },
+            "open_case": {
+              "name": "OpenCase",
+              "description": "Open a case with the flagged transaction as its first alert",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/provides/fraud_case_opened"
+                }
+              ]
+            },
+            "close_case": {
+              "name": "CloseCase",
+              "description": "Confirm or dismiss",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/cards/aggregates/card/provides/card_authorised"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ],
+          "entities": {
+            "fraud_case": {
+              "name": "FraudCase",
+              "description": "One investigation",
+              "root": true,
+              "attributes": {
+                "case_id": {
+                  "name": "caseId",
+                  "type": "string",
+                  "identity": true
+                },
+                "customer_id": {
+                  "name": "customerId",
+                  "type": "string"
+                },
+                "account_id": {
+                  "name": "accountId",
+                  "type": "string"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/entities/alert"
+                  },
+                  "relation": "includes",
+                  "label": "raised-by",
+                  "cardinality": "1..*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/valueobjects/case_status"
+                  },
+                  "relation": "uses",
+                  "label": "has-status",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "alert": {
+              "name": "Alert",
+              "description": "One flagged transaction with its score",
+              "root": false,
+              "attributes": {
+                "alert_id": {
+                  "name": "alertId",
+                  "type": "string",
+                  "identity": true
+                },
+                "transaction_ref": {
+                  "name": "transactionRef",
+                  "type": "string"
+                },
+                "score": {
+                  "name": "score",
+                  "type": "RiskScore",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/valueobjects/risk_score"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/valueobjects/risk_score"
+                  },
+                  "relation": "uses",
+                  "label": "scored",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "risk_score": {
+              "name": "RiskScore",
+              "description": "0 to 1000 with the reasons that produced it",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "int 0..1000"
+                },
+                "reasons": {
+                  "name": "reasons",
+                  "type": "string[]"
+                }
+              },
+              "relations": []
+            },
+            "case_status": {
+              "name": "CaseStatus",
+              "description": "open, confirmed, dismissed",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "'open' | 'confirmed' | 'dismissed'"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "case_has_alert": {
+              "name": "CaseHasAlert",
+              "description": "A case always has at least one alert",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/entities/fraud_case"
+                },
+                {
+                  "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/entities/alert"
+                }
+              ]
+            },
+            "score_explained": {
+              "name": "ScoreExplained",
+              "description": "A score carries its reasons, because the customer may be entitled to them",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/valueobjects/risk_score"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {
+        "transaction_scorer": {
+          "name": "TransactionScorer",
+          "description": "The bank's own model; a domain service because it reads across every customer's history",
+          "type": "domain",
+          "provides": {
+            "transaction_flagged": {
+              "name": "TransactionFlagged",
+              "description": "Above threshold; the caller stops the transaction",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/fraud/schemas/transaction_verdict"
+              }
+            },
+            "transaction_cleared": {
+              "name": "TransactionCleared",
+              "description": "Below threshold; the caller proceeds",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/fraud/schemas/transaction_verdict"
+              }
+            },
+            "score_transaction": {
+              "name": "ScoreTransaction",
+              "description": "Score synchronously; callers wait on the verdict",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/fraud/schemas/score_transaction"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged"
+                },
+                {
+                  "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_cleared"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {
+        "open_case_on_flag": {
+          "name": "Open case on flag",
+          "description": "Every flag becomes a case with the alert attached",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/provides/open_case"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "alert": {
+          "name": "Alert",
+          "definition": "One flagged transaction and its score",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/entities/alert"
+          }
+        },
+        "app_scam": {
+          "name": "APP scam",
+          "definition": "An authorised push payment the customer was tricked into making; reimbursable, so every missed flag costs the bank",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/fraud/services/transaction_scorer"
+          }
+        }
+      },
+      "schemas": {
+        "score_transaction": {
+          "name": "ScoreTransaction",
+          "description": "What the scorer needs: the transaction, its channel, amount and payee",
+          "attributes": {
+            "transaction_ref": {
+              "name": "transactionRef",
+              "type": "string",
+              "identity": true
+            },
+            "channel": {
+              "name": "channel",
+              "type": "'payment' | 'card'"
+            },
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "payee_iban": {
+              "name": "payeeIban",
+              "type": "string"
+            }
+          }
+        },
+        "transaction_verdict": {
+          "name": "TransactionVerdict",
+          "description": "Shared by flagged and cleared",
+          "attributes": {
+            "transaction_ref": {
+              "name": "transactionRef",
+              "type": "string",
+              "identity": true
+            },
+            "channel": {
+              "name": "channel",
+              "type": "'payment' | 'card'"
+            },
+            "score": {
+              "name": "score",
+              "type": "RiskScore",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/valueobjects/risk_score"
+              }
+            }
+          }
+        },
+        "fraud_case_opened": {
+          "name": "FraudCaseOpened",
+          "attributes": {
+            "case_id": {
+              "name": "caseId",
+              "type": "string",
+              "identity": true
+            },
+            "account_id": {
+              "name": "accountId",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "regulatory_reporting": {
+      "name": "Regulatory Reporting",
+      "description": "Returns assembled from events and reconciled to the ledger",
+      "subdomains": [
+        {
+          "$ref": "#/domains/risk_&_compliance/subdomains/regulatory_reporting"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/finance_systems_team"
+      },
+      "aggregates": {
+        "regulatory_return": {
+          "name": "RegulatoryReturn",
+          "description": "One report code for one period and its lines",
+          "provides": {
+            "return_filed": {
+              "name": "ReturnFiled",
+              "description": "Sent to the regulator",
+              "type": "event",
+              "internal": true
+            },
+            "accumulate_line": {
+              "name": "AccumulateLine",
+              "description": "Add an event's amount to the right line",
+              "type": "operation",
+              "internal": true
+            },
+            "file_return": {
+              "name": "FileReturn",
+              "description": "File a closed period's return",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/provides/return_filed"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/account_opened"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/loan_disbursed"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/sovereign_core_(legacy)/aggregates/savings_account_record/provides/nightly_batch_completed"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ],
+          "entities": {
+            "regulatory_return": {
+              "name": "RegulatoryReturn",
+              "description": "A return to the PCA",
+              "root": true,
+              "attributes": {
+                "return_id": {
+                  "name": "returnId",
+                  "type": "string",
+                  "identity": true
+                },
+                "report_code": {
+                  "name": "reportCode",
+                  "type": "string"
+                },
+                "filed_at": {
+                  "name": "filedAt",
+                  "type": "date-time"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/entities/report_line"
+                  },
+                  "relation": "includes",
+                  "label": "made-of",
+                  "cardinality": "1..*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/valueobjects/reporting_period"
+                  },
+                  "relation": "uses",
+                  "label": "for-period",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "report_line": {
+              "name": "ReportLine",
+              "description": "One line code and its amount",
+              "root": false,
+              "attributes": {
+                "line_code": {
+                  "name": "lineCode",
+                  "type": "string",
+                  "identity": true
+                },
+                "amount": {
+                  "name": "amount",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/valueobjects/money"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "of",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "valueobjects": {
+            "reporting_period": {
+              "name": "ReportingPeriod",
+              "description": "Month or quarter; closed before filing",
+              "attributes": {
+                "from": {
+                  "name": "from",
+                  "type": "date"
+                },
+                "to": {
+                  "name": "to",
+                  "type": "date"
+                },
+                "closed": {
+                  "name": "closed",
+                  "type": "boolean"
+                }
+              },
+              "relations": []
+            },
+            "money": {
+              "name": "Money",
+              "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
+              "attributes": {
+                "amount_minor": {
+                  "name": "amountMinor",
+                  "type": "int64"
+                },
+                "currency": {
+                  "name": "currency",
+                  "type": "ISO 4217 code"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "lines_reconcile_to_ledger": {
+              "name": "LinesReconcileToLedger",
+              "description": "A return is filed only when every line has been reconciled to the ledger postings for its period; FileReturn refuses an unreconciled line",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/entities/report_line"
+                },
+                {
+                  "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/entities/regulatory_return"
+                }
+              ]
+            },
+            "period_closed_before_filing": {
+              "name": "PeriodClosedBeforeFiling",
+              "description": "A return is filed only for a closed period",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/valueobjects/reporting_period"
+                }
+              ]
+            },
+            "filed_once_only": {
+              "name": "FiledOnceOnly",
+              "description": "A return is filed once; corrections are a new return",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/entities/regulatory_return"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {},
+      "policies": {
+        "accumulate_on_posting": {
+          "name": "Accumulate on posting",
+          "description": "Ledger postings, account openings and disbursements each add to a line as they happen",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
+            },
+            {
+              "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/account_opened"
+            },
+            {
+              "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/loan_disbursed"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/provides/accumulate_line"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "return": {
+          "name": "Return",
+          "definition": "A report to the regulator. The branches' 'return' is a returned payment",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return"
+          }
+        },
+        "reporting_period": {
+          "name": "Reporting period",
+          "definition": "The month or quarter a return covers",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/valueobjects/reporting_period"
+          }
+        }
+      },
+      "schemas": {}
+    },
+    "branch_&_contact_centre": {
+      "name": "Branch & Contact Centre",
+      "description": "Service requests raised in branches and on the phone",
+      "subdomains": [
+        {
+          "$ref": "#/domains/customer/subdomains/branch_&_contact_centre"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/channels_team"
+      },
+      "aggregates": {
+        "service_request": {
+          "name": "ServiceRequest",
+          "description": "A customer asking for something through a channel, with notes",
+          "provides": {
+            "service_request_raised": {
+              "name": "ServiceRequestRaised",
+              "description": "A customer asked for something",
+              "type": "event",
+              "internal": true
+            },
+            "raise_request": {
+              "name": "RaiseRequest",
+              "description": "Open a request in a branch or on the phone",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request/provides/service_request_raised"
+                }
+              ]
+            },
+            "suppress_marketing": {
+              "name": "SuppressMarketing",
+              "description": "Stop every outbound contact for the customer the same day",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/get_customer"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/get_available_balance"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/cards/aggregates/card/provides/block_card"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/provides/consent_withdrawn"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/provides/decide"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/identity_&_access/aggregates/credential/provides/authenticate_customer"
+              },
+              "pattern": "conformist"
+            }
+          ],
+          "entities": {
+            "service_request": {
+              "name": "ServiceRequest",
+              "description": "One ask, one outcome",
+              "root": true,
+              "attributes": {
+                "request_id": {
+                  "name": "requestId",
+                  "type": "string",
+                  "identity": true
+                },
+                "customer_id": {
+                  "name": "customerId",
+                  "type": "string"
+                },
+                "authenticated": {
+                  "name": "authenticated",
+                  "type": "boolean"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request/entities/note"
+                  },
+                  "relation": "includes",
+                  "label": "annotated-by",
+                  "cardinality": "*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request/valueobjects/channel"
+                  },
+                  "relation": "uses",
+                  "label": "through",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request/valueobjects/request_status"
+                  },
+                  "relation": "uses",
+                  "label": "has-status",
+                  "cardinality": "1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+                  },
+                  "relation": "references",
+                  "label": "raised-by",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "note": {
+              "name": "Note",
+              "description": "What an agent recorded; added, never edited",
+              "root": false,
+              "attributes": {
+                "note_id": {
+                  "name": "noteId",
+                  "type": "string",
+                  "identity": true
+                },
+                "author": {
+                  "name": "author",
+                  "type": "string"
+                },
+                "text": {
+                  "name": "text",
+                  "type": "string"
+                },
+                "at": {
+                  "name": "at",
+                  "type": "date-time"
+                }
+              },
+              "relations": []
+            }
+          },
+          "valueobjects": {
+            "channel": {
+              "name": "Channel",
+              "description": "branch, phone or chat",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "'branch' | 'phone' | 'chat'"
+                }
+              },
+              "relations": []
+            },
+            "request_status": {
+              "name": "RequestStatus",
+              "description": "open, resolved",
+              "attributes": {
+                "value": {
+                  "name": "value",
+                  "type": "'open' | 'resolved'"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "authenticated_before_action": {
+              "name": "AuthenticatedBeforeAction",
+              "description": "Nothing is done on a request until the customer is authenticated",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request/entities/service_request"
+                }
+              ]
+            },
+            "note_immutable": {
+              "name": "NoteImmutable",
+              "description": "Notes are added, never edited or deleted",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request/entities/note"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "services": {},
+      "policies": {
+        "suppress_marketing_on_withdrawal": {
+          "name": "Suppress marketing on withdrawal",
+          "description": "A withdrawn marketing consent stops outbound contact the same day; the fix for the fine",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/provides/consent_withdrawn"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request/provides/suppress_marketing"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "request": {
+          "name": "Request",
+          "definition": "One customer ask tracked to an outcome",
+          "aliases": [
+            "Ticket"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request"
+          }
+        },
+        "member": {
+          "name": "Member",
+          "definition": "What branch staff call a customer, from the mutual days. The same record as Customer & KYC's Customer, read through GetCustomer",
+          "aliases": [
+            "Customer"
+          ]
+        },
+        "balance": {
+          "name": "Balance",
+          "definition": "What the screen shows: the available balance as returned by GetAvailableBalance at the moment of the call, never recomputed here",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request"
+          }
+        },
+        "returned_payment": {
+          "name": "Returned payment",
+          "definition": "A payment sent back by the payee's bank. Not a regulatory return",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request/entities/service_request"
+          }
+        }
+      },
+      "schemas": {}
+    },
+    "sovereign_core_(legacy)": {
+      "name": "Sovereign Core (legacy)",
+      "description": "The 1989 COBOL core that still holds savings accounts and runs the nightly batch. Modelled at its edge only",
+      "subdomains": [
+        {
+          "$ref": "#/domains/banking_products/subdomains/current_&_savings_accounts"
+        }
+      ],
+      "bigBallOfMud": true,
+      "team": {
+        "$ref": "#/teams/core_banking_team"
+      },
+      "aggregates": {
+        "savings_account_record": {
+          "name": "SavingsAccountRecord",
+          "description": "The mainframe's savings account row, as far as anyone can read it",
+          "provides": {
+            "nightly_batch_completed": {
+              "name": "NightlyBatchCompleted",
+              "description": "The day's savings movements are in the batch file",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/sovereign_core_(legacy)/schemas/nightly_batch_completed"
+              }
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "savings_account_record": {
+              "name": "SavingsAccountRecord",
+              "description": "One savings account on Sovereign",
+              "root": true,
+              "attributes": {
+                "account_no": {
+                  "name": "accountNo",
+                  "type": "string",
+                  "identity": true
+                },
+                "product_code": {
+                  "name": "productCode",
+                  "type": "string"
+                }
+              },
+              "relations": []
+            }
+          },
+          "valueobjects": {},
+          "invariants": {}
+        }
+      },
+      "services": {},
+      "policies": {},
+      "glossary": {},
+      "schemas": {
+        "nightly_batch_completed": {
+          "name": "NightlyBatchCompleted",
+          "description": "The batch file's header: date and the postings file location",
+          "attributes": {
+            "batch_date": {
+              "name": "batchDate",
+              "type": "date",
+              "identity": true
+            },
+            "postings_file": {
+              "name": "postingsFile",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "identity_&_access": {
+      "name": "Identity & Access",
+      "description": "Usernames, credentials, step-up authentication",
+      "subdomains": [],
+      "team": {
+        "$ref": "#/teams/digital_platform_team"
+      },
+      "aggregates": {
+        "credential": {
+          "name": "Credential",
+          "description": "A customer's login",
+          "provides": {
+            "customer_authenticated": {
+              "name": "CustomerAuthenticated",
+              "description": "A customer proved who they are on a channel",
+              "pattern": "published-language",
+              "type": "event"
+            },
+            "authenticate_customer": {
+              "name": "AuthenticateCustomer",
+              "description": "Verify credentials and step-up",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/identity_&_access/aggregates/credential/provides/customer_authenticated"
+                }
+              ]
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "credential": {
+              "name": "Credential",
+              "description": "Username and step-up factors for one customer",
+              "root": true,
+              "attributes": {
+                "customer_id": {
+                  "name": "customerId",
+                  "type": "string",
+                  "identity": true
+                },
+                "username": {
+                  "name": "username",
+                  "type": "string"
+                },
+                "step_up_enrolled": {
+                  "name": "stepUpEnrolled",
+                  "type": "boolean"
+                }
+              },
+              "relations": []
+            }
+          },
+          "valueobjects": {},
+          "invariants": {}
+        }
+      },
+      "services": {},
+      "policies": {},
+      "glossary": {},
+      "schemas": {}
+    }
+  },
+  "relationships": [
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/sanctions_screening"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/customer_&_kyc"
+      },
+      "upstreamRoles": [
+        "open-host-service",
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/customer_&_kyc"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/accounts"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/customer_&_kyc"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/lending"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/customer_&_kyc"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/credit_decisioning"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/customer_&_kyc"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/branch_&_contact_centre"
+      },
+      "upstreamRoles": [
+        "open-host-service",
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "customer-supplier",
+      "upstream": {
+        "$ref": "#/boundedcontexts/ledger"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/payments_hub"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Payments posts through the ledger API and is consulted on changes"
+    },
+    {
+      "type": "customer-supplier",
+      "upstream": {
+        "$ref": "#/boundedcontexts/ledger"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/lending"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ]
+    },
+    {
+      "type": "customer-supplier",
+      "upstream": {
+        "$ref": "#/boundedcontexts/fraud"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/payments_hub"
+      },
+      "upstreamRoles": [
+        "open-host-service",
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Payments waits on the scorer and is consulted on its contract"
+    },
+    {
+      "type": "customer-supplier",
+      "upstream": {
+        "$ref": "#/boundedcontexts/fraud"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/cards"
+      },
+      "upstreamRoles": [
+        "open-host-service",
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/cards"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/fraud"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Post-authorisation monitoring"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/fraud"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/accounts"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/scheme_gateway"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/payments_hub"
+      },
+      "upstreamRoles": [
+        "open-host-service",
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "You don't negotiate with a scheme"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/accounts"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/cards"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "The balance check at authorisation time"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/cards"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/accounts"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Every authorisation becomes a hold on the account"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/accounts"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/payments_hub"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "The funds check before an instruction exists"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/accounts"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/branch_&_contact_centre"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/cards"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/branch_&_contact_centre"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/identity_&_access"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/branch_&_contact_centre"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/ledger"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/regulatory_reporting"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/accounts"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/regulatory_reporting"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/lending"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/regulatory_reporting"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/sovereign_core_(legacy)"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/ledger"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Every line of the batch file is translated"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/sovereign_core_(legacy)"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/regulatory_reporting"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ]
+    },
+    {
+      "type": "shared-kernel",
+      "participants": [
+        {
+          "$ref": "#/boundedcontexts/accounts"
+        },
+        {
+          "$ref": "#/boundedcontexts/ledger"
+        }
+      ],
+      "description": "Money and AccountNumber are one library owned by both teams"
+    },
+    {
+      "type": "partnership",
+      "participants": [
+        {
+          "$ref": "#/boundedcontexts/lending"
+        },
+        {
+          "$ref": "#/boundedcontexts/credit_decisioning"
+        }
+      ],
+      "description": "Origination and decisioning release together; a scorecard change is an application-form change"
+    },
+    {
+      "type": "separate-ways",
+      "participants": [
+        {
+          "$ref": "#/boundedcontexts/branch_&_contact_centre"
+        },
+        {
+          "$ref": "#/boundedcontexts/credit_decisioning"
+        }
+      ],
+      "description": "No integration by policy; the quick-quote consumption above contradicts this and is under investigation"
+    }
+  ],
+  "teams": {
+    "customer_platform_team": {
+      "name": "Customer Platform Team",
+      "description": "Onboarding, KYC, consent"
+    },
+    "financial_crime_team": {
+      "name": "Financial Crime Team",
+      "description": "Sanctions screening, fraud scoring, cases"
+    },
+    "accounts_team": {
+      "name": "Accounts Team",
+      "description": "The account platform; co-owns the Money library with Core Banking"
+    },
+    "core_banking_team": {
+      "name": "Core Banking Team",
+      "description": "The ledger, and Sovereign"
+    },
+    "cards_team": {
+      "name": "Cards Team",
+      "description": "Issuing and the CardCo integration"
+    },
+    "payments_team": {
+      "name": "Payments Team",
+      "description": "The payments hub"
+    },
+    "scheme_connectivity_team": {
+      "name": "Scheme Connectivity Team",
+      "description": "Gateways to the schemes"
+    },
+    "lending_team": {
+      "name": "Lending Team",
+      "description": "Origination and servicing; one planning board with Credit Risk"
+    },
+    "credit_risk_team": {
+      "name": "Credit Risk Team",
+      "description": "Decisioning, scorecards, affordability"
+    },
+    "finance_systems_team": {
+      "name": "Finance Systems Team",
+      "description": "Regulatory reporting"
+    },
+    "channels_team": {
+      "name": "Channels Team",
+      "description": "Branch and contact centre tooling"
+    },
+    "digital_platform_team": {
+      "name": "Digital Platform Team",
+      "description": "Identity and access"
+    }
+  }
+}

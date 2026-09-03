@@ -1,4 +1,29 @@
 /**
+ * @title Attribute
+ * @description A named, typed property of an entity, value object or schema.
+ */
+export interface AttributeSchema {
+	name: string;
+	/** Free-form type name, e.g. `string`, `Money`, `Date`. */
+	type: string;
+	description?: string;
+	/** True when this attribute is (part of) the identity of an entity. */
+	identity?: boolean;
+	/** The value object that models this attribute's type, when there is one. */
+	valueobject?: { $ref: string };
+}
+
+/**
+ * @title DataSchema
+ * @description A named payload shape owned by a bounded context, shared by the consumables that carry it.
+ */
+export interface DataSchemaSchema {
+	name: string;
+	description?: string;
+	attributes: { [attribute: string]: AttributeSchema };
+}
+
+/**
  * @title Aggregate
  * @description Represents an aggregate in the Open Domain Specification (ODS).
  */
@@ -13,21 +38,69 @@ export interface AggregateSchema {
 }
 
 /**
+ * @title Team
+ * @description A team that owns one or more bounded contexts.
+ */
+export interface TeamSchema {
+	name: string;
+	description?: string;
+	homepage?: string;
+}
+
+/**
+ * @title GlossaryTerm
+ * @description A term of the ubiquitous language of a bounded context.
+ */
+export interface GlossaryTermSchema {
+	name: string;
+	definition: string;
+	aliases?: string[];
+	/** The model element that embodies this term, when there is one. */
+	embodiedBy?: { $ref: string };
+}
+
+/**
+ * @title Policy
+ * @description A reaction: when these events happen, issue these commands.
+ */
+export interface PolicySchema {
+	name: string;
+	description: string;
+	/** The event consumables that trigger this policy. */
+	on: { $ref: string }[];
+	/** The operation consumables this policy issues. */
+	then: { $ref: string }[];
+}
+
+/**
  * @title BoundedContext
  * @description Represents a bounded context in the Open Domain Specification (ODS).
  */
 export interface BoundedContextSchema {
 	name: string;
 	description: string;
+	/** The subdomains this context serves; a context may serve several. */
+	subdomains: { $ref: string }[];
+	/**
+	 * Marks a context whose model is not coherent (typically legacy) so that
+	 * neighbours know to protect themselves from it.
+	 */
+	bigBallOfMud?: boolean;
+	/** The team that owns this context. */
+	team?: { $ref: string };
 	aggregates: { [aggregate: string]: AggregateSchema };
 	services: { [service: string]: ServiceSchema };
+	policies: { [policy: string]: PolicySchema };
+	glossary: { [term: string]: GlossaryTermSchema };
+	/** Payload shapes this context publishes or accepts, referenced by its consumables. */
+	schemas: { [schema: string]: DataSchemaSchema };
 }
 
-export type ConsumablePattern =
-	| "open-host-service"
-	| "published-language"
-	| "shared-kernel"
-	| "customer-supplier";
+/** How an upstream context exposes what it provides. */
+export type UpstreamRole = "open-host-service" | "published-language";
+
+/** How a downstream context protects itself from what it consumes. */
+export type DownstreamRole = "conformist" | "anti-corruption-layer";
 
 export type ConsumableType = "event" | "operation";
 
@@ -39,15 +112,19 @@ export interface ConsumableSchema {
 	name: string;
 	description: string;
 	type: ConsumableType;
-	pattern: ConsumablePattern;
+	/** The upstream role this consumable is offered under. Absent on internal consumables. */
+	pattern?: UpstreamRole;
+	/**
+	 * True when the consumable stays inside its context: an event only local
+	 * policies react to, or an operation only local callers issue. Internal
+	 * consumables may not be consumed from another context.
+	 */
+	internal?: boolean;
+	/** The payload shape, one of the context's schemas. */
+	schema?: { $ref: string };
+	/** For operations: the event consumables this operation may raise. */
+	raises?: { $ref: string }[];
 }
-
-export type ConsumptionPattern =
-	| "conformist"
-	| "anti-corruption-layer"
-	| "customer-supplier"
-	| "partnership"
-	| "separate-ways";
 
 /**
  * @title Consumption
@@ -55,10 +132,69 @@ export type ConsumptionPattern =
  */
 export interface ConsumptionSchema {
 	consumable: { $ref: string };
-	pattern: ConsumptionPattern;
+	/** The downstream role the consumer adopts for this consumable. */
+	pattern?: DownstreamRole;
 }
 
-export type DomainType = "core" | "supporting" | "generic";
+/**
+ * Relationships with a clear upstream and downstream side. `customer-supplier`
+ * is an upstream/downstream relationship where the downstream team has a say
+ * in the upstream's planning.
+ */
+export type DirectedRelationshipType =
+	| "upstream-downstream"
+	| "customer-supplier";
+
+/**
+ * Relationships without a direction: teams share a kernel, work as partners,
+ * or deliberately do not integrate at all.
+ */
+export type SymmetricRelationshipType =
+	| "partnership"
+	| "shared-kernel"
+	| "separate-ways";
+
+export type ContextRelationshipType =
+	| DirectedRelationshipType
+	| SymmetricRelationshipType;
+
+/**
+ * @title DirectedContextRelationship
+ * @description An upstream/downstream relationship between two bounded contexts.
+ */
+export interface DirectedContextRelationshipSchema {
+	type: DirectedRelationshipType;
+	upstream: { $ref: string };
+	downstream: { $ref: string };
+	upstreamRoles: UpstreamRole[];
+	downstreamRoles: DownstreamRole[];
+	description?: string;
+}
+
+/**
+ * @title SymmetricContextRelationship
+ * @description A relationship between two bounded contexts with no upstream or downstream side.
+ */
+export interface SymmetricContextRelationshipSchema {
+	type: SymmetricRelationshipType;
+	participants: [{ $ref: string }, { $ref: string }];
+	description?: string;
+}
+
+/**
+ * @title ContextRelationship
+ * @description A strategic relationship between two bounded contexts.
+ */
+export type ContextRelationshipSchema =
+	| DirectedContextRelationshipSchema
+	| SymmetricContextRelationshipSchema;
+
+/**
+ * Strategic classification of a subdomain: the part of the problem space
+ * the business competes on (core), needs but does not differentiate on
+ * (supporting), or can buy off the shelf (generic).
+ */
+export type SubdomainType = "core" | "supporting" | "generic";
 
 /**
  * @title Domain
@@ -66,7 +202,6 @@ export type DomainType = "core" | "supporting" | "generic";
  */
 export interface DomainSchema {
 	name: string;
-	type: DomainType;
 	description: string;
 	subdomains: {
 		[subdomain: string]: SubdomainSchema;
@@ -81,6 +216,7 @@ export interface EntitySchema {
 	root?: boolean;
 	name: string;
 	description: string;
+	attributes: { [attribute: string]: AttributeSchema };
 	relations: EntityRelationSchema[];
 }
 
@@ -92,10 +228,14 @@ export enum RelationType {
 	Uses = "uses",
 }
 
+/** How many targets one source relates to, in UML multiplicity notation. */
+export type RelationCardinality = "1" | "0..1" | "*" | "1..*";
+
 export interface EntityRelationSchema {
 	target: { $ref: string };
 	relation: EntityRelationType;
 	label?: string;
+	cardinality?: RelationCardinality;
 }
 
 /**
@@ -105,9 +245,16 @@ export interface EntityRelationSchema {
 export interface InvariantSchema {
 	name: string;
 	description: string;
+	/** The entities, value objects or attributes this invariant constrains. */
+	constrains: { $ref: string }[];
 }
 
-export type ServiceType = "application" | "domain" | "infrastructure";
+/**
+ * Application services orchestrate use cases and expose them to the outside;
+ * domain services hold domain logic that belongs to no single aggregate.
+ * Infrastructure is an implementation concern and is not modelled.
+ */
+export type ServiceType = "application" | "domain";
 
 /**
  * @title Service
@@ -127,10 +274,8 @@ export interface ServiceSchema {
  */
 export interface SubdomainSchema {
 	name: string;
+	type: SubdomainType;
 	description: string;
-	boundedcontexts: {
-		[boundedcontext: string]: BoundedContextSchema;
-	};
 }
 
 /**
@@ -140,6 +285,7 @@ export interface SubdomainSchema {
 export interface ValueObjectSchema {
 	name: string;
 	description: string;
+	attributes: { [attribute: string]: AttributeSchema };
 	relations: EntityRelationSchema[];
 }
 
@@ -148,6 +294,8 @@ export interface ValueObjectSchema {
  * @description Represents a workspace in the Open Domain Specification (ODS).
  */
 export interface WorkspaceSchema {
+	/** Location of the JSON schema this document conforms to, usually the schema.json beside it. Ignored by the loader. */
+	$schema?: string;
 	id: string;
 	odsVersion: `${number}.${number}.${number}`;
 	name: string;
@@ -158,6 +306,19 @@ export interface WorkspaceSchema {
 	version: string;
 	domains: {
 		[domain: string]: DomainSchema;
+	};
+	boundedcontexts: {
+		[boundedcontext: string]: BoundedContextSchema;
+	};
+	relationships: ContextRelationshipSchema[];
+	teams: {
+		[team: string]: TeamSchema;
+	};
+}
+
+export function teamRef(team: string) {
+	return {
+		$ref: `#/teams/${team}`,
 	};
 }
 
@@ -175,38 +336,38 @@ export function subdomainRef(domain: string, subdomain: string) {
 	};
 }
 
-export function boundedcontextRef(
-	domain: string,
-	subdomain: string,
-	boundedcontext: string,
-) {
-	const { $ref } = subdomainRef(domain, subdomain);
-
+export function boundedcontextRef(boundedcontext: string) {
 	return {
-		$ref: `${$ref}/boundedcontexts/${boundedcontext}`,
+		$ref: `#/boundedcontexts/${boundedcontext}`,
 	};
 }
 
-export function serviceRef(
-	domain: string,
-	subdomain: string,
-	boundedcontext: string,
-	service: string,
-) {
-	const { $ref } = boundedcontextRef(domain, subdomain, boundedcontext);
+export function serviceRef(boundedcontext: string, service: string) {
+	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
 		$ref: `${$ref}/services/${service}`,
 	};
 }
 
-export function aggregateRef(
-	domain: string,
-	subdomain: string,
-	boundedcontext: string,
-	aggregate: string,
-) {
-	const { $ref } = boundedcontextRef(domain, subdomain, boundedcontext);
+export function termRef(boundedcontext: string, term: string) {
+	const { $ref } = boundedcontextRef(boundedcontext);
+
+	return {
+		$ref: `${$ref}/glossary/${term}`,
+	};
+}
+
+export function policyRef(boundedcontext: string, policy: string) {
+	const { $ref } = boundedcontextRef(boundedcontext);
+
+	return {
+		$ref: `${$ref}/policies/${policy}`,
+	};
+}
+
+export function aggregateRef(boundedcontext: string, aggregate: string) {
+	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
 		$ref: `${$ref}/aggregates/${aggregate}`,
@@ -214,13 +375,11 @@ export function aggregateRef(
 }
 
 export function entityRef(
-	domain: string,
-	subdomain: string,
 	boundedcontext: string,
 	aggregate: string,
 	entity: string,
 ) {
-	const { $ref } = aggregateRef(domain, subdomain, boundedcontext, aggregate);
+	const { $ref } = aggregateRef(boundedcontext, aggregate);
 
 	return {
 		$ref: `${$ref}/entities/${entity}`,
@@ -228,13 +387,11 @@ export function entityRef(
 }
 
 export function valueObjectRef(
-	domain: string,
-	subdomain: string,
 	boundedcontext: string,
 	aggregate: string,
 	valueobject: string,
 ) {
-	const { $ref } = aggregateRef(domain, subdomain, boundedcontext, aggregate);
+	const { $ref } = aggregateRef(boundedcontext, aggregate);
 
 	return {
 		$ref: `${$ref}/valueobjects/${valueobject}`,
@@ -242,22 +399,26 @@ export function valueObjectRef(
 }
 
 export function invariantRef(
-	domain: string,
-	subdomain: string,
 	boundedcontext: string,
 	aggregate: string,
 	invariant: string,
 ) {
-	const { $ref } = aggregateRef(domain, subdomain, boundedcontext, aggregate);
+	const { $ref } = aggregateRef(boundedcontext, aggregate);
 
 	return {
 		$ref: `${$ref}/invariants/${invariant}`,
 	};
 }
 
+export function schemaRef(boundedcontext: string, schema: string) {
+	const { $ref } = boundedcontextRef(boundedcontext);
+
+	return {
+		$ref: `${$ref}/schemas/${schema}`,
+	};
+}
+
 export function consumableRef(
-	domain: string,
-	subdomain: string,
 	boundedcontext: string,
 	provider: string,
 	consumable: string,
@@ -265,8 +426,8 @@ export function consumableRef(
 ) {
 	const { $ref } =
 		providerType === "aggregate"
-			? aggregateRef(domain, subdomain, boundedcontext, provider)
-			: serviceRef(domain, subdomain, boundedcontext, provider);
+			? aggregateRef(boundedcontext, provider)
+			: serviceRef(boundedcontext, provider);
 
 	return {
 		$ref: `${$ref}/provides/${consumable}`,

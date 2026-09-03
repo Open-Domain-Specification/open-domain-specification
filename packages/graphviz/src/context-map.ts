@@ -1,12 +1,26 @@
 import { Graphviz } from "@hpcc-js/wasm-graphviz";
-import type {
-	ConsumablePattern,
-	ConsumptionPattern,
-	ODSContextMap,
-	ODSContextMapNode,
+import {
+	type ContextRelationshipType,
+	isDirectedRelationshipType,
+	type ODSContextMap,
+	type ODSContextMapEdge,
+	type ODSContextMapNode,
 } from "@open-domain-specification/core";
-import { Digraph, Edge, Node, Subgraph, toDot } from "ts-graphviz";
+import {
+	Digraph,
+	Edge,
+	type EdgeAttributesObject,
+	Node,
+	type NodeAttributesObject,
+	Subgraph,
+	toDot,
+} from "ts-graphviz";
 import { getDebug } from "./debug";
+import {
+	DOWNSTREAM_ROLE_LABELS,
+	RELATIONSHIP_LABELS,
+	UPSTREAM_ROLE_LABELS,
+} from "./role-labels";
 
 const stylesheet = `\
 .graph text {
@@ -29,20 +43,55 @@ function namespaceId(node: ODSContextMapNode): string {
 	return node.namespace.map((it) => it.id).join("__");
 }
 
-const CONUMPTION_PATTERN_LABELS: Record<ConsumptionPattern, string> = {
-	conformist: "C",
-	"customer-supplier": "C/s",
-	partnership: "P",
-	"anti-corruption-layer": "ACL",
-	"separate-ways": "SW",
-};
+const SYMMETRIC_EDGE_COLORS: Partial<Record<ContextRelationshipType, string>> =
+	{
+		"shared-kernel": "brown",
+		"separate-ways": "grey",
+	};
 
-const CONSUMABLE_PATTERN_LABEL: Record<ConsumablePattern, string> = {
-	"open-host-service": "OHS",
-	"shared-kernel": "SK",
-	"published-language": "PL",
-	"customer-supplier": "c/S",
-};
+/** A big ball of mud is drawn as an irregular, muddy blob. */
+function nodeAttributes(node: ODSContextMapNode): NodeAttributesObject {
+	const lines = [
+		node.name,
+		node.bigBallOfMud && "(big ball of mud)",
+		node.team && `[${node.team.name}]`,
+	].filter(Boolean);
+	return {
+		label: lines.join("\n"),
+		shape: node.bigBallOfMud ? "doubleoctagon" : "egg",
+		tooltip: node.description,
+		width: 1.5,
+		height: 1,
+		fillcolor: node.bigBallOfMud ? "#d7ccc8" : "white",
+		style: node.bigBallOfMud ? "filled,dashed" : "filled,solid",
+		fontname: "sans-serif",
+	};
+}
+
+/** Graphviz attributes that express one context-map edge. */
+function edgeAttributes(edge: ODSContextMapEdge): EdgeAttributesObject {
+	const isDirected = isDirectedRelationshipType(edge.type);
+	const roles = (labels: Record<string, string>, values: string[]) =>
+		values.map((it) => labels[it]).join("+");
+	return {
+		label: RELATIONSHIP_LABELS[edge.type],
+		tooltip: edge.description ?? edge.type,
+		dir: isDirected ? "forward" : "none",
+		style: edge.implied ? "dashed" : "solid",
+		color: SYMMETRIC_EDGE_COLORS[edge.type] ?? "black",
+		taillabel: isDirected
+			? roles(UPSTREAM_ROLE_LABELS, edge.upstreamRoles)
+			: "",
+		headlabel: isDirected
+			? roles(DOWNSTREAM_ROLE_LABELS, edge.downstreamRoles)
+			: "",
+		tailtooltip: edge.upstreamRoles.join(", "),
+		headtooltip: edge.downstreamRoles.join(", "),
+		fontsize: 10,
+		labeldistance: 0,
+		fontname: "sans-serif",
+	};
+}
 
 export function contextMapToDigraph(contextMap: ODSContextMap): {
 	toDot: () => string;
@@ -92,18 +141,7 @@ export function contextMapToDigraph(contextMap: ODSContextMap): {
 		}
 
 		debug(`Creating node ${id} in subgraph ${nid}`);
-		nodes[id] =
-			nodes[id] ||
-			new Node(id, {
-				label: node.name,
-				shape: "egg",
-				tooltip: node.description,
-				width: 1.5,
-				height: 1,
-				fillcolor: "white",
-				style: "filled,solid",
-				fontname: "sans-serif",
-			});
+		nodes[id] = nodes[id] || new Node(id, nodeAttributes(node));
 
 		debug(`Adding node ${id} to subgraph ${nid}`);
 		_subgraphs[_subgraphs.length - 1].addNode(nodes[id]);
@@ -117,18 +155,7 @@ export function contextMapToDigraph(contextMap: ODSContextMap): {
 
 		debug(`Source node: ${sourceNode.id}, Target node: ${targetNode.id}`);
 		edges[id] =
-			edges[id] ||
-			new Edge([targetNode, sourceNode], {
-				color: edge.targetPattern === "shared-kernel" ? "brown" : "black",
-				taillabel: CONUMPTION_PATTERN_LABELS[edge.sourcePattern],
-				headlabel: CONSUMABLE_PATTERN_LABEL[edge.targetPattern],
-				tailtooltip: edge.sourcePattern,
-				headtooltip: edge.targetPattern,
-				fontsize: 10,
-				labeldistance: 0,
-				label: edge.targetPattern === "shared-kernel" ? "⚠️" : "",
-				fontname: "sans-serif",
-			});
+			edges[id] || new Edge([sourceNode, targetNode], edgeAttributes(edge));
 		debug(`Adding edge ${id} from ${sourceNode.id} to ${targetNode.id}`);
 		g.addEdge(edges[id]);
 	}

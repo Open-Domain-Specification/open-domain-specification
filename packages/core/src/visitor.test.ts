@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { makeTestWs } from "./makeTestWs";
+import { makeRichTestWs, makeTestWs } from "./makeTestWs";
 import {
 	AbstractVisitor,
 	type AbstractVisitorOptions,
@@ -10,6 +10,7 @@ import type {
 	BoundedContext,
 	Consumable,
 	Consumption,
+	DataSchema,
 	Domain,
 	Entity,
 	EntityRelation,
@@ -32,6 +33,7 @@ class TestVisitor extends AbstractVisitor implements Visitor {
 	visitedConsumption = vi.fn();
 	visitedConsumable = vi.fn();
 	visitedInvariant = vi.fn();
+	visitedDataSchema = vi.fn();
 
 	constructor(props: AbstractVisitorOptions) {
 		super(props);
@@ -57,6 +59,10 @@ class TestVisitor extends AbstractVisitor implements Visitor {
 	visitService(n: Service): void {
 		this.visitedService(n);
 		super.visitService(n);
+	}
+	visitDataSchema(n: DataSchema): void {
+		this.visitedDataSchema(n);
+		super.visitDataSchema(n);
 	}
 	visitAggregate(n: Aggregate): void {
 		this.visitedAggregate(n);
@@ -319,5 +325,14 @@ describe("Visitor", () => {
 		expect(visitor.visitedAggregate).toHaveBeenCalledWith(d2Sd1Bc1S1Ag1);
 		expect(visitor.visitedEntity).toHaveBeenCalledWith(d2Sd1Bc1S1Ag1E1);
 		expect(visitor.visitedValueObject).toHaveBeenCalledWith(d2Sd1Bc1S1Ag1Vo1);
+	});
+
+	it("reaches every schema of a bounded context", () => {
+		const f = makeRichTestWs();
+		const visitor = new TestVisitor({});
+		visitor.visitWorkspace(f.ws);
+		expect(visitor.visitedDataSchema).toHaveBeenCalledWith(f.orderSummary);
+		expect(visitor.visitedDataSchema).toHaveBeenCalledWith(f.orderRequest);
+		expect(visitor.visitedDataSchema).toHaveBeenCalledTimes(2);
 	});
 });

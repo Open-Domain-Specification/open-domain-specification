@@ -1,15 +1,27 @@
 import objectHash from "object-hash";
-import { ODSConsumptionGraph } from "./consuption-graph";
-import type { ConsumablePattern, ConsumptionPattern } from "./schema";
-import type {
-	Aggregate,
-	BoundedContext,
-	Consumption,
-	Domain,
+import { ODSConsumptionGraph } from "./consumption-graph";
+import { contextMemberNamespace, type ODSNamespace } from "./namespace";
+import type { ConsumableType, DownstreamRole, UpstreamRole } from "./schema";
+import {
+	type Aggregate,
+	type BoundedContext,
+	type Consumption,
+	type Domain,
 	Service,
-	Subdomain,
-	Workspace,
+	type Subdomain,
+	type Workspace,
 } from "./workspace";
+
+/** A consumer or provider node; both are services or aggregates. */
+function memberNode(member: Aggregate | Service): ODSConsumptionMapNode {
+	return {
+		id: member.ref,
+		name: member.name,
+		description: member.description,
+		type: member instanceof Service ? "service" : "aggregate",
+		namespace: contextMemberNamespace(member),
+	};
+}
 
 export class ODSConsumableMap {
 	readonly slots = new Map<string, ODSConsumptionMapNodeSlot>();
@@ -51,66 +63,19 @@ export class ODSConsumableMap {
 
 	constructor(consumptions: Consumption[]) {
 		for (const consumption of consumptions) {
-			const targetNode: ODSConsumptionMapNode = this.addNode({
-				id: consumption.consumable.provider.ref,
-				name: consumption.consumable.provider.name,
-				description: consumption.consumable.provider.description,
-				namespace: [
-					{
-						id: consumption.consumer.boundedcontext.subdomain.domain.workspace
-							.id,
-						name: consumption.consumer.boundedcontext.subdomain.domain.workspace
-							.name,
-					},
-					{
-						id: consumption.consumable.provider.boundedcontext.subdomain.domain
-							.ref,
-						name: consumption.consumable.provider.boundedcontext.subdomain
-							.domain.name,
-					},
-					{
-						id: consumption.consumable.provider.boundedcontext.subdomain.ref,
-						name: consumption.consumable.provider.boundedcontext.subdomain.name,
-					},
-					{
-						id: consumption.consumable.provider.boundedcontext.ref,
-						name: consumption.consumable.provider.boundedcontext.name,
-					},
-				],
-			});
+			const targetNode = this.addNode(
+				memberNode(consumption.consumable.provider),
+			);
 
 			const targetSlot: ODSConsumptionMapNodeSlot = this.addNodeSlot({
 				id: consumption.consumable.ref,
 				name: consumption.consumable.name,
 				description: consumption.consumable.description,
+				type: consumption.consumable.type,
 				node: targetNode,
 			});
 
-			const sourceNode = this.addNode({
-				id: consumption.consumer.ref,
-				name: consumption.consumer.name,
-				description: consumption.consumer.boundedcontext.description,
-				namespace: [
-					{
-						id: consumption.consumer.boundedcontext.subdomain.domain.workspace
-							.id,
-						name: consumption.consumer.boundedcontext.subdomain.domain.workspace
-							.name,
-					},
-					{
-						id: consumption.consumer.boundedcontext.subdomain.domain.ref,
-						name: consumption.consumer.boundedcontext.subdomain.domain.name,
-					},
-					{
-						id: consumption.consumer.boundedcontext.subdomain.ref,
-						name: consumption.consumer.boundedcontext.subdomain.name,
-					},
-					{
-						id: consumption.consumer.boundedcontext.ref,
-						name: consumption.consumer.boundedcontext.name,
-					},
-				],
-			});
+			const sourceNode = this.addNode(memberNode(consumption.consumer));
 
 			this.addEdge({
 				source: sourceNode,
@@ -158,15 +123,13 @@ export class ODSConsumableMap {
 	}
 }
 
-export type ODSCosumptionMapNamespace = {
-	id: string;
-	name: string;
-};
+export type ODSCosumptionMapNamespace = ODSNamespace;
 
 export type ODSConsumptionMapNode = {
 	id: string;
 	name: string;
 	description?: string;
+	type: "aggregate" | "service";
 	namespace: ODSCosumptionMapNamespace[];
 };
 
@@ -174,12 +137,14 @@ export type ODSConsumptionMapNodeSlot = {
 	id: string;
 	name: string;
 	description?: string;
+	/** Whether the consumable is an event or an operation. */
+	type: ConsumableType;
 	node: ODSConsumptionMapNode;
 };
 
 export type ODSConsumptionMapEdge = {
 	source: ODSConsumptionMapNode;
-	sourcePattern: ConsumptionPattern;
+	sourcePattern?: DownstreamRole;
 	target: ODSConsumptionMapNodeSlot;
-	targetPattern: ConsumablePattern;
+	targetPattern?: UpstreamRole;
 };

@@ -16,7 +16,7 @@ With ODS, you can:
 | **`@open-domain-specification/core`**     | The TypeScript DSL & model classes for building ODS workspaces programmatically. |
 | **`@open-domain-specification/graphviz`** | A library for visualizing ODS workspaces as Graphviz diagrams.                   |
 | **`@open-domain-specification/doc`**      | A library for generating Markdown documentation from ODS workspace files.        |
-| **[`open-ds.io`](https://open-ds.io)**    | A React + Vite web app for interactive browsing of ODS workspaces.               |
+| **[`open-ds.io`](https://open-ds.io)**    | The ODS viewer: upload or link a workspace file and browse it with the same pages as the VS Code extension. |
 
 ## Quickstart
 
@@ -50,12 +50,12 @@ Compile the workspace to a JSON file
 ```ts
 import {writeFileSync} from "fs";
 
-writeFileSync("workspace.json", JSON.stringify(ws.toSchema(), null, 2));
+writeFileSync("workspace.json", JSON.stringify(workspace.toSchema(), null, 2));
 ```
 
 ### Explore
 
-Open the workspace in the ODS web app by visiting [open-ds.io](https://open-ds.io) and uploading the `workspace.json`
+Open the workspace in the ODS viewer by visiting [open-ds.io](https://open-ds.io) and uploading the `workspace.json`, or export a static site from the VS Code extension with `ODS: Export Static Site`
 file.
 
 Alternatively, you can use the `@open-domain-specification/doc` package to generate Markdown documentation from your
