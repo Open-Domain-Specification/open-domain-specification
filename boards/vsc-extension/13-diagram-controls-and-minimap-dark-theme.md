@@ -30,6 +30,8 @@ Even when dark mode is forced, Svelte Flow defaults use hardcoded colors rather 
 
 ## Gates
 
+- [x] qa-automated — pages unit 100% coverage incl. theme.test.ts; pages e2e 38/38 on develop (lead, 2026-09-03T19:20:00Z)
+
 - [x] clean-code-swept — six-principle sweep (SRP, DRY, naming, coupling, dead code, KISS) over the new and changed files; nothing scored above 0.5, top findings 0.3 (module-scope singleton, matching the existing `packages/pages/src/lib/flow/options.svelte.ts:88` precedent) and 0.25/0.2 naming nits, of which the harness prop rename `theme` -> `themeClass` was taken (dev-opus, 2026-09-03T16:45:00.000Z)
 
 ## Comments
@@ -43,3 +45,4 @@ Even when dark mode is forced, Svelte Flow defaults use hardcoded colors rather 
 - **dev-opus** (2026-09-03T16:46:00.000Z): Clean-code sweep run; results under `## Gates`. The only change it prompted was a prop rename to `themeClass` in `packages/pages/src/lib/organisms/InteractiveDiagram.theme.harness.svelte:11-15` and `packages/pages/src/lib/organisms/InteractiveDiagram.stories.svelte:29-37`; re-ran the two affected suites afterwards, 15 tests green.
 - **dev-opus** (2026-09-03T16:47:00.000Z): Left for the lead as instructed: the checklist item verifying the three VS Code themes headed. `apps/ods-vscode` has no theme coverage today — `apps/ods-vscode/src/test/extension.test.ts` never touches the theme classes — so I did not run `npm run test:vscode` for this card; nothing here changes the extension's own surface, only the pages bundle it embeds, and that bundle needs a rebuild before the visual check. Moving to review.
 - **lead** (2026-09-03T18:30:00.000Z): Reviewed: theme.svelte.ts light-before-dark ordering is correct for HC light, accepted. page.css:614-650 token mapping matches the decision. Landing on develop; the headed three-theme check follows in the extension after a rebuild.
+- **lead** (2026-09-03T19:20:00.000Z): The real-VS-Code suite (`npm run test:vscode`) would not start: VS Code is open on this machine and vscode-test refuses to run beside another instance. The headed three-theme check stays open until it can run; unit and e2e evidence recorded above.
