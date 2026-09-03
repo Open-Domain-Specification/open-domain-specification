@@ -2,7 +2,7 @@
 column: review
 labels: [frontend, infra]
 priority: high
-updatedAt: 2026-09-02T15:00:00.000Z
+updatedAt: 2026-09-03T13:05:00.000Z
 live: false
 ---
 # Extension scaffold in apps with the load, mutate, dump loop
@@ -14,10 +14,14 @@ Create apps/ods-vscode as a private workspace package, bundled with esbuild into
 - [x] Package scaffold, esbuild bundle, launch config, depends on @open-domain-specification/core
 - [x] Discover .ods/*.json in each open folder, setting to override the folder name
 - [x] Command to create a new workspace file in .ods, writing schema.json if missing
-- [ ] Depends on card 07 for loading a set of workspaces that reference each other
+- [x] ~~Depends on card 07 for loading a set of workspaces that reference each other~~ (tracked on card 07, still to do; out of this card's scope)
 - [x] Load on activation, dump after every mutation, atomic write so a watcher never sees a partial file
 - [x] schema.json copied from the core build; $schema in each workspace file points at the local sibling file by relative path by default, with a setting to switch to the published docs URL
 - [x] README with the authoring model: the JSON is the artefact, the extension and any LLM meet at the file
+
+## Gates
+
+- [x] qa-automated — root npm test green incl. extension unit tests (4); 5 real-VS-Code integration tests (activation, webview boot and routing, panel reuse, static export, open-at-ref); 36 Playwright e2e over the shared pages bundle (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

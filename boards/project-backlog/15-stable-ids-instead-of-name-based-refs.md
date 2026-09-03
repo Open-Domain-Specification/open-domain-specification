@@ -2,7 +2,7 @@
 column: review
 labels: [backend, breaking]
 priority: med
-updatedAt: 2026-09-02T13:01:46.000Z
+updatedAt: 2026-09-03T13:05:00.000Z
 live: false
 ---
 # Use stable ids instead of name-based refs
@@ -13,6 +13,10 @@ Refs are string paths built from names (packages/core/src/schema.ts:160-200), so
 
 - [x] Record a decision on id strategy
 - [x] Implement with a migration in workspace-from-schema.ts
+
+## Gates
+
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

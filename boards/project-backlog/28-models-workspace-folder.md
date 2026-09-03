@@ -5,7 +5,7 @@ priority: high
 agent: claude
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-03T05:20:00.000Z
+updatedAt: 2026-09-03T13:05:00.000Z
 ---
 # Each domain model in its own `models/` workspace, authored with the TypeScript DSL
 
@@ -21,6 +21,7 @@ Move the reference models out of `packages/ods-example-ws` into a new root works
 ## Gates
 
 - [x] clean-code-swept — reviewer sweep of the models workspaces; seven findings fixed: shared stress-test assertions in _shared, depcheck script name corrected (it never ran), unused doc dependency dropped, shared tsconfig and vitest base, single models/.depcheckrc.yaml, serve script on every model, lockfile regenerated without the deleted packages; models build, test and depcheck clean (claude, 2026-09-03T05:20:00.000Z)
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

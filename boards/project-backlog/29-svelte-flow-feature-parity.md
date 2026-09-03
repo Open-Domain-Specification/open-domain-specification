@@ -5,7 +5,7 @@ priority: high
 agent: claude
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-03T09:00:00.000Z
+updatedAt: 2026-09-03T13:05:00.000Z
 ---
 # Svelte Flow diagrams: feature parity with the Graphviz images
 
@@ -22,6 +22,7 @@ The interactive view of each figure must show everything its Graphviz image show
 ## Gates
 
 - [x] clean-code-swept — reviewer sweep of the diagram code; all eight findings applied: label tables owned once by the graphviz package, shared edge-path helper, global diagram CSS including the missing hidden-handle rule, NodeHandles and NodeHead components, dead generic node and edge removed, groupPath rename, shared test harnesses and mock; 303 unit tests at 100 coverage, 33 e2e, root green (claude, 2026-09-03T09:00:00.000Z)
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

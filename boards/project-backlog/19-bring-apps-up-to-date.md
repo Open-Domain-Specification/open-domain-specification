@@ -4,7 +4,7 @@ labels: [docs, frontend]
 priority: high
 agent: claude
 live: false
-updatedAt: 2026-09-02T13:14:06.000Z
+updatedAt: 2026-09-03T13:05:00.000Z
 ---
 # Bring the docs site and UI help up to date with the new model
 
@@ -19,6 +19,10 @@ Cards 01 to 15 changed the model but only touched the apps where a card required
 - [x] Docs: refresh feature lists on the graphviz, doc and UI pages
 - [x] UI: rewrite ProvidesHelp, add help for commands, policies, glossary and context relationships
 - [x] UI: link operations to the command they expose and event consumables to their event
+
+## Gates
+
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

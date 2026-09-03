@@ -4,7 +4,7 @@ labels: [frontend, docs]
 priority: high
 agent: claude
 live: false
-updatedAt: 2026-09-02T15:45:00.000Z
+updatedAt: 2026-09-03T13:05:00.000Z
 ---
 # Install the AI skill from the extension
 
@@ -16,6 +16,10 @@ Add an `ODS: Install AI Skill` command that writes the `@open-domain-specificati
 - [x] `ods.installSkill` command: folder pick, multi-select of targets, user-level toggle, rules-file pointer
 - [x] Stale check on activation with a one-time "Update" prompt stored in workspaceState
 - [x] README section "Install the AI skill"
+
+## Gates
+
+- [x] qa-automated — root npm test green incl. extension unit tests (4); 5 real-VS-Code integration tests (activation, webview boot and routing, panel reuse, static export, open-at-ref); 36 Playwright e2e over the shared pages bundle (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

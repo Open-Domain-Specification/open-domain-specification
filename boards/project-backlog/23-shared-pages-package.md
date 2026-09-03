@@ -5,7 +5,7 @@ priority: high
 agent: claude
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-02T16:50:00.000Z
+updatedAt: 2026-09-03T13:05:00.000Z
 ---
 # Shared pages package: one renderer for extension, static site and viewer
 
@@ -23,6 +23,7 @@ Extract the extension's page renderer (`html.ts`, `element-pages.ts`, `render.ts
 ## Gates
 
 - [x] clean-code-swept — three-reviewer sweep (SRP/KISS, DRY/dead, naming/coupling); one finding above 0.5 and four below fixed, none left as TODOs; pages 100 and extension 4 tests green, biome and depcheck clean (claude, 2026-09-02T16:50:00.000Z)
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 
