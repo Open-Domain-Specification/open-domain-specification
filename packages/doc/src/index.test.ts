@@ -1,6 +1,16 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { Workspace } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { toDoc } from "./index";
+
+const petstoreSchema = JSON.parse(
+	readFileSync(
+		join(__dirname, "../../../models/petstore/.ods/petstore.json"),
+		"utf8",
+	),
+);
+const petstore = Workspace.fromSchema(petstoreSchema);
 
 describe("toDoc", () => {
 	it("should generate documentation for empty workspace", async () => {
@@ -197,5 +207,70 @@ describe("toDoc", () => {
 		// The docs should still be generated properly with options
 		const workspaceDoc = docs["test_workspace/index.md"];
 		expect(workspaceDoc).toContain("Test Workspace");
+	});
+
+	it("snapshots the file list produced for the petstore reference workspace", async () => {
+		const docs = await toDoc(petstore);
+
+		expect(Object.keys(docs).sort()).toMatchInlineSnapshot(`
+			[
+			  "_sidebar.md",
+			  "boundedcontexts/catalog_bc/aggregates/pet/consumablemap.svg",
+			  "boundedcontexts/catalog_bc/aggregates/pet/index.md",
+			  "boundedcontexts/catalog_bc/aggregates/pet/relationmap.svg",
+			  "boundedcontexts/catalog_bc/contextmap.svg",
+			  "boundedcontexts/catalog_bc/index.md",
+			  "boundedcontexts/catalog_bc/services/pet_app/consumablemap.svg",
+			  "boundedcontexts/catalog_bc/services/pet_app/index.md",
+			  "boundedcontexts/fulfilment_bc/aggregates/shipment/consumablemap.svg",
+			  "boundedcontexts/fulfilment_bc/aggregates/shipment/index.md",
+			  "boundedcontexts/fulfilment_bc/aggregates/shipment/relationmap.svg",
+			  "boundedcontexts/fulfilment_bc/contextmap.svg",
+			  "boundedcontexts/fulfilment_bc/flowmap.svg",
+			  "boundedcontexts/fulfilment_bc/index.md",
+			  "boundedcontexts/fulfilment_bc/services/dispatch_planner/consumablemap.svg",
+			  "boundedcontexts/fulfilment_bc/services/dispatch_planner/index.md",
+			  "boundedcontexts/identity_bc/aggregates/user/consumablemap.svg",
+			  "boundedcontexts/identity_bc/aggregates/user/index.md",
+			  "boundedcontexts/identity_bc/aggregates/user/relationmap.svg",
+			  "boundedcontexts/identity_bc/contextmap.svg",
+			  "boundedcontexts/identity_bc/index.md",
+			  "boundedcontexts/identity_bc/services/user_app/consumablemap.svg",
+			  "boundedcontexts/identity_bc/services/user_app/index.md",
+			  "boundedcontexts/inventory_bc/aggregates/inventory_projection/consumablemap.svg",
+			  "boundedcontexts/inventory_bc/aggregates/inventory_projection/index.md",
+			  "boundedcontexts/inventory_bc/aggregates/inventory_projection/relationmap.svg",
+			  "boundedcontexts/inventory_bc/contextmap.svg",
+			  "boundedcontexts/inventory_bc/flowmap.svg",
+			  "boundedcontexts/inventory_bc/index.md",
+			  "boundedcontexts/inventory_bc/services/inventory_query/consumablemap.svg",
+			  "boundedcontexts/inventory_bc/services/inventory_query/index.md",
+			  "boundedcontexts/sales_bc/aggregates/order/consumablemap.svg",
+			  "boundedcontexts/sales_bc/aggregates/order/index.md",
+			  "boundedcontexts/sales_bc/aggregates/order/relationmap.svg",
+			  "boundedcontexts/sales_bc/contextmap.svg",
+			  "boundedcontexts/sales_bc/flowmap.svg",
+			  "boundedcontexts/sales_bc/index.md",
+			  "boundedcontexts/sales_bc/services/order_app/consumablemap.svg",
+			  "boundedcontexts/sales_bc/services/order_app/index.md",
+			  "domains/identity_&_accounts/contextmap.svg",
+			  "domains/identity_&_accounts/index.md",
+			  "domains/identity_&_accounts/subdomains/users/contextmap.svg",
+			  "domains/identity_&_accounts/subdomains/users/index.md",
+			  "domains/petstore_commerce/contextmap.svg",
+			  "domains/petstore_commerce/index.md",
+			  "domains/petstore_commerce/subdomains/catalog/contextmap.svg",
+			  "domains/petstore_commerce/subdomains/catalog/index.md",
+			  "domains/petstore_commerce/subdomains/fulfilment/contextmap.svg",
+			  "domains/petstore_commerce/subdomains/fulfilment/index.md",
+			  "domains/petstore_commerce/subdomains/inventory/contextmap.svg",
+			  "domains/petstore_commerce/subdomains/inventory/index.md",
+			  "domains/petstore_commerce/subdomains/sales/contextmap.svg",
+			  "domains/petstore_commerce/subdomains/sales/index.md",
+			  "swagger_petstore_(v3)/contextmap.svg",
+			  "swagger_petstore_(v3)/glossary.md",
+			  "swagger_petstore_(v3)/index.md",
+			]
+		`);
 	});
 });
