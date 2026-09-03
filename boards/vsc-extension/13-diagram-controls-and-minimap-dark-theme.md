@@ -5,7 +5,7 @@ priority: high
 agent: dev-opus
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-03T19:55:00.000Z
+updatedAt: 2026-09-03T22:40:00.000Z
 ---
 # Diagram controls and minimap theme styling in dark mode
 
@@ -25,12 +25,13 @@ Even when dark mode is forced, Svelte Flow defaults use hardcoded colors rather 
 - [x] Map Svelte Flow controls CSS variables to VS Code theme variables (`--xy-controls-button-background-color: var(--card)`, `--xy-controls-button-background-color-hover: var(--vscode-toolbar-hoverBackground)`, `--xy-controls-button-color: var(--fg)`, `--xy-controls-button-border-color: var(--border)`) in packages/pages/assets/page.css:450-614
 - [x] Map Svelte Flow minimap CSS variables to theme variables (`--xy-minimap-background-color: var(--card)`, `--xy-minimap-mask-background-color`, `--xy-minimap-node-background-color: var(--border)`) with a 1px border matching `var(--border)`
 - [x] Style the Svelte Flow attribution badge to blend seamlessly with `var(--bg)` and `var(--muted)`
-- [ ] Verify controls and minimap rendering across light, dark, and high-contrast VS Code themes in apps/ods-vscode/src/pages/panel.ts:152-176
+- [x] Verify controls and minimap rendering across light, dark, and high-contrast VS Code themes in apps/ods-vscode/src/pages/panel.ts:152-176
 - [x] Update Storybook stories and unit tests in packages/pages
 
 ## Gates
 
 - [x] qa-automated — pages unit 100% coverage incl. theme.test.ts; pages e2e 38/38 on develop (lead, 2026-09-03T19:20:00Z)
+- [x] qa-automated — `npm run test:vscode` with ODS_SCREENSHOTS=1, 9 passing; captures reviewed in Default Light Modern, Default Dark Modern and Default High Contrast (lead, 2026-09-03T22:40:00Z)
 
 - [x] clean-code-swept — six-principle sweep (SRP, DRY, naming, coupling, dead code, KISS) over the new and changed files; nothing scored above 0.5, top findings 0.3 (module-scope singleton, matching the existing `packages/pages/src/lib/flow/options.svelte.ts:88` precedent) and 0.25/0.2 naming nits, of which the harness prop rename `theme` -> `themeClass` was taken (dev-opus, 2026-09-03T16:45:00.000Z)
 
@@ -47,3 +48,4 @@ Even when dark mode is forced, Svelte Flow defaults use hardcoded colors rather 
 - **lead** (2026-09-03T18:30:00.000Z): Reviewed: theme.svelte.ts light-before-dark ordering is correct for HC light, accepted. page.css:614-650 token mapping matches the decision. Landing on develop; the headed three-theme check follows in the extension after a rebuild.
 - **lead** (2026-09-03T19:20:00.000Z): The real-VS-Code suite (`npm run test:vscode`) would not start: VS Code is open on this machine and vscode-test refuses to run beside another instance. The headed three-theme check stays open until it can run; unit and e2e evidence recorded above.
 - **lead** (2026-09-03T19:55:00.000Z): Browser-side visual check with `vscode-dark` on the body: controls and minimap render dark with a 1px token border and the attribution is muted. The in-VS-Code three-theme check still waits on the extension suite being able to launch.
+- **lead** (2026-09-03T22:40:00.000Z): VS Code closed, the real-extension suite ran (9 passing). Reviewed the aggregate page in light, the Sales BC context map in dark (media/screenshots/context-map-dark.png) and a one-off high-contrast capture: controls, minimap and the options panel follow the host theme in all three. Checklist complete.
