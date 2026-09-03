@@ -194,12 +194,78 @@ export function renderValidationRules(): string {
 	return parts.join("\n");
 }
 
+// ---------------------------------------------------------------------------
+// strategic-relationships.md
+// ---------------------------------------------------------------------------
+
+const CATEGORY_HEADINGS: Array<[string, string, string]> = [
+	[
+		"relationship",
+		"Relationship types",
+		"The `type` of a context relationship. Exactly one per relationship.",
+	],
+	[
+		"upstream-role",
+		"Upstream roles",
+		"How the upstream side exposes what it provides: a relationship's `upstreamRoles`, and a consumable's `pattern`.",
+	],
+	[
+		"downstream-role",
+		"Downstream roles",
+		"How the downstream side protects itself: a relationship's `downstreamRoles`, and a consumption's `pattern`.",
+	],
+];
+
+export function renderStrategicRelationships(): string {
+	const { PATTERNS } = require("@open-domain-specification/core") as {
+		PATTERNS: Record<
+			string,
+			{
+				name: string;
+				abbreviation: string;
+				category: string;
+				summary: string;
+				architecturalNature: string;
+				tradeOffs: string[];
+			}
+		>;
+	};
+	const parts: string[] = [
+		GENERATED_HEADER("PATTERNS"),
+		"# Strategic relationships",
+		"",
+		"What each strategic pattern means. Explain one to the user in these words: the diagram legend, the hover summaries and the generated documentation all read the same table, so your explanation and what they are looking at agree. The value in the left column is what goes in the model.",
+		"",
+	];
+	for (const [category, heading, blurb] of CATEGORY_HEADINGS) {
+		parts.push(`## ${heading}`, "", blurb, "");
+		for (const [key, pattern] of Object.entries(PATTERNS)) {
+			if (pattern.category !== category) continue;
+			parts.push(
+				`### \`${key}\` — ${pattern.name} (${pattern.abbreviation})`,
+				"",
+				pattern.summary,
+				"",
+				pattern.architecturalNature,
+				"",
+				...pattern.tradeOffs.map((t) => `- ${t}`),
+				"",
+			);
+		}
+	}
+	return parts.join("\n");
+}
+
 export function generateReferences(): Array<{ path: string; content: string }> {
 	return [
 		{ path: "references/model-reference.md", content: renderModelReference() },
 		{
 			path: "references/validation-rules.md",
 			content: renderValidationRules(),
+		},
+		{
+			path: "references/strategic-relationships.md",
+			content: renderStrategicRelationships(),
 		},
 	];
 }

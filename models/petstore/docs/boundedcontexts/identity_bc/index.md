@@ -44,6 +44,7 @@ Open-host service for /user endpoints
 | --- | --- | --- | --- | --- |
 | Sales BC | Orders are anonymous in Petstore v3; no integration by design | separate-ways | - | - |
 
+- `separate-ways` — **Separate Ways** (SW). A deliberate decision to forego integration and develop independently.
 
 ## Consumptions
 

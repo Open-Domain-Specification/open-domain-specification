@@ -1,5 +1,8 @@
 <script lang="ts">
-import type { ContextRelationship } from "@open-domain-specification/core";
+import {
+	type ContextRelationship,
+	PATTERNS,
+} from "@open-domain-specification/core";
 import Chip from "../atoms/Chip.svelte";
 import DispositionChip from "../atoms/DispositionChip.svelte";
 import Empty from "../atoms/Empty.svelte";
@@ -7,20 +10,19 @@ import Markdown from "../atoms/Markdown.svelte";
 import RefLink from "../atoms/RefLink.svelte";
 import {
 	crossingConsumables,
-	relationshipLinks,
 	dispositionOf,
+	relationshipLinks,
 } from "../evidence/derive";
 import {
 	type CommentSheetIndex,
 	LINK_KIND_LABELS,
-	PATTERN_SUMMARIES,
 	sheetForRelationship,
 } from "../evidence/fixtures";
 import { isSymmetricRelationship } from "../flow/graph";
 import { roleLabel } from "../flow/roles";
+import { consumableIcon, ICONS, useModel } from "../model";
 import Card from "../molecules/Card.svelte";
 import CommentList from "../molecules/CommentList.svelte";
-import { consumableIcon, ICONS, useModel } from "../model";
 
 /**
  * Everything known about one context relationship, intent and evidence
@@ -58,7 +60,7 @@ const sides = $derived([
 <article class="relationship-detail">
 	<header>
 		<svelte:element this={heading} class="title">{title}</svelte:element>
-		<Chip label={r.type} tone="muted" title={PATTERN_SUMMARIES[r.type]} />
+		<Chip label={r.type} tone="muted" title={PATTERNS[r.type].summary} />
 		<DispositionChip disposition={sheet?.disposition} />
 	</header>
 
@@ -81,12 +83,12 @@ const sides = $derived([
 							<li>
 								<Chip label={roleLabel(role) as string} tone="muted" title={role} />
 								<span class="pattern-name">{role}</span>
-								<span class="pattern-summary">{PATTERN_SUMMARIES[role]}</span>
+								<span class="pattern-summary">{PATTERNS[role].summary}</span>
 							</li>
 						{/each}
 					</ul>
 				{:else}
-					<p class="pattern-summary">{PATTERN_SUMMARIES[r.type]}</p>
+					<p class="pattern-summary">{PATTERNS[r.type].summary}</p>
 				{/if}
 			</Card>
 		{/each}
@@ -108,10 +110,10 @@ const sides = $derived([
 						<td><RefLink ref={c.consumable.ref} label={c.consumable.name} icon={consumableIcon(c.consumable)} /></td>
 						<td>
 							{#if c.consumable.pattern}
-								<Chip label={roleLabel(c.consumable.pattern) as string} tone="muted" title={PATTERN_SUMMARIES[c.consumable.pattern]} />
+								<Chip label={roleLabel(c.consumable.pattern) as string} tone="muted" title={PATTERNS[c.consumable.pattern].summary} />
 							{/if}
 							{#if c.consumption.pattern}
-								<Chip label={roleLabel(c.consumption.pattern) as string} tone="muted" title={PATTERN_SUMMARIES[c.consumption.pattern]} />
+								<Chip label={roleLabel(c.consumption.pattern) as string} tone="muted" title={PATTERNS[c.consumption.pattern].summary} />
 							{/if}
 						</td>
 						<td><RefLink ref={c.consumption.consumer.ref} label={c.consumption.consumer.name} /></td>

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
-import { Workspace } from "@open-domain-specification/core";
+import { PATTERNS, Workspace } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import {
 	generateReferences,
@@ -57,6 +57,29 @@ describe("dsl-api.md", () => {
 			if (method === "Workspace") continue;
 			expect(source, method).toMatch(new RegExp(`\\b${method}\\(`));
 		}
+	});
+});
+
+describe("strategic-relationships.md", () => {
+	const reference = file("references/strategic-relationships.md");
+
+	it("explains every pattern core knows, in core's own words", () => {
+		for (const [key, pattern] of Object.entries(PATTERNS)) {
+			expect(reference, key).toContain(
+				`### \`${key}\` — ${pattern.name} (${pattern.abbreviation})`,
+			);
+			expect(reference, key).toContain(pattern.summary);
+			expect(reference, key).toContain(pattern.architecturalNature);
+			for (const tradeOff of pattern.tradeOffs)
+				expect(reference, key).toContain(`- ${tradeOff}`);
+		}
+	});
+
+	it("names nothing core does not", () => {
+		const documented = [...reference.matchAll(/^### `([\w-]+)`/gm)].map(
+			(m) => m[1],
+		);
+		expect(documented.sort()).toEqual(Object.keys(PATTERNS).sort());
 	});
 });
 

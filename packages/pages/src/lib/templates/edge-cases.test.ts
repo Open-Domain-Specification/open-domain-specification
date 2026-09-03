@@ -5,6 +5,7 @@ import {
 	domainRef,
 	entityRef,
 	invariantRef,
+	PATTERNS,
 	policyRef,
 	schemaRef,
 	serviceRef,
@@ -233,18 +234,13 @@ describe("templates render the alternate branches the petstore fixture never hit
 		expect(text).toContain("PL");
 		expect(text).toContain("CF");
 		expect(text).toContain("ACL");
-		expect(titles).toContain(
-			"The upstream side publishes a stable service contract for all comers.",
-		);
-		expect(titles).toContain(
-			"The upstream side publishes a shared interchange format for its messages.",
-		);
-		expect(titles).toContain(
-			"The downstream side adopts the upstream model as-is and does not translate.",
-		);
-		expect(titles).toContain(
-			"The downstream side translates at the boundary to keep its own model clean.",
-		);
+		for (const pattern of [
+			"open-host-service",
+			"published-language",
+			"conformist",
+			"anti-corruption-layer",
+		] as const)
+			expect(titles, pattern).toContain(PATTERNS[pattern].summary);
 	});
 
 	it("ContextPage: copes with a context and a root entity that have no name", async () => {

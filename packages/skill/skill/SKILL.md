@@ -56,7 +56,10 @@ interviewing as soon as you know enough for one coherent increment; you can alwa
 
 Map answers with `references/translation-table.md`. Every element gets a `description` in
 the user's own words, and every noun they used more than once becomes a glossary term in its
-context. Use `references/ddd-glossary.md` for the one-sentence explanations.
+context. Use `references/ddd-glossary.md` for the one-sentence explanations. For a context
+relationship type or an upstream/downstream role, explain it from
+`references/strategic-relationships.md`, which is generated from the same table the diagrams
+and the generated docs read, so your words match what the user is looking at.
 
 ## Step 4: edit
 

@@ -1,14 +1,11 @@
 <script lang="ts">
-import type { BoundedContext } from "@open-domain-specification/core";
+import { type BoundedContext, PATTERNS } from "@open-domain-specification/core";
 import Chip from "../atoms/Chip.svelte";
-import DispositionChip from "../atoms/DispositionChip.svelte";
 import Dim from "../atoms/Dim.svelte";
+import DispositionChip from "../atoms/DispositionChip.svelte";
 import Empty from "../atoms/Empty.svelte";
 import { counterpartOf, positionGroups } from "../evidence/derive";
-import {
-	type CommentSheetIndex,
-	PATTERN_SUMMARIES,
-} from "../evidence/fixtures";
+import type { CommentSheetIndex } from "../evidence/fixtures";
 import { roleLabel } from "../flow/roles";
 import { useModel } from "../model";
 import ContextPill from "../molecules/ContextPill.svelte";
@@ -83,9 +80,9 @@ const discloses = (r: { source: { name: string }; target: { name: string } }) =>
 						{/if}
 						<td><ContextPill context={counterpartOf(r, context)} /></td>
 						<td class="description">{#if r.description}{r.description}{:else}<Dim>no description</Dim>{/if}</td>
-						<td><Chip label={r.type} tone="muted" title={PATTERN_SUMMARIES[r.type]} /></td>
-						<td>{#each r.upstreamRoles as role, i (role)}{#if i}{" "}{/if}<Chip label={roleLabel(role) as string} tone="muted" title={PATTERN_SUMMARIES[role]} />{/each}</td>
-						<td>{#each r.downstreamRoles as role, i (role)}{#if i}{" "}{/if}<Chip label={roleLabel(role) as string} tone="muted" title={PATTERN_SUMMARIES[role]} />{/each}</td>
+						<td><Chip label={r.type} tone="muted" title={PATTERNS[r.type].summary} /></td>
+						<td>{#each r.upstreamRoles as role, i (role)}{#if i}{" "}{/if}<Chip label={roleLabel(role) as string} tone="muted" title={PATTERNS[role].summary} />{/each}</td>
+						<td>{#each r.downstreamRoles as role, i (role)}{#if i}{" "}{/if}<Chip label={roleLabel(role) as string} tone="muted" title={PATTERNS[role].summary} />{/each}</td>
 						{#if withEvidence}<td><DispositionChip disposition={entry.sheet?.disposition} /></td>{/if}
 					</tr>
 					{#if withEvidence && expanded === entry.key}

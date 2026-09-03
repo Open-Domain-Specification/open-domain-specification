@@ -67,6 +67,14 @@ Open-host service for /store/order endpoints
 | Fulfilment BC | Order lifecycle and shipment lifecycle are designed and released together | partnership | - | - |
 | Identity BC | Orders are anonymous in Petstore v3; no integration by design | separate-ways | - | - |
 
+- `open-host-service` — **Open Host Service** (OHS). A public, stable protocol or API provided by an upstream context.
+- `anti-corruption-layer` — **Anti-Corruption Layer** (ACL). A translating boundary isolating a downstream model from external concepts.
+- `conformist` — **Conformist** (CF). Downstream adopts the upstream domain model without translation.
+- `published-language` — **Published Language** (PL). A well-documented shared interchange format.
+- `upstream-downstream` — **Upstream/Downstream** (U/D). One context depends on another; the upstream does not plan around the downstream.
+- `customer-supplier` — **Customer/Supplier** (C/S). Upstream plans for and prioritizes downstream requirements.
+- `partnership` — **Partnership** (P). Mutual co-operation where teams coordinate development and releases.
+- `separate-ways` — **Separate Ways** (SW). A deliberate decision to forego integration and develop independently.
 
 ## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |

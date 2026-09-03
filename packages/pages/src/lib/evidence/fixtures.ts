@@ -3,8 +3,8 @@ import {
 	type ContextRelationship,
 	Workspace,
 } from "@open-domain-specification/core";
-import type { Model } from "../model";
 import { petstoreModel } from "../fixtures";
+import type { Model } from "../model";
 
 /**
  * Provisional evidence types for the RFC-002 Storybook designs.
@@ -66,31 +66,6 @@ export const sheetForRef = (
 	sheets: CommentSheetIndex,
 	ref: string,
 ): CommentSheet | undefined => sheets[ref];
-
-/**
- * What each pattern means, in one line, for the hover summaries. A stand-in
- * for the `PATTERNS` knowledge base that card C moves into core; keys are the
- * core enum values so the move is a swap of this map for that one.
- */
-export const PATTERN_SUMMARIES: Record<string, string> = {
-	"upstream-downstream":
-		"Upstream changes flow downstream; the downstream side has no say in them.",
-	"customer-supplier":
-		"The downstream side is a customer whose needs the upstream side plans for.",
-	partnership:
-		"Two teams succeed or fail together and coordinate every release.",
-	"shared-kernel":
-		"A shared subset of the model, changed only by agreement of both sides.",
-	"separate-ways": "No integration at all; each side solves the problem alone.",
-	"open-host-service":
-		"The upstream side publishes a stable service contract for all comers.",
-	"published-language":
-		"The upstream side publishes a shared interchange format for its messages.",
-	conformist:
-		"The downstream side adopts the upstream model as-is and does not translate.",
-	"anti-corruption-layer":
-		"The downstream side translates at the boundary to keep its own model clean.",
-};
 
 /** What each disposition claims, for the chip's tooltip. */
 export const DISPOSITION_SUMMARIES: Record<Disposition, string> = {

@@ -1,5 +1,6 @@
 import {
 	type ContextRelationship,
+	PATTERNS,
 	Workspace,
 } from "@open-domain-specification/core";
 import { render, screen, within } from "@testing-library/svelte";
@@ -34,7 +35,7 @@ describe("RelationshipDetail", () => {
 		expect(heading).toHaveTextContent("Catalog BC ↔ Inventory BC");
 		expect(within(container).getByText("shared-kernel")).toHaveAttribute(
 			"title",
-			"A shared subset of the model, changed only by agreement of both sides.",
+			PATTERNS["shared-kernel"].summary,
 		);
 		expect(screen.getByText("refactor")).toHaveClass("warn");
 	});
@@ -48,9 +49,7 @@ describe("RelationshipDetail", () => {
 		expect(screen.getByText("downstream")).toBeInTheDocument();
 		expect(screen.getByText("open-host-service")).toBeInTheDocument();
 		expect(
-			screen.getByText(
-				"The downstream side translates at the boundary to keep its own model clean.",
-			),
+			screen.getByText(PATTERNS["anti-corruption-layer"].summary),
 		).toBeInTheDocument();
 	});
 
@@ -59,9 +58,7 @@ describe("RelationshipDetail", () => {
 		expect(container.querySelectorAll(".patterns")).toHaveLength(0);
 		expect(screen.getAllByText("participant")).toHaveLength(2);
 		expect(
-			screen.getAllByText(
-				"Two teams succeed or fail together and coordinate every release.",
-			).length,
+			screen.getAllByText(PATTERNS.partnership.summary).length,
 		).toBeGreaterThan(0);
 	});
 

@@ -1,16 +1,14 @@
 <script lang="ts">
+import { PATTERNS } from "@open-domain-specification/core";
 import Chip from "../atoms/Chip.svelte";
 import DispositionChip from "../atoms/DispositionChip.svelte";
 import Empty from "../atoms/Empty.svelte";
 import RefLink from "../atoms/RefLink.svelte";
 import { type EvidenceRow, health } from "../evidence/derive";
-import {
-	type CommentSheetIndex,
-	PATTERN_SUMMARIES,
-} from "../evidence/fixtures";
+import type { CommentSheetIndex } from "../evidence/fixtures";
 import { isSymmetricRelationship } from "../flow/graph";
-import CommentList from "../molecules/CommentList.svelte";
 import { ICONS, useModel } from "../model";
+import CommentList from "../molecules/CommentList.svelte";
 
 /**
  * The workspace read of the evidence layer (RFC-002 section 4.5): what is
@@ -91,7 +89,7 @@ const noFactsLabel = $derived(`No comments (${report.noFacts.length})`);
 			<RefLink ref={r.source.ref} label={r.source.name} icon={ICONS.boundedcontext} />
 			<span class="arrow">{isSymmetricRelationship(r.type) ? "↔" : "→"}</span>
 			<RefLink ref={r.target.ref} label={r.target.name} icon={ICONS.boundedcontext} />
-			<Chip label={r.type} tone="muted" title={PATTERN_SUMMARIES[r.type]} />
+			<Chip label={r.type} tone="muted" title={PATTERNS[r.type].summary} />
 			<DispositionChip disposition={entry.sheet?.disposition} />
 		</div>
 		<CommentList comments={entry.sheet?.comments ?? []} empty="Nothing written down yet." />

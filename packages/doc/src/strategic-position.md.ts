@@ -1,4 +1,5 @@
 import type { BoundedContext, ContextRelationship } from "@open-domain-specification/core";
+import { patternNotesMd } from "./context-relationships.md";
 import { markdownTable } from "./lib/markdown-table";
 
 /** Relationship types with no upstream or downstream side (RFC-002 section 4.1). */
@@ -52,6 +53,13 @@ export const strategicPositionMd = (boundedcontext: BoundedContext): string => {
 		group("Depended on by", dependedOnBy, boundedcontext),
 		group("Works alongside", worksAlongside, boundedcontext),
 	].filter(Boolean);
+	if (!sections.length) return "> No explicit relationships.";
 
-	return sections.length ? sections.join("\n") : "> No explicit relationships.";
+	// Footnote what the type and role columns above mean, in core's words.
+	const used = mine.flatMap((r) => [
+		r.type,
+		...r.upstreamRoles,
+		...r.downstreamRoles,
+	]);
+	return [sections.join("\n"), patternNotesMd(used)].filter(Boolean).join("\n");
 };

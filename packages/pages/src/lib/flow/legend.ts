@@ -1,13 +1,4 @@
-import type {
-	ContextRelationshipType,
-	DownstreamRole,
-	UpstreamRole,
-} from "@open-domain-specification/core";
-import {
-	DOWNSTREAM_ROLE_LABELS,
-	RELATIONSHIP_LABELS,
-	UPSTREAM_ROLE_LABELS,
-} from "@open-domain-specification/graphviz";
+import { PATTERNS, type PatternNature } from "@open-domain-specification/core";
 import type { ConsumableNodeData } from "./consumable-graph";
 import type { ContextNodeData } from "./context-graph";
 import type { Graph } from "./graph";
@@ -21,36 +12,18 @@ import { roleLabel } from "./roles";
  */
 export type LegendEntry = { mark: string; name: string };
 
-/** Full names behind the abbreviations the label tables produce. */
-const ROLE_NAMES: Record<UpstreamRole | DownstreamRole, string> = {
-	"open-host-service": "Open host service",
-	"published-language": "Published language",
-	conformist: "Conformist",
-	"anti-corruption-layer": "Anti-corruption layer",
-};
-const STEREOTYPE_NAMES: Record<ContextRelationshipType, string> = {
-	"upstream-downstream": "Upstream/downstream",
-	"customer-supplier": "Customer/supplier",
-	partnership: "Partnership",
-	"shared-kernel": "Shared kernel",
-	"separate-ways": "Separate ways",
-};
+/** Mark to full name for the patterns of the given categories, from core's knowledge base. */
+const marksOf = (...categories: PatternNature["category"][]) =>
+	new Map(
+		Object.values(PATTERNS)
+			.filter((p) => categories.includes(p.category))
+			.map((p) => [p.abbreviation, p.name]),
+	);
 
-/** Abbreviation to full name for every role, from the graphviz label tables. */
-const ROLES = new Map(
-	(
-		Object.entries({
-			...UPSTREAM_ROLE_LABELS,
-			...DOWNSTREAM_ROLE_LABELS,
-		}) as [UpstreamRole | DownstreamRole, string][]
-	).map(([role, label]) => [label, ROLE_NAMES[role]]),
-);
-/** Stereotype label to full name, from the graphviz label table. */
-const STEREOTYPES = new Map(
-	(
-		Object.entries(RELATIONSHIP_LABELS) as [ContextRelationshipType, string][]
-	).map(([type, label]) => [label, STEREOTYPE_NAMES[type]]),
-);
+/** Abbreviation to full name for every role a context end can play. */
+const ROLES = marksOf("upstream-role", "downstream-role");
+/** Stereotype mark to full name for every relationship type. */
+const STEREOTYPES = marksOf("relationship");
 
 /** Every "+"-joined end label of the edges, split into single abbreviations, in first-seen order. */
 function endLabels(graph: Graph): string[] {
