@@ -1,14 +1,12 @@
-import type { BoundedContext } from "@open-domain-specification/core";
-import { render } from "@testing-library/svelte";
+import { fireEvent, render, within } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
+import { petstoreSales } from "../fixtures";
 import Harness from "../Page.harness.svelte";
-import { petstoreModel } from "../fixtures";
 
-const model = petstoreModel();
-const sales = model.workspace.boundedcontexts.get("sales_bc") as BoundedContext;
+const { model, context: sales } = petstoreSales();
 
 describe("ContextPage strategic position", () => {
-	it("renders the grouped strategic position table with a description column, and no evidence chrome", () => {
+	it("renders the grouped strategic position table with a description column", () => {
 		const { container } = render(Harness, { model, ref: sales.ref });
 		const headings = [...container.querySelectorAll("tr.group th")].map(
 			(th) => th.textContent,
@@ -19,16 +17,36 @@ describe("ContextPage strategic position", () => {
 			"Works alongside",
 		]);
 		expect(
-			[...container.querySelectorAll("table.strategic-position .description")]
-				.some((td) => td.textContent && td.textContent.trim().length > 0),
+			[
+				...container.querySelectorAll("table.strategic-position .description"),
+			].some((td) => td.textContent && td.textContent.trim().length > 0),
 		).toBe(true);
-		// No sheets are supplied yet, so the toggle and disposition columns
-		// (and any expandable detail) are left out entirely.
-		expect(container.querySelector("td.toggle")).toBeNull();
+	});
+
+	it("discloses the evidence the petstore records, and expands a row in place", async () => {
+		const { container } = render(Harness, { model, ref: sales.ref });
 		expect(
 			[...container.querySelectorAll("table.strategic-position th")].some(
 				(th) => th.textContent === "Disposition",
 			),
-		).toBe(false);
+		).toBe(true);
+		// Sales → Inventory is the one Sales relationship not by design.
+		expect(
+			[...container.querySelectorAll("tr.position .chip")].map(
+				(c) => c.textContent,
+			),
+		).toContain("tolerated");
+
+		const toggle = within(container).getByRole("button", {
+			name: "Evidence for Catalog BC and Sales BC",
+		});
+		await fireEvent.click(toggle);
+		const detail = container.querySelector(".detail-row") as HTMLElement;
+		expect(
+			within(detail).getByRole("heading", { name: /Catalog BC → Sales BC/ }),
+		).toBeInTheDocument();
+		expect(
+			within(detail).getByText(/Sales reads Catalog through PetSummaryClient/),
+		).toBeInTheDocument();
 	});
 });

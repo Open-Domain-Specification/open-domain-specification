@@ -1,5 +1,5 @@
 <script module lang="ts">
-import type { Disposition } from "./fixtures";
+import type { Disposition } from "@open-domain-specification/core";
 
 /** What an evidence-aware context edge needs beyond the shipped edge's data. */
 export type DispositionEdgeData = {

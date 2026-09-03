@@ -1,4 +1,7 @@
-import { Workspace } from "@open-domain-specification/core";
+import {
+	type BoundedContext,
+	Workspace,
+} from "@open-domain-specification/core";
 import northbank from "../../../../models/northbank/.ods/northbank.json";
 import petstore from "../../../../models/petstore/.ods/petstore.json";
 import rivermart from "../../../../models/rivermart/.ods/rivermart.json";
@@ -14,6 +17,20 @@ export function petstoreModel(): Model {
 		workspace,
 		fileLabel: "petstore.json",
 		diagnostics: workspace.validate(),
+	};
+}
+
+/**
+ * The petstore seen from Sales, which every evidence surface uses: Sales is
+ * the one context that touches all four others, so its strategic position
+ * fills each of the three groups and shows a marked relationship, a silent
+ * one and a well-evidenced one at once.
+ */
+export function petstoreSales(): { model: Model; context: BoundedContext } {
+	const model = petstoreModel();
+	return {
+		model,
+		context: model.workspace.boundedcontexts.get("sales_bc") as BoundedContext,
 	};
 }
 

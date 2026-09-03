@@ -46,7 +46,11 @@ function buildStorybook() {
 	const result = spawnSync(
 		"npx",
 		["storybook", "build", "-o", "storybook-static"],
-		{ cwd: join(__dirname, ".."), stdio: "inherit", shell: process.platform === "win32" },
+		{
+			cwd: join(__dirname, ".."),
+			stdio: "inherit",
+			shell: process.platform === "win32",
+		},
 	);
 	if (result.status !== 0)
 		throw new Error(`storybook build failed with status ${result.status}`);

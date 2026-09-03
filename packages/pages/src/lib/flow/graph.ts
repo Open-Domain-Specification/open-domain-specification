@@ -92,11 +92,7 @@ export const groupPathOf = (ns: { name: string }[]) =>
 		.map((n) => n.name)
 		.join(" / ") || undefined;
 
-const SYMMETRIC = new Set(["partnership", "shared-kernel", "separate-ways"]);
-
-/** Relationship types with no upstream or downstream side. */
-export const isSymmetricRelationship = (type: string) => SYMMETRIC.has(type);
-
+export { isSymmetricRelationship } from "../relationship";
 export { consumableGraph } from "./consumable-graph";
 export { contextGraph } from "./context-graph";
 export { relationGraph } from "./relation-graph";

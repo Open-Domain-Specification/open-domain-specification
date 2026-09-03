@@ -1,9 +1,10 @@
 <script lang="ts">
+import type { Disposition } from "@open-domain-specification/core";
 import { Panel } from "@xyflow/svelte";
 import type { Graph } from "../flow/graph";
 import type { DiagramKind } from "../flow/kind";
 import { legendEntries } from "../flow/legend";
-import { type Disposition, DISPOSITION_SUMMARIES } from "./fixtures";
+import { DISPOSITION_SUMMARIES } from "./labels";
 
 /**
  * The diagram legend with one extra row per disposition mark the map draws

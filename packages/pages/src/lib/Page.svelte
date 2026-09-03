@@ -3,6 +3,7 @@ import {
 	Aggregate,
 	BoundedContext,
 	Consumable,
+	ContextRelationship,
 	DataSchema,
 	Domain,
 	Entity,
@@ -39,6 +40,9 @@ import InvariantPage, {
 import PolicyPage, {
 	sections as policySections,
 } from "./templates/PolicyPage.svelte";
+import RelationshipPage, {
+	sections as relationshipSections,
+} from "./templates/RelationshipPage.svelte";
 import SchemaPage, {
 	sections as schemaSections,
 } from "./templates/SchemaPage.svelte";
@@ -107,6 +111,8 @@ $effect(() => {
 			<main><TermPage term={target} /></main><Toc sections={termSections} />
 		{:else if target instanceof Consumable}
 			<main><ConsumablePage consumable={target} /></main><Toc sections={consumableSections(target)} />
+		{:else if target instanceof ContextRelationship}
+			<main><RelationshipPage relationship={target} /></main><Toc sections={relationshipSections} />
 		{:else if target instanceof Team}
 			<main><TeamPage team={target} /></main><Toc sections={teamSections} />
 		{:else}

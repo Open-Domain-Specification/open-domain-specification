@@ -1,14 +1,14 @@
 import { ODSContextMap } from "@open-domain-specification/core";
 import { render } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
+import { petstoreModel } from "../fixtures";
 import { contextGraph } from "../flow/graph";
 import { installXyflowTestEnv } from "../xyflow-test-env";
 import Harness from "./DispositionLegend.harness.svelte";
-import { petstoreEvidence } from "./fixtures";
 
 installXyflowTestEnv();
 
-const { model } = petstoreEvidence();
+const model = petstoreModel();
 const graph = contextGraph(ODSContextMap.fromWorkspace(model.workspace));
 const terms = (c: Element) =>
 	[...c.querySelectorAll("dt")].map((dt) => dt.textContent);

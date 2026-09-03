@@ -10,6 +10,7 @@ export const sectionsFor = (c: Consumable) => {
 			: { id: "raises", label: "Raises" },
 		{ id: "policies", label: isEvent ? "Reacted to by" : "Issued by" },
 		{ id: "consumers", label: "Consumed by" },
+		{ id: "comments", label: "Comments" },
 		{ id: "language", label: "Language" },
 	];
 };
@@ -17,10 +18,12 @@ export const sectionsFor = (c: Consumable) => {
 
 <script lang="ts">
 	import Dim from "../atoms/Dim.svelte";
+	import DispositionChip from "../atoms/DispositionChip.svelte";
 	import Empty from "../atoms/Empty.svelte";
 	import RefLink from "../atoms/RefLink.svelte";
 	import AttributeTable from "../molecules/AttributeTable.svelte";
 	import Card from "../molecules/Card.svelte";
+	import CommentList from "../molecules/CommentList.svelte";
 	import ConsumableChips from "../molecules/ConsumableChips.svelte";
 	import ConsumesTable from "../molecules/ConsumesTable.svelte";
 	import Fact from "../molecules/Fact.svelte";
@@ -43,7 +46,7 @@ export const sectionsFor = (c: Consumable) => {
 </script>
 
 <PageHeader kind={isEvent ? "Event" : "Operation"} icon={consumableIcon(c)} name={c.name} id={c.id} description={c.description} {crumbs}>
-	{#snippet meta()}<ConsumableChips consumable={c} />{/snippet}
+	{#snippet meta()}<ConsumableChips consumable={c} /><DispositionChip disposition={c.disposition} />{/snippet}
 	{#snippet facts()}
 		<Fact label="Provided by"><RefLink ref={provider.ref} label={provider.name} icon={"entities" in provider ? ICONS.aggregate : ICONS.service} /></Fact>
 		<Fact label="Payload">{#if c.schema}<RefLink ref={c.schema.ref} label={c.schema.name} icon={ICONS.schema} />{:else}<Dim>no schema</Dim>{/if}</Fact>
@@ -106,6 +109,14 @@ export const sectionsFor = (c: Consumable) => {
 		: "Downstream consumers and how each protects its model from this upstream."}
 >
 	{#if c.internal}<Empty text="Internal to the context." />{:else}<ConsumesTable consumptions={c.consumptions} />{/if}
+</Section>
+
+<Section
+	id="comments"
+	title="Comments"
+	lead="What is known about the real system behind this consumable, each statement backed by what it was read from."
+>
+	<CommentList comments={c.comments} empty="No comments recorded for this consumable yet." />
 </Section>
 
 <LanguageSection target={c} />

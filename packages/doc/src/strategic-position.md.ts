@@ -1,4 +1,8 @@
-import type { BoundedContext, ContextRelationship } from "@open-domain-specification/core";
+import type {
+	BoundedContext,
+	ContextRelationship,
+} from "@open-domain-specification/core";
+import { commentsMd } from "./comments.md";
 import { patternNotesMd } from "./context-relationships.md";
 import { markdownTable } from "./lib/markdown-table";
 
@@ -26,10 +30,32 @@ const HEADERS = [
 	"Downstream Roles",
 ];
 
-const group = (label: string, rows: ContextRelationship[], bc: BoundedContext) =>
-	rows.length
-		? `### ${label}\n${markdownTable(HEADERS, rows.map((r) => row(r, bc)))}`
-		: "";
+/**
+ * The counterpart names which row a comment bullet belongs to, and the type
+ * tells two relationships between the same pair of contexts apart.
+ */
+const commentTitle = (r: ContextRelationship, bc: BoundedContext) =>
+	`**${counterpartOf(r, bc).name}** (${r.type})`;
+
+const group = (
+	label: string,
+	rows: ContextRelationship[],
+	bc: BoundedContext,
+) => {
+	if (!rows.length) return "";
+	const table = markdownTable(
+		HEADERS,
+		rows.map((r) => row(r, bc)),
+	);
+	const comments = rows
+		.map((r) => commentsMd(commentTitle(r, bc), r.comments))
+		.filter(Boolean)
+		.join("\n");
+	// The trailing blank line keeps the next group's `###` off the last bullet.
+	return [`### ${label}`, table, comments && `${comments}\n`]
+		.filter(Boolean)
+		.join("\n");
+};
 
 /**
  * The strategic position of one context (RFC-002 section 4.1), grouped the

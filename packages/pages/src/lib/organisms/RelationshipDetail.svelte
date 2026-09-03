@@ -8,21 +8,13 @@ import DispositionChip from "../atoms/DispositionChip.svelte";
 import Empty from "../atoms/Empty.svelte";
 import Markdown from "../atoms/Markdown.svelte";
 import RefLink from "../atoms/RefLink.svelte";
-import {
-	crossingConsumables,
-	dispositionOf,
-	relationshipLinks,
-} from "../evidence/derive";
-import {
-	type CommentSheetIndex,
-	LINK_KIND_LABELS,
-	sheetForRelationship,
-} from "../evidence/fixtures";
-import { isSymmetricRelationship } from "../flow/graph";
+import { crossingConsumables, relationshipLinks } from "../evidence/derive";
+import { LINK_KIND_LABELS } from "../evidence/labels";
 import { roleLabel } from "../flow/roles";
 import { consumableIcon, ICONS, useModel } from "../model";
 import Card from "../molecules/Card.svelte";
 import CommentList from "../molecules/CommentList.svelte";
+import { isSymmetricRelationship, relationshipTitle } from "../relationship";
 
 /**
  * Everything known about one context relationship, intent and evidence
@@ -33,23 +25,17 @@ import CommentList from "../molecules/CommentList.svelte";
  */
 const {
 	relationship: r,
-	sheets,
 	heading = "h3",
 }: {
 	relationship: ContextRelationship;
-	sheets: CommentSheetIndex;
 	heading?: "h1" | "h3";
 } = $props();
 
 const model = useModel();
-const sheet = $derived(sheetForRelationship(sheets, r));
 const symmetric = $derived(isSymmetricRelationship(r.type));
-const crossings = $derived(crossingConsumables(r, model.workspace, sheets));
-const links = $derived(relationshipLinks(sheet, crossings));
-/** An arrow for a directed relationship, a double one where neither side leads. */
-const title = $derived(
-	`${r.source.name} ${symmetric ? "↔" : "→"} ${r.target.name}`,
-);
+const crossings = $derived(crossingConsumables(r, model.workspace));
+const links = $derived(relationshipLinks(r, crossings));
+const title = $derived(relationshipTitle(r));
 /** One card per side; a symmetric relationship gives neither side a role. */
 const sides = $derived([
 	{ context: r.source, roles: r.upstreamRoles, side: "Upstream" },
@@ -61,7 +47,7 @@ const sides = $derived([
 	<header>
 		<svelte:element this={heading} class="title">{title}</svelte:element>
 		<Chip label={r.type} tone="muted" title={PATTERNS[r.type].summary} />
-		<DispositionChip disposition={sheet?.disposition} />
+		<DispositionChip disposition={r.disposition} />
 	</header>
 
 	{#if r.description}
@@ -70,75 +56,90 @@ const sides = $derived([
 		<Empty text="No description on this relationship." />
 	{/if}
 
-	<h4>Roles</h4>
-	<div class="sides">
-		{#each sides as s (s.side)}
-			<Card ref={s.context.ref} name={s.context.name} icon={ICONS.boundedcontext}>
-				{#snippet meta()}
-					<Chip label={symmetric ? "participant" : s.side.toLowerCase()} tone="muted" />
-				{/snippet}
-				{#if s.roles.length}
-					<ul class="patterns">
-						{#each s.roles as role (role)}
-							<li>
-								<Chip label={roleLabel(role) as string} tone="muted" title={role} />
-								<span class="pattern-name">{role}</span>
-								<span class="pattern-summary">{PATTERNS[role].summary}</span>
-							</li>
-						{/each}
-					</ul>
-				{:else}
-					<p class="pattern-summary">{PATTERNS[r.type].summary}</p>
-				{/if}
-			</Card>
-		{/each}
-	</div>
-
-	<h4>Comments</h4>
-	<CommentList
-		comments={sheet?.comments ?? []}
-		empty="No comments recorded for this relationship yet."
-	/>
-
-	<h4>Consumables crossing this boundary</h4>
-	{#if crossings.length}
-		<table class="crossings">
-			<thead><tr><th>Consumable</th><th>Pattern</th><th>Consumed by</th><th></th></tr></thead>
-			<tbody>
-				{#each crossings as c (c.consumable.ref + c.consumption.consumer.ref)}
-					<tr>
-						<td><RefLink ref={c.consumable.ref} label={c.consumable.name} icon={consumableIcon(c.consumable)} /></td>
-						<td>
-							{#if c.consumable.pattern}
-								<Chip label={roleLabel(c.consumable.pattern) as string} tone="muted" title={PATTERNS[c.consumable.pattern].summary} />
-							{/if}
-							{#if c.consumption.pattern}
-								<Chip label={roleLabel(c.consumption.pattern) as string} tone="muted" title={PATTERNS[c.consumption.pattern].summary} />
-							{/if}
-						</td>
-						<td><RefLink ref={c.consumption.consumer.ref} label={c.consumption.consumer.name} /></td>
-						<td><DispositionChip disposition={c.sheet?.disposition} /></td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	{:else}
-		<Empty text="Nothing crosses this boundary; the relationship is strategic only." />
-	{/if}
-
-	<h4>Links</h4>
-	{#if links.length}
-		<ul class="links">
-			{#each links as link (link.url)}
-				<li>
-					<span class="kind">{LINK_KIND_LABELS[link.kind]}</span>
-					<a href={link.url} rel="external noreferrer">{link.label ?? link.url}</a>
-				</li>
+	<section id="roles">
+		<h4>Roles</h4>
+		<!-- Neither side of a symmetric relationship plays a role, so the pattern
+		     is stated once above both contexts rather than twice inside them. -->
+		{#if symmetric}
+			<p class="pattern-summary">{PATTERNS[r.type].summary}</p>
+		{/if}
+		<div class="sides">
+			{#each sides as s (s.side)}
+				<Card ref={s.context.ref} name={s.context.name} icon={ICONS.boundedcontext}>
+					{#snippet meta()}
+						{#if !symmetric}<Chip label={s.side.toLowerCase()} tone="muted" />{/if}
+					{/snippet}
+					{#if !symmetric}
+						{#if s.roles.length}
+							<ul class="patterns">
+								{#each s.roles as role (role)}
+									<li>
+										<Chip label={roleLabel(role) as string} tone="muted" title={role} />
+										<span class="pattern-name">{role}</span>
+										<span class="pattern-summary">{PATTERNS[role].summary}</span>
+									</li>
+								{/each}
+							</ul>
+						{:else}
+							<p class="pattern-summary">{PATTERNS[r.type].summary}</p>
+						{/if}
+					{/if}
+				</Card>
 			{/each}
-		</ul>
-	{:else}
-		<Empty text="No links yet. The skill's reconciliation pass fills these in." />
-	{/if}
+		</div>
+	</section>
+
+	<section id="comments">
+		<h4>Comments</h4>
+		<CommentList
+			comments={r.comments}
+			empty="No comments recorded for this relationship yet."
+		/>
+	</section>
+
+	<section id="crossings">
+		<h4>Consumables crossing this boundary</h4>
+		{#if crossings.length}
+			<table class="crossings">
+				<thead><tr><th>Consumable</th><th>Pattern</th><th>Consumed by</th><th></th></tr></thead>
+				<tbody>
+					{#each crossings as c (c.consumable.ref + c.consumption.consumer.ref)}
+						<tr>
+							<td><RefLink ref={c.consumable.ref} label={c.consumable.name} icon={consumableIcon(c.consumable)} /></td>
+							<td>
+								{#if c.consumable.pattern}
+									<Chip label={roleLabel(c.consumable.pattern) as string} tone="muted" title={PATTERNS[c.consumable.pattern].summary} />
+								{/if}
+								{#if c.consumption.pattern}
+									<Chip label={roleLabel(c.consumption.pattern) as string} tone="muted" title={PATTERNS[c.consumption.pattern].summary} />
+								{/if}
+							</td>
+							<td><RefLink ref={c.consumption.consumer.ref} label={c.consumption.consumer.name} /></td>
+							<td><DispositionChip disposition={c.consumable.disposition} /></td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		{:else}
+			<Empty text="Nothing crosses this boundary; the relationship is strategic only." />
+		{/if}
+	</section>
+
+	<section id="links">
+		<h4>Links</h4>
+		{#if links.length}
+			<ul class="links">
+				{#each links as link (link.url)}
+					<li>
+						<span class="kind">{LINK_KIND_LABELS[link.kind]}</span>
+						<a href={link.url} rel="external noreferrer">{link.label ?? link.url}</a>
+					</li>
+				{/each}
+			</ul>
+		{:else}
+			<Empty text="No links yet. The skill's reconciliation pass fills these in." />
+		{/if}
+	</section>
 </article>
 
 <style>
@@ -158,6 +159,12 @@ const sides = $derived([
 	.title {
 		margin: 0;
 		font-size: 1.1em;
+	}
+	/* Each block is a section so the standalone page can link to it, but the
+	   detail stays compact: the page-wide 40px section gap would tear it apart,
+	   inside a table row above all. */
+	.relationship-detail section {
+		margin: 0;
 	}
 	h4 {
 		margin: 12px 0 4px;

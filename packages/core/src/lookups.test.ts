@@ -209,3 +209,45 @@ describe("Workspace ref lookups", () => {
 		).toBeUndefined();
 	});
 });
+
+describe("relationship refs", () => {
+	const { ws, orderingBc, reportingBc } = makeRichTestWs();
+
+	it("names a relationship by its two contexts and the pattern joining them", () => {
+		const relationship = ws.addRelationship({
+			type: "shared-kernel",
+			participants: [orderingBc, reportingBc],
+		});
+		expect(relationship.ref).toBe(
+			`#/relationships/${orderingBc.id}~shared-kernel~${reportingBc.id}`,
+		);
+		expect(relationship.path).toBe(relationship.ref.slice(2));
+	});
+
+	it("resolves a relationship ref back to the relationship", () => {
+		const relationship = ws.addRelationship({
+			type: "separate-ways",
+			participants: [orderingBc, reportingBc],
+		});
+		expect(ws.findRelationship(relationship.ref)).toBe(relationship);
+		expect(ws.findRelationship("#/relationships/nope~partnership~nope")).toBe(
+			undefined,
+		);
+	});
+
+	it("tells two relationships between the same pair apart by their type", () => {
+		const supplier = ws.addRelationship({
+			type: "customer-supplier",
+			upstream: orderingBc,
+			downstream: reportingBc,
+		});
+		const stream = ws.addRelationship({
+			type: "upstream-downstream",
+			upstream: orderingBc,
+			downstream: reportingBc,
+		});
+		expect(supplier.ref).not.toBe(stream.ref);
+		expect(ws.findRelationship(supplier.ref)).toBe(supplier);
+		expect(ws.findRelationship(stream.ref)).toBe(stream);
+	});
+});

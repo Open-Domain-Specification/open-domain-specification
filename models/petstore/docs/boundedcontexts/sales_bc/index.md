@@ -56,10 +56,17 @@ Open-host service for /store/order endpoints
 | --- | --- | --- | --- | --- |
 | Catalog BC | Sales needs pet availability; Catalog commits to the summary contract | customer-supplier | open-host-service | anti-corruption-layer |
 
+- **Catalog BC** (customer-supplier)
+	- Sales reads Catalog through PetSummaryClient, which maps the catalog payload onto the Sales order model. [sales/acl/PetSummaryClient.ts](https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts)
+	- The summary contract is versioned and published; Catalog will not break it without a major release. [catalog/openapi.yaml](https://github.com/example/petstore/blob/main/catalog/openapi.yaml)
+
 ### Depended on by
 | With | Description | Type | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |
 | Inventory BC | The projection counts orders as Sales reports them | upstream-downstream | published-language | conformist |
+
+- **Inventory BC** (upstream-downstream)
+	- The projection conforms to the Sales order events rather than translating them; accepted while Inventory stays read-only. [inventory/projection/OrderEventHandler.ts](https://github.com/example/petstore/blob/main/inventory/projection/OrderEventHandler.ts)
 
 ### Works alongside
 | With | Description | Type | Upstream Roles | Downstream Roles |

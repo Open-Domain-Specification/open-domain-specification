@@ -1,6 +1,7 @@
 <script lang="ts">
 import {
 	type ContextRelationship,
+	dispositionOf,
 	ODSContextMap,
 	PATTERNS,
 } from "@open-domain-specification/core";
@@ -26,8 +27,6 @@ import DispositionEdge, {
 	type DispositionEdgeData,
 } from "./DispositionEdge.svelte";
 import DispositionLegend from "./DispositionLegend.svelte";
-import { dispositionOf } from "./derive";
-import { type CommentSheetIndex, sheetForRelationship } from "./fixtures";
 
 /**
  * The context map of RFC-002 section 4.2, wired for Storybook: disposition
@@ -39,8 +38,6 @@ import { type CommentSheetIndex, sheetForRelationship } from "./fixtures";
  * shipped diagram draws from the shared edge registry and nothing here may
  * change what shipped pages render.
  */
-const { sheets }: { sheets: CommentSheetIndex } = $props();
-
 const model = useModel();
 const graph = $derived(
 	contextGraph(ODSContextMap.fromWorkspace(model.workspace)),
@@ -56,13 +53,11 @@ const relationshipFor = (edge: Edge): ContextRelationship | undefined =>
 	);
 
 /** The hover line for a badge: what the pattern means, then what we know. */
-const summaryFor = (r: ContextRelationship) => {
-	const sheet = sheetForRelationship(sheets, r);
-	const first = sheet?.comments[0]?.text;
-	return [PATTERNS[r.type].summary, first ?? "No comments recorded yet."].join(
-		" ",
-	);
-};
+const summaryFor = (r: ContextRelationship) =>
+	[
+		PATTERNS[r.type].summary,
+		r.comments[0]?.text ?? "No comments recorded yet.",
+	].join(" ");
 
 let open = $state<{ r: ContextRelationship; x: number; y: number } | undefined>(
 	undefined,
@@ -81,7 +76,7 @@ $effect(() => {
 		if (!r) return edge;
 		const data: DispositionEdgeData = {
 			...(edge.data as DispositionEdgeData),
-			disposition: dispositionOf(sheetForRelationship(sheets, r)),
+			disposition: dispositionOf(r),
 			summary: summaryFor(r),
 			onBadgeClick: (at) => {
 				open = { r, x: at.x, y: at.y };
@@ -91,9 +86,7 @@ $effect(() => {
 	});
 });
 const dispositions = $derived(
-	model.workspace.relationships.map((r) =>
-		dispositionOf(sheetForRelationship(sheets, r)),
-	),
+	model.workspace.relationships.map((r) => dispositionOf(r)),
 );
 </script>
 
@@ -120,7 +113,7 @@ const dispositions = $derived(
 					<button class="close" type="button" aria-label="Close" onclick={() => { open = undefined; }}>
 						<i class="codicon codicon-close"></i>
 					</button>
-					<RelationshipDetail relationship={open.r} {sheets} />
+					<RelationshipDetail relationship={open.r} />
 				</div>
 			</ViewportPortal>
 		{/if}

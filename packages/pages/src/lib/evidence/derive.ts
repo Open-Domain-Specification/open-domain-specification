@@ -1,39 +1,29 @@
 import type {
 	BoundedContext,
+	CommentLink,
 	Consumable,
 	Consumption,
 	ContextRelationship,
 	Workspace,
 } from "@open-domain-specification/core";
-import { isSymmetricRelationship } from "../flow/graph";
-import {
-	type Disposition,
-	type CommentLink,
-	type CommentSheet,
-	type CommentSheetIndex,
-	relationshipKey,
-	sheetForRef,
-	sheetForRelationship,
-} from "./fixtures";
+import { dispositionOf } from "@open-domain-specification/core";
+import { isSymmetricRelationship } from "../relationship";
 
-/** One relationship with whatever the fixture overlay says about it. */
-export type EvidenceRow = {
-	/** Stable per row, so an expanded row survives a re-render. */
-	key: string;
-	relationship: ContextRelationship;
-	sheet?: CommentSheet;
-};
+/** One relationship, with a key of its own so an expanded row survives a re-render. */
+export type EvidenceRow = { key: string; relationship: ContextRelationship };
 
 /** A named block of rows: one of the three strategic-position groups. */
 export type RowGroup = { id: string; label: string; rows: EvidenceRow[] };
 
-/** The disposition a sheet claims, defaulting to by-design when unset. */
-export const dispositionOf = (sheet?: CommentSheet): Disposition =>
-	sheet?.disposition ?? "by-design";
+/**
+ * Whether a relationship has anything the evidence surfaces can disclose:
+ * something written down, or a disposition other than the by-design default.
+ */
+export const hasEvidence = (r: ContextRelationship): boolean =>
+	r.comments.length > 0 || dispositionOf(r) !== "by-design";
 
 /** A relationship the reader can act on: it is either marked or unexplained. */
-const hasNoFacts = (sheet?: CommentSheet) =>
-	!sheet || sheet.comments.length === 0;
+const hasNoComments = (r: ContextRelationship) => r.comments.length === 0;
 
 /** The context on the other side of a relationship from `bc`. */
 export const counterpartOf = (
@@ -41,16 +31,11 @@ export const counterpartOf = (
 	bc: BoundedContext,
 ): BoundedContext => (r.source === bc ? r.target : r.source);
 
-const row = (
-	r: ContextRelationship,
-	sheets: CommentSheetIndex,
-	index: number,
-): EvidenceRow => ({
-	// Indexed as well as keyed: two contexts can hold more than one
-	// relationship, and a row still needs an identity of its own.
-	key: `${index}:${relationshipKey(r)}`,
+const row = (r: ContextRelationship, index: number): EvidenceRow => ({
+	// Indexed as well as referenced: a workspace loaded from a hand-edited file
+	// can hold the same relationship twice, and a row still needs an identity.
+	key: `${index}:${r.ref}`,
 	relationship: r,
-	sheet: sheetForRelationship(sheets, r),
 });
 
 /**
@@ -63,10 +48,9 @@ const row = (
 export function positionGroups(
 	bc: BoundedContext,
 	relationships: ContextRelationship[],
-	sheets: CommentSheetIndex = {},
 ): RowGroup[] {
 	const mine = relationships.filter((r) => r.source === bc || r.target === bc);
-	const rows = mine.map((r, i) => row(r, sheets, i));
+	const rows = mine.map(row);
 	const groups: RowGroup[] = [
 		{
 			id: "depends-on",
@@ -102,40 +86,37 @@ export type HealthGroup = { context: BoundedContext; rows: EvidenceRow[] };
 export type Health = {
 	refactor: HealthGroup[];
 	tolerated: EvidenceRow[];
-	noFacts: EvidenceRow[];
+	noComments: EvidenceRow[];
 };
 
 /**
- * The workspace-level read of the overlay (RFC-002 section 4.5): what is
- * marked for refactoring, what is a tolerated compromise, and what carries no
- * comments at all. Refactor rows group by `source`, which for a directed
+ * The workspace-level read of the evidence layer (RFC-002 section 4.5): what
+ * is marked for refactoring, what is a tolerated compromise, and what carries
+ * no comments at all. Refactor rows group by `source`, which for a directed
  * relationship is the upstream context and for a symmetric one is the first
  * participant — in both cases the side a reader goes to first.
  */
-export function health(
-	workspace: Workspace,
-	sheets: CommentSheetIndex,
-): Health {
-	const rows = workspace.relationships.map((r, i) => row(r, sheets, i));
+export function health(workspace: Workspace): Health {
+	const rows = workspace.relationships.map(row);
 	const groups = new Map<BoundedContext, EvidenceRow[]>();
-	for (const x of rows.filter((x) => dispositionOf(x.sheet) === "refactor")) {
+	for (const x of rows.filter(
+		(x) => dispositionOf(x.relationship) === "refactor",
+	)) {
 		const into = groups.get(x.relationship.source) ?? [];
 		into.push(x);
 		groups.set(x.relationship.source, into);
 	}
 	return {
 		refactor: [...groups].map(([context, rows]) => ({ context, rows })),
-		tolerated: rows.filter((x) => dispositionOf(x.sheet) === "tolerated"),
-		noFacts: rows.filter((x) => hasNoFacts(x.sheet)),
+		tolerated: rows.filter(
+			(x) => dispositionOf(x.relationship) === "tolerated",
+		),
+		noComments: rows.filter((x) => hasNoComments(x.relationship)),
 	};
 }
 
 /** A consumable that crosses the boundary a relationship describes. */
-export type Crossing = {
-	consumable: Consumable;
-	consumption: Consumption;
-	sheet?: CommentSheet;
-};
+export type Crossing = { consumable: Consumable; consumption: Consumption };
 
 const contextOf = (owner: { boundedcontext: BoundedContext }) =>
 	owner.boundedcontext;
@@ -149,7 +130,6 @@ const contextOf = (owner: { boundedcontext: BoundedContext }) =>
 export function crossingConsumables(
 	r: ContextRelationship,
 	workspace: Workspace,
-	sheets: CommentSheetIndex,
 ): Crossing[] {
 	const sides = [r.source, r.target];
 	const crossings: Crossing[] = [];
@@ -160,11 +140,7 @@ export function crossingConsumables(
 				const to = contextOf(owner);
 				if (from === to) continue;
 				if (!sides.includes(from) || !sides.includes(to)) continue;
-				crossings.push({
-					consumable: consumption.consumable,
-					consumption,
-					sheet: sheetForRef(sheets, consumption.consumable.ref),
-				});
+				crossings.push({ consumable: consumption.consumable, consumption });
 			}
 		}
 	}
@@ -177,14 +153,15 @@ export function crossingConsumables(
  * chasing "why is this here" wants the ADR before the source file.
  */
 export function relationshipLinks(
-	sheet: CommentSheet | undefined,
+	r: ContextRelationship,
 	crossings: Crossing[],
 ): CommentLink[] {
-	const sheets = [sheet, ...crossings.map((c) => c.sheet)];
+	const sources = [r, ...crossings.map((c) => c.consumable)];
 	const byUrl = new Map<string, CommentLink>();
-	for (const s of sheets)
-		for (const f of s?.comments ?? [])
-			if (f.link && !byUrl.has(f.link.url)) byUrl.set(f.link.url, f.link);
+	for (const source of sources)
+		for (const comment of source.comments)
+			if (comment.link && !byUrl.has(comment.link.url))
+				byUrl.set(comment.link.url, comment.link);
 	return [...byUrl.values()].sort(
 		(a, b) => Number(b.kind === "adr") - Number(a.kind === "adr"),
 	);

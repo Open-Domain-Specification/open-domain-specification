@@ -1,9 +1,6 @@
 <script lang="ts">
-import {
-	type Disposition,
-	DISPOSITION_LABELS,
-	DISPOSITION_SUMMARIES,
-} from "../evidence/fixtures";
+import type { Disposition } from "@open-domain-specification/core";
+import { DISPOSITION_LABELS, DISPOSITION_SUMMARIES } from "../evidence/labels";
 import Chip from "./Chip.svelte";
 
 /**

@@ -1,14 +1,12 @@
 <script module lang="ts">
 import { defineMeta } from "@storybook/addon-svelte-csf";
-import {
-	petstoreEvidence,
-	strategicPositionFixture,
-} from "../evidence/fixtures";
+import { strategicPositionFixture } from "../evidence/fixtures";
 import Theme from "../evidence/Theme.harness.svelte";
+import { petstoreModel } from "../fixtures";
 import ModelProvider from "../ModelProvider.svelte";
 import HealthReport from "./HealthReport.svelte";
 
-const petstore = petstoreEvidence();
+const petstore = petstoreModel();
 const dense = strategicPositionFixture(8);
 
 // Each story's body goes in a `template` snippet. Plain children of <Story>
@@ -24,20 +22,20 @@ const { Story } = defineMeta({
 <!-- The no-comments section starts collapsed; open it to see the reconciliation list. -->
 <Story name="Petstore">
 	{#snippet template()}
-		<ModelProvider model={petstore.model}><HealthReport sheets={petstore.sheets} /></ModelProvider>
+		<ModelProvider model={petstore}><HealthReport /></ModelProvider>
 	{/snippet}
 </Story>
 
 <Story name="Eight relationships">
 	{#snippet template()}
-		<ModelProvider model={dense.model}><HealthReport sheets={dense.sheets} /></ModelProvider>
+		<ModelProvider model={dense.model}><HealthReport /></ModelProvider>
 	{/snippet}
 </Story>
 
 <Story name="Petstore, light">
 	{#snippet template()}
 		<Theme mode="light">
-			<ModelProvider model={petstore.model}><HealthReport sheets={petstore.sheets} /></ModelProvider>
+			<ModelProvider model={petstore}><HealthReport /></ModelProvider>
 		</Theme>
 	{/snippet}
 </Story>
@@ -45,7 +43,7 @@ const { Story } = defineMeta({
 <Story name="Petstore, dark">
 	{#snippet template()}
 		<Theme mode="dark">
-			<ModelProvider model={petstore.model}><HealthReport sheets={petstore.sheets} /></ModelProvider>
+			<ModelProvider model={petstore}><HealthReport /></ModelProvider>
 		</Theme>
 	{/snippet}
 </Story>

@@ -1,26 +1,21 @@
 import { Workspace } from "@open-domain-specification/core";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
-import {
-	type CommentSheetIndex,
-	petstoreEvidence,
-	relationshipKey,
-	strategicPositionFixture,
-} from "../evidence/fixtures";
+import { strategicPositionFixture } from "../evidence/fixtures";
 import Harness from "../evidence/WithModel.harness.svelte";
+import { petstoreModel } from "../fixtures";
 import type { Model } from "../model";
 import HealthReport from "./HealthReport.svelte";
 
-const show = (model: Model, sheets: CommentSheetIndex) =>
-	render(Harness, { model, component: HealthReport, args: { sheets } });
+const show = (model: Model) =>
+	render(Harness, { model, component: HealthReport, args: {} });
 
 const counts = (container: HTMLElement) =>
 	[...container.querySelectorAll(".summary strong")].map((s) => s.textContent);
 
 describe("HealthReport", () => {
 	it("counts what the architecture is unhappy with across the petstore", () => {
-		const { model, sheets } = petstoreEvidence();
-		const { container } = show(model, sheets);
+		const { container } = show(petstoreModel());
 		expect(counts(container)).toEqual(["1", "1", "2"]);
 		expect(
 			screen.getByText(/The kernel has grown past the status enum/),
@@ -31,15 +26,13 @@ describe("HealthReport", () => {
 	});
 
 	it("groups the refactor backlog under the context that owns the change", () => {
-		const { model, sheets } = petstoreEvidence();
-		const { container } = show(model, sheets);
+		const { container } = show(petstoreModel());
 		const group = container.querySelector("h4") as HTMLElement;
 		expect(group).toHaveTextContent("Catalog BC");
 	});
 
 	it("keeps the no-comments list collapsed until it is asked for", async () => {
-		const { model, sheets } = petstoreEvidence();
-		show(model, sheets);
+		show(petstoreModel());
 		const toggle = screen.getByRole("button", { name: /No comments \(2\)/ });
 		expect(toggle).toHaveAttribute("aria-expanded", "false");
 		expect(screen.queryByText("Nothing written down yet.")).toBeNull();
@@ -51,8 +44,7 @@ describe("HealthReport", () => {
 	});
 
 	it("lists every refactor and tolerated intent in the dense fixture", () => {
-		const { model, sheets } = strategicPositionFixture(8);
-		const { container } = show(model, sheets);
+		const { container } = show(strategicPositionFixture(8).model);
 		expect(counts(container)).toEqual(["2", "2", "2"]);
 		expect(container.querySelectorAll("h4")).toHaveLength(2);
 	});
@@ -66,16 +58,15 @@ describe("HealthReport", () => {
 		});
 		const a = workspace.addBoundedContext("A", { description: "A." });
 		const b = workspace.addBoundedContext("B", { description: "B." });
-		const r = a.upstreamOf(b, { description: "Plain." });
-		const sheets: CommentSheetIndex = {
-			[relationshipKey(r)]: {
-				comments: [{ text: "It is what it looks like." }],
-			},
-		};
-		const { container } = show(
-			{ workspace, fileLabel: "clean.json", diagnostics: [] },
-			sheets,
-		);
+		a.upstreamOf(b, {
+			description: "Plain.",
+			comments: [{ text: "It is what it looks like." }],
+		});
+		const { container } = show({
+			workspace,
+			fileLabel: "clean.json",
+			diagnostics: [],
+		});
 		expect(counts(container)).toEqual(["0", "0", "0"]);
 		expect(container.querySelectorAll(".summary li.zero")).toHaveLength(3);
 		expect(
