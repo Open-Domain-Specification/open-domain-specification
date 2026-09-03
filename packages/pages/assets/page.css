@@ -460,8 +460,13 @@ table.attrs td.k {
 .svelte-flow .flow-card.sketch .head {
 	justify-content: center;
 }
+/* The backdrop already carries the cluster colour, so the ellipse keeps one even stroke. */
 .svelte-flow .flow-card.sketch.context-node {
-	border-top-width: 5px;
+	border-top-width: 2px;
+	border-top-color: var(--fg);
+}
+.svelte-flow .flow-card.sketch.context-node.mud {
+	border-top-color: #8d6e63;
 }
 .flow-card .head {
 	display: flex;
