@@ -298,6 +298,7 @@ describe("toDoc", () => {
 			  "domains/petstore_commerce/subdomains/inventory/index.md",
 			  "domains/petstore_commerce/subdomains/sales/contextmap.svg",
 			  "domains/petstore_commerce/subdomains/sales/index.md",
+			  "index.html",
 			  "swagger_petstore_(v3)/contextmap.svg",
 			  "swagger_petstore_(v3)/glossary.md",
 			  "swagger_petstore_(v3)/index.md",
