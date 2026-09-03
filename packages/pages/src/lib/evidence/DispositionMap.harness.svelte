@@ -27,7 +27,7 @@ import DispositionEdge, {
 } from "./DispositionEdge.svelte";
 import DispositionLegend from "./DispositionLegend.svelte";
 import {
-	type FactSheetIndex,
+	type CommentSheetIndex,
 	PATTERN_SUMMARIES,
 	sheetForRelationship,
 } from "./fixtures";
@@ -42,7 +42,7 @@ import {
  * shipped diagram draws from the shared edge registry and nothing here may
  * change what shipped pages render.
  */
-const { sheets }: { sheets: FactSheetIndex } = $props();
+const { sheets }: { sheets: CommentSheetIndex } = $props();
 
 const model = useModel();
 const graph = $derived(
@@ -61,8 +61,8 @@ const relationshipFor = (edge: Edge): ContextRelationship | undefined =>
 /** The hover line for a badge: what the pattern means, then what we know. */
 const summaryFor = (r: ContextRelationship) => {
 	const sheet = sheetForRelationship(sheets, r);
-	const first = sheet?.facts[0]?.text;
-	return [PATTERN_SUMMARIES[r.type], first ?? "No facts recorded yet."].join(
+	const first = sheet?.comments[0]?.text;
+	return [PATTERN_SUMMARIES[r.type], first ?? "No comments recorded yet."].join(
 		" ",
 	);
 };

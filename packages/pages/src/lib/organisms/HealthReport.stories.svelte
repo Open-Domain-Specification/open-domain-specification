@@ -21,7 +21,7 @@ const { Story } = defineMeta({
 });
 </script>
 
-<!-- The no-facts section starts collapsed; open it to see the reconciliation list. -->
+<!-- The no-comments section starts collapsed; open it to see the reconciliation list. -->
 <Story name="Petstore">
 	{#snippet template()}
 		<ModelProvider model={petstore.model}><HealthReport sheets={petstore.sheets} /></ModelProvider>

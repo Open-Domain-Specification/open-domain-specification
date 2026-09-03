@@ -295,7 +295,11 @@ describe("domainBorders", () => {
  * segment, without the closing repeat of the start point.
  */
 function samplePath(d: string, steps = 8): Point[] {
-	const nums = (s: string) => s.trim().split(/[\s,]+/).map(Number);
+	const nums = (s: string) =>
+		s
+			.trim()
+			.split(/[\s,]+/)
+			.map(Number);
 	const [head, ...curves] = d.replace(/ Z$/, "").split("C");
 	let from = nums(head.slice(1)) as Point;
 	const out: Point[] = [from];

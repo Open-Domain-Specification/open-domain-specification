@@ -8,9 +8,9 @@ import type {
 import { isSymmetricRelationship } from "../flow/graph";
 import {
 	type Disposition,
-	type FactLink,
-	type FactSheet,
-	type FactSheetIndex,
+	type CommentLink,
+	type CommentSheet,
+	type CommentSheetIndex,
 	relationshipKey,
 	sheetForRef,
 	sheetForRelationship,
@@ -21,18 +21,19 @@ export type EvidenceRow = {
 	/** Stable per row, so an expanded row survives a re-render. */
 	key: string;
 	relationship: ContextRelationship;
-	sheet?: FactSheet;
+	sheet?: CommentSheet;
 };
 
 /** A named block of rows: one of the three strategic-position groups. */
 export type RowGroup = { id: string; label: string; rows: EvidenceRow[] };
 
 /** The disposition a sheet claims, defaulting to by-design when unset. */
-export const dispositionOf = (sheet?: FactSheet): Disposition =>
+export const dispositionOf = (sheet?: CommentSheet): Disposition =>
 	sheet?.disposition ?? "by-design";
 
 /** A relationship the reader can act on: it is either marked or unexplained. */
-const hasNoFacts = (sheet?: FactSheet) => !sheet || sheet.facts.length === 0;
+const hasNoFacts = (sheet?: CommentSheet) =>
+	!sheet || sheet.comments.length === 0;
 
 /** The context on the other side of a relationship from `bc`. */
 export const counterpartOf = (
@@ -42,7 +43,7 @@ export const counterpartOf = (
 
 const row = (
 	r: ContextRelationship,
-	sheets: FactSheetIndex,
+	sheets: CommentSheetIndex,
 	index: number,
 ): EvidenceRow => ({
 	// Indexed as well as keyed: two contexts can hold more than one
@@ -62,7 +63,7 @@ const row = (
 export function positionGroups(
 	bc: BoundedContext,
 	relationships: ContextRelationship[],
-	sheets: FactSheetIndex,
+	sheets: CommentSheetIndex,
 ): RowGroup[] {
 	const mine = relationships.filter((r) => r.source === bc || r.target === bc);
 	const rows = mine.map((r, i) => row(r, sheets, i));
@@ -107,13 +108,13 @@ export type Health = {
 /**
  * The workspace-level read of the overlay (RFC-002 section 4.5): what is
  * marked for refactoring, what is a tolerated compromise, and what carries no
- * facts at all. Refactor rows group by `source`, which for a directed
+ * comments at all. Refactor rows group by `source`, which for a directed
  * relationship is the upstream context and for a symmetric one is the first
  * participant — in both cases the side a reader goes to first.
  */
 export function health(
 	workspace: Workspace,
-	sheets: FactSheetIndex,
+	sheets: CommentSheetIndex,
 ): Health {
 	const rows = workspace.relationships.map((r, i) => row(r, sheets, i));
 	const groups = new Map<BoundedContext, EvidenceRow[]>();
@@ -133,7 +134,7 @@ export function health(
 export type Crossing = {
 	consumable: Consumable;
 	consumption: Consumption;
-	sheet?: FactSheet;
+	sheet?: CommentSheet;
 };
 
 const contextOf = (owner: { boundedcontext: BoundedContext }) =>
@@ -148,7 +149,7 @@ const contextOf = (owner: { boundedcontext: BoundedContext }) =>
 export function crossingConsumables(
 	r: ContextRelationship,
 	workspace: Workspace,
-	sheets: FactSheetIndex,
+	sheets: CommentSheetIndex,
 ): Crossing[] {
 	const sides = [r.source, r.target];
 	const crossings: Crossing[] = [];
@@ -176,13 +177,13 @@ export function crossingConsumables(
  * chasing "why is this here" wants the ADR before the source file.
  */
 export function relationshipLinks(
-	sheet: FactSheet | undefined,
+	sheet: CommentSheet | undefined,
 	crossings: Crossing[],
-): FactLink[] {
+): CommentLink[] {
 	const sheets = [sheet, ...crossings.map((c) => c.sheet)];
-	const byUrl = new Map<string, FactLink>();
+	const byUrl = new Map<string, CommentLink>();
 	for (const s of sheets)
-		for (const f of s?.facts ?? [])
+		for (const f of s?.comments ?? [])
 			if (f.link && !byUrl.has(f.link.url)) byUrl.set(f.link.url, f.link);
 	return [...byUrl.values()].sort(
 		(a, b) => Number(b.kind === "adr") - Number(a.kind === "adr"),

@@ -4,10 +4,7 @@ import {
 } from "@open-domain-specification/core";
 import { render, screen, within } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
-import {
-	petstoreEvidence,
-	relationshipKey,
-} from "../evidence/fixtures";
+import { petstoreEvidence, relationshipKey } from "../evidence/fixtures";
 import Harness from "../evidence/WithModel.harness.svelte";
 import type { Model } from "../model";
 import RelationshipDetail from "./RelationshipDetail.svelte";
@@ -68,15 +65,15 @@ describe("RelationshipDetail", () => {
 		).toBeGreaterThan(0);
 	});
 
-	it("lists the facts and the crossing consumables, with each consumable's own disposition", () => {
+	it("lists the comments and the crossing consumables, with each consumable's own disposition", () => {
 		const { container } = show(of("customer-supplier"));
 		expect(
 			screen.getByText(/Sales reads Catalog through PetSummaryClient/),
 		).toBeInTheDocument();
 		const crossings = container.querySelector(".crossings") as HTMLElement;
-		const names = [...crossings.querySelectorAll("tbody tr td:first-child")].map(
-			(td) => td.textContent?.trim(),
-		);
+		const names = [
+			...crossings.querySelectorAll("tbody tr td:first-child"),
+		].map((td) => td.textContent?.trim());
 		expect(names).toEqual(
 			expect.arrayContaining(["GetPetSummary", "ReservePet"]),
 		);
@@ -100,7 +97,7 @@ describe("RelationshipDetail", () => {
 	it("says what is missing when the relationship has no sheet at all", () => {
 		show(of("separate-ways"));
 		expect(
-			screen.getByText("No facts recorded for this relationship yet."),
+			screen.getByText("No comments recorded for this relationship yet."),
 		).toBeInTheDocument();
 		expect(
 			screen.getByText(
@@ -138,10 +135,14 @@ describe("RelationshipDetail", () => {
 		});
 		consumer.consumes(consumable, {});
 		const r = a.upstreamOf(b);
-		const model: Model = { workspace, fileLabel: "plain.json", diagnostics: [] };
+		const model: Model = {
+			workspace,
+			fileLabel: "plain.json",
+			diagnostics: [],
+		};
 		const bare = {
 			[relationshipKey(r)]: {
-				facts: [
+				comments: [
 					{
 						text: "Cited, but the citation has no name of its own.",
 						link: { kind: "code" as const, url: "https://example.com/x.ts" },

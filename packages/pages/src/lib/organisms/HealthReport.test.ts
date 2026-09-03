@@ -2,7 +2,7 @@ import { Workspace } from "@open-domain-specification/core";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import {
-	type FactSheetIndex,
+	type CommentSheetIndex,
 	petstoreEvidence,
 	relationshipKey,
 	strategicPositionFixture,
@@ -11,7 +11,7 @@ import Harness from "../evidence/WithModel.harness.svelte";
 import type { Model } from "../model";
 import HealthReport from "./HealthReport.svelte";
 
-const show = (model: Model, sheets: FactSheetIndex) =>
+const show = (model: Model, sheets: CommentSheetIndex) =>
 	render(Harness, { model, component: HealthReport, args: { sheets } });
 
 const counts = (container: HTMLElement) =>
@@ -37,17 +37,15 @@ describe("HealthReport", () => {
 		expect(group).toHaveTextContent("Catalog BC");
 	});
 
-	it("keeps the no-facts list collapsed until it is asked for", async () => {
+	it("keeps the no-comments list collapsed until it is asked for", async () => {
 		const { model, sheets } = petstoreEvidence();
 		show(model, sheets);
-		const toggle = screen.getByRole("button", { name: /No facts \(2\)/ });
+		const toggle = screen.getByRole("button", { name: /No comments \(2\)/ });
 		expect(toggle).toHaveAttribute("aria-expanded", "false");
 		expect(screen.queryByText("Nothing written down yet.")).toBeNull();
 		await fireEvent.click(toggle);
 		expect(toggle).toHaveAttribute("aria-expanded", "true");
-		expect(
-			screen.getAllByText("Nothing written down yet."),
-		).toHaveLength(2);
+		expect(screen.getAllByText("Nothing written down yet.")).toHaveLength(2);
 		await fireEvent.click(toggle);
 		expect(screen.queryByText("Nothing written down yet.")).toBeNull();
 	});
@@ -69,8 +67,10 @@ describe("HealthReport", () => {
 		const a = workspace.addBoundedContext("A", { description: "A." });
 		const b = workspace.addBoundedContext("B", { description: "B." });
 		const r = a.upstreamOf(b, { description: "Plain." });
-		const sheets: FactSheetIndex = {
-			[relationshipKey(r)]: { facts: [{ text: "It is what it looks like." }] },
+		const sheets: CommentSheetIndex = {
+			[relationshipKey(r)]: {
+				comments: [{ text: "It is what it looks like." }],
+			},
 		};
 		const { container } = show(
 			{ workspace, fileLabel: "clean.json", diagnostics: [] },
@@ -82,9 +82,9 @@ describe("HealthReport", () => {
 			screen.getByText("Nothing is marked for refactoring."),
 		).toBeInTheDocument();
 		expect(screen.getByText("No compromises recorded.")).toBeInTheDocument();
-		await fireEvent.click(screen.getByRole("button", { name: /No facts/ }));
+		await fireEvent.click(screen.getByRole("button", { name: /No comments/ }));
 		expect(
-			screen.getByText("Every intent carries at least one fact."),
+			screen.getByText("Every intent carries at least one comment."),
 		).toBeInTheDocument();
 	});
 });

@@ -11,7 +11,7 @@ import {
 	dispositionOf,
 } from "../evidence/derive";
 import {
-	type FactSheetIndex,
+	type CommentSheetIndex,
 	LINK_KIND_LABELS,
 	PATTERN_SUMMARIES,
 	sheetForRelationship,
@@ -19,7 +19,7 @@ import {
 import { isSymmetricRelationship } from "../flow/graph";
 import { roleLabel } from "../flow/roles";
 import Card from "../molecules/Card.svelte";
-import FactList from "../molecules/FactList.svelte";
+import CommentList from "../molecules/CommentList.svelte";
 import { consumableIcon, ICONS, useModel } from "../model";
 
 /**
@@ -35,7 +35,7 @@ const {
 	heading = "h3",
 }: {
 	relationship: ContextRelationship;
-	sheets: FactSheetIndex;
+	sheets: CommentSheetIndex;
 	heading?: "h1" | "h3";
 } = $props();
 
@@ -92,10 +92,10 @@ const sides = $derived([
 		{/each}
 	</div>
 
-	<h4>Facts</h4>
-	<FactList
-		facts={sheet?.facts ?? []}
-		empty="No facts recorded for this relationship yet."
+	<h4>Comments</h4>
+	<CommentList
+		comments={sheet?.comments ?? []}
+		empty="No comments recorded for this relationship yet."
 	/>
 
 	<h4>Consumables crossing this boundary</h4>

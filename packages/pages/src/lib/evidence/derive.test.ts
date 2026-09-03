@@ -9,7 +9,7 @@ import {
 	relationshipLinks,
 } from "./derive";
 import {
-	type FactSheetIndex,
+	type CommentSheetIndex,
 	petstoreEvidence,
 	relationshipKey,
 	strategicPositionFixture,
@@ -20,8 +20,8 @@ const petstore = () => petstoreEvidence();
 describe("dispositionOf", () => {
 	it("defaults to by-design for a missing sheet and for a sheet that does not say", () => {
 		expect(dispositionOf(undefined)).toBe("by-design");
-		expect(dispositionOf({ facts: [] })).toBe("by-design");
-		expect(dispositionOf({ facts: [], disposition: "refactor" })).toBe(
+		expect(dispositionOf({ comments: [] })).toBe("by-design");
+		expect(dispositionOf({ comments: [], disposition: "refactor" })).toBe(
 			"refactor",
 		);
 	});
@@ -87,7 +87,7 @@ describe("counterpartOf", () => {
 });
 
 describe("health", () => {
-	it("reads the petstore overlay into refactor, tolerated and no-facts", () => {
+	it("reads the petstore overlay into refactor, tolerated and no-comments", () => {
 		const { model, sheets } = petstore();
 		const report = health(model.workspace, sheets);
 		expect(report.refactor).toHaveLength(1);
@@ -110,11 +110,11 @@ describe("health", () => {
 		expect(rows).toHaveLength(2);
 		expect(report.refactor.every((g) => g.rows.length >= 1)).toBe(true);
 		expect(report.tolerated).toHaveLength(2);
-		// Search has a sheet with no facts, Notifications has no sheet at all.
+		// Search has a sheet with no comments, Notifications has no sheet at all.
 		expect(report.noFacts).toHaveLength(2);
 	});
 
-	it("reports nothing when every intent is by design and has a fact", () => {
+	it("reports nothing when every intent is by design and has a comment", () => {
 		const workspace = new Workspace("Clean", {
 			id: "clean",
 			odsVersion: "1.0.0",
@@ -124,10 +124,10 @@ describe("health", () => {
 		const a = workspace.addBoundedContext("A", { description: "A." });
 		const b = workspace.addBoundedContext("B", { description: "B." });
 		const r = a.upstreamOf(b, { description: "Plain." });
-		const sheets: FactSheetIndex = {
+		const sheets: CommentSheetIndex = {
 			[relationshipKey(r)]: {
 				disposition: "by-design",
-				facts: [{ text: "It is what it looks like." }],
+				comments: [{ text: "It is what it looks like." }],
 			},
 		};
 		const report = health(workspace, sheets);
@@ -192,7 +192,7 @@ describe("relationshipLinks", () => {
 	it("is empty when neither the relationship nor its crossings link anywhere", () => {
 		expect(relationshipLinks(undefined, [])).toEqual([]);
 		expect(
-			relationshipLinks({ facts: [{ text: "No citation." }] }, []),
+			relationshipLinks({ comments: [{ text: "No citation." }] }, []),
 		).toEqual([]);
 	});
 });

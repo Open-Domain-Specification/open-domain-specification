@@ -10,7 +10,7 @@ describe("DispositionChip", () => {
 		expect(chip).not.toHaveClass("warn");
 		expect(chip).toHaveAttribute(
 			"title",
-			"A known compromise, not planned to change. The facts say why.",
+			"A known compromise, not planned to change. The comments say why.",
 		);
 	});
 

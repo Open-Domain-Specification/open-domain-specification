@@ -13,8 +13,8 @@ const of = (type: string) =>
 	) as ContextRelationship;
 
 /** One relationship per state the overlay gives the petstore. */
-const byDesign = of("customer-supplier"); // Catalog → Sales, two facts
-const tolerated = of("upstream-downstream"); // Sales → Inventory, one fact
+const byDesign = of("customer-supplier"); // Catalog → Sales, two comments
+const tolerated = of("upstream-downstream"); // Sales → Inventory, one comment
 const refactor = of("shared-kernel"); // Catalog ↔ Inventory, says what it should become
 const noFacts = of("partnership"); // Sales ↔ Fulfilment, by design but silent
 const noSheet = of("separate-ways"); // Identity ↔ Sales, nothing written at all
@@ -47,13 +47,13 @@ const { Story } = defineMeta({
 	{/snippet}
 </Story>
 
-<Story name="By design, no facts">
+<Story name="By design, no comments">
 	{#snippet template()}
 		<ModelProvider {model}><RelationshipDetail relationship={noFacts} {sheets} /></ModelProvider>
 	{/snippet}
 </Story>
 
-<Story name="No fact sheet at all">
+<Story name="No comments at all">
 	{#snippet template()}
 		<ModelProvider {model}><RelationshipDetail relationship={noSheet} {sheets} /></ModelProvider>
 	{/snippet}

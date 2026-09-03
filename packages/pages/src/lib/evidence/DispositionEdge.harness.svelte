@@ -48,7 +48,15 @@ let nodes = $state.raw<Node[]>([
 ]);
 // svelte-ignore state_referenced_locally
 let edges = $state.raw<Edge[]>([
-	{ id: "e", type: "context", source: "#/a", target: "#/b", label, style, data },
+	{
+		id: "e",
+		type: "context",
+		source: "#/a",
+		target: "#/b",
+		label,
+		style,
+		data,
+	},
 ]);
 </script>
 

@@ -20,19 +20,19 @@ RFC-001's sentence generator, per-role notes and popovers are dropped. Its patte
 ## 2. Vocabulary
 
 - **Intent**: everything the model says today. Relationships, roles, consumables, patterns, aggregates, invariants.
-- **Evidence**: the fact sheet behind an intent: short grounded statements about the real system, each optionally linking to the code, the contract or the decision record.
+- **Evidence**: the comments on an intent: short grounded statements about the real system, each optionally linking to the code, the contract or the decision record.
 - **Disposition**: one word on whether the intent is by design, tolerated, or due for refactoring (section 3).
-- **Health**: the workspace-level view of every intent that is not by-design or has no facts (section 4.5).
+- **Health**: the workspace-level view of every intent that is not by-design or has no comments (section 4.5).
 - **Disclosure**: how evidence appears on a page. A hover shows a summary; a click opens the full detail in place, on the same page. Nothing navigates away, nothing zooms.
 
 ---
 
-## 3. The fact sheet (kept simple on purpose)
+## 3. Comments (kept simple on purpose)
 
-Evidence is a **fact sheet**: a short list of grounded statements about the architecture behind an intent, each optionally backed by a link. There is no lifecycle. No verified-by, no dates, no derived confidence, no staleness window. A fact is true until an author or the skill edits it, the same as every other line of the model.
+Evidence is **comments**: a short list of grounded statements about the architecture behind an intent, each optionally backed by a link. There is no lifecycle. No verified-by, no dates, no derived confidence, no staleness window. A comment stands until an author or the skill edits it, the same as every other line of the model.
 
 ```
-facts:
+comments:
   - "Shared PetStatus enum lives in @petstore/kernel, consumed by both services"   (link: code)
   - "Agreed in ADR-014; the kernel is deliberately tiny"                           (link: adr)
 ```
@@ -42,16 +42,16 @@ One optional label per intent says what the architecture thinks of it, because t
 | Disposition | Meaning |
 | :--- | :--- |
 | **by-design** | This is how it should be. Default when unset. |
-| **tolerated** | Known compromise; not planned to change. Say why in a fact. |
-| **refactor** | Should be removed or replaced; the facts say what it should become. |
+| **tolerated** | Known compromise; not planned to change. Say why in a comment. |
+| **refactor** | Should be removed or replaced; the comments say what it should become. |
 
-A shared kernel marked *refactor* with the fact "duplicated pricing rules; move to a Published Language from Catalog" tells a reader more than any status machine would. Health (section 4.5) is simply the list of intents that are not by-design, plus intents with no facts at all.
+A shared kernel marked *refactor* with the comment "duplicated pricing rules; move to a Published Language from Catalog" tells a reader more than any status machine would. Health (section 4.5) is simply the list of intents that are not by-design, plus intents with no comments at all.
 
 ---
 
 ## 4. Surfaces
 
-Each surface is designed in Storybook against fixture data before any schema work (section 8). The fixtures give the petstore relationships different dispositions and fact sheets so every state is visible.
+Each surface is designed in Storybook against fixture data before any schema work (section 8). The fixtures give the petstore relationships different dispositions and comments so every state is visible.
 
 ### 4.1 Context page: Strategic position
 
@@ -73,7 +73,7 @@ The same block serves both as the expanded row on a context page and as a standa
 
 1. Title: `Catalog BC → Sales BC`, type chip, disposition chip when not by-design.
 2. The description, verbatim.
-3. Roles, one card per side, each with: the pattern name and abbreviation, the knowledge-base summary, and the fact sheet for that role (statements with their links).
+3. Roles, one card per side, each with: the pattern name and abbreviation, the knowledge-base summary, and the comments for that role (statements with their links).
 4. The consumables that cross this boundary, each with its own pattern and disposition, linking to the consumable page.
 5. Decision links (ADRs) and code links, deduplicated across the roles.
 
@@ -81,21 +81,21 @@ On docsify the same block renders as markdown with the links inline; the hover s
 
 ### 4.4 Consumable page
 
-Already exists. Gains: the pattern's knowledge-base summary under the pattern chip, a fact sheet (same shape as 4.3 point 3), and a disposition chip in the header when not by-design.
+Already exists. Gains: the pattern's knowledge-base summary under the pattern chip, comments (same shape as 4.3 point 3), and a disposition chip in the header when not by-design.
 
 ### 4.5 Health report (workspace page)
 
 A section on the workspace page, and its own route, listing what the architecture is not happy with:
 
-- **Refactor**: every intent marked refactor, grouped by counterpart context, with its facts. This is the refactoring backlog the model implies.
-- **Tolerated**: every accepted compromise, with the fact that justifies it.
-- **No facts**: intents that carry no fact sheet at all, collapsed by default. This is the reconciliation to-do list for the skill.
+- **Refactor**: every intent marked refactor, grouped by counterpart context, with its comments. This is the refactoring backlog the model implies.
+- **Tolerated**: every accepted compromise, with the comment that justifies it.
+- **No comments**: intents that carry no comments at all, collapsed by default. This is the reconciliation to-do list for the skill.
 
 Each row links to the intent's page. A summary strip at the top gives the three counts, which is what a product owner reads to answer "is the map true, and is it what we want?". The tree shows the same counts on the workspace node.
 
 ### 4.6 Problems panel and validation
 
-One new rule, opt-in per workspace: `facts-required` warns on strategic intents with no fact sheet. They surface in the Problems panel like every other rule, mapped to the JSON position, so health is visible in the editor without opening a page.
+One new rule, opt-in per workspace: `comments-required` warns on strategic intents with no comments. They surface in the Problems panel like every other rule, mapped to the JSON position, so health is visible in the editor without opening a page.
 
 ---
 
@@ -103,9 +103,9 @@ One new rule, opt-in per workspace: `facts-required` warns on strategic intents 
 
 The skill already interviews the author and validates the model. It gains a third job: **reconciliation**.
 
-- **On request** ("check the model against the code"): for each strategic intent, search the repository for its evidence. An ACL should have an adapter or translator on the downstream side; an OHS should have a published contract; a shared kernel should have a shared package. Write facts with links for what it finds; where the code disagrees with the model, say so in a fact and propose a disposition; where it cannot decide, write a fact saying what it looked for and did not find.
+- **On request** ("check the model against the code"): for each strategic intent, search the repository for its evidence. An ACL should have an adapter or translator on the downstream side; an OHS should have a published contract; a shared kernel should have a shared package. Write comments with links for what it finds; where the code disagrees with the model, say so in a comment and propose a disposition; where it cannot decide, write a comment saying what it looked for and did not find.
 - **During the interview**: one question per new strategic intent, "is this by design, or something you are living with?", and "where does it live?", accepting a path or a URL. No per-role note question.
-- **Health-driven prompts**: when opening a workspace with intents that have no facts, offer to reconcile them first.
+- **Health-driven prompts**: when opening a workspace with intents that have no comments, offer to reconcile them first.
 
 This is the product's differentiator: a copilot that knows the model is a claim and helps keep it honest.
 
@@ -113,9 +113,9 @@ This is the product's differentiator: a copilot that knows the model is a claim 
 
 ## 6. What is deliberately not decided yet
 
-- The fact sheet schema. The surfaces above imply a shape (a list of statements with optional typed links, and one optional disposition) but it is pinned only after the Storybook designs are reviewed.
+- The comments schema. The surfaces above imply a shape (a list of statements with optional typed links, and one optional disposition) but it is pinned only after the Storybook designs are reviewed.
 - Where evidence lives for each element kind: inline on the relationship and consumable, or a separate `evidence` array keyed by ref. The health report and the Problems rules would prefer the latter; the DSL would prefer the former.
-- Whether aggregates and invariants carry fact sheets in the first release or only strategic intents.
+- Whether aggregates and invariants carry comments in the first release or only strategic intents.
 
 ---
 
@@ -132,10 +132,10 @@ This is the product's differentiator: a copilot that knows the model is a claim 
 | A | **Storybook designs** of 4.1, 4.2, 4.3, 4.4, 4.5 against fixtures with a provisional evidence type; review with the product owner | pages | first, no schema change |
 | B | Context page: grouped table, Description column, hover summaries | pages, doc | can ship before evidence exists |
 | C | `PATTERNS` in core; legend, doc generator, docs site, skill consume it | core, pages, doc, skill | |
-| D | Fact sheet schema, DSL, JSON schema, reference models | core, models | after A is reviewed; `feat!:` |
+| D | Comment sheet schema, DSL, JSON schema, reference models | core, models | after A is reviewed; `feat!:` |
 | E | Relationship detail and page; tree and search reach it; consumable page evidence | pages, doc, extension | |
 | F | Map disposition marks and badge disclosure | pages | |
-| G | Health report and the facts-required rule | pages, core, extension | |
+| G | Health report and the comments-required rule | pages, core, extension | |
 | H | Skill reconciliation and interview questions | skill | |
 
 Card A is the only one started by this RFC. Everything after B waits for the design review.
@@ -145,7 +145,7 @@ Card A is the only one started by this RFC. Everything after B waits for the des
 ## 9. Decisions carried over from the RFC-001 review
 
 - A relationship needs a page of its own. Popovers on a context page cannot substitute for it.
-- Per-role free-text notes are not captured; facts are short grounded statements with links, attached where the fact lives.
+- Per-role free-text notes are not captured; comments are short grounded statements with links, attached where the comment lives.
 - Generated prose is not the primary view. The grouped table with descriptions is.
 - Anything that only pages can render is secondary; the feature is data plus markdown first, so docsify and the skill see the same thing.
 - The legend panel overlapping the Catalog node on the map is a separate defect, logged as an extension card.

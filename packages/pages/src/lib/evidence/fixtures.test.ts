@@ -34,7 +34,7 @@ describe("evidence fixtures", () => {
 	it("gives the shared kernel a refactor sheet saying what it should become", () => {
 		const sheet = PETSTORE_SHEETS["catalog_bc~shared-kernel~inventory_bc"];
 		expect(sheet.disposition).toBe("refactor");
-		expect(sheet.facts.map((f) => f.link?.kind)).toContain("adr");
+		expect(sheet.comments.map((f) => f.link?.kind)).toContain("adr");
 	});
 
 	it("looks an element sheet up by its ref", () => {

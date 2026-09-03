@@ -12,36 +12,40 @@ import { petstoreModel } from "../fixtures";
  * These live here, and only here, on purpose: RFC-002 section 6 leaves the
  * schema open until these surfaces have been reviewed. The only importers are
  * the evidence surfaces themselves — `atoms/DispositionChip.svelte`,
- * `molecules/FactList.svelte`, `organisms/StrategicPositionTable.svelte`,
+ * `molecules/CommentList.svelte`, `organisms/StrategicPositionTable.svelte`,
  * `organisms/RelationshipDetail.svelte`, `organisms/HealthReport.svelte` and
  * the components under `evidence/` — and no shipped template renders any of
  * those, so nothing a reader can reach today depends on this shape.
  *
- * A fact sheet is a flat list of grounded statements, each optionally backed
+ * A comments is a flat list of grounded statements, each optionally backed
  * by one link, plus at most one disposition. There is deliberately no
  * lifecycle: no dates, no verified-by, no derived confidence.
  */
-export type FactLinkKind =
+export type CommentLinkKind =
 	| "code"
 	| "contract"
 	| "adr"
 	| "runbook"
 	| "dashboard";
 
-export type FactLink = { kind: FactLinkKind; url: string; label?: string };
+export type CommentLink = {
+	kind: CommentLinkKind;
+	url: string;
+	label?: string;
+};
 
-export type Fact = { text: string; link?: FactLink };
+export type Comment = { text: string; link?: CommentLink };
 
 export type Disposition = "by-design" | "tolerated" | "refactor";
 
-export type FactSheet = { facts: Fact[]; disposition?: Disposition };
+export type CommentSheet = { comments: Comment[]; disposition?: Disposition };
 
 /**
- * Fact sheets by key. A relationship is keyed by {@link relationshipKey}
+ * Comment sheets by key. A relationship is keyed by {@link relationshipKey}
  * because `ContextRelationship` carries no id of its own; everything else is
  * keyed by its `ref`, which every other model element already has.
  */
-export type FactSheetIndex = Record<string, FactSheet>;
+export type CommentSheetIndex = Record<string, CommentSheet>;
 
 /**
  * A relationship's fixture key. Derived rather than stored: RFC-002 section 6
@@ -51,17 +55,17 @@ export type FactSheetIndex = Record<string, FactSheet>;
 export const relationshipKey = (r: ContextRelationship): string =>
 	`${r.source.id}~${r.type}~${r.target.id}`;
 
-/** The fact sheet for a relationship, if the index has one. */
+/** The comments for a relationship, if the index has one. */
 export const sheetForRelationship = (
-	sheets: FactSheetIndex,
+	sheets: CommentSheetIndex,
 	r: ContextRelationship,
-): FactSheet | undefined => sheets[relationshipKey(r)];
+): CommentSheet | undefined => sheets[relationshipKey(r)];
 
-/** The fact sheet for any other element, by its ref. */
+/** The comments for any other element, by its ref. */
 export const sheetForRef = (
-	sheets: FactSheetIndex,
+	sheets: CommentSheetIndex,
 	ref: string,
-): FactSheet | undefined => sheets[ref];
+): CommentSheet | undefined => sheets[ref];
 
 /**
  * What each pattern means, in one line, for the hover summaries. A stand-in
@@ -91,9 +95,9 @@ export const PATTERN_SUMMARIES: Record<string, string> = {
 /** What each disposition claims, for the chip's tooltip. */
 export const DISPOSITION_SUMMARIES: Record<Disposition, string> = {
 	"by-design": "This is how the architecture should be.",
-	tolerated: "A known compromise, not planned to change. The facts say why.",
+	tolerated: "A known compromise, not planned to change. The comments say why.",
 	refactor:
-		"Should be removed or replaced. The facts say what it should become.",
+		"Should be removed or replaced. The comments say what it should become.",
 };
 
 /** Human wording for a disposition chip. */
@@ -103,8 +107,8 @@ export const DISPOSITION_LABELS: Record<Disposition, string> = {
 	refactor: "refactor",
 };
 
-/** How a fact's link kind is worded next to the statement. */
-export const LINK_KIND_LABELS: Record<FactLinkKind, string> = {
+/** How a comment's link kind is worded next to the statement. */
+export const LINK_KIND_LABELS: Record<CommentLinkKind, string> = {
 	code: "code",
 	contract: "contract",
 	adr: "decision",
@@ -118,10 +122,10 @@ export const LINK_KIND_LABELS: Record<FactLinkKind, string> = {
  * cope with the absent case. Two Catalog consumables carry sheets of their
  * own so the relationship detail's consumable list has dispositions to show.
  */
-export const PETSTORE_SHEETS: FactSheetIndex = {
+export const PETSTORE_SHEETS: CommentSheetIndex = {
 	"catalog_bc~customer-supplier~sales_bc": {
 		disposition: "by-design",
-		facts: [
+		comments: [
 			{
 				text: "Sales reads Catalog through PetSummaryClient, which maps the catalog payload onto the Sales order model.",
 				link: {
@@ -142,7 +146,7 @@ export const PETSTORE_SHEETS: FactSheetIndex = {
 	},
 	"sales_bc~upstream-downstream~inventory_bc": {
 		disposition: "tolerated",
-		facts: [
+		comments: [
 			{
 				text: "The projection conforms to the Sales order events rather than translating them; accepted while Inventory stays read-only.",
 				link: {
@@ -155,7 +159,7 @@ export const PETSTORE_SHEETS: FactSheetIndex = {
 	},
 	"catalog_bc~shared-kernel~inventory_bc": {
 		disposition: "refactor",
-		facts: [
+		comments: [
 			{
 				text: "PetStatus and its values live in @petstore/kernel and both services compile against it.",
 				link: {
@@ -176,13 +180,13 @@ export const PETSTORE_SHEETS: FactSheetIndex = {
 	},
 	"sales_bc~partnership~fulfilment_bc": {
 		disposition: "by-design",
-		facts: [],
+		comments: [],
 	},
 	// Identity–Sales has no entry at all: separate ways, nobody has written
 	// anything down, and the health report has to notice that.
 	"#/boundedcontexts/catalog_bc/services/pet_app/provides/get_pet_summary": {
 		disposition: "by-design",
-		facts: [
+		comments: [
 			{
 				text: "The summary projection is the only Catalog read Sales is allowed to make.",
 				link: {
@@ -195,7 +199,7 @@ export const PETSTORE_SHEETS: FactSheetIndex = {
 	},
 	"#/boundedcontexts/catalog_bc/aggregates/pet/provides/reserve_pet": {
 		disposition: "refactor",
-		facts: [
+		comments: [
 			{
 				text: "Reservation is a synchronous call into the Catalog aggregate; it should become an order-placed subscription so Sales stops blocking on Catalog.",
 				link: {
@@ -211,7 +215,7 @@ export const PETSTORE_SHEETS: FactSheetIndex = {
 /** The petstore model with its evidence overlay, for the stories. */
 export function petstoreEvidence(): {
 	model: Model;
-	sheets: FactSheetIndex;
+	sheets: CommentSheetIndex;
 	context: BoundedContext;
 } {
 	const model = petstoreModel();
@@ -238,10 +242,10 @@ type CounterpartFixture = {
 	upstreamRoles: ContextRelationship["upstreamRoles"];
 	downstreamRoles: ContextRelationship["downstreamRoles"];
 	description: string;
-	sheet?: FactSheet;
+	sheet?: CommentSheet;
 };
 
-const fact = (text: string, kind?: FactLinkKind): Fact =>
+const comment = (text: string, kind?: CommentLinkKind): Comment =>
 	kind
 		? { text, link: { kind, url: `https://example.com/${kind}`, label: kind } }
 		: { text };
@@ -256,9 +260,9 @@ const COUNTERPARTS: CounterpartFixture[] = [
 		description: "Prices are quoted by Pricing and translated on the way in.",
 		sheet: {
 			disposition: "by-design",
-			facts: [
-				fact("PriceQuoteClient translates quotes at the boundary.", "code"),
-				fact("The quote contract is versioned and published.", "contract"),
+			comments: [
+				comment("PriceQuoteClient translates quotes at the boundary.", "code"),
+				comment("The quote contract is versioned and published.", "contract"),
 			],
 		},
 	},
@@ -271,7 +275,9 @@ const COUNTERPARTS: CounterpartFixture[] = [
 		description: "Reporting reads the hub's events exactly as published.",
 		sheet: {
 			disposition: "tolerated",
-			facts: [fact("Reporting is read-only, so conforming is cheap.", "adr")],
+			comments: [
+				comment("Reporting is read-only, so conforming is cheap.", "adr"),
+			],
 		},
 	},
 	{
@@ -283,9 +289,12 @@ const COUNTERPARTS: CounterpartFixture[] = [
 		description: "Money types are one shared definition.",
 		sheet: {
 			disposition: "refactor",
-			facts: [
-				fact("The kernel now carries rounding rules as well as types.", "code"),
-				fact("It should become a Published Language from Ledger.", "adr"),
+			comments: [
+				comment(
+					"The kernel now carries rounding rules as well as types.",
+					"code",
+				),
+				comment("It should become a Published Language from Ledger.", "adr"),
 			],
 		},
 	},
@@ -295,7 +304,8 @@ const COUNTERPARTS: CounterpartFixture[] = [
 		type: "upstream-downstream",
 		upstreamRoles: ["open-host-service"],
 		downstreamRoles: ["conformist"],
-		description: "Notifications react to hub events; nobody has written down why.",
+		description:
+			"Notifications react to hub events; nobody has written down why.",
 	},
 	{
 		name: "Search",
@@ -306,7 +316,7 @@ const COUNTERPARTS: CounterpartFixture[] = [
 		upstreamRoles: ["open-host-service", "published-language"],
 		downstreamRoles: ["anti-corruption-layer", "conformist"],
 		description: "Search indexes the hub's published language.",
-		sheet: { disposition: "by-design", facts: [] },
+		sheet: { disposition: "by-design", comments: [] },
 	},
 	{
 		name: "Fulfilment",
@@ -317,7 +327,7 @@ const COUNTERPARTS: CounterpartFixture[] = [
 		description: "Both lifecycles are designed and released together.",
 		sheet: {
 			disposition: "by-design",
-			facts: [fact("One release train covers both services.", "runbook")],
+			comments: [comment("One release train covers both services.", "runbook")],
 		},
 	},
 	{
@@ -329,8 +339,10 @@ const COUNTERPARTS: CounterpartFixture[] = [
 		description: "No integration; billing is reconciled by hand each month.",
 		sheet: {
 			disposition: "tolerated",
-			// Deliberately unlinked: a fact is worth recording even with nothing to cite.
-			facts: [fact("Billing is reconciled by hand at the end of each month.")],
+			// Deliberately unlinked: a comment is worth recording even with nothing to cite.
+			comments: [
+				comment("Billing is reconciled by hand at the end of each month."),
+			],
 		},
 	},
 	{
@@ -339,10 +351,13 @@ const COUNTERPARTS: CounterpartFixture[] = [
 		type: "upstream-downstream",
 		upstreamRoles: ["published-language"],
 		downstreamRoles: ["anti-corruption-layer"],
-		description: "Identity claims are translated into the hub's own actor model.",
+		description:
+			"Identity claims are translated into the hub's own actor model.",
 		sheet: {
 			disposition: "refactor",
-			facts: [fact("The translator duplicates Identity's token parsing.", "code")],
+			comments: [
+				comment("The translator duplicates Identity's token parsing.", "code"),
+			],
 		},
 	},
 ];
@@ -354,19 +369,20 @@ const COUNTERPARTS: CounterpartFixture[] = [
  */
 export function strategicPositionFixture(count: number): {
 	model: Model;
-	sheets: FactSheetIndex;
+	sheets: CommentSheetIndex;
 	context: BoundedContext;
 } {
 	const workspace = new Workspace("Density", {
 		id: "density",
 		odsVersion: "1.0.0",
-		description: "Synthetic workspace for the strategic position density stories.",
+		description:
+			"Synthetic workspace for the strategic position density stories.",
 		version: "0.0.1",
 	});
 	const hub = workspace.addBoundedContext("Hub", {
 		description: "The context whose strategic position the story shows.",
 	});
-	const sheets: FactSheetIndex = {};
+	const sheets: CommentSheetIndex = {};
 	for (const counterpart of COUNTERPARTS.slice(0, count)) {
 		const other = workspace.addBoundedContext(counterpart.name, {
 			description: `${counterpart.name} as seen from Hub.`,
@@ -386,7 +402,8 @@ export function strategicPositionFixture(count: number): {
 						downstreamRoles: counterpart.downstreamRoles,
 						description: counterpart.description,
 					});
-		if (counterpart.sheet) sheets[relationshipKey(relationship)] = counterpart.sheet;
+		if (counterpart.sheet)
+			sheets[relationshipKey(relationship)] = counterpart.sheet;
 	}
 	return {
 		model: {

@@ -6,7 +6,7 @@ import Dim from "../atoms/Dim.svelte";
 import Empty from "../atoms/Empty.svelte";
 import { counterpartOf, positionGroups } from "../evidence/derive";
 import {
-	type FactSheetIndex,
+	type CommentSheetIndex,
 	PATTERN_SUMMARIES,
 } from "../evidence/fixtures";
 import { roleLabel } from "../flow/roles";
@@ -28,7 +28,7 @@ import RelationshipDetail from "./RelationshipDetail.svelte";
 const {
 	context,
 	sheets,
-}: { context: BoundedContext; sheets: FactSheetIndex } = $props();
+}: { context: BoundedContext; sheets: CommentSheetIndex } = $props();
 
 const model = useModel();
 const groups = $derived(

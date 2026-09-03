@@ -5,24 +5,24 @@ import Empty from "../atoms/Empty.svelte";
 import RefLink from "../atoms/RefLink.svelte";
 import { type EvidenceRow, health } from "../evidence/derive";
 import {
-	type FactSheetIndex,
+	type CommentSheetIndex,
 	PATTERN_SUMMARIES,
 } from "../evidence/fixtures";
 import { isSymmetricRelationship } from "../flow/graph";
-import FactList from "../molecules/FactList.svelte";
+import CommentList from "../molecules/CommentList.svelte";
 import { ICONS, useModel } from "../model";
 
 /**
  * The workspace read of the evidence layer (RFC-002 section 4.5): what is
  * marked for refactoring, what compromises are tolerated, and what carries no
- * facts at all. The strip at the top is the number a product owner reads to
+ * comments at all. The strip at the top is the number a product owner reads to
  * answer "is the map true, and is it what we want?"; everything below it is
  * the backlog behind those numbers.
  *
- * The no-facts section starts collapsed: it is a reconciliation to-do list
+ * The no-comments section starts collapsed: it is a reconciliation to-do list
  * for the skill rather than something the architecture is unhappy about.
  */
-const { sheets }: { sheets: FactSheetIndex } = $props();
+const { sheets }: { sheets: CommentSheetIndex } = $props();
 
 const model = useModel();
 const report = $derived(health(model.workspace, sheets));
@@ -30,7 +30,7 @@ const refactorCount = $derived(
 	report.refactor.reduce((n, g) => n + g.rows.length, 0),
 );
 let showNoFacts = $state(false);
-const noFactsLabel = $derived(`No facts (${report.noFacts.length})`);
+const noFactsLabel = $derived(`No comments (${report.noFacts.length})`);
 </script>
 
 <div class="health-report">
@@ -42,7 +42,7 @@ const noFactsLabel = $derived(`No facts (${report.noFacts.length})`);
 			<strong>{report.tolerated.length}</strong> tolerated
 		</li>
 		<li class:zero={report.noFacts.length === 0}>
-			<strong>{report.noFacts.length}</strong> with no facts
+			<strong>{report.noFacts.length}</strong> with no comments
 		</li>
 	</ul>
 
@@ -79,7 +79,7 @@ const noFactsLabel = $derived(`No facts (${report.noFacts.length})`);
 				{@render intent(entry)}
 			{/each}
 		{:else}
-			<Empty text="Every intent carries at least one fact." />
+			<Empty text="Every intent carries at least one comment." />
 		{/if}
 	{/if}
 </div>
@@ -94,7 +94,7 @@ const noFactsLabel = $derived(`No facts (${report.noFacts.length})`);
 			<Chip label={r.type} tone="muted" title={PATTERN_SUMMARIES[r.type]} />
 			<DispositionChip disposition={entry.sheet?.disposition} />
 		</div>
-		<FactList facts={entry.sheet?.facts ?? []} empty="Nothing written down yet." />
+		<CommentList comments={entry.sheet?.comments ?? []} empty="Nothing written down yet." />
 	</article>
 {/snippet}
 

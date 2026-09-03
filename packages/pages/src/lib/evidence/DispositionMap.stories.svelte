@@ -18,7 +18,7 @@ const { Story } = defineMeta({
 </script>
 
 <!--
-	Hover a role badge for the one-line pattern summary and the first fact;
+	Hover a role badge for the one-line pattern summary and the first comment;
 	click it to open the relationship detail anchored to the badge. The card
 	lives inside the flow viewport, so it pans and zooms with the map.
 	Catalog–Inventory is marked refactor (warning badge) and Sales→Inventory
