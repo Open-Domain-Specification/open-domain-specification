@@ -2341,17 +2341,53 @@ reportingBC.downstreamOf(sovereignBC, {
 });
 
 // Shared kernel: the Money and AccountNumber library, changed and released together.
-accountsBC.sharesKernelWith(
-	ledgerBC,
-	"Money and AccountNumber are one library owned by both teams",
-);
+accountsBC.sharesKernelWith(ledgerBC, {
+	description: "Money and AccountNumber are one library owned by both teams",
+	comments: [
+		{
+			text: "Money and AccountNumber live in @northbank/money; both services compile against the same version.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/northbank/blob/main/packages/money/src/Money.ts",
+				label: "packages/money/src/Money.ts",
+			},
+		},
+		{
+			text: "Kept deliberately tiny: two value objects and their parsers, changed only by agreement of both teams.",
+			link: {
+				kind: "adr",
+				url: "https://github.com/example/northbank/blob/main/docs/adr/006-money-kernel.md",
+				label: "ADR-006 The money kernel",
+			},
+		},
+	],
+});
 // Partnership: one planning board, joint releases, no translation.
-lendingBC.partnerOf(
-	decisioningBC,
-	"Origination and decisioning release together; a scorecard change is an application-form change",
-);
+lendingBC.partnerOf(decisioningBC, {
+	description:
+		"Origination and decisioning release together; a scorecard change is an application-form change",
+});
 // Separate ways: conduct policy. Front-line staff may not influence a credit decision.
-channelsBC.separateWaysFrom(
-	decisioningBC,
-	"No integration by policy; the quick-quote consumption above contradicts this and is under investigation",
-);
+channelsBC.separateWaysFrom(decisioningBC, {
+	description:
+		"No integration by policy; the quick-quote consumption above contradicts this and is under investigation",
+	disposition: "refactor",
+	comments: [
+		{
+			text: "The map says separate ways but Channels calls the quick-quote endpoint directly; one of the two has to go.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/northbank/blob/main/channels/quote/QuickQuoteClient.ts",
+				label: "channels/quote/QuickQuoteClient.ts",
+			},
+		},
+		{
+			text: "Conduct policy is explicit that front-line staff may not influence a credit decision.",
+			link: {
+				kind: "adr",
+				url: "https://github.com/example/northbank/blob/main/docs/adr/021-conduct-separation.md",
+				label: "ADR-021 Conduct separation",
+			},
+		},
+	],
+});

@@ -96,6 +96,42 @@ export interface BoundedContextSchema {
 	schemas: { [schema: string]: DataSchemaSchema };
 }
 
+/** What a comment's link points at. */
+export type CommentLinkKind =
+	| "code"
+	| "contract"
+	| "adr"
+	| "runbook"
+	| "dashboard";
+
+/**
+ * @title CommentLink
+ * @description Where the evidence for a comment lives: the code, the contract, the decision record, the runbook or the dashboard.
+ */
+export interface CommentLink {
+	kind: CommentLinkKind;
+	url: string;
+	/** What to show instead of the raw URL. */
+	label?: string;
+}
+
+/**
+ * @title Comment
+ * @description A short grounded statement about the real system behind a strategic intent, optionally backed by one link.
+ */
+export interface Comment {
+	text: string;
+	link?: CommentLink;
+}
+
+/**
+ * What the architecture thinks of a strategic intent: `by-design` is how it
+ * should be, `tolerated` a known compromise nobody plans to change, and
+ * `refactor` something that should be removed or replaced. An absent
+ * disposition means `by-design`.
+ */
+export type Disposition = "by-design" | "tolerated" | "refactor";
+
 /** How an upstream context exposes what it provides. */
 export type UpstreamRole = "open-host-service" | "published-language";
 
@@ -124,6 +160,10 @@ export interface ConsumableSchema {
 	schema?: { $ref: string };
 	/** For operations: the event consumables this operation may raise. */
 	raises?: { $ref: string }[];
+	/** Grounded statements about the real system behind this consumable. */
+	comments?: Comment[];
+	/** What the architecture thinks of this consumable. Absent means `by-design`. */
+	disposition?: Disposition;
 }
 
 /**
@@ -134,6 +174,10 @@ export interface ConsumptionSchema {
 	consumable: { $ref: string };
 	/** The downstream role the consumer adopts for this consumable. */
 	pattern?: DownstreamRole;
+	/** Grounded statements about the real system behind this consumption. */
+	comments?: Comment[];
+	/** What the architecture thinks of this consumption. Absent means `by-design`. */
+	disposition?: Disposition;
 }
 
 /**
@@ -169,6 +213,10 @@ export interface DirectedContextRelationshipSchema {
 	upstreamRoles: UpstreamRole[];
 	downstreamRoles: DownstreamRole[];
 	description?: string;
+	/** Grounded statements about the real system behind this relationship. */
+	comments?: Comment[];
+	/** What the architecture thinks of this relationship. Absent means `by-design`. */
+	disposition?: Disposition;
 }
 
 /**
@@ -179,6 +227,10 @@ export interface SymmetricContextRelationshipSchema {
 	type: SymmetricRelationshipType;
 	participants: [{ $ref: string }, { $ref: string }];
 	description?: string;
+	/** Grounded statements about the real system behind this relationship. */
+	comments?: Comment[];
+	/** What the architecture thinks of this relationship. Absent means `by-design`. */
+	disposition?: Disposition;
 }
 
 /**

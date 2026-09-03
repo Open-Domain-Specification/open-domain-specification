@@ -1,5 +1,10 @@
 import type { Debugger } from "debug";
 import { getDebug } from "./debug";
+import {
+	type Evidenced,
+	type EvidenceOptions,
+	normaliseDisposition,
+} from "./evidence";
 import type * as ods from "./schema";
 import {
 	type DownstreamRole,
@@ -703,6 +708,8 @@ export class BoundedContext
 			upstreamRoles: options.upstreamRoles ?? [],
 			downstreamRoles: options.downstreamRoles ?? [],
 			description: options.description,
+			comments: options.comments,
+			disposition: options.disposition,
 		});
 	}
 
@@ -714,33 +721,38 @@ export class BoundedContext
 		return upstream.upstreamOf(this, options);
 	}
 
-	partnerOf(other: BoundedContext, description?: string): ContextRelationship {
-		return this.symmetricWith("partnership", other, description);
+	partnerOf(
+		other: BoundedContext,
+		options: SymmetricRelationshipOptions = {},
+	): ContextRelationship {
+		return this.symmetricWith("partnership", other, options);
 	}
 
 	sharesKernelWith(
 		other: BoundedContext,
-		description?: string,
+		options: SymmetricRelationshipOptions = {},
 	): ContextRelationship {
-		return this.symmetricWith("shared-kernel", other, description);
+		return this.symmetricWith("shared-kernel", other, options);
 	}
 
 	separateWaysFrom(
 		other: BoundedContext,
-		description?: string,
+		options: SymmetricRelationshipOptions = {},
 	): ContextRelationship {
-		return this.symmetricWith("separate-ways", other, description);
+		return this.symmetricWith("separate-ways", other, options);
 	}
 
 	private symmetricWith(
 		type: ods.SymmetricRelationshipType,
 		other: BoundedContext,
-		description?: string,
+		options: SymmetricRelationshipOptions,
 	): ContextRelationship {
 		return this.workspace.addRelationship({
 			type,
 			participants: [this, other],
-			description,
+			description: options.description,
+			comments: options.comments,
+			disposition: options.disposition,
 		});
 	}
 
@@ -964,10 +976,10 @@ export type ConsumableAttributes = {
 	/** The payload shape, one of the context's schemas. */
 	schema?: DataSchema;
 	id?: string;
-};
+} & EvidenceOptions;
 
 export class Consumable
-	implements Visitable, SchemaConvertible<ods.ConsumableSchema>
+	implements Visitable, Evidenced, SchemaConvertible<ods.ConsumableSchema>
 {
 	id: string;
 	name: string;
@@ -980,6 +992,8 @@ export class Consumable
 	raisedEvents: Consumable[] = [];
 	provider: Aggregate | Service;
 	consumptions: Consumption[] = [];
+	comments: ods.Comment[];
+	disposition?: ods.Disposition;
 
 	get path(): string {
 		return `${this.provider.path}/provides/${this.id}`;
@@ -1001,6 +1015,8 @@ export class Consumable
 		this.type = attributes.type;
 		this.internal = attributes.internal ?? false;
 		this.schema = attributes.schema;
+		this.comments = attributes.comments ?? [];
+		this.disposition = normaliseDisposition(attributes.disposition);
 		this.provider = provider;
 		provider.consumables.set(this.id, this);
 	}
@@ -1033,6 +1049,8 @@ export class Consumable
 			raises: this.raisedEvents.length
 				? this.raisedEvents.map((it) => ({ $ref: it.ref }))
 				: undefined,
+			comments: this.comments.length ? this.comments : undefined,
+			disposition: this.disposition,
 		};
 	}
 }
@@ -1356,14 +1374,16 @@ export class EntityRelation
 
 export type ConsumptionAttributes = {
 	pattern?: DownstreamRole;
-};
+} & EvidenceOptions;
 
 export class Consumption
-	implements Visitable, SchemaConvertible<ods.ConsumptionSchema>
+	implements Visitable, Evidenced, SchemaConvertible<ods.ConsumptionSchema>
 {
 	consumer: Aggregate | Service;
 	consumable: Consumable;
 	pattern?: DownstreamRole;
+	comments: ods.Comment[];
+	disposition?: ods.Disposition;
 
 	constructor(
 		consumer: Aggregate | Service,
@@ -1374,6 +1394,8 @@ export class Consumption
 		this.consumer.consumptions.push(this);
 		this.consumable = consumable;
 		this.pattern = attributes.pattern;
+		this.comments = attributes.comments ?? [];
+		this.disposition = normaliseDisposition(attributes.disposition);
 		this.consumable.consumptions.push(this);
 	}
 
@@ -1385,6 +1407,8 @@ export class Consumption
 		return {
 			consumable: { $ref: this.consumable.ref },
 			pattern: this.pattern,
+			comments: this.comments.length ? this.comments : undefined,
+			disposition: this.disposition,
 		};
 	}
 }
@@ -1394,22 +1418,27 @@ export type DirectedRelationshipOptions = {
 	upstreamRoles?: UpstreamRole[];
 	downstreamRoles?: DownstreamRole[];
 	description?: string;
-};
+} & EvidenceOptions;
+
+/** What `partnerOf`, `sharesKernelWith` and `separateWaysFrom` accept. */
+export type SymmetricRelationshipOptions = {
+	description?: string;
+} & EvidenceOptions;
 
 export type ContextRelationshipAttributes =
-	| {
+	| ({
 			type: ods.DirectedRelationshipType;
 			upstream: BoundedContext;
 			downstream: BoundedContext;
 			upstreamRoles?: UpstreamRole[];
 			downstreamRoles?: DownstreamRole[];
 			description?: string;
-	  }
-	| {
+	  } & EvidenceOptions)
+	| ({
 			type: ods.SymmetricRelationshipType;
 			participants: [BoundedContext, BoundedContext];
 			description?: string;
-	  };
+	  } & EvidenceOptions);
 
 const DIRECTED_RELATIONSHIP_TYPES: ReadonlySet<ods.ContextRelationshipType> =
 	new Set<ods.ContextRelationshipType>([
@@ -1429,7 +1458,10 @@ export function isDirectedRelationshipType(
  * symmetric types the order carries no meaning.
  */
 export class ContextRelationship
-	implements Visitable, SchemaConvertible<ods.ContextRelationshipSchema>
+	implements
+		Visitable,
+		Evidenced,
+		SchemaConvertible<ods.ContextRelationshipSchema>
 {
 	workspace: Workspace;
 	type: ods.ContextRelationshipType;
@@ -1438,11 +1470,15 @@ export class ContextRelationship
 	upstreamRoles: UpstreamRole[];
 	downstreamRoles: DownstreamRole[];
 	description?: string;
+	comments: ods.Comment[];
+	disposition?: ods.Disposition;
 
 	constructor(workspace: Workspace, attributes: ContextRelationshipAttributes) {
 		this.workspace = workspace;
 		this.type = attributes.type;
 		this.description = attributes.description;
+		this.comments = attributes.comments ?? [];
+		this.disposition = normaliseDisposition(attributes.disposition);
 		if ("participants" in attributes) {
 			[this.source, this.target] = attributes.participants;
 			this.upstreamRoles = [];
@@ -1465,6 +1501,10 @@ export class ContextRelationship
 	}
 
 	toSchema(): ods.ContextRelationshipSchema {
+		const evidence = {
+			comments: this.comments.length ? this.comments : undefined,
+			disposition: this.disposition,
+		};
 		if (isDirectedRelationshipType(this.type)) {
 			return {
 				type: this.type,
@@ -1473,12 +1513,14 @@ export class ContextRelationship
 				upstreamRoles: this.upstreamRoles,
 				downstreamRoles: this.downstreamRoles,
 				description: this.description,
+				...evidence,
 			};
 		}
 		return {
 			type: this.type,
 			participants: [{ $ref: this.source.ref }, { $ref: this.target.ref }],
 			description: this.description,
+			...evidence,
 		};
 	}
 }

@@ -263,10 +263,9 @@ export function makeRichTestWs() {
 		description: "Reporting bounded context, serves no subdomain",
 		bigBallOfMud: true,
 	});
-	const salesReportsPartnership = reportingBc.partnerOf(
-		orderingBc,
-		"Reporting and ordering plan releases together",
-	);
+	const salesReportsPartnership = reportingBc.partnerOf(orderingBc, {
+		description: "Reporting and ordering plan releases together",
+	});
 
 	return {
 		ws,

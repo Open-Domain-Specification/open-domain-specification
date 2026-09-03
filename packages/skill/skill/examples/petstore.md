@@ -91,10 +91,36 @@ salesBC.downstreamOf(catalogBC, {
 ## Separate ways, on purpose
 
 ```ts
-identityBC.separateWaysFrom(
-	salesBC,
-	"Orders are anonymous in Petstore v3; no integration by design",
-);
+identityBC.separateWaysFrom(salesBC, {
+	description: "Orders are anonymous in Petstore v3; no integration by design",
+});
+```
+
+## Evidence: what the code says, and what the architecture wants
+
+```ts
+catalogBC.sharesKernelWith(inventoryBC, {
+	description: "PetStatus and its values are one shared definition",
+	disposition: "refactor",
+	comments: [
+		{
+			text: "PetStatus and its values live in @petstore/kernel and both services compile against it.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/petstore/blob/main/packages/kernel/src/PetStatus.ts",
+				label: "packages/kernel/src/PetStatus.ts",
+			},
+		},
+		{
+			text: "The kernel has grown past the status enum and now carries pricing rules; it should become a Published Language from Catalog.",
+			link: {
+				kind: "adr",
+				url: "https://github.com/example/petstore/blob/main/docs/adr/014-shrink-the-kernel.md",
+				label: "ADR-014 Shrink the kernel",
+			},
+		},
+	],
+});
 ```
 
 ## A policy reacting to events from two contexts
