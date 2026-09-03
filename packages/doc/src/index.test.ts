@@ -178,6 +178,37 @@ describe("toDoc", () => {
 		expect(docs).toHaveProperty("boundedcontexts/ordering/flowmap.svg");
 	});
 
+	it("should emit a docsify shell so the folder is a complete static site", async () => {
+		const workspace = new Workspace('Ac"me & <Co>', {
+			odsVersion: "1.0.0",
+			description: "A test workspace",
+			version: "0.1.0",
+		});
+
+		const docs = await toDoc(workspace);
+
+		const shell = docs["index.html"];
+		expect(shell).toContain("loadSidebar: true");
+		expect(shell).toContain("subMaxLevel: 2");
+		// Every page links its diagrams beside itself, not from the site root.
+		expect(shell).toContain("relativePath: true");
+		expect(shell).toContain('src="https://cdn.jsdelivr.net/npm/docsify@4"');
+		expect(shell).toContain(
+			'href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css"',
+		);
+		// No README.md is generated, so a bare `/` has to be sent somewhere real.
+		const workspaceIndex = Object.keys(docs).find((k) =>
+			k.endsWith("/index.md"),
+		);
+		const route = JSON.stringify(`#/${workspaceIndex}`);
+		expect(shell).toContain(`if (!location.hash) location.hash = ${route};`);
+		// Only the root has a _sidebar.md; docsify asks for one per folder.
+		expect(shell).toContain('alias: { "/.*/_sidebar.md": "/_sidebar.md" }');
+		// The name reaches the title and the config escaped for each context.
+		expect(shell).toContain("<title>Ac&quot;me &amp; &lt;Co&gt;</title>");
+		expect(shell).toContain('name: "Ac\\"me & <Co>"');
+	});
+
 	it("should handle workspace with options", async () => {
 		const workspace = new Workspace("Test Workspace", {
 			odsVersion: "1.0.0",
