@@ -1,4 +1,5 @@
 import { Workspace } from "@open-domain-specification/core";
+import { assertDocSite } from "@open-domain-specification/model-tools";
 import { describe, expect, it } from "vitest";
 import { workspace } from "./workspace";
 
@@ -278,6 +279,12 @@ describe("Swagger Petstore Example Workspace", () => {
 	it("validates clean: the demonstration reference has no diagnostics", () => {
 		expect(workspace.validate()).toEqual([]);
 	});
+
+	// Rendering every diagram through graphviz-wasm takes tens of seconds on
+	// the larger models, so this one test gets a generous timeout.
+	it("generates a complete docsify site with no broken links", async () => {
+		await assertDocSite(workspace);
+	}, 60_000);
 });
 
 describe("Swagger Petstore schema round-trip", () => {
