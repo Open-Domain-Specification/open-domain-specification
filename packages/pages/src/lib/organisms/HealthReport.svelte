@@ -1,5 +1,5 @@
 <script lang="ts">
-import { PATTERNS } from "@open-domain-specification/core";
+import { isSymmetricRelationship, PATTERNS } from "@open-domain-specification/core";
 import Chip from "../atoms/Chip.svelte";
 import DispositionChip from "../atoms/DispositionChip.svelte";
 import Empty from "../atoms/Empty.svelte";
@@ -7,7 +7,6 @@ import RefLink from "../atoms/RefLink.svelte";
 import { type EvidenceRow, health } from "../evidence/derive";
 import { ICONS, useModel } from "../model";
 import CommentList from "../molecules/CommentList.svelte";
-import { isSymmetricRelationship } from "../relationship";
 
 /**
  * The workspace read of the evidence layer (RFC-002 section 4.5): what is

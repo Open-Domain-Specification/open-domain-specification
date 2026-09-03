@@ -1,7 +1,9 @@
 <script lang="ts">
 import {
 	type ContextRelationship,
+	isSymmetricRelationship,
 	PATTERNS,
+	relationshipTitle,
 } from "@open-domain-specification/core";
 import Chip from "../atoms/Chip.svelte";
 import DispositionChip from "../atoms/DispositionChip.svelte";
@@ -14,7 +16,6 @@ import { roleLabel } from "../flow/roles";
 import { consumableIcon, ICONS, useModel } from "../model";
 import Card from "../molecules/Card.svelte";
 import CommentList from "../molecules/CommentList.svelte";
-import { isSymmetricRelationship, relationshipTitle } from "../relationship";
 
 /**
  * Everything known about one context relationship, intent and evidence

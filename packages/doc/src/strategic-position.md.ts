@@ -1,14 +1,11 @@
-import type {
-	BoundedContext,
-	ContextRelationship,
+import {
+	type BoundedContext,
+	type ContextRelationship,
+	isSymmetricRelationship,
 } from "@open-domain-specification/core";
 import { commentsMd } from "./comments.md";
 import { patternNotesMd } from "./context-relationships.md";
 import { markdownTable } from "./lib/markdown-table";
-
-/** Relationship types with no upstream or downstream side (RFC-002 section 4.1). */
-const SYMMETRIC = new Set(["partnership", "shared-kernel", "separate-ways"]);
-const isSymmetricRelationship = (type: string) => SYMMETRIC.has(type);
 
 /** The context on the other side of a relationship from `bc`. */
 const counterpartOf = (r: ContextRelationship, bc: BoundedContext) =>

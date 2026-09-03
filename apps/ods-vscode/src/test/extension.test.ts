@@ -180,6 +180,26 @@ describe("ODS extension in a real VS Code window", function () {
 			assert.equal(first.file.relativePath, file.relativePath);
 		});
 
+		it("labels a symmetric relationship row the same way pages does, not with a direction", async () => {
+			const root = api.tree.getChildren()[0];
+			const relationships = api.tree
+				.getChildren(root)
+				.find((n) => n.label === "Relationships");
+			assert.ok(relationships, "the tree has no Relationships group");
+			const separateWays = api.tree
+				.getChildren(relationships)
+				.find((n) => n.options.description === "separate-ways");
+			assert.ok(
+				separateWays,
+				"the petstore workspace has no separate-ways relationship",
+			);
+			assert.match(
+				separateWays.label,
+				/↔/,
+				"a symmetric relationship's row should use the same double arrow as pages, not a directional label",
+			);
+		});
+
 		it("reuses the webview for a second ref in the same file", async () => {
 			const file = petstoreFile(api);
 			const readyCount = log.messages.filter((m) => m.type === "ready").length;

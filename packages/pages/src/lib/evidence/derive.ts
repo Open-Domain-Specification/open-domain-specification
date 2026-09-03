@@ -1,13 +1,13 @@
-import type {
-	BoundedContext,
-	CommentLink,
-	Consumable,
-	Consumption,
-	ContextRelationship,
-	Workspace,
+import {
+	type BoundedContext,
+	type CommentLink,
+	type Consumable,
+	type Consumption,
+	type ContextRelationship,
+	dispositionOf,
+	isSymmetricRelationship,
+	type Workspace,
 } from "@open-domain-specification/core";
-import { dispositionOf } from "@open-domain-specification/core";
-import { isSymmetricRelationship } from "../relationship";
 
 /** One relationship, with a key of its own so an expanded row survives a re-render. */
 export type EvidenceRow = { key: string; relationship: ContextRelationship };

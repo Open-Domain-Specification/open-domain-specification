@@ -6,6 +6,7 @@ export * from "./flow-map";
 export * from "./namespace";
 export * from "./patterns";
 export * from "./relation-map";
+export * from "./relationship";
 export * from "./schema";
 export * from "./validate";
 export * from "./visitable";

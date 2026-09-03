@@ -1,11 +1,12 @@
-import type {
-	Aggregate,
-	BoundedContext,
-	Consumable,
-	Domain,
-	Service,
-	Subdomain,
-	Workspace,
+import {
+	type Aggregate,
+	type BoundedContext,
+	type Consumable,
+	type Domain,
+	relationshipTitle,
+	type Service,
+	type Subdomain,
+	type Workspace,
 } from "@open-domain-specification/core";
 import * as vscode from "vscode";
 import type { OdsDiagnostics } from "./diagnostics";
@@ -198,7 +199,7 @@ export class ModelTree
 							(r) =>
 								new ModelNode(
 									file,
-									`${r.source.name} ${r.type === "partnership" || r.type === "shared-kernel" ? "and" : "to"} ${r.target.name}`,
+									relationshipTitle(r),
 									"arrow-right",
 									undefined,
 									// A relationship has a page of its own, so the row opens it.

@@ -92,7 +92,7 @@ export const groupPathOf = (ns: { name: string }[]) =>
 		.map((n) => n.name)
 		.join(" / ") || undefined;
 
-export { isSymmetricRelationship } from "../relationship";
+export { isSymmetricRelationship } from "@open-domain-specification/core";
 export { consumableGraph } from "./consumable-graph";
 export { contextGraph } from "./context-graph";
 export { relationGraph } from "./relation-graph";

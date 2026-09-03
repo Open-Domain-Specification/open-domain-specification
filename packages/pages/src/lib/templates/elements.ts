@@ -13,7 +13,7 @@ import type {
  * hosts that list one. It lives in a leaf module because the extension reads
  * it too; this is the registration every other element already has here.
  */
-export { relationshipTitle } from "../relationship";
+export { relationshipTitle } from "@open-domain-specification/core";
 
 /* ---------- shared lookups across the workspace ---------- */
 
