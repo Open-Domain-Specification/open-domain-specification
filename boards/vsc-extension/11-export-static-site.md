@@ -1,10 +1,10 @@
 ---
-column: review
+column: done
 labels: [frontend]
 priority: med
 agent: claude
 live: false
-updatedAt: 2026-09-02T16:00:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 ---
 # Export the model as a static site
 
@@ -17,6 +17,10 @@ An `ODS: Export Static Site` command that renders every element page with the pa
 - [x] `page.js` runs without the VS Code bridge
 - [x] Command, manifest entry and progress notification
 - [x] Test that every link in the exported petstore resolves to a file
+
+## Gates
+
+- [x] qa-automated — root npm test green incl. extension unit tests (4); 5 real-VS-Code integration tests (activation, webview boot and routing, panel reuse, static export, open-at-ref); 36 Playwright e2e over the shared pages bundle (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

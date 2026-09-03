@@ -1,11 +1,11 @@
 ---
-column: review
+column: done
 labels: [frontend]
 priority: high
 agent: claude
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-03T01:30:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 ---
 # Integration tests inside a real VS Code window
 
@@ -21,6 +21,7 @@ Verify the extension in a real VS Code window using the recommended practice: `@
 ## Gates
 
 - [x] clean-code-swept — reviewer sweep of the test seam and suite; message waits made event-driven, duplicated file lookup folded into a helper, misleading default timeout removed; 5 passing in VS Code 1.96.4 (claude, 2026-09-03T01:30:00.000Z)
+- [x] qa-automated — root npm test green incl. extension unit tests (4); 5 real-VS-Code integration tests (activation, webview boot and routing, panel reuse, static export, open-at-ref); 36 Playwright e2e over the shared pages bundle (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

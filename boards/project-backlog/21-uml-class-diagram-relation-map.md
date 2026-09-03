@@ -1,10 +1,10 @@
 ---
-column: review
+column: done
 labels: [ddd, backend, docs]
 priority: med
 agent: claude
 live: false
-updatedAt: 2026-09-02T16:05:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 ---
 # Render the relation map as a UML class diagram
 
@@ -18,6 +18,10 @@ Where DDD has no notation of its own, use UML. The relation map (entities, value
 - [x] graphviz tests updated and extended
 - [x] Docs site relation page and example regenerated
 - [x] Whole-repo build and test green
+
+## Gates
+
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

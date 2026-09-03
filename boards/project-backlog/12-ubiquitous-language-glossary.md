@@ -1,8 +1,8 @@
 ---
-column: review
+column: done
 labels: [ddd, backend, docs]
 priority: high
-updatedAt: 2026-09-02T12:50:21.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 live: false
 ---
 # Add a ubiquitous language glossary per bounded context
@@ -14,6 +14,10 @@ The README pitches shared vocabulary as the core value, but names are the only v
 - [x] Add GlossaryTermSchema and BoundedContext.addTerm
 - [x] Generate a glossary page in packages/doc
 - [x] Add a glossary section to the UI bounded context page
+
+## Gates
+
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

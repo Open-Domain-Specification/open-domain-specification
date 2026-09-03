@@ -1,11 +1,11 @@
 ---
-column: review
+column: done
 labels: [frontend, ddd]
 priority: med
 agent: claude
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-03T04:30:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 ---
 # Interactive diagrams with Svelte Flow
 
@@ -22,6 +22,7 @@ Add `@xyflow/svelte` to the pages library and offer an interactive view beside e
 ## Gates
 
 - [x] clean-code-swept — three-reviewer sweep (SRP/KISS, DRY/dead, naming/coupling) over cards 24 and 25; findings above 0.3 fixed, none left as TODOs; root build and all 262 tests green, biome clean on pages and extension (claude, 2026-09-02T20:50:00.000Z)
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

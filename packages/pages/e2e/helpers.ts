@@ -2,6 +2,25 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Locator, Page } from "@playwright/test";
 
+/**
+ * Everything a page can tell us went wrong: console errors, uncaught page
+ * errors, requests that never landed, and responses that came back non-2xx.
+ * `file://` responses are left out -- they have no meaningful status.
+ */
+export function watchForProblems(page: Page): string[] {
+	const problems: string[] = [];
+	page.on("console", (m) => {
+		if (m.type() === "error") problems.push(m.text());
+	});
+	page.on("pageerror", (e) => problems.push(e.message));
+	page.on("requestfailed", (r) => problems.push(`failed ${r.url()}`));
+	page.on("response", (r) => {
+		if (r.url().startsWith("http") && !r.ok())
+			problems.push(`${r.status()} ${r.url()}`);
+	});
+	return problems;
+}
+
 /** Shared fixtures: the example workspace, served to the viewer over an intercepted URL. */
 
 export const PETSTORE_PATH = join(
@@ -16,6 +35,10 @@ export const PETSTORE_URL = "https://workspaces.test/.ods/petstore.json";
 export const WORKSPACE_NAME = "Swagger Petstore (v3)";
 export const ORDER_REF = "#/boundedcontexts/sales_bc/aggregates/order";
 export const EXPORT_ORIGIN = "http://localhost:4174";
+
+/** The petstore's generated docsify site, served as a plain folder of files. */
+export const DOCSIFY_DIR = join(__dirname, "../../../models/petstore/docs");
+export const DOCSIFY_ORIGIN = "http://localhost:4175";
 
 /** The viewer with the workspace already requested through the `?url=` import. */
 export const viewerAt = (hash = "") =>

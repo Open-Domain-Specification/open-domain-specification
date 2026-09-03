@@ -16,6 +16,7 @@ import { aggergateMd } from "./aggregate.md";
 import { boundedcontextMd } from "./boundedcontext.md";
 import { domainMd } from "./domain.md";
 import { glossaryMd } from "./glossary.md";
+import { indexHtml } from "./index.html";
 import {
 	pathToConsumableMapSvg,
 	pathToContextMapSvg,
@@ -35,6 +36,8 @@ export async function toDoc(
 ): Promise<Record<string, string>> {
 	const docs: Record<string, string> = {};
 	const sidebar: string[] = [];
+
+	docs["index.html"] = indexHtml(workspace);
 
 	docs[pathToIndexMd(workspace.path)] = workspaceMd(workspace, options);
 

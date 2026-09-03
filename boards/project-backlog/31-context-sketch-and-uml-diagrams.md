@@ -1,11 +1,11 @@
 ---
-column: review
+column: done
 labels: [frontend, ddd]
 priority: high
 agent: claude
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-03T14:00:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 ---
 # Sketch only for the context map, domain borders, and proper UML for the other two maps
 
@@ -26,6 +26,7 @@ Three changes to the interactive diagrams. First, the sketch style applies to th
 ## Gates
 
 - [x] clean-code-swept — reviewer sweep; four findings fixed: Voronoi cells computed once per backdrop, sketch data only on context nodes, legend names typed against the core unions, hasSketchStyle predicate; 344 unit tests at 100 coverage, 35 e2e, root green (claude, 2026-09-03T14:00:00.000Z)
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

@@ -1,8 +1,8 @@
 ---
-column: review
+column: done
 labels: [ddd, backend]
 priority: high
-updatedAt: 2026-09-02T12:24:54.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 live: false
 ---
 # Add domain events as first-class objects
@@ -15,6 +15,10 @@ Events exist only as `type: "event"` on a Consumable (packages/core/src/schema.t
 - [x] Allow a Consumable of type event to reference a DomainEvent
 - [x] Render events on the aggregate page and in the doc generator
 - [x] Tests in packages/core/src/workspace.test.ts
+
+## Gates
+
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

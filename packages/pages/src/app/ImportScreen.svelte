@@ -1,4 +1,5 @@
 <script lang="ts">
+import Logo from "../lib/atoms/Logo.svelte";
 import type { Example } from "../protocol";
 
 /** Import by URL (query parameter or form), by file upload, or from an example card; the last URL is remembered. */
@@ -10,8 +11,20 @@ let {
 	examples?: Example[];
 } = $props();
 const KEY = "ods-viewer-url";
+
+function toAbsoluteUrl(raw?: string | null): string {
+	if (!raw?.trim()) return "";
+	try {
+		return new URL(raw.trim(), document.baseURI).href;
+	} catch {
+		return raw.trim();
+	}
+}
+
 let url = $state(
-	new URLSearchParams(location.search).get("url") ?? remembered(),
+	toAbsoluteUrl(
+		new URLSearchParams(location.search).get("url") ?? remembered(),
+	),
 );
 let error = $state<string | undefined>();
 let loading = $state(false);
@@ -25,17 +38,21 @@ function remembered(): string {
 }
 
 async function fromUrl() {
+	const target = toAbsoluteUrl(url);
+	url = target;
 	loading = true;
 	error = undefined;
 	try {
-		const res = await fetch(url);
+		const res = await fetch(target);
 		if (!res.ok)
-			throw new Error(`Failed to fetch workspace from ${url} (${res.status})`);
+			throw new Error(
+				`Failed to fetch workspace from ${target} (${res.status})`,
+			);
 		const schema = await res.json();
 		try {
-			localStorage.setItem(KEY, url);
+			localStorage.setItem(KEY, target);
 		} catch {}
-		onload(schema, url.split("/").pop() || url);
+		onload(schema, target.split("/").pop() || target);
 	} catch (e) {
 		error = e instanceof Error ? e.message : String(e);
 	} finally {
@@ -55,7 +72,7 @@ async function fromFile(e: Event) {
 }
 
 function fromExample(example: Example) {
-	url = example.url;
+	url = toAbsoluteUrl(example.url);
 	fromUrl();
 }
 
@@ -64,12 +81,22 @@ if (new URLSearchParams(location.search).get("url")) fromUrl();
 
 <div class="layout">
 	<main class="import">
-		<h1><i class="codicon codicon-package"></i> Open a workspace</h1>
+		<h1 class="brand"><Logo size={32} /> Open a workspace</h1>
 		<p class="lead">Load an Open Domain Specification workspace file to browse it.</p>
 		<form onsubmit={(e) => { e.preventDefault(); fromUrl(); }}>
 			<label for="url">From a URL</label>
 			<div class="row">
-				<input id="url" type="url" bind:value={url} placeholder="https://example.com/.ods/petstore.json" readonly={loading} required />
+				<input
+					id="url"
+					type="url"
+					bind:value={url}
+					onchange={() => {
+						if (url) url = toAbsoluteUrl(url);
+					}}
+					placeholder="https://example.com/.ods/petstore.json"
+					readonly={loading}
+					required
+				/>
 				<button type="submit" disabled={loading}>{loading ? "Loading…" : "Load"}</button>
 			</div>
 			<p class="dim">The file is fetched directly from the URL by your browser, so it must allow cross-origin requests.</p>
@@ -93,6 +120,7 @@ if (new URLSearchParams(location.search).get("url")) fromUrl();
 
 <style>
 	.import { max-width: 640px; margin: 48px auto; }
+	.brand { display: flex; align-items: center; gap: 10px; }
 	.row { display: flex; gap: 8px; }
 	.row input { flex: 1; }
 	label { display: block; margin: 16px 0 6px; font-weight: 600; }

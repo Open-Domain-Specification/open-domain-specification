@@ -1,8 +1,8 @@
 ---
-column: review
+column: done
 labels: [ddd, backend]
 priority: high
-updatedAt: 2026-09-02T12:32:18.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 live: false
 ---
 # Add attributes to entities and value objects
@@ -14,6 +14,10 @@ Entities and value objects have only a name, description and relations (packages
 - [x] Add AttributeSchema and addAttribute on Entity and ValueObject
 - [x] Allow an attribute type to reference a value object
 - [x] Render attribute tables in doc and UI
+
+## Gates
+
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

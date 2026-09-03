@@ -1,8 +1,8 @@
 ---
-column: review
+column: done
 labels: [ddd, backend, breaking]
 priority: high
-updatedAt: 2026-09-02T12:08:56.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 live: false
 ---
 # Model context relationships explicitly instead of per-consumable patterns
@@ -16,6 +16,10 @@ Relationship patterns are split across ConsumablePattern and ConsumptionPattern 
 - [x] Rebuild ODSContextMap from relationships plus consumptions
 - [x] ~~Migration~~ (dropped: no backwards compatibility required)
 - [x] Record a decision in decisions/
+
+## Gates
+
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

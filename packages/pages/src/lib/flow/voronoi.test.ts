@@ -98,9 +98,15 @@ describe("ellipsePoints and resample", () => {
 			[0, 10],
 			[0, 5],
 		]);
+		// A step that does not divide the 40-unit perimeter stretches to one that
+		// does — 6 paces of 6.67 — so the chord closing the loop is as long as
+		// the rest and the spline through them meets itself without a kink.
 		const uneven = resample(square, 7);
 		expect(uneven.length).toBe(6);
-		expect(uneven[2]).toEqual([10, 4]);
+		expect(uneven[2][0]).toBe(10);
+		expect(uneven[2][1]).toBeCloseTo(10 / 3);
+		expect(uneven[5][0]).toBe(0);
+		expect(uneven[5][1]).toBeCloseTo(20 / 3);
 		expect(
 			resample(
 				[
@@ -282,4 +288,87 @@ describe("domainBorders", () => {
 			expect(Number(x0)).toBeLessThan(Number(x1));
 		}
 	});
+});
+
+/**
+ * Every point of a closed cubic path, sampled `steps` times along each
+ * segment, without the closing repeat of the start point.
+ */
+function samplePath(d: string, steps = 8): Point[] {
+	const nums = (s: string) => s.trim().split(/[\s,]+/).map(Number);
+	const [head, ...curves] = d.replace(/ Z$/, "").split("C");
+	let from = nums(head.slice(1)) as Point;
+	const out: Point[] = [from];
+	for (const curve of curves) {
+		const [c1x, c1y, x1, y1, x, y] = nums(curve);
+		const at = (t: number, i: number): number => {
+			const u = 1 - t;
+			const [c1, c2, p] = [[c1x, c1y][i], [x1, y1][i], [x, y][i]];
+			return (
+				u * u * u * from[i] +
+				3 * u * u * t * c1 +
+				3 * u * t * t * c2 +
+				t * t * t * p
+			);
+		};
+		for (let s = 1; s <= steps; s++)
+			out.push([at(s / steps, 0), at(s / steps, 1)]);
+		from = [x, y];
+	}
+	return out.slice(0, -1);
+}
+
+/** How far a point sits inside a node's ellipse: below 1 is inside it. */
+const ellipseRadius = (n: SketchNode, [x, y]: Point) =>
+	Math.hypot(
+		(x - (n.x + n.width / 2)) / (n.width / 2),
+		(y - (n.y + n.height / 2)) / (n.height / 2),
+	);
+
+/** The signed turn, in radians, at each vertex of the closed polygon through `points`. */
+function turns(points: Point[]): number[] {
+	const n = points.length;
+	const edge = (i: number): Point => [
+		points[(i + 1) % n][0] - points[i % n][0],
+		points[(i + 1) % n][1] - points[i % n][1],
+	];
+	return points.map((_, i) => {
+		const [a, b] = [edge(i), edge(i + 1)];
+		return Math.atan2(a[0] * b[1] - a[1] * b[0], a[0] * b[0] + a[1] * b[1]);
+	});
+}
+
+describe("the blob curve round a small or outlying node", () => {
+	/** Three big nodes in a row and one small node far below them. */
+	const outlier: SketchNode[] = [
+		{ id: "a", x: 0, y: 0, width: 260, height: 160 },
+		{ id: "b", x: 400, y: 0, width: 260, height: 160 },
+		{ id: "c", x: 800, y: 0, width: 260, height: 160 },
+		{ id: "small", x: 500, y: 620, width: 90, height: 40 },
+	];
+	const single: SketchNode[] = [
+		{ id: "only", x: 0, y: 0, width: 120, height: 60 },
+	];
+
+	for (const [name, nodes] of [
+		["a single node", single],
+		["an outlying small node", outlier],
+	] as const) {
+		it(`curves round ${name} without a cusp, and clears every node`, () => {
+			const { blob } = sketchBackdrop(nodes, 24);
+			expect(blob.startsWith("M")).toBe(true);
+			expect(blob.endsWith(" Z")).toBe(true);
+			const points = samplePath(blob);
+			const turn = turns(points);
+			// The hull runs one way round, so the curve through it should too: a
+			// cusp turns back on itself (the uniform spline reached -0.16 radians
+			// for the single node) and a loop where the curve overshoots winds the
+			// total past one turn. Sampling a path rounded to two decimals leaves a
+			// couple of degrees of slack at the sharpest corners.
+			for (const t of turn) expect(t).toBeGreaterThan(-0.1);
+			expect(turn.reduce((sum, t) => sum + t, 0)).toBeCloseTo(2 * Math.PI, 1);
+			for (const n of nodes)
+				for (const p of points) expect(ellipseRadius(n, p)).toBeGreaterThan(1);
+		});
+	}
 });

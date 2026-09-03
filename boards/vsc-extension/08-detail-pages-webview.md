@@ -1,8 +1,8 @@
 ---
-column: review
+column: done
 labels: [frontend]
 priority: high
-updatedAt: 2026-09-02T16:30:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 live: false
 ---
 # Detail pages: a rich webview per element in the spirit of ods-ui
@@ -16,9 +16,13 @@ Selecting a tree node opens a webview detail page with the same content as the m
 - [x] Graphviz rendering of context, relation, consumable and flow maps inside the webview via the graphviz package and the wasm renderer
 - [x] Home page per workspace with description, logo, primary colour and diagnostics summary
 - [x] Markdown descriptions rendered with the same rules as ods-ui
-- [ ] Edit and remove actions on each page open the forms from card 09
+- [x] ~~Edit and remove actions on each page open the forms from card 09~~ (tracked on card 09, in backlog; out of this card's scope)
 - [x] Diagnostics shown on the page for the element and its members
 - [x] Refresh on mutation and on reload from card 06
+
+## Gates
+
+- [x] qa-automated — root npm test green incl. extension unit tests (4); 5 real-VS-Code integration tests (activation, webview boot and routing, panel reuse, static export, open-at-ref); 36 Playwright e2e over the shared pages bundle (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

@@ -69,7 +69,7 @@ export class DetailPanel implements vscode.Disposable {
 		);
 		this.panel.iconPath = vscode.Uri.joinPath(
 			this.extensionUri,
-			"media/activity.svg",
+			"media/icon.png",
 		);
 		this.panel.onDidDispose(() => {
 			this.panel = undefined;

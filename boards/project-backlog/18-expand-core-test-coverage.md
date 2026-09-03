@@ -1,8 +1,8 @@
 ---
-column: review
+column: done
 labels: [backend, infra]
 priority: med
-updatedAt: 2026-09-02T11:43:34.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 live: false
 ---
 # Expand core test coverage
@@ -14,6 +14,10 @@ Core has 39 test cases across four files, and workspace-from-schema.test.ts has 
 - [x] Round-trip toSchema/fromSchema equality on the petstore workspace
 - [x] Tests for context-map, consumable-map and relation-map derivations
 - [x] Negative tests for OrThrow lookups
+
+## Gates
+
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

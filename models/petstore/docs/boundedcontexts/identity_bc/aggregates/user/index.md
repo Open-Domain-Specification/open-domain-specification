@@ -17,7 +17,7 @@ Petstore user record, as the legacy API shapes it
 ## Relationships
 | Source | Description | Target | Relation | Cardinality |
 | --- | --- | --- | --- | --- |
-| [User](entities/user/index.md) | has-status | User - UserStatus | uses | 1 |
+| [User - User](./index.md#entities-and-value-objects) | has-status | User - UserStatus | uses | 1 |
 
 
 ## Invariants

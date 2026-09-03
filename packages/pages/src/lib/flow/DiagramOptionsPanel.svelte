@@ -1,5 +1,8 @@
 <script lang="ts">
-import { Panel } from "@xyflow/svelte";
+import { Panel, useSvelteFlow } from "@xyflow/svelte";
+import { untrack } from "svelte";
+import Icon from "../atoms/Icon.svelte";
+import type { Fullscreen } from "./fullscreen.svelte";
 import { type DiagramKind, hasSketchStyle } from "./kind";
 import {
 	type DiagramStyle,
@@ -11,10 +14,18 @@ import {
 /**
  * Top-right controls: how edges attach, how they are drawn, and the figure
  * style. The style select only shows for the context map: the consumable
- * and relation maps are always drawn in their UML form.
+ * and relation maps are always drawn in their UML form. The last control
+ * blows the figure up to a full-viewport overlay.
  */
-let { kind = "context" }: { kind?: DiagramKind } = $props();
-let handles = $state<HandleMode>(diagramOptions.handles);
+let {
+	kind = "context",
+	fullscreen,
+}: { kind?: DiagramKind; fullscreen: Fullscreen } = $props();
+// The panel sits inside Svelte Flow, so it is the piece that can refit the canvas.
+const flow = useSvelteFlow();
+let handles = $state<HandleMode>(
+	untrack(() => diagramOptions.handlesFor(kind)),
+);
 let edges = $state<EdgeStyle>(diagramOptions.edges);
 let style = $state<DiagramStyle>(diagramOptions.style);
 const apply = () => diagramOptions.set({ handles, edges, style });
@@ -46,6 +57,15 @@ const apply = () => diagramOptions.set({ handles, edges, style });
 			</select>
 		</label>
 	{/if}
+	<button
+		type="button"
+		class="fullscreen"
+		title={fullscreen.active ? "Exit fullscreen" : "Enter fullscreen"}
+		aria-label={fullscreen.active ? "Exit fullscreen" : "Enter fullscreen"}
+		onclick={() => fullscreen.toggle(() => flow.fitView())}
+	>
+		<Icon name={fullscreen.active ? "screen-normal" : "screen-full"} />
+	</button>
 </Panel>
 
 <style>
@@ -76,5 +96,19 @@ const apply = () => diagramOptions.set({ handles, edges, style });
 		border: 1px solid var(--border);
 		border-radius: 3px;
 		padding: 1px 3px;
+	}
+	button.fullscreen {
+		display: flex;
+		align-items: center;
+		padding: 1px 3px;
+		font: inherit;
+		color: var(--fg);
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 3px;
+		cursor: pointer;
+	}
+	button.fullscreen :global(.codicon) {
+		font-size: 12px;
 	}
 </style>

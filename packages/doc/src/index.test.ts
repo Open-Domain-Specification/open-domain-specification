@@ -1,6 +1,16 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { Workspace } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { toDoc } from "./index";
+
+const petstoreSchema = JSON.parse(
+	readFileSync(
+		join(__dirname, "../../../models/petstore/.ods/petstore.json"),
+		"utf8",
+	),
+);
+const petstore = Workspace.fromSchema(petstoreSchema);
 
 describe("toDoc", () => {
 	it("should generate documentation for empty workspace", async () => {
@@ -178,6 +188,37 @@ describe("toDoc", () => {
 		expect(docs).toHaveProperty("boundedcontexts/ordering/flowmap.svg");
 	});
 
+	it("should emit a docsify shell so the folder is a complete static site", async () => {
+		const workspace = new Workspace('Ac"me & <Co>', {
+			odsVersion: "1.0.0",
+			description: "A test workspace",
+			version: "0.1.0",
+		});
+
+		const docs = await toDoc(workspace);
+
+		const shell = docs["index.html"];
+		expect(shell).toContain("loadSidebar: true");
+		expect(shell).toContain("subMaxLevel: 2");
+		// Every page links its diagrams beside itself, not from the site root.
+		expect(shell).toContain("relativePath: true");
+		expect(shell).toContain('src="https://cdn.jsdelivr.net/npm/docsify@4"');
+		expect(shell).toContain(
+			'href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css"',
+		);
+		// No README.md is generated, so a bare `/` has to be sent somewhere real.
+		const workspaceIndex = Object.keys(docs).find((k) =>
+			k.endsWith("/index.md"),
+		);
+		const route = JSON.stringify(`#/${workspaceIndex}`);
+		expect(shell).toContain(`if (!location.hash) location.hash = ${route};`);
+		// Only the root has a _sidebar.md; docsify asks for one per folder.
+		expect(shell).toContain('alias: { "/.*/_sidebar.md": "/_sidebar.md" }');
+		// The name reaches the title and the config escaped for each context.
+		expect(shell).toContain("<title>Ac&quot;me &amp; &lt;Co&gt;</title>");
+		expect(shell).toContain('name: "Ac\\"me & <Co>"');
+	});
+
 	it("should handle workspace with options", async () => {
 		const workspace = new Workspace("Test Workspace", {
 			odsVersion: "1.0.0",
@@ -197,5 +238,71 @@ describe("toDoc", () => {
 		// The docs should still be generated properly with options
 		const workspaceDoc = docs["test_workspace/index.md"];
 		expect(workspaceDoc).toContain("Test Workspace");
+	});
+
+	it("snapshots the file list produced for the petstore reference workspace", async () => {
+		const docs = await toDoc(petstore);
+
+		expect(Object.keys(docs).sort()).toMatchInlineSnapshot(`
+			[
+			  "_sidebar.md",
+			  "boundedcontexts/catalog_bc/aggregates/pet/consumablemap.svg",
+			  "boundedcontexts/catalog_bc/aggregates/pet/index.md",
+			  "boundedcontexts/catalog_bc/aggregates/pet/relationmap.svg",
+			  "boundedcontexts/catalog_bc/contextmap.svg",
+			  "boundedcontexts/catalog_bc/index.md",
+			  "boundedcontexts/catalog_bc/services/pet_app/consumablemap.svg",
+			  "boundedcontexts/catalog_bc/services/pet_app/index.md",
+			  "boundedcontexts/fulfilment_bc/aggregates/shipment/consumablemap.svg",
+			  "boundedcontexts/fulfilment_bc/aggregates/shipment/index.md",
+			  "boundedcontexts/fulfilment_bc/aggregates/shipment/relationmap.svg",
+			  "boundedcontexts/fulfilment_bc/contextmap.svg",
+			  "boundedcontexts/fulfilment_bc/flowmap.svg",
+			  "boundedcontexts/fulfilment_bc/index.md",
+			  "boundedcontexts/fulfilment_bc/services/dispatch_planner/consumablemap.svg",
+			  "boundedcontexts/fulfilment_bc/services/dispatch_planner/index.md",
+			  "boundedcontexts/identity_bc/aggregates/user/consumablemap.svg",
+			  "boundedcontexts/identity_bc/aggregates/user/index.md",
+			  "boundedcontexts/identity_bc/aggregates/user/relationmap.svg",
+			  "boundedcontexts/identity_bc/contextmap.svg",
+			  "boundedcontexts/identity_bc/index.md",
+			  "boundedcontexts/identity_bc/services/user_app/consumablemap.svg",
+			  "boundedcontexts/identity_bc/services/user_app/index.md",
+			  "boundedcontexts/inventory_bc/aggregates/inventory_projection/consumablemap.svg",
+			  "boundedcontexts/inventory_bc/aggregates/inventory_projection/index.md",
+			  "boundedcontexts/inventory_bc/aggregates/inventory_projection/relationmap.svg",
+			  "boundedcontexts/inventory_bc/contextmap.svg",
+			  "boundedcontexts/inventory_bc/flowmap.svg",
+			  "boundedcontexts/inventory_bc/index.md",
+			  "boundedcontexts/inventory_bc/services/inventory_query/consumablemap.svg",
+			  "boundedcontexts/inventory_bc/services/inventory_query/index.md",
+			  "boundedcontexts/sales_bc/aggregates/order/consumablemap.svg",
+			  "boundedcontexts/sales_bc/aggregates/order/index.md",
+			  "boundedcontexts/sales_bc/aggregates/order/relationmap.svg",
+			  "boundedcontexts/sales_bc/contextmap.svg",
+			  "boundedcontexts/sales_bc/flowmap.svg",
+			  "boundedcontexts/sales_bc/index.md",
+			  "boundedcontexts/sales_bc/services/order_app/consumablemap.svg",
+			  "boundedcontexts/sales_bc/services/order_app/index.md",
+			  "domains/identity_&_accounts/contextmap.svg",
+			  "domains/identity_&_accounts/index.md",
+			  "domains/identity_&_accounts/subdomains/users/contextmap.svg",
+			  "domains/identity_&_accounts/subdomains/users/index.md",
+			  "domains/petstore_commerce/contextmap.svg",
+			  "domains/petstore_commerce/index.md",
+			  "domains/petstore_commerce/subdomains/catalog/contextmap.svg",
+			  "domains/petstore_commerce/subdomains/catalog/index.md",
+			  "domains/petstore_commerce/subdomains/fulfilment/contextmap.svg",
+			  "domains/petstore_commerce/subdomains/fulfilment/index.md",
+			  "domains/petstore_commerce/subdomains/inventory/contextmap.svg",
+			  "domains/petstore_commerce/subdomains/inventory/index.md",
+			  "domains/petstore_commerce/subdomains/sales/contextmap.svg",
+			  "domains/petstore_commerce/subdomains/sales/index.md",
+			  "index.html",
+			  "swagger_petstore_(v3)/contextmap.svg",
+			  "swagger_petstore_(v3)/glossary.md",
+			  "swagger_petstore_(v3)/index.md",
+			]
+		`);
 	});
 });

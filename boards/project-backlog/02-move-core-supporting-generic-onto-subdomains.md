@@ -1,8 +1,8 @@
 ---
-column: review
+column: done
 labels: [ddd, backend, breaking]
 priority: high
-updatedAt: 2026-09-02T12:06:24.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 live: false
 ---
 # Move core/supporting/generic classification onto subdomains
@@ -15,6 +15,10 @@ DDD classifies subdomains as core, supporting or generic. The schema puts `type:
 - [x] Remove `type` on Domain (no migration: backwards compatibility not required)
 - [x] Update doc, graphviz and UI rendering of the type badge
 - [x] Update the petstore example
+
+## Gates
+
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

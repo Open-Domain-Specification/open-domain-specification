@@ -4,9 +4,20 @@ import * as path from "node:path";
 import type { WebviewMessage } from "@open-domain-specification/pages";
 import * as vscode from "vscode";
 import type { OdsTestApi } from "../extension";
+import {
+	capture,
+	DARK_THEME,
+	LIGHT_THEME,
+	prepareWindow,
+	SCREENSHOTS_ENABLED,
+	settle,
+	useTheme,
+} from "./screenshots";
 
 const EXTENSION_ID = "open-domain-specification.ods-vscode";
 const PETSTORE = "petstore.json";
+const WORKSPACE_REF = "#";
+const SALES_BC_REF = "#/boundedcontexts/sales_bc";
 const ORDER_REF = "#/boundedcontexts/sales_bc/aggregates/order";
 const TEAM_REF = "#/teams/orders_team";
 
@@ -216,6 +227,74 @@ describe("ODS extension in a real VS Code window", function () {
 				!editor.selection.isEmpty,
 				"the ref was opened without a selection",
 			);
+		});
+	});
+
+	/**
+	 * Marketplace images, regenerated from the running extension rather than
+	 * taken by hand. Off unless ODS_SCREENSHOTS=1 (`npm run screenshots`), and
+	 * last in the file so nothing it does to the window affects the assertions.
+	 */
+	describe("marketplace screenshots", () => {
+		let log: MessageLog;
+
+		before(async function () {
+			if (!SCREENSHOTS_ENABLED) return this.skip();
+			log = new MessageLog(api.panel);
+			// The export test leaves a sticky notification; it must not be in shot.
+			await vscode.commands.executeCommand("notifications.clearAll");
+			await prepareWindow();
+			await useTheme(LIGHT_THEME);
+			await vscode.commands.executeCommand("workbench.view.extension.ods");
+			await settle();
+		});
+
+		after(() => {
+			log?.dispose();
+		});
+
+		/** Opens `ref`, waiting for the app's own confirmation that it routed there. */
+		async function openPage(ref: string): Promise<void> {
+			// A ref can be opened twice in this block, so only count a fresh message.
+			const seen = new Set(log.messages);
+			await vscode.commands.executeCommand("ods.openPage", {
+				file: petstoreFile(api),
+				ref,
+			});
+			await log.waitFor(
+				(m) => !seen.has(m) && m.type === "navigated" && m.ref === ref,
+				`{ type: "navigated", ref: "${ref}" }`,
+			);
+			// Only the page in shot: the reveal test left a JSON editor open.
+			await vscode.commands.executeCommand(
+				"workbench.action.closeOtherEditors",
+			);
+			await settle();
+		}
+
+		it("captures the Workspaces tree beside a page", async () => {
+			await openPage(WORKSPACE_REF);
+			await capture("workspaces-tree");
+		});
+
+		it("captures an aggregate page", async () => {
+			await openPage(ORDER_REF);
+			await capture("aggregate-page");
+		});
+
+		it("captures the search spotlight", async () => {
+			// The quick pick only resolves once it is answered, so do not await it.
+			void vscode.commands.executeCommand("ods.search");
+			await settle();
+			await capture("search-spotlight");
+			await vscode.commands.executeCommand("workbench.action.closeQuickOpen");
+		});
+
+		it("captures a bounded context and its context map in dark mode", async () => {
+			await useTheme(DARK_THEME);
+			await openPage(SALES_BC_REF);
+			await capture("context-map-dark");
+			await useTheme(LIGHT_THEME);
 		});
 	});
 });

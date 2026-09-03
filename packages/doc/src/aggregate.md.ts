@@ -80,7 +80,9 @@ ${
 ${markdownTable(
 	["Source", "Description", "Target", "Relation", "Cardinality"],
 	ODSRelationGraph.fromAggregate(aggregate).relations.map((it) => [
-		`[${it.source.name}](${pathToIndexMd(it.source.path, aggregate.path)})`,
+		// Entities have no page of their own, so a source links to the section
+		// of its aggregate's page that lists it.
+		`[${it.source.aggregate.name} - ${it.source.name}](${pathToIndexMd(it.source.aggregate.path, aggregate.path)}#entities-and-value-objects)`,
 		it.label || "-",
 		`${it.target.aggregate.name} - ${it.target.name}`,
 		it.relation,

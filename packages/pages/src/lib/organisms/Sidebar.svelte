@@ -1,5 +1,6 @@
 <script lang="ts">
 import Icon from "../atoms/Icon.svelte";
+import Logo from "../atoms/Logo.svelte";
 import { ICONS, useModel } from "../model";
 
 /** Navigation standing in for the extension's tree view: domains, contexts and teams. */
@@ -56,6 +57,6 @@ const active = (ref: string) =>
 {/snippet}
 
 <nav class="site-nav">
-	<p class="toc-title"><a href="#/">{workspace.name}</a></p>
+	<p class="toc-title brand"><Logo size={20} /><a href="#/">{workspace.name}</a></p>
 	{@render list(items)}
 </nav>

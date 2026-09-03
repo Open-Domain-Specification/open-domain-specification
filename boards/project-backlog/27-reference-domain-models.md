@@ -1,11 +1,11 @@
 ---
-column: review
+column: done
 labels: [ddd, docs]
 priority: high
 agent: claude
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-03T02:00:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 ---
 # Reference domain models: a balanced canonical example plus fake-org stress tests
 
@@ -25,6 +25,7 @@ The petstore workspace is the canonical reference. Rework it to balance complete
 ## Gates
 
 - [x] clean-code-swept — reviewer sweep of the four DSL models, generator and tests; the one finding (money value-object builder copied in three files) fixed with a shared helper; 37 example tests, 241 pages tests green (claude, 2026-09-03T00:00:00.000Z)
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

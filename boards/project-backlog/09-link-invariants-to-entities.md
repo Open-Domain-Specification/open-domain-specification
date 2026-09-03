@@ -1,8 +1,8 @@
 ---
-column: review
+column: done
 labels: [ddd, backend]
 priority: med
-updatedAt: 2026-09-02T12:36:13.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 live: false
 ---
 # Link invariants to the entities and attributes they constrain
@@ -13,6 +13,10 @@ Invariants are free text (packages/core/src/schema.ts:105-108). Allow an invaria
 
 - [x] Add `constrains: { $ref }[]` to InvariantSchema
 - [x] Render invariants on the entity they constrain
+
+## Gates
+
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

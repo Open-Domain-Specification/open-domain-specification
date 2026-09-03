@@ -5,12 +5,14 @@
  * is collapsed. Remembered per browser so a choice sticks across pages and
  * visits.
  */
+import type { DiagramKind } from "./kind";
 export type HandleMode = "fixed" | "floating";
 export type EdgeStyle = "bezier" | "straight" | "step" | "smoothstep";
 export type DiagramStyle = "cards" | "sketch";
 
 export type DiagramOptions = {
-	handles: HandleMode;
+	/** Absent means no explicit user override: the per-kind default applies. */
+	handles?: HandleMode;
 	edges: EdgeStyle;
 	style: DiagramStyle;
 	legendCollapsed: boolean;
@@ -26,12 +28,16 @@ export const EDGE_STYLES: EdgeStyle[] = [
 export const DIAGRAM_STYLES: DiagramStyle[] = ["cards", "sketch"];
 
 const KEY = "ods-diagram-options";
-const DEFAULTS: DiagramOptions = {
-	handles: "fixed",
+const DEFAULTS: Omit<DiagramOptions, "handles"> = {
 	edges: "bezier",
 	style: "sketch",
 	legendCollapsed: false,
 };
+
+/** Context maps default to floating handles; every other kind stays fixed. */
+export function defaultHandles(kind: DiagramKind): HandleMode {
+	return kind === "context" ? "floating" : "fixed";
+}
 
 function read(): DiagramOptions {
 	try {
@@ -39,9 +45,9 @@ function read(): DiagramOptions {
 		if (!raw) return { ...DEFAULTS };
 		const parsed = JSON.parse(raw) as Partial<DiagramOptions>;
 		return {
-			handles: HANDLE_MODES.includes(parsed.handles as HandleMode)
-				? (parsed.handles as HandleMode)
-				: DEFAULTS.handles,
+			...(HANDLE_MODES.includes(parsed.handles as HandleMode)
+				? { handles: parsed.handles as HandleMode }
+				: {}),
 			edges: EDGE_STYLES.includes(parsed.edges as EdgeStyle)
 				? (parsed.edges as EdgeStyle)
 				: DEFAULTS.edges,
@@ -69,6 +75,10 @@ export function createDiagramOptions() {
 	return {
 		get handles() {
 			return current.handles;
+		},
+		/** The effective handle mode for a diagram kind: the user's override, else the kind's default. */
+		handlesFor(kind: DiagramKind): HandleMode {
+			return current.handles ?? defaultHandles(kind);
 		},
 		get edges() {
 			return current.edges;

@@ -244,3 +244,60 @@ describe("dragging a node in the cards style", () => {
 		});
 	});
 });
+
+describe("host theme", () => {
+	it("paints in the VS Code editor's colour mode, not the OS one, and follows a theme switch", async () => {
+		const { container } = render(InteractiveDiagram, {
+			graph: contextGraph(ODSContextMap.fromWorkspace(workspace)),
+		});
+		const flow = () => container.querySelector(".svelte-flow") as HTMLElement;
+		await waitFor(() => expect(flow()).toBeTruthy());
+		// No webview class: Svelte Flow keeps its own media-query mode.
+		expect(flow().classList.contains("dark")).toBe(false);
+		document.body.classList.add("vscode-dark");
+		await waitFor(() => expect(flow().classList.contains("dark")).toBe(true));
+		document.body.classList.replace("vscode-dark", "vscode-light");
+		await waitFor(() => expect(flow().classList.contains("light")).toBe(true));
+		document.body.classList.remove("vscode-light");
+	});
+});
+
+describe("fullscreen", () => {
+	it("turns the figure into an overlay, leaves on Escape, and leaves again when a node navigates", async () => {
+		diagramOptions.set({ style: "cards" });
+		const { container } = render(InteractiveDiagram, {
+			graph: contextGraph(ODSContextMap.fromWorkspace(workspace)),
+		});
+		const box = () => container.querySelector(".interactive") as HTMLElement;
+		await waitFor(() => expect(box()).toBeTruthy());
+		const button = () =>
+			container.querySelector("button.fullscreen") as HTMLButtonElement;
+		expect(box().classList.contains("fullscreen")).toBe(false);
+		// d3-drag swallows the first click after a gesture and only drops that guard on
+		// the next macrotask; the drag test above leaves it armed.
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		await fireEvent.click(button());
+		await waitFor(() =>
+			expect(box().classList.contains("fullscreen")).toBe(true),
+		);
+		await fireEvent.keyDown(window, { key: "Escape" });
+		await waitFor(() =>
+			expect(box().classList.contains("fullscreen")).toBe(false),
+		);
+
+		// Clicking through to another element must not leave the overlay behind.
+		await fireEvent.click(button());
+		await waitFor(() =>
+			expect(box().classList.contains("fullscreen")).toBe(true),
+		);
+		location.hash = "";
+		await fireEvent.click(
+			container.querySelector(`[data-id="${sales.ref}"]`) as HTMLElement,
+		);
+		expect(location.hash).toBe(sales.ref);
+		await waitFor(() =>
+			expect(box().classList.contains("fullscreen")).toBe(false),
+		);
+	});
+});

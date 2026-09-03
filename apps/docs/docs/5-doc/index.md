@@ -16,6 +16,7 @@ A TypeScript library for generating comprehensive Markdown documentation from Op
 - **Glossary**: A per-context glossary on each context page and a workspace-wide glossary page
 - **Teams and Diagnostics**: Who owns each context, and the result of `workspace.validate()` on the workspace page
 - **Navigation Structure**: Create sidebar navigation with proper hierarchy and cross-linking
+- **A Complete Static Site**: An `index.html` docsify shell alongside the Markdown, so the folder renders on any static host
 - **Breadcrumb Navigation**: Optional breadcrumb trails for easy navigation
 - **Multiple Component Types**: Support for workspaces, domains, subdomains, bounded contexts, services, and aggregates
 
@@ -41,3 +42,9 @@ See the [Example Workspace](https://github.com/Open-Domain-Specification/open-do
 The generated documentation includes a sidebar navigation structure that reflects the hierarchy of the ODS workspace. Each component type (workspace, domain, subdomain, bounded context, service, aggregate) has its own section in the sidebar. A bounded context is listed under every subdomain it serves, and contexts that serve no subdomain are listed directly under the workspace. The glossary page sits under the workspace.
 
 This is crafted for ease of use with `Docsify` or similar documentation generators that support hierarchical navigation, however you can also create your own custom navigation structure based on the generated Markdown files.
+
+### The Docsify Shell
+
+Alongside the Markdown, `toDoc` writes an `index.html`: a docsify shell that loads docsify from a CDN, names the site after the workspace, points a bare `/` at the workspace page, and resolves each page's diagrams beside it. The folder is therefore a complete static site — drop it on any host, no `docsify serve` required.
+
+A Playwright spec in the pages package (`packages/pages/e2e/docsify.spec.ts`) serves the generated petstore folder from a plain static server and walks every page in the sidebar, failing the build on a missing heading, a console error, or any request that 404s.

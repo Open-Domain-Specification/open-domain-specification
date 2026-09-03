@@ -36,6 +36,7 @@ describe("static site export", () => {
 	it("writes the bundle, its assets and an index with the workspace inlined", () => {
 		expect(result.workspaces).toBe(1);
 		expect(existsSync(join(outDir, "assets"))).toBe(true);
+		expect(existsSync(join(outDir, "favicon.svg"))).toBe(true);
 		const html = readFileSync(join(outDir, "index.html"), "utf8");
 		expect(html).toContain("window.__ODS__=");
 		expect(html).toContain(`"fileLabel":"petstore.json"`);

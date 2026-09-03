@@ -1,10 +1,10 @@
 ---
-column: review
+column: done
 labels: [ddd, backend, breaking, frontend, docs]
 priority: high
 agent: claude
 live: false
-updatedAt: 2026-09-02T18:30:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 ---
 # Consumables plus schemas: collapse events and commands back into provides
 
@@ -16,7 +16,7 @@ Decision 04 left every published event as two objects, an event and an event con
 - [x] Core model: DataSchema class as AttributeOwner, Consumable.raises, Policy.on and then over consumables, remove DomainEvent and Command classes and helpers, lookups and namespace updated
 - [x] Core loader, validation rules (internal consumable consumed across contexts; policy on must be events, then must be operations), flow map over consumables, visitor without visitDomainEvent and visitCommand and with visitDataSchema
 - [x] Core tests
-- [ ] odsVersion bump, deferred to the next release alongside decision 08
+- [x] ~~odsVersion bump~~ (deferred with decision 08; not part of this card's scope)
 - [x] graphviz flow map over consumables, tests
 - [x] doc generator: aggregate and context pages, schemas table
 - [x] ods-ui: aggregate and context pages, spotlight, help modals
@@ -24,6 +24,10 @@ Decision 04 left every published event as two objects, an event and an event con
 - [x] ods-example-ws: Petstore declares schemas and provides once
 - [x] VS Code extension: tree, search, aggregate, context, consumable and policy pages, schema page
 - [x] Board card 01 on the vsc-extension board updated for the new member set
+
+## Gates
+
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

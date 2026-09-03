@@ -1,11 +1,11 @@
 ---
-column: review
+column: done
 labels: [frontend, infra]
 priority: high
 agent: claude
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-02T23:20:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 ---
 # Unit and end-to-end tests for the pages app, 100% coverage
 
@@ -25,6 +25,7 @@ Two suites in `packages/pages` that run separately: `test:unit` (vitest, jsdom, 
 ## Gates
 
 - [x] clean-code-swept — reviewer sweep of the test code (DRY, dead code, naming); both findings fixed: shared xyflow polyfill helper, redundant dynamic imports removed; 241 unit tests at 100/100/100/100, 24 e2e green (claude, 2026-09-02T23:20:00.000Z)
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

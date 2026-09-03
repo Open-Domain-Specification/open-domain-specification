@@ -7,6 +7,11 @@ test("the interactive context map draws context nodes with stereotypes and roles
 	page,
 }) => {
 	const flow = await openInteractiveDiagram(page, "Context map");
+	// A fresh context map defaults to floating handles, with no user override yet.
+	await expect(
+		flow.locator(".diagram-options").getByLabel("Handle placement"),
+	).toHaveValue("floating");
+	await expect(flow.locator(".handle-hidden").first()).toBeAttached();
 	// The cards style shows the cluster regions this test checks; sketch is the default.
 	await flow
 		.locator(".diagram-options")

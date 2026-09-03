@@ -1,8 +1,8 @@
 ---
-column: review
+column: done
 labels: [ddd, backend, breaking]
 priority: high
-updatedAt: 2026-09-02T12:06:24.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 live: false
 ---
 # Decouple bounded contexts from subdomains
@@ -17,6 +17,10 @@ Subdomains are problem-space, bounded contexts are solution-space. The schema in
 - [x] ~~Add a migration path~~ (dropped: no backwards compatibility required)
 - [x] Update graphviz, doc, ods-ui and the petstore example
 - [x] Record a decision in decisions/
+
+## Gates
+
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

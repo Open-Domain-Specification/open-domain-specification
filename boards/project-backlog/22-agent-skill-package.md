@@ -1,10 +1,10 @@
 ---
-column: review
+column: done
 labels: [ddd, docs, backend]
 priority: high
 agent: claude
 live: false
-updatedAt: 2026-09-02T15:45:00.000Z
+updatedAt: 2026-09-03T13:20:00.000Z
 ---
 # Agent skill package for authoring ODS workspaces
 
@@ -22,6 +22,10 @@ The VS Code extension installs it (boards/vsc-extension/10-install-ai-skill.md).
 - [x] Tests: examples valid, install paths per target, generated references current, SKILL.md constraints, dsl-api names exist in workspace.ts
 - [x] Replace docs page `7-llm-context.md` with `7-ai-skill.md`
 - [x] Decision record 11 and copilot-instructions build note
+
+## Gates
+
+- [x] qa-automated — root npm test green: 536 unit tests over ten packages (core 96, pages 365 at 100% coverage, graphviz 18, doc 14, skill 16, models 23, extension 4); 36 Playwright e2e headed; 5 real-VS-Code integration tests (claude, 2026-09-03T13:05:00.000Z)
 
 ## Comments
 

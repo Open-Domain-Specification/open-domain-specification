@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import { installXyflowTestEnv } from "../xyflow-test-env";
 import Harness from "./DiagramOptionsPanel.harness.svelte";
+import { createFullscreen } from "./fullscreen.svelte";
 import { diagramOptions } from "./options.svelte";
 
 installXyflowTestEnv();
@@ -53,5 +54,43 @@ describe("DiagramOptionsPanel per diagram kind", () => {
 		relation.unmount();
 		render(Harness, { kind: "context" });
 		expect(screen.getByLabelText("Diagram style")).toBeInTheDocument();
+	});
+	it("shows the effective handle default per kind when there is no user override", () => {
+		diagramOptions.set({ handles: undefined });
+		const context = render(Harness, { kind: "context" });
+		expect(
+			(context.getByLabelText("Handle placement") as HTMLSelectElement).value,
+		).toBe("floating");
+		context.unmount();
+		const consumable = render(Harness, { kind: "consumable" });
+		expect(
+			(consumable.getByLabelText("Handle placement") as HTMLSelectElement)
+				.value,
+		).toBe("fixed");
+		consumable.unmount();
+	});
+});
+
+/** The refit runs a frame after the toggle; wait for it so `fitView` really is called. */
+const framed = () =>
+	new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+
+describe("DiagramOptionsPanel fullscreen toggle", () => {
+	it("flips the diagram in and out of the overlay, swapping the codicon and its label", async () => {
+		const fullscreen = createFullscreen();
+		const { getByLabelText, container } = render(Harness, { fullscreen });
+		const button = () => getByLabelText("Enter fullscreen");
+		expect(button()).toHaveAttribute("title", "Enter fullscreen");
+		expect(container.querySelector(".codicon-screen-full")).toBeTruthy();
+		await fireEvent.click(button());
+		await framed();
+		expect(fullscreen.active).toBe(true);
+		expect(getByLabelText("Exit fullscreen")).toBeInTheDocument();
+		expect(container.querySelector(".codicon-screen-normal")).toBeTruthy();
+		await fireEvent.click(getByLabelText("Exit fullscreen"));
+		await framed();
+		expect(fullscreen.active).toBe(false);
+		expect(container.querySelector(".codicon-screen-full")).toBeTruthy();
+		fullscreen.stop();
 	});
 });

@@ -9,3 +9,6 @@ coverage/
 
 *.vsix
 artifacts/
+
+# session handover notes, local only
+.handovers/
