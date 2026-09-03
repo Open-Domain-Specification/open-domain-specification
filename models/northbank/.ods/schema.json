@@ -182,12 +182,73 @@
             "title": "BoundedContext",
             "type": "object"
         },
+        "Comment": {
+            "additionalProperties": false,
+            "description": "A short grounded statement about the real system behind a strategic intent, optionally backed by one link.",
+            "properties": {
+                "link": {
+                    "$ref": "#/definitions/CommentLink"
+                },
+                "text": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "text"
+            ],
+            "title": "Comment",
+            "type": "object"
+        },
+        "CommentLink": {
+            "additionalProperties": false,
+            "description": "Where the evidence for a comment lives: the code, the contract, the decision record, the runbook or the dashboard.",
+            "properties": {
+                "kind": {
+                    "$ref": "#/definitions/CommentLinkKind"
+                },
+                "label": {
+                    "description": "What to show instead of the raw URL.",
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "kind",
+                "url"
+            ],
+            "title": "CommentLink",
+            "type": "object"
+        },
+        "CommentLinkKind": {
+            "description": "What a comment's link points at.",
+            "enum": [
+                "adr",
+                "code",
+                "contract",
+                "dashboard",
+                "runbook"
+            ],
+            "type": "string"
+        },
         "ConsumableSchema": {
             "additionalProperties": false,
             "description": "Represents a consumable in the Open Domain Specification (ODS).",
             "properties": {
+                "comments": {
+                    "description": "Grounded statements about the real system behind this consumable.",
+                    "items": {
+                        "$ref": "#/definitions/Comment"
+                    },
+                    "type": "array"
+                },
                 "description": {
                     "type": "string"
+                },
+                "disposition": {
+                    "$ref": "#/definitions/Disposition",
+                    "description": "What the architecture thinks of this consumable. Absent means `by-design`."
                 },
                 "internal": {
                     "description": "True when the consumable stays inside its context: an event only local\npolicies react to, or an operation only local callers issue. Internal\nconsumables may not be consumed from another context.",
@@ -252,6 +313,13 @@
             "additionalProperties": false,
             "description": "Represents a consumption in the Open Domain Specification (ODS).",
             "properties": {
+                "comments": {
+                    "description": "Grounded statements about the real system behind this consumption.",
+                    "items": {
+                        "$ref": "#/definitions/Comment"
+                    },
+                    "type": "array"
+                },
                 "consumable": {
                     "additionalProperties": false,
                     "properties": {
@@ -263,6 +331,10 @@
                         "$ref"
                     ],
                     "type": "object"
+                },
+                "disposition": {
+                    "$ref": "#/definitions/Disposition",
+                    "description": "What the architecture thinks of this consumption. Absent means `by-design`."
                 },
                 "pattern": {
                     "$ref": "#/definitions/DownstreamRole",
@@ -315,8 +387,19 @@
             "additionalProperties": false,
             "description": "An upstream/downstream relationship between two bounded contexts.",
             "properties": {
+                "comments": {
+                    "description": "Grounded statements about the real system behind this relationship.",
+                    "items": {
+                        "$ref": "#/definitions/Comment"
+                    },
+                    "type": "array"
+                },
                 "description": {
                     "type": "string"
+                },
+                "disposition": {
+                    "$ref": "#/definitions/Disposition",
+                    "description": "What the architecture thinks of this relationship. Absent means `by-design`."
                 },
                 "downstream": {
                     "additionalProperties": false,
@@ -373,6 +456,15 @@
             "enum": [
                 "customer-supplier",
                 "upstream-downstream"
+            ],
+            "type": "string"
+        },
+        "Disposition": {
+            "description": "What the architecture thinks of a strategic intent: `by-design` is how it\nshould be, `tolerated` a known compromise nobody plans to change, and\n`refactor` something that should be removed or replaced. An absent\ndisposition means `by-design`.",
+            "enum": [
+                "by-design",
+                "refactor",
+                "tolerated"
             ],
             "type": "string"
         },
@@ -696,8 +788,19 @@
             "additionalProperties": false,
             "description": "A relationship between two bounded contexts with no upstream or downstream side.",
             "properties": {
+                "comments": {
+                    "description": "Grounded statements about the real system behind this relationship.",
+                    "items": {
+                        "$ref": "#/definitions/Comment"
+                    },
+                    "type": "array"
+                },
                 "description": {
                     "type": "string"
+                },
+                "disposition": {
+                    "$ref": "#/definitions/Disposition",
+                    "description": "What the architecture thinks of this relationship. Absent means `by-design`."
                 },
                 "participants": {
                     "items": [
