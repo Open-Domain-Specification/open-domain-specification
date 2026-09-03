@@ -43,6 +43,32 @@ test("a Strategic position row expands in place into the relationship detail", a
 	await expect(page.locator(".detail-row")).toHaveCount(0);
 });
 
+test("a role chip discloses what the keyword means and what this relationship says", async ({
+	page,
+}) => {
+	await page.goto(viewerAt(SALES_REF));
+	const table = page.locator("table.strategic-position");
+	const acl = table.getByRole("button", { name: "ACL" }).first();
+	await acl.scrollIntoViewIfNeeded();
+	await expect(acl).toHaveAttribute("aria-expanded", "false");
+
+	await acl.hover();
+
+	const card = page.locator(".hover-card");
+	await expect(card).toContainText("Anti-Corruption Layer");
+	await expect(card).toContainText(
+		"A translating boundary isolating a downstream model from external concepts.",
+	);
+	// The card teaches the pattern, then discloses this relationship's evidence.
+	await expect(card).toContainText(
+		"Sales reads Catalog through PetSummaryClient",
+	);
+
+	await page.keyboard.press("Escape");
+	await expect(card).toHaveCount(0);
+	await expect(acl).toHaveAttribute("aria-expanded", "false");
+});
+
 test("a relationship ref opens the relationship as its own page", async ({
 	page,
 }) => {

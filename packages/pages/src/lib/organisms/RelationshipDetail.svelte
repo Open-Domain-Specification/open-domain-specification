@@ -16,6 +16,7 @@ import { roleLabel } from "../flow/roles";
 import { consumableIcon, ICONS, useModel } from "../model";
 import Card from "../molecules/Card.svelte";
 import CommentList from "../molecules/CommentList.svelte";
+import PatternHoverCard from "../molecules/PatternHoverCard.svelte";
 
 /**
  * Everything known about one context relationship, intent and evidence
@@ -47,7 +48,7 @@ const sides = $derived([
 <article class="relationship-detail">
 	<header>
 		<svelte:element this={heading} class="title">{title}</svelte:element>
-		<Chip label={r.type} tone="muted" title={PATTERNS[r.type].summary} />
+		<PatternHoverCard pattern={r.type} label={r.type} intent={r} />
 		<DispositionChip disposition={r.disposition} />
 	</header>
 
@@ -75,7 +76,7 @@ const sides = $derived([
 							<ul class="patterns">
 								{#each s.roles as role (role)}
 									<li>
-										<Chip label={roleLabel(role) as string} tone="muted" title={role} />
+										<PatternHoverCard pattern={role} intent={r} />
 										<span class="pattern-name">{role}</span>
 										<span class="pattern-summary">{PATTERNS[role].summary}</span>
 									</li>

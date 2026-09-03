@@ -24,6 +24,7 @@ const EVIDENCE_TITLES = [
 	"Organisms/StrategicPositionTable",
 	"Organisms/RelationshipDetail",
 	"Organisms/HealthReport",
+	"Molecules/PatternHoverCard",
 	"Evidence/",
 ];
 
@@ -49,7 +50,7 @@ test.describe("built Storybook renders every evidence design", () => {
 		"no storybook-static build; run `npm run build-storybook` first",
 	);
 
-	test("the index lists all five surfaces", () => {
+	test("the index lists every surface", () => {
 		const titles = new Set(stories.map((s) => s.title));
 		for (const prefix of EVIDENCE_TITLES)
 			expect(

@@ -1,6 +1,5 @@
 import {
 	type BoundedContext,
-	PATTERNS,
 	Workspace,
 } from "@open-domain-specification/core";
 import { fireEvent, render, screen, within } from "@testing-library/svelte";
@@ -32,20 +31,29 @@ describe("StrategicPositionTable", () => {
 		expect(container.querySelectorAll("tr.position")).toHaveLength(4);
 	});
 
-	it("prints the description the model already carries, and the role and type chips with their meaning", () => {
+	it("prints the description the model already carries, and makes every pattern keyword a hover card", () => {
 		show(petstoreSales());
 		expect(
 			screen.getByText(
 				"Sales needs pet availability; Catalog commits to the summary contract",
 			),
 		).toBeInTheDocument();
-		expect(screen.getByText("customer-supplier")).toHaveAttribute(
+		// The chips are triggers now, not title tooltips: what a keyword means
+		// is disclosed by PatternHoverCard, which has its own suite.
+		expect(
+			screen.getByRole("button", { name: "customer-supplier" }),
+		).toHaveAttribute("aria-expanded", "false");
+		expect(
+			screen.getAllByRole("button", { name: "OHS" })[0],
+		).toBeInTheDocument();
+	});
+
+	it("hovers the counterpart pill with the sentence generated from this context", () => {
+		const { container } = show(petstoreSales());
+		const pills = [...container.querySelectorAll("tr.position .pill")];
+		expect(pills[0]).toHaveAttribute(
 			"title",
-			PATTERNS["customer-supplier"].summary,
-		);
-		expect(screen.getAllByText("OHS")[0]).toHaveAttribute(
-			"title",
-			PATTERNS["open-host-service"].summary,
+			"Sales BC depends on Catalog BC as a customer, consuming its Open Host Service, and it protects its model with an Anti-Corruption Layer.",
 		);
 	});
 
@@ -100,14 +108,19 @@ describe("StrategicPositionTable", () => {
 		expect(eight.container.querySelectorAll("tr.position")).toHaveLength(8);
 	});
 
-	it("says so when a relationship has no description, and when the context has none at all", () => {
+	it("falls back to the generated sentence when a relationship has no description, and says so when the context has none at all", () => {
 		const { model, a, c } = bareWorkspace();
 		render(Harness, {
 			model,
 			component: StrategicPositionTable,
 			args: { context: a },
 		});
-		expect(screen.getByText("no description")).toBeInTheDocument();
+		// Muted and marked "generated", so a reader can tell nobody wrote it.
+		const generated = screen.getByText(
+			"A is upstream of B, while B takes the upstream model as it comes.",
+		);
+		expect(generated).toHaveClass("dim");
+		expect(generated).toHaveAttribute("title", "generated");
 
 		render(Harness, {
 			model,

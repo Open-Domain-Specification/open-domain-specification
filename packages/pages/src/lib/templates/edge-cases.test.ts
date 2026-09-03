@@ -226,21 +226,21 @@ describe("templates render the alternate branches the petstore fixture never hit
 		const text = container.textContent;
 		expect(text).toContain("unused");
 		// The strategic position table shows role abbreviations as chip text,
-		// with the full pattern name as the chip's tooltip.
-		const titles = [...container.querySelectorAll(".chip")].map((c) =>
-			c.getAttribute("title"),
-		);
+		// each one a hover card trigger that discloses what the keyword means.
 		expect(text).toContain("OHS");
 		expect(text).toContain("PL");
 		expect(text).toContain("CF");
 		expect(text).toContain("ACL");
+		const triggers = [...container.querySelectorAll("button.chip")].map(
+			(c) => c.textContent,
+		);
 		for (const pattern of [
 			"open-host-service",
 			"published-language",
 			"conformist",
 			"anti-corruption-layer",
 		] as const)
-			expect(titles, pattern).toContain(PATTERNS[pattern].summary);
+			expect(triggers, pattern).toContain(PATTERNS[pattern].abbreviation);
 	});
 
 	it("ContextPage: copes with a context and a root entity that have no name", async () => {

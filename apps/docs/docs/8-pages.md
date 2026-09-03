@@ -51,6 +51,25 @@ colours follow the page theme; every edge is animated so the direction reads. A
 collapsible **legend** at the top left indexes only the abbreviations, line styles and node
 marks the current diagram shows. Every choice is remembered per browser.
 
+## Reading a relationship
+
+A bounded context page lists its **Strategic position**: who it depends on, who depends on it,
+and who it merely works alongside. The Description column prints what the author wrote on the
+relationship. Where nobody wrote anything, it prints a generated sentence instead, muted and
+marked "generated" — for example *"Sales BC depends on Catalog BC as a customer, consuming its
+Open Host Service, and it protects its model with an Anti-Corruption Layer."* The sentence is
+`relationshipNarrative` in core, read from the context whose page you are on, so the same
+relationship reads one way from each end. It is also the hover text of the counterpart pill on
+every row, described or not, and the doc generator prints it in italics in the same column.
+
+Every pattern keyword on the page — the type chip such as `customer-supplier`, and the role
+chips `OHS`, `PL`, `CF` and `ACL` — is a hover card rather than a tooltip. Resting on one, or
+reaching it with the keyboard, opens a card that first says what the keyword means in core's
+words (its name, abbreviation, one-line summary and architectural nature) and then, under a
+rule, what this particular relationship has recorded against it: its disposition and its
+comments with their links. A click pins the card open; Escape or a click elsewhere closes it,
+and only one is ever open. The same card sits on the role cards of a relationship's own page.
+
 ## Component library
 
 The library follows atomic design under `src/lib`: atoms (icon, chip, ref link, markdown),

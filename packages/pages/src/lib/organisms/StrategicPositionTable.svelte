@@ -1,13 +1,17 @@
 <script lang="ts">
-import { type BoundedContext, PATTERNS } from "@open-domain-specification/core";
-import Chip from "../atoms/Chip.svelte";
+import {
+	type BoundedContext,
+	type ContextRelationship,
+	narrativeText,
+	relationshipNarrative,
+} from "@open-domain-specification/core";
 import Dim from "../atoms/Dim.svelte";
 import DispositionChip from "../atoms/DispositionChip.svelte";
 import Empty from "../atoms/Empty.svelte";
 import { counterpartOf, hasEvidence, positionGroups } from "../evidence/derive";
-import { roleLabel } from "../flow/roles";
 import { useModel } from "../model";
 import ContextPill from "../molecules/ContextPill.svelte";
+import PatternHoverCard from "../molecules/PatternHoverCard.svelte";
 import RelationshipDetail from "./RelationshipDetail.svelte";
 
 /**
@@ -42,6 +46,13 @@ const toggle = (key: string) => {
 /** Names both ends, because a row's own cells only name the counterpart. */
 const discloses = (r: { source: { name: string }; target: { name: string } }) =>
 	`Evidence for ${r.source.name} and ${r.target.name}`;
+/**
+ * The generated sentence for a row, read from this context. It is the row's
+ * description when the author wrote none, and the counterpart pill's hover
+ * text in every case: the pill says who, the sentence says what it means.
+ */
+const narrativeOf = (r: ContextRelationship) =>
+	narrativeText(relationshipNarrative(r, context));
 </script>
 
 {#if groups.length}
@@ -75,11 +86,11 @@ const discloses = (r: { source: { name: string }; target: { name: string } }) =>
 								</button>
 							</td>
 						{/if}
-						<td><ContextPill context={counterpartOf(r, context)} /></td>
-						<td class="description">{#if r.description}{r.description}{:else}<Dim>no description</Dim>{/if}</td>
-						<td><Chip label={r.type} tone="muted" title={PATTERNS[r.type].summary} /></td>
-						<td>{#each r.upstreamRoles as role, i (role)}{#if i}{" "}{/if}<Chip label={roleLabel(role) as string} tone="muted" title={PATTERNS[role].summary} />{/each}</td>
-						<td>{#each r.downstreamRoles as role, i (role)}{#if i}{" "}{/if}<Chip label={roleLabel(role) as string} tone="muted" title={PATTERNS[role].summary} />{/each}</td>
+						<td><ContextPill context={counterpartOf(r, context)} title={narrativeOf(r)} /></td>
+						<td class="description">{#if r.description}{r.description}{:else}<Dim title="generated">{narrativeOf(r)}</Dim>{/if}</td>
+						<td><PatternHoverCard pattern={r.type} label={r.type} intent={r} /></td>
+						<td>{#each r.upstreamRoles as role, i (role)}{#if i}{" "}{/if}<PatternHoverCard pattern={role} intent={r} />{/each}</td>
+						<td>{#each r.downstreamRoles as role, i (role)}{#if i}{" "}{/if}<PatternHoverCard pattern={role} intent={r} />{/each}</td>
 						{#if withEvidence}<td><DispositionChip disposition={r.disposition} /></td>{/if}
 					</tr>
 					{#if withEvidence && expanded === entry.key}

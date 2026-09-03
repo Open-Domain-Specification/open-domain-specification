@@ -4,6 +4,7 @@ export * from "./context-map";
 export * from "./evidence";
 export * from "./flow-map";
 export * from "./namespace";
+export * from "./narrative";
 export * from "./patterns";
 export * from "./relation-map";
 export * from "./relationship";

@@ -32,10 +32,10 @@ describe("RelationshipDetail", () => {
 		const { container } = show(of("shared-kernel"));
 		const heading = screen.getByRole("heading", { level: 3 });
 		expect(heading).toHaveTextContent("Catalog BC ↔ Inventory BC");
-		expect(within(container).getByText("shared-kernel")).toHaveAttribute(
-			"title",
-			PATTERNS["shared-kernel"].summary,
-		);
+		// The type is a hover card trigger, not a title tooltip.
+		expect(
+			within(container).getByRole("button", { name: "shared-kernel" }),
+		).toHaveAttribute("aria-expanded", "false");
 		expect(screen.getByText("refactor")).toHaveClass("warn");
 	});
 

@@ -5,6 +5,7 @@ import {
 	type Consumption,
 	type ContextRelationship,
 	dispositionOf,
+	type Evidenced,
 	isSymmetricRelationship,
 	relationshipsWithoutComments,
 	type Workspace,
@@ -17,11 +18,11 @@ export type EvidenceRow = { key: string; relationship: ContextRelationship };
 export type RowGroup = { id: string; label: string; rows: EvidenceRow[] };
 
 /**
- * Whether a relationship has anything the evidence surfaces can disclose:
+ * Whether an intent has anything the evidence surfaces can disclose:
  * something written down, or a disposition other than the by-design default.
  */
-export const hasEvidence = (r: ContextRelationship): boolean =>
-	r.comments.length > 0 || dispositionOf(r) !== "by-design";
+export const hasEvidence = (intent: Evidenced): boolean =>
+	intent.comments.length > 0 || dispositionOf(intent) !== "by-design";
 
 /** The context on the other side of a relationship from `bc`. */
 export const counterpartOf = (

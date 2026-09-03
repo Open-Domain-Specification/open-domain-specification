@@ -2,18 +2,33 @@ import {
 	type BoundedContext,
 	type ContextRelationship,
 	isSymmetricRelationship,
+	narrativeText,
+	relationshipNarrative,
 } from "@open-domain-specification/core";
 import { commentsMd } from "./comments.md";
 import { patternNotesMd } from "./context-relationships.md";
 import { markdownTable } from "./lib/markdown-table";
 
+// TODO: clean-code - 0.6 - DRY: `counterpartOf` and the three-way grouping in
+// `strategicPositionMd` below restate what `positionGroups` and `counterpartOf`
+// already say in packages/pages/src/lib/evidence/derive.ts:28-79. Neither is
+// UI-specific, so one definition belongs in core beside `relationship.ts` and
+// both packages should read it. Pre-existing; left for the lead to schedule.
 /** The context on the other side of a relationship from `bc`. */
 const counterpartOf = (r: ContextRelationship, bc: BoundedContext) =>
 	r.source === bc ? r.target : r.source;
 
+/**
+ * What the author wrote, or the sentence core generates from the same
+ * relationship read from this context. Italics mark it as generated, which is
+ * the muted styling the pages table uses for the same fallback.
+ */
+const description = (r: ContextRelationship, bc: BoundedContext) =>
+	r.description ?? `*${narrativeText(relationshipNarrative(r, bc))}*`;
+
 const row = (r: ContextRelationship, bc: BoundedContext) => [
 	counterpartOf(r, bc).name,
-	r.description ?? "-",
+	description(r, bc),
 	r.type,
 	r.upstreamRoles.join(", ") || "-",
 	r.downstreamRoles.join(", ") || "-",

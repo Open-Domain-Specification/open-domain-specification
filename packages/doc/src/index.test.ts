@@ -260,6 +260,35 @@ describe("toDoc", () => {
 		expect(salesDoc).toContain("Identity");
 	});
 
+	it("falls back to the generated sentence, in italics, when a relationship has no description", async () => {
+		const workspace = new Workspace("Bare", {
+			odsVersion: "1.0.0",
+			description: "One relationship nobody described.",
+			version: "0.1.0",
+		});
+		const catalog = workspace.addBoundedContext("Catalog", {
+			description: "Upstream.",
+		});
+		const sales = workspace.addBoundedContext("Sales", {
+			description: "Downstream.",
+		});
+		catalog.upstreamOf(sales, {
+			type: "customer-supplier",
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+
+		const docs = await toDoc(workspace);
+
+		// Written from each context, so the same relationship reads two ways.
+		expect(docs["boundedcontexts/sales/index.md"]).toContain(
+			"| *Sales depends on Catalog as a customer, consuming its Open Host Service, and it protects its model with an Anti-Corruption Layer.* |",
+		);
+		expect(docs["boundedcontexts/catalog/index.md"]).toContain(
+			"| *Catalog acts as an upstream supplier to Sales, exposing an Open Host Service, while Sales protects its model with an Anti-Corruption Layer.* |",
+		);
+	});
+
 	it("prints each relationship's comments under its group, statement then citation", async () => {
 		const docs = await toDoc(petstore);
 		const salesDoc = docs["boundedcontexts/sales_bc/index.md"];

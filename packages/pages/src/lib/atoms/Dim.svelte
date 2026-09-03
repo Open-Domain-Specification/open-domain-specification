@@ -1,7 +1,14 @@
 <script lang="ts">
 import type { Snippet } from "svelte";
 
-const { children }: { children: Snippet } = $props();
+const {
+	children,
+	title,
+}: {
+	children: Snippet;
+	/** Why the text is dimmed, when that is not obvious — "generated", say. */
+	title?: string;
+} = $props();
 </script>
 
-<span class="dim">{@render children()}</span>
+<span class="dim" {title}>{@render children()}</span>
