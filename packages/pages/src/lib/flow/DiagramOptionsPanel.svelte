@@ -1,5 +1,6 @@
 <script lang="ts">
 import { Panel } from "@xyflow/svelte";
+import { untrack } from "svelte";
 import { type DiagramKind, hasSketchStyle } from "./kind";
 import {
 	type DiagramStyle,
@@ -14,7 +15,7 @@ import {
  * and relation maps are always drawn in their UML form.
  */
 let { kind = "context" }: { kind?: DiagramKind } = $props();
-let handles = $state<HandleMode>(diagramOptions.handles);
+let handles = $state<HandleMode>(untrack(() => diagramOptions.handlesFor(kind)));
 let edges = $state<EdgeStyle>(diagramOptions.edges);
 let style = $state<DiagramStyle>(diagramOptions.style);
 const apply = () => diagramOptions.set({ handles, edges, style });
