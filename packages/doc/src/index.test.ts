@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { Workspace } from "@open-domain-specification/core";
+import { PATTERNS, Workspace } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { toDoc } from "./index";
 
@@ -258,6 +258,25 @@ describe("toDoc", () => {
 		expect(salesDoc).toContain("Inventory");
 		expect(salesDoc).toContain("Fulfilment");
 		expect(salesDoc).toContain("Identity");
+	});
+
+	it("footnotes every pattern a context's relationship table names, and no others", async () => {
+		const docs = await toDoc(petstore);
+		const contextDoc = docs["boundedcontexts/sales_bc/index.md"];
+
+		// Sales is downstream of Catalog behind an anti-corruption layer.
+		expect(contextDoc).toContain(
+			`- \`upstream-downstream\` — **Upstream/Downstream** (U/D). ${PATTERNS["upstream-downstream"].summary}`,
+		);
+		expect(contextDoc).toContain(
+			`- \`anti-corruption-layer\` — **Anti-Corruption Layer** (ACL). ${PATTERNS["anti-corruption-layer"].summary}`,
+		);
+		// Nothing is explained that the table above does not name.
+		const table = contextDoc.split("## Context Relationships")[1];
+		const notes = [...table.matchAll(/^- `([\w-]+)` — /gm)].map((m) => m[1]);
+		expect(notes.length).toBeGreaterThan(1);
+		for (const key of notes)
+			expect(table.split(`- \`${key}\``)[0], key).toContain(key);
 	});
 
 	it("snapshots the file list produced for the petstore reference workspace", async () => {

@@ -80,7 +80,7 @@ const mark = $derived(
 	data?.disposition && data.disposition !== "by-design" ? data.disposition : "",
 );
 const titleFor = (text: string) =>
-	[roleTitle(text), data?.summary].filter(Boolean).join(" — ");
+	[roleTitle(text), data?.summary].filter(Boolean).join("\n");
 </script>
 
 {#if params && path}

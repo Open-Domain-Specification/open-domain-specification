@@ -55,6 +55,10 @@ Open-host service for /pet endpoints
 | --- | --- | --- | --- | --- |
 | Inventory BC | PetStatus and its values are one shared definition | shared-kernel | - | - |
 
+- `open-host-service` — **Open Host Service** (OHS). A public, stable protocol or API provided by an upstream context.
+- `anti-corruption-layer` — **Anti-Corruption Layer** (ACL). A translating boundary isolating a downstream model from external concepts.
+- `customer-supplier` — **Customer/Supplier** (C/S). Upstream plans for and prioritizes downstream requirements.
+- `shared-kernel` — **Shared Kernel** (SK). A shared subset of domain model and code, co-owned by both teams.
 
 ## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |

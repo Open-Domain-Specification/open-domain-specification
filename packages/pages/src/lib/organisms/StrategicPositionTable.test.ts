@@ -1,4 +1,4 @@
-import { Workspace } from "@open-domain-specification/core";
+import { PATTERNS, Workspace } from "@open-domain-specification/core";
 import { fireEvent, render, screen, within } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import {
@@ -39,11 +39,11 @@ describe("StrategicPositionTable", () => {
 		).toBeInTheDocument();
 		expect(screen.getByText("customer-supplier")).toHaveAttribute(
 			"title",
-			"The downstream side is a customer whose needs the upstream side plans for.",
+			PATTERNS["customer-supplier"].summary,
 		);
 		expect(screen.getAllByText("OHS")[0]).toHaveAttribute(
 			"title",
-			"The upstream side publishes a stable service contract for all comers.",
+			PATTERNS["open-host-service"].summary,
 		);
 	});
 

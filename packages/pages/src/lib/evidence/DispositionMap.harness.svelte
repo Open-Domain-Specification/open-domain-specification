@@ -2,6 +2,7 @@
 import {
 	type ContextRelationship,
 	ODSContextMap,
+	PATTERNS,
 } from "@open-domain-specification/core";
 import {
 	Background,
@@ -21,16 +22,12 @@ import { nodeTypes } from "../flow/registry";
 import { hostColorMode } from "../flow/theme.svelte";
 import { useModel } from "../model";
 import RelationshipDetail from "../organisms/RelationshipDetail.svelte";
-import { dispositionOf } from "./derive";
 import DispositionEdge, {
 	type DispositionEdgeData,
 } from "./DispositionEdge.svelte";
 import DispositionLegend from "./DispositionLegend.svelte";
-import {
-	type CommentSheetIndex,
-	PATTERN_SUMMARIES,
-	sheetForRelationship,
-} from "./fixtures";
+import { dispositionOf } from "./derive";
+import { type CommentSheetIndex, sheetForRelationship } from "./fixtures";
 
 /**
  * The context map of RFC-002 section 4.2, wired for Storybook: disposition
@@ -62,7 +59,7 @@ const relationshipFor = (edge: Edge): ContextRelationship | undefined =>
 const summaryFor = (r: ContextRelationship) => {
 	const sheet = sheetForRelationship(sheets, r);
 	const first = sheet?.comments[0]?.text;
-	return [PATTERN_SUMMARIES[r.type], first ?? "No comments recorded yet."].join(
+	return [PATTERNS[r.type].summary, first ?? "No comments recorded yet."].join(
 		" ",
 	);
 };

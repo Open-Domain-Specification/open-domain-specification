@@ -51,6 +51,7 @@ Chooses ship dates across planned shipments so orders approved on the same day l
 | --- | --- | --- | --- | --- |
 | Sales BC | Order lifecycle and shipment lifecycle are designed and released together | partnership | - | - |
 
+- `partnership` — **Partnership** (P). Mutual co-operation where teams coordinate development and releases.
 
 ## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |

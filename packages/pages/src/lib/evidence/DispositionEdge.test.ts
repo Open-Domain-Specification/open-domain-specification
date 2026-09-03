@@ -1,7 +1,8 @@
+import { PATTERNS } from "@open-domain-specification/core";
 import { fireEvent, render, waitFor } from "@testing-library/svelte";
 import { describe, expect, it, vi } from "vitest";
-import { type Box, installXyflowTestEnv } from "../xyflow-test-env";
 import { diagramOptions } from "../flow/options.svelte";
+import { type Box, installXyflowTestEnv } from "../xyflow-test-env";
 import Harness from "./DispositionEdge.harness.svelte";
 
 installXyflowTestEnv();
@@ -40,7 +41,7 @@ describe("DispositionEdge", () => {
 		expect(down).toHaveClass("refactor", "downstream");
 		expect(up).toHaveAttribute(
 			"title",
-			"open-host-service — Should become an event.",
+			`Open Host Service — ${PATTERNS["open-host-service"].summary}\nShould become an event.`,
 		);
 		expect(up.querySelector("button")?.textContent).toBe("OHS");
 	});
@@ -59,8 +60,11 @@ describe("DispositionEdge", () => {
 		await drawn(plain.container);
 		const [badge] = badges(plain.container);
 		expect(badge).not.toHaveClass("tolerated", "refactor");
-		// With no summary the hover is just the pattern's full name.
-		expect(badge).toHaveAttribute("title", "published-language");
+		// With no evidence summary the hover is just the pattern's own meaning.
+		expect(badge).toHaveAttribute(
+			"title",
+			`Published Language — ${PATTERNS["published-language"].summary}`,
+		);
 	});
 
 	it("reports the badge's flow coordinates when it is clicked", async () => {

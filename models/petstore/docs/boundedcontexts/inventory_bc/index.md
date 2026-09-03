@@ -53,6 +53,10 @@ Open-host service for /store/inventory
 | --- | --- | --- | --- | --- |
 | Catalog BC | PetStatus and its values are one shared definition | shared-kernel | - | - |
 
+- `conformist` — **Conformist** (CF). Downstream adopts the upstream domain model without translation.
+- `published-language` — **Published Language** (PL). A well-documented shared interchange format.
+- `upstream-downstream` — **Upstream/Downstream** (U/D). One context depends on another; the upstream does not plan around the downstream.
+- `shared-kernel` — **Shared Kernel** (SK). A shared subset of domain model and code, co-owned by both teams.
 
 ## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |

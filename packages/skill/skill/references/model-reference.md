@@ -75,13 +75,38 @@ Represents a bounded context in the Open Domain Specification (ODS).
 
 No other fields are allowed.
 
+## Comment
+
+A short grounded statement about the real system behind a strategic intent, optionally backed by one link.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `link` | [CommentLink](#commentlink) | no |  |
+| `text` | string | yes |  |
+
+No other fields are allowed.
+
+## CommentLink
+
+Where the evidence for a comment lives: the code, the contract, the decision record, the runbook or the dashboard.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `kind` | "adr" | "code" | "contract" | "dashboard" | "runbook" | yes |  |
+| `label` | string | no | What to show instead of the raw URL. |
+| `url` | string | yes |  |
+
+No other fields are allowed.
+
 ## Consumable
 
 Represents a consumable in the Open Domain Specification (ODS).
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
+| `comments` | array of [Comment](#comment) | no | Grounded statements about the real system behind this consumable. |
 | `description` | string | yes |  |
+| `disposition` | "by-design" | "refactor" | "tolerated" | no | What the architecture thinks of this consumable. Absent means `by-design`. |
 | `internal` | boolean | no | True when the consumable stays inside its context: an event only local policies react to, or an operation only local callers issue. Internal consumables may not be consumed from another context. |
 | `name` | string | yes |  |
 | `pattern` | "open-host-service" | "published-language" | no | The upstream role this consumable is offered under. Absent on internal consumables. |
@@ -97,7 +122,9 @@ Represents a consumption in the Open Domain Specification (ODS).
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
+| `comments` | array of [Comment](#comment) | no | Grounded statements about the real system behind this consumption. |
 | `consumable` | `{ "$ref": string }` | yes |  |
+| `disposition` | "by-design" | "refactor" | "tolerated" | no | What the architecture thinks of this consumption. Absent means `by-design`. |
 | `pattern` | "anti-corruption-layer" | "conformist" | no | The downstream role the consumer adopts for this consumable. |
 
 No other fields are allowed.
@@ -126,7 +153,9 @@ An upstream/downstream relationship between two bounded contexts.
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
+| `comments` | array of [Comment](#comment) | no | Grounded statements about the real system behind this relationship. |
 | `description` | string | no |  |
+| `disposition` | "by-design" | "refactor" | "tolerated" | no | What the architecture thinks of this relationship. Absent means `by-design`. |
 | `downstream` | `{ "$ref": string }` | yes |  |
 | `downstreamRoles` | array of "anti-corruption-layer" | "conformist" | yes |  |
 | `type` | "customer-supplier" | "upstream-downstream" | yes |  |
@@ -242,7 +271,9 @@ A relationship between two bounded contexts with no upstream or downstream side.
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
+| `comments` | array of [Comment](#comment) | no | Grounded statements about the real system behind this relationship. |
 | `description` | string | no |  |
+| `disposition` | "by-design" | "refactor" | "tolerated" | no | What the architecture thinks of this relationship. Absent means `by-design`. |
 | `participants` | array of unknown | yes |  |
 | `type` | "partnership" | "separate-ways" | "shared-kernel" | yes |  |
 

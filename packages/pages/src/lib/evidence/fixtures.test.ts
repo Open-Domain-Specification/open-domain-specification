@@ -1,6 +1,6 @@
+import { PATTERNS } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import {
-	PATTERN_SUMMARIES,
 	PETSTORE_SHEETS,
 	petstoreEvidence,
 	relationshipKey,
@@ -44,12 +44,12 @@ describe("evidence fixtures", () => {
 		expect(sheetForRef(PETSTORE_SHEETS, "#/nothing")).toBeUndefined();
 	});
 
-	it("summarises every relationship type and role the petstore uses", () => {
+	it("uses only patterns core's knowledge base can summarise", () => {
 		const { model } = petstoreEvidence();
 		for (const r of model.workspace.relationships) {
-			expect(PATTERN_SUMMARIES[r.type]).toBeTruthy();
+			expect(PATTERNS[r.type].summary, r.type).toBeTruthy();
 			for (const role of [...r.upstreamRoles, ...r.downstreamRoles])
-				expect(PATTERN_SUMMARIES[role]).toBeTruthy();
+				expect(PATTERNS[role].summary, role).toBeTruthy();
 		}
 	});
 

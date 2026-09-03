@@ -1,3 +1,4 @@
+import { PATTERNS } from "@open-domain-specification/core";
 import { expect, test } from "@playwright/test";
 import { openInteractiveDiagram } from "./helpers";
 
@@ -47,9 +48,15 @@ test("the interactive context map draws context nodes with stereotypes and roles
 		for (const part of r.split("+")) expect(["OHS", "PL"]).toContain(part);
 	for (const r of await texts(".port.downstream .port-label"))
 		for (const part of r.split("+")) expect(["CF", "ACL"]).toContain(part);
+	// The tooltip is the pattern's own name and meaning, from core's knowledge base.
 	await expect(upstream.first()).toHaveAttribute(
 		"title",
-		/open-host-service|published-language/,
+		new RegExp(
+			[PATTERNS["open-host-service"], PATTERNS["published-language"]]
+				.map((p) => `${p.name} — ${p.summary}`)
+				.map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+				.join("|"),
+		),
 	);
 	// Ports are full-size and the line starts at their rim, not underneath them.
 	await expect(upstream.first()).toHaveCSS("height", "22px");
@@ -74,7 +81,7 @@ test("the interactive context map draws context nodes with stereotypes and roles
 			await flow.locator(".stereotype, .port-label", { hasText: t }).count(),
 		).toBeGreaterThan(0);
 	await expect(
-		legend.locator("dd", { hasText: "Open host service" }),
+		legend.locator("dd", { hasText: PATTERNS["open-host-service"].name }),
 	).toBeVisible();
 	await legend.getByRole("button", { name: "Legend" }).click();
 	await expect(legend.locator("dl")).toHaveCount(0);

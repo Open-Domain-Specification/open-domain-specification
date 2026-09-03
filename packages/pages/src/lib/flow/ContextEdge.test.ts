@@ -1,3 +1,4 @@
+import { PATTERNS } from "@open-domain-specification/core";
 import { render, waitFor } from "@testing-library/svelte";
 import { describe, expect, it, vi } from "vitest";
 import { type Box, installXyflowTestEnv } from "../xyflow-test-env";
@@ -41,10 +42,15 @@ describe("ContextEdge", () => {
 		const down = container.querySelector(".port.downstream") as HTMLElement;
 		expect(up.querySelector(".port-label")?.textContent).toBe("OHS+PL");
 		expect(up.getAttribute("title")).toBe(
-			"open-host-service + published-language",
+			[
+				`Open Host Service — ${PATTERNS["open-host-service"].summary}`,
+				`Published Language — ${PATTERNS["published-language"].summary}`,
+			].join("\n"),
 		);
 		expect(down.querySelector(".port-label")?.textContent).toBe("ACL");
-		expect(down.getAttribute("title")).toBe("anti-corruption-layer");
+		expect(down.getAttribute("title")).toBe(
+			`Anti-Corruption Layer — ${PATTERNS["anti-corruption-layer"].summary}`,
+		);
 		// Ports sit just outside the handles and the line starts at their rim.
 		expect(portAt(up)).toEqual([10 + PORT_RADIUS, 20]);
 		expect(portAt(down)).toEqual([200 - PORT_RADIUS, 80]);
