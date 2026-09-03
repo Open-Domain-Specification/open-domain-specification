@@ -51,12 +51,21 @@ Open-host service for /store/order endpoints
 
 
 ## Context Relationships
-| Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
+### Depends on
+| With | Description | Type | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |
-| Catalog BC | customer-supplier | Sales BC | open-host-service | anti-corruption-layer |
-| Sales BC | upstream-downstream | Inventory BC | published-language | conformist |
-| Sales BC | partnership | Fulfilment BC | - | - |
-| Identity BC | separate-ways | Sales BC | - | - |
+| Catalog BC | Sales needs pet availability; Catalog commits to the summary contract | customer-supplier | open-host-service | anti-corruption-layer |
+
+### Depended on by
+| With | Description | Type | Upstream Roles | Downstream Roles |
+| --- | --- | --- | --- | --- |
+| Inventory BC | The projection counts orders as Sales reports them | upstream-downstream | published-language | conformist |
+
+### Works alongside
+| With | Description | Type | Upstream Roles | Downstream Roles |
+| --- | --- | --- | --- | --- |
+| Fulfilment BC | Order lifecycle and shipment lifecycle are designed and released together | partnership | - | - |
+| Identity BC | Orders are anonymous in Petstore v3; no integration by design | separate-ways | - | - |
 
 
 ## Consumptions

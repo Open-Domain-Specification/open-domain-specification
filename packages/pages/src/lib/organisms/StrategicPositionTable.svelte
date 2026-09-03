@@ -25,15 +25,22 @@ import RelationshipDetail from "./RelationshipDetail.svelte";
  * navigates: the detail is the same block a standalone relationship page
  * renders, drawn inside the table row.
  */
+/**
+ * `sheets` is optional: without it, the table has nothing to disclose, so
+ * the toggle column, the expandable detail row and the disposition column
+ * are all left out and only the plain position — who, what, which roles —
+ * is shown.
+ */
 const {
 	context,
 	sheets,
-}: { context: BoundedContext; sheets: CommentSheetIndex } = $props();
+}: { context: BoundedContext; sheets?: CommentSheetIndex } = $props();
 
 const model = useModel();
 const groups = $derived(
 	positionGroups(context, model.workspace.relationships, sheets),
 );
+const withEvidence = $derived(sheets !== undefined);
 let expanded = $state<string | undefined>(undefined);
 const toggle = (key: string) => {
 	expanded = expanded === key ? undefined : key;
@@ -47,41 +54,43 @@ const discloses = (r: { source: { name: string }; target: { name: string } }) =>
 	<table class="strategic-position">
 		<thead>
 			<tr>
-				<th class="toggle"><span class="visually-hidden">Detail</span></th>
+				{#if withEvidence}<th class="toggle"><span class="visually-hidden">Detail</span></th>{/if}
 				<th>With</th>
 				<th>Description</th>
 				<th>Type</th>
 				<th>Upstream role</th>
 				<th>Downstream role</th>
-				<th>Disposition</th>
+				{#if withEvidence}<th>Disposition</th>{/if}
 			</tr>
 		</thead>
 		{#each groups as group (group.id)}
 			<tbody>
-				<tr class="group"><th colspan="7" scope="colgroup">{group.label}</th></tr>
+				<tr class="group"><th colspan={withEvidence ? 7 : 5} scope="colgroup">{group.label}</th></tr>
 				{#each group.rows as entry (entry.key)}
 					{@const r = entry.relationship}
 					<tr class="position" class:open={expanded === entry.key}>
-						<td class="toggle">
-							<button
-								type="button"
-								aria-expanded={expanded === entry.key}
-								aria-label={discloses(r)}
-								onclick={() => toggle(entry.key)}
-							>
-								<i class="codicon codicon-chevron-{expanded === entry.key ? 'down' : 'right'}"></i>
-							</button>
-						</td>
+						{#if withEvidence}
+							<td class="toggle">
+								<button
+									type="button"
+									aria-expanded={expanded === entry.key}
+									aria-label={discloses(r)}
+									onclick={() => toggle(entry.key)}
+								>
+									<i class="codicon codicon-chevron-{expanded === entry.key ? 'down' : 'right'}"></i>
+								</button>
+							</td>
+						{/if}
 						<td><ContextPill context={counterpartOf(r, context)} /></td>
 						<td class="description">{#if r.description}{r.description}{:else}<Dim>no description</Dim>{/if}</td>
 						<td><Chip label={r.type} tone="muted" title={PATTERN_SUMMARIES[r.type]} /></td>
 						<td>{#each r.upstreamRoles as role, i (role)}{#if i}{" "}{/if}<Chip label={roleLabel(role) as string} tone="muted" title={PATTERN_SUMMARIES[role]} />{/each}</td>
 						<td>{#each r.downstreamRoles as role, i (role)}{#if i}{" "}{/if}<Chip label={roleLabel(role) as string} tone="muted" title={PATTERN_SUMMARIES[role]} />{/each}</td>
-						<td><DispositionChip disposition={entry.sheet?.disposition} /></td>
+						{#if withEvidence}<td><DispositionChip disposition={entry.sheet?.disposition} /></td>{/if}
 					</tr>
-					{#if expanded === entry.key}
+					{#if withEvidence && expanded === entry.key}
 						<tr class="detail-row">
-							<td colspan="7"><RelationshipDetail relationship={r} {sheets} /></td>
+							<td colspan="7"><RelationshipDetail relationship={r} sheets={sheets ?? {}} /></td>
 						</tr>
 					{/if}
 				{/each}

@@ -39,9 +39,10 @@ Open-host service for /user endpoints
 > No policies.
 
 ## Context Relationships
-| Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
+### Works alongside
+| With | Description | Type | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |
-| Identity BC | separate-ways | Sales BC | - | - |
+| Sales BC | Orders are anonymous in Petstore v3; no integration by design | separate-ways | - | - |
 
 
 ## Consumptions

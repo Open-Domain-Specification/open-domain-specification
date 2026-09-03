@@ -23,7 +23,6 @@ export const sections = [
 	import AttributeTable from "../molecules/AttributeTable.svelte";
 	import Card from "../molecules/Card.svelte";
 	import ConsumesTable from "../molecules/ConsumesTable.svelte";
-	import ContextPill from "../molecules/ContextPill.svelte";
 	import Fact from "../molecules/Fact.svelte";
 	import Grid from "../molecules/Grid.svelte";
 	import ProvidesTable from "../molecules/ProvidesTable.svelte";
@@ -34,19 +33,18 @@ export const sections = [
 		ICONS,
 		nameOf,
 		problemsUnder,
-		RELATIONSHIP,
 		SERVICE_TYPE,
 		useModel,
 	} from "../model";
-	import { consumableGraph, contextGraph, isSymmetricRelationship } from "../flow/graph";
+	import { consumableGraph, contextGraph } from "../flow/graph";
 	import DiagramFigure from "../organisms/DiagramFigure.svelte";
 	import PageHeader from "../organisms/PageHeader.svelte";
 	import Section from "../organisms/Section.svelte";
+	import StrategicPositionTable from "../organisms/StrategicPositionTable.svelte";
 
 	let { context: bc }: { context: BoundedContext } = $props();
 	const model = useModel();
 	const ws = model.workspace;
-	const relationships = $derived(ws.relationships.filter((r) => r.source === bc || r.target === bc));
 	const aggregates = $derived([...bc.aggregates.values()]);
 	const services = $derived([...bc.services.values()]);
 	const policies = $derived([...bc.policies.values()]);
@@ -58,8 +56,6 @@ export const sections = [
 	const contextMap = $derived(ODSContextMap.fromBoundedContext(bc));
 	const consumableMap = $derived(ODSConsumableMap.fromBoundedContext(bc));
 
-	const directionOf = (r: (typeof relationships)[number]) =>
-		isSymmetricRelationship(r.type) ? "with" : r.source === bc ? "upstream of" : "downstream of";
 	const count = (kind: "operation" | "event", a: (typeof aggregates)[number]) =>
 		[...a.consumables.values()].filter((c) => c.type === kind).length;
 	const countsLine = (a: (typeof aggregates)[number]) =>
@@ -93,24 +89,7 @@ export const sections = [
 	lead="Who this context depends on and who depends on it. Roles say how each side protects its model."
 	problems={problemsUnder(model, bc.ref).filter((d) => d.ref === bc.ref)}
 >
-	{#if relationships.length}
-		<table>
-			<thead><tr><th>Relationship</th><th>With</th><th>Type</th><th>Upstream role</th><th>Downstream role</th></tr></thead>
-			<tbody>
-				{#each relationships as r}
-					<tr>
-						<td>{directionOf(r)}</td>
-						<td><ContextPill context={r.source === bc ? r.target : r.source} /></td>
-						<td><Chip label={r.type} tone="muted" title={RELATIONSHIP[r.type]} /></td>
-						<td>{#each r.upstreamRoles as x, i}{#if i}{" "}{/if}<Chip label={x} tone="muted" />{/each}</td>
-						<td>{#each r.downstreamRoles as x, i}{#if i}{" "}{/if}<Chip label={x} tone="muted" />{/each}</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	{:else}
-		<Empty text="No explicit relationships. Consumptions below imply upstream and downstream links." />
-	{/if}
+	<StrategicPositionTable context={bc} />
 	<DiagramFigure
 		caption="{bc.name} context map"
 		emptyText="No neighbouring contexts yet."

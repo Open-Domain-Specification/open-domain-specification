@@ -63,7 +63,7 @@ const row = (
 export function positionGroups(
 	bc: BoundedContext,
 	relationships: ContextRelationship[],
-	sheets: CommentSheetIndex,
+	sheets: CommentSheetIndex = {},
 ): RowGroup[] {
 	const mine = relationships.filter((r) => r.source === bc || r.target === bc);
 	const rows = mine.map((r, i) => row(r, sheets, i));

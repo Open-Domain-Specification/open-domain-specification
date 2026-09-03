@@ -3,13 +3,11 @@ import {
 	type BoundedContext,
 	type DataSchema,
 	ODSConsumptionGraph,
-	ODSContextMap,
 	type Policy,
 	type Service,
 } from "@open-domain-specification/core";
 import { attributeListMd } from "./attributes.md";
 import { contextBreadcrumbsMd } from "./breadcrumbs.md";
-import { contextRelationshipsMd } from "./context-relationships.md";
 import { glossaryTableMd } from "./glossary.md";
 import { markdownTable } from "./lib/markdown-table";
 import {
@@ -18,6 +16,7 @@ import {
 	pathToIndexMd,
 } from "./lib/paths";
 import type { Options } from "./options";
+import { strategicPositionMd } from "./strategic-position.md";
 import { teamLinkMd } from "./team.md";
 
 const aggregateSection = (aggregate: Aggregate) => `
@@ -113,7 +112,7 @@ ${markdownTable(
 }
 
 ## Context Relationships
-${contextRelationshipsMd(ODSContextMap.fromBoundedContext(boundedcontext))}
+${strategicPositionMd(boundedcontext)}
 
 ## Consumptions
 ${markdownTable(
