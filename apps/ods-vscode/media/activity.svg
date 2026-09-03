@@ -1,1 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/><circle cx="17" cy="7" r="3.5"/><circle cx="7" cy="17" r="3.5"/><path d="M11 7h2.5M7 11v2.5"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Outer Circular Boundary -->
+  <circle cx="12" cy="12" r="9.5"/>
+  <!-- Central D Cutout -->
+  <path d="M9.5 8H12C14.2 8 15.5 9.5 15.5 12C15.5 14.5 14.2 16 12 16H9.5V8Z"/>
+  <!-- 3 Clean Division Lines -->
+  <line x1="9.5" y1="8" x2="5.5" y2="5"/>
+  <line x1="9.5" y1="16" x2="5.5" y2="19"/>
+  <line x1="15.5" y1="12" x2="21.5" y2="12"/>
+</svg>

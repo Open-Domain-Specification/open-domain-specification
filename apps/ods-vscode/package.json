@@ -12,6 +12,7 @@
 	"categories": [
 		"Other"
 	],
+	"icon": "media/icon.png",
 	"main": "./dist/extension.js",
 	"repository": {
 		"type": "git",

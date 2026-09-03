@@ -1,3 +1,5 @@
+<p align="center"><img src="media/logo.png" width="112" alt="ODS" /></p>
+
 # Open Domain Specification (ODS)
 
 Open Domain Specification is a **Domain-Driven Design (DDD)**-inspired specification and toolkit for describing business

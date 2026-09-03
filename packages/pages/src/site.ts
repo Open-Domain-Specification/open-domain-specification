@@ -48,6 +48,10 @@ export async function exportSite(input: SiteInput): Promise<SiteResult> {
 	await fs.cp(path.join(appDir, "assets"), path.join(outDir, "assets"), {
 		recursive: true,
 	});
+	await fs.copyFile(
+		path.join(appDir, "favicon.svg"),
+		path.join(outDir, "favicon.svg"),
+	);
 	const indexPath = path.join(outDir, "index.html");
 	await fs.writeFile(
 		indexPath,

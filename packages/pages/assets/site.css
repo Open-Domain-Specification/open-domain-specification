@@ -56,6 +56,11 @@
 	grid-template-columns: 260px minmax(0, 1fr);
 	min-height: 100vh;
 }
+.site-nav .brand {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
 .site-nav {
 	position: sticky;
 	top: 0;

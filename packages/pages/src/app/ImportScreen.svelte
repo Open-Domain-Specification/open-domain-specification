@@ -1,4 +1,5 @@
 <script lang="ts">
+import Logo from "../lib/atoms/Logo.svelte";
 import type { Example } from "../protocol";
 
 /** Import by URL (query parameter or form), by file upload, or from an example card; the last URL is remembered. */
@@ -64,7 +65,7 @@ if (new URLSearchParams(location.search).get("url")) fromUrl();
 
 <div class="layout">
 	<main class="import">
-		<h1><i class="codicon codicon-package"></i> Open a workspace</h1>
+		<h1 class="brand"><Logo size={32} /> Open a workspace</h1>
 		<p class="lead">Load an Open Domain Specification workspace file to browse it.</p>
 		<form onsubmit={(e) => { e.preventDefault(); fromUrl(); }}>
 			<label for="url">From a URL</label>
@@ -93,6 +94,7 @@ if (new URLSearchParams(location.search).get("url")) fromUrl();
 
 <style>
 	.import { max-width: 640px; margin: 48px auto; }
+	.brand { display: flex; align-items: center; gap: 10px; }
 	.row { display: flex; gap: 8px; }
 	.row input { flex: 1; }
 	label { display: block; margin: 16px 0 6px; font-weight: 600; }
