@@ -39,9 +39,14 @@ describe("DisclosureCard", () => {
 		// Inside the viewport portal, so it pans and zooms with the map.
 		expect(card.closest(".svelte-flow__viewport-front")).toBeTruthy();
 		expect(card.style.transform).toBe("translate(120px, 48px)");
-		expect(card.querySelector(".relationship-detail h3")?.textContent).toBe(
-			"Catalog BC ↔ Inventory BC",
-		);
+		// The v2 detail's title is the two context lockups either side of the
+		// arrow, then the pattern and its disposition, so the badge a reader
+		// clicked and the card that opens name the same relationship.
+		const title = card
+			.querySelector(".relationship-detail h3")
+			?.textContent?.replace(/\s+/g, " ")
+			.trim();
+		expect(title).toBe("Catalog BC ↔ Inventory BC shared-kernel refactor");
 
 		// A pointer down inside the card is not a click somewhere else.
 		await fireEvent.pointerDown(card);

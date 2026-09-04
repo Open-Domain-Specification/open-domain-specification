@@ -5,7 +5,7 @@ import { petstoreModel } from "../fixtures";
 import { contextGraph } from "../flow/graph";
 import ModelProvider from "../ModelProvider.svelte";
 import InteractiveDiagram from "../organisms/InteractiveDiagram.svelte";
-import Theme from "./Theme.harness.svelte";
+import Theme from "../Theme.harness.svelte";
 
 const model = petstoreModel();
 const graph = contextGraph(

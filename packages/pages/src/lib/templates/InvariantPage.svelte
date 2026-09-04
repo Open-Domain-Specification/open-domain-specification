@@ -6,28 +6,36 @@ export const sections = [
 </script>
 
 <script lang="ts">
-	import { Entity, type Invariant } from "@open-domain-specification/core";
-	import Empty from "../atoms/Empty.svelte";
-	import RefLink from "../atoms/RefLink.svelte";
-	import Card from "../molecules/Card.svelte";
-	import Fact from "../molecules/Fact.svelte";
-	import Grid from "../molecules/Grid.svelte";
-	import { ICONS, nameOf, problemsUnder, useModel } from "../model";
-	import LanguageSection from "../organisms/LanguageSection.svelte";
-	import PageHeader from "../organisms/PageHeader.svelte";
-	import Section from "../organisms/Section.svelte";
-	import { ownerCrumbs } from "./elements";
+import type { Invariant } from "@open-domain-specification/core";
+import { nameOf, problemsUnder, useModel } from "../model";
+import { ownerCrumbs } from "../elements";
+import type { Column } from "../atoms/DataTable.svelte";
+import DataTable from "../atoms/DataTable.svelte";
+import Definition from "../atoms/Definition.svelte";
+import DefinitionList from "../atoms/DefinitionList.svelte";
+import Lockup from "../atoms/Lockup.svelte";
+import { kindOf } from "../molecules/element-kind";
+import LanguageSection from "../organisms/LanguageSection.svelte";
+import PageHeader from "../organisms/PageHeader.svelte";
+import Section from "../organisms/Section.svelte";
 
-	let { invariant: i }: { invariant: Invariant } = $props();
-	const model = useModel();
-	const ws = model.workspace;
-	const a = $derived(i.aggregate);
-	const describe = (t: unknown) => (t as { description?: string }).description;
+/** One rule that must hold after every change, and the elements it is about. */
+const { invariant: i }: { invariant: Invariant } = $props();
+const model = useModel();
+const a = $derived(i.aggregate);
+const targets = $derived(i.targets);
+const columns: Column[] = [
+	{ key: "name", label: "Element" },
+	{ key: "description", label: "Description" },
+];
 </script>
 
-<PageHeader kind="Invariant" icon={ICONS.invariant} name={i.name} id={i.id} description={i.description} crumbs={ownerCrumbs(ws, a)}>
+<PageHeader description={i.description} crumbs={ownerCrumbs(model.workspace, a)}>
+	{#snippet title()}<Lockup kind="invariant" name={i.name} id={i.id} detail="Invariant" size="title" />{/snippet}
 	{#snippet facts()}
-		<Fact label="Enforced by"><RefLink ref={a.ref} label={a.name} icon={ICONS.aggregate} /></Fact>
+		<DefinitionList>
+			<Definition term="Enforced by"><Lockup kind="aggregate" name={a.name} ref={a.ref} /></Definition>
+		</DefinitionList>
 	{/snippet}
 </PageHeader>
 
@@ -35,17 +43,18 @@ export const sections = [
 	id="constrains"
 	title="Constrains"
 	lead="The elements this rule is about. An invariant that spans aggregates cannot be guaranteed in one transaction."
+	count={targets.length}
 	problems={problemsUnder(model, i.ref)}
 >
-	{#if i.targets.length}
-		<Grid>
-			{#each i.targets as t}
-				<Card ref={t.ref} name={nameOf(t)} icon={t instanceof Entity ? ICONS.entity : ICONS.valueobject} description={describe(t)} />
-			{/each}
-		</Grid>
-	{:else}
-		<Empty text="Applies to the aggregate as a whole." />
-	{/if}
+	<DataTable {columns} rows={targets} empty="Applies to the aggregate as a whole." rowId={(t) => t.ref}>
+		{#snippet cell(t, col)}
+			{#if col.key === "name"}
+				<Lockup kind={kindOf(t)} name={nameOf(t)} ref={t.ref} />
+			{:else}
+				{t.description}
+			{/if}
+		{/snippet}
+	</DataTable>
 </Section>
 
 <LanguageSection target={i} />

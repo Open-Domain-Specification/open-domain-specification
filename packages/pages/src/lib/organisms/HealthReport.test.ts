@@ -1,82 +1,76 @@
-import { Workspace } from "@open-domain-specification/core";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
-import { strategicPositionFixture } from "../evidence/fixtures";
+import { health, healthCounts } from "../evidence/derive";
 import Harness from "../evidence/WithModel.harness.svelte";
-import { petstoreModel } from "../fixtures";
-import type { Model } from "../model";
+import { edgeCaseModel, emptyWorkspaceModel, petstoreModel } from "../fixtures";
 import HealthReport from "./HealthReport.svelte";
 
-const show = (model: Model) =>
+const report = (model: ReturnType<typeof petstoreModel>) =>
 	render(Harness, { model, component: HealthReport, args: {} });
 
-const counts = (container: HTMLElement) =>
-	[...container.querySelectorAll(".summary strong")].map((s) => s.textContent);
-
 describe("HealthReport", () => {
-	it("counts what the architecture is unhappy with across the petstore", () => {
-		const { container } = show(petstoreModel());
-		// Petstore turns comments-required on, so its third count is zero.
-		expect(counts(container)).toEqual(["1", "1", "0"]);
-		expect(
-			screen.getByText(/The kernel has grown past the status enum/),
-		).toBeInTheDocument();
-		expect(
-			screen.getByText(/The projection conforms to the Sales order events/),
-		).toBeInTheDocument();
+	it("puts the three numbers in the heading badges the stat tiles used to hold", () => {
+		const model = petstoreModel();
+		const counts = healthCounts(health(model.workspace));
+		const { container } = report(model);
+		const badges = [...container.querySelectorAll(".count")].map(
+			(b) => b.textContent,
+		);
+		// A badge is not drawn at zero (card 34): the petstore has nothing
+		// without comments, so only the first two headings carry one.
+		expect(counts.noComments).toBe(0);
+		expect(badges).toEqual([String(counts.refactor), String(counts.tolerated)]);
+		// No stat tile survives.
+		expect(container.querySelector(".summary")).toBeNull();
 	});
 
-	it("groups the refactor backlog under the context that owns the change", () => {
-		const { container } = show(petstoreModel());
-		const group = container.querySelector("h4") as HTMLElement;
-		expect(group).toHaveTextContent("Catalog BC");
+	it("groups refactor by the context that owns the change and reads the comments under each row", () => {
+		const model = petstoreModel();
+		const { container } = report(model);
+		const groups = container.querySelectorAll("tr.group th");
+		expect(groups.length).toBeGreaterThan(0);
+		const detail = container.querySelector("tr.detail") as HTMLElement;
+		expect(detail.querySelector("td")).toHaveAttribute("colspan", "3");
+		expect(detail.querySelector(".codicon-comment")).toBeInTheDocument();
+		// The intent cell names both ends with the arrow between them.
+		expect(container.querySelector("tbody .arrow")).toBeInTheDocument();
 	});
 
-	it("keeps the no-comments list collapsed until it is asked for", async () => {
-		show(strategicPositionFixture(8).model);
-		const toggle = screen.getByRole("button", { name: /No comments \(2\)/ });
+	it("keeps the reconciliation list collapsed until asked, and opens it without comment rows", async () => {
+		// The edge-case workspace's one relationship has nothing written down.
+		const { container } = report(edgeCaseModel());
+		const toggle = screen.getByRole("button", { name: /No comments/ });
 		expect(toggle).toHaveAttribute("aria-expanded", "false");
-		expect(screen.queryByText("Nothing written down yet.")).toBeNull();
+		const before = container.querySelectorAll("table").length;
+
 		await fireEvent.click(toggle);
 		expect(toggle).toHaveAttribute("aria-expanded", "true");
-		expect(screen.getAllByText("Nothing written down yet.")).toHaveLength(2);
-		await fireEvent.click(toggle);
-		expect(screen.queryByText("Nothing written down yet.")).toBeNull();
+		const tables = container.querySelectorAll("table");
+		expect(tables.length).toBe(before + 1);
+		const opened = tables[tables.length - 1];
+		expect(opened.querySelectorAll("tbody tr").length).toBeGreaterThan(0);
+		expect(opened.querySelector("tr.detail")).toBeNull();
 	});
 
-	it("lists every refactor and tolerated intent in the dense fixture", () => {
-		const { container } = show(strategicPositionFixture(8).model);
-		expect(counts(container)).toEqual(["2", "2", "2"]);
-		expect(container.querySelectorAll("h4")).toHaveLength(2);
-	});
-
-	it("says there is nothing to do when every intent is by design and evidenced", async () => {
-		const workspace = new Workspace("Clean", {
-			id: "clean",
-			odsVersion: "1.0.0",
-			description: "Nothing to report.",
-			version: "0.0.1",
-		});
-		const a = workspace.addBoundedContext("A", { description: "A." });
-		const b = workspace.addBoundedContext("B", { description: "B." });
-		a.upstreamOf(b, {
-			description: "Plain.",
-			comments: [{ text: "It is what it looks like." }],
-		});
-		const { container } = show({
-			workspace,
-			fileLabel: "clean.json",
-			diagnostics: [],
-		});
-		expect(counts(container)).toEqual(["0", "0", "0"]);
-		expect(container.querySelectorAll(".summary li.zero")).toHaveLength(3);
-		expect(
-			screen.getByText("Nothing is marked for refactoring."),
-		).toBeInTheDocument();
-		expect(screen.getByText("No compromises recorded.")).toBeInTheDocument();
+	it("says what would fill each section for a workspace with nothing recorded", async () => {
+		const empty = emptyWorkspaceModel();
+		report(empty);
+		expect(screen.getByText("Nothing is marked for refactoring.")).toHaveClass(
+			"empty",
+		);
+		expect(screen.getByText("No compromises recorded.")).toHaveClass("empty");
 		await fireEvent.click(screen.getByRole("button", { name: /No comments/ }));
 		expect(
 			screen.getByText("Every intent carries at least one comment."),
 		).toBeInTheDocument();
+	});
+
+	it("shows the petstore's own reconciliation list, whatever is in it", async () => {
+		const model = petstoreModel();
+		const counts = healthCounts(health(model.workspace));
+		const { container } = report(model);
+		await fireEvent.click(screen.getByRole("button", { name: /No comments/ }));
+		const rows = container.querySelectorAll("table:last-of-type tbody tr");
+		expect(rows.length >= counts.noComments).toBe(true);
 	});
 });

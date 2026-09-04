@@ -42,8 +42,9 @@ export const SERVICE_TYPE: Record<string, string> = {
 
 /**
  * Tooltip line per relationship type, read straight off core's pattern
- * knowledge base so the chip, the legend, the generated docs and the skill
- * all say the same thing.
+ * knowledge base so every host that names a relationship — the generated
+ * docs, the extension's tree and search, the skill — says the same thing.
+ * A page reads the same summaries through `Keyword`'s title.
  */
 export const RELATIONSHIP: Record<string, string> = Object.fromEntries(
 	Object.entries(PATTERNS)

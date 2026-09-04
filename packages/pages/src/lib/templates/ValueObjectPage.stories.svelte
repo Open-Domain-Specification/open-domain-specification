@@ -1,26 +1,30 @@
 <script module lang="ts">
 import { defineMeta } from "@storybook/addon-svelte-csf";
 import { petstoreModel } from "../fixtures";
-import ModelProvider from "../ModelProvider.svelte";
-import ValueObjectPage from "./ValueObjectPage.svelte";
+import Page from "../Page.harness.svelte";
+import Theme from "../Theme.harness.svelte";
+import { PETSTORE_REFS } from "./petstore.harness";
 
+// The harness renders the shipped route for a ref, so a story draws the
+// page a host draws — the real template inside `PageLayout`, with a model
+// in context — and cannot drift from it.
 const model = petstoreModel();
-const ws = model.workspace;
-const valueobject = [...ws.boundedcontexts.values()]
-	.flatMap((bc) => [...bc.aggregates.values()])
-	.flatMap((a) => [...a.valueobjects.values()])[0];
 const { Story } = defineMeta({
 	title: "Templates/ValueObjectPage",
-	component: ValueObjectPage,
+	component: Page,
 	parameters: { layout: "fullscreen" },
-	args: { valueobject },
+	args: { model, ref: PETSTORE_REFS.valueobject },
 });
 </script>
 
-<Story name="Petstore">
-	{#snippet template()}
-		<ModelProvider {model}>
-			<div class="layout"><main><ValueObjectPage {valueobject} /></main></div>
-		</ModelProvider>
-	{/snippet}
+<Story name="Light">
+	{#snippet template()}<Theme mode="light"><Page {model} ref={PETSTORE_REFS.valueobject} /></Theme>{/snippet}
+</Story>
+
+<Story name="Dark">
+	{#snippet template()}<Theme mode="dark"><Page {model} ref={PETSTORE_REFS.valueobject} /></Theme>{/snippet}
+</Story>
+
+<Story name="High contrast">
+	{#snippet template()}<Theme mode="hc"><Page {model} ref={PETSTORE_REFS.valueobject} /></Theme>{/snippet}
 </Story>

@@ -1,39 +1,41 @@
-import { ODSRelationMap } from "@open-domain-specification/core";
+import { ODSContextMap } from "@open-domain-specification/core";
 import { render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import { petstoreModel } from "../fixtures";
-import { relationGraph } from "../flow/graph";
+import { contextGraph } from "../flow/graph";
 import { installXyflowTestEnv } from "../xyflow-test-env";
 import Harness from "./DiagramFigure.harness.svelte";
 
 installXyflowTestEnv();
 
 describe("DiagramFigure", () => {
-	it("shows the empty text instead of a diagram when the graph has no nodes", () => {
+	it("says what would fill it, with no hairlines, when the graph is empty", () => {
 		render(Harness, {
 			model: petstoreModel(),
-			caption: "Caption",
-			emptyText: "Nothing to show.",
+			caption: "Context map",
+			emptyText: "No bounded contexts yet.",
 			graph: { nodes: [], edges: [], groups: [] },
 		});
-		expect(screen.getByText("Nothing to show.")).toBeInTheDocument();
-		expect(document.querySelector(".interactive")).not.toBeInTheDocument();
+		expect(screen.getByText("No bounded contexts yet.")).toHaveClass("empty");
+		expect(document.querySelector("figure.diagram")).not.toBeInTheDocument();
 	});
 
-	it("renders the interactive Svelte Flow view with its caption", () => {
+	it("is the canvas between two hairlines with the caption below it", () => {
 		const model = petstoreModel();
-		const bc = [...model.workspace.boundedcontexts.values()][0];
-		const aggregate = [...bc.aggregates.values()][0];
-		const map = ODSRelationMap.fromAggregate(aggregate);
 		render(Harness, {
 			model,
-			caption: "Structure",
+			caption: "Catalog BC context map",
 			emptyText: "unused",
-			graph: relationGraph(map),
+			graph: contextGraph(
+				ODSContextMap.fromWorkspace(model.workspace),
+				model.workspace.relationships,
+			),
 		});
 		expect(
-			document.querySelector("figure.diagram .interactive"),
+			document.querySelector("figure.diagram .canvas .interactive"),
 		).toBeInTheDocument();
-		expect(screen.getByText("Structure")).toBeInTheDocument();
+		expect(document.querySelector("figcaption")).toHaveTextContent(
+			"Catalog BC context map",
+		);
 	});
 });

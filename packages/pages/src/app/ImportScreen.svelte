@@ -79,7 +79,7 @@ function fromExample(example: Example) {
 if (new URLSearchParams(location.search).get("url")) fromUrl();
 </script>
 
-<div class="layout">
+<div class="screen">
 	<main class="import">
 		<h1 class="brand"><Logo size={32} /> Open a workspace</h1>
 		<p class="lead">Load an Open Domain Specification workspace file to browse it.</p>

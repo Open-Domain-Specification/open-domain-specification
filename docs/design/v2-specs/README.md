@@ -4,7 +4,7 @@ One short spec per organism and template in `packages/pages/src/lib/`, for
 the implementation cards that move each one onto the
 [design language v2](../design-language-v2.md). Each spec names the v2
 primitives it uses and sketches the layout. Primitives are the files under
-`packages/pages/src/lib/v2/`; their stories are under `V2/` in Storybook.
+`packages/pages/src/lib/atoms/`; their stories are under `Atoms/` in Storybook.
 
 Organisms: [AttributesSection](organism-attributes-section.md),
 [DiagramFigure](organism-diagram-figure.md),

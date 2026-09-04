@@ -3,119 +3,138 @@ import {
 	isSymmetricRelationship,
 	PATTERNS,
 } from "@open-domain-specification/core";
-import Chip from "../atoms/Chip.svelte";
-import DispositionChip from "../atoms/DispositionChip.svelte";
-import Empty from "../atoms/Empty.svelte";
-import RefLink from "../atoms/RefLink.svelte";
+import Comments from "../atoms/Comments.svelte";
+import type { Column, Group } from "../atoms/DataTable.svelte";
+import DataTable from "../atoms/DataTable.svelte";
+import Disposition from "../atoms/Disposition.svelte";
+import EmptyState from "../atoms/EmptyState.svelte";
+import Heading from "../atoms/Heading.svelte";
+import Keyword from "../atoms/Keyword.svelte";
 import { type EvidenceRow, health, healthCounts } from "../evidence/derive";
-import { ICONS, useModel } from "../model";
-import CommentList from "../molecules/CommentList.svelte";
-import HealthSummary from "../molecules/HealthSummary.svelte";
+import { useModel } from "../model";
+import ContextLockup from "../molecules/ContextLockup.svelte";
 
 /**
  * The workspace read of the evidence layer (RFC-002 section 4.5): what is
  * marked for refactoring, what compromises are tolerated, and what carries no
- * comments at all. The strip at the top is the number a product owner reads to
- * answer "is the map true, and is it what we want?"; everything below it is
- * the backlog behind those numbers.
+ * comments at all. v1 put three stat tiles in frames above the lists; here the
+ * three numbers are the count badges on the three headings, which is how a
+ * pane header carries its count, and each section is a table whose comments
+ * read as the row's own detail underneath it.
  *
- * The no-comments section starts collapsed: it is a reconciliation to-do list
- * for the skill rather than something the architecture is unhappy about.
+ * The no-comments section stays collapsed: it is a reconciliation to-do list
+ * for the skill rather than something the architecture is unhappy about, and
+ * its rows have no comments to show under them.
  */
-
 const model = useModel();
 const report = $derived(health(model.workspace));
 const counts = $derived(healthCounts(report));
 let showNoComments = $state(false);
-const noCommentsLabel = $derived(`No comments (${counts.noComments})`);
+
+const columns: Column[] = [
+	{ key: "intent", label: "Intent" },
+	{ key: "type", label: "Type" },
+	{ key: "disposition", label: "Disposition" },
+];
+/** Refactor keeps v1's grouping by the context that owns the change. */
+const refactorGroups = $derived<Group<EvidenceRow>[]>(
+	report.refactor.map((g) => ({
+		id: g.context.ref,
+		label: g.context.name,
+		rows: g.rows,
+	})),
+);
 </script>
 
 <div class="health-report">
-	<HealthSummary {counts} />
-
-	<h3 id="refactor">Refactor</h3>
-	{#if report.refactor.length}
-		{#each report.refactor as group (group.context.ref)}
-			<h4><RefLink ref={group.context.ref} label={group.context.name} icon={ICONS.boundedcontext} /></h4>
-			{#each group.rows as entry (entry.key)}
-				{@render intent(entry)}
-			{/each}
-		{/each}
+	<Heading level={3} id="refactor" count={counts.refactor}>Refactor</Heading>
+	{#if refactorGroups.length}
+		{@render intents({ groups: refactorGroups })}
 	{:else}
-		<Empty text="Nothing is marked for refactoring." />
+		<EmptyState text="Nothing is marked for refactoring." />
 	{/if}
 
-	<h3 id="tolerated">Tolerated</h3>
+	<Heading level={3} id="tolerated" count={counts.tolerated}>Tolerated</Heading>
 	{#if report.tolerated.length}
-		{#each report.tolerated as entry (entry.key)}
-			{@render intent(entry)}
-		{/each}
+		{@render intents({ rows: report.tolerated })}
 	{:else}
-		<Empty text="No compromises recorded." />
+		<EmptyState text="No compromises recorded." />
 	{/if}
 
-	<h3 id="no-comments">
-		<button type="button" aria-expanded={showNoComments} onclick={() => { showNoComments = !showNoComments; }}>
-			<i class="codicon codicon-chevron-{showNoComments ? 'down' : 'right'}"></i>
-			<span>{noCommentsLabel}</span>
+	<Heading level={3} id="no-comments" count={counts.noComments}>
+		<button
+			type="button"
+			aria-expanded={showNoComments}
+			onclick={() => {
+				showNoComments = !showNoComments;
+			}}
+		>
+			<i class="codicon codicon-chevron-{showNoComments ? 'down' : 'right'}" aria-hidden="true"></i>
+			No comments
 		</button>
-	</h3>
+	</Heading>
 	{#if showNoComments}
 		{#if report.noComments.length}
-			{#each report.noComments as entry (entry.key)}
-				{@render intent(entry)}
-			{/each}
+			{@render intents({ rows: report.noComments, comments: false })}
 		{:else}
-			<Empty text="Every intent carries at least one comment." />
+			<EmptyState text="Every intent carries at least one comment." />
 		{/if}
 	{/if}
 </div>
 
-{#snippet intent(entry: EvidenceRow)}
-	{@const r = entry.relationship}
-	<article class="intent">
-		<div class="intent-head">
-			<RefLink ref={r.source.ref} label={r.source.name} icon={ICONS.boundedcontext} />
-			<span class="arrow">{isSymmetricRelationship(r.type) ? "↔" : "→"}</span>
-			<RefLink ref={r.target.ref} label={r.target.name} icon={ICONS.boundedcontext} />
-			<Chip label={r.type} tone="muted" title={PATTERNS[r.type].summary} />
-			<DispositionChip disposition={r.disposition} />
-		</div>
-		<CommentList comments={r.comments} empty="Nothing written down yet." />
-	</article>
+{#snippet intents(what: {
+	rows?: EvidenceRow[];
+	groups?: Group<EvidenceRow>[];
+	comments?: boolean;
+})}
+	<DataTable
+		{columns}
+		rows={what.rows}
+		groups={what.groups}
+		rowId={(entry) => entry.key}
+		detail={what.comments === false ? undefined : rowComments}
+	>
+		{#snippet cell(entry, col)}
+			{@const r = entry.relationship}
+			{#if col.key === "intent"}
+				<ContextLockup context={r.source} />
+				<span class="arrow">{isSymmetricRelationship(r.type) ? "↔" : "→"}</span>
+				<ContextLockup context={r.target} />
+			{:else if col.key === "type"}
+				<Keyword text={r.type} title={PATTERNS[r.type].summary} />
+			{:else}
+				<Disposition disposition={r.disposition} />
+			{/if}
+		{/snippet}
+	</DataTable>
+{/snippet}
+
+{#snippet rowComments(entry: EvidenceRow)}
+	<Comments comments={entry.relationship.comments} empty="Nothing written down yet." />
 {/snippet}
 
 <style>
-	h3 {
-		margin: 16px 0 4px;
+	.arrow {
+		color: var(--vscode-descriptionForeground);
+		margin: 0 4px;
 	}
-	h3 button {
+	/* The chevron a pane header uses for a section that is collapsed; the
+	   heading and its badge are the Heading primitive's. */
+	button {
 		font: inherit;
 		color: inherit;
 		background: none;
 		border: 0;
 		padding: 0;
 		cursor: pointer;
+		border-radius: 2px;
 	}
-	h4 {
-		margin: 10px 0 2px;
-		font-size: 0.85em;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		color: var(--muted);
+	button:focus-visible {
+		outline: 1px solid var(--vscode-focusBorder);
+		outline-offset: 1px;
 	}
-	.intent {
-		border-left: 2px solid var(--border);
-		padding: 2px 0 2px 10px;
-		margin-bottom: 8px;
-	}
-	.intent-head {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 6px;
-	}
-	.arrow {
-		color: var(--muted);
+	button .codicon {
+		font-size: 1em;
+		vertical-align: -2px;
 	}
 </style>

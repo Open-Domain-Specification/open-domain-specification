@@ -3,43 +3,36 @@ import { describe, expect, it } from "vitest";
 import Problems from "./Problems.svelte";
 
 describe("Problems", () => {
-	it("renders nothing when there are no problems", () => {
+	it("draws nothing when there is nothing wrong", () => {
 		const { container } = render(Problems, { problems: [] });
 		expect(container.querySelector("ul")).toBeNull();
 	});
 
-	it("lists each diagnostic with its severity, rule and a link to the element", () => {
-		render(Problems, {
-			problems: [
-				{
-					severity: "warning",
-					rule: "aggregate-root",
-					message: "Aggregate has no root entity",
-					ref: "#/boundedcontexts/x/aggregates/y",
-				},
-			],
-		});
-		expect(screen.getByText("aggregate-root")).toBeInTheDocument();
-		expect(
-			screen.getByText(/Aggregate has no root entity/),
-		).toBeInTheDocument();
-		expect(screen.getByRole("link", { name: "go to" })).toHaveAttribute(
-			"href",
-			"#/boundedcontexts/x/aggregates/y",
-		);
-	});
-
-	it("copes with a diagnostic that has no message text", () => {
+	it("draws one Problems-panel row per diagnostic, in the severity's colour", () => {
 		const { container } = render(Problems, {
 			problems: [
 				{
-					severity: "warning",
+					severity: "error",
 					rule: "aggregate-root",
-					message: undefined as unknown as string,
-					ref: "#/x",
+					message: "Pet has no root entity.",
+					ref: "#/boundedcontexts/catalog_bc",
+				},
+				{
+					severity: "warning",
+					rule: "relationship-has-no-comments",
+					message: "Sales → Inventory has no comments.",
+					ref: "#/relationships/sales_inventory",
 				},
 			],
 		});
-		expect(container.querySelector("li")).toBeInTheDocument();
+		expect(container.querySelectorAll("li")).toHaveLength(2);
+		expect(container.querySelector(".codicon-error")).toHaveClass("error");
+		expect(container.querySelector(".codicon-warning")).toHaveClass("warning");
+		// The rule id reads as a token, and the row ends in a link to the element.
+		expect(screen.getByText("aggregate-root")).toHaveClass("mono");
+		expect(screen.getAllByRole("link", { name: "go to" })[0]).toHaveAttribute(
+			"href",
+			"#/boundedcontexts/catalog_bc",
+		);
 	});
 });

@@ -17,9 +17,10 @@ tokens for every colour, the editor's font at the editor's size, codicons for
 kinds, native-feeling lists and tables, links that look like VS Code links,
 restraint with colour, and a badge only where a native surface would use one.
 
-The v2 primitives live under `packages/pages/src/lib/v2/` with stories under
-`V2/` in Storybook; v1 stays shipped and untouched until the implementation
-cards move each template over. The specs for those cards are in
+The v2 primitives live under `packages/pages/src/lib/atoms/` with stories
+under `Atoms/` in Storybook. Card 36 finished the migration: every page ships
+from this language and nothing of v1 is left. The specs the implementation
+cards worked from are in
 [`v2-specs/`](v2-specs/).
 
 ## 1. Principles
@@ -154,13 +155,13 @@ browser: `textLink-activeForeground`, `focusBorder`, `list-hoverBackground`,
 `contrastActiveBorder`, `editorInfo-foreground`, `editorHoverWidget-*`,
 `widget-shadow`, `textCodeBlock-background` and the five `symbolIcon-*`
 tokens, in light and dark. The values are the ones in
-`packages/pages/src/lib/v2/Theme.harness.svelte`.
+`packages/pages/src/lib/Theme.harness.svelte`.
 
 ## 6. Icons: kinds, codicons, symbol colours
 
 Kinds keep the codicons in `packages/pages/src/lib/icons.ts`. Where the
 codicon is a symbol icon the Outline colours, the kind takes the same token
-(`packages/pages/src/lib/v2/kinds.ts`); where it is not, the kind stays in
+(`packages/pages/src/lib/atoms/kinds.ts`); where it is not, the kind stays in
 `icon.foreground`, as the platform does.
 
 | Kind            | Codicon            | Colour token                       |
@@ -184,8 +185,8 @@ file.
 
 ## 7. The v2 primitives
 
-Each primitive is one file under `packages/pages/src/lib/v2/`, with a
-`*.harness.svelte` showcase that the `V2/...` stories render in light, dark and
+Each primitive is one file under `packages/pages/src/lib/atoms/`, with a
+`*.harness.svelte` showcase that the `Atoms/...` stories render in light, dark and
 high contrast (and at density where rows are laid out), and a `*.test.ts` at
 100% coverage.
 

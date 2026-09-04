@@ -18,11 +18,16 @@ import {
 } from "@open-domain-specification/core";
 import { tick } from "svelte";
 import { useModel } from "./model";
-import Toc from "./organisms/Toc.svelte";
 import { HEALTH_PAGE, resolvePage } from "./resolve";
+import AggregatePage, {
+	sections as aggregateSections,
+} from "./templates/AggregatePage.svelte";
 import ConsumablePage, {
 	sectionsFor as consumableSections,
 } from "./templates/ConsumablePage.svelte";
+import ContextPage, {
+	sections as contextSections,
+} from "./templates/ContextPage.svelte";
 import DomainPage, {
 	sections as domainSections,
 } from "./templates/DomainPage.svelte";
@@ -35,6 +40,7 @@ import HealthPage, {
 import InvariantPage, {
 	sections as invariantSections,
 } from "./templates/InvariantPage.svelte";
+import PageLayout from "./templates/PageLayout.svelte";
 import PolicyPage, {
 	sections as policySections,
 } from "./templates/PolicyPage.svelte";
@@ -59,28 +65,18 @@ import TermPage, {
 import ValueObjectPage, {
 	sections as valueObjectSections,
 } from "./templates/ValueObjectPage.svelte";
-import PageLayout from "./v2/PageLayout.svelte";
-import V2AggregatePage, {
-	sections as v2AggregateSections,
-} from "./v2/templates/AggregatePage.svelte";
-import V2ContextPage, {
-	sections as v2ContextSections,
-} from "./v2/templates/ContextPage.svelte";
-import V2WorkspacePage, {
-	sections as v2WorkspaceSections,
-} from "./v2/templates/WorkspacePage.svelte";
+import WorkspacePage, {
+	sections as workspaceSections,
+} from "./templates/WorkspacePage.svelte";
 
 /**
  * Renders the page that owns `ref` and scrolls to the element when the ref
  * points inside it.
  *
- * The workspace, bounded context and aggregate routes are drawn by the v2
- * templates in `v2/PageLayout`, which carries its own two-column grid and the
- * v2 table of contents. The thirteen pages still on v1 share one `.layout`
- * from `assets/page.css` and the v1 `Toc`; card 36 moves them across, and the
- * whole inner block goes with the last of them. The team page is the group's
- * final `{:else}`, as the workspace was before this card: `resolvePage` only
- * ever returns one of these, so nothing reaches an unhandled branch.
+ * Every route is one template inside `PageLayout`, which carries the two
+ * columns and the table of contents. The team page is the group's final
+ * `{:else}`: `resolvePage` only ever returns one of these, so nothing reaches
+ * an unhandled branch.
  */
 let { ref }: { ref: string } = $props();
 const model = useModel();
@@ -103,40 +99,36 @@ $effect(() => {
 
 {#key page.pageRef}
 	{#if target instanceof Workspace}
-		<PageLayout sections={v2WorkspaceSections}><V2WorkspacePage /></PageLayout>
+		<PageLayout sections={workspaceSections}><WorkspacePage /></PageLayout>
 	{:else if target instanceof BoundedContext}
-		<PageLayout sections={v2ContextSections}><V2ContextPage context={target} /></PageLayout>
+		<PageLayout sections={contextSections}><ContextPage context={target} /></PageLayout>
 	{:else if target instanceof Aggregate}
-		<PageLayout sections={v2AggregateSections}><V2AggregatePage aggregate={target} /></PageLayout>
+		<PageLayout sections={aggregateSections}><AggregatePage aggregate={target} /></PageLayout>
+	{:else if target === HEALTH_PAGE}
+		<PageLayout sections={healthSections}><HealthPage /></PageLayout>
+	{:else if target instanceof Domain}
+		<PageLayout sections={domainSections}><DomainPage domain={target} /></PageLayout>
+	{:else if target instanceof Subdomain}
+		<PageLayout sections={subdomainSections}><SubdomainPage subdomain={target} /></PageLayout>
+	{:else if target instanceof Service}
+		<PageLayout sections={serviceSections}><ServicePage service={target} /></PageLayout>
+	{:else if target instanceof Entity}
+		<PageLayout sections={entitySections}><EntityPage entity={target} /></PageLayout>
+	{:else if target instanceof ValueObject}
+		<PageLayout sections={valueObjectSections}><ValueObjectPage valueobject={target} /></PageLayout>
+	{:else if target instanceof Invariant}
+		<PageLayout sections={invariantSections}><InvariantPage invariant={target} /></PageLayout>
+	{:else if target instanceof DataSchema}
+		<PageLayout sections={schemaSections}><SchemaPage schema={target} /></PageLayout>
+	{:else if target instanceof Policy}
+		<PageLayout sections={policySections}><PolicyPage policy={target} /></PageLayout>
+	{:else if target instanceof GlossaryTerm}
+		<PageLayout sections={termSections}><TermPage term={target} /></PageLayout>
+	{:else if target instanceof Consumable}
+		<PageLayout sections={consumableSections(target)}><ConsumablePage consumable={target} /></PageLayout>
+	{:else if target instanceof ContextRelationship}
+		<PageLayout sections={relationshipSections}><RelationshipPage relationship={target} /></PageLayout>
 	{:else}
-		<div class="layout">
-			{#if target === HEALTH_PAGE}
-				<main><HealthPage /></main><Toc sections={healthSections} />
-			{:else if target instanceof Domain}
-				<main><DomainPage domain={target} /></main><Toc sections={domainSections} />
-			{:else if target instanceof Subdomain}
-				<main><SubdomainPage subdomain={target} /></main><Toc sections={subdomainSections} />
-			{:else if target instanceof Service}
-				<main><ServicePage service={target} /></main><Toc sections={serviceSections} />
-			{:else if target instanceof Entity}
-				<main><EntityPage entity={target} /></main><Toc sections={entitySections} />
-			{:else if target instanceof ValueObject}
-				<main><ValueObjectPage valueobject={target} /></main><Toc sections={valueObjectSections} />
-			{:else if target instanceof Invariant}
-				<main><InvariantPage invariant={target} /></main><Toc sections={invariantSections} />
-			{:else if target instanceof DataSchema}
-				<main><SchemaPage schema={target} /></main><Toc sections={schemaSections} />
-			{:else if target instanceof Policy}
-				<main><PolicyPage policy={target} /></main><Toc sections={policySections} />
-			{:else if target instanceof GlossaryTerm}
-				<main><TermPage term={target} /></main><Toc sections={termSections} />
-			{:else if target instanceof Consumable}
-				<main><ConsumablePage consumable={target} /></main><Toc sections={consumableSections(target)} />
-			{:else if target instanceof ContextRelationship}
-				<main><RelationshipPage relationship={target} /></main><Toc sections={relationshipSections} />
-			{:else}
-				<main><TeamPage team={target as Team} /></main><Toc sections={teamSections} />
-			{/if}
-		</div>
+		<PageLayout sections={teamSections}><TeamPage team={target as Team} /></PageLayout>
 	{/if}
 {/key}

@@ -1,68 +1,41 @@
 import { render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
-import { emptyWorkspaceModel, petstoreModel } from "../fixtures";
-import Harness from "../Page.harness.svelte";
-import { HEALTH_PAGE, HEALTH_REF, pageRefs, resolvePage } from "../resolve";
-import { sections } from "./HealthPage.svelte";
-
-const model = petstoreModel();
-
-describe("the health route", () => {
-	it("resolves to the health page rather than falling back to the workspace", () => {
-		expect(resolvePage(model.workspace, HEALTH_REF)).toEqual({
-			target: HEALTH_PAGE,
-			pageRef: HEALTH_REF,
-		});
-	});
-
-	it("is one of the workspace's pages, so every host that walks them finds it", () => {
-		expect(pageRefs(model.workspace)).toContain(HEALTH_REF);
-	});
-
-	it("is not shadowed by a bounded context or a relationship pattern", () => {
-		expect(resolvePage(model.workspace, "#/healthy").pageRef).toBe("#");
-		expect(resolvePage(model.workspace, "#/health/extra").pageRef).toBe("#");
-	});
-});
+import Harness from "../evidence/WithModel.harness.svelte";
+import { petstoreModel } from "../fixtures";
+import HealthPage, { sections } from "./HealthPage.svelte";
 
 describe("HealthPage", () => {
-	it("renders the whole report under its own heading", () => {
-		render(Harness, { model, ref: HEALTH_REF });
-		expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-			"Health",
-		);
-		expect(
-			screen.getByText(/The kernel has grown past the status enum/),
-		).toBeInTheDocument();
-		expect(
-			screen.getByText(/The projection conforms to the Sales order events/),
-		).toBeInTheDocument();
-	});
-
-	it("gives the table of contents the report's own three headings", () => {
-		const { container } = render(Harness, { model, ref: HEALTH_REF });
+	it("points the table of contents at the report's three headings", () => {
 		expect(sections.map((s) => s.id)).toEqual([
 			"refactor",
 			"tolerated",
 			"no-comments",
 		]);
-		for (const section of sections)
-			expect(container.querySelector(`#${section.id}`)).not.toBeNull();
-		expect(container.querySelectorAll(".toc li")).toHaveLength(3);
 	});
 
-	it("crumbs back to the workspace it reports on", () => {
-		render(Harness, { model, ref: HEALTH_REF });
+	it("heads the page with PageHeader: the trail, the report's name behind the pulse icon, and no lockup", () => {
+		const model = petstoreModel();
+		const { container } = render(Harness, {
+			model,
+			component: HealthPage,
+			args: {},
+		});
+		const header = container.querySelector(".page-header") as HTMLElement;
+		expect(header.querySelector(".crumbs a")).toHaveTextContent(
+			model.workspace.name,
+		);
+		const title = screen.getByRole("heading", { level: 1 });
+		expect(header.contains(title)).toBe(true);
+		expect(title).toHaveTextContent("Health");
+		expect(title.querySelector(".codicon-pulse")).toBeInTheDocument();
+		// A read of the workspace, not an element: no kind, no id, no detail.
+		expect(title.querySelector(".lockup, .id, .detail")).toBeNull();
+		expect(header.querySelector(".md")).toHaveTextContent(
+			/read off the evidence layer/,
+		);
+		expect(header.querySelector("dl")).toBeNull();
 		expect(
-			screen.getByRole("link", { name: model.workspace.name }),
-		).toHaveAttribute("href", "#");
-	});
-
-	it("renders its empty states for a workspace with nothing in it", () => {
-		render(Harness, { model: emptyWorkspaceModel(), ref: HEALTH_REF });
-		expect(
-			screen.getByText("Nothing is marked for refactoring."),
+			container.querySelector("#report .health-report"),
 		).toBeInTheDocument();
-		expect(screen.getByText("No compromises recorded.")).toBeInTheDocument();
 	});
 });

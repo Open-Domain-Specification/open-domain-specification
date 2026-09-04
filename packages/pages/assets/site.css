@@ -51,15 +51,15 @@
 }
 
 /* Sidebar navigation stands in for the extension's tree view. Only the
-   column it sits in is styled here: the rows, the brand line and the
-   selection are the Sidebar organism's own, as the workbench tree draws
-   them. */
+   column it sits in is styled here, and the app shell owns that column's
+   class: the rows, the brand line and the selection belong to the Sidebar
+   organism, which draws them as the workbench tree does. */
 .site {
 	display: grid;
 	grid-template-columns: 260px minmax(0, 1fr);
 	min-height: 100vh;
 }
-.site > .tree {
+.site > .site-nav {
 	position: sticky;
 	top: 0;
 	height: 100vh;
@@ -82,7 +82,7 @@
 	.site {
 		grid-template-columns: 1fr;
 	}
-	.site > .tree {
+	.site > .site-nav {
 		position: static;
 		height: auto;
 		border-right: 0;

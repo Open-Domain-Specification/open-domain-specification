@@ -70,24 +70,29 @@ with their links, and the consumables that cross the boundary. The type and the 
 beside it (`OHS`, `PL`, `CF`, `ACL`) are keywords, set in the editor font because they are
 codes from a table, and each carries the pattern's one-line meaning as its hover text.
 
-On a relationship's own page every pattern keyword is a hover card rather than a tooltip.
-Resting on one, or reaching it with the keyboard, opens a card that first says what the
-keyword means in core's words (its name, abbreviation, one-line summary and architectural
-nature) and then, under a rule, what this particular relationship has recorded against it: its
-disposition and its comments with their links. A click pins the card open; Escape or a click
-elsewhere closes it, and only one is ever open.
+A relationship's own page renders that same block at page level, so what a row discloses in
+place and what the page shows are one component. Every pattern keyword there carries the
+pattern's one-line meaning as its hover text, as it does in the table.
 
 ## Component library
 
-The library follows atomic design under `src/lib`: atoms (icon, chip, ref link, markdown),
-molecules (cards, tables, fact rows), organisms (section, page header, diagram figure, sidebar, table of contents) and one template per element page.
-
-A second set lives under `src/lib/v2`, built to the design language in
+The library follows atomic design under `src/lib`, built to the design language in
 `docs/design/design-language-v2.md`: rows, tables and keywords in the workbench's own idiom
-instead of cards, chips and pills. The workspace, bounded context and aggregate pages ship
-from it, inside `v2/PageLayout`, and so does the static site's tree; the remaining pages are
-still on the original set and move across next. Storybook carries both, and a `V2/Compare`
-story puts a page's two versions side by side for as long as it has both.
+rather than cards, chips and pills.
+
+- **atoms** — heading, keyword, lockup, ref, definition list, data table, disposition, empty
+  state, comments, hover card, markdown, icon, logo.
+- **molecules** — crumbs, problems, the provides, consumes, attribute and subdomain tables,
+  the context and team lockups, the structure and consumable subsections.
+- **organisms** — section, page header, table of contents, sidebar, attributes, invariants and
+  language sections, health report, strategic position table, relationship detail, diagram
+  figure and the interactive diagram.
+- **templates** — `PageLayout`, the two columns and the table of contents every page is drawn
+  in, and one template per element page.
+
+Every page renders through `Page.svelte`, which picks the template for a ref and puts it in
+`PageLayout`. Each component carries its own styles, so a page draws correctly wherever it is
+mounted.
 
 Run Storybook to browse it against the petstore example:
 
@@ -96,10 +101,10 @@ cd packages/pages
 npm run storybook
 ```
 
-`page.css` styles everything and reads the VS Code theme variables; `site.css` defines those
-variables for light and dark outside the editor and styles the column the site's tree sits in.
-A v2 component carries its own styles, so a page built from them draws correctly without the
-page stylesheet.
+`page.css` supplies the theme tokens, the document defaults and the few things no single
+component owns — the toolbar, the anchor flash, the import screen — and reads the VS Code
+theme variables; `site.css` defines those variables for light and dark outside the editor and
+styles the column the site's tree sits in.
 
 ## Tests
 

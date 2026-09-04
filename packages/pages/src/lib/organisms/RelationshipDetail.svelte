@@ -1,29 +1,41 @@
 <script lang="ts">
 import {
 	type ContextRelationship,
+	type DownstreamRole,
 	isSymmetricRelationship,
 	PATTERNS,
-	relationshipTitle,
+	type UpstreamRole,
 } from "@open-domain-specification/core";
-import Chip from "../atoms/Chip.svelte";
-import DispositionChip from "../atoms/DispositionChip.svelte";
-import Empty from "../atoms/Empty.svelte";
+import Comments from "../atoms/Comments.svelte";
+import type { Column } from "../atoms/DataTable.svelte";
+import DataTable from "../atoms/DataTable.svelte";
+import Definition from "../atoms/Definition.svelte";
+import DefinitionList from "../atoms/DefinitionList.svelte";
+import Disposition from "../atoms/Disposition.svelte";
+import EmptyState from "../atoms/EmptyState.svelte";
+import Heading from "../atoms/Heading.svelte";
+import Keyword from "../atoms/Keyword.svelte";
+import Lockup from "../atoms/Lockup.svelte";
 import Markdown from "../atoms/Markdown.svelte";
-import RefLink from "../atoms/RefLink.svelte";
+import Ref from "../atoms/Ref.svelte";
 import { crossingConsumables, relationshipLinks } from "../evidence/derive";
 import { LINK_KIND_LABELS } from "../evidence/labels";
 import { roleLabel } from "../flow/roles";
-import { consumableIcon, ICONS, useModel } from "../model";
-import Card from "../molecules/Card.svelte";
-import CommentList from "../molecules/CommentList.svelte";
-import PatternHoverCard from "../molecules/PatternHoverCard.svelte";
+import { consumableIcon, useModel } from "../model";
+import ContextLockup from "../molecules/ContextLockup.svelte";
 
 /**
  * Everything known about one context relationship, intent and evidence
- * together (RFC-002 section 4.3). The same block serves as the expanded row
- * inside a strategic position table and as a standalone page, so it renders
- * its own heading rather than relying on a page header, and `heading` picks
- * the level that suits where it sits.
+ * together (RFC-002 section 4.3). The card v1 drew around it — and the two
+ * cards inside it that held nothing but a name — are gone: the title is the
+ * two context lockups with the arrow between them, the roles are a definition
+ * list, the crossings are a table and the links are a definition list keyed by
+ * what each one points at.
+ *
+ * The same block is the expanded row of a strategic position table and a page
+ * of its own, so `heading` picks the level of the title; everything inside it
+ * stays at the level-3 scale either way, and each part keeps its id so a table
+ * of contents can point at it.
  */
 const {
 	relationship: r,
@@ -34,175 +46,134 @@ const {
 } = $props();
 
 const model = useModel();
+const level = $derived<1 | 3>(heading === "h1" ? 1 : 3);
 const symmetric = $derived(isSymmetricRelationship(r.type));
 const crossings = $derived(crossingConsumables(r, model.workspace));
 const links = $derived(relationshipLinks(r, crossings));
-const title = $derived(relationshipTitle(r));
-/** One card per side; a symmetric relationship gives neither side a role. */
+/** Upstream first, as the model reads: source is the side the other protects itself from. */
 const sides = $derived([
-	{ context: r.source, roles: r.upstreamRoles, side: "Upstream" },
-	{ context: r.target, roles: r.downstreamRoles, side: "Downstream" },
+	{ term: "Upstream", context: r.source, roles: r.upstreamRoles },
+	{ term: "Downstream", context: r.target, roles: r.downstreamRoles },
 ]);
+const columns: Column[] = [
+	{ key: "consumable", label: "Consumable" },
+	{ key: "pattern", label: "Pattern" },
+	{ key: "consumer", label: "Consumed by" },
+	{ key: "disposition", label: "Disposition" },
+];
+/** A role's full name and what it means, in core's words, beside its code. */
+const patternLine = (role: UpstreamRole | DownstreamRole) =>
+	`${PATTERNS[role].name} — ${PATTERNS[role].summary}`;
+/** The patterns on a crossing: what the provider publishes as, and what the consumer protects itself with. */
+const patternsOf = (crossing: (typeof crossings)[number]) =>
+	[crossing.consumable.pattern, crossing.consumption.pattern].filter(
+		(p): p is UpstreamRole | DownstreamRole => Boolean(p),
+	);
 </script>
 
-<article class="relationship-detail">
-	<header>
-		<svelte:element this={heading} class="title">{title}</svelte:element>
-		<PatternHoverCard pattern={r.type} label={r.type} intent={r} />
-		<DispositionChip disposition={r.disposition} />
-	</header>
+<div class="relationship-detail">
+	<Heading {level}>
+		<ContextLockup context={r.source} />
+		<span class="arrow">{symmetric ? "↔" : "→"}</span>
+		<ContextLockup context={r.target} />
+		<Keyword text={r.type} title={PATTERNS[r.type].summary} />
+		<Disposition disposition={r.disposition} />
+	</Heading>
 
 	{#if r.description}
 		<Markdown text={r.description} />
 	{:else}
-		<Empty text="No description on this relationship." />
+		<EmptyState text="No description on this relationship." />
 	{/if}
 
 	<section id="roles">
-		<h4>Roles</h4>
+		<Heading level={3}>Roles</Heading>
 		<!-- Neither side of a symmetric relationship plays a role, so the pattern
-		     is stated once above both contexts rather than twice inside them. -->
+		     is stated once rather than twice. -->
 		{#if symmetric}
-			<p class="pattern-summary">{PATTERNS[r.type].summary}</p>
-		{/if}
-		<div class="sides">
-			{#each sides as s (s.side)}
-				<Card ref={s.context.ref} name={s.context.name} icon={ICONS.boundedcontext}>
-					{#snippet meta()}
-						{#if !symmetric}<Chip label={s.side.toLowerCase()} tone="muted" />{/if}
-					{/snippet}
-					{#if !symmetric}
-						{#if s.roles.length}
-							<ul class="patterns">
-								{#each s.roles as role (role)}
-									<li>
-										<PatternHoverCard pattern={role} intent={r} />
-										<span class="pattern-name">{role}</span>
-										<span class="pattern-summary">{PATTERNS[role].summary}</span>
-									</li>
-								{/each}
-							</ul>
+			<p class="summary">{PATTERNS[r.type].summary}</p>
+		{:else}
+			<DefinitionList>
+				{#each sides as side (side.term)}
+					<Definition term={side.term}>
+						<Lockup kind="boundedcontext" name={side.context.name} ref={side.context.ref} />
+						{#each side.roles as role (role)}
+							<Keyword text={roleLabel(role) as string} mono title={PATTERNS[role].summary} />
+							<span class="summary">{patternLine(role)}</span>
 						{:else}
-							<p class="pattern-summary">{PATTERNS[r.type].summary}</p>
-						{/if}
-					{/if}
-				</Card>
-			{/each}
-		</div>
+							<span class="summary">{PATTERNS[r.type].summary}</span>
+						{/each}
+					</Definition>
+				{/each}
+			</DefinitionList>
+		{/if}
 	</section>
 
 	<section id="comments">
-		<h4>Comments</h4>
-		<CommentList
-			comments={r.comments}
-			empty="No comments recorded for this relationship yet."
-		/>
+		<Heading level={3} count={r.comments.length}>Comments</Heading>
+		<Comments comments={r.comments} empty="No comments recorded for this relationship yet." />
 	</section>
 
 	<section id="crossings">
-		<h4>Consumables crossing this boundary</h4>
-		{#if crossings.length}
-			<table class="crossings">
-				<thead><tr><th>Consumable</th><th>Pattern</th><th>Consumed by</th><th></th></tr></thead>
-				<tbody>
-					{#each crossings as c (c.consumable.ref + c.consumption.consumer.ref)}
-						<tr>
-							<td><RefLink ref={c.consumable.ref} label={c.consumable.name} icon={consumableIcon(c.consumable)} /></td>
-							<td>
-								{#if c.consumable.pattern}
-									<Chip label={roleLabel(c.consumable.pattern) as string} tone="muted" title={PATTERNS[c.consumable.pattern].summary} />
-								{/if}
-								{#if c.consumption.pattern}
-									<Chip label={roleLabel(c.consumption.pattern) as string} tone="muted" title={PATTERNS[c.consumption.pattern].summary} />
-								{/if}
-							</td>
-							<td><RefLink ref={c.consumption.consumer.ref} label={c.consumption.consumer.name} /></td>
-							<td><DispositionChip disposition={c.consumable.disposition} /></td>
-						</tr>
+		<Heading level={3} count={crossings.length}>Consumables crossing this boundary</Heading>
+		<DataTable
+			{columns}
+			rows={crossings}
+			rowId={(c) => `${c.consumable.ref}:${c.consumption.consumer.ref}`}
+			empty="Nothing crosses this boundary; the relationship is strategic only."
+		>
+			{#snippet cell(c, col)}
+				{#if col.key === "consumable"}
+					<Ref
+						ref={c.consumable.ref}
+						label={c.consumable.name}
+						icon={consumableIcon(c.consumable)}
+						kind={c.consumable.type === "event" ? "event" : "command"}
+					/>
+				{:else if col.key === "pattern"}
+					{#each patternsOf(c) as pattern (pattern)}
+						<Keyword
+							text={roleLabel(pattern) as string}
+							mono
+							title={PATTERNS[pattern].summary}
+						/>
 					{/each}
-				</tbody>
-			</table>
-		{:else}
-			<Empty text="Nothing crosses this boundary; the relationship is strategic only." />
-		{/if}
+				{:else if col.key === "consumer"}
+					<Ref ref={c.consumption.consumer.ref} label={c.consumption.consumer.name} />
+				{:else}
+					<Disposition disposition={c.consumable.disposition} />
+				{/if}
+			{/snippet}
+		</DataTable>
 	</section>
 
 	<section id="links">
-		<h4>Links</h4>
+		<Heading level={3}>Links</Heading>
 		{#if links.length}
-			<ul class="links">
+			<DefinitionList>
 				{#each links as link (link.url)}
-					<li>
-						<span class="kind">{LINK_KIND_LABELS[link.kind]}</span>
-						<a href={link.url} rel="external noreferrer">{link.label ?? link.url}</a>
-					</li>
+					<Definition term={LINK_KIND_LABELS[link.kind]}>
+						<Ref ref={link.url} label={link.label ?? link.url} external />
+					</Definition>
 				{/each}
-			</ul>
+			</DefinitionList>
 		{:else}
-			<Empty text="No links yet. The skill's reconciliation pass fills these in." />
+			<EmptyState text="No links yet. The skill's reconciliation pass fills these in." />
 		{/if}
 	</section>
-</article>
+</div>
 
 <style>
-	.relationship-detail {
-		border: 1px solid var(--border);
-		border-radius: var(--radius);
-		padding: var(--gap);
-		background: var(--card);
-	}
-	header {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 6px;
-		margin-bottom: 6px;
-	}
-	.title {
-		margin: 0;
-		font-size: 1.1em;
-	}
-	/* Each block is a section so the standalone page can link to it, but the
-	   detail stays compact: the page-wide 40px section gap would tear it apart,
-	   inside a table row above all. */
+	/* Each part is a section so a page can link to it, but the block stays
+	   compact: the page's 32px section gap would tear it apart inside a row. */
 	.relationship-detail section {
 		margin: 0;
 	}
-	h4 {
-		margin: 12px 0 4px;
-		font-size: 0.85em;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		color: var(--muted);
+	.arrow,
+	.summary {
+		color: var(--vscode-descriptionForeground);
 	}
-	.sides {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-		gap: var(--gap);
-	}
-	.patterns {
-		margin: 4px 0 0;
-		padding-left: 0;
-		list-style: none;
-	}
-	.patterns li {
-		margin-bottom: 3px;
-	}
-	.pattern-name {
-		font-weight: 600;
-	}
-	.pattern-summary {
-		color: var(--muted);
-	}
-	.links {
-		margin: 4px 0;
-		padding-left: 18px;
-	}
-	.kind {
-		color: var(--muted);
-		margin-right: 4px;
-	}
-	.crossings {
-		width: 100%;
+	.summary {
+		margin: 0;
 	}
 </style>

@@ -138,8 +138,11 @@ test("a marked badge on the Sales context map opens the relationship detail in p
 	await expect(flow.locator(".anchored")).toHaveCount(0);
 	await badge.getByRole("button").click();
 	const card = flow.locator(".anchored");
-	await expect(card.locator(".relationship-detail h3")).toHaveText(
-		"Sales BC → Inventory BC",
+	// The detail's own title is the direct child heading; the sections inside
+	// it are level 3 too. It names both contexts, the pattern and the mark, so
+	// the badge clicked and the card opened cannot be different relationships.
+	await expect(card.locator(".relationship-detail > h3")).toHaveText(
+		"Sales BC → Inventory BC upstream-downstream tolerated",
 	);
 	// The card is inside the flow viewport, so it pans and zooms with the map.
 	await expect(
@@ -176,8 +179,8 @@ test("the shared kernel the model wants refactored is marked on the workspace ma
 	);
 
 	await kernel.getByRole("button").click();
-	await expect(flow.locator(".anchored .relationship-detail h3")).toHaveText(
-		"Catalog BC ↔ Inventory BC",
+	await expect(flow.locator(".anchored .relationship-detail > h3")).toHaveText(
+		"Catalog BC ↔ Inventory BC shared-kernel refactor",
 	);
 	// A click anywhere else dismisses it.
 	await flow.locator(".svelte-flow__pane").click({ position: { x: 5, y: 5 } });

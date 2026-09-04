@@ -1,6 +1,6 @@
 # Design sprint: morning review
 
-Written by the tech lead at the end of the 2026-09-04 design sprint. Nothing shipped has changed; every v2 surface lives beside v1 in Storybook.
+Written by the tech lead at the end of the 2026-09-04 design sprint, when every v2 surface still lived beside v1 in Storybook. Kept as the record of that review; cards 35 and 36 have since shipped the language and removed v1, so the comparison stories it sends you to are gone.
 
 ## How to look
 
@@ -10,7 +10,7 @@ node scripts/codicons.mjs && npm run build-storybook
 node e2e/static-server.mjs 4190 storybook-static   # then open http://localhost:4190
 ```
 
-Start with **V2/Compare**: sixteen stories, one per template, v1 on the left and v2 on the right against the petstore model. Then **V2/Templates** for each page in light, dark and high contrast, **V2/Organisms** and **V2/Layout** for the chrome, and the ten **V2/** primitives. The design language is `design-language-v2.md`; every organism and template has a spec under `v2-specs/`; the v1 audit screenshots are in `audit/` on disk.
+Storybook now carries the shipped design only: **Templates** for each page in light, dark and high contrast, **Organisms** and **Templates/PageLayout** for the chrome, and the **Atoms** primitives. The side-by-side **V2/Compare** stories this review was read against went with the last v1 template. The design language is `design-language-v2.md`; every organism and template has a spec under `v2-specs/`; the v1 audit screenshots are in `audit/` on disk.
 
 ## What changed, in one paragraph each
 

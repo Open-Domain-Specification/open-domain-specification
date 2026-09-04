@@ -64,7 +64,10 @@ test("the workspace's health strip links out to the full report", async ({
 
 	await expect(page).toHaveURL(/#\/health$/);
 	await expect(page.locator("main h1")).toContainText("Health");
-	await expect(page.locator("main .summary")).toContainText("1 to refactor");
+	// The report's own counts are the badges on its three headings, the same
+	// treatment the workspace page's Health section uses.
+	await expect(page.locator("main #refactor .count")).toHaveText("1");
+	await expect(page.locator("main #tolerated .count")).toHaveText("1");
 	// The refactor backlog, grouped under the context that owns the change.
 	await expect(page.locator("#refactor")).toBeVisible();
 	await expect(page.locator("main")).toContainText(
@@ -72,7 +75,10 @@ test("the workspace's health strip links out to the full report", async ({
 	);
 
 	// The no-comments list is a reconciliation to-do, so it starts collapsed.
-	const toggle = page.getByRole("button", { name: /No comments \(0\)/ });
+	// Its heading carries no count badge here: every intent in the petstore
+	// has a comment, and v2 draws no badge at zero (card 34).
+	await expect(page.locator("main #no-comments .count")).toHaveCount(0);
+	const toggle = page.getByRole("button", { name: /No comments/ });
 	await expect(toggle).toHaveAttribute("aria-expanded", "false");
 	await toggle.click();
 	await expect(toggle).toHaveAttribute("aria-expanded", "true");
@@ -118,9 +124,12 @@ test("a leaf ref opens its owner page and flashes the element", async ({
 		location.hash = ref;
 	}, ATTRIBUTE_REF);
 
-	// An attribute has no page of its own, so its entity owns it.
-	await expect(page.locator("main .crumbs .kind")).toHaveText("Entity");
+	// An attribute has no page of its own, so its entity owns it. v2 says the
+	// kind in the title's lockup rather than as a crumb, so the trail ends at
+	// the aggregate and the title carries the word.
+	await expect(page.locator("main .crumbs")).toContainText("Order");
 	await expect(page.locator("main h1")).toContainText("Order");
+	await expect(page.locator("main h1 .detail")).toHaveText("Entity");
 	const row = page.locator(`tr[id="${ATTRIBUTE_REF}"]`);
 	await expect(row).toHaveClass(/flash/);
 	await expect(row).toBeInViewport();

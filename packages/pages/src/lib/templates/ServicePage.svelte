@@ -3,36 +3,38 @@ export const sections = [{ id: "integration", label: "Integration" }];
 </script>
 
 <script lang="ts">
-	import { ODSConsumableMap, type Service } from "@open-domain-specification/core";
-	import Chip from "../atoms/Chip.svelte";
-	import RefLink from "../atoms/RefLink.svelte";
-	import ConsumesTable from "../molecules/ConsumesTable.svelte";
-	import Fact from "../molecules/Fact.svelte";
-	import ProvidesTable from "../molecules/ProvidesTable.svelte";
-	import { ICONS, problemsUnder, SERVICE_TYPE, useModel } from "../model";
-	import { consumableGraph } from "../flow/graph";
-	import DiagramFigure from "../organisms/DiagramFigure.svelte";
-	import PageHeader from "../organisms/PageHeader.svelte";
-	import Section from "../organisms/Section.svelte";
+import { ODSConsumableMap, type Service } from "@open-domain-specification/core";
+import { consumableGraph } from "../flow/graph";
+import { problemsUnder, SERVICE_TYPE, useModel } from "../model";
+import Definition from "../atoms/Definition.svelte";
+import DefinitionList from "../atoms/DefinitionList.svelte";
+import Heading from "../atoms/Heading.svelte";
+import Keyword from "../atoms/Keyword.svelte";
+import Lockup from "../atoms/Lockup.svelte";
+import ConsumesTable from "../molecules/ConsumesTable.svelte";
+import { contextCrumbs } from "../molecules/crumbs";
+import DiagramFigure from "../organisms/DiagramFigure.svelte";
+import PageHeader from "../organisms/PageHeader.svelte";
+import ProvidesTable from "../molecules/ProvidesTable.svelte";
+import Section from "../organisms/Section.svelte";
 
-	let { service: s }: { service: Service } = $props();
-	const model = useModel();
-	const bc = $derived(s.boundedcontext);
-	const consumableMap = $derived(ODSConsumableMap.fromService(s));
+/** A service: what it opens to other contexts, and what it leans on. */
+const { service: s }: { service: Service } = $props();
+const model = useModel();
+const bc = $derived(s.boundedcontext);
+const provides = $derived([...s.consumables.values()]);
+const consumableMap = $derived(ODSConsumableMap.fromService(s));
+const caption = $derived(`${s.name} consumable map`);
 </script>
 
-<PageHeader
-	kind="Service"
-	icon={ICONS.service}
-	name={s.name}
-	id={s.id}
-	description={s.description}
-	crumbs={[["#", model.workspace.name], [bc.ref, bc.name]]}
->
-	{#snippet meta()}<Chip label={s.type} tone="muted" title={SERVICE_TYPE[s.type]} />{/snippet}
+<PageHeader description={s.description} crumbs={contextCrumbs(model.workspace, bc)}>
+	{#snippet title()}<Lockup kind="service" name={s.name} id={s.id} detail="Service" size="title" />{/snippet}
+	{#snippet meta()}<Keyword text={s.type} title={SERVICE_TYPE[s.type]} />{/snippet}
 	{#snippet facts()}
-		<Fact label="Kind">{SERVICE_TYPE[s.type] ?? s.type}</Fact>
-		<Fact label="Context"><RefLink ref={bc.ref} label={bc.name} icon={ICONS.boundedcontext} /></Fact>
+		<DefinitionList>
+			<Definition term="Kind">{SERVICE_TYPE[s.type] ?? s.type}</Definition>
+			<Definition term="Context"><Lockup kind="boundedcontext" name={bc.name} ref={bc.ref} /></Definition>
+		</DefinitionList>
 	{/snippet}
 </PageHeader>
 
@@ -40,11 +42,16 @@ export const sections = [{ id: "integration", label: "Integration" }];
 	id="integration"
 	title="Integration"
 	lead="Operations this service opens to other contexts, and the consumables it depends on."
+	count={provides.length + s.consumptions.length}
 	problems={problemsUnder(model, s.ref)}
 >
-	<DiagramFigure caption="{s.name} consumable map" emptyText="Depends on nothing outside itself." graph={consumableGraph(consumableMap)} />
-	<h3>Provides</h3>
-	<ProvidesTable consumables={s.consumables.values()} />
-	<h3>Consumes</h3>
+	<DiagramFigure
+		{caption}
+		emptyText="Depends on nothing outside itself."
+		graph={consumableGraph(consumableMap)}
+	/>
+	<Heading level={3} count={provides.length}>Provides</Heading>
+	<ProvidesTable consumables={provides} />
+	<Heading level={3} count={s.consumptions.length}>Consumes</Heading>
 	<ConsumesTable consumptions={s.consumptions} />
 </Section>

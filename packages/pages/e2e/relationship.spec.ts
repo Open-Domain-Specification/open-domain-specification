@@ -1,3 +1,4 @@
+import { PATTERNS } from "@open-domain-specification/core";
 import { expect, test } from "@playwright/test";
 import { servePetstore, viewerAt } from "./helpers";
 
@@ -7,6 +8,8 @@ import { servePetstore, viewerAt } from "./helpers";
  */
 
 const SALES_REF = "#/boundedcontexts/sales_bc";
+/** The hover text a role code carries, read from core rather than restated. */
+const ACL_SUMMARY = PATTERNS["anti-corruption-layer"].summary;
 const CATALOG_SALES_REF =
 	"#/relationships/catalog_bc~customer-supplier~sales_bc";
 
@@ -78,35 +81,24 @@ test("a role code on the Strategic position table carries the pattern's meaning"
 	// away in the row's own detail, which the case above opens.
 	const acl = table.locator(".keyword.mono", { hasText: "ACL" }).first();
 	await acl.scrollIntoViewIfNeeded();
-	await expect(acl).toHaveAttribute(
-		"title",
-		"A translating boundary isolating a downstream model from external concepts.",
-	);
+	await expect(acl).toHaveAttribute("title", ACL_SUMMARY);
 });
 
-test("a role chip on the relationship page discloses what the keyword means and what this relationship says", async ({
+test("a role code on the relationship page carries the pattern's meaning, and the evidence is on the page under it", async ({
 	page,
 }) => {
 	await page.goto(viewerAt(CATALOG_SALES_REF));
-	const acl = page.getByRole("button", { name: "ACL" }).first();
+	// The role is a mono keyword with the pattern's summary as its title, the
+	// same treatment the strategic position table gives it. v1 disclosed the
+	// pattern and this relationship's evidence together in a hover card; card
+	// 38 rebuilds that on `HoverCard`, and until then the evidence is a
+	// section of the page rather than a layer over the word.
+	const acl = page.locator(".keyword.mono", { hasText: "ACL" }).first();
 	await acl.scrollIntoViewIfNeeded();
-	await expect(acl).toHaveAttribute("aria-expanded", "false");
-
-	await acl.hover();
-
-	const card = page.locator(".hover-card");
-	await expect(card).toContainText("Anti-Corruption Layer");
-	await expect(card).toContainText(
-		"A translating boundary isolating a downstream model from external concepts.",
-	);
-	// The card teaches the pattern, then discloses this relationship's evidence.
-	await expect(card).toContainText(
+	await expect(acl).toHaveAttribute("title", ACL_SUMMARY);
+	await expect(page.locator("#comments")).toContainText(
 		"Sales reads Catalog through PetSummaryClient",
 	);
-
-	await page.keyboard.press("Escape");
-	await expect(card).toHaveCount(0);
-	await expect(acl).toHaveAttribute("aria-expanded", "false");
 });
 
 test("a relationship ref opens the relationship as its own page", async ({
@@ -114,7 +106,11 @@ test("a relationship ref opens the relationship as its own page", async ({
 }) => {
 	await page.goto(viewerAt(CATALOG_SALES_REF));
 
-	await expect(page.locator("main .crumbs .kind")).toHaveText("Relationship");
+	// v2 drops the uppercase kind at the end of the trail; the title says what
+	// this is by naming both contexts with the arrow between them.
+	await expect(page.locator("main .crumbs")).toHaveText(
+		"Swagger Petstore (v3)›Catalog BC›Sales BC",
+	);
 	await expect(page.locator("main h1")).toContainText("Catalog BC → Sales BC");
 	await expect(page.locator("main")).toContainText(
 		"Sales reads Catalog through PetSummaryClient",

@@ -6,42 +6,39 @@ export const sections = [
 </script>
 
 <script lang="ts">
-	import { type Domain, ODSContextMap } from "@open-domain-specification/core";
-	import Empty from "../atoms/Empty.svelte";
-	import Grid from "../molecules/Grid.svelte";
-	import SubdomainCard from "../molecules/SubdomainCard.svelte";
-	import { ICONS, problemsUnder, useModel } from "../model";
-	import { contextGraph } from "../flow/graph";
-	import DiagramFigure from "../organisms/DiagramFigure.svelte";
-	import PageHeader from "../organisms/PageHeader.svelte";
-	import Section from "../organisms/Section.svelte";
+import { type Domain, ODSContextMap } from "@open-domain-specification/core";
+import { contextGraph } from "../flow/graph";
+import { problemsUnder, useModel } from "../model";
+import Lockup from "../atoms/Lockup.svelte";
+import DiagramFigure from "../organisms/DiagramFigure.svelte";
+import PageHeader from "../organisms/PageHeader.svelte";
+import Section from "../organisms/Section.svelte";
+import SubdomainTable from "../molecules/SubdomainTable.svelte";
 
-	let { domain: d }: { domain: Domain } = $props();
-	const model = useModel();
-	const subs = $derived([...d.subdomains.values()]);
-	const contextMap = $derived(ODSContextMap.fromDomain(d));
+/**
+ * One domain: the parts of the business it names, and the contexts that
+ * serve them. v1 laid the subdomains out as a grid of cards; here they are
+ * rows, because a reader comparing four subdomains reads down a column.
+ */
+const { domain: d }: { domain: Domain } = $props();
+const model = useModel();
+const subs = $derived([...d.subdomains.values()]);
+const contextMap = $derived(ODSContextMap.fromDomain(d));
+const mapCaption = $derived(`${d.name} context map`);
 </script>
 
-<PageHeader
-	kind="Domain"
-	icon={ICONS.domain}
-	name={d.name}
-	id={d.id}
-	description={d.description}
-	crumbs={[["#", model.workspace.name]]}
-/>
+<PageHeader crumbs={[["#", model.workspace.name]]} description={d.description}>
+	{#snippet title()}<Lockup kind="domain" name={d.name} id={d.id} detail="Domain" size="title" />{/snippet}
+</PageHeader>
 
 <Section
 	id="subdomains"
 	title="Subdomains"
 	lead="The parts of this domain, classified as core, supporting or generic. The classification decides where effort goes."
+	count={subs.length}
 	problems={problemsUnder(model, d.ref)}
 >
-	{#if subs.length}
-		<Grid>{#each subs as s}<SubdomainCard subdomain={s} />{/each}</Grid>
-	{:else}
-		<Empty text="No subdomains yet." />
-	{/if}
+	<SubdomainTable subdomains={subs} empty="No subdomains yet." />
 </Section>
 
 <Section
@@ -50,7 +47,7 @@ export const sections = [
 	lead="How the solution space lines up against this part of the problem."
 >
 	<DiagramFigure
-		caption="{d.name} context map"
+		caption={mapCaption}
 		emptyText="No contexts serve this domain yet."
 		graph={contextGraph(contextMap, model.workspace.relationships)}
 	/>
