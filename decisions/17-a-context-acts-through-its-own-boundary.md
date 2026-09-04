@@ -23,3 +23,4 @@ Two shortcuts in the model let a context reach into another. A policy's `then` m
 - No schema change; three rules and their catalogue entries. Decision 08's table is now consistent with the validator.
 - Petstore: `PetApp` becomes the open host; `Pet`'s `ReservePet` and `MarkPetSold` become internal and `PetApp` provides the public operations that use them; Sales' policies name Sales' own `orderApp` operations, which consume Catalog's. The other three models are checked for the same shape.
 - The consumable map reads as intended: what crosses a boundary always leaves an application service.
+- An application service's aggregates are read from what it consumes: the internal operations it depends on name them. No `orchestrates` field is added; it would restate the consumptions.

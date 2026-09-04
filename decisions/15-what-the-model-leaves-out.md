@@ -54,6 +54,18 @@ Aggregates, services, policies and schemas are flat within a context. A context 
 
 `partnership`, `shared-kernel` and `separate-ways` take exactly two participants. Three contexts in partnership are three pairs, each of which may differ in its comments and disposition; a single three-way edge would draw as one line and hide that. The map already composes pairs.
 
+### The ubiquitous language lives in the bounded context, not the domain
+
+A glossary belongs to a bounded context because that is what a ubiquitous language is: one meaning per word inside one boundary. A word that means the same thing in two contexts is two terms that happen to agree, and the model would rather have a reader see that agreement (or its absence) than assume it. Industry vocabulary shared across a domain is documentation, not model; it belongs in the domain's description. Reopened if two reference models show real duplication with no drift at all.
+
+### A policy issues operations; an operation raises events
+
+`then` names operations only. Reacting to an outside event by publishing an inside one is not boilerplate to skip: the translation between the two is behaviour, it has a name (the operation), and an anti-corruption layer is exactly the place a reader wants to see it named. An event-to-event policy would hide the one thing the boundary exists to make visible.
+
+### Array order is meaning: the first subdomain is the primary
+
+`BoundedContextSchema.subdomains` is ordered, and the first is the subdomain the context is drawn under (decision 02). JSON arrays are ordered by definition, the JSON schema's description of the field says so, and the interview asks "which subdomain does it mainly serve?" first. An explicit flag would be a second place to say the same thing.
+
 ## Consequences
 
 - A review that expects these constructs should find this record and argue with its reasoning rather than report their absence.

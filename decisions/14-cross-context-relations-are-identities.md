@@ -15,6 +15,10 @@ The `cross-aggregate-reference` rule checks that a relation into another aggrega
 - Petstore drops the `Order -> Pet` relation and keeps `petId`; the consumable map, not the relation map, is where that dependency reads.
 - Decision 08's rule that `EntityRelationSchema.target` may not cross a file is now implied and consistent.
 
+## Amendment (2026-09-06)
+
+Removing the relation removed the only structural record that `Order` depends on Catalog's `Pet`; a description is not something tooling can trace. `AttributeSchema.identifies?: { $ref }` names the root entity an identity attribute identifies, in any context; a rule checks it is a root, and the relation map draws it as a dashed edge across the boundary. The attribute stays the boundary; it now says which boundary. Card 54.
+
 ## Consequences
 
 - One new rule and catalogue entry; no schema change. Any existing model with a cross-context relation fails validation and must move to an identity attribute, which is the DDD reading anyway.
