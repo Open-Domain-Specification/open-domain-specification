@@ -37,14 +37,14 @@ const policySection = (policy: Policy) => [
 const schemaSection = (schema: DataSchema) => [
 	schema.name,
 	schema.description ?? "-",
-	attributeListMd(schema.attributes),
+	attributeListMd(schema.attributes, schema.boundedcontext.path),
 	schema.consumables.map((it) => it.name).join(", ") || "-",
 ];
 
 const valueObjectSection = (valueObject: ValueObject) => [
 	valueObject.name,
 	valueObject.description,
-	attributeListMd(valueObject.attributes),
+	attributeListMd(valueObject.attributes, valueObject.boundedcontext.path),
 	aggregatesHolding(valueObject)
 		.map((it) => it.name)
 		.join(", ") || "-",

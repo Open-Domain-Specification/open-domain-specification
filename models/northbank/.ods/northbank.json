@@ -1734,13 +1734,34 @@
         }
       },
       "schemas": {
+        "posting_line": {
+          "name": "PostingLine",
+          "description": "One side of a double entry, as a payload carries it",
+          "attributes": {
+            "ledger_account": {
+              "name": "ledgerAccount",
+              "type": "string"
+            },
+            "amount": {
+              "name": "amount",
+              "type": "Money"
+            },
+            "direction": {
+              "name": "direction",
+              "type": "'debit' | 'credit'"
+            }
+          }
+        },
         "post_entry": {
           "name": "PostEntry",
           "description": "The postings a caller wants made, as one balanced entry",
           "attributes": {
             "postings": {
               "name": "postings",
-              "type": "{ledgerAccount, amount, direction}[]"
+              "type": "PostingLine[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/ledger/schemas/posting_line"
+              }
             },
             "value_date": {
               "name": "valueDate",
@@ -1761,7 +1782,10 @@
             },
             "postings": {
               "name": "postings",
-              "type": "{ledgerAccount, amount, direction}[]"
+              "type": "PostingLine[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/ledger/schemas/posting_line"
+              }
             }
           }
         }

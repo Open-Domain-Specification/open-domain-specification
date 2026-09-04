@@ -22,7 +22,11 @@ one. Two contexts may share one only across a `shared-kernel` relationship.
 
 Entities, value objects and schemas carry typed **attributes**. An
 attribute has a free-form `type`, may be marked `identity` (for entities),
-and may point at the value object that models its type.
+and may point at the shape that models its type: the value object it is a
+value of, or the schema it nests. The two are mutually exclusive — a value
+object is a concept of the context's own model, a schema a payload the
+context publishes — and a collection stays in the type string
+(`OrderLine[]`), since there is no separate list construct.
 
 ## Relations and invariants
 
@@ -30,15 +34,21 @@ Entity relations (`includes`, `uses`, `references`) may carry a UML
 cardinality: `1`, `0..1`, `*` or `1..*`. Across aggregates only `references`
 is allowed and it must target the other aggregate's root.
 
-Invariants list what they **constrain**: entities, value objects or single
-attributes.
+Invariants list what they **constrain**: entities, value objects, single
+attributes, and the consumables of their own aggregate. A rule about a
+transition — "once sold, a pet does not go back to available" — names the
+operation that makes the transition, because that is where it is enforced;
+the operation then reads as the rule it has to uphold. Invariants stay
+prose; there is no expression language.
 
 ## Schemas
 
 A bounded context declares the payload shapes of its messages once, as
 **schemas** (`context.addSchema(name)`), the way OpenAPI keeps them under
 `components/schemas`. A schema has attributes like an entity does, and an
-attribute may still point at a value object. Schemas belong to the context,
+attribute may point at a value object or at another schema of the same
+context, which is how a payload with a nested shape — an order with lines,
+an address inside a customer — is modelled. Schemas belong to the context,
 not the workspace, because a payload is part of a context's published
 language. Any number of consumables may share one schema; the operation that
 raises an event and the event itself commonly do.

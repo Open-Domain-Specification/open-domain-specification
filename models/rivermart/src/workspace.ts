@@ -987,25 +987,44 @@ orderAgg
 	})
 	.constrains(orderStatusVO);
 
+// A payload with a shape inside it: the line is a schema of its own rather
+// than a flattened type string, so a consumer reads its fields on one page.
+const orderLineSchema = orderBC.addSchema("OrderLine", {
+	description: "One line of an order, as the fact carries it",
+});
+orderLineSchema.addAttribute("sku", { type: "string", identity: true });
+orderLineSchema.addAttribute("quantity", { type: "int32" });
+
 const orderPlacedSchema = orderBC.addSchema("OrderPlaced", {
 	description: "The fact warehouse, fraud and payments react to",
 });
 orderPlacedSchema.addAttribute("orderId", { type: "string", identity: true });
 orderPlacedSchema.addAttribute("customerId", { type: "string" });
-orderPlacedSchema.addAttribute("lines", { type: "{sku, quantity}[]" });
+orderPlacedSchema.addAttribute("lines", {
+	type: "OrderLine[]",
+	schema: orderLineSchema,
+});
 orderPlacedSchema.addAttribute("total", {
 	type: "Money",
 	valueobject: orderMoney,
 });
 const orderRefSchema = orderBC.addSchema("OrderRef");
 orderRefSchema.addAttribute("orderId", { type: "string", identity: true });
+const returnLineSchema = orderBC.addSchema("ReturnLine", {
+	description: "One line of a return: which line of the order, and how many",
+});
+returnLineSchema.addAttribute("lineId", { type: "string", identity: true });
+returnLineSchema.addAttribute("quantity", { type: "int32" });
 const returnRequestedSchema = orderBC.addSchema("ReturnRequested");
 returnRequestedSchema.addAttribute("returnId", {
 	type: "string",
 	identity: true,
 });
 returnRequestedSchema.addAttribute("orderId", { type: "string" });
-returnRequestedSchema.addAttribute("lines", { type: "{lineId, quantity}[]" });
+returnRequestedSchema.addAttribute("lines", {
+	type: "ReturnLine[]",
+	schema: returnLineSchema,
+});
 
 const orderPlaced = orderAgg.provides("OrderPlaced", {
 	description: "A paid-for order exists",
@@ -2107,11 +2126,19 @@ const purchaseOrder = purchaseOrderAgg.addRootEntity("PurchaseOrder", {
 purchaseOrder.addAttribute("poNumber", { type: "string", identity: true });
 purchaseOrder.addAttribute("vendorCode", { type: "string" });
 
+const purchaseOrderLineSchema = vendorBC.addSchema("PurchaseOrderLine", {
+	description: "One line of the nightly export",
+});
+purchaseOrderLineSchema.addAttribute("sku", { type: "string", identity: true });
+purchaseOrderLineSchema.addAttribute("quantity", { type: "int32" });
 const poReceivedSchema = vendorBC.addSchema("PurchaseOrderReceived", {
 	description: "The nightly export the warehouse reads",
 });
 poReceivedSchema.addAttribute("poNumber", { type: "string", identity: true });
-poReceivedSchema.addAttribute("lines", { type: "{sku, quantity}[]" });
+poReceivedSchema.addAttribute("lines", {
+	type: "PurchaseOrderLine[]",
+	schema: purchaseOrderLineSchema,
+});
 const purchaseOrderReceived = purchaseOrderAgg.provides(
 	"PurchaseOrderReceived",
 	{

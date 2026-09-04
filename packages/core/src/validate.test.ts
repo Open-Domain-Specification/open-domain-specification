@@ -245,6 +245,36 @@ describe("Workspace.validate", () => {
 		]);
 	});
 
+	it("keeps a nested schema in its own context, unless a kernel is shared", () => {
+		const ws = emptyWorkspace();
+		const a = ws.addBoundedContext("A", { description: "" });
+		const b = ws.addBoundedContext("B", { description: "" });
+		const c = ws.addBoundedContext("C", { description: "" });
+		a.sharesKernelWith(b);
+		const line = a.addSchema("Order Line");
+		// B shares a kernel with A, so it may nest A's shape; C may not.
+		b.addSchema("Order Request").addAttribute("Lines", {
+			type: "OrderLine[]",
+			schema: line,
+		});
+		const borrower = c.addSchema("Copy Request");
+		const borrowed = borrower.addAttribute("Lines", {
+			type: "OrderLine[]",
+			schema: line,
+		});
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "schema-context")
+				.map((d) => [d.message, d.ref]),
+		).toEqual([
+			[
+				'"Copy Request" types attribute "Lines" by schema "Order Line" from "A"; a payload belongs to the context that publishes it',
+				borrowed.ref,
+			],
+		]);
+	});
+
 	it("rejects returns on an event, and allows it on an operation", () => {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("BC", { description: "" });
@@ -390,27 +420,27 @@ describe("aggregate-tree", () => {
 		]);
 	});
 
-	it("refuses an entity with two parents", () => {
+	it("allows an entity type included by two parent types, because an instance still has one parent", () => {
 		const { ws, agg, root, line } = tidyAggregate();
 		const shared = agg.addEntity("Shared", { description: "" });
 		root.includes(shared, "owns");
 		line.includes(shared, "owns too");
-		expect(treeRules(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
-			[
-				"error",
-				'"Shared" is included by "Order" and "Line" in aggregate "Order"; inside an aggregate an entity has exactly one parent',
-				shared.ref,
-			],
-		]);
+		expect(treeRules(ws)).toEqual([]);
 	});
 
-	it("refuses a cycle of includes", () => {
+	it("allows an entity that includes its own type, which is a tree per instance", () => {
+		const { ws, line } = tidyAggregate();
+		line.includes(line, "nests");
+		expect(treeRules(ws)).toEqual([]);
+	});
+
+	it("refuses a cycle of includes through two distinct entity types", () => {
 		const { ws, root, line } = tidyAggregate();
 		line.includes(root, "back up");
 		expect(treeRules(ws).map((d) => [d.severity, d.message])).toEqual([
 			[
 				"error",
-				'"Line" includes "Order", which already includes "Line" further up aggregate "Order"; "includes" forms a tree from the root, never a cycle',
+				'"Line" includes "Order", which already includes "Line" further up aggregate "Order"; with each holding the other there is no whole to start the instance tree from',
 			],
 		]);
 	});
@@ -461,6 +491,71 @@ describe("invariant-in-aggregate", () => {
 					'Invariant "Stretched" of aggregate "Order" constrains "Customer", which is in aggregate "Customer"; an invariant holds inside the boundary that is saved as one',
 				ref: stretched.ref,
 			},
+		]);
+	});
+
+	it("lets an invariant name an operation of its own aggregate, but not a foreign one", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const order = bc.addAggregate("Order", { description: "" });
+		order.addRootEntity("Order", { description: "" });
+		const approve = order.provides("Approve", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const app = bc.addService("App", { description: "", type: "application" });
+		const submit = app.provides("Submit", {
+			description: "",
+			type: "operation",
+		});
+		// The transition rule names the operation that makes the transition.
+		order
+			.addInvariant("Once Approved", { description: "" })
+			.constrains(approve);
+		const misplaced = order
+			.addInvariant("Reaches Out", { description: "" })
+			.constrains(submit);
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "invariant-in-aggregate")
+				.map((d) => [d.message, d.ref]),
+		).toEqual([
+			[
+				'Invariant "Reaches Out" of aggregate "Order" constrains "Submit", which is in no aggregate at all; an invariant holds inside the boundary that is saved as one',
+				misplaced.ref,
+			],
+		]);
+	});
+});
+
+describe("attribute-one-shape", () => {
+	it("refuses an attribute typed by a value object and a schema at once", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const money = bc.addValueObject("Money", { description: "" });
+		const line = bc.addSchema("Order Line");
+		const request = bc.addSchema("Order Request");
+		// One shape each is fine, whichever of the two it is.
+		request.addAttribute("Lines", { type: "OrderLine[]", schema: line });
+		request.addAttribute("Total", { type: "Money", valueobject: money });
+		const both = request.addAttribute("Both", {
+			type: "Money",
+			valueobject: money,
+			schema: line,
+		});
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "attribute-one-shape")
+				.map((d) => [d.severity, d.message, d.ref]),
+		).toEqual([
+			[
+				"error",
+				'"Order Request" types attribute "Both" by both value object "Money" and schema "Order Line"; an attribute has one shape',
+				both.ref,
+			],
 		]);
 	});
 });
@@ -1358,6 +1453,16 @@ describe("shared-kernel-backed", () => {
 			description: "",
 			type: "operation",
 			schema: shape,
+		});
+		expect(backed(ws)).toEqual([]);
+	});
+
+	it("goes quiet when an attribute of one context nests the other's schema", () => {
+		const { ws, a, b } = kernel();
+		const line = a.addSchema("Order Line");
+		b.addSchema("Order Request").addAttribute("Lines", {
+			type: "OrderLine[]",
+			schema: line,
 		});
 		expect(backed(ws)).toEqual([]);
 	});

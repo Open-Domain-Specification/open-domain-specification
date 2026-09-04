@@ -25,18 +25,18 @@ const valueObjectSection =
 		"Value Object",
 		`[${valueObject.name}](${pathToIndexMd(valueObject.boundedcontext.path, aggregate.path)}#value-objects)`,
 		valueObject.description,
-		attributeListMd(valueObject.attributes),
+		attributeListMd(valueObject.attributes, aggregate.path),
 	];
 
 /** Where a relation end is documented: its aggregate, or its context. */
 const ownerOf = (member: Entity | ValueObject) =>
 	member instanceof Entity ? member.aggregate : member.boundedcontext;
 
-const entitySection = (entity: Entity) => [
+const entitySection = (aggregate: Aggregate) => (entity: Entity) => [
 	entity.root ? "Entity (Root)" : "Entity",
 	entity.root ? `**${entity.name}**` : entity.name,
 	entity.description,
-	attributeListMd(entity.attributes),
+	attributeListMd(entity.attributes, aggregate.path),
 ];
 
 const invariantSection = (invariant: Invariant) => [
@@ -74,7 +74,7 @@ ${
 									? -1
 									: 1,
 						)
-						.map(entitySection),
+						.map(entitySection(aggregate)),
 					...valueObjectsUsedBy(aggregate).map(valueObjectSection(aggregate)),
 				],
 			)

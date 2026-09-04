@@ -11,6 +11,13 @@ export interface AttributeSchema {
 	identity?: boolean;
 	/** The value object that models this attribute's type, when there is one. */
 	valueobject?: { $ref: string };
+	/**
+	 * The schema that models this attribute's type, when the attribute is a
+	 * shape of its own: the lines of an order, the address inside a customer.
+	 * Mutually exclusive with `valueobject`; a collection stays in the type
+	 * string (`OrderLine[]`).
+	 */
+	schema?: { $ref: string };
 }
 
 /**
@@ -307,7 +314,11 @@ export interface EntityRelationSchema {
 export interface InvariantSchema {
 	name: string;
 	description: string;
-	/** The entities, value objects or attributes this invariant constrains. */
+	/**
+	 * What this invariant is a rule about: the entities, value objects and
+	 * attributes it holds over, and the consumables of its own aggregate it
+	 * constrains, for a rule about what an operation may do.
+	 */
 	constrains: { $ref: string }[];
 }
 

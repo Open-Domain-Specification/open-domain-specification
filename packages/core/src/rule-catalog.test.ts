@@ -86,8 +86,10 @@ function everythingWrong(): Workspace {
 	const vo = a.addValueObject("Vo", { description: "" });
 	vo.addAttribute("Id", { type: "string", identity: true });
 	vo.includes(r1, "owns-a-root");
-	// aggregate-tree: includes onto a value object, uses onto an entity, two
-	// parents, a cycle, and an entity the root cannot be walked to
+	// aggregate-tree: includes onto a value object, uses onto an entity, a cycle
+	// through two types, and an entity the root cannot be walked to. Twice is
+	// included by two parent types and Child nests its own type; both are legal
+	// per instance, so neither is expected to fire.
 	const tree = a.addAggregate("Tree", { description: "" });
 	const treeRoot = tree.addRootEntity("TreeRoot", { description: "" });
 	const child = tree.addEntity("Child", { description: "" });
@@ -97,6 +99,7 @@ function everythingWrong(): Workspace {
 	treeRoot.includes(child, "owns");
 	treeRoot.includes(twice, "owns");
 	child.includes(twice, "owns too");
+	child.includes(child, "nests");
 	child.includes(treeRoot, "back up");
 	treeRoot.includes(shape, "includes a value object");
 	child.uses(twice, "uses an entity");
@@ -116,6 +119,12 @@ function everythingWrong(): Workspace {
 	holder.addAttribute("Weights", { type: "Weight[]", valueobject: weight });
 	holder.uses(colour, "coloured", "1");
 	holder.addAttribute("Shade", { type: "string", valueobject: colour });
+	// attribute-one-shape: one attribute claiming a value object and a schema
+	holder.addAttribute("Both", {
+		type: "Colour",
+		valueobject: colour,
+		schema: a.addSchema("Both Ways"),
+	});
 	// term-in-context: A's glossary points at B's aggregate
 	a.addTerm("Foreign Word", { definition: "", embodiedBy: other });
 	// relationship-roles-backed and mud-needs-acl: a legacy context whose

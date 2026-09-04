@@ -17,9 +17,10 @@ severity, a rule id, a message and the ref of the element concerned.
 | `root-identity` | error | an aggregate's root entity declares at least one identity attribute |
 | `entity-identity` | warning | every other entity in an aggregate declares at least one identity attribute; without one it is a value object |
 | `value-object-shape` | error | a value object declares no identity attribute and includes nothing |
-| `aggregate-tree` | error / warning | inside an aggregate `includes` forms a tree from the root over entities, `uses` points at value objects, and every entity is reachable from the root |
+| `aggregate-tree` | error / warning | inside an aggregate `includes` points at entities and `uses` at value objects, and every entity is reachable from the root. The tree is a claim about instances: a type that includes its own type, or one included by two different wholes, is legal; a ring through two or more distinct types is not |
 | `attribute-relation-coherence` | warning | an attribute typed by a value object has the matching `uses` relation, of a matching cardinality; the type itself is free text and is never checked against the value object's name |
-| `invariant-in-aggregate` | error | every element an invariant constrains is inside the invariant's own aggregate, or is a value object of its context |
+| `attribute-one-shape` | error | an attribute is typed by a value object or by a schema, never by both |
+| `invariant-in-aggregate` | error | every element an invariant constrains is inside the invariant's own aggregate — an entity, an attribute or one of its consumables — or is a value object of its context |
 | `relationship-roles-backed` | warning | a directed relationship's declared roles are carried by real crossings, and a crossing consumption's role is declared on the relationship; a crossing consumable's `schema` backs a `published-language` role |
 | `relationship-cycle` | warning | the directed relationships whose traffic is calls form no cycle; a step carried only by events is choreography and does not count (decision 20). The message lists the ring's contexts in order |
 | `shared-kernel-backed` | warning | two contexts declaring a shared kernel share at least one value object or schema across it |
@@ -32,7 +33,7 @@ severity, a rule id, a message and the ref of the element concerned.
 | `policy-in-context` | error | a policy issues operations of its own context; it may still react to another context's event |
 | `aggregate-not-public` | error | an aggregate's operations declare no upstream role and are consumed only inside their own context |
 | `domain-service-internal` | error | a domain service's operations declare no upstream role and are consumed only inside their own context |
-| `schema-context` | error | a consumable's sent and returned payload schemas belong to its own context, or to one it shares a kernel with |
+| `schema-context` | error | a schema named by a consumable's payload, by its `returns` or by a nested attribute belongs to the naming element's own context, or to one it shares a kernel with |
 | `returns-on-operation` | error | only an operation declares `returns`; an event has no caller to answer |
 | `consumable-kind` | error | policies react to events and issue operations; only operations raise, and only events |
 | `policy-complete` | warning | a policy reacts to at least one event and issues at least one operation |

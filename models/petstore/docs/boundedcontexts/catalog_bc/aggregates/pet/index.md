@@ -30,19 +30,19 @@ A pet listed in the store. One aggregate because a pet's photos, tags and status
 | Name | Description | Constrains |
 | --- | --- | --- |
 | NameRequired | Pet.name must be non-empty, because the storefront lists pets by name | Pet.name |
-| SoldNotReopen | Once sold, a pet does not revert to available without an explicit policy, so a buyer is never undercut. Constrains the Pet because the transition is the pet's, not the status value's | Pet |
+| SoldNotReopen | Once sold, a pet does not revert to available without an explicit policy, so a buyer is never undercut. Constrains the Pet because the transition is the pet's, not the status value's, and the operation that makes the transition, because that is where the rule is enforced | Pet, ChangePetStatus |
 
 
 ## Provides
-| Name | Type | Internal | Pattern | Description | Schema | Returns | Raises |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| PetRegistered | event | no | published-language | A new pet was registered | [PetRegistered](../../index.md#schemas) | - | - |
-| PetUpdated | event | no | published-language | Pet profile updated | [PetId](../../index.md#schemas) | - | - |
-| PetStatusChanged | event | no | published-language | Pet status changed (available|pending|sold) | [PetStatusChanged](../../index.md#schemas) | - | - |
-| PetDeleted | event | no | published-language | Pet removed from catalog | [PetId](../../index.md#schemas) | - | - |
-| ChangePetStatus | operation | yes | - | Move a pet between available, pending and sold; the catalogue's own edits, e.g. relisting | [PetStatusChanged](../../index.md#schemas) | - | PetStatusChanged |
-| ReservePet | operation | yes | - | available → pending: the pet is held for an approved order; run by PetApp on the request Sales makes | [PetId](../../index.md#schemas) | - | PetStatusChanged |
-| MarkPetSold | operation | yes | - | pending → sold: the pet has gone to its owner; run by PetApp on the request Sales makes | [PetId](../../index.md#schemas) | - | PetStatusChanged |
+| Name | Type | Internal | Pattern | Description | Schema | Returns | Raises | Guarded by |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| PetRegistered | event | no | published-language | A new pet was registered | [PetRegistered](../../index.md#schemas) | - | - | - |
+| PetUpdated | event | no | published-language | Pet profile updated | [PetId](../../index.md#schemas) | - | - | - |
+| PetStatusChanged | event | no | published-language | Pet status changed (available|pending|sold) | [PetStatusChanged](../../index.md#schemas) | - | - | - |
+| PetDeleted | event | no | published-language | Pet removed from catalog | [PetId](../../index.md#schemas) | - | - | - |
+| ChangePetStatus | operation | yes | - | Move a pet between available, pending and sold; the catalogue's own edits, e.g. relisting | [PetStatusChanged](../../index.md#schemas) | - | PetStatusChanged | SoldNotReopen |
+| ReservePet | operation | yes | - | available → pending: the pet is held for an approved order; run by PetApp on the request Sales makes | [PetId](../../index.md#schemas) | - | PetStatusChanged | - |
+| MarkPetSold | operation | yes | - | pending → sold: the pet has gone to its owner; run by PetApp on the request Sales makes | [PetId](../../index.md#schemas) | - | PetStatusChanged | - |
 
 
 ## Consumes

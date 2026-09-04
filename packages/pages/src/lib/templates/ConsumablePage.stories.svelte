@@ -38,3 +38,8 @@ const { Story } = defineMeta({
 <Story name="Query with returns">
 	{#snippet template()}<Theme mode="light"><Page {model} ref={PETSTORE_REFS.query} /></Theme>{/snippet}
 </Story>
+
+<!-- An operation an invariant names, so the Invariants section lists the rule it has to uphold. -->
+<Story name="Guarded operation">
+	{#snippet template()}<Theme mode="light"><Page {model} ref={PETSTORE_REFS.guardedOperation} /></Theme>{/snippet}
+</Story>

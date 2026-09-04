@@ -148,6 +148,12 @@ describe("toDoc", () => {
 			description: "What an approval answers with",
 		});
 		receipt.addAttribute("approvedAt", { type: "string" });
+		// A shape inside a shape: the summary nests the line schema.
+		const line = ordering.addSchema("Order Line", {
+			description: "One line of an order",
+		});
+		line.addAttribute("sku", { type: "string" });
+		summary.addAttribute("lines", { type: "OrderLine[]", schema: line });
 		const order = ordering.addAggregate("Order", { description: "" });
 		const placed = order.provides("Order Placed", {
 			type: "event",
@@ -164,6 +170,10 @@ describe("toDoc", () => {
 				returns: receipt,
 			})
 			.raises(placed);
+		// A transition rule names the operation that makes the transition.
+		order
+			.addInvariant("Approved once", { description: "" })
+			.constrains(approve);
 		ordering
 			.addPolicy("Auto approve", { description: "" })
 			.on(placed)
@@ -177,17 +187,20 @@ describe("toDoc", () => {
 		expect(aggregateDoc).not.toContain("## Commands");
 		// An event has no Returns, so the column is a dash, as Raises already is.
 		expect(aggregateDoc).toContain(
-			"| Order Placed | event | no | published-language | Raised when an order is placed | [Order Summary](../../index.md#schemas) | - | - |",
+			"| Order Placed | event | no | published-language | Raised when an order is placed | [Order Summary](../../index.md#schemas) | - | - | - |",
 		);
 		expect(aggregateDoc).toContain(
-			"| Approve Order | operation | yes | - | Approves an order | [Order Summary](../../index.md#schemas) | [Order Receipt](../../index.md#schemas) | Order Placed |",
+			"| Approve Order | operation | yes | - | Approves an order | [Order Summary](../../index.md#schemas) | [Order Receipt](../../index.md#schemas) | Order Placed | Approved once |",
 		);
 
 		const contextDoc = docs["boundedcontexts/ordering/index.md"];
 		expect(contextDoc).toContain("## Schemas");
+		// The nested schema is linked from the type, so a reader can open it.
 		expect(contextDoc).toContain(
-			"| Order Summary | What an order looks like | **orderId**: `string`, total: `number` | Order Placed, Approve Order |",
+			"| Order Summary | What an order looks like | **orderId**: `string`, total: `number`, lines: [`OrderLine[]`](./index.md#schemas) | Order Placed, Approve Order |",
 		);
+		// An invariant that names an operation reads on the aggregate too.
+		expect(aggregateDoc).toContain("| Approved once |  | Approve Order |");
 		// A schema nothing sends is still used: Approve Order answers with it.
 		expect(contextDoc).toContain(
 			"| Order Receipt | What an approval answers with | approvedAt: `string` | Approve Order |",

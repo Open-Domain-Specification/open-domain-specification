@@ -84,7 +84,12 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   Explain once: an aggregate is the cluster you change together and check rules across; the
   root is the one you name it after.
 - "What must never be allowed to happen to a <root>?" → invariants, each constraining the
-  entity, value object or attribute it is about.
+  entity, value object or attribute it is about. If the answer is about a change rather than
+  a value — "once it's sold it can't go back to available" — follow up with "which operation
+  makes that change?" and name that operation in `constrains` too: the rule is enforced where
+  the transition is made, and the operation then shows the rule it has to uphold. Only an
+  operation of the same aggregate; if the user names the API endpoint, the aggregate's own
+  operation behind it is the one to name.
 - "Does a <root> point at things in another cluster, for example an order pointing at a
   product?" → first ask "is that other cluster inside this same part of the business, or
   somewhere else?" Inside the same context → `references` to that cluster's root; ask "one
@@ -107,6 +112,12 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   an upstream `pattern`.
 - "What information travels with that announcement or request?" → a schema on the context,
   attached with `schema`.
+- When a field of that payload is described as a thing with parts of its own — "each line has
+  a sku and a quantity", "the address inside it" — ask "is that a shape of its own?" If yes,
+  declare a second schema on the same context and point the attribute at it with `schema`,
+  keeping any collection in the type string (`OrderLine[]`); if no, leave it a plain typed
+  attribute. An attribute carries `valueobject` or `schema`, never both: a value object is a
+  concept of this context's own model, a schema a payload it publishes.
 - For an operation, follow up: "and what comes back?" → a second schema on the same context,
   attached with `returns`. A command that answers with nothing leaves `returns` off; a query
   that answers with nothing is not a query, so keep asking. Never put `returns` on an event.

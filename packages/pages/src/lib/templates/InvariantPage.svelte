@@ -1,6 +1,7 @@
 <script module lang="ts">
 export const sections = [
 	{ id: "constrains", label: "Constrains" },
+	{ id: "guards", label: "Guarded by" },
 	{ id: "language", label: "Language" },
 ];
 </script>
@@ -15,6 +16,7 @@ import Definition from "../atoms/Definition.svelte";
 import DefinitionList from "../atoms/DefinitionList.svelte";
 import Lockup from "../atoms/Lockup.svelte";
 import { kindOf } from "../molecules/element-kind";
+import RefList from "../molecules/RefList.svelte";
 import LanguageSection from "../organisms/LanguageSection.svelte";
 import PageHeader from "../organisms/PageHeader.svelte";
 import Section from "../organisms/Section.svelte";
@@ -23,7 +25,10 @@ import Section from "../organisms/Section.svelte";
 const { invariant: i }: { invariant: Invariant } = $props();
 const model = useModel();
 const a = $derived(i.aggregate);
-const targets = $derived(i.targets);
+// The elements the rule holds true of, and the operations that have to uphold
+// it, are two different readings of the same list, so the page splits them.
+const guarded = $derived(i.guarded);
+const targets = $derived(i.targets.filter((t) => !guarded.includes(t)));
 const columns: Column[] = [
 	{ key: "name", label: "Element" },
 	{ key: "description", label: "Description" },
@@ -55,6 +60,15 @@ const columns: Column[] = [
 			{/if}
 		{/snippet}
 	</DataTable>
+</Section>
+
+<Section
+	id="guards"
+	title="Guarded by"
+	lead="The operations this rule is about. A transition rule is enforced where the transition is made, so these are the ones that have to uphold it."
+	count={guarded.length}
+>
+	<RefList items={guarded} kind="command" block empty="No operation names this rule; it is checked wherever the aggregate is saved." />
 </Section>
 
 <LanguageSection target={i} />

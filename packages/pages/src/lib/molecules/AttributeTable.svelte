@@ -10,6 +10,9 @@ import Ref from "../atoms/Ref.svelte";
  * for what identifies a thing — and the name and the type are in the editor
  * font, because they are the words the code uses. The description is last so
  * it takes the width.
+ *
+ * The type links to whatever models it, the value object or the nested schema,
+ * so a reader following a payload into its parts never leaves the table.
  */
 const {
 	attributes,
@@ -34,6 +37,8 @@ const columns: Column[] = [
 		{:else if col.key === "type"}
 			{#if a.valueobject}
 				<code><Ref ref={a.valueobject.ref} label={a.type} /></code>
+			{:else if a.schema}
+				<code><Ref ref={a.schema.ref} label={a.type} /></code>
 			{:else}
 				<code>{a.type}</code>
 			{/if}

@@ -920,11 +920,22 @@ entryAgg
 	})
 	.constrains(entry);
 
+// One shape inside two payloads: the request and the fact carry the same
+// posting line, so it is a schema of its own rather than a type string
+// written out twice.
+const postingLineSchema = ledgerBC.addSchema("PostingLine", {
+	description: "One side of a double entry, as a payload carries it",
+});
+postingLineSchema.addAttribute("ledgerAccount", { type: "string" });
+postingLineSchema.addAttribute("amount", { type: "Money" });
+postingLineSchema.addAttribute("direction", { type: "'debit' | 'credit'" });
+
 const postEntrySchema = ledgerBC.addSchema("PostEntry", {
 	description: "The postings a caller wants made, as one balanced entry",
 });
 postEntrySchema.addAttribute("postings", {
-	type: "{ledgerAccount, amount, direction}[]",
+	type: "PostingLine[]",
+	schema: postingLineSchema,
 });
 postEntrySchema.addAttribute("valueDate", {
 	type: "ValueDate",
@@ -933,7 +944,8 @@ postEntrySchema.addAttribute("valueDate", {
 const entryPostedSchema = ledgerBC.addSchema("EntryPosted");
 entryPostedSchema.addAttribute("entryId", { type: "string", identity: true });
 entryPostedSchema.addAttribute("postings", {
-	type: "{ledgerAccount, amount, direction}[]",
+	type: "PostingLine[]",
+	schema: postingLineSchema,
 });
 
 const entryPosted = entryAgg.provides("EntryPosted", {

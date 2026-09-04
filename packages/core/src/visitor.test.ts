@@ -333,6 +333,9 @@ describe("Visitor", () => {
 		visitor.visitWorkspace(f.ws);
 		expect(visitor.visitedDataSchema).toHaveBeenCalledWith(f.orderSummary);
 		expect(visitor.visitedDataSchema).toHaveBeenCalledWith(f.orderRequest);
-		expect(visitor.visitedDataSchema).toHaveBeenCalledTimes(2);
+		// The nested shape is a schema of the context in its own right, so the
+		// visitor reaches it there rather than through the attribute that names it.
+		expect(visitor.visitedDataSchema).toHaveBeenCalledWith(f.orderLineShape);
+		expect(visitor.visitedDataSchema).toHaveBeenCalledTimes(3);
 	});
 });

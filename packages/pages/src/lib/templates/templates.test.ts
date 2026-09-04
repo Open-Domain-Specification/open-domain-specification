@@ -264,6 +264,33 @@ describe("every template, through the shipped route", () => {
 		expect(container.querySelectorAll("#constrains tbody tr").length).toBe(2);
 	});
 
+	it("InvariantPage: a transition rule lists the operation it is enforced by apart from what it holds true of", () => {
+		const container = draw(PETSTORE_REFS.transitionInvariant);
+		// The Pet is what the rule holds true of; ChangePetStatus is where it is
+		// enforced, so the two read in their own sections.
+		expect(container.querySelector("#constrains")?.textContent).toContain(
+			"Pet",
+		);
+		expect(container.querySelector("#constrains")?.textContent).not.toContain(
+			"ChangePetStatus",
+		);
+		expect(container.querySelector("#guards")?.textContent).toContain(
+			"ChangePetStatus",
+		);
+	});
+
+	it("ConsumablePage: an operation an invariant names lists the rule it upholds", () => {
+		const guarded = draw(PETSTORE_REFS.guardedOperation);
+		expect(guarded.querySelector("#invariants")?.textContent).toContain(
+			"SoldNotReopen",
+		);
+		// An operation no rule names says so rather than showing an empty list.
+		const plain = draw(PETSTORE_REFS.operation);
+		expect(plain.querySelector("#invariants")?.textContent).toContain(
+			"No invariant names this one.",
+		);
+	});
+
 	it("TermPage: the embodied element is one row and the same word elsewhere is a table", () => {
 		const container = draw(PETSTORE_REFS.term);
 		expect(container.querySelector("#embodied .embodied")).toBeInTheDocument();

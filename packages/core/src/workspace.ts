@@ -349,7 +349,8 @@ export class Workspace
 		const target = this.getByRef(ref);
 		return target instanceof Entity ||
 			target instanceof ValueObject ||
-			target instanceof Attribute
+			target instanceof Attribute ||
+			target instanceof Consumable
 			? target
 			: undefined;
 	}
@@ -358,7 +359,7 @@ export class Workspace
 		const target = this.getConstrainableByRef(ref);
 		if (!target) {
 			throw new Error(
-				`Entity, Value Object or Attribute with ref ${ref} not found`,
+				`Entity, Value Object, Attribute or Consumable with ref ${ref} not found`,
 			);
 		}
 		return target;
@@ -1062,6 +1063,19 @@ export class Consumable
 		return this.provider.boundedcontext;
 	}
 
+	/**
+	 * The invariants that name this consumable: the rules it has to uphold every
+	 * time it runs. Only an aggregate's own invariants can reach it, so the
+	 * search stays inside this consumable's context.
+	 */
+	get invariants(): Invariant[] {
+		const out: Invariant[] = [];
+		for (const aggregate of this.boundedcontext.aggregates.values())
+			for (const invariant of aggregate.invariants.values())
+				if (invariant.targets.includes(this)) out.push(invariant);
+		return out;
+	}
+
 	accept(v: Visitor) {
 		return v.visitConsumable(this);
 	}
@@ -1303,8 +1317,12 @@ export type InvariantAttributes = {
 	description: string;
 	id?: string;
 };
-/** What an invariant can be declared over. */
-export type Constrainable = Entity | ValueObject | Attribute;
+/**
+ * What an invariant can be declared over: the elements it holds true of, and
+ * the consumables that have to uphold it, for a rule about a transition rather
+ * than about a value (decision 19).
+ */
+export type Constrainable = Entity | ValueObject | Attribute | Consumable;
 
 /** "Owner.attribute" for an attribute, the element's name otherwise. */
 export function constrainableLabel(target: Constrainable): string {
@@ -1341,6 +1359,14 @@ export class Invariant
 		this.description = attributes.description;
 		this.aggregate = aggregate;
 		this.aggregate.invariants.set(this.id, this);
+	}
+
+	/**
+	 * The consumables this invariant is a rule for: the operations that make the
+	 * transition it describes, and so the ones that have to uphold it.
+	 */
+	get guarded(): Consumable[] {
+		return this.targets.filter((it) => it instanceof Consumable);
 	}
 
 	/** Declares an element this invariant constrains. */
@@ -1624,6 +1650,8 @@ export type AttributeOptions = {
 	description?: string;
 	identity?: boolean;
 	valueobject?: ValueObject;
+	/** The schema that models this attribute's type, when it is a shape of its own. */
+	schema?: DataSchema;
 	id?: string;
 };
 
@@ -1642,6 +1670,8 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 	description?: string;
 	identity: boolean;
 	valueobject?: ValueObject;
+	/** The schema that models this attribute's type, when it is a shape of its own. */
+	schema?: DataSchema;
 	owner: AttributeOwner;
 
 	get path(): string {
@@ -1663,6 +1693,7 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 		this.description = attributes.description;
 		this.identity = attributes.identity ?? false;
 		this.valueobject = attributes.valueobject;
+		this.schema = attributes.schema;
 		this.owner = owner;
 		this.owner.attributes.set(this.id, this);
 	}
@@ -1674,6 +1705,7 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 			description: this.description,
 			identity: this.identity || undefined,
 			valueobject: this.valueobject && { $ref: this.valueobject.ref },
+			schema: this.schema && { $ref: this.schema.ref },
 		};
 	}
 }

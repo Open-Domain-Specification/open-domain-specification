@@ -10,6 +10,7 @@ export const sectionsFor = (c: Consumable) => {
 		isEvent
 			? { id: "raised", label: "Raised by" }
 			: { id: "raises", label: "Raises" },
+		{ id: "invariants", label: "Invariants" },
 		{ id: "policies", label: isEvent ? "Reacted to by" : "Issued by" },
 		{ id: "consumers", label: "Consumed by" },
 		{ id: "comments", label: "Comments" },
@@ -58,6 +59,10 @@ const policies = $derived(
 const schemaAttributes = $derived(
 	c.schema ? [...c.schema.attributes.values()] : [],
 );
+// The rules that name this consumable: a transition rule is enforced where the
+// transition is made, so it reads from the operation as well as from the
+// aggregate that declares it.
+const invariants = $derived(c.invariants);
 const returnsAttributes = $derived(
 	c.returns ? [...c.returns.attributes.values()] : [],
 );
@@ -141,6 +146,19 @@ const policyColumns: Column[] = [
 		{/if}
 	</Section>
 {/if}
+
+<Section
+	id="invariants"
+	title="Invariants"
+	lead="The rules this consumable has to uphold every time it runs."
+	count={invariants.length}
+>
+	{#if invariants.length}
+		<RefList items={invariants} kind="invariant" block />
+	{:else}
+		<EmptyState text="No invariant names this one." />
+	{/if}
+</Section>
 
 <Section
 	id="policies"
