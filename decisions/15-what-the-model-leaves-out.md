@@ -34,6 +34,18 @@ A projection is a service that provides a query operation; with decision 13 that
 
 A context serving several subdomains draws in the cluster of its first; the others are links. The cluster is a visual namespace, not a claim of exclusivity.
 
+### There is no subtyping between entities or value objects
+
+Relations are `references`, `includes` and `uses`; there is no `extends`. A class hierarchy is an implementation choice, and in a domain model it usually hides a missing concept: the kinds of account, or the formats of a title, are better said as a value object with a closed set of values, or as separate aggregates when they behave differently. Modelling a hierarchy as `includes` would be wrong, so the model refuses rather than misdraws. Reopened only if a reference model cannot name its concept without inheritance.
+
+### An aggregate is a boundary; its root is the entity you reach it by
+
+An aggregate has its own name and description because it is more than its root: it holds the entities, value objects, invariants and consumables inside one consistency boundary. Relations target the root entity because a relation is between entities; provisions target the aggregate because a consumable belongs to the boundary, not to one entity. Naming the root after the aggregate is a convention, not a duplication, and a reader sees both on one page.
+
+### A context has no modules
+
+Aggregates, services, policies and schemas are flat within a context. A context with dozens of aggregates is the model saying it should be more than one context, or that its subdomain should be split; adding a folder would hide that. Reopened if a reference model has a context that genuinely needs an internal grouping the reader cannot get from ordering and description.
+
 ## Consequences
 
 - A review that expects these constructs should find this record and argue with its reasoning rather than report their absence.
