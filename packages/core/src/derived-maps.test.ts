@@ -148,7 +148,7 @@ describe("ODSRelationMap", () => {
 			(e) => `${e.source.name} -> ${e.target.name}: ${e.cardinality ?? "-"}`,
 		);
 		expect(cardinalities).toContain("Order -> Order Line: 1..*");
-		expect(cardinalities).toContain("Invoice -> Order: -");
+		expect(cardinalities).toContain("Basket -> Order: -");
 	});
 
 	it("types nodes as root entity, entity or value object", () => {
@@ -159,12 +159,12 @@ describe("ODSRelationMap", () => {
 	});
 
 	it("follows cross-aggregate relations transitively and namespaces targets by their own aggregate", () => {
-		const map = ODSRelationMap.fromAggregate(f.invoiceAgg);
+		const map = ODSRelationMap.fromAggregate(f.basketAgg);
 		const target = map.nodes.get(f.order.ref);
 		expect(target?.namespace[target.namespace.length - 1]?.id).toBe(
 			f.orderAgg.ref,
 		);
-		// invoice -> order, then order -> line -> money are followed
+		// basket -> order, then order -> line -> money are followed
 		expect(map.edges.size).toBe(3);
 	});
 });

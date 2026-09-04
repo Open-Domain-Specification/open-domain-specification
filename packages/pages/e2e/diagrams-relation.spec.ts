@@ -25,11 +25,12 @@ test("draws each element as a UML class with three compartments, stereotype, att
 	await expect(order.locator(".compartment")).toHaveCount(3);
 	await expect(order.locator(".operations.compartment")).toBeAttached();
 	await expect(order.locator(".group")).toContainText("Order");
-	// The legend indexes the connectors and multiplicities in use.
+	// The legend indexes the connectors and multiplicities in use. The Order
+	// aggregate holds only `uses` relations now, so "open arrow" belongs with the
+	// association on the Shipment map below.
 	const terms = await flow.locator(".diagram-legend dt").allTextContents();
-	expect(terms).toEqual(
-		expect.arrayContaining(["open arrow", "dashed", "1, *, 0..1"]),
-	);
+	expect(terms).toEqual(expect.arrayContaining(["dashed", "1, *, 0..1"]));
+	expect(terms).not.toContain("open arrow");
 
 	const status = flow.locator(
 		'.svelte-flow__node[data-id$="/valueobjects/order_status"]',
@@ -46,7 +47,7 @@ test("draws each element as a UML class with three compartments, stereotype, att
 	).toBeVisible();
 });
 
-test("draws uses as a dashed dependency and references as an association, with label and cardinality", async ({
+test("draws uses as a dashed dependency, with cardinality as a target port", async ({
 	page,
 }) => {
 	const flow = await openInteractiveDiagram(page, "relation map", ORDER_REF);
@@ -64,6 +65,23 @@ test("draws uses as a dashed dependency and references as an association, with l
 		/animated/,
 	);
 
+	// The cardinality is a port at the target end; the source end has none.
+	await expect(
+		flow
+			.locator(".port.cardinality.target .port-label", { hasText: "0..1" })
+			.first(),
+	).toBeVisible();
+	await expect(flow.locator(".port:not(.cardinality)")).toHaveCount(0);
+});
+
+// The association lives on the Shipment map: `references` is the one relation
+// that may cross an aggregate, and it may only do so inside a bounded context,
+// so the petstore's example of it is Shipment -> Carrier, both in Fulfilment.
+test("draws references as an association, with label and cardinality", async ({
+	page,
+}) => {
+	const flow = await openInteractiveDiagram(page, "relation map", SHIPMENT_REF);
+
 	const references = flow.locator(".svelte-flow__edge-path.references").first();
 	await expect(references).toBeVisible();
 	await expect(references).not.toHaveClass(/dashed/);
@@ -72,15 +90,17 @@ test("draws uses as a dashed dependency and references as an association, with l
 	await expect(references).toHaveAttribute("marker-end", /vee/);
 
 	await expect(
-		flow.locator(".edge-label", { hasText: "for-pet" }).first(),
+		flow.locator(".edge-label", { hasText: "shipped-by" }).first(),
 	).toBeVisible();
-	// The cardinality is a port at the target end; the source end has none.
 	await expect(
 		flow
-			.locator(".port.cardinality.target .port-label", { hasText: "0..1" })
+			.locator(".port.cardinality.target .port-label")
+			.filter({ hasText: /^1$/ })
 			.first(),
 	).toBeVisible();
-	await expect(flow.locator(".port:not(.cardinality)")).toHaveCount(0);
+	// The association's connector is what the legend calls an open arrow.
+	const terms = await flow.locator(".diagram-legend dt").allTextContents();
+	expect(terms).toContain("open arrow");
 });
 
 test('draws includes as a composition with a filled diamond and "1" at the whole', async ({

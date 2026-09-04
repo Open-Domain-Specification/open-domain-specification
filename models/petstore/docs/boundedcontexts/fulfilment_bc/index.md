@@ -22,6 +22,10 @@ Plans and tracks the shipment of an approved order until it is delivered
 The journey of one approved order to its owner. Attempts live inside it because they mean nothing without the shipment
 
 
+### [Carrier](aggregates/carrier/index.md)
+The company that carries a consignment. Its own cluster because carriers are onboarded, rated and retired on their own schedule, nothing to do with any one shipment
+
+
 	
 ## Services
 

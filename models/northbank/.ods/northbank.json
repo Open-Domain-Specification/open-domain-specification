@@ -1028,16 +1028,7 @@
                   "type": "'sole' | 'joint' | 'view-only'"
                 }
               },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
-                  },
-                  "relation": "references",
-                  "label": "held-by",
-                  "cardinality": "1"
-                }
-              ]
+              "relations": []
             }
           },
           "valueobjects": {
@@ -1928,14 +1919,6 @@
                   "relation": "uses",
                   "label": "has-status",
                   "cardinality": "1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
-                  },
-                  "relation": "references",
-                  "label": "from-account",
-                  "cardinality": "1"
                 }
               ]
             }
@@ -2549,14 +2532,6 @@
                   "relation": "uses",
                   "label": "has-status",
                   "cardinality": "1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
-                  },
-                  "relation": "references",
-                  "label": "on-account",
-                  "cardinality": "1"
                 }
               ]
             },
@@ -2944,14 +2919,6 @@
                   "relation": "uses",
                   "label": "decided",
                   "cardinality": "0..1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
-                  },
-                  "relation": "references",
-                  "label": "made-by",
-                  "cardinality": "1"
                 }
               ]
             }
@@ -3116,6 +3083,11 @@
                   "name": "applicationId",
                   "type": "string"
                 },
+                "account_id": {
+                  "name": "accountId",
+                  "type": "string",
+                  "description": "Identity of the Account the loan is disbursed to, in Accounts; only the id crosses the boundary"
+                },
                 "principal": {
                   "name": "principal",
                   "type": "Money",
@@ -3177,14 +3149,6 @@
                   },
                   "relation": "references",
                   "label": "from-application",
-                  "cardinality": "1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
-                  },
-                  "relation": "references",
-                  "label": "disbursed-to",
                   "cardinality": "1"
                 }
               ]
@@ -4427,14 +4391,6 @@
                   },
                   "relation": "uses",
                   "label": "has-status",
-                  "cardinality": "1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
-                  },
-                  "relation": "references",
-                  "label": "raised-by",
                   "cardinality": "1"
                 }
               ]

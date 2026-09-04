@@ -745,8 +745,8 @@ cartLine.addAttribute("quantity", { type: "int" });
 cartLine.addAttribute("unitPrice", { type: "Money", valueobject: cartMoney });
 cart.includes(cartLine, "contains", "*");
 cartLine.uses(cartMoney, "priced-at", "1");
-// The line points at the Offer root in another context, by identity only.
-cartLine.references(offer, "for-offer", "1");
+// The Offer root lives in Offers, another bounded context: a relation never
+// crosses one, so `offerId` above is the only thing that crosses the boundary.
 
 cartAgg
 	.addInvariant("LineQuantityAtLeastOne", {
@@ -812,6 +812,12 @@ const wishlistItem = wishlistAgg.addRootEntity("WishlistItem", {
 wishlist.addAttribute("wishlistId", { type: "string", identity: true });
 wishlistItem.addAttribute("productId", { type: "string" });
 wishlist.includes(wishlistItem, "saves", "*");
+// DELIBERATE (cross-aggregate-reference): the cart "includes" wishlist items
+// from the Wishlist aggregate. The basket screen wanted the saved items beside
+// the lines and the modeller copied them in. Across aggregates only references
+// is allowed, and only to the other aggregate's root. Both aggregates are in
+// Cart & Checkout, so this trips that one rule and nothing else.
+cart.includes(wishlistItem, "saves-for-later", "*");
 
 const checkoutOrchestrator = cartBC.addService("CheckoutOrchestrator", {
 	description:
@@ -887,6 +893,11 @@ order.addAttribute("status", {
 });
 orderLine.addAttribute("lineId", { type: "string", identity: true });
 orderLine.addAttribute("sku", { type: "string" });
+orderLine.addAttribute("offerId", {
+	type: "string",
+	description:
+		"Identity of the Offer root in Offers; only the id crosses the boundary. `sku` is the catalogue code the line was bought under, which is not the same thing",
+});
 orderLine.addAttribute("quantity", { type: "int" });
 orderLine.addAttribute("unitPrice", { type: "Money", valueobject: orderMoney });
 shipment.addAttribute("shipmentId", { type: "string", identity: true });
@@ -909,7 +920,8 @@ order.uses(orderMoney, "totals", "1");
 order.uses(addressVO, "ships-to", "1");
 order.uses(orderStatusVO, "has-status", "1");
 shipment.uses(trackingRefVO, "tracked-as", "0..1");
-orderLine.references(offer, "bought-from-offer", "1");
+// The Offer root is in another bounded context, so the line holds `offerId`
+// and no relation.
 
 orderAgg
 	.addInvariant("TotalEqualsLines", {
@@ -1434,7 +1446,8 @@ fulfilmentOrder.includes(packageEntity, "packed-into", "*");
 // invariant below reads. Inside one aggregate a reference is enough.
 packageEntity.references(pickTask, "packs", "1..*");
 packageEntity.uses(trackingLabelVO, "labelled", "1");
-fulfilmentOrder.references(order, "fulfils", "1");
+// The Order root is in Order Management, another bounded context: the
+// fulfilment order holds `orderId` and nothing more.
 fulfilmentOrderAgg
 	.addInvariant("DispatchOnlyWhenPicked", {
 		description:
@@ -1770,10 +1783,16 @@ const dailyBudget = campaign.addAttribute("dailyBudget", {
 adGroup.addAttribute("adGroupId", { type: "string", identity: true });
 adGroup.addAttribute("keywords", { type: "string[]" });
 adGroup.addAttribute("bid", { type: "Bid", valueobject: bidVO });
+adGroup.addAttribute("productId", {
+	type: "string",
+	description:
+		"Identity of the Product root in Catalogue; only the id crosses the boundary",
+});
 campaign.includes(adGroup, "spends-through", "1..*");
 campaign.uses(campaignMoney, "budgeted", "1");
 adGroup.uses(bidVO, "bids", "1");
-adGroup.references(product, "advertises", "1..*");
+// The Product root is in Catalogue, another bounded context, so the ad group
+// holds `productId` instead of pointing at it.
 campaignAgg
 	.addInvariant("BidWithinBudget", {
 		description: "No bid exceeds the daily budget",
@@ -1910,11 +1929,8 @@ interaction.addAttribute("channel", { type: "'call' | 'chat' | 'email'" });
 interaction.addAttribute("at", { type: "date-time" });
 caseRoot.includes(interaction, "logged", "*");
 caseRoot.uses(resolutionVO, "resolved-as", "0..1");
-caseRoot.references(order, "about-order", "0..1");
-// DELIBERATE (cross-aggregate-reference): the case "includes" order lines
-// from the Order aggregate. Agents wanted the lines on the case screen and
-// the modeller copied them in. Across aggregates only references is allowed.
-caseRoot.includes(orderLine, "disputes", "*");
+// The Order root is in Order Management, another bounded context, so the case
+// holds `orderId` above and no relation.
 
 caseAgg
 	.addInvariant("ResolvedCaseHasInteraction", {

@@ -655,14 +655,6 @@
                   "relation": "uses",
                   "label": "ships-on",
                   "cardinality": "0..1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet"
-                  },
-                  "relation": "references",
-                  "label": "for-pet",
-                  "cardinality": "1"
                 }
               ]
             }
@@ -1155,6 +1147,11 @@
                 },
                 "order_id": {
                   "name": "orderId",
+                  "type": "int64",
+                  "description": "Identity of the Order root in Sales; only the id crosses the boundary"
+                },
+                "carrier_id": {
+                  "name": "carrierId",
                   "type": "int64"
                 },
                 "status": {
@@ -1192,10 +1189,10 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/entities/order"
+                    "$ref": "#/boundedcontexts/fulfilment_bc/aggregates/carrier/entities/carrier"
                   },
                   "relation": "references",
-                  "label": "fulfils",
+                  "label": "shipped-by",
                   "cardinality": "1"
                 }
               ]
@@ -1252,6 +1249,33 @@
               ]
             }
           }
+        },
+        "carrier": {
+          "name": "Carrier",
+          "description": "The company that carries a consignment. Its own cluster because carriers are onboarded, rated and retired on their own schedule, nothing to do with any one shipment",
+          "provides": {},
+          "consumes": [],
+          "entities": {
+            "carrier": {
+              "name": "Carrier",
+              "description": "One carrier Fulfilment ships with",
+              "root": true,
+              "attributes": {
+                "id": {
+                  "name": "id",
+                  "type": "int64",
+                  "identity": true
+                },
+                "name": {
+                  "name": "name",
+                  "type": "string"
+                }
+              },
+              "relations": []
+            }
+          },
+          "valueobjects": {},
+          "invariants": {}
         }
       },
       "services": {

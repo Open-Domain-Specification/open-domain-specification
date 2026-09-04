@@ -81,7 +81,12 @@ Repeat for each context the user wants detailed. Ask which one to start with.
 - "What must never be allowed to happen to a <root>?" → invariants, each constraining the
   entity, value object or attribute it is about.
 - "Does a <root> point at things in another cluster, for example an order pointing at a
-  product?" → `references` to that cluster's root; ask "one or many?" for cardinality.
+  product?" → first ask "is that other cluster inside this same part of the business, or
+  somewhere else?" Inside the same context → `references` to that cluster's root; ask "one
+  or many?" for cardinality. In another context → no relation at all: ask "which id does it
+  hold?" and add that as an attribute, then pick the dependency up in Phase F as a
+  consumable the source consumes. Explain once: a relation is one model's object graph, and
+  two contexts are two models, so only the id crosses.
 - "Does it contain things that cannot exist without it?" → `includes`.
 - "Does it use a value like an address, money or a status?" → `uses`.
 

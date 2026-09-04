@@ -113,14 +113,14 @@ describe("schema round-trip", () => {
 	});
 
 	it("re-links entity relations across aggregates", () => {
-		const invoice = rebuilt.getEntityByRefOrThrow(
-			"#/boundedcontexts/invoicing_bc/aggregates/invoice/entities/invoice",
+		const basket = rebuilt.getEntityByRefOrThrow(
+			"#/boundedcontexts/ordering_bc/aggregates/basket/entities/basket",
 		);
-		expect(invoice.root).toBe(true);
-		expect(invoice.relations).toHaveLength(1);
-		expect(invoice.relations[0].target.name).toBe("Order");
-		expect(invoice.relations[0].relation).toBe("references");
-		expect(invoice.relations[0].label).toBe("bills");
+		expect(basket.root).toBe(true);
+		expect(basket.relations).toHaveLength(1);
+		expect(basket.relations[0].target.name).toBe("Order");
+		expect(basket.relations[0].relation).toBe("references");
+		expect(basket.relations[0].label).toBe("became");
 		const order = rebuilt.getEntityByRefOrThrow(
 			"#/boundedcontexts/ordering_bc/aggregates/order/entities/order",
 		);

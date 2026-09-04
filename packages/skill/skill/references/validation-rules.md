@@ -20,6 +20,14 @@
 
 **Usual fix:** Change the relation to "references" and point it at the other aggregate's root entity, holding only its identity.
 
+## `cross-context-relation` (error)
+
+**Requires:** A relation never crosses a bounded context; only an identity does.
+
+**Why it matters:** Each context is its own model with its own language and lifecycle (decision 03), so a relation across the boundary makes one context's entity part of the other's object graph and the two can no longer be loaded, changed or stored apart. Decision 08's crossing table already says an entity relation's target may not cross a file, and splitting the contexts into their own files is exactly what turns this relation into a load error.
+
+**Usual fix:** Delete the relation and give the source an attribute holding the other root's identity — an Order in Sales carries petId rather than a relation to Catalog's Pet. The dependency between the two contexts then reads where it belongs, on the consumable map: the consumable the source consumes and the context relationship between the two.
+
 ## `role-coherence` (warning)
 
 **Requires:** A consumable used from another context declares an upstream role, and the consumption declares a downstream role.

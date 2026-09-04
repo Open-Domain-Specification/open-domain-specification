@@ -32,8 +32,24 @@ petAgg
 
 ## A cross-aggregate reference by identity to the other root
 
+Both aggregates are in Fulfilment BC. A relation may cross an aggregate, never a
+bounded context.
+
 ```ts
-orderRoot.references(petRoot, "for-pet", "1");
+shipmentRoot.references(carrierRoot, "shipped-by", "1");
+```
+
+## Another context reached by identity only, never by a relation
+
+The order is in Sales and the pet is in Catalog, so the order stores the pet's
+id and no relation. The dependency between the two contexts reads on the
+consumable map instead, through what Sales consumes from Catalog.
+
+```ts
+orderRoot.addAttribute("petId", {
+	type: "int64",
+	description: "Identity of the Pet root in Catalog; only the id crosses the boundary",
+});
 ```
 
 ## Published events with a payload schema, and an internal operation that raises one

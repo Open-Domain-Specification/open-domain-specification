@@ -447,9 +447,10 @@ orderRoot.addAttribute("status", {
 orderRoot.uses(orderStatusVO, "has-status", "1");
 orderRoot.uses(quantityVO, "has-quantity", "1");
 orderRoot.uses(shipDateVO, "ships-on", "0..1");
-// `references` is the only relation allowed across aggregates, and it must
-// target the other aggregate's root: the order holds the pet's identity, nothing more.
-orderRoot.references(petRoot, "for-pet", "1");
+// No relation to Catalog's Pet: a relation never crosses a bounded context, so
+// the order holds `petId` above and nothing more. Sales depends on Catalog
+// through the consumable it consumes and the context relationship between the
+// two, which is where that dependency reads.
 
 orderAgg
 	.addInvariant("OneAnimalPerOrder", {
@@ -648,6 +649,20 @@ const shipmentAgg = fulfilmentBC.addAggregate("Shipment", {
 const shipmentRoot = shipmentAgg.addRootEntity("Shipment", {
 	description: "One consignment for one order",
 });
+
+// A second aggregate in the same context, so the model still demonstrates a
+// `references` relation: the one relation kind that may cross an aggregate
+// boundary, and only inside one bounded context.
+const carrierAgg = fulfilmentBC.addAggregate("Carrier", {
+	description:
+		"The company that carries a consignment. Its own cluster because carriers are onboarded, rated and retired on their own schedule, nothing to do with any one shipment",
+});
+const carrierRoot = carrierAgg.addRootEntity("Carrier", {
+	description: "One carrier Fulfilment ships with",
+});
+carrierRoot.addAttribute("id", { type: "int64", identity: true });
+carrierRoot.addAttribute("name", { type: "string" });
+
 const deliveryAttempt = shipmentAgg.addEntity("DeliveryAttempt", {
 	description:
 		"A dated try at handing over the pet; an entity because attempts are counted and ordered, a child because it never exists without its shipment",
@@ -665,7 +680,12 @@ shipmentStatusVO.addAttribute("value", {
 });
 
 shipmentRoot.addAttribute("id", { type: "int64", identity: true });
-shipmentRoot.addAttribute("orderId", { type: "int64" });
+shipmentRoot.addAttribute("orderId", {
+	type: "int64",
+	description:
+		"Identity of the Order root in Sales; only the id crosses the boundary",
+});
+shipmentRoot.addAttribute("carrierId", { type: "int64" });
 shipmentRoot.addAttribute("status", {
 	type: "ShipmentStatus",
 	valueobject: shipmentStatusVO,
@@ -677,7 +697,11 @@ deliveryAttempt.addAttribute("succeeded", { type: "boolean" });
 shipmentRoot.includes(deliveryAttempt, "attempted-by", "*");
 shipmentRoot.uses(trackingNumberVO, "tracked-as", "1");
 shipmentRoot.uses(shipmentStatusVO, "has-status", "1");
-shipmentRoot.references(orderRoot, "fulfils", "1");
+// `references` is the only relation allowed across aggregates, and it must
+// target the other aggregate's root. Carrier is a second aggregate inside
+// Fulfilment, so the relation stays inside one bounded context; the order it
+// fulfils is in Sales, so that one is `orderId` above and no relation at all.
+shipmentRoot.references(carrierRoot, "shipped-by", "1");
 
 // This invariant constrains an entity rather than a value: the rule is about
 // the shipment as a whole.

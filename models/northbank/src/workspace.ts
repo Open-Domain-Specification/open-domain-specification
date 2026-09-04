@@ -622,7 +622,8 @@ account.uses(accountNumberVO, "numbered", "1");
 account.uses(accountMoney, "balance", "1");
 account.uses(overdraftVO, "overdraft", "1");
 account.uses(accountStatusVO, "has-status", "1");
-mandate.references(customer, "held-by", "1");
+// Customer lives in Customer & KYC: a relation never crosses a bounded
+// context, so the mandate holds `customerId` and nothing more.
 
 accountAgg
 	.addInvariant("IbanChecksumValid", {
@@ -981,7 +982,8 @@ instruction.uses(payeeVO, "to", "1");
 instruction.uses(paymentMoney, "of", "1");
 instruction.uses(executionDateVO, "on", "1");
 instruction.uses(paymentStatusVO, "has-status", "1");
-instruction.references(account, "from-account", "1");
+// Account lives in Accounts: `payerAccountId` above is the only thing that
+// crosses the boundary.
 
 instructionAgg
 	.addInvariant("PayerNotPayee", {
@@ -1456,7 +1458,8 @@ card.uses(panVO, "numbered", "1");
 card.uses(expiryVO, "expires", "1");
 card.uses(cardStatusVO, "has-status", "1");
 cardAuthorisation.uses(cardMoney, "of", "1");
-card.references(account, "on-account", "1");
+// Account lives in Accounts: `accountId` above is the only thing that crosses
+// the boundary.
 
 // A construction rule: the stored value is a token and four digits, on which
 // Luhn cannot be run, so the check happens once, before tokenisation.
@@ -1618,7 +1621,8 @@ application.addAttribute("status", {
 application.uses(applicationMoney, "requests", "1");
 application.uses(termVO, "over", "1");
 application.uses(decisionVO, "decided", "0..1");
-application.references(customer, "made-by", "1");
+// Customer lives in Customer & KYC: `customerId` above is the only thing that
+// crosses the boundary.
 // A rule across applications, so it is checked when SubmitApplication runs,
 // over the customer's applications; one instance cannot see the others.
 applicationAgg
@@ -1655,6 +1659,11 @@ loanStatusVO.addAttribute("value", {
 });
 loan.addAttribute("loanId", { type: "string", identity: true });
 loan.addAttribute("applicationId", { type: "string" });
+loan.addAttribute("accountId", {
+	type: "string",
+	description:
+		"Identity of the Account the loan is disbursed to, in Accounts; only the id crosses the boundary",
+});
 loan.addAttribute("principal", { type: "Money", valueobject: loanMoney });
 loan.addAttribute("apr", { type: "InterestRate", valueobject: aprVO });
 loan.addAttribute("status", { type: "LoanStatus", valueobject: loanStatusVO });
@@ -1669,7 +1678,9 @@ loan.uses(aprVO, "charged-at", "1");
 loan.uses(loanStatusVO, "has-status", "1");
 installment.uses(loanMoney, "of", "1");
 loan.references(application, "from-application", "1");
-loan.references(account, "disbursed-to", "1");
+// The account the loan is disbursed to lives in Accounts: `accountId` above is
+// the only thing that crosses the boundary. The application it came from is in
+// Lending too, so that one stays a relation.
 
 loanAgg
 	.addInvariant("NoDrawdownBeforeSignature", {
@@ -2092,7 +2103,8 @@ note.addAttribute("at", { type: "date-time" });
 request.includes(note, "annotated-by", "*");
 request.uses(channelVO, "through", "1");
 request.uses(requestStatusVO, "has-status", "1");
-request.references(customer, "raised-by", "1");
+// Customer lives in Customer & KYC: `customerId` above is the only thing that
+// crosses the boundary.
 
 requestAgg
 	.addInvariant("AuthenticatedBeforeAction", {

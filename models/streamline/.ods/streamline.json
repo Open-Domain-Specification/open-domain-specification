@@ -1502,14 +1502,6 @@
                   "relation": "uses",
                   "label": "streams-from",
                   "cardinality": "1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
-                  },
-                  "relation": "references",
-                  "label": "plays",
-                  "cardinality": "1"
                 }
               ]
             }
@@ -2179,16 +2171,7 @@
                   "type": "date-time"
                 }
               },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
-                  },
-                  "relation": "references",
-                  "label": "about",
-                  "cardinality": "1"
-                }
-              ]
+              "relations": []
             }
           },
           "valueobjects": {

@@ -62,6 +62,54 @@ describe("Workspace.validate", () => {
 		expect(messages[1]).toContain('only "references" is allowed');
 	});
 
+	it("lets a relation cross an aggregate but not a bounded context", () => {
+		const ws = emptyWorkspace();
+		const sales = ws.addBoundedContext("Sales", { description: "" });
+		const catalog = ws.addBoundedContext("Catalog", { description: "" });
+		const orderAgg = sales.addAggregate("Order", { description: "" });
+		const order = orderAgg.addRootEntity("Order", { description: "" });
+		// Same context, other aggregate: allowed, and it must stay allowed.
+		const basketAgg = sales.addAggregate("Basket", { description: "" });
+		order.references(
+			basketAgg.addRootEntity("Basket", { description: "" }),
+			"from-basket",
+		);
+		// Another context: an error, whatever the relation says.
+		const petAgg = catalog.addAggregate("Pet", { description: "" });
+		const pet = petAgg.addRootEntity("Pet", { description: "" });
+		order.references(pet, "for-pet");
+		const diagnostics = ws
+			.validate()
+			.filter((d) => d.rule === "cross-context-relation");
+		expect(diagnostics).toEqual([
+			{
+				severity: "error",
+				rule: "cross-context-relation",
+				message:
+					'"Order" in "Sales" references "Pet" in "Catalog"; a relation never crosses a bounded context, so hold "Pet"\'s identity as an attribute on "Order" instead',
+				ref: order.ref,
+			},
+		]);
+	});
+
+	it("flags a cross-context relation from a value object too", () => {
+		const ws = emptyWorkspace();
+		const one = ws.addBoundedContext("One", { description: "" });
+		const two = ws.addBoundedContext("Two", { description: "" });
+		const here = one.addAggregate("Here", { description: "" });
+		here.addRootEntity("Here", { description: "" });
+		const vo = here.addValueObject("Vo", { description: "" });
+		const there = two.addAggregate("There", { description: "" });
+		vo.uses(there.addValueObject("Their Vo", { description: "" }), "borrows");
+		const messages = ws
+			.validate()
+			.filter((d) => d.rule === "cross-context-relation")
+			.map((d) => d.message);
+		expect(messages).toEqual([
+			'"Vo" in "One" uses "Their Vo" in "Two"; a relation never crosses a bounded context, so hold "Their Vo"\'s identity as an attribute on "Vo" instead',
+		]);
+	});
+
 	it("warns when cross-context consumptions lack roles", () => {
 		const ws = emptyWorkspace();
 		const up = ws.addBoundedContext("Up", { description: "" });

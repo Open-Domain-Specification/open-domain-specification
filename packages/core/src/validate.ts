@@ -88,6 +88,27 @@ const crossAggregateReference: Rule = (workspace) => {
 	return diagnostics;
 };
 
+/**
+ * A relation never crosses a bounded context. Crossing a boundary is an
+ * integration, so the source holds the other root's identity as an attribute
+ * and the dependency reads on the consumable map instead.
+ */
+const crossContextRelation: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const relation of relationsOf(workspace)) {
+		const source = relation.source.aggregate.boundedcontext;
+		const target = relation.target.aggregate.boundedcontext;
+		if (source === target) continue;
+		diagnostics.push({
+			severity: "error",
+			rule: "cross-context-relation",
+			message: `"${relation.source.name}" in "${source.name}" ${relation.relation} "${relation.target.name}" in "${target.name}"; a relation never crosses a bounded context, so hold "${relation.target.name}"'s identity as an attribute on "${relation.source.name}" instead`,
+			ref: relation.source.ref,
+		});
+	}
+	return diagnostics;
+};
+
 /** Consumables and consumptions declare roles that fit their type. */
 const roleCoherence: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -346,6 +367,15 @@ const RULES: CataloguedRule[] = [
 		why: "Aggregates are consistency boundaries; reaching inside another one couples the two so they can no longer change or be stored independently.",
 		fix: 'Change the relation to "references" and point it at the other aggregate\'s root entity, holding only its identity.',
 		check: crossAggregateReference,
+	},
+	{
+		rule: "cross-context-relation",
+		severities: ["error"],
+		summary:
+			"A relation never crosses a bounded context; only an identity does.",
+		why: "Each context is its own model with its own language and lifecycle (decision 03), so a relation across the boundary makes one context's entity part of the other's object graph and the two can no longer be loaded, changed or stored apart. Decision 08's crossing table already says an entity relation's target may not cross a file, and splitting the contexts into their own files is exactly what turns this relation into a load error.",
+		fix: "Delete the relation and give the source an attribute holding the other root's identity — an Order in Sales carries petId rather than a relation to Catalog's Pet. The dependency between the two contexts then reads where it belongs, on the consumable map: the consumable the source consumes and the context relationship between the two.",
+		check: crossContextRelation,
 	},
 	{
 		rule: "role-coherence",

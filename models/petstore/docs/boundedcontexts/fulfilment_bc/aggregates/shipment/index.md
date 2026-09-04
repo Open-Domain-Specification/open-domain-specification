@@ -10,7 +10,7 @@ The journey of one approved order to its owner. Attempts live inside it because 
 ## Entities and Value Objects
 | Type | Name | Description | Attributes |
 | --- | --- | --- | --- |
-| Entity (Root) | **Shipment** | One consignment for one order | **id**: `int64`, orderId: `int64`, status: `ShipmentStatus` |
+| Entity (Root) | **Shipment** | One consignment for one order | **id**: `int64`, orderId: `int64`, carrierId: `int64`, status: `ShipmentStatus` |
 | Entity | DeliveryAttempt | A dated try at handing over the pet; an entity because attempts are counted and ordered, a child because it never exists without its shipment | attemptedAt: `date-time`, succeeded: `boolean` |
 | Value Object | TrackingNumber | Carrier reference; a value because two shipments never share one | value: `string` |
 | Value Object | ShipmentStatus | planned, in-transit or delivered | value: `'planned' | 'in-transit' | 'delivered'` |
@@ -22,15 +22,7 @@ The journey of one approved order to its owner. Attempts live inside it because 
 | [Shipment - Shipment](./index.md#entities-and-value-objects) | attempted-by | Shipment - DeliveryAttempt | includes | * |
 | [Shipment - Shipment](./index.md#entities-and-value-objects) | tracked-as | Shipment - TrackingNumber | uses | 1 |
 | [Shipment - Shipment](./index.md#entities-and-value-objects) | has-status | Shipment - ShipmentStatus | uses | 1 |
-| [Shipment - Shipment](./index.md#entities-and-value-objects) | fulfils | Order - Order | references | 1 |
-| [Order - Order](../../../sales_bc/aggregates/order/index.md#entities-and-value-objects) | has-status | Order - OrderStatus | uses | 1 |
-| [Order - Order](../../../sales_bc/aggregates/order/index.md#entities-and-value-objects) | has-quantity | Order - Quantity | uses | 1 |
-| [Order - Order](../../../sales_bc/aggregates/order/index.md#entities-and-value-objects) | ships-on | Order - ShipDate | uses | 0..1 |
-| [Order - Order](../../../sales_bc/aggregates/order/index.md#entities-and-value-objects) | for-pet | Pet - Pet | references | 1 |
-| [Pet - Pet](../../../catalog_bc/aggregates/pet/index.md#entities-and-value-objects) | categorized-as | Pet - Category | uses | 0..1 |
-| [Pet - Pet](../../../catalog_bc/aggregates/pet/index.md#entities-and-value-objects) | tagged-with | Pet - Tag | uses | * |
-| [Pet - Pet](../../../catalog_bc/aggregates/pet/index.md#entities-and-value-objects) | has-photo | Pet - PhotoUrl | uses | 1..* |
-| [Pet - Pet](../../../catalog_bc/aggregates/pet/index.md#entities-and-value-objects) | has-status | Pet - PetStatus | uses | 1 |
+| [Shipment - Shipment](./index.md#entities-and-value-objects) | shipped-by | Carrier - Carrier | references | 1 |
 
 
 ## Invariants

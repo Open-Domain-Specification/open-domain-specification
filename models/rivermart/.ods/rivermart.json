@@ -1237,6 +1237,14 @@
                   "relation": "includes",
                   "label": "contains",
                   "cardinality": "*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/wishlist/entities/wishlist_item"
+                  },
+                  "relation": "includes",
+                  "label": "saves-for-later",
+                  "cardinality": "*"
                 }
               ]
             },
@@ -1268,14 +1276,6 @@
                   },
                   "relation": "uses",
                   "label": "priced-at",
-                  "cardinality": "1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer"
-                  },
-                  "relation": "references",
-                  "label": "for-offer",
                   "cardinality": "1"
                 }
               ]
@@ -1743,6 +1743,11 @@
                   "name": "sku",
                   "type": "string"
                 },
+                "offer_id": {
+                  "name": "offerId",
+                  "type": "string",
+                  "description": "Identity of the Offer root in Offers; only the id crosses the boundary. `sku` is the catalogue code the line was bought under, which is not the same thing"
+                },
                 "quantity": {
                   "name": "quantity",
                   "type": "int"
@@ -1755,16 +1760,7 @@
                   }
                 }
               },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer"
-                  },
-                  "relation": "references",
-                  "label": "bought-from-offer",
-                  "cardinality": "1"
-                }
-              ]
+              "relations": []
             },
             "shipment": {
               "name": "Shipment",
@@ -3040,14 +3036,6 @@
                   "relation": "includes",
                   "label": "packed-into",
                   "cardinality": "*"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
-                  },
-                  "relation": "references",
-                  "label": "fulfils",
-                  "cardinality": "1"
                 }
               ]
             },
@@ -3678,6 +3666,11 @@
                   "valueobject": {
                     "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/bid"
                   }
+                },
+                "product_id": {
+                  "name": "productId",
+                  "type": "string",
+                  "description": "Identity of the Product root in Catalogue; only the id crosses the boundary"
                 }
               },
               "relations": [
@@ -3688,14 +3681,6 @@
                   "relation": "uses",
                   "label": "bids",
                   "cardinality": "1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/product"
-                  },
-                  "relation": "references",
-                  "label": "advertises",
-                  "cardinality": "1..*"
                 }
               ]
             }
@@ -3977,22 +3962,6 @@
                   "relation": "uses",
                   "label": "resolved-as",
                   "cardinality": "0..1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
-                  },
-                  "relation": "references",
-                  "label": "about-order",
-                  "cardinality": "0..1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order_line"
-                  },
-                  "relation": "includes",
-                  "label": "disputes",
-                  "cardinality": "*"
                 }
               ]
             },

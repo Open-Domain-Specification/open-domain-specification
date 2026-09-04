@@ -24,7 +24,9 @@ function everythingWrong(): Workspace {
 	r1.references(inner, "points-at");
 	// role-coherence and internal-consumable and separate-ways
 	const other = b.addAggregate("Other", { description: "" });
-	other.addRootEntity("Other", { description: "" });
+	const otherRoot = other.addRootEntity("Other", { description: "" });
+	// cross-context-relation: a relation reaching out of context A into B
+	r1.references(otherRoot, "across-contexts");
 	const plain = other.provides("Plain", { type: "event", description: "" });
 	const secret = other.provides("Secret", {
 		type: "event",

@@ -173,6 +173,17 @@ export function makeRichTestWs() {
 	order.addAttribute("Total", { type: "Money", valueobject: money });
 	order.includes(orderLine, "has lines", "1..*");
 	orderLine.uses(money, "priced in", "1");
+	// A second aggregate in the same context, so the fixture still has a
+	// relation that crosses an aggregate boundary without crossing a context
+	// boundary -- the only kind there is.
+	const basketAgg = orderingBc.addAggregate("Basket", {
+		description: "Basket aggregate",
+	});
+	const basket = basketAgg.addRootEntity("Basket", {
+		description: "Basket root",
+	});
+	basket.addAttribute("Basket Id", { type: "BasketId", identity: true });
+	basket.references(order, "became");
 	const nonEmpty = orderAgg
 		.addInvariant("Non-empty", {
 			description: "An order has at least one line",
@@ -229,7 +240,12 @@ export function makeRichTestWs() {
 	const invoice = invoiceAgg.addRootEntity("Invoice", {
 		description: "Invoice root",
 	});
-	invoice.references(order, "bills");
+	invoice.addAttribute("Id", { type: "InvoiceId", identity: true });
+	// Invoicing bills an order in another context, so it holds the order's
+	// identity rather than a relation to it: the only thing that crosses the
+	// boundary. The dependency itself reads on the consumable map, through the
+	// Order Placed event this aggregate consumes below.
+	invoice.addAttribute("Order Id", { type: "OrderId" });
 	const invoiceConsumesOrderPlaced = invoiceAgg.consumes(orderPlaced, {
 		pattern: "conformist",
 	});
@@ -276,6 +292,8 @@ export function makeRichTestWs() {
 		orderAgg,
 		order,
 		orderLine,
+		basketAgg,
+		basket,
 		money,
 		nonEmpty,
 		orderSummary,

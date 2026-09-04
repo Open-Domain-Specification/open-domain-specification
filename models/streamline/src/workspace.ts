@@ -813,7 +813,8 @@ session.addAttribute("deviceModelId", {
 session.addAttribute("bookmark", { type: "Bookmark", valueobject: bookmarkVO });
 session.uses(bookmarkVO, "resumes-at", "1");
 session.uses(manifestVO, "streams-from", "1");
-session.references(title, "plays", "1");
+// The Title root is in Catalogue, another bounded context: a relation never
+// crosses one, so the session holds `titleId` and nothing more.
 
 sessionAgg
 	.addInvariant("SessionNeedsEntitlement", {
@@ -1136,7 +1137,8 @@ signal.addAttribute("weight", { type: "float" });
 signal.addAttribute("at", { type: "date-time" });
 taste.includes(signal, "built-from", "*");
 taste.uses(affinityVO, "leans-to", "*");
-signal.references(title, "about", "1");
+// The Title root is in Catalogue, another bounded context, so the signal holds
+// `titleId` and no relation.
 
 tasteAgg
 	.addInvariant("SignalsFromOwnProfileOnly", {
