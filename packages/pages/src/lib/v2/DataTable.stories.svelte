@@ -36,6 +36,12 @@ const { Story } = defineMeta({ title: "V2/DataTable", component: DataTable });
 	{#snippet template()}<Theme mode="dark"><Demo dense sortable /></Theme>{/snippet}
 </Story>
 
+<!-- A row's own content under it, spanning every column: the shape the health
+     report's comments and the strategic position's expanded detail take. -->
+<Story name="Detail rows">
+	{#snippet template()}<Theme mode="light"><Demo detail /></Theme>{/snippet}
+</Story>
+
 <Story name="Empty">
 	{#snippet template()}<Theme mode="light"><Demo empty /></Theme>{/snippet}
 </Story>

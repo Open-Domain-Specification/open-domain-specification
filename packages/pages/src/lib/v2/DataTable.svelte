@@ -29,12 +29,20 @@ import EmptyState from "./EmptyState.svelte";
  * so a name cell can be a lockup and a pattern cell a keyword without this
  * component knowing either. `rowId` gives each row an anchor so a ref inside
  * the page can scroll to it.
+ *
+ * A row may carry a `detail`: a second row under it spanning every column,
+ * for the content that belongs to the row but not to any one cell — the
+ * comments under a health report row, the whole relationship detail under an
+ * expanded strategic position row. It is the caller's snippet again, and a
+ * caller that renders nothing for a row (an unexpanded one) gets no row.
  */
 const {
 	columns,
 	rows = [],
 	groups,
 	cell,
+	detail,
+	hasDetail = () => true,
 	rowId,
 	sortValue = (row: T, key: string) =>
 		String((row as Record<string, unknown>)[key] ?? ""),
@@ -45,6 +53,9 @@ const {
 	rows?: T[];
 	groups?: Group<T>[];
 	cell: Snippet<[T, Column]>;
+	detail?: Snippet<[T]>;
+	/** Which rows the detail row is drawn under; every row by default. */
+	hasDetail?: (row: T) => boolean;
 	rowId?: (row: T) => string | undefined;
 	sortValue?: (row: T, key: string) => string | number;
 	empty?: string;
@@ -122,6 +133,9 @@ const ariaSort = (key: string) =>
 							<td class:numeric={col.numeric}>{@render cell(row, col)}</td>
 						{/each}
 					</tr>
+					{#if detail && hasDetail(row)}
+						<tr class="detail"><td colspan={columns.length}>{@render detail(row)}</td></tr>
+					{/if}
 				{/each}
 			</tbody>
 		{/each}
@@ -189,11 +203,17 @@ const ariaSort = (key: string) =>
 		text-align: right;
 		font-variant-numeric: tabular-nums;
 	}
-	tbody tr:not(.group):hover {
+	/* A detail row is the row above's content, not a row of its own: it takes
+	   no hover and indents to the first cell's text. */
+	tr.detail > td {
+		padding: 0 8px 4px 24px;
+		white-space: normal;
+	}
+	tbody tr:not(.group, .detail):hover {
 		background: var(--vscode-list-hoverBackground);
 	}
 	/* High contrast themes draw hover as an outline rather than a wash. */
-	:global(.vscode-high-contrast) tbody tr:not(.group):hover td {
+	:global(.vscode-high-contrast) tbody tr:not(.group, .detail):hover td {
 		outline: 1px dashed var(--vscode-contrastActiveBorder);
 		outline-offset: -1px;
 	}

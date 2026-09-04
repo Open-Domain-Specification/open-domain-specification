@@ -31,11 +31,14 @@ const {
 	sortable = false,
 	dense = false,
 	empty = false,
+	detail = false,
 }: {
 	grouped?: boolean;
 	sortable?: boolean;
 	dense?: boolean;
 	empty?: boolean;
+	/** Draws each consumed row's consumers under it, the shape the health report takes. */
+	detail?: boolean;
 } = $props();
 
 const base: Row[] = [
@@ -139,6 +142,8 @@ const titleOf = (abbr: string) =>
 	rowId={(r) => r.id}
 	empty="Provides nothing. Add an operation or an event to the aggregate."
 	caption={grouped ? "What Pet provides, by kind" : undefined}
+	detail={detail ? consumers : undefined}
+	hasDetail={(r) => r.consumers.length > 0}
 >
 	{#snippet cell(row, col)}
 		{#if col.key === "name"}
@@ -156,3 +161,13 @@ const titleOf = (abbr: string) =>
 		{/if}
 	{/snippet}
 </DataTable>
+
+{#snippet consumers(row: Row)}
+	<span class="consumers-detail">Consumed by {row.consumers.join(", ")}.</span>
+{/snippet}
+
+<style>
+	.consumers-detail {
+		color: var(--vscode-descriptionForeground);
+	}
+</style>

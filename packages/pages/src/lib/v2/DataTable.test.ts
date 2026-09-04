@@ -139,6 +139,23 @@ describe("DataTable", () => {
 		expect(first).toHaveLength(14);
 	});
 
+	it("draws a row's own content under it, spanning every column, only for the rows that have any", () => {
+		const { container } = render(Demo, { detail: true });
+		const details = container.querySelectorAll("tr.detail");
+		// Five of the seven consumables are consumed by something.
+		expect(details).toHaveLength(5);
+		expect(details[0].querySelector("td")).toHaveAttribute("colspan", "6");
+		expect(details[0]).toHaveTextContent(
+			"Consumed by InventoryProjection.",
+		);
+		// The row above keeps its cells; the detail adds no column.
+		expect(container.querySelectorAll("tbody tr:not(.detail)")).toHaveLength(7);
+
+		// Without the snippet no detail row is drawn at all.
+		const plain = render(Demo);
+		expect(plain.container.querySelector("tr.detail")).toBeNull();
+	});
+
 	it("says what would fill it when there is nothing to list", () => {
 		const { container } = render(Demo, { empty: true });
 		expect(container.querySelector("table")).toBeNull();
