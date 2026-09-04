@@ -1,0 +1,20 @@
+---
+status: Proposed
+date: 2026-09-06
+---
+# Decision 16 — Value objects belong to the bounded context, and a shared kernel shares them
+
+## Context
+
+`ValueObjectSchema` lives under an aggregate (`schema.ts:34`), so a value object used by several aggregates of one context, NorthBank's `Money` or petstore's `PetStatus`, is declared once per aggregate, and `models/_shared/src/index.ts` exists only to repeat the declaration. In DDD a value object is part of the context's ubiquitous language, not an aggregate's. Separately, `shared-kernel` is a relationship type the map draws but no rule reads: two contexts declaring it still cannot reference one another's value objects or schemas (`schema-context`, decision 08's cross-file table). The relationship claims a sharing the model forbids.
+
+## Decision
+
+- Value objects move to the bounded context: `BoundedContextSchema.valueobjects`. An aggregate's entities and value objects reference them by `$ref` exactly as attributes reference them today; `AggregateSchema.valueobjects` is removed.
+- A `shared-kernel` relationship between two contexts permits `AttributeSchema.valueobject` and `ConsumableSchema.schema`/`returns` references across those two contexts only. The `schema-context` rule and decision 08's cross-file rule both make that exception, and no other. Every other pair of contexts stays sealed.
+- No `SharedKernel` namespace, no workspace-level value objects or schemas (decision 09 stands).
+
+## Consequences
+
+- Breaking `feat!`: schema, workspace model, DSL (`context.addValueObject`), JSON schema, all four reference models, `models/_shared` loses `money()`, doc generator (a Value objects section on the context page, referenced from aggregates), pages (context page gains the section; aggregate page lists the ones it uses), skill reference and interview ("which values does this context define once?").
+- A shared kernel finally means something structural, and the health report can show what crosses it.
