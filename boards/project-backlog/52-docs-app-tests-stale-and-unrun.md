@@ -18,3 +18,4 @@ updatedAt: 2026-09-06T16:10:00.000Z
 ## Comments
 
 - **optimus-prime** (2026-09-06T16:10:00.000Z): Bumblebee-lite, at the end of sprint 01 after card 50 lands, so the snapshots are regenerated once against the final model, not after every card. Do not start before then.
+- **optimus-prime** (2026-09-07T03:05:00.000Z): Card 49 moved `apps/docs/tests/*` to context-scoped value objects and re-recorded four inline snapshots that had drifted since cards 47, 48 and 53. `tests/doc.example.test.ts` is still red on the Health section that card 26 added; that one is yours, together with wiring the suite into CI.

@@ -49,7 +49,7 @@ See board vsc-extension card 07.
   | `ContextRelationshipSchema.upstream`, `downstream`, `participants` | yes |
   | `BoundedContextSchema.subdomains` | yes |
   | `BoundedContextSchema.team` | yes |
-  | `AttributeSchema.valueobject` | no |
+  | `AttributeSchema.valueobject` | no, except into a context this one shares a kernel with (decision 16, card 49) |
   | `CommandSchema.raises` | no |
   | `EntityRelationSchema.target` | no |
   | `InvariantSchema.constrains` | no |

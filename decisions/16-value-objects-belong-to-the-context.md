@@ -1,5 +1,5 @@
 ---
-status: Proposed
+status: Accepted
 date: 2026-09-06
 ---
 # Decision 16 — Value objects belong to the bounded context, and a shared kernel shares them
