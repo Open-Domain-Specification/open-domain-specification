@@ -2,7 +2,7 @@
 column: todo
 labels: [backend, ddd]
 priority: high
-agent: dev-opus
+agent: ironhide
 updatedAt: 2026-09-06T12:00:00.000Z
 ---
 # A context acts through its own boundary
