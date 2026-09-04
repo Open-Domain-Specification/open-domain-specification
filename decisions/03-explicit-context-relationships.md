@@ -43,3 +43,7 @@ cannot sensibly sit on a consumption. See board card 05.
 - Graphviz renders symmetric relationships without arrowheads and
   upstream/downstream with an arrow from upstream to downstream. Implied
   edges are dashed.
+
+## Amendment (2026-09-07)
+
+A consumable carries one `pattern`, how it is offered. A published language is not a second way of offering it but the data shape it carries, so a crossing consumable with a `schema` backs a `published-language` role on the relationship, and an open-host-service operation with a schema backs both roles at once. The `relationship-roles-backed` rule reads it that way (card 53).
