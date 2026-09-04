@@ -201,7 +201,7 @@ high contrast (and at density where rows are laid out), and a `*.test.ts` at
 | `Comments`        | `CommentList`                                      | Comment codicon in a gutter, statement, citation as an external `Ref` with a kind icon.            |
 | `Disposition`     | `DispositionChip`                                  | Problems-panel treatment: `warning` codicon in the warning colour for refactor, `info` in the secondary colour for tolerated, nothing for by design. |
 | `EmptyState`      | `Empty`                                            | One secondary sentence at row height, optional action.                                             |
-| `HoverCard`       | (new, RFC-002 section 4)                           | The editor hover widget's frame: a heading for the thing hovered, the body, `<hr>` between parts.  |
+| `HoverCard`       | (new, RFC-002 section 4)                           | The editor hover widget's frame: a heading for the thing hovered, the body, `<hr>` between parts. First used by `molecules/PatternHover`, the pattern keyword's disclosure: the pattern's meaning above the rule, this relationship's disposition and comments below it. |
 
 What v2 deliberately has no primitive for: card, grid, pill, chip, badge (the
 count is a property of a heading), tag list.

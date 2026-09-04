@@ -3,23 +3,21 @@ import {
 	type BoundedContext,
 	type ContextRelationship,
 	narrativeText,
-	PATTERNS,
 	relationshipNarrative,
 } from "@open-domain-specification/core";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Disposition from "../atoms/Disposition.svelte";
 import EmptyState from "../atoms/EmptyState.svelte";
-import Keyword from "../atoms/Keyword.svelte";
 import {
 	counterpartOf,
 	type EvidenceRow,
 	hasEvidence,
 	positionGroups,
 } from "../evidence/derive";
-import { roleLabel } from "../flow/roles";
 import { useModel } from "../model";
 import ContextLockup from "../molecules/ContextLockup.svelte";
+import PatternHover from "../molecules/PatternHover.svelte";
 import RelationshipDetail from "./RelationshipDetail.svelte";
 
 /**
@@ -28,9 +26,9 @@ import RelationshipDetail from "./RelationshipDetail.svelte";
  * what depends on it, what it merely works alongside — as the design
  * language's grouped table. v1 drew every value as the same grey pill, so the
  * counterpart (a link), the type, the roles and the disposition all looked
- * alike; here the counterpart is a lockup, type and roles are keywords with
- * the pattern's meaning as their hover, roles in the editor font because they
- * are codes from a table, and the disposition is the Problems-panel mark.
+ * alike; here the counterpart is a lockup, type and roles are keywords that
+ * disclose the pattern's meaning on hover, roles in the editor font because
+ * they are codes from a table, and the disposition is the Problems-panel mark.
  *
  * A row expands in place into the same block a relationship page renders. A
  * context whose relationships carry nothing recorded has nothing to disclose,
@@ -100,14 +98,14 @@ const columns = $derived<Column[]>([
 				{:else if col.key === "description"}
 					<span class="description">{r.description ? r.description : narrativeOf(r)}</span>
 				{:else if col.key === "type"}
-					<Keyword text={r.type} title={PATTERNS[r.type].summary} />
+					<PatternHover pattern={r.type} label={r.type} intent={r} />
 				{:else if col.key === "upstream"}
 					{#each r.upstreamRoles as role (role)}
-						<Keyword text={roleLabel(role) as string} mono title={PATTERNS[role].summary} />
+						<PatternHover pattern={role} mono intent={r} />
 					{/each}
 				{:else if col.key === "downstream"}
 					{#each r.downstreamRoles as role (role)}
-						<Keyword text={roleLabel(role) as string} mono title={PATTERNS[role].summary} />
+						<PatternHover pattern={role} mono intent={r} />
 					{/each}
 				{:else}
 					<Disposition disposition={r.disposition} />

@@ -23,6 +23,7 @@ import { LINK_KIND_LABELS } from "../evidence/labels";
 import { roleLabel } from "../flow/roles";
 import { consumableIcon, useModel } from "../model";
 import ContextLockup from "../molecules/ContextLockup.svelte";
+import PatternHover from "../molecules/PatternHover.svelte";
 
 /**
  * Everything known about one context relationship, intent and evidence
@@ -76,7 +77,7 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 		<ContextLockup context={r.source} />
 		<span class="arrow">{symmetric ? "↔" : "→"}</span>
 		<ContextLockup context={r.target} />
-		<Keyword text={r.type} title={PATTERNS[r.type].summary} />
+		<PatternHover pattern={r.type} label={r.type} intent={r} />
 		<Disposition disposition={r.disposition} />
 	</Heading>
 
@@ -98,7 +99,7 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 					<Definition term={side.term}>
 						<Lockup kind="boundedcontext" name={side.context.name} ref={side.context.ref} />
 						{#each side.roles as role (role)}
-							<Keyword text={roleLabel(role) as string} mono title={PATTERNS[role].summary} />
+							<PatternHover pattern={role} mono intent={r} />
 							<span class="summary">{patternLine(role)}</span>
 						{:else}
 							<span class="summary">{PATTERNS[r.type].summary}</span>

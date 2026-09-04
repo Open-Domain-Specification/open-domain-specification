@@ -1,8 +1,9 @@
 import {
 	type ContextRelationship,
 	isSymmetricRelationship,
+	PATTERNS,
 } from "@open-domain-specification/core";
-import { render, screen } from "@testing-library/svelte";
+import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import Harness from "../evidence/WithModel.harness.svelte";
 import { edgeCaseModel, petstoreModel } from "../fixtures";
@@ -44,6 +45,25 @@ describe("RelationshipDetail", () => {
 		).toEqual(["Upstream", "Downstream"]);
 		expect(roles.querySelector(".keyword.mono")).toBeInTheDocument();
 		expect(roles.querySelector(".summary")).toHaveTextContent("—");
+	});
+
+	it("discloses the pattern and this relationship's evidence from the type and role keywords", async () => {
+		const { container } = detail(asymmetric);
+		const acl = PATTERNS["anti-corruption-layer"];
+		const roles = container.querySelector("#roles") as HTMLElement;
+		const term = [...roles.querySelectorAll(".pattern-hover")].find((el) =>
+			el.textContent?.includes(acl.abbreviation),
+		) as HTMLElement;
+		await fireEvent.focusIn(term);
+		const card = term.querySelector(".hover-card") as HTMLElement;
+		expect(card.querySelector(".heading")).toHaveTextContent(acl.name);
+		expect(card).toHaveTextContent(acl.summary);
+		expect(card).toHaveTextContent("PetSummaryClient");
+
+		// The type keyword in the title is the same disclosure, so the reader
+		// never meets a pattern code on this block that teaches nothing.
+		const title = screen.getByRole("heading", { level: 3, name: /→/ });
+		expect(title.querySelector(".pattern-hover")).toBeInTheDocument();
 	});
 
 	it("states a symmetric relationship's pattern once, above both sides, with the ↔ arrow", () => {

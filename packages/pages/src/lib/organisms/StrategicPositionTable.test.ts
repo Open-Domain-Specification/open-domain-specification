@@ -1,4 +1,4 @@
-import type { BoundedContext } from "@open-domain-specification/core";
+import { type BoundedContext, PATTERNS } from "@open-domain-specification/core";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import Harness from "../evidence/WithModel.harness.svelte";
@@ -44,6 +44,21 @@ describe("StrategicPositionTable", () => {
 		expect(counterpart.querySelector("a")).toBeInTheDocument();
 		expect(container.querySelector(".keyword.mono")).toBeInTheDocument();
 		expect(container.querySelector(".disposition")).toBeInTheDocument();
+	});
+
+	it("discloses what a role code means, and this row's evidence under it", async () => {
+		const { model, context } = petstoreSales();
+		const { container } = position(model, context);
+		const acl = PATTERNS["anti-corruption-layer"];
+		const term = [...container.querySelectorAll(".pattern-hover")].find((el) =>
+			el.textContent?.includes(acl.abbreviation),
+		) as HTMLElement;
+		await fireEvent.focusIn(term);
+		const card = term.querySelector(".hover-card") as HTMLElement;
+		expect(card.querySelector(".heading")).toHaveTextContent(acl.name);
+		expect(card).toHaveTextContent(acl.summary);
+		// The row's own relationship, not the pattern in general.
+		expect(card).toHaveTextContent("PetSummaryClient");
 	});
 
 	it("expands a row in place into the whole relationship detail, and closes it again", async () => {

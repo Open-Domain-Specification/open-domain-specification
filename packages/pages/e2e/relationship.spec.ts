@@ -71,31 +71,57 @@ test("the Strategic position description reads as prose, not one word a line", a
 	expect(row).toBeLessThan(120);
 });
 
-test("a role code on the Strategic position table carries the pattern's meaning", async ({
+test("a role code on the Strategic position table discloses the pattern and this row's evidence", async ({
 	page,
 }) => {
 	await page.goto(viewerAt(SALES_REF));
 	const table = page.locator(".strategic-position");
-	// v2 sets a role code in the editor font with the pattern's summary as its
-	// title, rather than v1's chip: what this relationship records is one click
-	// away in the row's own detail, which the case above opens.
-	const acl = table.locator(".keyword.mono", { hasText: "ACL" }).first();
+	// The code is a hover trigger, not a `title`: a native tooltip could carry
+	// neither the disposition mark nor the comment's link.
+	const acl = table.getByRole("button", { name: "ACL" }).first();
 	await acl.scrollIntoViewIfNeeded();
-	await expect(acl).toHaveAttribute("title", ACL_SUMMARY);
+	await expect(acl).toHaveAttribute("aria-expanded", "false");
+
+	await acl.hover();
+
+	const card = page.locator(".hover-card");
+	await expect(card).toContainText("Anti-Corruption Layer");
+	await expect(card).toContainText(ACL_SUMMARY);
+	// The card teaches the pattern, then discloses this relationship's evidence.
+	await expect(card).toContainText(
+		"Sales reads Catalog through PetSummaryClient",
+	);
+	await expect(
+		card.getByRole("link", { name: /PetSummaryClient\.ts/ }),
+	).toBeVisible();
+
+	await page.keyboard.press("Escape");
+	await expect(card).toHaveCount(0);
+	await expect(acl).toHaveAttribute("aria-expanded", "false");
 });
 
-test("a role code on the relationship page carries the pattern's meaning, and the evidence is on the page under it", async ({
+test("a role code on the relationship page discloses the same card, and the evidence is on the page under it", async ({
 	page,
 }) => {
 	await page.goto(viewerAt(CATALOG_SALES_REF));
-	// The role is a mono keyword with the pattern's summary as its title, the
-	// same treatment the strategic position table gives it. v1 disclosed the
-	// pattern and this relationship's evidence together in a hover card; card
-	// 38 rebuilds that on `HoverCard`, and until then the evidence is a
-	// section of the page rather than a layer over the word.
-	const acl = page.locator(".keyword.mono", { hasText: "ACL" }).first();
+	const acl = page.getByRole("button", { name: "ACL" }).first();
 	await acl.scrollIntoViewIfNeeded();
-	await expect(acl).toHaveAttribute("title", ACL_SUMMARY);
+
+	await acl.hover();
+
+	const card = page.locator(".hover-card");
+	await expect(card).toContainText(ACL_SUMMARY);
+	// A click pins the card, so the pointer can leave it and come back; a
+	// click anywhere else closes it again.
+	await acl.click();
+	// Far enough down the page that the pinned card does not cover it.
+	const elsewhere = page.locator("#links h3");
+	await elsewhere.hover();
+	await expect(card).toBeVisible();
+	await elsewhere.click();
+	await expect(card).toHaveCount(0);
+
+	// The hover is a shortcut, never the only place the evidence lives.
 	await expect(page.locator("#comments")).toContainText(
 		"Sales reads Catalog through PetSummaryClient",
 	);

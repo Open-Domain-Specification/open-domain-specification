@@ -68,11 +68,15 @@ default, or a comment — carries a chevron. Expanding it opens the same block t
 relationship's own page renders, in place, without navigating away: the roles, the comments
 with their links, and the consumables that cross the boundary. The type and the role codes
 beside it (`OHS`, `PL`, `CF`, `ACL`) are keywords, set in the editor font because they are
-codes from a table, and each carries the pattern's one-line meaning as its hover text.
+codes from a table, and each opens a hover card: the pattern's full name, its one-line
+meaning and its architectural nature, then — under a rule, and only when there is anything
+to show — that relationship's disposition and its comments with their links. It opens after
+a short pause on hover and at once on keyboard focus, a click pins it, and Escape or a click
+anywhere else closes it; only one is ever open.
 
 A relationship's own page renders that same block at page level, so what a row discloses in
-place and what the page shows are one component. Every pattern keyword there carries the
-pattern's one-line meaning as its hover text, as it does in the table.
+place and what the page shows are one component. Every pattern keyword there opens the same
+hover card as it does in the table.
 
 ## Component library
 
@@ -83,7 +87,7 @@ rather than cards, chips and pills.
 - **atoms** — heading, keyword, lockup, ref, definition list, data table, disposition, empty
   state, comments, hover card, markdown, icon, logo.
 - **molecules** — crumbs, problems, the provides, consumes, attribute and subdomain tables,
-  the context and team lockups, the structure and consumable subsections.
+  the context and team lockups, the structure and consumable subsections, the pattern hover.
 - **organisms** — section, page header, table of contents, sidebar, attributes, invariants and
   language sections, health report, strategic position table, relationship detail, diagram
   figure and the interactive diagram.
