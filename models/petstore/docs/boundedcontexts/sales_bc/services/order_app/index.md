@@ -35,4 +35,8 @@ POST /pet/{petId}/reserve; holds the pet for an approved order by running the ag
 POST /pet/{petId}/sold; records the sale by running the aggregate's MarkPetSold
 - **Provider**: [PetApp](../../../catalog_bc/services/pet_app/index.md)
 
+### ShipmentDelivered 
+The pet reached its owner
+- **Provider**: [Shipment](../../../fulfilment_bc/aggregates/shipment/index.md)
+
 	

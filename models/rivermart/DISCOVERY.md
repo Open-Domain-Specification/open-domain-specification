@@ -345,7 +345,7 @@ to integrate.
 
 ## 7. Validation and what we left in
 
-Running `validate()` on the finished model gives three diagnostics. Each corresponds to a
+Running `validate()` on the finished model gives four diagnostics. Each corresponds to a
 real finding, and the client asked that they stay in the model so the owning team sees them:
 
 - `aggregate-root` on the Wishlist: the growth squad marked both Wishlist and WishlistItem
@@ -356,6 +356,12 @@ real finding, and the client asked that they stay in the model so the owning tea
 - `role-coherence` on Last Mile's consumption of `ShipmentDispatched`: no downstream role,
   because the two teams have never agreed one. The relationship is declared with only the
   upstream role, which is the honest state.
+- `partnership-backed` on Search and Advertising: the two teams call the results page one
+  product and release it together, but every dependency runs one way — Search calls
+  `GetSponsoredResults` and reports clicks through `RecordAdClick`, and Advertising consumes
+  nothing of Search's. On the traffic alone this is customer-supplier with Advertising
+  supplying. Whether the joint release train is enough to call it a partnership is the
+  Discovery Team's call, so the claim stays and the warning stays with it.
 
 ## 8. What the model leaves out
 

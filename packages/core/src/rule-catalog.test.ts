@@ -103,7 +103,7 @@ function everythingWrong(): Workspace {
 	// invariant-in-aggregate: a rule reaching into another aggregate
 	tree.addInvariant("Stretched", { description: "" }).constrains(r1);
 	// attribute-relation-coherence: attribute without relation, relation
-	// without attribute, list against a single-valued relation, wrong type name
+	// without attribute, and a list against a single-valued relation
 	const coherence = a.addAggregate("Coherence", { description: "" });
 	const holder = coherence.addRootEntity("Holder", { description: "" });
 	const price = coherence.addValueObject("Price", { description: "" });
@@ -129,16 +129,31 @@ function everythingWrong(): Workspace {
 		type: "event",
 		description: "",
 	});
-	a.addService("Consumer", { description: "", type: "application" }).consumes(
-		legacyFeed,
-		{
-			pattern: "conformist",
-		},
+	const consumer = a.addService("Consumer", {
+		description: "",
+		type: "application",
+	});
+	consumer.consumes(legacyFeed, { pattern: "conformist" });
+	// relationship-cycle: a call each way, which since decision 20 is what
+	// makes a ring — A calls C's Ask, C calls A's Answer. The event feed above
+	// would not have been enough on its own.
+	consumer.consumes(
+		legacy.provides("Ask", { type: "operation", description: "" }),
+		{},
+	);
+	legacy.consumes(
+		consumer.provides("Answer", { type: "operation", description: "" }),
+		{},
 	);
 	c.upstreamOf(a, {
 		upstreamRoles: ["open-host-service"],
 		downstreamRoles: ["anti-corruption-layer"],
 	});
+	// relationship-cycle: A is upstream of C, and C is already upstream of A
+	a.upstreamOf(c, {});
+	// partnership-backed: partners with no traffic either way, and
+	// disposition-needs-comment: a disposition on it with nothing written down
+	b.partnerOf(c, { disposition: "refactor" });
 	// context-serves-subdomain: A, B and C serve nothing
 	return ws;
 }

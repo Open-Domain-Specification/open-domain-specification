@@ -3688,6 +3688,12 @@
                 "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/get_customer"
               },
               "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/lending/aggregates/loan_application/provides/application_submitted"
+              },
+              "pattern": "conformist"
             }
           ],
           "entities": {

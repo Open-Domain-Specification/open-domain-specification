@@ -1,15 +1,23 @@
-import { relationshipsWithoutComments } from "./evidence";
+import {
+	dispositionOf,
+	intentsWithoutComments,
+	relationshipsWithoutComments,
+	type StrategicIntent,
+} from "./evidence";
+import type { UpstreamRole } from "./schema";
 import {
 	type Aggregate,
 	Attribute,
 	type BoundedContext,
 	type Constrainable,
-	type Consumption,
+	type Consumable,
+	Consumption,
+	ContextRelationship,
 	constrainableLabel,
 	Entity,
 	type EntityRelation,
 	isDirectedRelationshipType,
-	type Policy,
+	Policy,
 	type Service,
 	ValueObject,
 	type Workspace,
@@ -146,6 +154,35 @@ const rootIdentity: Rule = (workspace) => {
 };
 
 /**
+ * Every other entity is identified by something too. An entity is the thing
+ * you can still tell apart from another that holds exactly the same values;
+ * with no identity attribute nothing does the telling apart, and what is left
+ * is a value object. The root's own identity is `root-identity`'s business,
+ * and an error there because a reference cannot land without it; inside the
+ * boundary it is a warning, because the modeller may simply not have named the
+ * identity yet.
+ */
+const entityIdentity: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const aggregate of aggregatesOf(workspace)) {
+		for (const entity of aggregate.entities.values()) {
+			if (entity.root) continue;
+			const identified = Array.from(entity.attributes.values()).some(
+				(a) => a.identity,
+			);
+			if (identified) continue;
+			diagnostics.push({
+				severity: "warning",
+				rule: "entity-identity",
+				message: `Entity "${entity.name}" in aggregate "${aggregate.name}" declares no identity attribute; an entity is what you tell apart from another holding the same values, so without one "${entity.name}" is a value object`,
+				ref: entity.ref,
+			});
+		}
+	}
+	return diagnostics;
+};
+
+/**
  * A value object is compared by its values, so it carries no identity of its
  * own and owns no lifecycle: no identity attribute, and no `includes`.
  */
@@ -181,6 +218,58 @@ function append<K, V>(index: Map<K, V[]>, key: K, value: V): void {
 	const existing = index.get(key);
 	if (existing) existing.push(value);
 	else index.set(key, [value]);
+}
+
+/** Rotates a ring so its lowest key leads, so the same ring always reads the same way. */
+function leadWithLowestKey<N>(ring: N[], keyOf: (node: N) => string): N[] {
+	let lead = 0;
+	for (let i = 1; i < ring.length; i++) {
+		if (keyOf(ring[i]) < keyOf(ring[lead])) lead = i;
+	}
+	return [...ring.slice(lead), ...ring.slice(0, lead)];
+}
+
+/**
+ * The rings a directed graph closes on itself, each as its nodes in order.
+ *
+ * One ring per back edge of the depth-first walk, the shape `aggregate-tree`
+ * already uses for `includes`: every cycle carries at least one back edge, so
+ * nothing cyclic goes unreported, while a graph with none is walked once.
+ * Rings are rotated to their lowest key and de-duplicated by it, so which node
+ * the walk happened to start from changes neither the message nor the ref.
+ */
+function cyclesOf<N>(
+	nodes: Iterable<N>,
+	nextOf: (node: N) => Iterable<N>,
+	keyOf: (node: N) => string,
+): N[][] {
+	const rings: N[][] = [];
+	const seen = new Set<string>();
+	const path: N[] = [];
+	const onPath = new Set<N>();
+	const walked = new Set<N>();
+
+	const walk = (node: N) => {
+		onPath.add(node);
+		path.push(node);
+		for (const next of nextOf(node)) {
+			if (onPath.has(next)) {
+				const ring = leadWithLowestKey(path.slice(path.indexOf(next)), keyOf);
+				const key = ring.map(keyOf).join(">");
+				if (seen.has(key)) continue;
+				seen.add(key);
+				rings.push(ring);
+				continue;
+			}
+			if (!walked.has(next)) walk(next);
+		}
+		path.pop();
+		onPath.delete(node);
+		walked.add(node);
+	};
+
+	for (const node of nodes) if (!walked.has(node)) walk(node);
+	return rings;
 }
 
 /**
@@ -305,6 +394,11 @@ function includesCycles(
  * An attribute typed by a value object and a `uses` relation to it are two
  * halves of the same statement, and a list-typed attribute is a `*` or `1..*`
  * relation.
+ *
+ * The attribute's `type` is free text by decision 15, so the validator does
+ * not parse it and never asks it to spell the value object's name. The one
+ * exception is the trailing `[]`, the convention the cardinality check reads
+ * as "many".
  */
 const attributeRelationCoherence: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -335,14 +429,6 @@ const attributeRelationCoherence: Rule = (workspace) => {
 						severity: "warning",
 						rule: "attribute-relation-coherence",
 						message: `"${member.name}" types attribute "${attribute.name}" as a list ("${attribute.type}") but its "uses" relation to "${vo.name}" has cardinality "${relation.cardinality}"`,
-						ref: member.ref,
-					});
-				}
-				if (type !== vo.name && type !== `${vo.name}[]`) {
-					diagnostics.push({
-						severity: "warning",
-						rule: "attribute-relation-coherence",
-						message: `"${member.name}" types attribute "${attribute.name}" as "${attribute.type}" but points it at value object "${vo.name}"; the type a reader sees should be "${vo.name}" or "${vo.name}[]"`,
 						ref: member.ref,
 					});
 				}
@@ -446,6 +532,33 @@ const roleCoherence: Rule = (workspace) => {
 	return diagnostics;
 };
 
+/** Every consumption in which `to` consumes something `from` provides. */
+function crossingsBetween(
+	workspace: Workspace,
+	from: BoundedContext,
+	to: BoundedContext,
+): Consumption[] {
+	return Array.from(consumptionsOf(workspace)).filter(
+		(c) =>
+			c.consumable.provider.boundedcontext === from &&
+			c.consumer.boundedcontext === to,
+	);
+}
+
+/**
+ * Whether a crossing consumable carries an upstream role. A published language
+ * is a data shape, not a second flag, so any crossing consumable with a
+ * `schema` publishes one: an open-host-service operation with a schema backs
+ * both roles at once.
+ */
+function carriesUpstreamRole(
+	consumable: Consumable,
+	role: UpstreamRole,
+): boolean {
+	if (consumable.pattern === role) return true;
+	return role === "published-language" && consumable.schema !== undefined;
+}
+
 /**
  * The roles a directed relationship claims are the roles its traffic actually
  * carries, in both directions: every declared role is backed by a crossing,
@@ -453,18 +566,14 @@ const roleCoherence: Rule = (workspace) => {
  */
 const relationshipRolesBacked: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
-	const consumptions = Array.from(consumptionsOf(workspace));
 	for (const relationship of workspace.relationships) {
 		if (!isDirectedRelationshipType(relationship.type)) continue;
 		const upstream = relationship.source;
 		const downstream = relationship.target;
-		const crossings = consumptions.filter(
-			(c) =>
-				c.consumable.provider.boundedcontext === upstream &&
-				c.consumer.boundedcontext === downstream,
-		);
+		const crossings = crossingsBetween(workspace, upstream, downstream);
 		for (const role of relationship.upstreamRoles) {
-			if (crossings.some((c) => c.consumable.pattern === role)) continue;
+			if (crossings.some((c) => carriesUpstreamRole(c.consumable, role)))
+				continue;
 			diagnostics.push({
 				severity: "warning",
 				rule: "relationship-roles-backed",
@@ -491,6 +600,115 @@ const relationshipRolesBacked: Rule = (workspace) => {
 				ref: crossing.consumer.ref,
 			});
 		}
+	}
+	return diagnostics;
+};
+
+/** Whether the downstream context calls an operation the upstream one offers. */
+function callCrosses(
+	workspace: Workspace,
+	upstream: BoundedContext,
+	downstream: BoundedContext,
+): boolean {
+	return crossingsBetween(workspace, upstream, downstream).some(
+		(c) => c.consumable.type === "operation",
+	);
+}
+
+/**
+ * The directed relationships whose traffic is calls form no cycle.
+ *
+ * Only a call counts as a step (decision 20). An operation is answered before
+ * the caller can go on, so a ring of calls is a ring of teams each blocked on
+ * the next; a step carried only by events, or by a policy subscribing to the
+ * other side's event, is choreography — nobody waits, the events arrive when
+ * they arrive — and rings of those are `reaction-cycle`'s business. That makes
+ * the common shape honest: two contexts, each upstream in one respect and
+ * downstream in another, are a ring only when both directions are calls.
+ */
+const relationshipCycle: Rule = (workspace) => {
+	// The contexts are the nodes, so every ring found is a ring of distinct
+	// contexts. Walking the relationships instead would also report the longer
+	// closed walks that thread the same context twice, which say nothing new.
+	const startingAt = new Map<BoundedContext, ContextRelationship[]>();
+	for (const relationship of workspace.relationships) {
+		if (!isDirectedRelationshipType(relationship.type)) continue;
+		if (!callCrosses(workspace, relationship.source, relationship.target))
+			continue;
+		append(startingAt, relationship.source, relationship);
+	}
+
+	return cyclesOf(
+		workspace.boundedcontexts.values(),
+		(context) => (startingAt.get(context) ?? []).map((r) => r.target),
+		(context) => context.id,
+	).flatMap((ring) => {
+		// The ring reports at a relationship on it rather than at a context, so a
+		// reader lands on something they can edit. There is one by construction —
+		// the ring was walked along it — and the guard just keeps that honest.
+		const next = ring.length === 1 ? ring[0] : ring[1];
+		const link = (startingAt.get(ring[0]) ?? []).find((r) => r.target === next);
+		if (!link) return [];
+		return [
+			{
+				severity: "warning" as const,
+				rule: "relationship-cycle",
+				message: `Calls run in a cycle: ${[...ring, ring[0]]
+					.map((c) => `"${c.name}"`)
+					.join(
+						" -> ",
+					)}; each of these contexts waits on the next to answer, so no team on the ring can settle its model first. Turning one call on the ring into an event breaks it`,
+				ref: link.ref,
+			},
+		];
+	});
+};
+
+/** Whether anything of `from`'s crosses into `to`, as traffic or as a subscription. */
+function trafficCrosses(
+	workspace: Workspace,
+	from: BoundedContext,
+	to: BoundedContext,
+): boolean {
+	if (crossingsBetween(workspace, from, to).length > 0) return true;
+	// A policy subscribing to another context's event is the same exchange as
+	// a consumption, so it backs the partnership just as well.
+	for (const policy of to.policies.values()) {
+		for (const event of policy.events) {
+			if (event.provider.boundedcontext === from) return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * A partnership is a two-way dependency: the two contexts succeed or fail
+ * together, which is only true when each actually depends on the other. One
+ * with no traffic at all is a wish, and one with traffic only one way is a
+ * directed relationship wearing a partner's badge, which quietly excuses both
+ * ends from declaring the upstream and downstream roles they really have.
+ */
+const partnershipBacked: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const relationship of workspace.relationships) {
+		if (relationship.type !== "partnership") continue;
+		const { source, target } = relationship;
+		const missing = (
+			[
+				[source, target],
+				[target, source],
+			] as const
+		).filter(([from, to]) => !trafficCrosses(workspace, from, to));
+		if (missing.length === 0) continue;
+		const gaps = missing
+			.map(([from, to]) => `"${to.name}" consumes nothing from "${from.name}"`)
+			.join(" and ");
+		diagnostics.push({
+			severity: "warning",
+			rule: "partnership-backed",
+			message: `"${source.name}" and "${target.name}" are declared partners, but ${gaps}; a partnership is a two-way dependency, so back it with consumables both ways or state the direction the dependency really runs`,
+			ref: relationship.ref,
+		});
 	}
 	return diagnostics;
 };
@@ -837,6 +1055,58 @@ const policyComplete: Rule = (workspace) => {
 	return diagnostics;
 };
 
+/** A step in the reaction chain: an operation, an event, or a policy. */
+type Reactor = Consumable | Policy;
+
+/**
+ * What the reaction chain does next: an operation leads to the events it
+ * raises, an event to the policies listening for it, and a policy to the
+ * operations it issues.
+ */
+function reactionsFrom(
+	node: Reactor,
+	listeners: Map<Consumable, Policy[]>,
+): Reactor[] {
+	if (node instanceof Policy) return node.commands;
+	return [...node.raisedEvents, ...(listeners.get(node) ?? [])];
+}
+
+/**
+ * The reactions form no cycle: no operation raises an event whose policy
+ * issues an operation that leads, however far around, back to the first.
+ *
+ * A ring like that runs forever unless something outside the model stops it,
+ * and nothing in the model says what — so it is the modeller who has to look
+ * and either break the ring or write down the condition that ends it.
+ */
+const reactionCycle: Rule = (workspace) => {
+	const listeners = new Map<Consumable, Policy[]>();
+	const nodes: Reactor[] = [];
+	for (const bc of workspace.boundedcontexts.values()) {
+		for (const provider of [...bc.aggregates.values(), ...bc.services.values()])
+			nodes.push(...provider.consumables.values());
+		for (const policy of bc.policies.values()) {
+			nodes.push(policy);
+			for (const event of policy.events) append(listeners, event, policy);
+		}
+	}
+
+	return cyclesOf(
+		nodes,
+		(node) => reactionsFrom(node, listeners),
+		(node) => node.ref,
+	).map((cycle) => ({
+		severity: "warning" as const,
+		rule: "reaction-cycle",
+		message: `Reactions run in a cycle: ${[...cycle, cycle[0]]
+			.map((n) => `"${n.name}"`)
+			.join(
+				" -> ",
+			)}; the chain triggers itself and nothing in the model says what ends it`,
+		ref: cycle[0].ref,
+	}));
+};
+
 /** Every context serves at least one subdomain. */
 const contextServesSubdomain: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -867,6 +1137,43 @@ const commentsRequired: Rule = (workspace) => {
 		ref: r.ref,
 	}));
 };
+
+/** Names a strategic intent the way a Problems row has to read on its own. */
+function intentLabel(intent: StrategicIntent): string {
+	if (intent instanceof ContextRelationship)
+		return `The ${intent.type} between "${intent.source.name}" and "${intent.target.name}"`;
+	if (intent instanceof Consumption)
+		return `"${intent.consumer.name}"'s consumption of "${intent.consumable.name}"`;
+	return `"${intent.name}", provided by "${intent.provider.name}"`;
+}
+
+/**
+ * Where a diagnostic about an intent points. A consumption is the one intent
+ * with no ref of its own, so it reports at its consumer, as `role-coherence`
+ * and `mud-needs-acl` already do.
+ */
+function intentRef(intent: StrategicIntent): string {
+	return intent instanceof Consumption ? intent.consumer.ref : intent.ref;
+}
+
+/**
+ * A disposition other than `by-design` is a claim that something is wrong: the
+ * intent is `tolerated` for now, or wants a `refactor`. Either way the next
+ * reader needs to know what makes it so and what it would take to clear it,
+ * and only a comment carries that. `by-design` says nothing is owed.
+ *
+ * "Intent" here is {@link intentsWithoutComments}'s reading, so internal
+ * consumables are out: they never cross a boundary and so are not strategic.
+ */
+const dispositionNeedsComment: Rule = (workspace) =>
+	intentsWithoutComments(workspace)
+		.filter((intent) => dispositionOf(intent) !== "by-design")
+		.map((intent) => ({
+			severity: "warning" as const,
+			rule: "disposition-needs-comment",
+			message: `${intentLabel(intent)} is marked ${dispositionOf(intent)}, but carries no comment saying what makes it so or what would clear it`,
+			ref: intentRef(intent),
+		}));
 
 /** What a validation rule checks, in words a reader new to DDD can follow. */
 export type RuleDescription = {
@@ -921,6 +1228,15 @@ const RULES: CataloguedRule[] = [
 		check: rootIdentity,
 	},
 	{
+		rule: "entity-identity",
+		severities: ["warning"],
+		summary:
+			"Every non-root entity in an aggregate declares at least one identity attribute.",
+		why: "An entity is precisely the thing you can still tell apart from another one holding exactly the same values. Without an identity attribute nothing does the telling apart, so the element is a value object that has been filed under the wrong heading, and readers will expect a lifecycle and a history it does not have.",
+		fix: "Give the entity the attribute the business identifies it by — the line number, the reference — with identity: true, or make it a value object, which is usually what an entity with nothing to identify really was.",
+		check: entityIdentity,
+	},
+	{
 		rule: "value-object-shape",
 		severities: ["error"],
 		summary:
@@ -942,9 +1258,9 @@ const RULES: CataloguedRule[] = [
 		rule: "attribute-relation-coherence",
 		severities: ["warning"],
 		summary:
-			"An attribute typed by a value object has a matching uses relation, of a matching cardinality, and says the value object's name as its type.",
+			"An attribute typed by a value object has a matching uses relation, of a matching cardinality.",
 		why: "The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened, and a list-typed attribute against a single-valued relation says two different things about how many there are.",
-		fix: "Add the missing uses relation or the missing attribute, set the relation's cardinality to * or 1..* for a list, and write the attribute's type as the value object's name (or its name followed by []).",
+		fix: "Add the missing uses relation or the missing attribute, and set the relation's cardinality to * or 1..* for a list-typed attribute. The type itself is free text and is never checked against the value object's name; only a trailing [] is read, as \"many\".",
 		check: attributeRelationCoherence,
 	},
 	{
@@ -962,8 +1278,26 @@ const RULES: CataloguedRule[] = [
 		summary:
 			"A directed relationship's declared roles are carried by consumables and consumptions crossing between the two contexts, and a crossing consumption's role is declared on the relationship.",
 		why: "The context map and the consumable map are the same integration told twice, strategically and concretely. A role on the map that nothing carries is a claim about a team's way of working with nothing behind it, and a consumption whose role the map never mentions is an integration decision made without the map noticing.",
-		fix: "Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that.",
+		fix: "Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a schema, since a published language is a data shape rather than a second flag.",
 		check: relationshipRolesBacked,
+	},
+	{
+		rule: "relationship-cycle",
+		severities: ["warning"],
+		summary:
+			"The directed relationships whose traffic is calls form no cycle; steps carried only by events do not count.",
+		why: "An operation is answered before its caller can go on, so a ring of calls is a ring of teams each blocked on the next and a change anywhere goes round forever. Events are different: nobody waits for one, so a ring of contexts joined by events is fine, and rings of reactions are reaction-cycle's business instead.",
+		fix: "Turn one call on the ring into an event the other side reacts to, which is what DDD recommends anyway; failing that, invert the dependency or drop it.",
+		check: relationshipCycle,
+	},
+	{
+		rule: "partnership-backed",
+		severities: ["warning"],
+		summary:
+			"Two contexts declaring a partnership exchange consumables — or events a policy reacts to — in both directions.",
+		why: "A partnership says two teams succeed or fail together and so plan their releases as one, which is only worth the coordination when each really depends on the other. A partnership with no traffic at all is a wish, and one with traffic only one way is a directed relationship wearing a partner's badge — which quietly excuses both ends from declaring the upstream and downstream roles they actually have.",
+		fix: "Add the consumable the other direction is missing, or replace the partnership with the upstream-downstream or customer-supplier relationship the traffic really describes.",
+		check: partnershipBacked,
 	},
 	{
 		rule: "mud-needs-acl",
@@ -1073,6 +1407,15 @@ const RULES: CataloguedRule[] = [
 		check: policyComplete,
 	},
 	{
+		rule: "reaction-cycle",
+		severities: ["warning"],
+		summary:
+			"The reactions form no cycle: no operation raises an event whose policy issues an operation that leads back to the first.",
+		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down.",
+		fix: "Break the ring — usually one of the policies is reacting to too broad an event, or issues an operation it should not — or, if the loop is real and ends on a condition, model that condition so the chain stops somewhere a reader can see.",
+		check: reactionCycle,
+	},
+	{
 		rule: "context-serves-subdomain",
 		severities: ["warning"],
 		summary: "Every bounded context serves at least one subdomain.",
@@ -1088,6 +1431,15 @@ const RULES: CataloguedRule[] = [
 		why: "A relationship is a claim about how two teams meet; without a note saying where that shows up in the real system, nobody can tell whether the map is still true.",
 		fix: "Add a comment to the relationship saying what backs it in the code, or turn options.rules.commentsRequired off while the evidence layer is still being written.",
 		check: commentsRequired,
+	},
+	{
+		rule: "disposition-needs-comment",
+		severities: ["warning"],
+		summary:
+			"A strategic intent whose disposition is tolerated or refactor carries at least one comment.",
+		why: "by-design says nothing is owed. Any other disposition is a claim that something is wrong, and a claim on its own is not actionable: the next reader cannot tell what makes it wrong, how much it costs, or what would let it be cleared. The comment is where that lives, and without it the disposition is a flag nobody can act on or retire.",
+		fix: "Add a comment to the relationship, consumable or consumption saying what the trouble is and what clearing it would take, or set the disposition back to by-design if the intent is how it should be after all.",
+		check: dispositionNeedsComment,
 	},
 ];
 

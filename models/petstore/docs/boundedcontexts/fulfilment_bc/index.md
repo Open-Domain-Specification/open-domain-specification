@@ -61,7 +61,7 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 
 - **Sales BC** (partnership)
 	- Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged.
-	- ConfirmDelivery and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier.
+	- OrderApproved and ShipmentDelivered cross the boundary one way each, and Fulfilment calls ConfirmDelivery on top of that, all with no translation layer; each side depending on the other is what makes this a partnership rather than customer-supplier.
 
 - `partnership` — **Partnership** (P). Mutual co-operation where teams coordinate development and releases.
 
@@ -75,6 +75,7 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 | [PetApp](../catalog_bc/services/pet_app/index.md) | - | Pet | MarkPetSold | - |
 | [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
 | [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | - | Shipment | ShipmentDelivered | published-language |
 | [Shipment](aggregates/shipment/index.md) | conformist | Order | OrderApproved | published-language |
 
 

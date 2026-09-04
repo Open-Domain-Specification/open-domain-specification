@@ -475,12 +475,22 @@ describe("attribute-relation-coherence", () => {
 		]);
 	});
 
-	it("warns when the attribute's type does not name the value object", () => {
+	// Decision 15: a type is free text, so the validator never asks it to spell
+	// the value object's name. The trailing [] the cardinality check reads is
+	// the one convention that survives.
+	it("says nothing about a type that does not name the value object", () => {
 		const { ws, root, money } = pair();
 		root.addAttribute("Total", { type: "decimal", valueobject: money });
 		root.uses(money, "totalled in", "1");
+		expect(coherenceRules(ws)).toEqual([]);
+	});
+
+	it("still reads a trailing [] on a free-text type as many", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("Instalments", { type: "decimal[]", valueobject: money });
+		root.uses(money, "paid in", "1");
 		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
-			'"Order" types attribute "Total" as "decimal" but points it at value object "Money"; the type a reader sees should be "Money" or "Money[]"',
+			'"Order" types attribute "Instalments" as a list ("decimal[]") but its "uses" relation to "Money" has cardinality "1"',
 		]);
 	});
 });
@@ -1039,5 +1049,506 @@ describe("aggregate-not-public and domain-service-internal", () => {
 		// its operations stay inside (decision 17).
 		outsider.consumes(raised, { pattern: "conformist" });
 		expect(boundary(ws)).toEqual([]);
+	});
+});
+
+describe("entity-identity", () => {
+	/** An aggregate whose root is identified, and one plain entity beside it. */
+	function aggregate() {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const agg = bc.addAggregate("Order", { description: "" });
+		const root = agg.addRootEntity("Order", { description: "" });
+		root.addAttribute("Order Id", { type: "uuid", identity: true });
+		const line = agg.addEntity("Order Line", { description: "" });
+		return { ws, agg, root, line };
+	}
+
+	const identityRules = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "entity-identity");
+
+	it("warns about a non-root entity with nothing identifying it, and says it is a value object", () => {
+		const { ws, line } = aggregate();
+		expect(
+			identityRules(ws).map((d) => [d.severity, d.message, d.ref]),
+		).toEqual([
+			[
+				"warning",
+				'Entity "Order Line" in aggregate "Order" declares no identity attribute; an entity is what you tell apart from another holding the same values, so without one "Order Line" is a value object',
+				line.ref,
+			],
+		]);
+	});
+
+	it("goes quiet once the entity says what identifies it", () => {
+		const { ws, line } = aggregate();
+		line.addAttribute("Line No", { type: "int", identity: true });
+		expect(identityRules(ws)).toEqual([]);
+	});
+
+	it("wants an identity attribute, not just any attribute", () => {
+		const { ws, line } = aggregate();
+		line.addAttribute("Quantity", { type: "int" });
+		expect(identityRules(ws)).toHaveLength(1);
+	});
+
+	it("leaves the root to root-identity, and says nothing about value objects", () => {
+		const { ws, agg, root } = aggregate();
+		agg.addValueObject("Money", { description: "" });
+		root.attributes.clear();
+		// The root has no identity either now, but that is root-identity's error
+		// to raise, not this rule's warning; and the value object never gets one.
+		expect(identityRules(ws).map((d) => d.ref)).toEqual([
+			agg.entities.get("order_line")?.ref,
+		]);
+		expect(ws.validate().some((d) => d.rule === "root-identity")).toBe(true);
+	});
+});
+
+describe("relationship-cycle", () => {
+	/**
+	 * Three contexts, each with an application service, and a `step` that
+	 * declares one upstream of another and backs the step with real traffic —
+	 * a call or an event, because since decision 20 only calls make a ring.
+	 */
+	function three() {
+		const ws = emptyWorkspace();
+		const make = (name: string) => {
+			const bc = ws.addBoundedContext(name, { description: "" });
+			return {
+				bc,
+				app: bc.addService(`${name} App`, {
+					description: "",
+					type: "application",
+				}),
+			};
+		};
+		const a = make("A");
+		const b = make("B");
+		const c = make("C");
+		type Context = ReturnType<typeof make>;
+		const step = (
+			from: Context,
+			to: Context,
+			carriedBy: "operation" | "event",
+			type?: "customer-supplier",
+		) => {
+			const consumable = from.app.provides(
+				`${from.bc.name} to ${to.bc.name} ${carriedBy}`,
+				{ description: "", type: carriedBy },
+			);
+			to.app.consumes(consumable, {});
+			return from.bc.upstreamOf(to.bc, { type });
+		};
+		return { ws, a, b, c, step };
+	}
+
+	const cycles = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "relationship-cycle");
+
+	it("is quiet on a chain of calls that never closes, even a branching one", () => {
+		const { ws, a, b, c, step } = three();
+		step(a, b, "operation");
+		step(b, c, "operation");
+		step(a, c, "operation");
+		expect(cycles(ws)).toEqual([]);
+	});
+
+	it("names the ring's contexts in order, and reports at a relationship on it", () => {
+		const { ws, a, b, c, step } = three();
+		const ab = step(a, b, "operation");
+		step(b, c, "operation");
+		step(c, a, "operation");
+		expect(cycles(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"warning",
+				'Calls run in a cycle: "A" -> "B" -> "C" -> "A"; each of these contexts waits on the next to answer, so no team on the ring can settle its model first. Turning one call on the ring into an event breaks it',
+				ab.ref,
+			],
+		]);
+	});
+
+	// Decision 20: an operation is answered before its caller can go on, so a
+	// ring of calls blocks every team on it. Nobody waits for an event, so the
+	// same ring of contexts joined by events is a shape the model may keep.
+	it("says nothing about a ring carried by events", () => {
+		const { ws, a, b, c, step } = three();
+		step(a, b, "event");
+		step(b, c, "event");
+		step(c, a, "event");
+		expect(cycles(ws)).toEqual([]);
+	});
+
+	it("warns about the same ring once each step is a call", () => {
+		const { ws, a, b, c, step } = three();
+		step(a, b, "operation");
+		step(b, c, "operation");
+		step(c, a, "operation");
+		expect(cycles(ws)).toHaveLength(1);
+	});
+
+	it("takes a mutual pair of calls as a ring of two, and events as no ring at all", () => {
+		const calls = three();
+		calls.step(calls.a, calls.b, "operation");
+		calls.step(calls.b, calls.a, "operation");
+		expect(cycles(calls.ws)).toHaveLength(1);
+
+		const events = three();
+		events.step(events.a, events.b, "event");
+		events.step(events.b, events.a, "event");
+		expect(cycles(events.ws)).toEqual([]);
+	});
+
+	it("needs every step of the ring to be a call; one event breaks it", () => {
+		const { ws, a, b, c, step } = three();
+		step(a, b, "operation");
+		step(b, c, "event");
+		step(c, a, "operation");
+		expect(cycles(ws)).toEqual([]);
+	});
+
+	it("ignores a declared relationship no traffic backs at all", () => {
+		const { ws, a, b } = three();
+		a.bc.upstreamOf(b.bc, {});
+		b.bc.upstreamOf(a.bc, {});
+		expect(cycles(ws)).toEqual([]);
+	});
+
+	it("counts customer-supplier as directed too, so a mixed ring still closes", () => {
+		const { ws, a, b, step } = three();
+		step(a, b, "operation");
+		step(b, a, "operation", "customer-supplier");
+		expect(cycles(ws)).toHaveLength(1);
+	});
+
+	it("reads the same way whichever end declared the ring first", () => {
+		const forwards = three();
+		forwards.step(forwards.a, forwards.b, "operation");
+		forwards.step(forwards.b, forwards.c, "operation");
+		forwards.step(forwards.c, forwards.a, "operation");
+		const backwards = three();
+		backwards.step(backwards.c, backwards.a, "operation");
+		backwards.step(backwards.b, backwards.c, "operation");
+		backwards.step(backwards.a, backwards.b, "operation");
+		expect(cycles(backwards.ws).map((d) => d.message)).toEqual(
+			cycles(forwards.ws).map((d) => d.message),
+		);
+	});
+
+	it("reports a two-context ring once, not once per direction", () => {
+		const { ws, a, b, step } = three();
+		step(a, b, "operation");
+		step(b, a, "operation");
+		expect(cycles(ws)).toHaveLength(1);
+	});
+
+	it("leaves symmetric relationships out of the graph", () => {
+		const { ws, a, b, c, step } = three();
+		step(a, b, "operation");
+		b.bc.partnerOf(c.bc);
+		c.bc.sharesKernelWith(a.bc);
+		expect(cycles(ws)).toEqual([]);
+	});
+
+	it("reports each ring of distinct contexts once, not the walks that thread one twice", () => {
+		// A -> B, B -> C, C -> B and C -> A: two rings, B/C and A/B/C. Walking
+		// the relationships rather than the contexts would also report the closed
+		// walk A -> B -> C -> B -> A, which tells a reader nothing new.
+		const { ws, a, b, c, step } = three();
+		step(a, b, "operation");
+		step(b, c, "operation");
+		step(c, b, "operation");
+		step(c, a, "operation");
+		expect(
+			cycles(ws)
+				.map((d) => d.message)
+				.sort(),
+		).toEqual(
+			[
+				'Calls run in a cycle: "A" -> "B" -> "C" -> "A"; each of these contexts waits on the next to answer, so no team on the ring can settle its model first. Turning one call on the ring into an event breaks it',
+				'Calls run in a cycle: "B" -> "C" -> "B"; each of these contexts waits on the next to answer, so no team on the ring can settle its model first. Turning one call on the ring into an event breaks it',
+			].sort(),
+		);
+	});
+});
+
+describe("partnership-backed", () => {
+	/** Two partner contexts, each with a service to hang traffic on. */
+	function partners() {
+		const ws = emptyWorkspace();
+		const a = ws.addBoundedContext("A", { description: "" });
+		const b = ws.addBoundedContext("B", { description: "" });
+		const relationship = a.partnerOf(b);
+		return {
+			ws,
+			a,
+			b,
+			relationship,
+			aApp: a.addService("A App", { description: "", type: "application" }),
+			bApp: b.addService("B App", { description: "", type: "application" }),
+		};
+	}
+
+	const backed = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "partnership-backed");
+
+	it("warns about a partnership with no traffic at all, naming both gaps", () => {
+		const { ws, relationship } = partners();
+		expect(backed(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"warning",
+				'"A" and "B" are declared partners, but "B" consumes nothing from "A" and "A" consumes nothing from "B"; a partnership is a two-way dependency, so back it with consumables both ways or state the direction the dependency really runs',
+				relationship.ref,
+			],
+		]);
+	});
+
+	it("still warns when the traffic only runs one way, and names that way", () => {
+		const { ws, aApp, bApp } = partners();
+		const fromA = aApp.provides("Thing", { description: "", type: "event" });
+		bApp.consumes(fromA, {});
+		expect(backed(ws).map((d) => d.message)).toEqual([
+			'"A" and "B" are declared partners, but "A" consumes nothing from "B"; a partnership is a two-way dependency, so back it with consumables both ways or state the direction the dependency really runs',
+		]);
+	});
+
+	it("goes quiet once something crosses each way", () => {
+		const { ws, aApp, bApp } = partners();
+		const fromA = aApp.provides("Thing", { description: "", type: "event" });
+		const fromB = bApp.provides("Other Thing", {
+			description: "",
+			type: "event",
+		});
+		bApp.consumes(fromA, {});
+		aApp.consumes(fromB, {});
+		expect(backed(ws)).toEqual([]);
+	});
+
+	it("counts a policy reacting to the partner's event as traffic, as separate-ways does", () => {
+		const { ws, a, aApp, bApp } = partners();
+		const fromA = aApp.provides("Thing", { description: "", type: "event" });
+		const fromB = bApp.provides("Other Thing", {
+			description: "",
+			type: "event",
+		});
+		bApp.consumes(fromA, {});
+		// A never consumes from B; it subscribes to B's event instead, which is
+		// the same exchange told a different way.
+		const act = aApp.provides("Act", { description: "", type: "operation" });
+		a.addPolicy("On Other Thing", { description: "" }).on(fromB).then(act);
+		expect(backed(ws)).toEqual([]);
+	});
+
+	it("says nothing about shared kernels or directed relationships", () => {
+		const ws = emptyWorkspace();
+		const a = ws.addBoundedContext("A", { description: "" });
+		const b = ws.addBoundedContext("B", { description: "" });
+		a.sharesKernelWith(b);
+		a.upstreamOf(b, {});
+		expect(backed(ws)).toEqual([]);
+	});
+});
+
+describe("reaction-cycle", () => {
+	/** A context with an application service to hang a reaction chain on. */
+	function context() {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		return {
+			ws,
+			bc,
+			app: bc.addService("App", { description: "", type: "application" }),
+		};
+	}
+
+	const reactions = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "reaction-cycle");
+
+	it("is quiet on a chain that ends", () => {
+		const { ws, bc, app } = context();
+		const placed = app.provides("Placed", { description: "", type: "event" });
+		const invoiced = app.provides("Invoiced", {
+			description: "",
+			type: "event",
+		});
+		const invoice = app
+			.provides("Invoice", { description: "", type: "operation" })
+			.raises(invoiced);
+		app
+			.provides("Place", { description: "", type: "operation" })
+			.raises(placed);
+		bc.addPolicy("On Placed", { description: "" }).on(placed).then(invoice);
+		expect(reactions(ws)).toEqual([]);
+	});
+
+	it("names the chain in order when it closes on itself", () => {
+		const { ws, bc, app } = context();
+		const placed = app.provides("Placed", { description: "", type: "event" });
+		const place = app
+			.provides("Place", { description: "", type: "operation" })
+			.raises(placed);
+		const policy = bc
+			.addPolicy("On Placed", { description: "" })
+			.on(placed)
+			.then(place);
+		expect(reactions(ws)).toHaveLength(1);
+		const [diagnostic] = reactions(ws);
+		expect(diagnostic.severity).toBe("warning");
+		expect(diagnostic.message).toContain('"Place" -> "Placed"');
+		expect(diagnostic.message).toContain('"Placed" -> "On Placed"');
+		expect(diagnostic.message).toContain('"On Placed" -> "Place"');
+		expect([place.ref, placed.ref, policy.ref]).toContain(diagnostic.ref);
+	});
+
+	it("follows the ring through two policies as well as one", () => {
+		const { ws, bc, app } = context();
+		const placed = app.provides("Placed", { description: "", type: "event" });
+		const invoiced = app.provides("Invoiced", {
+			description: "",
+			type: "event",
+		});
+		const place = app
+			.provides("Place", { description: "", type: "operation" })
+			.raises(placed);
+		const invoice = app
+			.provides("Invoice", { description: "", type: "operation" })
+			.raises(invoiced);
+		bc.addPolicy("On Placed", { description: "" }).on(placed).then(invoice);
+		bc.addPolicy("On Invoiced", { description: "" }).on(invoiced).then(place);
+		expect(reactions(ws)).toHaveLength(1);
+		expect(reactions(ws)[0].message).toContain('"On Invoiced"');
+	});
+});
+
+describe("disposition-needs-comment", () => {
+	/** Two contexts and a relationship whose evidence the test decides. */
+	function related(
+		disposition?: "by-design" | "tolerated" | "refactor",
+		comments?: Array<{ text: string }>,
+	) {
+		const ws = emptyWorkspace();
+		const a = ws.addBoundedContext("A", { description: "" });
+		const b = ws.addBoundedContext("B", { description: "" });
+		const relationship = a.upstreamOf(b, { disposition, comments });
+		return { ws, a, b, relationship };
+	}
+
+	const needsComment = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "disposition-needs-comment");
+
+	it("says nothing when the intent is by-design, said or unsaid", () => {
+		expect(needsComment(related().ws)).toEqual([]);
+		expect(needsComment(related("by-design").ws)).toEqual([]);
+	});
+
+	it("warns about a tolerated relationship with nothing written down", () => {
+		const { ws, relationship } = related("tolerated");
+		expect(needsComment(ws).map((d) => [d.severity, d.message, d.ref])).toEqual(
+			[
+				[
+					"warning",
+					'The upstream-downstream between "A" and "B" is marked tolerated, but carries no comment saying what makes it so or what would clear it',
+					relationship.ref,
+				],
+			],
+		);
+	});
+
+	it("warns about a refactor the same way", () => {
+		expect(needsComment(related("refactor").ws).map((d) => d.message)).toEqual([
+			'The upstream-downstream between "A" and "B" is marked refactor, but carries no comment saying what makes it so or what would clear it',
+		]);
+	});
+
+	it("goes quiet as soon as one comment explains it", () => {
+		const { ws } = related("refactor", [
+			{ text: "A reads B's tables directly; a read model is planned." },
+		]);
+		expect(needsComment(ws)).toEqual([]);
+	});
+
+	it("reaches a consumable, and a consumption at its consumer's ref", () => {
+		const ws = emptyWorkspace();
+		const a = ws.addBoundedContext("A", { description: "" });
+		const b = ws.addBoundedContext("B", { description: "" });
+		const aApp = a.addService("A App", {
+			description: "",
+			type: "application",
+		});
+		const bApp = b.addService("B App", {
+			description: "",
+			type: "application",
+		});
+		const feed = aApp.provides("Feed", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+			disposition: "tolerated",
+		});
+		bApp.consumes(feed, { pattern: "conformist", disposition: "refactor" });
+		expect(needsComment(ws).map((d) => [d.ref, d.message])).toEqual([
+			[
+				feed.ref,
+				'"Feed", provided by "A App" is marked tolerated, but carries no comment saying what makes it so or what would clear it',
+			],
+			[
+				bApp.ref,
+				'"B App"\'s consumption of "Feed" is marked refactor, but carries no comment saying what makes it so or what would clear it',
+			],
+		]);
+	});
+
+	it("leaves an internal consumable alone; it never crosses a boundary", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const app = bc.addService("App", { description: "", type: "application" });
+		app.provides("Housekeeping", {
+			description: "",
+			type: "event",
+			internal: true,
+			disposition: "refactor",
+		});
+		expect(needsComment(ws)).toEqual([]);
+	});
+});
+
+describe("relationship-roles-backed and published languages", () => {
+	/** An upstream context offering one consumable, and a downstream consuming it. */
+	function crossingWithSchema(withSchema: boolean) {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const shape = up.addSchema("Order Summary");
+		const op = up
+			.addService("S", { description: "", type: "application" })
+			.provides("Op", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+				schema: withSchema ? shape : undefined,
+			});
+		down
+			.addService("T", { description: "", type: "application" })
+			.consumes(op, { pattern: "conformist" });
+		up.upstreamOf(down, {
+			upstreamRoles: ["open-host-service", "published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		return ws;
+	}
+
+	const backedRules = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "relationship-roles-backed");
+
+	it("takes a crossing consumable's schema as the published language, backing both roles at once", () => {
+		expect(backedRules(crossingWithSchema(true))).toEqual([]);
+	});
+
+	it("still warns when nothing crossing carries a schema or the flag", () => {
+		expect(
+			backedRules(crossingWithSchema(false)).map((d) => d.message),
+		).toEqual([
+			'"Up" is declared published-language to "Down", but nothing "Down" consumes from "Up" carries that upstream role',
+		]);
 	});
 });

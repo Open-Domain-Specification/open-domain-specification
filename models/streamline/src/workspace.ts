@@ -1982,6 +1982,12 @@ playbackBC.sharesKernelWith(edgeBC, {
 	],
 });
 // Partnership: SDK and player versioned, certified and released together.
+// DELIBERATE (partnership-backed): one release train and a joint lab run, but
+// the only traffic is Playback consuming DeviceCertified — Devices consumes
+// nothing of Playback's. On the traffic alone this is customer-supplier with
+// Devices supplying; the tie is organisational rather than modelled, and the
+// Partner Devices lead wants the claim left as it stands. See DISCOVERY.md
+// section 7.
 playbackBC.partnerOf(devicesBC, {
 	description:
 		"Player and device SDK ship as one release; certification is joint",

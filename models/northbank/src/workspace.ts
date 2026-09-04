@@ -2121,6 +2121,11 @@ creditDecisionAgg.consumes(getCustomer, { pattern: "anti-corruption-layer" });
 
 // Partnership: one planning board, so Lending conforms rather than translates.
 lendingApp.consumes(decide, { pattern: "conformist" });
+// And the other way, which the model already described and never wired up:
+// ApplicationSubmitted's schema is named "What decisioning receives" and the
+// event says "decisioning runs". Without this consumption the partnership had
+// traffic one way only, and a partnership is a two-way dependency.
+creditDecisionAgg.consumes(applicationSubmitted, { pattern: "conformist" });
 const requestDecision = lendingApp.provides("RequestDecision", {
 	description: "Send a submitted application to Credit Decisioning",
 	type: "operation",
