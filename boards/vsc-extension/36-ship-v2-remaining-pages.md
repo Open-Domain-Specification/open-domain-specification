@@ -1,8 +1,8 @@
 ---
-column: backlog
+column: todo
 labels: [frontend]
 priority: high
-updatedAt: 2026-09-05T00:40:00.000Z
+updatedAt: 2026-09-05T01:10:00.000Z
 ---
 # Ship v2 for the remaining thirteen pages (after card 35)
 
@@ -13,3 +13,7 @@ Domain, Subdomain, Relationship, Team, Health, Entity, ValueObject, Service, Con
 - [ ] All routes render v2; v1 deleted; `v2/` promoted and imports repointed
 - [ ] Pages unit at 100%; every e2e green; Storybook spec green over the renamed titles
 - [ ] `npm run test:vscode` green; screenshots regenerated; docs updated
+
+## Comments
+
+- **lead** (2026-09-05T01:10:00.000Z): Approved by the human on 2026-09-05. Starts after card 35 lands.

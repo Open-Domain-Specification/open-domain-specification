@@ -1,9 +1,9 @@
 ---
-column: backlog
+column: todo
 labels: [frontend, docs]
 priority: high
 agent: designer-fable
-updatedAt: 2026-09-05T00:40:00.000Z
+updatedAt: 2026-09-05T01:10:00.000Z
 ---
 # Designer rulings on the v2 review nits, applied in Storybook
 
@@ -22,3 +22,4 @@ docs/design/MORNING-REVIEW.md lists six nits found while landing v2. The designe
 ## Comments
 
 - **lead** (2026-09-05T00:40:00.000Z): For the designer (Fable agent with the frontend-design skill). The three least-sure decisions in the morning review are the human's to rule on; do not change them. Cards 20, 21 and 33 are in flight on the diagram fit, the story bodies and the compare harness; do not touch those files, and merge develop before your final run. Work in your worktree with absolute paths; build core, graphviz and pages and run `node scripts/codicons.mjs` before `build-storybook`; `npm ci` if node_modules is missing; if the card is missing, `git reset --hard develop` there first.
+- **lead** (2026-09-05T01:10:00.000Z): The human approved the design on 2026-09-05 with the three least-sure decisions as designed; rule on the six nits only. Cards 35 and 36 migrate the shipped routes after you land, so finish promptly.
