@@ -76,7 +76,7 @@ Open-host service for /store/order endpoints
 
 - **Fulfilment BC** (partnership)
 	- Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged.
-	- ConfirmDelivery and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier.
+	- OrderApproved and ShipmentDelivered cross the boundary one way each, and Fulfilment calls ConfirmDelivery on top of that, all with no translation layer; each side depending on the other is what makes this a partnership rather than customer-supplier.
 - **Identity BC** (separate-ways)
 	- The order payload carries no user field and the Sales service holds no credentials for the Identity API, so nothing links an order to an account. [sales/openapi.yaml](https://github.com/example/petstore/blob/main/sales/openapi.yaml)
 	- Keeping the two apart is deliberate: checkout must work for a visitor who never signs in. [ADR-007 Anonymous checkout](https://github.com/example/petstore/blob/main/docs/adr/007-anonymous-checkout.md)
@@ -104,5 +104,6 @@ Open-host service for /store/order endpoints
 | [PetApp](../catalog_bc/services/pet_app/index.md) | - | Pet | MarkPetSold | - |
 | [OrderApp](services/order_app/index.md) | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
 | [OrderApp](services/order_app/index.md) | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
+| [OrderApp](services/order_app/index.md) | - | Shipment | ShipmentDelivered | published-language |
 
 

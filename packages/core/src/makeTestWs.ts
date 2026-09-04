@@ -173,6 +173,9 @@ export function makeRichTestWs() {
 	money.addAttribute("Currency", { type: "ISO 4217" });
 	order.addAttribute("Order Id", { type: "OrderId", identity: true });
 	order.addAttribute("Total", { type: "Money", valueobject: money });
+	// A line is told apart from its neighbours by its position on the order, so
+	// it is an entity and not a value object; entity-identity wants that said.
+	orderLine.addAttribute("Line No", { type: "int", identity: true });
 	orderLine.addAttribute("Price", { type: "Money", valueobject: money });
 	order.includes(orderLine, "has lines", "1..*");
 	// Both the total and the line price are Money, so both carry the attribute
@@ -289,6 +292,23 @@ export function makeRichTestWs() {
 	const salesReportsPartnership = reportingBc.partnerOf(orderingBc, {
 		description: "Reporting and ordering plan releases together",
 	});
+	// A partnership is a two-way dependency, so the fixture backs it with
+	// traffic each way: reporting reads ordering's events, ordering reads
+	// reporting's figures back. Partners are exempt from role-coherence, but
+	// reporting is a big ball of mud, so what comes out of it is translated.
+	const reportingApp = reportingBc.addService("Reporting App", {
+		description: "Reporting application service",
+		type: "application",
+	});
+	const reportingConsumesOrderPlaced = reportingApp.consumes(orderPlaced, {});
+	const salesFigures = reportingApp.provides("Sales Figures", {
+		description: "Yesterday's sales, as reporting sees them",
+		type: "event",
+		pattern: "open-host-service",
+	});
+	const orderAppConsumesSalesFigures = orderApp.consumes(salesFigures, {
+		pattern: "anti-corruption-layer",
+	});
 
 	return {
 		ws,
@@ -322,5 +342,9 @@ export function makeRichTestWs() {
 		invoiceAppConsumesPlaceOrder,
 		reportingBc,
 		salesReportsPartnership,
+		reportingApp,
+		reportingConsumesOrderPlaced,
+		salesFigures,
+		orderAppConsumesSalesFigures,
 	};
 }

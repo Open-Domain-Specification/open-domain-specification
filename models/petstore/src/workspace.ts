@@ -768,6 +768,12 @@ shipmentRoot.addAttribute("trackingNumber", {
 	type: "TrackingNumber",
 	valueobject: trackingNumberVO,
 });
+// Attempts are counted and ordered, so the count is what tells one from the
+// next: that is exactly what makes DeliveryAttempt an entity and not a value.
+deliveryAttempt.addAttribute("attemptNumber", {
+	type: "int32",
+	identity: true,
+});
 deliveryAttempt.addAttribute("attemptedAt", { type: "date-time" });
 deliveryAttempt.addAttribute("succeeded", { type: "boolean" });
 
@@ -854,6 +860,13 @@ const reportDelivery = shipmentApp.provides("ReportDelivery", {
 	schema: shipmentDeliveredSchema,
 });
 shipmentApp.consumes(confirmDelivery, {});
+// The other half of the partnership, declared here because it needs
+// ShipmentDelivered above. ConfirmDelivery is the command that moves the order
+// to delivered; this is Sales reading the delivery facts — which shipment, and
+// when — that its order page shows. Without it nothing of Fulfilment's crossed
+// into Sales at all, and the partnership was a one-way dependency wearing a
+// partner's badge.
+orderApp.consumes(shipmentDelivered, {});
 
 fulfilmentBC
 	.addPolicy("Plan dispatch on approval", {
@@ -1129,8 +1142,8 @@ catalogBC.sharesKernelWith(inventoryBC, {
 });
 
 // partnership: the Orders Team owns both, releases them together, and each
-// reaches the other through its boundary (ConfirmDelivery) or its published
-// events (OrderApproved).
+// really depends on the other — Fulfilment on OrderApproved and on Sales'
+// ConfirmDelivery boundary, Sales on Fulfilment's ShipmentDelivered.
 salesBC.partnerOf(fulfilmentBC, {
 	description:
 		"Order lifecycle and shipment lifecycle are designed and released together",
@@ -1141,7 +1154,7 @@ salesBC.partnerOf(fulfilmentBC, {
 			text: "Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged.",
 		},
 		{
-			text: "ConfirmDelivery and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier.",
+			text: "OrderApproved and ShipmentDelivered cross the boundary one way each, and Fulfilment calls ConfirmDelivery on top of that, all with no translation layer; each side depending on the other is what makes this a partnership rather than customer-supplier.",
 		},
 	],
 });

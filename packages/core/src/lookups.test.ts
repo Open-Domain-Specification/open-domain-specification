@@ -205,8 +205,10 @@ describe("Workspace ref lookups", () => {
 		schema.boundedcontexts.renamed_key = schema.boundedcontexts.reporting_bc;
 		delete schema.boundedcontexts.reporting_bc;
 		schema.boundedcontexts.renamed_key.subdomains = [];
-		// nothing else may point at the old key
+		// nothing else may point at the old key: not the relationships, and not
+		// the ordering consumption that reads reporting's sales figures
 		schema.relationships = [];
+		schema.boundedcontexts.ordering_bc.services.order_app.consumes = [];
 		const rebuilt = Workspace.fromSchema(schema);
 		expect(
 			rebuilt.getBoundedContextByRef("#/boundedcontexts/renamed_key")?.name,

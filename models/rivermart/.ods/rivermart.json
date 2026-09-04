@@ -1050,6 +1050,11 @@
               "description": "One identity or bank check run on the seller; kept for audit",
               "root": false,
               "attributes": {
+                "check_id": {
+                  "name": "checkId",
+                  "type": "string",
+                  "identity": true
+                },
                 "check_type": {
                   "name": "checkType",
                   "type": "'identity' | 'bank-account' | 'address'"
@@ -1259,6 +1264,11 @@
               "description": "An offer and a quantity",
               "root": false,
               "attributes": {
+                "line_id": {
+                  "name": "lineId",
+                  "type": "string",
+                  "identity": true
+                },
                 "offer_id": {
                   "name": "offerId",
                   "type": "string"
@@ -1858,6 +1868,11 @@
               "description": "One order line and the quantity returned from it",
               "root": false,
               "attributes": {
+                "return_line_id": {
+                  "name": "returnLineId",
+                  "type": "string",
+                  "identity": true
+                },
                 "quantity": {
                   "name": "quantity",
                   "type": "int"
@@ -2981,6 +2996,11 @@
               "description": "Stock promised to an order but not yet picked",
               "root": false,
               "attributes": {
+                "reservation_id": {
+                  "name": "reservationId",
+                  "type": "string",
+                  "identity": true
+                },
                 "order_id": {
                   "name": "orderId",
                   "type": "string"
@@ -3132,6 +3152,11 @@
               "description": "One SKU and quantity for a picker to collect",
               "root": false,
               "attributes": {
+                "task_id": {
+                  "name": "taskId",
+                  "type": "string",
+                  "identity": true
+                },
                 "sku": {
                   "name": "sku",
                   "type": "string"
@@ -3499,7 +3524,8 @@
               "attributes": {
                 "sequence": {
                   "name": "sequence",
-                  "type": "int"
+                  "type": "int",
+                  "identity": true
                 },
                 "proof_of_delivery": {
                   "name": "proofOfDelivery",
@@ -3540,6 +3566,11 @@
                   "valueobject": {
                     "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/valueobjects/tracking_label"
                   }
+                },
+                "parcel_id": {
+                  "name": "parcelId",
+                  "type": "string",
+                  "identity": true
                 },
                 "order_id": {
                   "name": "orderId",
@@ -4098,6 +4129,11 @@
               "description": "A call, chat or email on the case",
               "root": false,
               "attributes": {
+                "interaction_id": {
+                  "name": "interactionId",
+                  "type": "string",
+                  "identity": true
+                },
                 "channel": {
                   "name": "channel",
                   "type": "'call' | 'chat' | 'email'"

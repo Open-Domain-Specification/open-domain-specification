@@ -36,6 +36,14 @@
 
 **Usual fix:** Mark the attribute the business uses to tell one apart — the order number, the customer id — with identity: true, or make the element a value object if there really is nothing to identify.
 
+## `entity-identity` (warning)
+
+**Requires:** Every non-root entity in an aggregate declares at least one identity attribute.
+
+**Why it matters:** An entity is precisely the thing you can still tell apart from another one holding exactly the same values. Without an identity attribute nothing does the telling apart, so the element is a value object that has been filed under the wrong heading, and readers will expect a lifecycle and a history it does not have.
+
+**Usual fix:** Give the entity the attribute the business identifies it by — the line number, the reference — with identity: true, or make it a value object, which is usually what an entity with nothing to identify really was.
+
 ## `value-object-shape` (error)
 
 **Requires:** A value object declares no identity attribute and includes nothing.
@@ -54,11 +62,11 @@
 
 ## `attribute-relation-coherence` (warning)
 
-**Requires:** An attribute typed by a value object has a matching uses relation, of a matching cardinality, and says the value object's name as its type.
+**Requires:** An attribute typed by a value object has a matching uses relation, of a matching cardinality.
 
 **Why it matters:** The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened, and a list-typed attribute against a single-valued relation says two different things about how many there are.
 
-**Usual fix:** Add the missing uses relation or the missing attribute, set the relation's cardinality to * or 1..* for a list, and write the attribute's type as the value object's name (or its name followed by []).
+**Usual fix:** Add the missing uses relation or the missing attribute, and set the relation's cardinality to * or 1..* for a list-typed attribute. The type itself is free text and is never checked against the value object's name; only a trailing [] is read, as "many".
 
 ## `invariant-in-aggregate` (error)
 
@@ -74,7 +82,23 @@
 
 **Why it matters:** The context map and the consumable map are the same integration told twice, strategically and concretely. A role on the map that nothing carries is a claim about a team's way of working with nothing behind it, and a consumption whose role the map never mentions is an integration decision made without the map noticing.
 
-**Usual fix:** Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that.
+**Usual fix:** Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a schema, since a published language is a data shape rather than a second flag.
+
+## `relationship-cycle` (warning)
+
+**Requires:** The directed relationships whose traffic is calls form no cycle; steps carried only by events do not count.
+
+**Why it matters:** An operation is answered before its caller can go on, so a ring of calls is a ring of teams each blocked on the next and a change anywhere goes round forever. Events are different: nobody waits for one, so a ring of contexts joined by events is fine, and rings of reactions are reaction-cycle's business instead.
+
+**Usual fix:** Turn one call on the ring into an event the other side reacts to, which is what DDD recommends anyway; failing that, invert the dependency or drop it.
+
+## `partnership-backed` (warning)
+
+**Requires:** Two contexts declaring a partnership exchange consumables — or events a policy reacts to — in both directions.
+
+**Why it matters:** A partnership says two teams succeed or fail together and so plan their releases as one, which is only worth the coordination when each really depends on the other. A partnership with no traffic at all is a wish, and one with traffic only one way is a directed relationship wearing a partner's badge — which quietly excuses both ends from declaring the upstream and downstream roles they actually have.
+
+**Usual fix:** Add the consumable the other direction is missing, or replace the partnership with the upstream-downstream or customer-supplier relationship the traffic really describes.
 
 ## `mud-needs-acl` (warning)
 
@@ -172,6 +196,14 @@
 
 **Usual fix:** Add the missing event to on or the missing operation to then.
 
+## `reaction-cycle` (warning)
+
+**Requires:** The reactions form no cycle: no operation raises an event whose policy issues an operation that leads back to the first.
+
+**Why it matters:** A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down.
+
+**Usual fix:** Break the ring — usually one of the policies is reacting to too broad an event, or issues an operation it should not — or, if the loop is real and ends on a condition, model that condition so the chain stops somewhere a reader can see.
+
 ## `context-serves-subdomain` (warning)
 
 **Requires:** Every bounded context serves at least one subdomain.
@@ -187,3 +219,11 @@
 **Why it matters:** A relationship is a claim about how two teams meet; without a note saying where that shows up in the real system, nobody can tell whether the map is still true.
 
 **Usual fix:** Add a comment to the relationship saying what backs it in the code, or turn options.rules.commentsRequired off while the evidence layer is still being written.
+
+## `disposition-needs-comment` (warning)
+
+**Requires:** A strategic intent whose disposition is tolerated or refactor carries at least one comment.
+
+**Why it matters:** by-design says nothing is owed. Any other disposition is a claim that something is wrong, and a claim on its own is not actionable: the next reader cannot tell what makes it wrong, how much it costs, or what would let it be cleared. The comment is where that lives, and without it the disposition is a flag nobody can act on or retire.
+
+**Usual fix:** Add a comment to the relationship, consumable or consumption saying what the trouble is and what clearing it would take, or set the disposition back to by-design if the intent is how it should be after all.

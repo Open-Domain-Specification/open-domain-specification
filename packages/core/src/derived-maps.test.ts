@@ -11,19 +11,28 @@ describe("ODSConsumptionGraph", () => {
 
 	it("collects every consumption from the workspace root", () => {
 		const graph = ODSConsumptionGraph.fromWorkspace(f.ws);
-		expect(graph.consumptions).toHaveLength(2);
+		expect(graph.consumptions).toHaveLength(4);
 		expect(graph.consumptions).toContain(f.invoiceConsumesOrderPlaced);
 		expect(graph.consumptions).toContain(f.invoiceAppConsumesPlaceOrder);
+		expect(graph.consumptions).toContain(f.reportingConsumesOrderPlaced);
+		expect(graph.consumptions).toContain(f.orderAppConsumesSalesFigures);
 	});
 
 	it("follows consumptions outward from a consumer scope", () => {
+		// Invoicing's own two, and then onward: the walk follows the providers it
+		// reaches, so ordering's two consumptions come with them.
 		const graph = ODSConsumptionGraph.fromBoundedContext(f.invoicingBc);
-		expect(graph.consumptions).toHaveLength(2);
+		expect(graph.consumptions).toHaveLength(4);
 	});
 
 	it("only includes consumptions whose provider is in scope when starting from the provider", () => {
+		// Both consumptions of the Order aggregate's own Order Placed event, and
+		// nothing Ordering's application service consumes from elsewhere.
 		const graph = ODSConsumptionGraph.fromAggregate(f.orderAgg);
-		expect(graph.consumptions).toEqual([f.invoiceConsumesOrderPlaced]);
+		expect(graph.consumptions).toEqual([
+			f.invoiceConsumesOrderPlaced,
+			f.reportingConsumesOrderPlaced,
+		]);
 	});
 });
 
@@ -123,8 +132,8 @@ describe("ODSConsumableMap", () => {
 		const map = ODSConsumableMap.fromWorkspace(f.ws);
 		expect(map.slots.get(f.orderPlaced.ref)?.node.id).toBe(f.orderAgg.ref);
 		expect(map.slots.get(f.placeOrder.ref)?.node.id).toBe(f.orderApp.ref);
-		expect(map.nodes.size).toBe(4);
-		expect(map.edges.size).toBe(2);
+		expect(map.nodes.size).toBe(5);
+		expect(map.edges.size).toBe(4);
 	});
 
 	it("carries both patterns on the edge", () => {

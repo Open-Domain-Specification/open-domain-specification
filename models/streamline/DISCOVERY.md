@@ -272,7 +272,7 @@ to connect them. The connected timeline, condensed:
 
 ## 7. Validation and what we left in
 
-Three diagnostics, each a finding the client asked to keep visible:
+Four diagnostics, each a finding the client asked to keep visible:
 
 - `policy-complete` on Devices' "Recertify on SDK release": reacts to `DeviceCertified` and
   issues nothing. It is the half-written automation the Partner Devices lead mentioned.
@@ -281,6 +281,11 @@ Three diagnostics, each a finding the client asked to keep visible:
   player's contract to the catalogue's.
 - `internal-consumable` on Recommendations' consumption of `BookmarkUpdated`: the resume
   point update is internal to the player and the dependency was never agreed.
+- `partnership-backed` on Playback and Devices: they ship on one release train and certify
+  in the same lab run, but the only traffic is Playback consuming `DeviceCertified`;
+  Devices consumes nothing of Playback's. On the traffic alone this is customer-supplier
+  with Devices supplying, and the joint certification is an organisational tie rather than
+  a modelled dependency. The Partner Devices lead wants the claim left as it stands.
 
 ## 8. What the model leaves out
 

@@ -73,5 +73,6 @@ Users and sessions per Petstore API; kept as its own domain because it would be 
 | [InventoryProjection](../boundedcontexts/inventory_bc/aggregates/inventory_projection/index.md) | conformist | Order | OrderDeleted | published-language |
 | [OrderApp](../boundedcontexts/sales_bc/services/order_app/index.md) | - | Order | DeliverOrder | - |
 | [ShipmentApp](../boundedcontexts/fulfilment_bc/services/shipment_app/index.md) | - | OrderApp | ConfirmDelivery | open-host-service |
+| [OrderApp](../boundedcontexts/sales_bc/services/order_app/index.md) | - | Shipment | ShipmentDelivered | published-language |
 	
 

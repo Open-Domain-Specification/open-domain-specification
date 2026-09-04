@@ -646,6 +646,7 @@ seller.addAttribute("status", {
 	type: "SellerStatus",
 	valueobject: sellerStatusVO,
 });
+verificationCheck.addAttribute("checkId", { type: "string", identity: true });
 verificationCheck.addAttribute("checkType", {
 	type: "'identity' | 'bank-account' | 'address'",
 });
@@ -758,6 +759,7 @@ const cartLine = cartAgg.addEntity("CartLine", {
 const cartMoney = money(cartAgg);
 cart.addAttribute("cartId", { type: "string", identity: true });
 cart.addAttribute("customerId", { type: "string" });
+cartLine.addAttribute("lineId", { type: "string", identity: true });
 cartLine.addAttribute("offerId", { type: "string" });
 cartLine.addAttribute("quantity", { type: "int" });
 cartLine.addAttribute("unitPrice", { type: "Money", valueobject: cartMoney });
@@ -928,6 +930,7 @@ shipment.addAttribute("tracking", {
 returnEntity.addAttribute("returnId", { type: "string", identity: true });
 returnEntity.addAttribute("reason", { type: "string" });
 returnEntity.addAttribute("refund", { type: "Money", valueobject: orderMoney });
+returnLine.addAttribute("returnLineId", { type: "string", identity: true });
 returnLine.addAttribute("quantity", { type: "int" });
 
 order.includes(orderLine, "has-lines", "1..*");
@@ -1441,6 +1444,7 @@ binVO.addAttribute("code", { type: "string" });
 position.addAttribute("sku", { type: "string", identity: true });
 position.addAttribute("siteId", { type: "string", identity: true });
 const onHand = position.addAttribute("onHand", { type: "int" });
+reservation.addAttribute("reservationId", { type: "string", identity: true });
 reservation.addAttribute("orderId", { type: "string" });
 reservation.addAttribute("quantity", { type: "int" });
 position.includes(reservation, "reserved-by", "*");
@@ -1489,6 +1493,7 @@ fulfilmentOrder.addAttribute("fulfilmentOrderId", {
 	identity: true,
 });
 fulfilmentOrder.addAttribute("orderId", { type: "string" });
+pickTask.addAttribute("taskId", { type: "string", identity: true });
 pickTask.addAttribute("sku", { type: "string" });
 pickTask.addAttribute("quantity", { type: "int" });
 const pickStatus = pickTask.addAttribute("status", {
@@ -1746,11 +1751,13 @@ proofVO.addAttribute("kind", { type: "'photo' | 'signature' | 'safe-place'" });
 proofVO.addAttribute("capturedAt", { type: "date-time" });
 route.addAttribute("routeId", { type: "string", identity: true });
 route.addAttribute("date", { type: "date" });
-stop.addAttribute("sequence", { type: "int" });
+// A stop is told apart from the next by where it falls on the route.
+stop.addAttribute("sequence", { type: "int", identity: true });
 parcel.addAttribute("label", {
 	type: "TrackingLabel",
 	valueobject: lastMileLabelVO,
 });
+parcel.addAttribute("parcelId", { type: "string", identity: true });
 parcel.addAttribute("orderId", { type: "string" });
 route.includes(stop, "visits", "1..*");
 stop.includes(parcel, "hands-over", "1..*");
@@ -2007,6 +2014,7 @@ resolutionVO.addAttribute("kind", {
 caseRoot.addAttribute("caseId", { type: "string", identity: true });
 caseRoot.addAttribute("customerId", { type: "string" });
 caseRoot.addAttribute("orderId", { type: "string" });
+interaction.addAttribute("interactionId", { type: "string", identity: true });
 interaction.addAttribute("channel", { type: "'call' | 'chat' | 'email'" });
 interaction.addAttribute("at", { type: "date-time" });
 caseRoot.includes(interaction, "logged", "*");
@@ -2324,8 +2332,13 @@ warehouseBC.sharesKernelWith(lastMileBC, {
 	],
 });
 
-// Partnership: organic ranking and sponsored slots are tuned together and
-// released together; neither team changes the results page alone.
+// DELIBERATE (partnership-backed): organic ranking and sponsored slots are
+// tuned and released together, but every dependency runs one way — Search
+// calls GetSponsoredResults and reports clicks through RecordAdClick, and
+// Advertising consumes nothing of Search's. On the traffic alone this is
+// customer-supplier with Advertising supplying; whether the joint release
+// train earns the word partnership is the Discovery Team's call, so the claim
+// stays and the warning stays with it. See DISCOVERY.md section 7.
 searchBC.partnerOf(adsBC, {
 	description: "The results page is one product owned by two teams",
 	comments: [
