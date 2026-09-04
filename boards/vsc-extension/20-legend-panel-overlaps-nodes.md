@@ -1,8 +1,9 @@
 ---
-column: backlog
+column: todo
 labels: [bug, frontend]
 priority: med
-updatedAt: 2026-09-03T23:40:00.000Z
+agent: dev-opus
+updatedAt: 2026-09-05T00:30:00.000Z
 ---
 # Legend panel overlaps the Catalog node on the petstore context map
 
@@ -13,3 +14,7 @@ In the petstore commerce context map the legend panel (top-left) sits on top of 
 - [ ] Reproduce with a Playwright screenshot of the petstore commerce context map
 - [ ] Fix so no node is covered at the default fit on the four reference models
 - [ ] E2e assertion that the legend's box does not intersect any node's box after fit
+
+## Comments
+
+- **lead** (2026-09-05T00:30:00.000Z): Assigned to dev-opus. Fixed by decision: fit the view so no node sits under the legend or the options panel at the default zoom, measured after mount (the panels' boxes are known; pad the fitView bounds on the side each panel occupies, or shift the viewport by the panel's width plus a gutter after fitView). Do not collapse the legend by default. Apply to context, consumable and relation maps. Test: an e2e case over the four reference models' workspace context maps asserting no node bounding box intersects the legend or options panel; the pages unit suite at 100%. Work in your worktree with absolute paths; build core, graphviz and pages first; `npm ci` if node_modules is missing; if the card is missing, `git reset --hard develop` there first.
