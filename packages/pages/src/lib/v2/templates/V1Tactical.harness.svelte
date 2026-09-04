@@ -1,6 +1,5 @@
 <script lang="ts">
 import {
-	Aggregate,
 	Consumable,
 	DataSchema,
 	Entity,
@@ -10,7 +9,6 @@ import {
 	Service,
 	ValueObject,
 } from "@open-domain-specification/core";
-import AggregatePage from "../../templates/AggregatePage.svelte";
 import ConsumablePage from "../../templates/ConsumablePage.svelte";
 import EntityPage from "../../templates/EntityPage.svelte";
 import InvariantPage from "../../templates/InvariantPage.svelte";
@@ -24,13 +22,13 @@ import ValueObjectPage from "../../templates/ValueObjectPage.svelte";
  * The tactical page as v1 ships it, for the left column of a comparison. It
  * takes the same resolved element the v2 column draws, so the two columns can
  * never be showing different things.
+ *
+ * The aggregate is not here: it ships v2 now and its v1 template is gone.
  */
 const { target }: { target: unknown } = $props();
 </script>
 
-{#if target instanceof Aggregate}
-	<AggregatePage aggregate={target} />
-{:else if target instanceof Service}
+{#if target instanceof Service}
 	<ServicePage service={target} />
 {:else if target instanceof Entity}
 	<EntityPage entity={target} />

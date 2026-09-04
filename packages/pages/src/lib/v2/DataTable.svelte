@@ -6,6 +6,15 @@ export type Column = {
 	sortable?: boolean;
 	numeric?: boolean;
 	width?: string;
+	/**
+	 * The column that takes the width the others do not need, and the only one
+	 * whose cells wrap. Every other column sits at its content width, so a
+	 * prose column that is not the growing one collapses to its longest word.
+	 * The last column grows when no column names itself, which is right for a
+	 * table that ends in its description; a table whose prose sits mid-row
+	 * says which column it is.
+	 */
+	grow?: boolean;
 };
 /** Rows under one label row, for a table that groups what it lists. */
 export type Group<R> = { id: string; label: string; rows: R[] };
@@ -82,8 +91,9 @@ const ordered = (list: T[]): T[] => {
 	});
 };
 
-const sections = $derived(
-	groups ?? [{ id: "all", label: "", rows }],
+const sections = $derived(groups ?? [{ id: "all", label: "", rows }]);
+const growKey = $derived(
+	(columns.find((c) => c.grow) ?? columns[columns.length - 1])?.key,
 );
 const total = $derived(sections.reduce((n, g) => n + g.rows.length, 0));
 const ariaSort = (key: string) =>
@@ -105,6 +115,7 @@ const ariaSort = (key: string) =>
 					<th
 						scope="col"
 						class:numeric={col.numeric}
+						class:grow={col.key === growKey}
 						style:width={col.width}
 						aria-sort={ariaSort(col.key)}
 					>
@@ -130,7 +141,7 @@ const ariaSort = (key: string) =>
 				{#each ordered(group.rows) as row, i (rowId?.(row) ?? i)}
 					<tr id={rowId?.(row)}>
 						{#each columns as col (col.key)}
-							<td class:numeric={col.numeric}>{@render cell(row, col)}</td>
+							<td class:numeric={col.numeric} class:grow={col.key === growKey}>{@render cell(row, col)}</td>
 						{/each}
 					</tr>
 					{#if detail && hasDetail(row)}
@@ -169,8 +180,8 @@ const ariaSort = (key: string) =>
 		letter-spacing: normal;
 		white-space: nowrap;
 	}
-	td:last-child,
-	th:last-child {
+	td.grow,
+	th.grow {
 		width: 100%;
 		white-space: normal;
 	}
@@ -217,10 +228,14 @@ const ariaSort = (key: string) =>
 		outline: 1px dashed var(--vscode-contrastActiveBorder);
 		outline-offset: -1px;
 	}
+	/* A label row is one cell across the whole table, so it wraps rather than
+	   pushing the table wider; it took this from `th:last-child` before the
+	   growing column was named. */
 	tr.group th {
 		padding-top: 8px;
 		color: var(--vscode-foreground);
 		font-weight: 600;
+		white-space: normal;
 	}
 	tbody + tbody tr.group th {
 		padding-top: 12px;

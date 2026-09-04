@@ -54,27 +54,42 @@ marks the current diagram shows. Every choice is remembered per browser.
 ## Reading a relationship
 
 A bounded context page lists its **Strategic position**: who it depends on, who depends on it,
-and who it merely works alongside. The Description column prints what the author wrote on the
-relationship. Where nobody wrote anything, it prints a generated sentence instead, muted and
-marked "generated" — for example *"Sales BC depends on Catalog BC as a customer, consuming its
-Open Host Service, and it protects its model with an Anti-Corruption Layer."* The sentence is
-`relationshipNarrative` in core, read from the context whose page you are on, so the same
-relationship reads one way from each end. It is also the hover text of the counterpart pill on
-every row, described or not, and the doc generator prints it in italics in the same column.
+and who it merely works alongside, grouped under those three headings. The Description column
+prints what the author wrote on the relationship. Where nobody wrote anything, it prints a
+generated sentence instead — for example *"Sales BC depends on Catalog BC as a customer,
+consuming its Open Host Service, and it protects its model with an Anti-Corruption Layer."*
+The sentence is `relationshipNarrative` in core, read from the context whose page you are on,
+so the same relationship reads one way from each end. It is also the hover text of the
+counterpart on every row, described or not, and the doc generator prints it in italics in the
+same column.
 
-Every pattern keyword on the page — the type chip such as `customer-supplier`, and the role
-chips `OHS`, `PL`, `CF` and `ACL` — is a hover card rather than a tooltip. Resting on one, or
-reaching it with the keyboard, opens a card that first says what the keyword means in core's
-words (its name, abbreviation, one-line summary and architectural nature) and then, under a
-rule, what this particular relationship has recorded against it: its disposition and its
-comments with their links. A click pins the card open; Escape or a click elsewhere closes it,
-and only one is ever open. The same card sits on the role cards of a relationship's own page.
+A row whose relationship has anything recorded against it — a disposition other than the
+default, or a comment — carries a chevron. Expanding it opens the same block the
+relationship's own page renders, in place, without navigating away: the roles, the comments
+with their links, and the consumables that cross the boundary. The type and the role codes
+beside it (`OHS`, `PL`, `CF`, `ACL`) are keywords, set in the editor font because they are
+codes from a table, and each carries the pattern's one-line meaning as its hover text.
+
+On a relationship's own page every pattern keyword is a hover card rather than a tooltip.
+Resting on one, or reaching it with the keyboard, opens a card that first says what the
+keyword means in core's words (its name, abbreviation, one-line summary and architectural
+nature) and then, under a rule, what this particular relationship has recorded against it: its
+disposition and its comments with their links. A click pins the card open; Escape or a click
+elsewhere closes it, and only one is ever open.
 
 ## Component library
 
 The library follows atomic design under `src/lib`: atoms (icon, chip, ref link, markdown),
-molecules (cards, tables, fact rows), organisms (section, page header, diagram figure, sidebar, table of contents) and one template per element page. Run Storybook to
-browse it against the petstore example:
+molecules (cards, tables, fact rows), organisms (section, page header, diagram figure, sidebar, table of contents) and one template per element page.
+
+A second set lives under `src/lib/v2`, built to the design language in
+`docs/design/design-language-v2.md`: rows, tables and keywords in the workbench's own idiom
+instead of cards, chips and pills. The workspace, bounded context and aggregate pages ship
+from it, inside `v2/PageLayout`, and so does the static site's tree; the remaining pages are
+still on the original set and move across next. Storybook carries both, and a `V2/Compare`
+story puts a page's two versions side by side for as long as it has both.
+
+Run Storybook to browse it against the petstore example:
 
 ```bash
 cd packages/pages
@@ -82,7 +97,9 @@ npm run storybook
 ```
 
 `page.css` styles everything and reads the VS Code theme variables; `site.css` defines those
-variables for light and dark outside the editor.
+variables for light and dark outside the editor and styles the column the site's tree sits in.
+A v2 component carries its own styles, so a page built from them draws correctly without the
+page stylesheet.
 
 ## Tests
 

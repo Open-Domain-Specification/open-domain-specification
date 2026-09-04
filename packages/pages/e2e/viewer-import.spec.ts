@@ -19,7 +19,7 @@ test("imports the workspace named by the url query parameter", async ({
 	await page.goto(viewerAt());
 
 	await expect(page.locator("main h1")).toContainText(WORKSPACE_NAME);
-	await expect(page.locator("nav.site-nav")).toBeVisible();
+	await expect(page.locator("nav.tree")).toBeVisible();
 });
 
 test("imports the workspace typed into the url form", async ({ page }) => {
@@ -54,7 +54,12 @@ test("imports a workspace picked from disk", async ({ page }) => {
 	await page.locator("input[type=file]").setInputFiles(PETSTORE_PATH);
 
 	await expect(page.locator("main h1")).toContainText(WORKSPACE_NAME);
-	await expect(page.locator("main h1")).toContainText("petstore.json");
+	// v2 keeps the version and the file out of the title and states them as
+	// two definitions under it.
+	await expect(page.locator("main .page-header dd")).toContainText([
+		"0.2.0",
+		"petstore.json",
+	]);
 });
 
 test("reports a url that cannot be fetched", async ({ page }) => {

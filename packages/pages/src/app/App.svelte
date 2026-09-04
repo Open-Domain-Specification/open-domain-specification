@@ -3,9 +3,9 @@ import { Workspace } from "@open-domain-specification/core";
 import { onMount, untrack } from "svelte";
 import ModelProvider from "../lib/ModelProvider.svelte";
 import type { Model } from "../lib/model";
-import Sidebar from "../lib/organisms/Sidebar.svelte";
 import Page from "../lib/Page.svelte";
 import { createRouter } from "../lib/router.svelte";
+import Sidebar from "../lib/v2/organisms/Sidebar.svelte";
 import {
 	type Bootstrap,
 	embedded,

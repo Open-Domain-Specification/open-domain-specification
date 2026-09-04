@@ -3,7 +3,7 @@ import ModelProvider from "../../ModelProvider.svelte";
 import type { Model } from "../../model";
 import { resolvePage } from "../../resolve";
 import PageLayout from "../PageLayout.svelte";
-import Tactical, { tacticalSections } from "./V2Tactical.harness.svelte";
+import Tactical, { tacticalSections } from "./Tactical.harness.svelte";
 
 /**
  * Renders the v2 tactical page that owns `ref`, inside the v2 page layout.

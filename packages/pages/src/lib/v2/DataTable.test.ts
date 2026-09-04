@@ -145,15 +145,54 @@ describe("DataTable", () => {
 		// Five of the seven consumables are consumed by something.
 		expect(details).toHaveLength(5);
 		expect(details[0].querySelector("td")).toHaveAttribute("colspan", "6");
-		expect(details[0]).toHaveTextContent(
-			"Consumed by InventoryProjection.",
-		);
+		expect(details[0]).toHaveTextContent("Consumed by InventoryProjection.");
 		// The row above keeps its cells; the detail adds no column.
 		expect(container.querySelectorAll("tbody tr:not(.detail)")).toHaveLength(7);
 
 		// Without the snippet no detail row is drawn at all.
 		const plain = render(Demo);
 		expect(plain.container.querySelector("tr.detail")).toBeNull();
+	});
+
+	it("gives the slack to the column that asks for it, and to the last when none does", () => {
+		const cell = createRawSnippet((row: () => unknown) => ({
+			render: () => `<span>${(row() as { name: string }).name}</span>`,
+		}));
+		const rows = [{ name: "Pet" }];
+		const columns: Column[] = [
+			{ key: "name", label: "Name" },
+			{ key: "description", label: "Description" },
+			{ key: "disposition", label: "Disposition" },
+		];
+
+		// No column asks, so the last one takes it: right for a table that
+		// ends in its description.
+		const last = render(DataTable, { columns, rows, cell });
+		expect(
+			[...last.container.querySelectorAll("thead th")].map((th) =>
+				th.classList.contains("grow"),
+			),
+		).toEqual([false, false, true]);
+
+		// A table whose prose sits mid-row says so, or that prose column
+		// collapses to its longest word while the last column takes the width.
+		const named = render(DataTable, {
+			columns: columns.map((c) =>
+				c.key === "description" ? { ...c, grow: true } : c,
+			),
+			rows,
+			cell,
+		});
+		expect(
+			[...named.container.querySelectorAll("thead th")].map((th) =>
+				th.classList.contains("grow"),
+			),
+		).toEqual([false, true, false]);
+		expect(
+			[...named.container.querySelectorAll("tbody td")].map((td) =>
+				td.classList.contains("grow"),
+			),
+		).toEqual([false, true, false]);
 	});
 
 	it("says what would fill it when there is nothing to list", () => {
