@@ -119,9 +119,9 @@
             },
             "reserve_pet": {
               "name": "ReservePet",
-              "description": "available → pending: the pet is held for an approved order; issued by Sales on approval",
-              "pattern": "open-host-service",
+              "description": "available → pending: the pet is held for an approved order; run by PetApp on the request Sales makes",
               "type": "operation",
+              "internal": true,
               "schema": {
                 "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
               },
@@ -129,24 +129,13 @@
                 {
                   "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
                 }
-              ],
-              "comments": [
-                {
-                  "text": "Reservation is a synchronous call into the Catalog aggregate; it should become an order-placed subscription so Sales stops blocking on Catalog.",
-                  "link": {
-                    "kind": "adr",
-                    "url": "https://github.com/example/petstore/blob/main/docs/adr/017-reserve-asynchronously.md",
-                    "label": "ADR-017 Reserve asynchronously"
-                  }
-                }
-              ],
-              "disposition": "refactor"
+              ]
             },
             "mark_pet_sold": {
               "name": "MarkPetSold",
-              "description": "pending → sold: the pet has gone to its owner; issued by Sales on delivery",
-              "pattern": "open-host-service",
+              "description": "pending → sold: the pet has gone to its owner; run by PetApp on the request Sales makes",
               "type": "operation",
+              "internal": true,
               "schema": {
                 "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
               },
@@ -405,9 +394,59 @@
                   }
                 }
               ]
+            },
+            "reserve_pet_for_order": {
+              "name": "ReservePetForOrder",
+              "description": "POST /pet/{petId}/reserve; holds the pet for an approved order by running the aggregate's ReservePet",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
+                }
+              ],
+              "comments": [
+                {
+                  "text": "Reservation is a synchronous call into Catalog; it should become an order-placed subscription so Sales stops blocking on Catalog.",
+                  "link": {
+                    "kind": "adr",
+                    "url": "https://github.com/example/petstore/blob/main/docs/adr/017-reserve-asynchronously.md",
+                    "label": "ADR-017 Reserve asynchronously"
+                  }
+                }
+              ],
+              "disposition": "refactor"
+            },
+            "mark_pet_sold_for_order": {
+              "name": "MarkPetSoldForOrder",
+              "description": "POST /pet/{petId}/sold; records the sale by running the aggregate's MarkPetSold",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
+                }
+              ]
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/reserve_pet"
+              }
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/mark_pet_sold"
+              }
+            }
+          ]
         }
       },
       "policies": {},
@@ -604,9 +643,9 @@
             },
             "deliver_order": {
               "name": "DeliverOrder",
-              "description": "Mark an approved order as delivered; issued by Fulfilment when the shipment arrives",
-              "pattern": "open-host-service",
+              "description": "Mark an approved order as delivered; run by OrderApp when Fulfilment reports the shipment arrived",
               "type": "operation",
+              "internal": true,
               "schema": {
                 "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
               },
@@ -795,9 +834,41 @@
                   "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_deleted"
                 }
               ]
+            },
+            "confirm_delivery": {
+              "name": "ConfirmDelivery",
+              "description": "POST /store/order/{orderId}/delivered; Fulfilment reports the shipment arrived and the order moves to delivered",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
+              }
+            },
+            "reserve_pet": {
+              "name": "ReservePet",
+              "description": "Ask Catalog to hold the ordered pet, through the ACL; Sales' own step in the order lifecycle",
+              "type": "operation",
+              "internal": true,
+              "schema": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
+              }
+            },
+            "mark_pet_sold": {
+              "name": "MarkPetSold",
+              "description": "Tell Catalog the ordered pet has gone to its owner, through the ACL",
+              "type": "operation",
+              "internal": true,
+              "schema": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
+              }
             }
           },
           "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/deliver_order"
+              }
+            },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/catalog_bc/services/pet_app/provides/get_pet_summary"
@@ -816,13 +887,13 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/reserve_pet"
+                "$ref": "#/boundedcontexts/catalog_bc/services/pet_app/provides/reserve_pet_for_order"
               },
               "pattern": "anti-corruption-layer"
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/mark_pet_sold"
+                "$ref": "#/boundedcontexts/catalog_bc/services/pet_app/provides/mark_pet_sold_for_order"
               },
               "pattern": "anti-corruption-layer"
             }
@@ -857,7 +928,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/reserve_pet"
+              "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/reserve_pet"
             }
           ]
         },
@@ -871,7 +942,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/mark_pet_sold"
+              "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/mark_pet_sold"
             }
           ]
         }
@@ -1363,6 +1434,29 @@
             }
           },
           "consumes": []
+        },
+        "shipment_app": {
+          "name": "ShipmentApp",
+          "description": "Fulfilment's application service: the boundary through which Fulfilment reports delivery to Sales",
+          "type": "application",
+          "provides": {
+            "report_delivery": {
+              "name": "ReportDelivery",
+              "description": "Tell Sales the shipment arrived, by calling the order's ConfirmDelivery",
+              "type": "operation",
+              "internal": true,
+              "schema": {
+                "$ref": "#/boundedcontexts/fulfilment_bc/schemas/shipment_delivered"
+              }
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/confirm_delivery"
+              }
+            }
+          ]
         }
       },
       "policies": {
@@ -1382,7 +1476,7 @@
         },
         "deliver_order_on_delivery": {
           "name": "Deliver order on delivery",
-          "description": "When a shipment is delivered, mark the order delivered in Sales",
+          "description": "When a shipment is delivered, report it to Sales so the order moves to delivered",
           "on": [
             {
               "$ref": "#/boundedcontexts/fulfilment_bc/aggregates/shipment/provides/shipment_delivered"
@@ -1390,7 +1484,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/deliver_order"
+              "$ref": "#/boundedcontexts/fulfilment_bc/services/shipment_app/provides/report_delivery"
             }
           ]
         }
@@ -1690,7 +1784,7 @@
           "text": "Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged."
         },
         {
-          "text": "DeliverOrder and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier."
+          "text": "ConfirmDelivery and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier."
         }
       ]
     },

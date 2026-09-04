@@ -719,12 +719,6 @@
                 "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/provides/license_window_expired"
               },
               "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/submit_encode"
-              },
-              "pattern": "anti-corruption-layer"
             }
           ],
           "entities": {
@@ -991,9 +985,22 @@
               "returns": {
                 "$ref": "#/boundedcontexts/catalogue/schemas/title_detail"
               }
+            },
+            "request_encode": {
+              "name": "RequestEncode",
+              "description": "Queue the matched title for encoding, by calling Encoding's SubmitEncode behind the ACL",
+              "type": "operation",
+              "internal": true
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/encoding/services/encoding_api/provides/submit_encode"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
         }
       },
       "policies": {
@@ -1007,7 +1014,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/submit_encode"
+              "$ref": "#/boundedcontexts/catalogue/services/catalogue_api/provides/request_encode"
             }
           ]
         },
@@ -1187,20 +1194,6 @@
                 "$ref": "#/boundedcontexts/encoding/schemas/encoding_completed"
               }
             },
-            "submit_encode": {
-              "name": "SubmitEncode",
-              "description": "Queue a master for encoding",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/encoding/schemas/submit_encode"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/encode_queued"
-                }
-              ]
-            },
             "complete_job": {
               "name": "CompleteJob",
               "description": "Record the finished renditions",
@@ -1336,6 +1329,28 @@
         }
       },
       "services": {
+        "encoding_api": {
+          "name": "EncodingAPI",
+          "description": "Encoding's application service: the boundary Catalogue queues masters through",
+          "type": "application",
+          "provides": {
+            "submit_encode": {
+              "name": "SubmitEncode",
+              "description": "Queue a master for encoding",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/encoding/schemas/submit_encode"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/encode_queued"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        },
         "per_title_ladder_planner": {
           "name": "PerTitleLadderPlanner",
           "description": "Analyses the source and chooses rungs; a domain service because it compares against every previous title",
@@ -1461,31 +1476,6 @@
               "type": "event",
               "internal": true
             },
-            "start_playback": {
-              "name": "StartPlayback",
-              "description": "Check entitlement and device, build the manifest, start",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/playback/schemas/start_playback"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_started"
-                }
-              ]
-            },
-            "stop_playback": {
-              "name": "StopPlayback",
-              "description": "End the session and report what was watched",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_stopped"
-                }
-              ]
-            },
             "record_heartbeat": {
               "name": "RecordHeartbeat",
               "description": "The player reports position every few seconds",
@@ -1507,7 +1497,7 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/edge_delivery/aggregates/edge_appliance/provides/resolve_edge"
+                "$ref": "#/boundedcontexts/edge_delivery/services/edge_api/provides/resolve_edge"
               },
               "pattern": "conformist"
             },
@@ -1519,13 +1509,13 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/provides/get_entitlement"
+                "$ref": "#/boundedcontexts/billing_&_plans/services/billing_api/provides/get_entitlement"
               },
               "pattern": "anti-corruption-layer"
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/provides/resolve_ad_break"
+                "$ref": "#/boundedcontexts/ads_tier/services/ads_api/provides/resolve_ad_break"
               },
               "pattern": "anti-corruption-layer"
             }
@@ -1664,6 +1654,39 @@
         }
       },
       "services": {
+        "playback_api": {
+          "name": "PlaybackAPI",
+          "description": "Playback's application service: the boundary players start and stop sessions through",
+          "type": "application",
+          "provides": {
+            "start_playback": {
+              "name": "StartPlayback",
+              "description": "Check entitlement and device, build the manifest, start",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/playback/schemas/start_playback"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_started"
+                }
+              ]
+            },
+            "stop_playback": {
+              "name": "StopPlayback",
+              "description": "End the session and report what was watched",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_stopped"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        },
         "adaptive_bitrate_selector": {
           "name": "AdaptiveBitrateSelector",
           "description": "Picks the rung as the network changes; a domain service because it reasons over the whole ladder, not one session",
@@ -1791,15 +1814,6 @@
               "type": "event",
               "internal": true
             },
-            "resolve_edge": {
-              "name": "ResolveEdge",
-              "description": "Which appliance a client should fetch from",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/edge_delivery/schemas/resolve_edge"
-              }
-            },
             "preposition_asset": {
               "name": "PrepositionAsset",
               "description": "Push a rendition to appliances predicted to need it",
@@ -1918,7 +1932,25 @@
           }
         }
       },
-      "services": {},
+      "services": {
+        "edge_api": {
+          "name": "EdgeAPI",
+          "description": "Edge Delivery's application service: the boundary Playback resolves appliances through",
+          "type": "application",
+          "provides": {
+            "resolve_edge": {
+              "name": "ResolveEdge",
+              "description": "Which appliance a client should fetch from",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/edge_delivery/schemas/resolve_edge"
+              }
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {
         "preposition_on_encode": {
           "name": "Preposition on encode",
@@ -2000,17 +2032,6 @@
               "schema": {
                 "$ref": "#/boundedcontexts/devices/schemas/device_certified"
               }
-            },
-            "register_device": {
-              "name": "RegisterDevice",
-              "description": "Submit a model with its capabilities",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/devices/aggregates/device/provides/device_registered"
-                }
-              ]
             },
             "certify": {
               "name": "Certify",
@@ -2136,7 +2157,27 @@
           }
         }
       },
-      "services": {},
+      "services": {
+        "devices_api": {
+          "name": "DevicesAPI",
+          "description": "Devices' application service: the boundary manufacturers submit models through",
+          "type": "application",
+          "provides": {
+            "register_device": {
+              "name": "RegisterDevice",
+              "description": "Submit a model with its capabilities",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/devices/aggregates/device/provides/device_registered"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {
         "recertify_on_sdk_release": {
           "name": "Recertify on SDK release",
@@ -2480,20 +2521,6 @@
                   "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/profile_created"
                 }
               ]
-            },
-            "create_profile": {
-              "name": "CreateProfile",
-              "description": "Add a profile, within the limit",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/households_&_profiles/schemas/profile_created"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/profile_created"
-                }
-              ]
             }
           },
           "consumes": [
@@ -2654,7 +2681,30 @@
           }
         }
       },
-      "services": {},
+      "services": {
+        "profiles_api": {
+          "name": "ProfilesAPI",
+          "description": "Households & Profiles' application service: the boundary members manage profiles through",
+          "type": "application",
+          "provides": {
+            "create_profile": {
+              "name": "CreateProfile",
+              "description": "Add a profile, within the limit",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/households_&_profiles/schemas/profile_created"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/profile_created"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {
         "create_household_on_account": {
           "name": "Create household on account",
@@ -2768,29 +2818,6 @@
               "description": "A renewal charge bounced",
               "type": "event",
               "internal": true
-            },
-            "start_subscription": {
-              "name": "StartSubscription",
-              "description": "Put a household on a plan",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/billing_&_plans/schemas/subscription_ref"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/provides/subscription_activated"
-                }
-              ]
-            },
-            "get_entitlement": {
-              "name": "GetEntitlement",
-              "description": "Whether a household may stream, and how many at once",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/billing_&_plans/schemas/entitlement_request"
-              }
             },
             "charge_renewal": {
               "name": "ChargeRenewal",
@@ -3049,7 +3076,39 @@
           }
         }
       },
-      "services": {},
+      "services": {
+        "billing_api": {
+          "name": "BillingAPI",
+          "description": "Billing & Plans' application service: the boundary plans are bought and entitlement is read through",
+          "type": "application",
+          "provides": {
+            "start_subscription": {
+              "name": "StartSubscription",
+              "description": "Put a household on a plan",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/billing_&_plans/schemas/subscription_ref"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/provides/subscription_activated"
+                }
+              ]
+            },
+            "get_entitlement": {
+              "name": "GetEntitlement",
+              "description": "Whether a household may stream, and how many at once",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/billing_&_plans/schemas/entitlement_request"
+              }
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {
         "await_plan_on_household": {
           "name": "Await plan on household",
@@ -3106,7 +3165,7 @@
           "name": "Entitlement",
           "definition": "The right to stream, derived from an active subscription",
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/provides/get_entitlement"
+            "$ref": "#/boundedcontexts/billing_&_plans/services/billing_api/provides/get_entitlement"
           }
         }
       },
@@ -3266,15 +3325,6 @@
                 "$ref": "#/boundedcontexts/ads_tier/schemas/ad_impression_recorded"
               }
             },
-            "resolve_ad_break": {
-              "name": "ResolveAdBreak",
-              "description": "The slots for a break the player has reached",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/ads_tier/schemas/resolve_ad_break"
-              }
-            },
             "prepare_breaks": {
               "name": "PrepareBreaks",
               "description": "Plan the breaks for a session by plan and country: ask billing for the household's plan, skip if it is not ad-supported, and fill slots within each creative's daily cap",
@@ -3302,7 +3352,7 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/provides/get_entitlement"
+                "$ref": "#/boundedcontexts/billing_&_plans/services/billing_api/provides/get_entitlement"
               },
               "pattern": "anti-corruption-layer"
             }
@@ -3462,7 +3512,25 @@
           }
         }
       },
-      "services": {},
+      "services": {
+        "ads_api": {
+          "name": "AdsAPI",
+          "description": "Ads Tier's application service: the boundary Playback resolves breaks through",
+          "type": "application",
+          "provides": {
+            "resolve_ad_break": {
+              "name": "ResolveAdBreak",
+              "description": "The slots for a break the player has reached",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/ads_tier/schemas/resolve_ad_break"
+              }
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {
         "prepare_breaks_on_start": {
           "name": "Prepare breaks on start",

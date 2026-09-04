@@ -732,7 +732,14 @@ const encodingCompleted = jobAgg.provides("EncodingCompleted", {
 	pattern: "published-language",
 	schema: encodingCompletedSchema,
 });
-const submitEncode = jobAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const encodingApi = encodingBC.addService("EncodingAPI", {
+	description:
+		"Encoding's application service: the boundary Catalogue queues masters through",
+	type: "application",
+});
+const submitEncode = encodingApi
 	.provides("SubmitEncode", {
 		description: "Queue a master for encoding",
 		type: "operation",
@@ -784,14 +791,22 @@ titleAgg.consumes(masterDelivered, { pattern: "anti-corruption-layer" });
 titleAgg.consumes(encodingCompleted, { pattern: "anti-corruption-layer" });
 titleAgg.consumes(windowOpened, { pattern: "anti-corruption-layer" });
 titleAgg.consumes(windowExpired, { pattern: "anti-corruption-layer" });
-titleAgg.consumes(submitEncode, { pattern: "anti-corruption-layer" });
+// The call out to Encoding is made by Catalogue's own application service,
+// and it is that operation the policy below names (decision 17).
+catalogueApi.consumes(submitEncode, { pattern: "anti-corruption-layer" });
+const requestEncode = catalogueApi.provides("RequestEncode", {
+	description:
+		"Queue the matched title for encoding, by calling Encoding's SubmitEncode behind the ACL",
+	type: "operation",
+	internal: true,
+});
 catalogueBC
 	.addPolicy("Request encode on master", {
 		description:
 			"A delivered master is matched to the title by productionId (and the episode by masterEpisodeNumber) and queued for encoding under that titleId",
 	})
 	.on(masterDelivered)
-	.then(submitEncode);
+	.then(requestEncode);
 catalogueBC
 	.addPolicy("Publish on encode", {
 		description: "A completed encode makes the title publishable",
@@ -930,7 +945,14 @@ const bookmarkUpdated = sessionAgg.provides("BookmarkUpdated", {
 	type: "event",
 	internal: true,
 });
-sessionAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const playbackApi = playbackBC.addService("PlaybackAPI", {
+	description:
+		"Playback's application service: the boundary players start and stop sessions through",
+	type: "application",
+});
+playbackApi
 	.provides("StartPlayback", {
 		description: "Check entitlement and device, build the manifest, start",
 		type: "operation",
@@ -938,7 +960,7 @@ sessionAgg
 		schema: startPlaybackSchema,
 	})
 	.raises(playbackStarted);
-sessionAgg
+playbackApi
 	.provides("StopPlayback", {
 		description: "End the session and report what was watched",
 		type: "operation",
@@ -1031,7 +1053,14 @@ const assetPrepositioned = applianceAgg.provides("AssetPrepositioned", {
 	type: "event",
 	internal: true,
 });
-const resolveEdge = applianceAgg.provides("ResolveEdge", {
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const edgeApi = edgeBC.addService("EdgeAPI", {
+	description:
+		"Edge Delivery's application service: the boundary Playback resolves appliances through",
+	type: "application",
+});
+const resolveEdge = edgeApi.provides("ResolveEdge", {
 	description: "Which appliance a client should fetch from",
 	type: "operation",
 	pattern: "open-host-service",
@@ -1135,7 +1164,14 @@ const deviceCertified = deviceAgg.provides("DeviceCertified", {
 	pattern: "published-language",
 	schema: deviceCertifiedSchema,
 });
-deviceAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const devicesApi = devicesBC.addService("DevicesAPI", {
+	description:
+		"Devices' application service: the boundary manufacturers submit models through",
+	type: "application",
+});
+devicesApi
 	.provides("RegisterDevice", {
 		description: "Submit a model with its capabilities",
 		type: "operation",
@@ -1379,7 +1415,14 @@ const createHousehold = householdAgg
 		internal: true,
 	})
 	.raises(householdCreated, profileCreated);
-householdAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const profilesApi = householdsBC.addService("ProfilesAPI", {
+	description:
+		"Households & Profiles' application service: the boundary members manage profiles through",
+	type: "application",
+});
+profilesApi
 	.provides("CreateProfile", {
 		description: "Add a profile, within the limit",
 		type: "operation",
@@ -1515,7 +1558,14 @@ const paymentFailed = subscriptionAgg.provides("PaymentFailed", {
 	type: "event",
 	internal: true,
 });
-subscriptionAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const billingApi = billingBC.addService("BillingAPI", {
+	description:
+		"Billing & Plans' application service: the boundary plans are bought and entitlement is read through",
+	type: "application",
+});
+billingApi
 	.provides("StartSubscription", {
 		description: "Put a household on a plan",
 		type: "operation",
@@ -1523,7 +1573,7 @@ subscriptionAgg
 		schema: subscriptionSchema,
 	})
 	.raises(subscriptionActivated);
-const getEntitlement = subscriptionAgg.provides("GetEntitlement", {
+const getEntitlement = billingApi.provides("GetEntitlement", {
 	description: "Whether a household may stream, and how many at once",
 	type: "operation",
 	pattern: "open-host-service",
@@ -1730,7 +1780,14 @@ const impressionRecorded = breakAgg.provides("AdImpressionRecorded", {
 	pattern: "published-language",
 	schema: impressionSchema,
 });
-const resolveAdBreak = breakAgg.provides("ResolveAdBreak", {
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const adsApi = adsBC.addService("AdsAPI", {
+	description:
+		"Ads Tier's application service: the boundary Playback resolves breaks through",
+	type: "application",
+});
+const resolveAdBreak = adsApi.provides("ResolveAdBreak", {
 	description: "The slots for a break the player has reached",
 	type: "operation",
 	pattern: "open-host-service",

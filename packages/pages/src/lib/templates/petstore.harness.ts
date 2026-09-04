@@ -2,8 +2,8 @@
  * The petstore route each template story is drawn against, chosen so the story
  * shows the template full rather than empty: the Pet aggregate has a root,
  * invariants with targets, internal and published consumables; Order App both
- * provides and consumes; ReservePet is the one operation carrying a
- * disposition and a comment; GetPetSummary is the one operation that declares
+ * provides and consumes; PetApp's ReservePetForOrder is the one operation
+ * carrying a disposition and a comment; GetPetSummary is the one operation that declares
  * what it returns; PetId is carried by eight consumables; and Pet is
  * the one glossary word two contexts both define.
  *
@@ -30,7 +30,8 @@ export const PETSTORE_REFS = {
 	valueobject:
 		"#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category",
 	service: "#/boundedcontexts/sales_bc/services/order_app",
-	operation: "#/boundedcontexts/catalog_bc/aggregates/pet/provides/reserve_pet",
+	operation:
+		"#/boundedcontexts/catalog_bc/services/pet_app/provides/reserve_pet_for_order",
 	// GetPetSummary is the one operation asked with one schema and answered
 	// with another, so it is the only route whose Returns section draws.
 	query:

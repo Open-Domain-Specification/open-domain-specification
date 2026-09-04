@@ -87,7 +87,7 @@ describe("DataTable", () => {
 		await fireEvent.click(screen.getByRole("button", { name: "Consumable" }));
 		expect(kindHeader).not.toHaveAttribute("aria-sort");
 		expect(names(container)[0]).toBe("ChangePetStatus");
-		expect(names(container).at(-1)).toBe("ReservePet");
+		expect(names(container).at(-1)).toBe("ReservePetForOrder");
 	});
 
 	it("sorts a row with no value for the key as empty, so it comes first ascending", async () => {

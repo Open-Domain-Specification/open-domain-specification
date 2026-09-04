@@ -188,16 +188,16 @@ describe("crossingConsumables", () => {
 		);
 		expect(crossings.map((c) => c.consumable.id).sort()).toEqual([
 			"get_pet_summary",
-			"mark_pet_sold",
-			"reserve_pet",
+			"mark_pet_sold_for_order",
+			"reserve_pet_for_order",
 		]);
 		expect(
-			crossings.find((c) => c.consumable.id === "reserve_pet")?.consumable
-				.disposition,
+			crossings.find((c) => c.consumable.id === "reserve_pet_for_order")
+				?.consumable.disposition,
 		).toBe("refactor");
 		expect(
-			crossings.find((c) => c.consumable.id === "mark_pet_sold")?.consumable
-				.comments,
+			crossings.find((c) => c.consumable.id === "mark_pet_sold_for_order")
+				?.consumable.comments,
 		).toEqual([]);
 	});
 

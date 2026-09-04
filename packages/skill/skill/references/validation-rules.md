@@ -116,6 +116,30 @@
 
 **Usual fix:** Drop internal and give the consumable an upstream role, or stop the other context from using it.
 
+## `policy-in-context` (error)
+
+**Requires:** A policy issues operations of its own bounded context; it may still react to another context's event.
+
+**Why it matters:** A policy is its context's own rule, and reaching into another context to run an operation there is that context acting through someone else's model rather than through the boundary they published. Reacting is different: subscribing to a published event is how contexts integrate, so a policy's on may cross where its then may not (decision 08's crossing table).
+
+**Usual fix:** Give the policy's own context an operation that consumes the foreign one — an application service operation is the usual place — and name that in then.
+
+## `aggregate-not-public` (error)
+
+**Requires:** An aggregate's operations declare no upstream role and are consumed only inside their own context.
+
+**Why it matters:** An aggregate is a consistency boundary, not an integration boundary. When it offers operations outward as well as the application service in front of it, nothing in the model says which of the two is the context's public surface, and a caller outside can change the aggregate without passing the service that guards it. Its events are unaffected: publishing facts is how a context speaks outward.
+
+**Usual fix:** Mark the aggregate's operation internal: true and drop its pattern, then give the context's application service the public operation that consumes it; point the outside caller at that one.
+
+## `domain-service-internal` (error)
+
+**Requires:** A domain service's operations declare no upstream role and are consumed only inside their own context.
+
+**Why it matters:** A domain service holds domain logic that belongs to no single aggregate — it is the inside of the model, the same as an aggregate. Offering it outward makes another context depend on how this one arranges its logic instead of on what it promises.
+
+**Usual fix:** Mark the domain service's operation internal: true and drop its pattern, then let the context's application service provide the public operation that consumes it.
+
 ## `schema-context` (error)
 
 **Requires:** A consumable's payload schema belongs to the consumable's own context.

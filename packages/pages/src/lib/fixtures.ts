@@ -83,6 +83,11 @@ export function edgeCaseModel(): Model {
 	});
 	ePlain.addAttribute("Id A", { type: "string", identity: true });
 	ePlain.addAttribute("Id B", { type: "string", identity: true });
+	// The branch the petstore no longer reaches: every entity there carries
+	// attributes now, and one of them is marked as the identity.
+	aggNoRoot.addEntity("Bare Entity", {
+		description: "Has no attributes at all, so nothing identifies it.",
+	});
 	aggNoRoot.addValueObject("Unused Value Object", {
 		description: "Never used as an attribute type, and has no relations.",
 	});

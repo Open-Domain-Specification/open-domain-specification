@@ -285,35 +285,25 @@ petAgg
 		schema: petStatusChangedSchema,
 	})
 	.raises(petStatusChanged);
-// The two transitions Sales drives are offered as open-host operations, so
-// the pet lifecycle (available → pending → sold) is walked by the order
-// lifecycle (placed → approved → delivered) rather than left informal.
+// The two transitions the order lifecycle drives are the aggregate's own, so
+// they are internal: what Catalog offers outward leaves PetApp below
+// (decision 17). The pet lifecycle (available → pending → sold) is still
+// walked by the order lifecycle (placed → approved → delivered).
 const reservePet = petAgg
 	.provides("ReservePet", {
 		description:
-			"available → pending: the pet is held for an approved order; issued by Sales on approval",
+			"available → pending: the pet is held for an approved order; run by PetApp on the request Sales makes",
 		type: "operation",
-		pattern: "open-host-service",
+		internal: true,
 		schema: petIdSchema,
-		disposition: "refactor",
-		comments: [
-			{
-				text: "Reservation is a synchronous call into the Catalog aggregate; it should become an order-placed subscription so Sales stops blocking on Catalog.",
-				link: {
-					kind: "adr",
-					url: "https://github.com/example/petstore/blob/main/docs/adr/017-reserve-asynchronously.md",
-					label: "ADR-017 Reserve asynchronously",
-				},
-			},
-		],
 	})
 	.raises(petStatusChanged);
 const markPetSold = petAgg
 	.provides("MarkPetSold", {
 		description:
-			"pending → sold: the pet has gone to its owner; issued by Sales on delivery",
+			"pending → sold: the pet has gone to its owner; run by PetApp on the request Sales makes",
 		type: "operation",
-		pattern: "open-host-service",
+		internal: true,
 		schema: petIdSchema,
 	})
 	.raises(petStatusChanged);
@@ -386,6 +376,43 @@ const getPetSummaryOp = petApp.provides("GetPetSummary", {
 		},
 	],
 });
+
+// The context's public boundary for the two transitions Sales drives: the
+// aggregate's operations stay inside, and the open-host operations that front
+// them belong to the application service (decision 17).
+const reservePetForOrder = petApp
+	.provides("ReservePetForOrder", {
+		description:
+			"POST /pet/{petId}/reserve; holds the pet for an approved order by running the aggregate's ReservePet",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: petIdSchema,
+		disposition: "refactor",
+		comments: [
+			{
+				text: "Reservation is a synchronous call into Catalog; it should become an order-placed subscription so Sales stops blocking on Catalog.",
+				link: {
+					kind: "adr",
+					url: "https://github.com/example/petstore/blob/main/docs/adr/017-reserve-asynchronously.md",
+					label: "ADR-017 Reserve asynchronously",
+				},
+			},
+		],
+	})
+	.raises(petStatusChanged);
+const markPetSoldForOrder = petApp
+	.provides("MarkPetSoldForOrder", {
+		description:
+			"POST /pet/{petId}/sold; records the sale by running the aggregate's MarkPetSold",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: petIdSchema,
+	})
+	.raises(petStatusChanged);
+// A consumption inside one context needs no pattern: there is no boundary to
+// protect between the service and the aggregate it fronts.
+petApp.consumes(reservePet, {});
+petApp.consumes(markPetSold, {});
 
 // Glossary: the ubiquitous language of this context, each term pointing at
 // the element that embodies it. Aliases record what other people call it.
@@ -541,14 +568,15 @@ const approveOrder = orderAgg
 		schema: orderIdSchema,
 	})
 	.raises(orderApproved);
-// Delivery is confirmed by Fulfilment, so this operation is offered as an
-// open host rather than kept internal.
+// Delivery is confirmed by Fulfilment, but the transition itself is the
+// aggregate's own, so it is internal and OrderApp's ConfirmDelivery below is
+// what Fulfilment calls (decision 17).
 const deliverOrder = orderAgg
 	.provides("DeliverOrder", {
 		description:
-			"Mark an approved order as delivered; issued by Fulfilment when the shipment arrives",
+			"Mark an approved order as delivered; run by OrderApp when Fulfilment reports the shipment arrived",
 		type: "operation",
-		pattern: "open-host-service",
+		internal: true,
 		schema: orderIdSchema,
 	})
 	.raises(orderDelivered);
@@ -581,6 +609,16 @@ orderApp
 	})
 	.raises(orderDeleted);
 
+// The open host Fulfilment calls, fronting the aggregate's internal transition.
+const confirmDelivery = orderApp.provides("ConfirmDelivery", {
+	description:
+		"POST /store/order/{orderId}/delivered; Fulfilment reports the shipment arrived and the order moves to delivered",
+	type: "operation",
+	pattern: "open-host-service",
+	schema: orderIdSchema,
+});
+orderApp.consumes(deliverOrder, {});
+
 // Anti-corruption layer: OrderApp translates the catalog's summary into its
 // own notion of availability rather than adopting the catalog's model.
 orderApp.consumes(getPetSummaryOp, {
@@ -596,9 +634,29 @@ orderApp.consumes(getPetSummaryOp, {
 		},
 	],
 });
-// The same ACL issues the two catalogue transitions Sales is responsible for.
-orderApp.consumes(reservePet, { pattern: "anti-corruption-layer" });
-orderApp.consumes(markPetSold, { pattern: "anti-corruption-layer" });
+// The same ACL calls the two catalogue transitions Sales is responsible for,
+// through the open host PetApp offers rather than the Pet aggregate itself.
+orderApp.consumes(reservePetForOrder, { pattern: "anti-corruption-layer" });
+orderApp.consumes(markPetSoldForOrder, { pattern: "anti-corruption-layer" });
+
+// A policy names operations of its own context (decision 17), so the two
+// catalogue transitions Sales drives get a local operation each: the one that
+// calls out through the ACL above. What crosses the boundary is the
+// consumption, which the consumable map already draws.
+const reservePetForApproved = orderApp.provides("ReservePet", {
+	description:
+		"Ask Catalog to hold the ordered pet, through the ACL; Sales' own step in the order lifecycle",
+	type: "operation",
+	internal: true,
+	schema: orderIdSchema,
+});
+const markPetSoldForDelivered = orderApp.provides("MarkPetSold", {
+	description:
+		"Tell Catalog the ordered pet has gone to its owner, through the ACL",
+	type: "operation",
+	internal: true,
+	schema: orderIdSchema,
+});
 
 // A policy is "when this happens, do that". It may react to events from
 // several contexts, but issues an operation of its own context here. Either
@@ -611,21 +669,22 @@ salesBC
 	})
 	.on(petStatusChanged, orderPlaced)
 	.then(approveOrder);
-// Policies that issue another context's open-host operations: the order
-// lifecycle drives the pet lifecycle, which is why Sales is the customer.
+// The order lifecycle drives the pet lifecycle, which is why Sales is the
+// customer. Each policy names a Sales operation, and that operation is what
+// reaches Catalog through the ACL: a context acts through its own boundary.
 salesBC
 	.addPolicy("Reserve pet on approval", {
 		description:
 			"When an order is approved, hold its pet (available → pending) so nobody else can be approved for the same animal",
 	})
 	.on(orderApproved)
-	.then(reservePet);
+	.then(reservePetForApproved);
 salesBC
 	.addPolicy("Mark pet sold on delivery", {
 		description: "When an order is delivered, the pet is sold (pending → sold)",
 	})
 	.on(orderDelivered)
-	.then(markPetSold);
+	.then(markPetSoldForDelivered);
 
 salesBC.addTerm("Order", {
 	definition:
@@ -650,7 +709,8 @@ salesBC.addTerm("Approval", {
    FULFILMENT: Shipment aggregate, DispatchPlanner domain service
    Demonstrates: an `includes` relation to a child entity that cannot exist
    alone, an invariant on an entity, a domain service (logic that belongs to
-   no single aggregate), and a policy that issues another context's operation.
+   no single aggregate), and a policy that acts on another context through an
+   operation of its own.
    ======================= */
 
 const shipmentAgg = fulfilmentBC.addAggregate("Shipment", {
@@ -779,21 +839,37 @@ const planDispatch = dispatchPlanner
 // belong to the Orders Team and the partnership below makes them change together.
 shipmentAgg.consumes(orderApproved, { pattern: "conformist" });
 
+// Fulfilment's own boundary. The policy below cannot name Sales' operation,
+// so ShipmentApp offers the local one that does the calling (decision 17).
+const shipmentApp = fulfilmentBC.addService("ShipmentApp", {
+	description:
+		"Fulfilment's application service: the boundary through which Fulfilment reports delivery to Sales",
+	type: "application",
+});
+const reportDelivery = shipmentApp.provides("ReportDelivery", {
+	description:
+		"Tell Sales the shipment arrived, by calling the order's ConfirmDelivery",
+	type: "operation",
+	internal: true,
+	schema: shipmentDeliveredSchema,
+});
+shipmentApp.consumes(confirmDelivery, {});
+
 fulfilmentBC
 	.addPolicy("Plan dispatch on approval", {
 		description: "Every approved order gets a shipment planned straight away",
 	})
 	.on(orderApproved)
 	.then(planDispatch);
-// A policy whose command lives in another context: Fulfilment tells Sales
-// the order is delivered, through the open-host operation Sales offers.
+// A policy acts in its own context: Fulfilment names its own ReportDelivery,
+// and that operation is what calls the open host Sales offers.
 fulfilmentBC
 	.addPolicy("Deliver order on delivery", {
 		description:
-			"When a shipment is delivered, mark the order delivered in Sales",
+			"When a shipment is delivered, report it to Sales so the order moves to delivered",
 	})
 	.on(shipmentDelivered)
-	.then(deliverOrder);
+	.then(reportDelivery);
 
 fulfilmentBC.addTerm("Shipment", {
 	definition: "The consignment that carries one order to its owner",
@@ -1053,7 +1129,8 @@ catalogBC.sharesKernelWith(inventoryBC, {
 });
 
 // partnership: the Orders Team owns both, releases them together, and each
-// issues the other's operations (DeliverOrder) or events (OrderApproved).
+// reaches the other through its boundary (ConfirmDelivery) or its published
+// events (OrderApproved).
 salesBC.partnerOf(fulfilmentBC, {
 	description:
 		"Order lifecycle and shipment lifecycle are designed and released together",
@@ -1064,7 +1141,7 @@ salesBC.partnerOf(fulfilmentBC, {
 			text: "Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged.",
 		},
 		{
-			text: "DeliverOrder and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier.",
+			text: "ConfirmDelivery and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier.",
 		},
 	],
 });

@@ -57,6 +57,30 @@ function everythingWrong(): Workspace {
 	a.addPolicy("Empty", { description: "" });
 	// separate-ways again, this time reached through a policy subscription
 	a.addPolicy("Listens Across", { description: "" }).on(plain).then(carries);
+	// aggregate-not-public: an aggregate offering an operation outward, and a
+	// second context reaching for it
+	const reachIn = other.provides("Reach In", {
+		type: "operation",
+		description: "",
+		pattern: "open-host-service",
+	});
+	a.addService("Reacher", { description: "", type: "application" }).consumes(
+		reachIn,
+		{},
+	);
+	// domain-service-internal: a domain service doing the same
+	const engine = b.addService("Rules Engine", {
+		description: "",
+		type: "domain",
+	});
+	const decide = engine.provides("Decide", {
+		type: "operation",
+		description: "",
+		pattern: "open-host-service",
+	});
+	twoRoots.consumes(decide, {});
+	// policy-in-context: a policy acting inside the context next door
+	a.addPolicy("Acts Elsewhere", { description: "" }).on(plain).then(reachIn);
 	// root-identity: no root in this fixture declares an identity attribute
 	// value-object-shape: a value object with an identity, and one that includes
 	const vo = twoRoots.addValueObject("Vo", { description: "" });

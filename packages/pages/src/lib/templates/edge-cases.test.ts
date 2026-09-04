@@ -88,14 +88,11 @@ describe("the tactical templates on the alternate branches", () => {
 	});
 
 	it("EntityPage: an entity with no identity attribute and no attributes says so", () => {
-		const petstore = petstoreModel();
-		const { container } = render(Harness, {
-			model: petstore,
-			ref: entityRef("inventory_bc", "inventory_projection", "inventory_view")
-				.$ref,
-		});
-		expect(container.textContent).toContain("no identity attribute marked");
-		expect(container.textContent).toContain("No attributes.");
+		const text = textOf(
+			entityRef("main_context", "rootless_aggregate", "bare_entity").$ref,
+		);
+		expect(text).toContain("no identity attribute marked");
+		expect(text).toContain("No attributes.");
 	});
 
 	it("ValueObjectPage: unused, with no relations", () => {

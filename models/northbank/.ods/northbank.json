@@ -362,34 +362,6 @@
               "schema": {
                 "$ref": "#/boundedcontexts/customer_&_kyc/schemas/consent_changed"
               }
-            },
-            "give_consent": {
-              "name": "GiveConsent",
-              "description": "Record a permission",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/customer_&_kyc/schemas/consent_changed"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/provides/consent_given"
-                }
-              ]
-            },
-            "withdraw_consent": {
-              "name": "WithdrawConsent",
-              "description": "End a permission, finally",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/customer_&_kyc/schemas/consent_changed"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/provides/consent_withdrawn"
-                }
-              ]
             }
           },
           "consumes": [],
@@ -531,6 +503,34 @@
           "description": "The onboarding journey and the customer read API",
           "type": "application",
           "provides": {
+            "give_consent": {
+              "name": "GiveConsent",
+              "description": "Record a permission",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/schemas/consent_changed"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/provides/consent_given"
+                }
+              ]
+            },
+            "withdraw_consent": {
+              "name": "WithdrawConsent",
+              "description": "End a permission, finally",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/schemas/consent_changed"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/provides/consent_withdrawn"
+                }
+              ]
+            },
             "start_onboarding": {
               "name": "StartOnboarding",
               "description": "Begin with name, date of birth, address and a document",
@@ -572,7 +572,7 @@
           "consumes": [
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/provides/screen_party"
+                "$ref": "#/boundedcontexts/sanctions_screening/services/screening_app/provides/screen_party"
               },
               "pattern": "anti-corruption-layer"
             }
@@ -741,20 +741,6 @@
               "schema": {
                 "$ref": "#/boundedcontexts/sanctions_screening/schemas/party_matched"
               }
-            },
-            "screen_party": {
-              "name": "ScreenParty",
-              "description": "Check a name, date of birth and country against the lists",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/sanctions_screening/schemas/screen_party"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/provides/party_matched"
-                }
-              ]
             }
           },
           "consumes": [],
@@ -809,7 +795,30 @@
           "invariants": {}
         }
       },
-      "services": {},
+      "services": {
+        "screening_app": {
+          "name": "ScreeningApp",
+          "description": "Sanctions Screening's application service: the boundary the bank screens names through",
+          "type": "application",
+          "provides": {
+            "screen_party": {
+              "name": "ScreenParty",
+              "description": "Check a name, date of birth and country against the lists",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/sanctions_screening/schemas/screen_party"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/provides/party_matched"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {},
       "glossary": {},
       "schemas": {
@@ -891,20 +900,6 @@
               "schema": {
                 "$ref": "#/boundedcontexts/accounts/schemas/account_ref"
               }
-            },
-            "freeze_account": {
-              "name": "FreezeAccount",
-              "description": "Block debits; issued when Financial Crime opens a case",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/accounts/schemas/account_ref"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/account_frozen"
-                }
-              ]
             },
             "close_account": {
               "name": "CloseAccount",
@@ -1266,6 +1261,20 @@
               "schema": {
                 "$ref": "#/boundedcontexts/accounts/schemas/account_ref"
               }
+            },
+            "freeze_account": {
+              "name": "FreezeAccount",
+              "description": "Block debits; issued when Financial Crime opens a case",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/accounts/schemas/account_ref"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/account_frozen"
+                }
+              ]
             }
           },
           "consumes": []
@@ -1296,7 +1305,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/freeze_account"
+              "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/freeze_account"
             }
           ]
         },
@@ -1417,34 +1426,6 @@
               "schema": {
                 "$ref": "#/boundedcontexts/ledger/schemas/entry_posted"
               }
-            },
-            "post_entry": {
-              "name": "PostEntry",
-              "description": "Post a balanced entry",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/ledger/schemas/post_entry"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
-                }
-              ]
-            },
-            "reverse_entry": {
-              "name": "ReverseEntry",
-              "description": "Post the opposite entry against an earlier one",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/ledger/schemas/post_entry"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
-                }
-              ]
             },
             "import_batch_postings": {
               "name": "ImportBatchPostings",
@@ -1700,7 +1681,44 @@
           }
         }
       },
-      "services": {},
+      "services": {
+        "ledger_app": {
+          "name": "LedgerApp",
+          "description": "The ledger's application service: the documented posting API every other context uses",
+          "type": "application",
+          "provides": {
+            "post_entry": {
+              "name": "PostEntry",
+              "description": "Post a balanced entry",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/ledger/schemas/post_entry"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
+                }
+              ]
+            },
+            "reverse_entry": {
+              "name": "ReverseEntry",
+              "description": "Post the opposite entry against an earlier one",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/ledger/schemas/post_entry"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {
         "import_nightly_batch": {
           "name": "Import nightly batch",
@@ -1847,20 +1865,6 @@
                 "$ref": "#/boundedcontexts/payments_hub/schemas/payment_event"
               }
             },
-            "initiate_payment": {
-              "name": "InitiatePayment",
-              "description": "Create an instruction from a channel, once AccountServicing confirms the available balance covers it and the daily limit holds",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/payments_hub/schemas/initiate_payment"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_initiated"
-                }
-              ]
-            },
             "submit_payment": {
               "name": "SubmitPayment",
               "description": "Mark cleared and hand to the gateway",
@@ -1904,12 +1908,6 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/submit_to_scheme"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
                 "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_settlement_confirmed"
               },
               "pattern": "conformist"
@@ -1919,18 +1917,6 @@
                 "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_rejected"
               },
               "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/post_entry"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/score_transaction"
-              },
-              "pattern": "anti-corruption-layer"
             },
             {
               "consumable": {
@@ -2137,7 +2123,67 @@
           }
         }
       },
-      "services": {},
+      "services": {
+        "payments_app": {
+          "name": "PaymentsApp",
+          "description": "The hub's application service: the boundary channels initiate payments through, and the one that calls the scheme, the ledger and fraud",
+          "type": "application",
+          "provides": {
+            "initiate_payment": {
+              "name": "InitiatePayment",
+              "description": "Create an instruction from a channel, once AccountServicing confirms the available balance covers it and the daily limit holds",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/payments_hub/schemas/initiate_payment"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_initiated"
+                }
+              ]
+            },
+            "send_to_scheme": {
+              "name": "SendToScheme",
+              "description": "Hand a submitted instruction to the gateway, by calling SubmitToScheme",
+              "type": "operation",
+              "internal": true
+            },
+            "post_settlement": {
+              "name": "PostSettlement",
+              "description": "Post the settled instruction to the ledger, through the ACL over PostEntry",
+              "type": "operation",
+              "internal": true
+            },
+            "score_instruction": {
+              "name": "ScoreInstruction",
+              "description": "Send an initiated instruction to Fraud for a verdict, through the ACL",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/scheme_gateway/services/scheme_gateway_app/provides/submit_to_scheme"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/ledger/services/ledger_app/provides/post_entry"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/fraud/services/fraud_app/provides/score_transaction"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
+        }
+      },
       "policies": {
         "submit_to_scheme": {
           "name": "Submit to scheme",
@@ -2149,7 +2195,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/submit_to_scheme"
+              "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/send_to_scheme"
             }
           ]
         },
@@ -2191,7 +2237,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/post_entry"
+              "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/post_settlement"
             }
           ]
         },
@@ -2205,7 +2251,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/score_transaction"
+              "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/score_instruction"
             }
           ]
         },
@@ -2370,23 +2416,6 @@
               "schema": {
                 "$ref": "#/boundedcontexts/scheme_gateway/schemas/scheme_settlement"
               }
-            },
-            "submit_to_scheme": {
-              "name": "SubmitToScheme",
-              "description": "Send a submission and await the response",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/scheme_gateway/schemas/scheme_submission"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_settlement_confirmed"
-                },
-                {
-                  "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_rejected"
-                }
-              ]
             }
           },
           "consumes": [],
@@ -2445,7 +2474,33 @@
           "invariants": {}
         }
       },
-      "services": {},
+      "services": {
+        "scheme_gateway_app": {
+          "name": "SchemeGatewayApp",
+          "description": "The gateway's application service: the boundary the hub submits messages through",
+          "type": "application",
+          "provides": {
+            "submit_to_scheme": {
+              "name": "SubmitToScheme",
+              "description": "Send a submission and await the response",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/scheme_gateway/schemas/scheme_submission"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_settlement_confirmed"
+                },
+                {
+                  "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_rejected"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {},
       "glossary": {},
       "schemas": {
@@ -2517,34 +2572,6 @@
                 "$ref": "#/boundedcontexts/cards/schemas/card_event"
               }
             },
-            "authorise_card": {
-              "name": "AuthoriseCard",
-              "description": "Approve or decline a merchant's request from CardCo",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/cards/schemas/card_authorisation_request"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/cards/aggregates/card/provides/card_authorised"
-                }
-              ]
-            },
-            "block_card": {
-              "name": "BlockCard",
-              "description": "Block a card; issued by fraud or by a customer through a channel",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/cards/schemas/card_event"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/cards/aggregates/card/provides/card_blocked"
-                }
-              ]
-            },
             "issue_card": {
               "name": "IssueCard",
               "description": "Issue a card on an account",
@@ -2561,7 +2588,7 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/score_transaction"
+                "$ref": "#/boundedcontexts/fraud/services/fraud_app/provides/score_transaction"
               },
               "pattern": "anti-corruption-layer"
             },
@@ -2786,7 +2813,44 @@
           }
         }
       },
-      "services": {},
+      "services": {
+        "cards_app": {
+          "name": "CardsApp",
+          "description": "Cards' application service: the boundary CardCo authorises against and channels block cards through",
+          "type": "application",
+          "provides": {
+            "authorise_card": {
+              "name": "AuthoriseCard",
+              "description": "Approve or decline a merchant's request from CardCo",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/cards/schemas/card_authorisation_request"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/cards/aggregates/card/provides/card_authorised"
+                }
+              ]
+            },
+            "block_card": {
+              "name": "BlockCard",
+              "description": "Block a card; issued by fraud or by a customer through a channel",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/cards/schemas/card_event"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/cards/aggregates/card/provides/card_blocked"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {
         "block_on_flagged_card_transaction": {
           "name": "Block on flagged card transaction",
@@ -2798,7 +2862,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/cards/aggregates/card/provides/block_card"
+              "$ref": "#/boundedcontexts/cards/services/cards_app/provides/block_card"
             }
           ]
         }
@@ -2928,20 +2992,6 @@
               "type": "event",
               "internal": true
             },
-            "submit_application": {
-              "name": "SubmitApplication",
-              "description": "Ask for an amount over a term",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/lending/schemas/application_submitted"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/lending/aggregates/loan_application/provides/application_submitted"
-                }
-              ]
-            },
             "record_decision": {
               "name": "RecordDecision",
               "description": "Store decisioning's outcome and reasons",
@@ -2963,12 +3013,6 @@
                 "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/get_customer"
               },
               "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/provides/decide"
-              },
-              "pattern": "conformist"
             },
             {
               "consumable": {
@@ -3136,20 +3180,6 @@
               "type": "event",
               "internal": true
             },
-            "sign_agreement": {
-              "name": "SignAgreement",
-              "description": "Record the signed agreement and create the loan",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/lending/schemas/loan_event"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/loan_agreement_signed"
-                }
-              ]
-            },
             "disburse": {
               "name": "Disburse",
               "description": "Pay the principal into the customer's account",
@@ -3184,14 +3214,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/post_entry"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "loan": {
               "name": "Loan",
@@ -3418,7 +3441,69 @@
           }
         }
       },
-      "services": {},
+      "services": {
+        "lending_app": {
+          "name": "LendingApp",
+          "description": "Lending's application service: the boundary applications arrive through, and the one that calls decisioning and the ledger",
+          "type": "application",
+          "provides": {
+            "submit_application": {
+              "name": "SubmitApplication",
+              "description": "Ask for an amount over a term",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/lending/schemas/application_submitted"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/lending/aggregates/loan_application/provides/application_submitted"
+                }
+              ]
+            },
+            "sign_agreement": {
+              "name": "SignAgreement",
+              "description": "Record the signed agreement and create the loan",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/lending/schemas/loan_event"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/loan_agreement_signed"
+                }
+              ]
+            },
+            "post_disbursement": {
+              "name": "PostDisbursement",
+              "description": "Post the disbursement to the ledger, through the ACL over PostEntry",
+              "type": "operation",
+              "internal": true
+            },
+            "request_decision": {
+              "name": "RequestDecision",
+              "description": "Send a submitted application to Credit Decisioning",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/ledger/services/ledger_app/provides/post_entry"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/credit_decisioning/services/decisioning_app/provides/decide"
+              },
+              "pattern": "conformist"
+            }
+          ]
+        }
+      },
       "policies": {
         "escalate_arrears": {
           "name": "Escalate arrears",
@@ -3458,7 +3543,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/post_entry"
+              "$ref": "#/boundedcontexts/lending/services/lending_app/provides/post_disbursement"
             }
           ]
         },
@@ -3472,7 +3557,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/provides/decide"
+              "$ref": "#/boundedcontexts/lending/services/lending_app/provides/request_decision"
             }
           ]
         },
@@ -3595,20 +3680,6 @@
               "schema": {
                 "$ref": "#/boundedcontexts/credit_decisioning/schemas/decision_made"
               }
-            },
-            "decide": {
-              "name": "Decide",
-              "description": "Pull the bureau, run the scorecard, check affordability",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/credit_decisioning/schemas/decision_request"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/provides/decision_made"
-                }
-              ]
             }
           },
           "consumes": [
@@ -3775,6 +3846,28 @@
         }
       },
       "services": {
+        "decisioning_app": {
+          "name": "DecisioningApp",
+          "description": "Credit Decisioning's application service: the boundary Lending and the channels ask for a decision through",
+          "type": "application",
+          "provides": {
+            "decide": {
+              "name": "Decide",
+              "description": "Pull the bureau, run the scorecard, check affordability",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/credit_decisioning/schemas/decision_request"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/provides/decision_made"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        },
         "scorecard": {
           "name": "Scorecard",
           "description": "The bank's own model; a domain service because it is tuned across the whole book",
@@ -4060,7 +4153,15 @@
               "schema": {
                 "$ref": "#/boundedcontexts/fraud/schemas/transaction_verdict"
               }
-            },
+            }
+          },
+          "consumes": []
+        },
+        "fraud_app": {
+          "name": "FraudApp",
+          "description": "Fraud's application service: the boundary other contexts ask for a verdict through, in front of the scorer",
+          "type": "application",
+          "provides": {
             "score_transaction": {
               "name": "ScoreTransaction",
               "description": "Score synchronously; callers wait on the verdict",
@@ -4451,17 +4552,6 @@
               "type": "event",
               "internal": true
             },
-            "raise_request": {
-              "name": "RaiseRequest",
-              "description": "Open a request in a branch or on the phone",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request/provides/service_request_raised"
-                }
-              ]
-            },
             "suppress_marketing": {
               "name": "SuppressMarketing",
               "description": "Stop every outbound contact for the customer the same day",
@@ -4484,7 +4574,7 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/cards/aggregates/card/provides/block_card"
+                "$ref": "#/boundedcontexts/cards/services/cards_app/provides/block_card"
               },
               "pattern": "conformist"
             },
@@ -4496,13 +4586,13 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/provides/decide"
+                "$ref": "#/boundedcontexts/credit_decisioning/services/decisioning_app/provides/decide"
               },
               "pattern": "anti-corruption-layer"
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/identity_&_access/aggregates/credential/provides/authenticate_customer"
+                "$ref": "#/boundedcontexts/identity_&_access/services/identity_app/provides/authenticate_customer"
               },
               "pattern": "conformist"
             }
@@ -4640,7 +4730,27 @@
           }
         }
       },
-      "services": {},
+      "services": {
+        "channels_app": {
+          "name": "ChannelsApp",
+          "description": "The branch and contact centre application service: the boundary agents raise requests through",
+          "type": "application",
+          "provides": {
+            "raise_request": {
+              "name": "RaiseRequest",
+              "description": "Open a request in a branch or on the phone",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request/provides/service_request_raised"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {
         "suppress_marketing_on_withdrawal": {
           "name": "Suppress marketing on withdrawal",
@@ -4781,17 +4891,6 @@
               "description": "A customer proved who they are on a channel",
               "pattern": "published-language",
               "type": "event"
-            },
-            "authenticate_customer": {
-              "name": "AuthenticateCustomer",
-              "description": "Verify credentials and step-up",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/identity_&_access/aggregates/credential/provides/customer_authenticated"
-                }
-              ]
             }
           },
           "consumes": [],
@@ -4822,7 +4921,27 @@
           "invariants": {}
         }
       },
-      "services": {},
+      "services": {
+        "identity_app": {
+          "name": "IdentityApp",
+          "description": "Identity & Access' application service: the boundary channels authenticate customers through",
+          "type": "application",
+          "provides": {
+            "authenticate_customer": {
+              "name": "AuthenticateCustomer",
+              "description": "Verify credentials and step-up",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/identity_&_access/aggregates/credential/provides/customer_authenticated"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {},
       "glossary": {},
       "schemas": {}

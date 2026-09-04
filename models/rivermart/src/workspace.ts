@@ -688,15 +688,6 @@ const verifySeller = sellerAgg
 		internal: true,
 	})
 	.raises(sellerActivated);
-const suspendSeller = sellerAgg
-	.provides("SuspendSeller", {
-		description:
-			"Suspend a seller; used by Trust & Safety through the policy below",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: sellerRefSchema,
-	})
-	.raises(sellerSuspended);
 
 const sellerCentral = sellerBC.addService("SellerCentralAPI", {
 	description: "The seller sign-up endpoints",
@@ -709,6 +700,17 @@ sellerCentral
 		pattern: "open-host-service",
 	})
 	.raises(sellerRegistered);
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const suspendSeller = sellerCentral
+	.provides("SuspendSeller", {
+		description:
+			"Suspend a seller; used by Trust & Safety through the policy below",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: sellerRefSchema,
+	})
+	.raises(sellerSuspended);
 
 sellerBC
 	.addPolicy("Verify on registration", {
@@ -792,19 +794,6 @@ const cartCheckedOut = cartAgg.provides("CartCheckedOut", {
 	pattern: "published-language",
 	schema: cartCheckedOutSchema,
 });
-cartAgg.provides("AddToCart", {
-	description: "Add or increase a line",
-	type: "operation",
-	pattern: "open-host-service",
-});
-cartAgg
-	.provides("Checkout", {
-		description: "Freeze the cart and start the purchase",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: cartCheckedOutSchema,
-	})
-	.raises(cartCheckedOut);
 // "If the hold fails the customer sees an error and the cart stays open":
 // the frozen cart is reopened, which is a change to the cart, so it is an operation.
 const reopenCart = cartAgg.provides("ReopenCart", {
@@ -840,6 +829,21 @@ const checkoutOrchestrator = cartBC.addService("CheckoutOrchestrator", {
 		"Drives a checkout through payment authorisation and order placement; an application service because it coordinates other contexts",
 	type: "application",
 });
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+checkoutOrchestrator.provides("AddToCart", {
+	description: "Add or increase a line",
+	type: "operation",
+	pattern: "open-host-service",
+});
+checkoutOrchestrator
+	.provides("Checkout", {
+		description: "Freeze the cart and start the purchase",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: cartCheckedOutSchema,
+	})
+	.raises(cartCheckedOut);
 checkoutOrchestrator.consumes(getOffer, { pattern: "anti-corruption-layer" });
 
 cartBC.addTerm("Cart", {
@@ -1009,36 +1013,12 @@ const orderCompleted = orderAgg.provides("OrderCompleted", {
 	schema: orderRefSchema,
 });
 
-const placeOrder = orderAgg
-	.provides("PlaceOrder", {
-		description: "Create the order from a checked-out cart",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: orderPlacedSchema,
-	})
-	.raises(orderPlaced);
-const cancelOrder = orderAgg
-	.provides("CancelOrder", {
-		description: "Cancel before anything ships",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: orderRefSchema,
-	})
-	.raises(orderCancelled);
 const recordShipment = orderAgg.provides("RecordShipment", {
 	description:
 		"Attach a warehouse dispatch to the order as a customer-visible shipment",
 	type: "operation",
 	internal: true,
 });
-const requestReturn = orderAgg
-	.provides("RequestReturn", {
-		description: "Open a return for some lines",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: returnRequestedSchema,
-	})
-	.raises(returnRequested);
 const completeOrder = orderAgg
 	.provides("CompleteOrder", {
 		description: "Close the order once every shipment is delivered",
@@ -1064,6 +1044,32 @@ const getOrder = orderApi.provides("GetOrder", {
 	pattern: "open-host-service",
 	schema: orderRefSchema,
 });
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const placeOrder = orderApi
+	.provides("PlaceOrder", {
+		description: "Create the order from a checked-out cart",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: orderPlacedSchema,
+	})
+	.raises(orderPlaced);
+const cancelOrder = orderApi
+	.provides("CancelOrder", {
+		description: "Cancel before anything ships",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: orderRefSchema,
+	})
+	.raises(orderCancelled);
+const requestReturn = orderApi
+	.provides("RequestReturn", {
+		description: "Open a return for some lines",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: returnRequestedSchema,
+	})
+	.raises(returnRequested);
 
 orderBC.addTerm("Order", {
 	definition: "A paid-for purchase of one or more lines",
@@ -1182,7 +1188,14 @@ const refundIssued = paymentAgg.provides("RefundIssued", {
 	schema: paymentRefSchema,
 });
 
-const authorisePayment = paymentAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const paymentsApi = paymentsBC.addService("PaymentsAPI", {
+	description:
+		"Payments' application service: the boundary checkout and order management ask for money through",
+	type: "application",
+});
+const authorisePayment = paymentsApi
 	.provides("AuthorisePayment", {
 		description: "Hold the cart total on the customer's instrument",
 		type: "operation",
@@ -1190,7 +1203,7 @@ const authorisePayment = paymentAgg
 		schema: authorisePaymentSchema,
 	})
 	.raises(paymentAuthorised, paymentDeclined);
-const capturePayment = paymentAgg
+const capturePayment = paymentsApi
 	.provides("CapturePayment", {
 		description:
 			"Take the money for one shipment; charging at dispatch keeps cancelled orders free",
@@ -1199,7 +1212,7 @@ const capturePayment = paymentAgg
 		schema: paymentRefSchema,
 	})
 	.raises(paymentCaptured);
-const refundPayment = paymentAgg
+const refundPayment = paymentsApi
 	.provides("RefundPayment", {
 		description: "Return money for a received return",
 		type: "operation",
@@ -1220,18 +1233,35 @@ checkoutOrchestrator.consumes(authorisePayment, {
 	pattern: "anti-corruption-layer",
 });
 checkoutOrchestrator.consumes(placeOrder, { pattern: "anti-corruption-layer" });
+// A policy names operations of its own context, so the orchestrator holds the
+// two steps that reach out through the ACL above (decision 17).
+const requestAuthorisation = checkoutOrchestrator.provides(
+	"RequestAuthorisation",
+	{
+		description:
+			"Ask Payments to hold the cart total, through the ACL; the checkout's own step",
+		type: "operation",
+		internal: true,
+	},
+);
+const placeOrderForCart = checkoutOrchestrator.provides("PlaceOrderForCart", {
+	description:
+		"Ask Order Management to create the order for an authorised cart, through the ACL",
+	type: "operation",
+	internal: true,
+});
 cartBC
 	.addPolicy("Authorise on checkout", {
 		description: "A checked-out cart is paid for before anything else happens",
 	})
 	.on(cartCheckedOut)
-	.then(authorisePayment);
+	.then(requestAuthorisation);
 cartBC
 	.addPolicy("Place order on authorisation", {
 		description: "Once funds are held the order becomes real",
 	})
 	.on(paymentAuthorised)
-	.then(placeOrder);
+	.then(placeOrderForCart);
 checkoutOrchestrator.consumes(paymentDeclined, {
 	pattern: "anti-corruption-layer",
 });
@@ -1527,7 +1557,14 @@ const stockReceived = inventoryAgg.provides("StockReceived", {
 	type: "event",
 	internal: true,
 });
-const reserveStock = inventoryAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const warehouseApi = warehouseBC.addService("WarehouseAPI", {
+	description:
+		"The warehouse's application service: the boundary stock is reserved through",
+	type: "application",
+});
+const reserveStock = warehouseApi
 	.provides("ReserveStock", {
 		description:
 			"Hold stock for an order, choosing the nearest site that has it",
@@ -1641,6 +1678,14 @@ orderAgg.consumes(shipmentDispatched, { pattern: "anti-corruption-layer" });
 orderAgg.consumes(returnReceived, { pattern: "anti-corruption-layer" });
 orderAgg.consumes(stockShort, { pattern: "anti-corruption-layer" });
 orderAgg.consumes(refundPayment, { pattern: "anti-corruption-layer" });
+// The refund is asked for by an operation of Order Management's own, which is
+// what the policy below names (decision 17).
+const requestRefund = orderAgg.provides("RequestRefund", {
+	description:
+		"Ask Payments to return the money for a graded return, through the ACL",
+	type: "operation",
+	internal: true,
+});
 orderBC
 	.addPolicy("Record dispatch", {
 		description: "A dispatched package appears on the order as a shipment",
@@ -1659,7 +1704,7 @@ orderBC
 		description: "Money goes back once the warehouse has graded the return",
 	})
 	.on(returnReceived)
-	.then(refundPayment);
+	.then(requestRefund);
 paymentAgg.consumes(shipmentDispatched, { pattern: "anti-corruption-layer" });
 paymentsBC
 	.addPolicy("Capture on dispatch", {
@@ -1986,7 +2031,14 @@ const caseOpened = caseAgg.provides("CaseOpened", {
 	type: "event",
 	pattern: "published-language",
 });
-const openCase = caseAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const caseApi = csBC.addService("CaseAPI", {
+	description:
+		"Customer Service's application service: the boundary cases are opened through",
+	type: "application",
+});
+const openCase = caseApi
 	.provides("OpenCase", {
 		description: "Create a case for a customer, optionally about an order",
 		type: "operation",

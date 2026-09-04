@@ -993,20 +993,6 @@
                   "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_activated"
                 }
               ]
-            },
-            "suspend_seller": {
-              "name": "SuspendSeller",
-              "description": "Suspend a seller; used by Trust & Safety through the policy below",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/seller_onboarding/schemas/seller_ref"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_suspended"
-                }
-              ]
             }
           },
           "consumes": [
@@ -1121,6 +1107,20 @@
                   "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_registered"
                 }
               ]
+            },
+            "suspend_seller": {
+              "name": "SuspendSeller",
+              "description": "Suspend a seller; used by Trust & Safety through the policy below",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/seller_onboarding/schemas/seller_ref"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_suspended"
+                }
+              ]
             }
           },
           "consumes": []
@@ -1151,7 +1151,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/suspend_seller"
+              "$ref": "#/boundedcontexts/seller_onboarding/services/seller_central_api/provides/suspend_seller"
             }
           ]
         }
@@ -1210,26 +1210,6 @@
               "schema": {
                 "$ref": "#/boundedcontexts/cart_&_checkout/schemas/cart_checked_out"
               }
-            },
-            "add_to_cart": {
-              "name": "AddToCart",
-              "description": "Add or increase a line",
-              "pattern": "open-host-service",
-              "type": "operation"
-            },
-            "checkout": {
-              "name": "Checkout",
-              "description": "Freeze the cart and start the purchase",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/cart_&_checkout/schemas/cart_checked_out"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/provides/cart_checked_out"
-                }
-              ]
             },
             "reopen_cart": {
               "name": "ReopenCart",
@@ -1396,7 +1376,40 @@
           "name": "CheckoutOrchestrator",
           "description": "Drives a checkout through payment authorisation and order placement; an application service because it coordinates other contexts",
           "type": "application",
-          "provides": {},
+          "provides": {
+            "add_to_cart": {
+              "name": "AddToCart",
+              "description": "Add or increase a line",
+              "pattern": "open-host-service",
+              "type": "operation"
+            },
+            "checkout": {
+              "name": "Checkout",
+              "description": "Freeze the cart and start the purchase",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/cart_&_checkout/schemas/cart_checked_out"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/provides/cart_checked_out"
+                }
+              ]
+            },
+            "request_authorisation": {
+              "name": "RequestAuthorisation",
+              "description": "Ask Payments to hold the cart total, through the ACL; the checkout's own step",
+              "type": "operation",
+              "internal": true
+            },
+            "place_order_for_cart": {
+              "name": "PlaceOrderForCart",
+              "description": "Ask Order Management to create the order for an authorised cart, through the ACL",
+              "type": "operation",
+              "internal": true
+            }
+          },
           "consumes": [
             {
               "consumable": {
@@ -1406,13 +1419,13 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/authorise_payment"
+                "$ref": "#/boundedcontexts/payments/services/payments_api/provides/authorise_payment"
               },
               "pattern": "anti-corruption-layer"
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/place_order"
+                "$ref": "#/boundedcontexts/order_management/services/order_api/provides/place_order"
               },
               "pattern": "anti-corruption-layer"
             },
@@ -1442,7 +1455,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/authorise_payment"
+              "$ref": "#/boundedcontexts/cart_&_checkout/services/checkout_orchestrator/provides/request_authorisation"
             }
           ]
         },
@@ -1456,7 +1469,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/place_order"
+              "$ref": "#/boundedcontexts/cart_&_checkout/services/checkout_orchestrator/provides/place_order_for_cart"
             }
           ]
         },
@@ -1564,53 +1577,11 @@
                 "$ref": "#/boundedcontexts/order_management/schemas/order_ref"
               }
             },
-            "place_order": {
-              "name": "PlaceOrder",
-              "description": "Create the order from a checked-out cart",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/order_management/schemas/order_placed"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
-                }
-              ]
-            },
-            "cancel_order": {
-              "name": "CancelOrder",
-              "description": "Cancel before anything ships",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/order_management/schemas/order_ref"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_cancelled"
-                }
-              ]
-            },
             "record_shipment": {
               "name": "RecordShipment",
               "description": "Attach a warehouse dispatch to the order as a customer-visible shipment",
               "type": "operation",
               "internal": true
-            },
-            "request_return": {
-              "name": "RequestReturn",
-              "description": "Open a return for some lines",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/order_management/schemas/return_requested"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/return_requested"
-                }
-              ]
             },
             "complete_order": {
               "name": "CompleteOrder",
@@ -1626,6 +1597,12 @@
             "hold_for_stock": {
               "name": "HoldForStock",
               "description": "Put the order into awaiting-stock when no site could reserve for it; it is retried when stock is received or cancelled by the customer",
+              "type": "operation",
+              "internal": true
+            },
+            "request_refund": {
+              "name": "RequestRefund",
+              "description": "Ask Payments to return the money for a graded return, through the ACL",
               "type": "operation",
               "internal": true
             }
@@ -1657,7 +1634,7 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/refund_payment"
+                "$ref": "#/boundedcontexts/payments/services/payments_api/provides/refund_payment"
               },
               "pattern": "anti-corruption-layer"
             },
@@ -2013,6 +1990,48 @@
               "schema": {
                 "$ref": "#/boundedcontexts/order_management/schemas/order_ref"
               }
+            },
+            "place_order": {
+              "name": "PlaceOrder",
+              "description": "Create the order from a checked-out cart",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/order_management/schemas/order_placed"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
+                }
+              ]
+            },
+            "cancel_order": {
+              "name": "CancelOrder",
+              "description": "Cancel before anything ships",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/order_management/schemas/order_ref"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_cancelled"
+                }
+              ]
+            },
+            "request_return": {
+              "name": "RequestReturn",
+              "description": "Open a return for some lines",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/order_management/schemas/return_requested"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/return_requested"
+                }
+              ]
             }
           },
           "consumes": []
@@ -2029,7 +2048,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/cancel_order"
+              "$ref": "#/boundedcontexts/order_management/services/order_api/provides/cancel_order"
             }
           ]
         },
@@ -2071,7 +2090,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/refund_payment"
+              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/request_refund"
             }
           ]
         },
@@ -2228,51 +2247,6 @@
               "schema": {
                 "$ref": "#/boundedcontexts/payments/schemas/payment_ref"
               }
-            },
-            "authorise_payment": {
-              "name": "AuthorisePayment",
-              "description": "Hold the cart total on the customer's instrument",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/payments/schemas/authorise_payment"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_authorised"
-                },
-                {
-                  "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_declined"
-                }
-              ]
-            },
-            "capture_payment": {
-              "name": "CapturePayment",
-              "description": "Take the money for one shipment; charging at dispatch keeps cancelled orders free",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/payments/schemas/payment_ref"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_captured"
-                }
-              ]
-            },
-            "refund_payment": {
-              "name": "RefundPayment",
-              "description": "Return money for a received return",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/payments/schemas/payment_ref"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/refund_issued"
-                }
-              ]
             },
             "attach_order": {
               "name": "AttachOrder",
@@ -2480,7 +2454,61 @@
           }
         }
       },
-      "services": {},
+      "services": {
+        "payments_api": {
+          "name": "PaymentsAPI",
+          "description": "Payments' application service: the boundary checkout and order management ask for money through",
+          "type": "application",
+          "provides": {
+            "authorise_payment": {
+              "name": "AuthorisePayment",
+              "description": "Hold the cart total on the customer's instrument",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/payments/schemas/authorise_payment"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_authorised"
+                },
+                {
+                  "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_declined"
+                }
+              ]
+            },
+            "capture_payment": {
+              "name": "CapturePayment",
+              "description": "Take the money for one shipment; charging at dispatch keeps cancelled orders free",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/payments/schemas/payment_ref"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_captured"
+                }
+              ]
+            },
+            "refund_payment": {
+              "name": "RefundPayment",
+              "description": "Return money for a received return",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/payments/schemas/payment_ref"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/refund_issued"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {
         "attach_order_to_payment": {
           "name": "Attach order to payment",
@@ -2506,7 +2534,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/capture_payment"
+              "$ref": "#/boundedcontexts/payments/services/payments_api/provides/capture_payment"
             }
           ]
         }
@@ -2868,23 +2896,6 @@
               "type": "event",
               "internal": true
             },
-            "reserve_stock": {
-              "name": "ReserveStock",
-              "description": "Hold stock for an order, choosing the nearest site that has it",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/warehouse/schemas/stock_reserved"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_reserved"
-                },
-                {
-                  "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_short"
-                }
-              ]
-            },
             "receive_stock": {
               "name": "ReceiveStock",
               "description": "Book in a vendor delivery",
@@ -3208,7 +3219,33 @@
           }
         }
       },
-      "services": {},
+      "services": {
+        "warehouse_api": {
+          "name": "WarehouseAPI",
+          "description": "The warehouse's application service: the boundary stock is reserved through",
+          "type": "application",
+          "provides": {
+            "reserve_stock": {
+              "name": "ReserveStock",
+              "description": "Hold stock for an order, choosing the nearest site that has it",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/warehouse/schemas/stock_reserved"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_reserved"
+                },
+                {
+                  "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_short"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {
         "reserve_on_order": {
           "name": "Reserve on order",
@@ -3220,7 +3257,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/reserve_stock"
+              "$ref": "#/boundedcontexts/warehouse/services/warehouse_api/provides/reserve_stock"
             }
           ]
         },
@@ -3976,17 +4013,6 @@
               "pattern": "published-language",
               "type": "event"
             },
-            "open_case": {
-              "name": "OpenCase",
-              "description": "Create a case for a customer, optionally about an order",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/customer_service/aggregates/case/provides/case_opened"
-                }
-              ]
-            },
             "resolve_case": {
               "name": "ResolveCase",
               "description": "Close the case with a resolution",
@@ -4003,7 +4029,7 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/request_return"
+                "$ref": "#/boundedcontexts/order_management/services/order_api/provides/request_return"
               },
               "pattern": "anti-corruption-layer"
             },
@@ -4110,7 +4136,27 @@
           }
         }
       },
-      "services": {},
+      "services": {
+        "case_api": {
+          "name": "CaseAPI",
+          "description": "Customer Service's application service: the boundary cases are opened through",
+          "type": "application",
+          "provides": {
+            "open_case": {
+              "name": "OpenCase",
+              "description": "Create a case for a customer, optionally about an order",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/customer_service/aggregates/case/provides/case_opened"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {
         "open_case_on_failed_delivery": {
           "name": "Open case on failed delivery",
@@ -4122,7 +4168,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/customer_service/aggregates/case/provides/open_case"
+              "$ref": "#/boundedcontexts/customer_service/services/case_api/provides/open_case"
             }
           ]
         }

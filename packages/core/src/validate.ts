@@ -10,6 +10,7 @@ import {
 	type EntityRelation,
 	isDirectedRelationshipType,
 	type Policy,
+	type Service,
 	ValueObject,
 	type Workspace,
 } from "./workspace";
@@ -633,6 +634,88 @@ const internalConsumable: Rule = (workspace) => {
 	return diagnostics;
 };
 
+/**
+ * A policy names operations of its own context. Reacting to another context's
+ * event is a consumption and crosses the boundary; acting inside another
+ * context does not (decision 17).
+ */
+const policyInContext: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const bc of workspace.boundedcontexts.values()) {
+		for (const policy of bc.policies.values()) {
+			for (const command of policy.commands) {
+				const owner = command.boundedcontext;
+				if (owner === bc) continue;
+				diagnostics.push({
+					severity: "error",
+					rule: "policy-in-context",
+					message: `Policy "${policy.name}" in "${bc.name}" issues "${command.name}", which belongs to "${owner.name}"`,
+					ref: policy.ref,
+				});
+			}
+		}
+	}
+	return diagnostics;
+};
+
+/**
+ * What a context offers outward is provided by an application service, so the
+ * operations of an aggregate or a domain service carry no upstream role and
+ * are consumed only from inside their own context (decision 17). Events are
+ * untouched: an aggregate still publishes the facts its context is known by.
+ */
+function operationsStayInside(
+	rule: string,
+	label: string,
+	provider: Aggregate | Service,
+): Diagnostic[] {
+	const bc = provider.boundedcontext;
+	const diagnostics: Diagnostic[] = [];
+	for (const operation of provider.consumables.values()) {
+		if (operation.type !== "operation") continue;
+		if (operation.pattern) {
+			diagnostics.push({
+				severity: "error",
+				rule,
+				message: `${label} "${provider.name}" offers "${operation.name}" as ${operation.pattern}, but what "${bc.name}" offers outward is provided by an application service`,
+				ref: operation.ref,
+			});
+		}
+		for (const { consumer } of operation.consumptions) {
+			if (consumer.boundedcontext === bc) continue;
+			diagnostics.push({
+				severity: "error",
+				rule,
+				message: `"${consumer.name}" in "${consumer.boundedcontext.name}" consumes "${operation.name}", an operation of ${label.toLowerCase()} "${provider.name}" internal to "${bc.name}"`,
+				ref: consumer.ref,
+			});
+		}
+	}
+	return diagnostics;
+}
+
+/** An aggregate's operations are its context's own, not its public boundary. */
+const aggregateNotPublic: Rule = (workspace) =>
+	Array.from(workspace.boundedcontexts.values()).flatMap((bc) =>
+		Array.from(bc.aggregates.values()).flatMap((aggregate) =>
+			operationsStayInside("aggregate-not-public", "Aggregate", aggregate),
+		),
+	);
+
+/** A domain service is internal logic, so its operations stay inside too. */
+const domainServiceInternal: Rule = (workspace) =>
+	Array.from(workspace.boundedcontexts.values()).flatMap((bc) =>
+		Array.from(bc.services.values())
+			.filter((service) => service.type === "domain")
+			.flatMap((service) =>
+				operationsStayInside(
+					"domain-service-internal",
+					"Domain service",
+					service,
+				),
+			),
+	);
+
 /** A consumable's payloads, sent and returned, are its own context's schemas. */
 const schemaContext: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -926,6 +1009,33 @@ const RULES: CataloguedRule[] = [
 		why: "internal means the consumable stays inside its context; anything outside depending on it makes that promise false.",
 		fix: "Drop internal and give the consumable an upstream role, or stop the other context from using it.",
 		check: internalConsumable,
+	},
+	{
+		rule: "policy-in-context",
+		severities: ["error"],
+		summary:
+			"A policy issues operations of its own bounded context; it may still react to another context's event.",
+		why: "A policy is its context's own rule, and reaching into another context to run an operation there is that context acting through someone else's model rather than through the boundary they published. Reacting is different: subscribing to a published event is how contexts integrate, so a policy's on may cross where its then may not (decision 08's crossing table).",
+		fix: "Give the policy's own context an operation that consumes the foreign one — an application service operation is the usual place — and name that in then.",
+		check: policyInContext,
+	},
+	{
+		rule: "aggregate-not-public",
+		severities: ["error"],
+		summary:
+			"An aggregate's operations declare no upstream role and are consumed only inside their own context.",
+		why: "An aggregate is a consistency boundary, not an integration boundary. When it offers operations outward as well as the application service in front of it, nothing in the model says which of the two is the context's public surface, and a caller outside can change the aggregate without passing the service that guards it. Its events are unaffected: publishing facts is how a context speaks outward.",
+		fix: "Mark the aggregate's operation internal: true and drop its pattern, then give the context's application service the public operation that consumes it; point the outside caller at that one.",
+		check: aggregateNotPublic,
+	},
+	{
+		rule: "domain-service-internal",
+		severities: ["error"],
+		summary:
+			"A domain service's operations declare no upstream role and are consumed only inside their own context.",
+		why: "A domain service holds domain logic that belongs to no single aggregate — it is the inside of the model, the same as an aggregate. Offering it outward makes another context depend on how this one arranges its logic instead of on what it promises.",
+		fix: "Mark the domain service's operation internal: true and drop its pattern, then let the context's application service provide the public operation that consumes it.",
+		check: domainServiceInternal,
 	},
 	{
 		rule: "schema-context",

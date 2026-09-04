@@ -37,7 +37,7 @@ Open-host service for /store/order endpoints
 | --- | --- | --- | --- |
 | OrderPlaced | - | **orderId**: `int64`, petId: `int64`, quantity: `Quantity` | OrderPlaced |
 | PlaceOrder | Request body for placing an order | petId: `int64`, quantity: `Quantity` | PlaceOrder |
-| OrderId | - | **orderId**: `int64` | OrderApproved, OrderDelivered, OrderDeleted, ApproveOrder, DeliverOrder, GetOrderById, DeleteOrder |
+| OrderId | - | **orderId**: `int64` | OrderApproved, OrderDelivered, OrderDeleted, ApproveOrder, DeliverOrder, GetOrderById, DeleteOrder, ConfirmDelivery, ReservePet, MarkPetSold |
 
 
 ## Policies
@@ -76,7 +76,7 @@ Open-host service for /store/order endpoints
 
 - **Fulfilment BC** (partnership)
 	- Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged.
-	- DeliverOrder and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier.
+	- ConfirmDelivery and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier.
 - **Identity BC** (separate-ways)
 	- The order payload carries no user field and the Sales service holds no credentials for the Identity API, so nothing links an order to an account. [sales/openapi.yaml](https://github.com/example/petstore/blob/main/sales/openapi.yaml)
 	- Keeping the two apart is deliberate: checkout must work for a visitor who never signs in. [ADR-007 Anonymous checkout](https://github.com/example/petstore/blob/main/docs/adr/007-anonymous-checkout.md)
@@ -93,12 +93,16 @@ Open-host service for /store/order endpoints
 ## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
-| [OrderApp](services/order_app/index.md) | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
-| [OrderApp](services/order_app/index.md) | anti-corruption-layer | Pet | ReservePet | open-host-service |
-| [OrderApp](services/order_app/index.md) | anti-corruption-layer | Pet | MarkPetSold | open-host-service |
+| [ShipmentApp](../fulfilment_bc/services/shipment_app/index.md) | - | OrderApp | ConfirmDelivery | open-host-service |
+| [OrderApp](services/order_app/index.md) | - | Order | DeliverOrder | - |
 | [Shipment](../fulfilment_bc/aggregates/shipment/index.md) | conformist | Order | OrderApproved | published-language |
 | [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Order | OrderApproved | published-language |
 | [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Order | OrderDelivered | published-language |
 | [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Order | OrderDeleted | published-language |
+| [OrderApp](services/order_app/index.md) | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [PetApp](../catalog_bc/services/pet_app/index.md) | - | Pet | ReservePet | - |
+| [PetApp](../catalog_bc/services/pet_app/index.md) | - | Pet | MarkPetSold | - |
+| [OrderApp](services/order_app/index.md) | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
+| [OrderApp](services/order_app/index.md) | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
 
 

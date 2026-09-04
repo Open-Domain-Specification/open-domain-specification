@@ -850,3 +850,194 @@ describe("comments-required", () => {
 		expect(schema).not.toHaveProperty("options");
 	});
 });
+
+describe("policy-in-context", () => {
+	/** Two contexts, an event crossing, and a policy that acts on the other. */
+	function reachingPolicy() {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const upApp = up.addService("Up App", {
+			description: "",
+			type: "application",
+		});
+		const happened = upApp.provides("Happened", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+		});
+		const react = upApp.provides("React", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		const downApp = down.addService("Down App", {
+			description: "",
+			type: "application",
+		});
+		const policy = down.addPolicy("On Happened", { description: "" });
+		policy.on(happened);
+		return { ws, down, downApp, react, policy };
+	}
+
+	const inContext = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "policy-in-context")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("flags a policy whose then names another context's operation", () => {
+		const { ws, react, policy } = reachingPolicy();
+		policy.then(react);
+		expect(inContext(ws)).toEqual([
+			[
+				"error",
+				'Policy "On Happened" in "Down" issues "React", which belongs to "Up"',
+				policy.ref,
+			],
+		]);
+	});
+
+	it("says nothing when the policy names its own context's operation", () => {
+		const { ws, downApp, react, policy } = reachingPolicy();
+		const local = downApp.provides("React Locally", {
+			description: "",
+			type: "operation",
+		});
+		downApp.consumes(react, { pattern: "anti-corruption-layer" });
+		policy.then(local);
+		expect(inContext(ws)).toEqual([]);
+	});
+
+	it("leaves a policy reacting to another context's event alone", () => {
+		const { ws, policy } = reachingPolicy();
+		// `on` is a consumption and may cross; only `then` may not (decision 17).
+		expect(policy.events).toHaveLength(1);
+		expect(inContext(ws)).toEqual([]);
+	});
+});
+
+describe("aggregate-not-public and domain-service-internal", () => {
+	/**
+	 * One context with an aggregate and a domain service, and a second context
+	 * ready to consume whatever the first offers.
+	 */
+	function inside() {
+		const ws = emptyWorkspace();
+		const own = ws.addBoundedContext("Own", { description: "" });
+		const other = ws.addBoundedContext("Other", { description: "" });
+		const agg = own.addAggregate("Thing", { description: "" });
+		agg.addRootEntity("Thing", { description: "" }).addAttribute("Id", {
+			type: "string",
+			identity: true,
+		});
+		const rules = own.addService("Rules", {
+			description: "",
+			type: "domain",
+		});
+		const app = own.addService("App", {
+			description: "",
+			type: "application",
+		});
+		const outsider = other.addService("Outsider", {
+			description: "",
+			type: "application",
+		});
+		return { ws, own, agg, rules, app, outsider };
+	}
+
+	const boundary = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter(
+				(d) =>
+					d.rule === "aggregate-not-public" ||
+					d.rule === "domain-service-internal",
+			)
+			.map((d) => [d.rule, d.severity, d.message, d.ref]);
+
+	it("flags an aggregate operation that declares an upstream role", () => {
+		const { ws, agg } = inside();
+		const op = agg.provides("Reserve", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		expect(boundary(ws)).toEqual([
+			[
+				"aggregate-not-public",
+				"error",
+				'Aggregate "Thing" offers "Reserve" as open-host-service, but what "Own" offers outward is provided by an application service',
+				op.ref,
+			],
+		]);
+	});
+
+	it("flags another context consuming an aggregate's operation", () => {
+		const { ws, agg, outsider } = inside();
+		const op = agg.provides("Reserve", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		outsider.consumes(op, { pattern: "anti-corruption-layer" });
+		expect(boundary(ws)).toEqual([
+			[
+				"aggregate-not-public",
+				"error",
+				'"Outsider" in "Other" consumes "Reserve", an operation of aggregate "Thing" internal to "Own"',
+				outsider.ref,
+			],
+		]);
+	});
+
+	it("flags a domain service offering or lending out an operation", () => {
+		const { ws, rules, outsider } = inside();
+		const op = rules.provides("Decide", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		outsider.consumes(op, { pattern: "conformist" });
+		expect(boundary(ws).map((d) => [d[0], d[3]])).toEqual([
+			["domain-service-internal", op.ref],
+			["domain-service-internal", outsider.ref],
+		]);
+	});
+
+	it("says nothing when the application service fronts them both", () => {
+		const { ws, agg, rules, app, outsider } = inside();
+		const held = agg.provides("Reserve", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const decided = rules.provides("Decide", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const offered = app.provides("Reserve Thing", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		app.consumes(held, {});
+		app.consumes(decided, {});
+		outsider.consumes(offered, { pattern: "anti-corruption-layer" });
+		expect(boundary(ws)).toEqual([]);
+	});
+
+	it("leaves an aggregate's events alone, published or consumed abroad", () => {
+		const { ws, agg, outsider } = inside();
+		const raised = agg.provides("Thing Happened", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+		});
+		// An aggregate still publishes the facts its context is known by; only
+		// its operations stay inside (decision 17).
+		outsider.consumes(raised, { pattern: "conformist" });
+		expect(boundary(ws)).toEqual([]);
+	});
+});

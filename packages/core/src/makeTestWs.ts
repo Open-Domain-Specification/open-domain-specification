@@ -20,8 +20,10 @@ export function makeTestWs() {
 		description: "",
 	});
 
+	// An application service, because what a context offers outward leaves its
+	// boundary and never an aggregate or a domain service (decision 17).
 	const d1Sd1Bc1S1 = d1Sd1Bc1.addService([d1Sd1Bc1.name, "S1"].join("."), {
-		type: "domain",
+		type: "application",
 		description: "",
 	});
 

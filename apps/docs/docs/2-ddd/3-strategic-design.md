@@ -52,6 +52,22 @@ Instead of one fragile “big model,” you get multiple strong models, each wit
 
 ---
 
+### A Context Acts Through Its Own Boundary
+
+What an aggregate offers stays inside its context. An aggregate is a
+consistency boundary, not an integration one, and the same goes for a domain
+service: both are the inside of the model. What a context offers outward is
+provided by its **application service**, so there is one place to look for the
+promises a context makes and one door every caller comes through.
+
+The same holds in the other direction. A policy reacts to another context's
+published event — that is how contexts integrate — but it issues operations of
+its own context only. To act on a neighbour, a context calls it from an
+operation of its own, and the dependency then reads where it belongs: as a
+consumption on the consumable map.
+
+---
+
 ### Relationships Between Contexts
 
 Boundaries don’t live in isolation. Contexts interact.

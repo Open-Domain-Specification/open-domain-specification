@@ -33,11 +33,15 @@ The company that carries a consignment. Its own cluster because carriers are onb
 Chooses ship dates across planned shipments so orders approved on the same day leave together; it only needs orderIds and dates, which is all OrderApproved gives it
 
 
+### [ShipmentApp](services/shipment_app/index.md)
+Fulfilment's application service: the boundary through which Fulfilment reports delivery to Sales
+
+
 
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| ShipmentDelivered | - | **shipmentId**: `int64`, orderId: `int64`, deliveredAt: `date-time` | ShipmentDelivered |
+| ShipmentDelivered | - | **shipmentId**: `int64`, orderId: `int64`, deliveredAt: `date-time` | ShipmentDelivered, ReportDelivery |
 
 
 ## Policies
@@ -46,7 +50,7 @@ Chooses ship dates across planned shipments so orders approved on the same day l
 | Name | Description | On | Then |
 | --- | --- | --- | --- |
 | Plan dispatch on approval | Every approved order gets a shipment planned straight away | OrderApproved | PlanDispatch |
-| Deliver order on delivery | When a shipment is delivered, mark the order delivered in Sales | ShipmentDelivered | DeliverOrder |
+| Deliver order on delivery | When a shipment is delivered, report it to Sales so the order moves to delivered | ShipmentDelivered | ReportDelivery |
 
 
 ## Context Relationships
@@ -57,13 +61,20 @@ Chooses ship dates across planned shipments so orders approved on the same day l
 
 - **Sales BC** (partnership)
 	- Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged.
-	- DeliverOrder and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier.
+	- ConfirmDelivery and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier.
 
 - `partnership` — **Partnership** (P). Mutual co-operation where teams coordinate development and releases.
 
 ## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
+| [ShipmentApp](services/shipment_app/index.md) | - | OrderApp | ConfirmDelivery | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | - | Order | DeliverOrder | - |
+| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [PetApp](../catalog_bc/services/pet_app/index.md) | - | Pet | ReservePet | - |
+| [PetApp](../catalog_bc/services/pet_app/index.md) | - | Pet | MarkPetSold | - |
+| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
 | [Shipment](aggregates/shipment/index.md) | conformist | Order | OrderApproved | published-language |
 
 

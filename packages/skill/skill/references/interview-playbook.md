@@ -93,7 +93,9 @@ Repeat for each context the user wants detailed. Ask which one to start with.
 ## Phase F: behaviour (produces Consumables, `raises`, Policies, Schemas)
 
 - "What can someone ask this part to do?" → `operation` consumables. Put an API entry point on
-  an application service, and a state change of one aggregate on that aggregate.
+  an application service, and a state change of one aggregate on that aggregate. What an
+  aggregate or a domain service offers stays inside the context: only an application service's
+  operations carry an upstream `pattern` or are consumed from outside.
 - "When that happens, what fact would you announce to the rest of the business?" → `event`
   consumable, linked from the operation with `raises`. Events are past tense.
 - "Is that something only this part uses, or would other parts care?" → `internal: true`, or
@@ -104,7 +106,9 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   attached with `returns`. A command that answers with nothing leaves `returns` off; a query
   that answers with nothing is not a query, so keep asking. Never put `returns` on an event.
 - "When <event> happens, what do you then do automatically?" → a policy with `on` the event
-  and `then` the operation. Either side may live in another context.
+  and `then` the operation. The event in `on` may belong to another context, because reacting
+  to a published fact is a consumption; the operation in `then` is always the policy's own
+  context's. To act on a neighbour, name a local operation that consumes theirs.
 - "Who outside this part listens for <event>?" → a consumption on their aggregate or service,
   with a downstream `pattern`.
 - Close: "Which of the words we used should I define, and does each map to one of the things

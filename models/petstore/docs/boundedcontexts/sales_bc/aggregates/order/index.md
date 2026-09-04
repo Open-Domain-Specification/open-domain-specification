@@ -40,7 +40,7 @@ Order for a single pet
 | OrderDelivered | event | no | published-language | Order delivered (status=delivered) | [OrderId](../../index.md#schemas) | - | - |
 | OrderDeleted | event | no | published-language | Order deleted via DELETE /store/order/{orderId} | [OrderId](../../index.md#schemas) | - | - |
 | ApproveOrder | operation | yes | - | Approve a placed order once the pet is available | [OrderId](../../index.md#schemas) | - | OrderApproved |
-| DeliverOrder | operation | no | open-host-service | Mark an approved order as delivered; issued by Fulfilment when the shipment arrives | [OrderId](../../index.md#schemas) | - | OrderDelivered |
+| DeliverOrder | operation | yes | - | Mark an approved order as delivered; run by OrderApp when Fulfilment reports the shipment arrived | [OrderId](../../index.md#schemas) | - | OrderDelivered |
 
 
 ## Consumes

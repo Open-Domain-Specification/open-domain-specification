@@ -26,8 +26,8 @@ describe("ConsumesTable", () => {
 		).toBeInTheDocument();
 		// The protection is a code from the pattern table, in the editor font.
 		expect(
-			container.querySelector("tbody td:nth-child(4) .keyword"),
-		).toHaveClass("mono");
+			container.querySelector("tbody td:nth-child(4) .keyword.mono"),
+		).toBeInTheDocument();
 	});
 
 	it("says a consumption with no declared protection is unspecified", () => {

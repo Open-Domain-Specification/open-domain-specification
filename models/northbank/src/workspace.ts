@@ -452,7 +452,14 @@ const holdOnboarding = customerAgg.provides("HoldOnboarding", {
 	type: "operation",
 	internal: true,
 });
-consentAgg
+
+const onboardingApp = customerBC.addService("OnboardingApp", {
+	description: "The onboarding journey and the customer read API",
+	type: "application",
+});
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+onboardingApp
 	.provides("GiveConsent", {
 		description: "Record a permission",
 		type: "operation",
@@ -460,7 +467,7 @@ consentAgg
 		schema: consentSchema,
 	})
 	.raises(consentGiven);
-consentAgg
+onboardingApp
 	.provides("WithdrawConsent", {
 		description: "End a permission, finally",
 		type: "operation",
@@ -468,11 +475,6 @@ consentAgg
 		schema: consentSchema,
 	})
 	.raises(consentWithdrawn);
-
-const onboardingApp = customerBC.addService("OnboardingApp", {
-	description: "The onboarding journey and the customer read API",
-	type: "application",
-});
 onboardingApp
 	.provides("StartOnboarding", {
 		description: "Begin with name, date of birth, address and a document",
@@ -556,7 +558,14 @@ const partyMatched = screeningAgg.provides("PartyMatched", {
 	pattern: "published-language",
 	schema: partyMatchedSchema,
 });
-const screenParty = screeningAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const screeningApp = sanctionsBC.addService("ScreeningApp", {
+	description:
+		"Sanctions Screening's application service: the boundary the bank screens names through",
+	type: "application",
+});
+const screenParty = screeningApp
 	.provides("ScreenParty", {
 		description: "Check a name, date of birth and country against the lists",
 		type: "operation",
@@ -734,14 +743,6 @@ const accountClosed = accountAgg.provides("AccountClosed", {
 	pattern: "published-language",
 	schema: accountRefSchema,
 });
-const freezeAccount = accountAgg
-	.provides("FreezeAccount", {
-		description: "Block debits; issued when Financial Crime opens a case",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: accountRefSchema,
-	})
-	.raises(accountFrozen);
 accountAgg
 	.provides("CloseAccount", {
 		description: "Close at zero balance",
@@ -780,6 +781,16 @@ const getAvailableBalance = accountServicing.provides("GetAvailableBalance", {
 	pattern: "open-host-service",
 	schema: accountRefSchema,
 });
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const freezeAccount = accountServicing
+	.provides("FreezeAccount", {
+		description: "Block debits; issued when Financial Crime opens a case",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: accountRefSchema,
+	})
+	.raises(accountFrozen);
 
 accountAgg.consumes(customerVerified, { pattern: "conformist" });
 
@@ -922,7 +933,14 @@ const entryPosted = entryAgg.provides("EntryPosted", {
 	pattern: "published-language",
 	schema: entryPostedSchema,
 });
-const postEntry = entryAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const ledgerApp = ledgerBC.addService("LedgerApp", {
+	description:
+		"The ledger's application service: the documented posting API every other context uses",
+	type: "application",
+});
+const postEntry = ledgerApp
 	.provides("PostEntry", {
 		description: "Post a balanced entry",
 		type: "operation",
@@ -930,7 +948,7 @@ const postEntry = entryAgg
 		schema: postEntrySchema,
 	})
 	.raises(entryPosted);
-entryAgg
+ledgerApp
 	.provides("ReverseEntry", {
 		description: "Post the opposite entry against an earlier one",
 		type: "operation",
@@ -1126,7 +1144,14 @@ const paymentRejected = instructionAgg.provides("PaymentRejected", {
 	pattern: "published-language",
 	schema: paymentEventSchema,
 });
-instructionAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const paymentsApp = paymentsBC.addService("PaymentsApp", {
+	description:
+		"The hub's application service: the boundary channels initiate payments through, and the one that calls the scheme, the ledger and fraud",
+	type: "application",
+});
+paymentsApp
 	.provides("InitiatePayment", {
 		description:
 			"Create an instruction from a channel, once AccountServicing confirms the available balance covers it and the daily limit holds",
@@ -1243,7 +1268,14 @@ const schemeRejected = schemeMessageAgg.provides("SchemeRejected", {
 	pattern: "published-language",
 	schema: settlementSchema,
 });
-const submitToScheme = schemeMessageAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const schemeApp = schemeBC.addService("SchemeGatewayApp", {
+	description:
+		"The gateway's application service: the boundary the hub submits messages through",
+	type: "application",
+});
+const submitToScheme = schemeApp
 	.provides("SubmitToScheme", {
 		description: "Send a submission and await the response",
 		type: "operation",
@@ -1252,16 +1284,24 @@ const submitToScheme = schemeMessageAgg
 	})
 	.raises(schemeSettlementConfirmed, schemeRejected);
 
-instructionAgg.consumes(submitToScheme, { pattern: "conformist" });
+paymentsApp.consumes(submitToScheme, { pattern: "conformist" });
 instructionAgg.consumes(schemeSettlementConfirmed, { pattern: "conformist" });
 instructionAgg.consumes(schemeRejected, { pattern: "conformist" });
-instructionAgg.consumes(postEntry, { pattern: "anti-corruption-layer" });
+paymentsApp.consumes(postEntry, { pattern: "anti-corruption-layer" });
+// A policy names operations of its own context, so each step that reaches
+// another context is an operation of the hub's own app service (decision 17).
+const sendToScheme = paymentsApp.provides("SendToScheme", {
+	description:
+		"Hand a submitted instruction to the gateway, by calling SubmitToScheme",
+	type: "operation",
+	internal: true,
+});
 paymentsBC
 	.addPolicy("Submit to scheme", {
 		description: "A submitted instruction goes to the gateway",
 	})
 	.on(paymentSubmitted)
-	.then(submitToScheme);
+	.then(sendToScheme);
 paymentsBC
 	.addPolicy("Confirm settlement", {
 		description: "The scheme's confirmation settles the instruction",
@@ -1274,12 +1314,18 @@ paymentsBC
 	})
 	.on(schemeRejected)
 	.then(rejectPayment);
+const postSettlement = paymentsApp.provides("PostSettlement", {
+	description:
+		"Post the settled instruction to the ledger, through the ACL over PostEntry",
+	type: "operation",
+	internal: true,
+});
 paymentsBC
 	.addPolicy("Post on settlement", {
 		description: "A settled instruction posts to the ledger",
 	})
 	.on(paymentSettled)
-	.then(postEntry);
+	.then(postSettlement);
 
 /* =======================
    FRAUD
@@ -1400,7 +1446,14 @@ fraudCaseAgg.provides("CloseCase", {
 	internal: true,
 });
 
-const scoreTransaction = transactionScorer
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const fraudApp = fraudBC.addService("FraudApp", {
+	description:
+		"Fraud's application service: the boundary other contexts ask for a verdict through, in front of the scorer",
+	type: "application",
+});
+const scoreTransaction = fraudApp
 	.provides("ScoreTransaction", {
 		description: "Score synchronously; callers wait on the verdict",
 		type: "operation",
@@ -1427,19 +1480,25 @@ fraudBC.addTerm("APP scam", {
 });
 
 // Payments waits on the scorer; flags reject, clears submit.
-instructionAgg.consumes(scoreTransaction, { pattern: "anti-corruption-layer" });
+paymentsApp.consumes(scoreTransaction, { pattern: "anti-corruption-layer" });
 instructionAgg.consumes(transactionFlagged, {
 	pattern: "anti-corruption-layer",
 });
 instructionAgg.consumes(transactionCleared, {
 	pattern: "anti-corruption-layer",
 });
+const scoreInstruction = paymentsApp.provides("ScoreInstruction", {
+	description:
+		"Send an initiated instruction to Fraud for a verdict, through the ACL",
+	type: "operation",
+	internal: true,
+});
 paymentsBC
 	.addPolicy("Score on initiation", {
 		description: "Every instruction is scored before it goes anywhere",
 	})
 	.on(paymentInitiated)
-	.then(scoreTransaction);
+	.then(scoreInstruction);
 paymentsBC
 	.addPolicy("Submit on clear", {
 		description: "A cleared instruction is submitted",
@@ -1585,7 +1644,14 @@ const cardBlocked = cardAgg.provides("CardBlocked", {
 	pattern: "published-language",
 	schema: cardEventSchema,
 });
-cardAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const cardsApp = cardsBC.addService("CardsApp", {
+	description:
+		"Cards' application service: the boundary CardCo authorises against and channels block cards through",
+	type: "application",
+});
+cardsApp
 	.provides("AuthoriseCard", {
 		description: "Approve or decline a merchant's request from CardCo",
 		type: "operation",
@@ -1593,7 +1659,7 @@ cardAgg
 		schema: cardAuthRequestSchema,
 	})
 	.raises(cardAuthorised);
-const blockCard = cardAgg
+const blockCard = cardsApp
 	.provides("BlockCard", {
 		description:
 			"Block a card; issued by fraud or by a customer through a channel",
@@ -1809,7 +1875,14 @@ const applicationDeclined = applicationAgg.provides("ApplicationDeclined", {
 	type: "event",
 	internal: true,
 });
-applicationAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const lendingApp = lendingBC.addService("LendingApp", {
+	description:
+		"Lending's application service: the boundary applications arrive through, and the one that calls decisioning and the ledger",
+	type: "application",
+});
+lendingApp
 	.provides("SubmitApplication", {
 		description: "Ask for an amount over a term",
 		type: "operation",
@@ -1848,7 +1921,7 @@ const arrearsNoticeIssued = loanAgg.provides("ArrearsNoticeIssued", {
 	type: "event",
 	internal: true,
 });
-loanAgg
+lendingApp
 	.provides("SignAgreement", {
 		description: "Record the signed agreement and create the loan",
 		type: "operation",
@@ -1894,14 +1967,21 @@ lendingBC
 	})
 	.on(agreementSigned)
 	.then(disburse);
-loanAgg.consumes(postEntry, { pattern: "anti-corruption-layer" });
+lendingApp.consumes(postEntry, { pattern: "anti-corruption-layer" });
+// Lending's own step, which is what the policy names (decision 17).
+const postDisbursement = lendingApp.provides("PostDisbursement", {
+	description:
+		"Post the disbursement to the ledger, through the ACL over PostEntry",
+	type: "operation",
+	internal: true,
+});
 lendingBC
 	.addPolicy("Post disbursement", {
 		description:
 			"Disbursement is a ledger entry: debit loan book, credit the account",
 	})
 	.on(loanDisbursed)
-	.then(postEntry);
+	.then(postDisbursement);
 applicationAgg.consumes(getCustomer, { pattern: "anti-corruption-layer" });
 
 lendingBC.addTerm("Loan", {
@@ -2012,7 +2092,14 @@ const decisionMade = creditDecisionAgg.provides("DecisionMade", {
 	pattern: "published-language",
 	schema: decisionMadeSchema,
 });
-const decide = creditDecisionAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const decisioningApp = decisioningBC.addService("DecisioningApp", {
+	description:
+		"Credit Decisioning's application service: the boundary Lending and the channels ask for a decision through",
+	type: "application",
+});
+const decide = decisioningApp
 	.provides("Decide", {
 		description: "Pull the bureau, run the scorecard, check affordability",
 		type: "operation",
@@ -2033,14 +2120,19 @@ scorecard.provides("ScoreApplication", {
 creditDecisionAgg.consumes(getCustomer, { pattern: "anti-corruption-layer" });
 
 // Partnership: one planning board, so Lending conforms rather than translates.
-applicationAgg.consumes(decide, { pattern: "conformist" });
+lendingApp.consumes(decide, { pattern: "conformist" });
+const requestDecision = lendingApp.provides("RequestDecision", {
+	description: "Send a submitted application to Credit Decisioning",
+	type: "operation",
+	internal: true,
+});
 applicationAgg.consumes(decisionMade, { pattern: "conformist" });
 lendingBC
 	.addPolicy("Decide on submission", {
 		description: "Every submitted application is sent for a decision",
 	})
 	.on(applicationSubmitted)
-	.then(decide);
+	.then(requestDecision);
 lendingBC
 	.addPolicy("Record decision", {
 		description: "The outcome and reasons are stored on the application",
@@ -2208,7 +2300,14 @@ const requestRaised = requestAgg.provides("ServiceRequestRaised", {
 	type: "event",
 	internal: true,
 });
-requestAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const channelsApp = channelsBC.addService("ChannelsApp", {
+	description:
+		"The branch and contact centre application service: the boundary agents raise requests through",
+	type: "application",
+});
+channelsApp
 	.provides("RaiseRequest", {
 		description: "Open a request in a branch or on the phone",
 		type: "operation",
@@ -2317,7 +2416,14 @@ const customerAuthenticated = credentialAgg.provides("CustomerAuthenticated", {
 	type: "event",
 	pattern: "published-language",
 });
-const authenticateCustomer = credentialAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const identityApp = identityBC.addService("IdentityApp", {
+	description:
+		"Identity & Access' application service: the boundary channels authenticate customers through",
+	type: "application",
+});
+const authenticateCustomer = identityApp
 	.provides("AuthenticateCustomer", {
 		description: "Verify credentials and step-up",
 		type: "operation",
