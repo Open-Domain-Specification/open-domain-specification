@@ -20,6 +20,9 @@ From the Antigravity baseline (scratchpad agy-baseline.md, issues 9, 10, 11, 13,
 - [ ] `role-coherence` no longer warns on a consumption between two contexts that declare a `partnership` or `shared-kernel` relationship: symmetric partners carry no upstream or downstream role (Antigravity run 2, issue 15)
 - [ ] `term-in-context` (error): a glossary term's `embodiedBy` names an element of the term's own context (run 2, issue 17)
 - [ ] `separate-ways` also walks policy subscriptions: a policy `on` an event of a context the policy's context has gone separate ways from is the same error as a consumption (run 2, issue 18)
+- [ ] `invariant-in-aggregate` (error): every element an invariant constrains belongs to the invariant's own aggregate (run 3, issue 14)
+- [ ] `aggregate-tree` also warns on an orphan: a non-root entity not reachable from the root by `includes` or `references` (run 3, issue 18)
+- [ ] `attribute-relation-coherence` also warns when `valueobject` is set and `type` is neither the value object's name nor `Name[]` (run 3, issue 22)
 - [ ] Skill references regenerated; `docs/` validation page lists the new rules; four models validate with the intended diagnostics only (petstore clean)
 
 ## Comments

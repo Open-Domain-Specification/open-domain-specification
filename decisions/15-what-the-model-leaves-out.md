@@ -46,6 +46,14 @@ An aggregate has its own name and description because it is more than its root: 
 
 Aggregates, services, policies and schemas are flat within a context. A context with dozens of aggregates is the model saying it should be more than one context, or that its subdomain should be split; adding a folder would hide that. Reopened if a reference model has a context that genuinely needs an internal grouping the reader cannot get from ordering and description.
 
+### A relation carries one multiplicity, read from the source
+
+`cardinality` on a relation says how many targets a source has, because that is the question a reader asks of a class diagram ("how many lines does an order have?"). The reverse multiplicity is not modelled: for `includes` it is always one (a part has one whole), for `references` and `uses` it is unbounded unless the domain says otherwise, and saying otherwise is a sentence in the description. Two-ended multiplicity would double the interview questions for a fact that is rarely the point.
+
+### A relationship is between two contexts
+
+`partnership`, `shared-kernel` and `separate-ways` take exactly two participants. Three contexts in partnership are three pairs, each of which may differ in its comments and disposition; a single three-way edge would draw as one line and hide that. The map already composes pairs.
+
 ## Consequences
 
 - A review that expects these constructs should find this record and argue with its reasoning rather than report their absence.

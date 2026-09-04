@@ -14,6 +14,10 @@ Two shortcuts in the model let a context reach into another. A policy's `then` m
 - An aggregate's consumables are the context's internal vocabulary: they may not carry an upstream pattern and may not be consumed from another context. What a context offers outward is provided by an application service. Rules `aggregate-not-public` (error on the pattern, error on a foreign consumption).
 - A domain service is likewise internal: its consumables may not carry an upstream pattern or be consumed from outside. Rule `domain-service-internal`.
 
+### A policy may react to another context's event; it may not act in another context
+
+`PolicySchema.on` is a consumption: reacting to a foreign event is how a context integrates, and it crosses a context and a file exactly as a consumption does, through the file's declared dependency. `PolicySchema.then` names the policy's own context's operations only. Decision 08's crossing table is corrected: `on` may cross a file, `then` may not. The `separate-ways` rule treats a policy's `on` as a consumption.
+
 ## Consequences
 
 - No schema change; three rules and their catalogue entries. Decision 08's table is now consistent with the validator.
