@@ -11,11 +11,11 @@ import {
 	type AttributeOwner,
 	type BoundedContext,
 	type Constrainable,
-	type Consumable,
+	Consumable,
 	Consumption,
 	ContextRelationship,
 	constrainableLabel,
-	type DataSchema,
+	DataSchema,
 	Entity,
 	type EntityRelation,
 	isDirectedRelationshipType,
@@ -50,6 +50,22 @@ function* modelMembersOf(workspace: Workspace): Iterable<Entity | ValueObject> {
 		for (const aggregate of bc.aggregates.values())
 			yield* aggregate.entities.values();
 	}
+}
+
+/** Everything one context declares that carries attributes. */
+function* attributeOwnersIn(context: BoundedContext): Iterable<AttributeOwner> {
+	yield* context.schemas.values();
+	yield* context.valueobjects.values();
+	for (const aggregate of context.aggregates.values())
+		yield* aggregate.entities.values();
+}
+
+/** The same walk across the workspace, each owner with the context it is in. */
+function* attributeOwnersOf(
+	workspace: Workspace,
+): Iterable<{ owner: AttributeOwner; context: BoundedContext }> {
+	for (const context of workspace.boundedcontexts.values())
+		for (const owner of attributeOwnersIn(context)) yield { owner, context };
 }
 
 function* relationsOf(workspace: Workspace): Iterable<EntityRelation> {
@@ -303,10 +319,18 @@ function saysWhatItPointsAt(relation: EntityRelation): boolean {
 }
 
 /**
- * Within one aggregate `includes` forms a tree from the root: it points at
- * entities, no entity has two parents, and no chain closes on itself, while
- * `uses` points at value objects (decision 10's conventions). Relations that
- * leave the aggregate belong to `cross-aggregate-reference`.
+ * Within one aggregate `includes` says whole-part: it points at entities and
+ * `uses` points at value objects (decision 10's conventions), and the parts of
+ * one instance form a tree hanging off the root.
+ *
+ * The claim is about instances, not about types, which is why the rule reads
+ * the type graph only for what a type graph can say. A Category whose parts are
+ * Categories is the composite pattern, and the instances still form a tree; a
+ * Waypoint included by both a FreightLeg and an AccessorialLeg still belongs to
+ * one leg at a time. Neither is reported. A ring through two or more distinct
+ * types is: there is then no type a reader can name as the one that holds the
+ * other, so no instance tree can be laid out either. Relations that leave the
+ * aggregate belong to `cross-aggregate-reference`.
  */
 const aggregateTree: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -336,26 +360,17 @@ const aggregateTree: Rule = (workspace) => {
 		}
 	}
 	for (const aggregate of aggregatesOf(workspace)) {
-		const parents = new Map<Entity, Entity[]>();
 		const children = new Map<Entity, Entity[]>();
 		for (const entity of aggregate.entities.values()) {
 			for (const relation of entity.relations) {
 				if (relation.relation !== "includes") continue;
 				if (!(relation.target instanceof Entity)) continue;
 				if (relation.target.aggregate !== aggregate) continue;
-				append(parents, relation.target, entity);
+				// A type that includes itself nests its own instances, so the edge
+				// says nothing about whether the instances form a ring.
+				if (relation.target === entity) continue;
 				append(children, entity, relation.target);
 			}
-		}
-		for (const [child, owners] of parents) {
-			if (owners.length < 2) continue;
-			const named = owners.map((o) => `"${o.name}"`).join(" and ");
-			diagnostics.push({
-				severity: "error",
-				rule: "aggregate-tree",
-				message: `"${child.name}" is included by ${named} in aggregate "${aggregate.name}"; inside an aggregate an entity has exactly one parent`,
-				ref: child.ref,
-			});
 		}
 		diagnostics.push(...includesCycles(aggregate, children));
 		diagnostics.push(...orphanEntities(aggregate));
@@ -395,7 +410,10 @@ function orphanEntities(aggregate: Aggregate): Diagnostic[] {
 		}));
 }
 
-/** One diagnostic per back edge of an aggregate's `includes` graph. */
+/**
+ * One diagnostic per back edge of an aggregate's `includes` graph between
+ * distinct entity types; a type that includes itself never reaches this graph.
+ */
 function includesCycles(
 	aggregate: Aggregate,
 	children: Map<Entity, Entity[]>,
@@ -410,7 +428,7 @@ function includesCycles(
 				diagnostics.push({
 					severity: "error",
 					rule: "aggregate-tree",
-					message: `"${entity.name}" includes "${child.name}", which already includes "${entity.name}" further up aggregate "${aggregate.name}"; "includes" forms a tree from the root, never a cycle`,
+					message: `"${entity.name}" includes "${child.name}", which already includes "${entity.name}" further up aggregate "${aggregate.name}"; with each holding the other there is no whole to start the instance tree from`,
 					ref: entity.ref,
 				});
 				continue;
@@ -487,20 +505,57 @@ const attributeRelationCoherence: Rule = (workspace) => {
 	return diagnostics;
 };
 
-/** The element an attribute hangs off, or the element itself. */
-function ownerOf(target: Constrainable): AttributeOwner {
-	return target instanceof Attribute ? target.owner : target;
-}
+/**
+ * An attribute names one shape or none, and which shapes it may name depends
+ * on what holds it (decision 18).
+ *
+ * A value object and a schema are different claims — a value object is a
+ * concept of the context's own model, a schema a payload shape at the
+ * boundary — so no attribute names both: doing so leaves a reader unable to
+ * say which of the two the field really is. And an entity or a value object
+ * names only a value object, never a schema: what a domain object holds is
+ * part of the model, and reaching for a published payload shape would put the
+ * boundary's vocabulary inside the model it exists to protect. Composition
+ * with a schema is a schema's own business.
+ */
+const attributeOneShape: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const { owner } of attributeOwnersOf(workspace)) {
+		for (const attribute of owner.attributes.values()) {
+			if (attribute.valueobject && attribute.schema) {
+				diagnostics.push({
+					severity: "error",
+					rule: "attribute-one-shape",
+					message: `"${owner.name}" types attribute "${attribute.name}" by both value object "${attribute.valueobject.name}" and schema "${attribute.schema.name}"; an attribute has one shape`,
+					ref: attribute.ref,
+				});
+				continue;
+			}
+			if (attribute.schema && !(owner instanceof DataSchema)) {
+				diagnostics.push({
+					severity: "error",
+					rule: "attribute-one-shape",
+					message: `"${owner.name}" types attribute "${attribute.name}" by schema "${attribute.schema.name}", which is a payload shape at the context's boundary; an entity or value object names a value object instead`,
+					ref: attribute.ref,
+				});
+			}
+		}
+	}
+	return diagnostics;
+};
 
 /**
  * Where an invariant may reach: the aggregate an element sits in, or the
  * context, for a value object the whole context shares. A schema's attribute
- * sits in neither, so it reports as out of reach.
+ * sits in neither, so it reports as out of reach; so does a service's
+ * operation, since a service is not a boundary anything is saved inside.
  */
 function scopeOf(
 	target: Constrainable,
 ): Aggregate | BoundedContext | undefined {
-	const owner = ownerOf(target);
+	if (target instanceof Consumable)
+		return target.provider instanceof Aggregate ? target.provider : undefined;
+	const owner = target instanceof Attribute ? target.owner : target;
 	if (owner instanceof Entity) return owner.aggregate;
 	if (owner instanceof ValueObject) return owner.boundedcontext;
 	return undefined;
@@ -509,8 +564,10 @@ function scopeOf(
 /**
  * An invariant is enforced when its aggregate is saved, so everything it
  * constrains has to be inside that aggregate — or be a value object of the
- * aggregate's own context, which is saved as part of whichever aggregate
- * holds one (decision 16).
+ * aggregate's own context, which is saved as part of whichever aggregate holds
+ * one (decision 16). An operation of the same aggregate is inside it too: a
+ * transition rule is a rule about what that operation may do, and naming it is
+ * how the model says which change the rule guards (decision 19).
  */
 const invariantInAggregate: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -726,21 +783,18 @@ const relationshipCycle: Rule = (workspace) => {
 
 /** Every attribute a context declares, wherever it hangs. */
 function* attributesOf(bc: BoundedContext): Iterable<Attribute> {
-	for (const vo of bc.valueobjects.values()) yield* vo.attributes.values();
-	for (const schema of bc.schemas.values()) yield* schema.attributes.values();
-	for (const aggregate of bc.aggregates.values()) {
-		for (const entity of aggregate.entities.values())
-			yield* entity.attributes.values();
-	}
+	for (const owner of attributeOwnersIn(bc)) yield* owner.attributes.values();
 }
 
 /**
  * Whether anything in `borrower` is typed by a value object `owner` declares,
- * or carries one of its schemas: the two ways a kernel is shared.
+ * nests one of its schemas, or carries one on a consumable: the ways a kernel
+ * is shared.
  */
 function borrowsFrom(borrower: BoundedContext, owner: BoundedContext): boolean {
 	for (const attribute of attributesOf(borrower)) {
 		if (attribute.valueobject?.boundedcontext === owner) return true;
+		if (attribute.schema?.boundedcontext === owner) return true;
 	}
 	for (const p of [
 		...borrower.aggregates.values(),
@@ -1049,18 +1103,31 @@ const domainServiceInternal: Rule = (workspace) =>
 	);
 
 /**
- * A consumable's payloads, sent and returned, are its own context's schemas,
- * unless the schema comes from a context this one shares a kernel with: that
+ * A payload shape is its own context's, wherever it is named: on a consumable
+ * that sends or answers with it, and on an attribute that nests it (decision
+ * 18). The exception is a context this one shares a kernel with: that
  * relationship is the declaration that the two keep part of one model between
  * them, and it is the only place a payload may be borrowed (decision 16).
  */
 const schemaContext: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
+	/** Whether the schema is another context's and no kernel is shared with it. */
+	const borrowedBy = (schema: DataSchema, bc: BoundedContext) =>
+		schema.boundedcontext !== bc &&
+		!sharesKernelWith(workspace, bc, schema.boundedcontext);
+	for (const { owner, context } of attributeOwnersOf(workspace)) {
+		for (const attribute of owner.attributes.values()) {
+			if (!attribute.schema || !borrowedBy(attribute.schema, context)) continue;
+			diagnostics.push({
+				severity: "error",
+				rule: "schema-context",
+				message: `"${owner.name}" types attribute "${attribute.name}" by schema "${attribute.schema.name}" from "${attribute.schema.boundedcontext.name}"; a payload belongs to the context that publishes it`,
+				ref: attribute.ref,
+			});
+		}
+	}
 	for (const bc of workspace.boundedcontexts.values()) {
-		/** Whether the schema is another context's and no kernel is shared with it. */
-		const borrowed = (schema: DataSchema) =>
-			schema.boundedcontext !== bc &&
-			!sharesKernelWith(workspace, bc, schema.boundedcontext);
+		const borrowed = (schema: DataSchema) => borrowedBy(schema, bc);
 		for (const p of [...bc.aggregates.values(), ...bc.services.values()]) {
 			for (const c of p.consumables.values()) {
 				if (c.schema && borrowed(c.schema)) {
@@ -1372,9 +1439,9 @@ const RULES: CataloguedRule[] = [
 		rule: "aggregate-tree",
 		severities: ["error", "warning"],
 		summary:
-			"Inside an aggregate, includes forms a tree from the root over entities, uses points at value objects, and every entity is reachable from the root.",
-		why: "The aggregate is loaded and saved as one thing through its root. Two parents or a cycle means there is no single order in which to save it, an includes onto a value object or a uses onto an entity says the opposite of what the author means, and an entity nothing reaches is either dead or a missing relation.",
-		fix: "Point includes at the entity's one parent and uses at value objects, break the cycle by making the back edge a references, and give an unreachable entity the relation that reaches it — or move it to its own aggregate.",
+			"Inside an aggregate, includes points at entities and uses at value objects, no ring of two or more entity types includes itself, and every entity is reachable from the root.",
+		why: "The aggregate is loaded and saved as one thing through its root, so the parts of one instance hang off it as a tree. That is a claim about instances, not about types: an entity whose parts are of its own type is the composite pattern and still a tree per instance, and a part type included by two different wholes still belongs to one of them at a time, so neither is reported. A ring through two or more distinct types is, because then no type can be named as the one that holds the other and there is no whole to start from. An includes onto a value object or a uses onto an entity says the opposite of what the author means, and an entity nothing reaches is either dead or a missing relation.",
+		fix: "Point includes at entities and uses at value objects, break a ring of distinct types by making the back edge a references, and give an unreachable entity the relation that reaches it — or move it to its own aggregate.",
 		check: aggregateTree,
 	},
 	{
@@ -1387,12 +1454,21 @@ const RULES: CataloguedRule[] = [
 		check: attributeRelationCoherence,
 	},
 	{
+		rule: "attribute-one-shape",
+		severities: ["error"],
+		summary:
+			"An attribute is typed by a value object or by a schema, never by both, and only a schema's attribute names a schema.",
+		why: "A value object and a schema are two different things to be. A value object is a concept the context models and compares by value; a schema is a payload shape the context publishes to whoever is listening. An attribute claiming both leaves a reader unable to say which model the field belongs to, and a change to either shape becomes a change nobody can scope. For the same reason an entity or a value object holds only value objects: a payload shape belongs at the boundary, and letting one inside puts the vocabulary of the wire into the model the boundary exists to protect.",
+		fix: "Keep the value object when the attribute is a concept of the domain, and the schema when it is a nested part of a payload; drop the other. On an entity or a value object, declare the value object the field really is and point at that. Collections stay in the type string, so a list of a nested shape is OrderLine[] beside one schema reference.",
+		check: attributeOneShape,
+	},
+	{
 		rule: "invariant-in-aggregate",
 		severities: ["error"],
 		summary:
-			"Every element an invariant constrains belongs to the invariant's own aggregate, or is a value object of its context.",
-		why: "An invariant is the rule that holds every time its aggregate is saved. Something outside the boundary can change between one save and the next with nothing to stop it, so a rule stretched across two aggregates is a rule nobody can enforce. A value object is the exception: it belongs to the context and carries no state of its own, so it is saved as part of whichever aggregate holds one.",
-		fix: "Move the invariant to the aggregate that owns what it constrains, drop the foreign target, or model the guarantee as a policy reacting to the other aggregate's event, which is eventual by nature.",
+			"Every element an invariant constrains belongs to the invariant's own aggregate — an entity, an attribute, one of its operations — or is a value object of its context.",
+		why: "An invariant is the rule that holds every time its aggregate is saved. Something outside the boundary can change between one save and the next with nothing to stop it, so a rule stretched across two aggregates is a rule nobody can enforce. A value object is one exception: it belongs to the context and carries no state of its own, so it is saved as part of whichever aggregate holds one. The aggregate's own operations are the other: a rule about a transition is a rule about the operation that makes it, and naming it says which change the rule guards.",
+		fix: "Move the invariant to the aggregate that owns what it constrains, drop the foreign target, or model the guarantee as a policy reacting to the other aggregate's event, which is eventual by nature. If the target is an application service's operation, name the aggregate's own operation behind it instead: that is where the rule is enforced.",
 		check: invariantInAggregate,
 	},
 	{
@@ -1428,7 +1504,7 @@ const RULES: CataloguedRule[] = [
 		summary:
 			"Two contexts declaring a shared kernel share at least one value object or schema across it.",
 		why: "A shared kernel is a piece of model two teams agree to keep in step, and it costs them the freedom to change it alone. Declaring one with nothing in it pays that price for nothing, and it stands in the model as the warrant for a sharing nobody has made: it is the one relationship over which a value object or a payload schema may be borrowed.",
-		fix: "Type an attribute by a value object the other context declares, or carry one of its schemas on a consumable; or replace the shared kernel with the relationship the two contexts really have.",
+		fix: "Type an attribute by a value object the other context declares, nest one of its schemas in an attribute, or carry one on a consumable; or replace the shared kernel with the relationship the two contexts really have.",
 		check: sharedKernelBacked,
 	},
 	{
@@ -1507,9 +1583,9 @@ const RULES: CataloguedRule[] = [
 		rule: "schema-context",
 		severities: ["error"],
 		summary:
-			"A consumable's payload schema belongs to the consumable's own context, or to one it shares a kernel with.",
-		why: "The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A shared kernel is where two teams have said that in the model and accepted the price, so it is the one place the borrowing is allowed.",
-		fix: "Move or copy the schema into the publishing context and point the consumable at that one, or declare the shared kernel if the two contexts really do keep that shape between them.",
+			"A schema named by a consumable's payload, by its returns or by a nested attribute belongs to the naming element's own context, or to one it shares a kernel with.",
+		why: "The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A nested schema is the same borrowing one level down. A shared kernel is where two teams have said that in the model and accepted the price, so it is the one place the borrowing is allowed.",
+		fix: "Move or copy the schema into the publishing context and point the consumable or attribute at that one, or declare the shared kernel if the two contexts really do keep that shape between them.",
 		check: schemaContext,
 	},
 	{

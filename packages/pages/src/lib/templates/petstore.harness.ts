@@ -43,6 +43,15 @@ export const PETSTORE_REFS = {
 	policy: "#/boundedcontexts/sales_bc/policies/approve_when_pet_available",
 	invariant:
 		"#/boundedcontexts/sales_bc/aggregates/order/invariants/deliver_only_when_approved",
+	// SoldNotReopen is the one transition rule: it names the entity the
+	// transition belongs to and the operation that makes it, so it is the only
+	// route whose Guarded by section draws.
+	transitionInvariant:
+		"#/boundedcontexts/catalog_bc/aggregates/pet/invariants/sold_not_reopen",
+	// The operation that rule guards, and so the one consumable route whose
+	// Invariants section draws.
+	guardedOperation:
+		"#/boundedcontexts/catalog_bc/aggregates/pet/provides/change_pet_status",
 	term: "#/boundedcontexts/catalog_bc/glossary/pet",
 	termWithAlias: "#/boundedcontexts/catalog_bc/glossary/category",
 } as const;

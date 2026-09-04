@@ -1,7 +1,7 @@
 import type { Attribute } from "@open-domain-specification/core";
 import { render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
-import { edgeCaseModel, petstoreModel } from "../fixtures";
+import { edgeCaseModel, petstoreModel, rivermartModel } from "../fixtures";
 import AttributeTable from "./AttributeTable.svelte";
 
 const attributesOf = (model: ReturnType<typeof petstoreModel>): Attribute[] =>
@@ -31,6 +31,16 @@ describe("AttributeTable", () => {
 	it("links a type that is a value object in the model", () => {
 		const linked = attributesOf(petstoreModel()).filter((a) => a.valueobject);
 		render(AttributeTable, { attributes: linked });
+		expect(screen.getAllByRole("link")[0].closest("code")).toBeInTheDocument();
+	});
+
+	it("links a type that is a schema of its own, so a payload can be read into its parts", () => {
+		const orderPlaced = rivermartModel().workspace.getSchemaByRefOrThrow(
+			"#/boundedcontexts/order_management/schemas/order_placed",
+		);
+		const nested = [...orderPlaced.attributes.values()].filter((a) => a.schema);
+		expect(nested).toHaveLength(1);
+		render(AttributeTable, { attributes: nested });
 		expect(screen.getAllByRole("link")[0].closest("code")).toBeInTheDocument();
 	});
 

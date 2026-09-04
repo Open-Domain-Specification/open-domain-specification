@@ -27,16 +27,25 @@ const line = order.addEntity("Order Line", { description: "One item" });
 orderRoot.includes(line, "has lines", "1..*"); // relations may carry a cardinality
 
 // Invariants say what they constrain.
-order
+const nonEmpty = order
 	.addInvariant("Non-empty", { description: "An order has at least one line" })
 	.constrains(line);
 
-// A context declares the payload shapes of its messages once, as schemas.
+// A context declares the payload shapes of its messages once, as schemas, and
+// a schema may name another as the type of one of its attributes.
+const lineSummary = ordering.addSchema("Line Summary", {
+	description: "One line, as the outside world sees it",
+});
+lineSummary.addAttribute("sku", { type: "SKU", identity: true });
 const orderSummary = ordering.addSchema("Order Summary", {
 	description: "What the outside world learns about an order",
 });
 orderSummary.addAttribute("orderId", { type: "OrderId", identity: true });
 orderSummary.addAttribute("total", { type: "Money", valueobject: money });
+orderSummary.addAttribute("lines", {
+	type: "LineSummary[]",
+	schema: lineSummary,
+});
 
 // An aggregate provides event consumables; an operation consumable lists the
 // events it raises. Both may point at a schema.
@@ -62,6 +71,15 @@ const lineAdded = order.provides("Line Added", {
 	type: "event",
 	internal: true,
 });
+
+// A transition rule is about the operation that makes the transition, so the
+// invariant names it: only the aggregate's own consumables may be named.
+const removeLine = order.provides("Remove Line", {
+	description: "Takes a line off the order",
+	type: "operation",
+	internal: true,
+});
+nonEmpty.constrains(removeLine);
 
 // Policies react to events with operations, even across contexts.
 const billing = ws.addBoundedContext("Billing", { description: "" });
@@ -136,11 +154,39 @@ describe("Tactical design", () => {
 			  "description": undefined,
 			  "identity": undefined,
 			  "name": "total",
+			  "schema": undefined,
 			  "type": "Money",
 			  "valueobject": {
 			    "$ref": "#/boundedcontexts/ordering/valueobjects/money",
 			  },
 			}
+		`);
+		expect(
+			schema.boundedcontexts.ordering.schemas.order_summary.attributes.lines,
+		).toMatchInlineSnapshot(`
+			{
+			  "description": undefined,
+			  "identity": undefined,
+			  "name": "lines",
+			  "schema": {
+			    "$ref": "#/boundedcontexts/ordering/schemas/line_summary",
+			  },
+			  "type": "LineSummary[]",
+			  "valueobject": undefined,
+			}
+		`);
+		expect(
+			schema.boundedcontexts.ordering.aggregates.order.invariants.non_empty
+				.constrains,
+		).toMatchInlineSnapshot(`
+			[
+			  {
+			    "$ref": "#/boundedcontexts/ordering/aggregates/order/entities/order_line",
+			  },
+			  {
+			    "$ref": "#/boundedcontexts/ordering/aggregates/order/provides/remove_line",
+			  },
+			]
 		`);
 		expect(lineAdded.internal).toBe(true);
 		expect(

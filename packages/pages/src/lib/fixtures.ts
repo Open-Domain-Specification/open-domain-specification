@@ -35,6 +35,22 @@ export function petstoreSales(): { model: Model; context: BoundedContext } {
 }
 
 /**
+ * RiverMart as a model. It is the reference organisation whose order payloads
+ * nest a shape of their own, so it is what a story showing composed schemas
+ * draws.
+ */
+export function rivermartModel(): Model {
+	const workspace = Workspace.fromSchema(
+		rivermart as Parameters<typeof Workspace.fromSchema>[0],
+	);
+	return {
+		workspace,
+		fileLabel: "rivermart.json",
+		diagnostics: workspace.validate(),
+	};
+}
+
+/**
  * A hand-built workspace exercising the alternate branches the petstore
  * fixture never reaches: teams that own nothing, aggregates without a root,
  * empty schemas, orphan glossary terms, a duplicate term name across

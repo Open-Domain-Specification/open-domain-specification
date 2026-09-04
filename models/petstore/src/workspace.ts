@@ -194,10 +194,10 @@ petAgg
 			"Pet.name must be non-empty, because the storefront lists pets by name",
 	})
 	.constrains(petRoot.attributes.get("name")!);
-petAgg
+const soldNotReopen = petAgg
 	.addInvariant("SoldNotReopen", {
 		description:
-			"Once sold, a pet does not revert to available without an explicit policy, so a buyer is never undercut. Constrains the Pet because the transition is the pet's, not the status value's",
+			"Once sold, a pet does not revert to available without an explicit policy, so a buyer is never undercut. Constrains the Pet because the transition is the pet's, not the status value's, and the operation that makes the transition, because that is where the rule is enforced",
 	})
 	.constrains(petRoot);
 
@@ -276,7 +276,7 @@ const petDeleted = petAgg.provides("PetDeleted", {
 
 // An internal operation never leaves its context, so it declares no pattern.
 // Only the catalog moves a pet between statuses; `raises` links it to the fact it produces.
-petAgg
+const changePetStatus = petAgg
 	.provides("ChangePetStatus", {
 		description:
 			"Move a pet between available, pending and sold; the catalogue's own edits, e.g. relisting",
@@ -285,6 +285,10 @@ petAgg
 		schema: petStatusChangedSchema,
 	})
 	.raises(petStatusChanged);
+// SoldNotReopen is a transition rule, so it names the operation that makes the
+// transition as well as the entity the transition belongs to; the operation is
+// declared here, below the invariant that guards it.
+soldNotReopen.constrains(changePetStatus);
 // The two transitions the order lifecycle drives are the aggregate's own, so
 // they are internal: what Catalog offers outward leaves PetApp below
 // (decision 17). The pet lifecycle (available → pending → sold) is still

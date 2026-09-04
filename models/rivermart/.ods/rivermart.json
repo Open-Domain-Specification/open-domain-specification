@@ -2154,6 +2154,21 @@
         }
       },
       "schemas": {
+        "order_line": {
+          "name": "OrderLine",
+          "description": "One line of an order, as the fact carries it",
+          "attributes": {
+            "sku": {
+              "name": "sku",
+              "type": "string",
+              "identity": true
+            },
+            "quantity": {
+              "name": "quantity",
+              "type": "int32"
+            }
+          }
+        },
         "order_placed": {
           "name": "OrderPlaced",
           "description": "The fact warehouse, fraud and payments react to",
@@ -2169,7 +2184,10 @@
             },
             "lines": {
               "name": "lines",
-              "type": "{sku, quantity}[]"
+              "type": "OrderLine[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/order_management/schemas/order_line"
+              }
             },
             "total": {
               "name": "total",
@@ -2190,6 +2208,21 @@
             }
           }
         },
+        "return_line": {
+          "name": "ReturnLine",
+          "description": "One line of a return: which line of the order, and how many",
+          "attributes": {
+            "line_id": {
+              "name": "lineId",
+              "type": "string",
+              "identity": true
+            },
+            "quantity": {
+              "name": "quantity",
+              "type": "int32"
+            }
+          }
+        },
         "return_requested": {
           "name": "ReturnRequested",
           "attributes": {
@@ -2204,7 +2237,10 @@
             },
             "lines": {
               "name": "lines",
-              "type": "{lineId, quantity}[]"
+              "type": "ReturnLine[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/order_management/schemas/return_line"
+              }
             }
           }
         }
@@ -4267,6 +4303,21 @@
       },
       "valueobjects": {},
       "schemas": {
+        "purchase_order_line": {
+          "name": "PurchaseOrderLine",
+          "description": "One line of the nightly export",
+          "attributes": {
+            "sku": {
+              "name": "sku",
+              "type": "string",
+              "identity": true
+            },
+            "quantity": {
+              "name": "quantity",
+              "type": "int32"
+            }
+          }
+        },
         "purchase_order_received": {
           "name": "PurchaseOrderReceived",
           "description": "The nightly export the warehouse reads",
@@ -4278,7 +4329,10 @@
             },
             "lines": {
               "name": "lines",
-              "type": "{sku, quantity}[]"
+              "type": "PurchaseOrderLine[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)/schemas/purchase_order_line"
+              }
             }
           }
         }

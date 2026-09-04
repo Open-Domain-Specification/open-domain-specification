@@ -28,3 +28,8 @@ const { Story } = defineMeta({
 <Story name="High contrast">
 	{#snippet template()}<Theme mode="hc"><Page {model} ref={PETSTORE_REFS.invariant} /></Theme>{/snippet}
 </Story>
+
+<!-- A transition rule: it names the entity and the operation that makes the transition, so Guarded by draws. -->
+<Story name="Transition rule">
+	{#snippet template()}<Theme mode="light"><Page {model} ref={PETSTORE_REFS.transitionInvariant} /></Theme>{/snippet}
+</Story>

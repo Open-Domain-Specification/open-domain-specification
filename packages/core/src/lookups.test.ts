@@ -82,7 +82,12 @@ describe("Workspace ref lookups", () => {
 			fixture.orderLine,
 		);
 		expect(() => ws.getConstrainableByRefOrThrow("#/nope")).toThrow(
-			/Entity, Value Object or Attribute/,
+			/Entity, Value Object, Attribute or Consumable/,
+		);
+		// An invariant may also be a rule about one of its aggregate's
+		// operations, so a consumable ref resolves as something constrainable.
+		expect(ws.getConstrainableByRef(fixture.raiseInvoice.ref)).toBe(
+			fixture.raiseInvoice,
 		);
 	});
 

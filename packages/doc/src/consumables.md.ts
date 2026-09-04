@@ -29,6 +29,10 @@ const consumableRow = (consumable: Consumable, fromPath: string) => [
 	consumable.type === "operation"
 		? consumable.raisedEvents.map((it) => it.name).join(", ") || "-"
 		: "-",
+	// The invariants that name this consumable: the rules it has to uphold
+	// every time it runs, which is what makes a transition rule readable from
+	// the operation as well as from the aggregate's Invariants table.
+	consumable.invariants.map((it) => it.name).join(", ") || "-",
 ];
 
 /**
@@ -53,6 +57,7 @@ export const providesTableMd = (
 			"Schema",
 			"Returns",
 			"Raises",
+			"Guarded by",
 		],
 		provided.map((it) => consumableRow(it, fromPath)),
 	);

@@ -30,8 +30,10 @@ element lives in a workspace file; `DSL` is the core call that creates it.
 | "it has a field", "it's made of" | Attribute | `attributes.<id>` with `type` in the user's words | `entity.addAttribute(name, {type})` |
 | "the number that identifies it" | identity attribute | `"identity": true` | `identity: true` |
 | "its status is one of these values" | attribute backed by a value object | `attributes.<id>.valueobject: {$ref}` | `addAttribute(name, {type, valueobject: vo})` |
+| "each line has a sku and a quantity", "the address inside it" | attribute of a **schema** typed by another schema | `attributes.<id>.schema: {$ref}` | `addAttribute(name, {type: "OrderLine[]", schema: line})` |
 | "these change together", "one transaction", "the order and its lines" | Aggregate | `aggregates.<id>` | `bc.addAggregate(name, {description})` |
 | "must never", "always has to", "can't be negative", "only when" | Invariant | `invariants.<id>` with `constrains: [{$ref}]` | `agg.addInvariant(name, {description}).constrains(target)` |
+| "once it's sold it can't go back", "that operation must not" | Invariant naming the operation it guards | `constrains: [{$ref to a consumable of the same aggregate}]` | `agg.addInvariant(name, {description}).constrains(operation)` |
 | "an order points at a pet" (another cluster) | references relation | `relations[]` `relation: "references"` to the other root | `entity.references(otherRoot, label, cardinality)` |
 | "it contains lines that can't exist alone" | includes relation | `relation: "includes"` | `entity.includes(child, label, cardinality)` |
 | "it has an address / a status" | uses relation | `relation: "uses"` | `entity.uses(vo, label, cardinality)` |

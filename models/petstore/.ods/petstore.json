@@ -239,10 +239,13 @@
             },
             "sold_not_reopen": {
               "name": "SoldNotReopen",
-              "description": "Once sold, a pet does not revert to available without an explicit policy, so a buyer is never undercut. Constrains the Pet because the transition is the pet's, not the status value's",
+              "description": "Once sold, a pet does not revert to available without an explicit policy, so a buyer is never undercut. Constrains the Pet because the transition is the pet's, not the status value's, and the operation that makes the transition, because that is where the rule is enforced",
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet"
+                },
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/change_pet_status"
                 }
               ]
             }

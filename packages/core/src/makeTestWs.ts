@@ -218,8 +218,17 @@ export function makeRichTestWs() {
 		aliases: ["Purchase order"],
 		embodiedBy: orderAgg,
 	});
+	// A payload with a shape inside it: the request nests the line schema
+	// rather than flattening it, and the collection stays in the type string.
+	const orderLineShape = orderingBc.addSchema("Order Line Shape", {
+		description: "One line of an order request",
+	});
+	orderLineShape.addAttribute("Sku", { type: "string" });
 	const orderRequest = orderingBc.addSchema("Order Request");
-	orderRequest.addAttribute("Lines", { type: "OrderLine[]" });
+	orderRequest.addAttribute("Lines", {
+		type: "OrderLine[]",
+		schema: orderLineShape,
+	});
 	const orderApp = orderingBc.addService("Order App", {
 		description: "Order application service",
 		type: "application",
@@ -271,6 +280,13 @@ export function makeRichTestWs() {
 			internal: true,
 		})
 		.raises(invoiceRaised);
+	// A transition rule: what it is about is the operation that makes the
+	// transition, so the invariant names the operation rather than a value.
+	const billedOnce = invoiceAgg
+		.addInvariant("Billed once", {
+			description: "An order is invoiced at most once",
+		})
+		.constrains(raiseInvoice);
 	const invoiceOnOrderPlaced = invoicingBc
 		.addPolicy("Invoice on order placed", {
 			description: "When an order is placed, raise an invoice",
@@ -325,6 +341,7 @@ export function makeRichTestWs() {
 		nonEmpty,
 		orderSummary,
 		orderRequest,
+		orderLineShape,
 		orderPlaced,
 		orderTerm,
 		orderApp,
@@ -337,6 +354,7 @@ export function makeRichTestWs() {
 		invoiceConsumesOrderPlaced,
 		invoiceRaised,
 		raiseInvoice,
+		billedOnce,
 		invoiceOnOrderPlaced,
 		invoiceApp,
 		invoiceAppConsumesPlaceOrder,

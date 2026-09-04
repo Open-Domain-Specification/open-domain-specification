@@ -54,11 +54,11 @@
 
 ## `aggregate-tree` (error, warning)
 
-**Requires:** Inside an aggregate, includes forms a tree from the root over entities, uses points at value objects, and every entity is reachable from the root.
+**Requires:** Inside an aggregate, includes points at entities and uses at value objects, no ring of two or more entity types includes itself, and every entity is reachable from the root.
 
-**Why it matters:** The aggregate is loaded and saved as one thing through its root. Two parents or a cycle means there is no single order in which to save it, an includes onto a value object or a uses onto an entity says the opposite of what the author means, and an entity nothing reaches is either dead or a missing relation.
+**Why it matters:** The aggregate is loaded and saved as one thing through its root, so the parts of one instance hang off it as a tree. That is a claim about instances, not about types: an entity whose parts are of its own type is the composite pattern and still a tree per instance, and a part type included by two different wholes still belongs to one of them at a time, so neither is reported. A ring through two or more distinct types is, because then no type can be named as the one that holds the other and there is no whole to start from. An includes onto a value object or a uses onto an entity says the opposite of what the author means, and an entity nothing reaches is either dead or a missing relation.
 
-**Usual fix:** Point includes at the entity's one parent and uses at value objects, break the cycle by making the back edge a references, and give an unreachable entity the relation that reaches it — or move it to its own aggregate.
+**Usual fix:** Point includes at entities and uses at value objects, break a ring of distinct types by making the back edge a references, and give an unreachable entity the relation that reaches it — or move it to its own aggregate.
 
 ## `attribute-relation-coherence` (warning)
 
@@ -68,13 +68,21 @@
 
 **Usual fix:** Add the missing uses relation or the missing attribute, and set the relation's cardinality to * or 1..* for a list-typed attribute. The type itself is free text and is never checked against the value object's name; only a trailing [] is read, as "many".
 
+## `attribute-one-shape` (error)
+
+**Requires:** An attribute is typed by a value object or by a schema, never by both, and only a schema's attribute names a schema.
+
+**Why it matters:** A value object and a schema are two different things to be. A value object is a concept the context models and compares by value; a schema is a payload shape the context publishes to whoever is listening. An attribute claiming both leaves a reader unable to say which model the field belongs to, and a change to either shape becomes a change nobody can scope. For the same reason an entity or a value object holds only value objects: a payload shape belongs at the boundary, and letting one inside puts the vocabulary of the wire into the model the boundary exists to protect.
+
+**Usual fix:** Keep the value object when the attribute is a concept of the domain, and the schema when it is a nested part of a payload; drop the other. On an entity or a value object, declare the value object the field really is and point at that. Collections stay in the type string, so a list of a nested shape is OrderLine[] beside one schema reference.
+
 ## `invariant-in-aggregate` (error)
 
-**Requires:** Every element an invariant constrains belongs to the invariant's own aggregate, or is a value object of its context.
+**Requires:** Every element an invariant constrains belongs to the invariant's own aggregate — an entity, an attribute, one of its operations — or is a value object of its context.
 
-**Why it matters:** An invariant is the rule that holds every time its aggregate is saved. Something outside the boundary can change between one save and the next with nothing to stop it, so a rule stretched across two aggregates is a rule nobody can enforce. A value object is the exception: it belongs to the context and carries no state of its own, so it is saved as part of whichever aggregate holds one.
+**Why it matters:** An invariant is the rule that holds every time its aggregate is saved. Something outside the boundary can change between one save and the next with nothing to stop it, so a rule stretched across two aggregates is a rule nobody can enforce. A value object is one exception: it belongs to the context and carries no state of its own, so it is saved as part of whichever aggregate holds one. The aggregate's own operations are the other: a rule about a transition is a rule about the operation that makes it, and naming it says which change the rule guards.
 
-**Usual fix:** Move the invariant to the aggregate that owns what it constrains, drop the foreign target, or model the guarantee as a policy reacting to the other aggregate's event, which is eventual by nature.
+**Usual fix:** Move the invariant to the aggregate that owns what it constrains, drop the foreign target, or model the guarantee as a policy reacting to the other aggregate's event, which is eventual by nature. If the target is an application service's operation, name the aggregate's own operation behind it instead: that is where the rule is enforced.
 
 ## `relationship-roles-backed` (warning)
 
@@ -106,7 +114,7 @@
 
 **Why it matters:** A shared kernel is a piece of model two teams agree to keep in step, and it costs them the freedom to change it alone. Declaring one with nothing in it pays that price for nothing, and it stands in the model as the warrant for a sharing nobody has made: it is the one relationship over which a value object or a payload schema may be borrowed.
 
-**Usual fix:** Type an attribute by a value object the other context declares, or carry one of its schemas on a consumable; or replace the shared kernel with the relationship the two contexts really have.
+**Usual fix:** Type an attribute by a value object the other context declares, nest one of its schemas in an attribute, or carry one on a consumable; or replace the shared kernel with the relationship the two contexts really have.
 
 ## `mud-needs-acl` (warning)
 
@@ -174,11 +182,11 @@
 
 ## `schema-context` (error)
 
-**Requires:** A consumable's payload schema belongs to the consumable's own context, or to one it shares a kernel with.
+**Requires:** A schema named by a consumable's payload, by its returns or by a nested attribute belongs to the naming element's own context, or to one it shares a kernel with.
 
-**Why it matters:** The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A shared kernel is where two teams have said that in the model and accepted the price, so it is the one place the borrowing is allowed.
+**Why it matters:** The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A nested schema is the same borrowing one level down. A shared kernel is where two teams have said that in the model and accepted the price, so it is the one place the borrowing is allowed.
 
-**Usual fix:** Move or copy the schema into the publishing context and point the consumable at that one, or declare the shared kernel if the two contexts really do keep that shape between them.
+**Usual fix:** Move or copy the schema into the publishing context and point the consumable or attribute at that one, or declare the shared kernel if the two contexts really do keep that shape between them.
 
 ## `returns-on-operation` (error)
 
