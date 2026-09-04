@@ -11,8 +11,8 @@ Two shortcuts in the model let a context reach into another. A policy's `then` m
 ## Decision
 
 - A policy's `then` names operations of the policy's own context. To act on another context, the local operation that consumes the foreign one is what the policy names. Rule `policy-in-context`, an error.
-- An aggregate's consumables are the context's internal vocabulary: they may not carry an upstream pattern and may not be consumed from another context. What a context offers outward is provided by an application service. Rules `aggregate-not-public` (error on the pattern, error on a foreign consumption).
-- A domain service is likewise internal: its consumables may not carry an upstream pattern or be consumed from outside. Rule `domain-service-internal`.
+- An aggregate's operations are the context's internal vocabulary: they may not carry an upstream pattern and may not be consumed from another context. What a context offers outward is provided by an application service. Rules `aggregate-not-public` (error on the pattern, error on a foreign consumption). Events are different: an aggregate raises its domain events, and the context publishes them as they are; the `raises` link is between the aggregate's operation and its event, and routing events through a service would break it for nothing. The rules therefore cover operations only.
+- A domain service is likewise internal: its operations may not carry an upstream pattern or be consumed from outside. Rule `domain-service-internal`.
 
 ### A policy may react to another context's event; it may not act in another context
 
