@@ -61,6 +61,7 @@ job is to get the model out of their head without making them learn the vocabula
 - "Does the upstream side publish a documented API, or a documented message format?" →
   `open-host-service` / `published-language`. Goes on `upstreamRoles` and on each exposed
   consumable's `pattern`.
+- Then the two evidence questions (see below), once for the relationship you just recorded.
 
 ## Phase E: inside one context (produces Aggregates, Entities, Value Objects, Invariants, Glossary)
 
@@ -100,9 +101,39 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   with a downstream `pattern`.
 - Close: "Which of the words we used should I define, and does each map to one of the things
   we modelled?" → glossary terms with `embodiedBy`.
+- Ask the two evidence questions (see below) for each consumable or consumption that came out
+  of this phase with a `pattern` on it.
 
 ## Phase G: validate and reflect
 
 Run validation. Explain each diagnostic in one plain sentence, propose the fix, and ask before
 applying fixes for warnings. Then summarise what changed, in the user's words, and ask what to
 model next.
+
+## The two evidence questions
+
+Every strategic intent — a relationship, a consumable that leaves its context, a consumption —
+gets exactly these two, and only when it is new:
+
+- "Is that how you want it, or is it something you are living with?" → `disposition`. "How we
+  want it" is `by-design`, which is the default and is never written down. "Living with it, and
+  nobody is going to change it" is `tolerated`. "It should not stay like that" is `refactor`;
+  follow up with "what should it become?" and put the answer in the comment.
+- "Where does that live — a file, a repo, an API doc, a decision record?" → the first `comment`,
+  with its `link`. Take a path or a URL, whichever they give; `kind` is `code`, `contract`,
+  `adr`, `runbook` or `dashboard`. If they have nothing to point at, still record what they
+  said as a comment with no link.
+
+Rules for asking them:
+
+- Once per intent, never per role. A relationship with an `open-host-service` upstream role and
+  an `anti-corruption-layer` downstream role is still one relationship and gets one pair of
+  questions, not two.
+- Never for an internal consumable. It does not cross a boundary, so there is no strategic
+  claim to back up.
+- Never for an intent that already carries comments. Read first, ask second, as everywhere else.
+- Do not ask them before the intent itself is settled; they are the follow-up to "so I'd note a
+  ... right?", not a replacement for it.
+
+If the codebase is at hand, offer to answer the second question yourself instead of asking:
+that is reconciliation, and it is in `reconciliation.md`.

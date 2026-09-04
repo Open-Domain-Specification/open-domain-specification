@@ -11,6 +11,41 @@ import {
 
 const file = (path: string) => readFileSync(join(skillRoot, path), "utf8");
 
+const require_ = createRequire(import.meta.url);
+const corePkgRoot = dirname(
+	require_.resolve("@open-domain-specification/core/package.json"),
+);
+
+/** The values an enum in core's generated JSON Schema allows. */
+function schemaEnum(definition: string): string[] {
+	const schema = require_(join(corePkgRoot, "dist/workspace.schema.json")) as {
+		definitions: Record<string, { enum?: string[] }>;
+	};
+	const values = schema.definitions[definition]?.enum;
+	if (!values) throw new Error(`no enum ${definition} in the workspace schema`);
+	return values;
+}
+
+/** The fenced blocks of one language in a markdown file, in order. */
+function fencedBlocks(markdown: string, language: string): string[] {
+	return [
+		...markdown.matchAll(
+			new RegExp(`\`\`\`${language}\\n([\\s\\S]*?)\`\`\``, "g"),
+		),
+	].map((m) => m[1]);
+}
+
+/**
+ * The ```json blocks of a markdown file, parsed. A block that shows fields in
+ * place rather than a whole document is a fragment (`"provides": { ... }`), so
+ * wrap it to parse as the object it would sit in.
+ */
+function jsonBlocks(markdown: string): Array<Record<string, unknown>> {
+	return fencedBlocks(markdown, "json").map((block) =>
+		JSON.parse(block.trimStart().startsWith("{") ? block : `{${block}}`),
+	);
+}
+
 describe("SKILL.md", () => {
 	const skill = file("SKILL.md");
 	const frontmatter = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/.exec(skill);
@@ -42,13 +77,10 @@ describe("generated references", () => {
 });
 
 describe("dsl-api.md", () => {
+	const doc = file("references/dsl-api.md");
+
 	it("names only methods that exist on the core classes", () => {
-		const require = createRequire(import.meta.url);
-		const corePkg = dirname(
-			require.resolve("@open-domain-specification/core/package.json"),
-		);
-		const source = readFileSync(join(corePkg, "src/workspace.ts"), "utf8");
-		const doc = file("references/dsl-api.md");
+		const source = readFileSync(join(corePkgRoot, "src/workspace.ts"), "utf8");
 		const methods = [...doc.matchAll(/\| `\.?(?:new )?(\w+)\(/g)].map(
 			(m) => m[1],
 		);
@@ -57,6 +89,19 @@ describe("dsl-api.md", () => {
 			if (method === "Workspace") continue;
 			expect(source, method).toMatch(new RegExp(`\\b${method}\\(`));
 		}
+	});
+
+	it("offers the evidence pair on a relationship, a consumable and a consumption", () => {
+		const rows = doc.split("\n").filter((line) => line.startsWith("| `"));
+		const evidenced = (method: string) =>
+			rows.find(
+				(row) =>
+					row.includes(`\`${method}(`) &&
+					row.includes("comments?") &&
+					row.includes("disposition?"),
+			);
+		for (const method of ["upstreamOf", "partnerOf", "provides", "consumes"])
+			expect(evidenced(method), method).toBeDefined();
 	});
 });
 
@@ -80,6 +125,106 @@ describe("strategic-relationships.md", () => {
 			(m) => m[1],
 		);
 		expect(documented.sort()).toEqual(Object.keys(PATTERNS).sort());
+	});
+});
+
+describe("reconciliation.md", () => {
+	const reference = file("references/reconciliation.md");
+
+	it("gives a search recipe for every pattern core knows", () => {
+		for (const key of Object.keys(PATTERNS))
+			expect(reference, key).toMatch(new RegExp(`^\\| \`${key}\` \\|`, "m"));
+	});
+
+	it("names every disposition and link kind the schema allows", () => {
+		for (const value of [
+			...schemaEnum("Disposition"),
+			...schemaEnum("CommentLinkKind"),
+		])
+			expect(reference, value).toContain(`\`${value}\``);
+	});
+
+	it("shows the evidence pair on a relationship, a consumable and a consumption", () => {
+		const carriers = jsonBlocks(reference).flatMap((block) => [
+			...(block.relationships ?? []),
+			...Object.values(block.provides ?? {}),
+			...(block.consumes ?? []),
+		]) as Array<{ comments?: unknown[]; disposition?: string }>;
+		expect(carriers).toHaveLength(3);
+		for (const carrier of carriers)
+			expect(carrier.comments?.length ?? 0).toBeGreaterThan(0);
+		expect(
+			carriers.filter((c) => c.disposition !== undefined),
+		).not.toHaveLength(0);
+	});
+
+	it("writes comments the schema accepts, and never the default disposition", () => {
+		const kinds = schemaEnum("CommentLinkKind");
+		const dispositions = schemaEnum("Disposition");
+		let seen = 0;
+		const walk = (node: unknown): void => {
+			if (Array.isArray(node)) return void node.forEach(walk);
+			if (!node || typeof node !== "object") return;
+			const record = node as Record<string, unknown>;
+			if (record.disposition !== undefined) {
+				expect(dispositions).toContain(record.disposition);
+				expect(record.disposition).not.toBe("by-design");
+			}
+			for (const comment of (record.comments ?? []) as Array<
+				Record<string, unknown>
+			>) {
+				seen++;
+				expect(Object.keys(comment).sort()).toEqual(["link", "text"]);
+				expect(typeof comment.text).toBe("string");
+				const link = comment.link as Record<string, unknown>;
+				expect(kinds).toContain(link.kind);
+				expect(typeof link.url).toBe("string");
+			}
+			Object.values(record).forEach(walk);
+		};
+		jsonBlocks(reference).forEach(walk);
+		expect(seen).toBeGreaterThan(0);
+	});
+});
+
+describe("interview-playbook.md", () => {
+	const playbook = file("references/interview-playbook.md");
+
+	it("asks the two evidence questions once per intent, never per role", () => {
+		expect(playbook).toContain("## The two evidence questions");
+		expect(playbook).toContain("Once per intent, never per role");
+		for (const value of schemaEnum("Disposition"))
+			expect(playbook, value).toContain(`\`${value}\``);
+	});
+});
+
+describe("petstore.md", () => {
+	const example = file("examples/petstore.md");
+
+	it("works the Catalog–Inventory shared kernel through to a refactor", () => {
+		const section = example.slice(
+			example.indexOf("## Worked reconciliation"),
+			example.indexOf("## A policy reacting"),
+		);
+		expect(section).not.toBe("");
+		expect(section).toContain("sharesKernelWith");
+		expect(section).toContain('disposition: "refactor"');
+		expect(fencedBlocks(section, "ts")).toHaveLength(1);
+	});
+});
+
+describe("the bundle", () => {
+	it("ships no reference nothing else points at", () => {
+		const bundle = readBundle();
+		for (const entry of bundle) {
+			if (!entry.path.startsWith("references/")) continue;
+			const basename = entry.path.split("/").pop() as string;
+			const pointsAtIt = bundle.some(
+				(other) =>
+					other.path !== entry.path && other.content.includes(basename),
+			);
+			expect(pointsAtIt, entry.path).toBe(true);
+		}
 	});
 });
 
