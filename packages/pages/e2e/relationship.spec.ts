@@ -123,6 +123,38 @@ test("Escape closes the modal and puts focus back on the row's toggle", async ({
 	await expect(toggle).toBeFocused();
 });
 
+test("the page behind the modal does not scroll while it is open, and keeps its place after it closes", async ({
+	page,
+}) => {
+	await page.goto(viewerAt(SALES_REF));
+
+	const toggle = page.locator(".strategic-position").getByRole("button", {
+		name: "Evidence for Catalog BC and Sales BC",
+	});
+	await toggle.scrollIntoViewIfNeeded();
+	await toggle.click();
+
+	const modal = page.locator("#relationship-modal");
+	await expect(modal).toBeVisible();
+	// The position the row's own scroll left the page at: this is the position
+	// the wheel must not be able to move it from while the modal is open.
+	const before = await page.evaluate(() => window.scrollY);
+
+	// Past the end of the modal body: overscroll must not chain to the page.
+	await modal.locator(".body").hover();
+	await page.mouse.wheel(0, 5000);
+	await page.mouse.wheel(0, 5000);
+	// Over the scrim, which is not scrollable at all.
+	await page.locator(".modal-layer .scrim").hover({ position: { x: 4, y: 4 } });
+	await page.mouse.wheel(0, 5000);
+
+	expect(await page.evaluate(() => window.scrollY)).toBe(before);
+
+	await modal.getByRole("button", { name: "Close Relationship" }).click();
+	await expect(modal).toHaveCount(0);
+	expect(await page.evaluate(() => window.scrollY)).toBe(before);
+});
+
 test("a click on the scrim closes the modal", async ({ page }) => {
 	await page.goto(viewerAt(SALES_REF));
 	const toggle = page.locator(".strategic-position").getByRole("button", {

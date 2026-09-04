@@ -112,4 +112,36 @@ describe("Modal", () => {
 		expect(tab.defaultPrevented).toBe(false);
 		expect(document.activeElement).toBe(inside[1]);
 	});
+
+	describe("locks the document behind it while open", () => {
+		const locked = () =>
+			document.documentElement.classList.contains("modal-open") &&
+			document.documentElement.style.overflow === "hidden";
+
+		it("is unlocked before the modal ever opens", () => {
+			render(Demo, { open: false });
+			expect(locked()).toBe(false);
+		});
+
+		it("locks on open and unlocks on the close button", async () => {
+			render(Demo);
+			expect(locked()).toBe(true);
+			await fireEvent.click(closeButton());
+			expect(locked()).toBe(false);
+		});
+
+		it("unlocks on Escape", async () => {
+			render(Demo);
+			expect(locked()).toBe(true);
+			await fireEvent.keyDown(modal() as HTMLElement, { key: "Escape" });
+			expect(locked()).toBe(false);
+		});
+
+		it("unlocks on a scrim click", async () => {
+			render(Demo);
+			expect(locked()).toBe(true);
+			await fireEvent.click(document.querySelector(".scrim") as HTMLElement);
+			expect(locked()).toBe(false);
+		});
+	});
 });

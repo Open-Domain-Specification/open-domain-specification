@@ -77,6 +77,29 @@ $effect(() => {
 });
 
 /**
+ * A modal is a mode: the page under it stays exactly where it was until it
+ * closes, on all three ways out (Escape, the close button, a scrim click),
+ * so this keys off `showing` itself rather than any one close path. Locking
+ * `<html>` rather than the modal's own layer keeps the fix to one place for
+ * every host — the webview and the static export both scroll the document,
+ * and the site shell's nav column is reached through the same class in
+ * assets/site.css. Because `overflow` is only ever hidden here and put back
+ * to whatever it was, the document's `scrollTop` never moves, so there is no
+ * jump and no position to restore on close.
+ */
+$effect(() => {
+	if (showing === undefined) return;
+	const html = document.documentElement;
+	const previousOverflow = html.style.overflow;
+	html.classList.add("modal-open");
+	html.style.overflow = "hidden";
+	return () => {
+		html.classList.remove("modal-open");
+		html.style.overflow = previousOverflow;
+	};
+});
+
+/**
  * Escape closes; Tab cycles inside the panel. A modal that let Tab walk out
  * of itself would leave a keyboard reader typing into a page they cannot see,
  * so the two ends of the ring are joined here. Focus starts on the panel,
@@ -221,6 +244,11 @@ const onkeydown = (e: KeyboardEvent) => {
 		flex: 1;
 		min-height: 0;
 		overflow: auto;
+		/* Without this, overscroll at either end of the body hands the wheel
+		   to the document behind it once the body itself can no longer
+		   consume the delta — the scrim and header have no scroller of their
+		   own, so this is the one place the chain can be cut. */
+		overscroll-behavior: contain;
 		/* One scroller, not two: a long crossings table lengthens this column
 		   and scrolls with everything else, rather than getting a scrollbar of
 		   its own inside a scrolling panel. The long read is the
