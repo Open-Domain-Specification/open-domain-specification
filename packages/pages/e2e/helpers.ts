@@ -88,6 +88,21 @@ export async function expectProseRow(description: Locator): Promise<void> {
 	expect(row).toBeLessThanOrEqual(prose.lines * prose.lineHeight + 1);
 }
 
+/**
+ * The page has one direction of travel. A frame inside it may scroll sideways
+ * -- that is the design's escape hatch when a table's columns cannot fit --
+ * but the document itself never does, on any machine's fonts.
+ */
+export async function expectNoSidewaysScroll(page: Page): Promise<void> {
+	expect(
+		await page.evaluate(
+			() =>
+				document.documentElement.scrollWidth -
+				document.documentElement.clientWidth,
+		),
+	).toBe(0);
+}
+
 /** Shared fixtures: the example workspace, served to the viewer over an intercepted URL. */
 
 export const PETSTORE_PATH = join(

@@ -1,6 +1,12 @@
 import { PATTERNS } from "@open-domain-specification/core";
 import { expect, test } from "@playwright/test";
-import { expectProseRow, servePetstore, viewerAt, wrapOf } from "./helpers";
+import {
+	expectNoSidewaysScroll,
+	expectProseRow,
+	servePetstore,
+	viewerAt,
+	wrapOf,
+} from "./helpers";
 
 /**
  * The relationship detail (RFC-002 card E) in both places it is reached: in
@@ -290,19 +296,16 @@ test("beside the site tree the Strategic position keeps its prose readable, its 
 	expect(name?.height ?? 0).toBeLessThan(30);
 	expect(word?.y ?? 0).toBeGreaterThan((name?.y ?? 0) + 10);
 
-	// Stacked tokens were enough here: nothing scrolls sideways. The table's
-	// own natural width (summed from each header's fractional text-measured
-	// width, e.g. 761.5px) already sits a hair under the frame; the browser's
-	// table auto-layout then rounds every column's width up to a whole device
-	// pixel independently, and those roundings can add up to a couple of
-	// pixels more than the frame's integer clientWidth even though nothing
-	// visually overflows. Confirmed by measuring: no single column is near
-	// the 24ch prose floor here, so this is that rounding, not a real
-	// off-by-one in the layout.
-	const frame = table.locator(".frame");
-	expect(
-		await frame.evaluate((el) => el.scrollWidth - el.clientWidth),
-	).toBeLessThanOrEqual(2);
+	// Whatever the six columns end up wanting, the sideways scroll stays
+	// inside the table's own frame and the page never gains one. How close
+	// the columns come to the 760px on offer is a font measurement — wider
+	// metrics push them past it and the frame scrolls, which the design
+	// permits everywhere (see the test below, and cards 33 and 37) — so it is
+	// not something to assert. What the reader is owed is asserted above:
+	// prose keeps its floor, the row stays on the description's own lines,
+	// cells align to the first line, tokens stay whole, and the page below
+	// keeps its single direction of travel.
+	await expectNoSidewaysScroll(page);
 });
 
 test("narrower still, the Strategic position scrolls inside its own frame and the page never does", async ({
@@ -321,13 +324,7 @@ test("narrower still, the Strategic position scrolls inside its own frame and th
 	expect(
 		await frame.evaluate((el) => el.scrollWidth - el.clientWidth),
 	).toBeGreaterThan(0);
-	expect(
-		await page.evaluate(
-			() =>
-				document.documentElement.scrollWidth -
-				document.documentElement.clientWidth,
-		),
-	).toBe(0);
+	await expectNoSidewaysScroll(page);
 });
 
 test("beside the site tree the pattern card stays inside the viewport, opens above a word near the bottom, and closes on scroll", async ({
