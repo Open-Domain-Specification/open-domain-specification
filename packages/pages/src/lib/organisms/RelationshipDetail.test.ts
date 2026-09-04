@@ -153,4 +153,16 @@ describe("RelationshipDetail", () => {
 			"external noreferrer",
 		);
 	});
+
+	it("separates a crossing's two patterns so they do not run together", () => {
+		// The provider's pattern and the consumer's sit in one cell; without a
+		// separator they read as one token ("OHSACL").
+		const { container } = detail(asymmetric);
+		const cell = container.querySelector<HTMLElement>(
+			"#crossings tbody tr td:nth-child(2)",
+		);
+		const joined = cell?.querySelector(".joined");
+		expect(joined).toBeTruthy();
+		expect(joined?.children.length).toBe(2);
+	});
 });

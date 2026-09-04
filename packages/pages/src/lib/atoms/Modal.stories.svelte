@@ -1,18 +1,18 @@
 <script module lang="ts">
 import { defineMeta } from "@storybook/addon-svelte-csf";
 import Theme from "../Theme.harness.svelte";
-import Demo from "./BottomSheet.harness.svelte";
-import BottomSheet from "./BottomSheet.svelte";
+import Demo from "./Modal.harness.svelte";
+import Modal from "./Modal.svelte";
 
 /**
- * The docked panel, in the frame of VS Code's own: a header row with the
- * view's name and a close button, a hairline under it, a border on top, and
- * the body scrolling inside. It is fixed to the bottom of the window it is
- * drawn in, so in Storybook it docks to the bottom of the preview frame.
+ * The centred panel, in the frame of VS Code's own modal dialog: the widget
+ * surface with the widget border and shadow, a title row with a close button,
+ * a body that scrolls, and the page dimmed behind it. It is fixed to the
+ * window it is drawn in, so in Storybook it centres over the preview frame.
  */
 const { Story } = defineMeta({
-	title: "Atoms/BottomSheet",
-	component: BottomSheet,
+	title: "Atoms/Modal",
+	component: Modal,
 });
 </script>
 
@@ -28,7 +28,7 @@ const { Story } = defineMeta({
 	{#snippet template()}<Theme mode="hc"><Demo /></Theme>{/snippet}
 </Story>
 
-<!-- Closed: the trigger is the only trace of it, and the page keeps its full height. -->
+<!-- Closed: the trigger is the only trace of it, and the page is undimmed. -->
 <Story name="Closed">
 	{#snippet template()}<Theme mode="dark"><Demo open={false} /></Theme>{/snippet}
 </Story>

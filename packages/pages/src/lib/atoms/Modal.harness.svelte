@@ -1,20 +1,22 @@
 <script lang="ts">
 import { untrack } from "svelte";
-import BottomSheet from "./BottomSheet.svelte";
 import Definition from "./Definition.svelte";
 import DefinitionList from "./DefinitionList.svelte";
 import Heading from "./Heading.svelte";
 import Keyword from "./Keyword.svelte";
+import Modal from "./Modal.svelte";
+import Ref from "./Ref.svelte";
 
 /**
- * The sheet over a page that is still readable: a list above, the panel
- * docked under it, and a trigger that carries the disclosure's own
+ * The modal over a page that is still there behind it: a list above, the
+ * panel centred over it, and a trigger that carries the disclosure's own
  * `aria-expanded`/`aria-controls`. Open by default so the story shows the
- * thing it is a story of.
+ * thing it is a story of. The links inside are here so the panel holds more
+ * than one focusable, which is what the Tab ring is made of.
  */
 const {
 	open: initial = true,
-	id = "sheet-demo",
+	id = "modal-demo",
 	title = "Relationship",
 }: { open?: boolean; id?: string; title?: string } = $props();
 let open = $state(untrack(() => initial));
@@ -40,16 +42,22 @@ const rows = [
 	</button>
 </div>
 
-<BottomSheet showing={open ? "catalog-sales" : undefined} {id} {title} onclose={() => (open = false)}>
+<Modal showing={open ? "catalog-sales" : undefined} {id} {title} onclose={() => (open = false)}>
 	<Heading level={3}>Catalog BC → Sales BC <Keyword text="customer-supplier" /></Heading>
 	<DefinitionList>
 		<Definition term="Upstream">Catalog BC <Keyword text="OHS" mono /></Definition>
 		<Definition term="Downstream">Sales BC <Keyword text="ACL" mono /></Definition>
+		<Definition term="Contract">
+			<Ref ref="https://example.com/contract" label="Pet summary contract" external />
+		</Definition>
+		<Definition term="Runbook">
+			<Ref ref="https://example.com/runbook" label="Catalog runbook" external />
+		</Definition>
 	</DefinitionList>
-</BottomSheet>
+</Modal>
 
 <style>
-	/* The story needs something under the sheet to be docked against. */
+	/* The story needs a page under the modal for the scrim to dim. */
 	.demo {
 		min-height: 320px;
 	}

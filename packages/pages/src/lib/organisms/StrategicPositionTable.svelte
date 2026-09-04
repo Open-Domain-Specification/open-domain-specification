@@ -5,11 +5,11 @@ import {
 	narrativeText,
 	relationshipNarrative,
 } from "@open-domain-specification/core";
-import BottomSheet from "../atoms/BottomSheet.svelte";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Disposition from "../atoms/Disposition.svelte";
 import EmptyState from "../atoms/EmptyState.svelte";
+import Modal from "../atoms/Modal.svelte";
 import {
 	counterpartOf,
 	type EvidenceRow,
@@ -31,10 +31,13 @@ import RelationshipDetail from "./RelationshipDetail.svelte";
  * disclose the pattern's meaning on hover, roles in the editor font because
  * they are codes from a table, and the disposition is the Problems-panel mark.
  *
- * A row discloses the same block a relationship page renders, in the docked
- * bottom sheet rather than in a row of the table: the detail carries tables of
- * its own, and a table inside a table row gave the reader two header rows and
- * two column rhythms in one grid. A
+ * A row discloses the same block a relationship page renders, in a modal
+ * rather than in a row of the table: the detail carries tables of its own, and
+ * a table inside a table row gave the reader two header rows and two column
+ * rhythms in one grid. It is a modal rather than the docked sheet it was
+ * first given, because the sheet took two fifths of a short webview and
+ * scrolled the row it belonged to out of sight; a modal takes the page away
+ * and gives it back with the row exactly where it was. A
  * context whose relationships carry nothing recorded has nothing to disclose,
  * so the toggle and disposition columns are both left out; one comment or one
  * non-default disposition anywhere brings them back for every row, because a
@@ -47,13 +50,13 @@ const groups = $derived(positionGroups(context, model.workspace.relationships));
 const withEvidence = $derived(
 	groups.some((g) => g.rows.some((row) => hasEvidence(row.relationship))),
 );
-/** The id the toggles' `aria-controls` points at; one sheet, one at a time. */
-const SHEET = "relationship-sheet";
+/** The id the toggles' `aria-controls` points at; one modal, one at a time. */
+const MODAL = "relationship-modal";
 let expanded = $state<string | undefined>(undefined);
 const toggle = (key: string) => {
 	expanded = expanded === key ? undefined : key;
 };
-/** The row whose evidence the sheet is showing, if any. */
+/** The row whose evidence the modal is showing, if any. */
 const shown = $derived(
 	groups.flatMap((g) => g.rows).find((row) => row.key === expanded),
 );
@@ -96,7 +99,7 @@ const columns = $derived<Column[]>([
 						type="button"
 						class="toggle"
 						aria-expanded={expanded === entry.key}
-						aria-controls={SHEET}
+						aria-controls={MODAL}
 						aria-label={discloses(r)}
 						onclick={() => toggle(entry.key)}
 					>
@@ -126,21 +129,21 @@ const columns = $derived<Column[]>([
 	<EmptyState text="No explicit relationships. Consumptions imply upstream and downstream links." />
 {/if}
 
-<!-- The sheet is a sibling of the table, not a descendant of its frame: the
-     frame is a size container, which would make a fixed panel inside it
+<!-- The modal is a sibling of the table, not a descendant of its frame: the
+     frame is a size container, which would make a fixed layer inside it
      position against the frame rather than the viewport. -->
-<BottomSheet
+<Modal
 	showing={shown?.key}
-	id={SHEET}
+	id={MODAL}
 	title="Relationship"
 	onclose={() => (expanded = undefined)}
 >
-	<!-- The sheet renders its children only while it is open, and it is open
+	<!-- The modal renders its children only while it is open, and it is open
 	     only when a row is showing, so the cast is the type system catching up
 	     with the guard on the line above rather than a case to handle. -->
 	{@const row = shown as EvidenceRow}
 	<RelationshipDetail relationship={row.relationship} />
-</BottomSheet>
+</Modal>
 
 <style>
 	/* The description wraps at the width v1 settled on; the table gives the

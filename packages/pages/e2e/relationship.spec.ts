@@ -3,8 +3,8 @@ import { expect, test } from "@playwright/test";
 import { servePetstore, viewerAt } from "./helpers";
 
 /**
- * The relationship detail (RFC-002 card E) in both places it is reached:
- * expanded in place from a Strategic position row, and as its own page.
+ * The relationship detail (RFC-002 card E) in both places it is reached: in
+ * the modal a Strategic position row opens, and as its own page.
  */
 
 const SALES_REF = "#/boundedcontexts/sales_bc";
@@ -17,9 +17,13 @@ test.beforeEach(async ({ page }) => {
 	await servePetstore(page);
 });
 
-test("a Strategic position row discloses the relationship in the bottom sheet", async ({
+/** An editor tab in the extension: the window this disclosure has to fit. */
+const EDITOR_TAB = { width: 1150, height: 700 };
+
+test("a Strategic position row discloses the relationship in a modal that fits an editor tab", async ({
 	page,
 }) => {
+	await page.setViewportSize(EDITOR_TAB);
 	await page.goto(viewerAt(SALES_REF));
 	await expect(page.locator("main h1")).toContainText("Sales BC");
 
@@ -29,20 +33,23 @@ test("a Strategic position row discloses the relationship in the bottom sheet", 
 	});
 	await toggle.scrollIntoViewIfNeeded();
 	await expect(toggle).toHaveAttribute("aria-expanded", "false");
-	await expect(toggle).toHaveAttribute("aria-controls", "relationship-sheet");
-	const sheet = page.locator("#relationship-sheet");
-	await expect(sheet).toHaveCount(0);
+	await expect(toggle).toHaveAttribute("aria-controls", "relationship-modal");
+	const modal = page.locator("#relationship-modal");
+	await expect(modal).toHaveCount(0);
 	// The detail is no longer a row of the table.
 	await expect(page.locator("tr.detail")).toHaveCount(0);
 
 	await toggle.click();
 
 	await expect(toggle).toHaveAttribute("aria-expanded", "true");
-	// The header names the view, as the platform's panel does; the content
-	// names which relationship, with each end a lockup and the arrow between
-	// them in its own element.
-	await expect(sheet.locator("h2")).toHaveText("Relationship");
-	const detail = sheet.locator(".relationship-detail");
+	// A real dialog, named by its title, with focus moved into it.
+	await expect(modal).toHaveAttribute("aria-modal", "true");
+	await expect(modal).toHaveAttribute("role", "dialog");
+	await expect(modal).toBeFocused();
+	// The header names the dialog; the content names which relationship, with
+	// each end a lockup and the arrow between them in its own element.
+	await expect(modal.locator("h2")).toHaveText("Relationship");
+	const detail = modal.locator(".relationship-detail");
 	await expect(detail.locator("h3").first()).toHaveText(
 		/Catalog BC\s+→\s+Sales BC/,
 	);
@@ -53,23 +60,45 @@ test("a Strategic position row discloses the relationship in the bottom sheet", 
 	// A disclosure, not a navigation: the page stays on Sales.
 	await expect(page).toHaveURL(new RegExp(`${SALES_REF}$`));
 
-	// It is docked to the foot of the window, starting at the page column
-	// rather than under the site tree, and the page leaves room for it.
-	const box = await sheet.boundingBox();
-	const window = page.viewportSize() as { width: number; height: number };
-	expect(Math.round((box?.y ?? 0) + (box?.height ?? 0))).toBe(window.height);
-	expect(box?.x ?? 0).toBeGreaterThan(200);
+	// Centred over the window, inside it on every side, and the page still
+	// visible either side of it rather than covered over.
+	const box = await modal.boundingBox();
+	const centre = (box?.x ?? 0) + (box?.width ?? 0) / 2;
+	expect(Math.abs(centre - EDITOR_TAB.width / 2)).toBeLessThan(2);
+	expect(box?.y ?? 0).toBeGreaterThanOrEqual(32);
+	expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(
+		EDITOR_TAB.height - 32,
+	);
+	expect(box?.width ?? 0).toBeLessThanOrEqual(960);
+	expect(box?.x ?? 0).toBeGreaterThanOrEqual(24);
+
+	// Wide enough to keep the crossings table out of a `DataTable`'s narrow
+	// tier: at 880px the panel broke a consumable's icon off its name and gave
+	// that row a second line.
+	const crossing = modal.locator("#crossings tbody tr").first();
+	expect((await crossing.boundingBox())?.height ?? 0).toBeLessThan(32);
+
+	// The size this card is about: a typical relationship reads in an editor
+	// tab without the body having to scroll.
+	const overflow = await modal
+		.locator(".body")
+		.evaluate((el) => el.scrollHeight - el.clientHeight);
+	expect(overflow).toBe(0);
+
+	// The page it covers is left exactly as it was: nothing reserved, nothing
+	// pushed, and the row still where the reader left it.
 	expect(
 		await page.evaluate(() =>
 			Number.parseFloat(getComputedStyle(document.body).paddingBottom),
 		),
-	).toBeGreaterThan(200);
+	).toBe(0);
 
-	await toggle.click();
-	await expect(sheet).toHaveCount(0);
+	await modal.getByRole("button", { name: "Close Relationship" }).click();
+	await expect(modal).toHaveCount(0);
+	await expect(toggle).toBeFocused();
 });
 
-test("Escape closes the sheet and puts focus back on the row's toggle", async ({
+test("Escape closes the modal and puts focus back on the row's toggle", async ({
 	page,
 }) => {
 	await page.goto(viewerAt(SALES_REF));
@@ -79,24 +108,37 @@ test("Escape closes the sheet and puts focus back on the row's toggle", async ({
 	await toggle.scrollIntoViewIfNeeded();
 	await toggle.click();
 
-	const sheet = page.locator("#relationship-sheet");
-	// A comment, the thing a reader opens the row for, read inside the sheet.
-	await expect(sheet.locator("#comments")).toContainText(
+	const modal = page.locator("#relationship-modal");
+	// A comment, the thing a reader opens the row for, read inside the modal.
+	await expect(modal.locator("#comments")).toContainText(
 		"Sales reads Catalog through PetSummaryClient",
 	);
-	// Read from inside the sheet: focus moves in, and Escape still returns it.
-	await sheet.getByRole("button", { name: "Close Relationship" }).focus();
+	// Read from inside the modal: focus moves on, and Escape still returns it.
+	await modal.getByRole("button", { name: "Close Relationship" }).focus();
 
 	await page.keyboard.press("Escape");
 
-	await expect(sheet).toHaveCount(0);
+	await expect(modal).toHaveCount(0);
 	await expect(toggle).toHaveAttribute("aria-expanded", "false");
 	await expect(toggle).toBeFocused();
-	expect(
-		await page.evaluate(() =>
-			Number.parseFloat(getComputedStyle(document.body).paddingBottom),
-		),
-	).toBe(0);
+});
+
+test("a click on the scrim closes the modal", async ({ page }) => {
+	await page.goto(viewerAt(SALES_REF));
+	const toggle = page.locator(".strategic-position").getByRole("button", {
+		name: "Evidence for Catalog BC and Sales BC",
+	});
+	await toggle.scrollIntoViewIfNeeded();
+	await toggle.click();
+	const modal = page.locator("#relationship-modal");
+	await expect(modal).toBeVisible();
+
+	// The dimmed page: a click on it is the third way out, beside Escape and
+	// the close button. Top left, which is scrim wherever the panel sits.
+	await page.locator(".modal-layer .scrim").click({ position: { x: 4, y: 4 } });
+
+	await expect(modal).toHaveCount(0);
+	await expect(toggle).toBeFocused();
 });
 
 test("the Strategic position description reads as prose, not one word a line", async ({

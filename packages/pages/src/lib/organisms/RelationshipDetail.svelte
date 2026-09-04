@@ -23,6 +23,7 @@ import { LINK_KIND_LABELS } from "../evidence/labels";
 import { roleLabel } from "../flow/roles";
 import { consumableIcon, useModel } from "../model";
 import ContextLockup from "../molecules/ContextLockup.svelte";
+import Joined from "../molecules/Joined.svelte";
 import PatternHover from "../molecules/PatternHover.svelte";
 
 /**
@@ -132,13 +133,15 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 						kind={c.consumable.type === "event" ? "event" : "command"}
 					/>
 				{:else if col.key === "pattern"}
-					{#each patternsOf(c) as pattern (pattern)}
-						<Keyword
-							text={roleLabel(pattern) as string}
-							mono
-							title={PATTERNS[pattern].summary}
-						/>
-					{/each}
+					<Joined>
+						{#each patternsOf(c) as pattern (pattern)}
+							<Keyword
+								text={roleLabel(pattern) as string}
+								mono
+								title={PATTERNS[pattern].summary}
+							/>
+						{/each}
+					</Joined>
 				{:else if col.key === "consumer"}
 					<Ref ref={c.consumption.consumer.ref} label={c.consumption.consumer.name} />
 				{:else}
