@@ -27,15 +27,9 @@ const consumableMap = $derived(ODSConsumableMap.fromService(s));
 const caption = $derived(`${s.name} consumable map`);
 </script>
 
-<PageHeader
-	kind="service"
-	kindLabel="Service"
-	name={s.name}
-	id={s.id}
-	description={s.description}
-	crumbs={contextCrumbs(model.workspace, bc)}
->
-	{#snippet keywords()}<Keyword text={s.type} title={SERVICE_TYPE[s.type]} />{/snippet}
+<PageHeader description={s.description} crumbs={contextCrumbs(model.workspace, bc)}>
+	{#snippet title()}<Lockup kind="service" name={s.name} id={s.id} detail="Service" size="title" />{/snippet}
+	{#snippet meta()}<Keyword text={s.type} title={SERVICE_TYPE[s.type]} />{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
 			<Definition term="Kind">{SERVICE_TYPE[s.type] ?? s.type}</Definition>

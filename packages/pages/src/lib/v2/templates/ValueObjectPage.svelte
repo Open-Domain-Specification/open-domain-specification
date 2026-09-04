@@ -53,14 +53,8 @@ const relationColumns: Column[] = [
 ];
 </script>
 
-<PageHeader
-	kind="valueobject"
-	kindLabel="Value object"
-	name={v.name}
-	id={v.id}
-	description={v.description}
-	crumbs={ownerCrumbs(ws, a)}
->
+<PageHeader description={v.description} crumbs={ownerCrumbs(ws, a)}>
+	{#snippet title()}<Lockup kind="valueobject" name={v.name} id={v.id} detail="Value object" size="title" />{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
 			<Definition term="Aggregate"><Lockup kind="aggregate" name={a.name} ref={a.ref} /></Definition>

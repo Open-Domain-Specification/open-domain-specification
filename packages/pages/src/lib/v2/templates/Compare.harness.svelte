@@ -1,6 +1,7 @@
 <script lang="ts">
 import { petstoreModel } from "../../fixtures";
 import ModelProvider from "../../ModelProvider.svelte";
+import { resolvePage } from "../../resolve";
 import V1ContextPage from "../../templates/ContextPage.svelte";
 import V1DomainPage from "../../templates/DomainPage.svelte";
 import V1HealthPage from "../../templates/HealthPage.svelte";
@@ -16,7 +17,9 @@ import {
 	pickSubdomain,
 	pickTeam,
 } from "./picks.harness";
+import V1Tactical from "./V1Tactical.harness.svelte";
 import V2Page, { type PageName } from "./V2Page.harness.svelte";
+import V2Tactical from "./V2Tactical.harness.svelte";
 
 /**
  * The same page twice for the morning review: v1 as it ships on the left, v2
@@ -24,15 +27,26 @@ import V2Page, { type PageName } from "./V2Page.harness.svelte";
  * column takes its colours from the loaded page stylesheet, as it does today;
  * the v2 column carries its theme with it. Neither column gets the table of
  * contents — what is being compared is the content, and both columns draw the
- * same element, picked once in `picks.harness.ts`.
+ * same element.
+ *
+ * A strategic page is named by `page` and picked once in `picks.harness.ts`.
+ * A tactical page is named by the `ref` of the element it is about, picked
+ * once in `petstore.harness.ts`, because the nine tactical templates are one
+ * per kind of element rather than one per route.
  */
 const {
-	page,
+	page = "workspace",
+	ref,
 	mode = "light",
-}: { page: PageName; mode?: "light" | "dark" | "hc" } = $props();
+}: {
+	page?: PageName;
+	ref?: string;
+	mode?: "light" | "dark" | "hc";
+} = $props();
 
 const model = petstoreModel();
 const ws = model.workspace;
+const target = $derived(ref ? resolvePage(ws, ref).target : undefined);
 </script>
 
 <ModelProvider {model}>
@@ -41,7 +55,9 @@ const ws = model.workspace;
 			<p class="label">v1</p>
 			<div class="layout">
 				<main>
-					{#if page === "workspace"}
+					{#if ref}
+						<V1Tactical {target} />
+					{:else if page === "workspace"}
 						<V1WorkspacePage />
 					{:else if page === "domain"}
 						<V1DomainPage domain={pickDomain(ws)} />
@@ -61,7 +77,9 @@ const ws = model.workspace;
 		</section>
 		<section>
 			<p class="label">v2</p>
-			<Theme {mode}><V2Page {page} {ws} /></Theme>
+			<Theme {mode}>
+				{#if ref}<V2Tactical {target} />{:else}<V2Page {page} {ws} />{/if}
+			</Theme>
 		</section>
 	</div>
 </ModelProvider>

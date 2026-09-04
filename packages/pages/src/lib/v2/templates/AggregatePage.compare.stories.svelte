@@ -1,19 +1,18 @@
 <script module lang="ts">
 import { defineMeta } from "@storybook/addon-svelte-csf";
-import { petstoreModel } from "../../fixtures";
 import Compare from "./Compare.harness.svelte";
 import { PETSTORE_REFS } from "./petstore.harness";
 
-// Two 1200px columns, v1 on the left and v2 on the right, for the review.
-const model = petstoreModel();
+// Two 1200px columns, v1 on the left and v2 on the right, for the review. A
+// tactical page is named by the ref of the element it is about, so both
+// columns draw the same one.
 const { Story } = defineMeta({
 	title: "V2/Compare/AggregatePage",
 	component: Compare,
 	parameters: { layout: "fullscreen" },
-	args: { model, ref: PETSTORE_REFS.aggregate },
 });
 </script>
 
 <Story name="v1 and v2">
-	{#snippet template()}<Compare {model} ref={PETSTORE_REFS.aggregate} />{/snippet}
+	{#snippet template()}<Compare ref={PETSTORE_REFS.aggregate} />{/snippet}
 </Story>

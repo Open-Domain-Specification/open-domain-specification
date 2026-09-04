@@ -7,8 +7,16 @@ import Keyword from "../Keyword.svelte";
 import Ref from "../Ref.svelte";
 import ContextLockup from "./ContextLockup.svelte";
 
-/** What a context or a service depends on, and how it protects itself from each. */
-const { consumptions }: { consumptions: Consumption[] } = $props();
+/**
+ * What a context or a service depends on, and how it protects itself from
+ * each. The same rows read the other way round on a consumable's page, which
+ * lists who consumes *it*, so `empty` is the caller's word for a table with
+ * nothing in it.
+ */
+const {
+	consumptions,
+	empty = "Depends on nothing outside itself.",
+}: { consumptions: Consumption[]; empty?: string } = $props();
 
 const columns: Column[] = [
 	{ key: "consumable", label: "Consumable" },
@@ -21,7 +29,7 @@ const columns: Column[] = [
 <DataTable
 	{columns}
 	rows={consumptions}
-	empty="Depends on nothing outside itself."
+	{empty}
 >
 	{#snippet cell(x, col)}
 		{#if col.key === "consumable"}

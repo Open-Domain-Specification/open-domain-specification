@@ -54,15 +54,9 @@ const incomingColumns: Column[] = [
 ];
 </script>
 
-<PageHeader
-	kind="entity"
-	kindLabel="Entity"
-	name={e.name}
-	id={e.id}
-	description={e.description}
-	crumbs={ownerCrumbs(model.workspace, a)}
->
-	{#snippet keywords()}
+<PageHeader description={e.description} crumbs={ownerCrumbs(model.workspace, a)}>
+	{#snippet title()}<Lockup kind="entity" name={e.name} id={e.id} detail="Entity" size="title" />{/snippet}
+	{#snippet meta()}
 		{#if e.root}<Keyword
 				text="aggregate root"
 				title="Every change to the aggregate enters through the root, which enforces the invariants."

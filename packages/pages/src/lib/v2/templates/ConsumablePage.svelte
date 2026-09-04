@@ -67,15 +67,15 @@ const policyColumns: Column[] = [
 ];
 </script>
 
-<PageHeader
-	kind={kindOf(c)}
-	kindLabel={isEvent ? "Event" : "Operation"}
-	name={c.name}
-	id={c.id}
-	description={c.description}
-	{crumbs}
->
-	{#snippet keywords()}<ConsumableKeywords consumable={c} />{/snippet}
+<PageHeader description={c.description} {crumbs}>
+	{#snippet title()}<Lockup
+			kind={kindOf(c)}
+			name={c.name}
+			id={c.id}
+			detail={isEvent ? "Event" : "Operation"}
+			size="title"
+		/>{/snippet}
+	{#snippet meta()}<ConsumableKeywords consumable={c} />{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
 			<Definition term="Provided by"><Lockup kind={kindOf(provider)} name={provider.name} ref={provider.ref} /></Definition>

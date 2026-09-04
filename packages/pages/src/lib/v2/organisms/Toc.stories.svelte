@@ -21,8 +21,3 @@ const { Story } = defineMeta({ title: "V2/Organisms/Toc", component: Toc });
 <Story name="High contrast">
 	{#snippet template()}<Theme mode="hc"><Demo /></Theme>{/snippet}
 </Story>
-
-<!-- The section being read takes the link colour and the 2px marker. -->
-<Story name="Active section">
-	{#snippet template()}<Theme mode="dark"><Demo active="integration" /></Theme>{/snippet}
-</Story>

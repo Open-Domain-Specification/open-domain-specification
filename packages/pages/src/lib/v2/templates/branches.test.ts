@@ -152,7 +152,7 @@ describe("v2 tactical templates on the shapes no shared fixture carries", () => 
 		const container = draw(
 			"#/boundedcontexts/edge_context/aggregates/edge_aggregate/entities/edge_root",
 		);
-		const terms = container.querySelector("#language .refs");
+		const terms = container.querySelector("#language .terms");
 		expect(terms?.textContent).toMatch(/Edge,\s*Boundary/);
 		expect(terms?.querySelectorAll("a.ref").length).toBe(2);
 	});
@@ -184,10 +184,12 @@ describe("v2 tactical templates on the shapes no shared fixture carries", () => 
 				(t) => t.includes("Service Raises Both") && t.includes("internal"),
 			),
 		).toBe(true);
-		// The internal operation raises two events, so the raises cell separates them.
-		expect(text.some((t) => /First Happened,\s*Second Happened/.test(t))).toBe(
-			true,
-		);
+		// The internal operation raises two events, so the raises cell lists both
+		// inside one `Joined`, whose comma is drawn by the stylesheet.
+		const raises = [...container.querySelectorAll("table.data tbody .joined")]
+			.map((j) => [...j.querySelectorAll("a.ref")].map((a) => a.textContent))
+			.find((names) => names.includes("First Happened"));
+		expect(raises).toEqual(["First Happened", "Second Happened"]);
 	});
 
 	it("AggregatePage: a consumable with two consumers lists both", () => {

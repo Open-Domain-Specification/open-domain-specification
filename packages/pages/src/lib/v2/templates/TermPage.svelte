@@ -44,15 +44,9 @@ const columns: Column[] = [
 ];
 </script>
 
-<PageHeader
-	kind="term"
-	kindLabel="Glossary term"
-	name={t.name}
-	id={t.id}
-	description={t.definition}
-	{crumbs}
->
-	{#snippet keywords()}
+<PageHeader description={t.definition} {crumbs}>
+	{#snippet title()}<Lockup kind="term" name={t.name} id={t.id} detail="Glossary term" size="title" />{/snippet}
+	{#snippet meta()}
 		{#each t.aliases as a (a)}<Keyword text={a} title="alias" />{/each}
 	{/snippet}
 	{#snippet facts()}

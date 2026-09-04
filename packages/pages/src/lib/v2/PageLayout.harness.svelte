@@ -10,12 +10,11 @@ import AttributesSection from "./organisms/AttributesSection.svelte";
 import PageHeader from "./organisms/PageHeader.svelte";
 import Section from "./organisms/Section.svelte";
 import Sidebar from "./organisms/Sidebar.svelte";
-import Toc from "./organisms/Toc.svelte";
 import PageLayout from "./PageLayout.svelte";
 
 /**
- * The whole chrome of a page at once: the site's tree on the left, the sticky
- * toolbar, the header, a section of rows and the table of contents. It exists
+ * The whole chrome of a page at once: the site's tree on the left, the page
+ * header, a section of rows and the table of contents. It exists
  * so the frame can be judged as one thing rather than component by component —
  * the gutters, the 1200px cap, the 22px rhythm and the two columns only read
  * as a page when they are all on screen together.
@@ -43,28 +42,27 @@ const sections = [
 			<div class="nav"><Sidebar current={pet?.ref ?? "#"} /></div>
 		{/if}
 		<div class="page">
-			<PageLayout>
-				{#snippet toolbar()}
-					<i class="codicon codicon-arrow-left" aria-hidden="true"></i>
-					<i class="codicon codicon-arrow-right" aria-hidden="true"></i>
-					<span class="file">petstore.json</span>
-				{/snippet}
-				{#snippet toc()}<Toc {sections} active="attributes" />{/snippet}
+			<PageLayout {sections}>
 				<PageHeader
-					kind="aggregate"
-					kindLabel="Aggregate"
-					name={pet?.name ?? ""}
-					id={pet?.id ?? ""}
 					description={pet?.description}
 					crumbs={[["#", model.workspace.name], [catalog.ref, catalog.name]]}
 				>
+					{#snippet title()}<Lockup
+							kind="aggregate"
+							name={pet?.name ?? ""}
+							id={pet?.id ?? ""}
+							detail="Aggregate"
+							size="title"
+						/>{/snippet}
 					{#snippet facts()}
-						<Definition term="Root">
-							<Lockup kind="entity" name="Pet" ref={`${pet?.ref}/entities/pet`} />
-						</Definition>
-						<Definition term="Context">
-							<Lockup kind="boundedcontext" name={catalog.name} ref={catalog.ref} />
-						</Definition>
+						<DefinitionList>
+							<Definition term="Root">
+								<Lockup kind="entity" name="Pet" ref={`${pet?.ref}/entities/pet`} />
+							</Definition>
+							<Definition term="Context">
+								<Lockup kind="boundedcontext" name={catalog.name} ref={catalog.ref} />
+							</Definition>
+						</DefinitionList>
 					{/snippet}
 				</PageHeader>
 				<AttributesSection
@@ -106,9 +104,6 @@ const sections = [
 	}
 	.page {
 		min-width: 0;
-	}
-	.file {
-		color: var(--vscode-descriptionForeground);
 	}
 	.row {
 		margin: 0;

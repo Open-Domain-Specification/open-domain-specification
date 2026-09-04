@@ -1,9 +1,7 @@
 <script lang="ts">
 import Toc from "./Toc.svelte";
 
-/** A context page's sections, with the third one being read. */
-const { active }: { active?: string } = $props();
-
+/** A context page's sections, as the table of contents lists them. */
 const sections = [
 	{ id: "position", label: "Strategic position" },
 	{ id: "model", label: "Model" },
@@ -13,4 +11,4 @@ const sections = [
 ];
 </script>
 
-<Toc {sections} {active} />
+<Toc {sections} />

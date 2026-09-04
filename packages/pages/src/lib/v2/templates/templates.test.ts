@@ -29,7 +29,7 @@ describe("v2 tactical templates", () => {
 			).toBe(0);
 			expect(container.querySelector("h1")).toBeInTheDocument();
 			// Every page sits in the v2 layout with its own table of contents.
-			expect(container.querySelector(".layout-v2 .toc-v2")).toBeInTheDocument();
+			expect(container.querySelector(".layout .toc")).toBeInTheDocument();
 		}
 	});
 
@@ -121,7 +121,7 @@ describe("v2 tactical templates", () => {
 		expect(container.textContent).toContain("anti-corruption-layer");
 	});
 
-	it("ServicePage: the provides and consumes tables sort on their headers", async () => {
+	it("ServicePage: the provides table sorts on its headers and the consumes table does not", async () => {
 		const container = draw(PETSTORE_REFS.service);
 		const names = (table: Element) =>
 			[...table.querySelectorAll("tbody tr td:first-child")].map((c) =>
@@ -143,17 +143,11 @@ describe("v2 tactical templates", () => {
 			provides.querySelector("th[aria-sort='ascending']"),
 		).toBeInTheDocument();
 
-		await fireEvent.click(
-			within(consumes as HTMLElement).getByRole("button", { name: "Context" }),
-		);
+		// The consumes table is read down, not sorted: its headers are plain
+		// column headers, so nothing in it is a button.
 		expect(
-			consumes.querySelector("th[aria-sort='ascending']"),
-		).toBeInTheDocument();
-		await fireEvent.click(
-			within(consumes as HTMLElement).getByRole("button", {
-				name: "Consumable",
-			}),
-		);
+			within(consumes as HTMLElement).queryAllByRole("button"),
+		).toHaveLength(0);
 		expect(names(consumes).length).toBeGreaterThan(0);
 	});
 
@@ -229,9 +223,9 @@ describe("v2 tactical templates", () => {
 		);
 	});
 
-	it("TermPage: aliases are keywords beside the title, titled so a reader knows what they are", () => {
+	it("TermPage: aliases are keywords in the header's meta line, titled so a reader knows what they are", () => {
 		const container = draw(PETSTORE_REFS.termWithAlias);
-		const alias = container.querySelector(".keywords .keyword");
+		const alias = container.querySelector(".page-header .meta .keyword");
 		expect(alias).toBeInTheDocument();
 		expect(alias).toHaveAttribute("title", "alias");
 	});
@@ -245,7 +239,7 @@ describe("v2 tactical templates", () => {
 		};
 		document.body.append(container);
 		const link = within(
-			container.querySelector(".toc-v2") as HTMLElement,
+			container.querySelector(".toc") as HTMLElement,
 		).getByText("Relations");
 		await fireEvent.click(link);
 		expect(scrolled).toBe(true);

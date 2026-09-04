@@ -30,14 +30,8 @@ const columns: Column[] = [
 ];
 </script>
 
-<PageHeader
-	kind="invariant"
-	kindLabel="Invariant"
-	name={i.name}
-	id={i.id}
-	description={i.description}
-	crumbs={ownerCrumbs(model.workspace, a)}
->
+<PageHeader description={i.description} crumbs={ownerCrumbs(model.workspace, a)}>
+	{#snippet title()}<Lockup kind="invariant" name={i.name} id={i.id} detail="Invariant" size="title" />{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
 			<Definition term="Enforced by"><Lockup kind="aggregate" name={a.name} ref={a.ref} /></Definition>

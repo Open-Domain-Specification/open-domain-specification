@@ -53,14 +53,8 @@ const raisersOf = (event: Consumable) =>
 	operations.filter((o) => o.raisedEvents.includes(event));
 </script>
 
-<PageHeader
-	kind="aggregate"
-	kindLabel="Aggregate"
-	name={a.name}
-	id={a.id}
-	description={a.description}
-	crumbs={contextCrumbs(model.workspace, bc)}
->
+<PageHeader description={a.description} crumbs={contextCrumbs(model.workspace, bc)}>
+	{#snippet title()}<Lockup kind="aggregate" name={a.name} id={a.id} detail="Aggregate" size="title" />{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
 			<Definition term="Root">
@@ -100,7 +94,7 @@ const raisersOf = (event: Consumable) =>
 <InvariantsSection
 	{invariants}
 	title="Invariants"
-	withTargets
+	constrains
 	lead="Rules that must hold after every change. The root enforces them; the elements they constrain are listed."
 	emptyText="No invariants stated. If nothing can go wrong, is this really an aggregate?"
 	problems={invariants.flatMap((i) => problemsUnder(model, i.ref))}

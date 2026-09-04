@@ -35,7 +35,8 @@ const columns: Column[] = [
 ];
 </script>
 
-<PageHeader kind="schema" kindLabel="Schema" name={s.name} id={s.id} description={s.description} {crumbs}>
+<PageHeader description={s.description} {crumbs}>
+	{#snippet title()}<Lockup kind="schema" name={s.name} id={s.id} detail="Schema" size="title" />{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
 			<Definition term="Published by"><Lockup kind="boundedcontext" name={bc.name} ref={bc.ref} /></Definition>

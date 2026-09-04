@@ -1,8 +1,6 @@
 <script lang="ts">
-import {
-	constrainableLabel,
-	type Invariant,
-} from "@open-domain-specification/core";
+import type { Diagnostic, Invariant } from "@open-domain-specification/core";
+import { constrainableLabel } from "@open-domain-specification/core";
 import type { Column } from "../DataTable.svelte";
 import DataTable from "../DataTable.svelte";
 import Keyword from "../Keyword.svelte";
@@ -17,6 +15,8 @@ import Section from "./Section.svelte";
  *
  * `constrains` adds the column the aggregate page needs, listing what each
  * rule names — the whole aggregate when it names nothing in particular.
+ * `problems` are the diagnostics about the rules themselves, which the
+ * section heading carries the way every other section does.
  */
 const {
 	invariants,
@@ -25,6 +25,7 @@ const {
 	id = "invariants",
 	title = "Constrained by",
 	constrains = false,
+	problems = [],
 }: {
 	invariants: Invariant[];
 	lead: string;
@@ -32,6 +33,7 @@ const {
 	id?: string;
 	title?: string;
 	constrains?: boolean;
+	problems?: Diagnostic[];
 } = $props();
 
 const columns = $derived<Column[]>([
@@ -41,7 +43,7 @@ const columns = $derived<Column[]>([
 ]);
 </script>
 
-<Section {id} {title} {lead} count={invariants.length}>
+<Section {id} {title} {lead} count={invariants.length} {problems}>
 	<DataTable {columns} rows={invariants} rowId={(i) => i.ref} empty={emptyText}>
 		{#snippet cell(i, col)}
 			{#if col.key === "name"}

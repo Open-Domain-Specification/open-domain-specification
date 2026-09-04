@@ -55,7 +55,8 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 	</DataTable>
 {/snippet}
 
-<PageHeader kind="policy" kindLabel="Policy" name={p.name} id={p.id} description={p.description} {crumbs}>
+<PageHeader description={p.description} {crumbs}>
+	{#snippet title()}<Lockup kind="policy" name={p.name} id={p.id} detail="Policy" size="title" />{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
 			<Definition term="Lives in"><Lockup kind="boundedcontext" name={bc.name} ref={bc.ref} /></Definition>
