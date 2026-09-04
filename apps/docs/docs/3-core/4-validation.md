@@ -19,7 +19,7 @@ severity, a rule id, a message and the ref of the element concerned.
 | `value-object-shape` | error | a value object declares no identity attribute and includes nothing |
 | `aggregate-tree` | error / warning | inside an aggregate `includes` points at entities and `uses` at value objects, and every entity is reachable from the root. The tree is a claim about instances: a type that includes its own type, or one included by two different wholes, is legal; a ring through two or more distinct types is not |
 | `attribute-relation-coherence` | warning | an attribute typed by a value object has the matching `uses` relation, of a matching cardinality; the type itself is free text and is never checked against the value object's name |
-| `attribute-one-shape` | error | an attribute is typed by a value object or by a schema, never by both |
+| `attribute-one-shape` | error | an attribute is typed by a value object or by a schema, never by both, and only a schema's attribute names a schema: a payload shape belongs at the boundary, so an entity or value object names a value object |
 | `invariant-in-aggregate` | error | every element an invariant constrains is inside the invariant's own aggregate — an entity, an attribute or one of its consumables — or is a value object of its context |
 | `relationship-roles-backed` | warning | a directed relationship's declared roles are carried by real crossings, and a crossing consumption's role is declared on the relationship; a crossing consumable's `schema` backs a `published-language` role |
 | `relationship-cycle` | warning | the directed relationships whose traffic is calls form no cycle; a step carried only by events is choreography and does not count (decision 20). The message lists the ring's contexts in order |

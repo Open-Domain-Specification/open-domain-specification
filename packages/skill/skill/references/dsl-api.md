@@ -34,7 +34,7 @@ independently of the name.
 | `Aggregate`, `Service` | `provides(name, { type, description, pattern?, internal?, schema?, returns?, comments?, disposition? })` | a consumable; `type` is `"event" \| "operation"`, `pattern` is `"open-host-service" \| "published-language"`; `schema` is what the caller sends and `returns` what an operation answers with, both schemas of the provider's own context |
 | `Aggregate`, `Service` | `consumes(consumable, { pattern?, comments?, disposition? })` | a consumption; `pattern` is `"conformist" \| "anti-corruption-layer"` |
 | `Consumable` | `raises(...events)` | the events an operation raises |
-| `Entity`, `ValueObject`, `DataSchema` | `addAttribute(name, { type, description?, identity?, valueobject?, schema? })` | an attribute; `type` is free text, and `valueobject` and `schema` are mutually exclusive |
+| `Entity`, `ValueObject`, `DataSchema` | `addAttribute(name, { type, description?, identity?, valueobject?, schema? })` | an attribute; `type` is free text, `valueobject` and `schema` are mutually exclusive, and only a `DataSchema`'s attribute may use `schema` |
 | `Entity`, `ValueObject` | `uses(target, label, cardinality?)` | a `uses` relation, at a value object of the same context |
 | `Entity`, `ValueObject` | `includes(target, label, cardinality?)` | an `includes` relation |
 | `Entity`, `ValueObject` | `references(target, label, cardinality?)` | a `references` relation; across aggregates target the root |

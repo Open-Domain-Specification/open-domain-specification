@@ -25,8 +25,10 @@ attribute has a free-form `type`, may be marked `identity` (for entities),
 and may point at the shape that models its type: the value object it is a
 value of, or the schema it nests. The two are mutually exclusive — a value
 object is a concept of the context's own model, a schema a payload the
-context publishes — and a collection stays in the type string
-(`OrderLine[]`), since there is no separate list construct.
+context publishes — and only a schema's attribute may name a schema: an
+entity or a value object holds value objects, because a payload shape
+belongs at the boundary rather than inside the model. A collection stays in
+the type string (`OrderLine[]`), since there is no separate list construct.
 
 ## Relations and invariants
 

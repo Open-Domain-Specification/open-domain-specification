@@ -70,11 +70,11 @@
 
 ## `attribute-one-shape` (error)
 
-**Requires:** An attribute is typed by a value object or by a schema, never by both.
+**Requires:** An attribute is typed by a value object or by a schema, never by both, and only a schema's attribute names a schema.
 
-**Why it matters:** A value object and a schema are two different things to be. A value object is a concept the context models and compares by value; a schema is a payload shape the context publishes to whoever is listening. An attribute claiming both leaves a reader unable to say which model the field belongs to, and a change to either shape becomes a change nobody can scope.
+**Why it matters:** A value object and a schema are two different things to be. A value object is a concept the context models and compares by value; a schema is a payload shape the context publishes to whoever is listening. An attribute claiming both leaves a reader unable to say which model the field belongs to, and a change to either shape becomes a change nobody can scope. For the same reason an entity or a value object holds only value objects: a payload shape belongs at the boundary, and letting one inside puts the vocabulary of the wire into the model the boundary exists to protect.
 
-**Usual fix:** Keep the value object when the attribute is a concept of the domain, and the schema when it is a nested part of a payload; drop the other. Collections stay in the type string, so a list of a nested shape is OrderLine[] beside one schema reference.
+**Usual fix:** Keep the value object when the attribute is a concept of the domain, and the schema when it is a nested part of a payload; drop the other. On an entity or a value object, declare the value object the field really is and point at that. Collections stay in the type string, so a list of a nested shape is OrderLine[] beside one schema reference.
 
 ## `invariant-in-aggregate` (error)
 

@@ -558,6 +558,44 @@ describe("attribute-one-shape", () => {
 			],
 		]);
 	});
+
+	it("keeps a payload shape out of the model: only a schema's attribute names a schema", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const line = bc.addSchema("Order Line");
+		const request = bc.addSchema("Order Request");
+		// A schema nesting a schema is the whole point of decision 18.
+		request.addAttribute("Lines", { type: "OrderLine[]", schema: line });
+		const order = bc.addAggregate("Order", { description: "" });
+		const root = order.addRootEntity("Order", { description: "" });
+		root.addAttribute("Id", { type: "uuid", identity: true });
+		const onEntity = root.addAttribute("Lines", {
+			type: "OrderLine[]",
+			schema: line,
+		});
+		const address = bc.addValueObject("Address", { description: "" });
+		const onValueObject = address.addAttribute("Lines", {
+			type: "OrderLine[]",
+			schema: line,
+		});
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "attribute-one-shape")
+				.map((d) => [d.severity, d.message, d.ref]),
+		).toEqual([
+			[
+				"error",
+				'"Address" types attribute "Lines" by schema "Order Line", which is a payload shape at the context\'s boundary; an entity or value object names a value object instead',
+				onValueObject.ref,
+			],
+			[
+				"error",
+				'"Order" types attribute "Lines" by schema "Order Line", which is a payload shape at the context\'s boundary; an entity or value object names a value object instead',
+				onEntity.ref,
+			],
+		]);
+	});
 });
 
 describe("attribute-relation-coherence", () => {

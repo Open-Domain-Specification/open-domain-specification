@@ -15,7 +15,7 @@ import {
 	Consumption,
 	ContextRelationship,
 	constrainableLabel,
-	type DataSchema,
+	DataSchema,
 	Entity,
 	type EntityRelation,
 	isDirectedRelationshipType,
@@ -506,23 +506,39 @@ const attributeRelationCoherence: Rule = (workspace) => {
 };
 
 /**
- * An attribute names one shape or none: the value object that models it, or
- * the schema it nests, never both (decision 18). The two are different claims
- * — a value object is a concept of the context's own model, a schema a payload
- * it publishes — and an attribute making both leaves a reader unable to say
- * which of the two the field really is.
+ * An attribute names one shape or none, and which shapes it may name depends
+ * on what holds it (decision 18).
+ *
+ * A value object and a schema are different claims — a value object is a
+ * concept of the context's own model, a schema a payload shape at the
+ * boundary — so no attribute names both: doing so leaves a reader unable to
+ * say which of the two the field really is. And an entity or a value object
+ * names only a value object, never a schema: what a domain object holds is
+ * part of the model, and reaching for a published payload shape would put the
+ * boundary's vocabulary inside the model it exists to protect. Composition
+ * with a schema is a schema's own business.
  */
 const attributeOneShape: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const { owner } of attributeOwnersOf(workspace)) {
 		for (const attribute of owner.attributes.values()) {
-			if (!attribute.valueobject || !attribute.schema) continue;
-			diagnostics.push({
-				severity: "error",
-				rule: "attribute-one-shape",
-				message: `"${owner.name}" types attribute "${attribute.name}" by both value object "${attribute.valueobject.name}" and schema "${attribute.schema.name}"; an attribute has one shape`,
-				ref: attribute.ref,
-			});
+			if (attribute.valueobject && attribute.schema) {
+				diagnostics.push({
+					severity: "error",
+					rule: "attribute-one-shape",
+					message: `"${owner.name}" types attribute "${attribute.name}" by both value object "${attribute.valueobject.name}" and schema "${attribute.schema.name}"; an attribute has one shape`,
+					ref: attribute.ref,
+				});
+				continue;
+			}
+			if (attribute.schema && !(owner instanceof DataSchema)) {
+				diagnostics.push({
+					severity: "error",
+					rule: "attribute-one-shape",
+					message: `"${owner.name}" types attribute "${attribute.name}" by schema "${attribute.schema.name}", which is a payload shape at the context's boundary; an entity or value object names a value object instead`,
+					ref: attribute.ref,
+				});
+			}
 		}
 	}
 	return diagnostics;
@@ -1441,9 +1457,9 @@ const RULES: CataloguedRule[] = [
 		rule: "attribute-one-shape",
 		severities: ["error"],
 		summary:
-			"An attribute is typed by a value object or by a schema, never by both.",
-		why: "A value object and a schema are two different things to be. A value object is a concept the context models and compares by value; a schema is a payload shape the context publishes to whoever is listening. An attribute claiming both leaves a reader unable to say which model the field belongs to, and a change to either shape becomes a change nobody can scope.",
-		fix: "Keep the value object when the attribute is a concept of the domain, and the schema when it is a nested part of a payload; drop the other. Collections stay in the type string, so a list of a nested shape is OrderLine[] beside one schema reference.",
+			"An attribute is typed by a value object or by a schema, never by both, and only a schema's attribute names a schema.",
+		why: "A value object and a schema are two different things to be. A value object is a concept the context models and compares by value; a schema is a payload shape the context publishes to whoever is listening. An attribute claiming both leaves a reader unable to say which model the field belongs to, and a change to either shape becomes a change nobody can scope. For the same reason an entity or a value object holds only value objects: a payload shape belongs at the boundary, and letting one inside puts the vocabulary of the wire into the model the boundary exists to protect.",
+		fix: "Keep the value object when the attribute is a concept of the domain, and the schema when it is a nested part of a payload; drop the other. On an entity or a value object, declare the value object the field really is and point at that. Collections stay in the type string, so a list of a nested shape is OrderLine[] beside one schema reference.",
 		check: attributeOneShape,
 	},
 	{

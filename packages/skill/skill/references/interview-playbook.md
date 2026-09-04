@@ -117,7 +117,9 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   declare a second schema on the same context and point the attribute at it with `schema`,
   keeping any collection in the type string (`OrderLine[]`); if no, leave it a plain typed
   attribute. An attribute carries `valueobject` or `schema`, never both: a value object is a
-  concept of this context's own model, a schema a payload it publishes.
+  concept of this context's own model, a schema a payload it publishes. Only a schema's own
+  attribute may name a schema — if the thing with parts is an entity's or a value object's
+  field, it is a value object, so declare one and use `valueobject`.
 - For an operation, follow up: "and what comes back?" → a second schema on the same context,
   attached with `returns`. A command that answers with nothing leaves `returns` off; a query
   that answers with nothing is not a query, so keep asking. Never put `returns` on an event.
