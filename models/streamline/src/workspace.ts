@@ -262,6 +262,10 @@ const episodeNumber = studioEpisode.addAttribute("episodeNumber", {
 studioEpisode.addAttribute("runtimeMinutes", { type: "int" });
 studioEpisode.addAttribute("masterUri", { type: "string (URI)" });
 production.includes(studioEpisode, "made-of", "1..*");
+production.addAttribute("budget", {
+	type: "Budget",
+	valueobject: budgetVO,
+});
 production.uses(budgetVO, "funded-by", "1");
 budgetVO.uses(budgetMoney, "amount", "1");
 
@@ -374,6 +378,10 @@ window.addAttribute("start", { type: "date" });
 window.addAttribute("end", { type: "date" });
 window.addAttribute("exclusive", { type: "boolean" });
 deal.includes(window, "grants", "1..*");
+window.addAttribute("territory", {
+	type: "Territory",
+	valueobject: territoryVO,
+});
 window.uses(territoryVO, "covers", "1");
 deal.uses(feeMoney, "costs", "1");
 
@@ -508,6 +516,21 @@ catalogueEpisode.addAttribute("rating", {
 });
 title.includes(season, "has-seasons", "*");
 season.includes(catalogueEpisode, "has-episodes", "1..*");
+title.addAttribute("artwork", {
+	type: "Artwork",
+	valueobject: artworkVO,
+});
+title.addAttribute("availability", {
+	type: "Availability[]",
+	valueobject: availabilityVO,
+	description: "One entry per territory and window the title is playable in",
+});
+catalogueEpisode.addAttribute("artwork", {
+	type: "Artwork",
+	valueobject: artworkVO,
+	description:
+		"An episode may carry its own still; absent means the series artwork",
+});
 title.uses(artworkVO, "shown-with", "1");
 title.uses(ratingVO, "rated", "1");
 title.uses(availabilityVO, "available", "*");
@@ -667,6 +690,10 @@ rendition.addAttribute("codec", { type: "string" });
 rendition.addAttribute("bitrateKbps", { type: "int" });
 rendition.addAttribute("height", { type: "int" });
 job.includes(rendition, "produces", "*");
+job.addAttribute("ladder", {
+	type: "Ladder",
+	valueobject: ladderVO,
+});
 job.uses(ladderVO, "planned-as", "1");
 
 jobAgg
@@ -833,6 +860,10 @@ session.addAttribute("deviceModelId", {
 		"The partner model the unit is an instance of; what certification is checked against",
 });
 session.addAttribute("bookmark", { type: "Bookmark", valueobject: bookmarkVO });
+session.addAttribute("manifest", {
+	type: "StreamManifest",
+	valueobject: manifestVO,
+});
 session.uses(bookmarkVO, "resumes-at", "1");
 session.uses(manifestVO, "streams-from", "1");
 // The Title root is in Catalogue, another bounded context: a relation never
@@ -980,6 +1011,10 @@ cachedAsset.addAttribute("renditionId", { type: "string", identity: true });
 cachedAsset.addAttribute("bytes", { type: "int64" });
 cachedAsset.addAttribute("lastHitAt", { type: "date-time" });
 appliance.includes(cachedAsset, "caches", "*");
+appliance.addAttribute("capacity", {
+	type: "Capacity",
+	valueobject: capacityVO,
+});
 appliance.uses(capacityVO, "sized", "1");
 applianceAgg
 	.addInvariant("CachedBytesWithinCapacity", {
@@ -1061,6 +1096,10 @@ certification.addAttribute("sdkVersion", { type: "string", identity: true });
 certification.addAttribute("passed", { type: "boolean" });
 certification.addAttribute("certifiedOn", { type: "date" });
 device.includes(certification, "certified-by", "*");
+device.addAttribute("capability", {
+	type: "Capability",
+	valueobject: capabilityVO,
+});
 device.uses(capabilityVO, "capable-of", "1");
 deviceAgg
 	.addInvariant("CertifiedBeforePlayback", {
@@ -1158,6 +1197,11 @@ signal.addAttribute("kind", {
 signal.addAttribute("weight", { type: "float" });
 signal.addAttribute("at", { type: "date-time" });
 taste.includes(signal, "built-from", "*");
+taste.addAttribute("affinities", {
+	type: "Affinity[]",
+	valueobject: affinityVO,
+	description: "What the profile leans to, strongest first",
+});
 taste.uses(affinityVO, "leans-to", "*");
 // The Title root is in Catalogue, another bounded context, so the signal holds
 // `titleId` and no relation.
@@ -1271,6 +1315,15 @@ profile.addAttribute("name", { type: "string" });
 profile.addAttribute("kids", { type: "boolean" });
 profile.addAttribute("primary", { type: "boolean" });
 household.includes(profile, "has-profiles", "1..*");
+profile.addAttribute("maturity", {
+	type: "MaturitySetting",
+	valueobject: maturityVO,
+});
+profile.addAttribute("pin", {
+	type: "ProfilePin",
+	valueobject: pinVO,
+	description: "Absent on an unlocked profile",
+});
 profile.uses(maturityVO, "limited-to", "1");
 profile.uses(pinVO, "locked-by", "0..1");
 
@@ -1398,7 +1451,12 @@ invoice.addAttribute("amount", {
 });
 invoice.addAttribute("paid", { type: "boolean" });
 subscription.includes(invoice, "billed-by", "*");
+planVO.uses(planMoney, "priced-at", "1");
 subscription.uses(planVO, "on-plan", "1");
+invoice.addAttribute("period", {
+	type: "BillingPeriod",
+	valueobject: periodVO,
+});
 invoice.uses(periodVO, "covers", "1");
 invoice.uses(planMoney, "charges", "1");
 
@@ -1628,6 +1686,14 @@ adSlot.addAttribute("slotId", { type: "string", identity: true });
 adSlot.addAttribute("creativeId", { type: "string" });
 adSlot.addAttribute("durationSeconds", { type: "int" });
 adBreak.includes(adSlot, "filled-by", "1..*");
+adSlot.addAttribute("advertiser", {
+	type: "Advertiser",
+	valueobject: advertiserVO,
+});
+adSlot.addAttribute("frequencyCap", {
+	type: "FrequencyCap",
+	valueobject: frequencyCapVO,
+});
 adSlot.uses(advertiserVO, "paid-by", "1");
 adSlot.uses(frequencyCapVO, "capped", "1");
 

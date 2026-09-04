@@ -1033,7 +1033,19 @@
               "name": "InventoryView",
               "description": "Status→count map for /store/inventory",
               "root": true,
-              "attributes": {},
+              "attributes": {
+                "status": {
+                  "name": "status",
+                  "type": "'available' | 'pending' | 'sold'",
+                  "description": "The status this row counts; the identity of the view",
+                  "identity": true
+                },
+                "count": {
+                  "name": "count",
+                  "type": "int32",
+                  "description": "How many pets are in that status"
+                }
+              },
               "relations": []
             }
           },
@@ -1206,6 +1218,13 @@
                   "type": "ShipmentStatus",
                   "valueobject": {
                     "$ref": "#/boundedcontexts/fulfilment_bc/aggregates/shipment/valueobjects/shipment_status"
+                  }
+                },
+                "tracking_number": {
+                  "name": "trackingNumber",
+                  "type": "TrackingNumber",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/fulfilment_bc/aggregates/shipment/valueobjects/tracking_number"
                   }
                 }
               },

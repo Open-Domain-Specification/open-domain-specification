@@ -1,10 +1,16 @@
 import { relationshipsWithoutComments } from "./evidence";
 import {
 	type Aggregate,
+	Attribute,
+	type BoundedContext,
+	type Constrainable,
 	type Consumption,
+	constrainableLabel,
 	Entity,
 	type EntityRelation,
+	isDirectedRelationshipType,
 	type Policy,
+	ValueObject,
 	type Workspace,
 } from "./workspace";
 
@@ -31,6 +37,11 @@ function* relationsOf(workspace: Workspace): Iterable<EntityRelation> {
 		for (const entity of aggregate.entities.values()) yield* entity.relations;
 		for (const vo of aggregate.valueobjects.values()) yield* vo.relations;
 	}
+}
+
+function* membersOf(aggregate: Aggregate): Iterable<Entity | ValueObject> {
+	yield* aggregate.entities.values();
+	yield* aggregate.valueobjects.values();
 }
 
 function* consumptionsOf(workspace: Workspace): Iterable<Consumption> {
@@ -109,16 +120,311 @@ const crossContextRelation: Rule = (workspace) => {
 	return diagnostics;
 };
 
+/**
+ * An aggregate's root entity is identified by something. Without an identity
+ * attribute nothing says which instance a reference points at.
+ */
+const rootIdentity: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const aggregate of aggregatesOf(workspace)) {
+		for (const root of aggregate.entities.values()) {
+			if (!root.root) continue;
+			const identified = Array.from(root.attributes.values()).some(
+				(a) => a.identity,
+			);
+			if (identified) continue;
+			diagnostics.push({
+				severity: "error",
+				rule: "root-identity",
+				message: `Root entity "${root.name}" of aggregate "${aggregate.name}" declares no identity attribute, so nothing says which "${root.name}" a reference means`,
+				ref: root.ref,
+			});
+		}
+	}
+	return diagnostics;
+};
+
+/**
+ * A value object is compared by its values, so it carries no identity of its
+ * own and owns no lifecycle: no identity attribute, and no `includes`.
+ */
+const valueObjectShape: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const aggregate of aggregatesOf(workspace)) {
+		for (const vo of aggregate.valueobjects.values()) {
+			for (const attribute of vo.attributes.values()) {
+				if (!attribute.identity) continue;
+				diagnostics.push({
+					severity: "error",
+					rule: "value-object-shape",
+					message: `Value object "${vo.name}" marks attribute "${attribute.name}" as an identity; two value objects with the same values are the same value, so it has no identity of its own`,
+					ref: vo.ref,
+				});
+			}
+			for (const relation of vo.relations) {
+				if (relation.relation !== "includes") continue;
+				diagnostics.push({
+					severity: "error",
+					rule: "value-object-shape",
+					message: `Value object "${vo.name}" includes "${relation.target.name}"; only an entity owns the lifecycle of what it includes, so "${vo.name}" uses "${relation.target.name}" instead`,
+					ref: vo.ref,
+				});
+			}
+		}
+	}
+	return diagnostics;
+};
+
+/** Adds one value to the list a key holds, starting the list if there is none. */
+function append<K, V>(index: Map<K, V[]>, key: K, value: V): void {
+	const existing = index.get(key);
+	if (existing) existing.push(value);
+	else index.set(key, [value]);
+}
+
+/**
+ * Within one aggregate `includes` forms a tree from the root: it points at
+ * entities, no entity has two parents, and no chain closes on itself, while
+ * `uses` points at value objects (decision 10's conventions). Relations that
+ * leave the aggregate belong to `cross-aggregate-reference`.
+ */
+const aggregateTree: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const aggregate of aggregatesOf(workspace)) {
+		const parents = new Map<Entity, Entity[]>();
+		const children = new Map<Entity, Entity[]>();
+		for (const member of membersOf(aggregate)) {
+			for (const relation of member.relations) {
+				if (relation.target.aggregate !== aggregate) continue;
+				if (relation.relation === "uses") {
+					if (relation.target instanceof ValueObject) continue;
+					diagnostics.push({
+						severity: "error",
+						rule: "aggregate-tree",
+						message: `"${member.name}" uses "${relation.target.name}", which is an entity; "uses" points at a value object, and an entity the aggregate owns is included`,
+						ref: member.ref,
+					});
+					continue;
+				}
+				if (relation.relation !== "includes") continue;
+				// A value object that includes anything is value-object-shape's.
+				if (!(member instanceof Entity)) continue;
+				if (!(relation.target instanceof Entity)) {
+					diagnostics.push({
+						severity: "error",
+						rule: "aggregate-tree",
+						message: `"${member.name}" includes "${relation.target.name}", which is a value object; "includes" points at an entity, and a value object is used`,
+						ref: member.ref,
+					});
+					continue;
+				}
+				append(parents, relation.target, member);
+				append(children, member, relation.target);
+			}
+		}
+		for (const [child, owners] of parents) {
+			if (owners.length < 2) continue;
+			const named = owners.map((o) => `"${o.name}"`).join(" and ");
+			diagnostics.push({
+				severity: "error",
+				rule: "aggregate-tree",
+				message: `"${child.name}" is included by ${named} in aggregate "${aggregate.name}"; inside an aggregate an entity has exactly one parent`,
+				ref: child.ref,
+			});
+		}
+		diagnostics.push(...includesCycles(aggregate, children));
+		diagnostics.push(...orphanEntities(aggregate));
+	}
+	return diagnostics;
+};
+
+/**
+ * One diagnostic per entity that no chain of `includes` or `references`
+ * reaches from a root of the aggregate. An aggregate with no root at all is
+ * `aggregate-root`'s business, so this says nothing about it.
+ */
+function orphanEntities(aggregate: Aggregate): Diagnostic[] {
+	const roots = Array.from(aggregate.entities.values()).filter((e) => e.root);
+	if (roots.length === 0) return [];
+	const reached = new Set<Entity>();
+	const walk = (entity: Entity) => {
+		if (reached.has(entity)) return;
+		reached.add(entity);
+		for (const relation of entity.relations) {
+			if (relation.relation === "uses") continue;
+			if (relation.target.aggregate !== aggregate) continue;
+			if (relation.target instanceof Entity) walk(relation.target);
+		}
+	};
+	for (const root of roots) walk(root);
+	return Array.from(aggregate.entities.values())
+		.filter((entity) => !reached.has(entity))
+		.map((entity) => ({
+			severity: "warning" as const,
+			rule: "aggregate-tree",
+			message: `"${entity.name}" is in aggregate "${aggregate.name}" but no chain of "includes" or "references" reaches it from ${roots
+				.map((r) => `"${r.name}"`)
+				.join(" or ")}, so nothing inside the boundary can get to it`,
+			ref: entity.ref,
+		}));
+}
+
+/** One diagnostic per back edge of an aggregate's `includes` graph. */
+function includesCycles(
+	aggregate: Aggregate,
+	children: Map<Entity, Entity[]>,
+): Diagnostic[] {
+	const diagnostics: Diagnostic[] = [];
+	const onStack = new Set<Entity>();
+	const walked = new Set<Entity>();
+	const walk = (entity: Entity) => {
+		onStack.add(entity);
+		for (const child of children.get(entity) ?? []) {
+			if (onStack.has(child)) {
+				diagnostics.push({
+					severity: "error",
+					rule: "aggregate-tree",
+					message: `"${entity.name}" includes "${child.name}", which already includes "${entity.name}" further up aggregate "${aggregate.name}"; "includes" forms a tree from the root, never a cycle`,
+					ref: entity.ref,
+				});
+				continue;
+			}
+			if (!walked.has(child)) walk(child);
+		}
+		onStack.delete(entity);
+		walked.add(entity);
+	};
+	for (const entity of aggregate.entities.values()) {
+		if (!walked.has(entity)) walk(entity);
+	}
+	return diagnostics;
+}
+
+/**
+ * An attribute typed by a value object and a `uses` relation to it are two
+ * halves of the same statement, and a list-typed attribute is a `*` or `1..*`
+ * relation.
+ */
+const attributeRelationCoherence: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const aggregate of aggregatesOf(workspace)) {
+		for (const member of membersOf(aggregate)) {
+			const uses = member.relations.filter(
+				(r) => r.relation === "uses" && r.target.aggregate === aggregate,
+			);
+			for (const attribute of member.attributes.values()) {
+				const vo = attribute.valueobject;
+				// A `uses` may not leave the aggregate, so only ask for one that could exist.
+				if (!vo || vo.aggregate !== aggregate) continue;
+				const relation = uses.find((r) => r.target === vo);
+				if (!relation) {
+					diagnostics.push({
+						severity: "warning",
+						rule: "attribute-relation-coherence",
+						message: `"${member.name}" types attribute "${attribute.name}" by value object "${vo.name}" but declares no "uses" relation to "${vo.name}", so the relation map never draws it`,
+						ref: member.ref,
+					});
+					continue;
+				}
+				const type = attribute.type.trim();
+				const single =
+					relation.cardinality === "1" || relation.cardinality === "0..1";
+				if (type.endsWith("[]") && single) {
+					diagnostics.push({
+						severity: "warning",
+						rule: "attribute-relation-coherence",
+						message: `"${member.name}" types attribute "${attribute.name}" as a list ("${attribute.type}") but its "uses" relation to "${vo.name}" has cardinality "${relation.cardinality}"`,
+						ref: member.ref,
+					});
+				}
+				if (type !== vo.name && type !== `${vo.name}[]`) {
+					diagnostics.push({
+						severity: "warning",
+						rule: "attribute-relation-coherence",
+						message: `"${member.name}" types attribute "${attribute.name}" as "${attribute.type}" but points it at value object "${vo.name}"; the type a reader sees should be "${vo.name}" or "${vo.name}[]"`,
+						ref: member.ref,
+					});
+				}
+			}
+			for (const relation of uses) {
+				const typed = Array.from(member.attributes.values()).some(
+					(a) => a.valueobject === relation.target,
+				);
+				if (typed) continue;
+				diagnostics.push({
+					severity: "warning",
+					rule: "attribute-relation-coherence",
+					message: `"${member.name}" uses "${relation.target.name}" but no attribute of "${member.name}" is typed by "${relation.target.name}", so the page says the relation exists and never shows where`,
+					ref: member.ref,
+				});
+			}
+		}
+	}
+	return diagnostics;
+};
+
+/** The aggregate a constrainable element sits in, if it sits in one at all. */
+function aggregateOf(target: Constrainable): Aggregate | undefined {
+	if (target instanceof Attribute) {
+		const { owner } = target;
+		return owner instanceof Entity || owner instanceof ValueObject
+			? owner.aggregate
+			: undefined;
+	}
+	return target.aggregate;
+}
+
+/**
+ * An invariant is enforced when its aggregate is saved, so everything it
+ * constrains has to be inside that aggregate.
+ */
+const invariantInAggregate: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const aggregate of aggregatesOf(workspace)) {
+		for (const invariant of aggregate.invariants.values()) {
+			for (const target of invariant.targets) {
+				const owner = aggregateOf(target);
+				if (owner === aggregate) continue;
+				const where = owner
+					? `aggregate "${owner.name}"`
+					: "no aggregate at all";
+				diagnostics.push({
+					severity: "error",
+					rule: "invariant-in-aggregate",
+					message: `Invariant "${invariant.name}" of aggregate "${aggregate.name}" constrains "${constrainableLabel(target)}", which is in ${where}; an invariant holds inside the boundary that is saved as one`,
+					ref: invariant.ref,
+				});
+			}
+		}
+	}
+	return diagnostics;
+};
+
+/** Whether the two contexts meet as equals, as partners or over a shared kernel. */
+function symmetricallyRelated(
+	workspace: Workspace,
+	one: BoundedContext,
+	other: BoundedContext,
+): boolean {
+	return workspace.relationships.some(
+		(r) =>
+			(r.type === "partnership" || r.type === "shared-kernel") &&
+			r.involves(one) &&
+			r.involves(other),
+	);
+}
+
 /** Consumables and consumptions declare roles that fit their type. */
 const roleCoherence: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const consumption of consumptionsOf(workspace)) {
 		const { consumable } = consumption;
-		if (
-			consumable.provider.boundedcontext === consumption.consumer.boundedcontext
-		) {
-			continue;
-		}
+		const provider = consumable.provider.boundedcontext;
+		const consumer = consumption.consumer.boundedcontext;
+		if (provider === consumer) continue;
+		// Partners and shared-kernel contexts have no upstream or downstream
+		// side, so neither end of the exchange carries a role to declare.
+		if (symmetricallyRelated(workspace, provider, consumer)) continue;
 		if (!consumable.pattern && !consumable.internal) {
 			diagnostics.push({
 				severity: "warning",
@@ -133,6 +439,103 @@ const roleCoherence: Rule = (workspace) => {
 				rule: "role-coherence",
 				message: `"${consumption.consumer.name}" consumes "${consumable.name}" from another context without a downstream role (conformist or anti-corruption-layer)`,
 				ref: consumption.consumer.ref,
+			});
+		}
+	}
+	return diagnostics;
+};
+
+/**
+ * The roles a directed relationship claims are the roles its traffic actually
+ * carries, in both directions: every declared role is backed by a crossing,
+ * and every crossing consumption's role is declared on the relationship.
+ */
+const relationshipRolesBacked: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	const consumptions = Array.from(consumptionsOf(workspace));
+	for (const relationship of workspace.relationships) {
+		if (!isDirectedRelationshipType(relationship.type)) continue;
+		const upstream = relationship.source;
+		const downstream = relationship.target;
+		const crossings = consumptions.filter(
+			(c) =>
+				c.consumable.provider.boundedcontext === upstream &&
+				c.consumer.boundedcontext === downstream,
+		);
+		for (const role of relationship.upstreamRoles) {
+			if (crossings.some((c) => c.consumable.pattern === role)) continue;
+			diagnostics.push({
+				severity: "warning",
+				rule: "relationship-roles-backed",
+				message: `"${upstream.name}" is declared ${role} to "${downstream.name}", but nothing "${downstream.name}" consumes from "${upstream.name}" carries that upstream role`,
+				ref: relationship.ref,
+			});
+		}
+		for (const role of relationship.downstreamRoles) {
+			if (crossings.some((c) => c.pattern === role)) continue;
+			diagnostics.push({
+				severity: "warning",
+				rule: "relationship-roles-backed",
+				message: `"${downstream.name}" is declared ${role} to "${upstream.name}", but no consumption of "${downstream.name}" from "${upstream.name}" declares that downstream role`,
+				ref: relationship.ref,
+			});
+		}
+		for (const crossing of crossings) {
+			if (!crossing.pattern) continue;
+			if (relationship.downstreamRoles.includes(crossing.pattern)) continue;
+			diagnostics.push({
+				severity: "warning",
+				rule: "relationship-roles-backed",
+				message: `"${crossing.consumer.name}" consumes "${crossing.consumable.name}" from "${upstream.name}" as ${crossing.pattern}, a downstream role the ${relationship.type} relationship between "${upstream.name}" and "${downstream.name}" does not declare`,
+				ref: crossing.consumer.ref,
+			});
+		}
+	}
+	return diagnostics;
+};
+
+/**
+ * Nothing conforms to a big ball of mud. A consumption out of one is
+ * translated behind an anti-corruption layer or the mess spreads.
+ */
+const mudNeedsAcl: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const consumption of consumptionsOf(workspace)) {
+		const provider = consumption.consumable.provider.boundedcontext;
+		const consumer = consumption.consumer.boundedcontext;
+		if (provider === consumer || !provider.bigBallOfMud) continue;
+		if (consumption.pattern === "anti-corruption-layer") continue;
+		const how = consumption.pattern
+			? "as a conformist"
+			: "without declaring a downstream role";
+		diagnostics.push({
+			severity: "warning",
+			rule: "mud-needs-acl",
+			message: `"${consumer.name}" consumes "${consumption.consumable.name}" from "${provider.name}" ${how}, and "${provider.name}" is a big ball of mud; translate it behind an anti-corruption layer so its model stays out of "${consumer.name}"`,
+			ref: consumption.consumer.ref,
+		});
+	}
+	return diagnostics;
+};
+
+/** A glossary term names the ubiquitous language of one context: its own. */
+const termInContext: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const bc of workspace.boundedcontexts.values()) {
+		for (const term of bc.glossary.values()) {
+			const embodiment = term.embodiedBy;
+			if (!embodiment) continue;
+			if (
+				embodiment.ref === bc.ref ||
+				embodiment.ref.startsWith(`${bc.ref}/`)
+			) {
+				continue;
+			}
+			diagnostics.push({
+				severity: "error",
+				rule: "term-in-context",
+				message: `Glossary term "${term.name}" of "${bc.name}" is embodied by "${embodiment.name}", which is not part of "${bc.name}"; a term belongs to the language of one context, and the same word means something else next door`,
+				ref: term.ref,
 			});
 		}
 	}
@@ -161,6 +564,26 @@ const separateWays: Rule = (workspace) => {
 				message: `"${consumerContext.name}" consumes "${consumption.consumable.name}" from "${providerContext.name}" although the contexts declare separate ways`,
 				ref: consumption.consumer.ref,
 			});
+		}
+	}
+	// A policy subscribing to another context's event is the same exchange as
+	// a consumption, so separate ways rules it out too.
+	for (const bc of workspace.boundedcontexts.values()) {
+		for (const policy of bc.policies.values()) {
+			for (const event of policy.events) {
+				const providerContext = event.provider.boundedcontext;
+				if (providerContext === bc) continue;
+				const declaredApart = separateWaysRelationships.some(
+					(r) => r.involves(providerContext) && r.involves(bc),
+				);
+				if (!declaredApart) continue;
+				diagnostics.push({
+					severity: "error",
+					rule: "separate-ways",
+					message: `Policy "${policy.name}" in "${bc.name}" reacts to "${event.name}" from "${providerContext.name}" although the contexts declare separate ways`,
+					ref: policy.ref,
+				});
+			}
 		}
 	}
 	return diagnostics;
@@ -406,20 +829,93 @@ const RULES: CataloguedRule[] = [
 		check: crossContextRelation,
 	},
 	{
+		rule: "root-identity",
+		severities: ["error"],
+		summary:
+			"An aggregate's root entity declares at least one identity attribute.",
+		why: "An entity is the thing that stays itself while its values change, and the root is what the rest of the model reaches the aggregate by. With no identity on it, nothing can say which one of them a reference, an event payload or a stored row is about.",
+		fix: "Mark the attribute the business uses to tell one apart — the order number, the customer id — with identity: true, or make the element a value object if there really is nothing to identify.",
+		check: rootIdentity,
+	},
+	{
+		rule: "value-object-shape",
+		severities: ["error"],
+		summary:
+			"A value object declares no identity attribute and includes nothing.",
+		why: "Two value objects with the same values are the same value: that is what makes them safe to copy, compare and replace. An identity attribute contradicts that, and includes claims a lifecycle a value object does not own.",
+		fix: "Drop identity: true from the attribute, or promote the element to an entity if it really has a life of its own; change an includes on a value object to uses.",
+		check: valueObjectShape,
+	},
+	{
+		rule: "aggregate-tree",
+		severities: ["error", "warning"],
+		summary:
+			"Inside an aggregate, includes forms a tree from the root over entities, uses points at value objects, and every entity is reachable from the root.",
+		why: "The aggregate is loaded and saved as one thing through its root. Two parents or a cycle means there is no single order in which to save it, an includes onto a value object or a uses onto an entity says the opposite of what the author means, and an entity nothing reaches is either dead or a missing relation.",
+		fix: "Point includes at the entity's one parent and uses at value objects, break the cycle by making the back edge a references, and give an unreachable entity the relation that reaches it — or move it to its own aggregate.",
+		check: aggregateTree,
+	},
+	{
+		rule: "attribute-relation-coherence",
+		severities: ["warning"],
+		summary:
+			"An attribute typed by a value object has a matching uses relation, of a matching cardinality, and says the value object's name as its type.",
+		why: "The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened, and a list-typed attribute against a single-valued relation says two different things about how many there are.",
+		fix: "Add the missing uses relation or the missing attribute, set the relation's cardinality to * or 1..* for a list, and write the attribute's type as the value object's name (or its name followed by []).",
+		check: attributeRelationCoherence,
+	},
+	{
+		rule: "invariant-in-aggregate",
+		severities: ["error"],
+		summary:
+			"Every element an invariant constrains belongs to the invariant's own aggregate.",
+		why: "An invariant is the rule that holds every time its aggregate is saved. Something outside the boundary can change between one save and the next with nothing to stop it, so a rule stretched across two aggregates is a rule nobody can enforce.",
+		fix: "Move the invariant to the aggregate that owns what it constrains, drop the foreign target, or model the guarantee as a policy reacting to the other aggregate's event, which is eventual by nature.",
+		check: invariantInAggregate,
+	},
+	{
+		rule: "relationship-roles-backed",
+		severities: ["warning"],
+		summary:
+			"A directed relationship's declared roles are carried by consumables and consumptions crossing between the two contexts, and a crossing consumption's role is declared on the relationship.",
+		why: "The context map and the consumable map are the same integration told twice, strategically and concretely. A role on the map that nothing carries is a claim about a team's way of working with nothing behind it, and a consumption whose role the map never mentions is an integration decision made without the map noticing.",
+		fix: "Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that.",
+		check: relationshipRolesBacked,
+	},
+	{
+		rule: "mud-needs-acl",
+		severities: ["warning"],
+		summary:
+			"A consumption from a big ball of mud declares the anti-corruption-layer downstream role.",
+		why: "A big ball of mud has no coherent model to conform to. Taking its shapes as they come drags its confusion across the boundary, and the consumer's own language starts to look like the legacy one.",
+		fix: "Set pattern: anti-corruption-layer on the consumption and translate at the edge, or drop bigBallOfMud if the context is no longer one.",
+		check: mudNeedsAcl,
+	},
+	{
+		rule: "term-in-context",
+		severities: ["error"],
+		summary:
+			"A glossary term's embodiedBy names an element of the term's own bounded context.",
+		why: "The glossary is one context's ubiquitous language, and the same word means something different in the context next door — that is the whole reason contexts have boundaries. A term pointing outside says the two contexts share a meaning they do not.",
+		fix: "Point the term at the element of its own context that embodies it, add the term to the context that owns that element, or leave embodiedBy off when nothing local embodies it.",
+		check: termInContext,
+	},
+	{
 		rule: "role-coherence",
 		severities: ["warning"],
 		summary:
-			"A consumable used from another context declares an upstream role, and the consumption declares a downstream role.",
-		why: "Crossing a context boundary is an integration decision: how the provider offers it (a documented API or a published format) and how the consumer takes it (as-is or translated) should be explicit.",
-		fix: "Set pattern on the consumable to open-host-service or published-language, and pattern on the consumption to conformist or anti-corruption-layer.",
+			"A consumable used from another context declares an upstream role, and the consumption declares a downstream role — unless the two contexts are partners or share a kernel.",
+		why: "Crossing a context boundary is an integration decision: how the provider offers it (a documented API or a published format) and how the consumer takes it (as-is or translated) should be explicit. Partnership and shared kernel are the exception: neither side is upstream of the other, so there is no role for either end to declare.",
+		fix: "Set pattern on the consumable to open-host-service or published-language, and pattern on the consumption to conformist or anti-corruption-layer; or declare the partnership or shared kernel that makes the two contexts equals.",
 		check: roleCoherence,
 	},
 	{
 		rule: "separate-ways",
 		severities: ["error"],
-		summary: "Contexts that declare separate ways exchange no consumables.",
-		why: "Separate ways is a deliberate decision not to integrate; a consumption between the two contradicts it.",
-		fix: "Remove the consumption, or remove the separate-ways relationship and declare the real one.",
+		summary:
+			"Contexts that declare separate ways exchange no consumables, and neither context's policies react to the other's events.",
+		why: "Separate ways is a deliberate decision not to integrate; a consumption between the two contradicts it, and a policy subscribing to the other's events is the same integration by another route — the coupling is real whether it is declared as a consumption or reached through a policy.",
+		fix: "Remove the consumption or the policy's subscription, or remove the separate-ways relationship and declare the real one.",
 		check: separateWays,
 	},
 	{

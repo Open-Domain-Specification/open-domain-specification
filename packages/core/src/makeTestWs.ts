@@ -171,7 +171,11 @@ export function makeRichTestWs() {
 	money.addAttribute("Currency", { type: "ISO 4217" });
 	order.addAttribute("Order Id", { type: "OrderId", identity: true });
 	order.addAttribute("Total", { type: "Money", valueobject: money });
+	orderLine.addAttribute("Price", { type: "Money", valueobject: money });
 	order.includes(orderLine, "has lines", "1..*");
+	// Both the total and the line price are Money, so both carry the attribute
+	// and the relation that draws it; attribute-relation-coherence wants the pair.
+	order.uses(money, "totalled in", "1");
 	orderLine.uses(money, "priced in", "1");
 	// A second aggregate in the same context, so the fixture still has a
 	// relation that crosses an aggregate boundary without crossing a context

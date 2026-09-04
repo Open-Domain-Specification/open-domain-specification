@@ -725,8 +725,7 @@ sellerBC.addTerm("Seller", {
 // Recorded as its own term, not an alias, so the 2015 decision stays visible.
 sellerBC.addTerm("Vendor", {
 	definition:
-		"Not a seller. A wholesale supplier to first-party retail, handled by Vendor Purchasing; the two accounts were never unified and will not be",
-	embodiedBy: vendorBC,
+		"Not a seller. A wholesale supplier to first-party retail, handled by Vendor Purchasing; the two accounts were never unified and will not be. Seller Onboarding has no vendor of its own, which is the point: the word is a false friend and nothing here embodies it",
 });
 
 offerAgg.consumes(sellerActivated, { pattern: "conformist" });
@@ -827,7 +826,7 @@ const wishlistItem = wishlistAgg.addRootEntity("WishlistItem", {
 	description: "One saved product",
 });
 wishlist.addAttribute("wishlistId", { type: "string", identity: true });
-wishlistItem.addAttribute("productId", { type: "string" });
+wishlistItem.addAttribute("productId", { type: "string", identity: true });
 wishlist.includes(wishlistItem, "saves", "*");
 // DELIBERATE (cross-aggregate-reference): the cart "includes" wishlist items
 // from the Wishlist aggregate. The basket screen wanted the saved items beside
@@ -934,6 +933,8 @@ shipment.references(orderLine, "carries", "1..*");
 returnEntity.includes(returnLine, "for-lines", "1..*");
 returnLine.references(orderLine, "returns", "1");
 order.uses(orderMoney, "totals", "1");
+orderLine.uses(orderMoney, "priced-at", "1");
+returnEntity.uses(orderMoney, "refunds", "1");
 order.uses(addressVO, "ships-to", "1");
 order.uses(orderStatusVO, "has-status", "1");
 shipment.uses(trackingRefVO, "tracked-as", "0..1");
@@ -1118,6 +1119,8 @@ paymentIntent.includes(authorisation, "held-by", "0..1");
 paymentIntent.includes(capture, "captured-by", "*");
 capture.includes(refund, "refunded-by", "*");
 paymentIntent.uses(paymentMoney, "for-amount", "1");
+capture.uses(paymentMoney, "of-amount", "1");
+refund.uses(paymentMoney, "of-amount", "1");
 
 paymentAgg
 	.addInvariant("CapturesWithinAuthorisation", {
@@ -1289,6 +1292,12 @@ assessment.addAttribute("score", {
 	type: "RiskScore",
 	valueobject: riskScoreVO,
 });
+assessment.addAttribute("signals", {
+	type: "Signal[]",
+	valueobject: signalVO,
+	description:
+		"What the score is made of; at least one, or the score is unexplained",
+});
 assessment.uses(riskScoreVO, "scored", "1");
 assessment.uses(signalVO, "explained-by", "1..*");
 assessmentAgg
@@ -1405,6 +1414,11 @@ const onHand = position.addAttribute("onHand", { type: "int" });
 reservation.addAttribute("orderId", { type: "string" });
 reservation.addAttribute("quantity", { type: "int" });
 position.includes(reservation, "reserved-by", "*");
+position.addAttribute("bins", {
+	type: "Bin[]",
+	valueobject: binVO,
+	description: "Where in the site the stock physically sits",
+});
 position.uses(binVO, "stored-in", "1..*");
 inventoryAgg
 	.addInvariant("ReservedWithinOnHand", {
@@ -1696,6 +1710,11 @@ parcel.addAttribute("orderId", { type: "string" });
 route.includes(stop, "visits", "1..*");
 stop.includes(parcel, "hands-over", "1..*");
 parcel.uses(lastMileLabelVO, "scanned-as", "1");
+stop.addAttribute("proofOfDelivery", {
+	type: "ProofOfDelivery",
+	valueobject: proofVO,
+	description: "Captured at the door; absent until the stop is completed",
+});
 stop.uses(proofVO, "proven-by", "0..1");
 routeAgg
 	.addInvariant("MaxStopsPerRoute", {
@@ -1741,9 +1760,9 @@ routeAgg
 	})
 	.raises(parcelDelivered, attemptFailed);
 
-// DELIBERATE (role-coherence): this consumption declares no downstream role.
-// The team never decided whether they conform to the warehouse's event or
-// translate it; the rule asks them to.
+// No downstream role, and none is wanted: Warehouse and Last Mile share a
+// kernel, so neither is upstream of the other and there is nothing to conform
+// to or translate. role-coherence exempts symmetric partners for that reason.
 routeAgg.consumes(shipmentDispatched, {});
 lastMileBC
 	.addPolicy("Route dispatched packages", {
@@ -1791,6 +1810,7 @@ const bidVO = campaignAgg.addValueObject("Bid", {
 	description: "What the seller pays per click, at most",
 });
 bidVO.addAttribute("maxCpc", { type: "Money", valueobject: campaignMoney });
+bidVO.uses(campaignMoney, "capped-at", "1");
 campaign.addAttribute("campaignId", { type: "string", identity: true });
 campaign.addAttribute("sellerId", { type: "string" });
 const dailyBudget = campaign.addAttribute("dailyBudget", {
@@ -1945,6 +1965,11 @@ caseRoot.addAttribute("orderId", { type: "string" });
 interaction.addAttribute("channel", { type: "'call' | 'chat' | 'email'" });
 interaction.addAttribute("at", { type: "date-time" });
 caseRoot.includes(interaction, "logged", "*");
+caseRoot.addAttribute("resolution", {
+	type: "Resolution",
+	valueobject: resolutionVO,
+	description: "Absent while the case is open",
+});
 caseRoot.uses(resolutionVO, "resolved-as", "0..1");
 // The Order root is in Order Management, another bounded context, so the case
 // holds `orderId` above and no relation.
@@ -2133,10 +2158,10 @@ cartBC.downstreamOf(identityBC, {
 	downstreamRoles: ["conformist"],
 });
 orderBC.downstreamOf(offersBC, {
-	upstreamRoles: ["open-host-service"],
-	downstreamRoles: ["conformist"],
+	upstreamRoles: [],
+	downstreamRoles: [],
 	description:
-		"Order lines carry the offer id they were bought from; Orders never reads Offers back, so the coupling is identity only",
+		"Order lines carry the offer id they were bought from; Orders never reads Offers back, so the coupling is identity only and neither side plays a role in an exchange that does not happen",
 });
 orderBC.downstreamOf(paymentsBC, {
 	upstreamRoles: ["open-host-service"],

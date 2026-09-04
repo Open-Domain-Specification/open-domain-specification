@@ -250,6 +250,510 @@ describe("Workspace.validate", () => {
 	});
 });
 
+describe("root-identity", () => {
+	it("wants an identity attribute on the root, and only on the root", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const named = bc.addAggregate("Named", { description: "" });
+		named
+			.addRootEntity("Named", { description: "" })
+			.addAttribute("Id", { type: "uuid", identity: true });
+		// A non-root entity without an identity is nobody's business here.
+		named.addEntity("Line", { description: "" });
+		const nameless = bc.addAggregate("Nameless", { description: "" });
+		const root = nameless.addRootEntity("Nameless", { description: "" });
+		root.addAttribute("Label", { type: "string" });
+		const rules = ws.validate().filter((d) => d.rule === "root-identity");
+		expect(rules).toEqual([
+			{
+				severity: "error",
+				rule: "root-identity",
+				message:
+					'Root entity "Nameless" of aggregate "Nameless" declares no identity attribute, so nothing says which "Nameless" a reference means',
+				ref: root.ref,
+			},
+		]);
+	});
+});
+
+describe("value-object-shape", () => {
+	it("refuses an identity attribute and an includes on a value object", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const agg = bc.addAggregate("A", { description: "" });
+		const root = agg.addRootEntity("A", { description: "" });
+		root.addAttribute("Id", { type: "uuid", identity: true });
+		const money = agg.addValueObject("Money", { description: "" });
+		money.addAttribute("Amount", { type: "int64" });
+		const bad = agg.addValueObject("Bad", { description: "" });
+		bad.addAttribute("Key", { type: "string", identity: true });
+		bad.includes(root, "owns");
+		const rules = ws.validate().filter((d) => d.rule === "value-object-shape");
+		expect(rules.map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"error",
+				'Value object "Bad" marks attribute "Key" as an identity; two value objects with the same values are the same value, so it has no identity of its own',
+				bad.ref,
+			],
+			[
+				"error",
+				'Value object "Bad" includes "A"; only an entity owns the lifecycle of what it includes, so "Bad" uses "A" instead',
+				bad.ref,
+			],
+		]);
+		// The well-formed value object next door stays quiet.
+		expect(rules.every((d) => d.ref !== money.ref)).toBe(true);
+	});
+});
+
+describe("aggregate-tree", () => {
+	/** A root, one child, one value object, and a clean includes/uses pair. */
+	function tidyAggregate() {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const agg = bc.addAggregate("Order", { description: "" });
+		const root = agg.addRootEntity("Order", { description: "" });
+		root.addAttribute("Id", { type: "uuid", identity: true });
+		const line = agg.addEntity("Line", { description: "" });
+		const money = agg.addValueObject("Money", { description: "" });
+		root.includes(line, "has", "1..*");
+		line.uses(money, "priced in", "1");
+		line.addAttribute("Price", { type: "Money", valueobject: money });
+		return { ws, agg, root, line, money };
+	}
+
+	const treeRules = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "aggregate-tree");
+
+	it("is quiet on a root that includes entities and uses value objects", () => {
+		expect(treeRules(tidyAggregate().ws)).toEqual([]);
+	});
+
+	it("refuses includes onto a value object and uses onto an entity", () => {
+		const { ws, root, line, money } = tidyAggregate();
+		root.includes(money, "wrong way round");
+		root.uses(line, "also wrong");
+		expect(treeRules(ws).map((d) => [d.severity, d.message])).toEqual([
+			[
+				"error",
+				'"Order" includes "Money", which is a value object; "includes" points at an entity, and a value object is used',
+			],
+			[
+				"error",
+				'"Order" uses "Line", which is an entity; "uses" points at a value object, and an entity the aggregate owns is included',
+			],
+		]);
+	});
+
+	it("refuses an entity with two parents", () => {
+		const { ws, agg, root, line } = tidyAggregate();
+		const shared = agg.addEntity("Shared", { description: "" });
+		root.includes(shared, "owns");
+		line.includes(shared, "owns too");
+		expect(treeRules(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"error",
+				'"Shared" is included by "Order" and "Line" in aggregate "Order"; inside an aggregate an entity has exactly one parent',
+				shared.ref,
+			],
+		]);
+	});
+
+	it("refuses a cycle of includes", () => {
+		const { ws, root, line } = tidyAggregate();
+		line.includes(root, "back up");
+		expect(treeRules(ws).map((d) => [d.severity, d.message])).toEqual([
+			[
+				"error",
+				'"Line" includes "Order", which already includes "Line" further up aggregate "Order"; "includes" forms a tree from the root, never a cycle',
+			],
+		]);
+	});
+
+	it("warns about an entity the root cannot be walked to", () => {
+		const { ws, agg } = tidyAggregate();
+		const stray = agg.addEntity("Stray", { description: "" });
+		expect(treeRules(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"warning",
+				'"Stray" is in aggregate "Order" but no chain of "includes" or "references" reaches it from "Order", so nothing inside the boundary can get to it',
+				stray.ref,
+			],
+		]);
+	});
+
+	it("counts a references as reaching an entity, and stays out of other aggregates", () => {
+		const { ws, agg, root } = tidyAggregate();
+		const referenced = agg.addEntity("Referenced", { description: "" });
+		root.references(referenced, "points at");
+		expect(treeRules(ws)).toEqual([]);
+	});
+});
+
+describe("invariant-in-aggregate", () => {
+	it("keeps every target of an invariant inside its own aggregate", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const order = bc.addAggregate("Order", { description: "" });
+		const root = order.addRootEntity("Order", { description: "" });
+		const total = root.addAttribute("Total", { type: "int64", identity: true });
+		const other = bc.addAggregate("Customer", { description: "" });
+		const customer = other.addRootEntity("Customer", { description: "" });
+		customer.addAttribute("Id", { type: "uuid", identity: true });
+		// Local targets, entity and attribute alike, are fine.
+		order.addInvariant("Positive", { description: "" }).constrains(root, total);
+		const stretched = order
+			.addInvariant("Stretched", { description: "" })
+			.constrains(customer);
+		const rules = ws
+			.validate()
+			.filter((d) => d.rule === "invariant-in-aggregate");
+		expect(rules).toEqual([
+			{
+				severity: "error",
+				rule: "invariant-in-aggregate",
+				message:
+					'Invariant "Stretched" of aggregate "Order" constrains "Customer", which is in aggregate "Customer"; an invariant holds inside the boundary that is saved as one',
+				ref: stretched.ref,
+			},
+		]);
+	});
+});
+
+describe("attribute-relation-coherence", () => {
+	/** An entity, a value object, and whatever the test decides to declare. */
+	function pair() {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const agg = bc.addAggregate("Order", { description: "" });
+		const root = agg.addRootEntity("Order", { description: "" });
+		root.addAttribute("Id", { type: "uuid", identity: true });
+		const money = agg.addValueObject("Money", { description: "" });
+		return { ws, agg, root, money };
+	}
+
+	const coherenceRules = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "attribute-relation-coherence");
+
+	it("is quiet when the attribute and the relation say the same thing", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("Total", { type: "Money", valueobject: money });
+		root.uses(money, "totalled in", "1");
+		expect(coherenceRules(ws)).toEqual([]);
+	});
+
+	it("accepts a list attribute against a many-valued relation", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("Instalments", { type: "Money[]", valueobject: money });
+		root.uses(money, "paid in", "1..*");
+		expect(coherenceRules(ws)).toEqual([]);
+	});
+
+	it("warns about an attribute with no relation and a relation with no attribute", () => {
+		const { ws, agg, root, money } = pair();
+		const size = agg.addValueObject("Size", { description: "" });
+		root.addAttribute("Total", { type: "Money", valueobject: money });
+		root.uses(size, "sized", "1");
+		expect(coherenceRules(ws).map((d) => [d.severity, d.message])).toEqual([
+			[
+				"warning",
+				'"Order" types attribute "Total" by value object "Money" but declares no "uses" relation to "Money", so the relation map never draws it',
+			],
+			[
+				"warning",
+				'"Order" uses "Size" but no attribute of "Order" is typed by "Size", so the page says the relation exists and never shows where',
+			],
+		]);
+	});
+
+	it("warns when a list attribute has a single-valued relation", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("Instalments", { type: "Money[]", valueobject: money });
+		root.uses(money, "paid in", "0..1");
+		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
+			'"Order" types attribute "Instalments" as a list ("Money[]") but its "uses" relation to "Money" has cardinality "0..1"',
+		]);
+	});
+
+	it("warns when the attribute's type does not name the value object", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("Total", { type: "decimal", valueobject: money });
+		root.uses(money, "totalled in", "1");
+		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
+			'"Order" types attribute "Total" as "decimal" but points it at value object "Money"; the type a reader sees should be "Money" or "Money[]"',
+		]);
+	});
+});
+
+describe("relationship-roles-backed", () => {
+	/** Upstream and downstream contexts, one consumable, one consumption. */
+	function crossing(
+		consumablePattern: "open-host-service" | "published-language" | undefined,
+		consumptionPattern: "conformist" | "anti-corruption-layer" | undefined,
+	) {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const op = up
+			.addService("S", { description: "", type: "application" })
+			.provides("Op", {
+				description: "",
+				type: "operation",
+				pattern: consumablePattern,
+			});
+		const consumer = down.addService("T", {
+			description: "",
+			type: "application",
+		});
+		consumer.consumes(op, { pattern: consumptionPattern });
+		return { ws, up, down, consumer };
+	}
+
+	const backedRules = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "relationship-roles-backed");
+
+	it("is quiet when the traffic carries the roles the relationship claims", () => {
+		const { ws, up, down } = crossing(
+			"open-host-service",
+			"anti-corruption-layer",
+		);
+		up.upstreamOf(down, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		expect(backedRules(ws)).toEqual([]);
+	});
+
+	it("warns about an upstream role nothing crossing carries", () => {
+		const { ws, up, down } = crossing(undefined, "anti-corruption-layer");
+		const relationship = up.upstreamOf(down, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		expect(backedRules(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"warning",
+				'"Up" is declared published-language to "Down", but nothing "Down" consumes from "Up" carries that upstream role',
+				relationship.ref,
+			],
+		]);
+	});
+
+	it("warns about a downstream role no consumption declares", () => {
+		const { ws, up, down } = crossing("open-host-service", undefined);
+		const relationship = up.upstreamOf(down, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		expect(backedRules(ws).map((d) => [d.message, d.ref])).toEqual([
+			[
+				'"Down" is declared anti-corruption-layer to "Up", but no consumption of "Down" from "Up" declares that downstream role',
+				relationship.ref,
+			],
+		]);
+	});
+
+	it("warns about a consumption whose role the relationship never declares", () => {
+		const { ws, up, down, consumer } = crossing(
+			"open-host-service",
+			"conformist",
+		);
+		up.upstreamOf(down, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: [],
+		});
+		expect(backedRules(ws).map((d) => [d.message, d.ref])).toEqual([
+			[
+				'"T" consumes "Op" from "Up" as conformist, a downstream role the upstream-downstream relationship between "Up" and "Down" does not declare',
+				consumer.ref,
+			],
+		]);
+	});
+
+	it("leaves symmetric relationships alone; they have no roles to back", () => {
+		const { ws, up, down } = crossing(undefined, undefined);
+		up.partnerOf(down);
+		expect(backedRules(ws)).toEqual([]);
+	});
+});
+
+describe("mud-needs-acl", () => {
+	/** A legacy provider and one consumer, with the consumption's role to taste. */
+	function fromLegacy(
+		pattern: "conformist" | "anti-corruption-layer" | undefined,
+		bigBallOfMud = true,
+	) {
+		const ws = emptyWorkspace();
+		const legacy = ws.addBoundedContext("Legacy", {
+			description: "",
+			bigBallOfMud,
+		});
+		const modern = ws.addBoundedContext("Modern", { description: "" });
+		const op = legacy
+			.addService("S", { description: "", type: "application" })
+			.provides("Get Customer", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			});
+		const consumer = modern.addService("T", {
+			description: "",
+			type: "application",
+		});
+		consumer.consumes(op, { pattern });
+		return { ws, consumer };
+	}
+
+	const mudRules = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "mud-needs-acl");
+
+	it("accepts an anti-corruption layer over the mud", () => {
+		expect(mudRules(fromLegacy("anti-corruption-layer").ws)).toEqual([]);
+	});
+
+	it("says nothing about a context that is not a big ball of mud", () => {
+		expect(mudRules(fromLegacy("conformist", false).ws)).toEqual([]);
+	});
+
+	it("warns about a conformist consumption of the mud", () => {
+		const { ws, consumer } = fromLegacy("conformist");
+		expect(mudRules(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"warning",
+				'"Modern" consumes "Get Customer" from "Legacy" as a conformist, and "Legacy" is a big ball of mud; translate it behind an anti-corruption layer so its model stays out of "Modern"',
+				consumer.ref,
+			],
+		]);
+	});
+
+	it("warns about a consumption of the mud with no role at all", () => {
+		const { ws } = fromLegacy(undefined);
+		expect(mudRules(ws).map((d) => d.message)).toEqual([
+			'"Modern" consumes "Get Customer" from "Legacy" without declaring a downstream role, and "Legacy" is a big ball of mud; translate it behind an anti-corruption layer so its model stays out of "Modern"',
+		]);
+	});
+});
+
+describe("role-coherence and symmetric relationships", () => {
+	/** Two contexts exchanging one consumable with no roles on either end. */
+	function bareExchange() {
+		const ws = emptyWorkspace();
+		const one = ws.addBoundedContext("One", { description: "" });
+		const two = ws.addBoundedContext("Two", { description: "" });
+		const op = one
+			.addService("S", { description: "", type: "application" })
+			.provides("Op", { description: "", type: "operation" });
+		two
+			.addService("T", { description: "", type: "application" })
+			.consumes(op, {});
+		return { ws, one, two };
+	}
+
+	it("still warns when the two contexts are not partners", () => {
+		const { ws } = bareExchange();
+		expect(
+			ws.validate().filter((d) => d.rule === "role-coherence"),
+		).toHaveLength(2);
+	});
+
+	it("goes quiet between partners", () => {
+		const { ws, one, two } = bareExchange();
+		one.partnerOf(two);
+		expect(ws.validate().filter((d) => d.rule === "role-coherence")).toEqual(
+			[],
+		);
+	});
+
+	it("goes quiet between contexts sharing a kernel", () => {
+		const { ws, one, two } = bareExchange();
+		one.sharesKernelWith(two);
+		expect(ws.validate().filter((d) => d.rule === "role-coherence")).toEqual(
+			[],
+		);
+	});
+
+	it("keeps warning when the two contexts went separate ways", () => {
+		const { ws, one, two } = bareExchange();
+		one.separateWaysFrom(two);
+		expect(
+			ws.validate().filter((d) => d.rule === "role-coherence"),
+		).toHaveLength(2);
+	});
+});
+
+describe("term-in-context", () => {
+	it("keeps a term's embodiment inside the term's own context", () => {
+		const ws = emptyWorkspace();
+		const sales = ws.addBoundedContext("Sales", { description: "" });
+		const catalog = ws.addBoundedContext("Catalog", { description: "" });
+		const orderAgg = sales.addAggregate("Order", { description: "" });
+		orderAgg
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("Id", { type: "uuid", identity: true });
+		const petAgg = catalog.addAggregate("Pet", { description: "" });
+		const pet = petAgg.addRootEntity("Pet", { description: "" });
+		pet.addAttribute("Id", { type: "uuid", identity: true });
+		// Local embodiments, and a term with none at all, are fine.
+		sales.addTerm("Order", { definition: "", embodiedBy: orderAgg });
+		sales.addTerm("Basket", { definition: "" });
+		const foreign = sales.addTerm("Pet", { definition: "", embodiedBy: pet });
+		const rules = ws.validate().filter((d) => d.rule === "term-in-context");
+		expect(rules).toEqual([
+			{
+				severity: "error",
+				rule: "term-in-context",
+				message:
+					'Glossary term "Pet" of "Sales" is embodied by "Pet", which is not part of "Sales"; a term belongs to the language of one context, and the same word means something else next door',
+				ref: foreign.ref,
+			},
+		]);
+	});
+});
+
+describe("separate-ways and policies", () => {
+	/** Two contexts, one event, and a policy in the other reacting to it. */
+	function subscription() {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const evt = up
+			.addService("S", { description: "", type: "application" })
+			.provides("Happened", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			});
+		const op = down
+			.addService("T", { description: "", type: "application" })
+			.provides("React", { description: "", type: "operation" });
+		const policy = down.addPolicy("On Happened", { description: "" });
+		policy.on(evt).then(op);
+		return { ws, up, down, policy };
+	}
+
+	it("says nothing while the contexts have not declared separate ways", () => {
+		const { ws } = subscription();
+		expect(ws.validate().filter((d) => d.rule === "separate-ways")).toEqual([]);
+	});
+
+	it("flags a policy subscribed to a context it went separate ways from", () => {
+		const { ws, up, down, policy } = subscription();
+		up.separateWaysFrom(down);
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "separate-ways")
+				.map((d) => [d.severity, d.message, d.ref]),
+		).toEqual([
+			[
+				"error",
+				'Policy "On Happened" in "Down" reacts to "Happened" from "Up" although the contexts declare separate ways',
+				policy.ref,
+			],
+		]);
+	});
+});
+
 describe("comments-required", () => {
 	/** Two contexts, one commented relationship and one bare one. */
 	function twoRelationships(options?: Workspace["options"]) {

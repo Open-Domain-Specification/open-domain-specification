@@ -28,21 +28,85 @@
 
 **Usual fix:** Delete the relation and give the source an attribute holding the other root's identity — an Order in Sales carries petId rather than a relation to Catalog's Pet. The dependency between the two contexts then reads where it belongs, on the consumable map: the consumable the source consumes and the context relationship between the two.
 
+## `root-identity` (error)
+
+**Requires:** An aggregate's root entity declares at least one identity attribute.
+
+**Why it matters:** An entity is the thing that stays itself while its values change, and the root is what the rest of the model reaches the aggregate by. With no identity on it, nothing can say which one of them a reference, an event payload or a stored row is about.
+
+**Usual fix:** Mark the attribute the business uses to tell one apart — the order number, the customer id — with identity: true, or make the element a value object if there really is nothing to identify.
+
+## `value-object-shape` (error)
+
+**Requires:** A value object declares no identity attribute and includes nothing.
+
+**Why it matters:** Two value objects with the same values are the same value: that is what makes them safe to copy, compare and replace. An identity attribute contradicts that, and includes claims a lifecycle a value object does not own.
+
+**Usual fix:** Drop identity: true from the attribute, or promote the element to an entity if it really has a life of its own; change an includes on a value object to uses.
+
+## `aggregate-tree` (error, warning)
+
+**Requires:** Inside an aggregate, includes forms a tree from the root over entities, uses points at value objects, and every entity is reachable from the root.
+
+**Why it matters:** The aggregate is loaded and saved as one thing through its root. Two parents or a cycle means there is no single order in which to save it, an includes onto a value object or a uses onto an entity says the opposite of what the author means, and an entity nothing reaches is either dead or a missing relation.
+
+**Usual fix:** Point includes at the entity's one parent and uses at value objects, break the cycle by making the back edge a references, and give an unreachable entity the relation that reaches it — or move it to its own aggregate.
+
+## `attribute-relation-coherence` (warning)
+
+**Requires:** An attribute typed by a value object has a matching uses relation, of a matching cardinality, and says the value object's name as its type.
+
+**Why it matters:** The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened, and a list-typed attribute against a single-valued relation says two different things about how many there are.
+
+**Usual fix:** Add the missing uses relation or the missing attribute, set the relation's cardinality to * or 1..* for a list, and write the attribute's type as the value object's name (or its name followed by []).
+
+## `invariant-in-aggregate` (error)
+
+**Requires:** Every element an invariant constrains belongs to the invariant's own aggregate.
+
+**Why it matters:** An invariant is the rule that holds every time its aggregate is saved. Something outside the boundary can change between one save and the next with nothing to stop it, so a rule stretched across two aggregates is a rule nobody can enforce.
+
+**Usual fix:** Move the invariant to the aggregate that owns what it constrains, drop the foreign target, or model the guarantee as a policy reacting to the other aggregate's event, which is eventual by nature.
+
+## `relationship-roles-backed` (warning)
+
+**Requires:** A directed relationship's declared roles are carried by consumables and consumptions crossing between the two contexts, and a crossing consumption's role is declared on the relationship.
+
+**Why it matters:** The context map and the consumable map are the same integration told twice, strategically and concretely. A role on the map that nothing carries is a claim about a team's way of working with nothing behind it, and a consumption whose role the map never mentions is an integration decision made without the map noticing.
+
+**Usual fix:** Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that.
+
+## `mud-needs-acl` (warning)
+
+**Requires:** A consumption from a big ball of mud declares the anti-corruption-layer downstream role.
+
+**Why it matters:** A big ball of mud has no coherent model to conform to. Taking its shapes as they come drags its confusion across the boundary, and the consumer's own language starts to look like the legacy one.
+
+**Usual fix:** Set pattern: anti-corruption-layer on the consumption and translate at the edge, or drop bigBallOfMud if the context is no longer one.
+
+## `term-in-context` (error)
+
+**Requires:** A glossary term's embodiedBy names an element of the term's own bounded context.
+
+**Why it matters:** The glossary is one context's ubiquitous language, and the same word means something different in the context next door — that is the whole reason contexts have boundaries. A term pointing outside says the two contexts share a meaning they do not.
+
+**Usual fix:** Point the term at the element of its own context that embodies it, add the term to the context that owns that element, or leave embodiedBy off when nothing local embodies it.
+
 ## `role-coherence` (warning)
 
-**Requires:** A consumable used from another context declares an upstream role, and the consumption declares a downstream role.
+**Requires:** A consumable used from another context declares an upstream role, and the consumption declares a downstream role — unless the two contexts are partners or share a kernel.
 
-**Why it matters:** Crossing a context boundary is an integration decision: how the provider offers it (a documented API or a published format) and how the consumer takes it (as-is or translated) should be explicit.
+**Why it matters:** Crossing a context boundary is an integration decision: how the provider offers it (a documented API or a published format) and how the consumer takes it (as-is or translated) should be explicit. Partnership and shared kernel are the exception: neither side is upstream of the other, so there is no role for either end to declare.
 
-**Usual fix:** Set pattern on the consumable to open-host-service or published-language, and pattern on the consumption to conformist or anti-corruption-layer.
+**Usual fix:** Set pattern on the consumable to open-host-service or published-language, and pattern on the consumption to conformist or anti-corruption-layer; or declare the partnership or shared kernel that makes the two contexts equals.
 
 ## `separate-ways` (error)
 
-**Requires:** Contexts that declare separate ways exchange no consumables.
+**Requires:** Contexts that declare separate ways exchange no consumables, and neither context's policies react to the other's events.
 
-**Why it matters:** Separate ways is a deliberate decision not to integrate; a consumption between the two contradicts it.
+**Why it matters:** Separate ways is a deliberate decision not to integrate; a consumption between the two contradicts it, and a policy subscribing to the other's events is the same integration by another route — the coupling is real whether it is declared as a consumption or reached through a policy.
 
-**Usual fix:** Remove the consumption, or remove the separate-ways relationship and declare the real one.
+**Usual fix:** Remove the consumption or the policy's subscription, or remove the separate-ways relationship and declare the real one.
 
 ## `internal-consumable` (error, warning)
 
