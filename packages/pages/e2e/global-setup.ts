@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -32,4 +33,25 @@ export default async function globalSetup() {
 		],
 		outDir: EXPORT_DIR,
 	});
+	buildStorybook();
+}
+
+/**
+ * The design surfaces are only reviewable through Storybook, and a story that
+ * compiles is not a story that renders, so `storybook.spec.ts` opens each one
+ * from a real build. Built here rather than left to the developer so the
+ * check cannot silently skip in CI.
+ */
+function buildStorybook() {
+	const result = spawnSync(
+		"npx",
+		["storybook", "build", "-o", "storybook-static"],
+		{
+			cwd: join(__dirname, ".."),
+			stdio: "inherit",
+			shell: process.platform === "win32",
+		},
+	);
+	if (result.status !== 0)
+		throw new Error(`storybook build failed with status ${result.status}`);
 }

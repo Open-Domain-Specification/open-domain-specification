@@ -1,4 +1,4 @@
-import type { Consumable } from "@open-domain-specification/core";
+import { type Consumable, PATTERNS } from "@open-domain-specification/core";
 
 /** Codicon names per element kind, shared by every host including the extension's tree and search. */
 export const ICONS = {
@@ -40,12 +40,14 @@ export const SERVICE_TYPE: Record<string, string> = {
 		"Domain service: a domain operation that does not belong naturally to a single aggregate.",
 };
 
-export const RELATIONSHIP: Record<string, string> = {
-	"upstream-downstream":
-		"Upstream changes flow to downstream; downstream has no say.",
-	"customer-supplier":
-		"Downstream is a customer whose needs the upstream plans for.",
-	partnership: "Two teams succeed or fail together and coordinate changes.",
-	"shared-kernel": "A shared subset of the model, changed only by agreement.",
-	"separate-ways": "No integration; each side solves the problem alone.",
-};
+/**
+ * Tooltip line per relationship type, read straight off core's pattern
+ * knowledge base so every host that names a relationship — the generated
+ * docs, the extension's tree and search, the skill — says the same thing.
+ * A page reads the same summaries through `Keyword`'s title.
+ */
+export const RELATIONSHIP: Record<string, string> = Object.fromEntries(
+	Object.entries(PATTERNS)
+		.filter(([, p]) => p.category === "relationship")
+		.map(([type, p]) => [type, p.summary]),
+);

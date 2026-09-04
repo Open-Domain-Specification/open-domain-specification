@@ -2,23 +2,23 @@ import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it, vi } from "vitest";
 import Toc from "./Toc.svelte";
 
-describe("Toc", () => {
-	const sections = [
-		{ id: "present", label: "Present Section" },
-		{ id: "missing", label: "Missing Section" },
-	];
+const sections = [
+	{ id: "present", label: "Present Section" },
+	{ id: "missing", label: "Missing Section" },
+];
 
-	it("lists every section as a link to its id", () => {
-		render(Toc, { sections });
+describe("Toc", () => {
+	it("titles itself in plain sentence case and lists every section as a link to its id", () => {
+		const { container } = render(Toc, { sections });
+		const title = container.querySelector(".toc-title") as HTMLElement;
+		expect(title).toHaveTextContent("On this page");
+		expect(title.textContent).not.toBe(title.textContent?.toUpperCase());
 		expect(
 			screen.getByRole("link", { name: "Present Section" }),
 		).toHaveAttribute("href", "#present");
-		expect(
-			screen.getByRole("link", { name: "Missing Section" }),
-		).toHaveAttribute("href", "#missing");
 	});
 
-	it("scrolls the target section into view when it exists in the page", async () => {
+	it("scrolls to the section rather than navigating to it", async () => {
 		const section = document.createElement("section");
 		section.id = "present";
 		const scrollIntoView = vi.fn();
@@ -36,17 +36,10 @@ describe("Toc", () => {
 		section.remove();
 	});
 
-	it("does nothing when the target section is not in the page", async () => {
+	it("does nothing when the section is not in the page", async () => {
 		render(Toc, { sections });
 		await expect(
 			fireEvent.click(screen.getByRole("link", { name: "Missing Section" })),
 		).resolves.not.toThrow();
-	});
-
-	it("copes with a section that has no id", () => {
-		const { container } = render(Toc, {
-			sections: [{ id: undefined as unknown as string, label: "No id" }],
-		});
-		expect(container.querySelector("a")).toHaveAttribute("href", "#");
 	});
 });

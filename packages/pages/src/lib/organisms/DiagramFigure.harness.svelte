@@ -4,7 +4,8 @@ import ModelProvider from "../ModelProvider.svelte";
 import type { Model } from "../model";
 import DiagramFigure from "./DiagramFigure.svelte";
 
-let {
+/** The figure inside a model context, which the diagram's nodes read. */
+const {
 	model,
 	caption,
 	emptyText,

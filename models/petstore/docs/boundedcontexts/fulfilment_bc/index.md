@@ -46,10 +46,16 @@ Chooses ship dates across planned shipments so orders approved on the same day l
 
 
 ## Context Relationships
-| Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
+### Works alongside
+| With | Description | Type | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |
-| Sales BC | partnership | Fulfilment BC | - | - |
+| Sales BC | Order lifecycle and shipment lifecycle are designed and released together | partnership | - | - |
 
+- **Sales BC** (partnership)
+	- Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged.
+	- DeliverOrder and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier.
+
+- `partnership` — **Partnership** (P). Mutual co-operation where teams coordinate development and releases.
 
 ## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |

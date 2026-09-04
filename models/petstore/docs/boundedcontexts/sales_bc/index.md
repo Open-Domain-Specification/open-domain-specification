@@ -51,13 +51,44 @@ Open-host service for /store/order endpoints
 
 
 ## Context Relationships
-| Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
+### Depends on
+| With | Description | Type | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |
-| Catalog BC | customer-supplier | Sales BC | open-host-service | anti-corruption-layer |
-| Sales BC | upstream-downstream | Inventory BC | published-language | conformist |
-| Sales BC | partnership | Fulfilment BC | - | - |
-| Identity BC | separate-ways | Sales BC | - | - |
+| Catalog BC | Sales needs pet availability; Catalog commits to the summary contract | customer-supplier | open-host-service | anti-corruption-layer |
 
+- **Catalog BC** (customer-supplier)
+	- Sales reads Catalog through PetSummaryClient, which maps the catalog payload onto the Sales order model. [sales/acl/PetSummaryClient.ts](https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts)
+	- The summary contract is versioned and published; Catalog will not break it without a major release. [catalog/openapi.yaml](https://github.com/example/petstore/blob/main/catalog/openapi.yaml)
+
+### Depended on by
+| With | Description | Type | Upstream Roles | Downstream Roles |
+| --- | --- | --- | --- | --- |
+| Inventory BC | The projection counts orders as Sales reports them | upstream-downstream | published-language | conformist |
+
+- **Inventory BC** (upstream-downstream)
+	- The projection conforms to the Sales order events rather than translating them; accepted while Inventory stays read-only. [inventory/projection/OrderEventHandler.ts](https://github.com/example/petstore/blob/main/inventory/projection/OrderEventHandler.ts)
+
+### Works alongside
+| With | Description | Type | Upstream Roles | Downstream Roles |
+| --- | --- | --- | --- | --- |
+| Fulfilment BC | Order lifecycle and shipment lifecycle are designed and released together | partnership | - | - |
+| Identity BC | Orders are anonymous in Petstore v3; no integration by design | separate-ways | - | - |
+
+- **Fulfilment BC** (partnership)
+	- Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged.
+	- DeliverOrder and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier.
+- **Identity BC** (separate-ways)
+	- The order payload carries no user field and the Sales service holds no credentials for the Identity API, so nothing links an order to an account. [sales/openapi.yaml](https://github.com/example/petstore/blob/main/sales/openapi.yaml)
+	- Keeping the two apart is deliberate: checkout must work for a visitor who never signs in. [ADR-007 Anonymous checkout](https://github.com/example/petstore/blob/main/docs/adr/007-anonymous-checkout.md)
+
+- `open-host-service` — **Open Host Service** (OHS). A public, stable protocol or API provided by an upstream context.
+- `anti-corruption-layer` — **Anti-Corruption Layer** (ACL). A translating boundary isolating a downstream model from external concepts.
+- `conformist` — **Conformist** (CF). Downstream adopts the upstream domain model without translation.
+- `published-language` — **Published Language** (PL). A well-documented shared interchange format.
+- `upstream-downstream` — **Upstream/Downstream** (U/D). One context depends on another; the upstream does not plan around the downstream.
+- `customer-supplier` — **Customer/Supplier** (C/S). Upstream plans for and prioritizes downstream requirements.
+- `partnership` — **Partnership** (P). Mutual co-operation where teams coordinate development and releases.
+- `separate-ways` — **Separate Ways** (SW). A deliberate decision to forego integration and develop independently.
 
 ## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |

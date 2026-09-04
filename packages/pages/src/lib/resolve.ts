@@ -1,9 +1,19 @@
 import type { Workspace } from "@open-domain-specification/core";
 
-/** Every ref that owns a page: workspace, teams, domains, subdomains, contexts and everything inside them. */
+/**
+ * The health report's route. It is the one page that is a read of the whole
+ * workspace rather than an element, so it has a route but no ref in the model.
+ */
+export const HEALTH_REF = "#/health";
+
+/** What {@link resolvePage} returns as the target for {@link HEALTH_REF}. */
+export const HEALTH_PAGE = { page: "health" } as const;
+
+/** Every ref that owns a page: workspace, teams, domains, subdomains, contexts, their relationships and everything inside them. */
 export function pageRefs(ws: Workspace): string[] {
-	const refs = ["#"];
+	const refs = ["#", HEALTH_REF];
 	for (const t of ws.teams.values()) refs.push(t.ref);
+	for (const r of ws.relationships) refs.push(r.ref);
 	for (const d of ws.domains.values()) {
 		refs.push(d.ref);
 		for (const s of d.subdomains.values()) refs.push(s.ref);
@@ -44,7 +54,11 @@ const PAGE_PATTERNS: [
 	RegExp,
 	(ws: Workspace, m: RegExpMatchArray) => unknown,
 ][] = [
+	// Not an element: a read of the whole workspace that owns a route of its own.
+	[/^#\/health$/, () => HEALTH_PAGE],
 	[/^#\/teams\/([^/]+)/, (ws, m) => ws.teams.get(m[1])],
+	// A relationship's ref is its whole identity, so match it entire.
+	[/^#\/relationships\/[^/]+$/, (ws, m) => ws.findRelationship(m[0])],
 	[
 		/^#\/domains\/([^/]+)\/subdomains\/([^/]+)/,
 		(ws, m) => ws.domains.get(m[1])?.subdomains.get(m[2]),

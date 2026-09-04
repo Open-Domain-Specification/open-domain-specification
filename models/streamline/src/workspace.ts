@@ -1811,17 +1811,46 @@ billingBC.downstreamOf(discsBC, {
 });
 
 // Shared kernel: one manifest and segment format library, changed by both.
-playbackBC.sharesKernelWith(
-	edgeBC,
-	"Manifest and segment formats are one library; the 2019 split was reverted",
-);
+playbackBC.sharesKernelWith(edgeBC, {
+	description:
+		"Manifest and segment formats are one library; the 2019 split was reverted",
+	disposition: "tolerated",
+	comments: [
+		{
+			text: "Manifest and segment parsing live in @streamline/manifest; the player and the edge both link it.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/streamline/blob/main/packages/manifest/src/Manifest.ts",
+				label: "packages/manifest/src/Manifest.ts",
+			},
+		},
+		{
+			text: "The 2019 attempt to give each side its own parser produced two subtly different players and was reverted.",
+			link: {
+				kind: "adr",
+				url: "https://github.com/example/streamline/blob/main/docs/adr/009-one-manifest-parser.md",
+				label: "ADR-009 One manifest parser",
+			},
+		},
+	],
+});
 // Partnership: SDK and player versioned, certified and released together.
-playbackBC.partnerOf(
-	devicesBC,
-	"Player and device SDK ship as one release; certification is joint",
-);
+playbackBC.partnerOf(devicesBC, {
+	description:
+		"Player and device SDK ship as one release; certification is joint",
+	comments: [
+		{
+			text: "One release train: the player and the device SDK are versioned together and certified in the same lab run.",
+			link: {
+				kind: "runbook",
+				url: "https://github.com/example/streamline/blob/main/docs/runbooks/joint-certification.md",
+				label: "Joint certification runbook",
+			},
+		},
+	],
+});
 // Separate ways: a public commitment, enforced by having no integration at all.
-adsBC.separateWaysFrom(
-	recsBC,
-	"Advertising is never a ranking signal and recommendations never reach ads",
-);
+adsBC.separateWaysFrom(recsBC, {
+	description:
+		"Advertising is never a ranking signal and recommendations never reach ads",
+});

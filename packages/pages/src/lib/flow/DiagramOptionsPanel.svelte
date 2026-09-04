@@ -10,6 +10,7 @@ import {
 	type EdgeStyle,
 	type HandleMode,
 } from "./options.svelte";
+import { fitPastPanels, OPTIONS_PANEL_CLASS } from "./panel-fit";
 
 /**
  * Top-right controls: how edges attach, how they are drawn, and the figure
@@ -20,7 +21,12 @@ import {
 let {
 	kind = "context",
 	fullscreen,
-}: { kind?: DiagramKind; fullscreen: Fullscreen } = $props();
+	container,
+}: {
+	kind?: DiagramKind;
+	fullscreen: Fullscreen;
+	container?: HTMLElement;
+} = $props();
 // The panel sits inside Svelte Flow, so it is the piece that can refit the canvas.
 const flow = useSvelteFlow();
 let handles = $state<HandleMode>(
@@ -31,7 +37,7 @@ let style = $state<DiagramStyle>(diagramOptions.style);
 const apply = () => diagramOptions.set({ handles, edges, style });
 </script>
 
-<Panel position="top-right" class="diagram-options">
+<Panel position="top-right" class={OPTIONS_PANEL_CLASS}>
 	<label>
 		<span>Handles</span>
 		<select aria-label="Handle placement" bind:value={handles} onchange={apply}>
@@ -62,13 +68,14 @@ const apply = () => diagramOptions.set({ handles, edges, style });
 		class="fullscreen"
 		title={fullscreen.active ? "Exit fullscreen" : "Enter fullscreen"}
 		aria-label={fullscreen.active ? "Exit fullscreen" : "Enter fullscreen"}
-		onclick={() => fullscreen.toggle(() => flow.fitView())}
+		onclick={() => fullscreen.toggle(() => fitPastPanels(flow, container))}
 	>
 		<Icon name={fullscreen.active ? "screen-normal" : "screen-full"} />
 	</button>
 </Panel>
 
 <style>
+	/* The class is panel-fit.ts's OPTIONS_PANEL_CLASS; keep the two in step. */
 	:global(.diagram-options) {
 		display: flex;
 		gap: 10px;

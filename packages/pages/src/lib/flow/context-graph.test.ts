@@ -140,6 +140,33 @@ describe("contextGraph", () => {
 		expect(e).toMatchObject({ label: "SK", directed: false, dashed: false });
 		expect(e.sourceLabel).toBeUndefined();
 	});
+	it("carries the declared relationship behind an edge, whichever way round the map drew it", () => {
+		const relationships = [
+			{ source: { ref: "#/b" }, target: { ref: "#/a" } },
+		] as unknown as Parameters<typeof contextGraph>[1];
+		const [e] = contextGraph(
+			mapOf(
+				[node({ id: "#/a" }), node({ id: "#/b" })],
+				[edge({ type: "shared-kernel" })],
+			),
+			relationships,
+		).edges;
+		expect(e.intent).toBe(relationships?.[0]);
+	});
+	it("leaves an implied edge and an unknown pair without an intent to mark", () => {
+		const relationships = [
+			{ source: { ref: "#/a" }, target: { ref: "#/b" } },
+		] as unknown as Parameters<typeof contextGraph>[1];
+		const nodes = [node({ id: "#/a" }), node({ id: "#/b" })];
+		const [implied] = contextGraph(
+			mapOf(nodes, [edge({ implied: true })]),
+			relationships,
+		).edges;
+		expect(implied.intent).toBeUndefined();
+		// Nothing declared about this pair: the edge draws as it always has.
+		const [unknown] = contextGraph(mapOf(nodes, [edge({})])).edges;
+		expect(unknown.intent).toBeUndefined();
+	});
 	it("gives a cluster a stable hue within the colour wheel", () => {
 		expect(clusterHue("Sales")).toBe(clusterHue("Sales"));
 		expect(clusterHue("Sales")).not.toBe(clusterHue("Inventory"));

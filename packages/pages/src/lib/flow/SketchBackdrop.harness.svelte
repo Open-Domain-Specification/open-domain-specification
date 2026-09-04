@@ -14,10 +14,13 @@ let {
 	padding?: number;
 } = $props();
 // svelte-ignore state_referenced_locally
-let nodes = $state.raw<Node[]>(initial);
+// `initial` arrives undefined for one tick while Storybook resolves args; `bind:nodes`
+// on SvelteFlow can't accept `undefined` since `nodes` has a fallback value there, so
+// this raw array always starts non-empty and only re-syncs once `initial` is real.
+let nodes = $state.raw<Node[]>(initial ?? []);
 // Sync from a re-render's `initial`, without undoing a drag done through `bind:nodes` below.
 $effect(() => {
-	nodes = initial;
+	if (initial) nodes = initial;
 });
 </script>
 

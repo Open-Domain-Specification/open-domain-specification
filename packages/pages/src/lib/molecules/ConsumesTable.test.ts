@@ -4,35 +4,47 @@ import { describe, expect, it } from "vitest";
 import { petstoreModel } from "../fixtures";
 import ConsumesTable from "./ConsumesTable.svelte";
 
-function firstConsumption() {
-	const { workspace } = petstoreModel();
-	for (const bc of workspace.boundedcontexts.values())
-		for (const m of [...bc.aggregates.values(), ...bc.services.values()])
-			for (const c of m.consumptions) return c;
-	throw new Error("petstore has no consumptions to test with");
-}
+const consumptions = (): Consumption[] =>
+	[...petstoreModel().workspace.boundedcontexts.values()].flatMap((bc) =>
+		[...bc.aggregates.values(), ...bc.services.values()].flatMap(
+			(m) => m.consumptions,
+		),
+	);
 
 describe("ConsumesTable", () => {
-	it("shows nothing when there are no consumptions", () => {
-		render(ConsumesTable, { consumptions: [] });
+	it("names what is consumed, who provides it, from which context, and the protection", () => {
+		const rows = consumptions();
+		const { container } = render(ConsumesTable, { consumptions: rows });
 		expect(
-			screen.getByText("Depends on nothing outside itself."),
+			[...container.querySelectorAll("thead th")].map((th) =>
+				th.textContent?.trim(),
+			),
+		).toEqual(["Consumable", "Provider", "Context", "Protection"]);
+		expect(container.querySelectorAll("tbody tr")).toHaveLength(rows.length);
+		expect(
+			container.querySelector(".codicon-symbol-class"),
 		).toBeInTheDocument();
+		// The protection is a code from the pattern table, in the editor font.
+		expect(
+			container.querySelector("tbody td:nth-child(4) .keyword"),
+		).toHaveClass("mono");
 	});
 
-	it("shows the declared protection pattern", () => {
-		const consumption = firstConsumption();
-		expect(consumption.pattern).toBeTruthy();
-		render(ConsumesTable, { consumptions: [consumption] });
-		expect(screen.getByText(consumption.pattern as string)).toBeInTheDocument();
+	it("says a consumption with no declared protection is unspecified", () => {
+		const rows = consumptions();
+		const bare = rows[0];
+		Object.defineProperty(bare, "pattern", {
+			value: undefined,
+			configurable: true,
+		});
+		render(ConsumesTable, { consumptions: [bare] });
+		expect(screen.getByText("unspecified")).toHaveClass("keyword");
 	});
 
-	it("shows 'unspecified' when no protection pattern is declared", () => {
-		const consumption = {
-			...firstConsumption(),
-			pattern: undefined,
-		} as unknown as Consumption;
-		render(ConsumesTable, { consumptions: [consumption] });
-		expect(screen.getByText("unspecified")).toBeInTheDocument();
+	it("says what would fill it when the context depends on nothing", () => {
+		render(ConsumesTable, { consumptions: [] });
+		expect(screen.getByText("Depends on nothing outside itself.")).toHaveClass(
+			"empty",
+		);
 	});
 });

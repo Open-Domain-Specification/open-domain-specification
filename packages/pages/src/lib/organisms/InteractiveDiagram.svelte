@@ -11,6 +11,7 @@ import "@xyflow/svelte/dist/style.css";
 import { onDestroy } from "svelte";
 import { fitClusters } from "../flow/cluster-fit";
 import DiagramOptionsPanel from "../flow/DiagramOptionsPanel.svelte";
+import { createDisclosure, withDisclosure } from "../flow/disclosure.svelte";
 import { flowEdges, flowNodes, groupLabels } from "../flow/flow-nodes";
 import { createFullscreen } from "../flow/fullscreen.svelte";
 import type { Graph } from "../flow/graph";
@@ -19,9 +20,11 @@ import LegendPanel from "../flow/LegendPanel.svelte";
 import { layout } from "../flow/layout";
 import { minimapNodeClass } from "../flow/minimap";
 import { diagramOptions } from "../flow/options.svelte";
+import PanelFit from "../flow/PanelFit.svelte";
 import { edgeTypes, nodeTypes } from "../flow/registry";
 import SketchBackdrop from "../flow/SketchBackdrop.svelte";
 import { hostColorMode } from "../flow/theme.svelte";
+import DisclosureCard from "./DisclosureCard.svelte";
 
 /**
  * A pannable, zoomable version of a figure. Nodes are refs, so clicking one
@@ -41,30 +44,38 @@ const sketch = $derived(sketchApplies(kind, diagramOptions.style));
 let nodes = $state.raw<Node[]>([]);
 let edges = $state.raw<Edge[]>([]);
 const labels = $derived(groupLabels(positioned));
+const disclosure = createDisclosure();
 $effect(() => {
 	nodes = flowNodes(positioned, {
 		floating: diagramOptions.handlesFor(kind) === "floating",
 		sketch,
 		free: kind === "context",
 	});
-	edges = flowEdges(positioned);
+	// The intent rides on the graph edge; only the click needs this component,
+	// which is the one place that can hold the open card.
+	edges = withDisclosure(flowEdges(positioned), positioned, disclosure);
 });
 const fullscreen = createFullscreen();
+/** Measured by the panel-aware fit, so it needs the box the panels float over. */
+let container = $state<HTMLElement>();
 onDestroy(fullscreen.stop);
+onDestroy(disclosure.stop);
 /** Free maps refit their cluster boxes round the nodes as one is dragged. */
 const refit = () => {
 	if (kind === "context") nodes = fitClusters(nodes);
 };
 </script>
 
-<div class="interactive" class:fullscreen={fullscreen.active}>
+<div class="interactive" class:fullscreen={fullscreen.active} bind:this={container}>
 	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={0.2} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} onnodeclick={({ node }) => { if (node.id.startsWith("#")) { fullscreen.exit(); location.hash = node.id; } }} onnodedrag={refit} onnodedragstop={refit}>
 		<Background />
 		{#if sketch}<SketchBackdrop {nodes} groupLabels={labels} />{/if}
 		<Controls showLock={false} />
 		<MiniMap pannable zoomable width={120} height={80} nodeClass={minimapNodeClass} />
-		<DiagramOptionsPanel {kind} {fullscreen} />
+		<DiagramOptionsPanel {kind} {fullscreen} {container} />
 		<LegendPanel {graph} {kind} />
+		<PanelFit {container} />
+		<DisclosureCard {disclosure} />
 	</SvelteFlow>
 </div>
 

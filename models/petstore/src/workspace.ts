@@ -22,6 +22,9 @@ export const workspace = new Workspace("Swagger Petstore (v3)", {
 	homepage: "https://petstore.swagger.io/",
 	primaryColor: "#0ea5e9",
 	logoUrl: "https://petstore.swagger.io/favicon-32x32.png",
+	// Petstore is the demonstration model, so it holds itself to the evidence
+	// layer as well as the structure: every relationship says what backs it.
+	options: { rules: { commentsRequired: true } },
 });
 
 /* =======================
@@ -281,6 +284,17 @@ const reservePet = petAgg
 		type: "operation",
 		pattern: "open-host-service",
 		schema: petIdSchema,
+		disposition: "refactor",
+		comments: [
+			{
+				text: "Reservation is a synchronous call into the Catalog aggregate; it should become an order-placed subscription so Sales stops blocking on Catalog.",
+				link: {
+					kind: "adr",
+					url: "https://github.com/example/petstore/blob/main/docs/adr/017-reserve-asynchronously.md",
+					label: "ADR-017 Reserve asynchronously",
+				},
+			},
+		],
 	})
 	.raises(petStatusChanged);
 const markPetSold = petAgg
@@ -349,6 +363,16 @@ const getPetSummaryOp = petApp.provides("GetPetSummary", {
 	type: "operation",
 	pattern: "open-host-service",
 	schema: petIdSchema,
+	comments: [
+		{
+			text: "The summary projection is the only Catalog read Sales is allowed to make.",
+			link: {
+				kind: "contract",
+				url: "https://github.com/example/petstore/blob/main/catalog/openapi.yaml#/paths/~1pets~1{id}~1summary",
+				label: "GET /pets/{id}/summary",
+			},
+		},
+	],
 });
 
 // Glossary: the ubiquitous language of this context, each term pointing at
@@ -546,7 +570,19 @@ orderApp
 
 // Anti-corruption layer: OrderApp translates the catalog's summary into its
 // own notion of availability rather than adopting the catalog's model.
-orderApp.consumes(getPetSummaryOp, { pattern: "anti-corruption-layer" });
+orderApp.consumes(getPetSummaryOp, {
+	pattern: "anti-corruption-layer",
+	comments: [
+		{
+			text: "PetSummaryClient is the translator; nothing else in Sales knows the catalog payload shape.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts",
+				label: "sales/acl/PetSummaryClient.ts",
+			},
+		},
+	],
+});
 // The same ACL issues the two catalogue transitions Sales is responsible for.
 orderApp.consumes(reservePet, { pattern: "anti-corruption-layer" });
 orderApp.consumes(markPetSold, { pattern: "anti-corruption-layer" });
@@ -891,6 +927,24 @@ salesBC.downstreamOf(catalogBC, {
 	downstreamRoles: ["anti-corruption-layer"],
 	description:
 		"Sales needs pet availability; Catalog commits to the summary contract",
+	comments: [
+		{
+			text: "Sales reads Catalog through PetSummaryClient, which maps the catalog payload onto the Sales order model.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts",
+				label: "sales/acl/PetSummaryClient.ts",
+			},
+		},
+		{
+			text: "The summary contract is versioned and published; Catalog will not break it without a major release.",
+			link: {
+				kind: "contract",
+				url: "https://github.com/example/petstore/blob/main/catalog/openapi.yaml",
+				label: "catalog/openapi.yaml",
+			},
+		},
+	],
 });
 
 // upstream-downstream: Inventory conforms to whatever Sales publishes and has no say in it.
@@ -898,24 +952,80 @@ inventoryBC.downstreamOf(salesBC, {
 	upstreamRoles: ["published-language"],
 	downstreamRoles: ["conformist"],
 	description: "The projection counts orders as Sales reports them",
+	disposition: "tolerated",
+	comments: [
+		{
+			text: "The projection conforms to the Sales order events rather than translating them; accepted while Inventory stays read-only.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/petstore/blob/main/inventory/projection/OrderEventHandler.ts",
+				label: "inventory/projection/OrderEventHandler.ts",
+			},
+		},
+	],
 });
 
 // shared-kernel: both contexts belong to the Pet Shop Team and share the
 // PetStatus vocabulary, so a change to it is made in one place for both.
-catalogBC.sharesKernelWith(
-	inventoryBC,
-	"PetStatus and its values are one shared definition",
-);
+catalogBC.sharesKernelWith(inventoryBC, {
+	description: "PetStatus and its values are one shared definition",
+	disposition: "refactor",
+	comments: [
+		{
+			text: "PetStatus and its values live in @petstore/kernel and both services compile against it.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/petstore/blob/main/packages/kernel/src/PetStatus.ts",
+				label: "packages/kernel/src/PetStatus.ts",
+			},
+		},
+		{
+			text: "The kernel has grown past the status enum and now carries pricing rules; it should become a Published Language from Catalog.",
+			link: {
+				kind: "adr",
+				url: "https://github.com/example/petstore/blob/main/docs/adr/014-shrink-the-kernel.md",
+				label: "ADR-014 Shrink the kernel",
+			},
+		},
+	],
+});
 
 // partnership: the Orders Team owns both, releases them together, and each
 // issues the other's operations (DeliverOrder) or events (OrderApproved).
-salesBC.partnerOf(
-	fulfilmentBC,
-	"Order lifecycle and shipment lifecycle are designed and released together",
-);
+salesBC.partnerOf(fulfilmentBC, {
+	description:
+		"Order lifecycle and shipment lifecycle are designed and released together",
+	comments: [
+		// Deliberately uncited: a comment does not need a link to be evidence,
+		// and the report has to read well when nobody has one to give.
+		{
+			text: "Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged.",
+		},
+		{
+			text: "DeliverOrder and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier.",
+		},
+	],
+});
 
 // separate-ways: orders carry no user link, so the two never integrate.
-identityBC.separateWaysFrom(
-	salesBC,
-	"Orders are anonymous in Petstore v3; no integration by design",
-);
+identityBC.separateWaysFrom(salesBC, {
+	description: "Orders are anonymous in Petstore v3; no integration by design",
+	comments: [
+		{
+			text: "The order payload carries no user field and the Sales service holds no credentials for the Identity API, so nothing links an order to an account.",
+			link: {
+				kind: "contract",
+				url: "https://github.com/example/petstore/blob/main/sales/openapi.yaml",
+				label: "sales/openapi.yaml",
+			},
+		},
+		{
+			text: "Keeping the two apart is deliberate: checkout must work for a visitor who never signs in.",
+			link: {
+				kind: "adr",
+				url: "https://github.com/example/petstore/blob/main/docs/adr/007-anonymous-checkout.md",
+				label: "ADR-007 Anonymous checkout",
+			},
+		},
+	],
+});

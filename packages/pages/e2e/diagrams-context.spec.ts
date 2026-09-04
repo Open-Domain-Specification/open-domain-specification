@@ -1,3 +1,4 @@
+import { PATTERNS } from "@open-domain-specification/core";
 import { expect, test } from "@playwright/test";
 import { openInteractiveDiagram } from "./helpers";
 
@@ -47,9 +48,15 @@ test("the interactive context map draws context nodes with stereotypes and roles
 		for (const part of r.split("+")) expect(["OHS", "PL"]).toContain(part);
 	for (const r of await texts(".port.downstream .port-label"))
 		for (const part of r.split("+")) expect(["CF", "ACL"]).toContain(part);
+	// The tooltip is the pattern's own name and meaning, from core's knowledge base.
 	await expect(upstream.first()).toHaveAttribute(
 		"title",
-		/open-host-service|published-language/,
+		new RegExp(
+			[PATTERNS["open-host-service"], PATTERNS["published-language"]]
+				.map((p) => `${p.name} — ${p.summary}`)
+				.map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+				.join("|"),
+		),
 	);
 	// Ports are full-size and the line starts at their rim, not underneath them.
 	await expect(upstream.first()).toHaveCSS("height", "22px");
@@ -74,7 +81,7 @@ test("the interactive context map draws context nodes with stereotypes and roles
 			await flow.locator(".stereotype, .port-label", { hasText: t }).count(),
 		).toBeGreaterThan(0);
 	await expect(
-		legend.locator("dd", { hasText: "Open host service" }),
+		legend.locator("dd", { hasText: PATTERNS["open-host-service"].name }),
 	).toBeVisible();
 	await legend.getByRole("button", { name: "Legend" }).click();
 	await expect(legend.locator("dl")).toHaveCount(0);
@@ -87,4 +94,95 @@ test("the interactive context map draws context nodes with stereotypes and roles
 		.selectOption("floating");
 	await expect(flow.locator(".handle-hidden").first()).toBeAttached();
 	await expect(upstream.first()).toBeVisible();
+});
+
+/** The three colours a disposition mark can change on a badge. */
+const paint = (el: Element) => {
+	const s = getComputedStyle(el);
+	return [s.color, s.borderTopColor, s.backgroundColor];
+};
+
+/**
+ * The evidence layer on the same map (RFC-002 section 4.2): the badges over a
+ * marked intent carry its disposition, hover to what is known, and open the
+ * relationship detail anchored inside the diagram.
+ */
+test("a marked badge on the Sales context map opens the relationship detail in place", async ({
+	page,
+}) => {
+	const flow = await openInteractiveDiagram(
+		page,
+		"Sales BC context map",
+		"#/boundedcontexts/sales_bc",
+	);
+	// Sales publishes to the Inventory projection, which conforms rather than
+	// translating: a tolerated compromise, so every badge on that edge is
+	// outlined instead of filled.
+	const badge = flow.locator(".port.stereotype.tolerated");
+	await expect(badge).toHaveText("U/D");
+	const [, rim, fill] = await badge.evaluate(paint);
+	expect(fill).toBe("rgba(0, 0, 0, 0)");
+	const [, plainRim, plainFill] = await flow
+		.locator(".port.stereotype:not(.tolerated):not(.refactor)")
+		.first()
+		.evaluate(paint);
+	expect(plainFill).not.toBe("rgba(0, 0, 0, 0)");
+	expect(rim).toBe(plainRim);
+	// The one-line hover is the pattern's meaning, then what someone wrote down.
+	await expect(badge).toHaveAttribute("title", /projection|conform/i);
+	// The legend names the mark this map draws, and only that one.
+	const terms = await flow.locator(".diagram-legend dt").allTextContents();
+	expect(terms).toContain("outlined badge");
+	expect(terms).not.toContain("warning badge");
+
+	await expect(flow.locator(".anchored")).toHaveCount(0);
+	await badge.getByRole("button").click();
+	const card = flow.locator(".anchored");
+	// The detail's own title is the direct child heading; the sections inside
+	// it are level 3 too. It names both contexts, the pattern and the mark, so
+	// the badge clicked and the card opened cannot be different relationships.
+	await expect(card.locator(".relationship-detail > h3")).toHaveText(
+		"Sales BC → Inventory BC upstream-downstream tolerated",
+	);
+	// The card is inside the flow viewport, so it pans and zooms with the map.
+	await expect(
+		card
+			.locator("xpath=ancestor::*[contains(@class, 'svelte-flow__viewport')]")
+			.first(),
+	).toBeAttached();
+	// The page never navigates: the detail is disclosed where the reader is.
+	await expect(page).toHaveURL(/#\/boundedcontexts\/sales_bc$/);
+
+	await page.keyboard.press("Escape");
+	await expect(flow.locator(".anchored")).toHaveCount(0);
+});
+
+test("the shared kernel the model wants refactored is marked on the workspace map", async ({
+	page,
+}) => {
+	const flow = await openInteractiveDiagram(page, "Context map");
+	// A symmetric relationship gives neither side a role, so the stereotype is
+	// the only badge it has to carry the mark.
+	const kernel = flow.locator(".port.stereotype.refactor");
+	await expect(kernel).toHaveText("SK");
+	const [color, rim] = await kernel.evaluate(paint);
+	// The warning treatment is text and rim in one colour, and it is not the
+	// colour an unmarked badge is drawn in.
+	expect(rim).toBe(color);
+	const [plainColor] = await flow
+		.locator(".port.stereotype:not(.refactor):not(.tolerated)")
+		.first()
+		.evaluate(paint);
+	expect(color).not.toBe(plainColor);
+	expect(await flow.locator(".diagram-legend dt").allTextContents()).toContain(
+		"warning badge",
+	);
+
+	await kernel.getByRole("button").click();
+	await expect(flow.locator(".anchored .relationship-detail > h3")).toHaveText(
+		"Catalog BC ↔ Inventory BC shared-kernel refactor",
+	);
+	// A click anywhere else dismisses it.
+	await flow.locator(".svelte-flow__pane").click({ position: { x: 5, y: 5 } });
+	await expect(flow.locator(".anchored")).toHaveCount(0);
 });

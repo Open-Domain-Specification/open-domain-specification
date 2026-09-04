@@ -150,3 +150,100 @@ describe("Workspace.validate", () => {
 		expect(rulesOf(ws)).toContain("warning:policy-complete");
 	});
 });
+
+describe("comments-required", () => {
+	/** Two contexts, one commented relationship and one bare one. */
+	function twoRelationships(options?: Workspace["options"]) {
+		const ws = new Workspace("V", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0",
+			options,
+		});
+		const a = ws.addBoundedContext("A", { description: "" });
+		const b = ws.addBoundedContext("B", { description: "" });
+		const c = ws.addBoundedContext("C", { description: "" });
+		a.upstreamOf(b, { comments: [{ text: "B reads A through an ACL." }] });
+		const bare = a.partnerOf(c);
+		return { ws, bare };
+	}
+
+	const commentsRequiredIn = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "comments-required");
+
+	it("is off unless the workspace opts in", () => {
+		expect(commentsRequiredIn(twoRelationships().ws)).toEqual([]);
+		expect(commentsRequiredIn(twoRelationships({}).ws)).toEqual([]);
+		expect(commentsRequiredIn(twoRelationships({ rules: {} }).ws)).toEqual([]);
+		expect(
+			commentsRequiredIn(
+				twoRelationships({ rules: { commentsRequired: false } }).ws,
+			),
+		).toEqual([]);
+	});
+
+	it("warns once per uncommented relationship, at that relationship's ref", () => {
+		const { ws, bare } = twoRelationships({
+			rules: { commentsRequired: true },
+		});
+		expect(commentsRequiredIn(ws)).toEqual([
+			{
+				severity: "warning",
+				rule: "comments-required",
+				message: expect.stringContaining("nothing is written down"),
+				ref: bare.ref,
+			},
+		]);
+	});
+
+	it("names both contexts and the type, so the Problems row reads on its own", () => {
+		const { ws } = twoRelationships({ rules: { commentsRequired: true } });
+		const [warning] = commentsRequiredIn(ws);
+		expect(warning.message).toContain('"A"');
+		expect(warning.message).toContain('"C"');
+		expect(warning.message).toContain("partnership");
+	});
+
+	it("goes quiet once the relationship carries a comment", () => {
+		const { ws, bare } = twoRelationships({
+			rules: { commentsRequired: true },
+		});
+		bare.comments.push({ text: "A and C release together, see ADR-014." });
+		expect(commentsRequiredIn(ws)).toEqual([]);
+	});
+
+	it("ignores uncommented consumables and consumptions, which are not relationships", () => {
+		const { ws, bare } = twoRelationships({
+			rules: { commentsRequired: true },
+		});
+		bare.comments.push({ text: "Documented." });
+		const a = ws.getBoundedContextByRefOrThrow("#/boundedcontexts/a");
+		const b = ws.getBoundedContextByRefOrThrow("#/boundedcontexts/b");
+		const svc = a.addService("S", { description: "", type: "application" });
+		const op = svc.provides("Op", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		b.addService("T", { description: "", type: "application" }).consumes(op, {
+			pattern: "conformist",
+		});
+
+		expect(op.comments).toEqual([]);
+		expect(commentsRequiredIn(ws)).toEqual([]);
+	});
+
+	it("survives the round trip, so the option is a property of the file", () => {
+		const { ws } = twoRelationships({ rules: { commentsRequired: true } });
+		const rebuilt = Workspace.fromSchema(
+			JSON.parse(JSON.stringify(ws.toSchema())),
+		);
+		expect(rebuilt.options).toEqual({ rules: { commentsRequired: true } });
+		expect(commentsRequiredIn(rebuilt)).toHaveLength(1);
+	});
+
+	it("writes no options key when the workspace sets none", () => {
+		const schema = JSON.parse(JSON.stringify(twoRelationships().ws.toSchema()));
+		expect(schema).not.toHaveProperty("options");
+	});
+});

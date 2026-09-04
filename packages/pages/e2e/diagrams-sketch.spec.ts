@@ -134,9 +134,12 @@ test("in the cards style the cluster boxes follow a dragged node", async ({
 	if (!box) throw new Error("every node sits under the legend");
 	await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
 	await page.mouse.down();
+	// Aimed at a point past the cluster's own corner rather than a fixed
+	// distance: the default fit leaves room for the panels, so how many
+	// pixels "far beyond the right edge" is depends on the zoom.
 	await page.mouse.move(
-		box.x + box.width / 2 + 500,
-		box.y + box.height / 2 + 300,
+		before.x + before.width + 250,
+		before.y + before.height + 150,
 		{ steps: 8 },
 	);
 	// The box grows during the drag, not only after it.

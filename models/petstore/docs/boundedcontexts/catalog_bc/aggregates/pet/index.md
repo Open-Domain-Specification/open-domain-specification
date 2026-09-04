@@ -44,6 +44,8 @@ A pet listed in the store. One aggregate because a pet's photos, tags and status
 | ReservePet | operation | no | open-host-service | available → pending: the pet is held for an approved order; issued by Sales on approval | [PetId](../../index.md#schemas) | PetStatusChanged |
 | MarkPetSold | operation | no | open-host-service | pending → sold: the pet has gone to its owner; issued by Sales on delivery | [PetId](../../index.md#schemas) | PetStatusChanged |
 
+- **ReservePet**
+	- Reservation is a synchronous call into the Catalog aggregate; it should become an order-placed subscription so Sales stops blocking on Catalog. [ADR-017 Reserve asynchronously](https://github.com/example/petstore/blob/main/docs/adr/017-reserve-asynchronously.md)
 
 ## Consumes
 > No consumptions.

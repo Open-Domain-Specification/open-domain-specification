@@ -1,6 +1,7 @@
 <script lang="ts">
 import { Workspace } from "@open-domain-specification/core";
 import { onMount, untrack } from "svelte";
+import EmptyState from "../lib/atoms/EmptyState.svelte";
 import ModelProvider from "../lib/ModelProvider.svelte";
 import type { Model } from "../lib/model";
 import Sidebar from "../lib/organisms/Sidebar.svelte";
@@ -66,15 +67,23 @@ $effect(() => {
 	{#key model}
 		<ModelProvider {model}>
 			<div class="site" class:embedded={embedded}>
-				{#if !embedded}<Sidebar current={router.ref} />{/if}
+				{#if !embedded}<div class="site-nav"><Sidebar current={router.ref} /></div>{/if}
 				<div class="site-page"><Page ref={router.ref} /></div>
 			</div>
 		</ModelProvider>
 	{/key}
 {:else if embedded}
-	<div class="layout"><main><p class="empty">Workspace not loaded.</p></main></div>
+	<main class="not-loaded"><EmptyState text="Workspace not loaded." /></main>
 {:else if models.length > 1}
 	<WorkspacePicker {models} onpick={(i) => (chosen = i)} />
 {:else}
 	<ImportScreen examples={initial?.examples ?? []} onload={(schema, fileLabel) => { models = [load({ schema, fileLabel })]; chosen = 0; }} />
 {/if}
+
+<style>
+	/* The webview before a workspace arrives: the page gutter and nothing
+	   else, since there is no layout worth drawing around one sentence. */
+	.not-loaded {
+		padding: 16px 24px;
+	}
+</style>

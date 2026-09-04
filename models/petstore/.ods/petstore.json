@@ -5,6 +5,11 @@
   "description": "DDD/ODS model for Swagger Petstore v3. Inventory is a projection returning a status→count map; Orders use placed|approved|delivered.",
   "version": "0.2.0",
   "odsVersion": "1.0.0",
+  "options": {
+    "rules": {
+      "commentsRequired": true
+    }
+  },
   "primaryColor": "#0ea5e9",
   "domains": {
     "petstore_commerce": {
@@ -124,7 +129,18 @@
                 {
                   "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
                 }
-              ]
+              ],
+              "comments": [
+                {
+                  "text": "Reservation is a synchronous call into the Catalog aggregate; it should become an order-placed subscription so Sales stops blocking on Catalog.",
+                  "link": {
+                    "kind": "adr",
+                    "url": "https://github.com/example/petstore/blob/main/docs/adr/017-reserve-asynchronously.md",
+                    "label": "ADR-017 Reserve asynchronously"
+                  }
+                }
+              ],
+              "disposition": "refactor"
             },
             "mark_pet_sold": {
               "name": "MarkPetSold",
@@ -375,7 +391,17 @@
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
-              }
+              },
+              "comments": [
+                {
+                  "text": "The summary projection is the only Catalog read Sales is allowed to make.",
+                  "link": {
+                    "kind": "contract",
+                    "url": "https://github.com/example/petstore/blob/main/catalog/openapi.yaml#/paths/~1pets~1{id}~1summary",
+                    "label": "GET /pets/{id}/summary"
+                  }
+                }
+              ]
             }
           },
           "consumes": []
@@ -759,7 +785,17 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/catalog_bc/services/pet_app/provides/get_pet_summary"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "comments": [
+                {
+                  "text": "PetSummaryClient is the translator; nothing else in Sales knows the catalog payload shape.",
+                  "link": {
+                    "kind": "code",
+                    "url": "https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts",
+                    "label": "sales/acl/PetSummaryClient.ts"
+                  }
+                }
+              ]
             },
             {
               "consumable": {
@@ -1470,7 +1506,25 @@
       "downstreamRoles": [
         "anti-corruption-layer"
       ],
-      "description": "Sales needs pet availability; Catalog commits to the summary contract"
+      "description": "Sales needs pet availability; Catalog commits to the summary contract",
+      "comments": [
+        {
+          "text": "Sales reads Catalog through PetSummaryClient, which maps the catalog payload onto the Sales order model.",
+          "link": {
+            "kind": "code",
+            "url": "https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts",
+            "label": "sales/acl/PetSummaryClient.ts"
+          }
+        },
+        {
+          "text": "The summary contract is versioned and published; Catalog will not break it without a major release.",
+          "link": {
+            "kind": "contract",
+            "url": "https://github.com/example/petstore/blob/main/catalog/openapi.yaml",
+            "label": "catalog/openapi.yaml"
+          }
+        }
+      ]
     },
     {
       "type": "upstream-downstream",
@@ -1486,7 +1540,18 @@
       "downstreamRoles": [
         "conformist"
       ],
-      "description": "The projection counts orders as Sales reports them"
+      "description": "The projection counts orders as Sales reports them",
+      "comments": [
+        {
+          "text": "The projection conforms to the Sales order events rather than translating them; accepted while Inventory stays read-only.",
+          "link": {
+            "kind": "code",
+            "url": "https://github.com/example/petstore/blob/main/inventory/projection/OrderEventHandler.ts",
+            "label": "inventory/projection/OrderEventHandler.ts"
+          }
+        }
+      ],
+      "disposition": "tolerated"
     },
     {
       "type": "shared-kernel",
@@ -1498,7 +1563,26 @@
           "$ref": "#/boundedcontexts/inventory_bc"
         }
       ],
-      "description": "PetStatus and its values are one shared definition"
+      "description": "PetStatus and its values are one shared definition",
+      "comments": [
+        {
+          "text": "PetStatus and its values live in @petstore/kernel and both services compile against it.",
+          "link": {
+            "kind": "code",
+            "url": "https://github.com/example/petstore/blob/main/packages/kernel/src/PetStatus.ts",
+            "label": "packages/kernel/src/PetStatus.ts"
+          }
+        },
+        {
+          "text": "The kernel has grown past the status enum and now carries pricing rules; it should become a Published Language from Catalog.",
+          "link": {
+            "kind": "adr",
+            "url": "https://github.com/example/petstore/blob/main/docs/adr/014-shrink-the-kernel.md",
+            "label": "ADR-014 Shrink the kernel"
+          }
+        }
+      ],
+      "disposition": "refactor"
     },
     {
       "type": "partnership",
@@ -1510,7 +1594,15 @@
           "$ref": "#/boundedcontexts/fulfilment_bc"
         }
       ],
-      "description": "Order lifecycle and shipment lifecycle are designed and released together"
+      "description": "Order lifecycle and shipment lifecycle are designed and released together",
+      "comments": [
+        {
+          "text": "Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged."
+        },
+        {
+          "text": "DeliverOrder and OrderApproved cross the boundary in both directions with no translation layer, which is what makes this a partnership rather than customer-supplier."
+        }
+      ]
     },
     {
       "type": "separate-ways",
@@ -1522,7 +1614,25 @@
           "$ref": "#/boundedcontexts/sales_bc"
         }
       ],
-      "description": "Orders are anonymous in Petstore v3; no integration by design"
+      "description": "Orders are anonymous in Petstore v3; no integration by design",
+      "comments": [
+        {
+          "text": "The order payload carries no user field and the Sales service holds no credentials for the Identity API, so nothing links an order to an account.",
+          "link": {
+            "kind": "contract",
+            "url": "https://github.com/example/petstore/blob/main/sales/openapi.yaml",
+            "label": "sales/openapi.yaml"
+          }
+        },
+        {
+          "text": "Keeping the two apart is deliberate: checkout must work for a visitor who never signs in.",
+          "link": {
+            "kind": "adr",
+            "url": "https://github.com/example/petstore/blob/main/docs/adr/007-anonymous-checkout.md",
+            "label": "ADR-007 Anonymous checkout"
+          }
+        }
+      ]
     }
   ],
   "teams": {

@@ -12,7 +12,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("the sidebar lists domains, contexts and teams", async ({ page }) => {
-	const nav = page.locator("nav.site-nav");
+	const nav = page.locator("nav.tree");
 
 	// Codicon glyphs are generated content, so accessible names carry a leading
 	// private-use character; match on the label rather than the whole name.
@@ -27,28 +27,64 @@ test("the sidebar lists domains, contexts and teams", async ({ page }) => {
 test("clicking a sidebar item routes to its page and marks it active", async ({
 	page,
 }) => {
-	const nav = page.locator("nav.site-nav");
+	const nav = page.locator("nav.tree");
 	await nav.getByRole("link", { name: "Sales BC" }).click();
 
 	await expect(page).toHaveURL(/#\/boundedcontexts\/sales_bc$/);
 	await expect(page.locator("main h1")).toContainText("Sales BC");
-	await expect(nav.locator("a.active")).toHaveText(/Sales BC/);
+	await expect(nav.locator(".item.active")).toHaveText(/Sales BC/);
 
 	await nav.getByRole("link", { name: "Orders Team" }).click();
 
 	await expect(page).toHaveURL(/#\/teams\/orders_team$/);
 	await expect(page.locator("main h1")).toContainText("Orders Team");
-	await expect(nav.locator("a.active")).toHaveText(/Orders Team/);
+	await expect(nav.locator(".item.active")).toHaveText(/Orders Team/);
 });
 
 test("table of contents entries scroll to their section", async ({ page }) => {
 	const toc = page.locator("aside.toc");
-	await expect(toc.getByRole("link", { name: "Model health" })).toBeVisible();
+	await expect(toc.getByRole("link", { name: "Health" })).toBeVisible();
 
 	await expect(page.locator("#health")).not.toBeInViewport();
-	await toc.getByRole("link", { name: "Model health" }).click();
+	await toc.getByRole("link", { name: "Health" }).click();
 
 	await expect(page.locator("#health")).toBeInViewport();
+});
+
+test("the workspace's health strip links out to the full report", async ({
+	page,
+}) => {
+	// v2 carries the three evidence counts as the badges on their headings,
+	// the way a pane header does, rather than as a stat strip.
+	const health = page.locator("#health");
+	await expect(health.locator("#refactor .count")).toHaveText("1");
+	await expect(health.locator("#tolerated .count")).toHaveText("1");
+
+	await page.getByRole("link", { name: /full health report/ }).click();
+
+	await expect(page).toHaveURL(/#\/health$/);
+	await expect(page.locator("main h1")).toContainText("Health");
+	// The report's own counts are the badges on its three headings, the same
+	// treatment the workspace page's Health section uses.
+	await expect(page.locator("main #refactor .count")).toHaveText("1");
+	await expect(page.locator("main #tolerated .count")).toHaveText("1");
+	// The refactor backlog, grouped under the context that owns the change.
+	await expect(page.locator("#refactor")).toBeVisible();
+	await expect(page.locator("main")).toContainText(
+		"The kernel has grown past the status enum",
+	);
+
+	// The no-comments list is a reconciliation to-do, so it starts collapsed.
+	// Its heading carries no count badge here: every intent in the petstore
+	// has a comment, and v2 draws no badge at zero (card 34).
+	await expect(page.locator("main #no-comments .count")).toHaveCount(0);
+	const toggle = page.getByRole("button", { name: /No comments/ });
+	await expect(toggle).toHaveAttribute("aria-expanded", "false");
+	await toggle.click();
+	await expect(toggle).toHaveAttribute("aria-expanded", "true");
+	await expect(page.locator("main")).toContainText(
+		"Every intent carries at least one comment.",
+	);
 });
 
 test("a ref link inside the page navigates", async ({ page }) => {
@@ -62,7 +98,7 @@ test("a ref link inside the page navigates", async ({ page }) => {
 });
 
 test("back and forward restore the pages visited", async ({ page }) => {
-	const nav = page.locator("nav.site-nav");
+	const nav = page.locator("nav.tree");
 	await nav.getByRole("link", { name: "Sales BC" }).click();
 	await expect(page.locator("main h1")).toContainText("Sales BC");
 	await nav.getByRole("link", { name: "Orders Team" }).click();
@@ -88,9 +124,12 @@ test("a leaf ref opens its owner page and flashes the element", async ({
 		location.hash = ref;
 	}, ATTRIBUTE_REF);
 
-	// An attribute has no page of its own, so its entity owns it.
-	await expect(page.locator("main .crumbs .kind")).toHaveText("Entity");
+	// An attribute has no page of its own, so its entity owns it. v2 says the
+	// kind in the title's lockup rather than as a crumb, so the trail ends at
+	// the aggregate and the title carries the word.
+	await expect(page.locator("main .crumbs")).toContainText("Order");
 	await expect(page.locator("main h1")).toContainText("Order");
+	await expect(page.locator("main h1 .detail")).toHaveText("Entity");
 	const row = page.locator(`tr[id="${ATTRIBUTE_REF}"]`);
 	await expect(row).toHaveClass(/flash/);
 	await expect(row).toBeInViewport();

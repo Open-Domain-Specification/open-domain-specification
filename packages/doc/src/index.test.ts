@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { Workspace } from "@open-domain-specification/core";
+import { PATTERNS, Workspace } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { toDoc } from "./index";
 
@@ -240,6 +240,127 @@ describe("toDoc", () => {
 		expect(workspaceDoc).toContain("Test Workspace");
 	});
 
+	it("groups a context's relationships by what they mean from there, with a Description column", async () => {
+		const docs = await toDoc(petstore);
+
+		const salesDoc = docs["boundedcontexts/sales_bc/index.md"];
+		expect(salesDoc).toContain("## Context Relationships");
+		expect(salesDoc).toContain("### Depends on");
+		expect(salesDoc).toContain("### Depended on by");
+		expect(salesDoc).toContain("### Works alongside");
+		expect(salesDoc).toContain(
+			"| With | Description | Type | Upstream Roles | Downstream Roles |",
+		);
+		// Sales depends on Catalog (customer-supplier), Inventory depends on
+		// Sales (upstream-downstream), and Sales works alongside Fulfilment
+		// (partnership) and Identity (separate-ways).
+		expect(salesDoc).toContain("Catalog");
+		expect(salesDoc).toContain("Inventory");
+		expect(salesDoc).toContain("Fulfilment");
+		expect(salesDoc).toContain("Identity");
+	});
+
+	it("falls back to the generated sentence, in italics, when a relationship has no description", async () => {
+		const workspace = new Workspace("Bare", {
+			odsVersion: "1.0.0",
+			description: "One relationship nobody described.",
+			version: "0.1.0",
+		});
+		const catalog = workspace.addBoundedContext("Catalog", {
+			description: "Upstream.",
+		});
+		const sales = workspace.addBoundedContext("Sales", {
+			description: "Downstream.",
+		});
+		catalog.upstreamOf(sales, {
+			type: "customer-supplier",
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+
+		const docs = await toDoc(workspace);
+
+		// Written from each context, so the same relationship reads two ways.
+		expect(docs["boundedcontexts/sales/index.md"]).toContain(
+			"| *Sales depends on Catalog as a customer, consuming its Open Host Service, and it protects its model with an Anti-Corruption Layer.* |",
+		);
+		expect(docs["boundedcontexts/catalog/index.md"]).toContain(
+			"| *Catalog acts as an upstream supplier to Sales, exposing an Open Host Service, while Sales protects its model with an Anti-Corruption Layer.* |",
+		);
+	});
+
+	it("prints each relationship's comments under its group, statement then citation", async () => {
+		const docs = await toDoc(petstore);
+		const salesDoc = docs["boundedcontexts/sales_bc/index.md"];
+		const position = salesDoc.split("## Context Relationships")[1];
+
+		expect(position).toContain("- **Catalog BC** (customer-supplier)");
+		expect(position).toContain(
+			"\t- Sales reads Catalog through PetSummaryClient, which maps the catalog payload onto the Sales order model. [sales/acl/PetSummaryClient.ts](https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts)",
+		);
+		// The comments sit under their own group's table, not another's.
+		const dependsOn = position
+			.split("### Depends on")[1]
+			.split("### Depended on by")[0];
+		expect(dependsOn).toContain("- **Catalog BC** (customer-supplier)");
+		expect(dependsOn).not.toContain("- **Inventory BC**");
+		// Petstore turns comments-required on, so the symmetric pair is explained
+		// under its own group too — one of them without a citation to trail it.
+		const alongside = position.split("### Works alongside")[1];
+		expect(alongside).toContain("- **Fulfilment BC** (partnership)");
+		expect(alongside).toContain(
+			"\t- Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged.\n",
+		);
+		expect(alongside).toContain("- **Identity BC** (separate-ways)");
+		expect(alongside).toContain(
+			"[ADR-007 Anonymous checkout](https://github.com/example/petstore/blob/main/docs/adr/007-anonymous-checkout.md)",
+		);
+	});
+
+	it("prints a consumable's comments beneath the Provides table that lists it", async () => {
+		const docs = await toDoc(petstore);
+		const petApp = docs["boundedcontexts/catalog_bc/services/pet_app/index.md"];
+		const provides = petApp.split("## Provides")[1].split("## Consumes")[0];
+
+		expect(provides).toContain("- **GetPetSummary**");
+		expect(provides).toContain(
+			"\t- The summary projection is the only Catalog read Sales is allowed to make. [GET /pets/{id}/summary](https://github.com/example/petstore/blob/main/catalog/openapi.yaml#/paths/~1pets~1{id}~1summary)",
+		);
+		// The bullets sit under the table, not inside it.
+		expect(provides.indexOf("| Name | Type |")).toBeLessThan(
+			provides.indexOf("- **GetPetSummary**"),
+		);
+	});
+
+	it("prints nothing beneath a Provides table whose consumables carry no comments", async () => {
+		const docs = await toDoc(petstore);
+		const shipment =
+			docs["boundedcontexts/fulfilment_bc/aggregates/shipment/index.md"];
+		const provides = shipment.split("## Provides")[1].split("## Consumes")[0];
+
+		expect(provides).toContain("| Name | Type |");
+		expect(provides).not.toContain("\n- **");
+	});
+
+	it("footnotes every pattern a context's relationship table names, and no others", async () => {
+		const docs = await toDoc(petstore);
+		const contextDoc = docs["boundedcontexts/sales_bc/index.md"];
+
+		// Sales is downstream of Catalog behind an anti-corruption layer.
+		expect(contextDoc).toContain(
+			`- \`upstream-downstream\` — **Upstream/Downstream** (U/D). ${PATTERNS["upstream-downstream"].summary}`,
+		);
+		expect(contextDoc).toContain(
+			`- \`anti-corruption-layer\` — **Anti-Corruption Layer** (ACL). ${PATTERNS["anti-corruption-layer"].summary}`,
+		);
+		// Nothing is explained that the table above does not name.
+		const table = contextDoc.split("## Context Relationships")[1];
+		const notes = [...table.matchAll(/^- `([\w-]+)` — /gm)].map((m) => m[1]);
+		expect(notes.length).toBeGreaterThan(1);
+		for (const key of notes)
+			expect(table.split(`- \`${key}\``)[0], key).toContain(key);
+	});
+
 	it("snapshots the file list produced for the petstore reference workspace", async () => {
 		const docs = await toDoc(petstore);
 
@@ -304,5 +425,53 @@ describe("toDoc", () => {
 			  "swagger_petstore_(v3)/index.md",
 			]
 		`);
+	});
+
+	it("prints the health report on the workspace page, in the same three lists as the pages surface", async () => {
+		const docs = await toDoc(petstore);
+		const health = docs["swagger_petstore_(v3)/index.md"]
+			.split("## Health")[1]
+			.split("## Teams")[0];
+
+		const refactor = health.split("### Refactor")[1].split("### Tolerated")[0];
+		expect(refactor).toContain("**Catalog BC ↔ Inventory BC** (shared-kernel)");
+		expect(refactor).toContain(
+			"[ADR-014 Shrink the kernel](https://github.com/example/petstore/blob/main/docs/adr/014-shrink-the-kernel.md)",
+		);
+
+		const tolerated = health
+			.split("### Tolerated")[1]
+			.split("### No comments")[0];
+		expect(tolerated).toContain(
+			"**Sales BC → Inventory BC** (upstream-downstream)",
+		);
+		expect(tolerated).not.toContain("shared-kernel");
+
+		// Petstore turns comments-required on, so the third list is empty.
+		expect(health.split("### No comments")[1]).toContain(
+			"> Every relationship carries at least one comment.",
+		);
+	});
+
+	it("says so in each health list a workspace has nothing for", async () => {
+		const workspace = new Workspace("Quiet", {
+			odsVersion: "1.0.0",
+			description: "Two contexts, one unexplained relationship.",
+			version: "0.1.0",
+		});
+		const a = workspace.addBoundedContext("A", { description: "A." });
+		const b = workspace.addBoundedContext("B", { description: "B." });
+		a.upstreamOf(b);
+
+		const health = (await toDoc(workspace))["quiet/index.md"]
+			.split("## Health")[1]
+			.split("## Teams")[0];
+
+		expect(health).toContain("> Nothing is marked for refactoring.");
+		expect(health).toContain("> No compromises recorded.");
+		expect(health).toContain("**A → B** (upstream-downstream)");
+		expect(health).not.toContain(
+			"> Every relationship carries at least one comment.",
+		);
 	});
 });

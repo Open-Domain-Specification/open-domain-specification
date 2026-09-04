@@ -56,7 +56,10 @@ interviewing as soon as you know enough for one coherent increment; you can alwa
 
 Map answers with `references/translation-table.md`. Every element gets a `description` in
 the user's own words, and every noun they used more than once becomes a glossary term in its
-context. Use `references/ddd-glossary.md` for the one-sentence explanations.
+context. Use `references/ddd-glossary.md` for the one-sentence explanations. For a context
+relationship type or an upstream/downstream role, explain it from
+`references/strategic-relationships.md`, which is generated from the same table the diagrams
+and the generated docs read, so your words match what the user is looking at.
 
 ## Step 4: edit
 
@@ -91,6 +94,29 @@ For each diagnostic, tell the user in one plain sentence what it means and what 
 using `references/validation-rules.md`. Errors block finishing. Warnings mark a missing
 decision: discuss them and let the user decide, rather than fixing them silently. If loading
 throws "... with ref ... not found", a ref is dangling: fix it first.
+
+## Step 6: reconcile the model with the code
+
+The model is a claim about a real system. When the user asks you to check it — "does the ACL
+actually exist", "reconcile the model with the code" — walk the intents that carry no comments
+(the health report's "No comments" list, or `intentsWithoutComments(workspace)`) and go looking.
+An anti-corruption layer means an adapter or translator on the downstream side; an open host
+service means a published contract; a shared kernel means a shared package both sides depend on;
+a conformist consumption means the upstream's own types used directly. Full search recipes and
+the shape of a comment are in `references/reconciliation.md`.
+
+Each intent ends one of three ways, and each way is a comment:
+
+- It is there → one comment saying what you found, with a link to the file or contract you
+  opened. Leave the disposition alone; absent already means `by-design`.
+- It is not what the model says → one comment saying what is there instead, and a *proposed*
+  `tolerated` (a compromise nobody plans to change) or `refactor` (it should be removed or
+  replaced). Say why in one sentence and wait for the user; the disposition is their call.
+- You cannot tell → one comment naming what you searched for and where, no disposition, then
+  ask the user where it lives.
+
+Only relationships, cross-boundary consumables and consumptions are reconciled. Internal
+consumables never cross a boundary, so they are not strategic and carry no evidence.
 
 ## Educating without preaching
 

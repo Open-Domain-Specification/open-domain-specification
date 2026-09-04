@@ -4657,7 +4657,26 @@
           "$ref": "#/boundedcontexts/last_mile"
         }
       ],
-      "description": "TrackingLabel format and scan events are one shared library"
+      "description": "TrackingLabel format and scan events are one shared library",
+      "comments": [
+        {
+          "text": "TrackingLabel and the scan event codes live in @rivermart/tracking, imported by both.",
+          "link": {
+            "kind": "code",
+            "url": "https://github.com/example/rivermart/blob/main/packages/tracking/src/TrackingLabel.ts",
+            "label": "packages/tracking/src/TrackingLabel.ts"
+          }
+        },
+        {
+          "text": "The label format is a carrier standard, so neither side can own it; the kernel is the cheapest place to keep it in step.",
+          "link": {
+            "kind": "contract",
+            "url": "https://github.com/example/rivermart/blob/main/docs/carrier-label-spec.md",
+            "label": "Carrier label spec"
+          }
+        }
+      ],
+      "disposition": "tolerated"
     },
     {
       "type": "partnership",
@@ -4669,7 +4688,17 @@
           "$ref": "#/boundedcontexts/advertising"
         }
       ],
-      "description": "The results page is one product owned by two teams"
+      "description": "The results page is one product owned by two teams",
+      "comments": [
+        {
+          "text": "Organic ranking and sponsored slots are blended in one service; neither team deploys the results page alone.",
+          "link": {
+            "kind": "code",
+            "url": "https://github.com/example/rivermart/blob/main/search/results/BlendedRanker.ts",
+            "label": "search/results/BlendedRanker.ts"
+          }
+        }
+      ]
     },
     {
       "type": "separate-ways",

@@ -59,6 +59,42 @@ export async function servePetstore(page: Page): Promise<void> {
 }
 
 /**
+ * Every workspace the repository ships. The bigger three are the stress
+ * cases: a fit that holds on the petstore can still put a node under a panel
+ * on a map with five times the contexts.
+ */
+export const REFERENCE_MODELS = [
+	"petstore",
+	"rivermart",
+	"streamline",
+	"northbank",
+] as const;
+
+export type ReferenceModel = (typeof REFERENCE_MODELS)[number];
+
+const modelPath = (name: ReferenceModel) =>
+	join(__dirname, `../../../models/${name}/.ods/${name}.json`);
+
+/** Fulfils every request for that model's workspace from the repository file. */
+export async function serveModel(
+	page: Page,
+	name: ReferenceModel,
+): Promise<string> {
+	const body = readFileSync(modelPath(name), "utf8");
+	await page.route(`**/${name}.json`, (route) =>
+		route.fulfill({
+			status: 200,
+			headers: {
+				"content-type": "application/json",
+				"access-control-allow-origin": "*",
+			},
+			body,
+		}),
+	);
+	return `https://workspaces.test/.ods/${name}.json`;
+}
+
+/**
  * Serves the petstore, navigates to `ref` and scrolls to the diagram whose
  * caption contains `title`, returning its `.svelte-flow` locator.
  */

@@ -2,7 +2,13 @@ import {
 	ODSConsumableMap,
 	ODSContextMap,
 	ODSRelationMap,
+	PATTERNS,
 } from "@open-domain-specification/core";
+import {
+	DOWNSTREAM_ROLE_LABELS,
+	RELATIONSHIP_LABELS,
+	UPSTREAM_ROLE_LABELS,
+} from "@open-domain-specification/graphviz";
 import { describe, expect, it } from "vitest";
 import { petstoreModel } from "../fixtures";
 import type { ConsumableNodeData } from "./consumable-graph";
@@ -15,14 +21,30 @@ const sales = workspace.boundedcontexts.get("sales_bc")!;
 const order = sales.aggregates.get("order")!;
 const marks = (entries: { mark: string }[]) => entries.map((e) => e.mark);
 
+describe("the marks the legend names", () => {
+	it("are the abbreviations core's knowledge base gives, for every pattern graphviz draws", () => {
+		const drawn: Record<string, string> = {
+			...RELATIONSHIP_LABELS,
+			...UPSTREAM_ROLE_LABELS,
+			...DOWNSTREAM_ROLE_LABELS,
+		};
+		expect(Object.keys(drawn).sort()).toEqual(Object.keys(PATTERNS).sort());
+		for (const [pattern, mark] of Object.entries(drawn))
+			expect(
+				PATTERNS[pattern as keyof typeof PATTERNS].abbreviation,
+				pattern,
+			).toBe(mark);
+	});
+});
+
 describe("legendEntries for the context map", () => {
 	it("lists the stereotypes, roles and marks the petstore map shows, with full names", () => {
 		const graph = contextGraph(ODSContextMap.fromWorkspace(workspace));
 		const entries = legendEntries(graph, "context");
 		const byMark = new Map(entries.map((e) => [e.mark, e.name]));
-		expect(byMark.get("U/D")).toBe("Upstream/downstream");
-		expect(byMark.get("OHS")).toBe("Open host service");
-		expect(byMark.get("ACL")).toBe("Anti-corruption layer");
+		expect(byMark.get("U/D")).toBe("Upstream/Downstream");
+		expect(byMark.get("OHS")).toBe("Open Host Service");
+		expect(byMark.get("ACL")).toBe("Anti-Corruption Layer");
 		expect(byMark.get("band")).toBe("Domain colour");
 		// Every stereotype and role listed is on an edge of the map.
 		const onEdges = new Set(
@@ -34,6 +56,39 @@ describe("legendEntries for the context map", () => {
 		);
 		for (const e of entries)
 			if (/^[A-Z/]+$/.test(e.mark)) expect(onEdges.has(e.mark)).toBe(true);
+	});
+	it("names one row per disposition mark the map draws, and never the unmarked default", () => {
+		const graph = contextGraph(
+			ODSContextMap.fromWorkspace(workspace),
+			workspace.relationships,
+		);
+		const entries = legendEntries(graph, "context");
+		const byMark = new Map(entries.map((e) => [e.mark, e]));
+		// The petstore has one tolerated and one refactor relationship.
+		expect(byMark.get("outlined badge")?.name).toBe("tolerated");
+		expect(byMark.get("warning badge")?.name).toBe("refactor");
+		expect(byMark.get("warning badge")?.title).toBeTruthy();
+		expect(byMark.has("filled badge")).toBe(false);
+
+		// Drawn without the workspace's relationships, the map marks nothing.
+		const unmarked = legendEntries(
+			contextGraph(ODSContextMap.fromWorkspace(workspace)),
+			"context",
+		);
+		expect(marks(unmarked)).not.toContain("warning badge");
+		expect(marks(unmarked)).not.toContain("outlined badge");
+	});
+	it("names only the marks present: a map of by-design intents gets no extra row", () => {
+		const byDesign = workspace.relationships.filter(
+			(r) => !r.disposition && r.type === "partnership",
+		);
+		expect(byDesign.length).toBeGreaterThan(0);
+		const entries = legendEntries(
+			contextGraph(ODSContextMap.fromWorkspace(workspace), byDesign),
+			"context",
+		);
+		expect(marks(entries)).not.toContain("outlined badge");
+		expect(marks(entries)).not.toContain("warning badge");
 	});
 	it("lists nothing the graph does not draw", () => {
 		const bare = legendEntries(
@@ -95,7 +150,7 @@ describe("legendEntries for the context map", () => {
 			"dashed octagon",
 			"band",
 		]);
-		expect(full.find((e) => e.mark === "SK")?.name).toBe("Shared kernel");
+		expect(full.find((e) => e.mark === "SK")?.name).toBe("Shared Kernel");
 		expect(full.find((e) => e.mark === "dashed")?.name).toBe(
 			"Implied relationship",
 		);

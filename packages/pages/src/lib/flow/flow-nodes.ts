@@ -1,6 +1,28 @@
+import {
+	type Disposition,
+	dispositionOf,
+} from "@open-domain-specification/core";
 import { type Edge, MarkerType, type Node } from "@xyflow/svelte";
+import { intentSummary } from "../evidence/labels";
 import { DASHED_EDGE_CLASS } from "./edge-path";
 import type { Positioned } from "./layout";
+
+/**
+ * What a context edge draws from beyond its geometry: the label at each end,
+ * and — when the map knows the intent behind the edge — what the architecture
+ * thinks of it, the line its badges disclose on hover, and what a click on one
+ * of them should open.
+ */
+export type ContextEdgeData = {
+	sourceLabel?: string;
+	targetLabel?: string;
+	/** Absent, or `by-design`, leaves every badge exactly as it was. */
+	disposition?: Disposition;
+	/** One-line hover text, appended to the role names on the end badges. */
+	summary?: string;
+	/** Given the badge's flow coordinates, so the card can be anchored to it. */
+	onBadgeClick?: (at: { x: number; y: number }) => void;
+};
 
 /** What shapes the Svelte Flow nodes beyond the layout: the options and the map's freedoms. */
 export type FlowNodeOptions = {
@@ -106,6 +128,13 @@ export function flowEdges(positioned: Positioned): Edge[] {
 				}
 			: undefined,
 		class: e.dashed ? DASHED_EDGE_CLASS : undefined,
-		data: { sourceLabel: e.sourceLabel, targetLabel: e.targetLabel },
+		data: {
+			sourceLabel: e.sourceLabel,
+			targetLabel: e.targetLabel,
+			...(e.intent && {
+				disposition: dispositionOf(e.intent),
+				summary: intentSummary(e.intent),
+			}),
+		} satisfies ContextEdgeData,
 	}));
 }

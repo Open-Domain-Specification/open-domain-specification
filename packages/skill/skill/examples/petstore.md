@@ -91,11 +91,63 @@ salesBC.downstreamOf(catalogBC, {
 ## Separate ways, on purpose
 
 ```ts
-identityBC.separateWaysFrom(
-	salesBC,
-	"Orders are anonymous in Petstore v3; no integration by design",
-);
+identityBC.separateWaysFrom(salesBC, {
+	description: "Orders are anonymous in Petstore v3; no integration by design",
+});
 ```
+
+## Worked reconciliation: the Catalog–Inventory shared kernel
+
+The model says Catalog and Inventory share a kernel. Reconciling it
+(`references/reconciliation.md`) means checking that claim against the repository and writing
+down what is actually there.
+
+**1. Take the intent off the worklist.** `intentsWithoutComments(workspace)` lists the shared
+kernel: a relationship with no comments, so nobody has said what backs it.
+
+**2. Search for what the pattern means.** A shared kernel is a shared package, library or schema
+both sides depend on, small and jointly owned. So: which package do both services declare as a
+dependency, and what is in it? The search finds `@petstore/kernel`, declared by both services,
+holding `PetStatus` and its values — and, further down the same package, pricing rules that only
+Catalog should own.
+
+**3. Two findings, two comments.** The first says what is there and links to the code. The
+second says what is there that should not be, and links to the decision record that already
+says so.
+
+**4. The code disagrees with the model, so propose a disposition.** The kernel has outgrown the
+small jointly-owned subset a shared kernel is meant to be, and there is an ADR saying it should
+become a Published Language from Catalog. Someone means to change it: `refactor`, not
+`tolerated`. Propose it with the comments, say why in one sentence, and let the author decide.
+
+```ts
+catalogBC.sharesKernelWith(inventoryBC, {
+	description: "PetStatus and its values are one shared definition",
+	disposition: "refactor",
+	comments: [
+		{
+			text: "PetStatus and its values live in @petstore/kernel and both services compile against it.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/petstore/blob/main/packages/kernel/src/PetStatus.ts",
+				label: "packages/kernel/src/PetStatus.ts",
+			},
+		},
+		{
+			text: "The kernel has grown past the status enum and now carries pricing rules; it should become a Published Language from Catalog.",
+			link: {
+				kind: "adr",
+				url: "https://github.com/example/petstore/blob/main/docs/adr/014-shrink-the-kernel.md",
+				label: "ADR-014 Shrink the kernel",
+			},
+		},
+	],
+});
+```
+
+The `type` stays `shared-kernel`. The intent layer records what the system is today; the
+evidence layer records what is behind it and what should replace it. Changing the type would
+lose the fact that a kernel is there.
 
 ## A policy reacting to events from two contexts
 
