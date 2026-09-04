@@ -54,7 +54,8 @@ See board vsc-extension card 07.
   | `EntityRelationSchema.target` | no |
   | `InvariantSchema.constrains` | no |
   | `ConsumableSchema.event`, `command` | no |
-  | `PolicySchema.on`, `then` | no |
+  | `PolicySchema.on` | yes: a consumption, through the file's dependency (decision 17) |
+  | `PolicySchema.then` | no (decision 17) |
   | `GlossaryTermSchema.embodiedBy` | no |
 
   Everything below a context is that context's own model, and DDD says a
