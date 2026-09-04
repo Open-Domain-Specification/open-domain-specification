@@ -18,13 +18,17 @@ const { Story } = defineMeta({
 </script>
 
 <Story name="Event">
-	<ModelProvider {model}>
-		<div class="layout"><main><ConsumablePage consumable={event} /></main></div>
-	</ModelProvider>
+	{#snippet template()}
+		<ModelProvider {model}>
+			<div class="layout"><main><ConsumablePage consumable={event} /></main></div>
+		</ModelProvider>
+	{/snippet}
 </Story>
 
 <Story name="Operation">
-	<ModelProvider {model}>
-		<div class="layout"><main><ConsumablePage consumable={operation} /></main></div>
-	</ModelProvider>
+	{#snippet template()}
+		<ModelProvider {model}>
+			<div class="layout"><main><ConsumablePage consumable={operation} /></main></div>
+		</ModelProvider>
+	{/snippet}
 </Story>

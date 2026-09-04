@@ -18,7 +18,9 @@ const { Story } = defineMeta({
 </script>
 
 <Story name="Petstore">
-	<ModelProvider {model}>
-		<div class="layout"><main><InvariantPage {invariant} /></main></div>
-	</ModelProvider>
+	{#snippet template()}
+		<ModelProvider {model}>
+			<div class="layout"><main><InvariantPage {invariant} /></main></div>
+		</ModelProvider>
+	{/snippet}
 </Story>

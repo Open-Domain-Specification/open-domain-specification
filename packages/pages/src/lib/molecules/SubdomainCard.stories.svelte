@@ -16,7 +16,9 @@ const { Story } = defineMeta({
 </script>
 
 <Story name="Petstore subdomains">
-	<ModelProvider {model}>
-		<div class="grid">{#each subdomains as s}<SubdomainCard subdomain={s} />{/each}</div>
-	</ModelProvider>
+	{#snippet template()}
+		<ModelProvider {model}>
+			<div class="grid">{#each subdomains as s}<SubdomainCard subdomain={s} />{/each}</div>
+		</ModelProvider>
+	{/snippet}
 </Story>
