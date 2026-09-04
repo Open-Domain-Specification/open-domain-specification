@@ -14,9 +14,9 @@
 
 ## `cross-aggregate-reference` (error)
 
-**Requires:** A relation into another aggregate uses references and targets that aggregate's root.
+**Requires:** A relation into another aggregate uses references and targets that aggregate's root; a relation to a value object crosses nothing.
 
-**Why it matters:** Aggregates are consistency boundaries; reaching inside another one couples the two so they can no longer change or be stored independently.
+**Why it matters:** Aggregates are consistency boundaries; reaching inside another one couples the two so they can no longer change or be stored independently. A value object belongs to the whole context rather than to one aggregate, so using one is not reaching into anybody.
 
 **Usual fix:** Change the relation to "references" and point it at the other aggregate's root entity, holding only its identity.
 
@@ -70,9 +70,9 @@
 
 ## `invariant-in-aggregate` (error)
 
-**Requires:** Every element an invariant constrains belongs to the invariant's own aggregate.
+**Requires:** Every element an invariant constrains belongs to the invariant's own aggregate, or is a value object of its context.
 
-**Why it matters:** An invariant is the rule that holds every time its aggregate is saved. Something outside the boundary can change between one save and the next with nothing to stop it, so a rule stretched across two aggregates is a rule nobody can enforce.
+**Why it matters:** An invariant is the rule that holds every time its aggregate is saved. Something outside the boundary can change between one save and the next with nothing to stop it, so a rule stretched across two aggregates is a rule nobody can enforce. A value object is the exception: it belongs to the context and carries no state of its own, so it is saved as part of whichever aggregate holds one.
 
 **Usual fix:** Move the invariant to the aggregate that owns what it constrains, drop the foreign target, or model the guarantee as a policy reacting to the other aggregate's event, which is eventual by nature.
 
@@ -88,9 +88,9 @@
 
 **Requires:** The directed relationships whose traffic is calls form no cycle; steps carried only by events do not count.
 
-**Why it matters:** An operation is answered before its caller can go on, so a ring of calls is a ring of teams each blocked on the next and a change anywhere goes round forever. Events are different: nobody waits for one, so a ring of contexts joined by events is fine, and rings of reactions are reaction-cycle's business instead.
+**Why it matters:** Downstream means a context shapes its model around what the upstream offers. In a ring of calls every context is shaped around a model that is shaped around its own, so none of them can settle or change first and the coupling has no end to start from. Events are different: reacting to a fact commits nobody to another model's shape, so a ring of contexts joined by events is fine, and rings of reactions are reaction-cycle's business instead.
 
-**Usual fix:** Turn one call on the ring into an event the other side reacts to, which is what DDD recommends anyway; failing that, invert the dependency or drop it.
+**Usual fix:** Declare a partnership where two of the contexts really do move as one, which says the mutual shaping is deliberate; otherwise reverse one dependency by turning that call into an event the other side reacts to, which is what DDD recommends anyway.
 
 ## `partnership-backed` (warning)
 
@@ -99,6 +99,14 @@
 **Why it matters:** A partnership says two teams succeed or fail together and so plan their releases as one, which is only worth the coordination when each really depends on the other. A partnership with no traffic at all is a wish, and one with traffic only one way is a directed relationship wearing a partner's badge — which quietly excuses both ends from declaring the upstream and downstream roles they actually have.
 
 **Usual fix:** Add the consumable the other direction is missing, or replace the partnership with the upstream-downstream or customer-supplier relationship the traffic really describes.
+
+## `shared-kernel-backed` (warning)
+
+**Requires:** Two contexts declaring a shared kernel share at least one value object or schema across it.
+
+**Why it matters:** A shared kernel is a piece of model two teams agree to keep in step, and it costs them the freedom to change it alone. Declaring one with nothing in it pays that price for nothing, and it stands in the model as the warrant for a sharing nobody has made: it is the one relationship over which a value object or a payload schema may be borrowed.
+
+**Usual fix:** Type an attribute by a value object the other context declares, or carry one of its schemas on a consumable; or replace the shared kernel with the relationship the two contexts really have.
 
 ## `mud-needs-acl` (warning)
 
@@ -166,11 +174,11 @@
 
 ## `schema-context` (error)
 
-**Requires:** A consumable's payload schema belongs to the consumable's own context.
+**Requires:** A consumable's payload schema belongs to the consumable's own context, or to one it shares a kernel with.
 
-**Why it matters:** The context that publishes a message owns its shape; borrowing another context's schema ties the two together.
+**Why it matters:** The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A shared kernel is where two teams have said that in the model and accepted the price, so it is the one place the borrowing is allowed.
 
-**Usual fix:** Move or copy the schema into the publishing context and point the consumable at that one.
+**Usual fix:** Move or copy the schema into the publishing context and point the consumable at that one, or declare the shared kernel if the two contexts really do keep that shape between them.
 
 ## `returns-on-operation` (error)
 

@@ -1,5 +1,9 @@
 import objectHash from "object-hash";
-import { aggregateNamespace, type ODSNamespace } from "./namespace";
+import {
+	aggregateNamespace,
+	contextMemberNamespace,
+	type ODSNamespace,
+} from "./namespace";
 import type { EntityRelationType, RelationCardinality } from "./schema";
 import { AbstractVisitor } from "./visitor";
 import {
@@ -26,7 +30,10 @@ function relationNode(node: Entity | ValueObject): ODSRelationMapNode {
 		name: node.name,
 		description: node.description,
 		type: relationNodeType(node),
-		namespace: aggregateNamespace(node.aggregate),
+		namespace:
+			node instanceof Entity
+				? aggregateNamespace(node.aggregate)
+				: contextMemberNamespace(node),
 		attributes: [...node.attributes.values()].map((it) => ({
 			name: it.name,
 			type: it.type,

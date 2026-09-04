@@ -17,8 +17,8 @@ The company that carries a consignment. Its own cluster because carriers are onb
 | Source | Description | Target | Relation | Cardinality |
 | --- | --- | --- | --- | --- |
 | [Shipment - Shipment](../shipment/index.md#entities-and-value-objects) | attempted-by | Shipment - DeliveryAttempt | includes | * |
-| [Shipment - Shipment](../shipment/index.md#entities-and-value-objects) | tracked-as | Shipment - TrackingNumber | uses | 1 |
-| [Shipment - Shipment](../shipment/index.md#entities-and-value-objects) | has-status | Shipment - ShipmentStatus | uses | 1 |
+| [Shipment - Shipment](../shipment/index.md#entities-and-value-objects) | tracked-as | Fulfilment BC - TrackingNumber | uses | 1 |
+| [Shipment - Shipment](../shipment/index.md#entities-and-value-objects) | has-status | Fulfilment BC - ShipmentStatus | uses | 1 |
 | [Shipment - Shipment](../shipment/index.md#entities-and-value-objects) | shipped-by | Carrier - Carrier | references | 1 |
 
 

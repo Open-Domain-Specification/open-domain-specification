@@ -6,14 +6,16 @@ import {
 } from "./evidence";
 import type { UpstreamRole } from "./schema";
 import {
-	type Aggregate,
+	Aggregate,
 	Attribute,
+	type AttributeOwner,
 	type BoundedContext,
 	type Constrainable,
 	type Consumable,
 	Consumption,
 	ContextRelationship,
 	constrainableLabel,
+	type DataSchema,
 	Entity,
 	type EntityRelation,
 	isDirectedRelationshipType,
@@ -41,16 +43,26 @@ function* aggregatesOf(workspace: Workspace): Iterable<Aggregate> {
 		yield* bc.aggregates.values();
 }
 
-function* relationsOf(workspace: Workspace): Iterable<EntityRelation> {
-	for (const aggregate of aggregatesOf(workspace)) {
-		for (const entity of aggregate.entities.values()) yield* entity.relations;
-		for (const vo of aggregate.valueobjects.values()) yield* vo.relations;
+/** Everything that can hold attributes and relations, in declaration order. */
+function* modelMembersOf(workspace: Workspace): Iterable<Entity | ValueObject> {
+	for (const bc of workspace.boundedcontexts.values()) {
+		yield* bc.valueobjects.values();
+		for (const aggregate of bc.aggregates.values())
+			yield* aggregate.entities.values();
 	}
 }
 
-function* membersOf(aggregate: Aggregate): Iterable<Entity | ValueObject> {
-	yield* aggregate.entities.values();
-	yield* aggregate.valueobjects.values();
+function* relationsOf(workspace: Workspace): Iterable<EntityRelation> {
+	for (const member of modelMembersOf(workspace)) yield* member.relations;
+}
+
+/**
+ * The aggregate a relation end sits in, or undefined for a value object: a
+ * value object belongs to the whole context (decision 16), so it sits inside
+ * no one aggregate's boundary.
+ */
+function aggregateOfEnd(member: Entity | ValueObject): Aggregate | undefined {
+	return member instanceof Entity ? member.aggregate : undefined;
 }
 
 function* consumptionsOf(workspace: Workspace): Iterable<Consumption> {
@@ -82,25 +94,28 @@ const aggregateRoot: Rule = (workspace) => {
 
 /**
  * A relation into another aggregate may only reference that aggregate's root,
- * and may not include or use its members directly.
+ * and may not include or use its members directly. A value object at either
+ * end crosses no aggregate boundary: it belongs to the context, and every
+ * aggregate of that context may hold one.
  */
 const crossAggregateReference: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const relation of relationsOf(workspace)) {
-		if (relation.source.aggregate === relation.target.aggregate) continue;
-		const target = relation.target;
+		const source = aggregateOfEnd(relation.source);
+		const target = aggregateOfEnd(relation.target);
+		if (!source || !target || source === target) continue;
 		if (relation.relation !== "references") {
 			diagnostics.push({
 				severity: "error",
 				rule: "cross-aggregate-reference",
-				message: `"${relation.source.name}" ${relation.relation} "${target.name}" in another aggregate; across aggregates only "references" is allowed`,
+				message: `"${relation.source.name}" ${relation.relation} "${relation.target.name}" in another aggregate; across aggregates only "references" is allowed`,
 				ref: relation.source.ref,
 			});
-		} else if (!(target instanceof Entity && target.root)) {
+		} else if (!(relation.target instanceof Entity && relation.target.root)) {
 			diagnostics.push({
 				severity: "error",
 				rule: "cross-aggregate-reference",
-				message: `"${relation.source.name}" references "${target.name}", which is not the root of aggregate "${target.aggregate.name}"; reference other aggregates by their root's identity`,
+				message: `"${relation.source.name}" references "${relation.target.name}", which is not the root of aggregate "${target.name}"; reference other aggregates by their root's identity`,
 				ref: relation.source.ref,
 			});
 		}
@@ -116,8 +131,8 @@ const crossAggregateReference: Rule = (workspace) => {
 const crossContextRelation: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const relation of relationsOf(workspace)) {
-		const source = relation.source.aggregate.boundedcontext;
-		const target = relation.target.aggregate.boundedcontext;
+		const source = relation.source.boundedcontext;
+		const target = relation.target.boundedcontext;
 		if (source === target) continue;
 		diagnostics.push({
 			severity: "error",
@@ -188,8 +203,8 @@ const entityIdentity: Rule = (workspace) => {
  */
 const valueObjectShape: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
-	for (const aggregate of aggregatesOf(workspace)) {
-		for (const vo of aggregate.valueobjects.values()) {
+	for (const bc of workspace.boundedcontexts.values()) {
+		for (const vo of bc.valueobjects.values()) {
 			for (const attribute of vo.attributes.values()) {
 				if (!attribute.identity) continue;
 				diagnostics.push({
@@ -273,6 +288,21 @@ function cyclesOf<N>(
 }
 
 /**
+ * Whether `aggregate-tree` is the rule that reads this relation's kind. It
+ * reads the ones that stay inside a context and inside an aggregate, plus
+ * every relation to a value object, which the whole context shares. A relation
+ * between two aggregates' entities is `cross-aggregate-reference`'s, and one
+ * between two contexts is `cross-context-relation`'s.
+ */
+function saysWhatItPointsAt(relation: EntityRelation): boolean {
+	if (relation.source.boundedcontext !== relation.target.boundedcontext)
+		return false;
+	const source = aggregateOfEnd(relation.source);
+	const target = aggregateOfEnd(relation.target);
+	return !source || !target || source === target;
+}
+
+/**
  * Within one aggregate `includes` forms a tree from the root: it points at
  * entities, no entity has two parents, and no chain closes on itself, while
  * `uses` points at value objects (decision 10's conventions). Relations that
@@ -280,36 +310,41 @@ function cyclesOf<N>(
  */
 const aggregateTree: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
+	for (const member of modelMembersOf(workspace)) {
+		for (const relation of member.relations) {
+			if (!saysWhatItPointsAt(relation)) continue;
+			if (relation.relation === "uses") {
+				if (relation.target instanceof ValueObject) continue;
+				diagnostics.push({
+					severity: "error",
+					rule: "aggregate-tree",
+					message: `"${member.name}" uses "${relation.target.name}", which is an entity; "uses" points at a value object, and an entity the aggregate owns is included`,
+					ref: member.ref,
+				});
+				continue;
+			}
+			// A value object that includes anything is value-object-shape's.
+			if (relation.relation !== "includes" || !(member instanceof Entity))
+				continue;
+			if (relation.target instanceof Entity) continue;
+			diagnostics.push({
+				severity: "error",
+				rule: "aggregate-tree",
+				message: `"${member.name}" includes "${relation.target.name}", which is a value object; "includes" points at an entity, and a value object is used`,
+				ref: member.ref,
+			});
+		}
+	}
 	for (const aggregate of aggregatesOf(workspace)) {
 		const parents = new Map<Entity, Entity[]>();
 		const children = new Map<Entity, Entity[]>();
-		for (const member of membersOf(aggregate)) {
-			for (const relation of member.relations) {
-				if (relation.target.aggregate !== aggregate) continue;
-				if (relation.relation === "uses") {
-					if (relation.target instanceof ValueObject) continue;
-					diagnostics.push({
-						severity: "error",
-						rule: "aggregate-tree",
-						message: `"${member.name}" uses "${relation.target.name}", which is an entity; "uses" points at a value object, and an entity the aggregate owns is included`,
-						ref: member.ref,
-					});
-					continue;
-				}
+		for (const entity of aggregate.entities.values()) {
+			for (const relation of entity.relations) {
 				if (relation.relation !== "includes") continue;
-				// A value object that includes anything is value-object-shape's.
-				if (!(member instanceof Entity)) continue;
-				if (!(relation.target instanceof Entity)) {
-					diagnostics.push({
-						severity: "error",
-						rule: "aggregate-tree",
-						message: `"${member.name}" includes "${relation.target.name}", which is a value object; "includes" points at an entity, and a value object is used`,
-						ref: member.ref,
-					});
-					continue;
-				}
-				append(parents, relation.target, member);
-				append(children, member, relation.target);
+				if (!(relation.target instanceof Entity)) continue;
+				if (relation.target.aggregate !== aggregate) continue;
+				append(parents, relation.target, entity);
+				append(children, entity, relation.target);
 			}
 		}
 		for (const [child, owners] of parents) {
@@ -342,8 +377,9 @@ function orphanEntities(aggregate: Aggregate): Diagnostic[] {
 		reached.add(entity);
 		for (const relation of entity.relations) {
 			if (relation.relation === "uses") continue;
-			if (relation.target.aggregate !== aggregate) continue;
-			if (relation.target instanceof Entity) walk(relation.target);
+			const { target } = relation;
+			if (target instanceof Entity && target.aggregate === aggregate)
+				walk(target);
 		}
 	};
 	for (const root of roots) walk(root);
@@ -402,78 +438,89 @@ function includesCycles(
  */
 const attributeRelationCoherence: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
-	for (const aggregate of aggregatesOf(workspace)) {
-		for (const member of membersOf(aggregate)) {
-			const uses = member.relations.filter(
-				(r) => r.relation === "uses" && r.target.aggregate === aggregate,
-			);
-			for (const attribute of member.attributes.values()) {
-				const vo = attribute.valueobject;
-				// A `uses` may not leave the aggregate, so only ask for one that could exist.
-				if (!vo || vo.aggregate !== aggregate) continue;
-				const relation = uses.find((r) => r.target === vo);
-				if (!relation) {
-					diagnostics.push({
-						severity: "warning",
-						rule: "attribute-relation-coherence",
-						message: `"${member.name}" types attribute "${attribute.name}" by value object "${vo.name}" but declares no "uses" relation to "${vo.name}", so the relation map never draws it`,
-						ref: member.ref,
-					});
-					continue;
-				}
-				const type = attribute.type.trim();
-				const single =
-					relation.cardinality === "1" || relation.cardinality === "0..1";
-				if (type.endsWith("[]") && single) {
-					diagnostics.push({
-						severity: "warning",
-						rule: "attribute-relation-coherence",
-						message: `"${member.name}" types attribute "${attribute.name}" as a list ("${attribute.type}") but its "uses" relation to "${vo.name}" has cardinality "${relation.cardinality}"`,
-						ref: member.ref,
-					});
-				}
-			}
-			for (const relation of uses) {
-				const typed = Array.from(member.attributes.values()).some(
-					(a) => a.valueobject === relation.target,
-				);
-				if (typed) continue;
+	for (const member of modelMembersOf(workspace)) {
+		const context = member.boundedcontext;
+		const uses = member.relations.filter(
+			(r) => r.relation === "uses" && r.target.boundedcontext === context,
+		);
+		for (const attribute of member.attributes.values()) {
+			const vo = attribute.valueobject;
+			// A relation may not leave the context, so only ask for one that
+			// could exist: a value object reached over a shared kernel is typed
+			// by ref alone.
+			if (!vo || vo.boundedcontext !== context) continue;
+			const relation = uses.find((r) => r.target === vo);
+			if (!relation) {
 				diagnostics.push({
 					severity: "warning",
 					rule: "attribute-relation-coherence",
-					message: `"${member.name}" uses "${relation.target.name}" but no attribute of "${member.name}" is typed by "${relation.target.name}", so the page says the relation exists and never shows where`,
+					message: `"${member.name}" types attribute "${attribute.name}" by value object "${vo.name}" but declares no "uses" relation to "${vo.name}", so the relation map never draws it`,
+					ref: member.ref,
+				});
+				continue;
+			}
+			const type = attribute.type.trim();
+			const single =
+				relation.cardinality === "1" || relation.cardinality === "0..1";
+			if (type.endsWith("[]") && single) {
+				diagnostics.push({
+					severity: "warning",
+					rule: "attribute-relation-coherence",
+					message: `"${member.name}" types attribute "${attribute.name}" as a list ("${attribute.type}") but its "uses" relation to "${vo.name}" has cardinality "${relation.cardinality}"`,
 					ref: member.ref,
 				});
 			}
+		}
+		for (const relation of uses) {
+			const typed = Array.from(member.attributes.values()).some(
+				(a) => a.valueobject === relation.target,
+			);
+			if (typed) continue;
+			diagnostics.push({
+				severity: "warning",
+				rule: "attribute-relation-coherence",
+				message: `"${member.name}" uses "${relation.target.name}" but no attribute of "${member.name}" is typed by "${relation.target.name}", so the page says the relation exists and never shows where`,
+				ref: member.ref,
+			});
 		}
 	}
 	return diagnostics;
 };
 
-/** The aggregate a constrainable element sits in, if it sits in one at all. */
-function aggregateOf(target: Constrainable): Aggregate | undefined {
-	if (target instanceof Attribute) {
-		const { owner } = target;
-		return owner instanceof Entity || owner instanceof ValueObject
-			? owner.aggregate
-			: undefined;
-	}
-	return target.aggregate;
+/** The element an attribute hangs off, or the element itself. */
+function ownerOf(target: Constrainable): AttributeOwner {
+	return target instanceof Attribute ? target.owner : target;
+}
+
+/**
+ * Where an invariant may reach: the aggregate an element sits in, or the
+ * context, for a value object the whole context shares. A schema's attribute
+ * sits in neither, so it reports as out of reach.
+ */
+function scopeOf(
+	target: Constrainable,
+): Aggregate | BoundedContext | undefined {
+	const owner = ownerOf(target);
+	if (owner instanceof Entity) return owner.aggregate;
+	if (owner instanceof ValueObject) return owner.boundedcontext;
+	return undefined;
 }
 
 /**
  * An invariant is enforced when its aggregate is saved, so everything it
- * constrains has to be inside that aggregate.
+ * constrains has to be inside that aggregate — or be a value object of the
+ * aggregate's own context, which is saved as part of whichever aggregate
+ * holds one (decision 16).
  */
 const invariantInAggregate: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const aggregate of aggregatesOf(workspace)) {
 		for (const invariant of aggregate.invariants.values()) {
 			for (const target of invariant.targets) {
-				const owner = aggregateOf(target);
-				if (owner === aggregate) continue;
-				const where = owner
-					? `aggregate "${owner.name}"`
+				const scope = scopeOf(target);
+				if (scope === aggregate || scope === aggregate.boundedcontext) continue;
+				const where = scope
+					? `${scope instanceof Aggregate ? "aggregate" : "bounded context"} "${scope.name}"`
 					: "no aggregate at all";
 				diagnostics.push({
 					severity: "error",
@@ -486,6 +533,17 @@ const invariantInAggregate: Rule = (workspace) => {
 	}
 	return diagnostics;
 };
+
+/** Whether the two contexts declare a shared kernel with one another. */
+function sharesKernelWith(
+	workspace: Workspace,
+	one: BoundedContext,
+	other: BoundedContext,
+): boolean {
+	return workspace.relationships.some(
+		(r) => r.type === "shared-kernel" && r.involves(one) && r.involves(other),
+	);
+}
 
 /** Whether the two contexts meet as equals, as partners or over a shared kernel. */
 function symmetricallyRelated(
@@ -618,13 +676,15 @@ function callCrosses(
 /**
  * The directed relationships whose traffic is calls form no cycle.
  *
- * Only a call counts as a step (decision 20). An operation is answered before
- * the caller can go on, so a ring of calls is a ring of teams each blocked on
- * the next; a step carried only by events, or by a policy subscribing to the
- * other side's event, is choreography — nobody waits, the events arrive when
- * they arrive — and rings of those are `reaction-cycle`'s business. That makes
- * the common shape honest: two contexts, each upstream in one respect and
- * downstream in another, are a ring only when both directions are calls.
+ * Upstream and downstream is a statement about models: the downstream context
+ * shapes its own model around what the upstream offers. A ring of those means
+ * every context on it is shaped around a model that is shaped around its own,
+ * so none of them can settle or change first. Only a call counts as a step
+ * (decision 20): a step carried only by events, or by a policy subscribing to
+ * the other side's event, is choreography, and rings of those are
+ * `reaction-cycle`'s business. That makes the common shape honest: two
+ * contexts, each upstream in one respect and downstream in another, are a ring
+ * only when both directions are calls.
  */
 const relationshipCycle: Rule = (workspace) => {
 	// The contexts are the nodes, so every ring found is a ring of distinct
@@ -657,11 +717,65 @@ const relationshipCycle: Rule = (workspace) => {
 					.map((c) => `"${c.name}"`)
 					.join(
 						" -> ",
-					)}; each of these contexts waits on the next to answer, so no team on the ring can settle its model first. Turning one call on the ring into an event breaks it`,
+					)}; each of these contexts shapes its model around the next, so every model on the ring is shaped around one that is shaped around itself and none can change first. Declare a partnership where two of them really do move as one, or reverse a dependency by turning that call into an event the other side reacts to`,
 				ref: link.ref,
 			},
 		];
 	});
+};
+
+/** Every attribute a context declares, wherever it hangs. */
+function* attributesOf(bc: BoundedContext): Iterable<Attribute> {
+	for (const vo of bc.valueobjects.values()) yield* vo.attributes.values();
+	for (const schema of bc.schemas.values()) yield* schema.attributes.values();
+	for (const aggregate of bc.aggregates.values()) {
+		for (const entity of aggregate.entities.values())
+			yield* entity.attributes.values();
+	}
+}
+
+/**
+ * Whether anything in `borrower` is typed by a value object `owner` declares,
+ * or carries one of its schemas: the two ways a kernel is shared.
+ */
+function borrowsFrom(borrower: BoundedContext, owner: BoundedContext): boolean {
+	for (const attribute of attributesOf(borrower)) {
+		if (attribute.valueobject?.boundedcontext === owner) return true;
+	}
+	for (const p of [
+		...borrower.aggregates.values(),
+		...borrower.services.values(),
+	]) {
+		for (const c of p.consumables.values()) {
+			if (c.schema?.boundedcontext === owner) return true;
+			if (c.returns?.boundedcontext === owner) return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * A shared kernel is a piece of model two teams keep in step, and the price is
+ * that neither can change it alone. Declaring one with nothing actually shared
+ * pays that price for nothing, and it also lets the pair through the checks
+ * that seal a context: a shared kernel is the one relationship over which a
+ * value object or a schema may be borrowed, so a reader takes it as the
+ * warrant for a sharing that here does not exist.
+ */
+const sharedKernelBacked: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const relationship of workspace.relationships) {
+		if (relationship.type !== "shared-kernel") continue;
+		const { source, target } = relationship;
+		if (borrowsFrom(source, target) || borrowsFrom(target, source)) continue;
+		diagnostics.push({
+			severity: "warning",
+			rule: "shared-kernel-backed",
+			message: `"${source.name}" and "${target.name}" declare a shared kernel, but neither types an attribute by a value object the other declares or carries one of its schemas, so nothing is in the kernel`,
+			ref: relationship.ref,
+		});
+	}
+	return diagnostics;
 };
 
 /** Whether anything of `from`'s crosses into `to`, as traffic or as a subscription. */
@@ -934,13 +1048,22 @@ const domainServiceInternal: Rule = (workspace) =>
 			),
 	);
 
-/** A consumable's payloads, sent and returned, are its own context's schemas. */
+/**
+ * A consumable's payloads, sent and returned, are its own context's schemas,
+ * unless the schema comes from a context this one shares a kernel with: that
+ * relationship is the declaration that the two keep part of one model between
+ * them, and it is the only place a payload may be borrowed (decision 16).
+ */
 const schemaContext: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const bc of workspace.boundedcontexts.values()) {
+		/** Whether the schema is another context's and no kernel is shared with it. */
+		const borrowed = (schema: DataSchema) =>
+			schema.boundedcontext !== bc &&
+			!sharesKernelWith(workspace, bc, schema.boundedcontext);
 		for (const p of [...bc.aggregates.values(), ...bc.services.values()]) {
 			for (const c of p.consumables.values()) {
-				if (c.schema && c.schema.boundedcontext !== bc) {
+				if (c.schema && borrowed(c.schema)) {
 					diagnostics.push({
 						severity: "error",
 						rule: "schema-context",
@@ -948,7 +1071,7 @@ const schemaContext: Rule = (workspace) => {
 						ref: c.ref,
 					});
 				}
-				if (c.returns && c.returns.boundedcontext !== bc) {
+				if (c.returns && borrowed(c.returns)) {
 					diagnostics.push({
 						severity: "error",
 						rule: "schema-context",
@@ -1204,8 +1327,8 @@ const RULES: CataloguedRule[] = [
 		rule: "cross-aggregate-reference",
 		severities: ["error"],
 		summary:
-			"A relation into another aggregate uses references and targets that aggregate's root.",
-		why: "Aggregates are consistency boundaries; reaching inside another one couples the two so they can no longer change or be stored independently.",
+			"A relation into another aggregate uses references and targets that aggregate's root; a relation to a value object crosses nothing.",
+		why: "Aggregates are consistency boundaries; reaching inside another one couples the two so they can no longer change or be stored independently. A value object belongs to the whole context rather than to one aggregate, so using one is not reaching into anybody.",
 		fix: 'Change the relation to "references" and point it at the other aggregate\'s root entity, holding only its identity.',
 		check: crossAggregateReference,
 	},
@@ -1267,8 +1390,8 @@ const RULES: CataloguedRule[] = [
 		rule: "invariant-in-aggregate",
 		severities: ["error"],
 		summary:
-			"Every element an invariant constrains belongs to the invariant's own aggregate.",
-		why: "An invariant is the rule that holds every time its aggregate is saved. Something outside the boundary can change between one save and the next with nothing to stop it, so a rule stretched across two aggregates is a rule nobody can enforce.",
+			"Every element an invariant constrains belongs to the invariant's own aggregate, or is a value object of its context.",
+		why: "An invariant is the rule that holds every time its aggregate is saved. Something outside the boundary can change between one save and the next with nothing to stop it, so a rule stretched across two aggregates is a rule nobody can enforce. A value object is the exception: it belongs to the context and carries no state of its own, so it is saved as part of whichever aggregate holds one.",
 		fix: "Move the invariant to the aggregate that owns what it constrains, drop the foreign target, or model the guarantee as a policy reacting to the other aggregate's event, which is eventual by nature.",
 		check: invariantInAggregate,
 	},
@@ -1286,8 +1409,8 @@ const RULES: CataloguedRule[] = [
 		severities: ["warning"],
 		summary:
 			"The directed relationships whose traffic is calls form no cycle; steps carried only by events do not count.",
-		why: "An operation is answered before its caller can go on, so a ring of calls is a ring of teams each blocked on the next and a change anywhere goes round forever. Events are different: nobody waits for one, so a ring of contexts joined by events is fine, and rings of reactions are reaction-cycle's business instead.",
-		fix: "Turn one call on the ring into an event the other side reacts to, which is what DDD recommends anyway; failing that, invert the dependency or drop it.",
+		why: "Downstream means a context shapes its model around what the upstream offers. In a ring of calls every context is shaped around a model that is shaped around its own, so none of them can settle or change first and the coupling has no end to start from. Events are different: reacting to a fact commits nobody to another model's shape, so a ring of contexts joined by events is fine, and rings of reactions are reaction-cycle's business instead.",
+		fix: "Declare a partnership where two of the contexts really do move as one, which says the mutual shaping is deliberate; otherwise reverse one dependency by turning that call into an event the other side reacts to, which is what DDD recommends anyway.",
 		check: relationshipCycle,
 	},
 	{
@@ -1298,6 +1421,15 @@ const RULES: CataloguedRule[] = [
 		why: "A partnership says two teams succeed or fail together and so plan their releases as one, which is only worth the coordination when each really depends on the other. A partnership with no traffic at all is a wish, and one with traffic only one way is a directed relationship wearing a partner's badge — which quietly excuses both ends from declaring the upstream and downstream roles they actually have.",
 		fix: "Add the consumable the other direction is missing, or replace the partnership with the upstream-downstream or customer-supplier relationship the traffic really describes.",
 		check: partnershipBacked,
+	},
+	{
+		rule: "shared-kernel-backed",
+		severities: ["warning"],
+		summary:
+			"Two contexts declaring a shared kernel share at least one value object or schema across it.",
+		why: "A shared kernel is a piece of model two teams agree to keep in step, and it costs them the freedom to change it alone. Declaring one with nothing in it pays that price for nothing, and it stands in the model as the warrant for a sharing nobody has made: it is the one relationship over which a value object or a payload schema may be borrowed.",
+		fix: "Type an attribute by a value object the other context declares, or carry one of its schemas on a consumable; or replace the shared kernel with the relationship the two contexts really have.",
+		check: sharedKernelBacked,
 	},
 	{
 		rule: "mud-needs-acl",
@@ -1375,9 +1507,9 @@ const RULES: CataloguedRule[] = [
 		rule: "schema-context",
 		severities: ["error"],
 		summary:
-			"A consumable's payload schema belongs to the consumable's own context.",
-		why: "The context that publishes a message owns its shape; borrowing another context's schema ties the two together.",
-		fix: "Move or copy the schema into the publishing context and point the consumable at that one.",
+			"A consumable's payload schema belongs to the consumable's own context, or to one it shares a kernel with.",
+		why: "The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A shared kernel is where two teams have said that in the model and accepted the price, so it is the one place the borrowing is allowed.",
+		fix: "Move or copy the schema into the publishing context and point the consumable at that one, or declare the shared kernel if the two contexts really do keep that shape between them.",
 		check: schemaContext,
 	},
 	{

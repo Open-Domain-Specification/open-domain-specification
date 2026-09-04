@@ -181,12 +181,13 @@ describe("Swagger Petstore Example Workspace", () => {
 		for (const [_, domain] of workspace.domains) {
 			for (const [_, subdomain] of domain.subdomains) {
 				for (const [_, bc] of subdomain.boundedcontexts) {
+					// Value objects hang off the context, not the aggregate.
+					if (bc.valueobjects.size > 0) {
+						foundValueObject = true;
+					}
 					for (const [_, aggregate] of bc.aggregates) {
 						if (aggregate.entities.size > 0) {
 							foundEntity = true;
-						}
-						if (aggregate.valueobjects.size > 0) {
-							foundValueObject = true;
 						}
 						if (aggregate.invariants.size > 0) {
 							foundInvariant = true;

@@ -1,12 +1,24 @@
-import { type Aggregate, Workspace } from "@open-domain-specification/core";
-import { money as sharedMoney } from "@open-domain-specification/model-tools";
+import {
+	type Attribute,
+	type BoundedContext,
+	Workspace,
+} from "@open-domain-specification/core";
 
-/** NorthBank's Money carries the shared-kernel note from the interviews. */
-const money = (aggregate: Aggregate) =>
-	sharedMoney(
-		aggregate,
-		"Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
-	);
+/**
+ * NorthBank's Money, declared once in each context that carries an amount:
+ * a value object belongs to the context's language, and every aggregate in
+ * that context holds the same one. Accounts' Money is the shared kernel's,
+ * and Ledger holds that one rather than a copy.
+ */
+const money = (boundedcontext: BoundedContext) => {
+	const vo = boundedcontext.addValueObject("Money", {
+		description:
+			"Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
+	});
+	vo.addAttribute("amountMinor", { type: "int64" });
+	vo.addAttribute("currency", { type: "ISO 4217 code" });
+	return vo;
+};
 
 /**
  * NorthBank: a fictional mid-sized retail bank.
@@ -260,16 +272,16 @@ const identityDocument = customerAgg.addEntity("IdentityDocument", {
 	description:
 		"A passport or licence checked during onboarding; kept for audit",
 });
-const dateOfBirthVO = customerAgg.addValueObject("DateOfBirth", {
+const dateOfBirthVO = customerBC.addValueObject("DateOfBirth", {
 	description: "A date; the source of the age rule",
 });
 dateOfBirthVO.addAttribute("value", { type: "date" });
-const addressVO = customerAgg.addValueObject("Address", {
+const addressVO = customerBC.addValueObject("Address", {
 	description: "Residential address, verified against the electoral roll",
 });
 addressVO.addAttribute("lines", { type: "string[]" });
 addressVO.addAttribute("postcode", { type: "string" });
-const kycStatusVO = customerAgg.addValueObject("KycStatus", {
+const kycStatusVO = customerBC.addValueObject("KycStatus", {
 	description: "pending, held (sanctions match), verified",
 });
 kycStatusVO.addAttribute("value", { type: "'pending' | 'held' | 'verified'" });
@@ -327,14 +339,14 @@ const consentAgg = customerBC.addAggregate("Consent", {
 const consent = consentAgg.addRootEntity("Consent", {
 	description: "A permission given, and possibly withdrawn, by a customer",
 });
-const purposeVO = consentAgg.addValueObject("ConsentPurpose", {
+const purposeVO = customerBC.addValueObject("ConsentPurpose", {
 	description:
 		"marketing, data-sharing or open-banking; the purpose decides the rules",
 });
 purposeVO.addAttribute("value", {
 	type: "'marketing' | 'data-sharing' | 'open-banking'",
 });
-const scopeVO = consentAgg.addValueObject("ConsentScope", {
+const scopeVO = customerBC.addValueObject("ConsentScope", {
 	description: "Channels and data categories the permission covers",
 });
 scopeVO.addAttribute("channels", { type: "string[]" });
@@ -529,7 +541,7 @@ const screeningAgg = sanctionsBC.addAggregate("ScreeningResult", {
 const screening = screeningAgg.addRootEntity("ScreeningResult", {
 	description: "The outcome for one party",
 });
-const matchScoreVO = screeningAgg.addValueObject("MatchScore", {
+const matchScoreVO = sanctionsBC.addValueObject("MatchScore", {
 	description: "0 to 100; above the threshold is a match",
 });
 matchScoreVO.addAttribute("value", { type: "int 0..100" });
@@ -607,24 +619,24 @@ const mandate = accountAgg.addEntity("Mandate", {
 	description:
 		"A customer's authority to operate the account; an entity because it is granted and revoked over time",
 });
-const ibanVO = accountAgg.addValueObject("IBAN", {
+const ibanVO = accountsBC.addValueObject("IBAN", {
 	description:
 		"Country, check digits, bank and account identifiers; valid only if the mod-97 checksum holds",
 });
 ibanVO.addAttribute("value", { type: "string (ISO 13616)" });
-const accountNumberVO = accountAgg.addValueObject("AccountNumber", {
+const accountNumberVO = accountsBC.addValueObject("AccountNumber", {
 	description:
 		"Sort code and eight-digit number; part of the shared kernel library",
 });
 accountNumberVO.addAttribute("sortCode", { type: "string" });
 accountNumberVO.addAttribute("number", { type: "string" });
-const accountMoney = money(accountAgg);
-const overdraftVO = accountAgg.addValueObject("OverdraftLimit", {
+const accountMoney = money(accountsBC);
+const overdraftVO = accountsBC.addValueObject("OverdraftLimit", {
 	description: "How far below zero the available balance may go",
 });
 overdraftVO.addAttribute("limit", { type: "Money", valueobject: accountMoney });
 overdraftVO.uses(accountMoney, "limited-to", "1");
-const accountStatusVO = accountAgg.addValueObject("AccountStatus", {
+const accountStatusVO = accountsBC.addValueObject("AccountStatus", {
 	description: "open, frozen or closed",
 });
 accountStatusVO.addAttribute("value", { type: "'open' | 'frozen' | 'closed'" });
@@ -826,19 +838,16 @@ const entry = entryAgg.addRootEntity("JournalEntry", {
 const posting = entryAgg.addEntity("Posting", {
 	description: "A debit or credit of an amount to one ledger account",
 });
-const ledgerMoney = money(entryAgg);
-// The shared kernel's second type, declared here as the ledger's own value
-// object: the same library as Accounts' AccountNumber.
-const ledgerAccountNumberVO = entryAgg.addValueObject("AccountNumber", {
-	description:
-		"Sort code and eight-digit number; the shared kernel library, so it is the same value Accounts holds",
-});
-ledgerAccountNumberVO.addAttribute("sortCode", { type: "string" });
-ledgerAccountNumberVO.addAttribute("number", { type: "string" });
+// Money and AccountNumber are the shared kernel Accounts and Ledger keep
+// between them, so the ledger holds Accounts' own value objects rather than a
+// copy of each. A relation may not cross a context boundary, so the link is
+// the attribute's `valueobject` and nothing else.
+const ledgerMoney = accountMoney;
+const ledgerAccountNumberVO = accountNumberVO;
 // A posting goes to a ledger account, not to an Accounts product: a customer's
 // account number or a nominal such as the loan book or scheme suspense.
 // Otherwise a disbursement (debit loan book, credit customer) could not balance.
-const ledgerAccountVO = entryAgg.addValueObject("LedgerAccount", {
+const ledgerAccountVO = ledgerBC.addValueObject("LedgerAccount", {
 	description:
 		"Where a posting lands: a customer account by its AccountNumber, or a nominal from the chart of accounts (loan book, scheme suspense, fee income)",
 });
@@ -848,16 +857,15 @@ ledgerAccountVO.addAttribute("accountNumber", {
 	valueobject: ledgerAccountNumberVO,
 	description: "Set when kind is customer",
 });
-ledgerAccountVO.uses(ledgerAccountNumberVO, "numbered", "1");
 ledgerAccountVO.addAttribute("nominalCode", {
 	type: "string",
 	description: "Set when kind is nominal, e.g. LOAN-BOOK, SCHEME-SUSPENSE",
 });
-const directionVO = entryAgg.addValueObject("PostingDirection", {
+const directionVO = ledgerBC.addValueObject("PostingDirection", {
 	description: "debit or credit",
 });
 directionVO.addAttribute("value", { type: "'debit' | 'credit'" });
-const valueDateVO = entryAgg.addValueObject("ValueDate", {
+const valueDateVO = ledgerBC.addValueObject("ValueDate", {
 	description:
 		"The date the money counts from, which may differ from the posting date",
 });
@@ -884,7 +892,6 @@ entry.addAttribute("valueDate", {
 	valueobject: valueDateVO,
 });
 entry.uses(valueDateVO, "valued-on", "1");
-posting.uses(ledgerMoney, "of", "1");
 posting.uses(directionVO, "as", "1");
 posting.uses(ledgerAccountVO, "to", "1");
 
@@ -903,7 +910,9 @@ entryAgg
 	.addInvariant("SingleCurrencyPerEntry", {
 		description: "Every posting in an entry shares one currency",
 	})
-	.constrains(ledgerMoney);
+	// Money itself is Accounts', held here over the shared kernel; the rule
+	// belongs to the posting amount inside this aggregate.
+	.constrains(posting.attributes.get("amount") as Attribute);
 entryAgg
 	.addInvariant("ImmutableOncePosted", {
 		description:
@@ -1014,18 +1023,18 @@ const instructionAgg = paymentsBC.addAggregate("PaymentInstruction", {
 const instruction = instructionAgg.addRootEntity("PaymentInstruction", {
 	description: "One instruction, from initiation to settlement or rejection",
 });
-const payeeVO = instructionAgg.addValueObject("Payee", {
+const payeeVO = paymentsBC.addValueObject("Payee", {
 	description:
 		"Name and IBAN of who gets paid; a value because the same details are the same payee",
 });
 payeeVO.addAttribute("name", { type: "string" });
 payeeVO.addAttribute("iban", { type: "string (ISO 13616)" });
-const paymentMoney = money(instructionAgg);
-const executionDateVO = instructionAgg.addValueObject("ExecutionDate", {
+const paymentMoney = money(paymentsBC);
+const executionDateVO = paymentsBC.addValueObject("ExecutionDate", {
 	description: "When to send it; today means before the scheme cut-off",
 });
 executionDateVO.addAttribute("value", { type: "date" });
-const paymentStatusVO = instructionAgg.addValueObject("PaymentStatus", {
+const paymentStatusVO = paymentsBC.addValueObject("PaymentStatus", {
 	description: "initiated, cleared, flagged, submitted, settled, rejected",
 });
 paymentStatusVO.addAttribute("value", {
@@ -1220,7 +1229,7 @@ const schemeMessageAgg = schemeBC.addAggregate("SchemeMessage", {
 const schemeMessage = schemeMessageAgg.addRootEntity("SchemeMessage", {
 	description: "A submission or a response",
 });
-const schemeFormatVO = schemeMessageAgg.addValueObject("SchemeFormat", {
+const schemeFormatVO = schemeBC.addValueObject("SchemeFormat", {
 	description: "The ISO 20022 message type",
 });
 schemeFormatVO.addAttribute("messageType", {
@@ -1342,12 +1351,12 @@ const fraudCase = fraudCaseAgg.addRootEntity("FraudCase", {
 const alert = fraudCaseAgg.addEntity("Alert", {
 	description: "One flagged transaction with its score",
 });
-const riskScoreVO = fraudCaseAgg.addValueObject("RiskScore", {
+const riskScoreVO = fraudBC.addValueObject("RiskScore", {
 	description: "0 to 1000 with the reasons that produced it",
 });
 riskScoreVO.addAttribute("value", { type: "int 0..1000" });
 riskScoreVO.addAttribute("reasons", { type: "string[]" });
-const caseStatusVO = fraudCaseAgg.addValueObject("CaseStatus", {
+const caseStatusVO = fraudBC.addValueObject("CaseStatus", {
 	description: "open, confirmed, dismissed",
 });
 caseStatusVO.addAttribute("value", {
@@ -1537,24 +1546,24 @@ const cardAuthorisation = cardAgg.addEntity("Authorisation", {
 	description:
 		"A merchant's approved request to take an amount; an entity because it is later captured or expires",
 });
-const panVO = cardAgg.addValueObject("PAN", {
+const panVO = cardsBC.addValueObject("PAN", {
 	description:
 		"The card number, held as a token plus last four; the full number passes Luhn",
 });
 panVO.addAttribute("token", { type: "string" });
 panVO.addAttribute("lastFour", { type: "string" });
-const expiryVO = cardAgg.addValueObject("Expiry", {
+const expiryVO = cardsBC.addValueObject("Expiry", {
 	description: "Month and year after which nothing authorises",
 });
 expiryVO.addAttribute("month", { type: "int 1..12" });
 expiryVO.addAttribute("year", { type: "int" });
-const cardStatusVO = cardAgg.addValueObject("CardStatus", {
+const cardStatusVO = cardsBC.addValueObject("CardStatus", {
 	description: "active, blocked, expired",
 });
 cardStatusVO.addAttribute("value", {
 	type: "'active' | 'blocked' | 'expired'",
 });
-const cardMoney = money(cardAgg);
+const cardMoney = money(cardsBC);
 card.addAttribute("cardId", { type: "string", identity: true });
 card.addAttribute("accountId", { type: "string" });
 card.addAttribute("pan", { type: "PAN", valueobject: panVO });
@@ -1722,12 +1731,12 @@ const applicationAgg = lendingBC.addAggregate("LoanApplication", {
 const application = applicationAgg.addRootEntity("LoanApplication", {
 	description: "One request for credit",
 });
-const applicationMoney = money(applicationAgg);
-const termVO = applicationAgg.addValueObject("Term", {
+const applicationMoney = money(lendingBC);
+const termVO = lendingBC.addValueObject("Term", {
 	description: "Months to repay over",
 });
 termVO.addAttribute("months", { type: "int" });
-const decisionVO = applicationAgg.addValueObject("Decision", {
+const decisionVO = lendingBC.addValueObject("Decision", {
 	description:
 		"approved or declined, with the reasons the customer is entitled to",
 });
@@ -1776,12 +1785,13 @@ const schedule = loanAgg.addEntity("RepaymentSchedule", {
 const installment = loanAgg.addEntity("Installment", {
 	description: "One due payment",
 });
-const loanMoney = money(loanAgg);
-const aprVO = loanAgg.addValueObject("InterestRate", {
+// Lending's Money is the context's, declared with the application above.
+const loanMoney = applicationMoney;
+const aprVO = lendingBC.addValueObject("InterestRate", {
 	description: "Annual percentage rate, within the regulatory cap",
 });
 aprVO.addAttribute("aprPercent", { type: "decimal" });
-const loanStatusVO = loanAgg.addValueObject("LoanStatus", {
+const loanStatusVO = lendingBC.addValueObject("LoanStatus", {
 	description: "approved, signed, disbursed, in-arrears, repaid",
 });
 loanStatusVO.addAttribute("value", {
@@ -2013,19 +2023,19 @@ const creditDecisionAgg = decisioningBC.addAggregate("CreditDecision", {
 const creditDecision = creditDecisionAgg.addRootEntity("CreditDecision", {
 	description: "The outcome for one application",
 });
-const bureauVO = creditDecisionAgg.addValueObject("BureauReport", {
+const bureauVO = decisioningBC.addValueObject("BureauReport", {
 	description: "The external credit file at a moment in time",
 });
 bureauVO.addAttribute("bureau", { type: "string" });
 bureauVO.addAttribute("score", { type: "int" });
 bureauVO.addAttribute("pulledAt", { type: "date-time" });
-const affordabilityVO = creditDecisionAgg.addValueObject("Affordability", {
+const affordabilityVO = decisioningBC.addValueObject("Affordability", {
 	description: "Monthly income, commitments and their ratio",
 });
 affordabilityVO.addAttribute("monthlyIncomeMinor", { type: "int64" });
 affordabilityVO.addAttribute("monthlyCommitmentsMinor", { type: "int64" });
 affordabilityVO.addAttribute("ratio", { type: "decimal" });
-const creditScoreVO = creditDecisionAgg.addValueObject("CreditScore", {
+const creditScoreVO = decisioningBC.addValueObject("CreditScore", {
 	description: "The scorecard's output with the reason codes",
 });
 creditScoreVO.addAttribute("value", { type: "int" });
@@ -2169,13 +2179,13 @@ const regReturn = returnAgg.addRootEntity("RegulatoryReturn", {
 const reportLine = returnAgg.addEntity("ReportLine", {
 	description: "One line code and its amount",
 });
-const periodVO = returnAgg.addValueObject("ReportingPeriod", {
+const periodVO = reportingBC.addValueObject("ReportingPeriod", {
 	description: "Month or quarter; closed before filing",
 });
 periodVO.addAttribute("from", { type: "date" });
 periodVO.addAttribute("to", { type: "date" });
 periodVO.addAttribute("closed", { type: "boolean" });
-const reportMoney = money(returnAgg);
+const reportMoney = money(reportingBC);
 regReturn.addAttribute("returnId", { type: "string", identity: true });
 regReturn.addAttribute("reportCode", { type: "string" });
 regReturn.addAttribute("filedAt", { type: "date-time" });
@@ -2262,11 +2272,11 @@ const request = requestAgg.addRootEntity("ServiceRequest", {
 const note = requestAgg.addEntity("Note", {
 	description: "What an agent recorded; added, never edited",
 });
-const channelVO = requestAgg.addValueObject("Channel", {
+const channelVO = channelsBC.addValueObject("Channel", {
 	description: "branch, phone or chat",
 });
 channelVO.addAttribute("value", { type: "'branch' | 'phone' | 'chat'" });
-const requestStatusVO = requestAgg.addValueObject("RequestStatus", {
+const requestStatusVO = channelsBC.addValueObject("RequestStatus", {
 	description: "open, resolved",
 });
 requestStatusVO.addAttribute("value", { type: "'open' | 'resolved'" });

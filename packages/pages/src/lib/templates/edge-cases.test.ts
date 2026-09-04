@@ -97,11 +97,7 @@ describe("the tactical templates on the alternate branches", () => {
 
 	it("ValueObjectPage: unused, with no relations", () => {
 		const text = textOf(
-			valueObjectRef(
-				"main_context",
-				"rootless_aggregate",
-				"unused_value_object",
-			).$ref,
+			valueObjectRef("main_context", "unused_value_object").$ref,
 		);
 		expect(text).toContain("Nothing uses this value object as a type yet.");
 		expect(text).toContain("No relations.");
@@ -111,11 +107,7 @@ describe("the tactical templates on the alternate branches", () => {
 	it("ValueObjectPage: a relation carries its cardinality as a code keyword", () => {
 		const { container } = render(Harness, {
 			model,
-			ref: valueObjectRef(
-				"main_context",
-				"rootless_aggregate",
-				"linking_value_object",
-			).$ref,
+			ref: valueObjectRef("main_context", "linking_value_object").$ref,
 		});
 		const relations = container.querySelector("#relations");
 		expect(relations?.textContent).toContain("Plain Entity");

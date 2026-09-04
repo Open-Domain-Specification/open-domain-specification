@@ -31,7 +31,6 @@ export interface AggregateSchema {
 	name: string;
 	description: string;
 	entities: { [entity: string]: EntitySchema };
-	valueobjects: { [valueobject: string]: ValueObjectSchema };
 	invariants: { [invariant: string]: InvariantSchema };
 	provides: { [consumable: string]: ConsumableSchema };
 	consumes: ConsumptionSchema[];
@@ -92,6 +91,11 @@ export interface BoundedContextSchema {
 	services: { [service: string]: ServiceSchema };
 	policies: { [policy: string]: PolicySchema };
 	glossary: { [term: string]: GlossaryTermSchema };
+	/**
+	 * The values this context defines once: part of its ubiquitous language,
+	 * referenced by the attributes and relations of any of its aggregates.
+	 */
+	valueobjects: { [valueobject: string]: ValueObjectSchema };
 	/** Payload shapes this context publishes or accepts, referenced by its consumables. */
 	schemas: { [schema: string]: DataSchemaSchema };
 }
@@ -463,12 +467,8 @@ export function entityRef(
 	};
 }
 
-export function valueObjectRef(
-	boundedcontext: string,
-	aggregate: string,
-	valueobject: string,
-) {
-	const { $ref } = aggregateRef(boundedcontext, aggregate);
+export function valueObjectRef(boundedcontext: string, valueobject: string) {
+	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
 		$ref: `${$ref}/valueobjects/${valueobject}`,

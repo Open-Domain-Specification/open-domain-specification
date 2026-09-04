@@ -42,6 +42,26 @@ describe("Workspace.validate", () => {
 		]);
 	});
 
+	it("lets two aggregates of one context use the same value object", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		// Money belongs to the context, so holding one crosses no boundary and
+		// neither aggregate has to declare its own (decision 16).
+		const money = bc.addValueObject("Money", { description: "" });
+		money.addAttribute("Amount", { type: "int64" });
+		for (const name of ["Order", "Invoice"]) {
+			const agg = bc.addAggregate(name, { description: "" });
+			const root = agg.addRootEntity(name, { description: "" });
+			root.addAttribute("Id", { type: "uuid", identity: true });
+			root.addAttribute("Total", { type: "Money", valueobject: money });
+			root.uses(money, "totalled in", "1");
+		}
+		// context-serves-subdomain is the fixture's own gap, not this one's.
+		expect(
+			ws.validate().filter((d) => d.rule !== "context-serves-subdomain"),
+		).toEqual([]);
+	});
+
 	it("only allows references to another aggregate's root", () => {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("BC", { description: "" });
@@ -96,11 +116,11 @@ describe("Workspace.validate", () => {
 		const ws = emptyWorkspace();
 		const one = ws.addBoundedContext("One", { description: "" });
 		const two = ws.addBoundedContext("Two", { description: "" });
-		const here = one.addAggregate("Here", { description: "" });
-		here.addRootEntity("Here", { description: "" });
-		const vo = here.addValueObject("Vo", { description: "" });
-		const there = two.addAggregate("There", { description: "" });
-		vo.uses(there.addValueObject("Their Vo", { description: "" }), "borrows");
+		one
+			.addAggregate("Here", { description: "" })
+			.addRootEntity("Here", { description: "" });
+		const vo = one.addValueObject("Vo", { description: "" });
+		vo.uses(two.addValueObject("Their Vo", { description: "" }), "borrows");
 		const messages = ws
 			.validate()
 			.filter((d) => d.rule === "cross-context-relation")
@@ -200,6 +220,31 @@ describe("Workspace.validate", () => {
 		]);
 	});
 
+	it("lets a shared kernel carry a payload across, and nothing else", () => {
+		const ws = emptyWorkspace();
+		const a = ws.addBoundedContext("A", { description: "" });
+		const b = ws.addBoundedContext("B", { description: "" });
+		const c = ws.addBoundedContext("C", { description: "" });
+		a.sharesKernelWith(b);
+		const shape = a.addSchema("Shape");
+		b.addService("S", { description: "", type: "application" }).provides("Op", {
+			description: "",
+			type: "operation",
+			schema: shape,
+			returns: shape,
+		});
+		// C shares no kernel with A, so the same borrowing is still an error.
+		c.addService("T", { description: "", type: "application" }).provides("Op", {
+			description: "",
+			type: "operation",
+			schema: shape,
+		});
+		const rules = ws.validate().filter((d) => d.rule === "schema-context");
+		expect(rules.map((d) => d.message)).toEqual([
+			expect.stringContaining('"Op" carries schema "Shape" from "A"'),
+		]);
+	});
+
 	it("rejects returns on an event, and allows it on an operation", () => {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("BC", { description: "" });
@@ -283,9 +328,9 @@ describe("value-object-shape", () => {
 		const agg = bc.addAggregate("A", { description: "" });
 		const root = agg.addRootEntity("A", { description: "" });
 		root.addAttribute("Id", { type: "uuid", identity: true });
-		const money = agg.addValueObject("Money", { description: "" });
+		const money = bc.addValueObject("Money", { description: "" });
 		money.addAttribute("Amount", { type: "int64" });
-		const bad = agg.addValueObject("Bad", { description: "" });
+		const bad = bc.addValueObject("Bad", { description: "" });
 		bad.addAttribute("Key", { type: "string", identity: true });
 		bad.includes(root, "owns");
 		const rules = ws.validate().filter((d) => d.rule === "value-object-shape");
@@ -315,7 +360,7 @@ describe("aggregate-tree", () => {
 		const root = agg.addRootEntity("Order", { description: "" });
 		root.addAttribute("Id", { type: "uuid", identity: true });
 		const line = agg.addEntity("Line", { description: "" });
-		const money = agg.addValueObject("Money", { description: "" });
+		const money = bc.addValueObject("Money", { description: "" });
 		root.includes(line, "has", "1..*");
 		line.uses(money, "priced in", "1");
 		line.addAttribute("Price", { type: "Money", valueobject: money });
@@ -428,8 +473,8 @@ describe("attribute-relation-coherence", () => {
 		const agg = bc.addAggregate("Order", { description: "" });
 		const root = agg.addRootEntity("Order", { description: "" });
 		root.addAttribute("Id", { type: "uuid", identity: true });
-		const money = agg.addValueObject("Money", { description: "" });
-		return { ws, agg, root, money };
+		const money = bc.addValueObject("Money", { description: "" });
+		return { ws, bc, agg, root, money };
 	}
 
 	const coherenceRules = (ws: Workspace) =>
@@ -450,8 +495,8 @@ describe("attribute-relation-coherence", () => {
 	});
 
 	it("warns about an attribute with no relation and a relation with no attribute", () => {
-		const { ws, agg, root, money } = pair();
-		const size = agg.addValueObject("Size", { description: "" });
+		const { ws, bc, root, money } = pair();
+		const size = bc.addValueObject("Size", { description: "" });
 		root.addAttribute("Total", { type: "Money", valueobject: money });
 		root.uses(size, "sized", "1");
 		expect(coherenceRules(ws).map((d) => [d.severity, d.message])).toEqual([
@@ -1061,7 +1106,7 @@ describe("entity-identity", () => {
 		const root = agg.addRootEntity("Order", { description: "" });
 		root.addAttribute("Order Id", { type: "uuid", identity: true });
 		const line = agg.addEntity("Order Line", { description: "" });
-		return { ws, agg, root, line };
+		return { ws, bc, agg, root, line };
 	}
 
 	const identityRules = (ws: Workspace) =>
@@ -1093,8 +1138,8 @@ describe("entity-identity", () => {
 	});
 
 	it("leaves the root to root-identity, and says nothing about value objects", () => {
-		const { ws, agg, root } = aggregate();
-		agg.addValueObject("Money", { description: "" });
+		const { ws, agg, bc, root } = aggregate();
+		bc.addValueObject("Money", { description: "" });
 		root.attributes.clear();
 		// The root has no identity either now, but that is root-identity's error
 		// to raise, not this rule's warning; and the value object never gets one.
@@ -1162,7 +1207,7 @@ describe("relationship-cycle", () => {
 		expect(cycles(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 			[
 				"warning",
-				'Calls run in a cycle: "A" -> "B" -> "C" -> "A"; each of these contexts waits on the next to answer, so no team on the ring can settle its model first. Turning one call on the ring into an event breaks it',
+				'Calls run in a cycle: "A" -> "B" -> "C" -> "A"; each of these contexts shapes its model around the next, so every model on the ring is shaped around one that is shaped around itself and none can change first. Declare a partnership where two of them really do move as one, or reverse a dependency by turning that call into an event the other side reacts to',
 				ab.ref,
 			],
 		]);
@@ -1265,10 +1310,63 @@ describe("relationship-cycle", () => {
 				.sort(),
 		).toEqual(
 			[
-				'Calls run in a cycle: "A" -> "B" -> "C" -> "A"; each of these contexts waits on the next to answer, so no team on the ring can settle its model first. Turning one call on the ring into an event breaks it',
-				'Calls run in a cycle: "B" -> "C" -> "B"; each of these contexts waits on the next to answer, so no team on the ring can settle its model first. Turning one call on the ring into an event breaks it',
+				'Calls run in a cycle: "A" -> "B" -> "C" -> "A"; each of these contexts shapes its model around the next, so every model on the ring is shaped around one that is shaped around itself and none can change first. Declare a partnership where two of them really do move as one, or reverse a dependency by turning that call into an event the other side reacts to',
+				'Calls run in a cycle: "B" -> "C" -> "B"; each of these contexts shapes its model around the next, so every model on the ring is shaped around one that is shaped around itself and none can change first. Declare a partnership where two of them really do move as one, or reverse a dependency by turning that call into an event the other side reacts to',
 			].sort(),
 		);
+	});
+});
+
+describe("shared-kernel-backed", () => {
+	/** Two contexts sharing a kernel, each with something to share over it. */
+	function kernel() {
+		const ws = emptyWorkspace();
+		const a = ws.addBoundedContext("A", { description: "" });
+		const b = ws.addBoundedContext("B", { description: "" });
+		const relationship = a.sharesKernelWith(b);
+		return { ws, a, b, relationship };
+	}
+
+	const backed = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "shared-kernel-backed");
+
+	it("warns about a kernel with nothing in it", () => {
+		const { ws, relationship } = kernel();
+		expect(backed(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"warning",
+				'"A" and "B" declare a shared kernel, but neither types an attribute by a value object the other declares or carries one of its schemas, so nothing is in the kernel',
+				relationship.ref,
+			],
+		]);
+	});
+
+	it("goes quiet when one context types an attribute by the other's value object", () => {
+		const { ws, a, b } = kernel();
+		const status = a.addValueObject("Status", { description: "" });
+		const agg = b.addAggregate("Stock", { description: "" });
+		const root = agg.addRootEntity("Stock", { description: "" });
+		root.addAttribute("Id", { type: "uuid", identity: true });
+		root.addAttribute("Status", { type: "Status", valueobject: status });
+		expect(backed(ws)).toEqual([]);
+	});
+
+	it("goes quiet when a consumable of one context carries the other's schema", () => {
+		const { ws, a, b } = kernel();
+		const shape = a.addSchema("Shape");
+		b.addService("S", { description: "", type: "application" }).provides("Op", {
+			description: "",
+			type: "operation",
+			schema: shape,
+		});
+		expect(backed(ws)).toEqual([]);
+	});
+
+	it("says nothing about contexts that declare no shared kernel", () => {
+		const ws = emptyWorkspace();
+		const a = ws.addBoundedContext("A", { description: "" });
+		a.partnerOf(ws.addBoundedContext("B", { description: "" }));
+		expect(backed(ws)).toEqual([]);
 	});
 });
 

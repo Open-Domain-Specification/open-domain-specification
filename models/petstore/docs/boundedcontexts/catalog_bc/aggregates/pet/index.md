@@ -11,19 +11,19 @@ A pet listed in the store. One aggregate because a pet's photos, tags and status
 | Type | Name | Description | Attributes |
 | --- | --- | --- | --- |
 | Entity (Root) | **Pet** | The listed animal; everything else in the aggregate hangs off it | **id**: `int64`, name: `string`, category: `Category`, photoUrls: `PhotoUrl[]`, tags: `Tag[]`, status: `PetStatus` |
-| Value Object | Category | The kind of animal, e.g. Dogs. A value because two pets in Dogs share one category | id: `int64`, name: `string` |
-| Value Object | Tag | Free-form label on a pet | name: `string` |
-| Value Object | PhotoUrl | Where a photo of the pet can be fetched | url: `string (URL)` |
-| Value Object | PetStatus | Where the pet is in its sales lifecycle. Shared with Inventory, which keys its counts by these values | value: `'available' | 'pending' | 'sold'` |
+| Value Object | [Category](../../index.md#value-objects) | The kind of animal, e.g. Dogs. A value because two pets in Dogs share one category | id: `int64`, name: `string` |
+| Value Object | [PetStatus](../../index.md#value-objects) | Where the pet is in its sales lifecycle. Shared with Inventory, which keys its counts by these values | value: `'available' | 'pending' | 'sold'` |
+| Value Object | [PhotoUrl](../../index.md#value-objects) | Where a photo of the pet can be fetched | url: `string (URL)` |
+| Value Object | [Tag](../../index.md#value-objects) | Free-form label on a pet | name: `string` |
 
 
 ## Relationships
 | Source | Description | Target | Relation | Cardinality |
 | --- | --- | --- | --- | --- |
-| [Pet - Pet](./index.md#entities-and-value-objects) | categorized-as | Pet - Category | uses | 0..1 |
-| [Pet - Pet](./index.md#entities-and-value-objects) | tagged-with | Pet - Tag | uses | * |
-| [Pet - Pet](./index.md#entities-and-value-objects) | has-photo | Pet - PhotoUrl | uses | 1..* |
-| [Pet - Pet](./index.md#entities-and-value-objects) | has-status | Pet - PetStatus | uses | 1 |
+| [Pet - Pet](./index.md#entities-and-value-objects) | categorized-as | Catalog BC - Category | uses | 0..1 |
+| [Pet - Pet](./index.md#entities-and-value-objects) | tagged-with | Catalog BC - Tag | uses | * |
+| [Pet - Pet](./index.md#entities-and-value-objects) | has-photo | Catalog BC - PhotoUrl | uses | 1..* |
+| [Pet - Pet](./index.md#entities-and-value-objects) | has-status | Catalog BC - PetStatus | uses | 1 |
 
 
 ## Invariants

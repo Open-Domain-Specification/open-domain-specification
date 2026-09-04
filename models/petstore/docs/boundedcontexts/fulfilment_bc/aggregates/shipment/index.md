@@ -12,16 +12,16 @@ The journey of one approved order to its owner. Attempts live inside it because 
 | --- | --- | --- | --- |
 | Entity (Root) | **Shipment** | One consignment for one order | **id**: `int64`, orderId: `int64`, carrierId: `int64`, status: `ShipmentStatus`, trackingNumber: `TrackingNumber` |
 | Entity | DeliveryAttempt | A dated try at handing over the pet; an entity because attempts are counted and ordered, a child because it never exists without its shipment | **attemptNumber**: `int32`, attemptedAt: `date-time`, succeeded: `boolean` |
-| Value Object | TrackingNumber | Carrier reference; a value because two shipments never share one | value: `string` |
-| Value Object | ShipmentStatus | planned, in-transit or delivered | value: `'planned' | 'in-transit' | 'delivered'` |
+| Value Object | [ShipmentStatus](../../index.md#value-objects) | planned, in-transit or delivered | value: `'planned' | 'in-transit' | 'delivered'` |
+| Value Object | [TrackingNumber](../../index.md#value-objects) | Carrier reference; a value because two shipments never share one | value: `string` |
 
 
 ## Relationships
 | Source | Description | Target | Relation | Cardinality |
 | --- | --- | --- | --- | --- |
 | [Shipment - Shipment](./index.md#entities-and-value-objects) | attempted-by | Shipment - DeliveryAttempt | includes | * |
-| [Shipment - Shipment](./index.md#entities-and-value-objects) | tracked-as | Shipment - TrackingNumber | uses | 1 |
-| [Shipment - Shipment](./index.md#entities-and-value-objects) | has-status | Shipment - ShipmentStatus | uses | 1 |
+| [Shipment - Shipment](./index.md#entities-and-value-objects) | tracked-as | Fulfilment BC - TrackingNumber | uses | 1 |
+| [Shipment - Shipment](./index.md#entities-and-value-objects) | has-status | Fulfilment BC - ShipmentStatus | uses | 1 |
 | [Shipment - Shipment](./index.md#entities-and-value-objects) | shipped-by | Carrier - Carrier | references | 1 |
 
 

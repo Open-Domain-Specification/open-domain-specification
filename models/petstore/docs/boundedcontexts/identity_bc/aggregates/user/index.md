@@ -11,13 +11,13 @@ Petstore user record, as the legacy API shapes it
 | Type | Name | Description | Attributes |
 | --- | --- | --- | --- |
 | Entity (Root) | **User** | A registered user of the store | **username**: `string`, email: `string`, userStatus: `UserStatus` |
-| Value Object | UserStatus | Untyped int per the Petstore v3 model; nobody remembers the meaning of each value | value: `int` |
+| Value Object | [UserStatus](../../index.md#value-objects) | Untyped int per the Petstore v3 model; nobody remembers the meaning of each value | value: `int` |
 
 
 ## Relationships
 | Source | Description | Target | Relation | Cardinality |
 | --- | --- | --- | --- | --- |
-| [User - User](./index.md#entities-and-value-objects) | has-status | User - UserStatus | uses | 1 |
+| [User - User](./index.md#entities-and-value-objects) | has-status | Identity BC - UserStatus | uses | 1 |
 
 
 ## Invariants

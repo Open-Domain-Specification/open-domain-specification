@@ -40,9 +40,15 @@ describe("Validation", () => {
 			[
 			  "error cross-aggregate-reference: "Order" references "Price", which is not the root of aggregate "Product"; reference other aggregates by their root's identity",
 			  "error cross-context-relation: "Order" in "Ordering" references "Price" in "Catalog"; a relation never crosses a bounded context, so hold "Price"'s identity as an attribute on "Order" instead",
+			  "error root-identity: Root entity "Order" of aggregate "Order" declares no identity attribute, so nothing says which "Order" a reference means",
+			  "error root-identity: Root entity "Product" of aggregate "Product" declares no identity attribute, so nothing says which "Product" a reference means",
+			  "warning entity-identity: Entity "Price" in aggregate "Product" declares no identity attribute; an entity is what you tell apart from another holding the same values, so without one "Price" is a value object",
+			  "warning aggregate-tree: "Price" is in aggregate "Product" but no chain of "includes" or "references" reaches it from "Product", so nothing inside the boundary can get to it",
 			  "error internal-consumable: Policy "Reprice on order" reacts to "Reprice", which is internal to "Catalog"",
 			  "error internal-consumable: Policy "Reprice on order" issues "Reprice", which is internal to "Catalog"",
+			  "error policy-in-context: Policy "Reprice on order" in "Ordering" issues "Reprice", which belongs to "Catalog"",
 			  "error consumable-kind: Policy "Reprice on order" reacts to "Reprice", which is an operation, not an event",
+			  "warning reaction-cycle: Reactions run in a cycle: "Reprice" -> "Reprice on order" -> "Reprice"; the chain triggers itself and nothing in the model says what ends it",
 			  "warning context-serves-subdomain: Bounded context "Ordering" serves no subdomain, so it is missing from the problem-space view",
 			  "warning context-serves-subdomain: Bounded context "Catalog" serves no subdomain, so it is missing from the problem-space view",
 			]

@@ -5,6 +5,7 @@ import {
 	ODSConsumptionGraph,
 	type Policy,
 	type Service,
+	type ValueObject,
 } from "@open-domain-specification/core";
 import { attributeListMd } from "./attributes.md";
 import { contextBreadcrumbsMd } from "./breadcrumbs.md";
@@ -15,6 +16,7 @@ import {
 	pathToFlowMapSvg,
 	pathToIndexMd,
 } from "./lib/paths";
+import { aggregatesHolding } from "./lib/value-objects";
 import type { Options } from "./options";
 import { strategicPositionMd } from "./strategic-position.md";
 import { teamLinkMd } from "./team.md";
@@ -37,6 +39,15 @@ const schemaSection = (schema: DataSchema) => [
 	schema.description ?? "-",
 	attributeListMd(schema.attributes),
 	schema.consumables.map((it) => it.name).join(", ") || "-",
+];
+
+const valueObjectSection = (valueObject: ValueObject) => [
+	valueObject.name,
+	valueObject.description,
+	attributeListMd(valueObject.attributes),
+	aggregatesHolding(valueObject)
+		.map((it) => it.name)
+		.join(", ") || "-",
 ];
 
 const serviceSection = (service: Service) => `
@@ -87,6 +98,18 @@ ${
 				.map(([_name, service]) => serviceSection(service))
 				.join("")
 		: "> No services."
+}
+
+## Value Objects
+${
+	boundedcontext.valueobjects.size > 0
+		? markdownTable(
+				["Name", "Description", "Attributes", "Used by"],
+				Array.from(boundedcontext.valueobjects.values()).map(
+					valueObjectSection,
+				),
+			)
+		: "> No value objects."
 }
 
 ## Schemas

@@ -295,7 +295,12 @@ export class Workspace
 	}
 
 	getValueObjectByRef(ref: string): ValueObject | undefined {
-		return this.findAggregateMember((it) => it.valueobjects, ref);
+		this.debug(`Searching for value object with ref: ${ref}`);
+		for (const bc of this.boundedcontexts.values()) {
+			for (const vo of bc.valueobjects.values()) {
+				if (vo.ref === ref) return vo;
+			}
+		}
 	}
 
 	getValueObjectByRefOrThrow(ref: string): ValueObject {
@@ -654,6 +659,7 @@ export class BoundedContext
 	aggregates = new Map<string, Aggregate>();
 	policies = new Map<string, Policy>();
 	glossary = new Map<string, GlossaryTerm>();
+	valueobjects = new Map<string, ValueObject>();
 	schemas = new Map<string, DataSchema>();
 	workspace: Workspace;
 	subdomains = new Set<Subdomain>();
@@ -782,6 +788,15 @@ export class BoundedContext
 		return new GlossaryTerm(this, name, attributes);
 	}
 
+	/**
+	 * Declares a value this context defines once, for any of its aggregates to
+	 * use: a value object is part of the ubiquitous language of the context,
+	 * not of one aggregate.
+	 */
+	addValueObject(name: string, attributes: ValueObjectAttributes): ValueObject {
+		return new ValueObject(this, name, attributes);
+	}
+
 	/** Declares a payload shape consumables of this context can carry. */
 	addSchema(name: string, attributes: DataSchemaAttributes = {}): DataSchema {
 		return new DataSchema(this, name, attributes);
@@ -802,6 +817,7 @@ export class BoundedContext
 			services: asRecords(this.services),
 			policies: asRecords(this.policies),
 			glossary: asRecords(this.glossary),
+			valueobjects: asRecords(this.valueobjects),
 			schemas: asRecords(this.schemas),
 		};
 	}
@@ -896,7 +912,6 @@ export class Aggregate
 	consumables = new Map<string, Consumable>();
 	invariants = new Map<string, Invariant>();
 	entities = new Map<string, Entity>();
-	valueobjects = new Map<string, ValueObject>();
 	boundedcontext: BoundedContext;
 	consumptions: Consumption[] = [];
 
@@ -956,10 +971,6 @@ export class Aggregate
 		return new Entity(this, name, { ...attributes, root: true });
 	}
 
-	addValueObject(name: string, attributes: ValueObjectAttributes): ValueObject {
-		return new ValueObject(this, name, attributes);
-	}
-
 	accept(v: Visitor) {
 		return v.visitAggregate(this);
 	}
@@ -971,7 +982,6 @@ export class Aggregate
 			provides: asRecords(this.consumables),
 			consumes: asArray(this.consumptions),
 			entities: asRecords(this.entities),
-			valueobjects: asRecords(this.valueobjects),
 			invariants: asRecords(this.invariants),
 		};
 	}
@@ -1091,6 +1101,11 @@ export class Entity
 	relations = [] as EntityRelation[];
 	aggregate: Aggregate;
 
+	/** The context this entity's aggregate belongs to. */
+	get boundedcontext(): BoundedContext {
+		return this.aggregate.boundedcontext;
+	}
+
 	get path(): string {
 		return `${this.aggregate.path}/entities/${this.id}`;
 	}
@@ -1194,10 +1209,10 @@ export class ValueObject
 	description: string;
 	attributes = new Map<string, Attribute>();
 	relations = [] as EntityRelation[];
-	aggregate: Aggregate;
+	boundedcontext: BoundedContext;
 
 	get path(): string {
-		return `${this.aggregate.path}/valueobjects/${this.id}`;
+		return `${this.boundedcontext.path}/valueobjects/${this.id}`;
 	}
 
 	get ref(): string {
@@ -1205,15 +1220,15 @@ export class ValueObject
 	}
 
 	constructor(
-		aggregate: Aggregate,
+		boundedcontext: BoundedContext,
 		name: string,
 		attributes: ValueObjectAttributes,
 	) {
 		this.id = attributes.id || snakeCase(name);
 		this.name = name;
 		this.description = attributes.description;
-		this.aggregate = aggregate;
-		this.aggregate.valueobjects.set(this.id, this);
+		this.boundedcontext = boundedcontext;
+		this.boundedcontext.valueobjects.set(this.id, this);
 	}
 
 	addAttribute(name: string, options: AttributeOptions): Attribute {

@@ -55,7 +55,7 @@ const orderEntity = orderAgg.addRootEntity("Order", {
 	description: "Order header",
 });
 
-const moneyVO = orderAgg.addValueObject("Money", {
+const moneyVO = orderingBC.addValueObject("Money", {
 	description: "Amount + currency",
 });
 
@@ -86,7 +86,7 @@ const articleEntity = articleAgg.addRootEntity("Article", {
 	description: "Article/page content",
 });
 
-const slugVO = articleAgg.addValueObject("Slug", {
+const slugVO = cmsBC.addValueObject("Slug", {
 	description: "URL-safe identifier",
 });
 

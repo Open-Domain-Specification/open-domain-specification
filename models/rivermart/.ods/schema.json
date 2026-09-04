@@ -35,12 +35,6 @@
                         "$ref": "#/definitions/ConsumableSchema"
                     },
                     "type": "object"
-                },
-                "valueobjects": {
-                    "additionalProperties": {
-                        "$ref": "#/definitions/ValueObjectSchema"
-                    },
-                    "type": "object"
                 }
             },
             "required": [
@@ -49,8 +43,7 @@
                 "entities",
                 "invariants",
                 "name",
-                "provides",
-                "valueobjects"
+                "provides"
             ],
             "title": "Aggregate",
             "type": "object"
@@ -167,6 +160,13 @@
                         "$ref"
                     ],
                     "type": "object"
+                },
+                "valueobjects": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/ValueObjectSchema"
+                    },
+                    "description": "The values this context defines once: part of its ubiquitous language,\nreferenced by the attributes and relations of any of its aggregates.",
+                    "type": "object"
                 }
             },
             "required": [
@@ -177,7 +177,8 @@
                 "policies",
                 "schemas",
                 "services",
-                "subdomains"
+                "subdomains",
+                "valueobjects"
             ],
             "title": "BoundedContext",
             "type": "object"

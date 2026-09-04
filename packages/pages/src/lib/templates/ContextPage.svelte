@@ -2,6 +2,7 @@
 export const sections = [
 	{ id: "position", label: "Strategic position" },
 	{ id: "model", label: "Model" },
+	{ id: "values", label: "Value objects" },
 	{ id: "integration", label: "Integration surface" },
 	{ id: "behaviour", label: "Policies" },
 	{ id: "schemas", label: "Schemas" },
@@ -15,7 +16,9 @@ import {
 	type BoundedContext,
 	ODSConsumableMap,
 	ODSContextMap,
+	type ValueObject,
 } from "@open-domain-specification/core";
+import { valueObjectsOf } from "../elements";
 import { consumableGraph, contextGraph } from "../flow/graph";
 import {
 	consumableIcon,
@@ -62,6 +65,7 @@ const services = $derived([...bc.services.values()]);
 const policies = $derived([...bc.policies.values()]);
 const terms = $derived([...bc.glossary.values()]);
 const schemas = $derived([...bc.schemas.values()]);
+const valueobjects = $derived([...bc.valueobjects.values()]);
 const members = $derived([...aggregates, ...services]);
 const provides = $derived(members.flatMap((m) => [...m.consumables.values()]));
 const consumes = $derived(members.flatMap((m) => m.consumptions));
@@ -76,6 +80,10 @@ const consumableCaption = $derived(`${bc.name} consumable map`);
 const countOf = (kind: "operation" | "event", a: Aggregate) =>
 	[...a.consumables.values()].filter((c) => c.type === kind).length;
 
+/** The aggregates of this context that hold a value object. */
+const holdersOf = (v: ValueObject) =>
+	aggregates.filter((a) => valueObjectsOf(a).includes(v));
+
 const aggregateColumns: Column[] = [
 	{ key: "name", label: "Aggregate" },
 	{ key: "root", label: "Root" },
@@ -84,6 +92,12 @@ const aggregateColumns: Column[] = [
 	{ key: "invariants", label: "Invariants", numeric: true },
 	{ key: "operations", label: "Operations", numeric: true },
 	{ key: "events", label: "Events", numeric: true },
+	{ key: "description", label: "Description" },
+];
+const valueObjectColumns: Column[] = [
+	{ key: "name", label: "Value object" },
+	{ key: "attributes", label: "Attributes", numeric: true },
+	{ key: "heldby", label: "Held by" },
 	{ key: "description", label: "Description" },
 ];
 const serviceColumns: Column[] = [
@@ -166,7 +180,7 @@ const termColumns: Column[] = [
 			{:else if col.key === "entities"}
 				{a.entities.size}
 			{:else if col.key === "valueobjects"}
-				{a.valueobjects.size}
+				{valueObjectsOf(a).length}
 			{:else if col.key === "invariants"}
 				{a.invariants.size}
 			{:else if col.key === "operations"}
@@ -193,6 +207,33 @@ const termColumns: Column[] = [
 				<Keyword text={s.type} title={SERVICE_TYPE[s.type]} />
 			{:else}
 				{s.description}
+			{/if}
+		{/snippet}
+	</DataTable>
+</Section>
+
+<Section
+	id="values"
+	title="Value objects"
+	lead="The values this context defines once. Any of its aggregates may hold one, so a change to a value object is a change everywhere it is held."
+	count={valueobjects.length}
+	problems={valueobjects.flatMap((v) => problemsUnder(model, v.ref))}
+>
+	<DataTable
+		columns={valueObjectColumns}
+		rows={valueobjects}
+		rowId={(v) => v.ref}
+		empty="No value objects. Every attribute here is a bare type."
+	>
+		{#snippet cell(v, col)}
+			{#if col.key === "name"}
+				<Lockup kind="valueobject" name={v.name} ref={v.ref} />
+			{:else if col.key === "attributes"}
+				{v.attributes.size}
+			{:else if col.key === "heldby"}
+				<Joined>{#each holdersOf(v) as a (a.ref)}<Lockup kind="aggregate" name={a.name} ref={a.ref} />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+			{:else}
+				{v.description}
 			{/if}
 		{/snippet}
 	</DataTable>

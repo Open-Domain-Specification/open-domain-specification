@@ -19,7 +19,7 @@ exports[`Visitor Example > should compile  1`] = `
                   "label": "addressable by",
                   "relation": "uses",
                   "target": {
-                    "$ref": "#/boundedcontexts/cms/aggregates/article/valueobjects/slug",
+                    "$ref": "#/boundedcontexts/cms/valueobjects/slug",
                   },
                 },
               ],
@@ -35,14 +35,6 @@ exports[`Visitor Example > should compile  1`] = `
           },
           "name": "Article",
           "provides": {},
-          "valueobjects": {
-            "slug": {
-              "attributes": {},
-              "description": "URL-safe identifier",
-              "name": "Slug",
-              "relations": [],
-            },
-          },
         },
       },
       "bigBallOfMud": undefined,
@@ -55,9 +47,11 @@ exports[`Visitor Example > should compile  1`] = `
         "content_renderer": {
           "consumes": [
             {
+              "comments": undefined,
               "consumable": {
                 "$ref": "#/boundedcontexts/ordering/services/checkout_app/provides/place_order",
               },
+              "disposition": undefined,
               "pattern": "conformist",
             },
           ],
@@ -65,11 +59,14 @@ exports[`Visitor Example > should compile  1`] = `
           "name": "ContentRenderer",
           "provides": {
             "get_article": {
+              "comments": undefined,
               "description": "Fetch article/page content by slug",
+              "disposition": undefined,
               "internal": undefined,
               "name": "GetArticle",
               "pattern": "open-host-service",
               "raises": undefined,
+              "returns": undefined,
               "schema": undefined,
               "type": "operation",
             },
@@ -83,6 +80,14 @@ exports[`Visitor Example > should compile  1`] = `
         },
       ],
       "team": undefined,
+      "valueobjects": {
+        "slug": {
+          "attributes": {},
+          "description": "URL-safe identifier",
+          "name": "Slug",
+          "relations": [],
+        },
+      },
     },
     "ordering": {
       "aggregates": {
@@ -100,7 +105,7 @@ exports[`Visitor Example > should compile  1`] = `
                   "label": "totals",
                   "relation": "uses",
                   "target": {
-                    "$ref": "#/boundedcontexts/ordering/aggregates/order/valueobjects/money",
+                    "$ref": "#/boundedcontexts/ordering/valueobjects/money",
                   },
                 },
               ],
@@ -116,14 +121,6 @@ exports[`Visitor Example > should compile  1`] = `
           },
           "name": "Order",
           "provides": {},
-          "valueobjects": {
-            "money": {
-              "attributes": {},
-              "description": "Amount + currency",
-              "name": "Money",
-              "relations": [],
-            },
-          },
         },
       },
       "bigBallOfMud": undefined,
@@ -136,9 +133,11 @@ exports[`Visitor Example > should compile  1`] = `
         "checkout_app": {
           "consumes": [
             {
+              "comments": undefined,
               "consumable": {
                 "$ref": "#/boundedcontexts/cms/services/content_renderer/provides/get_article",
               },
+              "disposition": undefined,
               "pattern": "anti-corruption-layer",
             },
           ],
@@ -146,11 +145,14 @@ exports[`Visitor Example > should compile  1`] = `
           "name": "CheckoutApp",
           "provides": {
             "place_order": {
+              "comments": undefined,
               "description": "Create an order from a valid checkout",
+              "disposition": undefined,
               "internal": undefined,
               "name": "PlaceOrder",
               "pattern": "open-host-service",
               "raises": undefined,
+              "returns": undefined,
               "schema": undefined,
               "type": "operation",
             },
@@ -164,6 +166,14 @@ exports[`Visitor Example > should compile  1`] = `
         },
       ],
       "team": undefined,
+      "valueobjects": {
+        "money": {
+          "attributes": {},
+          "description": "Amount + currency",
+          "name": "Money",
+          "relations": [],
+        },
+      },
     },
   },
   "description": "DDD workspace for an eCommerce platform example",
@@ -196,209 +206,7 @@ exports[`Visitor Example > should compile  1`] = `
   "logoUrl": "https://example.com/logo.svg",
   "name": "eCommerce",
   "odsVersion": "1.0.0",
-  "primaryColor": "#0ea5e9",
-  "relationships": [],
-  "teams": {},
-  "version": "0.1.0",
-}
-`;
-
-exports[`Visitor Example should compile  1`] = `
-{
-  "boundedcontexts": {
-    "cms": {
-      "aggregates": {
-        "article": {
-          "consumes": [],
-          "description": "Renderable content unit",
-          "entities": {
-            "article": {
-              "attributes": {},
-              "description": "Article/page content",
-              "name": "Article",
-              "relations": [
-                {
-                  "cardinality": undefined,
-                  "label": "addressable by",
-                  "relation": "uses",
-                  "target": {
-                    "$ref": "#/boundedcontexts/cms/aggregates/article/valueobjects/slug",
-                  },
-                },
-              ],
-              "root": true,
-            },
-          },
-          "invariants": {
-            "slug_format_valid": {
-              "constrains": [],
-              "description": "Slug must be lowercase, dash-separated",
-              "name": "SlugFormatValid",
-            },
-          },
-          "name": "Article",
-          "provides": {},
-          "valueobjects": {
-            "slug": {
-              "attributes": {},
-              "description": "URL-safe identifier",
-              "name": "Slug",
-              "relations": [],
-            },
-          },
-        },
-      },
-      "bigBallOfMud": undefined,
-      "description": "Site content retrieval/rendering",
-      "glossary": {},
-      "name": "CMS",
-      "policies": {},
-      "schemas": {},
-      "services": {
-        "content_renderer": {
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/ordering/services/checkout_app/provides/place_order",
-              },
-              "pattern": "conformist",
-            },
-          ],
-          "description": "Application service for fetching/rendering content",
-          "name": "ContentRenderer",
-          "provides": {
-            "get_article": {
-              "description": "Fetch article/page content by slug",
-              "internal": undefined,
-              "name": "GetArticle",
-              "pattern": "open-host-service",
-              "raises": undefined,
-              "schema": undefined,
-              "type": "operation",
-            },
-          },
-          "type": "application",
-        },
-      },
-      "subdomains": [
-        {
-          "$ref": "#/domains/content/subdomains/publishing",
-        },
-      ],
-      "team": undefined,
-    },
-    "ordering": {
-      "aggregates": {
-        "order": {
-          "consumes": [],
-          "description": "Immutable record of a purchase",
-          "entities": {
-            "order": {
-              "attributes": {},
-              "description": "Order header",
-              "name": "Order",
-              "relations": [
-                {
-                  "cardinality": undefined,
-                  "label": "totals",
-                  "relation": "uses",
-                  "target": {
-                    "$ref": "#/boundedcontexts/ordering/aggregates/order/valueobjects/money",
-                  },
-                },
-              ],
-              "root": true,
-            },
-          },
-          "invariants": {
-            "totals_non_negative": {
-              "constrains": [],
-              "description": "Order totals must be >= 0",
-              "name": "TotalsNonNegative",
-            },
-          },
-          "name": "Order",
-          "provides": {},
-          "valueobjects": {
-            "money": {
-              "attributes": {},
-              "description": "Amount + currency",
-              "name": "Money",
-              "relations": [],
-            },
-          },
-        },
-      },
-      "bigBallOfMud": undefined,
-      "description": "Checkout flow and orders",
-      "glossary": {},
-      "name": "Ordering",
-      "policies": {},
-      "schemas": {},
-      "services": {
-        "checkout_app": {
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/cms/services/content_renderer/provides/get_article",
-              },
-              "pattern": "anti-corruption-layer",
-            },
-          ],
-          "description": "Application service for placing orders",
-          "name": "CheckoutApp",
-          "provides": {
-            "place_order": {
-              "description": "Create an order from a valid checkout",
-              "internal": undefined,
-              "name": "PlaceOrder",
-              "pattern": "open-host-service",
-              "raises": undefined,
-              "schema": undefined,
-              "type": "operation",
-            },
-          },
-          "type": "application",
-        },
-      },
-      "subdomains": [
-        {
-          "$ref": "#/domains/commerce/subdomains/sales",
-        },
-      ],
-      "team": undefined,
-    },
-  },
-  "description": "DDD workspace for an eCommerce platform example",
-  "domains": {
-    "commerce": {
-      "description": "Core commerce capabilities",
-      "name": "Commerce",
-      "subdomains": {
-        "sales": {
-          "description": "From cart to order",
-          "name": "Sales",
-          "type": "core",
-        },
-      },
-    },
-    "content": {
-      "description": "Supporting site content",
-      "name": "Content",
-      "subdomains": {
-        "publishing": {
-          "description": "Pages and articles",
-          "name": "Publishing",
-          "type": "supporting",
-        },
-      },
-    },
-  },
-  "homepage": "https://example.com",
-  "id": "e_commerce",
-  "logoUrl": "https://example.com/logo.svg",
-  "name": "eCommerce",
-  "odsVersion": "1.0.0",
+  "options": undefined,
   "primaryColor": "#0ea5e9",
   "relationships": [],
   "teams": {},

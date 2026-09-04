@@ -41,7 +41,7 @@ describe("AttributesSection", () => {
 		expect(link).toHaveTextContent("Category");
 		expect(link).toHaveAttribute(
 			"href",
-			"#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category",
+			"#/boundedcontexts/catalog_bc/valueobjects/category",
 		);
 		// A plain type is code, not a link.
 		const plain = container.querySelectorAll("tbody tr")[1] as HTMLElement;

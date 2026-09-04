@@ -26,7 +26,7 @@ element lives in a workspace file; `DSL` is the core call that creates it.
 | "we publish a message format everyone agrees on" | published language | event `pattern: "published-language"` | `agg.provides(name, {type: "event", pattern: "published-language"})` |
 | "this specific order", "the thing with a number" | Entity | `aggregates.<a>.entities.<id>` | `agg.addEntity(name, {description})` |
 | "the main thing", "the one we name the rule about" | root entity | `"root": true` | `agg.addRootEntity(name, {description})` |
-| "just a value", "an address", "money", "same values, same thing" | Value Object | `aggregates.<a>.valueobjects.<id>` | `agg.addValueObject(name, {description})` |
+| "just a value", "an address", "money", "same values, same thing" | Value Object | `boundedcontexts.<bc>.valueobjects.<id>` | `bc.addValueObject(name, {description})` |
 | "it has a field", "it's made of" | Attribute | `attributes.<id>` with `type` in the user's words | `entity.addAttribute(name, {type})` |
 | "the number that identifies it" | identity attribute | `"identity": true` | `identity: true` |
 | "its status is one of these values" | attribute backed by a value object | `attributes.<id>.valueobject: {$ref}` | `addAttribute(name, {type, valueobject: vo})` |

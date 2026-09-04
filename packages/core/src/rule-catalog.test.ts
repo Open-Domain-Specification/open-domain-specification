@@ -83,7 +83,7 @@ function everythingWrong(): Workspace {
 	a.addPolicy("Acts Elsewhere", { description: "" }).on(plain).then(reachIn);
 	// root-identity: no root in this fixture declares an identity attribute
 	// value-object-shape: a value object with an identity, and one that includes
-	const vo = twoRoots.addValueObject("Vo", { description: "" });
+	const vo = a.addValueObject("Vo", { description: "" });
 	vo.addAttribute("Id", { type: "string", identity: true });
 	vo.includes(r1, "owns-a-root");
 	// aggregate-tree: includes onto a value object, uses onto an entity, two
@@ -93,7 +93,7 @@ function everythingWrong(): Workspace {
 	const child = tree.addEntity("Child", { description: "" });
 	const twice = tree.addEntity("Twice", { description: "" });
 	tree.addEntity("Orphan", { description: "" });
-	const shape = tree.addValueObject("Shape", { description: "" });
+	const shape = a.addValueObject("Shape", { description: "" });
 	treeRoot.includes(child, "owns");
 	treeRoot.includes(twice, "owns");
 	child.includes(twice, "owns too");
@@ -106,10 +106,10 @@ function everythingWrong(): Workspace {
 	// without attribute, and a list against a single-valued relation
 	const coherence = a.addAggregate("Coherence", { description: "" });
 	const holder = coherence.addRootEntity("Holder", { description: "" });
-	const price = coherence.addValueObject("Price", { description: "" });
-	const size = coherence.addValueObject("Size", { description: "" });
-	const weight = coherence.addValueObject("Weight", { description: "" });
-	const colour = coherence.addValueObject("Colour", { description: "" });
+	const price = a.addValueObject("Price", { description: "" });
+	const size = a.addValueObject("Size", { description: "" });
+	const weight = a.addValueObject("Weight", { description: "" });
+	const colour = a.addValueObject("Colour", { description: "" });
 	holder.addAttribute("Price", { type: "Price", valueobject: price });
 	holder.uses(size, "sized", "1");
 	holder.uses(weight, "weighs", "0..1");
@@ -154,7 +154,10 @@ function everythingWrong(): Workspace {
 	// partnership-backed: partners with no traffic either way, and
 	// disposition-needs-comment: a disposition on it with nothing written down
 	b.partnerOf(c, { disposition: "refactor" });
-	// context-serves-subdomain: A, B and C serve nothing
+	// shared-kernel-backed: a kernel declared with nothing in it
+	const d = ws.addBoundedContext("D", { description: "" });
+	d.sharesKernelWith(b);
+	// context-serves-subdomain: A, B, C and D serve nothing
 	return ws;
 }
 

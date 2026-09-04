@@ -57,7 +57,7 @@ const orderEntity = orderAgg.addRootEntity("Order", {
 orderEntity.addAttribute("id", { type: "OrderId", identity: true });
 orderEntity.addAttribute("placedAt", { type: "Instant" });
 
-const moneyVO = orderAgg.addValueObject("Money", {
+const moneyVO = orderingBC.addValueObject("Money", {
 	description: "Amount + currency",
 });
 moneyVO.addAttribute("amount", { type: "Decimal" });
@@ -90,7 +90,7 @@ const articleEntity = articleAgg.addRootEntity("Article", {
 	description: "Article/page content",
 });
 
-const slugVO = articleAgg.addValueObject("Slug", {
+const slugVO = cmsBC.addValueObject("Slug", {
 	description: "URL-safe identifier",
 });
 

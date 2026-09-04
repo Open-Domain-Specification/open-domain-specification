@@ -54,7 +54,7 @@ export function makeTestWs() {
 		},
 	);
 
-	const d1Sd1Bc1Ag1Vo1 = d1Sd1Bc1Ag1.addValueObject(
+	const d1Sd1Bc1Ag1Vo1 = d1Sd1Bc1.addValueObject(
 		[d1Sd1Bc1Ag1.name, "Vo1"].join("."),
 		{
 			description: "",
@@ -97,7 +97,7 @@ export function makeTestWs() {
 		},
 	);
 
-	const d2Sd1Bc1S1Ag1Vo1 = d2Sd1Bc1S1Ag1.addValueObject(
+	const d2Sd1Bc1S1Ag1Vo1 = d2Sd1Bc1.addValueObject(
 		[d2Sd1Bc1S1Ag1.name, "Vo1"].join("."),
 		{
 			description: "",
@@ -166,7 +166,7 @@ export function makeRichTestWs() {
 	const orderLine = orderAgg.addEntity("Order Line", {
 		description: "A line on the order",
 	});
-	const money = orderAgg.addValueObject("Money", {
+	const money = orderingBc.addValueObject("Money", {
 		description: "Amount and currency",
 	});
 	money.addAttribute("Amount", { type: "decimal" });

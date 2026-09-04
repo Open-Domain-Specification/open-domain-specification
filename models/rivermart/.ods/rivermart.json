@@ -166,7 +166,7 @@
                   "name": "brand",
                   "type": "Brand",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/valueobjects/brand"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/brand"
                   }
                 }
               },
@@ -181,7 +181,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/valueobjects/brand"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/brand"
                   },
                   "relation": "uses",
                   "label": "made-by",
@@ -208,48 +208,20 @@
                   "name": "dimensions",
                   "type": "Dimensions",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/valueobjects/dimensions"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/dimensions"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/valueobjects/dimensions"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/dimensions"
                   },
                   "relation": "uses",
                   "label": "packaged-as",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "brand": {
-              "name": "Brand",
-              "description": "The maker's name; a value shared by every product of that brand",
-              "attributes": {
-                "name": {
-                  "name": "name",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "dimensions": {
-              "name": "Dimensions",
-              "description": "Packaged size and weight, which the warehouse needs to slot it",
-              "attributes": {
-                "weight_grams": {
-                  "name": "weightGrams",
-                  "type": "int"
-                },
-                "length_mm": {
-                  "name": "lengthMm",
-                  "type": "int"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -345,6 +317,34 @@
           }
         }
       },
+      "valueobjects": {
+        "brand": {
+          "name": "Brand",
+          "description": "The maker's name; a value shared by every product of that brand",
+          "attributes": {
+            "name": {
+              "name": "name",
+              "type": "string"
+            }
+          },
+          "relations": []
+        },
+        "dimensions": {
+          "name": "Dimensions",
+          "description": "Packaged size and weight, which the warehouse needs to slot it",
+          "attributes": {
+            "weight_grams": {
+              "name": "weightGrams",
+              "type": "int"
+            },
+            "length_mm": {
+              "name": "lengthMm",
+              "type": "int"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {
         "product_listed": {
           "name": "ProductListed",
@@ -392,7 +392,7 @@
               "name": "brand",
               "type": "Brand",
               "valueobject": {
-                "$ref": "#/boundedcontexts/catalogue/aggregates/product/valueobjects/brand"
+                "$ref": "#/boundedcontexts/catalogue/valueobjects/brand"
               }
             },
             "variants": {
@@ -487,7 +487,6 @@
               "relations": []
             }
           },
-          "valueobjects": {},
           "invariants": {}
         }
       },
@@ -587,6 +586,7 @@
           }
         }
       },
+      "valueobjects": {},
       "schemas": {}
     },
     "offers": {
@@ -693,7 +693,7 @@
                   "name": "price",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/offers/aggregates/offer/valueobjects/money"
+                    "$ref": "#/boundedcontexts/offers/valueobjects/money"
                   }
                 },
                 "available_quantity": {
@@ -704,7 +704,7 @@
                   "name": "condition",
                   "type": "Condition",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/offers/aggregates/offer/valueobjects/condition"
+                    "$ref": "#/boundedcontexts/offers/valueobjects/condition"
                   }
                 },
                 "fulfilled_by_river_mart": {
@@ -721,7 +721,7 @@
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/offers/aggregates/offer/valueobjects/money"
+                    "$ref": "#/boundedcontexts/offers/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "priced-at",
@@ -729,41 +729,13 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/offers/aggregates/offer/valueobjects/condition"
+                    "$ref": "#/boundedcontexts/offers/valueobjects/condition"
                   },
                   "relation": "uses",
                   "label": "in-condition",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "money": {
-              "name": "Money",
-              "description": "An amount in a currency: minor units and an ISO 4217 code",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
-            },
-            "condition": {
-              "name": "Condition",
-              "description": "new, used-like-new, used-good; buyers filter on it",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'new' | 'used-like-new' | 'used-good'"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -895,6 +867,34 @@
           }
         }
       },
+      "valueobjects": {
+        "money": {
+          "name": "Money",
+          "description": "An amount in a currency: minor units and an ISO 4217 code",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": []
+        },
+        "condition": {
+          "name": "Condition",
+          "description": "new, used-like-new, used-good; buyers filter on it",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'new' | 'used-like-new' | 'used-good'"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {
         "offer_published": {
           "name": "OfferPublished",
@@ -912,7 +912,7 @@
               "name": "price",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/offers/aggregates/offer/valueobjects/money"
+                "$ref": "#/boundedcontexts/offers/valueobjects/money"
               }
             }
           }
@@ -1022,7 +1022,7 @@
                   "name": "status",
                   "type": "SellerStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/valueobjects/seller_status"
+                    "$ref": "#/boundedcontexts/seller_onboarding/valueobjects/seller_status"
                   }
                 }
               },
@@ -1037,7 +1037,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/valueobjects/seller_status"
+                    "$ref": "#/boundedcontexts/seller_onboarding/valueobjects/seller_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
@@ -1067,26 +1067,13 @@
               "relations": []
             }
           },
-          "valueobjects": {
-            "seller_status": {
-              "name": "SellerStatus",
-              "description": "registered, active or suspended",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'registered' | 'active' | 'suspended'"
-                }
-              },
-              "relations": []
-            }
-          },
           "invariants": {
             "active_only_after_checks": {
               "name": "ActiveOnlyAfterChecks",
               "description": "A seller becomes active only when identity and bank checks both passed",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/valueobjects/seller_status"
+                  "$ref": "#/boundedcontexts/seller_onboarding/valueobjects/seller_status"
                 },
                 {
                   "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/entities/verification_check"
@@ -1176,6 +1163,19 @@
         "vendor": {
           "name": "Vendor",
           "definition": "Not a seller. A wholesale supplier to first-party retail, handled by Vendor Purchasing; the two accounts were never unified and will not be. Seller Onboarding has no vendor of its own, which is the point: the word is a false friend and nothing here embodies it"
+        }
+      },
+      "valueobjects": {
+        "seller_status": {
+          "name": "SellerStatus",
+          "description": "registered, active or suspended",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'registered' | 'active' | 'suspended'"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {
@@ -1281,37 +1281,20 @@
                   "name": "unitPrice",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/valueobjects/money"
+                    "$ref": "#/boundedcontexts/cart_&_checkout/valueobjects/money"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/valueobjects/money"
+                    "$ref": "#/boundedcontexts/cart_&_checkout/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "priced-at",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "money": {
-              "name": "Money",
-              "description": "An amount in a currency: minor units and an ISO 4217 code",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -1377,7 +1360,6 @@
               "relations": []
             }
           },
-          "valueobjects": {},
           "invariants": {}
         }
       },
@@ -1510,6 +1492,23 @@
           }
         }
       },
+      "valueobjects": {
+        "money": {
+          "name": "Money",
+          "description": "An amount in a currency: minor units and an ISO 4217 code",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {
         "cart_checked_out": {
           "name": "CartCheckedOut",
@@ -1528,7 +1527,7 @@
               "name": "total",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/valueobjects/money"
+                "$ref": "#/boundedcontexts/cart_&_checkout/valueobjects/money"
               }
             }
           }
@@ -1674,21 +1673,21 @@
                   "name": "total",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/money"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/money"
                   }
                 },
                 "shipping_address": {
                   "name": "shippingAddress",
                   "type": "Address",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/address"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/address"
                   }
                 },
                 "status": {
                   "name": "status",
                   "type": "OrderStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/order_status"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/order_status"
                   }
                 }
               },
@@ -1719,7 +1718,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/money"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "totals",
@@ -1727,7 +1726,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/address"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/address"
                   },
                   "relation": "uses",
                   "label": "ships-to",
@@ -1735,7 +1734,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/order_status"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/order_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
@@ -1770,14 +1769,14 @@
                   "name": "unitPrice",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/money"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/money"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/money"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "priced-at",
@@ -1799,7 +1798,7 @@
                   "name": "tracking",
                   "type": "TrackingReference",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/tracking_reference"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/tracking_reference"
                   }
                 }
               },
@@ -1814,7 +1813,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/tracking_reference"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/tracking_reference"
                   },
                   "relation": "uses",
                   "label": "tracked-as",
@@ -1840,7 +1839,7 @@
                   "name": "refund",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/money"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/money"
                   }
                 }
               },
@@ -1855,7 +1854,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/money"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "refunds",
@@ -1888,64 +1887,6 @@
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "money": {
-              "name": "Money",
-              "description": "An amount in a currency: minor units and an ISO 4217 code",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
-            },
-            "address": {
-              "name": "Address",
-              "description": "Where it ships; a value because the same address on two orders is the same place",
-              "attributes": {
-                "lines": {
-                  "name": "lines",
-                  "type": "string[]"
-                },
-                "postcode": {
-                  "name": "postcode",
-                  "type": "string"
-                },
-                "country": {
-                  "name": "country",
-                  "type": "ISO 3166 code"
-                }
-              },
-              "relations": []
-            },
-            "order_status": {
-              "name": "OrderStatus",
-              "description": "placed, awaiting-stock, cancelled, partially-shipped, shipped, completed",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'placed' | 'awaiting-stock' | 'cancelled' | 'partially-shipped' | 'shipped' | 'completed'"
-                }
-              },
-              "relations": []
-            },
-            "tracking_reference": {
-              "name": "TrackingReference",
-              "description": "The carrier reference the customer sees",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "string"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -1984,7 +1925,7 @@
               "description": "An order with a shipment is returned, not cancelled",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/order_status"
+                  "$ref": "#/boundedcontexts/order_management/valueobjects/order_status"
                 }
               ]
             }
@@ -2154,6 +2095,64 @@
           }
         }
       },
+      "valueobjects": {
+        "money": {
+          "name": "Money",
+          "description": "An amount in a currency: minor units and an ISO 4217 code",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": []
+        },
+        "address": {
+          "name": "Address",
+          "description": "Where it ships; a value because the same address on two orders is the same place",
+          "attributes": {
+            "lines": {
+              "name": "lines",
+              "type": "string[]"
+            },
+            "postcode": {
+              "name": "postcode",
+              "type": "string"
+            },
+            "country": {
+              "name": "country",
+              "type": "ISO 3166 code"
+            }
+          },
+          "relations": []
+        },
+        "order_status": {
+          "name": "OrderStatus",
+          "description": "placed, awaiting-stock, cancelled, partially-shipped, shipped, completed",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'placed' | 'awaiting-stock' | 'cancelled' | 'partially-shipped' | 'shipped' | 'completed'"
+            }
+          },
+          "relations": []
+        },
+        "tracking_reference": {
+          "name": "TrackingReference",
+          "description": "The carrier reference the customer sees",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "string"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {
         "order_placed": {
           "name": "OrderPlaced",
@@ -2176,7 +2175,7 @@
               "name": "total",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/money"
+                "$ref": "#/boundedcontexts/order_management/valueobjects/money"
               }
             }
           }
@@ -2303,7 +2302,7 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/payments/aggregates/payment/valueobjects/money"
+                    "$ref": "#/boundedcontexts/payments/valueobjects/money"
                   }
                 }
               },
@@ -2326,7 +2325,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/payments/aggregates/payment/valueobjects/money"
+                    "$ref": "#/boundedcontexts/payments/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "for-amount",
@@ -2365,7 +2364,7 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/payments/aggregates/payment/valueobjects/money"
+                    "$ref": "#/boundedcontexts/payments/valueobjects/money"
                   }
                 }
               },
@@ -2380,7 +2379,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/payments/aggregates/payment/valueobjects/money"
+                    "$ref": "#/boundedcontexts/payments/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "of-amount",
@@ -2402,37 +2401,20 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/payments/aggregates/payment/valueobjects/money"
+                    "$ref": "#/boundedcontexts/payments/valueobjects/money"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/payments/aggregates/payment/valueobjects/money"
+                    "$ref": "#/boundedcontexts/payments/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "of-amount",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "money": {
-              "name": "Money",
-              "description": "An amount in a currency: minor units and an ISO 4217 code",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -2462,7 +2444,7 @@
               "description": "Every amount on one payment shares the intent's currency",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/payments/aggregates/payment/valueobjects/money"
+                  "$ref": "#/boundedcontexts/payments/valueobjects/money"
                 }
               ]
             }
@@ -2567,6 +2549,23 @@
           }
         }
       },
+      "valueobjects": {
+        "money": {
+          "name": "Money",
+          "description": "An amount in a currency: minor units and an ISO 4217 code",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {
         "payment_authorised": {
           "name": "PaymentAuthorised",
@@ -2604,7 +2603,7 @@
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/payments/aggregates/payment/valueobjects/money"
+                "$ref": "#/boundedcontexts/payments/valueobjects/money"
               }
             },
             "instrument_token": {
@@ -2684,7 +2683,7 @@
                   "name": "score",
                   "type": "RiskScore",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/risk_score"
+                    "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
                   }
                 },
                 "signals": {
@@ -2692,14 +2691,14 @@
                   "type": "Signal[]",
                   "description": "What the score is made of; at least one, or the score is unexplained",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/signal"
+                    "$ref": "#/boundedcontexts/fraud/valueobjects/signal"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/risk_score"
+                    "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
                   },
                   "relation": "uses",
                   "label": "scored",
@@ -2707,7 +2706,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/signal"
+                    "$ref": "#/boundedcontexts/fraud/valueobjects/signal"
                   },
                   "relation": "uses",
                   "label": "explained-by",
@@ -2716,41 +2715,13 @@
               ]
             }
           },
-          "valueobjects": {
-            "risk_score": {
-              "name": "RiskScore",
-              "description": "0 to 1000; above the threshold is flagged",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "int 0..1000"
-                }
-              },
-              "relations": []
-            },
-            "signal": {
-              "name": "Signal",
-              "description": "A named contribution to the score, e.g. 'new account, high value'",
-              "attributes": {
-                "name": {
-                  "name": "name",
-                  "type": "string"
-                },
-                "weight": {
-                  "name": "weight",
-                  "type": "int"
-                }
-              },
-              "relations": []
-            }
-          },
           "invariants": {
             "score_explained": {
               "name": "ScoreExplained",
               "description": "A flagged score always carries at least one signal, so an agent can defend it",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/signal"
+                  "$ref": "#/boundedcontexts/fraud/valueobjects/signal"
                 }
               ]
             }
@@ -2824,8 +2795,36 @@
           "name": "Flag",
           "definition": "A score above threshold; it pauses the subject until reviewed",
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/risk_score"
+            "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
           }
+        }
+      },
+      "valueobjects": {
+        "risk_score": {
+          "name": "RiskScore",
+          "description": "0 to 1000; above the threshold is flagged",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "int 0..1000"
+            }
+          },
+          "relations": []
+        },
+        "signal": {
+          "name": "Signal",
+          "description": "A named contribution to the score, e.g. 'new account, high value'",
+          "attributes": {
+            "name": {
+              "name": "name",
+              "type": "string"
+            },
+            "weight": {
+              "name": "weight",
+              "type": "int"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {
@@ -2841,7 +2840,7 @@
               "name": "score",
               "type": "RiskScore",
               "valueobject": {
-                "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/risk_score"
+                "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
               }
             }
           }
@@ -2858,7 +2857,7 @@
               "name": "score",
               "type": "RiskScore",
               "valueobject": {
-                "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/risk_score"
+                "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
               }
             }
           }
@@ -2968,7 +2967,7 @@
                   "type": "Bin[]",
                   "description": "Where in the site the stock physically sits",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/valueobjects/bin"
+                    "$ref": "#/boundedcontexts/warehouse/valueobjects/bin"
                   }
                 }
               },
@@ -2983,7 +2982,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/valueobjects/bin"
+                    "$ref": "#/boundedcontexts/warehouse/valueobjects/bin"
                   },
                   "relation": "uses",
                   "label": "stored-in",
@@ -3008,19 +3007,6 @@
                 "quantity": {
                   "name": "quantity",
                   "type": "int"
-                }
-              },
-              "relations": []
-            }
-          },
-          "valueobjects": {
-            "bin": {
-              "name": "Bin",
-              "description": "Aisle, shelf, slot",
-              "attributes": {
-                "code": {
-                  "name": "code",
-                  "type": "string"
                 }
               },
               "relations": []
@@ -3187,7 +3173,7 @@
                   "name": "label",
                   "type": "TrackingLabel",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/valueobjects/tracking_label"
+                    "$ref": "#/boundedcontexts/warehouse/valueobjects/tracking_label"
                   }
                 }
               },
@@ -3202,30 +3188,13 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/valueobjects/tracking_label"
+                    "$ref": "#/boundedcontexts/warehouse/valueobjects/tracking_label"
                   },
                   "relation": "uses",
                   "label": "labelled",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "tracking_label": {
-              "name": "TrackingLabel",
-              "description": "Carrier barcode and scan vocabulary. Part of the kernel shared with Last Mile: one library, one format",
-              "attributes": {
-                "barcode": {
-                  "name": "barcode",
-                  "type": "string"
-                },
-                "carrier": {
-                  "name": "carrier",
-                  "type": "string"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -3375,6 +3344,34 @@
           }
         }
       },
+      "valueobjects": {
+        "bin": {
+          "name": "Bin",
+          "description": "Aisle, shelf, slot",
+          "attributes": {
+            "code": {
+              "name": "code",
+              "type": "string"
+            }
+          },
+          "relations": []
+        },
+        "tracking_label": {
+          "name": "TrackingLabel",
+          "description": "Carrier barcode and scan vocabulary. Part of the kernel shared with Last Mile: one library, one format",
+          "attributes": {
+            "barcode": {
+              "name": "barcode",
+              "type": "string"
+            },
+            "carrier": {
+              "name": "carrier",
+              "type": "string"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {
         "stock_reserved": {
           "name": "StockReserved",
@@ -3407,7 +3404,7 @@
               "name": "label",
               "type": "TrackingLabel",
               "valueobject": {
-                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/valueobjects/tracking_label"
+                "$ref": "#/boundedcontexts/warehouse/valueobjects/tracking_label"
               }
             }
           }
@@ -3532,7 +3529,7 @@
                   "type": "ProofOfDelivery",
                   "description": "Captured at the door; absent until the stop is completed",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/valueobjects/proof_of_delivery"
+                    "$ref": "#/boundedcontexts/last_mile/valueobjects/proof_of_delivery"
                   }
                 }
               },
@@ -3547,7 +3544,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/valueobjects/proof_of_delivery"
+                    "$ref": "#/boundedcontexts/last_mile/valueobjects/proof_of_delivery"
                   },
                   "relation": "uses",
                   "label": "proven-by",
@@ -3564,7 +3561,7 @@
                   "name": "label",
                   "type": "TrackingLabel",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/valueobjects/tracking_label"
+                    "$ref": "#/boundedcontexts/warehouse/valueobjects/tracking_label"
                   }
                 },
                 "parcel_id": {
@@ -3575,43 +3572,6 @@
                 "order_id": {
                   "name": "orderId",
                   "type": "string"
-                }
-              },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/valueobjects/tracking_label"
-                  },
-                  "relation": "uses",
-                  "label": "scanned-as",
-                  "cardinality": "1"
-                }
-              ]
-            }
-          },
-          "valueobjects": {
-            "tracking_label": {
-              "name": "TrackingLabel",
-              "description": "The same barcode and scan vocabulary the warehouse prints; the shared kernel means both contexts read one format",
-              "attributes": {
-                "barcode": {
-                  "name": "barcode",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "proof_of_delivery": {
-              "name": "ProofOfDelivery",
-              "description": "Photo, signature or safe-place note",
-              "attributes": {
-                "kind": {
-                  "name": "kind",
-                  "type": "'photo' | 'signature' | 'safe-place'"
-                },
-                "captured_at": {
-                  "name": "capturedAt",
-                  "type": "date-time"
                 }
               },
               "relations": []
@@ -3664,6 +3624,23 @@
           "embodiedBy": {
             "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/entities/parcel"
           }
+        }
+      },
+      "valueobjects": {
+        "proof_of_delivery": {
+          "name": "ProofOfDelivery",
+          "description": "Photo, signature or safe-place note",
+          "attributes": {
+            "kind": {
+              "name": "kind",
+              "type": "'photo' | 'signature' | 'safe-place'"
+            },
+            "captured_at": {
+              "name": "capturedAt",
+              "type": "date-time"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {
@@ -3776,7 +3753,7 @@
                   "name": "dailyBudget",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/money"
+                    "$ref": "#/boundedcontexts/advertising/valueobjects/money"
                   }
                 }
               },
@@ -3791,7 +3768,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/money"
+                    "$ref": "#/boundedcontexts/advertising/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "budgeted",
@@ -3817,7 +3794,7 @@
                   "name": "bid",
                   "type": "Bid",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/bid"
+                    "$ref": "#/boundedcontexts/advertising/valueobjects/bid"
                   }
                 },
                 "product_id": {
@@ -3829,50 +3806,10 @@
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/bid"
+                    "$ref": "#/boundedcontexts/advertising/valueobjects/bid"
                   },
                   "relation": "uses",
                   "label": "bids",
-                  "cardinality": "1"
-                }
-              ]
-            }
-          },
-          "valueobjects": {
-            "money": {
-              "name": "Money",
-              "description": "An amount in a currency: minor units and an ISO 4217 code",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
-            },
-            "bid": {
-              "name": "Bid",
-              "description": "What the seller pays per click, at most",
-              "attributes": {
-                "max_cpc": {
-                  "name": "maxCpc",
-                  "type": "Money",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/money"
-                  }
-                }
-              },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/money"
-                  },
-                  "relation": "uses",
-                  "label": "capped-at",
                   "cardinality": "1"
                 }
               ]
@@ -3884,7 +3821,7 @@
               "description": "No bid exceeds the daily budget",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/bid"
+                  "$ref": "#/boundedcontexts/advertising/valueobjects/bid"
                 },
                 {
                   "$ref": "#/boundedcontexts/advertising/aggregates/campaign/entities/campaign/attributes/daily_budget"
@@ -3998,6 +3935,46 @@
           }
         }
       },
+      "valueobjects": {
+        "money": {
+          "name": "Money",
+          "description": "An amount in a currency: minor units and an ISO 4217 code",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": []
+        },
+        "bid": {
+          "name": "Bid",
+          "description": "What the seller pays per click, at most",
+          "attributes": {
+            "max_cpc": {
+              "name": "maxCpc",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/advertising/valueobjects/money"
+              }
+            }
+          },
+          "relations": [
+            {
+              "target": {
+                "$ref": "#/boundedcontexts/advertising/valueobjects/money"
+              },
+              "relation": "uses",
+              "label": "capped-at",
+              "cardinality": "1"
+            }
+          ]
+        }
+      },
       "schemas": {
         "ad_clicked": {
           "name": "AdClicked",
@@ -4015,7 +3992,7 @@
               "name": "cost",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/money"
+                "$ref": "#/boundedcontexts/advertising/valueobjects/money"
               }
             }
           }
@@ -4101,7 +4078,7 @@
                   "type": "Resolution",
                   "description": "Absent while the case is open",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/customer_service/aggregates/case/valueobjects/resolution"
+                    "$ref": "#/boundedcontexts/customer_service/valueobjects/resolution"
                   }
                 }
               },
@@ -4116,7 +4093,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/customer_service/aggregates/case/valueobjects/resolution"
+                    "$ref": "#/boundedcontexts/customer_service/valueobjects/resolution"
                   },
                   "relation": "uses",
                   "label": "resolved-as",
@@ -4141,19 +4118,6 @@
                 "at": {
                   "name": "at",
                   "type": "date-time"
-                }
-              },
-              "relations": []
-            }
-          },
-          "valueobjects": {
-            "resolution": {
-              "name": "Resolution",
-              "description": "How it ended: refund, replacement, information, no action",
-              "attributes": {
-                "kind": {
-                  "name": "kind",
-                  "type": "'refund' | 'replacement' | 'information' | 'no-action'"
                 }
               },
               "relations": []
@@ -4222,6 +4186,19 @@
           }
         }
       },
+      "valueobjects": {
+        "resolution": {
+          "name": "Resolution",
+          "description": "How it ended: refund, replacement, information, no action",
+          "attributes": {
+            "kind": {
+              "name": "kind",
+              "type": "'refund' | 'replacement' | 'information' | 'no-action'"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {}
     },
     "vendor_purchasing_(legacy)": {
@@ -4271,7 +4248,6 @@
               "relations": []
             }
           },
-          "valueobjects": {},
           "invariants": {}
         }
       },
@@ -4289,6 +4265,7 @@
           }
         }
       },
+      "valueobjects": {},
       "schemas": {
         "purchase_order_received": {
           "name": "PurchaseOrderReceived",
@@ -4350,7 +4327,6 @@
               "relations": []
             }
           },
-          "valueobjects": {},
           "invariants": {}
         }
       },
@@ -4394,6 +4370,7 @@
           }
         }
       },
+      "valueobjects": {},
       "schemas": {}
     }
   },

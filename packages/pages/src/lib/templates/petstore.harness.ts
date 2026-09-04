@@ -27,8 +27,7 @@ export const PETSTORE_REFS = {
 	team: "#/teams/pet_shop_team",
 	aggregate: "#/boundedcontexts/catalog_bc/aggregates/pet",
 	entity: "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet",
-	valueobject:
-		"#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category",
+	valueobject: "#/boundedcontexts/catalog_bc/valueobjects/category",
 	service: "#/boundedcontexts/sales_bc/services/order_app",
 	operation:
 		"#/boundedcontexts/catalog_bc/services/pet_app/provides/reserve_pet_for_order",

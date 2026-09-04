@@ -82,13 +82,14 @@ export function* searchIndex(file: WorkspaceFile): Iterable<Hit> {
 	}
 	for (const bc of ws.boundedcontexts.values()) {
 		yield hit(file, "boundedcontext", bc, []);
+		// A value object belongs to the context, not to one of its aggregates.
+		for (const v of bc.valueobjects.values())
+			yield hit(file, "valueobject", v, [bc.name]);
 		for (const a of bc.aggregates.values()) {
 			const trail = [bc.name, a.name];
 			yield hit(file, "aggregate", a, [bc.name]);
 			for (const e of a.entities.values())
 				yield hit(file, "entity", e, trail, e.root ? "root" : undefined);
-			for (const v of a.valueobjects.values())
-				yield hit(file, "valueobject", v, trail);
 			for (const i of a.invariants.values())
 				yield hit(file, "invariant", i, trail);
 			for (const c of a.consumables.values())

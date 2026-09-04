@@ -38,6 +38,13 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 
 
 
+## Value Objects
+| Name | Description | Attributes | Used by |
+| --- | --- | --- | --- |
+| TrackingNumber | Carrier reference; a value because two shipments never share one | value: `string` | Shipment |
+| ShipmentStatus | planned, in-transit or delivered | value: `'planned' | 'in-transit' | 'delivered'` | Shipment |
+
+
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |

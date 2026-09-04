@@ -14,10 +14,11 @@ const page = (
 ) => render(Harness, { model, component: ContextPage, args: { context } });
 
 describe("ContextPage", () => {
-	it("names its six sections for the table of contents", () => {
+	it("names its seven sections for the table of contents", () => {
 		expect(sections.map((s) => s.id)).toEqual([
 			"position",
 			"model",
+			"values",
 			"integration",
 			"behaviour",
 			"schemas",
@@ -129,7 +130,9 @@ describe("ContextPage", () => {
 		expect(screen.getAllByText("no root")[0]).toHaveClass("warn");
 		expect(screen.getByText("unused")).toHaveClass("keyword");
 		expect(screen.getAllByText("not modelled").length).toBeGreaterThan(0);
-		expect(screen.getAllByText("nothing").length).toBe(2);
+		// The policy fires on nothing and issues nothing, and neither of the
+		// context's two value objects is held by an aggregate.
+		expect(screen.getAllByText("nothing").length).toBe(4);
 		expect(
 			screen.getByText("The schema has no attributes."),
 		).toBeInTheDocument();

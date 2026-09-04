@@ -32,6 +32,14 @@ Open-host service for /store/order endpoints
 
 
 
+## Value Objects
+| Name | Description | Attributes | Used by |
+| --- | --- | --- | --- |
+| OrderStatus | Where the order is in its lifecycle | value: `'placed' | 'approved' | 'delivered'` | Order |
+| Quantity | The v3 API's quantity field, kept for the wire shape. A Pet is an individual animal, so the invariant below pins it to 1 | value: `int > 0` | Order |
+| ShipDate | When the order ships; set by Fulfilment once dispatch is planned | value: `date-time` | Order |
+
+
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
