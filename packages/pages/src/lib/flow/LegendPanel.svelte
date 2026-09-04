@@ -4,6 +4,7 @@ import type { Graph } from "./graph";
 import type { DiagramKind } from "./kind";
 import { legendEntries } from "./legend";
 import { diagramOptions } from "./options.svelte";
+import { LEGEND_PANEL_CLASS } from "./panel-fit";
 
 /**
  * Top-left index of the terms the diagram shows: abbreviations with their
@@ -18,7 +19,7 @@ const toggle = () => diagramOptions.set({ legendCollapsed: !collapsed });
 </script>
 
 {#if entries.length}
-	<Panel position="top-left" class="diagram-legend">
+	<Panel position="top-left" class={LEGEND_PANEL_CLASS}>
 		<button class="legend-header" type="button" aria-expanded={!collapsed} onclick={toggle}>
 			<i class={`codicon codicon-chevron-${collapsed ? "right" : "down"}`}></i> Legend
 		</button>
@@ -34,6 +35,7 @@ const toggle = () => diagramOptions.set({ legendCollapsed: !collapsed });
 {/if}
 
 <style>
+	/* The class is panel-fit.ts's LEGEND_PANEL_CLASS; keep the two in step. */
 	:global(.diagram-legend) {
 		max-width: 240px;
 		max-height: calc(100% - 140px);
