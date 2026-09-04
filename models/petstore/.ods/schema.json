@@ -62,19 +62,6 @@
                 "name": {
                     "type": "string"
                 },
-                "schema": {
-                    "additionalProperties": false,
-                    "description": "The schema that models this attribute's type, when the attribute is a\nshape of its own: the lines of an order, the address inside a customer.\nMutually exclusive with `valueobject`; a collection stays in the type\nstring (`OrderLine[]`).",
-                    "properties": {
-                        "$ref": {
-                            "type": "string"
-                        }
-                    },
-                    "required": [
-                        "$ref"
-                    ],
-                    "type": "object"
-                },
                 "type": {
                     "description": "Free-form type name, e.g. `string`, `Money`, `Date`.",
                     "type": "string"
@@ -644,7 +631,7 @@
             "description": "Represents an invariant in the Open Domain Specification (ODS).",
             "properties": {
                 "constrains": {
-                    "description": "What this invariant is a rule about: the entities, value objects and\nattributes it holds over, and the consumables of its own aggregate it\nconstrains, for a rule about what an operation may do.",
+                    "description": "The entities, value objects or attributes this invariant constrains.",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
