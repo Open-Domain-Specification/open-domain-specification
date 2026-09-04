@@ -27,9 +27,48 @@ jobs:
           name: ods-vscode-vsix
           path: artifacts/ods-vscode.vsix
 
+  # The pages Playwright suite, kept out of `npm test` so a developer's unit run
+  # never has to build browsers. Its own job so a browser failure reads as a
+  # browser failure rather than a red `npm test`.
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      # Every workspace, not just pages: global-setup imports the package's own
+      # `dist/site.js`, and the docsify spec walks the petstore's generated docs.
+      - run: npm run build
+      # Keyed on the lockfile, which is what pins the Playwright version the
+      # browser build has to match.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+      # Unconditional: a cache hit still needs the system libraries Chromium
+      # links against, and `install` skips the download when the cached browser
+      # already matches the pinned version.
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run the pages end-to-end suite
+        working-directory: packages/pages
+        run: npx playwright test
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: packages/pages/test-results
+          retention-days: 7
+          if-no-files-found: ignore
+
   publish:
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, e2e]
     if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
