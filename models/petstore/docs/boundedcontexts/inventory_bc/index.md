@@ -32,7 +32,10 @@ Open-host service for /store/inventory
 
 
 ## Schemas
-> No schemas.
+| Name | Description | Attributes | Used by |
+| --- | --- | --- | --- |
+| InventoryCounts | How many pets stand in each status right now | available: `int32`, pending: `int32`, sold: `int32` | GetInventory |
+
 
 ## Policies
 ![flowmap](./flowmap.svg)

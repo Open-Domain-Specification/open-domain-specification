@@ -5,6 +5,8 @@ export const sectionsFor = (c: Consumable) => {
 	const isEvent = c.type === "event";
 	return [
 		{ id: "payload", label: "Payload" },
+		// Only an operation answers its caller, and only when it named a shape.
+		...(c.returns ? [{ id: "returns", label: "Returns" }] : []),
 		isEvent
 			? { id: "raised", label: "Raised by" }
 			: { id: "raises", label: "Raises" },
@@ -56,6 +58,9 @@ const policies = $derived(
 const schemaAttributes = $derived(
 	c.schema ? [...c.schema.attributes.values()] : [],
 );
+const returnsAttributes = $derived(
+	c.returns ? [...c.returns.attributes.values()] : [],
+);
 const crumbs = $derived<[string, string][]>([
 	...contextCrumbs(ws, bc),
 	[provider.ref, provider.name],
@@ -82,6 +87,9 @@ const policyColumns: Column[] = [
 			<Definition term="Payload">
 				{#if c.schema}<Lockup kind="schema" name={c.schema.name} ref={c.schema.ref} />{:else}<Keyword text="no schema" />{/if}
 			</Definition>
+			{#if c.returns}
+				<Definition term="Returns"><Lockup kind="schema" name={c.returns.name} ref={c.returns.ref} /></Definition>
+			{/if}
 			{#if c.disposition && c.disposition !== "by-design"}
 				<Definition term="Disposition"><Disposition disposition={c.disposition} /></Definition>
 			{/if}
@@ -104,6 +112,17 @@ const policyColumns: Column[] = [
 		<EmptyState text="No schema declared." />
 	{/if}
 </Section>
+
+{#if c.returns}
+	<Section
+		id="returns"
+		title="Returns"
+		lead="What the caller gets back. Callers depend on every attribute here, so removing one is a breaking change."
+		count={returnsAttributes.length}
+	>
+		<AttributeTable attributes={returnsAttributes} empty="The returned schema has no attributes." />
+	</Section>
+{/if}
 
 {#if isEvent}
 	<Section id="raised" title="Raised by" lead="Operations whose success produces this event." count={raisedBy.length}>

@@ -210,7 +210,7 @@ const internalConsumable: Rule = (workspace) => {
 	return diagnostics;
 };
 
-/** A consumable's payload is one of its own context's schemas. */
+/** A consumable's payloads, sent and returned, are its own context's schemas. */
 const schemaContext: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const bc of workspace.boundedcontexts.values()) {
@@ -224,11 +224,39 @@ const schemaContext: Rule = (workspace) => {
 						ref: c.ref,
 					});
 				}
+				if (c.returns && c.returns.boundedcontext !== bc) {
+					diagnostics.push({
+						severity: "error",
+						rule: "schema-context",
+						message: `"${c.name}" returns schema "${c.returns.name}" from "${c.returns.boundedcontext.name}"; a payload belongs to the context that publishes it`,
+						ref: c.ref,
+					});
+				}
 				if (c.internal && c.pattern) {
 					diagnostics.push({
 						severity: "warning",
 						rule: "internal-consumable",
 						message: `"${c.name}" is internal but declares the upstream role "${c.pattern}", which only matters to other contexts`,
+						ref: c.ref,
+					});
+				}
+			}
+		}
+	}
+	return diagnostics;
+};
+
+/** Only an operation answers its caller, so only an operation declares returns. */
+const returnsOnOperation: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const bc of workspace.boundedcontexts.values()) {
+		for (const p of [...bc.aggregates.values(), ...bc.services.values()]) {
+			for (const c of p.consumables.values()) {
+				if (c.type === "event" && c.returns) {
+					diagnostics.push({
+						severity: "error",
+						rule: "returns-on-operation",
+						message: `"${c.name}" is an event but declares returns "${c.returns.name}"; an event is a fact nobody answers`,
 						ref: c.ref,
 					});
 				}
@@ -411,6 +439,14 @@ const RULES: CataloguedRule[] = [
 		why: "The context that publishes a message owns its shape; borrowing another context's schema ties the two together.",
 		fix: "Move or copy the schema into the publishing context and point the consumable at that one.",
 		check: schemaContext,
+	},
+	{
+		rule: "returns-on-operation",
+		severities: ["error"],
+		summary: "Only an operation declares returns; an event never does.",
+		why: "returns names what a caller gets back from a request. An event is a fact already published to whoever is listening; there is no caller to answer, so a returns on one describes an exchange that does not happen.",
+		fix: "Drop returns from the event, or change the consumable's type to operation if it really is a request.",
+		check: returnsOnOperation,
 	},
 	{
 		rule: "consumable-kind",

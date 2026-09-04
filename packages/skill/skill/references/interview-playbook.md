@@ -100,6 +100,9 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   an upstream `pattern`.
 - "What information travels with that announcement or request?" → a schema on the context,
   attached with `schema`.
+- For an operation, follow up: "and what comes back?" → a second schema on the same context,
+  attached with `returns`. A command that answers with nothing leaves `returns` off; a query
+  that answers with nothing is not a query, so keep asking. Never put `returns` on an event.
 - "When <event> happens, what do you then do automatically?" → a policy with `on` the event
   and `then` the operation. Either side may live in another context.
 - "Who outside this part listens for <event>?" → a consumption on their aggregate or service,

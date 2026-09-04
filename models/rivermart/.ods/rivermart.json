@@ -310,11 +310,14 @@
             },
             "get_product": {
               "name": "GetProduct",
-              "description": "Read one product with its variants",
+              "description": "Asked with a ProductRef, answers with one product and its variants",
               "pattern": "open-host-service",
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/catalogue/schemas/product_ref"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/catalogue/schemas/product_detail"
               }
             }
           },
@@ -369,6 +372,32 @@
               "name": "productId",
               "type": "string",
               "identity": true
+            }
+          }
+        },
+        "product_detail": {
+          "name": "ProductDetail",
+          "description": "One product with its variants, as GetProduct answers it",
+          "attributes": {
+            "product_id": {
+              "name": "productId",
+              "type": "string",
+              "identity": true
+            },
+            "title": {
+              "name": "title",
+              "type": "string"
+            },
+            "brand": {
+              "name": "brand",
+              "type": "Brand",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/product/valueobjects/brand"
+              }
+            },
+            "variants": {
+              "name": "variants",
+              "type": "Variant[]"
             }
           }
         }

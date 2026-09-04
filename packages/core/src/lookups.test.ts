@@ -34,7 +34,14 @@ describe("Workspace ref lookups", () => {
 		);
 		expect(fixture.orderPlaced.schema).toBe(fixture.orderSummary);
 		expect(fixture.orderPlaced.type).toBe("event");
-		expect(fixture.orderSummary.consumables).toEqual([fixture.orderPlaced]);
+		// Both ends count: the event carries the summary, and Place Order answers
+		// with it. Order Request is only ever sent, so it lists one consumable.
+		expect(fixture.orderSummary.consumables).toEqual([
+			fixture.orderPlaced,
+			fixture.placeOrder,
+		]);
+		expect(fixture.placeOrder.returns).toBe(fixture.orderSummary);
+		expect(fixture.orderRequest.consumables).toEqual([fixture.placeOrder]);
 		expect(fixture.orderSummary.attributes.get("total")?.valueobject).toBe(
 			fixture.money,
 		);

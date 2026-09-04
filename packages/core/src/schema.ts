@@ -156,8 +156,14 @@ export interface ConsumableSchema {
 	 * consumables may not be consumed from another context.
 	 */
 	internal?: boolean;
-	/** The payload shape, one of the context's schemas. */
+	/** The payload the caller sends, one of the context's schemas. */
 	schema?: { $ref: string };
+	/**
+	 * For operations: the payload shape the caller gets back, one of the
+	 * context's schemas. Absent means the operation returns nothing worth
+	 * naming, which is honest for commands. Never valid on an event.
+	 */
+	returns?: { $ref: string };
 	/** For operations: the event consumables this operation may raise. */
 	raises?: { $ref: string }[];
 	/** Grounded statements about the real system behind this consumable. */

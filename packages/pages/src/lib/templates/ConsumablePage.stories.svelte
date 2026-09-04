@@ -33,3 +33,8 @@ const { Story } = defineMeta({
 <Story name="Event">
 	{#snippet template()}<Theme mode="light"><Page {model} ref={PETSTORE_REFS.event} /></Theme>{/snippet}
 </Story>
+
+<!-- A query: asked with one schema, answered with another, so the Returns section draws under Payload. -->
+<Story name="Query with returns">
+	{#snippet template()}<Theme mode="light"><Page {model} ref={PETSTORE_REFS.query} /></Theme>{/snippet}
+</Story>

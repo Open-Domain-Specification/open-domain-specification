@@ -20,10 +20,10 @@ Materialized view: { available: number, pending: number, sold: number }. An aggr
 > No invariants.
 
 ## Provides
-| Name | Type | Internal | Pattern | Description | Schema | Raises |
-| --- | --- | --- | --- | --- | --- | --- |
-| InventoryUpdated | event | no | published-language | Inventory counts changed | - | - |
-| RecountInventory | operation | yes | - | Recompute the status→count map from catalog and sales facts | - | InventoryUpdated |
+| Name | Type | Internal | Pattern | Description | Schema | Returns | Raises |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| InventoryUpdated | event | no | published-language | Inventory counts changed | - | - | - |
+| RecountInventory | operation | yes | - | Recompute the status→count map from catalog and sales facts | - | - | InventoryUpdated |
 
 
 ## Consumes

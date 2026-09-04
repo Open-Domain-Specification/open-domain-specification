@@ -60,6 +60,14 @@
 
 **Usual fix:** Move or copy the schema into the publishing context and point the consumable at that one.
 
+## `returns-on-operation` (error)
+
+**Requires:** Only an operation declares returns; an event never does.
+
+**Why it matters:** returns names what a caller gets back from a request. An event is a fact already published to whoever is listening; there is no caller to answer, so a returns on one describes an exchange that does not happen.
+
+**Usual fix:** Drop returns from the event, or change the consumable's type to operation if it really is a request.
+
 ## `consumable-kind` (error)
 
 **Requires:** Policies react to events and issue operations; only operations raise events, and they raise only events.

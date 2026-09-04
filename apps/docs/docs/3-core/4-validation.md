@@ -17,6 +17,7 @@ severity, a rule id, a message and the ref of the element concerned.
 | `role-coherence` | warning | consumables and consumptions crossing contexts declare their roles |
 | `separate-ways` | error | contexts that declared separate ways do not exchange consumables |
 | `internal-consumable` | error | an internal consumable is not consumed, reacted to or issued from another context |
+| `returns-on-operation` | error | only an operation declares `returns`; an event has no caller to answer |
 | `consumable-kind` | error | policies react to events and issue operations; only operations raise, and only events |
 | `policy-complete` | warning | a policy reacts to at least one event and issues at least one operation |
 | `context-serves-subdomain` | warning | every context serves a subdomain |

@@ -41,6 +41,7 @@ element lives in a workspace file; `DSL` is the core call that creates it.
 | "doing that announces ..." | operation raises event | operation `raises: [{$ref event}]` | `op.raises(event)` |
 | "only we use that", "nobody outside needs it" | internal consumable | `"internal": true`, no `pattern` | `internal: true` |
 | "what's in the message / the request body" | Schema | `schemas.<id>` on the context; consumable `schema: {$ref}` | `bc.addSchema(name).addAttribute(...)`; `schema: s` |
+| "what you get back", "the response body", "it returns ..." | Schema on the operation | operation `returns: {$ref}` on the provider's own context | `provides(name, {type: "operation", returns: s})` |
 | "when X happens we then Y", "automatically after X" | Policy | `policies.<id>` with `on: [event refs]`, `then: [operation refs]` | `bc.addPolicy(name, {description}).on(e).then(op)` |
 | "we listen for their X" | consumption | `consumes: [{consumable: {$ref}, pattern}]` | `agg.consumes(theirEvent, {pattern})` |
 | "the API layer", "the endpoint handler", "the use case" | application service | `services.<id>` `type: "application"` | `bc.addService(name, {type: "application", description})` |

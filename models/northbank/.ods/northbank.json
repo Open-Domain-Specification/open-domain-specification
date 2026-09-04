@@ -523,11 +523,14 @@
             },
             "get_customer": {
               "name": "GetCustomer",
-              "description": "Read a customer's verified details",
+              "description": "Asked with a CustomerRef, answers with the customer's verified details",
               "pattern": "open-host-service",
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/customer_&_kyc/schemas/customer_ref"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/schemas/customer_details"
               }
             }
           },
@@ -634,6 +637,38 @@
             "verified_at": {
               "name": "verifiedAt",
               "type": "date-time"
+            }
+          }
+        },
+        "customer_details": {
+          "name": "CustomerDetails",
+          "description": "The verified details GetCustomer answers with",
+          "attributes": {
+            "customer_id": {
+              "name": "customerId",
+              "type": "string",
+              "identity": true
+            },
+            "date_of_birth": {
+              "name": "dateOfBirth",
+              "type": "DateOfBirth",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/date_of_birth"
+              }
+            },
+            "address": {
+              "name": "address",
+              "type": "Address",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/address"
+              }
+            },
+            "kyc_status": {
+              "name": "kycStatus",
+              "type": "KycStatus",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/kyc_status"
+              }
             }
           }
         },

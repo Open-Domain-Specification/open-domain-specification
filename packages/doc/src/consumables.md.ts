@@ -1,16 +1,22 @@
-import type { Consumable } from "@open-domain-specification/core";
+import type { Consumable, DataSchema } from "@open-domain-specification/core";
 import { commentsMd } from "./comments.md";
 import { markdownTable } from "./lib/markdown-table";
 import { pathToIndexMd } from "./lib/paths";
+
+/** Link one schema to its row in the Schemas table of its bounded context page. */
+const schemaRowLinkMd = (schema: DataSchema, fromPath: string): string =>
+	`[${schema.name}](${pathToIndexMd(schema.boundedcontext.path, fromPath)}#schemas)`;
 
 /** Link to the schema's row in the Schemas table of its bounded context page. */
 export const schemaLinkMd = (
 	consumable: Consumable,
 	fromPath: string,
 ): string =>
-	consumable.schema
-		? `[${consumable.schema.name}](${pathToIndexMd(consumable.schema.boundedcontext.path, fromPath)}#schemas)`
-		: "-";
+	consumable.schema ? schemaRowLinkMd(consumable.schema, fromPath) : "-";
+
+/** The shape the operation answers with, linked the same way its payload is. */
+const returnsLinkMd = (consumable: Consumable, fromPath: string): string =>
+	consumable.returns ? schemaRowLinkMd(consumable.returns, fromPath) : "-";
 
 const consumableRow = (consumable: Consumable, fromPath: string) => [
 	consumable.name,
@@ -19,6 +25,7 @@ const consumableRow = (consumable: Consumable, fromPath: string) => [
 	consumable.pattern ?? "-",
 	consumable.description,
 	schemaLinkMd(consumable, fromPath),
+	returnsLinkMd(consumable, fromPath),
 	consumable.type === "operation"
 		? consumable.raisedEvents.map((it) => it.name).join(", ") || "-"
 		: "-",
@@ -37,7 +44,16 @@ export const providesTableMd = (
 	if (consumables.size === 0) return "> No consumables.";
 	const provided = Array.from(consumables.values());
 	const table = markdownTable(
-		["Name", "Type", "Internal", "Pattern", "Description", "Schema", "Raises"],
+		[
+			"Name",
+			"Type",
+			"Internal",
+			"Pattern",
+			"Description",
+			"Schema",
+			"Returns",
+			"Raises",
+		],
 		provided.map((it) => consumableRow(it, fromPath)),
 	);
 	const comments = provided

@@ -42,7 +42,15 @@ An aggregate or service **provides** consumables and nothing else crosses a
 node boundary. An `event` consumable records that something happened; an
 `operation` consumable is the intention to change something (a command or an
 API call) and lists the events it may **raise** (`operation.raises(event)`).
-Either may carry a `schema`.
+Either may carry a `schema`: the payload the caller sends.
+
+An operation may also declare a `returns` schema, the shape the caller gets
+back. It is what makes a query modellable — `GetPetSummary` is asked with a
+`PetId` and answers with a `PetSummary` — and both schemas belong to the
+provider's own context. Leave `returns` off when the operation answers with
+nothing worth naming, which is honest for most commands; an event never
+declares one, because a fact announced to whoever is listening has no caller
+to answer.
 
 A consumable is published by default and carries the upstream `pattern` it
 is offered under. Mark it `internal: true` when it is raised or handled

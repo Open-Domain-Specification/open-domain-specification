@@ -174,6 +174,57 @@ describe("Workspace.validate", () => {
 		expect(rulesOf(ws)).toContain("warning:internal-consumable");
 	});
 
+	it("keeps returned schemas inside the publishing context too", () => {
+		const ws = emptyWorkspace();
+		const a = ws.addBoundedContext("A", { description: "" });
+		const b = ws.addBoundedContext("B", { description: "" });
+		const foreign = a.addSchema("Foreign");
+		const own = b.addSchema("Own");
+		const svc = b.addService("S", { description: "", type: "application" });
+		svc.provides("Borrows", {
+			description: "",
+			type: "operation",
+			schema: own,
+			returns: foreign,
+		});
+		// The sent payload is fine on its own, so only returns may trip the rule.
+		svc.provides("Fine", {
+			description: "",
+			type: "operation",
+			schema: own,
+			returns: own,
+		});
+		const rules = ws.validate().filter((d) => d.rule === "schema-context");
+		expect(rules.map((d) => d.message)).toEqual([
+			expect.stringContaining('"Borrows" returns schema "Foreign" from "A"'),
+		]);
+	});
+
+	it("rejects returns on an event, and allows it on an operation", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const answer = bc.addSchema("Answer");
+		const svc = bc.addService("S", { description: "", type: "application" });
+		svc.provides("Asked", {
+			description: "",
+			type: "event",
+			returns: answer,
+		});
+		svc.provides("Ask", {
+			description: "",
+			type: "operation",
+			returns: answer,
+		});
+		const rules = ws
+			.validate()
+			.filter((d) => d.rule === "returns-on-operation");
+		expect(rules).toHaveLength(1);
+		expect(rules[0].severity).toBe("error");
+		expect(rules[0].message).toContain(
+			'"Asked" is an event but declares returns "Answer"',
+		);
+	});
+
 	it("checks consumable kinds on policies and raises", () => {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("BC", { description: "" });

@@ -386,11 +386,14 @@
             },
             "get_pet_summary": {
               "name": "GetPetSummary",
-              "description": "Slim {id,name,status} read offered to other contexts, so Sales can check availability without coupling to the full Pet",
+              "description": "GET /pets/{id}/summary; asked with a PetId, answers with a PetSummary, so Sales can check availability without coupling to the full Pet",
               "pattern": "open-host-service",
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_summary"
               },
               "comments": [
                 {
@@ -506,6 +509,28 @@
               "name": "petId",
               "type": "int64",
               "identity": true
+            }
+          }
+        },
+        "pet_summary": {
+          "name": "PetSummary",
+          "description": "The slim read of a pet other contexts are allowed to hold",
+          "attributes": {
+            "pet_id": {
+              "name": "petId",
+              "type": "int64",
+              "identity": true
+            },
+            "name": {
+              "name": "name",
+              "type": "string"
+            },
+            "status": {
+              "name": "status",
+              "type": "PetStatus",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+              }
             }
           }
         }
@@ -1024,9 +1049,12 @@
           "provides": {
             "get_inventory": {
               "name": "GetInventory",
-              "description": "GET /store/inventory → { [status]: count }",
+              "description": "GET /store/inventory; takes nothing, answers with the counts",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "returns": {
+                "$ref": "#/boundedcontexts/inventory_bc/schemas/inventory_counts"
+              }
             }
           },
           "consumes": [
@@ -1081,7 +1109,26 @@
           }
         }
       },
-      "schemas": {}
+      "schemas": {
+        "inventory_counts": {
+          "name": "InventoryCounts",
+          "description": "How many pets stand in each status right now",
+          "attributes": {
+            "available": {
+              "name": "available",
+              "type": "int32"
+            },
+            "pending": {
+              "name": "pending",
+              "type": "int32"
+            },
+            "sold": {
+              "name": "sold",
+              "type": "int32"
+            }
+          }
+        }
+      }
     },
     "fulfilment_bc": {
       "name": "Fulfilment BC",

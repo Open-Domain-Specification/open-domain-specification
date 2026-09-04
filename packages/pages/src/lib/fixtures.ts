@@ -106,15 +106,40 @@ export function edgeCaseModel(): Model {
 		description: "Nothing carries this payload.",
 	});
 	schemaUnused.addAttribute("Field", { type: "string" });
+	const schemaEchoed = bcMain.addSchema("Echoed Schema", {
+		description: "Sent and returned by the same operation.",
+	});
+	schemaEchoed.addAttribute("Field", { type: "string" });
+	const schemaAnswer = bcMain.addSchema("Answer Schema", {
+		description: "Only ever returned, never sent.",
+	});
+	schemaAnswer.addAttribute("Result", { type: "string" });
 
 	aggNoRoot.addConsumable("Silent Operation", {
 		type: "operation",
 		description: "Carries a payload with no attributes.",
 		schema: schemaEmpty,
 	});
+	// Provided by an aggregate rather than a service, so the subsection an
+	// AggregatePage draws is the surface that has to show the returned shape.
+	// No reference model has one of these yet.
+	aggNoRoot.addConsumable("Answering Operation", {
+		type: "operation",
+		description: "Asked with one shape and answered with another.",
+		schema: schemaEmpty,
+		returns: schemaAnswer,
+	});
 	aggNoRoot.addConsumable("Orphan Event", {
 		type: "event",
 		description: "Never raised by any operation.",
+	});
+	// One shape on both ends of the same exchange: an upsert asked with the
+	// record and answered with the record as stored.
+	aggNoRoot.addConsumable("Echoing Operation", {
+		type: "operation",
+		description: "Takes and answers with the same shape.",
+		schema: schemaEchoed,
+		returns: schemaEchoed,
 	});
 
 	bcMain.addPolicy("Idle Policy", {

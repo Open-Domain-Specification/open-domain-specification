@@ -31,8 +31,18 @@ const crumbs = $derived(contextCrumbs(model.workspace, bc));
 const columns: Column[] = [
 	{ key: "name", label: "Consumable", sortable: true },
 	{ key: "kind", label: "Kind" },
+	{ key: "direction", label: "Carried as" },
 	{ key: "provider", label: "Provider" },
 ];
+
+/**
+ * Which end of the exchange this shape sits on. An operation may both take and
+ * answer with one schema, so the two are not exclusive.
+ */
+const directionOf = (c: (typeof carriers)[number]) =>
+	[c.schema === s ? "payload" : "", c.returns === s ? "returns" : ""]
+		.filter(Boolean)
+		.join(", ");
 </script>
 
 <PageHeader description={s.description} {crumbs}>
@@ -52,7 +62,7 @@ const columns: Column[] = [
 <Section
 	id="carriers"
 	title="Carried by"
-	lead="Consumables that use this schema as their payload. A command and the event it raises often share one."
+	lead="Consumables that depend on this shape, whether they send it or answer with it. A command and the event it raises often share one."
 	count={carriers.length}
 	problems={problemsUnder(model, s.ref)}
 >
@@ -62,6 +72,8 @@ const columns: Column[] = [
 				<Lockup kind={kindOf(c)} name={c.name} ref={c.ref} />
 			{:else if col.key === "kind"}
 				<ConsumableKeywords consumable={c} />
+			{:else if col.key === "direction"}
+				{directionOf(c)}
 			{:else}
 				<Lockup kind={kindOf(c.provider)} name={c.provider.name} ref={c.provider.ref} />
 			{/if}

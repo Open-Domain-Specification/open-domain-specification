@@ -983,8 +983,13 @@ export type ConsumableAttributes = {
 	type: ods.ConsumableType;
 	/** Stays inside the context; never offered to other contexts. */
 	internal?: boolean;
-	/** The payload shape, one of the context's schemas. */
+	/** The payload the caller sends, one of the context's schemas. */
 	schema?: DataSchema;
+	/**
+	 * For operations: the payload shape the caller gets back. Absent means the
+	 * operation returns nothing worth naming. Never valid on an event.
+	 */
+	returns?: DataSchema;
 	id?: string;
 } & EvidenceOptions;
 
@@ -998,6 +1003,8 @@ export class Consumable
 	type: ods.ConsumableType;
 	internal: boolean;
 	schema?: DataSchema;
+	/** For operations: the payload shape the caller gets back. */
+	returns?: DataSchema;
 	/** For operations: the event consumables this operation may raise. */
 	raisedEvents: Consumable[] = [];
 	provider: Aggregate | Service;
@@ -1025,6 +1032,7 @@ export class Consumable
 		this.type = attributes.type;
 		this.internal = attributes.internal ?? false;
 		this.schema = attributes.schema;
+		this.returns = attributes.returns;
 		this.comments = attributes.comments ?? [];
 		this.disposition = normaliseDisposition(attributes.disposition);
 		this.provider = provider;
@@ -1056,6 +1064,7 @@ export class Consumable
 			type: this.type,
 			internal: this.internal || undefined,
 			schema: this.schema && { $ref: this.schema.ref },
+			returns: this.returns && { $ref: this.returns.ref },
 			raises: this.raisedEvents.length
 				? this.raisedEvents.map((it) => ({ $ref: it.ref }))
 				: undefined,
@@ -1693,13 +1702,17 @@ export class DataSchema
 		return new Attribute(this, name, options);
 	}
 
-	/** Consumables across the workspace that carry this schema. */
+	/**
+	 * Consumables across the workspace that depend on this shape, whether they
+	 * send it as their payload or answer with it. Both are the same promise:
+	 * removing an attribute breaks whoever is on the other end.
+	 */
 	get consumables(): Consumable[] {
 		const out: Consumable[] = [];
 		for (const bc of this.boundedcontext.workspace.boundedcontexts.values()) {
 			for (const p of [...bc.aggregates.values(), ...bc.services.values()])
 				for (const c of p.consumables.values())
-					if (c.schema === this) out.push(c);
+					if (c.schema === this || c.returns === this) out.push(c);
 		}
 		return out;
 	}

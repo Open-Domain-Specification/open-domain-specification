@@ -537,6 +537,26 @@ const titleRefSchema = catalogueBC.addSchema("TitleRef", {
 });
 titleRefSchema.addAttribute("titleId", { type: "string", identity: true });
 titleRefSchema.addAttribute("episodeId", { type: "string" });
+// A returned shape: GetTitle is asked with a TitleRef and answers with this.
+const titleDetailSchema = catalogueBC.addSchema("TitleDetail", {
+	description: "A title with its seasons, episodes and availability",
+});
+titleDetailSchema.addAttribute("titleId", { type: "string", identity: true });
+titleDetailSchema.addAttribute("name", { type: "string" });
+titleDetailSchema.addAttribute("kind", { type: "'film' | 'series'" });
+titleDetailSchema.addAttribute("rating", {
+	type: "MaturityRating",
+	valueobject: ratingVO,
+});
+titleDetailSchema.addAttribute("artwork", {
+	type: "Artwork",
+	valueobject: artworkVO,
+});
+titleDetailSchema.addAttribute("availability", {
+	type: "Availability",
+	valueobject: availabilityVO,
+});
+titleDetailSchema.addAttribute("seasons", { type: "Season[]" });
 const availabilityChangedSchema = catalogueBC.addSchema(
 	"TitleAvailabilityChanged",
 );
@@ -593,10 +613,12 @@ const catalogueApi = catalogueBC.addService("CatalogueAPI", {
 	type: "application",
 });
 const getTitle = catalogueApi.provides("GetTitle", {
-	description: "Read a title with seasons, episodes and availability",
+	description:
+		"Asked with a TitleRef, answers with the title's seasons, episodes and availability",
 	type: "operation",
 	pattern: "open-host-service",
 	schema: titleRefSchema,
+	returns: titleDetailSchema,
 });
 
 catalogueBC.addTerm("Title", {

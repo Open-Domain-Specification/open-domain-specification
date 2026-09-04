@@ -235,6 +235,17 @@ const petIdSchema = catalogBC.addSchema("PetId", {
 		"Identifies one pet; shared by every consumable that only needs the id",
 });
 petIdSchema.addAttribute("petId", { type: "int64", identity: true });
+// A returned shape: what GetPetSummary answers with, as opposed to the PetId
+// it is asked with. Sales depends on these three attributes and nothing else.
+const petSummarySchema = catalogBC.addSchema("PetSummary", {
+	description: "The slim read of a pet other contexts are allowed to hold",
+});
+petSummarySchema.addAttribute("petId", { type: "int64", identity: true });
+petSummarySchema.addAttribute("name", { type: "string" });
+petSummarySchema.addAttribute("status", {
+	type: "PetStatus",
+	valueobject: petStatusVO,
+});
 
 // Events are past-tense facts. published-language says other contexts may
 // rely on their shape.
@@ -359,10 +370,11 @@ petApp
 // A deliberately slim read offered to other contexts, so they need not know the whole Pet.
 const getPetSummaryOp = petApp.provides("GetPetSummary", {
 	description:
-		"Slim {id,name,status} read offered to other contexts, so Sales can check availability without coupling to the full Pet",
+		"GET /pets/{id}/summary; asked with a PetId, answers with a PetSummary, so Sales can check availability without coupling to the full Pet",
 	type: "operation",
 	pattern: "open-host-service",
 	schema: petIdSchema,
+	returns: petSummarySchema,
 	comments: [
 		{
 			text: "The summary projection is the only Catalog read Sales is allowed to make.",
@@ -835,14 +847,24 @@ inventoryBC
 	)
 	.then(recountInventory);
 
+// The counts the projection answers with. A query that takes no request body
+// still has a shape worth naming: this is what callers depend on.
+const inventoryCountsSchema = inventoryBC.addSchema("InventoryCounts", {
+	description: "How many pets stand in each status right now",
+});
+inventoryCountsSchema.addAttribute("available", { type: "int32" });
+inventoryCountsSchema.addAttribute("pending", { type: "int32" });
+inventoryCountsSchema.addAttribute("sold", { type: "int32" });
+
 const inventoryQuery = inventoryBC.addService("InventoryQuery", {
 	description: "Open-host service for /store/inventory",
 	type: "application",
 });
 inventoryQuery.provides("GetInventory", {
-	description: "GET /store/inventory → { [status]: count }",
+	description: "GET /store/inventory; takes nothing, answers with the counts",
 	type: "operation",
 	pattern: "open-host-service",
+	returns: inventoryCountsSchema,
 });
 // A consumption inside one context needs no pattern: there is no boundary to protect.
 inventoryQuery.consumes(inventoryUpdated, {});

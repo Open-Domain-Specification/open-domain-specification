@@ -112,7 +112,8 @@ Represents a consumable in the Open Domain Specification (ODS).
 | `name` | string | yes |  |
 | `pattern` | "open-host-service" | "published-language" | no | The upstream role this consumable is offered under. Absent on internal consumables. |
 | `raises` | array of `{ "$ref": string }` | no | For operations: the event consumables this operation may raise. |
-| `schema` | `{ "$ref": string }` | no | The payload shape, one of the context's schemas. |
+| `returns` | `{ "$ref": string }` | no | For operations: the payload shape the caller gets back, one of the context's schemas. Absent means the operation returns nothing worth naming, which is honest for commands. Never valid on an event. |
+| `schema` | `{ "$ref": string }` | no | The payload the caller sends, one of the context's schemas. |
 | `type` | "event" | "operation" | yes |  |
 
 No other fields are allowed.

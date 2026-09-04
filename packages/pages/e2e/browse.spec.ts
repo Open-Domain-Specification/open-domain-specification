@@ -4,6 +4,9 @@ import { ORDER_REF, servePetstore, viewerAt, WORKSPACE_NAME } from "./helpers";
 /** Moving around a loaded workspace: sidebar, table of contents, ref links and history. */
 
 const ATTRIBUTE_REF = `${ORDER_REF}/entities/order/attributes/status`;
+/** The one petstore operation asked with one schema and answered with another. */
+const GET_PET_SUMMARY_REF =
+	"#/boundedcontexts/catalog_bc/services/pet_app/provides/get_pet_summary";
 
 test.beforeEach(async ({ page }) => {
 	await servePetstore(page);
@@ -133,4 +136,38 @@ test("a leaf ref opens its owner page and flashes the element", async ({
 	const row = page.locator(`tr[id="${ATTRIBUTE_REF}"]`);
 	await expect(row).toHaveClass(/flash/);
 	await expect(row).toBeInViewport();
+});
+
+test("a query shows what it is asked with and what it answers with, and the returned schema links back", async ({
+	page,
+}) => {
+	await page.evaluate((ref) => {
+		location.hash = ref;
+	}, GET_PET_SUMMARY_REF);
+
+	await expect(page.locator("main h1")).toContainText("GetPetSummary");
+	await expect(page.locator("main h1 .detail")).toHaveText("Operation");
+
+	// Two facts, two tables: PetId goes in, PetSummary comes back.
+	const facts = page.locator("main dl").first();
+	await expect(facts).toContainText("Payload");
+	await expect(facts).toContainText("Returns");
+	await expect(page.locator("#payload tbody")).toContainText("petId");
+	const returns = page.locator("#returns");
+	await returns.scrollIntoViewIfNeeded();
+	await expect(returns.locator("tbody")).toContainText("status");
+
+	// The Returns fact links to the schema, whose carriers table names this
+	// operation back and says the shape only ever travels outward.
+	await page
+		.locator("main dd")
+		.filter({ hasText: "PetSummary" })
+		.getByRole("link")
+		.first()
+		.click();
+	await expect(page.locator("main h1")).toContainText("PetSummary");
+	const carriers = page.locator("#carriers tbody tr");
+	await expect(carriers).toHaveCount(1);
+	await expect(carriers).toContainText("GetPetSummary");
+	await expect(carriers).toContainText("returns");
 });

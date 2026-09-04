@@ -945,11 +945,14 @@
           "provides": {
             "get_title": {
               "name": "GetTitle",
-              "description": "Read a title with seasons, episodes and availability",
+              "description": "Asked with a TitleRef, answers with the title's seasons, episodes and availability",
               "pattern": "open-host-service",
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/catalogue/schemas/title_ref"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/catalogue/schemas/title_detail"
               }
             }
           },
@@ -1050,6 +1053,50 @@
             "episode_id": {
               "name": "episodeId",
               "type": "string"
+            }
+          }
+        },
+        "title_detail": {
+          "name": "TitleDetail",
+          "description": "A title with its seasons, episodes and availability",
+          "attributes": {
+            "title_id": {
+              "name": "titleId",
+              "type": "string",
+              "identity": true
+            },
+            "name": {
+              "name": "name",
+              "type": "string"
+            },
+            "kind": {
+              "name": "kind",
+              "type": "'film' | 'series'"
+            },
+            "rating": {
+              "name": "rating",
+              "type": "MaturityRating",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/maturity_rating"
+              }
+            },
+            "artwork": {
+              "name": "artwork",
+              "type": "Artwork",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/artwork"
+              }
+            },
+            "availability": {
+              "name": "availability",
+              "type": "Availability",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/availability"
+              }
+            },
+            "seasons": {
+              "name": "seasons",
+              "type": "Season[]"
             }
           }
         },

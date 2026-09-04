@@ -168,6 +168,42 @@ describe("every template, through the shipped route", () => {
 		expect(container.querySelector("#raises")).toBeInTheDocument();
 	});
 
+	it("ConsumablePage: a query draws Returns as a second fact and a second attribute table", () => {
+		const container = draw(PETSTORE_REFS.query);
+		const terms = [...container.querySelectorAll("dt")].map(
+			(t) => t.textContent,
+		);
+		expect(terms).toContain("Payload");
+		expect(terms).toContain("Returns");
+		const returns = container.querySelector("#returns");
+		expect(returns).toBeInTheDocument();
+		// The returned shape, not the sent one: PetId goes in, PetSummary comes back.
+		const names = (root: Element | null) =>
+			[...(root?.querySelectorAll("tbody tr code") ?? [])]
+				.map((c) => c.textContent?.trim())
+				.filter((t) => t && !t.includes("`"));
+		expect(names(returns)).toEqual([
+			"petId",
+			"int64",
+			"name",
+			"string",
+			"status",
+			"PetStatus",
+		]);
+		expect(names(container.querySelector("#payload"))).toEqual([
+			"petId",
+			"int64",
+		]);
+	});
+
+	it("ConsumablePage: an operation that returns nothing draws no Returns anywhere", () => {
+		const container = draw(PETSTORE_REFS.operation);
+		expect(container.querySelector("#returns")).not.toBeInTheDocument();
+		expect(
+			[...container.querySelectorAll("dt")].map((t) => t.textContent),
+		).not.toContain("Returns");
+	});
+
 	it("ConsumablePage: an event lists what raises it and the policies that react", () => {
 		const container = draw(PETSTORE_REFS.event);
 		expect(container.querySelector("#raised")).toBeInTheDocument();
@@ -182,8 +218,26 @@ describe("every template, through the shipped route", () => {
 			[...container.querySelectorAll("#carriers thead th")].map((h) =>
 				h.textContent?.trim(),
 			),
-		).toEqual(["Consumable", "Kind", "Provider"]);
+		).toEqual(["Consumable", "Kind", "Carried as", "Provider"]);
 		expect(container.querySelector("#carriers .keyword")).toBeInTheDocument();
+		// PetId is only ever sent, so every row of its table says payload.
+		const directions = [
+			...container.querySelectorAll("#carriers tbody tr"),
+		].map((r) => r.querySelectorAll("td")[2]?.textContent?.trim());
+		expect(new Set(directions)).toEqual(new Set(["payload"]));
+	});
+
+	it("SchemaPage: a schema that only ever comes back lists the operation that returns it", () => {
+		const container = draw(PETSTORE_REFS.returnedSchema);
+		const rows = [...container.querySelectorAll("#carriers tbody tr")].map(
+			(r) => [...r.querySelectorAll("td")].map((c) => c.textContent?.trim()),
+		);
+		expect(rows).toHaveLength(1);
+		expect(rows[0][0]).toContain("GetPetSummary");
+		expect(rows[0][2]).toBe("returns");
+		expect(container.textContent).not.toContain(
+			"Nothing carries this schema yet",
+		);
 	});
 
 	it("PolicyPage: when and then are tables, and only then names the kind", () => {

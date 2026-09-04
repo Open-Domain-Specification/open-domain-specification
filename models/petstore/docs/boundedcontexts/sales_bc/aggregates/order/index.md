@@ -33,14 +33,14 @@ Order for a single pet
 
 
 ## Provides
-| Name | Type | Internal | Pattern | Description | Schema | Raises |
-| --- | --- | --- | --- | --- | --- | --- |
-| OrderPlaced | event | no | published-language | Order created (status=placed) | [OrderPlaced](../../index.md#schemas) | - |
-| OrderApproved | event | no | published-language | Order approved (status=approved); Inventory and Fulfilment both react | [OrderId](../../index.md#schemas) | - |
-| OrderDelivered | event | no | published-language | Order delivered (status=delivered) | [OrderId](../../index.md#schemas) | - |
-| OrderDeleted | event | no | published-language | Order deleted via DELETE /store/order/{orderId} | [OrderId](../../index.md#schemas) | - |
-| ApproveOrder | operation | yes | - | Approve a placed order once the pet is available | [OrderId](../../index.md#schemas) | OrderApproved |
-| DeliverOrder | operation | no | open-host-service | Mark an approved order as delivered; issued by Fulfilment when the shipment arrives | [OrderId](../../index.md#schemas) | OrderDelivered |
+| Name | Type | Internal | Pattern | Description | Schema | Returns | Raises |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| OrderPlaced | event | no | published-language | Order created (status=placed) | [OrderPlaced](../../index.md#schemas) | - | - |
+| OrderApproved | event | no | published-language | Order approved (status=approved); Inventory and Fulfilment both react | [OrderId](../../index.md#schemas) | - | - |
+| OrderDelivered | event | no | published-language | Order delivered (status=delivered) | [OrderId](../../index.md#schemas) | - | - |
+| OrderDeleted | event | no | published-language | Order deleted via DELETE /store/order/{orderId} | [OrderId](../../index.md#schemas) | - | - |
+| ApproveOrder | operation | yes | - | Approve a placed order once the pet is available | [OrderId](../../index.md#schemas) | - | OrderApproved |
+| DeliverOrder | operation | no | open-host-service | Mark an approved order as delivered; issued by Fulfilment when the shipment arrives | [OrderId](../../index.md#schemas) | - | OrderDelivered |
 
 
 ## Consumes

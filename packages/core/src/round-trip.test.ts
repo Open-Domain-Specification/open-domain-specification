@@ -70,6 +70,24 @@ describe("schema round-trip", () => {
 		]);
 	});
 
+	it("re-links an operation to the schema it returns, apart from the one it takes", () => {
+		const placeOrder = rebuilt.getConsumableByRefOrThrow(
+			"#/boundedcontexts/ordering_bc/services/order_app/provides/place_order",
+		);
+		expect(placeOrder.schema?.ref).toBe(
+			"#/boundedcontexts/ordering_bc/schemas/order_request",
+		);
+		expect(placeOrder.returns?.ref).toBe(
+			"#/boundedcontexts/ordering_bc/schemas/order_summary",
+		);
+		// An operation that answers with nothing keeps returns absent.
+		const raiseInvoice = rebuilt.getConsumableByRefOrThrow(
+			"#/boundedcontexts/invoicing_bc/aggregates/invoice/provides/raise_invoice",
+		);
+		expect(raiseInvoice.returns).toBeUndefined();
+		expect(raiseInvoice.toSchema().returns).toBeUndefined();
+	});
+
 	it("keeps attributes on entities and value objects", () => {
 		const order = rebuilt.getEntityByRefOrThrow(
 			"#/boundedcontexts/ordering_bc/aggregates/order/entities/order",

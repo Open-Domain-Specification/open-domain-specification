@@ -44,6 +44,12 @@ function everythingWrong(): Workspace {
 		description: "",
 		schema: foreign,
 	});
+	// returns-on-operation: an event that says what it gives back
+	other.provides("Answered", {
+		type: "event",
+		description: "",
+		returns: b.addSchema("Answer"),
+	});
 	// consumable-kind: event raises, policy on operation / then event
 	plain.raises(carries);
 	a.addPolicy("Backwards", { description: "" }).on(carries).then(plain);

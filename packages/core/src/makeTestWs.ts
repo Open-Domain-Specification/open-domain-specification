@@ -221,6 +221,7 @@ export function makeRichTestWs() {
 			type: "operation",
 			pattern: "open-host-service",
 			schema: orderRequest,
+			returns: orderSummary,
 		})
 		.raises(orderPlaced);
 

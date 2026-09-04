@@ -373,6 +373,27 @@ customerVerifiedSchema.addAttribute("customerId", {
 	identity: true,
 });
 customerVerifiedSchema.addAttribute("verifiedAt", { type: "date-time" });
+// A returned shape: GetCustomer is asked with a CustomerRef and answers with
+// this, so callers can see what they depend on without reading the aggregate.
+const customerDetailsSchema = customerBC.addSchema("CustomerDetails", {
+	description: "The verified details GetCustomer answers with",
+});
+customerDetailsSchema.addAttribute("customerId", {
+	type: "string",
+	identity: true,
+});
+customerDetailsSchema.addAttribute("dateOfBirth", {
+	type: "DateOfBirth",
+	valueobject: dateOfBirthVO,
+});
+customerDetailsSchema.addAttribute("address", {
+	type: "Address",
+	valueobject: addressVO,
+});
+customerDetailsSchema.addAttribute("kycStatus", {
+	type: "KycStatus",
+	valueobject: kycStatusVO,
+});
 const consentSchema = customerBC.addSchema("ConsentChanged", {
 	description:
 		"Used by both consent events; the contact centre acts on it the same day",
@@ -448,10 +469,12 @@ onboardingApp
 	})
 	.raises(onboardingStarted);
 const getCustomer = onboardingApp.provides("GetCustomer", {
-	description: "Read a customer's verified details",
+	description:
+		"Asked with a CustomerRef, answers with the customer's verified details",
 	type: "operation",
 	pattern: "open-host-service",
 	schema: customerRefSchema,
+	returns: customerDetailsSchema,
 });
 
 const kycScreening = customerBC.addService("KycScreening", {

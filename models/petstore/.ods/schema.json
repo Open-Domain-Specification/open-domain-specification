@@ -277,9 +277,22 @@
                     },
                     "type": "array"
                 },
+                "returns": {
+                    "additionalProperties": false,
+                    "description": "For operations: the payload shape the caller gets back, one of the\ncontext's schemas. Absent means the operation returns nothing worth\nnaming, which is honest for commands. Never valid on an event.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
                 "schema": {
                     "additionalProperties": false,
-                    "description": "The payload shape, one of the context's schemas.",
+                    "description": "The payload the caller sends, one of the context's schemas.",
                     "properties": {
                         "$ref": {
                             "type": "string"

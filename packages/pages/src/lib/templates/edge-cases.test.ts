@@ -37,6 +37,32 @@ describe("the tactical templates on the alternate branches", () => {
 		expect(container.textContent).toContain("whole aggregate");
 	});
 
+	it("AggregatePage: an operation an aggregate provides shows what it answers with, and one that answers with nothing shows no Returns", () => {
+		const { container } = render(Harness, {
+			model,
+			ref: aggregateRef("main_context", "rootless_aggregate").$ref,
+		});
+		const subsectionFor = (name: string) =>
+			[...container.querySelectorAll(".subsection")].find((s) =>
+				s.querySelector("h3")?.textContent?.includes(name),
+			);
+
+		const answering = subsectionFor("Answering Operation");
+		const terms = [...(answering?.querySelectorAll("dt") ?? [])].map(
+			(t) => t.textContent,
+		);
+		expect(terms).toContain("Payload");
+		expect(terms).toContain("Returns");
+		expect(answering?.textContent).toContain("Answer Schema");
+
+		// Silent Operation carries a payload but answers with nothing, so the
+		// row is absent rather than empty.
+		const silent = subsectionFor("Silent Operation");
+		expect(
+			[...(silent?.querySelectorAll("dt") ?? [])].map((t) => t.textContent),
+		).not.toContain("Returns");
+	});
+
 	it("AggregatePage: an aggregate with nothing in it says what would fill each section", () => {
 		const text = textOf(aggregateRef("main_context", "empty_aggregate").$ref);
 		expect(text).toContain("No entities. An aggregate needs a root entity.");
@@ -185,6 +211,14 @@ describe("the tactical templates on the alternate branches", () => {
 		expect(textOf(schemaRef("main_context", "unused_schema").$ref)).toContain(
 			"Nothing carries this schema yet.",
 		);
+	});
+
+	it("SchemaPage: one operation sends and answers with the same shape, listed once", () => {
+		const text = textOf(schemaRef("main_context", "echoed_schema").$ref);
+		expect(text).toContain("Echoing Operation");
+		// One row, both directions on it, rather than the consumable listed twice.
+		expect(text).toContain("payload, returns");
+		expect(text.split("Echoing Operation")).toHaveLength(2);
 	});
 
 	it("TermPage: not modelled, and a word only one context uses", () => {

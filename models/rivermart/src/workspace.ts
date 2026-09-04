@@ -305,6 +305,21 @@ productListedSchema.addAttribute("title", { type: "string" });
 productListedSchema.addAttribute("skus", { type: "string[]" });
 const productRefSchema = catalogueBC.addSchema("ProductRef");
 productRefSchema.addAttribute("productId", { type: "string", identity: true });
+// A returned shape: GetProduct is asked with a ProductRef and answers with
+// this, which is wider than the ProductListed event other contexts react to.
+const productDetailSchema = catalogueBC.addSchema("ProductDetail", {
+	description: "One product with its variants, as GetProduct answers it",
+});
+productDetailSchema.addAttribute("productId", {
+	type: "string",
+	identity: true,
+});
+productDetailSchema.addAttribute("title", { type: "string" });
+productDetailSchema.addAttribute("brand", {
+	type: "Brand",
+	valueobject: brandVO,
+});
+productDetailSchema.addAttribute("variants", { type: "Variant[]" });
 
 const productListed = productAgg.provides("ProductListed", {
 	description: "A product joined the catalogue",
@@ -341,10 +356,12 @@ catalogueApi
 	})
 	.raises(productRetired);
 const getProduct = catalogueApi.provides("GetProduct", {
-	description: "Read one product with its variants",
+	description:
+		"Asked with a ProductRef, answers with one product and its variants",
 	type: "operation",
 	pattern: "open-host-service",
 	schema: productRefSchema,
+	returns: productDetailSchema,
 });
 
 catalogueBC.addTerm("Product", {

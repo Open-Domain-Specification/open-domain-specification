@@ -144,6 +144,10 @@ describe("toDoc", () => {
 		});
 		summary.addAttribute("orderId", { type: "string", identity: true });
 		summary.addAttribute("total", { type: "number" });
+		const receipt = ordering.addSchema("Order Receipt", {
+			description: "What an approval answers with",
+		});
+		receipt.addAttribute("approvedAt", { type: "string" });
 		const order = ordering.addAggregate("Order", { description: "" });
 		const placed = order.provides("Order Placed", {
 			type: "event",
@@ -157,6 +161,7 @@ describe("toDoc", () => {
 				internal: true,
 				description: "Approves an order",
 				schema: summary,
+				returns: receipt,
 			})
 			.raises(placed);
 		ordering
@@ -170,17 +175,22 @@ describe("toDoc", () => {
 			docs["boundedcontexts/ordering/aggregates/order/index.md"];
 		expect(aggregateDoc).not.toContain("## Events");
 		expect(aggregateDoc).not.toContain("## Commands");
+		// An event has no Returns, so the column is a dash, as Raises already is.
 		expect(aggregateDoc).toContain(
-			"| Order Placed | event | no | published-language | Raised when an order is placed | [Order Summary](../../index.md#schemas) | - |",
+			"| Order Placed | event | no | published-language | Raised when an order is placed | [Order Summary](../../index.md#schemas) | - | - |",
 		);
 		expect(aggregateDoc).toContain(
-			"| Approve Order | operation | yes | - | Approves an order | [Order Summary](../../index.md#schemas) | Order Placed |",
+			"| Approve Order | operation | yes | - | Approves an order | [Order Summary](../../index.md#schemas) | [Order Receipt](../../index.md#schemas) | Order Placed |",
 		);
 
 		const contextDoc = docs["boundedcontexts/ordering/index.md"];
 		expect(contextDoc).toContain("## Schemas");
 		expect(contextDoc).toContain(
 			"| Order Summary | What an order looks like | **orderId**: `string`, total: `number` | Order Placed, Approve Order |",
+		);
+		// A schema nothing sends is still used: Approve Order answers with it.
+		expect(contextDoc).toContain(
+			"| Order Receipt | What an approval answers with | approvedAt: `string` | Approve Order |",
 		);
 		expect(contextDoc).toContain(
 			"| Auto approve |  | Order Placed | Approve Order |",
@@ -374,6 +384,9 @@ describe("toDoc", () => {
 			  "boundedcontexts/catalog_bc/index.md",
 			  "boundedcontexts/catalog_bc/services/pet_app/consumablemap.svg",
 			  "boundedcontexts/catalog_bc/services/pet_app/index.md",
+			  "boundedcontexts/fulfilment_bc/aggregates/carrier/consumablemap.svg",
+			  "boundedcontexts/fulfilment_bc/aggregates/carrier/index.md",
+			  "boundedcontexts/fulfilment_bc/aggregates/carrier/relationmap.svg",
 			  "boundedcontexts/fulfilment_bc/aggregates/shipment/consumablemap.svg",
 			  "boundedcontexts/fulfilment_bc/aggregates/shipment/index.md",
 			  "boundedcontexts/fulfilment_bc/aggregates/shipment/relationmap.svg",

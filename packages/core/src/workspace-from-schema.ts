@@ -33,11 +33,17 @@ function addProvides(
 ) {
 	for (const [id, consumableSchema] of Object.entries(schema.provides)) {
 		debug(`Adding consumable: ${consumableSchema.name} to ${provider.name}`);
-		const { raises: _raises, schema: schemaRef, ...rest } = consumableSchema;
+		const {
+			raises: _raises,
+			schema: schemaRef,
+			returns: returnsRef,
+			...rest
+		} = consumableSchema;
 		provider.addConsumable(consumableSchema.name, {
 			...rest,
 			id,
 			schema: schemaRef && workspace.getSchemaByRefOrThrow(schemaRef.$ref),
+			returns: returnsRef && workspace.getSchemaByRefOrThrow(returnsRef.$ref),
 		});
 	}
 }

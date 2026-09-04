@@ -3,7 +3,8 @@
  * shows the template full rather than empty: the Pet aggregate has a root,
  * invariants with targets, internal and published consumables; Order App both
  * provides and consumes; ReservePet is the one operation carrying a
- * disposition and a comment; PetId is carried by eight consumables; and Pet is
+ * disposition and a comment; GetPetSummary is the one operation that declares
+ * what it returns; PetId is carried by eight consumables; and Pet is
  * the one glossary word two contexts both define.
  *
  * Sales is the context every evidence surface uses: it is the one context that
@@ -30,9 +31,15 @@ export const PETSTORE_REFS = {
 		"#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category",
 	service: "#/boundedcontexts/sales_bc/services/order_app",
 	operation: "#/boundedcontexts/catalog_bc/aggregates/pet/provides/reserve_pet",
+	// GetPetSummary is the one operation asked with one schema and answered
+	// with another, so it is the only route whose Returns section draws.
+	query:
+		"#/boundedcontexts/catalog_bc/services/pet_app/provides/get_pet_summary",
 	event:
 		"#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed",
 	schema: "#/boundedcontexts/catalog_bc/schemas/pet_id",
+	// PetSummary is the one schema nothing sends: it exists only as an answer.
+	returnedSchema: "#/boundedcontexts/catalog_bc/schemas/pet_summary",
 	policy: "#/boundedcontexts/sales_bc/policies/approve_when_pet_available",
 	invariant:
 		"#/boundedcontexts/sales_bc/aggregates/order/invariants/deliver_only_when_approved",
