@@ -1,9 +1,9 @@
 ---
-column: backlog
+column: todo
 labels: [frontend]
 priority: med
 agent: designer-fable
-updatedAt: 2026-09-05T05:40:00.000Z
+updatedAt: 2026-09-05T08:40:00.000Z
 ---
 # Strategic position table at narrow widths
 
