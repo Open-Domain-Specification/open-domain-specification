@@ -1,6 +1,6 @@
 {
 	"name": "@open-domain-specification/model-rivermart",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "RiverMart, a fictional online marketplace, as an Open Domain Specification stress-test reference workspace",
 	"type": "module",
 	"scripts": {
@@ -12,8 +12,8 @@
 	},
 	"private": true,
 	"dependencies": {
-		"@open-domain-specification/core": "^0.2.0",
-		"@open-domain-specification/model-tools": "^0.2.0",
+		"@open-domain-specification/core": "^0.3.0",
+		"@open-domain-specification/model-tools": "^0.3.0",
 		"docsify-cli": "^4.4.4"
 	},
 	"devDependencies": {
