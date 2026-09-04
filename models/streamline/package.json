@@ -1,6 +1,6 @@
 {
 	"name": "@open-domain-specification/model-streamline",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"description": "StreamLine, a fictional streaming service, as an Open Domain Specification stress-test reference workspace",
 	"type": "module",
 	"scripts": {
@@ -12,8 +12,8 @@
 	},
 	"private": true,
 	"dependencies": {
-		"@open-domain-specification/core": "^0.3.0",
-		"@open-domain-specification/model-tools": "^0.3.0",
+		"@open-domain-specification/core": "^0.4.0",
+		"@open-domain-specification/model-tools": "^0.4.0",
 		"docsify-cli": "^4.4.4"
 	},
 	"devDependencies": {

@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.4.0](https://github.com/Open-Domain-Specification/open-domain-specification/compare/v0.3.0...v0.4.0) (2026-09-04)
+
+
+### Bug Fixes
+
+* **pages:** a node no longer takes an edge badge's pointer (card 45) ([f02da4a](https://github.com/Open-Domain-Specification/open-domain-specification/commit/f02da4a03efee8cc8683d05e65ba716474fed9dc))
+* **pages:** the page behind the modal no longer scrolls (card 44) ([a725771](https://github.com/Open-Domain-Specification/open-domain-specification/commit/a7257719c896299bcf8b766e6ae6ba8cea8c6663))
+
+
+### Features
+
+* **pages:** relationship detail opens in a bottom sheet (card 41) ([4d5b066](https://github.com/Open-Domain-Specification/open-domain-specification/commit/4d5b066c38d40d3f98d5916ffe88682523f2aaf0))
+* **pages:** relationship detail opens in a modal, not a bottom sheet (card 43) ([0572fd3](https://github.com/Open-Domain-Specification/open-domain-specification/commit/0572fd3fd6ada2a085a7b440f88c0efe0766b25c))
+
+
+
+
+
 # [0.3.0](https://github.com/Open-Domain-Specification/open-domain-specification/compare/v0.2.0...v0.3.0) (2026-09-04)
 
 
