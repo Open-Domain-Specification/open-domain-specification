@@ -297,6 +297,20 @@ h1 {
 .svelte-flow .svelte-flow__edge-label.port {
 	pointer-events: none;
 }
+/* The badges are the layer above the map, not part of it. Svelte Flow gives a
+   node and an edge label the same `z-index: 2` and puts the nodes layer second
+   in the DOM, so a node whose box reaches a badge draws over it and, worse,
+   takes its pointer: the shared kernel's badge could not be clicked at all on
+   a runner whose fonts measure the Sales card a few pixels bigger (card 45).
+   A node's box is its own text, so no layout keeps the two apart on every
+   machine; the label layer is lifted over the nodes layer instead. Lifting the
+   layer rather than the badge because Svelte Flow writes each label's z-index
+   inline, from its edge's, and lifting the edge would take the line over the
+   cards with it. The disclosure card stays above both on its own z-index
+   (DisclosureCard.svelte). */
+.svelte-flow .svelte-flow__edge-labels {
+	z-index: 3;
+}
 /* The evidence marks (RFC-002 4.2): a badge over an intent marked for
    refactoring takes the warning colour, a tolerated one is outlined instead of
    filled, and a by-design one is left exactly as it is. A badge that discloses

@@ -65,6 +65,17 @@ cards worked from are in
    inside the viewport by shifting left rather than flipping sideways, above
    the word when there is no room below and more above, scrolling inside
    itself when neither side has room, and gone when the page scrolls.
+   Disclosure too big for a hover — a whole relationship, with a description,
+   a definition list, a comment list and a table of its own — goes in the
+   modal instead, never in a row of the table it was opened from: a table
+   inside a table row gives the reader two header rows, two column rhythms
+   and two hover treatments in one grid. It was first given a docked bottom
+   sheet, which is the shape that failed: in a webview at editor height the
+   sheet took two fifths of the window, pushed the table up and scrolled the
+   row it belonged to out of sight, so the detail lost the row it was opened
+   from. The modal takes the page away instead of rearranging it, and gives
+   it back untouched — the row exactly where it was, with focus on the toggle
+   that opened it.
 9. **Empty states say what would fill them.** One sentence in the secondary
    colour, and at most one action after it. A section or subsection never
    disappears because it is empty: the table of contents anchors it and the
@@ -154,6 +165,8 @@ There is no card padding and no grid gap, because there are no cards.
 | Count badge            | `--vscode-badge-background`, `--vscode-badge-foreground`       | site.css                          |
 | Hover card             | `--vscode-editorHoverWidget-{background,border,foreground}`    | `editorWidget`, `widget-border`   |
 | Hover card shadow      | `--vscode-widget-shadow`                                       | `rgba(0,0,0,.16)`                 |
+| Modal ground           | `--vscode-editorWidget-background`                             | `--vscode-editor-background`      |
+| Modal border, shadow   | `--vscode-widget-border`, `--vscode-widget-shadow`             | `rgba(128,128,128,.35)`, `rgba(0,0,0,.36)` |
 
 Dropped from v1: `--core`, `--supporting`, `--generic` (the chart colours for
 classification), `--card`, `--radius`, `--gap`. The chart colours remain in
@@ -166,6 +179,11 @@ browser: `textLink-activeForeground`, `focusBorder`, `list-hoverBackground`,
 `widget-shadow`, `textCodeBlock-background` and the five `symbolIcon-*`
 tokens, in light and dark. The values are the ones in
 `packages/pages/src/lib/Theme.harness.svelte`.
+
+The one value in the pages that is not a theme token is the modal's scrim.
+VS Code dims the workbench behind its dialog with a wash it does not expose
+as a colour, and it is the same wash in every theme, so the pages state it as
+a constant too: `rgb(0 0 0 / 0.44)`.
 
 ## 6. Icons: kinds, codicons, symbol colours
 
@@ -211,6 +229,7 @@ high contrast (and at density where rows are laid out), and a `*.test.ts` at
 | `Comments`        | `CommentList`                                      | Comment codicon in a gutter, statement, citation as an external `Ref` with a kind icon.            |
 | `Disposition`     | `DispositionChip`                                  | Problems-panel treatment: `warning` codicon in the warning colour for refactor, `info` in the secondary colour for tolerated, nothing for by design. |
 | `EmptyState`      | `Empty`                                            | One secondary sentence at row height, optional action.                                             |
+| `Modal`           | (new, card 43; replaces card 41's `BottomSheet`)   | VS Code's own modal dialog, for disclosure too big for a hover: a panel centred over the dimmed page on the widget surface, with the widget border, a 6px radius and the widget shadow, a title row naming the dialog with a close button, one hairline under it, and a body that scrolls. `min(960px, 100% - 48px)` wide — enough that the crossings table inside it clears a `DataTable`'s 900px narrow tier, which below that width breaks a consumable's icon off its name, while the page still shows either side of the panel — and `min(760px, 100% - 64px)` tall, which lets a typical relationship read in an editor tab at 1150x700 without the body scrolling. One scroller, never two: a long table lengthens that body rather than getting a scrollbar of its own, and the long read is the thing's own page. A real dialog: `role="dialog"` with `aria-modal` and the title as its accessible name, focus moved into the panel on open and trapped in it, returned to the trigger on close, and Escape, the close button and a click on the scrim all close it. The trigger keeps `aria-expanded`/`aria-controls`. First used by `organisms/StrategicPositionTable` for the relationship detail. |
 | `HoverCard`       | (new, RFC-002 section 4)                           | The editor hover widget's frame: a heading for the thing hovered, the body, `<hr>` between parts. First used by `molecules/PatternHover`, the pattern keyword's disclosure: the pattern's meaning above the rule, this relationship's disposition and comments below it. Placement is the caller's, in viewport coordinates from the word's position when the card opens (`molecules/hover-placement.ts`), so no frame around the word can clip it. |
 
 What v2 deliberately has no primitive for: card, grid, pill, chip, badge (the
@@ -322,7 +341,7 @@ harness files follow their component.
 | `RelationshipDetail.svelte`     | restyle  | No outer card; heading, type keyword, disposition; roles as a definition list per side; comments; crossings table; links list. |
 | `Section.svelte`                | restyle  | `Heading` 2 with lead and count, problems inline, then children.             |
 | `Sidebar.svelte`                | restyle  | Active row uses `list.activeSelection*`; no uppercase brand title.           |
-| `StrategicPositionTable.svelte` | restyle  | Grouped `DataTable`; keywords for type and roles; `Disposition`; the expanded row stays. |
+| `StrategicPositionTable.svelte` | restyle  | Grouped `DataTable`; keywords for type and roles; `Disposition`; the disclosure moved from an expanded row to the `Modal`. |
 | `Toc.svelte`                    | restyle  | Drop the uppercase title; otherwise the same left-rule list.                 |
 
 ### Templates (`packages/pages/src/lib/templates/`) and the layout

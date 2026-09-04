@@ -68,6 +68,13 @@
 	background: var(--vscode-sideBar-background);
 	border-right: 1px solid var(--vscode-panel-border);
 }
+/* The nav column is its own scroller, so locking the document (Modal.svelte,
+   which adds this class to <html> while a modal is open) does not stop a
+   wheel over the tree from moving it. This is the site shell's own half of
+   that fix. */
+html.modal-open .site > .site-nav {
+	overflow: hidden;
+}
 .site-page {
 	min-width: 0;
 }

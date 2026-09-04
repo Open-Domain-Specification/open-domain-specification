@@ -61,26 +61,54 @@ describe("StrategicPositionTable", () => {
 		expect(card).toHaveTextContent("PetSummaryClient");
 	});
 
-	it("expands a row in place into the whole relationship detail, and closes it again", async () => {
+	it("opens the whole relationship detail in the modal, and closes it again", async () => {
 		const { model, context } = petstoreSales();
 		const { container } = position(model, context);
+		// The detail is no longer a row of the table: a table inside a table
+		// row gave the reader two header rows in one grid.
 		expect(container.querySelector("tr.detail")).toBeNull();
+		expect(document.getElementById("relationship-modal")).toBeNull();
 
 		const toggle = screen.getAllByRole("button", { name: /^Evidence for/ })[0];
+		expect(toggle).toHaveAttribute("aria-controls", "relationship-modal");
 		await fireEvent.click(toggle);
-		expect(toggle).toHaveAttribute("aria-expanded", "true");
-		const detail = container.querySelector("tr.detail") as HTMLElement;
-		expect(detail.querySelector("td")).toHaveAttribute("colspan", "7");
-		expect(detail.querySelector("#roles")).toBeInTheDocument();
 
-		await fireEvent.click(toggle);
+		expect(toggle).toHaveAttribute("aria-expanded", "true");
+		const modal = document.getElementById("relationship-modal") as HTMLElement;
+		expect(modal).toHaveAttribute("aria-modal", "true");
+		expect(modal.querySelector("h2")).toHaveTextContent("Relationship");
+		expect(modal.querySelector("#roles")).toBeInTheDocument();
 		expect(container.querySelector("tr.detail")).toBeNull();
 
-		// Opening another row replaces the open one.
+		await fireEvent.click(toggle);
+		expect(document.getElementById("relationship-modal")).toBeNull();
+
+		// One modal, one relationship at a time: a second row replaces the first.
 		const others = screen.getAllByRole("button", { name: /^Evidence for/ });
 		await fireEvent.click(others[0]);
+		const first = document.querySelector(
+			"#relationship-modal .body",
+		)?.textContent;
 		await fireEvent.click(others[1]);
-		expect(container.querySelectorAll("tr.detail")).toHaveLength(1);
+		const modals = document.querySelectorAll("#relationship-modal");
+		expect(modals).toHaveLength(1);
+		expect(modals[0].querySelector(".body")?.textContent).not.toBe(first);
+	});
+
+	it("closes the modal on Escape and puts focus back on the row's toggle", async () => {
+		const { model, context } = petstoreSales();
+		position(model, context);
+		const toggle = screen.getAllByRole("button", { name: /^Evidence for/ })[0];
+		toggle.focus();
+		await fireEvent.click(toggle);
+		const modal = document.getElementById("relationship-modal") as HTMLElement;
+		expect(modal).not.toBeNull();
+
+		await fireEvent.keyDown(modal, { key: "Escape" });
+
+		expect(document.getElementById("relationship-modal")).toBeNull();
+		expect(toggle).toHaveAttribute("aria-expanded", "false");
+		expect(document.activeElement).toBe(toggle);
 	});
 
 	it("leaves the toggle and disposition columns out where nothing is recorded", () => {
@@ -94,7 +122,7 @@ describe("StrategicPositionTable", () => {
 				th.textContent?.trim(),
 			),
 		).toEqual(["With", "Description", "Type", "Upstream", "Downstream"]);
-		expect(container.querySelector("tr.detail")).toBeNull();
+		expect(document.getElementById("relationship-modal")).toBeNull();
 		// With no description of its own, the row reads the generated sentence.
 		expect(
 			container.querySelector("tbody td:nth-child(2) .description")?.textContent
