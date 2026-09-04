@@ -95,7 +95,7 @@ describe("schema round-trip", () => {
 		expect(order.attributes.get("order_id")?.identity).toBe(true);
 		expect(order.attributes.get("total")?.valueobject?.name).toBe("Money");
 		const money = rebuilt.getValueObjectByRefOrThrow(
-			"#/boundedcontexts/ordering_bc/aggregates/order/valueobjects/money",
+			"#/boundedcontexts/ordering_bc/valueobjects/money",
 		);
 		expect(Array.from(money.attributes.keys())).toEqual(["amount", "currency"]);
 	});

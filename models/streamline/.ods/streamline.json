@@ -176,7 +176,7 @@
                   "name": "budget",
                   "type": "Budget",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/studio_production/aggregates/production/valueobjects/budget"
+                    "$ref": "#/boundedcontexts/studio_production/valueobjects/budget"
                   }
                 }
               },
@@ -191,7 +191,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/studio_production/aggregates/production/valueobjects/budget"
+                    "$ref": "#/boundedcontexts/studio_production/valueobjects/budget"
                   },
                   "relation": "uses",
                   "label": "funded-by",
@@ -221,57 +221,13 @@
               "relations": []
             }
           },
-          "valueobjects": {
-            "budget": {
-              "name": "Budget",
-              "description": "Approved spend; a value because two productions with the same figures have the same budget",
-              "attributes": {
-                "approved": {
-                  "name": "approved",
-                  "type": "Money",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/studio_production/aggregates/production/valueobjects/money"
-                  }
-                },
-                "approved_on": {
-                  "name": "approvedOn",
-                  "type": "date"
-                }
-              },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/studio_production/aggregates/production/valueobjects/money"
-                  },
-                  "relation": "uses",
-                  "label": "amount",
-                  "cardinality": "1"
-                }
-              ]
-            },
-            "money": {
-              "name": "Money",
-              "description": "An amount in a currency: minor units and an ISO 4217 code",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
-            }
-          },
           "invariants": {
             "budget_approved_before_shoot": {
               "name": "BudgetApprovedBeforeShoot",
               "description": "The phase cannot move to shooting until the budget carries an approval date",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/studio_production/aggregates/production/valueobjects/budget"
+                  "$ref": "#/boundedcontexts/studio_production/valueobjects/budget"
                 },
                 {
                   "$ref": "#/boundedcontexts/studio_production/aggregates/production/entities/production/attributes/phase"
@@ -339,6 +295,50 @@
           "embodiedBy": {
             "$ref": "#/boundedcontexts/studio_production/aggregates/production/entities/episode"
           }
+        }
+      },
+      "valueobjects": {
+        "budget": {
+          "name": "Budget",
+          "description": "Approved spend; a value because two productions with the same figures have the same budget",
+          "attributes": {
+            "approved": {
+              "name": "approved",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/studio_production/valueobjects/money"
+              }
+            },
+            "approved_on": {
+              "name": "approvedOn",
+              "type": "date"
+            }
+          },
+          "relations": [
+            {
+              "target": {
+                "$ref": "#/boundedcontexts/studio_production/valueobjects/money"
+              },
+              "relation": "uses",
+              "label": "amount",
+              "cardinality": "1"
+            }
+          ]
+        },
+        "money": {
+          "name": "Money",
+          "description": "An amount in a currency: minor units and an ISO 4217 code",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {
@@ -452,7 +452,7 @@
                   "name": "fee",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/valueobjects/money"
+                    "$ref": "#/boundedcontexts/licensing/valueobjects/money"
                   }
                 }
               },
@@ -467,7 +467,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/valueobjects/money"
+                    "$ref": "#/boundedcontexts/licensing/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "costs",
@@ -505,48 +505,20 @@
                   "name": "territory",
                   "type": "Territory",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/valueobjects/territory"
+                    "$ref": "#/boundedcontexts/licensing/valueobjects/territory"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/valueobjects/territory"
+                    "$ref": "#/boundedcontexts/licensing/valueobjects/territory"
                   },
                   "relation": "uses",
                   "label": "covers",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "territory": {
-              "name": "Territory",
-              "description": "A set of countries a window covers. Not a cache region",
-              "attributes": {
-                "countries": {
-                  "name": "countries",
-                  "type": "ISO 3166 code[]"
-                }
-              },
-              "relations": []
-            },
-            "money": {
-              "name": "Money",
-              "description": "An amount in a currency: minor units and an ISO 4217 code",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -567,7 +539,7 @@
                   "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/entities/window"
                 },
                 {
-                  "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/valueobjects/territory"
+                  "$ref": "#/boundedcontexts/licensing/valueobjects/territory"
                 }
               ]
             }
@@ -588,8 +560,36 @@
           "name": "Territory",
           "definition": "The countries a window covers. Edge Delivery's 'region' is something else",
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/valueobjects/territory"
+            "$ref": "#/boundedcontexts/licensing/valueobjects/territory"
           }
+        }
+      },
+      "valueobjects": {
+        "territory": {
+          "name": "Territory",
+          "description": "A set of countries a window covers. Not a cache region",
+          "attributes": {
+            "countries": {
+              "name": "countries",
+              "type": "ISO 3166 code[]"
+            }
+          },
+          "relations": []
+        },
+        "money": {
+          "name": "Money",
+          "description": "An amount in a currency: minor units and an ISO 4217 code",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {
@@ -606,7 +606,7 @@
               "name": "territory",
               "type": "Territory",
               "valueobject": {
-                "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/valueobjects/territory"
+                "$ref": "#/boundedcontexts/licensing/valueobjects/territory"
               }
             },
             "start": {
@@ -744,7 +744,7 @@
                   "name": "rating",
                   "type": "MaturityRating",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/maturity_rating"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/maturity_rating"
                   }
                 },
                 "production_id": {
@@ -761,7 +761,7 @@
                   "name": "artwork",
                   "type": "Artwork",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/artwork"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/artwork"
                   }
                 },
                 "availability": {
@@ -769,7 +769,7 @@
                   "type": "Availability[]",
                   "description": "One entry per territory and window the title is playable in",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/availability"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/availability"
                   }
                 }
               },
@@ -784,7 +784,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/artwork"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/artwork"
                   },
                   "relation": "uses",
                   "label": "shown-with",
@@ -792,7 +792,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/maturity_rating"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/maturity_rating"
                   },
                   "relation": "uses",
                   "label": "rated",
@@ -800,7 +800,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/availability"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/availability"
                   },
                   "relation": "uses",
                   "label": "available",
@@ -855,7 +855,7 @@
                   "type": "MaturityRating",
                   "description": "An episode may be rated above its series",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/maturity_rating"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/maturity_rating"
                   }
                 },
                 "artwork": {
@@ -863,14 +863,14 @@
                   "type": "Artwork",
                   "description": "An episode may carry its own still; absent means the series artwork",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/artwork"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/artwork"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/artwork"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/artwork"
                   },
                   "relation": "uses",
                   "label": "shown-with",
@@ -878,60 +878,13 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/maturity_rating"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/maturity_rating"
                   },
                   "relation": "uses",
                   "label": "rated",
                   "cardinality": "0..1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "artwork": {
-              "name": "Artwork",
-              "description": "Images by aspect ratio",
-              "attributes": {
-                "images": {
-                  "name": "images",
-                  "type": "{ratio, uri}[]"
-                }
-              },
-              "relations": []
-            },
-            "maturity_rating": {
-              "name": "MaturityRating",
-              "description": "The rating shown and enforced by profile maturity settings",
-              "attributes": {
-                "scheme": {
-                  "name": "scheme",
-                  "type": "string"
-                },
-                "value": {
-                  "name": "value",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "availability": {
-              "name": "Availability",
-              "description": "Countries and dates a title is live, derived from licence windows or studio ownership",
-              "attributes": {
-                "countries": {
-                  "name": "countries",
-                  "type": "ISO 3166 code[]"
-                },
-                "from": {
-                  "name": "from",
-                  "type": "date"
-                },
-                "until": {
-                  "name": "until",
-                  "type": "date"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -952,7 +905,7 @@
               "description": "No rating, no publish; profiles enforce maturity on it",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/maturity_rating"
+                  "$ref": "#/boundedcontexts/catalogue/valueobjects/maturity_rating"
                 }
               ]
             },
@@ -961,7 +914,7 @@
               "description": "Availability in a country never exceeds a licence window or studio ownership",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/availability"
+                  "$ref": "#/boundedcontexts/catalogue/valueobjects/availability"
                 }
               ]
             }
@@ -1080,8 +1033,55 @@
           "name": "Availability",
           "definition": "The countries and dates a title is live",
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/availability"
+            "$ref": "#/boundedcontexts/catalogue/valueobjects/availability"
           }
+        }
+      },
+      "valueobjects": {
+        "artwork": {
+          "name": "Artwork",
+          "description": "Images by aspect ratio",
+          "attributes": {
+            "images": {
+              "name": "images",
+              "type": "{ratio, uri}[]"
+            }
+          },
+          "relations": []
+        },
+        "maturity_rating": {
+          "name": "MaturityRating",
+          "description": "The rating shown and enforced by profile maturity settings",
+          "attributes": {
+            "scheme": {
+              "name": "scheme",
+              "type": "string"
+            },
+            "value": {
+              "name": "value",
+              "type": "string"
+            }
+          },
+          "relations": []
+        },
+        "availability": {
+          "name": "Availability",
+          "description": "Countries and dates a title is live, derived from licence windows or studio ownership",
+          "attributes": {
+            "countries": {
+              "name": "countries",
+              "type": "ISO 3166 code[]"
+            },
+            "from": {
+              "name": "from",
+              "type": "date"
+            },
+            "until": {
+              "name": "until",
+              "type": "date"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {
@@ -1121,21 +1121,21 @@
               "name": "rating",
               "type": "MaturityRating",
               "valueobject": {
-                "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/maturity_rating"
+                "$ref": "#/boundedcontexts/catalogue/valueobjects/maturity_rating"
               }
             },
             "artwork": {
               "name": "artwork",
               "type": "Artwork",
               "valueobject": {
-                "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/artwork"
+                "$ref": "#/boundedcontexts/catalogue/valueobjects/artwork"
               }
             },
             "availability": {
               "name": "availability",
               "type": "Availability",
               "valueobject": {
-                "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/availability"
+                "$ref": "#/boundedcontexts/catalogue/valueobjects/availability"
               }
             },
             "seasons": {
@@ -1156,7 +1156,7 @@
               "name": "availability",
               "type": "Availability",
               "valueobject": {
-                "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/availability"
+                "$ref": "#/boundedcontexts/catalogue/valueobjects/availability"
               }
             }
           }
@@ -1241,7 +1241,7 @@
                   "name": "ladder",
                   "type": "Ladder",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/valueobjects/ladder"
+                    "$ref": "#/boundedcontexts/encoding/valueobjects/ladder"
                   }
                 }
               },
@@ -1256,7 +1256,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/valueobjects/ladder"
+                    "$ref": "#/boundedcontexts/encoding/valueobjects/ladder"
                   },
                   "relation": "uses",
                   "label": "planned-as",
@@ -1290,26 +1290,13 @@
               "relations": []
             }
           },
-          "valueobjects": {
-            "ladder": {
-              "name": "Ladder",
-              "description": "The planned rungs: bitrate and resolution pairs chosen for this title's content",
-              "attributes": {
-                "rungs": {
-                  "name": "rungs",
-                  "type": "{bitrateKbps, height}[]"
-                }
-              },
-              "relations": []
-            }
-          },
           "invariants": {
             "ladder_has_lowest_rung": {
               "name": "LadderHasLowestRung",
               "description": "Every ladder has a rung under 300 kbit/s so a stream starts on a bad network",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/valueobjects/ladder"
+                  "$ref": "#/boundedcontexts/encoding/valueobjects/ladder"
                 }
               ]
             },
@@ -1321,7 +1308,7 @@
                   "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/entities/rendition"
                 },
                 {
-                  "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/valueobjects/ladder"
+                  "$ref": "#/boundedcontexts/encoding/valueobjects/ladder"
                 }
               ]
             }
@@ -1387,7 +1374,7 @@
           "name": "Ladder",
           "definition": "The set of bitrate and resolution rungs a title is encoded at",
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/valueobjects/ladder"
+            "$ref": "#/boundedcontexts/encoding/valueobjects/ladder"
           }
         },
         "rendition": {
@@ -1399,6 +1386,19 @@
           "embodiedBy": {
             "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/entities/rendition"
           }
+        }
+      },
+      "valueobjects": {
+        "ladder": {
+          "name": "Ladder",
+          "description": "The planned rungs: bitrate and resolution pairs chosen for this title's content",
+          "attributes": {
+            "rungs": {
+              "name": "rungs",
+              "type": "{bitrateKbps, height}[]"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {
@@ -1563,21 +1563,21 @@
                   "name": "bookmark",
                   "type": "Bookmark",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/playback/aggregates/playback_session/valueobjects/bookmark"
+                    "$ref": "#/boundedcontexts/playback/valueobjects/bookmark"
                   }
                 },
                 "manifest": {
                   "name": "manifest",
                   "type": "StreamManifest",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/playback/aggregates/playback_session/valueobjects/stream_manifest"
+                    "$ref": "#/boundedcontexts/playback/valueobjects/stream_manifest"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/playback/aggregates/playback_session/valueobjects/bookmark"
+                    "$ref": "#/boundedcontexts/playback/valueobjects/bookmark"
                   },
                   "relation": "uses",
                   "label": "resumes-at",
@@ -1585,41 +1585,13 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/playback/aggregates/playback_session/valueobjects/stream_manifest"
+                    "$ref": "#/boundedcontexts/playback/valueobjects/stream_manifest"
                   },
                   "relation": "uses",
                   "label": "streams-from",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "bookmark": {
-              "name": "Bookmark",
-              "description": "The resume point; updated every few seconds, kept inside the player",
-              "attributes": {
-                "position_seconds": {
-                  "name": "positionSeconds",
-                  "type": "int"
-                }
-              },
-              "relations": []
-            },
-            "stream_manifest": {
-              "name": "StreamManifest",
-              "description": "The renditions and the edge to fetch from, in the format shared with Edge Delivery",
-              "attributes": {
-                "rendition_ids": {
-                  "name": "renditionIds",
-                  "type": "string[]"
-                },
-                "edge_url": {
-                  "name": "edgeUrl",
-                  "type": "string (URL)"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -1646,7 +1618,7 @@
               "description": "The resume point never exceeds the title's runtime",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/valueobjects/bookmark"
+                  "$ref": "#/boundedcontexts/playback/valueobjects/bookmark"
                 }
               ]
             }
@@ -1718,7 +1690,7 @@
             "Resume point"
           ],
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/playback/aggregates/playback_session/valueobjects/bookmark"
+            "$ref": "#/boundedcontexts/playback/valueobjects/bookmark"
           }
         },
         "device": {
@@ -1727,6 +1699,34 @@
           "embodiedBy": {
             "$ref": "#/boundedcontexts/playback/aggregates/playback_session/entities/playback_session/attributes/device_id"
           }
+        }
+      },
+      "valueobjects": {
+        "bookmark": {
+          "name": "Bookmark",
+          "description": "The resume point; updated every few seconds, kept inside the player",
+          "attributes": {
+            "position_seconds": {
+              "name": "positionSeconds",
+              "type": "int"
+            }
+          },
+          "relations": []
+        },
+        "stream_manifest": {
+          "name": "StreamManifest",
+          "description": "The renditions and the edge to fetch from, in the format shared with Edge Delivery",
+          "attributes": {
+            "rendition_ids": {
+              "name": "renditionIds",
+              "type": "string[]"
+            },
+            "edge_url": {
+              "name": "edgeUrl",
+              "type": "string (URL)"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {
@@ -1858,7 +1858,7 @@
                   "name": "capacity",
                   "type": "Capacity",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/edge_delivery/aggregates/edge_appliance/valueobjects/capacity"
+                    "$ref": "#/boundedcontexts/edge_delivery/valueobjects/capacity"
                   }
                 }
               },
@@ -1873,7 +1873,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/edge_delivery/aggregates/edge_appliance/valueobjects/capacity"
+                    "$ref": "#/boundedcontexts/edge_delivery/valueobjects/capacity"
                   },
                   "relation": "uses",
                   "label": "sized",
@@ -1903,19 +1903,6 @@
               "relations": []
             }
           },
-          "valueobjects": {
-            "capacity": {
-              "name": "Capacity",
-              "description": "Disk bytes available for cache",
-              "attributes": {
-                "bytes": {
-                  "name": "bytes",
-                  "type": "int64"
-                }
-              },
-              "relations": []
-            }
-          },
           "invariants": {
             "cached_bytes_within_capacity": {
               "name": "CachedBytesWithinCapacity",
@@ -1925,7 +1912,7 @@
                   "$ref": "#/boundedcontexts/edge_delivery/aggregates/edge_appliance/entities/cached_asset"
                 },
                 {
-                  "$ref": "#/boundedcontexts/edge_delivery/aggregates/edge_appliance/valueobjects/capacity"
+                  "$ref": "#/boundedcontexts/edge_delivery/valueobjects/capacity"
                 }
               ]
             }
@@ -1945,6 +1932,9 @@
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/edge_delivery/schemas/resolve_edge"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/edge_delivery/schemas/edge_manifest"
               }
             }
           },
@@ -1986,6 +1976,19 @@
           }
         }
       },
+      "valueobjects": {
+        "capacity": {
+          "name": "Capacity",
+          "description": "Disk bytes available for cache",
+          "attributes": {
+            "bytes": {
+              "name": "bytes",
+              "type": "int64"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {
         "resolve_edge": {
           "name": "ResolveEdge",
@@ -1997,6 +2000,19 @@
             "rendition_ids": {
               "name": "renditionIds",
               "type": "string[]"
+            }
+          }
+        },
+        "edge_manifest": {
+          "name": "EdgeManifest",
+          "description": "The appliance to fetch from, in the shared manifest format",
+          "attributes": {
+            "manifest": {
+              "name": "manifest",
+              "type": "StreamManifest",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/playback/valueobjects/stream_manifest"
+              }
             }
           }
         }
@@ -2069,7 +2085,7 @@
                   "name": "capability",
                   "type": "Capability",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/devices/aggregates/device/valueobjects/capability"
+                    "$ref": "#/boundedcontexts/devices/valueobjects/capability"
                   }
                 }
               },
@@ -2084,7 +2100,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/devices/aggregates/device/valueobjects/capability"
+                    "$ref": "#/boundedcontexts/devices/valueobjects/capability"
                   },
                   "relation": "uses",
                   "label": "capable-of",
@@ -2114,27 +2130,6 @@
               "relations": []
             }
           },
-          "valueobjects": {
-            "capability": {
-              "name": "Capability",
-              "description": "Codecs, DRM level and maximum resolution",
-              "attributes": {
-                "codecs": {
-                  "name": "codecs",
-                  "type": "string[]"
-                },
-                "drm_level": {
-                  "name": "drmLevel",
-                  "type": "string"
-                },
-                "max_height": {
-                  "name": "maxHeight",
-                  "type": "int"
-                }
-              },
-              "relations": []
-            }
-          },
           "invariants": {
             "certified_before_playback": {
               "name": "CertifiedBeforePlayback",
@@ -2150,7 +2145,7 @@
               "description": "A device is registered with its capabilities or not at all",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/devices/aggregates/device/valueobjects/capability"
+                  "$ref": "#/boundedcontexts/devices/valueobjects/capability"
                 }
               ]
             }
@@ -2199,6 +2194,27 @@
           }
         }
       },
+      "valueobjects": {
+        "capability": {
+          "name": "Capability",
+          "description": "Codecs, DRM level and maximum resolution",
+          "attributes": {
+            "codecs": {
+              "name": "codecs",
+              "type": "string[]"
+            },
+            "drm_level": {
+              "name": "drmLevel",
+              "type": "string"
+            },
+            "max_height": {
+              "name": "maxHeight",
+              "type": "int"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {
         "device_certified": {
           "name": "DeviceCertified",
@@ -2216,7 +2232,7 @@
               "name": "capability",
               "type": "Capability",
               "valueobject": {
-                "$ref": "#/boundedcontexts/devices/aggregates/device/valueobjects/capability"
+                "$ref": "#/boundedcontexts/devices/valueobjects/capability"
               }
             }
           }
@@ -2282,7 +2298,7 @@
                   "type": "Affinity[]",
                   "description": "What the profile leans to, strongest first",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/recommendations/aggregates/taste_profile/valueobjects/affinity"
+                    "$ref": "#/boundedcontexts/recommendations/valueobjects/affinity"
                   }
                 }
               },
@@ -2297,7 +2313,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/recommendations/aggregates/taste_profile/valueobjects/affinity"
+                    "$ref": "#/boundedcontexts/recommendations/valueobjects/affinity"
                   },
                   "relation": "uses",
                   "label": "leans-to",
@@ -2330,23 +2346,6 @@
                 "at": {
                   "name": "at",
                   "type": "date-time"
-                }
-              },
-              "relations": []
-            }
-          },
-          "valueobjects": {
-            "affinity": {
-              "name": "Affinity",
-              "description": "A genre or theme and how strongly the profile leans to it",
-              "attributes": {
-                "genre": {
-                  "name": "genre",
-                  "type": "string"
-                },
-                "score": {
-                  "name": "score",
-                  "type": "float 0..1"
                 }
               },
               "relations": []
@@ -2472,6 +2471,23 @@
           }
         }
       },
+      "valueobjects": {
+        "affinity": {
+          "name": "Affinity",
+          "description": "A genre or theme and how strongly the profile leans to it",
+          "attributes": {
+            "genre": {
+              "name": "genre",
+              "type": "string"
+            },
+            "score": {
+              "name": "score",
+              "type": "float 0..1"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {}
     },
     "households_&_profiles": {
@@ -2588,7 +2604,7 @@
                   "name": "maturity",
                   "type": "MaturitySetting",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/valueobjects/maturity_setting"
+                    "$ref": "#/boundedcontexts/households_&_profiles/valueobjects/maturity_setting"
                   }
                 },
                 "pin": {
@@ -2596,14 +2612,14 @@
                   "type": "ProfilePin",
                   "description": "Absent on an unlocked profile",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/valueobjects/profile_pin"
+                    "$ref": "#/boundedcontexts/households_&_profiles/valueobjects/profile_pin"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/valueobjects/maturity_setting"
+                    "$ref": "#/boundedcontexts/households_&_profiles/valueobjects/maturity_setting"
                   },
                   "relation": "uses",
                   "label": "limited-to",
@@ -2611,37 +2627,13 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/valueobjects/profile_pin"
+                    "$ref": "#/boundedcontexts/households_&_profiles/valueobjects/profile_pin"
                   },
                   "relation": "uses",
                   "label": "locked-by",
                   "cardinality": "0..1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "maturity_setting": {
-              "name": "MaturitySetting",
-              "description": "The highest rating a profile may play",
-              "attributes": {
-                "max_rating": {
-                  "name": "maxRating",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "profile_pin": {
-              "name": "ProfilePin",
-              "description": "Four digits that unlock a profile or raise a maturity cap",
-              "attributes": {
-                "hash": {
-                  "name": "hash",
-                  "type": "string"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -2671,10 +2663,10 @@
                   "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/profile"
                 },
                 {
-                  "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/valueobjects/maturity_setting"
+                  "$ref": "#/boundedcontexts/households_&_profiles/valueobjects/maturity_setting"
                 },
                 {
-                  "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/valueobjects/profile_pin"
+                  "$ref": "#/boundedcontexts/households_&_profiles/valueobjects/profile_pin"
                 }
               ]
             }
@@ -2738,6 +2730,30 @@
           "embodiedBy": {
             "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/profile"
           }
+        }
+      },
+      "valueobjects": {
+        "maturity_setting": {
+          "name": "MaturitySetting",
+          "description": "The highest rating a profile may play",
+          "attributes": {
+            "max_rating": {
+              "name": "maxRating",
+              "type": "string"
+            }
+          },
+          "relations": []
+        },
+        "profile_pin": {
+          "name": "ProfilePin",
+          "description": "Four digits that unlock a profile or raise a maturity cap",
+          "attributes": {
+            "hash": {
+              "name": "hash",
+              "type": "string"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {
@@ -2897,7 +2913,7 @@
                   "name": "plan",
                   "type": "Plan",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/plan"
+                    "$ref": "#/boundedcontexts/billing_&_plans/valueobjects/plan"
                   }
                 }
               },
@@ -2912,7 +2928,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/plan"
+                    "$ref": "#/boundedcontexts/billing_&_plans/valueobjects/plan"
                   },
                   "relation": "uses",
                   "label": "on-plan",
@@ -2940,7 +2956,7 @@
                   "type": "Money",
                   "description": "The sum of the lines",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/money"
+                    "$ref": "#/boundedcontexts/billing_&_plans/valueobjects/money"
                   }
                 },
                 "paid": {
@@ -2951,14 +2967,14 @@
                   "name": "period",
                   "type": "BillingPeriod",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/billing_period"
+                    "$ref": "#/boundedcontexts/billing_&_plans/valueobjects/billing_period"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/billing_period"
+                    "$ref": "#/boundedcontexts/billing_&_plans/valueobjects/billing_period"
                   },
                   "relation": "uses",
                   "label": "covers",
@@ -2966,80 +2982,13 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/money"
+                    "$ref": "#/boundedcontexts/billing_&_plans/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "charges",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "plan": {
-              "name": "Plan",
-              "description": "A tier: price, concurrent streams, ad-supported or not",
-              "attributes": {
-                "tier": {
-                  "name": "tier",
-                  "type": "'basic-with-ads' | 'standard' | 'premium'"
-                },
-                "price": {
-                  "name": "price",
-                  "type": "Money",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/money"
-                  }
-                },
-                "max_streams": {
-                  "name": "maxStreams",
-                  "type": "int"
-                },
-                "ad_supported": {
-                  "name": "adSupported",
-                  "type": "boolean"
-                }
-              },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/money"
-                  },
-                  "relation": "uses",
-                  "label": "priced-at",
-                  "cardinality": "1"
-                }
-              ]
-            },
-            "money": {
-              "name": "Money",
-              "description": "An amount in a currency: minor units and an ISO 4217 code",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
-            },
-            "billing_period": {
-              "name": "BillingPeriod",
-              "description": "The month an invoice covers",
-              "attributes": {
-                "from": {
-                  "name": "from",
-                  "type": "date"
-                },
-                "to": {
-                  "name": "to",
-                  "type": "date"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -3060,7 +3009,7 @@
                   "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/entities/invoice"
                 },
                 {
-                  "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/plan"
+                  "$ref": "#/boundedcontexts/billing_&_plans/valueobjects/plan"
                 }
               ]
             },
@@ -3158,7 +3107,7 @@
           "name": "Plan",
           "definition": "A tier with a price, a stream limit and whether it carries ads",
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/plan"
+            "$ref": "#/boundedcontexts/billing_&_plans/valueobjects/plan"
           }
         },
         "entitlement": {
@@ -3167,6 +3116,73 @@
           "embodiedBy": {
             "$ref": "#/boundedcontexts/billing_&_plans/services/billing_api/provides/get_entitlement"
           }
+        }
+      },
+      "valueobjects": {
+        "plan": {
+          "name": "Plan",
+          "description": "A tier: price, concurrent streams, ad-supported or not",
+          "attributes": {
+            "tier": {
+              "name": "tier",
+              "type": "'basic-with-ads' | 'standard' | 'premium'"
+            },
+            "price": {
+              "name": "price",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/billing_&_plans/valueobjects/money"
+              }
+            },
+            "max_streams": {
+              "name": "maxStreams",
+              "type": "int"
+            },
+            "ad_supported": {
+              "name": "adSupported",
+              "type": "boolean"
+            }
+          },
+          "relations": [
+            {
+              "target": {
+                "$ref": "#/boundedcontexts/billing_&_plans/valueobjects/money"
+              },
+              "relation": "uses",
+              "label": "priced-at",
+              "cardinality": "1"
+            }
+          ]
+        },
+        "money": {
+          "name": "Money",
+          "description": "An amount in a currency: minor units and an ISO 4217 code",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": []
+        },
+        "billing_period": {
+          "name": "BillingPeriod",
+          "description": "The month an invoice covers",
+          "attributes": {
+            "from": {
+              "name": "from",
+              "type": "date"
+            },
+            "to": {
+              "name": "to",
+              "type": "date"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {
@@ -3242,7 +3258,6 @@
               "relations": []
             }
           },
-          "valueobjects": {},
           "invariants": {}
         }
       },
@@ -3283,6 +3298,7 @@
           }
         }
       },
+      "valueobjects": {},
       "schemas": {
         "account_created": {
           "name": "AccountCreated",
@@ -3423,21 +3439,21 @@
                   "name": "advertiser",
                   "type": "Advertiser",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/valueobjects/advertiser"
+                    "$ref": "#/boundedcontexts/ads_tier/valueobjects/advertiser"
                   }
                 },
                 "frequency_cap": {
                   "name": "frequencyCap",
                   "type": "FrequencyCap",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/valueobjects/frequency_cap"
+                    "$ref": "#/boundedcontexts/ads_tier/valueobjects/frequency_cap"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/valueobjects/advertiser"
+                    "$ref": "#/boundedcontexts/ads_tier/valueobjects/advertiser"
                   },
                   "relation": "uses",
                   "label": "paid-by",
@@ -3445,37 +3461,13 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/valueobjects/frequency_cap"
+                    "$ref": "#/boundedcontexts/ads_tier/valueobjects/frequency_cap"
                   },
                   "relation": "uses",
                   "label": "capped",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "advertiser": {
-              "name": "Advertiser",
-              "description": "Who paid for the creative",
-              "attributes": {
-                "name": {
-                  "name": "name",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "frequency_cap": {
-              "name": "FrequencyCap",
-              "description": "The creative's rule for how often one household may see it in a day. The break carries the rule; PrepareBreaks applies it against the household's impressions so far today, which a single break cannot hold",
-              "attributes": {
-                "max_per_day": {
-                  "name": "maxPerDay",
-                  "type": "int"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -3566,6 +3558,30 @@
           }
         }
       },
+      "valueobjects": {
+        "advertiser": {
+          "name": "Advertiser",
+          "description": "Who paid for the creative",
+          "attributes": {
+            "name": {
+              "name": "name",
+              "type": "string"
+            }
+          },
+          "relations": []
+        },
+        "frequency_cap": {
+          "name": "FrequencyCap",
+          "description": "The creative's rule for how often one household may see it in a day. The break carries the rule; PrepareBreaks applies it against the household's impressions so far today, which a single break cannot hold",
+          "attributes": {
+            "max_per_day": {
+              "name": "maxPerDay",
+              "type": "int"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {
         "resolve_ad_break": {
           "name": "ResolveAdBreak",
@@ -3644,13 +3660,13 @@
               "relations": []
             }
           },
-          "valueobjects": {},
           "invariants": {}
         }
       },
       "services": {},
       "policies": {},
       "glossary": {},
+      "valueobjects": {},
       "schemas": {
         "disc_rental_invoiced": {
           "name": "DiscRentalInvoiced",

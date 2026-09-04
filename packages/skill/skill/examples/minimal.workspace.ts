@@ -35,7 +35,8 @@ const order = orderAgg.addRootEntity("Order", {
 order.addAttribute("orderNumber", { type: "order number", identity: true });
 const total = order.addAttribute("total", { type: "money" });
 
-const address = orderAgg.addValueObject("Address", {
+// A value object belongs to the context, so every aggregate here may hold one.
+const address = orders.addValueObject("Address", {
 	description: "Where the order ships to",
 });
 address.addAttribute("lines", { type: "text" });

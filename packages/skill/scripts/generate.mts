@@ -122,7 +122,7 @@ Every cross-link is an object \`{ "$ref": "<path>" }\`. Paths are JSON pointers 
 | Bounded context | \`#/boundedcontexts/<bc>\` |
 | Aggregate | \`#/boundedcontexts/<bc>/aggregates/<aggregate>\` |
 | Entity | \`#/boundedcontexts/<bc>/aggregates/<aggregate>/entities/<entity>\` |
-| Value object | \`#/boundedcontexts/<bc>/aggregates/<aggregate>/valueobjects/<vo>\` |
+| Value object | \`#/boundedcontexts/<bc>/valueobjects/<vo>\` |
 | Invariant | \`#/boundedcontexts/<bc>/aggregates/<aggregate>/invariants/<invariant>\` |
 | Attribute | \`<owner path>/attributes/<attribute>\` (owner is an entity, value object or schema) |
 | Consumable of an aggregate | \`#/boundedcontexts/<bc>/aggregates/<aggregate>/provides/<consumable>\` |

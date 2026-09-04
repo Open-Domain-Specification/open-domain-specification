@@ -32,6 +32,12 @@ Open-host service for /user endpoints
 
 
 
+## Value Objects
+| Name | Description | Attributes | Used by |
+| --- | --- | --- | --- |
+| UserStatus | Untyped int per the Petstore v3 model; nobody remembers the meaning of each value | value: `int` | User |
+
+
 ## Schemas
 > No schemas.
 

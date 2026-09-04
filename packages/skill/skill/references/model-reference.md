@@ -39,7 +39,6 @@ Represents an aggregate in the Open Domain Specification (ODS).
 | `invariants` | map of id to [Invariant](#invariant) | yes |  |
 | `name` | string | yes |  |
 | `provides` | map of id to [Consumable](#consumable) | yes |  |
-| `valueobjects` | map of id to [ValueObject](#valueobject) | yes |  |
 
 No other fields are allowed.
 
@@ -73,6 +72,7 @@ Represents a bounded context in the Open Domain Specification (ODS).
 | `services` | map of id to [Service](#service) | yes |  |
 | `subdomains` | array of `{ "$ref": string }` | yes | The subdomains this context serves; a context may serve several. |
 | `team` | `{ "$ref": string }` | no | The team that owns this context. |
+| `valueobjects` | map of id to [ValueObject](#valueobject) | yes | The values this context defines once: part of its ubiquitous language, referenced by the attributes and relations of any of its aggregates. |
 
 No other fields are allowed.
 
@@ -338,7 +338,7 @@ Every cross-link is an object `{ "$ref": "<path>" }`. Paths are JSON pointers in
 | Bounded context | `#/boundedcontexts/<bc>` |
 | Aggregate | `#/boundedcontexts/<bc>/aggregates/<aggregate>` |
 | Entity | `#/boundedcontexts/<bc>/aggregates/<aggregate>/entities/<entity>` |
-| Value object | `#/boundedcontexts/<bc>/aggregates/<aggregate>/valueobjects/<vo>` |
+| Value object | `#/boundedcontexts/<bc>/valueobjects/<vo>` |
 | Invariant | `#/boundedcontexts/<bc>/aggregates/<aggregate>/invariants/<invariant>` |
 | Attribute | `<owner path>/attributes/<attribute>` (owner is an entity, value object or schema) |
 | Consumable of an aggregate | `#/boundedcontexts/<bc>/aggregates/<aggregate>/provides/<consumable>` |

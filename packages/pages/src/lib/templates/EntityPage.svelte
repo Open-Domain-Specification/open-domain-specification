@@ -30,8 +30,10 @@ import Section from "../organisms/Section.svelte";
 const { entity: e }: { entity: Entity } = $props();
 const model = useModel();
 const a = $derived(e.aggregate);
+// Value objects belong to the context, so what may point at an entity is
+// every entity of the aggregate and every value object of the context.
 const incoming = $derived(
-	[...a.entities.values(), ...a.valueobjects.values()]
+	[...a.entities.values(), ...e.boundedcontext.valueobjects.values()]
 		.flatMap((o) => o.relations)
 		.filter((r) => r.target === e),
 );

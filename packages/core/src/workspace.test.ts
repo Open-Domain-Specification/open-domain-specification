@@ -309,7 +309,7 @@ describe("Workspace lookup methods", () => {
 			description: "Order entity",
 		});
 
-		valueObject = aggregate.addValueObject("Money", {
+		valueObject = boundedContext.addValueObject("Money", {
 			description: "Money value object",
 		});
 	});

@@ -88,10 +88,10 @@ export function edgeCaseModel(): Model {
 	aggNoRoot.addEntity("Bare Entity", {
 		description: "Has no attributes at all, so nothing identifies it.",
 	});
-	aggNoRoot.addValueObject("Unused Value Object", {
+	bcMain.addValueObject("Unused Value Object", {
 		description: "Never used as an attribute type, and has no relations.",
 	});
-	const voLinker = aggNoRoot.addValueObject("Linking Value Object", {
+	const voLinker = bcMain.addValueObject("Linking Value Object", {
 		description: "Points at the plain entity.",
 	});
 	voLinker.addRelation(ePlain, { relation: "references", cardinality: "1" });

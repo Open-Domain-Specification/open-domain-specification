@@ -114,9 +114,7 @@ describe("Workspace Edge Cases", () => {
 			),
 		).toBeUndefined();
 		expect(
-			workspace.getValueObjectByRef(
-				"#/boundedcontexts/test/aggregates/test/valueobjects/test",
-			),
+			workspace.getValueObjectByRef("#/boundedcontexts/test/valueobjects/test"),
 		).toBeUndefined();
 		expect(
 			workspace.getEntityOrValueobjectByRef("#/invalid/ref"),

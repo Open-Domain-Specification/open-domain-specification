@@ -276,6 +276,9 @@ export class ModelTree
 					group(node, "Services", "symbol-method", () =>
 						[...bc.services.values()].map((s) => this.serviceNode(node, s)),
 					),
+					group(node, "Value Objects", "symbol-constant", () =>
+						this.leaves(file, bc.valueobjects.values(), "symbol-constant"),
+					),
 					group(node, "Policies", "law", () =>
 						[...bc.policies.values()].map(
 							(p) =>
@@ -355,9 +358,6 @@ export class ModelTree
 				[
 					group(node, "Entities", "symbol-field", () =>
 						this.leaves(file, a.entities.values(), "symbol-field"),
-					),
-					group(node, "Value Objects", "symbol-constant", () =>
-						this.leaves(file, a.valueobjects.values(), "symbol-constant"),
 					),
 					group(node, "Invariants", "shield", () =>
 						this.leaves(file, a.invariants.values(), "shield"),

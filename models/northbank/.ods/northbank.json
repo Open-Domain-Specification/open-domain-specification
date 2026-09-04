@@ -194,21 +194,21 @@
                   "name": "dateOfBirth",
                   "type": "DateOfBirth",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/date_of_birth"
+                    "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/date_of_birth"
                   }
                 },
                 "kyc_status": {
                   "name": "kycStatus",
                   "type": "KycStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/kyc_status"
+                    "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/kyc_status"
                   }
                 },
                 "address": {
                   "name": "address",
                   "type": "Address",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/address"
+                    "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/address"
                   }
                 }
               },
@@ -223,7 +223,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/date_of_birth"
+                    "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/date_of_birth"
                   },
                   "relation": "uses",
                   "label": "born-on",
@@ -231,7 +231,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/address"
+                    "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/address"
                   },
                   "relation": "uses",
                   "label": "lives-at",
@@ -239,7 +239,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/kyc_status"
+                    "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/kyc_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
@@ -269,45 +269,6 @@
               "relations": []
             }
           },
-          "valueobjects": {
-            "date_of_birth": {
-              "name": "DateOfBirth",
-              "description": "A date; the source of the age rule",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "date"
-                }
-              },
-              "relations": []
-            },
-            "address": {
-              "name": "Address",
-              "description": "Residential address, verified against the electoral roll",
-              "attributes": {
-                "lines": {
-                  "name": "lines",
-                  "type": "string[]"
-                },
-                "postcode": {
-                  "name": "postcode",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "kyc_status": {
-              "name": "KycStatus",
-              "description": "pending, held (sanctions match), verified",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'pending' | 'held' | 'verified'"
-                }
-              },
-              "relations": []
-            }
-          },
           "invariants": {
             "adult_only": {
               "name": "AdultOnly",
@@ -323,7 +284,7 @@
               "description": "A verified customer has at least one identity document on file",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/kyc_status"
+                  "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/kyc_status"
                 },
                 {
                   "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/identity_document"
@@ -396,21 +357,21 @@
                   "name": "purpose",
                   "type": "ConsentPurpose",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/valueobjects/consent_purpose"
+                    "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/consent_purpose"
                   }
                 },
                 "scope": {
                   "name": "scope",
                   "type": "ConsentScope",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/valueobjects/consent_scope"
+                    "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/consent_scope"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/valueobjects/consent_purpose"
+                    "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/consent_purpose"
                   },
                   "relation": "uses",
                   "label": "for",
@@ -418,7 +379,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/valueobjects/consent_scope"
+                    "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/consent_scope"
                   },
                   "relation": "uses",
                   "label": "covers",
@@ -433,34 +394,6 @@
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "consent_purpose": {
-              "name": "ConsentPurpose",
-              "description": "marketing, data-sharing or open-banking; the purpose decides the rules",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'marketing' | 'data-sharing' | 'open-banking'"
-                }
-              },
-              "relations": []
-            },
-            "consent_scope": {
-              "name": "ConsentScope",
-              "description": "Channels and data categories the permission covers",
-              "attributes": {
-                "channels": {
-                  "name": "channels",
-                  "type": "string[]"
-                },
-                "data_categories": {
-                  "name": "dataCategories",
-                  "type": "string[]"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -478,7 +411,7 @@
               "description": "A consent without a purpose is not a consent",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/valueobjects/consent_purpose"
+                  "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/consent_purpose"
                 }
               ]
             },
@@ -490,7 +423,7 @@
                   "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/entities/consent/attributes/expires_at"
                 },
                 {
-                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/valueobjects/consent_purpose"
+                  "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/consent_purpose"
                 }
               ]
             }
@@ -625,7 +558,7 @@
           "name": "KYC",
           "definition": "Know your customer: the verification that must pass before any account opens",
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/kyc_status"
+            "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/kyc_status"
           }
         },
         "consent": {
@@ -634,6 +567,71 @@
           "embodiedBy": {
             "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent"
           }
+        }
+      },
+      "valueobjects": {
+        "date_of_birth": {
+          "name": "DateOfBirth",
+          "description": "A date; the source of the age rule",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "date"
+            }
+          },
+          "relations": []
+        },
+        "address": {
+          "name": "Address",
+          "description": "Residential address, verified against the electoral roll",
+          "attributes": {
+            "lines": {
+              "name": "lines",
+              "type": "string[]"
+            },
+            "postcode": {
+              "name": "postcode",
+              "type": "string"
+            }
+          },
+          "relations": []
+        },
+        "kyc_status": {
+          "name": "KycStatus",
+          "description": "pending, held (sanctions match), verified",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'pending' | 'held' | 'verified'"
+            }
+          },
+          "relations": []
+        },
+        "consent_purpose": {
+          "name": "ConsentPurpose",
+          "description": "marketing, data-sharing or open-banking; the purpose decides the rules",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'marketing' | 'data-sharing' | 'open-banking'"
+            }
+          },
+          "relations": []
+        },
+        "consent_scope": {
+          "name": "ConsentScope",
+          "description": "Channels and data categories the permission covers",
+          "attributes": {
+            "channels": {
+              "name": "channels",
+              "type": "string[]"
+            },
+            "data_categories": {
+              "name": "dataCategories",
+              "type": "string[]"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {
@@ -674,21 +672,21 @@
               "name": "dateOfBirth",
               "type": "DateOfBirth",
               "valueobject": {
-                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/date_of_birth"
+                "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/date_of_birth"
               }
             },
             "address": {
               "name": "address",
               "type": "Address",
               "valueobject": {
-                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/address"
+                "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/address"
               }
             },
             "kyc_status": {
               "name": "kycStatus",
               "type": "KycStatus",
               "valueobject": {
-                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/kyc_status"
+                "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/kyc_status"
               }
             }
           }
@@ -710,7 +708,7 @@
               "name": "purpose",
               "type": "ConsentPurpose",
               "valueobject": {
-                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/valueobjects/consent_purpose"
+                "$ref": "#/boundedcontexts/customer_&_kyc/valueobjects/consent_purpose"
               }
             }
           }
@@ -763,33 +761,20 @@
                   "name": "score",
                   "type": "MatchScore",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/valueobjects/match_score"
+                    "$ref": "#/boundedcontexts/sanctions_screening/valueobjects/match_score"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/valueobjects/match_score"
+                    "$ref": "#/boundedcontexts/sanctions_screening/valueobjects/match_score"
                   },
                   "relation": "uses",
                   "label": "scored",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "match_score": {
-              "name": "MatchScore",
-              "description": "0 to 100; above the threshold is a match",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "int 0..100"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {}
@@ -821,6 +806,19 @@
       },
       "policies": {},
       "glossary": {},
+      "valueobjects": {
+        "match_score": {
+          "name": "MatchScore",
+          "description": "0 to 100; above the threshold is a match",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "int 0..100"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {
         "screen_party": {
           "name": "ScreenParty",
@@ -851,7 +849,7 @@
               "name": "score",
               "type": "MatchScore",
               "valueobject": {
-                "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/valueobjects/match_score"
+                "$ref": "#/boundedcontexts/sanctions_screening/valueobjects/match_score"
               }
             }
           }
@@ -971,14 +969,14 @@
                   "name": "iban",
                   "type": "IBAN",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/iban"
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/iban"
                   }
                 },
                 "account_number": {
                   "name": "accountNumber",
                   "type": "AccountNumber",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/account_number"
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/account_number"
                   }
                 },
                 "posted_balance": {
@@ -986,7 +984,7 @@
                   "type": "Money",
                   "description": "What the ledger has posted to this account",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/money"
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/money"
                   }
                 },
                 "pending_authorisations": {
@@ -994,7 +992,7 @@
                   "type": "Money",
                   "description": "Card authorisations approved but not yet captured; a hold placed on CardAuthorised and released when the capture posts",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/money"
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/money"
                   }
                 },
                 "available_balance": {
@@ -1002,21 +1000,21 @@
                   "type": "Money",
                   "description": "Posted balance less pending card authorisations",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/money"
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/money"
                   }
                 },
                 "status": {
                   "name": "status",
                   "type": "AccountStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/account_status"
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/account_status"
                   }
                 },
                 "overdraft": {
                   "name": "overdraft",
                   "type": "OverdraftLimit",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/overdraft_limit"
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/overdraft_limit"
                   }
                 }
               },
@@ -1031,7 +1029,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/iban"
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/iban"
                   },
                   "relation": "uses",
                   "label": "identified-by",
@@ -1039,7 +1037,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/account_number"
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/account_number"
                   },
                   "relation": "uses",
                   "label": "numbered",
@@ -1047,7 +1045,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/money"
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "balance",
@@ -1055,7 +1053,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/overdraft_limit"
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/overdraft_limit"
                   },
                   "relation": "uses",
                   "label": "overdraft",
@@ -1063,7 +1061,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/account_status"
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/account_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
@@ -1089,90 +1087,13 @@
               "relations": []
             }
           },
-          "valueobjects": {
-            "iban": {
-              "name": "IBAN",
-              "description": "Country, check digits, bank and account identifiers; valid only if the mod-97 checksum holds",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "string (ISO 13616)"
-                }
-              },
-              "relations": []
-            },
-            "account_number": {
-              "name": "AccountNumber",
-              "description": "Sort code and eight-digit number; part of the shared kernel library",
-              "attributes": {
-                "sort_code": {
-                  "name": "sortCode",
-                  "type": "string"
-                },
-                "number": {
-                  "name": "number",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "money": {
-              "name": "Money",
-              "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
-            },
-            "overdraft_limit": {
-              "name": "OverdraftLimit",
-              "description": "How far below zero the available balance may go",
-              "attributes": {
-                "limit": {
-                  "name": "limit",
-                  "type": "Money",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/money"
-                  }
-                }
-              },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/money"
-                  },
-                  "relation": "uses",
-                  "label": "limited-to",
-                  "cardinality": "1"
-                }
-              ]
-            },
-            "account_status": {
-              "name": "AccountStatus",
-              "description": "open, frozen or closed",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'open' | 'frozen' | 'closed'"
-                }
-              },
-              "relations": []
-            }
-          },
           "invariants": {
             "iban_checksum_valid": {
               "name": "IbanChecksumValid",
               "description": "The IBAN's mod-97 checksum holds, or the account does not exist",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/iban"
+                  "$ref": "#/boundedcontexts/accounts/valueobjects/iban"
                 }
               ]
             },
@@ -1184,7 +1105,7 @@
                   "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account/attributes/available_balance"
                 },
                 {
-                  "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/overdraft_limit"
+                  "$ref": "#/boundedcontexts/accounts/valueobjects/overdraft_limit"
                 }
               ]
             },
@@ -1205,7 +1126,7 @@
               "description": "A frozen account accepts no debits until Financial Crime unfreezes it",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/account_status"
+                  "$ref": "#/boundedcontexts/accounts/valueobjects/account_status"
                 }
               ]
             },
@@ -1214,7 +1135,7 @@
               "description": "An account closes only at a zero balance",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/account_status"
+                  "$ref": "#/boundedcontexts/accounts/valueobjects/account_status"
                 },
                 {
                   "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account/attributes/available_balance"
@@ -1350,6 +1271,83 @@
           }
         }
       },
+      "valueobjects": {
+        "iban": {
+          "name": "IBAN",
+          "description": "Country, check digits, bank and account identifiers; valid only if the mod-97 checksum holds",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "string (ISO 13616)"
+            }
+          },
+          "relations": []
+        },
+        "account_number": {
+          "name": "AccountNumber",
+          "description": "Sort code and eight-digit number; part of the shared kernel library",
+          "attributes": {
+            "sort_code": {
+              "name": "sortCode",
+              "type": "string"
+            },
+            "number": {
+              "name": "number",
+              "type": "string"
+            }
+          },
+          "relations": []
+        },
+        "money": {
+          "name": "Money",
+          "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": []
+        },
+        "overdraft_limit": {
+          "name": "OverdraftLimit",
+          "description": "How far below zero the available balance may go",
+          "attributes": {
+            "limit": {
+              "name": "limit",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/accounts/valueobjects/money"
+              }
+            }
+          },
+          "relations": [
+            {
+              "target": {
+                "$ref": "#/boundedcontexts/accounts/valueobjects/money"
+              },
+              "relation": "uses",
+              "label": "limited-to",
+              "cardinality": "1"
+            }
+          ]
+        },
+        "account_status": {
+          "name": "AccountStatus",
+          "description": "open, frozen or closed",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'open' | 'frozen' | 'closed'"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {
         "account_ref": {
           "name": "AccountRef",
@@ -1374,7 +1372,7 @@
               "name": "iban",
               "type": "IBAN",
               "valueobject": {
-                "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/iban"
+                "$ref": "#/boundedcontexts/accounts/valueobjects/iban"
               }
             },
             "customer_id": {
@@ -1471,7 +1469,7 @@
                   "name": "valueDate",
                   "type": "ValueDate",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/value_date"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/value_date"
                   }
                 }
               },
@@ -1486,7 +1484,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/value_date"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/value_date"
                   },
                   "relation": "uses",
                   "label": "valued-on",
@@ -1508,36 +1506,28 @@
                   "name": "ledgerAccount",
                   "type": "LedgerAccount",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/ledger_account"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/ledger_account"
                   }
                 },
                 "amount": {
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/money"
+                    "$ref": "#/boundedcontexts/accounts/valueobjects/money"
                   }
                 },
                 "direction": {
                   "name": "direction",
                   "type": "PostingDirection",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/posting_direction"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/posting_direction"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/money"
-                  },
-                  "relation": "uses",
-                  "label": "of",
-                  "cardinality": "1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/posting_direction"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/posting_direction"
                   },
                   "relation": "uses",
                   "label": "as",
@@ -1545,100 +1535,13 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/ledger_account"
+                    "$ref": "#/boundedcontexts/ledger/valueobjects/ledger_account"
                   },
                   "relation": "uses",
                   "label": "to",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "money": {
-              "name": "Money",
-              "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
-            },
-            "account_number": {
-              "name": "AccountNumber",
-              "description": "Sort code and eight-digit number; the shared kernel library, so it is the same value Accounts holds",
-              "attributes": {
-                "sort_code": {
-                  "name": "sortCode",
-                  "type": "string"
-                },
-                "number": {
-                  "name": "number",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "ledger_account": {
-              "name": "LedgerAccount",
-              "description": "Where a posting lands: a customer account by its AccountNumber, or a nominal from the chart of accounts (loan book, scheme suspense, fee income)",
-              "attributes": {
-                "kind": {
-                  "name": "kind",
-                  "type": "'customer' | 'nominal'"
-                },
-                "account_number": {
-                  "name": "accountNumber",
-                  "type": "AccountNumber",
-                  "description": "Set when kind is customer",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/account_number"
-                  }
-                },
-                "nominal_code": {
-                  "name": "nominalCode",
-                  "type": "string",
-                  "description": "Set when kind is nominal, e.g. LOAN-BOOK, SCHEME-SUSPENSE"
-                }
-              },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/account_number"
-                  },
-                  "relation": "uses",
-                  "label": "numbered",
-                  "cardinality": "1"
-                }
-              ]
-            },
-            "posting_direction": {
-              "name": "PostingDirection",
-              "description": "debit or credit",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'debit' | 'credit'"
-                }
-              },
-              "relations": []
-            },
-            "value_date": {
-              "name": "ValueDate",
-              "description": "The date the money counts from, which may differ from the posting date",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "date"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -1665,7 +1568,7 @@
               "description": "Every posting in an entry shares one currency",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/money"
+                  "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/entities/posting/attributes/amount"
                 }
               ]
             },
@@ -1751,7 +1654,7 @@
             "Nominal"
           ],
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/ledger_account"
+            "$ref": "#/boundedcontexts/ledger/valueobjects/ledger_account"
           }
         },
         "posted_balance": {
@@ -1778,8 +1681,56 @@
           "name": "Value date",
           "definition": "The date money counts from, which may differ from when it was posted",
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/value_date"
+            "$ref": "#/boundedcontexts/ledger/valueobjects/value_date"
           }
+        }
+      },
+      "valueobjects": {
+        "ledger_account": {
+          "name": "LedgerAccount",
+          "description": "Where a posting lands: a customer account by its AccountNumber, or a nominal from the chart of accounts (loan book, scheme suspense, fee income)",
+          "attributes": {
+            "kind": {
+              "name": "kind",
+              "type": "'customer' | 'nominal'"
+            },
+            "account_number": {
+              "name": "accountNumber",
+              "type": "AccountNumber",
+              "description": "Set when kind is customer",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/accounts/valueobjects/account_number"
+              }
+            },
+            "nominal_code": {
+              "name": "nominalCode",
+              "type": "string",
+              "description": "Set when kind is nominal, e.g. LOAN-BOOK, SCHEME-SUSPENSE"
+            }
+          },
+          "relations": []
+        },
+        "posting_direction": {
+          "name": "PostingDirection",
+          "description": "debit or credit",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'debit' | 'credit'"
+            }
+          },
+          "relations": []
+        },
+        "value_date": {
+          "name": "ValueDate",
+          "description": "The date the money counts from, which may differ from the posting date",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "date"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {
@@ -1795,7 +1746,7 @@
               "name": "valueDate",
               "type": "ValueDate",
               "valueobject": {
-                "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/value_date"
+                "$ref": "#/boundedcontexts/ledger/valueobjects/value_date"
               }
             }
           }
@@ -1950,35 +1901,35 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/money"
+                    "$ref": "#/boundedcontexts/payments_hub/valueobjects/money"
                   }
                 },
                 "status": {
                   "name": "status",
                   "type": "PaymentStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payment_status"
+                    "$ref": "#/boundedcontexts/payments_hub/valueobjects/payment_status"
                   }
                 },
                 "payee": {
                   "name": "payee",
                   "type": "Payee",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payee"
+                    "$ref": "#/boundedcontexts/payments_hub/valueobjects/payee"
                   }
                 },
                 "execution_date": {
                   "name": "executionDate",
                   "type": "ExecutionDate",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/execution_date"
+                    "$ref": "#/boundedcontexts/payments_hub/valueobjects/execution_date"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payee"
+                    "$ref": "#/boundedcontexts/payments_hub/valueobjects/payee"
                   },
                   "relation": "uses",
                   "label": "to",
@@ -1986,7 +1937,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/money"
+                    "$ref": "#/boundedcontexts/payments_hub/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "of",
@@ -1994,7 +1945,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/execution_date"
+                    "$ref": "#/boundedcontexts/payments_hub/valueobjects/execution_date"
                   },
                   "relation": "uses",
                   "label": "on",
@@ -2002,7 +1953,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payment_status"
+                    "$ref": "#/boundedcontexts/payments_hub/valueobjects/payment_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
@@ -2011,67 +1962,13 @@
               ]
             }
           },
-          "valueobjects": {
-            "payee": {
-              "name": "Payee",
-              "description": "Name and IBAN of who gets paid; a value because the same details are the same payee",
-              "attributes": {
-                "name": {
-                  "name": "name",
-                  "type": "string"
-                },
-                "iban": {
-                  "name": "iban",
-                  "type": "string (ISO 13616)"
-                }
-              },
-              "relations": []
-            },
-            "money": {
-              "name": "Money",
-              "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
-            },
-            "execution_date": {
-              "name": "ExecutionDate",
-              "description": "When to send it; today means before the scheme cut-off",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "date"
-                }
-              },
-              "relations": []
-            },
-            "payment_status": {
-              "name": "PaymentStatus",
-              "description": "initiated, cleared, flagged, submitted, settled, rejected",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'initiated' | 'cleared' | 'flagged' | 'submitted' | 'settled' | 'rejected'"
-                }
-              },
-              "relations": []
-            }
-          },
           "invariants": {
             "payer_not_payee": {
               "name": "PayerNotPayee",
               "description": "The payer and payee accounts differ",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payee"
+                  "$ref": "#/boundedcontexts/payments_hub/valueobjects/payee"
                 }
               ]
             },
@@ -2107,7 +2004,7 @@
               "description": "A same-day instruction is initiated before the scheme cut-off",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/execution_date"
+                  "$ref": "#/boundedcontexts/payments_hub/valueobjects/execution_date"
                 }
               ]
             },
@@ -2116,7 +2013,7 @@
               "description": "A flagged instruction is rejected; it never reaches a scheme",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payment_status"
+                  "$ref": "#/boundedcontexts/payments_hub/valueobjects/payment_status"
                 }
               ]
             }
@@ -2303,7 +2200,7 @@
             "Beneficiary"
           ],
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payee"
+            "$ref": "#/boundedcontexts/payments_hub/valueobjects/payee"
           }
         },
         "party": {
@@ -2321,6 +2218,60 @@
           }
         }
       },
+      "valueobjects": {
+        "payee": {
+          "name": "Payee",
+          "description": "Name and IBAN of who gets paid; a value because the same details are the same payee",
+          "attributes": {
+            "name": {
+              "name": "name",
+              "type": "string"
+            },
+            "iban": {
+              "name": "iban",
+              "type": "string (ISO 13616)"
+            }
+          },
+          "relations": []
+        },
+        "money": {
+          "name": "Money",
+          "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": []
+        },
+        "execution_date": {
+          "name": "ExecutionDate",
+          "description": "When to send it; today means before the scheme cut-off",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "date"
+            }
+          },
+          "relations": []
+        },
+        "payment_status": {
+          "name": "PaymentStatus",
+          "description": "initiated, cleared, flagged, submitted, settled, rejected",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'initiated' | 'cleared' | 'flagged' | 'submitted' | 'settled' | 'rejected'"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {
         "initiate_payment": {
           "name": "InitiatePayment",
@@ -2333,21 +2284,21 @@
               "name": "payee",
               "type": "Payee",
               "valueobject": {
-                "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payee"
+                "$ref": "#/boundedcontexts/payments_hub/valueobjects/payee"
               }
             },
             "amount": {
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/money"
+                "$ref": "#/boundedcontexts/payments_hub/valueobjects/money"
               }
             },
             "execution_date": {
               "name": "executionDate",
               "type": "ExecutionDate",
               "valueobject": {
-                "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/execution_date"
+                "$ref": "#/boundedcontexts/payments_hub/valueobjects/execution_date"
               }
             }
           }
@@ -2369,14 +2320,14 @@
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/money"
+                "$ref": "#/boundedcontexts/payments_hub/valueobjects/money"
               }
             },
             "payee": {
               "name": "payee",
               "type": "Payee",
               "valueobject": {
-                "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payee"
+                "$ref": "#/boundedcontexts/payments_hub/valueobjects/payee"
               }
             }
           }
@@ -2442,33 +2393,20 @@
                   "name": "format",
                   "type": "SchemeFormat",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/valueobjects/scheme_format"
+                    "$ref": "#/boundedcontexts/scheme_gateway/valueobjects/scheme_format"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/valueobjects/scheme_format"
+                    "$ref": "#/boundedcontexts/scheme_gateway/valueobjects/scheme_format"
                   },
                   "relation": "uses",
                   "label": "formatted-as",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "scheme_format": {
-              "name": "SchemeFormat",
-              "description": "The ISO 20022 message type",
-              "attributes": {
-                "message_type": {
-                  "name": "messageType",
-                  "type": "'pacs.008' | 'pacs.002' | 'pain.001'"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {}
@@ -2503,6 +2441,19 @@
       },
       "policies": {},
       "glossary": {},
+      "valueobjects": {
+        "scheme_format": {
+          "name": "SchemeFormat",
+          "description": "The ISO 20022 message type",
+          "attributes": {
+            "message_type": {
+              "name": "messageType",
+              "type": "'pacs.008' | 'pacs.002' | 'pain.001'"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {
         "scheme_submission": {
           "name": "SchemeSubmission",
@@ -2517,7 +2468,7 @@
               "name": "messageType",
               "type": "SchemeFormat",
               "valueobject": {
-                "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/valueobjects/scheme_format"
+                "$ref": "#/boundedcontexts/scheme_gateway/valueobjects/scheme_format"
               }
             }
           }
@@ -2618,21 +2569,21 @@
                   "name": "pan",
                   "type": "PAN",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/pan"
+                    "$ref": "#/boundedcontexts/cards/valueobjects/pan"
                   }
                 },
                 "expiry": {
                   "name": "expiry",
                   "type": "Expiry",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/expiry"
+                    "$ref": "#/boundedcontexts/cards/valueobjects/expiry"
                   }
                 },
                 "status": {
                   "name": "status",
                   "type": "CardStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/card_status"
+                    "$ref": "#/boundedcontexts/cards/valueobjects/card_status"
                   }
                 }
               },
@@ -2647,7 +2598,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/pan"
+                    "$ref": "#/boundedcontexts/cards/valueobjects/pan"
                   },
                   "relation": "uses",
                   "label": "numbered",
@@ -2655,7 +2606,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/expiry"
+                    "$ref": "#/boundedcontexts/cards/valueobjects/expiry"
                   },
                   "relation": "uses",
                   "label": "expires",
@@ -2663,7 +2614,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/card_status"
+                    "$ref": "#/boundedcontexts/cards/valueobjects/card_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
@@ -2689,7 +2640,7 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/money"
+                    "$ref": "#/boundedcontexts/cards/valueobjects/money"
                   }
                 },
                 "at": {
@@ -2700,7 +2651,7 @@
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/money"
+                    "$ref": "#/boundedcontexts/cards/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "of",
@@ -2709,71 +2660,13 @@
               ]
             }
           },
-          "valueobjects": {
-            "pan": {
-              "name": "PAN",
-              "description": "The card number, held as a token plus last four; the full number passes Luhn",
-              "attributes": {
-                "token": {
-                  "name": "token",
-                  "type": "string"
-                },
-                "last_four": {
-                  "name": "lastFour",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "expiry": {
-              "name": "Expiry",
-              "description": "Month and year after which nothing authorises",
-              "attributes": {
-                "month": {
-                  "name": "month",
-                  "type": "int 1..12"
-                },
-                "year": {
-                  "name": "year",
-                  "type": "int"
-                }
-              },
-              "relations": []
-            },
-            "card_status": {
-              "name": "CardStatus",
-              "description": "active, blocked, expired",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'active' | 'blocked' | 'expired'"
-                }
-              },
-              "relations": []
-            },
-            "money": {
-              "name": "Money",
-              "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
-            }
-          },
           "invariants": {
             "pan_luhn_valid": {
               "name": "PanLuhnValid",
               "description": "A PAN value is only ever created from a full number that passed the Luhn check; the token and last four are never re-checked because they cannot be",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/pan"
+                  "$ref": "#/boundedcontexts/cards/valueobjects/pan"
                 }
               ]
             },
@@ -2782,7 +2675,7 @@
               "description": "A blocked card authorises nothing",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/card_status"
+                  "$ref": "#/boundedcontexts/cards/valueobjects/card_status"
                 },
                 {
                   "$ref": "#/boundedcontexts/cards/aggregates/card/entities/authorisation"
@@ -2794,7 +2687,7 @@
               "description": "Past expiry, nothing authorises",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/expiry"
+                  "$ref": "#/boundedcontexts/cards/valueobjects/expiry"
                 },
                 {
                   "$ref": "#/boundedcontexts/cards/aggregates/card/entities/authorisation"
@@ -2872,7 +2765,7 @@
           "name": "PAN",
           "definition": "The card number; held as a token and the last four digits",
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/pan"
+            "$ref": "#/boundedcontexts/cards/valueobjects/pan"
           }
         },
         "authorisation": {
@@ -2888,6 +2781,64 @@
           "embodiedBy": {
             "$ref": "#/boundedcontexts/cards/aggregates/card/entities/authorisation"
           }
+        }
+      },
+      "valueobjects": {
+        "pan": {
+          "name": "PAN",
+          "description": "The card number, held as a token plus last four; the full number passes Luhn",
+          "attributes": {
+            "token": {
+              "name": "token",
+              "type": "string"
+            },
+            "last_four": {
+              "name": "lastFour",
+              "type": "string"
+            }
+          },
+          "relations": []
+        },
+        "expiry": {
+          "name": "Expiry",
+          "description": "Month and year after which nothing authorises",
+          "attributes": {
+            "month": {
+              "name": "month",
+              "type": "int 1..12"
+            },
+            "year": {
+              "name": "year",
+              "type": "int"
+            }
+          },
+          "relations": []
+        },
+        "card_status": {
+          "name": "CardStatus",
+          "description": "active, blocked, expired",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'active' | 'blocked' | 'expired'"
+            }
+          },
+          "relations": []
+        },
+        "money": {
+          "name": "Money",
+          "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {
@@ -2907,7 +2858,7 @@
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/money"
+                "$ref": "#/boundedcontexts/cards/valueobjects/money"
               }
             }
           }
@@ -2948,7 +2899,7 @@
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/cards/aggregates/card/valueobjects/money"
+                "$ref": "#/boundedcontexts/cards/valueobjects/money"
               }
             }
           }
@@ -3040,7 +2991,7 @@
                   "name": "requested",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/lending/aggregates/loan_application/valueobjects/money"
+                    "$ref": "#/boundedcontexts/lending/valueobjects/money"
                   }
                 },
                 "status": {
@@ -3051,7 +3002,7 @@
                   "name": "term",
                   "type": "Term",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/lending/aggregates/loan_application/valueobjects/term"
+                    "$ref": "#/boundedcontexts/lending/valueobjects/term"
                   }
                 },
                 "decision": {
@@ -3059,14 +3010,14 @@
                   "type": "Decision",
                   "description": "Set once Credit Decisioning has answered",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/lending/aggregates/loan_application/valueobjects/decision"
+                    "$ref": "#/boundedcontexts/lending/valueobjects/decision"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/lending/aggregates/loan_application/valueobjects/money"
+                    "$ref": "#/boundedcontexts/lending/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "requests",
@@ -3074,7 +3025,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/lending/aggregates/loan_application/valueobjects/term"
+                    "$ref": "#/boundedcontexts/lending/valueobjects/term"
                   },
                   "relation": "uses",
                   "label": "over",
@@ -3082,56 +3033,13 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/lending/aggregates/loan_application/valueobjects/decision"
+                    "$ref": "#/boundedcontexts/lending/valueobjects/decision"
                   },
                   "relation": "uses",
                   "label": "decided",
                   "cardinality": "0..1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "money": {
-              "name": "Money",
-              "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
-            },
-            "term": {
-              "name": "Term",
-              "description": "Months to repay over",
-              "attributes": {
-                "months": {
-                  "name": "months",
-                  "type": "int"
-                }
-              },
-              "relations": []
-            },
-            "decision": {
-              "name": "Decision",
-              "description": "approved or declined, with the reasons the customer is entitled to",
-              "attributes": {
-                "outcome": {
-                  "name": "outcome",
-                  "type": "'approved' | 'declined'"
-                },
-                "reasons": {
-                  "name": "reasons",
-                  "type": "string[]"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -3239,21 +3147,21 @@
                   "name": "principal",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/money"
+                    "$ref": "#/boundedcontexts/lending/valueobjects/money"
                   }
                 },
                 "apr": {
                   "name": "apr",
                   "type": "InterestRate",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/interest_rate"
+                    "$ref": "#/boundedcontexts/lending/valueobjects/interest_rate"
                   }
                 },
                 "status": {
                   "name": "status",
                   "type": "LoanStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/loan_status"
+                    "$ref": "#/boundedcontexts/lending/valueobjects/loan_status"
                   }
                 }
               },
@@ -3268,7 +3176,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/money"
+                    "$ref": "#/boundedcontexts/lending/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "principal",
@@ -3276,7 +3184,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/interest_rate"
+                    "$ref": "#/boundedcontexts/lending/valueobjects/interest_rate"
                   },
                   "relation": "uses",
                   "label": "charged-at",
@@ -3284,7 +3192,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/loan_status"
+                    "$ref": "#/boundedcontexts/lending/valueobjects/loan_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
@@ -3336,7 +3244,7 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/money"
+                    "$ref": "#/boundedcontexts/lending/valueobjects/money"
                   }
                 },
                 "paid": {
@@ -3347,7 +3255,7 @@
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/money"
+                    "$ref": "#/boundedcontexts/lending/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "of",
@@ -3356,52 +3264,13 @@
               ]
             }
           },
-          "valueobjects": {
-            "money": {
-              "name": "Money",
-              "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
-            },
-            "interest_rate": {
-              "name": "InterestRate",
-              "description": "Annual percentage rate, within the regulatory cap",
-              "attributes": {
-                "apr_percent": {
-                  "name": "aprPercent",
-                  "type": "decimal"
-                }
-              },
-              "relations": []
-            },
-            "loan_status": {
-              "name": "LoanStatus",
-              "description": "approved, signed, disbursed, in-arrears, repaid",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'approved' | 'signed' | 'disbursed' | 'in-arrears' | 'repaid'"
-                }
-              },
-              "relations": []
-            }
-          },
           "invariants": {
             "no_drawdown_before_signature": {
               "name": "NoDrawdownBeforeSignature",
               "description": "Nothing is disbursed before the agreement is signed",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/loan_status"
+                  "$ref": "#/boundedcontexts/lending/valueobjects/loan_status"
                 }
               ]
             },
@@ -3410,7 +3279,7 @@
               "description": "The APR never exceeds the regulatory cap",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/interest_rate"
+                  "$ref": "#/boundedcontexts/lending/valueobjects/interest_rate"
                 }
               ]
             },
@@ -3431,7 +3300,7 @@
               "description": "A missed installment puts the loan in arrears",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/loan_status"
+                  "$ref": "#/boundedcontexts/lending/valueobjects/loan_status"
                 },
                 {
                   "$ref": "#/boundedcontexts/lending/aggregates/loan/entities/installment"
@@ -3598,8 +3467,73 @@
           "name": "Arrears",
           "definition": "At least one installment missed; the regulatory notice follows (IssueArrearsNotice). Notice intervals and forbearance are servicing detail left out (DISCOVERY section 8)",
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/loan_status"
+            "$ref": "#/boundedcontexts/lending/valueobjects/loan_status"
           }
+        }
+      },
+      "valueobjects": {
+        "money": {
+          "name": "Money",
+          "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": []
+        },
+        "term": {
+          "name": "Term",
+          "description": "Months to repay over",
+          "attributes": {
+            "months": {
+              "name": "months",
+              "type": "int"
+            }
+          },
+          "relations": []
+        },
+        "decision": {
+          "name": "Decision",
+          "description": "approved or declined, with the reasons the customer is entitled to",
+          "attributes": {
+            "outcome": {
+              "name": "outcome",
+              "type": "'approved' | 'declined'"
+            },
+            "reasons": {
+              "name": "reasons",
+              "type": "string[]"
+            }
+          },
+          "relations": []
+        },
+        "interest_rate": {
+          "name": "InterestRate",
+          "description": "Annual percentage rate, within the regulatory cap",
+          "attributes": {
+            "apr_percent": {
+              "name": "aprPercent",
+              "type": "decimal"
+            }
+          },
+          "relations": []
+        },
+        "loan_status": {
+          "name": "LoanStatus",
+          "description": "approved, signed, disbursed, in-arrears, repaid",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'approved' | 'signed' | 'disbursed' | 'in-arrears' | 'repaid'"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {
@@ -3620,14 +3554,14 @@
               "name": "requested",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/lending/aggregates/loan_application/valueobjects/money"
+                "$ref": "#/boundedcontexts/lending/valueobjects/money"
               }
             },
             "term": {
               "name": "term",
               "type": "Term",
               "valueobject": {
-                "$ref": "#/boundedcontexts/lending/aggregates/loan_application/valueobjects/term"
+                "$ref": "#/boundedcontexts/lending/valueobjects/term"
               }
             }
           }
@@ -3649,7 +3583,7 @@
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/lending/aggregates/loan/valueobjects/money"
+                "$ref": "#/boundedcontexts/lending/valueobjects/money"
               }
             }
           }
@@ -3719,28 +3653,28 @@
                   "name": "bureauReport",
                   "type": "BureauReport",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/bureau_report"
+                    "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/bureau_report"
                   }
                 },
                 "affordability": {
                   "name": "affordability",
                   "type": "Affordability",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/affordability"
+                    "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/affordability"
                   }
                 },
                 "score": {
                   "name": "score",
                   "type": "CreditScore",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/credit_score"
+                    "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/credit_score"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/bureau_report"
+                    "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/bureau_report"
                   },
                   "relation": "uses",
                   "label": "based-on",
@@ -3748,7 +3682,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/affordability"
+                    "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/affordability"
                   },
                   "relation": "uses",
                   "label": "assessed",
@@ -3756,7 +3690,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/credit_score"
+                    "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/credit_score"
                   },
                   "relation": "uses",
                   "label": "scored",
@@ -3765,68 +3699,13 @@
               ]
             }
           },
-          "valueobjects": {
-            "bureau_report": {
-              "name": "BureauReport",
-              "description": "The external credit file at a moment in time",
-              "attributes": {
-                "bureau": {
-                  "name": "bureau",
-                  "type": "string"
-                },
-                "score": {
-                  "name": "score",
-                  "type": "int"
-                },
-                "pulled_at": {
-                  "name": "pulledAt",
-                  "type": "date-time"
-                }
-              },
-              "relations": []
-            },
-            "affordability": {
-              "name": "Affordability",
-              "description": "Monthly income, commitments and their ratio",
-              "attributes": {
-                "monthly_income_minor": {
-                  "name": "monthlyIncomeMinor",
-                  "type": "int64"
-                },
-                "monthly_commitments_minor": {
-                  "name": "monthlyCommitmentsMinor",
-                  "type": "int64"
-                },
-                "ratio": {
-                  "name": "ratio",
-                  "type": "decimal"
-                }
-              },
-              "relations": []
-            },
-            "credit_score": {
-              "name": "CreditScore",
-              "description": "The scorecard's output with the reason codes",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "int"
-                },
-                "reason_codes": {
-                  "name": "reasonCodes",
-                  "type": "string[]"
-                }
-              },
-              "relations": []
-            }
-          },
           "invariants": {
             "affordability_ratio_cap": {
               "name": "AffordabilityRatioCap",
               "description": "Commitments over income at most forty-five percent for an approval",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/affordability"
+                  "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/affordability"
                 }
               ]
             },
@@ -3835,7 +3714,7 @@
               "description": "Every decision carries reason codes; the customer is entitled to them",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/credit_score"
+                  "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/credit_score"
                 }
               ]
             },
@@ -3844,7 +3723,7 @@
               "description": "The bureau report is no older than thirty days",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/bureau_report"
+                  "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/bureau_report"
                 }
               ]
             }
@@ -3902,8 +3781,63 @@
           "name": "Decline reason",
           "definition": "A code the customer is entitled to see when refused",
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/credit_score"
+            "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/credit_score"
           }
+        }
+      },
+      "valueobjects": {
+        "bureau_report": {
+          "name": "BureauReport",
+          "description": "The external credit file at a moment in time",
+          "attributes": {
+            "bureau": {
+              "name": "bureau",
+              "type": "string"
+            },
+            "score": {
+              "name": "score",
+              "type": "int"
+            },
+            "pulled_at": {
+              "name": "pulledAt",
+              "type": "date-time"
+            }
+          },
+          "relations": []
+        },
+        "affordability": {
+          "name": "Affordability",
+          "description": "Monthly income, commitments and their ratio",
+          "attributes": {
+            "monthly_income_minor": {
+              "name": "monthlyIncomeMinor",
+              "type": "int64"
+            },
+            "monthly_commitments_minor": {
+              "name": "monthlyCommitmentsMinor",
+              "type": "int64"
+            },
+            "ratio": {
+              "name": "ratio",
+              "type": "decimal"
+            }
+          },
+          "relations": []
+        },
+        "credit_score": {
+          "name": "CreditScore",
+          "description": "The scorecard's output with the reason codes",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "int"
+            },
+            "reason_codes": {
+              "name": "reasonCodes",
+              "type": "string[]"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {
@@ -3945,7 +3879,7 @@
               "name": "score",
               "type": "CreditScore",
               "valueobject": {
-                "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/credit_score"
+                "$ref": "#/boundedcontexts/credit_decisioning/valueobjects/credit_score"
               }
             }
           }
@@ -4026,7 +3960,7 @@
                   "name": "status",
                   "type": "CaseStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/valueobjects/case_status"
+                    "$ref": "#/boundedcontexts/fraud/valueobjects/case_status"
                   }
                 }
               },
@@ -4041,7 +3975,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/valueobjects/case_status"
+                    "$ref": "#/boundedcontexts/fraud/valueobjects/case_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
@@ -4067,48 +4001,20 @@
                   "name": "score",
                   "type": "RiskScore",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/valueobjects/risk_score"
+                    "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/valueobjects/risk_score"
+                    "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
                   },
                   "relation": "uses",
                   "label": "scored",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "risk_score": {
-              "name": "RiskScore",
-              "description": "0 to 1000 with the reasons that produced it",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "int 0..1000"
-                },
-                "reasons": {
-                  "name": "reasons",
-                  "type": "string[]"
-                }
-              },
-              "relations": []
-            },
-            "case_status": {
-              "name": "CaseStatus",
-              "description": "open, confirmed, dismissed",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'open' | 'confirmed' | 'dismissed'"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -4129,7 +4035,7 @@
               "description": "A score carries its reasons, because the customer may be entitled to them",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/valueobjects/risk_score"
+                  "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
                 }
               ]
             }
@@ -4221,6 +4127,34 @@
           }
         }
       },
+      "valueobjects": {
+        "risk_score": {
+          "name": "RiskScore",
+          "description": "0 to 1000 with the reasons that produced it",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "int 0..1000"
+            },
+            "reasons": {
+              "name": "reasons",
+              "type": "string[]"
+            }
+          },
+          "relations": []
+        },
+        "case_status": {
+          "name": "CaseStatus",
+          "description": "open, confirmed, dismissed",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'open' | 'confirmed' | 'dismissed'"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {
         "score_transaction": {
           "name": "ScoreTransaction",
@@ -4262,7 +4196,7 @@
               "name": "score",
               "type": "RiskScore",
               "valueobject": {
-                "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/valueobjects/risk_score"
+                "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
               }
             }
           }
@@ -4372,7 +4306,7 @@
                   "name": "period",
                   "type": "ReportingPeriod",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/valueobjects/reporting_period"
+                    "$ref": "#/boundedcontexts/regulatory_reporting/valueobjects/reporting_period"
                   }
                 }
               },
@@ -4387,7 +4321,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/valueobjects/reporting_period"
+                    "$ref": "#/boundedcontexts/regulatory_reporting/valueobjects/reporting_period"
                   },
                   "relation": "uses",
                   "label": "for-period",
@@ -4409,56 +4343,20 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/valueobjects/money"
+                    "$ref": "#/boundedcontexts/regulatory_reporting/valueobjects/money"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/valueobjects/money"
+                    "$ref": "#/boundedcontexts/regulatory_reporting/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "of",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "reporting_period": {
-              "name": "ReportingPeriod",
-              "description": "Month or quarter; closed before filing",
-              "attributes": {
-                "from": {
-                  "name": "from",
-                  "type": "date"
-                },
-                "to": {
-                  "name": "to",
-                  "type": "date"
-                },
-                "closed": {
-                  "name": "closed",
-                  "type": "boolean"
-                }
-              },
-              "relations": []
-            },
-            "money": {
-              "name": "Money",
-              "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -4479,7 +4377,7 @@
               "description": "A return is filed only for a closed period",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/valueobjects/reporting_period"
+                  "$ref": "#/boundedcontexts/regulatory_reporting/valueobjects/reporting_period"
                 }
               ]
             },
@@ -4530,8 +4428,44 @@
           "name": "Reporting period",
           "definition": "The month or quarter a return covers",
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/valueobjects/reporting_period"
+            "$ref": "#/boundedcontexts/regulatory_reporting/valueobjects/reporting_period"
           }
+        }
+      },
+      "valueobjects": {
+        "reporting_period": {
+          "name": "ReportingPeriod",
+          "description": "Month or quarter; closed before filing",
+          "attributes": {
+            "from": {
+              "name": "from",
+              "type": "date"
+            },
+            "to": {
+              "name": "to",
+              "type": "date"
+            },
+            "closed": {
+              "name": "closed",
+              "type": "boolean"
+            }
+          },
+          "relations": []
+        },
+        "money": {
+          "name": "Money",
+          "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {}
@@ -4626,14 +4560,14 @@
                   "name": "channel",
                   "type": "Channel",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request/valueobjects/channel"
+                    "$ref": "#/boundedcontexts/branch_&_contact_centre/valueobjects/channel"
                   }
                 },
                 "status": {
                   "name": "status",
                   "type": "RequestStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request/valueobjects/request_status"
+                    "$ref": "#/boundedcontexts/branch_&_contact_centre/valueobjects/request_status"
                   }
                 }
               },
@@ -4648,7 +4582,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request/valueobjects/channel"
+                    "$ref": "#/boundedcontexts/branch_&_contact_centre/valueobjects/channel"
                   },
                   "relation": "uses",
                   "label": "through",
@@ -4656,7 +4590,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request/valueobjects/request_status"
+                    "$ref": "#/boundedcontexts/branch_&_contact_centre/valueobjects/request_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
@@ -4685,30 +4619,6 @@
                 "at": {
                   "name": "at",
                   "type": "date-time"
-                }
-              },
-              "relations": []
-            }
-          },
-          "valueobjects": {
-            "channel": {
-              "name": "Channel",
-              "description": "branch, phone or chat",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'branch' | 'phone' | 'chat'"
-                }
-              },
-              "relations": []
-            },
-            "request_status": {
-              "name": "RequestStatus",
-              "description": "open, resolved",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'open' | 'resolved'"
                 }
               },
               "relations": []
@@ -4806,6 +4716,30 @@
           }
         }
       },
+      "valueobjects": {
+        "channel": {
+          "name": "Channel",
+          "description": "branch, phone or chat",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'branch' | 'phone' | 'chat'"
+            }
+          },
+          "relations": []
+        },
+        "request_status": {
+          "name": "RequestStatus",
+          "description": "open, resolved",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'open' | 'resolved'"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {}
     },
     "sovereign_core_(legacy)": {
@@ -4855,13 +4789,13 @@
               "relations": []
             }
           },
-          "valueobjects": {},
           "invariants": {}
         }
       },
       "services": {},
       "policies": {},
       "glossary": {},
+      "valueobjects": {},
       "schemas": {
         "nightly_batch_completed": {
           "name": "NightlyBatchCompleted",
@@ -4923,7 +4857,6 @@
               "relations": []
             }
           },
-          "valueobjects": {},
           "invariants": {}
         }
       },
@@ -4950,6 +4883,7 @@
       },
       "policies": {},
       "glossary": {},
+      "valueobjects": {},
       "schemas": {}
     }
   },

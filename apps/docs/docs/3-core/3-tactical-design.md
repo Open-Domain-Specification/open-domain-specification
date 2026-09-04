@@ -11,6 +11,13 @@ Everything an aggregate or service offers is a **consumable**, typed `event`
 or `operation`; the words command and event stay in prose, not as separate
 objects.
 
+## Value objects
+
+A **value object** belongs to the bounded context
+(`context.addValueObject(name)`), not to one aggregate: it is part of the
+context's ubiquitous language, and every aggregate of the context may hold
+one. Two contexts may share one only across a `shared-kernel` relationship.
+
 ## Attributes
 
 Entities, value objects and schemas carry typed **attributes**. An

@@ -72,6 +72,11 @@ Repeat for each context the user wants detailed. Ask which one to start with.
 - Per noun: "If two of these had identical details, would they still be two different things?"
   Yes → entity; no → value object. Explain once: an entity matters because of which one it is
   (this order, not that one); a value object matters only by its values (an address).
+- "Which values does this context define once — money, an address, a status — and which of
+  them do several of these things carry?" → value objects, declared on the context
+  (`context.addValueObject`), not on one aggregate: any aggregate here may hold one. If a
+  value is genuinely the same in a neighbouring context, that is a `shared-kernel`
+  relationship, and it is the only way one context may name another's value object.
 - "What identifies it: an order number, an email?" → an attribute with `identity: true`.
 - "What details does it carry?" → attributes, with `type` in the user's words.
 - "Which of these do you always change or check together? What must be true across all of

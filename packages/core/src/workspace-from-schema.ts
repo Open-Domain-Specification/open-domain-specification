@@ -187,6 +187,15 @@ function addBoundedContext(
 		});
 	}
 
+	for (const [valueobjectId, valueobjectSchema] of Object.entries(
+		boundedcontextSchema.valueobjects,
+	)) {
+		boundedcontext.addValueObject(valueobjectSchema.name, {
+			...valueobjectSchema,
+			id: valueobjectId,
+		});
+	}
+
 	for (const [aggregateId, aggregateSchema] of Object.entries(
 		boundedcontextSchema.aggregates,
 	)) {
@@ -210,14 +219,6 @@ function addBoundedContext(
 			aggregateSchema.entities,
 		)) {
 			aggregate.addEntity(entitySchema.name, { ...entitySchema, id: entityId });
-		}
-		for (const [valueobjectId, valueobjectSchema] of Object.entries(
-			aggregateSchema.valueobjects,
-		)) {
-			aggregate.addValueObject(valueobjectSchema.name, {
-				...valueobjectSchema,
-				id: valueobjectId,
-			});
 		}
 	}
 
@@ -280,6 +281,21 @@ function linkReferences(
 			);
 		}
 
+		for (const [valueobjectId, valueobjectSchema] of Object.entries(
+			boundedcontextSchema.valueobjects,
+		)) {
+			const valueobject = workspace.getValueObjectByRefOrThrow(
+				valueObjectRef(boundedcontextId, valueobjectId).$ref,
+			);
+			addAttributes(valueobject, valueobjectSchema.attributes, workspace);
+			for (const relation of valueobjectSchema.relations) {
+				valueobject.addRelation(
+					workspace.getEntityOrValueobjectByRefOrThrow(relation.target.$ref),
+					relation,
+				);
+			}
+		}
+
 		for (const [aggregateId, aggregateSchema] of Object.entries(
 			boundedcontextSchema.aggregates,
 		)) {
@@ -292,21 +308,6 @@ function linkReferences(
 				addAttributes(entity, entitySchema.attributes, workspace);
 				for (const relation of entitySchema.relations) {
 					entity.addRelation(
-						workspace.getEntityOrValueobjectByRefOrThrow(relation.target.$ref),
-						relation,
-					);
-				}
-			}
-
-			for (const [valueobjectId, valueobjectSchema] of Object.entries(
-				aggregateSchema.valueobjects,
-			)) {
-				const valueobject = workspace.getValueObjectByRefOrThrow(
-					valueObjectRef(boundedcontextId, aggregateId, valueobjectId).$ref,
-				);
-				addAttributes(valueobject, valueobjectSchema.attributes, workspace);
-				for (const relation of valueobjectSchema.relations) {
-					valueobject.addRelation(
 						workspace.getEntityOrValueobjectByRefOrThrow(relation.target.$ref),
 						relation,
 					);

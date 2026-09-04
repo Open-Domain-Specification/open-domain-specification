@@ -125,7 +125,8 @@ export abstract class AbstractVisitor implements Visitor {
 	}
 
 	/**
-	 * Visits a BoundedContext node and traverses its services and aggregates.
+	 * Visits a BoundedContext node and traverses its services, aggregates and
+	 * the value objects the context defines.
 	 * @param node - The BoundedContext node to visit.
 	 */
 	visitBoundedContext(node: BoundedContext): void {
@@ -133,6 +134,10 @@ export abstract class AbstractVisitor implements Visitor {
 
 		for (const service of node.services.values()) {
 			service.accept(this);
+		}
+
+		for (const valueObject of node.valueobjects.values()) {
+			valueObject.accept(this);
 		}
 
 		for (const aggregate of node.aggregates.values()) {
@@ -189,7 +194,7 @@ export abstract class AbstractVisitor implements Visitor {
 	}
 
 	/**
-	 * Visits an Aggregate node and traverses its consumables, invariants, entities, value objects, and consumptions.
+	 * Visits an Aggregate node and traverses its consumables, invariants, entities and consumptions.
 	 * @param node - The Aggregate node to visit.
 	 */
 	visitAggregate(node: Aggregate): void {
@@ -202,9 +207,6 @@ export abstract class AbstractVisitor implements Visitor {
 		}
 		for (const entity of node.entities.values()) {
 			entity.accept(this);
-		}
-		for (const valueObject of node.valueobjects.values()) {
-			valueObject.accept(this);
 		}
 		if (this.followConsumptions) {
 			for (const cons of node.consumptions) cons.accept(this);

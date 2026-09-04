@@ -142,24 +142,24 @@ const petRoot = petAgg.addRootEntity("Pet", {
 });
 
 // Value objects: compared by value, no identity of their own.
-const categoryVO = petAgg.addValueObject("Category", {
+const categoryVO = catalogBC.addValueObject("Category", {
 	description:
 		"The kind of animal, e.g. Dogs. A value because two pets in Dogs share one category",
 });
 categoryVO.addAttribute("id", { type: "int64" });
 categoryVO.addAttribute("name", { type: "string" });
 
-const tagVO = petAgg.addValueObject("Tag", {
+const tagVO = catalogBC.addValueObject("Tag", {
 	description: "Free-form label on a pet",
 });
 tagVO.addAttribute("name", { type: "string" });
 
-const photoUrlVO = petAgg.addValueObject("PhotoUrl", {
+const photoUrlVO = catalogBC.addValueObject("PhotoUrl", {
 	description: "Where a photo of the pet can be fetched",
 });
 photoUrlVO.addAttribute("url", { type: "string (URL)" });
 
-const petStatusVO = petAgg.addValueObject("PetStatus", {
+const petStatusVO = catalogBC.addValueObject("PetStatus", {
 	description:
 		"Where the pet is in its sales lifecycle. Shared with Inventory, which keys its counts by these values",
 });
@@ -447,18 +447,18 @@ const orderRoot = orderAgg.addRootEntity("Order", {
 	description: "The customer's request to buy one pet",
 });
 
-const orderStatusVO = orderAgg.addValueObject("OrderStatus", {
+const orderStatusVO = salesBC.addValueObject("OrderStatus", {
 	description: "Where the order is in its lifecycle",
 });
 orderStatusVO.addAttribute("value", {
 	type: "'placed' | 'approved' | 'delivered'",
 });
-const quantityVO = orderAgg.addValueObject("Quantity", {
+const quantityVO = salesBC.addValueObject("Quantity", {
 	description:
 		"The v3 API's quantity field, kept for the wire shape. A Pet is an individual animal, so the invariant below pins it to 1",
 });
 quantityVO.addAttribute("value", { type: "int > 0" });
-const shipDateVO = orderAgg.addValueObject("ShipDate", {
+const shipDateVO = salesBC.addValueObject("ShipDate", {
 	description:
 		"When the order ships; set by Fulfilment once dispatch is planned",
 });
@@ -739,12 +739,12 @@ const deliveryAttempt = shipmentAgg.addEntity("DeliveryAttempt", {
 	description:
 		"A dated try at handing over the pet; an entity because attempts are counted and ordered, a child because it never exists without its shipment",
 });
-const trackingNumberVO = shipmentAgg.addValueObject("TrackingNumber", {
+const trackingNumberVO = fulfilmentBC.addValueObject("TrackingNumber", {
 	description:
 		"Carrier reference; a value because two shipments never share one",
 });
 trackingNumberVO.addAttribute("value", { type: "string" });
-const shipmentStatusVO = shipmentAgg.addValueObject("ShipmentStatus", {
+const shipmentStatusVO = fulfilmentBC.addValueObject("ShipmentStatus", {
 	description: "planned, in-transit or delivered",
 });
 shipmentStatusVO.addAttribute("value", {
@@ -905,11 +905,14 @@ const inventoryAgg = inventoryBC.addAggregate("InventoryProjection", {
 const inventoryView = inventoryAgg.addRootEntity("InventoryView", {
 	description: "Status→count map for /store/inventory",
 });
-// A projection still needs to say which row it is: one view per status.
+// A projection still needs to say which row it is: one view per status. The
+// status is Catalog's PetStatus, reached across the shared kernel the two
+// contexts declare: one definition, counted here rather than restated.
 inventoryView.addAttribute("status", {
-	type: "'available' | 'pending' | 'sold'",
+	type: "PetStatus",
 	description: "The status this row counts; the identity of the view",
 	identity: true,
+	valueobject: petStatusVO,
 });
 inventoryView.addAttribute("count", {
 	type: "int32",
@@ -996,7 +999,7 @@ const userRoot = userAgg.addRootEntity("User", {
 	description: "A registered user of the store",
 });
 
-const userStatusVO = userAgg.addValueObject("UserStatus", {
+const userStatusVO = identityBC.addValueObject("UserStatus", {
 	description:
 		"Untyped int per the Petstore v3 model; nobody remembers the meaning of each value",
 });

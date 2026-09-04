@@ -9,10 +9,11 @@ const ws = new Workspace("eCommerce", {
 const ordering = ws.addBoundedContext("Ordering", { description: "" });
 const order = ordering.addAggregate("Order", { description: "A purchase" });
 
-// Entities and value objects carry typed attributes; identity attributes
-// identify an entity and an attribute may point at the value object that
-// models its type.
-const money = order.addValueObject("Money", {
+// A value object belongs to the bounded context: every aggregate of the
+// context may hold one. Entities and value objects carry typed attributes;
+// identity attributes identify an entity and an attribute may point at the
+// value object that models its type.
+const money = ordering.addValueObject("Money", {
 	description: "Amount + currency",
 });
 money.addAttribute("amount", { type: "decimal" });
@@ -104,11 +105,14 @@ describe("Tactical design", () => {
 			schema.boundedcontexts.ordering.aggregates.order.provides.order_placed,
 		).toMatchInlineSnapshot(`
 			{
+			  "comments": undefined,
 			  "description": "An order was placed",
+			  "disposition": undefined,
 			  "internal": undefined,
 			  "name": "Order Placed",
 			  "pattern": "published-language",
 			  "raises": undefined,
+			  "returns": undefined,
 			  "schema": {
 			    "$ref": "#/boundedcontexts/ordering/schemas/order_summary",
 			  },
@@ -134,7 +138,7 @@ describe("Tactical design", () => {
 			  "name": "total",
 			  "type": "Money",
 			  "valueobject": {
-			    "$ref": "#/boundedcontexts/ordering/aggregates/order/valueobjects/money",
+			    "$ref": "#/boundedcontexts/ordering/valueobjects/money",
 			  },
 			}
 		`);

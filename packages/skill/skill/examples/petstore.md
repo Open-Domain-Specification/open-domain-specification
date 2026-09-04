@@ -18,6 +18,19 @@ const identityBC = usersSD.addBoundedcontext("Identity BC", {
 });
 ```
 
+## Value objects declared on the context
+
+A value object is part of the context's language, so it is declared once there
+and any aggregate of the context may hold it. Only a `shared-kernel`
+relationship lets a second context name it.
+
+```ts
+const petStatusVO = catalogBC.addValueObject("PetStatus", {
+	description: "Where the pet is in its sales lifecycle",
+});
+petStatusVO.addAttribute("value", { type: "'available' | 'pending' | 'sold'" });
+```
+
 ## Attributes backed by value objects, relations with cardinality, invariants on attributes
 
 ```ts

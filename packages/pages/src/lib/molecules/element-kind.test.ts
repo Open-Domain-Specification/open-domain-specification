@@ -12,7 +12,7 @@ const domain = [...ws.domains.values()][0];
 describe("kindOf", () => {
 	it("names every kind the pages link to", () => {
 		expect(kindOf([...aggregate.entities.values()][0])).toBe("entity");
-		expect(kindOf([...aggregate.valueobjects.values()][0])).toBe("valueobject");
+		expect(kindOf([...bc.valueobjects.values()][0])).toBe("valueobject");
 		expect(kindOf(aggregate)).toBe("aggregate");
 		expect(kindOf([...bc.services.values()][0])).toBe("service");
 		expect(kindOf(bc)).toBe("boundedcontext");

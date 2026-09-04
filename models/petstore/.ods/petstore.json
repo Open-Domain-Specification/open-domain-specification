@@ -166,35 +166,35 @@
                   "name": "category",
                   "type": "Category",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/category"
                   }
                 },
                 "photo_urls": {
                   "name": "photoUrls",
                   "type": "PhotoUrl[]",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/photo_url"
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/photo_url"
                   }
                 },
                 "tags": {
                   "name": "tags",
                   "type": "Tag[]",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/tag"
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/tag"
                   }
                 },
                 "status": {
                   "name": "status",
                   "type": "PetStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/category"
                   },
                   "relation": "uses",
                   "label": "categorized-as",
@@ -202,7 +202,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/tag"
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/tag"
                   },
                   "relation": "uses",
                   "label": "tagged-with",
@@ -210,7 +210,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/photo_url"
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/photo_url"
                   },
                   "relation": "uses",
                   "label": "has-photo",
@@ -218,63 +218,13 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "category": {
-              "name": "Category",
-              "description": "The kind of animal, e.g. Dogs. A value because two pets in Dogs share one category",
-              "attributes": {
-                "id": {
-                  "name": "id",
-                  "type": "int64"
-                },
-                "name": {
-                  "name": "name",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "tag": {
-              "name": "Tag",
-              "description": "Free-form label on a pet",
-              "attributes": {
-                "name": {
-                  "name": "name",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "photo_url": {
-              "name": "PhotoUrl",
-              "description": "Where a photo of the pet can be fetched",
-              "attributes": {
-                "url": {
-                  "name": "url",
-                  "type": "string (URL)"
-                }
-              },
-              "relations": []
-            },
-            "pet_status": {
-              "name": "PetStatus",
-              "description": "Where the pet is in its sales lifecycle. Shared with Inventory, which keys its counts by these values",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'available' | 'pending' | 'sold'"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -465,15 +415,65 @@
             "Species"
           ],
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+            "$ref": "#/boundedcontexts/catalog_bc/valueobjects/category"
           }
         },
         "available": {
           "name": "Available",
           "definition": "A pet that can be ordered; it becomes pending when Sales approves an order for it (ReservePet) and sold when that order is delivered (MarkPetSold)",
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+            "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
           }
+        }
+      },
+      "valueobjects": {
+        "category": {
+          "name": "Category",
+          "description": "The kind of animal, e.g. Dogs. A value because two pets in Dogs share one category",
+          "attributes": {
+            "id": {
+              "name": "id",
+              "type": "int64"
+            },
+            "name": {
+              "name": "name",
+              "type": "string"
+            }
+          },
+          "relations": []
+        },
+        "tag": {
+          "name": "Tag",
+          "description": "Free-form label on a pet",
+          "attributes": {
+            "name": {
+              "name": "name",
+              "type": "string"
+            }
+          },
+          "relations": []
+        },
+        "photo_url": {
+          "name": "PhotoUrl",
+          "description": "Where a photo of the pet can be fetched",
+          "attributes": {
+            "url": {
+              "name": "url",
+              "type": "string (URL)"
+            }
+          },
+          "relations": []
+        },
+        "pet_status": {
+          "name": "PetStatus",
+          "description": "Where the pet is in its sales lifecycle. Shared with Inventory, which keys its counts by these values",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'available' | 'pending' | 'sold'"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {
@@ -494,7 +494,7 @@
               "name": "category",
               "type": "Category",
               "valueobject": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/category"
               }
             }
           }
@@ -511,14 +511,14 @@
               "name": "from",
               "type": "PetStatus",
               "valueobject": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
               }
             },
             "to": {
               "name": "to",
               "type": "PetStatus",
               "valueobject": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
               }
             }
           }
@@ -535,7 +535,7 @@
               "name": "category",
               "type": "Category",
               "valueobject": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/category"
               }
             }
           }
@@ -568,7 +568,7 @@
               "name": "status",
               "type": "PetStatus",
               "valueobject": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
               }
             }
           }
@@ -677,28 +677,28 @@
                   "name": "quantity",
                   "type": "Quantity",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
+                    "$ref": "#/boundedcontexts/sales_bc/valueobjects/quantity"
                   }
                 },
                 "ship_date": {
                   "name": "shipDate",
                   "type": "ShipDate",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/ship_date"
+                    "$ref": "#/boundedcontexts/sales_bc/valueobjects/ship_date"
                   }
                 },
                 "status": {
                   "name": "status",
                   "type": "OrderStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status"
+                    "$ref": "#/boundedcontexts/sales_bc/valueobjects/order_status"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status"
+                    "$ref": "#/boundedcontexts/sales_bc/valueobjects/order_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
@@ -706,7 +706,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
+                    "$ref": "#/boundedcontexts/sales_bc/valueobjects/quantity"
                   },
                   "relation": "uses",
                   "label": "has-quantity",
@@ -714,7 +714,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/ship_date"
+                    "$ref": "#/boundedcontexts/sales_bc/valueobjects/ship_date"
                   },
                   "relation": "uses",
                   "label": "ships-on",
@@ -723,48 +723,13 @@
               ]
             }
           },
-          "valueobjects": {
-            "order_status": {
-              "name": "OrderStatus",
-              "description": "Where the order is in its lifecycle",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'placed' | 'approved' | 'delivered'"
-                }
-              },
-              "relations": []
-            },
-            "quantity": {
-              "name": "Quantity",
-              "description": "The v3 API's quantity field, kept for the wire shape. A Pet is an individual animal, so the invariant below pins it to 1",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "int > 0"
-                }
-              },
-              "relations": []
-            },
-            "ship_date": {
-              "name": "ShipDate",
-              "description": "When the order ships; set by Fulfilment once dispatch is planned",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "date-time"
-                }
-              },
-              "relations": []
-            }
-          },
           "invariants": {
             "one_animal_per_order": {
               "name": "OneAnimalPerOrder",
               "description": "Quantity is exactly 1: a Pet is one animal with one status, so it cannot be sold five times. The API's quantity field is accepted but never exceeds one",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
+                  "$ref": "#/boundedcontexts/sales_bc/valueobjects/quantity"
                 }
               ]
             },
@@ -773,7 +738,7 @@
               "description": "Move to approved only after the catalogue's summary reported the pet available; the catalogue's status itself is outside this aggregate, so the check is a read through the ACL, not a shared invariant",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status"
+                  "$ref": "#/boundedcontexts/sales_bc/valueobjects/order_status"
                 }
               ]
             },
@@ -782,10 +747,10 @@
               "description": "Deliver only from approved and only once a ship date is set, so nothing is marked delivered that was never checked or never dispatched",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status"
+                  "$ref": "#/boundedcontexts/sales_bc/valueobjects/order_status"
                 },
                 {
-                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/ship_date"
+                  "$ref": "#/boundedcontexts/sales_bc/valueobjects/ship_date"
                 }
               ]
             }
@@ -978,6 +943,41 @@
           }
         }
       },
+      "valueobjects": {
+        "order_status": {
+          "name": "OrderStatus",
+          "description": "Where the order is in its lifecycle",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'placed' | 'approved' | 'delivered'"
+            }
+          },
+          "relations": []
+        },
+        "quantity": {
+          "name": "Quantity",
+          "description": "The v3 API's quantity field, kept for the wire shape. A Pet is an individual animal, so the invariant below pins it to 1",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "int > 0"
+            }
+          },
+          "relations": []
+        },
+        "ship_date": {
+          "name": "ShipDate",
+          "description": "When the order ships; set by Fulfilment once dispatch is planned",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "date-time"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {
         "order_placed": {
           "name": "OrderPlaced",
@@ -995,7 +995,7 @@
               "name": "quantity",
               "type": "Quantity",
               "valueobject": {
-                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
+                "$ref": "#/boundedcontexts/sales_bc/valueobjects/quantity"
               }
             }
           }
@@ -1012,7 +1012,7 @@
               "name": "quantity",
               "type": "Quantity",
               "valueobject": {
-                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
+                "$ref": "#/boundedcontexts/sales_bc/valueobjects/quantity"
               }
             }
           }
@@ -1112,9 +1112,12 @@
               "attributes": {
                 "status": {
                   "name": "status",
-                  "type": "'available' | 'pending' | 'sold'",
+                  "type": "PetStatus",
                   "description": "The status this row counts; the identity of the view",
-                  "identity": true
+                  "identity": true,
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
+                  }
                 },
                 "count": {
                   "name": "count",
@@ -1125,7 +1128,6 @@
               "relations": []
             }
           },
-          "valueobjects": {},
           "invariants": {}
         }
       },
@@ -1197,6 +1199,7 @@
           }
         }
       },
+      "valueobjects": {},
       "schemas": {
         "inventory_counts": {
           "name": "InventoryCounts",
@@ -1293,14 +1296,14 @@
                   "name": "status",
                   "type": "ShipmentStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/fulfilment_bc/aggregates/shipment/valueobjects/shipment_status"
+                    "$ref": "#/boundedcontexts/fulfilment_bc/valueobjects/shipment_status"
                   }
                 },
                 "tracking_number": {
                   "name": "trackingNumber",
                   "type": "TrackingNumber",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/fulfilment_bc/aggregates/shipment/valueobjects/tracking_number"
+                    "$ref": "#/boundedcontexts/fulfilment_bc/valueobjects/tracking_number"
                   }
                 }
               },
@@ -1315,7 +1318,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/fulfilment_bc/aggregates/shipment/valueobjects/tracking_number"
+                    "$ref": "#/boundedcontexts/fulfilment_bc/valueobjects/tracking_number"
                   },
                   "relation": "uses",
                   "label": "tracked-as",
@@ -1323,7 +1326,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/fulfilment_bc/aggregates/shipment/valueobjects/shipment_status"
+                    "$ref": "#/boundedcontexts/fulfilment_bc/valueobjects/shipment_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
@@ -1356,30 +1359,6 @@
                 "succeeded": {
                   "name": "succeeded",
                   "type": "boolean"
-                }
-              },
-              "relations": []
-            }
-          },
-          "valueobjects": {
-            "tracking_number": {
-              "name": "TrackingNumber",
-              "description": "Carrier reference; a value because two shipments never share one",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "shipment_status": {
-              "name": "ShipmentStatus",
-              "description": "planned, in-transit or delivered",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'planned' | 'in-transit' | 'delivered'"
                 }
               },
               "relations": []
@@ -1421,7 +1400,6 @@
               "relations": []
             }
           },
-          "valueobjects": {},
           "invariants": {}
         }
       },
@@ -1511,6 +1489,30 @@
           }
         }
       },
+      "valueobjects": {
+        "tracking_number": {
+          "name": "TrackingNumber",
+          "description": "Carrier reference; a value because two shipments never share one",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "string"
+            }
+          },
+          "relations": []
+        },
+        "shipment_status": {
+          "name": "ShipmentStatus",
+          "description": "planned, in-transit or delivered",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'planned' | 'in-transit' | 'delivered'"
+            }
+          },
+          "relations": []
+        }
+      },
       "schemas": {
         "shipment_delivered": {
           "name": "ShipmentDelivered",
@@ -1588,33 +1590,20 @@
                   "name": "userStatus",
                   "type": "UserStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/identity_bc/aggregates/user/valueobjects/user_status"
+                    "$ref": "#/boundedcontexts/identity_bc/valueobjects/user_status"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/identity_bc/aggregates/user/valueobjects/user_status"
+                    "$ref": "#/boundedcontexts/identity_bc/valueobjects/user_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "user_status": {
-              "name": "UserStatus",
-              "description": "Untyped int per the Petstore v3 model; nobody remembers the meaning of each value",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "int"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {}
@@ -1680,6 +1669,19 @@
           "embodiedBy": {
             "$ref": "#/boundedcontexts/identity_bc/aggregates/user"
           }
+        }
+      },
+      "valueobjects": {
+        "user_status": {
+          "name": "UserStatus",
+          "description": "Untyped int per the Petstore v3 model; nobody remembers the meaning of each value",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "int"
+            }
+          },
+          "relations": []
         }
       },
       "schemas": {}

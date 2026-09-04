@@ -10,7 +10,8 @@ Materialized view: { available: number, pending: number, sold: number }. An aggr
 ## Entities and Value Objects
 | Type | Name | Description | Attributes |
 | --- | --- | --- | --- |
-| Entity (Root) | **InventoryView** | Status→count map for /store/inventory | **status**: `'available' | 'pending' | 'sold'`, count: `int32` |
+| Entity (Root) | **InventoryView** | Status→count map for /store/inventory | **status**: `PetStatus`, count: `int32` |
+| Value Object | [PetStatus](../../../catalog_bc/index.md#value-objects) | Where the pet is in its sales lifecycle. Shared with Inventory, which keys its counts by these values | value: `'available' | 'pending' | 'sold'` |
 
 
 ## Relationships

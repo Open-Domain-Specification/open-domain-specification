@@ -1,5 +1,21 @@
-import { Workspace } from "@open-domain-specification/core";
-import { money } from "@open-domain-specification/model-tools";
+import {
+	type BoundedContext,
+	Workspace,
+} from "@open-domain-specification/core";
+
+/**
+ * Money, declared once in each context that carries an amount: a value object
+ * belongs to the context's language, and every aggregate in that context
+ * holds the same one.
+ */
+const money = (boundedcontext: BoundedContext) => {
+	const vo = boundedcontext.addValueObject("Money", {
+		description: "An amount in a currency: minor units and an ISO 4217 code",
+	});
+	vo.addAttribute("amountMinor", { type: "int64" });
+	vo.addAttribute("currency", { type: "ISO 4217 code" });
+	return vo;
+};
 
 /**
  * RiverMart: a fictional online retailer in the shape of a large marketplace.
@@ -254,12 +270,12 @@ const variant = productAgg.addEntity("Variant", {
 	description:
 		"A sellable version of the product (size, colour). An entity because each has its own SKU",
 });
-const brandVO = productAgg.addValueObject("Brand", {
+const brandVO = catalogueBC.addValueObject("Brand", {
 	description:
 		"The maker's name; a value shared by every product of that brand",
 });
 brandVO.addAttribute("name", { type: "string" });
-const dimensionVO = productAgg.addValueObject("Dimensions", {
+const dimensionVO = catalogueBC.addValueObject("Dimensions", {
 	description: "Packaged size and weight, which the warehouse needs to slot it",
 });
 dimensionVO.addAttribute("weightGrams", { type: "int" });
@@ -467,8 +483,8 @@ const offerAgg = offersBC.addAggregate("Offer", {
 const offer = offerAgg.addRootEntity("Offer", {
 	description: "The seller's terms for a SKU",
 });
-const offerMoney = money(offerAgg);
-const conditionVO = offerAgg.addValueObject("Condition", {
+const offerMoney = money(offersBC);
+const conditionVO = offersBC.addValueObject("Condition", {
 	description: "new, used-like-new, used-good; buyers filter on it",
 });
 conditionVO.addAttribute("value", {
@@ -634,7 +650,7 @@ const seller = sellerAgg.addRootEntity("SellerAccount", {
 const verificationCheck = sellerAgg.addEntity("VerificationCheck", {
 	description: "One identity or bank check run on the seller; kept for audit",
 });
-const sellerStatusVO = sellerAgg.addValueObject("SellerStatus", {
+const sellerStatusVO = sellerBC.addValueObject("SellerStatus", {
 	description: "registered, active or suspended",
 });
 sellerStatusVO.addAttribute("value", {
@@ -756,7 +772,7 @@ const cart = cartAgg.addRootEntity("Cart", {
 const cartLine = cartAgg.addEntity("CartLine", {
 	description: "An offer and a quantity",
 });
-const cartMoney = money(cartAgg);
+const cartMoney = money(cartBC);
 cart.addAttribute("cartId", { type: "string", identity: true });
 cart.addAttribute("customerId", { type: "string" });
 cartLine.addAttribute("lineId", { type: "string", identity: true });
@@ -882,22 +898,22 @@ const returnEntity = orderAgg.addEntity("Return", {
 const returnLine = orderAgg.addEntity("ReturnLine", {
 	description: "One order line and the quantity returned from it",
 });
-const orderMoney = money(orderAgg);
-const addressVO = orderAgg.addValueObject("Address", {
+const orderMoney = money(orderBC);
+const addressVO = orderBC.addValueObject("Address", {
 	description:
 		"Where it ships; a value because the same address on two orders is the same place",
 });
 addressVO.addAttribute("lines", { type: "string[]" });
 addressVO.addAttribute("postcode", { type: "string" });
 addressVO.addAttribute("country", { type: "ISO 3166 code" });
-const orderStatusVO = orderAgg.addValueObject("OrderStatus", {
+const orderStatusVO = orderBC.addValueObject("OrderStatus", {
 	description:
 		"placed, awaiting-stock, cancelled, partially-shipped, shipped, completed",
 });
 orderStatusVO.addAttribute("value", {
 	type: "'placed' | 'awaiting-stock' | 'cancelled' | 'partially-shipped' | 'shipped' | 'completed'",
 });
-const trackingRefVO = orderAgg.addValueObject("TrackingReference", {
+const trackingRefVO = orderBC.addValueObject("TrackingReference", {
 	description: "The carrier reference the customer sees",
 });
 trackingRefVO.addAttribute("value", { type: "string" });
@@ -1111,7 +1127,7 @@ const capture = paymentAgg.addEntity("Capture", {
 const refund = paymentAgg.addEntity("Refund", {
 	description: "Money given back against a capture",
 });
-const paymentMoney = money(paymentAgg);
+const paymentMoney = money(paymentsBC);
 paymentIntent.addAttribute("paymentId", { type: "string", identity: true });
 paymentIntent.addAttribute("orderId", { type: "string" });
 paymentIntent.addAttribute("amount", {
@@ -1306,11 +1322,11 @@ const assessmentAgg = fraudBC.addAggregate("RiskAssessment", {
 const assessment = assessmentAgg.addRootEntity("RiskAssessment", {
 	description: "One scoring run",
 });
-const riskScoreVO = assessmentAgg.addValueObject("RiskScore", {
+const riskScoreVO = fraudBC.addValueObject("RiskScore", {
 	description: "0 to 1000; above the threshold is flagged",
 });
 riskScoreVO.addAttribute("value", { type: "int 0..1000" });
-const signalVO = assessmentAgg.addValueObject("Signal", {
+const signalVO = fraudBC.addValueObject("Signal", {
 	description:
 		"A named contribution to the score, e.g. 'new account, high value'",
 });
@@ -1437,7 +1453,7 @@ const position = inventoryAgg.addRootEntity("InventoryPosition", {
 const reservation = inventoryAgg.addEntity("Reservation", {
 	description: "Stock promised to an order but not yet picked",
 });
-const binVO = inventoryAgg.addValueObject("Bin", {
+const binVO = warehouseBC.addValueObject("Bin", {
 	description: "Aisle, shelf, slot",
 });
 binVO.addAttribute("code", { type: "string" });
@@ -1482,7 +1498,7 @@ const pickTask = fulfilmentOrderAgg.addEntity("PickTask", {
 const packageEntity = fulfilmentOrderAgg.addEntity("Package", {
 	description: "A box that leaves the dock",
 });
-const trackingLabelVO = fulfilmentOrderAgg.addValueObject("TrackingLabel", {
+const trackingLabelVO = warehouseBC.addValueObject("TrackingLabel", {
 	description:
 		"Carrier barcode and scan vocabulary. Part of the kernel shared with Last Mile: one library, one format",
 });
@@ -1739,12 +1755,12 @@ const parcel = routeAgg.addEntity("Parcel", {
 	description:
 		"One labelled item to hand over at a stop; the warehouse's package once it is on a van",
 });
-const lastMileLabelVO = routeAgg.addValueObject("TrackingLabel", {
-	description:
-		"The same barcode and scan vocabulary the warehouse prints; the shared kernel means both contexts read one format",
-});
-lastMileLabelVO.addAttribute("barcode", { type: "string" });
-const proofVO = routeAgg.addValueObject("ProofOfDelivery", {
+// The same barcode and scan vocabulary the warehouse prints: the shared
+// kernel is one library, so Last Mile holds the warehouse's own value object
+// rather than a copy of it. A relation may not cross a context boundary, so
+// the attribute's `valueobject` is the whole of the link.
+const lastMileLabelVO = trackingLabelVO;
+const proofVO = lastMileBC.addValueObject("ProofOfDelivery", {
 	description: "Photo, signature or safe-place note",
 });
 proofVO.addAttribute("kind", { type: "'photo' | 'signature' | 'safe-place'" });
@@ -1761,7 +1777,6 @@ parcel.addAttribute("parcelId", { type: "string", identity: true });
 parcel.addAttribute("orderId", { type: "string" });
 route.includes(stop, "visits", "1..*");
 stop.includes(parcel, "hands-over", "1..*");
-parcel.uses(lastMileLabelVO, "scanned-as", "1");
 stop.addAttribute("proofOfDelivery", {
 	type: "ProofOfDelivery",
 	valueobject: proofVO,
@@ -1857,8 +1872,8 @@ const campaign = campaignAgg.addRootEntity("Campaign", {
 const adGroup = campaignAgg.addEntity("AdGroup", {
 	description: "Products and keywords that share a bid",
 });
-const campaignMoney = money(campaignAgg);
-const bidVO = campaignAgg.addValueObject("Bid", {
+const campaignMoney = money(adsBC);
+const bidVO = adsBC.addValueObject("Bid", {
 	description: "What the seller pays per click, at most",
 });
 bidVO.addAttribute("maxCpc", { type: "Money", valueobject: campaignMoney });
@@ -2005,7 +2020,7 @@ const caseRoot = caseAgg.addRootEntity("Case", {
 const interaction = caseAgg.addEntity("Interaction", {
 	description: "A call, chat or email on the case",
 });
-const resolutionVO = caseAgg.addValueObject("Resolution", {
+const resolutionVO = csBC.addValueObject("Resolution", {
 	description: "How it ended: refund, replacement, information, no action",
 });
 resolutionVO.addAttribute("kind", {

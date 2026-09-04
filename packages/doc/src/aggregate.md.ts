@@ -2,7 +2,7 @@ import {
 	type Aggregate,
 	type Consumption,
 	constrainableLabel,
-	type Entity,
+	Entity,
 	type Invariant,
 	ODSRelationGraph,
 	type ValueObject,
@@ -16,14 +16,21 @@ import {
 	pathToIndexMd,
 	pathToRelationMapSvg,
 } from "./lib/paths";
+import { valueObjectsUsedBy } from "./lib/value-objects";
 import type { Options } from "./options";
 
-const valueObjectSection = (valueObject: ValueObject) => [
-	"Value Object",
-	valueObject.name,
-	valueObject.description,
-	attributeListMd(valueObject.attributes),
-];
+/** A value object the aggregate holds, linked to the context that declares it. */
+const valueObjectSection =
+	(aggregate: Aggregate) => (valueObject: ValueObject) => [
+		"Value Object",
+		`[${valueObject.name}](${pathToIndexMd(valueObject.boundedcontext.path, aggregate.path)}#value-objects)`,
+		valueObject.description,
+		attributeListMd(valueObject.attributes),
+	];
+
+/** Where a relation end is documented: its aggregate, or its context. */
+const ownerOf = (member: Entity | ValueObject) =>
+	member instanceof Entity ? member.aggregate : member.boundedcontext;
 
 const entitySection = (entity: Entity) => [
 	entity.root ? "Entity (Root)" : "Entity",
@@ -55,7 +62,7 @@ ${aggregate.description}
 
 ## Entities and Value Objects
 ${
-	aggregate.entities.size > 0 || aggregate.valueobjects.size > 0
+	aggregate.entities.size > 0 || valueObjectsUsedBy(aggregate).length > 0
 		? markdownTable(
 				["Type", "Name", "Description", "Attributes"],
 				[
@@ -68,9 +75,7 @@ ${
 									: 1,
 						)
 						.map(entitySection),
-					...Array.from(aggregate.valueobjects.values()).map(
-						valueObjectSection,
-					),
+					...valueObjectsUsedBy(aggregate).map(valueObjectSection(aggregate)),
 				],
 			)
 		: ""
@@ -81,10 +86,11 @@ ${markdownTable(
 	["Source", "Description", "Target", "Relation", "Cardinality"],
 	ODSRelationGraph.fromAggregate(aggregate).relations.map((it) => [
 		// Entities have no page of their own, so a source links to the section
-		// of its aggregate's page that lists it.
-		`[${it.source.aggregate.name} - ${it.source.name}](${pathToIndexMd(it.source.aggregate.path, aggregate.path)}#entities-and-value-objects)`,
+		// that lists it: its aggregate's page, or, for a value object, the page
+		// of the context that declares it.
+		`[${ownerOf(it.source).name} - ${it.source.name}](${pathToIndexMd(ownerOf(it.source).path, aggregate.path)}#${it.source instanceof Entity ? "entities-and-value-objects" : "value-objects"})`,
 		it.label || "-",
-		`${it.target.aggregate.name} - ${it.target.name}`,
+		`${ownerOf(it.target).name} - ${it.target.name}`,
 		it.relation,
 		it.cardinality ?? "-",
 	]),

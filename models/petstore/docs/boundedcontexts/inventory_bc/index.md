@@ -31,6 +31,9 @@ Open-host service for /store/inventory
 
 
 
+## Value Objects
+> No value objects.
+
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |

@@ -37,7 +37,7 @@ function tacticalEdges(): Model {
 		root: true,
 	});
 	root.addAttribute("id", { type: "string", identity: true });
-	const vo = aggregate.addValueObject("Edge Value", {
+	const vo = bc.addValueObject("Edge Value", {
 		description: "The target of the unlabelled relation.",
 	});
 	root.addRelation(vo, { relation: "uses", cardinality: "1" });

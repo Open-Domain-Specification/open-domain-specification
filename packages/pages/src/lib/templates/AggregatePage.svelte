@@ -15,6 +15,7 @@ import {
 	ODSConsumableMap,
 	ODSRelationMap,
 } from "@open-domain-specification/core";
+import { valueObjectsOf } from "../elements";
 import { consumableGraph, relationGraph } from "../flow/graph";
 import { problemsUnder, useModel } from "../model";
 import Definition from "../atoms/Definition.svelte";
@@ -39,7 +40,9 @@ const bc = $derived(a.boundedcontext);
 const entities = $derived(
 	[...a.entities.values()].sort((x, y) => Number(y.root) - Number(x.root)),
 );
-const valueobjects = $derived([...a.valueobjects.values()]);
+// A value object belongs to the context, so the aggregate lists the ones it
+// holds rather than owning any (decision 16).
+const valueobjects = $derived(valueObjectsOf(a));
 const invariants = $derived([...a.invariants.values()]);
 const consumables = $derived([...a.consumables.values()]);
 const operations = $derived(consumables.filter((c) => c.type === "operation"));
@@ -81,14 +84,14 @@ const raisersOf = (event: Consumable) =>
 <Section
 	id="structure"
 	title="Structure"
-	lead="Entities have identity and a lifecycle; value objects are defined by their attributes and are replaced, not changed."
+	lead="Entities have identity and a lifecycle; the value objects are the context's, listed here as the ones this aggregate holds."
 	count={entities.length + valueobjects.length}
 	problems={[...entities, ...valueobjects].flatMap((e) => problemsUnder(model, e.ref))}
 >
 	<Heading level={3} count={entities.length}>Entities</Heading>
 	{#each entities as e (e.ref)}<StructureSubsection element={e} />{:else}<EmptyState text="No entities. An aggregate needs a root entity." />{/each}
 	<Heading level={3} count={valueobjects.length}>Value objects</Heading>
-	{#each valueobjects as v (v.ref)}<StructureSubsection element={v} />{:else}<EmptyState text="No value objects." />{/each}
+	{#each valueobjects as v (v.ref)}<StructureSubsection element={v} />{:else}<EmptyState text="No value objects. Nothing here is typed by one of the context's values." />{/each}
 </Section>
 
 <InvariantsSection

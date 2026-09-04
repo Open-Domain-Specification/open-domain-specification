@@ -1,5 +1,21 @@
-import { Workspace } from "@open-domain-specification/core";
-import { money } from "@open-domain-specification/model-tools";
+import {
+	type BoundedContext,
+	Workspace,
+} from "@open-domain-specification/core";
+
+/**
+ * Money, declared once in each context that carries an amount: a value object
+ * belongs to the context's language, and every aggregate in that context
+ * holds the same one.
+ */
+const money = (boundedcontext: BoundedContext) => {
+	const vo = boundedcontext.addValueObject("Money", {
+		description: "An amount in a currency: minor units and an ISO 4217 code",
+	});
+	vo.addAttribute("amountMinor", { type: "int64" });
+	vo.addAttribute("currency", { type: "ISO 4217 code" });
+	return vo;
+};
 
 /**
  * StreamLine: a fictional streaming service in the shape of a large one.
@@ -237,11 +253,11 @@ const studioEpisode = productionAgg.addEntity("Episode", {
 	description:
 		"A production artefact: a number, a runtime and eventually a master. Not the catalogue's episode",
 });
-const budgetVO = productionAgg.addValueObject("Budget", {
+const budgetVO = studioBC.addValueObject("Budget", {
 	description:
 		"Approved spend; a value because two productions with the same figures have the same budget",
 });
-const budgetMoney = money(productionAgg);
+const budgetMoney = money(studioBC);
 budgetVO.addAttribute("approved", { type: "Money", valueobject: budgetMoney });
 budgetVO.addAttribute("approvedOn", { type: "date" });
 production.addAttribute("productionId", { type: "string", identity: true });
@@ -362,11 +378,11 @@ const window = dealAgg.addEntity("Window", {
 	description:
 		"A territory, a start, an end and whether StreamLine is exclusive",
 });
-const territoryVO = dealAgg.addValueObject("Territory", {
+const territoryVO = licensingBC.addValueObject("Territory", {
 	description: "A set of countries a window covers. Not a cache region",
 });
 territoryVO.addAttribute("countries", { type: "ISO 3166 code[]" });
-const feeMoney = money(dealAgg);
+const feeMoney = money(licensingBC);
 deal.addAttribute("dealId", { type: "string", identity: true });
 deal.addAttribute("licensor", { type: "string" });
 deal.addAttribute("termStart", { type: "date" });
@@ -464,16 +480,16 @@ const catalogueEpisode = titleAgg.addEntity("Episode", {
 	description:
 		"What a member plays; carries artwork and a rating, unlike the studio's episode",
 });
-const artworkVO = titleAgg.addValueObject("Artwork", {
+const artworkVO = catalogueBC.addValueObject("Artwork", {
 	description: "Images by aspect ratio",
 });
 artworkVO.addAttribute("images", { type: "{ratio, uri}[]" });
-const ratingVO = titleAgg.addValueObject("MaturityRating", {
+const ratingVO = catalogueBC.addValueObject("MaturityRating", {
 	description: "The rating shown and enforced by profile maturity settings",
 });
 ratingVO.addAttribute("scheme", { type: "string" });
 ratingVO.addAttribute("value", { type: "string" });
-const availabilityVO = titleAgg.addValueObject("Availability", {
+const availabilityVO = catalogueBC.addValueObject("Availability", {
 	description:
 		"Countries and dates a title is live, derived from licence windows or studio ownership",
 });
@@ -674,7 +690,7 @@ const rendition = jobAgg.addEntity("Rendition", {
 	description:
 		"One codec, bitrate and resolution; an entity because each is addressed by the player",
 });
-const ladderVO = jobAgg.addValueObject("Ladder", {
+const ladderVO = encodingBC.addValueObject("Ladder", {
 	description:
 		"The planned rungs: bitrate and resolution pairs chosen for this title's content",
 });
@@ -838,12 +854,12 @@ const sessionAgg = playbackBC.addAggregate("PlaybackSession", {
 const session = sessionAgg.addRootEntity("PlaybackSession", {
 	description: "The unit playback rules are stated about",
 });
-const bookmarkVO = sessionAgg.addValueObject("Bookmark", {
+const bookmarkVO = playbackBC.addValueObject("Bookmark", {
 	description:
 		"The resume point; updated every few seconds, kept inside the player",
 });
 bookmarkVO.addAttribute("positionSeconds", { type: "int" });
-const manifestVO = sessionAgg.addValueObject("StreamManifest", {
+const manifestVO = playbackBC.addValueObject("StreamManifest", {
 	description:
 		"The renditions and the edge to fetch from, in the format shared with Edge Delivery",
 });
@@ -1019,7 +1035,7 @@ const appliance = applianceAgg.addRootEntity("EdgeAppliance", {
 const cachedAsset = applianceAgg.addEntity("CachedAsset", {
 	description: "One rendition on disk with its last hit time",
 });
-const capacityVO = applianceAgg.addValueObject("Capacity", {
+const capacityVO = edgeBC.addValueObject("Capacity", {
 	description: "Disk bytes available for cache",
 });
 capacityVO.addAttribute("bytes", { type: "int64" });
@@ -1060,11 +1076,22 @@ const edgeApi = edgeBC.addService("EdgeAPI", {
 		"Edge Delivery's application service: the boundary Playback resolves appliances through",
 	type: "application",
 });
+// The answer comes back in the manifest format the kernel defines, so Edge
+// fills in Playback's own StreamManifest rather than a shape of its own: that
+// borrowing is what the shared kernel between the two contexts permits.
+const edgeManifestSchema = edgeBC.addSchema("EdgeManifest", {
+	description: "The appliance to fetch from, in the shared manifest format",
+});
+edgeManifestSchema.addAttribute("manifest", {
+	type: "StreamManifest",
+	valueobject: manifestVO,
+});
 const resolveEdge = edgeApi.provides("ResolveEdge", {
 	description: "Which appliance a client should fetch from",
 	type: "operation",
 	pattern: "open-host-service",
 	schema: resolveEdgeSchema,
+	returns: edgeManifestSchema,
 });
 const prepositionAsset = applianceAgg
 	.provides("PrepositionAsset", {
@@ -1112,7 +1139,7 @@ const device = deviceAgg.addRootEntity("Device", {
 const certification = deviceAgg.addEntity("Certification", {
 	description: "A pass or fail against one SDK version",
 });
-const capabilityVO = deviceAgg.addValueObject("Capability", {
+const capabilityVO = devicesBC.addValueObject("Capability", {
 	description: "Codecs, DRM level and maximum resolution",
 });
 capabilityVO.addAttribute("codecs", { type: "string[]" });
@@ -1219,7 +1246,7 @@ const signal = tasteAgg.addEntity("Signal", {
 	description:
 		"One viewing fact with a weight and a time; an entity because signals decay and are audited",
 });
-const affinityVO = tasteAgg.addValueObject("Affinity", {
+const affinityVO = recsBC.addValueObject("Affinity", {
 	description: "A genre or theme and how strongly the profile leans to it",
 });
 affinityVO.addAttribute("genre", { type: "string" });
@@ -1335,11 +1362,11 @@ const household = householdAgg.addRootEntity("Household", {
 const profile = householdAgg.addEntity("Profile", {
 	description: "One person's viewing identity",
 });
-const maturityVO = householdAgg.addValueObject("MaturitySetting", {
+const maturityVO = householdsBC.addValueObject("MaturitySetting", {
 	description: "The highest rating a profile may play",
 });
 maturityVO.addAttribute("maxRating", { type: "string" });
-const pinVO = householdAgg.addValueObject("ProfilePin", {
+const pinVO = householdsBC.addValueObject("ProfilePin", {
 	description: "Four digits that unlock a profile or raise a maturity cap",
 });
 pinVO.addAttribute("hash", { type: "string" });
@@ -1459,17 +1486,17 @@ const subscription = subscriptionAgg.addRootEntity("Subscription", {
 const invoice = subscriptionAgg.addEntity("Invoice", {
 	description: "One period's charge; an entity because it is numbered and paid",
 });
-const planVO = subscriptionAgg.addValueObject("Plan", {
+const planVO = billingBC.addValueObject("Plan", {
 	description: "A tier: price, concurrent streams, ad-supported or not",
 });
-const planMoney = money(subscriptionAgg);
+const planMoney = money(billingBC);
 planVO.addAttribute("tier", {
 	type: "'basic-with-ads' | 'standard' | 'premium'",
 });
 planVO.addAttribute("price", { type: "Money", valueobject: planMoney });
 planVO.addAttribute("maxStreams", { type: "int" });
 planVO.addAttribute("adSupported", { type: "boolean" });
-const periodVO = subscriptionAgg.addValueObject("BillingPeriod", {
+const periodVO = billingBC.addValueObject("BillingPeriod", {
 	description: "The month an invoice covers",
 });
 periodVO.addAttribute("from", { type: "date" });
@@ -1711,11 +1738,11 @@ const adBreak = breakAgg.addRootEntity("AdBreak", {
 const adSlot = breakAgg.addEntity("AdSlot", {
 	description: "One creative in the break",
 });
-const advertiserVO = breakAgg.addValueObject("Advertiser", {
+const advertiserVO = adsBC.addValueObject("Advertiser", {
 	description: "Who paid for the creative",
 });
 advertiserVO.addAttribute("name", { type: "string" });
-const frequencyCapVO = breakAgg.addValueObject("FrequencyCap", {
+const frequencyCapVO = adsBC.addValueObject("FrequencyCap", {
 	description:
 		"The creative's rule for how often one household may see it in a day. The break carries the rule; PrepareBreaks applies it against the household's impressions so far today, which a single break cannot hold",
 });

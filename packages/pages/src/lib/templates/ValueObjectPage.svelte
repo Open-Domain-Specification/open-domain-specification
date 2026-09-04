@@ -11,17 +11,14 @@ export const sections = [
 <script lang="ts">
 import type { ValueObject } from "@open-domain-specification/core";
 import { problemsUnder, useModel } from "../model";
-import {
-	type AttributeOwner,
-	ownerCrumbs,
-	usagesOf,
-} from "../elements";
+import { type AttributeOwner, usagesOf } from "../elements";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Definition from "../atoms/Definition.svelte";
 import DefinitionList from "../atoms/DefinitionList.svelte";
 import Keyword from "../atoms/Keyword.svelte";
 import Code from "../molecules/Code.svelte";
+import { contextCrumbs } from "../molecules/crumbs";
 import Lockup from "../atoms/Lockup.svelte";
 import AttributesSection from "../organisms/AttributesSection.svelte";
 import { kindOf } from "../molecules/element-kind";
@@ -34,10 +31,14 @@ import Section from "../organisms/Section.svelte";
 const { valueobject: v }: { valueobject: ValueObject } = $props();
 const model = useModel();
 const ws = model.workspace;
-const a = $derived(v.aggregate);
+// A value object belongs to the context, so any aggregate of that context may
+// hold it and any of their invariants may name it (decision 16).
+const bc = $derived(v.boundedcontext);
 const usages = $derived(usagesOf(ws, v));
 const invariants = $derived(
-	[...a.invariants.values()].filter((i) => i.targets.includes(v)),
+	[...bc.aggregates.values()]
+		.flatMap((a) => [...a.invariants.values()])
+		.filter((i) => i.targets.includes(v)),
 );
 const ownerOf = (u: { owner: unknown }) => u.owner as AttributeOwner;
 
@@ -53,11 +54,11 @@ const relationColumns: Column[] = [
 ];
 </script>
 
-<PageHeader description={v.description} crumbs={ownerCrumbs(ws, a)}>
+<PageHeader description={v.description} crumbs={contextCrumbs(ws, bc)}>
 	{#snippet title()}<Lockup kind="valueobject" name={v.name} id={v.id} detail="Value object" size="title" />{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
-			<Definition term="Aggregate"><Lockup kind="aggregate" name={a.name} ref={a.ref} /></Definition>
+			<Definition term="Context"><Lockup kind="boundedcontext" name={bc.name} ref={bc.ref} /></Definition>
 		</DefinitionList>
 	{/snippet}
 </PageHeader>
@@ -98,7 +99,7 @@ const relationColumns: Column[] = [
 <Section
 	id="relations"
 	title="Relations"
-	lead="Value objects may hold other value objects; they should not point at entities in other aggregates."
+	lead="Value objects may hold other value objects of the same context; they should not point at entities in other aggregates."
 	count={v.relations.length}
 >
 	<DataTable columns={relationColumns} rows={v.relations} empty="No relations.">
