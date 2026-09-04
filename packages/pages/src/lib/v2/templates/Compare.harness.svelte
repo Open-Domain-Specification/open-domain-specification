@@ -87,10 +87,14 @@ const target = $derived(ref ? resolvePage(ws, ref).target : undefined);
 <style>
 	.compare {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: repeat(2, minmax(600px, 1fr));
 		gap: 24px;
 		max-width: 1200px;
 		margin: 0 auto;
+		overflow-x: auto;
+	}
+	.compare > section {
+		min-width: 600px;
 	}
 	.compare :global(.layout) {
 		padding: 0;

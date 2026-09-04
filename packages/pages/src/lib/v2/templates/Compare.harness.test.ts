@@ -1,7 +1,21 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { render } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import Compare from "./Compare.harness.svelte";
 import { PETSTORE_REFS } from "./petstore.harness";
+
+/**
+ * `vitest.config.ts` runs with `css: false` (the default), so the harness's
+ * scoped `<style>` is stripped before jsdom ever sees it and `getComputedStyle`
+ * on a rendered column would read nothing. The 600px minimum and the
+ * horizontal scroll are style-only decisions, so this asserts them from the
+ * component source instead.
+ */
+const source = readFileSync(
+	join(dirname(new URL(import.meta.url).pathname), "Compare.harness.svelte"),
+	"utf8",
+);
 
 /**
  * The compare harness is the morning review's only surface, and the Storybook
@@ -42,6 +56,13 @@ describe("Compare.harness", () => {
 		expect(v1).toContain("Pet");
 		expect(v2).toContain("Pet");
 		expect(v2).toContain("Entity");
+	});
+
+	it("keeps each column at a 600px minimum and lets the row scroll", () => {
+		const { container } = render(Compare, { page: "context" as const });
+		expect(columns(container)).toHaveLength(2);
+		expect(source).toMatch(/\.compare\s*>\s*section\s*{[^}]*min-width:\s*600px/);
+		expect(source).toMatch(/\.compare\s*{[^}]*overflow-x:\s*auto/);
 	});
 
 	it("draws the element the ref names, not a page of another kind", () => {
