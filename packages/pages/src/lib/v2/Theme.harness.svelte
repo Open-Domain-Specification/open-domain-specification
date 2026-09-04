@@ -47,6 +47,8 @@ const bodyClass = $derived(
 		--vscode-focusBorder: #005fb8;
 		--vscode-contrastActiveBorder: transparent;
 		--vscode-list-hoverBackground: #f2f2f2;
+		--vscode-list-activeSelectionBackground: #0060c0;
+		--vscode-list-activeSelectionForeground: #ffffff;
 		--vscode-badge-background: #cccccc;
 		--vscode-badge-foreground: #3b3b3b;
 		--vscode-editorWarning-foreground: #bf8803;
@@ -77,6 +79,8 @@ const bodyClass = $derived(
 		--vscode-focusBorder: #0078d4;
 		--vscode-contrastActiveBorder: transparent;
 		--vscode-list-hoverBackground: #2a2d2e;
+		--vscode-list-activeSelectionBackground: #04395e;
+		--vscode-list-activeSelectionForeground: #ffffff;
 		--vscode-badge-background: #616161;
 		--vscode-badge-foreground: #f8f8f8;
 		--vscode-editorWarning-foreground: #cca700;
@@ -107,6 +111,8 @@ const bodyClass = $derived(
 		--vscode-focusBorder: #f38518;
 		--vscode-contrastActiveBorder: #f38518;
 		--vscode-list-hoverBackground: transparent;
+		--vscode-list-activeSelectionBackground: #000000;
+		--vscode-list-activeSelectionForeground: #ffffff;
 		--vscode-badge-background: #000000;
 		--vscode-badge-foreground: #ffffff;
 		--vscode-editorWarning-foreground: #ffff00;
