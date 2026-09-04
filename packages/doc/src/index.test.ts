@@ -395,6 +395,8 @@ describe("toDoc", () => {
 			  "boundedcontexts/fulfilment_bc/index.md",
 			  "boundedcontexts/fulfilment_bc/services/dispatch_planner/consumablemap.svg",
 			  "boundedcontexts/fulfilment_bc/services/dispatch_planner/index.md",
+			  "boundedcontexts/fulfilment_bc/services/shipment_app/consumablemap.svg",
+			  "boundedcontexts/fulfilment_bc/services/shipment_app/index.md",
 			  "boundedcontexts/identity_bc/aggregates/user/consumablemap.svg",
 			  "boundedcontexts/identity_bc/aggregates/user/index.md",
 			  "boundedcontexts/identity_bc/aggregates/user/relationmap.svg",
