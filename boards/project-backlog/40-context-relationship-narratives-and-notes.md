@@ -1,8 +1,8 @@
 ---
-column: backlog
+column: review
 labels: [ddd, frontend, schema]
 priority: med
-updatedAt: 2026-09-03T15:33:00.000Z
+updatedAt: 2026-09-05T11:20:00.000Z
 ---
 # Context relationship narratives, role notes, and interactive UI popovers
 
@@ -24,3 +24,4 @@ See proposal at [docs/rfcs/rfc-001-context-relationship-narratives-and-notes.md]
 ## Comments
 
 - **lead** (2026-09-03T15:33:00.000Z): Drafted RFC-001 proposal in docs/rfcs/rfc-001-context-relationship-narratives-and-notes.md after design review. Ready for team feedback.
+- **lead** (2026-09-05T11:20:00.000Z): Superseded and delivered. RFC-001 was replaced by [RFC-002](../../docs/rfcs/rfc-002-intent-and-evidence.md) after a product review: role notes became a plain comment list with a disposition (project card 41 in this board's numbering is the knowledge base; the schema landed as `comments`/`disposition` in core), the sentence generator became a fallback and a hover rather than a paragraph block, and the popover became the pattern hover card. Shipped by extension cards 22, 23, 25, 26, 27 and 38. Nothing is left to do here; closing for the human to move to done.
