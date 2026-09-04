@@ -44,4 +44,18 @@ describe("Section", () => {
 		expect(container.querySelector(".count")).toHaveTextContent("3");
 		expect(container.querySelectorAll(".problems li")).toHaveLength(1);
 	});
+
+	it("stays on the page when it lists nothing, with no badge, so the empty sentence carries the zero", () => {
+		const { container } = render(Section, {
+			id: "behaviour",
+			title: "Policies",
+			lead: "Reactions: when these events happen, issue these operations.",
+			count: 0,
+			children,
+		});
+		expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent(
+			"Policies",
+		);
+		expect(container.querySelector(".count")).toBeNull();
+	});
 });

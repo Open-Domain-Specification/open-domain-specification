@@ -35,8 +35,9 @@ Teams  (3)                                       (Section)
     Team               Owns                             Description
     👥 Pet Shop Team   ⬚ Catalog BC, ⬚ Inventory BC     Owns the catalog and ...
 
-Model health                                     (Section)
-  Structural rules ...                           (lead)
+Health                                           (Section)
+  What the model is not happy about ...          (lead)
+  Structure  (2)                                 (Heading 3, badge = diagnostic count, none at zero)
   ✓ No structural problems found.                (Problems list, or this sentence in the secondary colour)
   Refactor (1) / Tolerated (1) / No comments (2) (HealthReport)
 ```

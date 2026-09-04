@@ -13,7 +13,7 @@ const { withCounts = true }: { withCounts?: boolean } = $props();
 <Heading level={2} id="structure" lead="Entities have identity and a lifecycle; value objects are defined by their attributes and are replaced, not changed." count={withCounts ? 5 : undefined}>Structure</Heading>
 <Heading level={3} count={withCounts ? 1 : undefined}>Entities</Heading>
 <EmptyState text="No entities. An aggregate needs a root entity." />
-<Heading level={3}>Value objects</Heading>
+<Heading level={3} count={withCounts ? 0 : undefined}>Value objects</Heading>
 <EmptyState text="No value objects." />
 
 <Heading level={2} id="invariants" lead="Rules that must hold after every change.">Invariants</Heading>

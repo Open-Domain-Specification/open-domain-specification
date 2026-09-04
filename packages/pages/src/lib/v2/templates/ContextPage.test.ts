@@ -33,10 +33,9 @@ describe("v2 ContextPage", () => {
 		// The header's own facts; the expanded relationship rows below have
 		// definition lists of their own.
 		const header = container.querySelector(".page-header") as HTMLElement;
-		expect([...header.querySelectorAll("dt")].map((dt) => dt.textContent)).toEqual([
-			"Serves",
-			"Owned by",
-		]);
+		expect(
+			[...header.querySelectorAll("dt")].map((dt) => dt.textContent),
+		).toEqual(["Serves", "Owned by"]);
 		expect(container.querySelector(".chip, .pill")).toBeNull();
 	});
 
@@ -58,7 +57,9 @@ describe("v2 ContextPage", () => {
 			"Events",
 			"Description",
 		]);
-		expect(modelSection.querySelectorAll("td.numeric").length).toBeGreaterThan(0);
+		expect(modelSection.querySelectorAll("td.numeric").length).toBeGreaterThan(
+			0,
+		);
 		expect(container.querySelector(".card, .grid")).toBeNull();
 	});
 
@@ -91,8 +92,15 @@ describe("v2 ContextPage", () => {
 		const thin = model.workspace.boundedcontexts.get(
 			"thin_context",
 		) as BoundedContext;
-		page(model, thin);
+		const { container } = page(model, thin);
 		expect(screen.getByText("No aggregates yet.")).toBeInTheDocument();
+		// The Services subsection stays on the page when there are none, its
+		// heading unbadged: the shape of the model is the information.
+		const services = [...container.querySelectorAll("#model h3")].find((h) =>
+			h.textContent?.includes("Services"),
+		) as HTMLElement;
+		expect(services).toBeInTheDocument();
+		expect(services.querySelector(".count")).toBeNull();
 		expect(screen.getByText("No services.")).toBeInTheDocument();
 		expect(screen.getByText("Provides nothing.")).toBeInTheDocument();
 		expect(

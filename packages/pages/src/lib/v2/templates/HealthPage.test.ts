@@ -13,20 +13,29 @@ describe("v2 HealthPage", () => {
 		]);
 	});
 
-	it("is a read of the workspace, so its title is the report's name and not a lockup", () => {
+	it("heads the page with PageHeader: the trail, the report's name behind the pulse icon, and no lockup", () => {
 		const model = petstoreModel();
 		const { container } = render(Harness, {
 			model,
 			component: HealthPage,
 			args: {},
 		});
-		expect(container.querySelector(".crumbs a")).toHaveTextContent(
+		const header = container.querySelector(".page-header") as HTMLElement;
+		expect(header.querySelector(".crumbs a")).toHaveTextContent(
 			model.workspace.name,
 		);
 		const title = screen.getByRole("heading", { level: 1 });
+		expect(header.contains(title)).toBe(true);
 		expect(title).toHaveTextContent("Health");
 		expect(title.querySelector(".codicon-pulse")).toBeInTheDocument();
-		expect(title.querySelector(".lockup")).toBeNull();
-		expect(container.querySelector("#report .health-report")).toBeInTheDocument();
+		// A read of the workspace, not an element: no kind, no id, no detail.
+		expect(title.querySelector(".lockup, .id, .detail")).toBeNull();
+		expect(header.querySelector(".md")).toHaveTextContent(
+			/read off the evidence layer/,
+		);
+		expect(header.querySelector("dl")).toBeNull();
+		expect(
+			container.querySelector("#report .health-report"),
+		).toBeInTheDocument();
 	});
 });

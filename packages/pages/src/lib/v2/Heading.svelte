@@ -8,7 +8,10 @@ import type { Snippet } from "svelte";
  * scale already says which is which. A `lead` is the one line of guidance
  * under a level-2 heading that tells a reader what the section is for. A
  * `count` draws the platform's badge, the one place v2 uses one: a pane
- * header in VS Code carries its item count in exactly this badge.
+ * header in VS Code carries its item count in exactly this badge. As on the
+ * platform, the badge is not drawn at zero: it means "there are N", its
+ * absence means none, and the empty sentence under the heading already says
+ * so in words.
  */
 const {
 	level,
@@ -26,7 +29,7 @@ const {
 </script>
 
 <svelte:element this={`h${level}`} {id} class="heading h{level}">
-	{@render children()}{#if count !== undefined}<span class="count">{count}</span>{/if}
+	{@render children()}{#if count}<span class="count">{count}</span>{/if}
 </svelte:element>
 {#if lead}<p class="lead">{lead}</p>{/if}
 

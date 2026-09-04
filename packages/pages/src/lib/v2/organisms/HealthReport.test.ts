@@ -2,7 +2,11 @@ import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import { health, healthCounts } from "../../evidence/derive";
 import Harness from "../../evidence/WithModel.harness.svelte";
-import { edgeCaseModel, emptyWorkspaceModel, petstoreModel } from "../../fixtures";
+import {
+	edgeCaseModel,
+	emptyWorkspaceModel,
+	petstoreModel,
+} from "../../fixtures";
 import HealthReport from "./HealthReport.svelte";
 
 const report = (model: ReturnType<typeof petstoreModel>) =>
@@ -16,11 +20,10 @@ describe("HealthReport", () => {
 		const badges = [...container.querySelectorAll(".count")].map(
 			(b) => b.textContent,
 		);
-		expect(badges).toEqual([
-			String(counts.refactor),
-			String(counts.tolerated),
-			String(counts.noComments),
-		]);
+		// A badge is not drawn at zero (card 34): the petstore has nothing
+		// without comments, so only the first two headings carry one.
+		expect(counts.noComments).toBe(0);
+		expect(badges).toEqual([String(counts.refactor), String(counts.tolerated)]);
 		// No stat tile survives.
 		expect(container.querySelector(".summary")).toBeNull();
 	});

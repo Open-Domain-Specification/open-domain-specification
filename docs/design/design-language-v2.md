@@ -48,12 +48,18 @@ cards move each template over. The specs for those cards are in
    Table headers are secondary text in sentence case with one hairline under
    them. Links have no underline until hover and a `focusBorder` ring.
 7. **A badge only where a native surface would use one.** The one badge in
-   v2 is the count in a heading, which is the pane header's item badge.
+   v2 is the count in a heading, which is the pane header's item badge. As on
+   the platform it is never drawn at zero: the badge means "there are N", its
+   absence means none.
 8. **Disclosure in the editor's hover.** A pattern's meaning and an intent's
    evidence summary appear in the editor hover widget's frame (RFC-002
    section 4), never in a custom popover.
 9. **Empty states say what would fill them.** One sentence in the secondary
-   colour, and at most one action after it.
+   colour, and at most one action after it. A section or subsection never
+   disappears because it is empty: the table of contents anchors it and the
+   shape of the model is the information, so a context with no services says
+   so under a Services heading, as an empty pane in VS Code keeps its title
+   over "No symbols found".
 
 ## 2. What the VS Code UX guidelines require of a webview
 
@@ -349,7 +355,51 @@ has a meaning to reveal. The editor marks nothing hoverable, and under every
 pattern code in a table it was noise. A keyword with a title keeps only the
 help cursor.
 
-## 11. Reproducing the audit
+## 11. Rulings from the morning review
+
+The human approved the language on 2026-09-05 with the three decisions in
+section 10 as designed. The review left six nits; the rulings, with their
+reasons, are on card 34 and summarised here so the language says one thing.
+
+- **The count badge is not drawn at zero** (principle 7). `Heading` draws
+  the badge only for a count above zero. The Problems tab, the Source Control
+  view and the Extensions view hide theirs at zero, and the empty sentence
+  under the heading already says the zero in words; `0` beside "No policies."
+  said it twice.
+- **An empty section or subsection stays on the page** (principle 9). This
+  covers the paired level-3 headings inside a section (Aggregates and
+  Services, Provides and Consumes, Entities and Value objects, Outgoing and
+  Incoming, Operations and Events): the pair is the fixed shape of the
+  section, and seeing the shape is how a reader learns that a context has
+  aggregates and no services rather than wondering whether the services live
+  elsewhere. v1 hid the heading because an empty card grid was a hole; an
+  empty row list is one heading and one secondary line.
+- **The health page uses `PageHeader` with a plain title.** It is the one
+  page that is a read of the workspace rather than an element. A lockup
+  carries a kind, an id and a detail, and a report has none; a workspace
+  lockup would claim the page is the workspace, which the crumb already names
+  as where the reader came from. The title is the report's name behind the
+  pulse codicon the tree draws on the health node, at the size a title
+  lockup's icon takes, so the row the reader clicked and the title they land
+  on match.
+- **The workspace page has one health section, "Health".** v1's two sections
+  ("Model health" for the rule checker, "Health" for the evidence) are one in
+  v2 and the naming moves down a level: the section's first level-3 heading
+  is "Structure", badged with the diagnostic count as the Problems panel is,
+  and the report's Refactor, Tolerated and No comments follow it. The
+  reader's question is one, "what is the model unhappy about", with four
+  kinds of answer, and "Structure" names the source of the findings the way
+  "Refactor" and "Tolerated" do. The section, the full page and the tree node
+  share the name.
+- **`V2Page.harness.svelte` keeps its name until v1 is deleted.** A rename
+  edits the compare harness, which card 33 owns, and a re-export at the old
+  name is an alias this repo does not keep. Once cards 35 and 36 remove v1 and
+  the compare harness every `V2` prefix is stale, and the harnesses are
+  renamed in that pass, `Strategic.harness.svelte` beside
+  `Tactical.harness.svelte`.
+- The compare story's collapsing v1 column is card 33's.
+
+## 12. Reproducing the audit
 
 ```sh
 cd packages/pages

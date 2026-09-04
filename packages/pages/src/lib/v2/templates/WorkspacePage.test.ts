@@ -15,22 +15,23 @@ const page = (model: ReturnType<typeof petstoreModel>) =>
 	render(Harness, { model, component: WorkspacePage, args: {} });
 
 describe("v2 WorkspacePage", () => {
-	it("folds v1's two health sections into one for the table of contents", () => {
+	it("folds v1's two health sections into one, named Health, for the table of contents", () => {
 		expect(sections.map((s) => s.id)).toEqual([
 			"problem",
 			"solution",
 			"teams",
 			"health",
 		]);
+		expect(sections.at(-1)?.label).toBe("Health");
 	});
 
 	it("turns the version and file chips into two definitions under the title", () => {
 		const model = petstoreModel();
 		const { container } = page(model);
 		const header = container.querySelector(".page-header") as HTMLElement;
-		expect([...header.querySelectorAll("dt")].map((dt) => dt.textContent)).toEqual(
-			["Version", "File"],
-		);
+		expect(
+			[...header.querySelectorAll("dt")].map((dt) => dt.textContent),
+		).toEqual(["Version", "File"]);
 		expect(header.querySelector("dd")).toHaveTextContent(
 			model.workspace.version,
 		);
@@ -66,27 +67,40 @@ describe("v2 WorkspacePage", () => {
 
 		const teams = container.querySelector("#teams") as HTMLElement;
 		expect(
-			[...teams.querySelectorAll("thead th")].map((th) => th.textContent?.trim()),
+			[...teams.querySelectorAll("thead th")].map((th) =>
+				th.textContent?.trim(),
+			),
 		).toEqual(["Team", "Owns", "Description"]);
 	});
 
-	it("reads the structural problems and the evidence health in one section", () => {
+	it("reads the structural problems and the evidence health in one section, Structure first", () => {
 		const model = petstoreModel();
 		const { container } = page(model);
 		const health = container.querySelector("#health") as HTMLElement;
+		expect(health.querySelector("h2")).toHaveTextContent("Health");
+		const subheads = health.querySelectorAll("h3");
+		expect(subheads).toHaveLength(4);
+		["Structure", "Refactor", "Tolerated", "No comments"].forEach((name, i) =>
+			expect(subheads[i]).toHaveTextContent(name),
+		);
 		expect(health.querySelector(".health-report")).toBeInTheDocument();
 		expect(
 			screen.getByRole("link", { name: /Open the full health report/ }),
 		).toHaveAttribute("href", "#/health");
 	});
 
-	it("says the good news in the icon colour rather than in green", () => {
+	it("badges Structure with the problem count and says the good news in the icon colour rather than in green", () => {
 		const { container } = page(edgeCaseModel());
 		const problems = container.querySelectorAll("#health .problems li");
 		expect(problems.length).toBeGreaterThan(0);
+		expect(container.querySelector("#structure .count")).toHaveTextContent(
+			String(problems.length),
+		);
 
-		// A workspace with nothing in it has nothing to complain about.
+		// A workspace with nothing in it has nothing to complain about, and no
+		// badge to say so: the sentence carries the zero.
 		const empty = page(emptyWorkspaceModel());
+		expect(empty.container.querySelector("#structure .count")).toBeNull();
 		const ok = empty.container.querySelector(".ok") as HTMLElement;
 		expect(ok).toHaveTextContent("No structural problems found.");
 		expect(ok.querySelector(".codicon-pass")).toBeInTheDocument();
@@ -95,7 +109,9 @@ describe("v2 WorkspacePage", () => {
 	it("says what would fill each section of an empty workspace", () => {
 		page(emptyWorkspaceModel());
 		expect(
-			screen.getByText("No domains yet. Start by naming what the business does."),
+			screen.getByText(
+				"No domains yet. Start by naming what the business does.",
+			),
 		).toBeInTheDocument();
 		expect(screen.getAllByText("No bounded contexts yet.").length).toBe(2);
 		expect(screen.getByText("No teams recorded.")).toBeInTheDocument();

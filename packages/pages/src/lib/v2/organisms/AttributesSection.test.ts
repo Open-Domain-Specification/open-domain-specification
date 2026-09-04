@@ -65,8 +65,9 @@ describe("AttributesSection", () => {
 		const { container } = render(Demo, { empty: true });
 		expect(container.querySelector("table")).toBeNull();
 		expect(screen.getByText("No attributes.")).toHaveClass("empty");
+		// The heading stays; the badge is not drawn at zero.
 		expect(
 			screen.getByRole("heading", { level: 2 }).querySelector(".count"),
-		).toHaveTextContent("0");
+		).toBeNull();
 	});
 });

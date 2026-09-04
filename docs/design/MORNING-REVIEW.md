@@ -24,14 +24,16 @@ Start with **V2/Compare**: sixteen stories, one per template, v1 on the left and
 2. **Subdomain classification loses its colour.** `core` / `supporting` / `generic` are plain keywords in a sortable column. Fallback: sort that column first.
 3. **No hairline between table rows.** One rule under the header, then rhythm and hover, as the keybindings editor does. On wide tables with wrapped descriptions v1's per-row rule helped. Fallback: a 50% `panel.border` hairline per row.
 
-## Open nits found while landing
+## Nits found while landing, and how they were ruled
 
-- The **context page compare story** collapses the v1 column to a sliver (the v1 diagram forces the width). The v2 column and the `V2/Templates/ContextPage` stories are fine; the harness needs a min-width per column.
-- An **empty section shows a `0` count badge** (card 31's choice where the spec was silent); v1 hid empty sections. Decide: hide, or keep the zero.
-- **ContextPage always draws the Services heading** with an empty table (card 30 took the plainer path); v1 hid it. Same decision as above.
-- **HealthPage draws its own header** rather than PageHeader because it has no lockup or id. Acceptable, or give it a lockup with the workspace's icon.
-- The workspace page has two health sections, **"Model health"** (structural rules) and **"Health"** (evidence). Suggested: "Structure" and "Health".
-- Naming: `V2Page.harness.svelte` covers only the seven strategic pages and would read better as `V2Strategic`.
+The human approved the design on 2026-09-05 with the three least-sure decisions as designed. The designer ruled on the nits on card 34; the reasons are in the card's journal and in section 11 of `design-language-v2.md`.
+
+- The **context page compare story** collapses the v1 column to a sliver (the v1 diagram forces the width). Card 33 gives the harness a min-width per column; not ruled here.
+- An **empty section showed a `0` count badge**. Ruled: the section stays, the badge goes at zero. The platform never draws its count badge at zero and the empty sentence already carries the zero in words. Applied once in `Heading`, so every template, organism and the health report follow.
+- **ContextPage always draws the Services heading** with an empty table. Ruled: keep. A paired subsection is the fixed shape of its section and the shape is the information; VS Code keeps an empty pane with a sentence rather than removing it. The same holds for every paired subsection in v2.
+- **HealthPage drew its own header**. Ruled: it uses `PageHeader` with a plain title, no lockup. A report has no kind, id or detail, and a workspace lockup would claim the page is the workspace, which the crumb already names. The pulse codicon stays, at a title lockup's icon size.
+- The workspace page's health section was **"Model health"** beside a page called **"Health"**. Ruled: the section is "Health", its first heading is "Structure" (badged with the diagnostic count), then Refactor, Tolerated and No comments. One question, four kinds of answer, one name shared by the section, the page and the tree node.
+- Naming: `V2Page.harness.svelte`. Ruled: left until cards 35 and 36 delete v1 and the compare harness (which card 33 owns and which imports it), when every `V2` prefix goes stale and the harnesses are renamed together: `Strategic.harness.svelte` beside `Tactical.harness.svelte`.
 
 ## After approval
 

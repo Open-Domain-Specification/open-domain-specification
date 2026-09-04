@@ -20,12 +20,17 @@ describe("Heading", () => {
 		expect(valueObjects.nextElementSibling).toHaveClass("empty");
 	});
 
-	it("carries the platform badge for a count, and nothing when there is no count", () => {
+	it("carries the platform badge for a count, nothing at zero, and nothing when there is no count", () => {
 		const { container } = render(Demo);
 		const counts = [...container.querySelectorAll(".count")].map(
 			(c) => c.textContent,
 		);
+		// Value objects is counted at zero: the empty sentence says so, the badge does not.
 		expect(counts).toEqual(["5", "1"]);
+		const valueObjects = [...container.querySelectorAll("h3")].at(
+			-1,
+		) as HTMLElement;
+		expect(valueObjects.querySelector(".count")).toBeNull();
 		const bare = render(Demo, { withCounts: false });
 		expect(bare.container.querySelector(".count")).toBeNull();
 	});

@@ -3,7 +3,7 @@ export const sections = [
 	{ id: "problem", label: "Problem space" },
 	{ id: "solution", label: "Solution space" },
 	{ id: "teams", label: "Teams" },
-	{ id: "health", label: "Model health" },
+	{ id: "health", label: "Health" },
 ];
 </script>
 
@@ -41,6 +41,11 @@ import Ref from "../Ref.svelte";
  * The green tick line loses its colour — the pass codicon in the icon colour
  * and one secondary sentence — because a VS Code surface does not paint good
  * news green.
+ *
+ * v1's two health sections are one here. The reader's question is one, "what
+ * is the model unhappy about", with four kinds of answer: Structure is what
+ * the rule checker finds, badged with the Problems panel's count; Refactor,
+ * Tolerated and No comments are what the model's own evidence says.
  */
 const model = useModel();
 const ws = model.workspace;
@@ -139,9 +144,10 @@ const teamColumns: Column[] = [
 
 <Section
 	id="health"
-	title="Model health"
-	lead="Structural rules ODS can check, then what the architecture itself is not happy with: what is marked for refactoring, what compromises are tolerated, and what nobody has written anything down about."
+	title="Health"
+	lead="What the model is not happy about. Structure is what the rules ODS checks find; the rest is read off the evidence: what is marked for refactoring, what compromises are tolerated, and what nobody has written anything down about."
 >
+	<Heading level={3} id="structure" count={model.diagnostics.length}>Structure</Heading>
 	{#if model.diagnostics.length}
 		<Problems problems={model.diagnostics} />
 	{:else}

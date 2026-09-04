@@ -20,7 +20,8 @@ Who this context depends on and who depends on it ...   (lead, 80ch, secondary)
 The bottom rule under the section header goes; the 32px above the heading
 and the weight carry the hierarchy. `count` is passed by the template when
 the section lists things (aggregates, consumables, terms), and it is the
-number of rows.
+number of rows; at zero no badge is drawn and the section stays, its empty
+sentence carrying the zero (card 34).
 
 Problems render as the Problems panel does: severity codicon in
 `editorError`/`editorWarning`, the rule id as a `mono` keyword, the message,
