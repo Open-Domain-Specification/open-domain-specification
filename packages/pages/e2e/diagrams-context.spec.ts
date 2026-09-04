@@ -186,3 +186,39 @@ test("the shared kernel the model wants refactored is marked on the workspace ma
 	await flow.locator(".svelte-flow__pane").click({ position: { x: 5, y: 5 } });
 	await expect(flow.locator(".anchored")).toHaveCount(0);
 });
+
+/**
+ * A badge that discloses evidence is a control, so the pointer has to reach it
+ * wherever the layout puts it. Svelte Flow draws an edge label and a node at
+ * the same z-index and the nodes layer is the later sibling, so a node whose
+ * box reaches the badge took the click instead: the shared kernel's SK badge
+ * was overlapped by the Sales card by a hair here and by more on a Linux
+ * runner, whose fonts measure the card a few pixels bigger, and there the
+ * click never landed at all (card 45). Asked as a hit test rather than by
+ * clicking each badge, because the hit test names what covers the badge and a
+ * click that cannot land only ever reports a timeout.
+ */
+test("every badge that discloses evidence takes the pointer where it is drawn", async ({
+	page,
+}) => {
+	const flow = await openInteractiveDiagram(page, "Context map");
+	const badges = flow.locator(".port.intent");
+	await expect(badges.first()).toBeVisible();
+	const problems = await badges.evaluateAll((els) =>
+		els.flatMap((el) => {
+			const button = el.querySelector("button");
+			if (!button) return [`${el.textContent} is not a button`];
+			const box = button.getBoundingClientRect();
+			const over = document.elementFromPoint(
+				box.x + box.width / 2,
+				box.y + box.height / 2,
+			) as HTMLElement | null;
+			if (over && button.contains(over)) return [];
+			// Whatever took the pointer, named the way the map names it.
+			return [
+				`${el.textContent} is under ${over?.dataset.id ?? over?.className ?? "nothing"}`,
+			];
+		}),
+	);
+	expect(problems).toEqual([]);
+});

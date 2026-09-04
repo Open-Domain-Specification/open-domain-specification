@@ -1,6 +1,6 @@
 import { PATTERNS } from "@open-domain-specification/core";
 import { expect, test } from "@playwright/test";
-import { servePetstore, viewerAt } from "./helpers";
+import { expectProseRow, servePetstore, viewerAt, wrapOf } from "./helpers";
 
 /**
  * The relationship detail (RFC-002 card E) in both places it is reached: in
@@ -74,9 +74,10 @@ test("a Strategic position row discloses the relationship in a modal that fits a
 
 	// Wide enough to keep the crossings table out of a `DataTable`'s narrow
 	// tier: at 880px the panel broke a consumable's icon off its name and gave
-	// that row a second line.
+	// that row a second line. Counted in lines rather than as a height in
+	// pixels, which is only ever the runner's fonts (see `wrapOf`).
 	const crossing = modal.locator("#crossings tbody tr").first();
-	expect((await crossing.boundingBox())?.height ?? 0).toBeLessThan(32);
+	expect((await wrapOf(crossing)).lines).toBe(1);
 
 	// The size this card is about: a typical relationship reads in an editor
 	// tab without the body having to scroll.
@@ -188,10 +189,9 @@ test("the Strategic position description reads as prose, not one word a line", a
 	// longest word: 70px and a 177px row, at every viewport width.
 	const box = await description.boundingBox();
 	expect(box?.width ?? 0).toBeGreaterThan(200);
-	const row = await description.evaluate(
-		(el) => el.closest("tr")?.getBoundingClientRect().height ?? 0,
-	);
-	expect(row).toBeLessThan(120);
+	// And short, counted in the description's own lines rather than in pixels,
+	// which are only ever the runner's fonts (see `expectProseRow`).
+	await expectProseRow(description);
 });
 
 test("a role code on the Strategic position table discloses the pattern and this row's evidence", async ({
@@ -272,7 +272,10 @@ test("beside the site tree the Strategic position keeps its prose readable, its 
 	// description fell to a word a line: 119px wide, 111px tall.
 	const description = await first.locator(".description").boundingBox();
 	expect(description?.width ?? 0).toBeGreaterThanOrEqual(PROSE_FLOOR);
-	expect((await first.boundingBox())?.height ?? 0).toBeLessThan(80);
+
+	// And the row stays short, said in the description's own lines rather than
+	// in pixels, which are only ever the runner's fonts (see `expectProseRow`).
+	await expectProseRow(first.locator(".description"));
 
 	// Cells align to the top: the counterpart sits on the description's first
 	// line, not at the foot of the row.

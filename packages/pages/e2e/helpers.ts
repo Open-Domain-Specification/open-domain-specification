@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Locator, Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 /**
  * Everything a page can tell us went wrong: console errors, uncaught page
@@ -19,6 +19,73 @@ export function watchForProblems(page: Page): string[] {
 			problems.push(`${r.status()} ${r.url()}`);
 	});
 	return problems;
+}
+
+/**
+ * How a block of text actually wrapped, measured in the browser: the number of
+ * line boxes its content occupies (fragments that share a line counted once),
+ * the total width of ink on them, the width it had to wrap into and its own
+ * line height.
+ *
+ * Assertions about prose belong in these terms rather than in pixels. A line
+ * count and a line height are the same statement on every machine, while the
+ * height a sentence takes is whatever the runner's fonts make it: the same
+ * table row is three lines on a developer's macOS and four on CI's Linux, and
+ * neither is a defect. `ink / width` rounded up is the fewest lines the text
+ * could occupy at that width, so comparing the count against it says the text
+ * filled the width it had instead of breaking early -- which is what "reads as
+ * prose, not a word a line" means once the fonts are out of it.
+ */
+export async function wrapOf(locator: Locator): Promise<{
+	lines: number;
+	ink: number;
+	width: number;
+	lineHeight: number;
+}> {
+	return locator.evaluate((el) => {
+		const range = document.createRange();
+		range.selectNodeContents(el);
+		const rects = [...range.getClientRects()]
+			.filter((r) => r.width > 0)
+			.sort((a, b) => a.top - b.top);
+		// A line is a band: an icon, a link and a word sit at different tops and
+		// heights on the one line, so a fragment opens a new line only once it
+		// starts below everything on the line before it.
+		let bottom = Number.NEGATIVE_INFINITY;
+		let lines = 0;
+		for (const rect of rects) {
+			if (rect.top >= bottom) lines += 1;
+			bottom = Math.max(bottom, rect.bottom);
+		}
+		return {
+			lines,
+			ink: rects.reduce((total, r) => total + r.width, 0),
+			width: el.getBoundingClientRect().width,
+			lineHeight: Number.parseFloat(getComputedStyle(el).lineHeight),
+		};
+	});
+}
+
+/**
+ * A table row that reads as prose and stays short, asserted in lines rather
+ * than in pixels so it says the same thing on every machine's fonts.
+ *
+ * Two claims. The description fills the width it has instead of breaking
+ * early: at most one line more than `ink / width` needs, which is the line a
+ * word boundary can cost. And the row is those lines and nothing more, so
+ * nothing else in it is taller than the prose. Together with the column's own
+ * prose floor they are what "the description reads as prose, not a word a
+ * line, and the row stays short" comes to.
+ */
+export async function expectProseRow(description: Locator): Promise<void> {
+	const prose = await wrapOf(description);
+	expect(prose.lines).toBeLessThanOrEqual(
+		Math.ceil(prose.ink / prose.width) + 1,
+	);
+	const row = await description.evaluate(
+		(el) => el.closest("tr")?.getBoundingClientRect().height ?? 0,
+	);
+	expect(row).toBeLessThanOrEqual(prose.lines * prose.lineHeight + 1);
 }
 
 /** Shared fixtures: the example workspace, served to the viewer over an intercepted URL. */
