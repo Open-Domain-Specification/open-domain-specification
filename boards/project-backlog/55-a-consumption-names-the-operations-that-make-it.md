@@ -9,7 +9,7 @@ updatedAt: 2026-09-07T02:10:00.000Z
 
 The sixth review run (issue 6) is right that a consumption declared on a service says every operation of that service depends on the consumable, when usually one or two do. StreamLine's subscription service consumes a payment gateway; listing entitlements does not. The atlas view is unchanged, the consumer node still depends on the provider, but the evidence beneath it should be able to say which of the consumer's own operations or policies make the exchange.
 
-`ConsumptionSchema.by?: Array<{ $ref: string }>`: the consumer's own consumables (operations) or policies that make this exchange. Absent means the whole consumer, which stays the default and the common case. This is optional detail, not a call graph; nothing derives sequence diagrams from it.
+`ConsumptionSchema.by?: Array<{ $ref: string }>`: the consumer's own consumables (operations) or policies that make this exchange. Absent means the whole consumer, which stays the default and the common case. This is optional detail, not a call graph; nothing derives sequence diagrams from it. The seventh review run (issue 4) asks for the same link from the other side, which provided operation invokes which consumption, and `by` answers it.
 
 ## Checklist
 

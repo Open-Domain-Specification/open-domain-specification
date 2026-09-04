@@ -42,6 +42,14 @@ Relations are `references`, `includes` and `uses`; there is no `extends`. A clas
 
 An aggregate has its own name and description because it is more than its root: it holds the entities, value objects, invariants and consumables inside one consistency boundary. Relations target the root entity because a relation is between entities; provisions target the aggregate because a consumable belongs to the boundary, not to one entity. Naming the root after the aggregate is a convention, not a duplication, and a reader sees both on one page.
 
+### The aggregate tree is a tree of instances
+
+`aggregate-tree` says an aggregate is loaded and saved as one thing through its root, so every entity is reachable from the root and no instance has two parents. The model declares types, not instances, and the rule reads it that way (card 50, after the seventh review run): an entity that includes its own type is the composite pattern, a category of categories, and is legal; an entity type included by two parent types is legal, because each instance still has one parent; only a cycle through two or more distinct types is an error, because then no type can be named as the one that holds the other. The first wording of the rule forbade all three and was wrong about two of them.
+
+### A rule that spans aggregates is not an invariant
+
+An invariant belongs to one aggregate because an aggregate is the boundary inside which a rule can be kept true in one transaction; that is what the boundary is for. A rule across several aggregates, a customer's daily limit summed over all their accounts, cannot be kept true that way, and calling it an invariant would promise a consistency the system does not have. The model holds it where DDD holds it: as an operation of a domain service, whose description states the rule and whose consumers are the application services that must ask before acting. Invariants therefore stay on aggregates, and may constrain that aggregate's operations (decision 19) but not a service's; the application service's operation reaches the invariant through the aggregate operation it consumes.
+
 ### A context has no modules
 
 Aggregates, services, policies and schemas are flat within a context. A context with dozens of aggregates is the model saying it should be more than one context, or that its subdomain should be split; adding a folder would hide that. Reopened if a reference model has a context that genuinely needs an internal grouping the reader cannot get from ordering and description.
@@ -52,7 +60,7 @@ Aggregates, services, policies and schemas are flat within a context. A context 
 
 ### A relationship is between two contexts
 
-`partnership`, `shared-kernel` and `separate-ways` take exactly two participants. Three contexts in partnership are three pairs, each of which may differ in its comments and disposition; a single three-way edge would draw as one line and hide that. The map already composes pairs.
+`partnership`, `shared-kernel` and `separate-ways` take exactly two participants. Three contexts in partnership are three pairs, each of which may differ in its comments and disposition; a single three-way edge would draw as one line and hide that. The map already composes pairs. When many contexts share one kernel, the kernel is a context of its own and each sharer declares one relationship with it (decision 16, amendment), so the count is the number of sharers, not the number of pairs.
 
 ### The ubiquitous language lives in the bounded context, not the domain
 

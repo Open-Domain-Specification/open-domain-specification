@@ -18,3 +18,7 @@ date: 2026-09-06
 
 - Breaking `feat!`: schema, workspace model, DSL (`context.addValueObject`), JSON schema, all four reference models, `models/_shared` loses `money()`, doc generator (a Value objects section on the context page, referenced from aggregates), pages (context page gains the section; aggregate page lists the ones it uses), skill reference and interview ("which values does this context define once?").
 - A shared kernel finally means something structural, and the health report can show what crosses it.
+
+## Amendment (2026-09-07)
+
+A shared kernel among many contexts is not many pairs. The kernel is a context of its own, owning the value objects and schemas it shares, and every context that uses the shared library declares one `shared-kernel` relationship with it and borrows what it needs. Six contexts sharing a financial-primitives library are six relationships to one kernel context, not fifteen among themselves, and `shared-kernel-backed` is satisfied on each by the borrowing it names. Card 56 makes NorthBank show this instead of declaring its Money once per context.
