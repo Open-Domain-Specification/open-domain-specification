@@ -59,9 +59,11 @@ describe("Compare.harness", () => {
 	});
 
 	it("keeps each column at a 600px minimum and lets the row scroll", () => {
-		const { container } = render(Compare, { page: "context" as const });
+		const { container } = render(Compare, { page: "domain" as const });
 		expect(columns(container)).toHaveLength(2);
-		expect(source).toMatch(/\.compare\s*>\s*section\s*{[^}]*min-width:\s*600px/);
+		expect(source).toMatch(
+			/\.compare\s*>\s*section\s*{[^}]*min-width:\s*600px/,
+		);
 		expect(source).toMatch(/\.compare\s*{[^}]*overflow-x:\s*auto/);
 	});
 

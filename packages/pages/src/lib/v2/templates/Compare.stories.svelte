@@ -3,9 +3,11 @@ import { defineMeta } from "@storybook/addon-svelte-csf";
 import Compare from "./Compare.harness.svelte";
 
 /**
- * One story per template, each drawing the shipped v1 page and its v2
- * successor side by side against the same petstore element, for the morning
- * review. The v1 column is the page exactly as it ships.
+ * One story per template still on v1, each drawing the shipped page and its
+ * v2 successor side by side against the same petstore element, for the
+ * morning review. The v1 column is the page exactly as it ships, so a page
+ * that has already been migrated — the workspace, the bounded context and the
+ * aggregate — has no story here.
  */
 const { Story } = defineMeta({
 	title: "V2/Compare",
@@ -14,20 +16,12 @@ const { Story } = defineMeta({
 });
 </script>
 
-<Story name="WorkspacePage">
-	{#snippet template()}<Compare page="workspace" />{/snippet}
-</Story>
-
 <Story name="DomainPage">
 	{#snippet template()}<Compare page="domain" />{/snippet}
 </Story>
 
 <Story name="SubdomainPage">
 	{#snippet template()}<Compare page="subdomain" />{/snippet}
-</Story>
-
-<Story name="ContextPage">
-	{#snippet template()}<Compare page="context" />{/snippet}
 </Story>
 
 <Story name="RelationshipPage">

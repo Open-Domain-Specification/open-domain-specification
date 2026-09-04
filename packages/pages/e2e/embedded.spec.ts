@@ -27,7 +27,7 @@ test("announces itself and waits for a model", async ({ page }) => {
 	await page.goto("/");
 
 	await expect(page.locator("main")).toContainText("Workspace not loaded.");
-	await expect(page.locator("nav.site-nav")).toHaveCount(0);
+	await expect(page.locator("nav.tree")).toHaveCount(0);
 	await expect
 		.poll(async () => await posted(page))
 		.toContainEqual({ type: "ready" });
@@ -53,7 +53,7 @@ test("renders the model the host sends and reports where it landed", async ({
 	}, PETSTORE_SCHEMA);
 
 	await expect(page.locator("main h1")).toContainText("Orders Team");
-	await expect(page.locator("nav.site-nav")).toHaveCount(0);
+	await expect(page.locator("nav.tree")).toHaveCount(0);
 	await expect
 		.poll(async () => await posted(page))
 		.toContainEqual({ type: "navigated", ref: "#/teams/orders_team" });

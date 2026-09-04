@@ -5,7 +5,6 @@ import {
 	domainRef,
 	entityRef,
 	invariantRef,
-	PATTERNS,
 	policyRef,
 	schemaRef,
 	serviceRef,
@@ -26,15 +25,17 @@ function renderRef(ref: string) {
 	return render(Harness, { model, ref }).container;
 }
 
+/**
+ * Every case here goes through the router rather than mounting a template, so
+ * a case lands on whichever version of the page that ref currently ships: the
+ * thirteen pages still on v1, and — where the branch survives the migration
+ * unchanged, as an empty aggregate and a nameless context do — the three that
+ * now ship v2. The branches that changed wording or markup in v2 are proved
+ * against it in `src/lib/v2/templates/edge-cases.test.ts` and
+ * `src/lib/v2/templates/ContextPage.test.ts` instead. Card 36 retires what is
+ * left of the v1 half.
+ */
 describe("templates render the alternate branches the petstore fixture never hits", () => {
-	it("AggregatePage: no root entity, and an invariant with no named targets", () => {
-		const text = renderRef(
-			aggregateRef("main_context", "rootless_aggregate").$ref,
-		).textContent;
-		expect(text).toContain("no root entity");
-		expect(text).toContain("Constrains the whole aggregate.");
-	});
-
 	it("AggregatePage: no entities at all", () => {
 		const text = renderRef(
 			aggregateRef("main_context", "empty_aggregate").$ref,
@@ -219,28 +220,6 @@ describe("templates render the alternate branches the petstore fixture never hit
 	it("ContextPage: no aggregates at all", () => {
 		const text = renderRef(boundedcontextRef("thin_context").$ref).textContent;
 		expect(text).toContain("No aggregates yet.");
-	});
-
-	it("ContextPage: unused schema chip, not-modelled term, and multi-role relationship", () => {
-		const container = renderRef(boundedcontextRef("main_context").$ref);
-		const text = container.textContent;
-		expect(text).toContain("unused");
-		// The strategic position table shows role abbreviations as chip text,
-		// each one a hover card trigger that discloses what the keyword means.
-		expect(text).toContain("OHS");
-		expect(text).toContain("PL");
-		expect(text).toContain("CF");
-		expect(text).toContain("ACL");
-		const triggers = [...container.querySelectorAll("button.chip")].map(
-			(c) => c.textContent,
-		);
-		for (const pattern of [
-			"open-host-service",
-			"published-language",
-			"conformist",
-			"anti-corruption-layer",
-		] as const)
-			expect(triggers, pattern).toContain(PATTERNS[pattern].abbreviation);
 	});
 
 	it("ContextPage: copes with a context and a root entity that have no name", async () => {

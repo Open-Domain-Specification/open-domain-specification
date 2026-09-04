@@ -52,6 +52,12 @@ const {
 		line-height: 1.3;
 		margin-bottom: 4px;
 	}
+	/* The title lockup carries the same 1.5em so it reads as a title wherever
+	   it is used on its own. Inside the h1 that scale is already applied, so
+	   it takes the heading's size rather than multiplying it to 2.25em. */
+	.h1 :global(.lockup.title) {
+		font-size: 1em;
+	}
 	.h2 {
 		font-size: 1.15em;
 		line-height: 1.4;

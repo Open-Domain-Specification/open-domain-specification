@@ -64,7 +64,9 @@ const discloses = (r: ContextRelationship) =>
 const columns = $derived<Column[]>([
 	...(withEvidence ? [{ key: "toggle", label: "", width: "22px" }] : []),
 	{ key: "with", label: "With" },
-	{ key: "description", label: "Description" },
+	// Disposition, not the description, is this table's last column, so the
+	// description is the one that has to claim the slack.
+	{ key: "description", label: "Description", grow: true },
 	{ key: "type", label: "Type" },
 	{ key: "upstream", label: "Upstream" },
 	{ key: "downstream", label: "Downstream" },

@@ -2,24 +2,21 @@
 import { petstoreModel } from "../../fixtures";
 import ModelProvider from "../../ModelProvider.svelte";
 import { resolvePage } from "../../resolve";
-import V1ContextPage from "../../templates/ContextPage.svelte";
 import V1DomainPage from "../../templates/DomainPage.svelte";
 import V1HealthPage from "../../templates/HealthPage.svelte";
 import V1RelationshipPage from "../../templates/RelationshipPage.svelte";
 import V1SubdomainPage from "../../templates/SubdomainPage.svelte";
 import V1TeamPage from "../../templates/TeamPage.svelte";
-import V1WorkspacePage from "../../templates/WorkspacePage.svelte";
 import Theme from "../Theme.harness.svelte";
 import {
-	pickContext,
 	pickDomain,
 	pickRelationship,
 	pickSubdomain,
 	pickTeam,
 } from "./picks.harness";
+import Strategic, { type PageName } from "./Strategic.harness.svelte";
+import V2Tactical from "./Tactical.harness.svelte";
 import V1Tactical from "./V1Tactical.harness.svelte";
-import V2Page, { type PageName } from "./V2Page.harness.svelte";
-import V2Tactical from "./V2Tactical.harness.svelte";
 
 /**
  * The same page twice for the morning review: v1 as it ships on the left, v2
@@ -33,13 +30,21 @@ import V2Tactical from "./V2Tactical.harness.svelte";
  * A tactical page is named by the `ref` of the element it is about, picked
  * once in `petstore.harness.ts`, because the nine tactical templates are one
  * per kind of element rather than one per route.
+ *
+ * Only the pages still on v1 can be compared. The workspace, the bounded
+ * context and the aggregate ship v2 now and their v1 templates are gone, so
+ * `page` excludes them and no ref under an aggregate may be passed; card 36
+ * retires the harness with the last v1 template.
  */
+/** The strategic pages that still have a v1 column to compare against. */
+type Compared = Exclude<PageName, "workspace" | "context">;
+
 const {
-	page = "workspace",
+	page = "domain",
 	ref,
 	mode = "light",
 }: {
-	page?: PageName;
+	page?: Compared;
 	ref?: string;
 	mode?: "light" | "dark" | "hc";
 } = $props();
@@ -57,14 +62,10 @@ const target = $derived(ref ? resolvePage(ws, ref).target : undefined);
 				<main>
 					{#if ref}
 						<V1Tactical {target} />
-					{:else if page === "workspace"}
-						<V1WorkspacePage />
 					{:else if page === "domain"}
 						<V1DomainPage domain={pickDomain(ws)} />
 					{:else if page === "subdomain"}
 						<V1SubdomainPage subdomain={pickSubdomain(ws)} />
-					{:else if page === "context"}
-						<V1ContextPage context={pickContext(ws)} />
 					{:else if page === "relationship"}
 						<V1RelationshipPage relationship={pickRelationship(ws)} />
 					{:else if page === "team"}
@@ -78,7 +79,7 @@ const target = $derived(ref ? resolvePage(ws, ref).target : undefined);
 		<section>
 			<p class="label">v2</p>
 			<Theme {mode}>
-				{#if ref}<V2Tactical {target} />{:else}<V2Page {page} {ws} />{/if}
+				{#if ref}<V2Tactical {target} />{:else}<Strategic {page} {ws} />{/if}
 			</Theme>
 		</section>
 	</div>

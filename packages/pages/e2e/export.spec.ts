@@ -26,7 +26,7 @@ test("picking a workspace opens it", async ({ page }) => {
 	await page.getByRole("link", { name: "Second Workspace" }).click();
 
 	await expect(page.locator("main h1")).toContainText("Second Workspace");
-	await expect(page.locator("nav.site-nav")).toBeVisible();
+	await expect(page.locator("nav.tree")).toBeVisible();
 });
 
 test("deep links work once a workspace is picked", async ({ page }) => {

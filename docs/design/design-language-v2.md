@@ -103,6 +103,11 @@ and pattern abbreviations are set in `--vscode-editor-font-family`.
 Two sizes may share a row (a name and its id); never three. Prose paragraphs
 are capped at 80 characters (`max-width: 80ch`).
 
+Sizes in this table are absolute, not cumulative. The title lockup carries
+1.5em so it reads as a title on its own, and the h1 it usually sits in carries
+1.5em too; inside that h1 the lockup takes the heading's size rather than
+multiplying it. A page title is 1.5em, never 2.25em.
+
 ## 4. Spacing scale
 
 VS Code's rhythm is a 22px row. Everything else is a multiple of 4px.
@@ -190,7 +195,7 @@ high contrast (and at density where rows are laid out), and a `*.test.ts` at
 | `Lockup`          | `RefLink` + `IdChip` + the crumb kind eyebrow      | Kind icon in its symbol colour, name (a `Ref` when it has one), then id and detail in the secondary colour. `size="title"` for the h1. |
 | `Ref`             | `RefLink`                                          | The link. `external` adds `rel` and the trailing `link-external` codicon.                          |
 | `DefinitionList`, `Definition` | `Fact`, `.facts`, single-fact `Card`s    | Term beside value in an aligned grid at 22px rows.                                                  |
-| `DataTable`       | `table`, `Grid` of `Card`s, `ProvidesTable`, `ConsumesTable`, `AttributeTable`, `StrategicPositionTable`'s table | Native-looking rows with hover, sentence-case secondary header, optional groups and sortable columns; cells are the caller's snippet. |
+| `DataTable`       | `table`, `Grid` of `Card`s, `ProvidesTable`, `ConsumesTable`, `AttributeTable`, `StrategicPositionTable`'s table | Native-looking rows with hover, sentence-case secondary header, optional groups and sortable columns; cells are the caller's snippet. One column `grow`s — it takes the width the others do not need and is the only one that wraps; the last column grows when none is named, so a table whose prose is not its last column must name it. |
 | `Heading`         | `h1`, `h2`, `h3`, `Section` header, `.toc-title`   | The three levels; `lead` under a level 2; `count` draws the pane badge.                            |
 | `Comments`        | `CommentList`                                      | Comment codicon in a gutter, statement, citation as an external `Ref` with a kind icon.            |
 | `Disposition`     | `DispositionChip`                                  | Problems-panel treatment: `warning` codicon in the warning colour for refactor, `info` in the secondary colour for tolerated, nothing for by design. |

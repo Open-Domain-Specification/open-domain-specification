@@ -3,7 +3,10 @@ import { petstoreModel } from "../../fixtures";
 import ModelProvider from "../../ModelProvider.svelte";
 import PageLayout from "../PageLayout.svelte";
 import Theme from "../Theme.harness.svelte";
-import V2Page, { type PageName, sectionsOf } from "./V2Page.harness.svelte";
+import Strategic, {
+	type PageName,
+	sectionsOf,
+} from "./Strategic.harness.svelte";
 
 /**
  * One v2 template, in one theme, inside the page layout it ships in — the two
@@ -21,7 +24,7 @@ const model = petstoreModel();
 <Theme {mode}>
 	<ModelProvider {model}>
 		<PageLayout sections={sectionsOf(page)}>
-			<V2Page {page} ws={model.workspace} />
+			<Strategic {page} ws={model.workspace} />
 		</PageLayout>
 	</ModelProvider>
 </Theme>

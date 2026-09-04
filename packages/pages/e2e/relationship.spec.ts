@@ -20,19 +20,23 @@ test("a Strategic position row expands in place into the relationship detail", a
 	await page.goto(viewerAt(SALES_REF));
 	await expect(page.locator("main h1")).toContainText("Sales BC");
 
-	const table = page.locator("table.strategic-position");
+	const table = page.locator(".strategic-position");
 	const toggle = table.getByRole("button", {
 		name: "Evidence for Catalog BC and Sales BC",
 	});
 	await toggle.scrollIntoViewIfNeeded();
 	await expect(toggle).toHaveAttribute("aria-expanded", "false");
-	await expect(page.locator(".detail-row")).toHaveCount(0);
+	await expect(page.locator("tr.detail")).toHaveCount(0);
 
 	await toggle.click();
 
 	await expect(toggle).toHaveAttribute("aria-expanded", "true");
-	const detail = page.locator(".detail-row .relationship-detail");
-	await expect(detail.locator("h3")).toHaveText(/Catalog BC → Sales BC/);
+	const detail = page.locator("tr.detail .relationship-detail");
+	// The detail's own title; the blocks under it are h3s too, and each end
+	// is a lockup, so the arrow between them sits in its own element.
+	await expect(detail.locator("h3").first()).toHaveText(
+		/Catalog BC\s+→\s+Sales BC/,
+	);
 	await expect(detail).toContainText(
 		"Sales reads Catalog through PetSummaryClient",
 	);
@@ -40,15 +44,51 @@ test("a Strategic position row expands in place into the relationship detail", a
 	await expect(page).toHaveURL(new RegExp(`${SALES_REF}$`));
 
 	await toggle.click();
-	await expect(page.locator(".detail-row")).toHaveCount(0);
+	await expect(page.locator("tr.detail")).toHaveCount(0);
 });
 
-test("a role chip discloses what the keyword means and what this relationship says", async ({
+test("the Strategic position description reads as prose, not one word a line", async ({
+	page,
+}) => {
+	// Wide enough that the table has width to spare, which is the case this
+	// is about: who gets it. An editor tab is about this wide.
+	await page.setViewportSize({ width: 1600, height: 900 });
+	await page.goto(viewerAt(SALES_REF));
+	const description = page.locator(".strategic-position .description").first();
+	await description.scrollIntoViewIfNeeded();
+
+	// Disposition is this table's last column, so before the description asked
+	// to `grow` the spare width all went there and the description fell to its
+	// longest word: 70px and a 177px row, at every viewport width.
+	const box = await description.boundingBox();
+	expect(box?.width ?? 0).toBeGreaterThan(200);
+	const row = await description.evaluate(
+		(el) => el.closest("tr")?.getBoundingClientRect().height ?? 0,
+	);
+	expect(row).toBeLessThan(120);
+});
+
+test("a role code on the Strategic position table carries the pattern's meaning", async ({
 	page,
 }) => {
 	await page.goto(viewerAt(SALES_REF));
-	const table = page.locator("table.strategic-position");
-	const acl = table.getByRole("button", { name: "ACL" }).first();
+	const table = page.locator(".strategic-position");
+	// v2 sets a role code in the editor font with the pattern's summary as its
+	// title, rather than v1's chip: what this relationship records is one click
+	// away in the row's own detail, which the case above opens.
+	const acl = table.locator(".keyword.mono", { hasText: "ACL" }).first();
+	await acl.scrollIntoViewIfNeeded();
+	await expect(acl).toHaveAttribute(
+		"title",
+		"A translating boundary isolating a downstream model from external concepts.",
+	);
+});
+
+test("a role chip on the relationship page discloses what the keyword means and what this relationship says", async ({
+	page,
+}) => {
+	await page.goto(viewerAt(CATALOG_SALES_REF));
+	const acl = page.getByRole("button", { name: "ACL" }).first();
 	await acl.scrollIntoViewIfNeeded();
 	await expect(acl).toHaveAttribute("aria-expanded", "false");
 
