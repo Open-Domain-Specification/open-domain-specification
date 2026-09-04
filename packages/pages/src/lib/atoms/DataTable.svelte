@@ -8,11 +8,11 @@ export type Column = {
 	width?: string;
 	/**
 	 * The column that takes the width the others do not need, and the only one
-	 * whose cells wrap. Every other column sits at its content width, so a
-	 * prose column that is not the growing one collapses to its longest word.
-	 * The last column grows when no column names itself, which is right for a
-	 * table that ends in its description; a table whose prose sits mid-row
-	 * says which column it is.
+	 * whose cells wrap as prose. Every other column sits at its content width,
+	 * so a prose column that is not the growing one collapses to its longest
+	 * word. The last column grows when no column names itself, which is right
+	 * for a table that ends in its description; a table whose prose sits
+	 * mid-row says which column it is.
 	 */
 	grow?: boolean;
 };
@@ -44,6 +44,18 @@ import EmptyState from "./EmptyState.svelte";
  * comments under a health report row, the whole relationship detail under an
  * expanded strategic position row. It is the caller's snippet again, and a
  * caller that renders nothing for a row (an unexpanded one) gets no row.
+ *
+ * Width is settled in three tiers keyed to the table's own width, because
+ * the site tree and the contents column make the viewport meaningless. At
+ * full width every non-growing cell is one line and the growing column takes
+ * the rest. Under 900px, a table beside the tree or in an editor tab under
+ * about 1150px, a run of tokens in a non-growing cell breaks between tokens
+ * (a keyword, a lockup, a code and a disposition each stay whole) so the prose
+ * keeps its measure. The prose has a floor of 24ch, the narrowest measure that
+ * still reads as prose; when stacked tokens cannot give it that, the table
+ * scrolls sideways inside its own frame and the page never does, as the
+ * Extensions detail page does with a wide contributions table. Stack first,
+ * scroll last.
  */
 const {
 	columns,
@@ -107,6 +119,7 @@ const ariaSort = (key: string) =>
 {#if total === 0}
 	<EmptyState text={empty} />
 {:else}
+	<div class="frame">
 	<table class="data">
 		{#if caption}<caption>{caption}</caption>{/if}
 		<thead>
@@ -151,6 +164,7 @@ const ariaSort = (key: string) =>
 			</tbody>
 		{/each}
 	</table>
+	</div>
 {/if}
 
 <style>
@@ -158,6 +172,12 @@ const ariaSort = (key: string) =>
 	   stylesheet no longer styles bare `table`, `th` or `td`, so a table looks
 	   the same wherever it is drawn — a page, a story or a host that loads
 	   only part of the sheet. */
+	/* The frame is what the width tiers are measured against, and the one
+	   thing that scrolls sideways when the columns will not fit. */
+	.frame {
+		container-type: inline-size;
+		overflow-x: auto;
+	}
 	.data {
 		width: 100%;
 		margin: 0;
@@ -170,10 +190,14 @@ const ariaSort = (key: string) =>
 		color: var(--vscode-descriptionForeground);
 		padding: 0 8px 4px;
 	}
+	/* Top, not baseline: every cell shares the 22px line and the same strut,
+	   so first lines already sit on one baseline, and top cannot be fooled by
+	   content whose baseline is not its first line, as a wrapped inline-block's
+	   is not. A row is read from its first line. */
 	th,
 	td {
 		text-align: left;
-		vertical-align: baseline;
+		vertical-align: top;
 		padding: 0 8px;
 		border: 0;
 		font-size: inherit;
@@ -184,7 +208,17 @@ const ariaSort = (key: string) =>
 	td.grow,
 	th.grow {
 		width: 100%;
+		min-width: 24ch;
 		white-space: normal;
+	}
+	/* A narrow table: a run of tokens breaks between tokens. The tokens
+	   themselves keep their own `nowrap`, so a name never breaks beside its
+	   icon and a code never splits. This is the only place the tier is
+	   decided; what a cell holds needs no breakpoint of its own. */
+	@container (max-width: 900px) {
+		td {
+			white-space: normal;
+		}
 	}
 	thead th {
 		font-weight: 400;

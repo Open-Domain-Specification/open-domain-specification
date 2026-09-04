@@ -123,11 +123,12 @@ const columns = $derived<Column[]>([
 
 <style>
 	/* The description wraps at the width v1 settled on; the table gives the
-	   rest to the columns that do not. */
+	   rest to the columns that do not. A block, not an inline-block: an
+	   inline-block's baseline is its last line, which put every other cell of
+	   a tall row at its foot. */
 	.description {
-		display: inline-block;
+		display: block;
 		max-width: 34ch;
-		white-space: normal;
 	}
 	.toggle {
 		background: none;

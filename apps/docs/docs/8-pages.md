@@ -71,8 +71,16 @@ beside it (`OHS`, `PL`, `CF`, `ACL`) are keywords, set in the editor font becaus
 codes from a table, and each opens a hover card: the pattern's full name, its one-line
 meaning and its architectural nature, then — under a rule, and only when there is anything
 to show — that relationship's disposition and its comments with their links. It opens after
-a short pause on hover and at once on keyboard focus, a click pins it, and Escape or a click
-anywhere else closes it; only one is ever open.
+a short pause on hover and at once on keyboard focus, a click pins it, and Escape, a click
+anywhere else or scrolling the page closes it; only one is ever open. It places itself as the
+editor's hover does: under the word, shifted left to stay inside the window when the word is
+near the right edge, above the word when there is no room below.
+
+The table itself has three widths. At full width every column sits at its content and the
+description takes the rest. Beside the site tree, or in an editor tab narrower than about
+1150px, the codes in a cell stack one per line and a context's `big ball of mud` drops under
+its name, so the description keeps a readable measure. Narrower still, the table scrolls
+sideways inside its own frame rather than letting the page scroll.
 
 A relationship's own page renders that same block at page level, so what a row discloses in
 place and what the page shows are one component. Every pattern keyword there opens the same

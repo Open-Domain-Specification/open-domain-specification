@@ -213,6 +213,67 @@ describe("PatternHover", () => {
 		expect(none.container.querySelector("hr")).toBeNull();
 	});
 
+	it("closes when the page scrolls or the window resizes, but not when the card itself scrolls", async () => {
+		const { container } = show({ intent: intent({ comments: COMMENTS }) });
+		const button = screen.getByRole("button", { name: "ACL" });
+		await fireEvent.click(button);
+		// A card given less room than it needs scrolls inside itself; that is
+		// the reader using it, not leaving it.
+		await fireEvent.scroll(container.querySelector(".layer") as HTMLElement);
+		expect(container.querySelector(".hover-card")).not.toBeNull();
+
+		await fireEvent.scroll(document);
+		expect(container.querySelector(".hover-card")).toBeNull();
+
+		await fireEvent.click(button);
+		await fireEvent(window, new Event("resize"));
+		expect(container.querySelector(".hover-card")).toBeNull();
+	});
+
+	it("places the card against the word, inside the viewport, and caps it to the room it has", async () => {
+		const viewport = { width: 1000, height: 800 };
+		Object.defineProperty(document.documentElement, "clientWidth", {
+			get: () => viewport.width,
+			configurable: true,
+		});
+		Object.defineProperty(document.documentElement, "clientHeight", {
+			get: () => viewport.height,
+			configurable: true,
+		});
+		const rect = vi
+			.spyOn(HTMLElement.prototype, "getBoundingClientRect")
+			.mockImplementation(function (this: HTMLElement) {
+				const word = this.classList.contains("trigger");
+				return {
+					top: 100,
+					left: word ? 900 : 0,
+					bottom: 122,
+					right: word ? 930 : 0,
+					width: word ? 30 : 400,
+					height: word ? 22 : 200,
+				} as DOMRect;
+			});
+		const { container } = show();
+		const term = container.querySelector(".pattern-hover") as HTMLElement;
+
+		await fireEvent.focusIn(term);
+		const layer = container.querySelector(".layer") as HTMLElement;
+		// Under the word, shifted left so it ends 8px inside the right edge.
+		expect(layer.style.top).toBe("122px");
+		expect(layer.style.left).toBe(`${1000 - 8 - 400}px`);
+		expect(layer.style.maxHeight).toBe("");
+
+		// A short viewport with more room below than above: the card keeps its
+		// place under the word and takes only the room down to the margin.
+		await fireEvent.keyDown(document, { key: "Escape" });
+		viewport.height = 300;
+		await fireEvent.focusIn(term);
+		const capped = container.querySelector(".layer") as HTMLElement;
+		expect(capped.style.top).toBe("122px");
+		expect(capped.style.maxHeight).toBe(`${300 - 8 - 122}px`);
+		rect.mockRestore();
+	});
+
 	it("gives up its listeners when it is destroyed while open", async () => {
 		const { container, unmount } = show();
 		await fireEvent.focusIn(

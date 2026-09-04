@@ -30,6 +30,9 @@ describe("DataTable", () => {
 		expect(container.querySelector("tbody td.numeric")).toHaveTextContent("1");
 		expect(names(container)).toHaveLength(7);
 		expect(container.querySelector("tr#pet_registered")).toBeInTheDocument();
+		// The frame is what the width tiers measure against and the one thing
+		// that scrolls sideways when the columns will not fit.
+		expect(container.querySelector(".frame > table.data")).toBeInTheDocument();
 		expect(container.querySelector("tr.group")).toBeNull();
 		expect(container.querySelector("caption")).toBeNull();
 		expect(container.querySelector("thead button")).toBeNull();

@@ -68,7 +68,7 @@ const { Story } = defineMeta({
 <!-- The row a strategic position table draws: the type spelled out, then the
      two role codes in the editor font. -->
 {#snippet row(intent: Evidenced)}
-	<p style="padding-bottom: 240px">
+	<p>
 		<PatternHover pattern="customer-supplier" label="customer-supplier" {intent} />
 		<PatternHover pattern="open-host-service" mono {intent} />
 		<PatternHover pattern="anti-corruption-layer" mono {intent} />

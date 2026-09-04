@@ -36,11 +36,14 @@ const {
 </span>
 
 <style>
+	/* One token: a narrow table cell may break between a lockup and what
+	   follows it, never between the icon and the name or inside the name. */
 	.lockup {
 		display: inline-flex;
 		align-items: baseline;
 		gap: 6px;
 		min-width: 0;
+		white-space: nowrap;
 	}
 	.codicon {
 		font-size: 1em;

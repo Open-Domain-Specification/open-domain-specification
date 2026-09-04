@@ -11,6 +11,7 @@ import HoverCard from "../atoms/HoverCard.svelte";
 import Keyword from "../atoms/Keyword.svelte";
 import { hasEvidence } from "../evidence/derive";
 import { createHover } from "./hover.svelte";
+import { placeHover } from "./hover-placement";
 
 /**
  * One pattern keyword, and what it means, disclosed on hover (RFC-002
@@ -26,9 +27,13 @@ import { createHover } from "./hover.svelte";
  * where the hover stops being about the word and starts being about this
  * relationship, which is the split the frame's `<hr>` is for.
  *
- * The card is positioned against the trigger inside the page flow rather than
- * in a portal: a page renders in a VS Code webview, a static export and
- * Storybook, and only flow positioning behaves the same in all three.
+ * The card is placed in viewport coordinates from the trigger's position when
+ * it opens (`hover-placement.ts`), which is how the editor's hover widget
+ * places itself: no frame around the trigger, a table's scroll frame
+ * included, can clip it, and it stays a DOM child of the trigger's root so
+ * pinning, Escape and the outside-click test are unchanged. A page renders in
+ * a VS Code webview, a static export and Storybook, and each is its own
+ * viewport, so this behaves the same in all three.
  */
 const {
 	pattern,
@@ -54,8 +59,24 @@ const nature = $derived(PATTERNS[pattern]);
  */
 const heading = $derived(`${nature.name} (${nature.abbreviation})`);
 let root = $state<HTMLElement>();
+let trigger = $state<HTMLElement>();
 const hover = createHover(() => root);
 onDestroy(hover.stop);
+
+/** Places the card layer the moment it exists, against where the word is now. */
+const placeLayer = (layer: HTMLElement) => {
+	const anchor = (trigger as HTMLElement).getBoundingClientRect();
+	const { width, height } = layer.getBoundingClientRect();
+	const { clientWidth, clientHeight } = document.documentElement;
+	const at = placeHover(
+		anchor,
+		{ width, height },
+		{ width: clientWidth, height: clientHeight },
+	);
+	layer.style.top = `${at.top}px`;
+	layer.style.left = `${at.left}px`;
+	if (at.maxHeight !== undefined) layer.style.maxHeight = `${at.maxHeight}px`;
+};
 </script>
 
 <span
@@ -69,11 +90,12 @@ onDestroy(hover.stop);
 	<button
 		type="button"
 		class="trigger"
+		bind:this={trigger}
 		aria-expanded={hover.open}
 		onclick={hover.pin}
 	><Keyword text={label ?? nature.abbreviation} {mono} /></button>
 	{#if hover.open}
-		<span class="layer">
+		<span class="layer" use:placeLayer>
 			<HoverCard {heading}>
 				<p>{nature.summary}</p>
 				<!-- The trade-offs stay on the docs site; a hover is one thought.
@@ -93,10 +115,6 @@ onDestroy(hover.stop);
 </span>
 
 <style>
-	.pattern-hover {
-		position: relative;
-		display: inline-block;
-	}
 	/* The trigger exists to take focus and a click; it must leave the keyword
 	   looking exactly like the keywords beside it that have nothing to say. */
 	.trigger {
@@ -116,16 +134,23 @@ onDestroy(hover.stop);
 		outline: 1px solid var(--vscode-focusBorder);
 		outline-offset: 1px;
 	}
-	/* Under the keyword, over everything else, and never inheriting the
-	   `nowrap` a table cell sets on its content. */
+	/* Over everything else, at the viewport position `placeLayer` gives it, and
+	   never inheriting the `nowrap` a table cell sets on its content. The 4px
+	   between the word and the card is padding, not a gap, so the pointer can
+	   cross into the card without leaving the disclosure; it sits on both
+	   sides so the card can open above the word as well as under it. Wider
+	   than the viewport it narrows; taller than its room it scrolls. */
 	.layer {
-		position: absolute;
+		position: fixed;
 		z-index: 20;
-		top: calc(100% + 4px);
+		top: 0;
 		left: 0;
+		box-sizing: border-box;
 		display: block;
+		padding: 4px 0;
 		width: max-content;
-		max-width: 60ch;
+		max-width: min(60ch, calc(100vw - 16px));
+		overflow-y: auto;
 		text-align: left;
 		white-space: normal;
 		/* The keyword may sit in a heading; the card it opens is body text

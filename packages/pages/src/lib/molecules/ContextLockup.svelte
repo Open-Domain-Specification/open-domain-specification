@@ -29,18 +29,17 @@ const {
 } = $props();
 </script>
 
-<span class="context" {title}>
-	<Lockup kind="boundedcontext" name={context.name} ref={context.ref} />
-	{#if context.bigBallOfMud}
-		<Keyword text={MUD.label} tone="warn" title={MUD.title} />
-	{/if}
-</span>
+<!-- Inline, not a flex box, and no whitespace between the two: each is a
+     whole token, and whether a line may break between them is the cell's
+     decision (a narrow table lets its cells wrap between tokens, so the
+     warning word drops under the name instead of holding the column open),
+     never this component's. -->
+<span class="context" {title}><span class="name"><Lockup kind="boundedcontext" name={context.name} ref={context.ref} /></span>{#if context.bigBallOfMud}<Keyword text={MUD.label} tone="warn" title={MUD.title} />{/if}</span>
 
 <style>
-	.context {
-		display: inline-flex;
-		align-items: baseline;
-		gap: 8px;
-		min-width: 0;
+	/* The gap sits after the name, so a warning word that wraps under it
+	   starts at the cell's edge rather than 8px in. */
+	.name {
+		margin-right: 8px;
 	}
 </style>

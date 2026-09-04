@@ -2,9 +2,12 @@
  * Open/closed state for one hover disclosure.
  *
  * A hover disclosure is not a tooltip: it opens on hover after a pause, it
- * opens on keyboard focus, a click pins it open, and Escape or a click
- * anywhere else closes it. The pause matters because a table row is a line of
- * keywords — sweeping the pointer along it must open nothing.
+ * opens on keyboard focus, a click pins it open, and Escape, a click anywhere
+ * else, or the page scrolling or resizing closes it. The pause matters
+ * because a table row is a line of keywords — sweeping the pointer along it
+ * must open nothing. Scrolling closes it because the card is placed in
+ * viewport coordinates when it opens, as the editor's hover is, and the
+ * editor's hover goes when its line moves.
  *
  * Only one disclosure is open at a time, which is why the current one is
  * module state: a second opening closes the first without the two components
@@ -53,7 +56,9 @@ export function createHover(root: () => HTMLElement | undefined): Hover {
 	};
 	// Captured on pointerdown rather than click so a card closes before whatever
 	// was clicked underneath it reacts.
-	const onPointerDown = (event: Event) => {
+	// A pointer or a scroll inside the disclosure is the reader using it; the
+	// card scrolls inside itself when it was given less room than it needs.
+	const onOutside = (event: Event) => {
 		const target = event.target as Node | null;
 		if (target && root()?.contains(target)) return;
 		hover.close();
@@ -62,7 +67,12 @@ export function createHover(root: () => HTMLElement | undefined): Hover {
 	const listen = (on: boolean) => {
 		const bind = on ? document.addEventListener : document.removeEventListener;
 		bind.call(document, "keydown", onKeydown, true);
-		bind.call(document, "pointerdown", onPointerDown, true);
+		bind.call(document, "pointerdown", onOutside, true);
+		bind.call(document, "scroll", onOutside, true);
+		const bindWindow = on
+			? window.addEventListener
+			: window.removeEventListener;
+		bindWindow.call(window, "resize", hover.close);
 	};
 
 	const show = () => {

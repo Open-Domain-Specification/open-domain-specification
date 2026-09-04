@@ -47,14 +47,24 @@ cards worked from are in
 6. **Native lists, tables and links.** Rows hover with `list.hoverBackground`;
    in high contrast they hover with the dashed `contrastActiveBorder` outline.
    Table headers are secondary text in sentence case with one hairline under
-   them. Links have no underline until hover and a `focusBorder` ring.
+   them. Links have no underline until hover and a `focusBorder` ring. Cells
+   align to the top, so a row is read from its first line. A table has one
+   prose column and it never falls under 24ch: a narrow table stacks the
+   tokens in its other cells first (a keyword, a lockup, a code and a
+   disposition each stay whole) and scrolls sideways inside its own frame
+   last, as the Extensions detail page does with a wide contributions table;
+   the page never scrolls sideways and the tree never collapses for a table.
 7. **A badge only where a native surface would use one.** The one badge in
    v2 is the count in a heading, which is the pane header's item badge. As on
    the platform it is never drawn at zero: the badge means "there are N", its
    absence means none.
 8. **Disclosure in the editor's hover.** A pattern's meaning and an intent's
    evidence summary appear in the editor hover widget's frame (RFC-002
-   section 4), never in a custom popover.
+   section 4), never in a custom popover. It is placed as the editor places
+   its hover: under the word with its left edge on the word's, kept 8px
+   inside the viewport by shifting left rather than flipping sideways, above
+   the word when there is no room below and more above, scrolling inside
+   itself when neither side has room, and gone when the page scrolls.
 9. **Empty states say what would fill them.** One sentence in the secondary
    colour, and at most one action after it. A section or subsection never
    disappears because it is empty: the table of contents anchors it and the
@@ -193,15 +203,15 @@ high contrast (and at density where rows are laid out), and a `*.test.ts` at
 | Primitive         | Replaces in v1                                    | What it is                                                                                         |
 | ----------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `Keyword`         | `Chip`, `ConsumableChips`, `Dim`                   | A classifying word in the secondary colour; `mono` for codes; `warn`/`error` tone only for a diagnostic meaning; a `title` is its hover text. |
-| `Lockup`          | `RefLink` + `IdChip` + the crumb kind eyebrow      | Kind icon in its symbol colour, name (a `Ref` when it has one), then id and detail in the secondary colour. `size="title"` for the h1. |
+| `Lockup`          | `RefLink` + `IdChip` + the crumb kind eyebrow      | Kind icon in its symbol colour, name (a `Ref` when it has one), then id and detail in the secondary colour. `size="title"` for the h1. One token: it never breaks inside itself, so a narrow cell breaks after it (a context's `big ball of mud` drops under the name). |
 | `Ref`             | `RefLink`                                          | The link. `external` adds `rel` and the trailing `link-external` codicon.                          |
 | `DefinitionList`, `Definition` | `Fact`, `.facts`, single-fact `Card`s    | Term beside value in an aligned grid at 22px rows.                                                  |
-| `DataTable`       | `table`, `Grid` of `Card`s, `ProvidesTable`, `ConsumesTable`, `AttributeTable`, `StrategicPositionTable`'s table | Native-looking rows with hover, sentence-case secondary header, optional groups and sortable columns; cells are the caller's snippet. One column `grow`s — it takes the width the others do not need and is the only one that wraps; the last column grows when none is named, so a table whose prose is not its last column must name it. |
+| `DataTable`       | `table`, `Grid` of `Card`s, `ProvidesTable`, `ConsumesTable`, `AttributeTable`, `StrategicPositionTable`'s table | Native-looking rows with hover, sentence-case secondary header, optional groups and sortable columns; cells are the caller's snippet and align to the top. One column `grow`s — it takes the width the others do not need and is the only one that wraps as prose, with a floor of 24ch; the last column grows when none is named, so a table whose prose is not its last column must name it. Three widths, measured on the table's own frame because the tree and the contents column make the viewport meaningless: at full width every other cell is one line; under 900px a run of tokens in a cell breaks between tokens, never inside one; when that still cannot give the prose its floor, the frame scrolls sideways. |
 | `Heading`         | `h1`, `h2`, `h3`, `Section` header, `.toc-title`   | The three levels; `lead` under a level 2; `count` draws the pane badge.                            |
 | `Comments`        | `CommentList`                                      | Comment codicon in a gutter, statement, citation as an external `Ref` with a kind icon.            |
 | `Disposition`     | `DispositionChip`                                  | Problems-panel treatment: `warning` codicon in the warning colour for refactor, `info` in the secondary colour for tolerated, nothing for by design. |
 | `EmptyState`      | `Empty`                                            | One secondary sentence at row height, optional action.                                             |
-| `HoverCard`       | (new, RFC-002 section 4)                           | The editor hover widget's frame: a heading for the thing hovered, the body, `<hr>` between parts. First used by `molecules/PatternHover`, the pattern keyword's disclosure: the pattern's meaning above the rule, this relationship's disposition and comments below it. |
+| `HoverCard`       | (new, RFC-002 section 4)                           | The editor hover widget's frame: a heading for the thing hovered, the body, `<hr>` between parts. First used by `molecules/PatternHover`, the pattern keyword's disclosure: the pattern's meaning above the rule, this relationship's disposition and comments below it. Placement is the caller's, in viewport coordinates from the word's position when the card opens (`molecules/hover-placement.ts`), so no frame around the word can clip it. |
 
 What v2 deliberately has no primitive for: card, grid, pill, chip, badge (the
 count is a property of a heading), tag list.
