@@ -17,7 +17,7 @@ test.beforeEach(async ({ page }) => {
 	await servePetstore(page);
 });
 
-test("a Strategic position row expands in place into the relationship detail", async ({
+test("a Strategic position row discloses the relationship in the bottom sheet", async ({
 	page,
 }) => {
 	await page.goto(viewerAt(SALES_REF));
@@ -29,25 +29,74 @@ test("a Strategic position row expands in place into the relationship detail", a
 	});
 	await toggle.scrollIntoViewIfNeeded();
 	await expect(toggle).toHaveAttribute("aria-expanded", "false");
+	await expect(toggle).toHaveAttribute("aria-controls", "relationship-sheet");
+	const sheet = page.locator("#relationship-sheet");
+	await expect(sheet).toHaveCount(0);
+	// The detail is no longer a row of the table.
 	await expect(page.locator("tr.detail")).toHaveCount(0);
 
 	await toggle.click();
 
 	await expect(toggle).toHaveAttribute("aria-expanded", "true");
-	const detail = page.locator("tr.detail .relationship-detail");
-	// The detail's own title; the blocks under it are h3s too, and each end
-	// is a lockup, so the arrow between them sits in its own element.
+	// The header names the view, as the platform's panel does; the content
+	// names which relationship, with each end a lockup and the arrow between
+	// them in its own element.
+	await expect(sheet.locator("h2")).toHaveText("Relationship");
+	const detail = sheet.locator(".relationship-detail");
 	await expect(detail.locator("h3").first()).toHaveText(
 		/Catalog BC\s+→\s+Sales BC/,
 	);
 	await expect(detail).toContainText(
 		"Sales reads Catalog through PetSummaryClient",
 	);
-	// The row expands in place: the page never navigates away from Sales.
+	await expect(page.locator("tr.detail")).toHaveCount(0);
+	// A disclosure, not a navigation: the page stays on Sales.
 	await expect(page).toHaveURL(new RegExp(`${SALES_REF}$`));
 
+	// It is docked to the foot of the window, starting at the page column
+	// rather than under the site tree, and the page leaves room for it.
+	const box = await sheet.boundingBox();
+	const window = page.viewportSize() as { width: number; height: number };
+	expect(Math.round((box?.y ?? 0) + (box?.height ?? 0))).toBe(window.height);
+	expect(box?.x ?? 0).toBeGreaterThan(200);
+	expect(
+		await page.evaluate(() =>
+			Number.parseFloat(getComputedStyle(document.body).paddingBottom),
+		),
+	).toBeGreaterThan(200);
+
 	await toggle.click();
-	await expect(page.locator("tr.detail")).toHaveCount(0);
+	await expect(sheet).toHaveCount(0);
+});
+
+test("Escape closes the sheet and puts focus back on the row's toggle", async ({
+	page,
+}) => {
+	await page.goto(viewerAt(SALES_REF));
+	const toggle = page.locator(".strategic-position").getByRole("button", {
+		name: "Evidence for Catalog BC and Sales BC",
+	});
+	await toggle.scrollIntoViewIfNeeded();
+	await toggle.click();
+
+	const sheet = page.locator("#relationship-sheet");
+	// A comment, the thing a reader opens the row for, read inside the sheet.
+	await expect(sheet.locator("#comments")).toContainText(
+		"Sales reads Catalog through PetSummaryClient",
+	);
+	// Read from inside the sheet: focus moves in, and Escape still returns it.
+	await sheet.getByRole("button", { name: "Close Relationship" }).focus();
+
+	await page.keyboard.press("Escape");
+
+	await expect(sheet).toHaveCount(0);
+	await expect(toggle).toHaveAttribute("aria-expanded", "false");
+	await expect(toggle).toBeFocused();
+	expect(
+		await page.evaluate(() =>
+			Number.parseFloat(getComputedStyle(document.body).paddingBottom),
+		),
+	).toBe(0);
 });
 
 test("the Strategic position description reads as prose, not one word a line", async ({

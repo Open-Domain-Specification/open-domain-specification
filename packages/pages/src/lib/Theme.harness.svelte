@@ -38,6 +38,7 @@ const bodyClass = $derived(
 		--vscode-icon-foreground: #3b3b3b;
 		--vscode-editor-background: #ffffff;
 		--vscode-sideBar-background: #f8f8f8;
+		--vscode-panel-background: #f8f8f8;
 		--vscode-editorWidget-background: #f8f8f8;
 		--vscode-panel-border: #e5e5e5;
 		--vscode-widget-border: #e5e5e5;
@@ -70,6 +71,7 @@ const bodyClass = $derived(
 		--vscode-icon-foreground: #cccccc;
 		--vscode-editor-background: #1f1f1f;
 		--vscode-sideBar-background: #181818;
+		--vscode-panel-background: #181818;
 		--vscode-editorWidget-background: #202020;
 		--vscode-panel-border: #2b2b2b;
 		--vscode-widget-border: #313131;
@@ -102,6 +104,7 @@ const bodyClass = $derived(
 		--vscode-icon-foreground: #ffffff;
 		--vscode-editor-background: #000000;
 		--vscode-sideBar-background: #000000;
+		--vscode-panel-background: #000000;
 		--vscode-editorWidget-background: #0c141f;
 		--vscode-panel-border: #6fc3df;
 		--vscode-widget-border: #6fc3df;

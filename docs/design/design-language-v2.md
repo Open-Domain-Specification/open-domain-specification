@@ -65,6 +65,11 @@ cards worked from are in
    inside the viewport by shifting left rather than flipping sideways, above
    the word when there is no room below and more above, scrolling inside
    itself when neither side has room, and gone when the page scrolls.
+   Disclosure too big for a hover — a whole relationship, with a description,
+   a definition list, a comment list and a table of its own — goes in the
+   docked bottom sheet instead, never in a row of the table it was opened
+   from: a table inside a table row gives the reader two header rows, two
+   column rhythms and two hover treatments in one grid.
 9. **Empty states say what would fill them.** One sentence in the secondary
    colour, and at most one action after it. A section or subsection never
    disappears because it is empty: the table of contents anchors it and the
@@ -154,6 +159,7 @@ There is no card padding and no grid gap, because there are no cards.
 | Count badge            | `--vscode-badge-background`, `--vscode-badge-foreground`       | site.css                          |
 | Hover card             | `--vscode-editorHoverWidget-{background,border,foreground}`    | `editorWidget`, `widget-border`   |
 | Hover card shadow      | `--vscode-widget-shadow`                                       | `rgba(0,0,0,.16)`                 |
+| Bottom sheet ground    | `--vscode-panel-background`                                    | `--vscode-editor-background`      |
 
 Dropped from v1: `--core`, `--supporting`, `--generic` (the chart colours for
 classification), `--card`, `--radius`, `--gap`. The chart colours remain in
@@ -166,6 +172,13 @@ browser: `textLink-activeForeground`, `focusBorder`, `list-hoverBackground`,
 `widget-shadow`, `textCodeBlock-background` and the five `symbolIcon-*`
 tokens, in light and dark. The values are the ones in
 `packages/pages/src/lib/Theme.harness.svelte`.
+
+`panel-background` joined them for the bottom sheet, at the value both Modern
+themes give it — the side bar's, `#f8f8f8` light and `#181818` dark — so a
+panel docked over the page reads as a different surface from the editor it
+covers, as the platform's own does. The one variable in the pages that is not
+a theme token is `--ods-panel-inset`: the site shell sets it to the width of
+its tree so a fixed panel starts where the page column does.
 
 ## 6. Icons: kinds, codicons, symbol colours
 
@@ -211,6 +224,7 @@ high contrast (and at density where rows are laid out), and a `*.test.ts` at
 | `Comments`        | `CommentList`                                      | Comment codicon in a gutter, statement, citation as an external `Ref` with a kind icon.            |
 | `Disposition`     | `DispositionChip`                                  | Problems-panel treatment: `warning` codicon in the warning colour for refactor, `info` in the secondary colour for tolerated, nothing for by design. |
 | `EmptyState`      | `Empty`                                            | One secondary sentence at row height, optional action.                                             |
+| `BottomSheet`     | (new, card 41)                                     | VS Code's own bottom panel, for disclosure too big for a hover: a header row naming the view with a close button, one hairline under it, one border on top, the panel background, no rounded corners, no scrim and no shadow. Fixed to the foot of the window and inset to the page column (`--ods-panel-inset`, which the site shell sets to its tree's width), so the row that opened it stays on screen and it never runs under the tree, as the platform's panel never runs under the side bar. `clamp(220px, 40vh, 560px)` tall with the body scrolling, declared once in CSS and reserved on `<body>` while it is open so it hides nothing; deliberately not resizable, since a drag edge would need a keyboard equivalent and a remembered size to earn itself. A disclosure, not a dialog: the page stays live, the trigger keeps `aria-expanded`/`aria-controls`, Escape closes from anywhere and focus returns to the trigger. First used by `organisms/StrategicPositionTable` for the relationship detail. |
 | `HoverCard`       | (new, RFC-002 section 4)                           | The editor hover widget's frame: a heading for the thing hovered, the body, `<hr>` between parts. First used by `molecules/PatternHover`, the pattern keyword's disclosure: the pattern's meaning above the rule, this relationship's disposition and comments below it. Placement is the caller's, in viewport coordinates from the word's position when the card opens (`molecules/hover-placement.ts`), so no frame around the word can clip it. |
 
 What v2 deliberately has no primitive for: card, grid, pill, chip, badge (the
@@ -322,7 +336,7 @@ harness files follow their component.
 | `RelationshipDetail.svelte`     | restyle  | No outer card; heading, type keyword, disposition; roles as a definition list per side; comments; crossings table; links list. |
 | `Section.svelte`                | restyle  | `Heading` 2 with lead and count, problems inline, then children.             |
 | `Sidebar.svelte`                | restyle  | Active row uses `list.activeSelection*`; no uppercase brand title.           |
-| `StrategicPositionTable.svelte` | restyle  | Grouped `DataTable`; keywords for type and roles; `Disposition`; the expanded row stays. |
+| `StrategicPositionTable.svelte` | restyle  | Grouped `DataTable`; keywords for type and roles; `Disposition`; the disclosure moved from an expanded row to the `BottomSheet`. |
 | `Toc.svelte`                    | restyle  | Drop the uppercase title; otherwise the same left-rule list.                 |
 
 ### Templates (`packages/pages/src/lib/templates/`) and the layout
