@@ -10,7 +10,7 @@ Materialized view: { available: number, pending: number, sold: number }. An aggr
 ## Entities and Value Objects
 | Type | Name | Description | Attributes |
 | --- | --- | --- | --- |
-| Entity (Root) | **InventoryView** | Status→count map for /store/inventory | - |
+| Entity (Root) | **InventoryView** | Status→count map for /store/inventory | **status**: `'available' | 'pending' | 'sold'`, count: `int32` |
 
 
 ## Relationships

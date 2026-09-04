@@ -291,6 +291,10 @@ const documentExpiry = identityDocument.addAttribute("expiresOn", {
 	type: "date",
 });
 customer.includes(identityDocument, "verified-by", "*");
+customer.addAttribute("address", {
+	type: "Address",
+	valueobject: addressVO,
+});
 customer.uses(dateOfBirthVO, "born-on", "1");
 customer.uses(addressVO, "lives-at", "1");
 customer.uses(kycStatusVO, "has-status", "1");
@@ -340,6 +344,14 @@ consent.addAttribute("customerId", { type: "string" });
 consent.addAttribute("givenAt", { type: "date-time" });
 const withdrawnAt = consent.addAttribute("withdrawnAt", { type: "date-time" });
 const expiresAt = consent.addAttribute("expiresAt", { type: "date-time" });
+consent.addAttribute("purpose", {
+	type: "ConsentPurpose",
+	valueobject: purposeVO,
+});
+consent.addAttribute("scope", {
+	type: "ConsentScope",
+	valueobject: scopeVO,
+});
 consent.uses(purposeVO, "for", "1");
 consent.uses(scopeVO, "covers", "1");
 consent.references(customer, "given-by", "1");
@@ -602,6 +614,7 @@ const overdraftVO = accountAgg.addValueObject("OverdraftLimit", {
 	description: "How far below zero the available balance may go",
 });
 overdraftVO.addAttribute("limit", { type: "Money", valueobject: accountMoney });
+overdraftVO.uses(accountMoney, "limited-to", "1");
 const accountStatusVO = accountAgg.addValueObject("AccountStatus", {
 	description: "open, frozen or closed",
 });
@@ -640,6 +653,10 @@ account.addAttribute("status", {
 mandate.addAttribute("customerId", { type: "string", identity: true });
 mandate.addAttribute("powers", { type: "'sole' | 'joint' | 'view-only'" });
 account.includes(mandate, "operated-under", "1..*");
+account.addAttribute("overdraft", {
+	type: "OverdraftLimit",
+	valueobject: overdraftVO,
+});
 account.uses(ibanVO, "identified-by", "1");
 account.uses(accountNumberVO, "numbered", "1");
 account.uses(accountMoney, "balance", "1");
@@ -820,6 +837,7 @@ ledgerAccountVO.addAttribute("accountNumber", {
 	valueobject: ledgerAccountNumberVO,
 	description: "Set when kind is customer",
 });
+ledgerAccountVO.uses(ledgerAccountNumberVO, "numbered", "1");
 ledgerAccountVO.addAttribute("nominalCode", {
 	type: "string",
 	description: "Set when kind is nominal, e.g. LOAN-BOOK, SCHEME-SUSPENSE",
@@ -850,6 +868,10 @@ posting.addAttribute("direction", {
 	valueobject: directionVO,
 });
 entry.includes(posting, "made-of", "1..*");
+entry.addAttribute("valueDate", {
+	type: "ValueDate",
+	valueobject: valueDateVO,
+});
 entry.uses(valueDateVO, "valued-on", "1");
 posting.uses(ledgerMoney, "of", "1");
 posting.uses(directionVO, "as", "1");
@@ -1000,6 +1022,11 @@ const paymentAmount = instruction.addAttribute("amount", {
 instruction.addAttribute("status", {
 	type: "PaymentStatus",
 	valueobject: paymentStatusVO,
+});
+instruction.addAttribute("payee", { type: "Payee", valueobject: payeeVO });
+instruction.addAttribute("executionDate", {
+	type: "ExecutionDate",
+	valueobject: executionDateVO,
 });
 instruction.uses(payeeVO, "to", "1");
 instruction.uses(paymentMoney, "of", "1");
@@ -1177,6 +1204,10 @@ schemeFormatVO.addAttribute("messageType", {
 schemeMessage.addAttribute("messageId", { type: "string", identity: true });
 schemeMessage.addAttribute("schemeRef", { type: "string" });
 schemeMessage.addAttribute("direction", { type: "'outbound' | 'inbound'" });
+schemeMessage.addAttribute("format", {
+	type: "SchemeFormat",
+	valueobject: schemeFormatVO,
+});
 schemeMessage.uses(schemeFormatVO, "formatted-as", "1");
 
 const submissionSchema = schemeBC.addSchema("SchemeSubmission", {
@@ -1283,6 +1314,10 @@ alert.addAttribute("alertId", { type: "string", identity: true });
 alert.addAttribute("transactionRef", { type: "string" });
 alert.addAttribute("score", { type: "RiskScore", valueobject: riskScoreVO });
 fraudCase.includes(alert, "raised-by", "1..*");
+fraudCase.addAttribute("status", {
+	type: "CaseStatus",
+	valueobject: caseStatusVO,
+});
 fraudCase.uses(caseStatusVO, "has-status", "1");
 alert.uses(riskScoreVO, "scored", "1");
 
@@ -1641,6 +1676,12 @@ application.addAttribute("requested", {
 application.addAttribute("status", {
 	type: "'open' | 'decided' | 'withdrawn'",
 });
+application.addAttribute("term", { type: "Term", valueobject: termVO });
+application.addAttribute("decision", {
+	type: "Decision",
+	valueobject: decisionVO,
+	description: "Set once Credit Decisioning has answered",
+});
 application.uses(applicationMoney, "requests", "1");
 application.uses(termVO, "over", "1");
 application.uses(decisionVO, "decided", "0..1");
@@ -1912,6 +1953,18 @@ creditScoreVO.addAttribute("reasonCodes", { type: "string[]" });
 creditDecision.addAttribute("decisionId", { type: "string", identity: true });
 creditDecision.addAttribute("applicationId", { type: "string" });
 creditDecision.addAttribute("outcome", { type: "'approved' | 'declined'" });
+creditDecision.addAttribute("bureauReport", {
+	type: "BureauReport",
+	valueobject: bureauVO,
+});
+creditDecision.addAttribute("affordability", {
+	type: "Affordability",
+	valueobject: affordabilityVO,
+});
+creditDecision.addAttribute("score", {
+	type: "CreditScore",
+	valueobject: creditScoreVO,
+});
 creditDecision.uses(bureauVO, "based-on", "1");
 creditDecision.uses(affordabilityVO, "assessed", "1");
 creditDecision.uses(creditScoreVO, "scored", "1");
@@ -2032,6 +2085,10 @@ regReturn.addAttribute("filedAt", { type: "date-time" });
 reportLine.addAttribute("lineCode", { type: "string", identity: true });
 reportLine.addAttribute("amount", { type: "Money", valueobject: reportMoney });
 regReturn.includes(reportLine, "made-of", "1..*");
+regReturn.addAttribute("period", {
+	type: "ReportingPeriod",
+	valueobject: periodVO,
+});
 regReturn.uses(periodVO, "for-period", "1");
 reportLine.uses(reportMoney, "of", "1");
 
@@ -2124,6 +2181,11 @@ note.addAttribute("author", { type: "string" });
 note.addAttribute("text", { type: "string" });
 note.addAttribute("at", { type: "date-time" });
 request.includes(note, "annotated-by", "*");
+request.addAttribute("channel", { type: "Channel", valueobject: channelVO });
+request.addAttribute("status", {
+	type: "RequestStatus",
+	valueobject: requestStatusVO,
+});
 request.uses(channelVO, "through", "1");
 request.uses(requestStatusVO, "has-status", "1");
 // Customer lives in Customer & KYC: `customerId` above is the only thing that

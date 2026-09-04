@@ -55,7 +55,67 @@ function everythingWrong(): Workspace {
 	a.addPolicy("Backwards", { description: "" }).on(carries).then(plain);
 	// policy-complete: empty policy
 	a.addPolicy("Empty", { description: "" });
-	// context-serves-subdomain: A and B serve nothing
+	// separate-ways again, this time reached through a policy subscription
+	a.addPolicy("Listens Across", { description: "" }).on(plain).then(carries);
+	// root-identity: no root in this fixture declares an identity attribute
+	// value-object-shape: a value object with an identity, and one that includes
+	const vo = twoRoots.addValueObject("Vo", { description: "" });
+	vo.addAttribute("Id", { type: "string", identity: true });
+	vo.includes(r1, "owns-a-root");
+	// aggregate-tree: includes onto a value object, uses onto an entity, two
+	// parents, a cycle, and an entity the root cannot be walked to
+	const tree = a.addAggregate("Tree", { description: "" });
+	const treeRoot = tree.addRootEntity("TreeRoot", { description: "" });
+	const child = tree.addEntity("Child", { description: "" });
+	const twice = tree.addEntity("Twice", { description: "" });
+	tree.addEntity("Orphan", { description: "" });
+	const shape = tree.addValueObject("Shape", { description: "" });
+	treeRoot.includes(child, "owns");
+	treeRoot.includes(twice, "owns");
+	child.includes(twice, "owns too");
+	child.includes(treeRoot, "back up");
+	treeRoot.includes(shape, "includes a value object");
+	child.uses(twice, "uses an entity");
+	// invariant-in-aggregate: a rule reaching into another aggregate
+	tree.addInvariant("Stretched", { description: "" }).constrains(r1);
+	// attribute-relation-coherence: attribute without relation, relation
+	// without attribute, list against a single-valued relation, wrong type name
+	const coherence = a.addAggregate("Coherence", { description: "" });
+	const holder = coherence.addRootEntity("Holder", { description: "" });
+	const price = coherence.addValueObject("Price", { description: "" });
+	const size = coherence.addValueObject("Size", { description: "" });
+	const weight = coherence.addValueObject("Weight", { description: "" });
+	const colour = coherence.addValueObject("Colour", { description: "" });
+	holder.addAttribute("Price", { type: "Price", valueobject: price });
+	holder.uses(size, "sized", "1");
+	holder.uses(weight, "weighs", "0..1");
+	holder.addAttribute("Weights", { type: "Weight[]", valueobject: weight });
+	holder.uses(colour, "coloured", "1");
+	holder.addAttribute("Shade", { type: "string", valueobject: colour });
+	// term-in-context: A's glossary points at B's aggregate
+	a.addTerm("Foreign Word", { definition: "", embodiedBy: other });
+	// relationship-roles-backed and mud-needs-acl: a legacy context whose
+	// declared roles nothing carries, consumed as a conformist
+	const c = ws.addBoundedContext("C", { description: "", bigBallOfMud: true });
+	const legacy = c.addService("Legacy", {
+		description: "",
+		type: "application",
+	});
+	const legacyFeed = legacy.provides("Legacy Feed", {
+		type: "event",
+		description: "",
+	});
+	a.addService("Consumer", { description: "", type: "application" }).consumes(
+		legacyFeed,
+		{
+			pattern: "conformist",
+		},
+	);
+	c.upstreamOf(a, {
+		upstreamRoles: ["open-host-service"],
+		downstreamRoles: ["anti-corruption-layer"],
+	});
+	// context-serves-subdomain: A, B and C serve nothing
 	return ws;
 }
 

@@ -702,6 +702,12 @@ shipmentRoot.addAttribute("status", {
 	type: "ShipmentStatus",
 	valueobject: shipmentStatusVO,
 });
+// Every `uses` relation below is the same statement as one of these
+// attributes; the attribute says what the shipment holds, the relation draws it.
+shipmentRoot.addAttribute("trackingNumber", {
+	type: "TrackingNumber",
+	valueobject: trackingNumberVO,
+});
 deliveryAttempt.addAttribute("attemptedAt", { type: "date-time" });
 deliveryAttempt.addAttribute("succeeded", { type: "boolean" });
 
@@ -807,8 +813,18 @@ const inventoryAgg = inventoryBC.addAggregate("InventoryProjection", {
 		"Materialized view: { available: number, pending: number, sold: number }. An aggregate because the counts are rebuilt as one unit",
 });
 
-inventoryAgg.addRootEntity("InventoryView", {
+const inventoryView = inventoryAgg.addRootEntity("InventoryView", {
 	description: "Status→count map for /store/inventory",
+});
+// A projection still needs to say which row it is: one view per status.
+inventoryView.addAttribute("status", {
+	type: "'available' | 'pending' | 'sold'",
+	description: "The status this row counts; the identity of the view",
+	identity: true,
+});
+inventoryView.addAttribute("count", {
+	type: "int32",
+	description: "How many pets are in that status",
 });
 
 const inventoryUpdated = inventoryAgg.provides("InventoryUpdated", {

@@ -1170,10 +1170,7 @@
         },
         "vendor": {
           "name": "Vendor",
-          "definition": "Not a seller. A wholesale supplier to first-party retail, handled by Vendor Purchasing; the two accounts were never unified and will not be",
-          "embodiedBy": {
-            "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)"
-          }
+          "definition": "Not a seller. A wholesale supplier to first-party retail, handled by Vendor Purchasing; the two accounts were never unified and will not be. Seller Onboarding has no vendor of its own, which is the point: the word is a false friend and nothing here embodies it"
         }
       },
       "schemas": {
@@ -1383,7 +1380,8 @@
               "attributes": {
                 "product_id": {
                   "name": "productId",
-                  "type": "string"
+                  "type": "string",
+                  "identity": true
                 }
               },
               "relations": []
@@ -1789,7 +1787,16 @@
                   }
                 }
               },
-              "relations": []
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "priced-at",
+                  "cardinality": "1"
+                }
+              ]
             },
             "shipment": {
               "name": "Shipment",
@@ -1858,6 +1865,14 @@
                   "relation": "includes",
                   "label": "for-lines",
                   "cardinality": "1..*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "refunds",
+                  "cardinality": "1"
                 }
               ]
             },
@@ -2373,6 +2388,14 @@
                   "relation": "includes",
                   "label": "refunded-by",
                   "cardinality": "*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/payments/aggregates/payment/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "of-amount",
+                  "cardinality": "1"
                 }
               ]
             },
@@ -2394,7 +2417,16 @@
                   }
                 }
               },
-              "relations": []
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/payments/aggregates/payment/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "of-amount",
+                  "cardinality": "1"
+                }
+              ]
             }
           },
           "valueobjects": {
@@ -2610,6 +2642,14 @@
                   "type": "RiskScore",
                   "valueobject": {
                     "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/risk_score"
+                  }
+                },
+                "signals": {
+                  "name": "signals",
+                  "type": "Signal[]",
+                  "description": "What the score is made of; at least one, or the score is unexplained",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/signal"
                   }
                 }
               },
@@ -2896,6 +2936,14 @@
                 "on_hand": {
                   "name": "onHand",
                   "type": "int"
+                },
+                "bins": {
+                  "name": "bins",
+                  "type": "Bin[]",
+                  "description": "Where in the site the stock physically sits",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/valueobjects/bin"
+                  }
                 }
               },
               "relations": [
@@ -3415,6 +3463,14 @@
                 "sequence": {
                   "name": "sequence",
                   "type": "int"
+                },
+                "proof_of_delivery": {
+                  "name": "proofOfDelivery",
+                  "type": "ProofOfDelivery",
+                  "description": "Captured at the door; absent until the stop is completed",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/valueobjects/proof_of_delivery"
+                  }
                 }
               },
               "relations": [
@@ -3742,7 +3798,16 @@
                   }
                 }
               },
-              "relations": []
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "capped-at",
+                  "cardinality": "1"
+                }
+              ]
             }
           },
           "invariants": {
@@ -3973,6 +4038,14 @@
                 "order_id": {
                   "name": "orderId",
                   "type": "string"
+                },
+                "resolution": {
+                  "name": "resolution",
+                  "type": "Resolution",
+                  "description": "Absent while the case is open",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/customer_service/aggregates/case/valueobjects/resolution"
+                  }
                 }
               },
               "relations": [
@@ -4374,13 +4447,9 @@
       "downstream": {
         "$ref": "#/boundedcontexts/order_management"
       },
-      "upstreamRoles": [
-        "open-host-service"
-      ],
-      "downstreamRoles": [
-        "conformist"
-      ],
-      "description": "Order lines carry the offer id they were bought from; Orders never reads Offers back, so the coupling is identity only"
+      "upstreamRoles": [],
+      "downstreamRoles": [],
+      "description": "Order lines carry the offer id they were bought from; Orders never reads Offers back, so the coupling is identity only and neither side plays a role in an exchange that does not happen"
     },
     {
       "type": "upstream-downstream",

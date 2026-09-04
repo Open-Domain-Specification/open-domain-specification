@@ -139,7 +139,7 @@ describe("ODSRelationMap", () => {
 	const f = makeRichTestWs();
 
 	it("collects all relations reachable from the workspace", () => {
-		expect(ODSRelationGraph.fromWorkspace(f.ws).relations).toHaveLength(3);
+		expect(ODSRelationGraph.fromWorkspace(f.ws).relations).toHaveLength(4);
 	});
 
 	it("carries cardinality on relation edges", () => {
@@ -164,8 +164,8 @@ describe("ODSRelationMap", () => {
 		expect(target?.namespace[target.namespace.length - 1]?.id).toBe(
 			f.orderAgg.ref,
 		);
-		// basket -> order, then order -> line -> money are followed
-		expect(map.edges.size).toBe(3);
+		// basket -> order, then order -> line, order -> money and line -> money
+		expect(map.edges.size).toBe(4);
 	});
 });
 

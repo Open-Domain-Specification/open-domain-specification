@@ -203,6 +203,13 @@
                   "valueobject": {
                     "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/kyc_status"
                   }
+                },
+                "address": {
+                  "name": "address",
+                  "type": "Address",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/valueobjects/address"
+                  }
                 }
               },
               "relations": [
@@ -412,6 +419,20 @@
                 "expires_at": {
                   "name": "expiresAt",
                   "type": "date-time"
+                },
+                "purpose": {
+                  "name": "purpose",
+                  "type": "ConsentPurpose",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/valueobjects/consent_purpose"
+                  }
+                },
+                "scope": {
+                  "name": "scope",
+                  "type": "ConsentScope",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/valueobjects/consent_scope"
+                  }
                 }
               },
               "relations": [
@@ -995,6 +1016,13 @@
                   "valueobject": {
                     "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/account_status"
                   }
+                },
+                "overdraft": {
+                  "name": "overdraft",
+                  "type": "OverdraftLimit",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/overdraft_limit"
+                  }
                 }
               },
               "relations": [
@@ -1120,7 +1148,16 @@
                   }
                 }
               },
-              "relations": []
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "limited-to",
+                  "cardinality": "1"
+                }
+              ]
             },
             "account_status": {
               "name": "AccountStatus",
@@ -1448,6 +1485,13 @@
                   "name": "reversalOf",
                   "type": "string",
                   "description": "The entry this one reverses, if any"
+                },
+                "value_date": {
+                  "name": "valueDate",
+                  "type": "ValueDate",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/value_date"
+                  }
                 }
               },
               "relations": [
@@ -1582,7 +1626,16 @@
                   "description": "Set when kind is nominal, e.g. LOAN-BOOK, SCHEME-SUSPENSE"
                 }
               },
-              "relations": []
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/valueobjects/account_number"
+                  },
+                  "relation": "uses",
+                  "label": "numbered",
+                  "cardinality": "1"
+                }
+              ]
             },
             "posting_direction": {
               "name": "PostingDirection",
@@ -1919,6 +1972,20 @@
                   "type": "PaymentStatus",
                   "valueobject": {
                     "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payment_status"
+                  }
+                },
+                "payee": {
+                  "name": "payee",
+                  "type": "Payee",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/payee"
+                  }
+                },
+                "execution_date": {
+                  "name": "executionDate",
+                  "type": "ExecutionDate",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/valueobjects/execution_date"
                   }
                 }
               },
@@ -2341,6 +2408,13 @@
                 "direction": {
                   "name": "direction",
                   "type": "'outbound' | 'inbound'"
+                },
+                "format": {
+                  "name": "format",
+                  "type": "SchemeFormat",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/valueobjects/scheme_format"
+                  }
                 }
               },
               "relations": [
@@ -2928,6 +3002,21 @@
                 "status": {
                   "name": "status",
                   "type": "'open' | 'decided' | 'withdrawn'"
+                },
+                "term": {
+                  "name": "term",
+                  "type": "Term",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan_application/valueobjects/term"
+                  }
+                },
+                "decision": {
+                  "name": "decision",
+                  "type": "Decision",
+                  "description": "Set once Credit Decisioning has answered",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan_application/valueobjects/decision"
+                  }
                 }
               },
               "relations": [
@@ -3548,6 +3637,27 @@
                 "outcome": {
                   "name": "outcome",
                   "type": "'approved' | 'declined'"
+                },
+                "bureau_report": {
+                  "name": "bureauReport",
+                  "type": "BureauReport",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/bureau_report"
+                  }
+                },
+                "affordability": {
+                  "name": "affordability",
+                  "type": "Affordability",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/affordability"
+                  }
+                },
+                "score": {
+                  "name": "score",
+                  "type": "CreditScore",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/valueobjects/credit_score"
+                  }
                 }
               },
               "relations": [
@@ -3812,6 +3922,13 @@
                 "account_id": {
                   "name": "accountId",
                   "type": "string"
+                },
+                "status": {
+                  "name": "status",
+                  "type": "CaseStatus",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/valueobjects/case_status"
+                  }
                 }
               },
               "relations": [
@@ -4143,6 +4260,13 @@
                 "filed_at": {
                   "name": "filedAt",
                   "type": "date-time"
+                },
+                "period": {
+                  "name": "period",
+                  "type": "ReportingPeriod",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/valueobjects/reporting_period"
+                  }
                 }
               },
               "relations": [
@@ -4401,6 +4525,20 @@
                 "authenticated": {
                   "name": "authenticated",
                   "type": "boolean"
+                },
+                "channel": {
+                  "name": "channel",
+                  "type": "Channel",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request/valueobjects/channel"
+                  }
+                },
+                "status": {
+                  "name": "status",
+                  "type": "RequestStatus",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/branch_&_contact_centre/aggregates/service_request/valueobjects/request_status"
+                  }
                 }
               },
               "relations": [

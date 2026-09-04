@@ -171,6 +171,13 @@
                   "name": "phase",
                   "type": "'development' | 'shooting' | 'post' | 'delivered'",
                   "description": "Where the production is; shooting cannot begin in development without an approved budget"
+                },
+                "budget": {
+                  "name": "budget",
+                  "type": "Budget",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/studio_production/aggregates/production/valueobjects/budget"
+                  }
                 }
               },
               "relations": [
@@ -493,6 +500,13 @@
                 "exclusive": {
                   "name": "exclusive",
                   "type": "boolean"
+                },
+                "territory": {
+                  "name": "territory",
+                  "type": "Territory",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/valueobjects/territory"
+                  }
                 }
               },
               "relations": [
@@ -748,6 +762,21 @@
                   "name": "playableRenditionSet",
                   "type": "string",
                   "description": "For a film, the encoding job whose renditions it plays; a series plays through its episodes"
+                },
+                "artwork": {
+                  "name": "artwork",
+                  "type": "Artwork",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/artwork"
+                  }
+                },
+                "availability": {
+                  "name": "availability",
+                  "type": "Availability[]",
+                  "description": "One entry per territory and window the title is playable in",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/availability"
+                  }
                 }
               },
               "relations": [
@@ -833,6 +862,14 @@
                   "description": "An episode may be rated above its series",
                   "valueobject": {
                     "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/maturity_rating"
+                  }
+                },
+                "artwork": {
+                  "name": "artwork",
+                  "type": "Artwork",
+                  "description": "An episode may carry its own still; absent means the series artwork",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/valueobjects/artwork"
                   }
                 }
               },
@@ -1206,6 +1243,13 @@
                 "status": {
                   "name": "status",
                   "type": "'queued' | 'running' | 'completed' | 'failed'"
+                },
+                "ladder": {
+                  "name": "ladder",
+                  "type": "Ladder",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/valueobjects/ladder"
+                  }
                 }
               },
               "relations": [
@@ -1531,6 +1575,13 @@
                   "valueobject": {
                     "$ref": "#/boundedcontexts/playback/aggregates/playback_session/valueobjects/bookmark"
                   }
+                },
+                "manifest": {
+                  "name": "manifest",
+                  "type": "StreamManifest",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/playback/aggregates/playback_session/valueobjects/stream_manifest"
+                  }
                 }
               },
               "relations": [
@@ -1788,6 +1839,13 @@
                   "name": "region",
                   "type": "string",
                   "description": "A cache region; not a licensing territory"
+                },
+                "capacity": {
+                  "name": "capacity",
+                  "type": "Capacity",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/edge_delivery/aggregates/edge_appliance/valueobjects/capacity"
+                  }
                 }
               },
               "relations": [
@@ -1985,6 +2043,13 @@
                 "model": {
                   "name": "model",
                   "type": "string"
+                },
+                "capability": {
+                  "name": "capability",
+                  "type": "Capability",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/devices/aggregates/device/valueobjects/capability"
+                  }
                 }
               },
               "relations": [
@@ -2170,6 +2235,14 @@
                   "name": "profileId",
                   "type": "string",
                   "identity": true
+                },
+                "affinities": {
+                  "name": "affinities",
+                  "type": "Affinity[]",
+                  "description": "What the profile leans to, strongest first",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/recommendations/aggregates/taste_profile/valueobjects/affinity"
+                  }
                 }
               },
               "relations": [
@@ -2483,6 +2556,21 @@
                 "primary": {
                   "name": "primary",
                   "type": "boolean"
+                },
+                "maturity": {
+                  "name": "maturity",
+                  "type": "MaturitySetting",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/valueobjects/maturity_setting"
+                  }
+                },
+                "pin": {
+                  "name": "pin",
+                  "type": "ProfilePin",
+                  "description": "Absent on an unlocked profile",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/valueobjects/profile_pin"
+                  }
                 }
               },
               "relations": [
@@ -2831,6 +2919,13 @@
                 "paid": {
                   "name": "paid",
                   "type": "boolean"
+                },
+                "period": {
+                  "name": "period",
+                  "type": "BillingPeriod",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/billing_period"
+                  }
                 }
               },
               "relations": [
@@ -2878,7 +2973,16 @@
                   "type": "boolean"
                 }
               },
-              "relations": []
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "priced-at",
+                  "cardinality": "1"
+                }
+              ]
             },
             "money": {
               "name": "Money",
@@ -3264,6 +3368,20 @@
                 "duration_seconds": {
                   "name": "durationSeconds",
                   "type": "int"
+                },
+                "advertiser": {
+                  "name": "advertiser",
+                  "type": "Advertiser",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/valueobjects/advertiser"
+                  }
+                },
+                "frequency_cap": {
+                  "name": "frequencyCap",
+                  "type": "FrequencyCap",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/valueobjects/frequency_cap"
+                  }
                 }
               },
               "relations": [
