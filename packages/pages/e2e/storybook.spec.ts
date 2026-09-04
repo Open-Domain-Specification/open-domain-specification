@@ -18,19 +18,24 @@ const STORYBOOK_DIR = join(__dirname, "../storybook-static");
 const INDEX = join(STORYBOOK_DIR, "index.json");
 const BASE = "http://localhost:4176";
 
-/** The surfaces this card designed; the rest of the sidebar is other cards' work. */
-const EVIDENCE_TITLES = [
+/**
+ * The designed surfaces: the evidence designs of card 19 and the v2 design
+ * language primitives of card 28. The rest of the sidebar is other cards'
+ * work.
+ */
+const DESIGNED_TITLES = [
 	"Atoms/DispositionChip",
 	"Organisms/StrategicPositionTable",
 	"Organisms/RelationshipDetail",
 	"Organisms/HealthReport",
 	"Molecules/PatternHoverCard",
 	"Evidence/",
+	"V2/",
 ];
 
 type Entry = { id: string; title: string; name: string; type: string };
 
-function evidenceStories(): Entry[] {
+function designedStories(): Entry[] {
 	if (!existsSync(INDEX)) return [];
 	const index = JSON.parse(readFileSync(INDEX, "utf8")) as {
 		entries: Record<string, Entry>;
@@ -38,21 +43,21 @@ function evidenceStories(): Entry[] {
 	return Object.values(index.entries).filter(
 		(e) =>
 			e.type === "story" &&
-			EVIDENCE_TITLES.some((prefix) => e.title.startsWith(prefix)),
+			DESIGNED_TITLES.some((prefix) => e.title.startsWith(prefix)),
 	);
 }
 
-const stories = evidenceStories();
+const stories = designedStories();
 
-test.describe("built Storybook renders every evidence design", () => {
+test.describe("built Storybook renders every designed surface", () => {
 	test.skip(
 		stories.length === 0,
 		"no storybook-static build; run `npm run build-storybook` first",
 	);
 
-	test("the index lists every surface", () => {
+	test("the index lists every designed surface", () => {
 		const titles = new Set(stories.map((s) => s.title));
-		for (const prefix of EVIDENCE_TITLES)
+		for (const prefix of DESIGNED_TITLES)
 			expect(
 				[...titles].some((t) => t.startsWith(prefix)),
 				`no story found under ${prefix}`,
