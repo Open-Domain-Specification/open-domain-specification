@@ -34,3 +34,7 @@ A shared kernel is co-owned. Where one team owns the library and others merely u
 ## Note (2026-09-08)
 
 Evans's shared kernel is a bounded subset of model and code two teams own together, not only primitives. The model holds it the same way in both sizes: two contexts share value objects and schemas directly, and anything with identity and behaviour that two teams own together, a jointly maintained Product with its unit conversions, is an aggregate of a kernel context that both consume through its operations. Nothing is duplicated and the agreement is the kernel context's own model. A shared entity outside a kernel context is not expressible, on purpose: an entity has one home.
+
+## Amendment (2026-09-08, second)
+
+A kernel context's aggregate is shared by being consumed: `shared-kernel-backed` counts a sharer's consumption of the kernel's operations as well as its borrowed value objects and schemas (card 90). The kernel's `team` is the team that keeps it, which for a co-owned kernel is the joint team the model names; the model does not list the co-owners, and that is a named cost.

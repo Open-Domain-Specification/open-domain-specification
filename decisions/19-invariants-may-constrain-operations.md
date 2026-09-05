@@ -16,3 +16,7 @@ date: 2026-09-06
 ## Consequences
 
 - The `invariant-in-aggregate` rule (card 50 kept the existing id rather than add a second rule) accepts consumables of the invariant's aggregate; the invariant page lists them under "Guarded by"; the consumable page lists its invariants; the doc generator follows; petstore's `SoldNotReopen` names `ChangePetStatus`.
+
+## Amendment (2026-09-08)
+
+An invariant may also name an operation of an application service of its own context when that operation is the guard: a funds check at initiation, an entitlement check at playback start. Decision 17 put the public operation on the service, so the guard often lives there and the invariant must be able to point at it (card 90). The five precondition invariants in the reference models that carried their guard in prose now name it.

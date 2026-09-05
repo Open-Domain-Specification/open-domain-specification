@@ -77,3 +77,7 @@ The record said no rule reads `by` as causality. The architect review showed the
 ## Amendment (2026-09-08, second)
 
 The Consequences said petstore's `MarkPetSoldForOrder` consumption was left plain so both readings appear in one model. Card 77 gave it its `by`, because the reaction chain needed it; the plain reading now appears on `GetPetSummary` and `DeliverOrder` instead, and card 78 gives the latter its `by` too. A front that calls out declares no `raises` of its own for what it reaches (`raises-restated`); the pages say what it reaches beneath its Raises list.
+
+## Amendment (2026-09-08, third)
+
+`by` is the causal link, and a model without it has a hollow reaction walk: twenty-five of forty-two cross-context operation consumptions in the reference models named no caller and NorthBank's instruction lifecycle dead-ended at every outbound step. Where the consumer provides more than one operation the caller is ambiguous, and `consumption-by-required` (warning) asks for it (card 90). A consumer with one operation is its own `by`.

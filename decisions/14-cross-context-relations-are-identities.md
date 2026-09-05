@@ -48,3 +48,7 @@ stereotype, and `relationship-declared` asks for the relationship behind it.
 ## Amendment (2026-09-08)
 
 An identity may also name an external context (decision 28): a card scheme's authorisation id or a payment provider's customer id is an id in a system whose entities are not ours to state, and the attribute says which system. The map draws the dependency to that context (card 81).
+
+## Amendment (2026-09-08, second)
+
+An identity held by an entity is the context's dependency on another context's identity scheme and asks for a relationship. An identity echoed in a payload, a correlation id on an event or a request, is not: the payload carries it for its reader and the context holding the schema owes the other nothing. `relationship-declared` reads entity and value object attributes only (card 90); the sixteen empty-role relationships the models added for echoed ids were the rule's invention and come out.

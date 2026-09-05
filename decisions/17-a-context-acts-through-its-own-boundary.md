@@ -28,3 +28,7 @@ Two shortcuts in the model let a context reach into another. A policy's `then` m
 ## Amendment (2026-09-07)
 
 The record covered inbound only: an aggregate may not be consumed from outside, but nothing stopped an aggregate consuming another context's operation, and two reference models did so while two routed the same call through a service. The outbound half is the same principle: an aggregate is a consistency boundary, not a client. It consumes only its own context's consumables; a foreign operation or event is consumed by an application service or a policy, which hands the aggregate what it needs. `aggregate-consumes-inside` (card 73). A policy holds no consumption of its own, so where a policy is what reacts, the consumption sits on the context's application service and names the policy in its `by` (decision 21).
+
+## Amendment (2026-09-08)
+
+This record said a policy's `on` is a consumption and nothing made it one: three reactors subscribed to another context's event with no consumption anywhere, so neither map drew the dependency and the anti-corruption rule never saw it. `subscription-consumed` (card 90) requires the consumption, on the service or aggregate that owns the reaction, with `by` naming the reactor. A named cost stays: every outbound call is an internal operation on the application service that consumes the foreign one, even for a conformist with no translation to name. The two operations are the boundary drawn twice, once on each side, and the model keeps it because the flow map and the reaction walk read the boundary there.

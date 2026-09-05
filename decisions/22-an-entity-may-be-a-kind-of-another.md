@@ -28,3 +28,7 @@ Decision 15 refused subtyping: a hierarchy usually hides a missing concept, and 
 ## Amendment (2026-09-07)
 
 The context above guessed NorthBank's accounts as the reference case. Its discovery notes say the platform holds current accounts only, so card 59 took the kinds the interviews actually state: a ledger account is a customer's or a nominal (NorthBank), and a title is a film or a series (StreamLine). Two mechanics settled at implementation: a kind is reached wherever its parent is, so `aggregate-tree`'s reachability walk follows specialisation while its containment checks do not; and a cross-aggregate `references` may target a kind of the other aggregate's root, never a kind of a non-root entity.
+
+## Amendment (2026-09-08, second)
+
+The context claimed that splitting kinds into separate aggregates "says they are consistent separately, which is false". That was overclaimed: an insurer's motor, home and life policies, or a hospital's inpatient and outpatient encounters, share an identity scheme and attributes and are consistent separately, and for them three aggregates is the truth. Specialisation stays inside one aggregate and one context on purpose, because a parent in another aggregate would make one boundary's attribute set depend on another's; the cost is that a product line whose kinds are separate aggregates repeats the shared attributes, which the model accepts and names here.

@@ -29,3 +29,7 @@ An external context has no entities, so an identity attribute names the context 
 ## Note (2026-09-08, second)
 
 An internal schedule is not a special trigger: a scheduler calls an operation, `RunNightlyBatch`, and that operation raises the event, which is how the reference models write their batch jobs. Telemetry from a fleet of devices comes from an external context, because the devices are outside the software, and that is a true statement rather than a workaround; the ingestion service that receives it is the context's own application service. A reviewer calling either a synthetic proxy is asking the model to say that events appear from nowhere, which it will not.
+
+## Amendment (2026-09-08, second)
+
+A legacy system the enterprise owns but cannot read is not external, and this record's own argument, that stating a system's insides is invention, applied to it too: three reference models invented a nightly batch service so an event had a raiser. A `bigBallOfMud` context is exempt from `event-unraised`, `aggregate-root` and `root-identity` as an external one is (card 90); it may state what it emits without stating how. An external context states no rules of its own: `external-is-boundary` refuses value object invariants on it too.
