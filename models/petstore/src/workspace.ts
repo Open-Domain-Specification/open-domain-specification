@@ -457,37 +457,36 @@ const getPetSummaryOp = petApp.provides("GetPetSummary", {
 
 // The context's public boundary for the two transitions Sales drives: the
 // aggregate's operations stay inside, and the open-host operations that front
-// them belong to the application service (decision 17).
-const reservePetForOrder = petApp
-	.provides("ReservePetForOrder", {
-		description:
-			"POST /pet/{petId}/reserve; holds the pet for an approved order by running the aggregate's ReservePet",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: petIdSchema,
-		rejects: [petUnavailableSchema],
-		disposition: "refactor",
-		comments: [
-			{
-				text: "Reservation is a synchronous call into Catalog; it should become an order-placed subscription so Sales stops blocking on Catalog.",
-				link: {
-					kind: "adr",
-					url: "https://github.com/example/petstore/blob/main/docs/adr/017-reserve-asynchronously.md",
-					label: "ADR-017 Reserve asynchronously",
-				},
+// them belong to the application service (decision 17). Neither front raises
+// anything of its own: PetReserved and PetSold are the aggregate's facts, and
+// the `by` below carries them out through the chain, so restating them here
+// would only invite drift (`raises-restated`).
+const reservePetForOrder = petApp.provides("ReservePetForOrder", {
+	description:
+		"POST /pet/{petId}/reserve; holds the pet for an approved order by running the aggregate's ReservePet",
+	type: "operation",
+	pattern: "open-host-service",
+	schema: petIdSchema,
+	rejects: [petUnavailableSchema],
+	disposition: "refactor",
+	comments: [
+		{
+			text: "Reservation is a synchronous call into Catalog; it should become an order-placed subscription so Sales stops blocking on Catalog.",
+			link: {
+				kind: "adr",
+				url: "https://github.com/example/petstore/blob/main/docs/adr/017-reserve-asynchronously.md",
+				label: "ADR-017 Reserve asynchronously",
 			},
-		],
-	})
-	.raises(petReserved);
-const markPetSoldForOrder = petApp
-	.provides("MarkPetSoldForOrder", {
-		description:
-			"POST /pet/{petId}/sold; records the sale by running the aggregate's MarkPetSold",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: petIdSchema,
-	})
-	.raises(petSold);
+		},
+	],
+});
+const markPetSoldForOrder = petApp.provides("MarkPetSoldForOrder", {
+	description:
+		"POST /pet/{petId}/sold; records the sale by running the aggregate's MarkPetSold",
+	type: "operation",
+	pattern: "open-host-service",
+	schema: petIdSchema,
+});
 // A consumption inside one context needs no pattern: there is no boundary to
 // protect between the service and the aggregate it fronts. `by` names which
 // of the service's operations runs which transition (decision 21), and that
@@ -738,10 +737,6 @@ orderApp.consumes(getPetSummaryOp, {
 		},
 	],
 });
-// The same ACL calls the two catalogue transitions Sales is responsible for,
-// through the open host PetApp offers rather than the Pet aggregate itself.
-orderApp.consumes(markPetSoldForOrder, { pattern: "anti-corruption-layer" });
-
 // A process, like a policy, names operations of its own context (decisions 17
 // and 23), so the two catalogue transitions Sales drives get a local operation
 // each: the one that calls out through the ACL above. What crosses the boundary is the
@@ -761,10 +756,17 @@ const markPetSoldForDelivered = orderApp.provides("MarkPetSold", {
 	schema: orderIdSchema,
 });
 // Placing, reading or deleting an order never calls Catalog; one operation
-// does, and naming it keeps the dependency where it really is.
+// does each of these, and naming it keeps the dependency where it really is.
+// The same ACL makes both calls, through the open host PetApp offers rather
+// than the Pet aggregate itself, and because `by` is what carries the chain
+// across the boundary (decision 21's amendment) both are named.
 orderApp.consumes(reservePetForOrder, {
 	pattern: "anti-corruption-layer",
 	by: [reservePetForApproved],
+});
+orderApp.consumes(markPetSoldForOrder, {
+	pattern: "anti-corruption-layer",
+	by: [markPetSoldForDelivered],
 });
 
 // One order, from placed to delivered, is a process and not three policies: it
@@ -959,7 +961,10 @@ const reportDelivery = shipmentApp.provides("ReportDelivery", {
 	internal: true,
 	schema: shipmentDeliveredSchema,
 });
-shipmentApp.consumes(confirmDelivery, {});
+// ReportDelivery is the one operation of ShipmentApp that calls out, so it
+// names itself in `by` and the chain carries from RecordDeliveryAttempt's
+// ShipmentDelivered through the policy into Sales (decision 21).
+shipmentApp.consumes(confirmDelivery, { by: [reportDelivery] });
 // The other half of the partnership, declared here because it needs
 // ShipmentDelivered above. ConfirmDelivery is the command that moves the order
 // to delivered; this is Sales reading the delivery facts — which shipment, and

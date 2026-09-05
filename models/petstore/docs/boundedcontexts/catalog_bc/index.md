@@ -91,7 +91,7 @@ Open-host service for /pet endpoints
 | --- | --- | --- | --- | --- | --- |
 | [OrderApp](../sales_bc/services/order_app/index.md) | - | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
 | [OrderApp](../sales_bc/services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
-| [OrderApp](../sales_bc/services/order_app/index.md) | - | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | MarkPetSold | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
 | [PetApp](services/pet_app/index.md) | ReservePetForOrder | - | Pet | ReservePet | - |
 | [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetRegistered | published-language |
 | [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetStatusChanged | published-language |

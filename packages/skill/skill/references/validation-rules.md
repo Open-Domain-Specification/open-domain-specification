@@ -356,6 +356,14 @@
 
 **Usual fix:** Raise an event of this context and let the other context react to it, or, if the point is to act over there, consume that context's operation and let it raise its own event.
 
+## `raises-restated` (warning)
+
+**Requires:** An operation does not restate under raises an event an operation it calls already raises.
+
+**Why it matters:** An event is raised where it happens, once. When an open-host operation fronts an aggregate's transition and names itself in the consumption's by, the chain already carries that transition's events across to whoever is reading: by is the causal link the flow map draws and reaction-cycle walks. Repeating the event on the front says two things happen instead of one, and the copy is free to drift from what the aggregate actually raises, so the front ends up describing behaviour the aggregate no longer has.
+
+**Usual fix:** Drop the event from the front's raises and leave it on the operation that really raises it; the chain carries it. If the front genuinely produces its own fact as well, that fact is a different event with its own name.
+
 ## `event-unraised` (warning)
 
 **Requires:** Every event of a context we model is raised by one of that context's own operations.

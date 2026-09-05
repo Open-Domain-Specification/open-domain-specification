@@ -5,7 +5,7 @@ import {
 	type StrategicIntent,
 } from "./evidence";
 import { attributeOwnersIn, identityCrossings } from "./identity-crossings";
-import { ReactionChain, type Reactor } from "./reaction-walk";
+import { ReactionChain, type Reactor, reachedEvents } from "./reaction-walk";
 import type { UpstreamRole } from "./schema";
 import {
 	Aggregate,
@@ -2079,6 +2079,58 @@ const raisesInContext: Rule = (workspace) => {
 };
 
 /**
+ * A front does not restate what it calls raises.
+ *
+ * An open-host operation that runs an aggregate's transition, and names it in
+ * the consumption's `by`, already reaches that transition's events: `by` is
+ * the causal link the flow map draws and `reaction-cycle` walks (decision 21's
+ * amendment), so the chain carries the fact from where it happens. Repeating
+ * the event under the front's own `raises` says instead that both raise it,
+ * and the copy is free to drift from what the aggregate actually raises. An
+ * event is raised where it happens, once.
+ *
+ * Only what the front reaches is reported: an event a front raises itself and
+ * nothing it calls raises is its own fact and is left alone.
+ */
+const raisesRestated: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const bc of modelledContexts(workspace)) {
+		for (const provider of [...bc.aggregates.values(), ...bc.services.values()])
+			for (const operation of provider.consumables.values()) {
+				if (operation.type !== "operation") continue;
+				const reached = reachedEvents(operation);
+				for (const event of operation.raisedEvents) {
+					if (!reached.includes(event)) continue;
+					diagnostics.push({
+						severity: "warning",
+						rule: "raises-restated",
+						message: `"${operation.name}" raises "${event.name}", which "${raisersAmong(operation, event).join('", "')}" already raises through the consumption it makes; drop it, the chain carries it`,
+						ref: operation.ref,
+					});
+				}
+			}
+	}
+	return diagnostics;
+};
+
+/**
+ * The operations `operation` calls that reach `event`, named so the warning
+ * says where the fact really happens rather than only that it is a copy.
+ */
+const raisersAmong = (operation: Consumable, event: Consumable): string[] =>
+	operation.provider.consumptions
+		.filter(
+			(c) => c.consumable.type === "operation" && c.by.includes(operation),
+		)
+		.map((c) => c.consumable)
+		.filter(
+			(called) =>
+				called.raisedEvents.includes(event) ||
+				reachedEvents(called).includes(event),
+		)
+		.map((called) => called.name);
+
+/**
  * Something in a context raises each of its events.
  *
  * An event is a fact that happened inside a boundary, and the model says what
@@ -2701,6 +2753,15 @@ const RULES: CataloguedRule[] = [
 		why: "A context publishes its own facts. An event is something that happened inside one boundary, named in that boundary's language, and only the context it happened in is in a position to say so. Raising another context's event claims both that this operation can make a fact true over there and that the neighbour's published event means whatever this one needs — and since the flow map and reaction-cycle read a consumption's by as the causal link across a boundary, a foreign event under raises would fake that link and draw a chain that reaches through the wall.",
 		fix: "Raise an event of this context and let the other context react to it, or, if the point is to act over there, consume that context's operation and let it raise its own event.",
 		check: raisesInContext,
+	},
+	{
+		rule: "raises-restated",
+		severities: ["warning"],
+		summary:
+			"An operation does not restate under raises an event an operation it calls already raises.",
+		why: "An event is raised where it happens, once. When an open-host operation fronts an aggregate's transition and names itself in the consumption's by, the chain already carries that transition's events across to whoever is reading: by is the causal link the flow map draws and reaction-cycle walks. Repeating the event on the front says two things happen instead of one, and the copy is free to drift from what the aggregate actually raises, so the front ends up describing behaviour the aggregate no longer has.",
+		fix: "Drop the event from the front's raises and leave it on the operation that really raises it; the chain carries it. If the front genuinely produces its own fact as well, that fact is a different event with its own name.",
+		check: raisesRestated,
 	},
 	{
 		rule: "event-unraised",

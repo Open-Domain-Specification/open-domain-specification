@@ -81,13 +81,13 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 ## Consumptions
 | Consumer | Made By | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- | --- |
-| [ShipmentApp](services/shipment_app/index.md) | - | - | OrderApp | ConfirmDelivery | open-host-service |
+| [ShipmentApp](services/shipment_app/index.md) | ReportDelivery | - | OrderApp | ConfirmDelivery | open-host-service |
 | [OrderApp](../sales_bc/services/order_app/index.md) | - | - | Order | DeliverOrder | - |
 | [OrderApp](../sales_bc/services/order_app/index.md) | - | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
 | [PetApp](../catalog_bc/services/pet_app/index.md) | ReservePetForOrder | - | Pet | ReservePet | - |
 | [PetApp](../catalog_bc/services/pet_app/index.md) | MarkPetSoldForOrder | - | Pet | MarkPetSold | - |
-| [OrderApp](../sales_bc/services/order_app/index.md) | - | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
 | [OrderApp](../sales_bc/services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | MarkPetSold | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
 | [OrderApp](../sales_bc/services/order_app/index.md) | - | - | Shipment | ShipmentDelivered | published-language |
 | [ShipmentApp](services/shipment_app/index.md) | Plan dispatch on approval | conformist | Order | OrderApproved | published-language |
 

@@ -479,12 +479,35 @@ describe("toDoc", () => {
 		expect(section("ReservePetForOrder")).toContain(
 			"- **Made by**: ReservePet",
 		);
-		// The pair beside it is the whole service, so the line is left off.
-		expect(section("MarkPetSoldForOrder")).not.toContain("**Made by**");
+		// Its pair says the same, because `by` is what carries the chain across
+		// the boundary and both catalogue transitions are one operation's work.
+		expect(section("MarkPetSoldForOrder")).toContain(
+			"- **Made by**: MarkPetSold",
+		);
+		// The read beside them is the whole service, so the line is left off.
+		expect(section("GetPetSummary")).not.toContain("**Made by**");
 		// The context page reads the same rows as a table.
 		const contextDoc = docs["boundedcontexts/sales_bc/index.md"];
 		expect(contextDoc).toContain("| Consumer | Made By |");
 		expect(contextDoc).toContain("| ReservePet |");
+	});
+
+	it("says what a front reaches, since it raises nothing of its own", async () => {
+		const docs = await toDoc(petstore);
+		const petApp = docs["boundedcontexts/catalog_bc/services/pet_app/index.md"];
+		const provides = petApp.split("## Provides")[1].split("## Consumes")[0];
+
+		// The front declares no raises, so its Raises cell is empty and the
+		// sentence beneath the table is what tells a reader the fact still
+		// happens (card 77).
+		expect(provides).toContain(
+			"- **ReservePetForOrder** also reaches PetReserved through the operations it calls, raised where they happen rather than restated here.",
+		);
+		expect(provides).toContain(
+			"- **MarkPetSoldForOrder** also reaches PetSold through the operations it calls, raised where they happen rather than restated here.",
+		);
+		// An operation that calls nothing says nothing.
+		expect(provides).not.toContain("- **GetPetById** also reaches");
 	});
 
 	it("prints nothing beneath a Provides table whose consumables carry no comments", async () => {

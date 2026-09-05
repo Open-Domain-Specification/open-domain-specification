@@ -2376,6 +2376,107 @@ describe("raises-in-context", () => {
 	});
 });
 
+describe("raises-restated", () => {
+	/**
+	 * One context whose application service fronts an aggregate operation: the
+	 * shape decision 17 requires, and the one a front can restate.
+	 */
+	function front() {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Catalog", { description: "" });
+		const agg = bc.addAggregate("Pet", { description: "" });
+		agg.addRootEntity("Pet", { description: "" }).addAttribute("Id", {
+			type: "string",
+			identity: true,
+		});
+		const app = bc.addService("Pet App", {
+			description: "",
+			type: "application",
+		});
+		const reserved = agg.provides("Pet Reserved", {
+			description: "",
+			type: "event",
+		});
+		const reserve = agg
+			.provides("Reserve Pet", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(reserved);
+		const reserveForOrder = app.provides("Reserve Pet For Order", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		return { ws, agg, app, reserved, reserve, reserveForOrder };
+	}
+
+	const restated = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "raises-restated")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("flags a front that restates the event the operation it calls raises", () => {
+		const { ws, app, reserve, reserved, reserveForOrder } = front();
+		reserveForOrder.raises(reserved);
+		app.consumes(reserve, { by: [reserveForOrder] });
+		expect(restated(ws)).toEqual([
+			[
+				"warning",
+				'"Reserve Pet For Order" raises "Pet Reserved", which "Reserve Pet" already raises through the consumption it makes; drop it, the chain carries it',
+				reserveForOrder.ref,
+			],
+		]);
+	});
+
+	it("says nothing once the front drops it and lets the chain carry it", () => {
+		const { ws, app, reserve, reserveForOrder } = front();
+		app.consumes(reserve, { by: [reserveForOrder] });
+		expect(restated(ws)).toEqual([]);
+	});
+
+	it("leaves a fact the front produces itself alone", () => {
+		const { ws, app, reserve, reserveForOrder } = front();
+		const audited = app.provides("Reservation Audited", {
+			description: "",
+			type: "event",
+		});
+		reserveForOrder.raises(audited);
+		app.consumes(reserve, { by: [reserveForOrder] });
+		expect(restated(ws)).toEqual([]);
+	});
+
+	it("says nothing when the consumption does not name the front in by", () => {
+		// Without `by` the model never claims this operation is what calls out,
+		// so there is no chain to carry the fact and no restatement to drop.
+		const { ws, app, reserve, reserved, reserveForOrder } = front();
+		reserveForOrder.raises(reserved);
+		app.consumes(reserve, {});
+		expect(restated(ws)).toEqual([]);
+	});
+
+	it("follows a chain of fronts to the operation that really raises it", () => {
+		const { ws, app, reserve, reserved, reserveForOrder } = front();
+		const edge = app.provides("Reserve Pet Edge", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		edge.raises(reserved);
+		app.consumes(reserve, { by: [reserveForOrder] });
+		app.consumes(reserveForOrder, { by: [edge] });
+		expect(restated(ws)).toEqual([
+			[
+				"warning",
+				'"Reserve Pet Edge" raises "Pet Reserved", which "Reserve Pet For Order" already raises through the consumption it makes; drop it, the chain carries it',
+				edge.ref,
+			],
+		]);
+	});
+});
+
 describe("aggregate-not-public and domain-service-internal", () => {
 	/**
 	 * One context with an aggregate and a domain service, and a second context

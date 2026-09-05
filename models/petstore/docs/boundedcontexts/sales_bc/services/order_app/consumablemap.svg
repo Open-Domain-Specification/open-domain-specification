@@ -123,7 +123,7 @@
 <title>#/boundedcontexts/sales_bc/services/order_app&#45;&gt;#/boundedcontexts/catalog_bc/services/pet_app</title>
 <path fill="none" stroke="black" d="M202.46,-453.85C235.14,-446.37 275.33,-433.11 305,-410 335.5,-386.25 358.24,-348.45 372.66,-318.88"/>
 <polygon fill="black" stroke="black" points="375.66,-320.71 376.76,-310.17 369.33,-317.73 375.66,-320.71"/>
-<text xml:space="preserve" text-anchor="middle" x="362.96" y="-401" font-family="sans-serif" font-size="10.00">MarkPetSoldForOrder</text>
+<text xml:space="preserve" text-anchor="middle" x="359.06" y="-401" font-family="sans-serif" font-size="10.00">ReservePetForOrder</text>
 <g id="a_edge6&#45;headlabel"><a xlink:title="open&#45;host&#45;service">
 <text xml:space="preserve" text-anchor="middle" x="377.41" y="-305.8" font-family="sans-serif" font-size="10.00">OHS</text>
 </a>
@@ -136,15 +136,15 @@
 <!-- #/boundedcontexts/sales_bc/services/order_app&#45;&gt;#/boundedcontexts/catalog_bc/services/pet_app -->
 <g id="edge7" class="edge">
 <title>#/boundedcontexts/sales_bc/services/order_app&#45;&gt;#/boundedcontexts/catalog_bc/services/pet_app</title>
-<path fill="none" stroke="black" d="M202.45,-460.36C275.28,-455.66 394.7,-443.02 422,-410 443.66,-383.81 431.95,-345.39 417.12,-316.22"/>
-<polygon fill="black" stroke="black" points="420.33,-314.81 412.51,-307.66 414.17,-318.13 420.33,-314.81"/>
-<text xml:space="preserve" text-anchor="middle" x="469.02" y="-401" font-family="sans-serif" font-size="10.00">ReservePetForOrder</text>
+<path fill="none" stroke="black" d="M202.63,-459.97C273.54,-454.9 387.78,-441.9 414,-410 435.05,-384.4 426.36,-346.66 414.07,-317.58"/>
+<polygon fill="black" stroke="black" points="417.36,-316.36 410.05,-308.68 410.98,-319.24 417.36,-316.36"/>
+<text xml:space="preserve" text-anchor="middle" x="464.9" y="-401" font-family="sans-serif" font-size="10.00">MarkPetSoldForOrder</text>
 <g id="a_edge7&#45;headlabel"><a xlink:title="open&#45;host&#45;service">
-<text xml:space="preserve" text-anchor="middle" x="411.79" y="-303.33" font-family="sans-serif" font-size="10.00">OHS</text>
+<text xml:space="preserve" text-anchor="middle" x="409.43" y="-304.3" font-family="sans-serif" font-size="10.00">OHS</text>
 </a>
 </g>
 <g id="a_edge7&#45;taillabel"><a xlink:title="anti&#45;corruption&#45;layer">
-<text xml:space="preserve" text-anchor="middle" x="202.45" y="-457.36" font-family="sans-serif" font-size="10.00">ACL</text>
+<text xml:space="preserve" text-anchor="middle" x="202.63" y="-456.97" font-family="sans-serif" font-size="10.00">ACL</text>
 </a>
 </g>
 </g>

@@ -24,6 +24,7 @@ export const sectionsFor = (c: Consumable) => {
 </script>
 
 <script lang="ts">
+import { reachedEvents } from "@open-domain-specification/core";
 import { problemsUnder, useModel } from "../model";
 import { consumablesOf, policiesOf, processesOf } from "../elements";
 import Comments from "../atoms/Comments.svelte";
@@ -56,6 +57,17 @@ const bc = $derived(provider.boundedcontext);
 const isEvent = $derived(c.type === "event");
 const raisedBy = $derived(
 	[...consumablesOf(ws)].filter((o) => o.raisedEvents.includes(c)),
+);
+/**
+ * The events this operation reaches through the operations it calls, minus
+ * anything it raises itself. A front that runs an aggregate's transition
+ * declares no `raises` of its own, so without this line its Raises section
+ * would read as though nothing happens (card 77).
+ */
+const reached = $derived(
+	isEvent
+		? []
+		: reachedEvents(c).filter((e) => !c.raisedEvents.includes(e)),
 );
 const policies = $derived(
 	[...policiesOf(ws)].filter((p) =>
@@ -195,8 +207,11 @@ const processColumns: Column[] = [
 	<Section id="raises" title="Raises" lead="Events produced when the operation is accepted." count={c.raisedEvents.length}>
 		{#if c.raisedEvents.length}
 			<RefList items={c.raisedEvents} kind="event" block />
-		{:else}
+		{:else if !reached.length}
 			<EmptyState text="Raises nothing. Its effect is invisible to the rest of the system." />
+		{/if}
+		{#if reached.length}
+			<p class="reached">Through the operations it calls, it also reaches <RefList items={reached} kind="event" />, raised where they happen rather than restated here.</p>
 		{/if}
 	</Section>
 {/if}
@@ -309,5 +324,14 @@ const processColumns: Column[] = [
 		padding: 0 8px;
 		max-width: 80ch;
 		line-height: 1.5;
+	}
+	/* A sentence, not a new mark: what the chain reaches reads as prose under
+	   the list of what this operation declares (card 77). */
+	.reached {
+		margin: 4px 0 0;
+		padding: 0 8px;
+		max-width: 80ch;
+		line-height: 1.5;
+		color: var(--vscode-descriptionForeground);
 	}
 </style>
