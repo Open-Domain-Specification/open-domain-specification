@@ -288,7 +288,7 @@ Three diagnostics, each a finding the client asked to keep visible:
 - `schema-context` on Playback's `PlaybackStarted`: the event carries the catalogue's
   `TitleRef` schema instead of one of Playback's own. It was quicker to reuse; it ties the
   player's contract to the catalogue's.
-- `internal-consumable` on Recommendations' consumption of `BookmarkUpdated`: the resume
+- `internal-consumable` on `RecommendationsAPI`'s consumption of `BookmarkUpdated`: the resume
   point update is internal to the player and the dependency was never agreed.
 
 The partnership between Playback and Devices used to raise `partnership-backed` as a fourth

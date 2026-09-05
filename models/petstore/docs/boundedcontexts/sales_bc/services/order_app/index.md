@@ -16,6 +16,7 @@ Open-host service for /store/order endpoints
 | ReservePet | operation | yes | - | Ask Catalog to hold the ordered pet, through the ACL; Sales' own step in the order lifecycle | [OrderId](../../index.md#schemas) | - | - | - | - |
 | MarkPetSold | operation | yes | - | Tell Catalog the ordered pet has gone to its owner, through the ACL | [OrderId](../../index.md#schemas) | - | - | - | - |
 
+- **ConfirmDelivery** also reaches OrderDelivered through the operations it calls, raised where they happen rather than restated here.
 - **ReservePet** also reaches PetReserved through the operations it calls, raised where they happen rather than restated here.
 - **MarkPetSold** also reaches PetSold through the operations it calls, raised where they happen rather than restated here.
 
@@ -24,6 +25,7 @@ Open-host service for /store/order endpoints
 ### DeliverOrder 
 Mark an approved order as delivered; run by OrderApp when Fulfilment reports the shipment arrived
 - **Provider**: [Order](../../aggregates/order/index.md)
+- **Made by**: ConfirmDelivery
 
 ### GetPetSummary [anti-corruption-layer]
 GET /pets/{id}/summary; asked with a PetId, answers with a PetSummary, so Sales can check availability without coupling to the full Pet

@@ -134,8 +134,11 @@ Every cross-link is an object \`{ "$ref": "<path>" }\`. Paths are JSON pointers 
 | Glossary term | \`#/boundedcontexts/<bc>/glossary/<term>\` |
 | Schema | \`#/boundedcontexts/<bc>/schemas/<schema>\` |
 | Consumption | \`<consumer path>/consumes/<consumable path, with ~ for />\` |
+| Relationship | \`#/relationships/<source>~<type>~<target>\` |
 
 A consumption has no id of its own, so its path is derived from the pair it joins: \`#/boundedcontexts/sales/services/order_app/consumes/boundedcontexts~catalog~services~pet_app~provides~get_pet\` is Order App's consumption of Pet App's Get Pet. It is never the position in \`consumes[]\`, so reordering the array changes no ref, and it is computed rather than stored, so nothing writes it in a file: it is what a diagnostic about a consumption points at.
+
+A relationship has no id of its own either: its path is the two contexts it joins and the type that joins them, so \`#/relationships/catalog_bc~customer-supplier~sales_bc\` is the customer-supplier relationship from Catalog to Sales. It too is computed rather than stored, and it is what a diagnostic about a relationship points at.
 
 A bounded context path never embeds the domain or subdomain, so moving a context between subdomains breaks no refs. A ref that points at nothing makes the whole file fail to load.
 `;

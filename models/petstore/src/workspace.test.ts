@@ -1,4 +1,4 @@
-import { Workspace } from "@open-domain-specification/core";
+import { ODSContextMap, Workspace } from "@open-domain-specification/core";
 import { assertDocSite } from "@open-domain-specification/model-tools";
 import { describe, expect, it } from "vitest";
 import { workspace } from "./workspace";
@@ -275,6 +275,27 @@ describe("Swagger Petstore Example Workspace", () => {
 			"references",
 			"uses",
 		]);
+	});
+
+	// The fulfilment subdomain holds only Fulfilment, but its consumption walk
+	// follows Sales out to Catalog, so both ends of the declared
+	// Catalog → Sales relationship are on the page's map and it has to be drawn
+	// as the workspace declares it (card 78).
+	it("draws a declared relationship as declared on a scope that only reaches it", () => {
+		const fulfilment = workspace
+			.getDomainByRefOrThrow("#/domains/petstore_commerce")
+			.subdomains.get("fulfilment");
+		if (!fulfilment) throw new Error("the Fulfilment subdomain is missing");
+		const map = ODSContextMap.fromSubdomain(fulfilment);
+		const catalogToSales = [...map.edges.values()].filter(
+			(e) =>
+				e.source.id === "#/boundedcontexts/catalog_bc" &&
+				e.target.id === "#/boundedcontexts/sales_bc",
+		);
+		expect(catalogToSales).toHaveLength(1);
+		expect(catalogToSales[0].implied).toBe(false);
+		expect(catalogToSales[0].type).toBe("customer-supplier");
+		expect([...map.edges.values()].some((e) => e.implied)).toBe(false);
 	});
 
 	it("validates clean: the demonstration reference has no diagnostics", () => {

@@ -1076,11 +1076,15 @@ function relationshipJoins(
  * stand to each other.
  *
  * Decision 03 made relationships explicit and decision 08 promised this rule.
- * A crossing is a consumption of another context's consumable or, since
- * decision 14, an identity naming another context's entity — the two ways the
- * model records that one context depends on another. Either way the context
- * map still draws an implied edge, so nothing disappears; what is missing is
- * the answer to the question the edge raises, which is on what terms.
+ * A crossing is a consumption of another context's consumable, a policy or a
+ * process reacting to another context's event, or — since decision 14 — an
+ * identity naming another context's entity: the three ways the model records
+ * that one context depends on another. A subscription counts for the same
+ * reason `separate-ways` and `partnership-backed` count one; the coupling is
+ * real whether it is written as a consumption or reached through a policy.
+ * Either way the context map still draws an implied edge, so nothing
+ * disappears; what is missing is the answer to the question the edge raises,
+ * which is on what terms.
  *
  * One diagnostic per undeclared pair and direction, not per crossing: one
  * relationship is what would clear them all, so one warning is what a reader
@@ -1132,6 +1136,25 @@ const relationshipDeclared: Rule = (workspace) => {
 			`"${crossing.from.name}" holds "${crossing.attribute.name}", ${what}, but no relationship says how "${crossing.to.name}" and "${crossing.from.name}" stand to each other`,
 			crossing.attribute.ref,
 		);
+	}
+	// A policy or a process reacting to another context's event is the same
+	// dependency as a consumption — `separate-ways` and `partnership-backed`
+	// both already count it — so it wants a relationship for the same reason.
+	// Last, because it is the crossing a reader is least likely to have in mind
+	// and a pair joined by something more concrete is better named by that.
+	for (const bc of workspace.boundedcontexts.values()) {
+		for (const reactor of reactorsOf(bc)) {
+			for (const event of subscribedEvents(reactor)) {
+				const upstream = event.provider.boundedcontext;
+				if (upstream === bc) continue;
+				note(
+					upstream,
+					bc,
+					`${reactorLabel(reactor)} "${reactor.name}" in "${bc.name}" reacts to "${event.name}" from "${upstream.name}", but no relationship says how "${upstream.name}" and "${bc.name}" stand to each other`,
+					reactor.ref,
+				);
+			}
+		}
 	}
 	return [...missing.values()];
 };
@@ -1655,6 +1678,37 @@ const internalConsumable: Rule = (workspace) => {
 				}
 			}
 		}
+	}
+	return diagnostics;
+};
+
+/**
+ * One consumer takes one consumable once.
+ *
+ * A consumption has no id of its own: its ref is the consumer and the
+ * consumable it joins (card 62). Declare the same pair twice and the two
+ * consumptions share a ref, so the second is unreachable — its pattern, its
+ * `by`, its comments and its disposition are written where nothing can link
+ * to them — and every surface keyed by that ref has two rows claiming one key,
+ * which is how card 73 met it: a Svelte `each_key_duplicate` crash on the
+ * pages render rather than a diagnostic telling the author what was wrong.
+ * An error, because the model has lost information the moment it is written.
+ */
+const consumptionOnce: Rule = (workspace) => {
+	const seen = new Map<string, Consumption>();
+	const diagnostics: Diagnostic[] = [];
+	for (const consumption of consumptionsOf(workspace)) {
+		const first = seen.get(consumption.ref);
+		if (!first) {
+			seen.set(consumption.ref, consumption);
+			continue;
+		}
+		diagnostics.push({
+			severity: "error",
+			rule: "consumption-once",
+			message: `"${consumption.consumer.name}" consumes "${consumption.consumable.name}" from "${consumption.consumable.provider.name}" more than once; the two share one ref, so only the first can ever be reached`,
+			ref: consumption.ref,
+		});
 	}
 	return diagnostics;
 };
@@ -2546,8 +2600,8 @@ const RULES: CataloguedRule[] = [
 		rule: "relationship-declared",
 		severities: ["warning"],
 		summary:
-			"Two contexts joined by a crossing — a consumption of the other's consumable, or an identity naming the other's entity — declare a relationship in that direction.",
-		why: "Decision 03 made the relationship the place where the terms of an integration are written: who is upstream, what the provider commits to, whether the consumer translates. A crossing with no relationship still draws on the context map, as a dashed implied edge, but that edge only says a dependency exists; the relationship is what says on what terms, and it is the thing a team can argue about, comment on and change. An identity counts because since decision 14 it is the only structural record that one context's model depends on another's, even when nothing is consumed.",
+			"Two contexts joined by a crossing — a consumption of the other's consumable, a policy or process reacting to the other's event, or an identity naming the other's entity — declare a relationship in that direction.",
+		why: "Decision 03 made the relationship the place where the terms of an integration are written: who is upstream, what the provider commits to, whether the consumer translates. A crossing with no relationship still draws on the context map, as a dashed implied edge, but that edge only says a dependency exists; the relationship is what says on what terms, and it is the thing a team can argue about, comment on and change. A subscription counts because reacting to a neighbour's event is an integration by another route, the same one separate ways forbids and a partnership is backed by. An identity counts because since decision 14 it is the only structural record that one context's model depends on another's, even when nothing is consumed.",
 		fix: "Declare the relationship the two contexts really have, naming both of them: upstream-downstream or customer-supplier from the provider to the consumer, or a partnership or shared kernel if they meet as equals — either of those counts whichever way round the crossing runs. Separate ways does not count: it says the two do not integrate, so it contradicts the crossing instead of explaining it. If neither context should depend on the other, remove the crossing rather than declaring a relationship for it.",
 		check: relationshipDeclared,
 	},
@@ -2640,6 +2694,14 @@ const RULES: CataloguedRule[] = [
 		why: "internal means the consumable stays inside its context; anything outside depending on it makes that promise false.",
 		fix: "Drop internal and give the consumable an upstream role, or stop the other context from using it.",
 		check: internalConsumable,
+	},
+	{
+		rule: "consumption-once",
+		severities: ["error"],
+		summary: "A consumer consumes a given consumable at most once.",
+		why: "A consumption has no id of its own — its ref is the consumer and the consumable it joins — so a second consumption of the same consumable carries the same ref as the first. Only one of them can ever be reached: the other's pattern, by, comments and disposition are written where no reader, link or tool will land, and any surface keyed by the ref has two rows claiming one key, which is a render crash rather than a model a reader can follow.",
+		fix: "Merge the two into one consumption, keeping every operation, policy and process named in by, and the pattern, comments and disposition either of them carried. If the two really are different exchanges, they are different consumables or different consumers.",
+		check: consumptionOnce,
 	},
 	{
 		rule: "consumption-by-resolves",

@@ -126,14 +126,44 @@ export class ODSContextMap {
 		}
 	}
 
+	/**
+	 * The contexts the map will draw: the ones in scope, plus the ones the
+	 * consumption and identity walks reach out to. A scope narrower than the
+	 * workspace — a subdomain page — still follows traffic past its own
+	 * contexts, so those further contexts are on the map and the pairs among
+	 * them are drawn.
+	 */
+	private static reached(
+		contexts: BoundedContext[],
+		consumptions: Consumption[],
+	): Set<BoundedContext> {
+		const reached = new Set(contexts);
+		for (const consumption of consumptions) {
+			reached.add(consumption.consumable.provider.boundedcontext);
+			reached.add(consumption.consumer.boundedcontext);
+		}
+		for (const crossing of identityCrossings(contexts)) {
+			reached.add(crossing.from);
+			reached.add(crossing.to);
+		}
+		return reached;
+	}
+
 	private static fromScope(scope: ScopeManager, consumptions: Consumption[]) {
 		const contexts = scope.scopes.filter(
 			(it): it is BoundedContext => it instanceof BoundedContext,
 		);
 		const workspace = contexts[0]?.workspace;
+		// A relationship is kept when it touches the scope, and also when both
+		// its ends are on the map anyway: the walk reached them, so leaving the
+		// declaration behind would draw the pair as implied and tell a reader
+		// the workspace never said how those two stand to each other.
+		const reached = ODSContextMap.reached(contexts, consumptions);
 		const relationships =
-			workspace?.relationships.filter((it) =>
-				contexts.some((bc) => it.involves(bc)),
+			workspace?.relationships.filter(
+				(it) =>
+					contexts.some((bc) => it.involves(bc)) ||
+					(reached.has(it.source) && reached.has(it.target)),
 			) ?? [];
 		return new ODSContextMap(contexts, relationships, consumptions);
 	}

@@ -1,3 +1,4 @@
+import type { ImpliedBy } from "./context-map";
 import { PATTERNS } from "./patterns";
 import { isSymmetricRelationship } from "./relationship";
 import type { DownstreamRole, UpstreamRole } from "./schema";
@@ -30,8 +31,8 @@ export type NarrativeSegment =
 
 /**
  * What the sentence is generated from. A {@link ContextRelationship} satisfies
- * it; `implied` is the decision-03 link derived from consumptions rather than
- * declared, which no model element carries and only a map edge knows about.
+ * it; `impliedBy` is the decision-03 link derived rather than declared, which
+ * no model element carries and only a map edge knows about.
  */
 export type NarratableRelationship = Pick<
 	ContextRelationship,
@@ -39,8 +40,12 @@ export type NarratableRelationship = Pick<
 > & {
 	source: NarrativeContext;
 	target: NarrativeContext;
-	/** True when the link was derived from consumptions rather than declared. */
-	implied?: boolean;
+	/**
+	 * What put the link there when no relationship declares it, and absent
+	 * when one does. It is the map edge's own {@link ImpliedBy}, so the aside
+	 * names the walk that found the dependency rather than assuming traffic.
+	 */
+	impliedBy?: ImpliedBy;
 };
 
 const text = (value: string): NarrativeSegment => ({
@@ -147,9 +152,18 @@ const SYMMETRIC_JOIN = {
 	"separate-ways": " from ",
 } as const;
 
-/** Rule 5: the aside every implied link carries, in the context page's words. */
-const IMPLIED_ASIDE =
-	" Implied by consumptions; no explicit relationship is declared.";
+/**
+ * Rule 5: the aside every implied link carries, in the context page's words.
+ * Which walk found it belongs in the sentence, because the two are different
+ * dependencies: traffic between the contexts, or an identity in one naming an
+ * entity of the other with nothing exchanged at all.
+ */
+const IMPLIED_ASIDE: Record<ImpliedBy, string> = {
+	consumption:
+		" Implied by consumptions; no explicit relationship is declared.",
+	identity:
+		" Implied by an identity attribute naming the other context; no explicit relationship is declared.",
+};
 
 /**
  * The sentence for `r` as read from `viewpoint`, one of its two contexts.
@@ -182,10 +196,10 @@ export function relationshipNarrative(
 
 	// An implied link is an undeclared dependency: the plain directed template
 	// with nothing on either side, and an aside saying where it came from.
-	const upstreamRoles = r.implied ? [] : r.upstreamRoles;
-	const downstreamRoles = r.implied ? [] : r.downstreamRoles;
-	const aside = r.implied ? [text(IMPLIED_ASIDE)] : [];
-	const type = r.implied
+	const upstreamRoles = r.impliedBy ? [] : r.upstreamRoles;
+	const downstreamRoles = r.impliedBy ? [] : r.downstreamRoles;
+	const aside = r.impliedBy ? [text(IMPLIED_ASIDE[r.impliedBy])] : [];
+	const type = r.impliedBy
 		? "upstream-downstream"
 		: (r.type as keyof typeof UPSTREAM_VERB);
 

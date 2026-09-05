@@ -31,7 +31,7 @@ severity, a rule id, a message and the ref of the element concerned.
 | `invariant-in-context` | error | every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, one of its value objects, or one of its operations |
 | `context-invariant-guarded` | error | a context's invariant names at least one operation of that context as a guard |
 | `relationship-roles-backed` | warning | a directed relationship's declared roles are carried by real crossings, and a crossing consumption's role is declared on the relationship; a crossing consumable's `schema` backs a `published-language` role |
-| `relationship-declared` | warning | two contexts joined by a crossing — a consumption of the other's consumable, or an identity naming the other's entity — declare a relationship in that direction |
+| `relationship-declared` | warning | two contexts joined by a crossing — a consumption of the other's consumable, a policy or process reacting to the other's event, or an identity naming the other's entity — declare a relationship in that direction |
 | `relationship-duplicate` | error | a pair of contexts declares at most one relationship of each type and direction; a symmetric type has no direction, so either order counts as the same one |
 | `relationship-cycle` | warning | the directed relationships whose traffic is calls form no cycle; a step carried only by events is choreography, and a step whose downstream declares an anti-corruption layer translates at its edge, so neither counts (decision 20). The message lists the ring's contexts in order |
 | `partnership-backed` | warning | two contexts declaring a partnership exchange consumables, or events a policy reacts to, in at least one direction |
@@ -42,6 +42,7 @@ severity, a rule id, a message and the ref of the element concerned.
 | `role-coherence` | warning | consumables and consumptions crossing contexts declare their roles, unless the two contexts are partners or share a kernel |
 | `separate-ways` | error | contexts that declared separate ways exchange no consumables, and neither reacts to the other's events |
 | `internal-consumable` | error / warning | an internal consumable is not consumed, reacted to or issued from another context |
+| `consumption-once` | error | a consumer consumes a given consumable at most once; a second consumption of the same pair carries the same ref, so only the first can be reached |
 | `consumption-by-resolves` | error | a consumption's `by` names the consumer's own operations, or policies of the consumer's context; a consumption belongs to the consumer, so what makes it is the consumer's own |
 | `process-in-context` | error | a process issues operations of its own bounded context; what starts it, what it waits for and what ends it may be another context's events |
 | `process-has-ends` | warning | a process names at least one event that completes an instance |

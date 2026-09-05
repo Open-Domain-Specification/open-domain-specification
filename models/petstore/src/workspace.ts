@@ -720,7 +720,11 @@ const confirmDelivery = orderApp.provides("ConfirmDelivery", {
 	pattern: "open-host-service",
 	schema: orderIdSchema,
 });
-orderApp.consumes(deliverOrder, {});
+// ConfirmDelivery is the one operation of OrderApp that runs the aggregate's
+// internal transition, so it names itself in `by` and the chain carries from
+// Fulfilment's ReportDelivery through ConfirmDelivery into OrderDelivered
+// rather than stopping at the open host (decision 21).
+orderApp.consumes(deliverOrder, { by: [confirmDelivery] });
 
 // Anti-corruption layer: OrderApp translates the catalog's summary into its
 // own notion of availability rather than adopting the catalog's model.

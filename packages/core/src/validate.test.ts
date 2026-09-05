@@ -3565,6 +3565,61 @@ describe("relationship-declared", () => {
 		expect(declared(ws)).toHaveLength(1);
 	});
 
+	/** Two contexts, a policy in one reacting to the other's event. */
+	function subscription() {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const happened = up
+			.addService("Feed", { description: "", type: "application" })
+			.provides("Happened", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			});
+		const local = down
+			.addService("Local", { description: "", type: "application" })
+			.provides("React", { description: "", type: "operation" });
+		const policy = down
+			.addPolicy("On happened", { description: "" })
+			.on(happened)
+			.issues(local);
+		return { ws, up, down, policy };
+	}
+
+	it("warns about a policy reacting to another context's event", () => {
+		const { ws, policy } = subscription();
+		expect(declared(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"warning",
+				'Policy "On happened" in "Down" reacts to "Happened" from "Up", but no relationship says how "Up" and "Down" stand to each other',
+				policy.ref,
+			],
+		]);
+	});
+
+	it("goes quiet when a relationship covers the subscription", () => {
+		const { ws, up, down } = subscription();
+		up.upstreamOf(down, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		expect(declared(ws)).toEqual([]);
+	});
+
+	it("says nothing about a policy reacting to its own context's event", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const service = bc.addService("S", {
+			description: "",
+			type: "application",
+		});
+		bc.addPolicy("On own", { description: "" })
+			.on(service.provides("Own", { description: "", type: "event" }))
+			.issues(service.provides("Do", { description: "", type: "operation" }));
+		expect(declared(ws)).toEqual([]);
+	});
+
 	it("says nothing about a consumption or an identity inside one context", () => {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("BC", { description: "" });
@@ -3580,6 +3635,62 @@ describe("relationship-declared", () => {
 			{},
 		);
 		expect(declared(ws)).toEqual([]);
+	});
+});
+
+describe("consumption-once", () => {
+	const once = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "consumption-once");
+
+	/** One consumer and one consumable of another context, ready to be taken. */
+	function pair() {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		up.upstreamOf(down, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		const happened = up
+			.addService("Feed", { description: "", type: "application" })
+			.provides("Happened", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			});
+		const consumer = down.addService("Reader", {
+			description: "",
+			type: "application",
+		});
+		return { ws, up, down, happened, consumer };
+	}
+
+	it("errors on a second consumption of the same consumable by the same consumer", () => {
+		const { ws, happened, consumer } = pair();
+		consumer.consumes(happened, { pattern: "conformist" });
+		const second = consumer.consumes(happened, { pattern: "conformist" });
+		expect(once(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"error",
+				'"Reader" consumes "Happened" from "Feed" more than once; the two share one ref, so only the first can ever be reached',
+				second.ref,
+			],
+		]);
+	});
+
+	it("says nothing when the consumer takes it once", () => {
+		const { ws, happened, consumer } = pair();
+		consumer.consumes(happened, { pattern: "conformist" });
+		expect(once(ws)).toEqual([]);
+	});
+
+	it("says nothing when two different consumers take the same consumable", () => {
+		const { ws, down, happened, consumer } = pair();
+		consumer.consumes(happened, { pattern: "conformist" });
+		down
+			.addService("Other", { description: "", type: "application" })
+			.consumes(happened, { pattern: "conformist" });
+		expect(once(ws)).toEqual([]);
 	});
 });
 

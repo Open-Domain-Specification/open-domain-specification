@@ -11,6 +11,7 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | ReportDelivery | operation | yes | - | Tell Sales the shipment arrived, by calling the order's ConfirmDelivery | [ShipmentDelivered](../../index.md#schemas) | - | - | - | - |
 
+- **ReportDelivery** also reaches OrderDelivered through the operations it calls, raised where they happen rather than restated here.
 
 ## Consumes
 
