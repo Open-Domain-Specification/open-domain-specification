@@ -219,6 +219,14 @@ Link the decision from the card's description so reviewers can find it.
 Keep `docs/` current whenever behavior changes. The first `# ` heading in a doc
 file is its sidebar label; the numeric prefix orders it.
 
+## Landing a card
+
+Before a card moves to `done`, its whole checklist — every package's suite,
+built and run inside its own directory, in order, plus the pages e2e fit spec
+and the petstore-schema-vs-core-dist comparison — must pass. `npm run verify`
+(`scripts/verify-all.sh`) runs that whole checklist in one command and is the
+landing gate: run it, and only record a script gate as passed once it exits 0.
+
 ## Remember
 
 The extension watches all of these files — just save your edits, no reload
