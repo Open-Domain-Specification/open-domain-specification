@@ -559,7 +559,7 @@ orderAgg
 
 const orderPlacedSchema = salesBC.addSchema("OrderPlaced");
 orderPlacedSchema.addAttribute("orderId", { type: "int64", identity: true });
-orderPlacedSchema.addAttribute("petId", { type: "int64" });
+orderPlacedSchema.addAttribute("petId", { type: "int64", identifies: petRoot });
 orderPlacedSchema.addAttribute("quantity", {
 	type: "Quantity",
 	valueobject: quantityVO,
@@ -567,7 +567,7 @@ orderPlacedSchema.addAttribute("quantity", {
 const placeOrderSchema = salesBC.addSchema("PlaceOrder", {
 	description: "Request body for placing an order",
 });
-placeOrderSchema.addAttribute("petId", { type: "int64" });
+placeOrderSchema.addAttribute("petId", { type: "int64", identifies: petRoot });
 placeOrderSchema.addAttribute("quantity", {
 	type: "Quantity",
 	valueobject: quantityVO,
@@ -579,7 +579,7 @@ const orderDetailSchema = salesBC.addSchema("OrderDetail", {
 	description: "One order, as GET /store/order/{orderId} answers with it",
 });
 orderDetailSchema.addAttribute("orderId", { type: "int64", identity: true });
-orderDetailSchema.addAttribute("petId", { type: "int64" });
+orderDetailSchema.addAttribute("petId", { type: "int64", identifies: petRoot });
 orderDetailSchema.addAttribute("quantity", {
 	type: "Quantity",
 	valueobject: quantityVO,
@@ -868,7 +868,10 @@ shipmentDeliveredSchema.addAttribute("shipmentId", {
 	type: "int64",
 	identity: true,
 });
-shipmentDeliveredSchema.addAttribute("orderId", { type: "int64" });
+shipmentDeliveredSchema.addAttribute("orderId", {
+	type: "int64",
+	identifies: orderRoot,
+});
 shipmentDeliveredSchema.addAttribute("deliveredAt", { type: "date-time" });
 
 // An internal event: nothing outside Fulfilment needs to know a plan exists.

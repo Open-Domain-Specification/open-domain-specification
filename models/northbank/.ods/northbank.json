@@ -707,7 +707,10 @@
             },
             "customer_id": {
               "name": "customerId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+              }
             },
             "purpose": {
               "name": "purpose",
@@ -1346,7 +1349,10 @@
             },
             "customer_id": {
               "name": "customerId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+              }
             },
             "product_code": {
               "name": "productCode",
@@ -1359,7 +1365,10 @@
           "attributes": {
             "customer_id": {
               "name": "customerId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+              }
             },
             "product_code": {
               "name": "productCode",
@@ -2252,7 +2261,10 @@
           "attributes": {
             "payer_account_id": {
               "name": "payerAccountId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
+              }
             },
             "payee": {
               "name": "payee",
@@ -2288,7 +2300,10 @@
             },
             "payer_account_id": {
               "name": "payerAccountId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
+              }
             },
             "amount": {
               "name": "amount",
@@ -2436,7 +2451,10 @@
             "instruction_id": {
               "name": "instructionId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction"
+              }
             },
             "message_type": {
               "name": "messageType",
@@ -2453,7 +2471,10 @@
             "instruction_id": {
               "name": "instructionId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction"
+              }
             },
             "scheme_ref": {
               "name": "schemeRef",
@@ -2827,7 +2848,10 @@
             },
             "account_id": {
               "name": "accountId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
+              }
             }
           }
         },
@@ -2842,11 +2866,17 @@
             },
             "account_id": {
               "name": "accountId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
+              }
             },
             "authorisation_id": {
               "name": "authorisationId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/cards/aggregates/card/entities/authorisation"
+              }
             },
             "amount": {
               "name": "amount",
@@ -3467,7 +3497,10 @@
             },
             "customer_id": {
               "name": "customerId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+              }
             },
             "requested": {
               "name": "requested",
@@ -3496,7 +3529,10 @@
             },
             "account_id": {
               "name": "accountId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
+              }
             },
             "amount": {
               "name": "amount",
@@ -3562,7 +3598,10 @@
                 },
                 "application_id": {
                   "name": "applicationId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/lending/aggregates/loan_application/entities/loan_application"
+                  }
                 },
                 "outcome": {
                   "name": "outcome",
@@ -3766,11 +3805,17 @@
             "application_id": {
               "name": "applicationId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/lending/aggregates/loan_application/entities/loan_application"
+              }
             },
             "customer_id": {
               "name": "customerId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+              }
             },
             "requested_minor": {
               "name": "requestedMinor",
@@ -3788,7 +3833,10 @@
             "application_id": {
               "name": "applicationId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/lending/aggregates/loan_application/entities/loan_application"
+              }
             },
             "outcome": {
               "name": "outcome",

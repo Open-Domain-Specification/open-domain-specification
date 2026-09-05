@@ -567,7 +567,10 @@
             "product_id": {
               "name": "productId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/product"
+              }
             },
             "buy_box_price_minor": {
               "name": "buyBoxPriceMinor",
@@ -687,13 +690,12 @@
                   "type": "string",
                   "identity": true
                 },
-                "seller_id": {
-                  "name": "sellerId",
-                  "type": "string"
-                },
                 "sku": {
                   "name": "sku",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/variant"
+                  }
                 },
                 "price": {
                   "name": "price",
@@ -722,6 +724,13 @@
                   "name": "sellerRating",
                   "type": "int 0..100",
                   "description": "The marketplace's rolling score for the seller, weighed against price and delivery in the buy box"
+                },
+                "seller_id": {
+                  "name": "sellerId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/entities/seller_account"
+                  }
                 }
               },
               "relations": [
@@ -915,7 +924,10 @@
             },
             "sku": {
               "name": "sku",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/variant"
+              }
             },
             "price": {
               "name": "price",
@@ -932,7 +944,10 @@
             "sku": {
               "name": "sku",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/variant"
+              }
             },
             "offer_id": {
               "name": "offerId",
@@ -1559,15 +1574,18 @@
               "type": "string",
               "identity": true
             },
-            "customer_id": {
-              "name": "customerId",
-              "type": "string"
-            },
             "total": {
               "name": "total",
               "type": "Money",
               "valueobject": {
                 "$ref": "#/boundedcontexts/cart_&_checkout/valueobjects/money"
+              }
+            },
+            "customer_id": {
+              "name": "customerId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/identity/aggregates/customer_account/entities/customer_account"
               }
             }
           }
@@ -1797,7 +1815,10 @@
                 },
                 "sku": {
                   "name": "sku",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/variant"
+                  }
                 },
                 "offer_id": {
                   "name": "offerId",
@@ -2227,10 +2248,6 @@
               "type": "string",
               "identity": true
             },
-            "customer_id": {
-              "name": "customerId",
-              "type": "string"
-            },
             "lines": {
               "name": "lines",
               "type": "OrderLine[]",
@@ -2243,6 +2260,13 @@
               "type": "Money",
               "valueobject": {
                 "$ref": "#/boundedcontexts/order_management/valueobjects/money"
+              }
+            },
+            "customer_id": {
+              "name": "customerId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/identity/aggregates/customer_account/entities/customer_account"
               }
             }
           }
@@ -2320,11 +2344,17 @@
             "return_id": {
               "name": "returnId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/return"
+              }
             },
             "order_id": {
               "name": "orderId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+              }
             },
             "lines": {
               "name": "lines",
@@ -2707,7 +2737,10 @@
             },
             "cart_id": {
               "name": "cartId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/entities/cart"
+              }
             }
           }
         },
@@ -2727,7 +2760,10 @@
           "attributes": {
             "cart_id": {
               "name": "cartId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/entities/cart"
+              }
             },
             "amount": {
               "name": "amount",
@@ -2964,7 +3000,10 @@
             "order_id": {
               "name": "orderId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+              }
             },
             "score": {
               "name": "score",
@@ -2981,7 +3020,10 @@
             "seller_id": {
               "name": "sellerId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/entities/seller_account"
+              }
             },
             "score": {
               "name": "score",
@@ -3515,7 +3557,10 @@
             "order_id": {
               "name": "orderId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+              }
             },
             "site_id": {
               "name": "siteId",
@@ -3530,11 +3575,17 @@
             "package_id": {
               "name": "packageId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/entities/package"
+              }
             },
             "order_id": {
               "name": "orderId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+              }
             },
             "label": {
               "name": "label",
@@ -3551,7 +3602,10 @@
             "return_id": {
               "name": "returnId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/return"
+              }
             },
             "condition": {
               "name": "condition",
@@ -3794,7 +3848,10 @@
             },
             "order_id": {
               "name": "orderId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+              }
             },
             "delivered_at": {
               "name": "deliveredAt",
@@ -3812,7 +3869,10 @@
             },
             "order_id": {
               "name": "orderId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+              }
             },
             "reason": {
               "name": "reason",
@@ -3887,7 +3947,10 @@
                 },
                 "seller_id": {
                   "name": "sellerId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/entities/seller_account"
+                  }
                 },
                 "daily_budget": {
                   "name": "dailyBudget",
@@ -4135,7 +4198,10 @@
             },
             "product_id": {
               "name": "productId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/product"
+              }
             },
             "cost": {
               "name": "cost",
@@ -4153,7 +4219,10 @@
             "product_id": {
               "name": "productId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/product"
+              }
             },
             "bid": {
               "name": "bid",

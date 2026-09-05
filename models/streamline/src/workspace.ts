@@ -306,7 +306,10 @@ masterDeliveredSchema.addAttribute("productionId", {
 	type: "string",
 	identity: true,
 });
-masterDeliveredSchema.addAttribute("episodeNumber", { type: "int" });
+masterDeliveredSchema.addAttribute("episodeNumber", {
+	type: "int",
+	identifies: studioEpisode,
+});
 masterDeliveredSchema.addAttribute("mezzanineUri", { type: "string (URI)" });
 masterDeliveredSchema.addAttribute("runtimeMinutes", { type: "int" });
 
@@ -389,7 +392,8 @@ deal.addAttribute("termStart", { type: "date" });
 deal.addAttribute("termEnd", { type: "date" });
 deal.addAttribute("fee", { type: "Money", valueobject: feeMoney });
 window.addAttribute("windowId", { type: "string", identity: true });
-window.addAttribute("titleId", { type: "string" });
+// `titleId` is declared with the Title root further down, because the root it
+// identifies has to exist before the attribute can name it.
 window.addAttribute("start", { type: "date" });
 window.addAttribute("end", { type: "date" });
 window.addAttribute("exclusive", { type: "boolean" });
@@ -415,7 +419,7 @@ dealAgg
 const windowSchema = licensingBC.addSchema("LicenseWindow", {
 	description: "Title, territories and dates; used by both window events",
 });
-windowSchema.addAttribute("titleId", { type: "string", identity: true });
+// `titleId` is declared with the Title root further down.
 windowSchema.addAttribute("territory", {
 	type: "Territory",
 	valueobject: territoryVO,
@@ -497,6 +501,16 @@ availabilityVO.addAttribute("countries", { type: "ISO 3166 code[]" });
 availabilityVO.addAttribute("from", { type: "date" });
 availabilityVO.addAttribute("until", { type: "date" });
 title.addAttribute("titleId", { type: "string", identity: true });
+// `titleId` on Window and LicenseWindow is declared here, because an
+// attribute can only name a root that already exists and this is where the
+// Title root is. Licensing is another bounded context, so this identity is
+// the whole of what those hold of a title.
+window.addAttribute("titleId", { type: "string", identifies: title });
+windowSchema.addAttribute("titleId", {
+	type: "string",
+	identity: true,
+	identifies: title,
+});
 title.addAttribute("name", { type: "string" });
 title.addAttribute("kind", { type: "'film' | 'series'" });
 title.addAttribute("rating", { type: "MaturityRating", valueobject: ratingVO });
@@ -509,6 +523,7 @@ title.addAttribute("productionId", {
 	optional: true,
 	description:
 		"The studio production behind an original, or absent for a licensed title; how MasterDelivered is matched to a title",
+	identifies: production,
 });
 title.addAttribute("playableRenditionSet", {
 	type: "string",
@@ -577,7 +592,11 @@ const titleRefSchema = catalogueBC.addSchema("TitleRef", {
 });
 titleRefSchema.addAttribute("titleId", { type: "string", identity: true });
 // The schema identifies one title and, for a series, one episode of it.
-titleRefSchema.addAttribute("episodeId", { type: "string", optional: true });
+titleRefSchema.addAttribute("episodeId", {
+	type: "string",
+	optional: true,
+	identifies: catalogueEpisode,
+});
 // A returned shape: GetTitle is asked with a TitleRef and answers with this.
 const titleDetailSchema = catalogueBC.addSchema("TitleDetail", {
 	description: "A title with its seasons, episodes and availability",
@@ -698,7 +717,7 @@ const ladderVO = encodingBC.addValueObject("Ladder", {
 });
 ladderVO.addAttribute("rungs", { type: "{bitrateKbps, height}[]" });
 job.addAttribute("jobId", { type: "string", identity: true });
-job.addAttribute("titleId", { type: "string" });
+job.addAttribute("titleId", { type: "string", identifies: title });
 job.addAttribute("sourceUri", { type: "string (URI)" });
 job.addAttribute("status", {
 	type: "'queued' | 'running' | 'completed' | 'failed'",
@@ -727,7 +746,10 @@ jobAgg
 	.constrains(rendition, ladderVO);
 
 const submitEncodeSchema = encodingBC.addSchema("SubmitEncode");
-submitEncodeSchema.addAttribute("titleId", { type: "string" });
+submitEncodeSchema.addAttribute("titleId", {
+	type: "string",
+	identifies: title,
+});
 submitEncodeSchema.addAttribute("sourceUri", { type: "string (URI)" });
 const encodingCompletedSchema = encodingBC.addSchema("EncodingCompleted", {
 	description: "The rendition list the catalogue and the edge react to",
@@ -736,8 +758,14 @@ encodingCompletedSchema.addAttribute("jobId", {
 	type: "string",
 	identity: true,
 });
-encodingCompletedSchema.addAttribute("titleId", { type: "string" });
-encodingCompletedSchema.addAttribute("renditionIds", { type: "string[]" });
+encodingCompletedSchema.addAttribute("titleId", {
+	type: "string",
+	identifies: title,
+});
+encodingCompletedSchema.addAttribute("renditionIds", {
+	type: "string[]",
+	identifies: rendition,
+});
 
 const encodeQueued = jobAgg.provides("EncodeQueued", {
 	description: "A job is waiting for a ladder plan",
@@ -873,12 +901,9 @@ manifestVO.addAttribute("edgeUrl", { type: "string (URL)" });
 session.addAttribute("sessionId", { type: "string", identity: true });
 // DISCOVERY: peer review. The household is what entitlement and the stream
 // limit are about, and a series is watched an episode at a time, so both
-// identities belong on the session.
-const sessionHousehold = session.addAttribute("householdId", {
-	type: "string",
-	description:
-		"The paying unit the profile belongs to; what entitlement is checked for",
-});
+// identities belong on the session. `householdId`, the invariant that reads
+// it and `deviceModelId` are declared further down, with the Household and
+// Device roots they identify.
 session.addAttribute("titleId", { type: "string", identifies: title });
 session.addAttribute("episodeId", {
 	type: "string",
@@ -890,11 +915,6 @@ session.addAttribute("episodeId", {
 const sessionDevice = session.addAttribute("deviceId", {
 	type: "string",
 	description: "The individual unit (an installation), not the partner model",
-});
-session.addAttribute("deviceModelId", {
-	type: "string",
-	description:
-		"The partner model the unit is an instance of; what certification is checked against",
 });
 session.addAttribute("bookmark", { type: "Bookmark", valueobject: bookmarkVO });
 session.addAttribute("manifest", {
@@ -912,15 +932,9 @@ sessionAgg
 			"A session starts only with a current entitlement from billing",
 	})
 	.constrains(session);
-// One session cannot see its siblings, so the limit is checked at start:
-// GetEntitlement returns the plan's stream count and Playback counts the
-// household's open sessions before it creates another.
-sessionAgg
-	.addInvariant("WithinStreamLimit", {
-		description:
-			"A session starts only if the household's open sessions are fewer than the plan's stream count from GetEntitlement; checked at StartPlayback because a session cannot see its siblings",
-	})
-	.constrains(sessionHousehold);
+// `WithinStreamLimit` is declared with the Household root further down,
+// because it constrains `householdId`, and that attribute can only be
+// declared once the root it identifies exists.
 sessionAgg
 	.addInvariant("BookmarkWithinRuntime", {
 		description: "The resume point never exceeds the title's runtime",
@@ -928,15 +942,18 @@ sessionAgg
 	.constrains(bookmarkVO);
 
 const startPlaybackSchema = playbackBC.addSchema("StartPlayback");
-startPlaybackSchema.addAttribute("profileId", { type: "string" });
-startPlaybackSchema.addAttribute("householdId", { type: "string" });
-startPlaybackSchema.addAttribute("titleId", { type: "string" });
+// `profileId` and `householdId` are declared with the Profile and Household
+// roots further down; `deviceModelId` with the Device root.
+startPlaybackSchema.addAttribute("titleId", {
+	type: "string",
+	identifies: title,
+});
 startPlaybackSchema.addAttribute("episodeId", {
 	type: "string",
 	optional: true,
+	identifies: catalogueEpisode,
 });
 startPlaybackSchema.addAttribute("deviceId", { type: "string" });
-startPlaybackSchema.addAttribute("deviceModelId", { type: "string" });
 const playbackStoppedSchema = playbackBC.addSchema("PlaybackStopped", {
 	description: "The fact personalisation learns from",
 });
@@ -944,11 +961,15 @@ playbackStoppedSchema.addAttribute("sessionId", {
 	type: "string",
 	identity: true,
 });
-playbackStoppedSchema.addAttribute("profileId", { type: "string" });
-playbackStoppedSchema.addAttribute("titleId", { type: "string" });
+// `profileId` is declared with the Profile root further down.
+playbackStoppedSchema.addAttribute("titleId", {
+	type: "string",
+	identifies: title,
+});
 playbackStoppedSchema.addAttribute("episodeId", {
 	type: "string",
 	optional: true,
+	identifies: catalogueEpisode,
 });
 playbackStoppedSchema.addAttribute("watchedSeconds", { type: "int" });
 playbackStoppedSchema.addAttribute("completed", { type: "boolean" });
@@ -1078,7 +1099,10 @@ applianceAgg
 
 const resolveEdgeSchema = edgeBC.addSchema("ResolveEdge");
 resolveEdgeSchema.addAttribute("clientIp", { type: "string" });
-resolveEdgeSchema.addAttribute("renditionIds", { type: "string[]" });
+resolveEdgeSchema.addAttribute("renditionIds", {
+	type: "string[]",
+	identifies: rendition,
+});
 
 const assetPrepositioned = applianceAgg.provides("AssetPrepositioned", {
 	description: "A rendition was pushed to an appliance ahead of demand",
@@ -1173,6 +1197,19 @@ device.addAttribute("capability", {
 	valueobject: capabilityVO,
 });
 device.uses(capabilityVO, "capable-of", "1");
+// `deviceModelId` on PlaybackSession and StartPlayback is declared here,
+// because an attribute can only name a root that already exists and this is
+// where the Device root is.
+session.addAttribute("deviceModelId", {
+	type: "string",
+	description:
+		"The partner model the unit is an instance of; what certification is checked against",
+	identifies: device,
+});
+startPlaybackSchema.addAttribute("deviceModelId", {
+	type: "string",
+	identifies: device,
+});
 deviceAgg
 	.addInvariant("CertifiedBeforePlayback", {
 		description:
@@ -1307,7 +1344,11 @@ const homepageRowSchema = recsBC.addSchema("HomepageRow", {
 	description:
 		"One ranked row: a title in a candidate pool the profile may see",
 });
-homepageRowSchema.addAttribute("titleId", { type: "string", identity: true });
+homepageRowSchema.addAttribute("titleId", {
+	type: "string",
+	identity: true,
+	identifies: title,
+});
 const homepageRowsSchema = recsBC.addSchema("HomepageRows", {
 	description: "The ranked rows for a profile",
 });
@@ -1402,7 +1443,7 @@ const pinVO = householdsBC.addValueObject("ProfilePin", {
 });
 pinVO.addAttribute("hash", { type: "string" });
 household.addAttribute("householdId", { type: "string", identity: true });
-household.addAttribute("accountId", { type: "string" });
+// `accountId` is declared with the Account root further down.
 household.addAttribute("country", { type: "ISO 3166 code" });
 profile.addAttribute("profileId", { type: "string", identity: true });
 // Every profile id in the model is declared here, because an attribute can
@@ -1415,6 +1456,36 @@ taste.addAttribute("profileId", {
 	type: "string",
 	identity: true,
 	identifies: profile,
+});
+startPlaybackSchema.addAttribute("profileId", {
+	type: "string",
+	identifies: profile,
+});
+playbackStoppedSchema.addAttribute("profileId", {
+	type: "string",
+	identifies: profile,
+});
+// PlaybackSession's `householdId` and the invariant that reads it, and
+// StartPlayback's own `householdId`, are declared here too, because the
+// Household root they identify has to exist first.
+const sessionHousehold = session.addAttribute("householdId", {
+	type: "string",
+	description:
+		"The paying unit the profile belongs to; what entitlement is checked for",
+	identifies: household,
+});
+// One session cannot see its siblings, so the limit is checked at start:
+// GetEntitlement returns the plan's stream count and Playback counts the
+// household's open sessions before it creates another.
+sessionAgg
+	.addInvariant("WithinStreamLimit", {
+		description:
+			"A session starts only if the household's open sessions are fewer than the plan's stream count from GetEntitlement; checked at StartPlayback because a session cannot see its siblings",
+	})
+	.constrains(sessionHousehold);
+startPlaybackSchema.addAttribute("householdId", {
+	type: "string",
+	identifies: household,
 });
 profile.addAttribute("name", { type: "string" });
 profile.addAttribute("kids", { type: "boolean" });
@@ -1454,12 +1525,13 @@ householdCreatedSchema.addAttribute("householdId", {
 	type: "string",
 	identity: true,
 });
-householdCreatedSchema.addAttribute("accountId", { type: "string" });
+// `accountId` is declared with the Account root further down.
 householdCreatedSchema.addAttribute("country", { type: "ISO 3166 code" });
 const profileCreatedSchema = householdsBC.addSchema("ProfileCreated");
 profileCreatedSchema.addAttribute("profileId", {
 	type: "string",
 	identity: true,
+	identifies: profile,
 });
 profileCreatedSchema.addAttribute("householdId", { type: "string" });
 profileCreatedSchema.addAttribute("kids", { type: "boolean" });
@@ -1546,6 +1618,7 @@ periodVO.addAttribute("to", { type: "date" });
 subscription.addAttribute("subscriptionId", { type: "string", identity: true });
 const subscriptionHousehold = subscription.addAttribute("householdId", {
 	type: "string",
+	identifies: household,
 });
 subscription.addAttribute("status", {
 	type: "'active' | 'dunning' | 'lapsed'",
@@ -1601,11 +1674,17 @@ subscriptionSchema.addAttribute("subscriptionId", {
 	type: "string",
 	identity: true,
 });
-subscriptionSchema.addAttribute("householdId", { type: "string" });
+subscriptionSchema.addAttribute("householdId", {
+	type: "string",
+	identifies: household,
+});
 const entitlementSchema = billingBC.addSchema("EntitlementRequest", {
 	description: "What Playback asks: which household, for how many streams",
 });
-entitlementSchema.addAttribute("householdId", { type: "string" });
+entitlementSchema.addAttribute("householdId", {
+	type: "string",
+	identifies: household,
+});
 // A returned shape: what GetEntitlement answers with.
 const entitlementResultSchema = billingBC.addSchema("Entitlement", {
 	description: "Whether the household may stream, and how many at once",
@@ -1734,6 +1813,14 @@ const account = accountAgg.addRootEntity("Account", {
 });
 account.addAttribute("accountId", { type: "string", identity: true });
 account.addAttribute("email", { type: "string" });
+// `accountId` on Household and HouseholdCreated is declared here, because an
+// attribute can only name a root that already exists and this is where the
+// Account root is.
+household.addAttribute("accountId", { type: "string", identifies: account });
+householdCreatedSchema.addAttribute("accountId", {
+	type: "string",
+	identifies: account,
+});
 const accountCreatedSchema = identityBC.addSchema("AccountCreated");
 accountCreatedSchema.addAttribute("accountId", {
 	type: "string",
@@ -1802,10 +1889,13 @@ const frequencyCapVO = adsBC.addValueObject("FrequencyCap", {
 });
 frequencyCapVO.addAttribute("maxPerDay", { type: "int" });
 adBreak.addAttribute("breakId", { type: "string", identity: true });
-adBreak.addAttribute("sessionId", { type: "string" });
+adBreak.addAttribute("sessionId", { type: "string", identifies: session });
 // DISCOVERY: Ads Team lead ("we work with plan and country"), peer review.
 // The plan is what the ad-supported rule reads, so the break records it.
-adBreak.addAttribute("householdId", { type: "string" });
+adBreak.addAttribute("householdId", {
+	type: "string",
+	identifies: household,
+});
 const breakPlanTier = adBreak.addAttribute("planTier", {
 	type: "'basic-with-ads' | 'standard' | 'premium'",
 	description:

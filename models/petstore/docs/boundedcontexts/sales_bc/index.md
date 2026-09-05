@@ -43,10 +43,10 @@ Open-host service for /store/order endpoints
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| OrderPlaced | - | **orderId**: `int64`, petId: `int64`, quantity: `Quantity` | OrderPlaced |
-| PlaceOrder | Request body for placing an order | petId: `int64`, quantity: `Quantity` | PlaceOrder |
+| OrderPlaced | - | **orderId**: `int64`, petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity` | OrderPlaced |
+| PlaceOrder | Request body for placing an order | petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity` | PlaceOrder |
 | OrderId | - | **orderId**: `int64` | OrderApproved, OrderDelivered, OrderDeleted, ApproveOrder, DeliverOrder, GetOrderById, DeleteOrder, ConfirmDelivery, ReservePet, MarkPetSold |
-| OrderDetail | One order, as GET /store/order/{orderId} answers with it | **orderId**: `int64`, petId: `int64`, quantity: `Quantity`, shipDate: `ShipDate`, status: `OrderStatus` | GetOrderById |
+| OrderDetail | One order, as GET /store/order/{orderId} answers with it | **orderId**: `int64`, petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity`, shipDate: `ShipDate`, status: `OrderStatus` | GetOrderById |
 
 
 ## Policies
