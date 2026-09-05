@@ -1,7 +1,12 @@
 import type { Attribute } from "@open-domain-specification/core";
 import { render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
-import { edgeCaseModel, petstoreModel, rivermartModel } from "../fixtures";
+import {
+	edgeCaseModel,
+	petstoreModel,
+	rivermartModel,
+	streamlineModel,
+} from "../fixtures";
 import AttributeTable from "./AttributeTable.svelte";
 
 const attributesOf = (model: ReturnType<typeof petstoreModel>): Attribute[] =>
@@ -81,6 +86,27 @@ describe("AttributeTable", () => {
 		);
 		render(AttributeTable, { attributes: [] });
 		expect(screen.getByText("No attributes.")).toBeInTheDocument();
+	});
+
+	it("puts what a kind inherits under a label row naming where it comes from", () => {
+		const series = streamlineModel().workspace.getEntityByRefOrThrow(
+			"#/boundedcontexts/catalogue/aggregates/title/entities/series",
+		);
+		const { container } = render(AttributeTable, {
+			attributes: [...series.attributes.values()],
+			inherited: series.inheritedAttributes,
+		});
+		const labels = [...container.querySelectorAll("tr.group th")].map((th) =>
+			th.textContent?.trim(),
+		);
+		expect(labels).toEqual(["Inherited from Title"]);
+		// Own attributes lead, under no label of their own; the inherited ones
+		// follow in the group, and every attribute is a row.
+		expect(container.querySelectorAll("tbody tr:not(.group)")).toHaveLength(
+			series.allAttributes.length,
+		);
+		const first = container.querySelector("tbody tr:not(.group)");
+		expect(first?.getAttribute("id")).toBe(series.allAttributes[0].ref);
 	});
 
 	it("leaves the description cell empty for an attribute that has none", () => {

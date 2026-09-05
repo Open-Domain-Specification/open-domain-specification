@@ -1683,24 +1683,38 @@
       "valueobjects": {
         "ledger_account": {
           "name": "LedgerAccount",
-          "description": "Where a posting lands: a customer account by its AccountNumber, or a nominal from the chart of accounts (loan book, scheme suspense, fee income)",
+          "description": "Where a posting lands. No posting lands on a LedgerAccount as such: every one of them is a customer account or a nominal, and the two are named differently",
+          "attributes": {},
+          "relations": []
+        },
+        "customer_ledger_account": {
+          "name": "CustomerLedgerAccount",
+          "description": "A customer's account, named by its account number",
+          "specialises": {
+            "$ref": "#/boundedcontexts/ledger/valueobjects/ledger_account"
+          },
           "attributes": {
-            "kind": {
-              "name": "kind",
-              "type": "'customer' | 'nominal'"
-            },
             "account_number": {
               "name": "accountNumber",
               "type": "AccountNumber",
-              "description": "Set when kind is customer",
               "valueobject": {
                 "$ref": "#/boundedcontexts/shared_kernel/valueobjects/account_number"
               }
-            },
+            }
+          },
+          "relations": []
+        },
+        "nominal_ledger_account": {
+          "name": "NominalLedgerAccount",
+          "description": "An account of the bank's own chart rather than a customer's: the loan book, scheme suspense, fee income",
+          "specialises": {
+            "$ref": "#/boundedcontexts/ledger/valueobjects/ledger_account"
+          },
+          "attributes": {
             "nominal_code": {
               "name": "nominalCode",
               "type": "string",
-              "description": "Set when kind is nominal, e.g. LOAN-BOOK, SCHEME-SUSPENSE"
+              "description": "From the chart of accounts, e.g. LOAN-BOOK, SCHEME-SUSPENSE"
             }
           },
           "relations": []

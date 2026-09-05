@@ -1169,9 +1169,37 @@ export class Consumable
 	}
 }
 
+/** Anything that may be a kind of another of its own sort (decision 22). */
+type Specialisable = {
+	specialises?: Specialisable;
+	attributes: Map<string, Attribute>;
+	relations: EntityRelation[];
+};
+
+/**
+ * The chain of parents above a subtype, nearest first.
+ *
+ * Cycle-safe on purpose: two things declared kinds of each other is a model
+ * `specialisation-cycle` reports, and every reader of the chain — a rule, a
+ * page, the relation map — has to survive being handed one rather than hang.
+ */
+function ancestorsOf<T extends Specialisable>(node: T): T[] {
+	const chain: T[] = [];
+	const seen = new Set<Specialisable>([node]);
+	let parent = node.specialises as T | undefined;
+	while (parent && !seen.has(parent)) {
+		chain.push(parent);
+		seen.add(parent);
+		parent = parent.specialises as T | undefined;
+	}
+	return chain;
+}
+
 export type EntityAttributes = {
 	description: string;
 	root?: boolean;
+	/** The entity this one is a kind of; see {@link Entity.specialises}. */
+	specialises?: Entity;
 	id?: string;
 };
 
@@ -1185,10 +1213,48 @@ export class Entity
 	attributes = new Map<string, Attribute>();
 	relations = [] as EntityRelation[];
 	aggregate: Aggregate;
+	/**
+	 * The entity this one is a kind of, when it is one: a LoanAccount is an
+	 * Account and has everything an Account has, plus its own (decision 22).
+	 * The parent is an entity of the same aggregate.
+	 */
+	specialises?: Entity;
 
 	/** The context this entity's aggregate belongs to. */
 	get boundedcontext(): BoundedContext {
 		return this.aggregate.boundedcontext;
+	}
+
+	/** The entities of this aggregate that are a kind of this one. */
+	get kinds(): Entity[] {
+		return Array.from(this.aggregate.entities.values()).filter(
+			(it) => it.specialises === this,
+		);
+	}
+
+	/** Every entity this one is a kind of, nearest parent first. */
+	get ancestors(): Entity[] {
+		return ancestorsOf(this);
+	}
+
+	/** The attributes this entity has because a parent declares them. */
+	get inheritedAttributes(): Attribute[] {
+		return this.ancestors.flatMap((it) => [...it.attributes.values()]);
+	}
+
+	/** Everything this entity holds: its own attributes, then the inherited ones. */
+	get allAttributes(): Attribute[] {
+		return [...this.attributes.values(), ...this.inheritedAttributes];
+	}
+
+	/** The relations this entity has because a parent declares them. */
+	get inheritedRelations(): EntityRelation[] {
+		return this.ancestors.flatMap((it) => it.relations);
+	}
+
+	/** Everything this entity points at: its own relations, then the inherited ones. */
+	get allRelations(): EntityRelation[] {
+		return [...this.relations, ...this.inheritedRelations];
 	}
 
 	get path(): string {
@@ -1208,6 +1274,7 @@ export class Entity
 		this.name = name;
 		this.description = attributes.description;
 		this.root = attributes.root || false;
+		this.specialises = attributes.specialises;
 		this.aggregate = aggregate;
 		this.aggregate.entities.set(this.id, this);
 	}
@@ -1275,6 +1342,7 @@ export class Entity
 			name: this.name,
 			description: this.description,
 			root: this.root,
+			specialises: this.specialises && { $ref: this.specialises.ref },
 			attributes: asRecords(this.attributes),
 			relations: asArray(this.relations),
 		};
@@ -1283,6 +1351,8 @@ export class Entity
 
 export type ValueObjectAttributes = {
 	description: string;
+	/** The value object this one is a kind of; see {@link ValueObject.specialises}. */
+	specialises?: ValueObject;
 	id?: string;
 };
 
@@ -1295,6 +1365,51 @@ export class ValueObject
 	attributes = new Map<string, Attribute>();
 	relations = [] as EntityRelation[];
 	boundedcontext: BoundedContext;
+	/**
+	 * The value object this one is a kind of, when it is one: a nominal ledger
+	 * account is a ledger account and has everything one has, plus its own
+	 * (decision 22). The parent belongs to this context, or to a context this
+	 * one shares a kernel with.
+	 */
+	specialises?: ValueObject;
+
+	/**
+	 * The value objects that are a kind of this one, anywhere in the
+	 * workspace: a kernel's value object is specialised by the contexts that
+	 * borrow it, so the kinds of one are not all in its own context.
+	 */
+	get kinds(): ValueObject[] {
+		const out: ValueObject[] = [];
+		for (const bc of this.boundedcontext.workspace.boundedcontexts.values())
+			for (const vo of bc.valueobjects.values())
+				if (vo.specialises === this) out.push(vo);
+		return out;
+	}
+
+	/** Every value object this one is a kind of, nearest parent first. */
+	get ancestors(): ValueObject[] {
+		return ancestorsOf(this);
+	}
+
+	/** The attributes this value object has because a parent declares them. */
+	get inheritedAttributes(): Attribute[] {
+		return this.ancestors.flatMap((it) => [...it.attributes.values()]);
+	}
+
+	/** Everything this value object holds: its own attributes, then the inherited ones. */
+	get allAttributes(): Attribute[] {
+		return [...this.attributes.values(), ...this.inheritedAttributes];
+	}
+
+	/** The relations this value object has because a parent declares them. */
+	get inheritedRelations(): EntityRelation[] {
+		return this.ancestors.flatMap((it) => it.relations);
+	}
+
+	/** Everything this value object points at: its own relations, then the inherited ones. */
+	get allRelations(): EntityRelation[] {
+		return [...this.relations, ...this.inheritedRelations];
+	}
 
 	get path(): string {
 		return `${this.boundedcontext.path}/valueobjects/${this.id}`;
@@ -1312,6 +1427,7 @@ export class ValueObject
 		this.id = attributes.id || snakeCase(name);
 		this.name = name;
 		this.description = attributes.description;
+		this.specialises = attributes.specialises;
 		this.boundedcontext = boundedcontext;
 		this.boundedcontext.valueobjects.set(this.id, this);
 	}
@@ -1378,6 +1494,7 @@ export class ValueObject
 		return {
 			name: this.name,
 			description: this.description,
+			specialises: this.specialises && { $ref: this.specialises.ref },
 			attributes: asRecords(this.attributes),
 			relations: asArray(this.relations),
 		};

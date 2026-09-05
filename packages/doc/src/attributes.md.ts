@@ -17,7 +17,11 @@ import { pathToIndexMd } from "./lib/paths";
  * (decision 24). Only the exception is written: everything unmarked is always
  * present, which is the common case.
  */
-const attributeMd = (attribute: Attribute, fromPath: string) => {
+const attributeMd = (
+	attribute: Attribute,
+	fromPath: string,
+	inherited = false,
+) => {
 	const name = attribute.identity ? `**${attribute.name}**` : attribute.name;
 	const type = attribute.schema
 		? `[\`${attribute.type}\`](${pathToIndexMd(attribute.schema.boundedcontext.path, fromPath)}#schemas)`
@@ -26,17 +30,25 @@ const attributeMd = (attribute: Attribute, fromPath: string) => {
 		? ` (identifies [${attribute.identifies.name}](${pathToIndexMd(attribute.identifies.aggregate.path, fromPath)}))`
 		: "";
 	const optional = attribute.optional ? " (optional)" : "";
-	return `${name}: ${type}${optional}${identifies}`;
+	// A kind has its parent's attributes as its own, so they are listed here
+	// too, each saying whose it is: that is where a reader goes to change one
+	// (decision 22).
+	const from = inherited ? ` (from ${attribute.owner.name})` : "";
+	return `${name}: ${type}${optional}${identifies}${from}`;
 };
 
 /**
  * Attributes as an inline `name: \`type\`` list; identity attributes in bold,
- * and an attribute that is sometimes absent marked `(optional)`.
+ * and an attribute that is sometimes absent marked `(optional)`. Whatever the
+ * owner has from what it is a kind of follows its own, each marked with where
+ * it comes from.
  */
 export const attributeListMd = (
 	attributes: ReadonlyMap<string, Attribute>,
 	fromPath: string,
+	inherited: readonly Attribute[] = [],
 ) =>
-	Array.from(attributes.values())
-		.map((it) => attributeMd(it, fromPath))
-		.join(", ") || "-";
+	[
+		...Array.from(attributes.values()).map((it) => attributeMd(it, fromPath)),
+		...inherited.map((it) => attributeMd(it, fromPath, true)),
+	].join(", ") || "-";

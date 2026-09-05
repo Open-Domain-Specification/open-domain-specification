@@ -340,6 +340,42 @@ describe("toDoc", () => {
 		expect(catalog).not.toContain("**id**: `int64` (optional)");
 	});
 
+	it("says what a kind is a kind of, and lists what it has from it beside its own", async () => {
+		const ws = new Workspace("Kinds", {
+			odsVersion: "1.0.0",
+			description: "A model with kinds.",
+			version: "1.0.0",
+			id: "kinds",
+		});
+		const bc = ws.addBoundedContext("Catalogue", { description: "Titles." });
+		const agg = bc.addAggregate("Title", { description: "One title." });
+		const title = agg.addRootEntity("Title", { description: "A title." });
+		title.addAttribute("titleId", { type: "string", identity: true });
+		const series = agg.addEntity("Series", {
+			description: "A title that plays through its episodes.",
+			specialises: title,
+		});
+		series.addAttribute("seasons", { type: "int" });
+		const rating = bc.addValueObject("Rating", { description: "A rating." });
+		rating.addAttribute("value", { type: "string" });
+		bc.addValueObject("House Rating", {
+			description: "Our own rating.",
+			specialises: rating,
+		});
+
+		const docs = await toDoc(ws);
+		const aggregate =
+			docs["boundedcontexts/catalogue/aggregates/title/index.md"];
+		expect(aggregate).toContain("| Entity (a kind of Title) | Series |");
+		// Its own attribute first, then what it has from the title, saying whose.
+		expect(aggregate).toContain(
+			"seasons: `int`, **titleId**: `string` (from Title)",
+		);
+		const context = docs["boundedcontexts/catalogue/index.md"];
+		expect(context).toContain("| House Rating (a kind of Rating) |");
+		expect(context).toContain("value: `string` (from Rating)");
+	});
+
 	it("groups a context's relationships by what they mean from there, with a Description column", async () => {
 		const docs = await toDoc(petstore);
 

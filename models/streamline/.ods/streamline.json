@@ -710,7 +710,7 @@
           "entities": {
             "title": {
               "name": "Title",
-              "description": "One film or series",
+              "description": "What a member browses to: a name, a rating, artwork and where it plays. No title is ever just a Title; every one of them is a film or a series",
               "root": true,
               "attributes": {
                 "title_id": {
@@ -721,10 +721,6 @@
                 "name": {
                   "name": "name",
                   "type": "string"
-                },
-                "kind": {
-                  "name": "kind",
-                  "type": "'film' | 'series'"
                 },
                 "rating": {
                   "name": "rating",
@@ -741,11 +737,6 @@
                   "identifies": {
                     "$ref": "#/boundedcontexts/studio_production/aggregates/production/entities/production"
                   }
-                },
-                "playable_rendition_set": {
-                  "name": "playableRenditionSet",
-                  "type": "string",
-                  "description": "For a film, the encoding job whose renditions it plays; a series plays through its episodes"
                 },
                 "artwork": {
                   "name": "artwork",
@@ -764,14 +755,6 @@
                 }
               },
               "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/season"
-                  },
-                  "relation": "includes",
-                  "label": "has-seasons",
-                  "cardinality": "*"
-                },
                 {
                   "target": {
                     "$ref": "#/boundedcontexts/catalogue/valueobjects/artwork"
@@ -795,6 +778,41 @@
                   "relation": "uses",
                   "label": "available",
                   "cardinality": "*"
+                }
+              ]
+            },
+            "film": {
+              "name": "Film",
+              "description": "A title a member watches in one sitting, playing one encode",
+              "root": false,
+              "specialises": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
+              },
+              "attributes": {
+                "playable_rendition_set": {
+                  "name": "playableRenditionSet",
+                  "type": "string",
+                  "description": "The encoding job whose renditions this film plays; a series plays through its episodes instead"
+                }
+              },
+              "relations": []
+            },
+            "series": {
+              "name": "Series",
+              "description": "A title watched an episode at a time, through its seasons",
+              "root": false,
+              "specialises": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
+              },
+              "attributes": {},
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/season"
+                  },
+                  "relation": "includes",
+                  "label": "has-seasons",
+                  "cardinality": "1..*"
                 }
               ]
             },

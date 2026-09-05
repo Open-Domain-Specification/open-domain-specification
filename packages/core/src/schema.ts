@@ -333,6 +333,13 @@ export interface EntitySchema {
 	root?: boolean;
 	name: string;
 	description: string;
+	/**
+	 * The entity this one is a kind of: it has every attribute and relation of
+	 * that entity, plus its own. The target is an entity of the same
+	 * aggregate, and a subtype is never itself the root, because the aggregate
+	 * has one root and a kind of it is reached through it (decision 22).
+	 */
+	specialises?: { $ref: string };
 	attributes: { [attribute: string]: AttributeSchema };
 	relations: EntityRelationSchema[];
 }
@@ -409,6 +416,12 @@ export interface SubdomainSchema {
 export interface ValueObjectSchema {
 	name: string;
 	description: string;
+	/**
+	 * The value object this one is a kind of: it has every attribute and
+	 * relation of that value object, plus its own. The target belongs to this
+	 * context, or to a context this one shares a kernel with (decision 22).
+	 */
+	specialises?: { $ref: string };
 	attributes: { [attribute: string]: AttributeSchema };
 	relations: EntityRelationSchema[];
 }

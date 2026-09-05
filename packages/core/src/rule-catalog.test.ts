@@ -134,6 +134,30 @@ function everythingWrong(): Workspace {
 	child.includes(treeRoot, "back up");
 	treeRoot.includes(shape, "includes a value object");
 	child.uses(twice, "uses an entity");
+	// specialisation-in-boundary: an entity that is a kind of one in another
+	// aggregate, and a value object that is a kind of one in a context it
+	// shares no kernel with
+	tree.addEntity("Stretched Kind", { description: "", specialises: r1 });
+	a.addValueObject("Borrowed Kind", {
+		description: "",
+		specialises: b.addValueObject("Theirs", { description: "" }),
+	});
+	// specialisation-not-root: a root that is also a kind of another entity,
+	// and specialisation-redeclares: it restates an attribute it already has
+	const alsoRoot = twoRoots.addEntity("Also Root", {
+		description: "",
+		root: true,
+		specialises: r1,
+	});
+	alsoRoot.addAttribute("innerId", { type: "string" });
+	// specialisation-cycle: two entities each a kind of the other, which only
+	// an edit after the fact can produce
+	const ring = tree.addEntity("Ring", { description: "" });
+	const ringToo = tree.addEntity("Ring Too", {
+		description: "",
+		specialises: ring,
+	});
+	ring.specialises = ringToo;
 	// invariant-in-aggregate: a rule reaching into another aggregate
 	tree.addInvariant("Stretched", { description: "" }).constrains(r1);
 	// invariant-in-context: a context's rule counting another context's entity,

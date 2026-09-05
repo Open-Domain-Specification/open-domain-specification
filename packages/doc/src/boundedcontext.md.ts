@@ -44,9 +44,17 @@ const schemaSection = (schema: DataSchema) => [
 ];
 
 const valueObjectSection = (valueObject: ValueObject) => [
-	valueObject.name,
+	// A kind says so beside its name, and lists what it has from the value
+	// object it is a kind of along with its own (decision 22).
+	valueObject.specialises
+		? `${valueObject.name} (a kind of ${valueObject.specialises.name})`
+		: valueObject.name,
 	valueObject.description,
-	attributeListMd(valueObject.attributes, valueObject.boundedcontext.path),
+	attributeListMd(
+		valueObject.attributes,
+		valueObject.boundedcontext.path,
+		valueObject.inheritedAttributes,
+	),
 	aggregatesHolding(valueObject)
 		.map((it) => it.name)
 		.join(", ") || "-",

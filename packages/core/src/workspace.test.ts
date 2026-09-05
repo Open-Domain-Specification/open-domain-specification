@@ -416,3 +416,99 @@ describe("an external bounded context", () => {
 		expect(rebuilt.getBoundedContextByRefOrThrow(bc.ref).external).toBe(true);
 	});
 });
+
+describe("a kind of another entity or value object", () => {
+	/** Account with two kinds, and a kernel value object with one. */
+	function kinds() {
+		const ws = new Workspace("W", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0",
+		});
+		const kernel = ws.addBoundedContext("Kernel", { description: "" });
+		const shared = kernel.addValueObject("Amount", { description: "" });
+		const bc = ws.addBoundedContext("Accounts", { description: "" });
+		const fee = bc.addValueObject("Fee", {
+			description: "",
+			specialises: shared,
+		});
+		const agg = bc.addAggregate("Account", { description: "" });
+		const account = agg.addRootEntity("Account", { description: "" });
+		const id = account.addAttribute("Id", { type: "uuid", identity: true });
+		const status = bc.addValueObject("Status", { description: "" });
+		account.uses(status, "has-status", "1");
+		const loan = agg.addEntity("Loan Account", {
+			description: "",
+			specialises: account,
+		});
+		const term = loan.addAttribute("Term", { type: "months" });
+		const savings = agg.addEntity("Savings Account", {
+			description: "",
+			specialises: account,
+		});
+		return {
+			ws,
+			bc,
+			agg,
+			shared,
+			fee,
+			account,
+			id,
+			status,
+			loan,
+			term,
+			savings,
+		};
+	}
+
+	it("names what it is a kind of, and what is a kind of it", () => {
+		const { account, loan, savings, shared, fee } = kinds();
+		expect(loan.specialises).toBe(account);
+		expect(account.kinds).toEqual([loan, savings]);
+		expect(loan.kinds).toEqual([]);
+		// A kernel's value object is specialised from the context that borrows
+		// it, so its kinds are found across the workspace, not in its own
+		// context.
+		expect(shared.kinds).toEqual([fee]);
+		expect(fee.ancestors).toEqual([shared]);
+	});
+
+	it("has its parent's attributes and relations as its own, its own first", () => {
+		const { account, id, loan, term, status } = kinds();
+		expect(loan.ancestors).toEqual([account]);
+		expect(loan.allAttributes).toEqual([term, id]);
+		expect(loan.inheritedAttributes).toEqual([id]);
+		expect(loan.allRelations.map((r) => r.target)).toEqual([status]);
+		expect(loan.relations).toEqual([]);
+		// The parent gains nothing from its kinds; inheritance runs one way.
+		expect(account.allAttributes).toEqual([id]);
+	});
+
+	it("stops walking a chain that returns to where it started", () => {
+		const { account, loan } = kinds();
+		account.specialises = loan;
+		expect(loan.ancestors).toEqual([account]);
+		expect(account.ancestors).toEqual([loan]);
+		expect(loan.allAttributes.length).toBe(2);
+	});
+
+	it("carries what it is a kind of into the schema and back out again", () => {
+		const { ws, account, loan, shared, fee } = kinds();
+		expect(loan.toSchema().specialises).toEqual({ $ref: account.ref });
+		expect(account.toSchema().specialises).toBeUndefined();
+		expect(fee.toSchema().specialises).toEqual({ $ref: shared.ref });
+		const rebuilt = Workspace.fromSchema(
+			JSON.parse(JSON.stringify(ws.toSchema())),
+		);
+		expect(rebuilt.getEntityByRefOrThrow(loan.ref).specialises?.ref).toBe(
+			account.ref,
+		);
+		// The kernel's value object is loaded before the context that borrows
+		// it or after it, depending on declaration order; either way the link
+		// is joined once every context exists.
+		expect(rebuilt.getValueObjectByRefOrThrow(fee.ref).specialises?.ref).toBe(
+			shared.ref,
+		);
+		expect(rebuilt.toSchema()).toEqual(ws.toSchema());
+	});
+});

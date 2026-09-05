@@ -48,9 +48,20 @@ function relationNode(node: Entity | ValueObject): ODSRelationMapNode {
 export class ODSRelationGraph extends AbstractVisitor {
 	protected readonly _relations = new Set<EntityRelation>();
 	protected readonly _identities = new Set<Attribute>();
+	protected readonly _subtypes = new Set<Entity | ValueObject>();
 
 	get relations(): EntityRelation[] {
 		return Array.from(this._relations.values());
+	}
+
+	/**
+	 * The entities and value objects in scope that are a kind of another one.
+	 * The map draws each as a generalisation, pointing at what it is a kind
+	 * of, which may be a value object of the kernel context it is borrowed
+	 * from (decision 22).
+	 */
+	get subtypes(): (Entity | ValueObject)[] {
+		return Array.from(this._subtypes.values());
 	}
 
 	/**
@@ -73,17 +84,23 @@ export class ODSRelationGraph extends AbstractVisitor {
 
 	visitEntity(entity: Entity) {
 		this.collectIdentities(entity);
+		this.collectSpecialisation(entity);
 		super.visitEntity(entity);
 	}
 
 	visitValueObject(valueobject: ValueObject) {
 		this.collectIdentities(valueobject);
+		this.collectSpecialisation(valueobject);
 		super.visitValueObject(valueobject);
 	}
 
 	private collectIdentities(node: Entity | ValueObject) {
 		for (const attribute of node.attributes.values())
 			if (attribute.identifies) this._identities.add(attribute);
+	}
+
+	private collectSpecialisation(node: Entity | ValueObject) {
+		if (node.specialises) this._subtypes.add(node);
 	}
 
 	static fromWorkspace(workspace: Workspace) {
@@ -144,7 +161,11 @@ export class ODSRelationMap {
 		return edge;
 	}
 
-	constructor(relations: EntityRelation[], identities: Attribute[] = []) {
+	constructor(
+		relations: EntityRelation[],
+		identities: Attribute[] = [],
+		subtypes: (Entity | ValueObject)[] = [],
+	) {
 		for (const relation of relations) {
 			const sourceNode = this.addNode(relationNode(relation.source));
 			const targetNode = this.addNode(relationNode(relation.target));
@@ -173,10 +194,28 @@ export class ODSRelationMap {
 				label: attribute.name,
 			});
 		}
+		// A kind draws as a generalisation at what it is a kind of, and carries
+		// no label or multiplicity: the line says the whole of it, and the
+		// attributes it inherits stay in the parent's compartment rather than
+		// being repeated in the kind's (decision 22).
+		for (const subtype of subtypes) {
+			const parent = subtype.specialises;
+			if (!parent) continue;
+			this.addEdge({
+				source: this.addNode(relationNode(subtype)),
+				target: this.addNode(relationNode(parent)),
+				relation: "specialises",
+				label: "",
+			});
+		}
 	}
 
 	static fromGraph(graph: ODSRelationGraph) {
-		return new ODSRelationMap(graph.relations, graph.identities);
+		return new ODSRelationMap(
+			graph.relations,
+			graph.identities,
+			graph.subtypes,
+		);
 	}
 
 	static fromWorkspace(workspace: Workspace) {
@@ -227,10 +266,11 @@ export type ODSRelationMapEdge = {
 	source: ODSRelationMapNode;
 	target: ODSRelationMapNode;
 	/**
-	 * The relation drawn, or `identifies` for the identity an attribute holds
-	 * of another entity: the one dependency that may cross a context boundary.
+	 * The relation drawn; `identifies` for the identity an attribute holds of
+	 * another entity, the one dependency that may cross a context boundary;
+	 * or `specialises` for a kind pointing at what it is a kind of.
 	 */
-	relation: EntityRelationType | "identifies";
+	relation: EntityRelationType | "identifies" | "specialises";
 	label: string;
 	cardinality?: RelationCardinality;
 };

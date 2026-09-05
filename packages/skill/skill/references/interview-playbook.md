@@ -92,6 +92,16 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   `shared-kernel` relationship with that context.
 - "What identifies it: an order number, an email?" → an attribute with `identity: true`.
 - "What details does it carry?" → attributes, with `type` in the user's words.
+- "Are there kinds of this that differ in what they hold?" → ask when an attribute applies
+  only sometimes, when a type field lists the sorts of something, or when the user says "a
+  title is a film or a series". Each kind is its own entity or value object with
+  `specialises` pointing at the one they are all kinds of; it has that one's attributes and
+  relations already and declares only what it adds. The parent keeps what every kind has, and
+  its description says so when no instance is ever just the parent — there is no abstract
+  flag. An entity is a kind of an entity of its own aggregate and is never itself `root`; a
+  value object is a kind of one its own context declares, or one it borrows over a
+  `shared-kernel`. If the kinds differ only in a label, not in what they hold, it is one
+  element with a value object of closed values, not a hierarchy.
 - "Which of these are always present?" → ask once per entity, value object and schema, after
   the attributes are listed. Everything the user does not name is `optional: true`; the ones
   they do name are left unmarked, because required is the common case and stays unwritten. An

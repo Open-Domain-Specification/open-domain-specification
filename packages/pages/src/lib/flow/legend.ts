@@ -166,6 +166,16 @@ function relationLegend(graph: Graph): LegendEntry[] {
 		...(types.has("relation-identifies")
 			? [{ mark: "dashed «identifies»", name: "Identity of another entity" }]
 			: []),
+		...(types.has("relation-specialises")
+			? [
+					{
+						mark: "hollow triangle",
+						name: "Generalisation (is a kind of)",
+						title:
+							"The kind has every attribute and relation of what it points at, plus its own; the triangle sits at the parent.",
+					},
+				]
+			: []),
 		...(graph.edges.some((e) => e.sourceLabel || e.targetLabel)
 			? [{ mark: "1, *, 0..1", name: "Multiplicity" }]
 			: []),

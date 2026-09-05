@@ -53,6 +53,19 @@ function tacticalEdges(): Model {
 		cardinality: "1",
 	});
 
+	// A kind of the root and a kind of the value object, so the two tactical
+	// pages have their "A kind of" and "Kinds" facts and their inherited
+	// attribute group to draw (decision 22).
+	const kind = aggregate.addEntity("Edge Kind", {
+		description: "A kind of the root: it has the root's id and one more field.",
+		specialises: root,
+	});
+	kind.addAttribute("kindOnly", { type: "string" });
+	bc.addValueObject("Edge Value Kind", {
+		description: "A kind of the value object, declared in the same context.",
+		specialises: vo,
+	});
+
 	const first = aggregate.addConsumable("First Happened", {
 		type: "event",
 		description: "One of the two events the operation raises.",
@@ -113,6 +126,14 @@ function tacticalEdges(): Model {
 
 const model = tacticalEdges();
 const draw = (ref: string) => render(Harness, { model, ref }).container;
+/** The page header's facts, as term to what it says. */
+const facts = (container: Element) =>
+	Object.fromEntries(
+		[...container.querySelectorAll("dt")].map((t) => [
+			t.textContent?.trim(),
+			t.nextElementSibling?.textContent?.trim(),
+		]),
+	);
 
 describe("the tactical templates on the shapes no shared fixture carries", () => {
 	it("EntityPage: a relation with no label leaves its cell empty rather than inventing one", () => {
@@ -137,6 +158,43 @@ describe("the tactical templates on the shapes no shared fixture carries", () =>
 		][1];
 		expect(incoming?.textContent).toContain("Edge Neighbour");
 		expect(incoming?.textContent).toContain("points-at");
+	});
+
+	it("EntityPage: a kind names what it is a kind of, and its parent names its kinds", () => {
+		const kind = draw(
+			"#/boundedcontexts/edge_context/aggregates/edge_aggregate/entities/edge_kind",
+		);
+		expect(facts(kind)["A kind of"]).toBe("Edge Root");
+		// It has no identity of its own; the one it is identified by is the
+		// root's, and the fact reads it as the kind's.
+		expect(facts(kind).Identity).toBe("id");
+		// Own attributes first, then a group naming where the rest come from.
+		const groups = [...kind.querySelectorAll("#attributes tr.group th")].map(
+			(th) => th.textContent?.trim(),
+		);
+		expect(groups).toEqual(["Inherited from Edge Root"]);
+		expect(kind.querySelector("#attributes .count")?.textContent).toContain(
+			"2",
+		);
+
+		const parent = draw(
+			"#/boundedcontexts/edge_context/aggregates/edge_aggregate/entities/edge_root",
+		);
+		expect(facts(parent).Kinds).toBe("Edge Kind");
+		expect(facts(parent)["A kind of"]).toBeUndefined();
+		expect(parent.querySelector("#attributes tr.group")).toBeNull();
+	});
+
+	it("ValueObjectPage: a kind names what it is a kind of, and its parent names its kinds", () => {
+		const kind = draw(
+			"#/boundedcontexts/edge_context/valueobjects/edge_value_kind",
+		);
+		expect(facts(kind)["A kind of"]).toBe("Edge Value");
+		const parent = draw(
+			"#/boundedcontexts/edge_context/valueobjects/edge_value",
+		);
+		expect(facts(parent).Kinds).toBe("Edge Value Kind");
+		expect(facts(parent)["A kind of"]).toBeUndefined();
 	});
 
 	it("ConsumablePage: an operation raising two events separates them", () => {
