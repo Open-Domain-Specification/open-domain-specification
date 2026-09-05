@@ -31,6 +31,10 @@ entity or a value object holds value objects, because a payload shape
 belongs at the boundary rather than inside the model. A collection stays in
 the type string (`OrderLine[]`), since there is no separate list construct.
 
+An attribute may be marked `optional`; absent means required, the common
+case. An identity attribute is never optional — `identity-not-optional`
+says an identity that may be missing is not an identity.
+
 An attribute that holds an id says whose, with `identifies`: the entity it is
 the identity of. That entity may be in another bounded context, and usually is
 — a relation never crosses a boundary, so an identity attribute is the whole of
@@ -44,11 +48,25 @@ draws it as a dashed edge to the entity named, inside that entity's own
 aggregate cluster, and the `identifies-entity` rule checks the target is an
 entity of this workspace.
 
+## Specialisation
+
+An entity or value object may be a **kind of** another
+(`entity.specialises(other)`): it has every attribute and relation of the
+one it specialises, plus its own. An entity is a kind of an entity of its
+own aggregate; a value object is a kind of one its own context declares or
+borrows through a shared kernel. A subtype is never itself `root: true` — a
+kind of the root is reached through it — and does not redeclare an
+attribute it already has from its parent. NorthBank's current, savings and
+loan accounts, or StreamLine's films and series, are kinds of one account
+or one title: one identity scheme and one set of invariants, with
+attributes each kind has and the others do not.
+
 ## Relations and invariants
 
 Entity relations (`includes`, `uses`, `references`) may carry a UML
 cardinality: `1`, `0..1`, `*` or `1..*`. Across aggregates only `references`
-is allowed and it must target the other aggregate's root.
+is allowed and it must target the other aggregate's root, or a kind of that
+root.
 
 Invariants list what they **constrain**: entities, value objects, single
 attributes, and the consumables of their own aggregate. A rule about a
@@ -56,6 +74,17 @@ transition — "once sold, a pet does not go back to available" — names the
 operation that makes the transition, because that is where it is enforced;
 the operation then reads as the rule it has to uphold. Invariants stay
 prose; there is no expression language.
+
+An invariant may instead belong to the bounded context rather than to one
+aggregate: one open application per customer, one active offer per seller
+and SKU, a daily transfer limit are true across instances, or across
+aggregates, of a context — no single instance can see the others, so the
+rule holds only because something checks it before acting. A context
+invariant constrains entities and attributes of any aggregate in the
+context and must name at least one operation of the context that guards it
+(`context-invariant-guarded`); nothing it constrains may reach outside the
+context (`invariant-in-context`). A rule across contexts is a policy or a
+process reacting to the other context's events instead.
 
 ## Schemas
 
