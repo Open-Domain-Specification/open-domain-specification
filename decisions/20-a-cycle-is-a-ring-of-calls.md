@@ -29,3 +29,7 @@ The first wording of the rule's message claimed each context waits on the next t
 ## Amendment (2026-09-07, second)
 
 The architect review read Evans back to the rule: a partnership is two teams whose success depends on each other, a joint release train, and that does not require consumption in both directions. RiverMart's and StreamLine's one-way partnerships were truthful and the rule over-claimed. `partnership-backed` now requires traffic in at least one direction, because a partnership with no exchange at all is a wish, and its text says why the other direction is not demanded (card 63 keeps the models; the rule change lands with card 69).
+
+## Amendment (2026-09-08)
+
+Codex's review made the remaining overreach plain: two contexts that call each other through anti-corruption layers evolve independently, and telling them they cannot change first is false. A step whose downstream declares an anti-corruption layer toward that upstream does not count toward a ring (card 82), and the message says only what the model can: the contexts depend on each other's contracts, and the repairs are an ACL, a partnership, or an event.

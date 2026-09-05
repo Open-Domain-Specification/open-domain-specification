@@ -50,7 +50,7 @@ An aggregate has its own name and description because it is more than its root: 
 
 ### The aggregate tree is a tree of instances
 
-`aggregate-tree` says an aggregate is loaded and saved as one thing through its root, so every entity is reachable from the root and no instance has two parents. The model declares types, not instances, and the rule reads it that way (card 50, after the seventh review run): an entity that includes its own type is the composite pattern, a category of categories, and is legal; an entity type included by two parent types is legal, because each instance still has one parent; only a cycle through two or more distinct types is an error, because then no type can be named as the one that holds the other. The first wording of the rule forbade all three and was wrong about two of them.
+`aggregate-tree` says an aggregate is loaded and saved as one thing through its root, so every entity is reachable from the root. The model declares types, not instances, and a graph of types says nothing conclusive about a tree of instances: a questionnaire's groups contain questions that contain groups, and every instance is still a finite tree. The rule therefore checks reachability and the containment targets and judges no cycle among types at all (card 82, after Codex's first review reproduced a valid model it rejected). Earlier wordings forbade self-inclusion, then only mutual inclusion, and were wrong both times for the same reason.
 
 ### A rule that spans aggregates is not an invariant
 

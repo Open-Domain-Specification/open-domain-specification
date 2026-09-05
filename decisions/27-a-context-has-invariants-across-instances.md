@@ -26,3 +26,7 @@ Decision 15 said a rule that spans aggregates is not an invariant but a domain s
 ## Note (2026-09-07)
 
 Card 68 found five cross-instance rules in the reference models, not the eleven this record guessed. The other six, an order approved only while its pet is available, a session started only with an entitlement, a payment initiated only within the available balance, are rules checked against another context's data before acting. They are preconditions of an operation, held at the moment of the call and named by the aggregate invariant that constrains that operation (decision 19), and they stay where they are. A context invariant is the rule no single instance can keep.
+
+## Amendment (2026-09-08)
+
+Three kinds, each named on the invariant's page. A value object's invariant holds by construction and constrains only the value's own attributes; a Money's same-currency rule or an IBAN's checksum lives on the value, not on whichever aggregate first held it (card 82). An aggregate's invariant holds on every save inside its boundary. A context's invariant is checked before acting by the operation that guards it, and the model says so plainly: a check can race, and a reader who needs an atomic reservation models it as an aggregate. An obligation across contexts, every captured payment eventually posted to the ledger, is a process whose end is the obligation met; the model states the mechanism, not a guarantee it cannot keep.

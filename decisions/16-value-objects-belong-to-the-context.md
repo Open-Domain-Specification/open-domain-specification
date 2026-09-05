@@ -30,3 +30,7 @@ Reviewers ask for aggregate-private value objects, for two reasons: an aggregate
 ## Amendment (2026-09-08)
 
 A shared kernel is co-owned. Where one team owns the library and others merely use it, the relationship is directed: the owner is upstream with a published language, and each user is a downstream conformist, which decision 03's conformist role now lets borrow the upstream's schemas and value objects in that one direction (card 81). NorthBank's kernel is co-owned by a kernel team and stays a shared kernel; a model whose primitives belong to one team declares the directed form instead.
+
+## Note (2026-09-08)
+
+Evans's shared kernel is a bounded subset of model and code two teams own together, not only primitives. The model holds it the same way in both sizes: two contexts share value objects and schemas directly, and anything with identity and behaviour that two teams own together, a jointly maintained Product with its unit conversions, is an aggregate of a kernel context that both consume through its operations. Nothing is duplicated and the agreement is the kernel context's own model. A shared entity outside a kernel context is not expressible, on purpose: an entity has one home.
