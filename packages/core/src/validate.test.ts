@@ -1390,6 +1390,83 @@ describe("context-invariant-guarded", () => {
 	});
 });
 
+describe("precondition-names-operation", () => {
+	/** An aggregate with one operation, for a rule to guard or fail to. */
+	function guardable() {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const agg = bc.addAggregate("Ledger", { description: "" });
+		const root = agg.addRootEntity("Entry", { description: "" });
+		const post = agg.provides("Post Entry", {
+			description: "",
+			type: "operation",
+		});
+		return { ws, agg, root, post };
+	}
+
+	const fired = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "precondition-names-operation")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("refuses a precondition that names no operation", () => {
+		const { ws, agg, root } = guardable();
+		const loose = agg
+			.addInvariant("Funds Available", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(root);
+		expect(fired(ws)).toEqual([
+			[
+				"error",
+				'Invariant "Funds Available" is marked a precondition but names no operation; a precondition is checked before something runs, so say what',
+				loose.ref,
+			],
+		]);
+	});
+
+	it("accepts one that names the operation it guards", () => {
+		const { ws, agg, root, post } = guardable();
+		agg
+			.addInvariant("Funds Available", { description: "", precondition: true })
+			.constrains(root, post);
+		expect(fired(ws)).toEqual([]);
+	});
+
+	it("says nothing about a rule that names an operation and keeps holding", () => {
+		// PostEntry must produce balanced postings and the postings stay
+		// balanced: the operation is named for responsibility, not to weaken the
+		// rule (decision 27, second amendment).
+		const { ws, agg, root, post } = guardable();
+		agg
+			.addInvariant("Balanced Postings", { description: "" })
+			.constrains(root, post);
+		expect(fired(ws)).toEqual([]);
+	});
+
+	it("round-trips the flag", () => {
+		const { ws, agg, root, post } = guardable();
+		const precondition = agg
+			.addInvariant("Funds Available", { description: "", precondition: true })
+			.constrains(root, post);
+		const plain = agg
+			.addInvariant("Balanced Postings", { description: "" })
+			.constrains(root, post);
+		const rebuilt = Workspace.fromSchema(
+			JSON.parse(JSON.stringify(ws.toSchema())),
+		);
+		expect(
+			rebuilt.getInvariantByRefOrThrow(precondition.ref).precondition,
+		).toBe(true);
+		expect(rebuilt.getInvariantByRefOrThrow(plain.ref).precondition).toBe(
+			false,
+		);
+		expect(rebuilt.toSchema()).toEqual(ws.toSchema());
+	});
+});
+
 describe("attribute-one-shape", () => {
 	it("refuses an attribute typed by a value object and a schema at once", () => {
 		const ws = emptyWorkspace();
@@ -4828,8 +4905,9 @@ describe("valueobject-context", () => {
 describe("waiting on an answer", () => {
 	/**
 	 * Payments answers a caller, and Checkout calls it: the shape decision 23's
-	 * second amendment is about. `consume` is what makes the answer this
-	 * context's to hear; `reject` puts the shape on the operation.
+	 * second amendment is about, named by its origin as the third asks.
+	 * `consume` is what makes the answer this context's to hear; `reject` puts
+	 * the shape on the operation.
 	 */
 	function answered({ consume = true, reject = true } = {}) {
 		const ws = emptyWorkspace();
@@ -4879,7 +4957,7 @@ describe("waiting on an answer", () => {
 		const process = checkout
 			.addProcess("Checkout", { description: "" })
 			.starts(confirmed)
-			.on(declined)
+			.on(authorise.rejected(declined))
 			.issues(ask, reopen)
 			.ends(confirmed);
 		return {
@@ -4900,40 +4978,63 @@ describe("waiting on an answer", () => {
 			.filter((d) => d.rule === "consumable-kind")
 			.map((d) => [d.severity, d.message, d.ref]);
 
-	it("accepts a schema an operation the context consumes rejects with", () => {
+	it("accepts a refusal of an operation the context consumes", () => {
 		expect(kinds(answered().ws)).toEqual([]);
 	});
 
-	it("accepts a schema that operation returns, the same way", () => {
-		const { ws, authorise, declined } = answered({ reject: false });
+	it("accepts what that operation returns, the same way", () => {
+		const { ws, checkout, authorise, declined, reopen } = answered({
+			reject: false,
+		});
 		authorise.returns = declined;
+		checkout.processes.clear();
+		checkout
+			.addPolicy("Reopen on decline", { description: "" })
+			.on(authorise.returned())
+			.issues(reopen);
 		expect(kinds(ws)).toEqual([]);
 	});
 
-	it("refuses a shape nothing the context calls answers with, naming what to do", () => {
+	it("refuses a rejection the operation never declares, naming what to do", () => {
 		const { ws, process } = answered({ reject: false });
 		expect(kinds(ws)).toEqual([
 			[
 				"error",
-				'Process "Checkout" waits for "Payment Declined", which no operation "Checkout" consumes answers with; name the operation that returns or rejects with "Payment Declined", and consume it, or react to an event instead',
+				'Process "Checkout" waits for "Authorise Payment rejects with Payment Declined", which "Authorise Payment" never declares; wait for an answer the operation says it comes back with, or react to an event instead',
 				process.ref,
 			],
 		]);
 	});
 
 	it("refuses an answer from an operation this context never calls", () => {
-		const { ws } = answered({ consume: false });
-		expect(kinds(ws)).toHaveLength(1);
+		const { ws, process } = answered({ consume: false });
+		expect(kinds(ws)).toEqual([
+			[
+				"error",
+				'Process "Checkout" waits for "Authorise Payment rejects with Payment Declined", but nothing in "Checkout" consumes "Authorise Payment"; a context hears an answer by having made the call, so consume that operation, or react to an event instead',
+				process.ref,
+			],
+		]);
+	});
+
+	it("refuses an answer of an operation that returns nothing at the DSL", () => {
+		// There is no answer to name, so nothing is built to be waited on: the
+		// mistake is refused where it is written rather than carried as an
+		// answer with no shape.
+		const { authorise } = answered({ reject: false });
+		expect(() => authorise.returned()).toThrow(
+			"Operation Authorise Payment returns nothing",
+		);
 	});
 
 	it("reads a policy's on and a process's ends the same way", () => {
-		const { ws, checkout, confirmed, declined, reopen } = answered({
+		const { ws, checkout, confirmed, declined, authorise, reopen } = answered({
 			reject: false,
 		});
 		checkout.processes.clear();
 		const policy = checkout
 			.addPolicy("Reopen on decline", { description: "" })
-			.on(declined)
+			.on(authorise.rejected(declined))
 			.issues(reopen);
 		expect(kinds(ws).map(([, , ref]) => ref)).toEqual([policy.ref]);
 		checkout.policies.clear();
@@ -4941,7 +5042,7 @@ describe("waiting on an answer", () => {
 			.addProcess("Checkout", { description: "" })
 			.starts(confirmed)
 			.issues(reopen)
-			.ends(declined);
+			.ends(authorise.rejected(declined));
 		expect(kinds(ws).map(([, , ref]) => ref)).toEqual([process.ref]);
 	});
 
@@ -4956,7 +5057,7 @@ describe("waiting on an answer", () => {
 				.filter((d) => d.rule === "relationship-declared")
 				.map((d) => d.message),
 		).toContain(
-			'Process "Checkout" in "Checkout" waits for "Payment Declined" to come back from "Payments", but no relationship says how "Payments" and "Checkout" stand to each other',
+			'Process "Checkout" in "Checkout" waits for "Authorise Payment rejects with Payment Declined" to come back from "Payments", but no relationship says how "Payments" and "Checkout" stand to each other',
 		);
 	});
 
@@ -4968,13 +5069,44 @@ describe("waiting on an answer", () => {
 	});
 
 	it("round-trips the answer through the schema and back", () => {
-		const { ws, process, declined } = answered();
+		const { ws, process, declined, authorise } = answered();
 		const rebuilt = Workspace.fromSchema(
 			JSON.parse(JSON.stringify(ws.toSchema())),
 		);
 		const waited = rebuilt.getProcessByRefOrThrow(process.ref).events;
-		expect(waited.map((it) => it.ref)).toEqual([declined.ref]);
+		expect(waited.map((it) => it.ref)).toEqual([
+			`${authorise.ref}/rejects/${declined.id}`,
+		]);
 		expect(rebuilt.toSchema()).toEqual(ws.toSchema());
+	});
+
+	it("names an answer by its origin, and resolves that ref", () => {
+		const { ws, authorise, declined } = answered();
+		const rejected = authorise.rejected(declined);
+		expect(rejected.ref).toBe(`${authorise.ref}/rejects/payment_declined`);
+		expect(ws.getByRef(rejected.ref)).toBe(rejected);
+		authorise.returns = declined;
+		expect(authorise.returned().ref).toBe(`${authorise.ref}/returns`);
+		expect(ws.getByRef(`${authorise.ref}/returns`)).toBe(authorise.returned());
+	});
+
+	it("keeps two operations' refusals apart even when the shape is shared", () => {
+		// Codex's review, run 4: Authorise and Refund both refuse with one
+		// PaymentDeclined, and the reactor named only one of them.
+		const { ws, payments, declined, authorise } = answered();
+		const refund = payments.services
+			.get("payments_api")
+			?.provides("Refund Payment", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+				rejects: [declined],
+			});
+		expect(refund).toBeDefined();
+		expect(authorise.rejected(declined)).not.toBe(refund?.rejected(declined));
+		// Nothing new to report: the process waits on Authorise's refusal, and
+		// Refund's is a different answer nobody named.
+		expect(kinds(ws)).toEqual([]);
 	});
 });
 

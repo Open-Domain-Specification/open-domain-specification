@@ -656,7 +656,7 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 		const process = checkout
 			.addProcess("Checkout", { description: "" })
 			.starts(confirmed)
-			.on(declined)
+			.on(authorise.rejected(declined))
 			.issues(ask, reopen)
 			.ends(held);
 		return { ws, declined, authorise, held, process, ask };
@@ -712,12 +712,36 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 	});
 
 	it("draws an ending answer from the operation into the process", () => {
-		const { ws, process, declined, held } = callAndBranch();
+		const { ws, process, declined, held, authorise } = callAndBranch();
 		process.events.length = 0;
 		process.endEvents.length = 0;
-		process.ends(declined, held);
+		process.ends(authorise.rejected(declined), held);
 		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
 			"Authorise Payment -> Checkout [Payment Declined (ends)]",
+		);
+	});
+
+	it("connects only the operation the reactor named, where two share a shape", () => {
+		// Codex's review, run 4: Authorise and Refund both refuse with one
+		// Payment Declined. The process waits on Authorise's refusal, so Refund
+		// answers nobody and no edge runs from it.
+		const { ws, declined } = callAndBranch();
+		const paymentsApi = ws
+			.getBoundedContextByRefOrThrow("#/boundedcontexts/payments")
+			.services.get("payments_api");
+		const refund = paymentsApi?.provides("Refund Payment", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+			rejects: [declined],
+		});
+		expect(refund).toBeDefined();
+		const drawnEdges = drawn(ODSFlowMap.fromWorkspace(ws));
+		expect(drawnEdges).toContain(
+			"Authorise Payment -> Checkout [Payment Declined]",
+		);
+		expect(drawnEdges).not.toContain(
+			"Refund Payment -> Checkout [Payment Declined]",
 		);
 	});
 

@@ -395,12 +395,40 @@ export class Workspace
 	}
 
 	/**
+	 * Resolves an answer ref: `<operation ref>/returns`, or
+	 * `<operation ref>/rejects/<schema id>` for one of its refusals. The shape
+	 * is looked up among the ones that operation declares, because an answer is
+	 * the operation coming back and nothing else can say what it comes back as
+	 * (decision 23, third amendment).
+	 */
+	getAnswerByRef(ref: string): Answer | undefined {
+		const [operationRef, rejectionId] = ref.endsWith("/returns")
+			? [ref.slice(0, -"/returns".length)]
+			: ref.split("/rejects/");
+		if (!operationRef) return undefined;
+		const operation = this.getConsumableByRef(operationRef);
+		if (!operation) return undefined;
+		if (rejectionId === undefined)
+			return operation.returns ? operation.returned() : undefined;
+		const rejection = operation.rejects.find((it) => it.id === rejectionId);
+		return rejection && operation.rejected(rejection);
+	}
+
+	getAnswerByRefOrThrow(ref: string): Answer {
+		const answer = this.getAnswerByRef(ref);
+		if (!answer) {
+			throw new Error(`Answer with ref ${ref} not found`);
+		}
+		return answer;
+	}
+
+	/**
 	 * Resolves any ref a policy's `on`, or a process's `on` or `ends`, may
-	 * name: an event, or the schema an operation answers with (decision 23).
+	 * name: an event, or an answer of an operation (decision 23).
 	 */
 	getReactionTriggerByRef(ref: string): ReactionTrigger | undefined {
 		const target = this.getByRef(ref);
-		return target instanceof Consumable || target instanceof DataSchema
+		return target instanceof Consumable || target instanceof Answer
 			? target
 			: undefined;
 	}
@@ -408,7 +436,7 @@ export class Workspace
 	getReactionTriggerByRefOrThrow(ref: string): ReactionTrigger {
 		const target = this.getReactionTriggerByRef(ref);
 		if (!target) {
-			throw new Error(`Consumable or Schema with ref ${ref} not found`);
+			throw new Error(`Consumable or Answer with ref ${ref} not found`);
 		}
 		return target;
 	}
@@ -495,8 +523,16 @@ export class Workspace
 				return this.getTermByRef(ref);
 			case "attributes":
 				return this.getAttributeByRef(ref);
+			// An answer hangs off the operation it comes back from rather than
+			// off a collection, so the two shapes are read here: a refusal by the
+			// `rejects` segment before the shape's id, and the successful answer
+			// by its final `returns`, which no collection is named.
+			case "rejects":
+				return this.getAnswerByRef(ref);
 			default:
-				return undefined;
+				return segments[segments.length - 1] === "returns"
+					? this.getAnswerByRef(ref)
+					: undefined;
 		}
 	}
 
@@ -1184,6 +1220,53 @@ export class Consumable
 		provider.consumables.set(this.id, this);
 	}
 
+	/**
+	 * The answers this operation has been asked for, kept so that naming one
+	 * twice names one object: a reaction's `on` is compared by identity, and
+	 * the walk keys what it wakes by the answer itself.
+	 */
+	private readonly answersGiven = new Map<string, Answer>();
+
+	/**
+	 * The successful answer: what a caller gets back when this operation does
+	 * what it was asked. An operation that returns nothing has no such answer,
+	 * so asking for one is a mistake in the model that is refused here rather
+	 * than carried as an answer with no shape.
+	 */
+	returned(): Answer {
+		if (!this.returns)
+			throw new Error(
+				`Operation ${this.name} returns nothing, so it has no answer to wait for`,
+			);
+		return this.answerFor(this.returns, false);
+	}
+
+	/**
+	 * One refusal: what a caller gets back when this operation says no. The
+	 * schema is named rather than looked up, because `consumable-kind` is where
+	 * a refusal the operation never declared is reported.
+	 */
+	rejected(schema: DataSchema): Answer {
+		return this.answerFor(schema, true);
+	}
+
+	/** Both answers of this operation: what it returns, then what it refuses with. */
+	get answers(): Answer[] {
+		return [
+			...(this.returns ? [this.returned()] : []),
+			...this.rejects.map((it) => this.rejected(it)),
+		];
+	}
+
+	private answerFor(schema: DataSchema, rejection: boolean): Answer {
+		const key = rejection ? `rejects/${schema.ref}` : "returns";
+		const existing = this.answersGiven.get(key);
+		if (existing) return existing;
+		const answer = new Answer(this, schema, rejection);
+		this.answersGiven.set(key, answer);
+		return answer;
+	}
+
 	/** Declares an event consumable this operation may raise. */
 	raises(...events: Consumable[]): this {
 		for (const event of events) {
@@ -1235,6 +1318,76 @@ export class Consumable
 			comments: this.comments.length ? this.comments : undefined,
 			disposition: this.disposition,
 		};
+	}
+}
+
+/**
+ * One answer of one operation: what that call comes back with.
+ *
+ * An answer is named by where it comes from, not by the shape alone. Schemas
+ * are shared across consumables (decision 09), so two operations may refuse
+ * with the same `PaymentDeclined`; a reactor waiting on the shape would be
+ * woken by both, and the reaction walk would draw a causal step from a call
+ * nobody was waiting on. Naming the origin says which call came back:
+ * `<operation ref>/returns` is the successful answer and
+ * `<operation ref>/rejects/<schema id>` one of its refusals (decision 23,
+ * third amendment).
+ *
+ * Answers are made by {@link Consumable.returned} and
+ * {@link Consumable.rejected} and kept by the operation, so the same answer is
+ * the same object wherever it is named and the walk can key its listeners by
+ * it.
+ */
+export class Answer implements Referenceable {
+	/** The operation this answer comes back from. */
+	readonly operation: Consumable;
+	/** The shape it comes back as. */
+	readonly schema: DataSchema;
+	/** Whether this is a refusal rather than the successful answer. */
+	readonly rejection: boolean;
+
+	constructor(operation: Consumable, schema: DataSchema, rejection: boolean) {
+		this.operation = operation;
+		this.schema = schema;
+		this.rejection = rejection;
+	}
+
+	get ref(): string {
+		return this.rejection
+			? `${this.operation.ref}/rejects/${this.schema.id}`
+			: `${this.operation.ref}/returns`;
+	}
+
+	/** The shape's name: what the answer is read as in a list of triggers. */
+	get name(): string {
+		return this.schema.name;
+	}
+
+	/** The shape's description, which is what the answer carries. */
+	get description(): string | undefined {
+		return this.schema.description;
+	}
+
+	/** Where the answer comes from, in words: "X rejects with Y". */
+	get origin(): string {
+		return `${this.operation.name} ${this.rejection ? "rejects with" : "returns"} ${this.schema.name}`;
+	}
+
+	/** The context the call went to, which is where the answer comes from. */
+	get boundedcontext(): BoundedContext {
+		return this.operation.boundedcontext;
+	}
+
+	/**
+	 * Whether the operation really answers this way. A refusal is written by
+	 * naming a schema, so the DSL can name one the operation never declared;
+	 * `consumable-kind` reports that rather than the constructor refusing it,
+	 * because a model with a mistake in it still has to load and be validated.
+	 */
+	get declared(): boolean {
+		return this.rejection
+			? this.operation.rejects.includes(this.schema)
+			: this.operation.returns === this.schema;
 	}
 }
 
@@ -1608,6 +1761,8 @@ export class ValueObject
 
 export type InvariantAttributes = {
 	description: string;
+	/** Whether the rule is a precondition; see {@link Invariant.precondition}. */
+	precondition?: boolean;
 	id?: string;
 };
 /**
@@ -1642,6 +1797,19 @@ export class Invariant
 	owner: Aggregate | BoundedContext | ValueObject;
 	/** The elements this invariant constrains. */
 	targets: Constrainable[] = [];
+	/**
+	 * Whether the rule is a precondition: checked before the operation it names
+	 * runs, and not kept true afterwards. What it was checked against — a
+	 * balance, an entitlement, another context's answer — may move on the
+	 * moment the call returns.
+	 *
+	 * It is stated rather than inferred from naming an operation, because those
+	 * are two different facts: which operation keeps a rule, and what kind of
+	 * rule it is. `PostEntry` must produce balanced postings and the rule is
+	 * still true after it; the operation is named for responsibility, not to
+	 * weaken the rule (decision 27, second amendment).
+	 */
+	precondition: boolean;
 
 	get path(): string {
 		return `${this.owner.path}/invariants/${this.id}`;
@@ -1672,6 +1840,7 @@ export class Invariant
 		this.id = attributes.id || snakeCase(name);
 		this.name = name;
 		this.description = attributes.description;
+		this.precondition = attributes.precondition ?? false;
 		this.owner = owner;
 		this.owner.invariants.set(this.id, this);
 	}
@@ -1702,6 +1871,7 @@ export class Invariant
 		return {
 			name: this.name,
 			description: this.description,
+			precondition: this.precondition || undefined,
 			constrains: this.targets.map((it) => ({ $ref: it.ref })),
 		};
 	}
@@ -2192,17 +2362,20 @@ export class DataSchema
  * What a reaction waits for: an event, or the answer an operation comes back
  * with.
  *
- * An answer is named by the schema the operation `returns` or `rejects` with,
- * and means "when that answer comes back". The commonest process-manager
- * shape is a call and a branch on what came back, and a model that could wait
- * only on events made its authors publish a reply as a fact the world was
- * told about: RiverMart published a declined payment against decision 25's own
- * example and NorthBank modelled one synchronous verdict as two events. The
- * answer is synchronous because the operation is, so delivery is still implied
- * by the consumable's type and nothing new says it (decision 23, second
- * amendment).
+ * The commonest process-manager shape is a call and a branch on what came
+ * back, and a model that could wait only on events made its authors publish a
+ * reply as a fact the world was told about: RiverMart published a declined
+ * payment against decision 25's own example and NorthBank modelled one
+ * synchronous verdict as two events. The answer is synchronous because the
+ * operation is, so delivery is still implied by the consumable's type and
+ * nothing new says it (decision 23, second amendment).
+ *
+ * An answer is named by its origin — `op.returned()`, `op.rejected(schema)` —
+ * and never by the shape alone, so waiting on a refusal wakes the reactor for
+ * that call and not for every other operation that happens to refuse with the
+ * same schema (see {@link Answer}).
  */
-export type ReactionTrigger = Consumable | DataSchema;
+export type ReactionTrigger = Consumable | Answer;
 
 export type PolicyAttributes = {
 	description: string;

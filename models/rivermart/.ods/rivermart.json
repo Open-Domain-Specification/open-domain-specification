@@ -1627,7 +1627,7 @@
               "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_authorised"
             },
             {
-              "$ref": "#/boundedcontexts/payments/schemas/payment_declined"
+              "$ref": "#/boundedcontexts/payments/services/payments_api/provides/authorise_payment/rejects/payment_declined"
             }
           ],
           "then": [

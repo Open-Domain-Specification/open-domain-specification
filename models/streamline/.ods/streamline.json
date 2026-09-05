@@ -1668,6 +1668,7 @@
             "session_needs_entitlement": {
               "name": "SessionNeedsEntitlement",
               "description": "A session starts only with a current entitlement from billing, read by StartPlayback through GetEntitlement before the session is created",
+              "precondition": true,
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/playback/aggregates/playback_session/entities/playback_session"
@@ -3823,6 +3824,7 @@
             "ads_only_on_ad_supported_plan": {
               "name": "AdsOnlyOnAdSupportedPlan",
               "description": "Breaks exist only for sessions whose planTier is ad-supported; the tier comes from billing's entitlement answer, which PrepareBreaks reads before it plans anything",
+              "precondition": true,
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/entities/ad_break/attributes/plan_tier"

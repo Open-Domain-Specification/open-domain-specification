@@ -377,7 +377,10 @@ const changePetStatus = petAgg
 	.raises(petStatusChanged);
 // SoldNotReopen is a transition rule, so it names the operation that makes the
 // transition as well as the entity the transition belongs to; the operation is
-// declared here, below the invariant that guards it.
+// declared here, below the invariant that guards it. Not a precondition: the
+// pet's status is the aggregate's own, and once sold it stays sold every time
+// the pet is saved, so ChangePetStatus is named for responsibility rather than
+// to say the rule stops holding after it (card 94).
 soldNotReopen.constrains(changePetStatus);
 // The two transitions the order lifecycle drives are the aggregate's own, so
 // they are internal: what Catalog offers outward leaves PetApp below
@@ -691,6 +694,9 @@ orderAgg
 	.addInvariant("ApproveOnlyWhenAvailable", {
 		description:
 			"Move to approved only after the catalogue's summary reported the pet available; the catalogue's status itself is outside this aggregate, so the check is a read through the ACL, not a shared invariant",
+		// The catalogue may sell the pet a second later and this order says
+		// nothing about it: the read holds at approval only (card 94).
+		precondition: true,
 	})
 	.constrains(orderStatusVO, approveOrder);
 // Delivery is confirmed by Fulfilment, but the transition itself is the

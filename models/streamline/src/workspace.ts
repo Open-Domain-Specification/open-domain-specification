@@ -1123,6 +1123,9 @@ sessionAgg
 	.addInvariant("SessionNeedsEntitlement", {
 		description:
 			"A session starts only with a current entitlement from billing, read by StartPlayback through GetEntitlement before the session is created",
+		// The entitlement may lapse while the session runs, and nothing here
+		// re-establishes it: it is checked at the call and no later (card 94).
+		precondition: true,
 	})
 	.constrains(session, startPlayback);
 
@@ -2133,6 +2136,9 @@ breakAgg
 	.addInvariant("AdsOnlyOnAdSupportedPlan", {
 		description:
 			"Breaks exist only for sessions whose planTier is ad-supported; the tier comes from billing's entitlement answer, which PrepareBreaks reads before it plans anything",
+		// The tier is another context's to change, so the check holds at the
+		// moment PrepareBreaks reads it and not afterwards (card 94).
+		precondition: true,
 	})
 	.constrains(breakPlanTier, prepareBreaks);
 breakAgg

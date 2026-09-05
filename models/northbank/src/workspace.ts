@@ -1334,6 +1334,10 @@ const initiatePayment = paymentsApp
 // A rule across instructions, not inside one: the context holds it and
 // InitiatePayment keeps it, summing the day's instructions for the payer
 // account, since no single instruction can know the others (decision 27).
+// Not a precondition, on its own words: the total never exceeding the limit is
+// as true after InitiatePayment as before it, and everything it counts is this
+// context's own to read. InitiatePayment is named because it is the operation
+// that keeps it, which is what naming a guard says (card 94).
 paymentsBC
 	.addInvariant("DailyLimit", {
 		description:
@@ -1348,6 +1352,9 @@ instructionAgg
 	.addInvariant("FundsAvailableAtInitiation", {
 		description:
 			"An instruction is created only if the payer's available balance, read through AccountServicing, covers the amount; the overdraft itself is Accounts' rule at posting",
+		// The balance is Accounts' to move, so the cover holds at initiation and
+		// nothing here re-establishes it afterwards (card 94).
+		precondition: true,
 	})
 	.constrains(paymentAmount, initiatePayment);
 // The funds check is a read of Accounts' documented API, translated: the hub
@@ -1698,10 +1705,11 @@ paymentsApp.consumes(scoreTransaction, {
 });
 // The first half of the instruction lifecycle above: scoring, and what the
 // verdict does. It is written here because Fraud's shapes are declared in this
-// section. The process waits on the answer to the call it made, which is what
-// "synchronous scoring" means and what it could not say before card 92.
+// section. The process waits on the answer to the call it made, named by that
+// call, which is what "synchronous scoring" means and what it could not say
+// before card 92.
 instructionLifecycle
-	.on(transactionVerdictSchema)
+	.on(scoreTransaction.returned())
 	.issues(scoreInstruction, submitPayment);
 // Accounts freezes when a case opens.
 accountServicing.consumes(fraudCaseOpened, {
@@ -1929,6 +1937,9 @@ cardAgg
 	.addInvariant("AuthWithinAvailableBalance", {
 		description:
 			"An authorisation is approved only if the available balance read from AccountServicing at that moment covers it; Accounts then holds the amount",
+		// "At that moment" is the whole of it: the balance moves next door and
+		// the check is not made again (card 94).
+		precondition: true,
 	})
 	.constrains(cardAuthorisation, authoriseCard);
 cardsApp.consumes(scoreTransaction, {
