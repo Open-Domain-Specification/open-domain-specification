@@ -32,8 +32,10 @@ type EdgeKind = ODSRelationMapEdge["relation"];
  * `includes` a composition with the diamond on the whole, `uses` a dependency.
  * An identity is a dependency too, and draws as one: dashed, with an
  * «identifies» stereotype that says which kind it is. The holder knows the
- * other root's id and nothing else about it, which is exactly why this is the
- * one line allowed to leave a bounded context (decision 14).
+ * other entity's id and nothing else about it, which is exactly why this is
+ * the one line allowed to leave a bounded context (decision 14). When that
+ * entity is a child, the line lands on the child inside its aggregate's
+ * cluster, where the root it is reached through is drawn beside it.
  */
 const UML_ARROWS: Record<EdgeKind, EdgeAttributesObject> = {
 	[RelationType.References]: {

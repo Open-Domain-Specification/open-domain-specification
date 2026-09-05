@@ -13,8 +13,8 @@ severity, a rule id, a message and the ref of the element concerned.
 | --- | --- | --- |
 | `aggregate-root` | error / warning | exactly one root entity per aggregate |
 | `cross-aggregate-reference` | error | relations into another aggregate are `references` to its root; a relation to a value object crosses no aggregate, since the context declares it |
-| `cross-context-relation` | error | a relation never crosses a bounded context; the source holds the other root's identity instead |
-| `identifies-root` | error | an attribute's `identifies` names the root entity of an aggregate; the root is what an aggregate is reached by, which is what lets an identity cross a context boundary |
+| `cross-context-relation` | error | a relation never crosses a bounded context; the source holds the other entity's identity instead |
+| `identifies-entity` | error | an attribute's `identifies` names an entity of this workspace, root or child; a child is reached through its own root, so the dependency is on the aggregate that root leads |
 | `root-identity` | error | an aggregate's root entity declares at least one identity attribute |
 | `entity-identity` | warning | every other entity in an aggregate declares at least one identity attribute; without one it is a value object |
 | `identity-not-optional` | error | an identity attribute is not marked `optional`; an identity that may be missing cannot say which instance a reference means |

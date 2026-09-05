@@ -133,7 +133,7 @@ function relationLegend(graph: Graph): LegendEntry[] {
 			? [{ mark: "dashed", name: "Dependency (uses)" }]
 			: []),
 		...(types.has("relation-identifies")
-			? [{ mark: "dashed «identifies»", name: "Identity of another root" }]
+			? [{ mark: "dashed «identifies»", name: "Identity of another entity" }]
 			: []),
 		...(graph.edges.some((e) => e.sourceLabel || e.targetLabel)
 			? [{ mark: "1, *, 0..1", name: "Multiplicity" }]

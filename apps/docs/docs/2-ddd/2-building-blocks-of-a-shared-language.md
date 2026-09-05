@@ -68,10 +68,11 @@ relation into another aggregate's insides — it stores the other root's id, the
 way an order stores a `petId` rather than the pet itself. Across a bounded
 context there is no relation at all, only the id: the dependency between two
 contexts is an integration, so it shows up in what one context consumes from
-the other, not in the object graph. The id still says which root it is of, so
-the dependency is written down rather than implied. ODS checks all three — see
-[cross-aggregate-reference, cross-context-relation and
-identifies-root](../3-core/4-validation.md).
+the other, not in the object graph. The id still says which thing it is of, so
+the dependency is written down rather than implied — and that thing may be a
+child of another cluster, like the profile inside a household, which you reach
+through its own root. ODS checks all three — see [cross-aggregate-reference,
+cross-context-relation and identifies-entity](../3-core/4-validation.md).
 
 ---
 

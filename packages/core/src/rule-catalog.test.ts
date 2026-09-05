@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { RULE_CATALOG } from "./validate";
-import { Workspace } from "./workspace";
+import { type Entity, Workspace } from "./workspace";
+
+/** A root entity that belongs to some other workspace than the fixture's. */
+function strangerEntity(): Entity {
+	return new Workspace("Elsewhere", {
+		odsVersion: "1.0.0",
+		description: "",
+		version: "0",
+	})
+		.addBoundedContext("Elsewhere", { description: "" })
+		.addAggregate("Stranger", { description: "" })
+		.addRootEntity("Stranger", { description: "" });
+}
 
 /** A workspace that trips every rule at least once. */
 function everythingWrong(): Workspace {
@@ -22,8 +34,13 @@ function everythingWrong(): Workspace {
 	// cross-aggregate-reference: includes across aggregates, references non-root
 	r1.includes(inner, "owns");
 	r1.references(inner, "points-at");
-	// identifies-root: an identity attribute naming an entity that is not a root
+	// identifies-entity: an identity naming an entity of a different workspace,
+	// which this one cannot reach at all. A child of an aggregate here is fine.
 	r1.addAttribute("innerId", { type: "string", identifies: inner });
+	r1.addAttribute("strangerId", {
+		type: "string",
+		identifies: strangerEntity(),
+	});
 	// identity-not-optional: an identity that is allowed to go missing
 	r1.addAttribute("maybeId", {
 		type: "string",
