@@ -24,3 +24,7 @@ Two shortcuts in the model let a context reach into another. A policy's `then` m
 - Petstore: `PetApp` becomes the open host; `Pet`'s `ReservePet` and `MarkPetSold` become internal and `PetApp` provides the public operations that use them; Sales' policies name Sales' own `orderApp` operations, which consume Catalog's. The other three models are checked for the same shape.
 - The consumable map reads as intended: what crosses a boundary always leaves an application service.
 - An application service's aggregates are read from what it consumes: the internal operations it depends on name them. No `orchestrates` field is added; it would restate the consumptions.
+
+## Amendment (2026-09-07)
+
+The record covered inbound only: an aggregate may not be consumed from outside, but nothing stopped an aggregate consuming another context's operation, and two reference models did so while two routed the same call through a service. The outbound half is the same principle: an aggregate is a consistency boundary, not a client. It consumes only its own context's consumables; a foreign operation or event is consumed by an application service or a policy, which hands the aggregate what it needs. `aggregate-consumes-inside` (card 73).

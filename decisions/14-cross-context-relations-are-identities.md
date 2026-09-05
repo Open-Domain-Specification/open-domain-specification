@@ -17,10 +17,14 @@ The `cross-aggregate-reference` rule checks that a relation into another aggrega
 
 ## Amendment (2026-09-06)
 
-Removing the relation removed the only structural record that `Order` depends on Catalog's `Pet`; a description is not something tooling can trace. `AttributeSchema.identifies?: { $ref }` names the root entity an identity attribute identifies, in any context; a rule checks it is a root, and the relation map draws it as a dashed edge across the boundary. The attribute stays the boundary; it now says which boundary. Card 54.
+Removing the relation removed the only structural record that `Order` depends on Catalog's `Pet`; a description is not something tooling can trace. `AttributeSchema.identifies?: { $ref }` names the entity an identity attribute identifies, in any context, and the relation map draws it as a dashed edge across the boundary. The attribute stays the boundary; it now says which boundary. Card 54.
 
 ## Consequences
 
 - One new rule and catalogue entry; no schema change. Any existing model with a cross-context relation fails validation and must move to an identity attribute, which is the DDD reading anyway.
-- The aggregate relation map loses cross-context edges; the consumable map carries them.
+- The aggregate relation map loses cross-context relations; an identity across contexts is drawn as an implied edge on the context map, with `relationship-declared` asking for the relationship behind it (card 70).
 - Skill reference regenerated from the rule catalogue.
+
+## Amendment (2026-09-07)
+
+The first rule required the identified entity to be a root. The architect review showed that is false to real systems: a playback session identifies a profile inside a household, a claim identifies a coverage inside a policy, an appeal identifies a decision inside a case, and each child stays inside its aggregate precisely because its parent's invariants need it there. An identity may name any entity; when it names a child, the dependency is on the aggregate reached through that child's root, and the map draws the edge to the child inside its cluster. `identifies-root` becomes `identifies-entity` (card 67).

@@ -26,6 +26,10 @@ A command to an aggregate and an operation on an application service turned out 
 
 `AttributeSchema.type` is a string in the author's words (`int64`, `'available' | 'pending' | 'sold'`, `string (URL)`), and an invariant is a name, a sentence and the elements it constrains. A primitive vocabulary and an expression language would move the model from the author's language into code, which loses the product reader and verifies nothing the code's own tests do not. The one omission worth its cost, an optional flag on an attribute, is deferred until a reference model needs it. Because the type is the author's text, the validator never parses it, with one convention: a trailing `[]` means many, and the `attribute-relation-coherence` rule reads only that when it compares an attribute with its relation's cardinality. It does not match the string against a value object's name; the `valueobject` reference is the link, and the text beside it is the reader's.
 
+### Versions are names
+
+A schema or a consumable has no version field. A changed contract that old consumers still need is a second consumable or schema with a name that says so, `OrderPlacedV2`, consumed by whoever moved, with a comment on the old one saying why it stays; the consumable map then shows who is on which. A version number on one element would either mean nothing (nobody consumes a number) or need a compatibility model the validator cannot check. Reopened if a reference model has to carry more than two versions of one thing at once.
+
 ### Read models are query services
 
 A projection is a service that provides a query operation; with decision 13 that operation says what it returns. No `ReadModel` construct is added. Petstore's inventory projection is a bounded context of its own because it serves two subdomains, not because the model forced it.

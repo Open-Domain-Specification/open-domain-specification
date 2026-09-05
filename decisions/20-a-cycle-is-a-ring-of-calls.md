@@ -16,7 +16,7 @@ Decision 15 already fixes delivery by type: an operation is a call, an event is 
 
 `relationship-cycle` walks only the steps where an operation of the upstream context is consumed by the downstream one. A step backed only by events or by a policy subscribing to the other side's event is choreography and does not count; `reaction-cycle` covers rings of those separately, because a loop of reactions is a different fault with a different fix. A mutual pair of calls is a ring of two and is reported.
 
-`partnership-backed` stays as specified: traffic both ways. Where a reference model declared a partnership with traffic one way, the model's own prose decides the fix. If its description or comments say the quiet direction exists, the model gains the consumption it already describes; if they do not, the relationship is demoted to customer-supplier with the roles the existing traffic implies.
+`partnership-backed` was specified as traffic both ways; see the second amendment. Where a reference model declared a partnership with traffic one way, the model's own prose decides the fix. If its description or comments say the quiet direction exists, the model gains the consumption it already describes; if they do not, the relationship is demoted to customer-supplier with the roles the existing traffic implies.
 
 ## Consequences
 
@@ -25,3 +25,7 @@ A ring of contexts joined by events validates clean, as it should. A ring of cal
 ## Amendment (2026-09-07)
 
 The first wording of the rule's message claimed each context waits on the next to answer. That is a runtime claim the model cannot make and the sixth review run rightly objected. The message now speaks of models shaped around each other and offers the partnership as the first repair (card 49 carries the rewording).
+
+## Amendment (2026-09-07, second)
+
+The architect review read Evans back to the rule: a partnership is two teams whose success depends on each other, a joint release train, and that does not require consumption in both directions. RiverMart's and StreamLine's one-way partnerships were truthful and the rule over-claimed. `partnership-backed` now requires traffic in at least one direction, because a partnership with no exchange at all is a wish, and its text says why the other direction is not demanded (card 63 keeps the models; the rule change lands with card 69).

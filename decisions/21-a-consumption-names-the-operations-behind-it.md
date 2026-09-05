@@ -69,3 +69,7 @@ interview, asked only when the honest answer is "one or two of them".
 - Rejected: a `calls` link from the provider's operation back to its callers.
   It would be the same fact stored on the far side of a boundary, where the
   provider has no way to know it and no reason to maintain it.
+
+## Amendment (2026-09-07)
+
+The record said no rule reads `by` as causality. The architect review showed the cost: a policy issues a local operation that calls out through the boundary, and there the flow map and `reaction-cycle` stopped, so a ring through two contexts validated clean. `by` is the one causal link the model has across a boundary, and it is read as one: the flow map and the cycle walk continue from a local operation through the consumption it makes to the consumed operation and what that raises (card 69). Order and timing are still not modelled.
