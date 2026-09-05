@@ -10,7 +10,6 @@ describe("diagram options", () => {
 		expect(o.handles).toBeUndefined();
 		expect(o.edges).toBe("bezier");
 		expect(o.style).toBe("sketch");
-		expect(o.legendCollapsed).toBe(false);
 	});
 	it("defaults context diagrams to floating handles and other kinds to fixed", () => {
 		expect(defaultHandles("context")).toBe("floating");
@@ -37,18 +36,15 @@ describe("diagram options", () => {
 		o.set({ handles: "floating" });
 		o.set({ edges: "step" });
 		o.set({ style: "cards" });
-		o.set({ legendCollapsed: true });
 		expect(JSON.parse(localStorage.getItem(KEY) ?? "{}")).toEqual({
 			handles: "floating",
 			edges: "step",
 			style: "cards",
-			legendCollapsed: true,
 		});
 		const again = createDiagramOptions();
 		expect(again.handles).toBe("floating");
 		expect(again.edges).toBe("step");
 		expect(again.style).toBe("cards");
-		expect(again.legendCollapsed).toBe(true);
 	});
 	it("honours a legacy stored value that already set handles", () => {
 		localStorage.setItem(
@@ -57,7 +53,6 @@ describe("diagram options", () => {
 				handles: "fixed",
 				edges: "bezier",
 				style: "sketch",
-				legendCollapsed: false,
 			}),
 		);
 		const o = createDiagramOptions();
@@ -71,14 +66,12 @@ describe("diagram options", () => {
 				handles: "diagonal",
 				edges: "zigzag",
 				style: "oil",
-				legendCollapsed: "yes",
 			}),
 		);
 		let o = createDiagramOptions();
 		expect(o.handles).toBeUndefined();
 		expect(o.edges).toBe("bezier");
 		expect(o.style).toBe("sketch");
-		expect(o.legendCollapsed).toBe(false);
 		localStorage.setItem(KEY, "not json");
 		o = createDiagramOptions();
 		expect(o.handles).toBeUndefined();

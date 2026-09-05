@@ -18,6 +18,8 @@ Organisms: [AttributesSection](organism-attributes-section.md),
 [StrategicPositionTable](organism-strategic-position-table.md),
 [Toc](organism-toc.md).
 
+Diagram panels: [what gives way when the fit runs out of room](flow-diagram-panels.md).
+
 Templates: [AggregatePage](template-aggregate-page.md),
 [ConsumablePage](template-consumable-page.md),
 [ContextPage](template-context-page.md), [DomainPage](template-domain-page.md),
