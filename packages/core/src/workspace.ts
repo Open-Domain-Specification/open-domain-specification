@@ -441,6 +441,51 @@ export class Workspace
 		return target;
 	}
 
+	/**
+	 * Resolves any ref a process's `on` or `ends` may name: everything a
+	 * policy's `on` may name, and the process's own deadlines (decision 23,
+	 * fourth amendment).
+	 */
+	getProcessTriggerByRef(ref: string): ProcessTrigger | undefined {
+		const target = this.getByRef(ref);
+		return target instanceof Consumable ||
+			target instanceof Answer ||
+			target instanceof Deadline
+			? target
+			: undefined;
+	}
+
+	getProcessTriggerByRefOrThrow(ref: string): ProcessTrigger {
+		const target = this.getProcessTriggerByRef(ref);
+		if (!target) {
+			throw new Error(
+				`Consumable, Answer or Deadline with ref ${ref} not found`,
+			);
+		}
+		return target;
+	}
+
+	/** Every deadline of every process, in declaration order. */
+	private *allDeadlines(): Iterable<Deadline> {
+		for (const boundedcontext of this.boundedcontexts.values())
+			for (const process of boundedcontext.processes.values())
+				yield* process.deadlines.values();
+	}
+
+	getDeadlineByRef(ref: string): Deadline | undefined {
+		for (const deadline of this.allDeadlines()) {
+			if (deadline.ref === ref) return deadline;
+		}
+	}
+
+	getDeadlineByRefOrThrow(ref: string): Deadline {
+		const deadline = this.getDeadlineByRef(ref);
+		if (!deadline) {
+			throw new Error(`Deadline with ref ${ref} not found`);
+		}
+		return deadline;
+	}
+
 	/** Resolves any ref a consumption's `by` may name. */
 	getConsumptionCallerByRef(ref: string): ConsumptionCaller | undefined {
 		const target = this.getByRef(ref);
@@ -519,6 +564,8 @@ export class Workspace
 				return this.getPolicyByRef(ref);
 			case "processes":
 				return this.getProcessByRef(ref);
+			case "deadlines":
+				return this.getDeadlineByRef(ref);
 			case "glossary":
 				return this.getTermByRef(ref);
 			case "attributes":
@@ -1946,6 +1993,17 @@ export class EntityRelation
  */
 export type ConsumptionCaller = Consumable | Policy | Process;
 
+/**
+ * How a caller reads inside a consumption's ref: the collection it lives in,
+ * then its id. Two callers of one consumer may share an id — an operation and
+ * the policy named after it — and only the collection tells them apart.
+ */
+function callerSegment(caller: ConsumptionCaller): string {
+	if (caller instanceof Policy) return `policies/${caller.id}`;
+	if (caller instanceof Process) return `processes/${caller.id}`;
+	return `provides/${caller.id}`;
+}
+
 export type ConsumptionAttributes = {
 	pattern?: DownstreamRole;
 	/**
@@ -1984,6 +2042,13 @@ export class Consumption
 	 * the callers of the sibling consumptions disjoint, so the segment tells
 	 * the two apart. A pair declared once keeps the ref it always had
 	 * (decision 26, card 89).
+	 *
+	 * That segment names the caller's collection as well as its id, because an
+	 * id is only unique within one. A context whose policy is named after the
+	 * operation it issues — Petstore's "Reserve Pet" is both — gave two
+	 * consumptions one ref while `consumption-once` saw two different callers
+	 * and said nothing (card 95). `provides`, `policies` or `processes` is the
+	 * same word the caller's own ref uses, so the two agree by construction.
 	 */
 	get path(): string {
 		const pair = `${this.consumer.path}/consumes/${this.consumable.path.split("/").join("~")}`;
@@ -1991,7 +2056,7 @@ export class Consumption
 			(other) => other !== this && other.consumable === this.consumable,
 		);
 		const caller = this.by[0];
-		return shared && caller ? `${pair}/${caller.id}` : pair;
+		return shared && caller ? `${pair}/${callerSegment(caller)}` : pair;
 	}
 
 	get ref(): string {
@@ -2377,6 +2442,17 @@ export class DataSchema
  */
 export type ReactionTrigger = Consumable | Answer;
 
+/**
+ * What a process waits for: everything a policy may wait for, and its own
+ * deadlines.
+ *
+ * A deadline is the one trigger that belongs to the reactor rather than to
+ * some provider, which is why only a process may name one: a policy is
+ * stateless and remembers no instance, so it has no clock of its own to run
+ * (decisions 15 and 23).
+ */
+export type ProcessTrigger = ReactionTrigger | Deadline;
+
 export type PolicyAttributes = {
 	description: string;
 	/** The events or answers that trigger it; also settable with `.on(...)`. */
@@ -2467,19 +2543,93 @@ export type ProcessAttributes = {
 	/** The events that begin an instance; also settable with `.starts(...)`. */
 	starts?: Consumable[];
 	/**
-	 * The events and answers it waits for while alive; also settable with
-	 * `.on(...)`.
+	 * The events, answers and deadlines it waits for while alive; also settable
+	 * with `.on(...)`.
 	 */
-	on?: ReactionTrigger[];
+	on?: ProcessTrigger[];
 	/** The operations it issues; also settable with `.issues(...)`. */
 	issues?: Consumable[];
 	/**
-	 * The events and answers that complete an instance; also settable with
-	 * `.ends(...)`.
+	 * The events, answers and deadlines that complete an instance; also
+	 * settable with `.ends(...)`.
 	 */
-	ends?: ReactionTrigger[];
+	ends?: ProcessTrigger[];
 	id?: string;
 } & EvidenceOptions;
+
+export type DeadlineAttributes = {
+	description: string;
+	/**
+	 * How long the instance waits before the deadline falls, in the words the
+	 * business uses: "30 minutes", "two working days". Free text for the same
+	 * reason an attribute's type is (decision 15): the model says the limit
+	 * exists and how long it is, and leaves the arithmetic to the code.
+	 */
+	after: string;
+	id?: string;
+};
+
+/**
+ * A time limit a process keeps on its own instances: cancel the reservation if
+ * nobody has paid after thirty minutes.
+ *
+ * A deadline belongs to the process, not to a calendar. Decision 28's Clock is
+ * an external context whose events every context shares — the month end, the
+ * scheme cut-off — and a per-instance timer is not one of those: it starts
+ * when this instance starts waiting, and nothing outside knows the instance
+ * exists. Modelled as a Clock event it cost five declarations (an external
+ * context, a service, an event, a consumption on a service that provides
+ * nothing, and a relationship) to say one thing, and said the wrong thing
+ * besides (decision 23, fourth amendment).
+ *
+ * So it is an element of the process, and the process is the only thing that
+ * may name it: it may `on` a deadline, to act when the time is up, or `ends`
+ * on one, when running out of time is how the instance finishes. It behaves as
+ * an event the process raises to itself, and the reaction walk and the flow
+ * map draw it that way — one step from the process back to the process,
+ * labelled with how long the wait was.
+ */
+export class Deadline
+	implements Referenceable, SchemaConvertible<ods.DeadlineSchema>
+{
+	id: string;
+	name: string;
+	description: string;
+	/** How long the instance waits before it falls; see {@link DeadlineAttributes.after}. */
+	after: string;
+	/** The process whose instances keep it. */
+	process: Process;
+
+	get path(): string {
+		return `${this.process.path}/deadlines/${this.id}`;
+	}
+
+	get ref(): string {
+		return `#/${this.path}`;
+	}
+
+	/** The context the process belongs to, which is where the deadline is kept. */
+	get boundedcontext(): BoundedContext {
+		return this.process.boundedcontext;
+	}
+
+	constructor(process: Process, name: string, attributes: DeadlineAttributes) {
+		this.id = attributes.id || snakeCase(name);
+		this.name = name;
+		this.description = attributes.description;
+		this.after = attributes.after;
+		this.process = process;
+		process.deadlines.set(this.id, this);
+	}
+
+	toSchema(): ods.DeadlineSchema {
+		return {
+			name: this.name,
+			description: this.description,
+			after: this.after,
+		};
+	}
+}
 
 /**
  * A reaction that outlives one event. A policy is stateless and any-of: it
@@ -2496,9 +2646,12 @@ export type ProcessAttributes = {
  *
  * What it waits for and what completes it may be an answer as well as an
  * event, because the commonest process is a call and a branch on what came
- * back (see {@link ReactionTrigger}). What starts one is an event: an answer
- * is what a caller gets back from a call, so something was already waiting for
- * it, and an instance that did not exist before the call cannot have been.
+ * back (see {@link ReactionTrigger}). It may also be one of the process's own
+ * deadlines, because the second commonest is a wait with a time limit on it
+ * (see {@link Deadline}). What starts one is an event: an answer is what a
+ * caller gets back from a call and a deadline is counted from the moment an
+ * instance began waiting, so in both cases something was already there, and an
+ * instance that did not exist before cannot have been.
  */
 export class Process
 	implements Visitable, Evidenced, SchemaConvertible<ods.ProcessSchema>
@@ -2509,12 +2662,14 @@ export class Process
 	boundedcontext: BoundedContext;
 	/** Events that begin an instance. */
 	startEvents: Consumable[] = [];
-	/** The events and answers an instance waits for while it is alive. */
-	events: ReactionTrigger[] = [];
+	/** The events, answers and deadlines an instance waits for while it is alive. */
+	events: ProcessTrigger[] = [];
 	/** Operation consumables the process issues. */
 	commands: Consumable[] = [];
-	/** The events and answers that complete an instance. */
-	endEvents: ReactionTrigger[] = [];
+	/** The events, answers and deadlines that complete an instance. */
+	endEvents: ProcessTrigger[] = [];
+	/** The time limits this process keeps on its own instances, by id. */
+	deadlines = new Map<string, Deadline>();
 	comments: ods.Comment[];
 	disposition?: ods.Disposition;
 
@@ -2550,10 +2705,11 @@ export class Process
 	}
 
 	/**
-	 * Adds an event an instance waits for while it is alive, or an answer it
-	 * waits to come back.
+	 * Adds an event an instance waits for while it is alive, an answer it waits
+	 * to come back, or one of its own deadlines.
 	 */
-	on(...events: ReactionTrigger[]): this {
+	on(...events: ProcessTrigger[]): this {
+		for (const event of events) this.refuseForeignDeadline(event);
 		return this.add(this.events, events);
 	}
 
@@ -2562,12 +2718,37 @@ export class Process
 		return this.add(this.commands, commands);
 	}
 
-	/** Adds an event, or an answer, that completes an instance. */
-	ends(...events: ReactionTrigger[]): this {
+	/** Adds an event, an answer, or a deadline that completes an instance. */
+	ends(...events: ProcessTrigger[]): this {
+		for (const event of events) this.refuseForeignDeadline(event);
 		return this.add(this.endEvents, events);
 	}
 
-	private add<T extends ReactionTrigger>(target: T[], consumables: T[]): this {
+	/**
+	 * Refuses a deadline that belongs to another process. A deadline counts
+	 * from the moment one instance began waiting, so no other reactor knows
+	 * the instance exists, let alone when its clock started; naming somebody
+	 * else's is not a rule to report but a sentence with no meaning, and it is
+	 * refused where it is written, as an answer of an operation that returns
+	 * nothing is.
+	 */
+	private refuseForeignDeadline(trigger: ProcessTrigger): void {
+		if (trigger instanceof Deadline && trigger.process !== this)
+			throw new Error(
+				`Deadline ${trigger.name} belongs to process ${trigger.process.name}, so ${this.name} cannot wait on it`,
+			);
+	}
+
+	/**
+	 * Declares a time limit this process keeps on its own instances. Name it
+	 * before naming it in `on` or `ends`, the way an operation exists before a
+	 * process issues it.
+	 */
+	addDeadline(name: string, attributes: DeadlineAttributes): Deadline {
+		return new Deadline(this, name, attributes);
+	}
+
+	private add<T extends ProcessTrigger>(target: T[], consumables: T[]): this {
 		for (const consumable of consumables) {
 			if (!target.includes(consumable)) target.push(consumable);
 		}
@@ -2579,11 +2760,18 @@ export class Process
 	}
 
 	toSchema(): ods.ProcessSchema {
-		const refs = (triggers: ReactionTrigger[]) =>
+		const refs = (triggers: ProcessTrigger[]) =>
 			triggers.map((it) => ({ $ref: it.ref }));
 		return {
 			name: this.name,
 			description: this.description,
+			// Deadlines come before the lists, because `on` and `ends` may name
+			// one and a reader meets it where it is declared.
+			deadlines: this.deadlines.size
+				? Object.fromEntries(
+						[...this.deadlines].map(([id, it]) => [id, it.toSchema()]),
+					)
+				: undefined,
 			starts: refs(this.startEvents),
 			on: refs(this.events),
 			[issuesSchemaKey]: refs(this.commands),

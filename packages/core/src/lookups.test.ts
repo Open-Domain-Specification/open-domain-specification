@@ -205,6 +205,28 @@ describe("Workspace ref lookups", () => {
 		);
 		expect(() => ws.getInvariantByRefOrThrow(missing)).toThrow(/Invariant/);
 		expect(() => ws.getConsumableByRefOrThrow(missing)).toThrow(/Consumable/);
+		expect(() => ws.getDeadlineByRefOrThrow(missing)).toThrow(/Deadline/);
+		expect(() => ws.getProcessTriggerByRefOrThrow(missing)).toThrow(
+			/Consumable, Answer or Deadline/,
+		);
+	});
+
+	it("resolves a deadline by its ref, under the process that keeps it", () => {
+		const bc = ws.addBoundedContext("Reservations", { description: "" });
+		const held = bc
+			.addService("App", { description: "", type: "application" })
+			.provides("Held", { description: "", type: "event" });
+		const process = bc.addProcess("Hold until paid", { description: "" });
+		const expiry = process.addDeadline("Unpaid", {
+			description: "",
+			after: "30 minutes",
+		});
+		process.starts(held).on(expiry);
+		expect(ws.getDeadlineByRef(expiry.ref)).toBe(expiry);
+		expect(ws.getByRef(expiry.ref)).toBe(expiry);
+		expect(ws.getProcessTriggerByRef(expiry.ref)).toBe(expiry);
+		// A policy's `on` never resolves one: a deadline is the process's.
+		expect(ws.getReactionTriggerByRef(expiry.ref)).toBeUndefined();
 	});
 
 	it("honours explicit ids over name-derived ids", () => {

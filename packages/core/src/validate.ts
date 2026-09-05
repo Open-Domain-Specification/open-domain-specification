@@ -21,17 +21,17 @@ import {
 	type Constrainable,
 	Consumable,
 	Consumption,
-	type ConsumptionCaller,
 	ContextRelationship,
 	constrainableLabel,
 	DataSchema,
+	Deadline,
 	Entity,
 	type EntityRelation,
 	type Invariant,
 	isDirectedRelationshipType,
 	Policy,
 	Process,
-	type ReactionTrigger,
+	type ProcessTrigger,
 	type Service,
 	ValueObject,
 	type Workspace,
@@ -137,7 +137,7 @@ function* processesOf(workspace: Workspace): Iterable<Process> {
  * `on` — separate ways, internal consumables, the kind of each one — means the
  * same thing by all three (decision 23).
  */
-function subscribedTriggers(reactor: Policy | Process): ReactionTrigger[] {
+function subscribedTriggers(reactor: Policy | Process): ProcessTrigger[] {
 	return reactor instanceof Process
 		? [...reactor.startEvents, ...reactor.events, ...reactor.endEvents]
 		: reactor.events;
@@ -150,11 +150,13 @@ function subscribedTriggers(reactor: Policy | Process): ReactionTrigger[] {
  * wrong kind of thing to react to. An answer is none of those — it is a shape,
  * and what carries it is the operation the reactor's own context already
  * consumes — so it is left to `consumable-kind`, which is where the model says
- * what an answer has to be (decision 23, second amendment).
+ * what an answer has to be (decision 23, second amendment). A deadline is none
+ * of those either, and crosses nothing at all: it is the process's own timer,
+ * so no boundary, no provider and no subscription is involved.
  */
 function subscribedEvents(reactor: Policy | Process): Consumable[] {
 	return subscribedTriggers(reactor).filter(
-		(it): it is Consumable => !(it instanceof Answer),
+		(it): it is Consumable => it instanceof Consumable,
 	);
 }
 
@@ -1112,12 +1114,17 @@ const invariantInValueObject: Rule = (workspace) => {
  * are after `PostEntry`. Inferring the one fact from the other conflated them
  * (decision 27, second amendment).
  *
- * A value object borrowed from another context is inside the boundary as well,
- * as long as an entity or a value inside the aggregate holds one: what is
- * saved with the aggregate is the value, not the definition, and where the
- * definition lives — this context, a shared kernel, an upstream the context
- * conforms to — says nothing about which aggregate holds an instance. A value
- * nobody inside the aggregate holds is still refused (card 89).
+ * A value object is inside the boundary as long as an entity or a value inside
+ * the aggregate holds one: what is saved with the aggregate is the value, not
+ * the definition, and where the definition lives — this context, a shared
+ * kernel, an upstream the context conforms to — says nothing about which
+ * aggregate holds an instance. A value nobody inside the aggregate holds is
+ * refused, and that is the one question asked about any value object,
+ * borrowed or the context's own. Until card 95 a value of the aggregate's own
+ * context was let through unheld, because a value belongs to the whole context
+ * and the check that reads scopes accepted it before the holding was looked
+ * at — so the rule refused a borrowed `Money` nothing held and accepted a
+ * local one, having said in this comment that it refused both (card 89).
  *
  * The last thing inside is an operation of a service of the same context,
  * application or domain, when that operation is the guard: a precondition is
@@ -1133,11 +1140,20 @@ const invariantInAggregate: Rule = (workspace) => {
 		const held = valueObjectsHeldIn(aggregate);
 		for (const invariant of aggregate.invariants.values()) {
 			for (const target of invariant.targets) {
-				const scope = scopeOf(target);
-				if (scope === aggregate || scope === aggregate.boundedcontext) continue;
-				if (guardedByService(target, aggregate.boundedcontext)) continue;
 				const vo = valueObjectOf(target);
-				if (vo && held.has(vo)) continue;
+				const scope = scopeOf(target);
+				// A value object is asked one question and no other: does
+				// anything inside this aggregate hold one? Its scope is the
+				// context whichever context declared it, so reading the scope
+				// first would answer "inside the boundary" for every value the
+				// context owns, held or not.
+				if (vo) {
+					if (held.has(vo)) continue;
+				} else {
+					if (scope === aggregate || scope === aggregate.boundedcontext)
+						continue;
+					if (guardedByService(target, aggregate.boundedcontext)) continue;
+				}
 				const service =
 					target instanceof Consumable &&
 					!(target.provider instanceof Aggregate)
@@ -1500,6 +1516,9 @@ const relationshipDeclared: Rule = (workspace) => {
 	for (const bc of workspace.boundedcontexts.values()) {
 		for (const reactor of reactorsOf(bc)) {
 			for (const trigger of subscribedTriggers(reactor)) {
+				// A deadline crosses nothing: it is the process's own timer, so
+				// there is no second context for a relationship to describe.
+				if (trigger instanceof Deadline) continue;
 				const upstream =
 					trigger instanceof Answer
 						? trigger.operation.boundedcontext
@@ -1637,6 +1656,15 @@ function carriesUpstreamRole(
  * `borrowsFrom` is the predicate `conformist-backed` reads for the same reason,
  * so the two rules answer the borrowing question the same way rather than one
  * accepting what the other warns about (card 90).
+ *
+ * Published language is the mirror of it, and reads the same borrowing from
+ * the upstream's side. A standards body publishes a language and provides
+ * nothing to consume: FHIR, ISO 20022 and a scheme's record layout are schemas
+ * a conformist takes and sends over a pipe the model does not draw, so the
+ * shapes the downstream borrows are the whole of what the upstream offers.
+ * Backing the role only by a schema-carrying consumption meant the one role
+ * that describes a standards body was warned unbacked whenever it was declared
+ * (decision 28's amendment, card 95).
  */
 const relationshipRolesBacked: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -1648,10 +1676,16 @@ const relationshipRolesBacked: Rule = (workspace) => {
 		for (const role of relationship.upstreamRoles) {
 			if (crossings.some((c) => carriesUpstreamRole(c.consumable, role)))
 				continue;
+			if (role === "published-language" && borrowsFrom(downstream, upstream))
+				continue;
+			const alsoBorrowed =
+				role === "published-language"
+					? `, and nothing in "${downstream.name}" carries one of its schemas or value objects`
+					: "";
 			diagnostics.push({
 				severity: "warning",
 				rule: "relationship-roles-backed",
-				message: `"${upstream.name}" is declared ${role} to "${downstream.name}", but nothing "${downstream.name}" consumes from "${upstream.name}" carries that upstream role`,
+				message: `"${upstream.name}" is declared ${role} to "${downstream.name}", but nothing "${downstream.name}" consumes from "${upstream.name}" carries that upstream role${alsoBorrowed}`,
 				ref: relationship.ref,
 			});
 		}
@@ -1823,17 +1857,23 @@ const sharedKernelBacked: Rule = (workspace) => {
 };
 
 /**
- * Whether `downstream` takes any of `upstream`'s shapes as they stand.
+ * Whether `downstream` takes anything of `upstream`'s as it stands.
  *
- * Three things count, and they are the three ways the model can record it.
- * The downstream names one of the upstream's schemas or value objects on
- * something of its own, which is `borrowsFrom` and is the borrowing the
- * conformist role now warrants. It consumes something the upstream publishes
- * that carries one of the upstream's schemas, which is taking a published
- * language as published — the ordinary shape of an event-driven conformist,
- * and the one the reference models are full of. Or it calls one of the
- * upstream's operations, which is conforming to an interface that may carry
- * no schema at all.
+ * Two things count, and they are the two ways the model can record it. The
+ * downstream names one of the upstream's schemas or value objects on something
+ * of its own, which is `borrowsFrom` and is the borrowing the conformist role
+ * warrants. Or it consumes something the upstream provides — any consumable,
+ * whether it carries a schema or not.
+ *
+ * That second half used to ask for a payload: a consumed operation counted,
+ * and a consumed event counted only if it carried one of the upstream's
+ * schemas. So a context conforming to a neighbour's bare notification — an
+ * event whose name is the whole of it, `NightlyBatchCompleted` — was told
+ * there was nothing to conform to, while the rule's own summary said it
+ * consumed nothing the upstream published. It did. What is conformed to is the
+ * upstream's language, and a name is language; the models never showed it
+ * because a shared assertion demanded a schema on every cross-context event
+ * and hid the case (card 95).
  */
 function conformsInSubstance(
 	workspace: Workspace,
@@ -1841,10 +1881,7 @@ function conformsInSubstance(
 	upstream: BoundedContext,
 ): boolean {
 	if (borrowsFrom(downstream, upstream)) return true;
-	if (callCrosses(workspace, upstream, downstream)) return true;
-	return crossingsBetween(workspace, upstream, downstream).some(
-		(c) => c.consumable.schema?.boundedcontext === upstream,
-	);
+	return crossingsBetween(workspace, upstream, downstream).length > 0;
 }
 
 /**
@@ -1863,7 +1900,9 @@ function conformsInSubstance(
  * Whether a downstream that subscribes to a published event translates it or
  * takes it as it comes is not in the model and was never meant to be
  * (decision 15), so demanding a borrowed schema here would report every
- * event-driven conformist there is.
+ * event-driven conformist there is — and demanding one on the event, which the
+ * rule did until card 95, reported the ones whose upstream publishes a bare
+ * notification.
  */
 const conformistBacked: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -1876,7 +1915,7 @@ const conformistBacked: Rule = (workspace) => {
 		diagnostics.push({
 			severity: "warning",
 			rule: "conformist-backed",
-			message: `"${downstream.name}" declares itself a conformist of "${upstream.name}", but it names none of "${upstream.name}"'s schemas or value objects, consumes nothing it publishes and calls none of its operations, so there is nothing here to conform to`,
+			message: `"${downstream.name}" declares itself a conformist of "${upstream.name}", but it names none of "${upstream.name}"'s schemas or value objects and consumes nothing "${upstream.name}" provides, so there is nothing here to conform to`,
 			ref: relationship.ref,
 		});
 	}
@@ -2089,6 +2128,12 @@ const internalConsumable: Rule = (workspace) => {
  * met that as a Svelte `each_key_duplicate` crash on the pages render rather
  * than a diagnostic telling the author what was wrong. An error, because the
  * model has lost information the moment it is written.
+ *
+ * Callers are compared by ref, which is what the consumption's own path is
+ * built from. Comparing them by anything narrower let the two disagree: the
+ * path used the caller's bare id, so a policy and an operation with one id
+ * gave two consumptions one ref while this rule, reading the callers
+ * themselves, saw two different things and said nothing (card 95).
  */
 const consumptionOnce: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -2101,7 +2146,7 @@ const consumptionOnce: Rule = (workspace) => {
 	}
 	for (const pair of pairs.values()) {
 		if (pair.length < 2) continue;
-		const callers = new Map<ConsumptionCaller, Consumption>();
+		const callers = new Map<string, Consumption>();
 		for (const consumption of pair) {
 			const { consumer, consumable } = consumption;
 			const takes = `"${consumer.name}" consumes "${consumable.name}" from "${consumable.provider.name}" ${pair.length} times`;
@@ -2117,8 +2162,9 @@ const consumptionOnce: Rule = (workspace) => {
 				continue;
 			}
 			for (const caller of consumption.by) {
-				if (callers.has(caller)) report(`"${caller.name}" makes more than one`);
-				else callers.set(caller, consumption);
+				if (callers.has(caller.ref))
+					report(`"${caller.name}" makes more than one`);
+				else callers.set(caller.ref, consumption);
 			}
 		}
 	}
@@ -2310,7 +2356,7 @@ const subscriptionConsumed: Rule = (workspace) => {
 const subscriptionBacked: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const bc of modelledContexts(workspace)) {
-		const reacted = new Set<ReactionTrigger>();
+		const reacted = new Set<ProcessTrigger>();
 		for (const reactor of reactorsOf(bc))
 			for (const trigger of subscribedTriggers(reactor)) reacted.add(trigger);
 		for (const member of [...bc.aggregates.values(), ...bc.services.values()])
@@ -2692,13 +2738,18 @@ const rejectsOnOperation: Rule = (workspace) => {
  * raise events.
  *
  * An answer names the operation it comes back from, and two things have to be
- * true of it. The operation has to be one the reactor's own context consumes,
- * because a context hears an answer by having made the call (see
- * {@link operationsCalledIn}); and the operation has to answer that way — a
- * refusal it never declared is a reply that never arrives, however many other
- * operations refuse with the same shape (decision 23, third amendment). What
- * the model does not check is which branch the reactor takes on it; that is
- * the code's, as every other condition in a process is (decisions 15 and 23).
+ * true of it. The reactor has to be able to hear the call come back, which is
+ * so when the operation is one its own context consumes (see
+ * {@link operationsCalledIn}) and equally so when the reactor issues the
+ * operation itself: a process that calls a local validator and branches on the
+ * verdict made the call, and demanding a consumption of it forced the author to
+ * invent a consumer nobody has — a service that provides nothing, taking its
+ * own context's operation, so that a rule would let a true sentence through
+ * (card 95). And the operation has to answer that way — a refusal it never
+ * declared is a reply that never arrives, however many other operations refuse
+ * with the same shape (decision 23, third amendment). What the model does not
+ * check is which branch the reactor takes on it; that is the code's, as every
+ * other condition in a process is (decisions 15 and 23).
  */
 const consumableKinds: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -2719,11 +2770,14 @@ const consumableKinds: Rule = (workspace) => {
 						message: `${reactorLabel(reactor)} "${reactor.name}" waits for "${trigger.origin}", which "${trigger.operation.name}" never declares; wait for an answer the operation says it comes back with, or react to an event instead`,
 						ref: reactor.ref,
 					});
-				else if (!called.has(trigger.operation))
+				else if (
+					!called.has(trigger.operation) &&
+					!reactor.commands.includes(trigger.operation)
+				)
 					diagnostics.push({
 						severity: "error",
 						rule: "consumable-kind",
-						message: `${reactorLabel(reactor)} "${reactor.name}" waits for "${trigger.origin}", but nothing in "${bc.name}" consumes "${trigger.operation.name}"; a context hears an answer by having made the call, so consume that operation, or react to an event instead`,
+						message: `${reactorLabel(reactor)} "${reactor.name}" waits for "${trigger.origin}", but nothing in "${bc.name}" consumes "${trigger.operation.name}" and ${reactorLabel(reactor).toLowerCase()} "${reactor.name}" does not issue it; a reactor hears an answer by having made the call, so issue that operation or consume it, or react to an event instead`,
 						ref: reactor.ref,
 					});
 			}
@@ -2985,22 +3039,60 @@ const reactionCycle: Rule = (workspace) => {
 };
 
 /**
+ * Whether a context is a shared kernel: every relationship it has is a shared
+ * kernel, and two or more contexts share it.
+ *
+ * Decision 16's amendment draws a kernel two teams keep in step as a third
+ * context both sides borrow from, because that gives the kernel an owner and
+ * spares a set of sharers the pairwise agreements. That context is nothing but
+ * the kernel — a library of `Money` and `AccountNumber`, not a capability —
+ * and its shape says so: it exchanges nothing except by shared kernel, and
+ * more than one context shares it. One sharer would be an ordinary pair, where
+ * the kernel is the two teams' joint model and neither of them a context of
+ * its own.
+ */
+function isSharedKernelContext(
+	workspace: Workspace,
+	bc: BoundedContext,
+): boolean {
+	const sharers = new Set<BoundedContext>();
+	let any = false;
+	for (const relationship of workspace.relationships) {
+		if (!relationship.involves(bc)) continue;
+		if (relationship.type !== "shared-kernel") return false;
+		any = true;
+		sharers.add(
+			relationship.source === bc ? relationship.target : relationship.source,
+		);
+	}
+	return any && sharers.size >= 2;
+}
+
+/**
  * Every context serves at least one subdomain. An external context does not:
  * a card scheme or a licensor is not part of anybody's problem space here, so
  * it is not missing from the problem-space view -- it was never in it
  * (decision 28).
+ *
+ * Neither does a shared kernel context, and for the opposite reason: it is not
+ * outside the problem space but under all of it. What a kernel of `Money` and
+ * `AccountNumber` serves is whatever its sharers serve, and asking it to name
+ * a subdomain of its own made NorthBank invent "Shared Financial Primitives",
+ * a supporting subdomain with one context in it that no capability map has and
+ * nobody's customer journey runs through — a row on the problem-space view
+ * that exists so a rule would stop asking (decision 16's amendment, card 95).
  */
 const contextServesSubdomain: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const bc of modelledContexts(workspace)) {
-		if (bc.subdomains.size === 0) {
-			diagnostics.push({
-				severity: "warning",
-				rule: "context-serves-subdomain",
-				message: `Bounded context "${bc.name}" serves no subdomain, so it is missing from the problem-space view`,
-				ref: bc.ref,
-			});
-		}
+		if (bc.subdomains.size > 0) continue;
+		if (isSharedKernelContext(workspace, bc)) continue;
+		diagnostics.push({
+			severity: "warning",
+			rule: "context-serves-subdomain",
+			message: `Bounded context "${bc.name}" serves no subdomain, so it is missing from the problem-space view`,
+			ref: bc.ref,
+		});
 	}
 	return diagnostics;
 };
@@ -3264,9 +3356,9 @@ const RULES: CataloguedRule[] = [
 		rule: "invariant-in-aggregate",
 		severities: ["error"],
 		summary:
-			"An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object of its context, or one borrowed from elsewhere that something in the aggregate holds, or is an operation of a service of its own context, application or domain, that guards it.",
-		why: "Naming an operation says which operation keeps the rule; it does not say what kind of rule it is. The invariant says that itself, with precondition: set, it is checked before that operation runs and nothing re-establishes it afterwards — enough funds at initiation, an entitlement at playback start, a pet still available at approval. Unset, the operation is named for responsibility and the rule is still true after it: PostEntry must produce balanced postings and the postings stay balanced. The invariant's page says which of the two it is reading, because the two promise different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts.",
-		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object from another context, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door.",
+			"An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object something in the aggregate holds, its context's own or one borrowed from elsewhere, or is an operation of a service of its own context, application or domain, that guards it.",
+		why: "Naming an operation says which operation keeps the rule; it does not say what kind of rule it is. The invariant says that itself, with precondition: set, it is checked before that operation runs and nothing re-establishes it afterwards — enough funds at initiation, an entitlement at playback start, a pet still available at approval. Unset, the operation is named for responsibility and the rule is still true after it: PostEntry must produce balanced postings and the postings stay balanced. The invariant's page says which of the two it is reading, because the two promise different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not, wherever it was declared. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts.",
+		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one, and it is asked of the context's own values as much as of borrowed ones. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door.",
 		check: invariantInAggregate,
 	},
 	{
@@ -3300,9 +3392,9 @@ const RULES: CataloguedRule[] = [
 		rule: "relationship-roles-backed",
 		severities: ["warning"],
 		summary:
-			"A directed relationship's declared roles are carried by consumables and consumptions crossing between the two contexts — or, for conformist, by the downstream borrowing the upstream's shapes — and a crossing consumption's role is declared on the relationship.",
+			"A directed relationship's declared roles are carried by consumables and consumptions crossing between the two contexts — or, for published language and for conformist, by the downstream borrowing the upstream's shapes — and a crossing consumption's role is declared on the relationship.",
 		why: "The context map and the consumable map are the same integration told twice, strategically and concretely. A role on the map that nothing carries is a claim about a team's way of working with nothing behind it, and a consumption whose role the map never mentions is an integration decision made without the map noticing.",
-		fix: "Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a schema, since a published language is a data shape rather than a second flag. A conformist role is backed by borrowing too: a downstream naming one of the upstream's schemas or value objects has adopted its model, which is what the role says, so a conformist to a standards body needs no consumption to prove it.",
+		fix: "Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a schema, since a published language is a data shape rather than a second flag, and equally by the downstream naming one of the upstream's schemas or value objects: a standards body publishes a language and offers nothing to consume, so the shapes borrowed from it are the whole of what it provides. A conformist role is backed by borrowing too: a downstream naming one of the upstream's schemas or value objects has adopted its model, which is what the role says, so a conformist to a standards body needs no consumption to prove it.",
 		check: relationshipRolesBacked,
 	},
 	{
@@ -3354,9 +3446,9 @@ const RULES: CataloguedRule[] = [
 		rule: "conformist-backed",
 		severities: ["warning"],
 		summary:
-			"A downstream that declares the conformist role takes something of its upstream's: a schema or value object named here, something it publishes consumed here, or one of its operations called.",
-		why: "Conformist is the strongest thing a downstream can say about itself: it gives up its own language for the upstream's and accepts every change the upstream makes. It is also what lets this context name the upstream's schemas and value objects at all, so a reader takes it as the warrant for a borrowing. Declared between two contexts that exchange nothing at all, it is a claim on the map with nothing under it, exactly as an empty shared kernel or an unbacked partnership is. What the rule does not ask is that the conforming show in the shapes: whether a downstream subscribing to a published event translates it or takes it as it comes is not something the model records, so asking for a borrowed schema would report every event-driven conformist there is.",
-		fix: "Consume what the upstream publishes, call one of its operations, or name one of its schemas or value objects here; or drop the conformist role if the two contexts really exchange nothing.",
+			"A downstream that declares the conformist role takes something of its upstream's: a schema or value object named here, or anything the upstream provides consumed here.",
+		why: "Conformist is the strongest thing a downstream can say about itself: it gives up its own language for the upstream's and accepts every change the upstream makes. It is also what lets this context name the upstream's schemas and value objects at all, so a reader takes it as the warrant for a borrowing. Declared between two contexts that exchange nothing at all, it is a claim on the map with nothing under it, exactly as an empty shared kernel or an unbacked partnership is. What the rule does not ask is that the conforming show in the shapes: whether a downstream subscribing to a published event translates it or takes it as it comes is not something the model records, so asking for a borrowed schema would report every event-driven conformist there is. It does not ask for a payload either: a consumed event whose name is the whole of it is still the upstream's language, and demanding a schema on the event reported the conformists of contexts that publish bare notifications.",
+		fix: "Consume something the upstream provides, of any kind and with or without a payload, or name one of its schemas or value objects here; or drop the conformist role if the two contexts really exchange nothing.",
 		check: conformistBacked,
 	},
 	{
@@ -3567,8 +3659,8 @@ const RULES: CataloguedRule[] = [
 		severities: ["error"],
 		summary:
 			"Policies and processes react to events and issue operations; only operations raise events, and they raise only events.",
-		why: "An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable.",
-		fix: "Check the type of each consumable a policy or raises list points at and swap it for the right kind.",
+		why: "An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable. A reaction may also wait on an answer, and then two things have to hold: the operation declares that answer, and the reactor can hear it come back — because its context consumes the operation, or because the reactor issues the operation itself, which is the local call-and-branch.",
+		fix: "Check the type of each consumable a policy or raises list points at and swap it for the right kind. For an answer, either declare it on the operation it is named from, or issue or consume that operation.",
 		check: consumableKinds,
 	},
 	{
@@ -3619,9 +3711,10 @@ const RULES: CataloguedRule[] = [
 	{
 		rule: "context-serves-subdomain",
 		severities: ["warning"],
-		summary: "Every bounded context serves at least one subdomain.",
-		why: "A context that serves no subdomain has no place in the problem-space view, so nobody can see which part of the business it exists for.",
-		fix: "Add the subdomain the context serves to its subdomains list.",
+		summary:
+			"Every bounded context serves at least one subdomain, except an external one and a shared kernel context.",
+		why: "A context that serves no subdomain has no place in the problem-space view, so nobody can see which part of the business it exists for. An external context was never in that view: a card scheme or a licensor is not part of anybody's problem space here. A shared kernel context is under all of it rather than outside it — a library of Money and AccountNumber serves whatever its sharers serve — so asking it for a subdomain of its own only invents one.",
+		fix: "Add the subdomain the context serves to its subdomains list. If the context is somebody else's system, mark it external. If it is a kernel two or more contexts share and nothing else, every relationship it has is a shared kernel and the rule leaves it alone.",
 		check: contextServesSubdomain,
 	},
 	{

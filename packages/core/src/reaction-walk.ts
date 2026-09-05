@@ -2,9 +2,10 @@ import {
 	type Answer,
 	type BoundedContext,
 	type Consumable,
+	Deadline,
 	Policy,
 	Process,
-	type ReactionTrigger,
+	type ProcessTrigger,
 } from "./workspace";
 
 /** A step in a reaction chain: an operation, an event, a policy or a process. */
@@ -24,6 +25,11 @@ export type ReactionStep = {
 	to: Reactor;
 	/** The answer the step carries, when it is one. */
 	answer?: Answer;
+	/**
+	 * The deadline the step carries, when it is one: a process's own timer
+	 * falling, which runs from the process back to the process.
+	 */
+	deadline?: Deadline;
 };
 
 /**
@@ -52,8 +58,18 @@ export type ReactionStep = {
  * (decision 21), the consumer is saying that operation is what makes the
  * exchange, which is the same as saying the operation's effect continues at
  * the consumed one. That is the one causal link the model has across a
- * boundary and it is read as one (decision 21's amendment). Order and timing
- * are still not modelled: each step only says what happens next, never when.
+ * boundary and it is read as one (decision 21's amendment), and where the
+ * consumer provides exactly one operation the walk reads that operation as the
+ * `by` the model did not make it write (see `callsOut`). Order and timing are
+ * still not modelled: each step only says what happens next, never when.
+ *
+ * A process's deadline is the sixth step, and the only one that starts and
+ * ends at the same node. The instance set the timer when it began waiting and
+ * the timer fell, so the process wakes itself: there is no provider anywhere
+ * to draw it from, because a per-instance limit is nobody else's fact
+ * (decision 23, fourth amendment). The ring it closes runs through one process
+ * and no other reactor, which is the lifecycle shape `reaction-cycle` already
+ * exempts.
  *
  * Two things deliberately take no step. A consumed event is a subscription,
  * not something the caller causes, so only consumed operations continue the
@@ -72,7 +88,7 @@ export class ReactionChain {
 	 * wake only whoever named them (decision 23, third amendment).
 	 */
 	private readonly listeners = new Map<
-		ReactionTrigger,
+		ProcessTrigger,
 		Array<Policy | Process>
 	>();
 	/** Every policy in scope, in declaration order. */
@@ -101,13 +117,19 @@ export class ReactionChain {
 			for (const process of bc.processes.values()) {
 				this.processes.push(process);
 				this.steps.push(process);
-				this.listen(process, [...process.startEvents, ...process.events]);
+				// A deadline needs no listener: it is the process's own, so the
+				// step to whoever waits for it is the self-step `stepsFrom`
+				// draws, and no other node can reach it.
+				this.listen(process, [
+					...process.startEvents,
+					...process.events.filter((it) => !(it instanceof Deadline)),
+				]);
 			}
 		}
 	}
 
 	/** Records that `reactor` wakes on each of `triggers`. */
-	private listen(reactor: Policy | Process, triggers: ReactionTrigger[]) {
+	private listen(reactor: Policy | Process, triggers: ProcessTrigger[]) {
 		for (const trigger of triggers) {
 			const existing = this.listeners.get(trigger);
 			if (existing) existing.push(reactor);
@@ -117,8 +139,20 @@ export class ReactionChain {
 
 	/** What the chain does next from one step, and what carries each step. */
 	stepsFrom(node: Reactor): ReactionStep[] {
-		if (node instanceof Policy || node instanceof Process)
-			return node.commands.map((to) => ({ to }));
+		if (node instanceof Policy) return node.commands.map((to) => ({ to }));
+		if (node instanceof Process)
+			return [
+				...node.commands.map((to) => ({ to })),
+				// A deadline the process waits on is a step it takes to itself:
+				// the instance set the timer, the timer fell, and the same
+				// process wakes. A deadline it ends on takes no step, for the
+				// reason no ending fact does. The ring this closes is one
+				// process and no other reactor, which `reaction-cycle` already
+				// reads as a lifecycle rather than a loop.
+				...node.events
+					.filter((it): it is Deadline => it instanceof Deadline)
+					.map((deadline): ReactionStep => ({ to: node, deadline })),
+			];
 		const steps: ReactionStep[] = [
 			...node.raisedEvents,
 			...this.consumedThrough(node),
@@ -161,11 +195,27 @@ export function* operationsCalledBy(bc: BoundedContext): Iterable<Consumable> {
  * operations the consumer itself provides (`consumption-by-resolves`), so the
  * consumer is always this operation's provider and no index is needed — which
  * also means the step is found the same way however narrow the scope is.
+ *
+ * A consumer that provides exactly one operation is its own `by`. That is what
+ * decision 21's third amendment says and what `consumption-by-required` acts
+ * on, staying quiet rather than making such a consumer write down the only
+ * answer there is; the walk did not read it that way, so the one place the
+ * model let an author leave `by` off was the one place the chain dead-ended,
+ * and RiverMart's single-operation front reached nothing (card 95). Inferred
+ * only where there is nothing to choose between: two operations and an absent
+ * `by` still stops here, which is the warning's whole point.
  */
 function callsOut(operation: Consumable): Consumable[] {
-	return operation.provider.consumptions
+	if (operation.type !== "operation") return [];
+	const { provider } = operation;
+	const soleCaller =
+		[...provider.consumables.values()].filter((it) => it.type === "operation")
+			.length === 1;
+	return provider.consumptions
 		.filter(
-			(c) => c.consumable.type === "operation" && c.by.includes(operation),
+			(c) =>
+				c.consumable.type === "operation" &&
+				(c.by.includes(operation) || (soleCaller && c.by.length === 0)),
 		)
 		.map((c) => c.consumable);
 }

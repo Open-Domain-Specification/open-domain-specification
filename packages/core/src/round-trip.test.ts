@@ -284,7 +284,8 @@ describe("one pair, two exchanges", () => {
 	 * A reader that takes one event twice: an archive keeps the provider's
 	 * shape as it stands, a decision translates it through an anti-corruption
 	 * layer. The two are told apart by the callers they name, and the ref of
-	 * each carries the first of them (decision 26, card 89).
+	 * each carries the first of them, collection and id, so an operation and a
+	 * policy sharing an id stay apart (decision 26, cards 89 and 95).
 	 */
 	function twice() {
 		const ws = new Workspace("Round Trip", {
@@ -333,10 +334,10 @@ describe("one pair, two exchanges", () => {
 			"#/boundedcontexts/down/services/reader",
 		);
 		expect(reader.consumptions.map((it) => it.ref)).toEqual([
-			`${pairRef}/archive`,
-			`${pairRef}/decide`,
+			`${pairRef}/provides/archive`,
+			`${pairRef}/policies/decide`,
 		]);
-		expect(rebuilt.findConsumption(`${pairRef}/decide`)?.pattern).toBe(
+		expect(rebuilt.findConsumption(`${pairRef}/policies/decide`)?.pattern).toBe(
 			"anti-corruption-layer",
 		);
 		expect(

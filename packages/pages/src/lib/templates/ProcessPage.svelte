@@ -12,9 +12,10 @@ export const sections = [
 <script lang="ts">
 import {
 	Answer,
+	Deadline,
 	ODSFlowMap,
 	type Process,
-	type ReactionTrigger,
+	type ProcessTrigger,
 } from "@open-domain-specification/core";
 import { problemsUnder, useModel } from "../model";
 import { flowGraph } from "../flow/graph";
@@ -53,18 +54,30 @@ const flowMap = $derived(ODSFlowMap.fromBoundedContext(bc));
 /**
  * Where a trigger comes from: an event's provider, or — for an answer — the
  * one operation the answer names, which is the call this process made
- * (decision 23, third amendment).
+ * (decision 23, third amendment). A deadline comes from the process itself,
+ * because a per-instance timer is nobody else's fact.
  */
-const sourceOf = (trigger: ReactionTrigger) =>
-	trigger instanceof Answer ? trigger.operation : trigger.provider;
+const sourceOf = (trigger: ProcessTrigger) => {
+	if (trigger instanceof Answer) return trigger.operation;
+	if (trigger instanceof Deadline) return trigger.process;
+	return trigger.provider;
+};
 
 /**
  * What the name in the first column links to. An answer has no page of its
  * own — it is a call coming back, not an element — so it links to the shape it
- * came back as, and the Provider column says which call.
+ * came back as, and the Provider column says which call. A deadline has none
+ * either, and links to the process that declares it.
  */
-const linkOf = (trigger: ReactionTrigger) =>
-	trigger instanceof Answer ? trigger.schema.ref : trigger.ref;
+const linkOf = (trigger: ProcessTrigger) => {
+	if (trigger instanceof Answer) return trigger.schema.ref;
+	if (trigger instanceof Deadline) return trigger.process.ref;
+	return trigger.ref;
+};
+
+/** How long an instance had, said beside a deadline's name and nowhere else. */
+const detailOf = (trigger: ProcessTrigger) =>
+	trigger instanceof Deadline ? `after ${trigger.after}` : undefined;
 
 /** Every table names the kind, since what a process waits for may be an answer. */
 const columnsFor = (label: string, withKind: boolean): Column[] => [
@@ -76,13 +89,13 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 ];
 </script>
 
-{#snippet consumables(rows: ReactionTrigger[], label: string, withKind: boolean, empty: string)}
+{#snippet consumables(rows: ProcessTrigger[], label: string, withKind: boolean, empty: string)}
 	<DataTable columns={columnsFor(label, withKind)} {rows} {empty} rowId={(c) => c.ref}>
 		{#snippet cell(c, col)}
 			{#if col.key === "name"}
-				<Lockup kind={kindOf(c)} name={c.name} ref={linkOf(c)} />
+				<Lockup kind={kindOf(c)} name={c.name} ref={linkOf(c)} detail={detailOf(c)} />
 			{:else if col.key === "kind"}
-				{#if c instanceof Answer}<Keyword text={c.rejection ? "rejection" : "answer"} />{:else}<ConsumableKeywords consumable={c} />{/if}
+				{#if c instanceof Answer}<Keyword text={c.rejection ? "rejection" : "answer"} />{:else if c instanceof Deadline}<Keyword text="deadline" title="A time limit this process keeps on its own instances; it needs no clock outside the model." />{:else}<ConsumableKeywords consumable={c} />{/if}
 			{:else if col.key === "provider"}
 				{@const source = sourceOf(c)}
 				<Lockup kind={kindOf(source)} name={source.name} ref={source.ref} />
@@ -121,10 +134,10 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 <Section
 	id="when"
 	title="While it runs"
-	lead="What a live instance waits for: further events, and the answers the operations it issues come back with. An event from another context arrives through a consumption; an answer arrives from the call."
+	lead="What a live instance waits for: further events, the answers the operations it issues come back with, and its own deadlines. An event from another context arrives through a consumption; an answer arrives from the call; a deadline is this process's own clock and needs nothing outside the model."
 	count={p.events.length}
 >
-	{@render consumables(p.events, "Event or answer", true, "Waits for nothing else once it has started.")}
+	{@render consumables(p.events, "Event, answer or deadline", true, "Waits for nothing else once it has started.")}
 </Section>
 
 <Section
@@ -139,10 +152,10 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 <Section
 	id="ends"
 	title="Ends"
-	lead="What completes an instance: an event, or an answer a call comes back with. Ending on a fact its own operations raise is the normal shape, not a loop."
+	lead="What completes an instance: an event, an answer a call comes back with, or a deadline running out. Ending on a fact its own operations raise is the normal shape, not a loop."
 	count={p.endEvents.length}
 >
-	{@render consumables(p.endEvents, "Event or answer", true, "Nothing completes an instance, so the model never says how it finishes.")}
+	{@render consumables(p.endEvents, "Event, answer or deadline", true, "Nothing completes an instance, so the model never says how it finishes.")}
 	<!-- The map comes after the last section it summarises, so the four
 	     headings above have already named everything it draws. -->
 	<DiagramFigure

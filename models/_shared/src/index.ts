@@ -54,10 +54,18 @@ export async function generate(
  * The assertions shared, byte-for-byte, by RiverMart's, StreamLine's and
  * NorthBank's workspace tests: at least three relationship types are used and
  * there is one big ball of mud, every context the enterprise owns has a team,
- * there's a glossary,
- * policies, at least one process and schemas on cross-context events,
- * `validate()` reports exactly the deliberate problems (by rule id and
- * severity), and the workspace round-trips through `Workspace.fromSchema`.
+ * there's a glossary, policies and at least one process, `validate()` reports
+ * exactly the deliberate problems (by rule id and severity), and the workspace
+ * round-trips through `Workspace.fromSchema`.
+ *
+ * It used to demand a schema on every cross-context event too, and that one is
+ * gone. It was never a rule of the model -- a published fact whose name is the
+ * whole of it, `NightlyBatchCompleted`, is an honest event and nothing in the
+ * catalogue asks it for a payload -- and by keeping the reference models free
+ * of the case it hid a real gap: `conformist-backed` counted only
+ * schema-carrying consumptions, so a context conforming to a bare notification
+ * was told there was nothing to conform to and no model ever showed it
+ * (card 95).
  *
  * The relationship check is a floor, not a census. Requiring all five types of
  * every model would make a model invent a relationship it does not have -- a
@@ -100,22 +108,6 @@ export function assertStressTestWorkspace(
 		contexts.reduce((n, bc) => n + bc.processes.size, 0) > 0,
 		`${workspace.name} names no process`,
 	);
-	for (const bc of contexts) {
-		for (const provider of [
-			...bc.aggregates.values(),
-			...bc.services.values(),
-		]) {
-			for (const c of provider.consumables.values()) {
-				const consumedElsewhere = c.consumptions.some(
-					(it) => it.consumer.boundedcontext !== bc,
-				);
-				if (c.type === "event" && consumedElsewhere && !c.internal) {
-					assert.notStrictEqual(c.schema, undefined, `${c.name} has no schema`);
-				}
-			}
-		}
-	}
-
 	const diagnostics = workspace
 		.validate()
 		.map(({ rule, severity }) => ({ rule, severity }))

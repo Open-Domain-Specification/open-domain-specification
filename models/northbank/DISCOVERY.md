@@ -113,8 +113,8 @@ and PaymentStatus; invariants `PayerNotPayee`, `AmountPositive`,
 `CutOffRespected`, `FlaggedNeverSubmitted`, and `DailyLimit` on the context itself,
 guarded by `InitiatePayment`; the "Instruction lifecycle"
 process, which starts on `PaymentInitiated`, waits for the scorer's verdict
-(`TransactionVerdict`, the answer `ScoreTransaction` returns) and then for the scheme's answer
-(`SchemeSettlementConfirmed` or `SchemeRejected`), issues `ScoreInstruction`,
+(`TransactionVerdict`, the answer `ScoreTransaction` returns) and then for the answer
+`SubmitToScheme` comes back with (`SchemeSettlement`, or the refusal `SchemeRefusal`), issues `ScoreInstruction`,
 `SubmitPayment`, `SendToScheme`, `ConfirmSettlement`, `RejectPayment` and `PostSettlement`,
 and ends on `PaymentSettled` or `PaymentRejected`. It was recorded as seven chained
 policies until card 60; the lead described one instruction going from initiated to settled,
@@ -128,8 +128,14 @@ the cut-off stops it: no instruction exists, so the channel is told which rule s
 "We turn a submission into a scheme message and send it. The scheme confirms or rejects.
 ISO 20022 now. Our API to the hub is documented; the hub takes our format as it is."
 
-Recorded as: Scheme Gateway as generic; SchemeMessage with SchemeFormat; `SubmitToScheme`
-as an open host raising `SchemeSettlementConfirmed` and `SchemeRejected`.
+Recorded as: Scheme Gateway as generic; SchemeMessage with SchemeFormat; the scheme itself
+as an external context, Payment Scheme, publishing `SchemeSettlementConfirmed` and
+`SchemeRejected` in its own `SchemeResponse` shape; `SubmitToScheme` as an open host that
+consumes both of them and **returns** `SchemeSettlement` or **rejects with** `SchemeRefusal`,
+which is what "send it and await the response" means. Until card 95 the gateway was credited
+with raising the scheme's two answers itself and the scheme was never declared at all: the
+model said the gateway made the settlement happen, and the one system the whole payment path
+depends on was missing from the map.
 
 ### Cards Team lead
 
@@ -242,11 +248,13 @@ The connected timeline, condensed:
 | TransactionFlagged | ScoreTransaction | Open case; block card |
 | FraudCaseOpened | OpenCase | Freeze account |
 | PaymentSubmitted (internal) | SubmitPayment | Submit to scheme |
-| SchemeSettlementConfirmed / Rejected | SubmitToScheme | Confirm settlement |
+| SchemeSettlementConfirmed / Rejected | the scheme (external) | Scheme Gateway answers the hub |
+| SchemeSettlement / SchemeRefusal (answers, not events) | SubmitToScheme returns / rejects with them | Confirm settlement or reject |
 | PaymentSettled / Rejected | ConfirmSettlement / RejectPayment | Post to ledger |
 | EntryPosted | PostEntry / ReverseEntry | Accounts updates balance; Reporting accumulates |
 | NightlyBatchCompleted | Sovereign batch | Ledger imports; Reporting accumulates |
 | CardAuthorised / CardBlocked | AuthoriseCard / BlockCard | Accounts places a hold; Fraud monitors |
+| CardAuthorisationApproved / Declined (answers, not events) | AuthoriseCard returns / rejects with them | CardCo is told, and waits for it |
 | ApplicationSubmitted | SubmitApplication | Decide |
 | DecisionMade | Decide | Record decision |
 | LoanApproved / ApplicationDeclined (internal) | RecordDecision | (offer, out of scope) |
@@ -292,12 +300,18 @@ The connected timeline, condensed:
 | Scheme Connectivity | generic | The scheme's format, not the bank's |
 | Cards | generic | "We would outsource it if the contract allowed" |
 | Identity & Access | generic | Vendor built |
-| Shared Financial Primitives | supporting | A library, not a product; nobody's customer journey runs through it (card 56) |
+
+The Shared Kernel context serves none of these, and card 95 took away the one it used to
+have. "Shared Financial Primitives" was a supporting subdomain with a single context in it,
+invented in card 56 so that `context-serves-subdomain` would stop asking; no capability map
+of the bank has such a capability and no customer journey runs through it. What the kernel
+serves is whatever its sharers serve, and the rule now says so. The team that owns Money and
+AccountNumber stays, because somebody does own them.
 
 ## 6. The context map
 
 - **Shared kernel**, card 56: Money and AccountNumber are declared once, in a Shared Kernel
-  context of its own (a supporting subdomain, its own team), and every context that carries
+  context of its own (no subdomain of its own since card 95, its own team), and every context that carries
   an amount or a ledger account declares one shared-kernel relationship with it and borrows
   what it needs. Six sharers (Accounts, Ledger, Payments, Cards, Lending, Reporting) is six
   relationships to one kernel, not fifteen pairwise agreements among themselves (decision
@@ -315,6 +329,10 @@ The connected timeline, condensed:
   (Ledger towards Sovereign, Cards towards CardCo's format and Accounts, Customer towards
   Sanctions, Payments towards Accounts for the funds check, Accounts towards Cards for the
   authorisation hold).
+- **The three systems we do not run**, declared as external contexts: the Screening Vendor
+  behind Sanctions Screening, CardCo behind Cards, and — since card 95 — the Payment Scheme
+  behind the gateway. Each publishes in its own shape and each is conformed to, because you
+  negotiate with none of them.
 
 ## 7. Validation and what we left in
 
@@ -575,3 +593,31 @@ service is gone: the Head of Customer Platform described one step, "we screen th
 against the sanctions lists", and once the call moved that service held nothing at all — no
 rule, no reading across aggregates. The screening the interview describes is unchanged; what
 changed is which of this context's own parts makes the call.
+
+## Revision (card 95): the scheme is somebody else's machine, and the kernel serves no subdomain
+
+Three things the model said that the interviews did not.
+
+The Scheme Connectivity lead said "we turn a submission into a scheme message and send it.
+The scheme confirms or rejects", and the model gave `SubmitToScheme` a `raises` list with
+`SchemeSettlementConfirmed` and `SchemeRejected` on it. That says the gateway makes the
+settlement happen. It does not: the scheme does, on its own timings, and the gateway waits.
+The scheme is now an external context of its own — the last system in the payment path that
+was not on the map — publishing both facts in its own `SchemeResponse` shape, and the
+gateway consumes them through the operation that waits, `SubmitToScheme`. What the hub gets
+is the answer to the call it made: `SubmitToScheme` **returns** `SchemeSettlement` and
+**rejects with** `SchemeRefusal`, and the "Instruction lifecycle" process waits on those two
+answers where it used to consume two events it never heard first-hand. "We submit to the
+scheme through the gateway" is what the hub lead said, and now that is what the model draws.
+
+`AuthoriseCard` got the same treatment for the same reason. The Cards lead said "CardCo
+sends us the authorisation request in their format and we translate it", and the answer goes
+back the same way: CardCo waits on the call. The operation's description said it approved or
+declined and the model named neither answer, so the decline — the outcome the blocked-card,
+expired-card and available-balance rules all produce — existed nowhere at all. It now
+returns `CardAuthorisationApproved` and rejects with `CardAuthorisationDeclined`, whose
+reason is one of those three rules.
+
+Last, the Shared Kernel context lost the subdomain card 56 gave it. See section 5.
+
+The deliberate diagnostics of section 7 are untouched: the same four, for the same reasons.

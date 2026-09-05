@@ -4,9 +4,10 @@ import { ScopeManager } from "./scope-manager";
 import {
 	Answer,
 	BoundedContext,
+	Deadline,
 	Policy,
 	Process,
-	type ReactionTrigger,
+	type ProcessTrigger,
 	type Workspace,
 } from "./workspace";
 
@@ -29,6 +30,12 @@ import {
  * shared shape draw two edges and neither claims the other's caller
  * (decision 23).
  *
+ * A process's deadline is drawn the same way, as a loop from the process back
+ * to the process labelled with how long the instance had. It gets no node
+ * either, and for a stronger reason: there is no provider it could hang under,
+ * because a per-instance timer is the process's own and nobody else's fact
+ * (decision 23, fourth amendment).
+ *
  * That is also why a front need not restate what it calls raises: the map
  * already draws the front, the operation it calls and the event that
  * operation raises, so the fact is reached rather than declared twice
@@ -49,10 +56,13 @@ export class ODSFlowMap {
 	 * Adds an edge, keeping the first drawn between one pair. An answer is
 	 * keyed by its shape as well as by its ends: a call answering the same
 	 * reactor it already reached some other way is a second edge, and the
-	 * reader is told which is which by the name on it.
+	 * reader is told which is which by the name on it. A deadline is keyed by
+	 * how long it waits for the same reason: a process with two limits on one
+	 * instance draws two loops, not one.
 	 */
 	addEdge(edge: ODSFlowMapEdge) {
-		const id = `${edge.source.id}|${edge.target.id}${edge.answer ? `|${edge.answer}` : ""}`;
+		const label = edge.answer ?? edge.after;
+		const id = `${edge.source.id}|${edge.target.id}${label ? `|${label}` : ""}`;
 		const existing = this.edges.get(id);
 		if (existing) return existing;
 		this.edges.set(id, edge);
@@ -80,6 +90,18 @@ export class ODSFlowMap {
 			// it is drawn and never walked from the process (decision 23), which is
 			// what keeps the normal shape out of `reaction-cycle`.
 			for (const ending of process.endEvents) {
+				if (ending instanceof Deadline) {
+					// Running out of time is the process's own doing, so the
+					// edge starts and finishes at the process and says how long
+					// the instance had.
+					this.addEdge({
+						source: node,
+						target: node,
+						kind: "ends",
+						after: ending.after,
+					});
+					continue;
+				}
 				if (ending instanceof Answer) {
 					// An ending answer runs the other way: the call comes back into
 					// the process and that is what completes the instance, so the
@@ -109,10 +131,13 @@ export class ODSFlowMap {
 	 * answer names and the answer is drawn as that operation's own step.
 	 */
 	private enter(
-		trigger: ReactionTrigger,
+		trigger: ProcessTrigger,
 		chain: ReactionChain,
 		walked: Set<Reactor>,
 	) {
+		// A deadline has no node and nothing before it: the process is what
+		// raises it, and the walk from the process draws the loop.
+		if (trigger instanceof Deadline) return;
 		this.walk(
 			trigger instanceof Answer ? trigger.operation : trigger,
 			chain,
@@ -125,11 +150,12 @@ export class ODSFlowMap {
 		if (walked.has(node)) return;
 		walked.add(node);
 		const from = this.addNode(nodeFor(node));
-		for (const { to, answer } of chain.stepsFrom(node)) {
+		for (const { to, answer, deadline } of chain.stepsFrom(node)) {
 			this.addEdge({
 				source: from,
 				target: this.addNode(nodeFor(to)),
 				...(answer && { answer: answer.name }),
+				...(deadline && { after: deadline.after }),
 			});
 			this.walk(to, chain, walked);
 		}
@@ -207,17 +233,23 @@ export type ODSFlowMapEdge = {
 	 * waiting woke. Absent on every other edge.
 	 */
 	answer?: string;
+	/**
+	 * How long a deadline waits, on the loop a process's own timer draws from
+	 * the process back to itself. Absent on every other edge.
+	 */
+	after?: string;
 };
 
 /**
  * What an edge is labelled with, so the three renderers say the same thing: an
- * answer by the shape it came back as, what completes a process as `ends`, and
- * a plain step not at all. A dash alone cannot say which of the things a
- * dashed line means across these diagrams a reader is looking at, and an
- * unlabelled arrow into a process could not say the call had come back.
+ * answer by the shape it came back as, a deadline by how long the instance
+ * had, what completes a process as `ends`, and a plain step not at all. A dash
+ * alone cannot say which of the things a dashed line means across these
+ * diagrams a reader is looking at, and an unlabelled arrow into a process
+ * could not say the call had come back.
  */
 export function flowEdgeLabel(edge: ODSFlowMapEdge): string | undefined {
-	if (edge.answer)
-		return edge.kind === "ends" ? `${edge.answer} (ends)` : edge.answer;
+	const named = edge.answer ?? (edge.after && `after ${edge.after}`);
+	if (named) return edge.kind === "ends" ? `${named} (ends)` : named;
 	return edge.kind === "ends" ? "ends" : undefined;
 }

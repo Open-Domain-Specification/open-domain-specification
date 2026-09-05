@@ -127,6 +127,22 @@ export interface PolicySchema {
 }
 
 /**
+ * @title Deadline
+ * @description A time limit a process keeps on its own instances: cancel the reservation if nobody has paid after thirty minutes. It behaves as an event the process raises to itself, so the process may wait on it or end on it, and nothing else may name it. A per-instance timer is not a calendar event, so it needs no Clock context (decision 23, fourth amendment).
+ */
+export interface DeadlineSchema {
+	name: string;
+	description: string;
+	/**
+	 * How long the instance waits before the deadline falls, in the words the
+	 * business uses: "30 minutes", "two working days". Free text, like an
+	 * attribute's type: the model says the limit exists and how long it is, and
+	 * leaves the arithmetic to the code (decision 15).
+	 */
+	after: string;
+}
+
+/**
  * @title Process
  * @description A long-running reaction that holds state across events: it remembers which of its events have arrived and acts when enough of them have. What it correlates on, how long it waits and what it undoes are prose in its description rather than fields, because the model says that a process exists and what it listens to and does; how it decides is the code's (decisions 15 and 23).
  */
@@ -154,10 +170,17 @@ export interface ProcessSchema {
 	/** The operation consumables of this process's own context that it issues. */
 	then: { $ref: string }[];
 	/**
-	 * What completes an instance: an event consumable, or an answer named the
-	 * same way `on` names one.
+	 * What completes an instance: an event consumable, an answer, or a deadline
+	 * named the same way `on` names one.
 	 */
 	ends: { $ref: string }[];
+	/**
+	 * The time limits this process keeps on its own instances, by id. A
+	 * deadline is an element of the process, so `on` and `ends` name one by
+	 * `<process ref>/deadlines/<id>` and nothing outside the process may name
+	 * it at all (decision 23, fourth amendment).
+	 */
+	deadlines?: { [deadline: string]: DeadlineSchema };
 	/** Grounded statements about the real system behind this process. */
 	comments?: Comment[];
 	/** What the architecture thinks of this process. Absent means `by-design`. */

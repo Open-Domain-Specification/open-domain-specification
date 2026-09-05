@@ -1407,13 +1407,6 @@ const paymentAuthorised = paymentAgg.provides("PaymentAuthorised", {
 	pattern: "published-language",
 	schema: paymentAuthorisedSchema,
 });
-const authorisationExpired = paymentAgg.provides("AuthorisationExpired", {
-	description:
-		"A hold reached its expiry without being captured and was released",
-	type: "event",
-	pattern: "published-language",
-	schema: paymentRefSchema,
-});
 const paymentCaptured = paymentAgg.provides("PaymentCaptured", {
 	description: "Money was taken for a dispatched shipment",
 	type: "event",
@@ -1444,19 +1437,6 @@ const authorisePayment = paymentsApi
 		rejects: [paymentDeclinedSchema],
 	})
 	.raises(paymentAuthorised);
-// DISCOVERY: Payments engineering lead, and the Authorisation glossary entry:
-// a hold "expires if not captured". A scheduler calls this every few minutes;
-// nothing in the model consumes it, which is what an operation called from
-// outside the software looks like (decision 28), and the released hold is a
-// fact the checkout and the storefront both hear.
-paymentsApi
-	.provides("ExpireAuthorisations", {
-		description:
-			"Release every hold now past its Authorisation.expiresAt; a scheduler runs it",
-		type: "operation",
-		pattern: "open-host-service",
-	})
-	.raises(authorisationExpired);
 const capturePayment = paymentsApi
 	.provides("CapturePayment", {
 		description:
@@ -1560,12 +1540,28 @@ const placeOrderForCart = checkoutOrchestrator.provides("PlaceOrderForCart", {
 const checkout = cartBC
 	.addProcess("Checkout", {
 		description:
-			"From the customer confirming the basket to an order existing. It asks Payments to hold the cart total and then waits: on a hold the order is placed, on a decline — the answer AuthorisePayment refuses with — the cart is unfrozen so another instrument can be tried and the same instance waits for the next attempt. Correlation is by cartId, which the authorisation carries back. An instance nobody comes back to ends when the hold does: the authorisation expires, Payments says so, and the instance is over without anybody timing the cart out",
+			"From the customer confirming the basket to an order existing. It asks Payments to hold the cart total and then waits: on a hold the order is placed, on a decline — the answer AuthorisePayment refuses with — the cart is unfrozen so another instrument can be tried and the same instance waits for the next attempt. Correlation is by cartId, which the authorisation carries back. An instance nobody comes back to ends when its own clock runs out: the hold Payments took lasts thirty minutes, and after that the checkout is over. The cart is not: a cart nobody returns to is the customer's to abandon",
 	})
 	.starts(cartCheckedOut)
 	.on(paymentAuthorised, authorisePayment.rejected(paymentDeclinedSchema))
-	.issues(requestAuthorisation, placeOrderForCart, reopenCart)
-	.ends(orderPlaced, authorisationExpired);
+	.issues(requestAuthorisation, placeOrderForCart, reopenCart);
+// DISCOVERY: Payments engineering lead, and the Authorisation glossary entry:
+// a hold "expires if not captured", thirty minutes after it is taken. Card 92
+// wrote that as an `ExpireAuthorisations` operation on Payments that a
+// scheduler ran and an `AuthorisationExpired` event only the checkout heard,
+// which is five declarations and a fact about the world — that something
+// outside the software sweeps holds — for one instance's clock. It is the
+// process's own: it starts when this instance asks for the hold, nobody
+// outside knows the instance exists, and running out of time is how a checkout
+// nobody comes back to finishes (decision 23, fourth amendment; card 95).
+checkout.ends(
+	orderPlaced,
+	checkout.addDeadline("Authorisation expiry", {
+		description:
+			"The hold Payments took is released and the checkout is over; the cart stays open for the customer to come back to",
+		after: "30 minutes",
+	}),
+);
 // Everything the checkout reaches for, declared together now that both the
 // operations and the process exist to be named. The orchestrator offers four
 // operations, so which one calls out is a real question and `by` answers it
@@ -1584,10 +1580,6 @@ checkoutOrchestrator.consumes(placeOrder, {
 	by: [placeOrderForCart],
 });
 checkoutOrchestrator.consumes(paymentAuthorised, {
-	pattern: "anti-corruption-layer",
-	by: [checkout],
-});
-checkoutOrchestrator.consumes(authorisationExpired, {
 	pattern: "anti-corruption-layer",
 	by: [checkout],
 });
@@ -1639,9 +1631,24 @@ const signalVO = fraudBC.addValueObject("Signal", {
 signalVO.addAttribute("name", { type: "string" });
 signalVO.addAttribute("weight", { type: "int" });
 assessment.addAttribute("assessmentId", { type: "string", identity: true });
-assessment.addAttribute("subjectId", {
+// DISCOVERY: Trust & Safety lead. "We score an order or a seller." One
+// attribute called subjectId, typed string and described as "an order id or a
+// seller id", identified nothing: `identifies` names one kind of thing, and an
+// id that is either of two is not one. Decision 15 gave the model's answer in
+// the same breath and cited this very attribute as following it, which it did
+// not: two optional attributes, each identifying its own target, and an
+// invariant in prose that exactly one is set (card 95).
+const assessedOrder = assessment.addAttribute("orderId", {
 	type: "string",
-	description: "An order id or a seller id",
+	optional: true,
+	identifies: order,
+	description: "Set when the assessment is of an order",
+});
+const assessedSeller = assessment.addAttribute("sellerId", {
+	type: "string",
+	optional: true,
+	identifies: seller,
+	description: "Set when the assessment is of a seller",
 });
 assessment.addAttribute("score", {
 	type: "RiskScore",
@@ -1655,6 +1662,15 @@ assessment.addAttribute("signals", {
 });
 assessment.uses(riskScoreVO, "scored", "1");
 assessment.uses(signalVO, "explained-by", "1..*");
+// The rule the two optional ids need, and the one the model states in prose
+// because no field can: a union identity would need a union type, which
+// decision 18 leaves out.
+assessmentAgg
+	.addInvariant("OneSubject", {
+		description:
+			"Exactly one of orderId and sellerId is set: an assessment is of an order or of a seller, never both and never neither",
+	})
+	.constrains(assessedOrder, assessedSeller);
 assessmentAgg
 	.addInvariant("ScoreExplained", {
 		description:

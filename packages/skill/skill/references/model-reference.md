@@ -157,6 +157,18 @@ A named payload shape owned by a bounded context, shared by the consumables that
 
 No other fields are allowed.
 
+## Deadline
+
+A time limit a process keeps on its own instances: cancel the reservation if nobody has paid after thirty minutes. It behaves as an event the process raises to itself, so the process may wait on it or end on it, and nothing else may name it. A per-instance timer is not a calendar event, so it needs no Clock context (decision 23, fourth amendment).
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `after` | string | yes | How long the instance waits before the deadline falls, in the words the business uses: "30 minutes", "two working days". Free text, like an attribute's type: the model says the limit exists and how long it is, and leaves the arithmetic to the code (decision 15). |
+| `description` | string | yes |  |
+| `name` | string | yes |  |
+
+No other fields are allowed.
+
 ## DirectedContextRelationship
 
 An upstream/downstream relationship between two bounded contexts.
@@ -259,9 +271,10 @@ A long-running reaction that holds state across events: it remembers which of it
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `comments` | array of [Comment](#comment) | no | Grounded statements about the real system behind this process. |
+| `deadlines` | map of id to [Deadline](#deadline) | no | The time limits this process keeps on its own instances, by id. A deadline is an element of the process, so `on` and `ends` name one by `<process ref>/deadlines/<id>` and nothing outside the process may name it at all (decision 23, fourth amendment). |
 | `description` | string | yes |  |
 | `disposition` | "by-design" | "refactor" | "tolerated" | no | What the architecture thinks of this process. Absent means `by-design`. |
-| `ends` | array of `{ "$ref": string }` | yes | What completes an instance: an event consumable, or an answer named the same way `on` names one. |
+| `ends` | array of `{ "$ref": string }` | yes | What completes an instance: an event consumable, an answer, or a deadline named the same way `on` names one. |
 | `name` | string | yes |  |
 | `on` | array of `{ "$ref": string }` | yes | Further event consumables the process waits for or reacts to while an instance is alive, and the answers it waits to come back: an answer of an operation this context consumes, named by its origin the way a policy's `on` names one, means "when that answer comes back", which is the call-and-branch a process manager is usually made of. Like a policy's `on`, one of these may belong to another context: subscribing to a published fact, or calling out and waiting, is how contexts integrate (decision 23). |
 | `starts` | array of `{ "$ref": string }` | yes | The event consumables that begin an instance of this process. An answer is what a caller gets back from a call, so something was already waiting for it and an instance that did not exist cannot have been: only an event starts one. |

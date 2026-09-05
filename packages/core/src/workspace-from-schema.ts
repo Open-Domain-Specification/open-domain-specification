@@ -232,7 +232,8 @@ function addBoundedContext(
 
 	// The consumables a process joins may live in any context, so its four
 	// lists are dropped here and joined in the second pass (linkProcesses),
-	// exactly as a policy's are.
+	// exactly as a policy's are. Its deadlines are its own, so they are made
+	// here, before anything can name one.
 	for (const [processId, processSchema] of Object.entries(
 		boundedcontextSchema.processes,
 	)) {
@@ -241,9 +242,21 @@ function addBoundedContext(
 			on: _on,
 			then: _then,
 			ends: _ends,
+			deadlines,
 			...rest
 		} = processSchema;
-		boundedcontext.addProcess(processSchema.name, { ...rest, id: processId });
+		const process = boundedcontext.addProcess(processSchema.name, {
+			...rest,
+			id: processId,
+		});
+		for (const [deadlineId, deadlineSchema] of Object.entries(
+			deadlines ?? {},
+		)) {
+			process.addDeadline(deadlineSchema.name, {
+				...deadlineSchema,
+				id: deadlineId,
+			});
+		}
 	}
 
 	for (const [schemaId, schemaSchema] of Object.entries(
@@ -535,9 +548,10 @@ function linkProcesses(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 			const consumables = (refs: { $ref: string }[]) =>
 				refs.map(({ $ref }) => workspace.getConsumableByRefOrThrow($ref));
 			// What a process waits for, and what completes it, may be an answer
-			// rather than an event, so both resolve to either (decision 23).
+			// or one of its own deadlines rather than an event, so both resolve
+			// to any of the three (decision 23).
 			const triggers = (refs: { $ref: string }[]) =>
-				refs.map(({ $ref }) => workspace.getReactionTriggerByRefOrThrow($ref));
+				refs.map(({ $ref }) => workspace.getProcessTriggerByRefOrThrow($ref));
 			process.starts(...consumables(processSchema.starts));
 			process.on(...triggers(processSchema.on));
 			process.issues(...consumables(processSchema.then));

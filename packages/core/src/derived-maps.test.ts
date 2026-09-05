@@ -5,7 +5,7 @@ import { ODSContextMap } from "./context-map";
 import { flowEdgeLabel, ODSFlowMap } from "./flow-map";
 import { makeRichTestWs } from "./makeTestWs";
 import { ODSRelationGraph, ODSRelationMap } from "./relation-map";
-import { Workspace } from "./workspace";
+import { Deadline, type ReactionTrigger, Workspace } from "./workspace";
 
 describe("ODSConsumptionGraph", () => {
 	const f = makeRichTestWs();
@@ -745,6 +745,50 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 		);
 	});
 
+	it("carries the chain through a consumer that provides one operation", () => {
+		// `consumption-by-required` does not ask a single-operation consumer for
+		// a `by`, because there is nothing to choose between; the walk reads it
+		// the same way, so the chain no longer stops at the one boundary the
+		// model let an author leave unwritten (decision 21's amendment, card 95).
+		const { ws, ask, authorise } = callAndBranch();
+		const orchestrator = ask.provider;
+		orchestrator.consumptions.length = 0;
+		orchestrator.consumables.delete("reopen_cart");
+		orchestrator.consumes(authorise, { pattern: "anti-corruption-layer" });
+		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
+			"Request Authorisation -> Authorise Payment",
+		);
+	});
+
+	it("draws a deadline as a loop from the process, labelled with how long", () => {
+		// A per-instance timer has no provider to hang a node under, so the
+		// process wakes itself and the label is the whole of what happened
+		// (decision 23, fourth amendment).
+		const { ws, process } = callAndBranch();
+		const expiry = process.addDeadline("Hold expiry", {
+			description: "",
+			after: "30 minutes",
+		});
+		process.on(expiry);
+		const map = ODSFlowMap.fromWorkspace(ws);
+		expect(drawn(map)).toContain("Checkout -> Checkout [after 30 minutes]");
+		expect(map.nodes.has(expiry.ref)).toBe(false);
+	});
+
+	it("draws a deadline a process ends on as the ending edge", () => {
+		const { ws, process } = callAndBranch();
+		process.endEvents.length = 0;
+		process.ends(
+			process.addDeadline("Nobody came back", {
+				description: "",
+				after: "30 minutes",
+			}),
+		);
+		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
+			"Checkout -> Checkout [after 30 minutes (ends)]",
+		);
+	});
+
 	it("draws an answer a policy waits on the same way", () => {
 		const { ws } = callAndBranch();
 		const checkout = ws.getBoundedContextByRefOrThrow(
@@ -755,7 +799,12 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 		const policy = checkout.addPolicy("Reopen on decline", {
 			description: "",
 		});
-		policy.on(...(process?.events ?? [])).issues(...(process?.commands ?? []));
+		// A policy waits on everything a process does except a deadline, which
+		// is the process's own; this one has none.
+		const triggers = (process?.events ?? []).filter(
+			(it): it is ReactionTrigger => !(it instanceof Deadline),
+		);
+		policy.on(...triggers).issues(...(process?.commands ?? []));
 		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
 			"Authorise Payment -> Reopen on decline [Payment Declined]",
 		);

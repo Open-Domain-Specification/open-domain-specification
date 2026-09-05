@@ -642,7 +642,7 @@ describe("Workspace.validate", () => {
 		).toEqual([
 			[
 				"warning",
-				'"Cards" declares itself a conformist of "Scheme", but it names none of "Scheme"\'s schemas or value objects, consumes nothing it publishes and calls none of its operations, so there is nothing here to conform to',
+				'"Cards" declares itself a conformist of "Scheme", but it names none of "Scheme"\'s schemas or value objects and consumes nothing "Scheme" provides, so there is nothing here to conform to',
 				relationship.ref,
 			],
 		]);
@@ -696,6 +696,33 @@ describe("Workspace.validate", () => {
 		cards
 			.addService("Cards App", { description: "", type: "application" })
 			.consumes(authorise, { pattern: "conformist" });
+		expect(ws.validate().filter((d) => d.rule === "conformist-backed")).toEqual(
+			[],
+		);
+	});
+
+	it("takes a bare notification as backing the role, payload or not", () => {
+		// The gap card 95 closed: the rule counted a consumed event only when it
+		// carried the upstream's schema, so a conformist of a context that
+		// publishes a name and nothing else was told there was nothing to
+		// conform to.
+		const ws = emptyWorkspace();
+		const core = ws.addBoundedContext("Core Banking", { description: "" });
+		const reporting = ws.addBoundedContext("Reporting", { description: "" });
+		core.upstreamOf(reporting, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		const done = core
+			.addService("Batch", { description: "", type: "application" })
+			.provides("Nightly Batch Completed", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			});
+		reporting
+			.addService("Returns", { description: "", type: "application" })
+			.consumes(done, { pattern: "conformist" });
 		expect(ws.validate().filter((d) => d.rule === "conformist-backed")).toEqual(
 			[],
 		);
@@ -1139,6 +1166,29 @@ describe("invariant-in-aggregate", () => {
 		).toEqual([
 			[
 				'Invariant "Reaches Out" of aggregate "Invoice" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
+				reaching.ref,
+			],
+		]);
+	});
+
+	it("refuses a value object of the aggregate's own context that nothing holds", () => {
+		// The gap card 95 closed: a value belongs to the whole context, so
+		// reading the scope answered "inside the boundary" before anyone asked
+		// whether the aggregate held one.
+		const { ws, billing, invoice } = borrowed();
+		const local = billing.addValueObject("Discount", { description: "" });
+		local.addAttribute("percent", { type: "int" });
+		const reaching = invoice
+			.addInvariant("Reaches Sideways", { description: "" })
+			.constrains(local);
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "invariant-in-aggregate")
+				.map((d) => [d.message, d.ref]),
+		).toEqual([
+			[
+				'Invariant "Reaches Sideways" of aggregate "Invoice" constrains "Discount", which is a value object of bounded context "Billing" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
 				reaching.ref,
 			],
 		]);
@@ -1962,7 +2012,7 @@ describe("relationship-roles-backed", () => {
 		expect(backedRules(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 			[
 				"warning",
-				'"Up" is declared published-language to "Down", but nothing "Down" consumes from "Up" carries that upstream role',
+				'"Up" is declared published-language to "Down", but nothing "Down" consumes from "Up" carries that upstream role, and nothing in "Down" carries one of its schemas or value objects',
 				relationship.ref,
 			],
 		]);
@@ -2053,6 +2103,22 @@ describe("relationship-roles-backed", () => {
 		const root = chart.addRootEntity("Chart", { description: "" });
 		root.addAttribute("Id", { type: "uuid", identity: true });
 		root.addAttribute("Diagnosis", { type: "Coding", valueobject: coding });
+		expect(ws.validate()).toEqual([]);
+	});
+
+	it("counts the same borrowing as backing the upstream's published language", () => {
+		// A standards body provides nothing to consume: the shapes a conformist
+		// borrows are the whole of what it publishes (decision 28's amendment).
+		const { ws, fhir, clinical, patient, relationship } = conformsToStandard();
+		relationship.upstreamRoles = ["published-language"];
+		clinical
+			.addService("Records", { description: "", type: "application" })
+			.provides("Publish Encounter", {
+				description: "",
+				type: "operation",
+				schema: patient,
+			});
+		expect(fhir.external).toBe(true);
 		expect(ws.validate()).toEqual([]);
 	});
 
@@ -2525,6 +2591,80 @@ describe("process rules", () => {
 		});
 	});
 
+	describe("deadlines", () => {
+		it("is a trigger with no crossing, no provider and no relationship to ask for", () => {
+			// The whole point of decision 23's fourth amendment: a per-instance
+			// timer used to cost an external Clock context, a service, an event, a
+			// consumption and a relationship, and every one of those was a claim
+			// about the outside world that was not true.
+			const { ws, process } = reachingProcess();
+			const before = ws.validate();
+			const expiry = process.addDeadline("Unpaid", {
+				description: "",
+				after: "30 minutes",
+			});
+			process.on(expiry);
+			expect(expiry.ref).toBe(
+				"#/boundedcontexts/down/processes/long_running/deadlines/unpaid",
+			);
+			expect(ws.getByRef(expiry.ref)).toBe(expiry);
+			expect(ws.validate()).toEqual(before);
+		});
+
+		it("ends an instance as an event does, and is no cycle", () => {
+			const { ws, process } = reachingProcess();
+			process.endEvents.length = 0;
+			process.ends(
+				process.addDeadline("Nobody came back", {
+					description: "",
+					after: "30 minutes",
+				}),
+			);
+			expect(ruleOf(ws, "process-has-ends")).toEqual([]);
+			expect(ruleOf(ws, "reaction-cycle")).toEqual([]);
+		});
+
+		it("is refused where it is written when another process names it", () => {
+			// A deadline counts from the moment one instance began waiting, so no
+			// other reactor knows the instance exists, let alone when its clock
+			// started.
+			const { down, process } = reachingProcess();
+			const expiry = process.addDeadline("Unpaid", {
+				description: "",
+				after: "30 minutes",
+			});
+			const other = down.addProcess("Other", { description: "" });
+			expect(() => other.on(expiry)).toThrow(
+				"Deadline Unpaid belongs to process Long Running",
+			);
+		});
+
+		it("survives toSchema and back, on and ends alike", () => {
+			const { ws, process } = reachingProcess();
+			const waited = process.addDeadline("Chased", {
+				description: "A reminder goes out",
+				after: "two working days",
+			});
+			const over = process.addDeadline("Abandoned", {
+				description: "Nobody came back",
+				after: "30 minutes",
+			});
+			process.on(waited).ends(over);
+			const schema = ws.toSchema();
+			const rebuilt = Workspace.fromSchema(JSON.parse(JSON.stringify(schema)));
+			expect(rebuilt.toSchema()).toEqual(schema);
+			const back = rebuilt.getProcessByRefOrThrow(process.ref);
+			expect(
+				[...back.deadlines.values()].map((it) => [it.name, it.after]),
+			).toEqual([
+				["Chased", "two working days"],
+				["Abandoned", "30 minutes"],
+			]);
+			expect(back.events.map((it) => it.ref)).toContain(waited.ref);
+			expect(back.endEvents.map((it) => it.ref)).toContain(over.ref);
+		});
+	});
+
 	describe("the rules a process shares with a policy", () => {
 		it("reads its three event lists as reactions the boundary rules see", () => {
 			const { ws, down, downApp, upApp, process } = reachingProcess();
@@ -2896,11 +3036,28 @@ describe("raises-restated", () => {
 		expect(restated(ws)).toEqual([]);
 	});
 
-	it("says nothing when the consumption does not name the front in by", () => {
-		// Without `by` the model never claims this operation is what calls out,
-		// so there is no chain to carry the fact and no restatement to drop.
+	it("reads a lone operation as the by the model did not make it write", () => {
+		// A consumer providing one operation is its own `by`, which is why
+		// `consumption-by-required` does not ask for one; the chain reads it the
+		// same way, so the front is restating a fact the chain already carries
+		// (decision 21's third amendment, card 95).
 		const { ws, app, reserve, reserved, reserveForOrder } = front();
 		reserveForOrder.raises(reserved);
+		app.consumes(reserve, {});
+		expect(restated(ws).map(([, , ref]) => ref)).toEqual([reserveForOrder.ref]);
+	});
+
+	it("says nothing when the consumption does not name the front in by", () => {
+		// With two operations to choose between and no `by`, the model never
+		// claims which one calls out, so there is no chain to carry the fact and
+		// no restatement to drop.
+		const { ws, app, reserve, reserved, reserveForOrder } = front();
+		reserveForOrder.raises(reserved);
+		app.provides("Cancel Reservation", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
 		app.consumes(reserve, {});
 		expect(restated(ws)).toEqual([]);
 	});
@@ -3907,7 +4064,7 @@ describe("relationship-roles-backed and published languages", () => {
 		expect(
 			backedRules(crossingWithSchema(false)).map((d) => d.message),
 		).toEqual([
-			'"Up" is declared published-language to "Down", but nothing "Down" consumes from "Up" carries that upstream role',
+			'"Up" is declared published-language to "Down", but nothing "Down" consumes from "Up" carries that upstream role, and nothing in "Down" carries one of its schemas or value objects',
 		]);
 	});
 });
@@ -4182,10 +4339,36 @@ describe("consumption-once", () => {
 		// are reachable one at a time (decision 26).
 		const pairRef =
 			"#/boundedcontexts/down/services/reader/consumes/boundedcontexts~up~services~feed~provides~happened";
-		expect(asIs.ref).toBe(`${pairRef}/archive`);
-		expect(translated.ref).toBe(`${pairRef}/decide`);
+		// The caller's collection is part of the segment, so an operation and
+		// a policy sharing an id stay apart (card 95).
+		expect(asIs.ref).toBe(`${pairRef}/provides/archive`);
+		expect(translated.ref).toBe(`${pairRef}/policies/decide`);
 		expect(ws.findConsumption(asIs.ref)).toBe(asIs);
 		expect(ws.findConsumption(translated.ref)).toBe(translated);
+	});
+
+	it("keeps an operation and a policy of one id apart in the ref", () => {
+		// Petstore names a policy after the operation it issues, so both are
+		// `reserve_pet`, and the ref carried the bare id: two consumptions, one
+		// ref, and `consumption-once` saw two callers and said nothing (card 95).
+		const { ws, down, happened, consumer } = pair();
+		const reserve = consumer.provides("Reserve Pet", {
+			description: "",
+			type: "operation",
+		});
+		const policy = down.addPolicy("Reserve Pet", { description: "" });
+		expect(policy.id).toBe(reserve.id);
+		const byOperation = consumer.consumes(happened, {
+			pattern: "conformist",
+			by: [reserve],
+		});
+		const byPolicy = consumer.consumes(happened, {
+			pattern: "anti-corruption-layer",
+			by: [policy],
+		});
+		expect(byOperation.ref).not.toBe(byPolicy.ref);
+		expect(ws.findConsumption(byPolicy.ref)).toBe(byPolicy);
+		expect(once(ws)).toEqual([]);
 	});
 
 	it("errors when two consumptions of one consumable name the same caller", () => {
@@ -4420,6 +4603,64 @@ describe("external-is-boundary", () => {
 				.filter((d) => d.rule === "context-serves-subdomain")
 				.map((d) => d.ref),
 		).not.toContain(external.ref);
+	});
+});
+
+describe("context-serves-subdomain and the shared kernel", () => {
+	/**
+	 * The shape decision 16's amendment draws: a kernel of Money and
+	 * AccountNumber as a context of its own, which `sharers` contexts borrow
+	 * from and which serves no subdomain because it serves theirs.
+	 */
+	function kernel(sharers: number) {
+		const ws = emptyWorkspace();
+		const platform = ws
+			.addDomain("Enterprise", { description: "" })
+			.addSubdomain("Payments", { description: "", type: "core" });
+		const shared = ws.addBoundedContext("Shared Kernel", { description: "" });
+		const money = shared.addValueObject("Money", { description: "" });
+		money.addAttribute("amount", { type: "decimal" });
+		for (let i = 0; i < sharers; i++) {
+			const bc = ws.addBoundedContext(`Sharer ${i}`, {
+				description: "",
+				subdomains: [platform],
+			});
+			const agg = bc.addAggregate(`Thing ${i}`, { description: "" });
+			const root = agg.addRootEntity(`Thing ${i}`, { description: "" });
+			root.addAttribute("Id", { type: "uuid", identity: true });
+			root.addAttribute("Total", { type: "Money", valueobject: money });
+			bc.sharesKernelWith(shared);
+		}
+		return { ws, shared };
+	}
+
+	const unserved = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "context-serves-subdomain")
+			.map((d) => d.ref);
+
+	it("asks a context two others share for no subdomain of its own", () => {
+		const { ws, shared } = kernel(2);
+		expect(unserved(ws)).toEqual([]);
+		expect(shared.subdomains.size).toBe(0);
+	});
+
+	it("still asks a context only one other shares with", () => {
+		// One sharer is an ordinary pair: the kernel is the two teams' joint
+		// model, not a third context under everybody.
+		const { ws, shared } = kernel(1);
+		expect(unserved(ws)).toEqual([shared.ref]);
+	});
+
+	it("still asks a context that also stands in some other relationship", () => {
+		// A context that consumes, publishes or conforms is doing something
+		// besides being the kernel, and that something serves a subdomain.
+		const { ws, shared } = kernel(2);
+		ws.addBoundedContext("Elsewhere", { description: "" }).upstreamOf(shared, {
+			upstreamRoles: ["published-language"],
+		});
+		expect(unserved(ws)).toContain(shared.ref);
 	});
 });
 
@@ -5011,10 +5252,37 @@ describe("waiting on an answer", () => {
 		expect(kinds(ws)).toEqual([
 			[
 				"error",
-				'Process "Checkout" waits for "Authorise Payment rejects with Payment Declined", but nothing in "Checkout" consumes "Authorise Payment"; a context hears an answer by having made the call, so consume that operation, or react to an event instead',
+				'Process "Checkout" waits for "Authorise Payment rejects with Payment Declined", but nothing in "Checkout" consumes "Authorise Payment" and process "Checkout" does not issue it; a reactor hears an answer by having made the call, so issue that operation or consume it, or react to an event instead',
 				process.ref,
 			],
 		]);
+	});
+
+	it("accepts the answer of an operation the reactor issues itself", () => {
+		// A local call and a branch: the process issues a validator of its own
+		const { ws, checkout, declined, reopen, confirmed } = answered({
+			consume: false,
+			reject: false,
+		});
+		checkout.processes.clear();
+		const verdict = checkout.addSchema("Verdict");
+		verdict.addAttribute("ok", { type: "boolean" });
+		const validate = checkout
+			.addService("Validator", { description: "", type: "domain" })
+			.provides("Validate Cart", {
+				description: "",
+				type: "operation",
+				internal: true,
+				returns: verdict,
+			});
+		checkout
+			.addProcess("Checkout", { description: "" })
+			.starts(confirmed)
+			.on(validate.returned())
+			.issues(validate, reopen)
+			.ends(confirmed);
+		expect(declined).toBeDefined();
+		expect(kinds(ws)).toEqual([]);
 	});
 
 	it("refuses an answer of an operation that returns nothing at the DSL", () => {

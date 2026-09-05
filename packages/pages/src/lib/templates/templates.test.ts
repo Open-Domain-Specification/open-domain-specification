@@ -345,7 +345,7 @@ describe("every template, through the shipped route", () => {
 			"Description",
 		]);
 		expect(headers("when")).toEqual([
-			"Event or answer",
+			"Event, answer or deadline",
 			"Kind",
 			"Provider",
 			"Context",
@@ -359,7 +359,7 @@ describe("every template, through the shipped route", () => {
 			"Description",
 		]);
 		expect(headers("ends")).toEqual([
-			"Event or answer",
+			"Event, answer or deadline",
 			"Kind",
 			"Provider",
 			"Context",
