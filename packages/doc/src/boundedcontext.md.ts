@@ -2,11 +2,12 @@ import {
 	type Aggregate,
 	type BoundedContext,
 	constrainableLabel,
-	type DataSchema,
+	DataSchema,
 	type Invariant,
 	ODSConsumptionGraph,
 	type Policy,
 	type Process,
+	type ReactionTrigger,
 	type Service,
 	type ValueObject,
 } from "@open-domain-specification/core";
@@ -30,10 +31,20 @@ ${aggregate.description}
 
 `;
 
+/**
+ * What a reaction waits for, named in one cell. An answer is marked, because
+ * in a column of event names a schema would otherwise read as one more event
+ * rather than as a call coming back (decision 23).
+ */
+const triggerList = (triggers: ReactionTrigger[]) =>
+	triggers
+		.map((it) => (it instanceof DataSchema ? `${it.name} (answer)` : it.name))
+		.join(", ") || "-";
+
 const policySection = (policy: Policy) => [
 	policy.name,
 	policy.description,
-	policy.events.map((it) => it.name).join(", ") || "-",
+	triggerList(policy.events),
 	policy.commands.map((it) => it.name).join(", ") || "-",
 ];
 
@@ -43,9 +54,9 @@ const processSection = (process: Process) => [
 	process.name,
 	process.description,
 	process.startEvents.map((it) => it.name).join(", ") || "-",
-	process.events.map((it) => it.name).join(", ") || "-",
+	triggerList(process.events),
 	process.commands.map((it) => it.name).join(", ") || "-",
-	process.endEvents.map((it) => it.name).join(", ") || "-",
+	triggerList(process.endEvents),
 ];
 
 const schemaSection = (schema: DataSchema) => [

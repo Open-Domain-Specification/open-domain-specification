@@ -11,7 +11,7 @@ Open-host service for /pet endpoints
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | AddPet | operation | no | open-host-service | POST /pet | [RegisterPet](../../index.md#schemas) | - | - | PetRegistered | - |
 | UpdatePet | operation | no | open-host-service | PUT /pet | - | - | - | PetUpdated | - |
-| FindPetsByStatus | operation | no | open-host-service | GET /pet/findByStatus?status=available|pending|sold | - | [Pet](../../index.md#schemas) | - | - | - |
+| FindPetsByStatus | operation | no | open-host-service | GET /pet/findByStatus?status=available|pending|sold | - | [Pets](../../index.md#schemas) | - | - | - |
 | GetPetById | operation | no | open-host-service | GET /pet/{petId} | [PetId](../../index.md#schemas) | [Pet](../../index.md#schemas) | - | - | - |
 | UploadImage | operation | no | open-host-service | POST /pet/{petId}/uploadImage; adds a PhotoUrl, so it is a profile update | [PetId](../../index.md#schemas) | - | - | PetUpdated | - |
 | DeletePet | operation | no | open-host-service | DELETE /pet/{petId} | [PetId](../../index.md#schemas) | - | - | PetDeleted | - |

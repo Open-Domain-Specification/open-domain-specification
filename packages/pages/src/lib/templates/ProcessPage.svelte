@@ -11,9 +11,11 @@ export const sections = [
 
 <script lang="ts">
 import {
-	type Consumable,
+	answeredBy,
+	DataSchema,
 	ODSFlowMap,
 	type Process,
+	type ReactionTrigger,
 } from "@open-domain-specification/core";
 import { problemsUnder, useModel } from "../model";
 import { flowGraph } from "../flow/graph";
@@ -29,6 +31,7 @@ import Lockup from "../atoms/Lockup.svelte";
 import ConsumableKeywords from "../molecules/ConsumableKeywords.svelte";
 import { contextCrumbs } from "../molecules/crumbs";
 import { kindOf } from "../molecules/element-kind";
+import Joined from "../molecules/Joined.svelte";
 import DiagramFigure from "../organisms/DiagramFigure.svelte";
 import LanguageSection from "../organisms/LanguageSection.svelte";
 import PageHeader from "../organisms/PageHeader.svelte";
@@ -49,7 +52,14 @@ const crumbs = $derived(contextCrumbs(model.workspace, bc));
 // dashed edge is what completes it.
 const flowMap = $derived(ODSFlowMap.fromBoundedContext(bc));
 
-/** The event tables list one kind; only "Then" needs the kind column. */
+/**
+ * Where a trigger comes from: an event's provider, or — for an answer — the
+ * operations this context calls that come back with that shape (decision 23).
+ */
+const sourcesOf = (trigger: ReactionTrigger) =>
+	trigger instanceof DataSchema ? answeredBy(bc, trigger) : [trigger.provider];
+
+/** Every table names the kind, since what a process waits for may be an answer. */
 const columnsFor = (label: string, withKind: boolean): Column[] => [
 	{ key: "name", label },
 	...(withKind ? [{ key: "kind", label: "Kind" }] : []),
@@ -59,15 +69,15 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 ];
 </script>
 
-{#snippet consumables(rows: Consumable[], label: string, withKind: boolean, empty: string)}
+{#snippet consumables(rows: ReactionTrigger[], label: string, withKind: boolean, empty: string)}
 	<DataTable columns={columnsFor(label, withKind)} {rows} {empty} rowId={(c) => c.ref}>
 		{#snippet cell(c, col)}
 			{#if col.key === "name"}
 				<Lockup kind={kindOf(c)} name={c.name} ref={c.ref} />
 			{:else if col.key === "kind"}
-				<ConsumableKeywords consumable={c} />
+				{#if c instanceof DataSchema}<Keyword text="answer" />{:else}<ConsumableKeywords consumable={c} />{/if}
 			{:else if col.key === "provider"}
-				<Lockup kind={kindOf(c.provider)} name={c.provider.name} ref={c.provider.ref} />
+				<Joined>{#each sourcesOf(c) as source (source.ref)}<Lockup kind={kindOf(source)} name={source.name} ref={source.ref} />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
 			{:else if col.key === "context"}
 				<Lockup kind="boundedcontext" name={c.boundedcontext.name} ref={c.boundedcontext.ref} />
 			{:else}
@@ -103,10 +113,10 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 <Section
 	id="when"
 	title="While it runs"
-	lead="The further events a live instance waits for or reacts to. Events from other contexts arrive through a consumption."
+	lead="What a live instance waits for: further events, and the answers the operations it issues come back with. An event from another context arrives through a consumption; an answer arrives from the call."
 	count={p.events.length}
 >
-	{@render consumables(p.events, "Event", false, "Waits for nothing else once it has started.")}
+	{@render consumables(p.events, "Event or answer", true, "Waits for nothing else once it has started.")}
 </Section>
 
 <Section
@@ -121,10 +131,10 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 <Section
 	id="ends"
 	title="Ends"
-	lead="The events that complete an instance. Ending on a fact its own operations raise is the normal shape, not a loop."
+	lead="What completes an instance: an event, or an answer a call comes back with. Ending on a fact its own operations raise is the normal shape, not a loop."
 	count={p.endEvents.length}
 >
-	{@render consumables(p.endEvents, "Event", false, "Nothing completes an instance, so the model never says how it finishes.")}
+	{@render consumables(p.endEvents, "Event or answer", true, "Nothing completes an instance, so the model never says how it finishes.")}
 	<!-- The map comes after the last section it summarises, so the four
 	     headings above have already named everything it draws. -->
 	<DiagramFigure

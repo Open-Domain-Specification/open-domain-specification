@@ -56,6 +56,12 @@ export type GraphEdge = {
 	 * legend names each kind it sees; a declared edge leaves it unset.
 	 */
 	impliedBy?: ImpliedBy;
+	/**
+	 * On a flow edge, true when the step is an answer coming back from a call:
+	 * the label is then the shape it came back as rather than a word about the
+	 * edge itself, and the legend says so (decision 23).
+	 */
+	answer?: boolean;
 };
 
 /** A shaded region grouping nodes, nested through `parent`, as a Graphviz cluster. */

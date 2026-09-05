@@ -377,7 +377,6 @@ export function makeRichTestWs() {
 		description: "Reporting application service",
 		type: "application",
 	});
-	const reportingConsumesOrderPlaced = reportingApp.consumes(orderPlaced, {});
 	const salesFigures = reportingApp.provides("Sales Figures", {
 		description: "Yesterday's sales, as reporting sees them",
 		type: "event",
@@ -385,15 +384,23 @@ export function makeRichTestWs() {
 	});
 	// Something has to make the figures happen, or `event-unraised` rightly
 	// says the model never explains where they come from.
-	reportingApp
+	const compileSalesFigures = reportingApp
 		.provides("Compile Sales Figures", {
 			description: "Totals yesterday's orders",
 			type: "operation",
 			internal: true,
 		})
 		.raises(salesFigures);
+	// Neither subscription is reacted to by a policy, and both are honest: one
+	// operation accumulates the orders it hears, and the other reads the figures
+	// when it plans. `by` is what says so, and what keeps both backed
+	// (`subscription-backed`).
+	const reportingConsumesOrderPlaced = reportingApp.consumes(orderPlaced, {
+		by: [compileSalesFigures],
+	});
 	const orderAppConsumesSalesFigures = orderApp.consumes(salesFigures, {
 		pattern: "anti-corruption-layer",
+		by: [placeOrder],
 	});
 
 	return {

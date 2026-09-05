@@ -51,8 +51,9 @@ Open-host service for /pet endpoints
 | PetStatusChanged | - | **petId**: `int64`, from: `PetStatus`, to: `PetStatus` | PetStatusChanged, ChangePetStatus |
 | RegisterPet | Request body for adding a pet | name: `string`, category: `Category` | AddPet |
 | PetId | Identifies one pet; shared by every consumable that only needs the id | **petId**: `int64` | PetUpdated, PetReserved, PetSold, PetDeleted, ReservePet, MarkPetSold, GetPetById, UploadImage, DeletePet, GetPetSummary, ReservePetForOrder, MarkPetSoldForOrder |
-| Pet | The full pet resource, as GET /pet/{petId} answers with it | **petId**: `int64`, name: `string`, category: `Category`, photoUrls: `PhotoUrl[]`, tags: `Tag[]`, status: `PetStatus` | FindPetsByStatus, GetPetById |
+| Pet | The full pet resource, as GET /pet/{petId} answers with it | **petId**: `int64`, name: `string`, category: `Category`, photoUrls: `PhotoUrl[]`, tags: `Tag[]`, status: `PetStatus` | GetPetById |
 | PetSummary | The slim read of a pet other contexts are allowed to hold | **petId**: `int64`, name: `string`, status: `PetStatus` | GetPetSummary |
+| Pets | The pets matching a status search, in the order found | pets: [`PetSummary[]`](./index.md#schemas) | FindPetsByStatus |
 | PetUnavailable | Why the pet could not be held: it is already pending or sold | **petId**: `int64`, status: `PetStatus` | ReservePetForOrder |
 
 
@@ -89,7 +90,7 @@ Open-host service for /pet endpoints
 ## Consumptions
 | Consumer | Made By | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- | --- |
-| [OrderApp](../sales_bc/services/order_app/index.md) | Order fulfilment | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | CheckPetAvailable | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
 | [OrderApp](../sales_bc/services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
 | [OrderApp](../sales_bc/services/order_app/index.md) | MarkPetSold | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
 | [PetApp](services/pet_app/index.md) | ReservePetForOrder | - | Pet | ReservePet | - |

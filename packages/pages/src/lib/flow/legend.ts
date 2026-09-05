@@ -209,6 +209,16 @@ function flowLegend(graph: Graph): LegendEntry[] {
 					},
 				]
 			: []),
+		...(graph.edges.some((e) => e.answer)
+			? [
+					{
+						mark: "labelled arrow",
+						name: "An answer coming back",
+						title:
+							"A call answered: the operation returned or rejected with the shape on the arrow, and whoever was waiting for it woke.",
+					},
+				]
+			: []),
 		...(graph.edges.some((e) => e.dashed)
 			? [
 					{

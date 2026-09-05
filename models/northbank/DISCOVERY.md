@@ -31,7 +31,8 @@ Recorded as: Customer & KYC serving both the "Onboarding & KYC" and "Consent" su
 the Customer aggregate with IdentityDocument `includes`, DateOfBirth, Address and
 KycStatus, invariants `AdultOnly`, `VerifiedNeedsDocument`, `DocumentNotExpired`; the
 Consent aggregate with ConsentPurpose and ConsentScope, invariants `WithdrawnIsFinal`,
-`PurposeRequired`, `OpenBankingConsentExpires`; the KycScreening domain service; the
+`PurposeRequired`, `OpenBankingConsentExpires`; `ScreenCustomer` on the onboarding
+application service, which is what makes the screening call (card 92); the
 "Customer onboarding" process, which starts on `OnboardingStarted`, screens, waits for the
 engine's answer, holds on a match and ends on `CustomerVerified` (card 60: it was two
 policies, and neither could hold the prospective customer between the two events);
@@ -112,7 +113,7 @@ and PaymentStatus; invariants `PayerNotPayee`, `AmountPositive`,
 `CutOffRespected`, `FlaggedNeverSubmitted`, and `DailyLimit` on the context itself,
 guarded by `InitiatePayment`; the "Instruction lifecycle"
 process, which starts on `PaymentInitiated`, waits for the scorer's verdict
-(`TransactionCleared` or `TransactionFlagged`) and then for the scheme's answer
+(`TransactionVerdict`, the answer `ScoreTransaction` returns) and then for the scheme's answer
 (`SchemeSettlementConfirmed` or `SchemeRejected`), issues `ScoreInstruction`,
 `SubmitPayment`, `SendToScheme`, `ConfirmSettlement`, `RejectPayment` and `PostSettlement`,
 and ends on `PaymentSettled` or `PaymentRejected`. It was recorded as seven chained
@@ -179,8 +180,9 @@ attached; a case always has at least one alert and a score always has its reason
 freeze accounts. Since the scam reimbursement rules every flag we miss is our money."
 
 Recorded as: Fraud as core; FraudCase with Alert `includes`, RiskScore and CaseStatus;
-invariants `CaseHasAlert` and `ScoreExplained`; the TransactionScorer domain service with
-`ScoreTransaction` raising `TransactionFlagged` and `TransactionCleared`; `FraudCaseOpened`
+invariants `CaseHasAlert` and `ScoreExplained`; FraudApp's `ScoreTransaction` returning
+`TransactionVerdict` — "synchronously, because payments wait on it" — and raising the
+TransactionScorer's `TransactionFlagged`; `FraudCaseOpened`
 published; the "Open case on flag" policy; anti-corruption consumption of `CardAuthorised`
 for post-authorisation monitoring.
 
@@ -236,7 +238,8 @@ The connected timeline, condensed:
 | ConsentGiven / ConsentWithdrawn | GiveConsent / WithdrawConsent | Contact centre suppresses marketing |
 | AccountOpened / Frozen / Closed | OpenAccount / FreezeAccount / CloseAccount | Reporting accumulates |
 | PaymentInitiated | InitiatePayment | Score the instruction |
-| TransactionFlagged / Cleared | ScoreTransaction | Reject / submit; open case; block card |
+| TransactionVerdict (an answer, not an event) | ScoreTransaction returns it | Payments rejects or submits |
+| TransactionFlagged | ScoreTransaction | Open case; block card |
 | FraudCaseOpened | OpenCase | Freeze account |
 | PaymentSubmitted (internal) | SubmitPayment | Submit to scheme |
 | SchemeSettlementConfirmed / Rejected | SubmitToScheme | Confirm settlement |
@@ -363,8 +366,9 @@ Accepted
   the Core Banking interview says so, a Ledger glossary entry for Account separates the two
   meanings, and section 4 records the collision.
 - Fraud verdicts on the case aggregate: `TransactionFlagged` and `TransactionCleared` were
-  provided by `FraudCase`, although a cleared transaction opens no case. Changed: both are
-  provided by the `TransactionScorer` domain service that raises them.
+  provided by `FraudCase`, although a cleared transaction opens no case. Changed: both were
+  moved to the `TransactionScorer` domain service, and card 92 turned the pair into one
+  answer and one fact (see the revision below).
 - Split-brain savings: the brief says savings are still on Sovereign, but Accounts modelled
   current and savings products. Changed: Accounts holds current accounts only (product
   code, root, schemas and overdraft description), Sovereign keeps savings in the same
@@ -543,3 +547,31 @@ and `ScoreExplained` to `RiskScore`, which carries its reasons or is not a score
 act on. What stayed on the aggregates is everything a value cannot see for itself: a frozen
 account refusing debits, a balance against an overdraft limit, a decision explained by a
 bureau report.
+
+## Revision (card 92): the verdict is an answer, and the screening call leaves the boundary
+
+The Financial Crime lead said it in one sentence — "the scorer takes a transaction, its
+channel, amount and payee, and returns flagged or cleared, synchronously, because payments
+wait on it" — and the model wrote it as two published events, because a process could wait
+only on events. That made a caller subscribe to hear the answer to its own question, and it
+made Payments consume two events it never really heard as facts. Decision 23's second
+amendment gives the shape a name: `ScoreTransaction` **returns** `TransactionVerdict`, the
+transaction and its score, and the "Instruction lifecycle" process waits on that answer.
+Whether the score is above the threshold is the process's own branch, in its description
+rather than in the model, exactly as every other condition in a process is (decision 15).
+
+`TransactionFlagged` stays an event, because a flag is a fact and two contexts act on it
+where it happened: Fraud opens a case, Cards blocks the card. `TransactionCleared` is gone.
+Nobody publishes a clearance; it was an event only because the model had nowhere else to put
+the call coming back.
+
+Two consumptions moved with it. Payments' consumptions of the two verdict events are gone —
+the answer arrives down the `ScoreTransaction` call it already makes — and Customer & KYC
+stopped calling Sanctions Screening from a domain service. A domain service is the inside of
+the model, the same as an aggregate, so what leaves the boundary leaves through the
+application service (decision 17's second amendment). The onboarding application service now
+consumes `ScreenParty`, made by its own `ScreenCustomer`, and the `KycScreening` domain
+service is gone: the Head of Customer Platform described one step, "we screen the name
+against the sanctions lists", and once the call moved that service held nothing at all — no
+rule, no reading across aggregates. The screening the interview describes is unchanged; what
+changed is which of this context's own parts makes the call.

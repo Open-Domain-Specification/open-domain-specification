@@ -112,7 +112,12 @@ export interface GlossaryTermSchema {
 export interface PolicySchema {
 	name: string;
 	description: string;
-	/** The event consumables that trigger this policy. */
+	/**
+	 * What triggers this policy: an event consumable, or a `DataSchema` an
+	 * operation of this context's consumptions returns or rejects with, which
+	 * means "when that answer comes back". The answer is synchronous because
+	 * the operation is, so nothing else says so (decision 23).
+	 */
 	on: { $ref: string }[];
 	/** The operation consumables this policy issues. */
 	then: { $ref: string }[];
@@ -125,18 +130,29 @@ export interface PolicySchema {
 export interface ProcessSchema {
 	name: string;
 	description: string;
-	/** The event consumables that begin an instance of this process. */
+	/**
+	 * The event consumables that begin an instance of this process. An answer
+	 * is what a caller gets back from a call, so something was already waiting
+	 * for it and an instance that did not exist cannot have been: only an event
+	 * starts one.
+	 */
 	starts: { $ref: string }[];
 	/**
 	 * Further event consumables the process waits for or reacts to while an
-	 * instance is alive. Like a policy's `on`, one of these may belong to
-	 * another context: subscribing to a published fact is how contexts
-	 * integrate (decision 23).
+	 * instance is alive, and the `DataSchema`s it waits to come back: a schema
+	 * an operation of this context's consumptions returns or rejects with means
+	 * "when that answer comes back", which is the call-and-branch a process
+	 * manager is usually made of. Like a policy's `on`, one of these may belong
+	 * to another context: subscribing to a published fact, or calling out and
+	 * waiting, is how contexts integrate (decision 23).
 	 */
 	on: { $ref: string }[];
 	/** The operation consumables of this process's own context that it issues. */
 	then: { $ref: string }[];
-	/** The event consumables that complete an instance. */
+	/**
+	 * What completes an instance: an event consumable, or an answer named the
+	 * same way `on` names one.
+	 */
 	ends: { $ref: string }[];
 	/** Grounded statements about the real system behind this process. */
 	comments?: Comment[];
@@ -446,6 +462,17 @@ export interface InvariantSchema {
 	 * own attributes and nothing else; an aggregate's reaches inside its own
 	 * aggregate and the value objects of its context; a context's reaches
 	 * anywhere in the context and names at least one operation that guards it.
+	 *
+	 * An aggregate's invariant naming a value object means that aggregate's
+	 * instances of it — the amounts this payment holds, not every Money in the
+	 * context — because what is saved with an aggregate is the value, not the
+	 * definition. A rule about every instance of a value wherever it is held is
+	 * the value's own invariant, and a rule across the instances of several
+	 * aggregates is the context's (decisions 16 and 27).
+	 *
+	 * Naming an operation says which of two things the invariant is: with one it
+	 * is a guard, a precondition checked when that operation runs; with none it
+	 * is a rule true again after every save.
 	 */
 	constrains: { $ref: string }[];
 }

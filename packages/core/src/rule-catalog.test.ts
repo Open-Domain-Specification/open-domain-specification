@@ -87,7 +87,10 @@ function everythingWrong(): Workspace {
 	// policy-complete: empty policy
 	a.addPolicy("Empty", { description: "" });
 	// separate-ways again, this time reached through a policy subscription
-	a.addPolicy("Listens Across", { description: "" }).on(plain).issues(carries);
+	const listensAcross = a
+		.addPolicy("Listens Across", { description: "" })
+		.on(plain)
+		.issues(carries);
 	// aggregate-not-public: an aggregate offering an operation outward, and a
 	// second context reaching for it
 	const reachIn = other.provides("Reach In", {
@@ -110,6 +113,8 @@ function everythingWrong(): Workspace {
 		pattern: "open-host-service",
 	});
 	twoRoots.consumes(decide, {});
+	// domain-service-consumes-inside: the inside of B's model calling out to A
+	engine.consumes(carries, {});
 	// policy-in-context: a policy acting inside the context next door
 	a.addPolicy("Acts Elsewhere", { description: "" }).on(plain).issues(reachIn);
 	// process-in-context, process-starts and process-has-ends at once: a
@@ -186,6 +191,12 @@ function everythingWrong(): Workspace {
 	holder.addAttribute("Shade", { type: "string", valueobject: colour });
 	// relation-for-resolves: a relation drawing an attribute nobody declares
 	holder.uses(size, "measured", "1", { for: "Dimensions" });
+	// valueobject-context: an attribute typed by B's value object, and A and B
+	// share no kernel and A conforms to nothing of B's
+	holder.addAttribute("Their Money", {
+		type: "Money",
+		valueobject: b.addValueObject("Money", { description: "" }),
+	});
 	// attribute-one-shape: one attribute claiming a value object and a schema
 	holder.addAttribute("Both", {
 		type: "Colour",
@@ -221,9 +232,11 @@ function everythingWrong(): Workspace {
 	// A calls C's Ask and C calls A's Answer, which since decision 20 is the
 	// traffic a ring is made of. It is still not a ring: A translates behind an
 	// anti-corruption layer, so the two are free to change (card 82).
+	// consumption-by-operation: the policy is named as what makes the call,
+	// which skips the local operation decision 17 puts at the boundary
 	consumer.consumes(
 		legacy.provides("Ask", { type: "operation", description: "" }),
-		{},
+		{ by: [listensAcross] },
 	);
 	legacy.consumes(
 		consumer.provides("Answer", { type: "operation", description: "" }),

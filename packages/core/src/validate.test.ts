@@ -826,7 +826,8 @@ describe("root-identity", () => {
 });
 
 describe("value-object-shape", () => {
-	it("refuses an identity attribute and an includes on a value object", () => {
+	/** A context with a root, a well-formed value and a misshapen one. */
+	function shapes() {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("BC", { description: "" });
 		const agg = bc.addAggregate("A", { description: "" });
@@ -835,10 +836,20 @@ describe("value-object-shape", () => {
 		const money = bc.addValueObject("Money", { description: "" });
 		money.addAttribute("Amount", { type: "int64" });
 		const bad = bc.addValueObject("Bad", { description: "" });
+		return { ws, bc, agg, root, money, bad };
+	}
+
+	const shape = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "value-object-shape")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("refuses an identity attribute and a relation reaching an entity", () => {
+		const { ws, root, money, bad } = shapes();
 		bad.addAttribute("Key", { type: "string", identity: true });
 		bad.includes(root, "owns");
-		const rules = ws.validate().filter((d) => d.rule === "value-object-shape");
-		expect(rules.map((d) => [d.severity, d.message, d.ref])).toEqual([
+		expect(shape(ws)).toEqual([
 			[
 				"error",
 				'Value object "Bad" marks attribute "Key" as an identity; two value objects with the same values are the same value, so it has no identity of its own',
@@ -846,12 +857,48 @@ describe("value-object-shape", () => {
 			],
 			[
 				"error",
-				'Value object "Bad" includes "A"; only an entity owns the lifecycle of what it includes, so "Bad" uses "A" instead',
+				'Value object "Bad" includes entity "A"; a value is a value of something and nothing is reached through it, so a value object relates only to other values — hold "A"\'s id as an attribute with identifies instead',
 				bad.ref,
 			],
 		]);
 		// The well-formed value object next door stays quiet.
-		expect(rules.every((d) => d.ref !== money.ref)).toBe(true);
+		expect(shape(ws).every(([, , ref]) => ref !== money.ref)).toBe(true);
+	});
+
+	it("refuses a value object including or referencing another value", () => {
+		const { ws, money, bad } = shapes();
+		bad.includes(money, "owns");
+		bad.references(money, "points-at");
+		expect(shape(ws).map(([, message]) => message)).toEqual([
+			'Value object "Bad" includes "Money"; only an entity owns the lifecycle of what it includes, so "Bad" uses "Money" instead',
+			'Value object "Bad" references "Money"; a reference holds another aggregate\'s identity and a value has none, so "Bad" uses "Money" instead',
+		]);
+	});
+
+	it("closes cross-aggregate-reference's gap: a value reaching a child of another aggregate", () => {
+		// The review's probe. `cross-aggregate-reference` reads the aggregate at
+		// each end and a value object is in none, so nothing saw this until the
+		// shape of a value object was what refused it (card 92).
+		const { ws, bc, agg, root, bad } = shapes();
+		const child = agg.addEntity("Mandate", { description: "" });
+		child.addAttribute("Id", { type: "uuid", identity: true });
+		root.includes(child, "under", "*");
+		bad.references(child, "authorised-by", "1");
+		const other = bc.addAggregate("Instruction", { description: "" });
+		const instruction = other.addRootEntity("Instruction", { description: "" });
+		instruction.addAttribute("Id", { type: "uuid", identity: true });
+		instruction.addAttribute("Payee", { type: "Bad", valueobject: bad });
+		instruction.uses(bad, "to", "1");
+		expect(shape(ws).map(([, message]) => message)).toEqual([
+			'Value object "Bad" references entity "Mandate"; a value is a value of something and nothing is reached through it, so a value object relates only to other values — hold "Mandate"\'s id as an attribute with identifies instead',
+		]);
+	});
+
+	it("says nothing about a value object using another value", () => {
+		const { ws, money, bad } = shapes();
+		bad.addAttribute("Amount", { type: "Money", valueobject: money });
+		bad.uses(money, "of", "1");
+		expect(shape(ws)).toEqual([]);
 	});
 });
 
@@ -4402,34 +4449,46 @@ describe("a big ball of mud, whose insides nobody can read", () => {
 	const rules = (ws: Workspace, ...ids: string[]) =>
 		ws.validate().filter((d) => ids.includes(d.rule));
 
-	it("is asked for no raiser, no root and no root identity", () => {
+	/** The four rules that ask a context to be complete about its insides. */
+	const COMPLETENESS = [
+		"event-unraised",
+		"aggregate-root",
+		"root-identity",
+		"entity-identity",
+	];
+
+	it("is asked for no raiser, no root and no identity of any kind", () => {
 		const { ws } = mud();
-		expect(
-			rules(ws, "event-unraised", "aggregate-root", "root-identity"),
-		).toEqual([]);
+		expect(rules(ws, ...COMPLETENESS)).toEqual([]);
 	});
 
-	it("asks a context nobody has called unreadable for all three", () => {
+	it("asks a context nobody has called unreadable for all of them", () => {
 		const { ws } = mud(false);
-		expect(
-			rules(ws, "event-unraised", "aggregate-root", "root-identity").map(
-				(d) => d.rule,
-			),
-		).toEqual(["aggregate-root", "event-unraised"]);
+		expect(rules(ws, ...COMPLETENESS).map((d) => d.rule)).toEqual([
+			"aggregate-root",
+			"entity-identity",
+			"event-unraised",
+		]);
 	});
 
 	it("still holds it to the rules about what it does state", () => {
 		const { ws, record } = mud();
-		// entity-identity is about an entity the model does name, and naming one
-		// is a claim the author has made: a mud context is exempt from
-		// completeness, not from coherence.
-		record.addAttribute("Balance", { type: "decimal" });
+		// A mud context is exempt from completeness, not from coherence: what it
+		// does say has to hold together. Card 90 read entity-identity as the
+		// second kind and card 92 as the first — nobody can read a legacy system
+		// well enough to say which column tells one row from another, which is
+		// the same argument that exempts it from root-identity.
+		const key = record.addAttribute("Account Key", {
+			type: "string",
+			identity: true,
+			optional: true,
+		});
 		expect(
 			ws
 				.validate()
-				.filter((d) => d.rule === "entity-identity")
+				.filter((d) => d.rule === "identity-not-optional")
 				.map((d) => d.ref),
-		).toEqual([record.ref]);
+		).toEqual([key.ref]);
 	});
 });
 
@@ -4656,5 +4715,543 @@ describe("consumption-by-required", () => {
 			app.provides(name, { description: "", type: "operation" });
 		app.consumes(approve, {});
 		expect(required(ws)).toEqual([]);
+	});
+});
+
+describe("valueobject-context", () => {
+	/**
+	 * The review's probe: a claims context typing a reserve by a policy admin
+	 * context's `Money`, with whatever relationship the caller declares.
+	 */
+	function borrowed() {
+		const ws = emptyWorkspace();
+		const admin = ws.addBoundedContext("Policy Admin", { description: "" });
+		const claims = ws.addBoundedContext("Claims", { description: "" });
+		const money = admin.addValueObject("Money", { description: "" });
+		money.addAttribute("Amount", { type: "int64" });
+		const claim = claims
+			.addAggregate("Claim", { description: "" })
+			.addRootEntity("Claim", { description: "" });
+		claim.addAttribute("Id", { type: "uuid", identity: true });
+		const reserve = claim.addAttribute("Reserve", {
+			type: "Money",
+			valueobject: money,
+		});
+		claim.uses(money, "reserved-at", "1");
+		return { ws, admin, claims, money, claim, reserve };
+	}
+
+	const borrowing = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "valueobject-context")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("refuses another context's value object where nothing carries it", () => {
+		const { ws, reserve } = borrowed();
+		expect(borrowing(ws)).toEqual([
+			[
+				"error",
+				'"Claim" in "Claims" types attribute "Reserve" by value object "Money" from "Policy Admin"; a value object is part of one context\'s language, so borrowing it wants a shared kernel with "Policy Admin" or a conformist relationship toward it',
+				reserve.ref,
+			],
+		]);
+	});
+
+	it("allows it over a shared kernel, either way round", () => {
+		const { ws, admin, claims } = borrowed();
+		claims.sharesKernelWith(admin);
+		expect(borrowing(ws)).toEqual([]);
+	});
+
+	it("allows it down a relationship the borrower conforms on", () => {
+		const { ws, admin, claims } = borrowed();
+		admin.upstreamOf(claims, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		expect(borrowing(ws)).toEqual([]);
+	});
+
+	it("refuses it up a relationship the owner conforms on, since the borrowing is one-way", () => {
+		const { ws, admin, claims } = borrowed();
+		claims.upstreamOf(admin, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		expect(borrowing(ws)).toHaveLength(1);
+	});
+
+	it("reads a payload schema's attribute the same way, since the definition is what is borrowed", () => {
+		const { ws, claims, money } = borrowed();
+		claims.sharesKernelWith(money.boundedcontext);
+		const payload = claims.addSchema("Claim Registered");
+		const amount = payload.addAttribute("Amount", {
+			type: "Money",
+			valueobject: money,
+		});
+		expect(borrowing(ws)).toEqual([]);
+		ws.relationships.length = 0;
+		expect(borrowing(ws).map(([, , ref]) => ref)).toContain(amount.ref);
+	});
+
+	it("says nothing about a value object of the attribute's own context", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Claims", { description: "" });
+		const money = bc.addValueObject("Money", { description: "" });
+		money.addAttribute("Amount", { type: "int64" });
+		const claim = bc
+			.addAggregate("Claim", { description: "" })
+			.addRootEntity("Claim", { description: "" });
+		claim.addAttribute("Id", { type: "uuid", identity: true });
+		claim.addAttribute("Reserve", { type: "Money", valueobject: money });
+		claim.uses(money, "reserved-at", "1");
+		expect(borrowing(ws)).toEqual([]);
+	});
+
+	it("wants a relationship for the crossing, as an identity does", () => {
+		const { ws, reserve } = borrowed();
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "relationship-declared")
+				.map((d) => [d.message, d.ref]),
+		).toEqual([
+			[
+				'"Claims" types "Claim"\'s "Reserve" by "Money" from "Policy Admin", but no relationship says how "Policy Admin" and "Claims" stand to each other',
+				reserve.ref,
+			],
+		]);
+	});
+});
+
+describe("waiting on an answer", () => {
+	/**
+	 * Payments answers a caller, and Checkout calls it: the shape decision 23's
+	 * second amendment is about. `consume` is what makes the answer this
+	 * context's to hear; `reject` puts the shape on the operation.
+	 */
+	function answered({ consume = true, reject = true } = {}) {
+		const ws = emptyWorkspace();
+		const payments = ws.addBoundedContext("Payments", { description: "" });
+		const checkout = ws.addBoundedContext("Checkout", { description: "" });
+		payments.upstreamOf(checkout, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		const paymentsApi = payments.addService("Payments API", {
+			description: "",
+			type: "application",
+		});
+		const declined = payments.addSchema("Payment Declined");
+		const authorise = paymentsApi.provides("Authorise Payment", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+			...(reject && { rejects: [declined] }),
+		});
+		const orchestrator = checkout.addService("Checkout Orchestrator", {
+			description: "",
+			type: "application",
+		});
+		const confirmed = orchestrator.provides("Cart Confirmed", {
+			description: "",
+			type: "event",
+		});
+		const ask = orchestrator.provides("Request Authorisation", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const reopen = orchestrator.provides("Reopen Cart", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		orchestrator
+			.provides("Confirm Cart", { description: "", type: "operation" })
+			.raises(confirmed);
+		if (consume)
+			orchestrator.consumes(authorise, {
+				pattern: "anti-corruption-layer",
+				by: [ask],
+			});
+		const process = checkout
+			.addProcess("Checkout", { description: "" })
+			.starts(confirmed)
+			.on(declined)
+			.issues(ask, reopen)
+			.ends(confirmed);
+		return {
+			ws,
+			payments,
+			checkout,
+			confirmed,
+			declined,
+			authorise,
+			process,
+			reopen,
+		};
+	}
+
+	const kinds = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "consumable-kind")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("accepts a schema an operation the context consumes rejects with", () => {
+		expect(kinds(answered().ws)).toEqual([]);
+	});
+
+	it("accepts a schema that operation returns, the same way", () => {
+		const { ws, authorise, declined } = answered({ reject: false });
+		authorise.returns = declined;
+		expect(kinds(ws)).toEqual([]);
+	});
+
+	it("refuses a shape nothing the context calls answers with, naming what to do", () => {
+		const { ws, process } = answered({ reject: false });
+		expect(kinds(ws)).toEqual([
+			[
+				"error",
+				'Process "Checkout" waits for "Payment Declined", which no operation "Checkout" consumes answers with; name the operation that returns or rejects with "Payment Declined", and consume it, or react to an event instead',
+				process.ref,
+			],
+		]);
+	});
+
+	it("refuses an answer from an operation this context never calls", () => {
+		const { ws } = answered({ consume: false });
+		expect(kinds(ws)).toHaveLength(1);
+	});
+
+	it("reads a policy's on and a process's ends the same way", () => {
+		const { ws, checkout, confirmed, declined, reopen } = answered({
+			reject: false,
+		});
+		checkout.processes.clear();
+		const policy = checkout
+			.addPolicy("Reopen on decline", { description: "" })
+			.on(declined)
+			.issues(reopen);
+		expect(kinds(ws).map(([, , ref]) => ref)).toEqual([policy.ref]);
+		checkout.policies.clear();
+		const process = checkout
+			.addProcess("Checkout", { description: "" })
+			.starts(confirmed)
+			.issues(reopen)
+			.ends(declined);
+		expect(kinds(ws).map(([, , ref]) => ref)).toEqual([process.ref]);
+	});
+
+	it("wants a relationship for the crossing the answer is", () => {
+		// Without the consumption there is nothing more concrete to name the
+		// pair by, so the answer is the crossing the warning reports.
+		const { ws } = answered({ consume: false });
+		ws.relationships.length = 0;
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "relationship-declared")
+				.map((d) => d.message),
+		).toContain(
+			'Process "Checkout" in "Checkout" waits for "Payment Declined" to come back from "Payments", but no relationship says how "Payments" and "Checkout" stand to each other',
+		);
+	});
+
+	it("asks for no subscription-consumed of its own: the call is the consumption", () => {
+		const { ws } = answered();
+		expect(
+			ws.validate().filter((d) => d.rule === "subscription-consumed"),
+		).toEqual([]);
+	});
+
+	it("round-trips the answer through the schema and back", () => {
+		const { ws, process, declined } = answered();
+		const rebuilt = Workspace.fromSchema(
+			JSON.parse(JSON.stringify(ws.toSchema())),
+		);
+		const waited = rebuilt.getProcessByRefOrThrow(process.ref).events;
+		expect(waited.map((it) => it.ref)).toEqual([declined.ref]);
+		expect(rebuilt.toSchema()).toEqual(ws.toSchema());
+	});
+});
+
+describe("consumption-by-operation", () => {
+	/**
+	 * A reactor in one context acting on another's operation, with `by` naming
+	 * either the reactor itself or the local operation decision 17 asks for.
+	 */
+	function reaches({ throughOperation = false } = {}) {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Catalog", { description: "" });
+		const down = ws.addBoundedContext("Sales", { description: "" });
+		up.upstreamOf(down, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		const catalogApi = up.addService("Catalog API", {
+			description: "",
+			type: "application",
+		});
+		const reserve = catalogApi.provides("Reserve Pet", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		const orderApp = down.addService("Order App", {
+			description: "",
+			type: "application",
+		});
+		const placed = orderApp.provides("Order Placed", {
+			description: "",
+			type: "event",
+		});
+		const local = orderApp.provides("Reserve For Order", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const policy = down
+			.addPolicy("Reserve on order", { description: "" })
+			.on(placed)
+			.issues(local);
+		const consumption = orderApp.consumes(reserve, {
+			pattern: "anti-corruption-layer",
+			by: [throughOperation ? local : policy],
+		});
+		return { ws, down, orderApp, reserve, local, policy, consumption };
+	}
+
+	const calls = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "consumption-by-operation")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("refuses a policy named as what makes a call", () => {
+		const { ws, consumption } = reaches();
+		expect(calls(ws)).toEqual([
+			[
+				"error",
+				'"Order App" says its consumption of "Reserve Pet" is made by policy "Reserve on order"; a policy issues an operation of its own context and that operation makes the call, so name that operation here',
+				consumption.ref,
+			],
+		]);
+	});
+
+	it("refuses a process the same way, and names it as one", () => {
+		const { ws, down, orderApp, reserve, local } = reaches();
+		orderApp.consumptions.length = 0;
+		const process = down
+			.addProcess("Order fulfilment", { description: "" })
+			.issues(local);
+		orderApp.consumes(reserve, { by: [process] });
+		expect(calls(ws).map(([, message]) => message)).toEqual([
+			'"Order App" says its consumption of "Reserve Pet" is made by process "Order fulfilment"; a process issues an operation of its own context and that operation makes the call, so name that operation here',
+		]);
+	});
+
+	it("accepts the local operation the reactor issues", () => {
+		expect(calls(reaches({ throughOperation: true }).ws)).toEqual([]);
+	});
+
+	it("says nothing about a policy on a consumption of an event, where nothing stands between", () => {
+		const { ws, orderApp, down, local } = reaches({ throughOperation: true });
+		const upstream = ws.getBoundedContextByRefOrThrow(
+			"#/boundedcontexts/catalog",
+		);
+		const listed = upstream.services
+			.get("catalog_api")
+			?.provides("Pet Listed", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			});
+		if (!listed) throw new Error("no event");
+		const policy = down
+			.addPolicy("Note listing", { description: "" })
+			.on(listed)
+			.issues(local);
+		orderApp.consumes(listed, { pattern: "conformist", by: [policy] });
+		expect(calls(ws)).toEqual([]);
+	});
+});
+
+describe("domain-service-consumes-inside", () => {
+	/** A domain service reaching out, or the application service doing it for it. */
+	function reads({ throughApp = false } = {}) {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Screening", { description: "" });
+		const down = ws.addBoundedContext("Customer", { description: "" });
+		up.upstreamOf(down, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		const screeningApp = up.addService("Screening App", {
+			description: "",
+			type: "application",
+		});
+		const screen = screeningApp.provides("Screen Party", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		const customerApp = down.addService("Customer App", {
+			description: "",
+			type: "application",
+		});
+		const ask = customerApp.provides("Screen Customer", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const kyc = down.addService("Kyc Screening", {
+			description: "",
+			type: "domain",
+		});
+		kyc.provides("Assess", { description: "", type: "operation" });
+		if (throughApp) customerApp.consumes(screen, { by: [ask] });
+		else kyc.consumes(screen, { pattern: "anti-corruption-layer" });
+		return { ws, up, down, screen, kyc, customerApp, screeningApp };
+	}
+
+	const inside = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "domain-service-consumes-inside")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("refuses a domain service calling another context's operation", () => {
+		const { ws, kyc } = reads();
+		expect(inside(ws)).toEqual([
+			[
+				"error",
+				'Domain service "Kyc Screening" consumes "Screen Party" from "Screening"; a domain service is the inside of the model, not a client, so let an application service of "Customer" make the call and hand "Kyc Screening" what it needs',
+				kyc.ref,
+			],
+		]);
+	});
+
+	it("refuses a foreign event too, and says where the reaction goes", () => {
+		const { ws, kyc, screeningApp } = reads({ throughApp: true });
+		const matched = screeningApp.provides("Party Matched", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+		});
+		kyc.consumes(matched, { pattern: "anti-corruption-layer" });
+		expect(inside(ws).map(([, message]) => message)).toEqual([
+			'Domain service "Kyc Screening" consumes "Party Matched" from "Screening"; a domain service is the inside of the model, not a client, so let an application service of "Customer" take it in, with the policy or process that reacts to it named in `by` and hand "Kyc Screening" what it needs',
+		]);
+	});
+
+	it("goes quiet once the application service makes the call", () => {
+		expect(inside(reads({ throughApp: true }).ws)).toEqual([]);
+	});
+
+	it("says nothing about a domain service consuming its own context's operation", () => {
+		const { ws, down, kyc } = reads({ throughApp: true });
+		const own = down.services
+			.get("customer_app")
+			?.provides("Read Customer", { description: "", type: "operation" });
+		if (!own) throw new Error("no operation");
+		kyc.consumes(own, {});
+		expect(inside(ws)).toEqual([]);
+	});
+});
+
+describe("subscription-backed", () => {
+	/** A context taking in a neighbour's event, with or without something under it. */
+	function feed() {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Catalogue", { description: "" });
+		const down = ws.addBoundedContext("Offers", { description: "" });
+		up.upstreamOf(down, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		const catalogueApi = up.addService("Catalogue API", {
+			description: "",
+			type: "application",
+		});
+		const listed = catalogueApi.provides("Product Listed", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+		});
+		const offerApi = down.addService("Offer API", {
+			description: "",
+			type: "application",
+		});
+		const record = offerApi.provides("Record Sku", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const consumption = offerApi.consumes(listed, { pattern: "conformist" });
+		return { ws, down, offerApi, listed, record, consumption };
+	}
+
+	const backed = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "subscription-backed")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("warns about an event nothing here reacts to and no caller names", () => {
+		const { ws, consumption } = feed();
+		expect(backed(ws)).toEqual([
+			[
+				"warning",
+				'"Offer API" consumes "Product Listed" from "Catalogue", but nothing in "Offers" reacts to it and the consumption names no caller; a subscription nothing acts on is a dependency with nothing under it',
+				consumption.ref,
+			],
+		]);
+	});
+
+	it("goes quiet when a policy of the consumer's context reacts", () => {
+		const { ws, down, listed, record } = feed();
+		down
+			.addPolicy("Keep the list", { description: "" })
+			.on(listed)
+			.issues(record);
+		expect(backed(ws)).toEqual([]);
+	});
+
+	it("goes quiet when a process waits on it, wherever in its lifecycle", () => {
+		const { ws, down, listed, record } = feed();
+		down
+			.addProcess("Relist", { description: "" })
+			.starts(listed)
+			.issues(record)
+			.ends(listed);
+		expect(backed(ws)).toEqual([]);
+	});
+
+	it("goes quiet when the consumption says which of its own parts reads the feed", () => {
+		const { ws, offerApi, listed, record } = feed();
+		offerApi.consumptions.length = 0;
+		offerApi.consumes(listed, { pattern: "conformist", by: [record] });
+		expect(backed(ws)).toEqual([]);
+	});
+
+	it("says nothing about a consumed operation, which the consumer calls itself", () => {
+		const { ws, down, offerApi } = feed();
+		offerApi.consumptions.length = 0;
+		const catalogue = ws.getBoundedContextByRefOrThrow(
+			"#/boundedcontexts/catalogue",
+		);
+		const read = catalogue.services
+			.get("catalogue_api")
+			?.provides("Get Product", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			});
+		if (!read) throw new Error("no operation");
+		down.services.get("offer_api")?.consumes(read, { pattern: "conformist" });
+		expect(backed(ws)).toEqual([]);
 	});
 });

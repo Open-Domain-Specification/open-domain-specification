@@ -31,9 +31,10 @@ describe("ConsumesTable", () => {
 	});
 
 	it("names the consumer's own operation behind a consumption, and says so when it is the whole consumer", () => {
-		// Sales asks Catalog to reserve a pet, and to mark it sold, from one
-		// operation of its own each, and reads the catalogue summary from its
-		// process; the whole of Inventory's projection takes the pet facts.
+		// Sales asks Catalog to reserve a pet, to mark it sold and to read its
+		// summary, from one operation of its own each — a call is made by an
+		// operation (card 92); the whole of Inventory's projection takes the pet
+		// facts.
 		const { container } = render(ConsumesTable, {
 			consumptions: consumptions(),
 		});
@@ -43,7 +44,7 @@ describe("ConsumesTable", () => {
 		]);
 		expect(madeBy).toContainEqual(["ReservePetForOrder", "ReservePet"]);
 		expect(madeBy).toContainEqual(["MarkPetSoldForOrder", "MarkPetSold"]);
-		expect(madeBy).toContainEqual(["GetPetSummary", "Order fulfilment"]);
+		expect(madeBy).toContainEqual(["GetPetSummary", "CheckPetAvailable"]);
 		expect(madeBy).toContainEqual(["PetRegistered", "whole consumer"]);
 		expect(screen.getAllByText("whole consumer")[0]).toHaveClass("keyword");
 	});

@@ -58,6 +58,21 @@ const KIND = {
 		empty:
 			"No operation names this rule; it is checked wherever the aggregate is saved.",
 	},
+	// An aggregate's rule that names an operation is a different promise from
+	// one that does not, and the page says which: a guard is checked when that
+	// operation runs — a funds check at initiation, a status transition — and is
+	// not re-established every time the aggregate is saved (decision 27's third
+	// note).
+	guard: {
+		label: "guard",
+		title:
+			"A precondition of the operations it names: checked when one of them runs, not a rule true again after every save.",
+		lead: "The elements this rule is about, all inside the aggregate that is saved as one.",
+		guards:
+			"The operations this rule guards. It is checked at the moment one of them runs, which is what makes it a precondition rather than something the aggregate re-establishes on every save.",
+		empty:
+			"No operation names this rule; it is checked wherever the aggregate is saved.",
+	},
 	context: {
 		label: "context invariant",
 		title:
@@ -69,12 +84,16 @@ const KIND = {
 			"No operation names this rule, so nothing keeps it: a rule across instances needs a guard.",
 	},
 } as const;
-const words = $derived(KIND[i.kind]);
 // The elements the rule holds true of, and the operations that have to uphold
 // it, are two different readings of the same list, so the page splits them by
 // what each target is: a consumable is an operation the rule guards, anything
 // else is something the rule is about.
 const guarded = $derived(i.guarded);
+// An aggregate's rule that names an operation is a guard on that operation. A
+// context's already reads that way, and a value's can name none.
+const words = $derived(
+	KIND[i.kind === "aggregate" && guarded.length > 0 ? "guard" : i.kind],
+);
 const targets = $derived(i.targets.filter((t) => !(t instanceof Consumable)));
 const columns: Column[] = [
 	{ key: "name", label: "Element" },

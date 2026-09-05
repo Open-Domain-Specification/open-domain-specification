@@ -509,7 +509,7 @@ function linkPolicies(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 			);
 			policy.on(
 				...policySchema.on.map(({ $ref }) =>
-					workspace.getConsumableByRefOrThrow($ref),
+					workspace.getReactionTriggerByRefOrThrow($ref),
 				),
 			);
 			policy.issues(
@@ -534,10 +534,14 @@ function linkProcesses(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 			);
 			const consumables = (refs: { $ref: string }[]) =>
 				refs.map(({ $ref }) => workspace.getConsumableByRefOrThrow($ref));
+			// What a process waits for, and what completes it, may be an answer
+			// rather than an event, so both resolve to either (decision 23).
+			const triggers = (refs: { $ref: string }[]) =>
+				refs.map(({ $ref }) => workspace.getReactionTriggerByRefOrThrow($ref));
 			process.starts(...consumables(processSchema.starts));
-			process.on(...consumables(processSchema.on));
+			process.on(...triggers(processSchema.on));
 			process.issues(...consumables(processSchema.then));
-			process.ends(...consumables(processSchema.ends));
+			process.ends(...triggers(processSchema.ends));
 		}
 	}
 }

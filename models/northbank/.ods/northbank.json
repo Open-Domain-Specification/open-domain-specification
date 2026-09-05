@@ -485,25 +485,10 @@
               "returns": {
                 "$ref": "#/boundedcontexts/customer_&_kyc/schemas/customer_details"
               }
-            }
-          },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/provides/party_matched"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ]
-        },
-        "kyc_screening": {
-          "name": "KycScreening",
-          "description": "Runs sanctions and document checks; a domain service because it spans the customer and the screening result",
-          "type": "domain",
-          "provides": {
+            },
             "screen_customer": {
               "name": "ScreenCustomer",
-              "description": "Screen the prospective customer against sanctions lists",
+              "description": "Screen the prospective customer against the sanctions lists, through the ACL",
               "type": "operation",
               "internal": true
             }
@@ -516,9 +501,15 @@
               "pattern": "anti-corruption-layer",
               "by": [
                 {
-                  "$ref": "#/boundedcontexts/customer_&_kyc/services/kyc_screening/provides/screen_customer"
+                  "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/screen_customer"
                 }
               ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/provides/party_matched"
+              },
+              "pattern": "anti-corruption-layer"
             }
           ]
         }
@@ -540,7 +531,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/customer_&_kyc/services/kyc_screening/provides/screen_customer"
+              "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/screen_customer"
             },
             {
               "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/provides/hold_onboarding"
@@ -1184,7 +1175,12 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/provides/customer_verified"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/open_account"
+                }
+              ]
             },
             {
               "consumable": {
@@ -2130,18 +2126,6 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_cleared"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
                 "$ref": "#/boundedcontexts/fraud/services/fraud_app/provides/score_transaction"
               },
               "pattern": "anti-corruption-layer",
@@ -2158,7 +2142,7 @@
       "processes": {
         "instruction_lifecycle": {
           "name": "Instruction lifecycle",
-          "description": "From an instruction being initiated to the money having moved. It scores every instruction with Fraud and waits: a flag rejects it and it is never submitted, a clearance submits it to the scheme in the scheme's own format, and the process then waits again for the scheme's answer. A confirmation settles the instruction and posts it to the ledger; a refusal rejects it. Correlation is by instructionId, which the scorer's verdict and the scheme's response both carry; an instruction the scheme never answers stays open for the operations team, because the scheme's own timings are not the bank's to model",
+          "description": "From an instruction being initiated to the money having moved. It scores every instruction with Fraud and waits for the verdict to come back: above the threshold it rejects the instruction and never submits it, below it submits to the scheme in the scheme's own format, and the process then waits again for the scheme's answer. A confirmation settles the instruction and posts it to the ledger; a refusal rejects it. Correlation is by instructionId, which the scorer's verdict and the scheme's response both carry; an instruction the scheme never answers stays open for the operations team, because the scheme's own timings are not the bank's to model",
           "starts": [
             {
               "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_initiated"
@@ -2172,10 +2156,7 @@
               "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_rejected"
             },
             {
-              "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_cleared"
-            },
-            {
-              "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged"
+              "$ref": "#/boundedcontexts/fraud/schemas/transaction_verdict"
             }
           ],
           "then": [
@@ -3834,7 +3815,12 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/lending/aggregates/loan_application/provides/application_submitted"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/credit_decisioning/services/decisioning_app/provides/decide"
+                }
+              ]
             }
           ]
         },
@@ -4139,16 +4125,7 @@
           "provides": {
             "transaction_flagged": {
               "name": "TransactionFlagged",
-              "description": "Above threshold; the caller stops the transaction",
-              "pattern": "published-language",
-              "type": "event",
-              "schema": {
-                "$ref": "#/boundedcontexts/fraud/schemas/transaction_verdict"
-              }
-            },
-            "transaction_cleared": {
-              "name": "TransactionCleared",
-              "description": "Below threshold; the caller proceeds",
+              "description": "Above threshold; a case is opened and the card is blocked",
               "pattern": "published-language",
               "type": "event",
               "schema": {
@@ -4165,18 +4142,18 @@
           "provides": {
             "score_transaction": {
               "name": "ScoreTransaction",
-              "description": "Score synchronously; callers wait on the verdict",
+              "description": "Score synchronously; the caller waits and is answered with the verdict, and a flag is published as well because other contexts act on it",
               "pattern": "open-host-service",
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/fraud/schemas/score_transaction"
               },
+              "returns": {
+                "$ref": "#/boundedcontexts/fraud/schemas/transaction_verdict"
+              },
               "raises": [
                 {
                   "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged"
-                },
-                {
-                  "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_cleared"
                 }
               ]
             }
@@ -4186,7 +4163,12 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/cards/aggregates/card/provides/card_authorised"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/fraud/services/fraud_app/provides/score_transaction"
+                }
+              ]
             }
           ]
         }
@@ -4290,7 +4272,7 @@
         },
         "transaction_verdict": {
           "name": "TransactionVerdict",
-          "description": "Shared by flagged and cleared",
+          "description": "What the scorer answers with: the transaction and its score, reasons and all; above the threshold is a flag",
           "attributes": {
             "transaction_ref": {
               "name": "transactionRef",
@@ -4506,7 +4488,7 @@
       "policies": {
         "accumulate_on_posting": {
           "name": "Accumulate on posting",
-          "description": "Ledger postings, account openings and disbursements each add to a line as they happen",
+          "description": "Ledger postings, account openings and disbursements each add to a line as they happen, and Sovereign's nightly batch adds the savings movements",
           "on": [
             {
               "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
@@ -4516,6 +4498,9 @@
             },
             {
               "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/loan_disbursed"
+            },
+            {
+              "$ref": "#/boundedcontexts/sovereign_core_(legacy)/aggregates/savings_account_record/provides/nightly_batch_completed"
             }
           ],
           "then": [

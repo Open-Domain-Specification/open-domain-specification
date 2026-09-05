@@ -43,6 +43,7 @@ import Lockup from "../atoms/Lockup.svelte";
 import AttributeTable from "../molecules/AttributeTable.svelte";
 import ConsumesTable from "../molecules/ConsumesTable.svelte";
 import { EXTERNAL, MUD } from "../molecules/ContextLockup.svelte";
+import { kindOf } from "../molecules/element-kind";
 import Joined from "../molecules/Joined.svelte";
 import ProvidesTable from "../molecules/ProvidesTable.svelte";
 import TeamLockup from "../molecules/TeamLockup.svelte";
@@ -301,7 +302,7 @@ const termColumns: Column[] = [
 			{#if col.key === "name"}
 				<Lockup kind="policy" name={p.name} ref={p.ref} />
 			{:else if col.key === "when"}
-				<Joined>{#each p.events as e (e.ref)}<Ref ref={e.ref} label={e.name} icon={ICONS.event} kind="event" />{:else}<Keyword text="nothing" />{/each}</Joined>
+				<Joined>{#each p.events as e (e.ref)}<Ref ref={e.ref} label={e.name} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else if col.key === "then"}
 				<Joined>{#each p.commands as c (c.ref)}<Ref ref={c.ref} label={c.name} icon={ICONS.command} kind="command" />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else}
@@ -318,11 +319,11 @@ const termColumns: Column[] = [
 			{:else if col.key === "starts"}
 				<Joined>{#each p.startEvents as e (e.ref)}<Ref ref={e.ref} label={e.name} icon={ICONS.event} kind="event" />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
 			{:else if col.key === "when"}
-				<Joined>{#each p.events as e (e.ref)}<Ref ref={e.ref} label={e.name} icon={ICONS.event} kind="event" />{:else}<Keyword text="nothing" />{/each}</Joined>
+				<Joined>{#each p.events as e (e.ref)}<Ref ref={e.ref} label={e.name} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else if col.key === "then"}
 				<Joined>{#each p.commands as c (c.ref)}<Ref ref={c.ref} label={c.name} icon={ICONS.command} kind="command" />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else if col.key === "ends"}
-				<Joined>{#each p.endEvents as e (e.ref)}<Ref ref={e.ref} label={e.name} icon={ICONS.event} kind="event" />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+				<Joined>{#each p.endEvents as e (e.ref)}<Ref ref={e.ref} label={e.name} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
 			{:else}
 				{p.description}
 			{/if}

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ODSConsumableMap } from "./consumable-map";
 import { ODSConsumptionGraph } from "./consumption-graph";
 import { ODSContextMap } from "./context-map";
-import { ODSFlowMap } from "./flow-map";
+import { flowEdgeLabel, ODSFlowMap } from "./flow-map";
 import { makeRichTestWs } from "./makeTestWs";
 import { ODSRelationGraph, ODSRelationMap } from "./relation-map";
 import { Workspace } from "./workspace";
@@ -245,7 +245,7 @@ describe("ODSConsumableMap", () => {
 	const orderPlacedEdge = () => {
 		const map = ODSConsumableMap.fromService(f.invoiceApp);
 		const edge = Array.from(map.edges.values()).find(
-			(it) => it.by.length > 0 || it.sourcePattern === "conformist",
+			(it) => it.sourcePattern === "conformist",
 		);
 		if (!edge) throw new Error("Order Placed is not consumed");
 		return edge;
@@ -259,7 +259,9 @@ describe("ODSConsumableMap", () => {
 
 	it("names what makes the consumption on the edge, and nothing when it is the whole consumer", () => {
 		expect(orderPlacedEdge().by).toEqual(["Invoice on order placed"]);
-		const whole = ODSConsumableMap.fromService(f.reportingApp);
+		// Invoicing's call on Place Order names nobody: the whole service depends
+		// on it, which stays the common case and the default reading.
+		const whole = ODSConsumableMap.fromService(f.invoiceApp);
 		expect(Array.from(whole.edges.values()).map((it) => it.by)).toContainEqual(
 			[],
 		);
@@ -545,6 +547,148 @@ describe("ODSFlowMap", () => {
 		// The far side's operation clusters under the service that provides it.
 		expect(map.nodes.get(dispatch.ref)?.namespace.slice(-1)[0]?.id).toBe(
 			shippingApp.ref,
+		);
+	});
+});
+
+describe("ODSFlowMap and the answer a call comes back with", () => {
+	/**
+	 * Decision 23's second amendment: a checkout process calls out for a hold
+	 * and branches on what comes back. The rejection is a schema, not an event,
+	 * and the process waits on it.
+	 */
+	function callAndBranch() {
+		const ws = new Workspace("Answers", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "1.0.0",
+		});
+		const payments = ws.addBoundedContext("Payments", { description: "" });
+		const paymentsApi = payments.addService("Payments API", {
+			description: "",
+			type: "application",
+		});
+		const declined = payments.addSchema("Payment Declined");
+		const held = paymentsApi.provides("Payment Held", {
+			description: "",
+			type: "event",
+		});
+		const authorise = paymentsApi
+			.provides("Authorise Payment", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+				rejects: [declined],
+			})
+			.raises(held);
+		const checkout = ws.addBoundedContext("Checkout", { description: "" });
+		const orchestrator = checkout.addService("Checkout Orchestrator", {
+			description: "",
+			type: "application",
+		});
+		const confirmed = orchestrator.provides("Cart Confirmed", {
+			description: "",
+			type: "event",
+		});
+		const ask = orchestrator.provides("Request Authorisation", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const reopen = orchestrator.provides("Reopen Cart", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		orchestrator.consumes(authorise, {
+			pattern: "anti-corruption-layer",
+			by: [ask],
+		});
+		payments.upstreamOf(checkout, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		const process = checkout
+			.addProcess("Checkout", { description: "" })
+			.starts(confirmed)
+			.on(declined)
+			.issues(ask, reopen)
+			.ends(held);
+		return { ws, declined, authorise, held, process, ask };
+	}
+
+	const drawn = (map: ODSFlowMap) =>
+		Array.from(map.edges.values()).map(
+			(e) =>
+				`${e.source.name} -> ${e.target.name}${flowEdgeLabel(e) ? ` [${flowEdgeLabel(e)}]` : ""}`,
+		);
+
+	it("draws the answer as an edge from the operation, labelled with the shape", () => {
+		const { ws, declined } = callAndBranch();
+		const map = ODSFlowMap.fromWorkspace(ws);
+		expect(drawn(map)).toContain(
+			"Authorise Payment -> Checkout [Payment Declined]",
+		);
+		// The shape is what the step is called, not a step of its own.
+		expect(map.nodes.has(declined.ref)).toBe(false);
+	});
+
+	it("draws the whole call and the branch back, in the order a reader traces them", () => {
+		const { ws } = callAndBranch();
+		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toEqual([
+			"Cart Confirmed -> Checkout",
+			"Checkout -> Request Authorisation",
+			"Request Authorisation -> Authorise Payment",
+			"Authorise Payment -> Payment Held",
+			"Authorise Payment -> Checkout [Payment Declined]",
+			"Checkout -> Reopen Cart",
+			"Checkout -> Payment Held [ends]",
+		]);
+	});
+
+	it("draws the answer on the waiting context's own map, from the neighbour's operation", () => {
+		// A map scoped to one context still shows where the answer came from: the
+		// operation is the neighbour's, and this context is the one that called
+		// it, so the chain knows the shape it answers with.
+		const { ws } = callAndBranch();
+		const checkout = ws.getBoundedContextByRefOrThrow(
+			"#/boundedcontexts/checkout",
+		);
+		expect(drawn(ODSFlowMap.fromBoundedContext(checkout))).toContain(
+			"Authorise Payment -> Checkout [Payment Declined]",
+		);
+	});
+
+	it("reports no cycle: a process fed by its own answer is its lifecycle", () => {
+		const { ws } = callAndBranch();
+		expect(ws.validate().filter((d) => d.rule === "reaction-cycle")).toEqual(
+			[],
+		);
+	});
+
+	it("draws an ending answer from the operation into the process", () => {
+		const { ws, process, declined, held } = callAndBranch();
+		process.events.length = 0;
+		process.endEvents.length = 0;
+		process.ends(declined, held);
+		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
+			"Authorise Payment -> Checkout [Payment Declined (ends)]",
+		);
+	});
+
+	it("draws an answer a policy waits on the same way", () => {
+		const { ws } = callAndBranch();
+		const checkout = ws.getBoundedContextByRefOrThrow(
+			"#/boundedcontexts/checkout",
+		);
+		const process = checkout.processes.get("checkout");
+		checkout.processes.clear();
+		const policy = checkout.addPolicy("Reopen on decline", {
+			description: "",
+		});
+		policy.on(...(process?.events ?? [])).issues(...(process?.commands ?? []));
+		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
+			"Authorise Payment -> Reopen on decline [Payment Declined]",
 		);
 	});
 });

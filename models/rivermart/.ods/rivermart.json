@@ -832,6 +832,12 @@
               "returns": {
                 "$ref": "#/boundedcontexts/offers/schemas/offer_detail"
               }
+            },
+            "record_catalogue_sku": {
+              "name": "RecordCatalogueSku",
+              "description": "Add a listed product to Offers' own SKU list, or take a retired one off it; the list is Offers' translation of the catalogue and holds no product model",
+              "type": "operation",
+              "internal": true
             }
           },
           "consumes": [
@@ -839,19 +845,34 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/catalogue/aggregates/product/provides/product_listed"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/offers/policies/keep_the_sku_list_in_step"
+                }
+              ]
             },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/catalogue/aggregates/product/provides/product_retired"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/offers/policies/keep_the_sku_list_in_step"
+                }
+              ]
             },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_activated"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/offers/services/offer_api/provides/publish_offer"
+                }
+              ]
             },
             {
               "consumable": {
@@ -863,6 +884,23 @@
         }
       },
       "policies": {
+        "keep_the_sku_list_in_step": {
+          "name": "Keep the SKU list in step",
+          "description": "Offers may only be published against a SKU the catalogue has, so the list follows every listing and retirement",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/catalogue/aggregates/product/provides/product_listed"
+            },
+            {
+              "$ref": "#/boundedcontexts/catalogue/aggregates/product/provides/product_retired"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/offers/services/offer_api/provides/record_catalogue_sku"
+            }
+          ]
+        },
         "recompute_buy_box_on_offer_change": {
           "name": "Recompute buy box on offer change",
           "description": "Any published offer can win or lose the buy box",
@@ -1540,7 +1578,7 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_declined"
+                "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/authorisation_expired"
               },
               "pattern": "anti-corruption-layer",
               "by": [
@@ -1578,7 +1616,7 @@
       "processes": {
         "checkout": {
           "name": "Checkout",
-          "description": "From the customer confirming the basket to an order existing. It asks Payments to hold the cart total and then waits: on a hold the order is placed, on a decline the cart is unfrozen so another instrument can be tried and the same instance waits for the next attempt. Correlation is by cartId, which the authorisation carries back; an instance that is never paid for stays open with the cart, because a cart nobody returns to is the customer's to abandon and not ours to time out",
+          "description": "From the customer confirming the basket to an order existing. It asks Payments to hold the cart total and then waits: on a hold the order is placed, on a decline — the answer AuthorisePayment refuses with — the cart is unfrozen so another instrument can be tried and the same instance waits for the next attempt. Correlation is by cartId, which the authorisation carries back. An instance nobody comes back to ends when the hold does: the authorisation expires, Payments says so, and the instance is over without anybody timing the cart out",
           "starts": [
             {
               "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/provides/cart_checked_out"
@@ -1589,7 +1627,7 @@
               "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_authorised"
             },
             {
-              "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_declined"
+              "$ref": "#/boundedcontexts/payments/schemas/payment_declined"
             }
           ],
           "then": [
@@ -1606,6 +1644,9 @@
           "ends": [
             {
               "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
+            },
+            {
+              "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/authorisation_expired"
             }
           ]
         }
@@ -2504,9 +2545,9 @@
                 "$ref": "#/boundedcontexts/payments/schemas/payment_authorised"
               }
             },
-            "payment_declined": {
-              "name": "PaymentDeclined",
-              "description": "The provider refused; checkout shows an error",
+            "authorisation_expired": {
+              "name": "AuthorisationExpired",
+              "description": "A hold reached its expiry without being captured and was released",
               "pattern": "published-language",
               "type": "event",
               "schema": {
@@ -2553,6 +2594,8 @@
                 "order_id": {
                   "name": "orderId",
                   "type": "string",
+                  "description": "Absent until the order exists; AttachOrder fills it",
+                  "optional": true,
                   "identifies": {
                     "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
                   }
@@ -2722,18 +2765,31 @@
           "provides": {
             "authorise_payment": {
               "name": "AuthorisePayment",
-              "description": "Hold the cart total on the customer's instrument",
+              "description": "Hold the cart total on the customer's instrument; the caller waits, and is told either that the money is held or why it is not",
               "pattern": "open-host-service",
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/payments/schemas/authorise_payment"
               },
+              "rejects": [
+                {
+                  "$ref": "#/boundedcontexts/payments/schemas/payment_declined"
+                }
+              ],
               "raises": [
                 {
                   "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_authorised"
-                },
+                }
+              ]
+            },
+            "expire_authorisations": {
+              "name": "ExpireAuthorisations",
+              "description": "Release every hold now past its Authorisation.expiresAt; a scheduler runs it",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "raises": [
                 {
-                  "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_declined"
+                  "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/authorisation_expired"
                 }
               ]
             },
@@ -2902,6 +2958,22 @@
               "name": "paymentId",
               "type": "string",
               "identity": true
+            }
+          }
+        },
+        "payment_declined": {
+          "name": "PaymentDeclined",
+          "description": "Why the hold was refused, in the words the customer is shown",
+          "attributes": {
+            "payment_id": {
+              "name": "paymentId",
+              "type": "string",
+              "identity": true
+            },
+            "reason": {
+              "name": "reason",
+              "type": "'insufficient-funds' | 'instrument-refused' | 'provider-unavailable'",
+              "description": "What the storefront tells the customer to try instead"
             }
           }
         },
@@ -5306,7 +5378,7 @@
         "published-language"
       ],
       "downstreamRoles": [],
-      "description": "Roles on the consumption were never agreed; see the role-coherence warning"
+      "description": "Last Mile takes the dispatch feed as the warehouse publishes it, and declares no downstream role: the two also share a kernel, so neither is upstream of the other and neither has a role to declare (card 47)"
     },
     {
       "type": "upstream-downstream",

@@ -1,7 +1,8 @@
 import { Graphviz } from "@hpcc-js/wasm-graphviz";
-import type {
-	ODSFlowMap,
-	ODSFlowMapNode,
+import {
+	flowEdgeLabel,
+	type ODSFlowMap,
+	type ODSFlowMapNode,
 } from "@open-domain-specification/core";
 import {
 	Digraph,
@@ -26,7 +27,13 @@ const NODE_STYLES: Record<ODSFlowMapNode["type"], NodeAttributesObject> = {
 };
 
 /** A step in the chain is a plain arrow; what ends a process is not a step. */
-const ENDS_EDGE: EdgeAttributesObject = { style: "dashed", label: "ends" };
+const ENDS_EDGE: EdgeAttributesObject = { style: "dashed" };
+
+/** The type its label is set in, wherever an edge carries one. */
+const LABEL_FONT: EdgeAttributesObject = {
+	fontname: "sans-serif",
+	fontsize: 10,
+};
 
 /** Whether a node stands for a reaction rather than a consumable. */
 const isReaction = (node: ODSFlowMapNode) =>
@@ -58,15 +65,17 @@ export function flowMapToDigraph(flowMap: ODSFlowMap): {
 	for (const edge of flowMap.edges.values()) {
 		const source = nodes.get(edge.source.id);
 		const target = nodes.get(edge.target.id);
-		if (source && target)
-			g.addEdge(
-				new Edge(
-					[source, target],
-					edge.kind === "ends"
-						? { ...ENDS_EDGE, fontname: "sans-serif", fontsize: 10 }
-						: {},
-				),
-			);
+		if (!source || !target) continue;
+		// An answer is a step and is drawn as one; what it is labelled with is
+		// the shape it came back as, so the arrow from an operation into a
+		// process says which of its answers woke it (decision 23).
+		const label = flowEdgeLabel(edge);
+		g.addEdge(
+			new Edge([source, target], {
+				...(edge.kind === "ends" && ENDS_EDGE),
+				...(label && { label, ...LABEL_FONT }),
+			}),
+		);
 	}
 
 	return {

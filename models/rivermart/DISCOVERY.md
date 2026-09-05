@@ -252,7 +252,9 @@ marked every place two people disagreed about a word. The main timeline, condens
 | OfferPublished / OfferWithdrawn | PublishOffer / WithdrawSellerOffers | Recompute buy box |
 | BuyBoxAwarded | AwardBuyBox | Search reindexes price |
 | CartCheckedOut | Checkout | Authorise on checkout |
-| PaymentAuthorised / PaymentDeclined | AuthorisePayment | Place order on authorisation / Reopen cart on decline |
+| PaymentAuthorised | AuthorisePayment | Checkout places the order |
+| PaymentDeclined (an answer, not an event) | AuthorisePayment rejects with it | Checkout reopens the cart |
+| AuthorisationExpired | ExpireAuthorisations | Checkout ends: nobody came back |
 | OrderPlaced | PlaceOrder | Warehouse reserves; Fraud scores order; Payments attaches the order id |
 | OrderRiskFlagged | ScoreOrder | Cancel flagged orders |
 | OrderCancelled | CancelOrder | Warehouse releases the reservation and voids pick tasks |
@@ -274,15 +276,16 @@ own context uses are `internal`.
 The wall was not this tidy. The table is the happy path; the red hotspot stickies, each of
 which is now somewhere in the model, were:
 
-- A payment declined after the cart was frozen (Checkout: "the cart stays open"; now a policy).
+- A payment declined after the cart was frozen (Checkout: "the cart stays open"; the decline is
+  what `AuthorisePayment` rejects with and the Checkout process waits on it, card 92).
 - No site able to reserve for an order (Warehouse: "it waits or is split"; now `StockShort`
   puts the order into awaiting-stock in Orders).
 - A fraud flag arriving after the warehouse had already reserved (Fulfilment and Trust &
   Safety disagreed on who guaranteed no pick; now `OrderCancelled` releases and voids).
 - Order lines copied onto cases (Customer Service; left in as the deliberate
   `cross-aggregate-reference`, section 7).
-- Who translates the dispatch feed (Logistics; left in as the deliberate `role-coherence`
-  warning, section 7).
+- Who translates the dispatch feed (Logistics; still unagreed, and the relationship says so,
+  section 7).
 - Charging on impression versus on click (Ads and Search; the auction awards, the click pays).
 
 ## 4. Language collisions
@@ -528,3 +531,30 @@ operation, not CaseAPI's to name.
 cardinality. `Product.brand` and `Shipment.tracking` were required beside relations of
 `0..1`; own-label goods carry no brand and a shipment has no carrier reference until the
 carrier gives one, so both attributes are optional and the two halves agree.
+
+## Revision (card 92): the decline is an answer, and a hold that expires ends the checkout
+
+The Checkout tech lead described one call and two outcomes — "we ask Payments to hold the
+money, and only when the hold succeeds do we tell Orders to create the order. If the hold
+fails the customer sees an error and the cart stays open" — and the model published the
+failure as `PaymentDeclined`, an event with a published language, against decision 25's own
+example. Nothing happened when a hold was declined; a call came back refused, and the only
+party who hears it is the caller who asked. `AuthorisePayment` now **rejects with**
+`PaymentDeclined`, a schema of Payments carrying the payment id and the reason the storefront
+shows, and the Checkout process waits on that answer (decision 23's second amendment). The
+consumption of the event is gone with it: the answer arrives down the `AuthorisePayment`
+call the orchestrator already declares, which is what makes it Checkout's to hear.
+
+The same interview left a question the model had never answered: what finishes a checkout
+nobody comes back to? Its own description said the instance "stays open with the cart",
+which is a process that never ends. The Payments lead and the Authorisation glossary entry
+both say what really happens — a hold "expires if not captured", and `Authorisation` has
+carried `expiresAt` since the first draft. So Payments' application service gains
+`ExpireAuthorisations`, which a scheduler runs every few minutes and which raises
+`AuthorisationExpired` for every hold past its expiry. Nothing in the model consumes the
+operation, which is what an operation called from outside the software looks like
+(decision 28); the released hold is a published fact, and the Checkout process ends on it.
+A cart nobody returns to is still the customer's to abandon: what ends is the checkout, not
+the cart.
+
+The deliberate diagnostics of section 7 are untouched.

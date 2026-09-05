@@ -48,7 +48,7 @@ Open-host service for /store/order endpoints
 | --- | --- | --- | --- |
 | OrderPlaced | - | **orderId**: `int64`, petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity` | OrderPlaced |
 | PlaceOrder | Request body for placing an order | petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity` | PlaceOrder |
-| OrderId | - | **orderId**: `int64` | OrderApproved, OrderDelivered, OrderDeleted, ApproveOrder, DeliverOrder, GetOrderById, DeleteOrder, ConfirmDelivery, ReservePet, MarkPetSold |
+| OrderId | - | **orderId**: `int64` | OrderApproved, OrderDelivered, OrderDeleted, ApproveOrder, DeliverOrder, GetOrderById, DeleteOrder, ConfirmDelivery, ReservePet, MarkPetSold, CheckPetAvailable |
 | OrderDetail | One order, as GET /store/order/{orderId} answers with it | **orderId**: `int64`, petId: `int64` (identifies [Pet](../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity`, shipDate: `ShipDate`, status: `OrderStatus` | GetOrderById |
 
 
@@ -62,7 +62,7 @@ Reactions that hold state across events: each one remembers which of its events 
 
 | Name | Description | Starts | On | Then | Ends |
 | --- | --- | --- | --- | --- | --- |
-| Order fulfilment | From an order being placed to the pet being sold. It starts on OrderPlaced and waits, because the pet may not be available yet: a relisting (PetStatusChanged) makes it look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest. On approval it holds the pet (available → pending), and once the order is delivered it tells the catalogue the pet has gone to its owner (pending → sold). It does not listen to PetReserved: that is the fact this very chain produces. Correlation is by petId and then orderId; an order nobody can fulfil is cancelled by hand, which is why there is no timeout here | OrderPlaced | PetStatusChanged | ApproveOrder, ReservePet, MarkPetSold | OrderDelivered |
+| Order fulfilment | From an order being placed to the pet being sold. It starts on OrderPlaced and waits, because the pet may not be available yet: a relisting (PetStatusChanged) makes it look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest. On approval it holds the pet (available → pending), and once the order is delivered it tells the catalogue the pet has gone to its owner (pending → sold). It does not listen to PetReserved: that is the fact this very chain produces. Correlation is by petId and then orderId; an order nobody can fulfil is cancelled by hand, which is why there is no timeout here | OrderPlaced | PetStatusChanged | CheckPetAvailable, ApproveOrder, ReservePet, MarkPetSold | OrderDelivered |
 
 
 ## Context Relationships
@@ -118,7 +118,7 @@ Reactions that hold state across events: each one remembers which of its events 
 | [PetApp](../catalog_bc/services/pet_app/index.md) | ReservePetForOrder | - | Pet | ReservePet | - |
 | [PetApp](../catalog_bc/services/pet_app/index.md) | MarkPetSoldForOrder | - | Pet | MarkPetSold | - |
 | [OrderApp](services/order_app/index.md) | MarkPetSold | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
-| [OrderApp](services/order_app/index.md) | Order fulfilment | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [OrderApp](services/order_app/index.md) | CheckPetAvailable | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
 | [OrderApp](services/order_app/index.md) | Order fulfilment | anti-corruption-layer | Pet | PetStatusChanged | published-language |
 
 

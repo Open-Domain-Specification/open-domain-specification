@@ -8,9 +8,11 @@ export const sections = [
 
 <script lang="ts">
 import {
-	type Consumable,
+	answeredBy,
+	DataSchema,
 	ODSFlowMap,
 	type Policy,
+	type ReactionTrigger,
 } from "@open-domain-specification/core";
 import { problemsUnder, useModel } from "../model";
 import { flowGraph } from "../flow/graph";
@@ -19,10 +21,12 @@ import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Definition from "../atoms/Definition.svelte";
 import DefinitionList from "../atoms/DefinitionList.svelte";
+import Keyword from "../atoms/Keyword.svelte";
 import Lockup from "../atoms/Lockup.svelte";
 import ConsumableKeywords from "../molecules/ConsumableKeywords.svelte";
 import { contextCrumbs } from "../molecules/crumbs";
 import { kindOf } from "../molecules/element-kind";
+import Joined from "../molecules/Joined.svelte";
 import DiagramFigure from "../organisms/DiagramFigure.svelte";
 import LanguageSection from "../organisms/LanguageSection.svelte";
 import PageHeader from "../organisms/PageHeader.svelte";
@@ -37,25 +41,35 @@ const crumbs = $derived(contextCrumbs(model.workspace, bc));
 // drawn in its neighbours' rows, which is the reason to draw it at all.
 const flowMap = $derived(ODSFlowMap.fromBoundedContext(bc));
 
-/** The "When" table lists events, which are all of one kind; only "Then" needs the kind column. */
-const columnsFor = (label: string, withKind: boolean): Column[] => [
+/**
+ * Where a trigger comes from: an event's provider, or — for an answer — the
+ * operations this context calls that come back with that shape (decision 23).
+ */
+const sourcesOf = (trigger: ReactionTrigger) =>
+	trigger instanceof DataSchema ? answeredBy(bc, trigger) : [trigger.provider];
+
+/**
+ * Both tables name the kind: what a policy issues is an operation or an event,
+ * and what triggers it is an event or an answer (decision 23).
+ */
+const columnsFor = (label: string): Column[] => [
 	{ key: "name", label },
-	...(withKind ? [{ key: "kind", label: "Kind" }] : []),
+	{ key: "kind", label: "Kind" },
 	{ key: "provider", label: "Provider" },
 	{ key: "context", label: "Context" },
 	{ key: "description", label: "Description" },
 ];
 </script>
 
-{#snippet consumables(rows: Consumable[], label: string, withKind: boolean, empty: string)}
-	<DataTable columns={columnsFor(label, withKind)} {rows} {empty} rowId={(c) => c.ref}>
+{#snippet consumables(rows: ReactionTrigger[], label: string, empty: string)}
+	<DataTable columns={columnsFor(label)} {rows} {empty} rowId={(c) => c.ref}>
 		{#snippet cell(c, col)}
 			{#if col.key === "name"}
 				<Lockup kind={kindOf(c)} name={c.name} ref={c.ref} />
 			{:else if col.key === "kind"}
-				<ConsumableKeywords consumable={c} />
+				{#if c instanceof DataSchema}<Keyword text="answer" />{:else}<ConsumableKeywords consumable={c} />{/if}
 			{:else if col.key === "provider"}
-				<Lockup kind={kindOf(c.provider)} name={c.provider.name} ref={c.provider.ref} />
+				<Joined>{#each sourcesOf(c) as source (source.ref)}<Lockup kind={kindOf(source)} name={source.name} ref={source.ref} />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
 			{:else if col.key === "context"}
 				<Lockup kind="boundedcontext" name={c.boundedcontext.name} ref={c.boundedcontext.ref} />
 			{:else}
@@ -77,15 +91,15 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 <Section
 	id="when"
 	title="When"
-	lead="The events that trigger this policy. Events from other contexts arrive through a consumption."
+	lead="What triggers this policy: an event, or the answer an operation this context calls comes back with. An event from another context arrives through a consumption; an answer arrives from the call."
 	count={p.events.length}
 	problems={problemsUnder(model, p.ref)}
 >
-	{@render consumables(p.events, "Event", false, "Triggered by nothing.")}
+	{@render consumables(p.events, "Event or answer", "Triggered by nothing.")}
 </Section>
 
 <Section id="then" title="Then" lead="The operations the policy issues. Whenever X happens, do Y." count={p.commands.length}>
-	{@render consumables(p.commands, "Operation", true, "Issues nothing.")}
+	{@render consumables(p.commands, "Operation", "Issues nothing.")}
 	<!-- The map comes after the last section it summarises. -->
 	<DiagramFigure
 		caption={flowMapCaption(bc.name)}
