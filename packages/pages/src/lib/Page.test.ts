@@ -46,6 +46,30 @@ describe("a ref pointing inside a page scrolls to and flashes the target", () =>
 		unmount();
 	});
 
+	it("lands on the consumer's page at the consumption's row", async () => {
+		Element.prototype.scrollIntoView = vi.fn();
+		// A consumption has no page of its own (decision 26): its ref resolves
+		// to the consumer, and the row it names flashes like any other leaf.
+		const consumption = [...model.workspace.boundedcontexts.values()]
+			.flatMap((bc) => [...bc.services.values(), ...bc.aggregates.values()])
+			.flatMap((member) => member.consumptions)[0];
+
+		const { container, unmount } = render(Harness, {
+			model,
+			ref: consumption.ref,
+		});
+
+		expect(container.querySelector("h1")?.textContent).toContain(
+			consumption.consumer.name,
+		);
+		await waitFor(() => {
+			expect(container.querySelector(`[id="${consumption.ref}"]`)).toHaveClass(
+				"flash",
+			);
+		});
+		unmount();
+	});
+
 	it("does nothing when the ref points at nothing inside the page", async () => {
 		Element.prototype.scrollIntoView = vi.fn();
 		const bc = [...model.workspace.boundedcontexts.values()][0];

@@ -104,3 +104,74 @@ describe("locateRef on a relationship", () => {
 		expect(none.slice(span.start, span.end)).toBe('"name"');
 	});
 });
+
+describe("locateRef on a consumption", () => {
+	const consumer = {
+		name: "Order App",
+		consumes: [
+			{
+				consumable: {
+					$ref: "#/boundedcontexts/catalog/services/pet_app/provides/get_pet",
+				},
+				pattern: "conformist",
+			},
+			{
+				consumable: {
+					$ref: "#/boundedcontexts/catalog/aggregates/pet/provides/pet_sold",
+				},
+			},
+		],
+	};
+	const file = JSON.stringify(
+		{
+			name: "Shop",
+			boundedcontexts: { orders: { services: { order_app: consumer } } },
+		},
+		null,
+		2,
+	);
+	const at = (ref: string) => {
+		const span = locateRef(file, ref);
+		return file.slice(span.start, span.end);
+	};
+	const CONSUMER = "#/boundedcontexts/orders/services/order_app";
+
+	it("finds the element of consumes[] whose consumable the ref names", () => {
+		const found = at(
+			`${CONSUMER}/consumes/boundedcontexts~catalog~services~pet_app~provides~get_pet`,
+		);
+		expect(found.startsWith("{")).toBe(true);
+		expect(found).toContain("get_pet");
+		expect(found).not.toContain("pet_sold");
+	});
+
+	it("tells two consumptions of the same consumer apart", () => {
+		expect(
+			at(
+				`${CONSUMER}/consumes/boundedcontexts~catalog~aggregates~pet~provides~pet_sold`,
+			),
+		).toContain("pet_sold");
+	});
+
+	it("falls back to the array when nothing in it matches", () => {
+		expect(
+			at(`${CONSUMER}/consumes/boundedcontexts~catalog~services~x~provides~y`),
+		).toBe('"consumes"');
+	});
+
+	it("falls back to the consumer when it consumes nothing at all", () => {
+		const none = JSON.stringify(
+			{
+				name: "Shop",
+				boundedcontexts: { orders: { services: { order_app: { name: "A" } } } },
+			},
+			null,
+			2,
+		);
+		const span = locateRef(
+			none,
+			`${CONSUMER}/consumes/boundedcontexts~catalog~services~pet_app~provides~get_pet`,
+		);
+		expect(none.slice(span.start, span.end)).toBe('"order_app"');
+	});
+});

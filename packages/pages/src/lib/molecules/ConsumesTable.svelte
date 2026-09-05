@@ -15,6 +15,10 @@ import ContextLockup from "./ContextLockup.svelte";
  * The same rows read the other way round on a consumable's page, which lists
  * who consumes *it*, so `empty` is the caller's word for a table with nothing
  * in it.
+ *
+ * A consumption has no page of its own, so each row carries the consumption's
+ * ref as its id: a link or a diagnostic at that ref lands on the consumer's
+ * page and flashes the row (decision 26).
  */
 const {
 	consumptions,
@@ -33,6 +37,7 @@ const columns: Column[] = [
 <DataTable
 	{columns}
 	rows={consumptions}
+	rowId={(x) => x.ref}
 	{empty}
 >
 	{#snippet cell(x, col)}

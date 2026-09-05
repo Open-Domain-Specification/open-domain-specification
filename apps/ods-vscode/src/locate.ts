@@ -63,6 +63,29 @@ function locateRelationship(tree: Node, ref: string): Span | undefined {
 }
 
 /**
+ * A consumption's ref is `<consumer>/consumes/<consumable path with ~ for />`,
+ * but in the file `consumes` is an array with no keys, so the consumable has
+ * to be matched against each element's `$ref` rather than looked up by path.
+ */
+const CONSUMPTION = /^(#\/.+)\/consumes\/([^/]+)$/;
+
+type ConsumptionJson = { consumable?: { $ref?: string } };
+
+function locateConsumption(tree: Node, ref: string): Span | undefined {
+	const match = ref.match(CONSUMPTION);
+	if (!match) return undefined;
+	const [, consumer, flattened] = match;
+	const consumable = `#/${flattened.split("~").join("/")}`;
+	const array = findNodeAtLocation(tree, [...refToPath(consumer), "consumes"]);
+	for (const element of array?.children ?? []) {
+		const value = getNodeValue(element) as ConsumptionJson;
+		if (value.consumable?.$ref === consumable)
+			return { start: element.offset, end: element.offset + element.length };
+	}
+	return undefined;
+}
+
+/**
  * Character span of the element a ref points at inside a workspace file. Falls back to the
  * deepest existing ancestor, then the workspace name, then the start of the file.
  */
@@ -71,6 +94,8 @@ export function locateRef(text: string, ref: string): Span {
 	if (!tree) return { start: 0, end: 0 };
 	const relationship = locateRelationship(tree, ref);
 	if (relationship) return relationship;
+	const consumption = locateConsumption(tree, ref);
+	if (consumption) return consumption;
 	const segments = refToPath(ref);
 	for (let n = segments.length; n > 0; n--) {
 		const node = findNodeAtLocation(tree, segments.slice(0, n));

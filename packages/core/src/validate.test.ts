@@ -229,11 +229,14 @@ describe("Workspace.validate", () => {
 		const down = ws.addBoundedContext("Down", { description: "" });
 		const svc = up.addService("S", { description: "", type: "application" });
 		const op = svc.provides("Op", { description: "", type: "operation" });
-		down
+		const consumption = down
 			.addService("T", { description: "", type: "application" })
 			.consumes(op, {});
 		const rules = ws.validate().filter((d) => d.rule === "role-coherence");
 		expect(rules).toHaveLength(2);
+		// The missing upstream role is the consumable's; the missing downstream
+		// role is the consumption's, and each reports where the edit belongs.
+		expect(rules.map((d) => d.ref)).toEqual([op.ref, consumption.ref]);
 	});
 
 	it("flags consumptions between contexts that declared separate ways", () => {
@@ -315,7 +318,7 @@ describe("Workspace.validate", () => {
 			pattern: "open-host-service",
 		});
 		const elsewhere = up.addPolicy("Elsewhere", { description: "" });
-		down
+		const consumption = down
 			.addService("T", { description: "", type: "application" })
 			.consumes(op, { pattern: "conformist", by: [poll, elsewhere] });
 		const diagnostics = ws
@@ -324,6 +327,10 @@ describe("Workspace.validate", () => {
 		expect(diagnostics).toHaveLength(2);
 		expect(diagnostics[0].message).toContain('provided by "S"');
 		expect(diagnostics[1].message).toContain('belongs to "Up"');
+		expect(diagnostics.map((d) => d.ref)).toEqual([
+			consumption.ref,
+			consumption.ref,
+		]);
 	});
 
 	it("flags a consumption said to be made by one of the consumer's events", () => {
@@ -346,12 +353,16 @@ describe("Workspace.validate", () => {
 			type: "event",
 			internal: true,
 		});
-		consumer.consumes(op, { pattern: "conformist", by: [raised] });
+		const consumption = consumer.consumes(op, {
+			pattern: "conformist",
+			by: [raised],
+		});
 		const diagnostics = ws
 			.validate()
 			.filter((d) => d.rule === "consumption-by-resolves");
 		expect(diagnostics).toHaveLength(1);
 		expect(diagnostics[0].message).toContain('the event "Raised"');
+		expect(diagnostics[0].ref).toBe(consumption.ref);
 	});
 
 	it("keeps payload schemas inside the publishing context", () => {
@@ -1140,8 +1151,8 @@ describe("mud-needs-acl", () => {
 			description: "",
 			type: "application",
 		});
-		consumer.consumes(op, { pattern });
-		return { ws, consumer };
+		const consumption = consumer.consumes(op, { pattern });
+		return { ws, consumption };
 	}
 
 	const mudRules = (ws: Workspace) =>
@@ -1156,12 +1167,12 @@ describe("mud-needs-acl", () => {
 	});
 
 	it("warns about a conformist consumption of the mud", () => {
-		const { ws, consumer } = fromLegacy("conformist");
+		const { ws, consumption } = fromLegacy("conformist");
 		expect(mudRules(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 			[
 				"warning",
 				'"Modern" consumes "Get Customer" from "Legacy" as a conformist, and "Legacy" is a big ball of mud; translate it behind an anti-corruption layer so its model stays out of "Modern"',
-				consumer.ref,
+				consumption.ref,
 			],
 		]);
 	});
@@ -2371,7 +2382,7 @@ describe("disposition-needs-comment", () => {
 		expect(needsComment(ws)).toEqual([]);
 	});
 
-	it("reaches a consumable, and a consumption at its consumer's ref", () => {
+	it("reaches a consumable, and a consumption at its own ref", () => {
 		const ws = emptyWorkspace();
 		const a = ws.addBoundedContext("A", { description: "" });
 		const b = ws.addBoundedContext("B", { description: "" });
@@ -2389,14 +2400,17 @@ describe("disposition-needs-comment", () => {
 			pattern: "published-language",
 			disposition: "tolerated",
 		});
-		bApp.consumes(feed, { pattern: "conformist", disposition: "refactor" });
+		const consumption = bApp.consumes(feed, {
+			pattern: "conformist",
+			disposition: "refactor",
+		});
 		expect(needsComment(ws).map((d) => [d.ref, d.message])).toEqual([
 			[
 				feed.ref,
 				'"Feed", provided by "A App" is marked tolerated, but carries no comment saying what makes it so or what would clear it',
 			],
 			[
-				bApp.ref,
+				consumption.ref,
 				'"B App"\'s consumption of "Feed" is marked refactor, but carries no comment saying what makes it so or what would clear it',
 			],
 		]);

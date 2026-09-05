@@ -903,7 +903,7 @@ const roleCoherence: Rule = (workspace) => {
 				severity: "warning",
 				rule: "role-coherence",
 				message: `"${consumption.consumer.name}" consumes "${consumable.name}" from another context without a downstream role (conformist or anti-corruption-layer)`,
-				ref: consumption.consumer.ref,
+				ref: consumption.ref,
 			});
 		}
 	}
@@ -1163,7 +1163,7 @@ const mudNeedsAcl: Rule = (workspace) => {
 			severity: "warning",
 			rule: "mud-needs-acl",
 			message: `"${consumer.name}" consumes "${consumption.consumable.name}" from "${provider.name}" ${how}, and "${provider.name}" is a big ball of mud; translate it behind an anti-corruption layer so its model stays out of "${consumer.name}"`,
-			ref: consumption.consumer.ref,
+			ref: consumption.ref,
 		});
 	}
 	return diagnostics;
@@ -1307,7 +1307,7 @@ const consumptionByResolves: Rule = (workspace) => {
 					severity: "error",
 					rule: "consumption-by-resolves",
 					message: `"${consumer.name}" says its consumption of "${consumption.consumable.name}" is made by ${wrong}; a consumption names the consumer's own operations or its context's policies`,
-					ref: consumer.ref,
+					ref: consumption.ref,
 				});
 				continue;
 			}
@@ -1316,7 +1316,7 @@ const consumptionByResolves: Rule = (workspace) => {
 					severity: "error",
 					rule: "consumption-by-resolves",
 					message: `"${consumer.name}" says its consumption of "${consumption.consumable.name}" is made by the event "${caller.name}"; an event is something that has happened, so it calls nothing`,
-					ref: consumer.ref,
+					ref: consumption.ref,
 				});
 			}
 		}
@@ -1799,15 +1799,6 @@ function intentLabel(intent: StrategicIntent): string {
 }
 
 /**
- * Where a diagnostic about an intent points. A consumption is the one intent
- * with no ref of its own, so it reports at its consumer, as `role-coherence`
- * and `mud-needs-acl` already do.
- */
-function intentRef(intent: StrategicIntent): string {
-	return intent instanceof Consumption ? intent.consumer.ref : intent.ref;
-}
-
-/**
  * A disposition other than `by-design` is a claim that something is wrong: the
  * intent is `tolerated` for now, or wants a `refactor`. Either way the next
  * reader needs to know what makes it so and what it would take to clear it,
@@ -1823,7 +1814,7 @@ const dispositionNeedsComment: Rule = (workspace) =>
 			severity: "warning" as const,
 			rule: "disposition-needs-comment",
 			message: `${intentLabel(intent)} is marked ${dispositionOf(intent)}, but carries no comment saying what makes it so or what would clear it`,
-			ref: intentRef(intent),
+			ref: intent.ref,
 		}));
 
 /** What a validation rule checks, in words a reader new to DDD can follow. */

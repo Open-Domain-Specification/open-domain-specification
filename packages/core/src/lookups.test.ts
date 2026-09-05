@@ -241,6 +241,45 @@ describe("Workspace ref lookups", () => {
 	});
 });
 
+describe("consumption refs", () => {
+	const fixture = makeRichTestWs();
+	const { ws } = fixture;
+
+	it("names a consumption by the consumer and the consumable it takes", () => {
+		const consumption = fixture.invoiceConsumesOrderPlaced;
+		expect(consumption.ref).toBe(
+			`${consumption.consumer.ref}/consumes/${consumption.consumable.path.split("/").join("~")}`,
+		);
+		expect(consumption.path).toBe(consumption.ref.slice(2));
+	});
+
+	it("resolves a consumption ref back to the consumption", () => {
+		expect(ws.findConsumption(fixture.invoiceConsumesOrderPlaced.ref)).toBe(
+			fixture.invoiceConsumesOrderPlaced,
+		);
+		expect(ws.findConsumption(fixture.orderAppConsumesSalesFigures.ref)).toBe(
+			fixture.orderAppConsumesSalesFigures,
+		);
+		expect(
+			ws.findConsumption(`${fixture.invoiceApp.ref}/consumes/nothing~here`),
+		).toBeUndefined();
+	});
+
+	it("tells two consumptions by the same consumer apart", () => {
+		expect(fixture.invoiceConsumesOrderPlaced.ref).not.toBe(
+			fixture.invoiceAppConsumesPlaceOrder.ref,
+		);
+	});
+
+	it("keeps the ref across a round trip, because nothing stores it", () => {
+		const before = fixture.invoiceConsumesOrderPlaced.ref;
+		const after = Workspace.fromSchema(ws.toSchema());
+		expect(after.findConsumption(before)?.consumable.name).toBe(
+			fixture.orderPlaced.name,
+		);
+	});
+});
+
 describe("relationship refs", () => {
 	const { ws, orderingBc, reportingBc } = makeRichTestWs();
 
