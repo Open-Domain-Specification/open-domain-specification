@@ -21,3 +21,7 @@ Decision 15 deferred an optional flag on attributes "until a reference model nee
 - One optional field in the schema, the workspace model, the DSL (`addAttribute(name, { optional: true })`), `toSchema`/`fromSchema`, and the regenerated JSON schema; `feat!` because the reference models change.
 - Attribute tables on pages and in the generated docs mark an optional attribute; the skill's interview asks "which of these are always present?" once per entity, value object and schema.
 - Reference models set the flag where the source contract or the discovery notes say so, and nowhere else.
+
+## Note (2026-09-08)
+
+Presence is not size. `optional` says whether the attribute is there; a relation's cardinality says how many the list may hold, and a required list may hold none. The coherence rule therefore pairs a required scalar with `1`, an optional scalar with `0..1`, and a list with `*` or `1..*` regardless of presence (card 89). The first rule equated required with non-empty and made petstore misstate its own contract.

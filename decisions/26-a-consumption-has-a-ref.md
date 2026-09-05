@@ -20,3 +20,7 @@ A consumption is a strategic intent: it carries a pattern, comments and a dispos
 
 - Core: `Consumption.ref`, the lookup by ref, the four rules' `ref`, tests. Extension: ref-to-position for array elements under `consumes`. Pages: the row anchor and the flash on arrival that other leaf refs already have. Skill reference: the grammar line.
 - No schema change; a `feat`, not `feat!`.
+
+## Amendment (2026-09-08)
+
+One consumer may consume one consumable more than once when the exchanges differ, an archive that takes a provider's response as it is and a decision that translates it through an anti-corruption layer, each with its own pattern and disposition. The pair alone then no longer identifies a consumption: every such consumption names a non-empty, mutually disjoint `by`, `consumption-once` asks for exactly that, and the ref appends the first caller's id only when the pair is not unique, so the single-consumption ref stays as it was (card 89).
