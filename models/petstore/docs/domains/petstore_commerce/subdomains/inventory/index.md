@@ -15,7 +15,6 @@ Projection for /store/inventory (status→count)
 ## Context Relationships
 | Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |
-| Catalog BC | customer-supplier | Sales BC | open-host-service | anti-corruption-layer |
 | Sales BC | upstream-downstream | Inventory BC | published-language | conformist |
 | Catalog BC | shared-kernel | Inventory BC | - | - |
 

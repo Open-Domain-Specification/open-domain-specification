@@ -127,26 +127,25 @@ export class ODSContextMap {
 	}
 
 	/**
-	 * The contexts the map will draw: the ones in scope, plus the ones the
-	 * consumption and identity walks reach out to. A scope narrower than the
-	 * workspace — a subdomain page — still follows traffic past its own
-	 * contexts, so those further contexts are on the map and the pairs among
-	 * them are drawn.
+	 * The pairs of contexts the walk found a crossing between: a consumption
+	 * from one to the other, or an identity in one naming the other's entity.
+	 * These are the pairs the map would otherwise draw as implied.
 	 */
-	private static reached(
+	private static crossedPairs(
 		contexts: BoundedContext[],
 		consumptions: Consumption[],
-	): Set<BoundedContext> {
-		const reached = new Set(contexts);
+	): Set<string> {
+		const crossed = new Set<string>();
 		for (const consumption of consumptions) {
-			reached.add(consumption.consumable.provider.boundedcontext);
-			reached.add(consumption.consumer.boundedcontext);
+			const upstream = consumption.consumable.provider.boundedcontext;
+			const downstream = consumption.consumer.boundedcontext;
+			if (upstream === downstream) continue;
+			crossed.add(pairKey(upstream, downstream));
 		}
 		for (const crossing of identityCrossings(contexts)) {
-			reached.add(crossing.from);
-			reached.add(crossing.to);
+			crossed.add(pairKey(crossing.from, crossing.to));
 		}
-		return reached;
+		return crossed;
 	}
 
 	private static fromScope(scope: ScopeManager, consumptions: Consumption[]) {
@@ -154,16 +153,18 @@ export class ODSContextMap {
 			(it): it is BoundedContext => it instanceof BoundedContext,
 		);
 		const workspace = contexts[0]?.workspace;
-		// A relationship is kept when it touches the scope, and also when both
-		// its ends are on the map anyway: the walk reached them, so leaving the
-		// declaration behind would draw the pair as implied and tell a reader
-		// the workspace never said how those two stand to each other.
-		const reached = ODSContextMap.reached(contexts, consumptions);
+		// A relationship is kept when it touches the scope, and also when the
+		// walk found a crossing between its two ends: that pair would be drawn
+		// as implied, and the declaration says the same edge better. A pair the
+		// walk exchanges nothing between is left off — this scope has no edge
+		// there to replace, and drawing one would put a piece of a neighbouring
+		// map on this page.
+		const crossed = ODSContextMap.crossedPairs(contexts, consumptions);
 		const relationships =
 			workspace?.relationships.filter(
 				(it) =>
 					contexts.some((bc) => it.involves(bc)) ||
-					(reached.has(it.source) && reached.has(it.target)),
+					crossed.has(pairKey(it.source, it.target)),
 			) ?? [];
 		return new ODSContextMap(contexts, relationships, consumptions);
 	}
