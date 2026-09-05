@@ -22,3 +22,7 @@ Decision 15 said a rule that spans aggregates is not an invariant but a domain s
 - Schema, workspace model, DSL (`bc.addInvariant(...)`), `toSchema`/`fromSchema`, JSON schema; `feat!`. The eleven cross-instance invariants in the reference models move to their contexts and name their guards.
 - Context page gains an Invariants section in the aggregate page's shape; the invariant page says which kind it is; the doc generator and the skill follow; the interview asks "is this true of one of these, or of all of them together?".
 - Decision 15's "a rule that spans aggregates is not an invariant" section is replaced by a pointer here.
+
+## Note (2026-09-07)
+
+Card 68 found five cross-instance rules in the reference models, not the eleven this record guessed. The other six, an order approved only while its pet is available, a session started only with an entitlement, a payment initiated only within the available balance, are rules checked against another context's data before acting. They are preconditions of an operation, held at the moment of the call and named by the aggregate invariant that constrains that operation (decision 19), and they stay where they are. A context invariant is the rule no single instance can keep.
