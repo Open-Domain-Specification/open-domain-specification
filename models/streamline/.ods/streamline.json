@@ -706,32 +706,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/studio_production/aggregates/production/provides/master_delivered"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/encoding_completed"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/provides/license_window_opened"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/provides/license_window_expired"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "title": {
               "name": "Title",
@@ -963,6 +938,30 @@
             }
           },
           "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/studio_production/aggregates/production/provides/master_delivered"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/encoding_completed"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/provides/license_window_opened"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/licensing/aggregates/license_deal/provides/license_window_expired"
+              },
+              "pattern": "anti-corruption-layer"
+            },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/encoding/services/encoding_api/provides/submit_encode"
@@ -1226,14 +1225,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/studio_production/aggregates/production/provides/master_delivered"
-              },
-              "pattern": "conformist"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "encoding_job": {
               "name": "EncodingJob",
@@ -1360,7 +1352,14 @@
               ]
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/studio_production/aggregates/production/provides/master_delivered"
+              },
+              "pattern": "conformist"
+            }
+          ]
         },
         "per_title_ladder_planner": {
           "name": "PerTitleLadderPlanner",
@@ -1521,38 +1520,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/catalogue/services/catalogue_api/provides/get_title"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/edge_delivery/services/edge_api/provides/resolve_edge"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/devices/aggregates/device/provides/device_certified"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/billing_&_plans/services/billing_api/provides/get_entitlement"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/ads_tier/services/ads_api/provides/resolve_ad_break"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "playback_session": {
               "name": "PlaybackSession",
@@ -1716,7 +1684,58 @@
               ]
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalogue/services/catalogue_api/provides/get_title"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/playback/services/playback_api/provides/start_playback"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/edge_delivery/services/edge_api/provides/resolve_edge"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/playback/services/playback_api/provides/start_playback"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/devices/aggregates/device/provides/device_certified"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/billing_&_plans/services/billing_api/provides/get_entitlement"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/playback/services/playback_api/provides/start_playback"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/ads_tier/services/ads_api/provides/resolve_ad_break"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/playback/services/playback_api/provides/start_playback"
+                }
+              ]
+            }
+          ]
         },
         "adaptive_bitrate_selector": {
           "name": "AdaptiveBitrateSelector",
@@ -1931,14 +1950,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/encoding_completed"
-              },
-              "pattern": "conformist"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "edge_appliance": {
               "name": "EdgeAppliance",
@@ -2047,7 +2059,14 @@
               }
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/encoding_completed"
+              },
+              "pattern": "conformist"
+            }
+          ]
         }
       },
       "policies": {
@@ -2375,26 +2394,7 @@
               "internal": true
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_stopped"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/bookmark_updated"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/profile_created"
-              },
-              "pattern": "conformist"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "taste_profile": {
               "name": "TasteProfile",
@@ -2545,7 +2545,26 @@
               }
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_stopped"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/bookmark_updated"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/profile_created"
+              },
+              "pattern": "conformist"
+            }
+          ]
         }
       },
       "policies": {
@@ -2693,14 +2712,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/identity/aggregates/account/provides/account_created"
-              },
-              "pattern": "conformist"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "household": {
               "name": "Household",
@@ -2852,7 +2864,14 @@
               ]
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/identity/aggregates/account/provides/account_created"
+              },
+              "pattern": "conformist"
+            }
+          ]
         }
       },
       "policies": {
@@ -3040,30 +3059,7 @@
               "internal": true
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/household_created"
-              },
-              "pattern": "conformist",
-              "by": [
-                {
-                  "$ref": "#/boundedcontexts/billing_&_plans/policies/await_plan_on_household"
-                }
-              ]
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/disc_rental_(legacy)/aggregates/rental_queue/provides/disc_rental_invoiced"
-              },
-              "pattern": "anti-corruption-layer",
-              "by": [
-                {
-                  "$ref": "#/boundedcontexts/billing_&_plans/policies/add_disc_charge_to_bill"
-                }
-              ]
-            }
-          ],
+          "consumes": [],
           "entities": {
             "subscription": {
               "name": "Subscription",
@@ -3240,7 +3236,30 @@
               }
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/household_created"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/billing_&_plans/policies/await_plan_on_household"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/disc_rental_(legacy)/aggregates/rental_queue/provides/disc_rental_invoiced"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/billing_&_plans/policies/add_disc_charge_to_bill"
+                }
+              ]
+            }
+          ]
         }
       },
       "policies": {
@@ -3565,20 +3584,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_started"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/billing_&_plans/services/billing_api/provides/get_entitlement"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "ad_break": {
               "name": "AdBreak",
@@ -3736,7 +3742,25 @@
               }
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_started"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/billing_&_plans/services/billing_api/provides/get_entitlement"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/ads_tier/services/ads_api/provides/resolve_ad_break"
+                }
+              ]
+            }
+          ]
         }
       },
       "policies": {

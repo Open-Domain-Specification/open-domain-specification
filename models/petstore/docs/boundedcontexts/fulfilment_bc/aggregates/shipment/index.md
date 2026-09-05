@@ -40,9 +40,5 @@ The journey of one approved order to its owner. Attempts live inside it because 
 
 
 ## Consumes
-
-### OrderApproved [conformist]
-Order approved (status=approved); Inventory and Fulfilment both react
-- **Provider**: [Order](../../../sales_bc/aggregates/order/index.md)
-
+> No consumptions.
 	

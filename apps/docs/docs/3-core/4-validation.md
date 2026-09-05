@@ -35,6 +35,7 @@ severity, a rule id, a message and the ref of the element concerned.
 | `consumption-by-resolves` | error | a consumption's `by` names the consumer's own operations, or policies of the consumer's context; a consumption belongs to the consumer, so what makes it is the consumer's own |
 | `policy-in-context` | error | a policy issues operations of its own context; it may still react to another context's event |
 | `aggregate-not-public` | error | an aggregate's operations declare no upstream role and are consumed only inside their own context |
+| `aggregate-consumes-inside` | error | an aggregate consumes only consumables of its own bounded context; a foreign operation or event is consumed by an application service or a policy |
 | `domain-service-internal` | error | a domain service's operations declare no upstream role and are consumed only inside their own context |
 | `schema-context` | error | a schema named by a consumable's payload, by its `returns` or by a nested attribute belongs to the naming element's own context, or to one it shares a kernel with |
 | `returns-on-operation` | error | only an operation declares `returns`; an event has no caller to answer |

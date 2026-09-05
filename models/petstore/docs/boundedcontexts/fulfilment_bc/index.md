@@ -86,6 +86,6 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 | [OrderApp](../sales_bc/services/order_app/index.md) | - | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
 | [OrderApp](../sales_bc/services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
 | [OrderApp](../sales_bc/services/order_app/index.md) | - | - | Shipment | ShipmentDelivered | published-language |
-| [Shipment](aggregates/shipment/index.md) | - | conformist | Order | OrderApproved | published-language |
+| [ShipmentApp](services/shipment_app/index.md) | Plan dispatch on approval | conformist | Order | OrderApproved | published-language |
 
 

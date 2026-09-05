@@ -309,18 +309,19 @@ export function makeRichTestWs() {
 		})
 		.on(orderPlaced)
 		.then(raiseInvoice);
-	// Only the policy reaches for the other context's event; nothing else in
-	// the aggregate touches it, and that is what `by` says.
-	const invoiceConsumesOrderPlaced = invoiceAgg.consumes(orderPlaced, {
-		pattern: "conformist",
-		by: [invoiceOnOrderPlaced],
-	});
 	const invoiceApp = invoicingBc.addService("Invoice App", {
 		description: "Invoice application service",
 		type: "application",
 	});
 	const invoiceAppConsumesPlaceOrder = invoiceApp.consumes(placeOrder, {
 		pattern: "anti-corruption-layer",
+	});
+	// The context takes the other one's event in at its own boundary, not on
+	// the aggregate (decision 17): only the policy reaches for it, nothing else
+	// in Invoicing touches it, and that is what `by` says.
+	const invoiceConsumesOrderPlaced = invoiceApp.consumes(orderPlaced, {
+		pattern: "conformist",
+		by: [invoiceOnOrderPlaced],
 	});
 	// Both of those crossings need a relationship saying on what terms
 	// (`relationship-declared`), and it carries every role they play.

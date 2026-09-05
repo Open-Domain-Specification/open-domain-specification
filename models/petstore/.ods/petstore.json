@@ -1430,14 +1430,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_approved"
-              },
-              "pattern": "conformist"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "shipment": {
               "name": "Shipment",
@@ -1613,6 +1606,17 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/confirm_delivery"
               }
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_approved"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/fulfilment_bc/policies/plan_dispatch_on_approval"
+                }
+              ]
             }
           ]
         }
