@@ -1,4 +1,11 @@
 <script lang="ts">
+	/**
+	 * The zoom floor bounds how far the panel-aware fit can pull a wide map in.
+	 * At 0.2 NorthBank's fifteen contexts no longer fit beside the legend in a
+	 * narrow webview and a node slid under the options panel; 0.1 leaves the fit
+	 * room on every shipped model, and fullscreen and zoom are there for reading.
+	 */
+	const MIN_ZOOM = 0.1;
 import {
 	Background,
 	Controls,
@@ -67,7 +74,7 @@ const refit = () => {
 </script>
 
 <div class="interactive" class:fullscreen={fullscreen.active} bind:this={container}>
-	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={0.2} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} onnodeclick={({ node }) => { if (node.id.startsWith("#")) { fullscreen.exit(); location.hash = node.id; } }} onnodedrag={refit} onnodedragstop={refit}>
+	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={MIN_ZOOM} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} onnodeclick={({ node }) => { if (node.id.startsWith("#")) { fullscreen.exit(); location.hash = node.id; } }} onnodedrag={refit} onnodedragstop={refit}>
 		<Background />
 		{#if sketch}<SketchBackdrop {nodes} groupLabels={labels} />{/if}
 		<Controls showLock={false} />
