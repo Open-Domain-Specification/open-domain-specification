@@ -13,10 +13,16 @@ import {
 	schemaRef,
 	serviceRef,
 	termRef,
+	valueObjectInvariantRef,
 	valueObjectRef,
 	type WorkspaceSchema,
 } from "./schema";
-import type { Aggregate, AttributeOwner, Service, Workspace } from "./workspace";
+import type {
+	Aggregate,
+	AttributeOwner,
+	Service,
+	Workspace,
+} from "./workspace";
 import {
 	BoundedContext,
 	Entity,
@@ -254,11 +260,20 @@ function addBoundedContext(
 	)) {
 		// What it is a kind of is joined later: the parent may be in a context
 		// this pass has not reached (linkSpecialisations).
-		boundedcontext.addValueObject(valueobjectSchema.name, {
+		const valueobject = boundedcontext.addValueObject(valueobjectSchema.name, {
 			...valueobjectSchema,
 			id: valueobjectId,
 			specialises: undefined,
 		});
+
+		for (const [invariantId, invariantSchema] of Object.entries(
+			valueobjectSchema.invariants,
+		)) {
+			valueobject.addInvariant(invariantSchema.name, {
+				...invariantSchema,
+				id: invariantId,
+			});
+		}
 	}
 
 	for (const [aggregateId, aggregateSchema] of Object.entries(
@@ -362,6 +377,20 @@ function linkReferences(
 					workspace.getEntityOrValueobjectByRefOrThrow(relation.target.$ref),
 					relation,
 				);
+			}
+
+			// A value's rule is about its own attributes, so it is wired once
+			// they exist, the way an aggregate's is below.
+			for (const [invariantId, invariantSchema] of Object.entries(
+				valueobjectSchema.invariants,
+			)) {
+				const invariant = workspace.getInvariantByRefOrThrow(
+					valueObjectInvariantRef(boundedcontextId, valueobjectId, invariantId)
+						.$ref,
+				);
+				for (const { $ref } of invariantSchema.constrains) {
+					invariant.constrains(workspace.getConstrainableByRefOrThrow($ref));
+				}
 			}
 		}
 

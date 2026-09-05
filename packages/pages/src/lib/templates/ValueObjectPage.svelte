@@ -3,7 +3,8 @@ export const sections = [
 	{ id: "attributes", label: "Attributes" },
 	{ id: "usage", label: "Used as a type by" },
 	{ id: "relations", label: "Relations" },
-	{ id: "invariants", label: "Constrained by" },
+	{ id: "invariants", label: "Invariants" },
+	{ id: "constrained-by", label: "Constrained by" },
 	{ id: "language", label: "Language" },
 ];
 </script>
@@ -38,7 +39,11 @@ const bc = $derived(v.boundedcontext);
 // shared kernel, so the kinds are looked up across the workspace, not here.
 const kinds = $derived(v.kinds);
 const usages = $derived(usagesOf(ws, v));
-const invariants = $derived(
+// The value's own rules, which hold by construction, and separately the rules
+// of the aggregates that hold one, which name this value as part of a wider
+// statement (decision 27).
+const invariants = $derived([...v.invariants.values()]);
+const constrainedBy = $derived(
 	[...bc.aggregates.values()]
 		.flatMap((a) => [...a.invariants.values()])
 		.filter((i) => i.targets.includes(v)),
@@ -130,9 +135,19 @@ const relationColumns: Column[] = [
 </Section>
 
 <InvariantsSection
+	title="Invariants"
 	{invariants}
-	lead="Invariants that name this value object."
-	emptyText="No invariant names this value object."
+	constrains
+	lead="Rules this value keeps by being constructed at all: one that breaks them is never made, so nothing guards them."
+	emptyText="This value keeps no rule of its own."
+/>
+
+<InvariantsSection
+	id="constrained-by"
+	title="Constrained by"
+	invariants={constrainedBy}
+	lead="Rules of the aggregates that hold this value, which name it as part of a wider statement."
+	emptyText="No aggregate's rule names this value object."
 />
 
 <LanguageSection target={v} />

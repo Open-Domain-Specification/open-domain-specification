@@ -90,6 +90,7 @@ exports[`Visitor Example > should compile  1`] = `
         "slug": {
           "attributes": {},
           "description": "URL-safe identifier",
+          "invariants": {},
           "name": "Slug",
           "relations": [],
           "specialises": undefined,
@@ -183,6 +184,7 @@ exports[`Visitor Example > should compile  1`] = `
         "money": {
           "attributes": {},
           "description": "Amount + currency",
+          "invariants": {},
           "name": "Money",
           "relations": [],
           "specialises": undefined,

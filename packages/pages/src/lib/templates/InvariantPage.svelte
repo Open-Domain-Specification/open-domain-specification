@@ -9,6 +9,7 @@ export const sections = [
 <script lang="ts">
 import {
 	Aggregate,
+	BoundedContext,
 	Consumable,
 	type Invariant,
 } from "@open-domain-specification/core";
@@ -30,13 +31,24 @@ import Section from "../organisms/Section.svelte";
 /** One rule that must hold after every change, and the elements it is about. */
 const { invariant: i }: { invariant: Invariant } = $props();
 const model = useModel();
-// A rule belongs either to one aggregate, where it holds on every save, or to
-// the whole context, where it holds across instances and something checks it
-// before acting (decision 27). The header says which, because the two promise
-// different things.
+// A rule belongs to a value object, where it holds by construction, to one
+// aggregate, where it holds on every save, or to the whole context, where it
+// holds across instances and something checks it before acting (decision 27).
+// The header says which, because the three promise different things.
 const owner = $derived(i.owner);
 const inAggregate = $derived(owner instanceof Aggregate);
+const inContext = $derived(owner instanceof BoundedContext);
 const KIND = {
+	value: {
+		label: "value invariant",
+		title:
+			"Holds by construction of the value: one that breaks it is never made.",
+		lead: "The attributes of this value the rule is about. A value knows nothing outside itself, so the list goes no further.",
+		guards:
+			"Nothing guards a value's rule. It is kept by refusing to construct a value that breaks it, which is why no operation appears here.",
+		empty:
+			"No operation guards this rule, and none needs to: the value is never made without it.",
+	},
 	aggregate: {
 		label: "aggregate invariant",
 		title: "Holds inside the aggregate's boundary, every time it is saved.",
@@ -72,9 +84,9 @@ const columns: Column[] = [
 
 <PageHeader
 	description={i.description}
-	crumbs={owner instanceof Aggregate
-		? ownerCrumbs(model.workspace, owner)
-		: contextCrumbs(model.workspace, owner)}
+	crumbs={owner instanceof BoundedContext
+		? contextCrumbs(model.workspace, owner)
+		: ownerCrumbs(model.workspace, owner)}
 >
 	{#snippet title()}<Lockup kind="invariant" name={i.name} id={i.id} detail="Invariant" size="title" />{/snippet}
 	{#snippet meta()}
@@ -85,8 +97,10 @@ const columns: Column[] = [
 			<Definition term="Enforced by">
 				{#if inAggregate}
 					<Lockup kind="aggregate" name={owner.name} ref={owner.ref} />
-				{:else}
+				{:else if inContext}
 					<Lockup kind="boundedcontext" name={owner.name} ref={owner.ref} />
+				{:else}
+					<Lockup kind="valueobject" name={owner.name} ref={owner.ref} />
 				{/if}
 			</Definition>
 		</DefinitionList>
@@ -105,7 +119,9 @@ const columns: Column[] = [
 		rows={targets}
 		empty={inAggregate
 			? "Applies to the aggregate as a whole."
-			: "Applies to the context as a whole."}
+			: inContext
+				? "Applies to the context as a whole."
+				: "Applies to the value as a whole."}
 		rowId={(t) => t.ref}
 	>
 		{#snippet cell(t, col)}

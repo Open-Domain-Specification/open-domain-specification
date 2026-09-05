@@ -171,6 +171,13 @@ export function makeRichTestWs() {
 	});
 	money.addAttribute("Amount", { type: "decimal" });
 	money.addAttribute("Currency", { type: "ISO 4217" });
+	// A rule the value keeps by being constructed at all: no save, no guard,
+	// and nothing outside the value in it (decision 27).
+	money
+		.addInvariant("Amount Is Scaled To Its Currency", {
+			description: "The amount carries the number of decimals its currency has",
+		})
+		.constrains(...money.attributes.values());
 	order.addAttribute("Order Id", { type: "OrderId", identity: true });
 	order.addAttribute("Total", { type: "Money", valueobject: money });
 	// A note the customer may or may not leave: the one attribute here that is

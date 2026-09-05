@@ -860,15 +860,13 @@ describe("aggregate-tree", () => {
 		expect(treeRules(ws)).toEqual([]);
 	});
 
-	it("refuses a cycle of includes through two distinct entity types", () => {
+	// A questionnaire's groups contain questions that contain groups, and every
+	// questionnaire is still a finite tree. The model declares types, so the
+	// rule judges no ring among them at all (decision 15, card 82).
+	it("allows two entity types that include each other, because the instances still form a tree", () => {
 		const { ws, root, line } = tidyAggregate();
 		line.includes(root, "back up");
-		expect(treeRules(ws).map((d) => [d.severity, d.message])).toEqual([
-			[
-				"error",
-				'"Line" includes "Order", which already includes "Line" further up aggregate "Order"; with each holding the other there is no whole to start the instance tree from',
-			],
-		]);
+		expect(treeRules(ws)).toEqual([]);
 	});
 
 	it("warns about an entity the root cannot be walked to", () => {
@@ -1018,6 +1016,69 @@ describe("invariant-in-context", () => {
 				rule.ref,
 			],
 		]);
+	});
+});
+
+describe("invariant-in-value-object", () => {
+	const rules = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "invariant-in-value-object");
+
+	/** A context with an IBAN and an account that holds one. */
+	function bank() {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Accounts", { description: "" });
+		const iban = bc.addValueObject("IBAN", { description: "" });
+		const value = iban.addAttribute("value", { type: "string" });
+		const agg = bc.addAggregate("Account", { description: "" });
+		const account = agg.addRootEntity("Account", { description: "" });
+		account.addAttribute("id", { type: "uuid", identity: true });
+		account.addAttribute("iban", { type: "IBAN", valueobject: iban });
+		account.uses(iban, "iban", "1");
+		return { ws, bc, iban, value, agg, account };
+	}
+
+	it("lets a value's rule name its own attributes, and needs no guard", () => {
+		const { ws, iban, value } = bank();
+		iban.addInvariant("Checksum Valid", { description: "" }).constrains(value);
+		expect(rules(ws)).toEqual([]);
+		expect(
+			ws.validate().filter((d) => d.rule === "context-invariant-guarded"),
+		).toEqual([]);
+	});
+
+	it("refuses a value's rule that reaches for the entity holding it", () => {
+		const { ws, iban, account } = bank();
+		const rule = iban
+			.addInvariant("Reaches Out", { description: "" })
+			.constrains(account);
+		expect(rules(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"error",
+				'Invariant "Reaches Out" of value object "IBAN" constrains "Account", which is not an attribute of "IBAN"; a value\'s rule holds by construction of that value and reaches nothing outside it',
+				rule.ref,
+			],
+		]);
+	});
+
+	it("refuses a value's rule that names an operation, since nothing guards a value", () => {
+		const { ws, iban, agg } = bank();
+		const open = agg.provides("Open", { description: "", type: "operation" });
+		iban.addInvariant("Guarded", { description: "" }).constrains(open);
+		expect(rules(ws).map((d) => d.message)).toEqual([
+			'Invariant "Guarded" of value object "IBAN" constrains "Open", which is not an attribute of "IBAN"; a value\'s rule holds by construction of that value and reaches nothing outside it',
+		]);
+	});
+
+	it("counts an attribute the value has from what it is a kind of as its own", () => {
+		const { ws, bc, iban, value } = bank();
+		const domestic = bc.addValueObject("Domestic IBAN", {
+			description: "",
+			specialises: iban,
+		});
+		domestic
+			.addInvariant("Home Country", { description: "" })
+			.constrains(value);
+		expect(rules(ws)).toEqual([]);
 	});
 });
 
@@ -1200,10 +1261,96 @@ describe("attribute-relation-coherence", () => {
 
 	it("warns when a list attribute has a single-valued relation", () => {
 		const { ws, root, money } = pair();
-		root.addAttribute("Instalments", { type: "Money[]", valueobject: money });
+		// Optional, so the only thing the two halves disagree about is number.
+		root.addAttribute("Instalments", {
+			type: "Money[]",
+			valueobject: money,
+			optional: true,
+		});
 		root.uses(money, "paid in", "0..1");
 		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
 			'"Order" types attribute "Instalments" as a list ("Money[]") but its "uses" relation to "Money" has cardinality "0..1"',
+		]);
+	});
+
+	it("warns when an optional attribute has a relation that says there is always one", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("Total", {
+			type: "Money",
+			valueobject: money,
+			optional: true,
+		});
+		root.uses(money, "totalled in", "1");
+		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
+			'"Order" types attribute "Total" as optional but its "uses" relation to "Money" has cardinality "1", which says there is always at least one',
+		]);
+	});
+
+	it("warns when a required attribute has a relation that says there may be none", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("Total", { type: "Money", valueobject: money });
+		root.uses(money, "totalled in", "0..1");
+		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
+			'"Order" types attribute "Total" as required but its "uses" relation to "Money" has cardinality "0..1", which says there may be none',
+		]);
+	});
+
+	it("accepts an optional attribute against 0..1 and a required list against 1..*", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("Deposit", {
+			type: "Money",
+			valueobject: money,
+			optional: true,
+		});
+		root.uses(money, "Deposit", "0..1");
+		root.addAttribute("Instalments", { type: "Money[]", valueobject: money });
+		root.uses(money, "Instalments", "1..*");
+		expect(coherenceRules(ws)).toEqual([]);
+	});
+
+	// Codex's case: a customer's current address and its address history are
+	// both Addresses, and the two halves are paired by label.
+	it("matches an attribute to its relation by label when one value object is used twice", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("currentAddress", { type: "Money", valueobject: money });
+		root.addAttribute("addressHistory", {
+			type: "Money[]",
+			valueobject: money,
+			optional: true,
+		});
+		root.uses(money, "currentAddress", "1");
+		root.uses(money, "addressHistory", "*");
+		expect(coherenceRules(ws)).toEqual([]);
+	});
+
+	it("reads each labelled relation's own cardinality, not the first one it finds", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("currentAddress", { type: "Money", valueobject: money });
+		root.addAttribute("addressHistory", {
+			type: "Money[]",
+			valueobject: money,
+			optional: true,
+		});
+		root.uses(money, "currentAddress", "1");
+		root.uses(money, "addressHistory", "0..1");
+		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
+			'"Order" types attribute "addressHistory" as a list ("Money[]") but its "uses" relation to "Money" has cardinality "0..1"',
+		]);
+	});
+
+	it("reports an attribute that no label picks out among several relations, and the relation with it", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("currentAddress", { type: "Money", valueobject: money });
+		root.addAttribute("addressHistory", {
+			type: "Money[]",
+			valueobject: money,
+			optional: true,
+		});
+		root.uses(money, "currentAddress", "1");
+		root.uses(money, "lived at", "*");
+		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
+			'"Order" types attribute "addressHistory" by value object "Money", and 2 "uses" relations point at "Money" with none of them labelled "addressHistory"; where one value object is used twice the label says which relation belongs to which attribute',
+			'"Order" uses "Money" 2 times and this relation is labelled "lived at", which names no attribute of "Order" typed by "Money"; where one value object is used twice the label says which relation belongs to which attribute',
 		]);
 	});
 
@@ -1368,11 +1515,12 @@ describe("specialisation", () => {
 	it("reads an inherited relation and an inherited attribute as the kind's own", () => {
 		const { ws, account, loan, money } = accounts();
 		account.addAttribute("Balance", { type: "Money", valueobject: money });
-		account.uses(money, "held in", "1");
+		account.uses(money, "Balance", "1");
 		// The kind adds an attribute typed by a value object its parent already
-		// uses, and a relation to one its parent's attribute already names.
+		// uses, and a relation to one its parent's attribute already names. The
+		// kind holds two of each in all, so the labels pair them.
 		loan.addAttribute("Arrears", { type: "Money", valueobject: money });
-		loan.uses(money, "in arrears of", "1");
+		loan.uses(money, "Arrears", "1");
 		expect(
 			ws.validate().filter((d) => d.rule === "attribute-relation-coherence"),
 		).toEqual([]);
@@ -2614,7 +2762,7 @@ describe("relationship-cycle", () => {
 		expect(cycles(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 			[
 				"warning",
-				'Calls run in a cycle: "A" -> "B" -> "C" -> "A"; each of these contexts shapes its model around the next, so every model on the ring is shaped around one that is shaped around itself and none can change first. Declare a partnership where two of them really do move as one, or reverse a dependency by turning that call into an event the other side reacts to',
+				'Calls run in a cycle: "A" -> "B" -> "C" -> "A"; each of these contexts calls the next, so all of them depend on each other\'s contracts. Put an anti-corruption layer on one of the steps, so that side translates and is free to change; or declare a partnership where two of them really do move as one; or reverse a dependency by turning that call into an event the other side reacts to',
 				ab.ref,
 			],
 		]);
@@ -2664,6 +2812,45 @@ describe("relationship-cycle", () => {
 		a.bc.upstreamOf(b.bc, {});
 		b.bc.upstreamOf(a.bc, {});
 		expect(cycles(ws)).toEqual([]);
+	});
+
+	// Decision 20's 2026-09-08 amendment: an anti-corruption layer is where one
+	// side's contract stops, so a pair that calls each other through one is
+	// free to change and is not a ring.
+	it("does not count a step whose downstream declares an anti-corruption layer", () => {
+		const { ws, a, b, step } = three();
+		step(a, b, "operation");
+		const back = b.app.provides("B to A operation", {
+			description: "",
+			type: "operation",
+		});
+		a.app.consumes(back, { pattern: "anti-corruption-layer" });
+		b.bc.upstreamOf(a.bc, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		expect(cycles(ws)).toEqual([]);
+	});
+
+	it("still reports the ring when the layer is on a step that is not part of it", () => {
+		const { ws, a, b, c, step } = three();
+		step(a, b, "operation");
+		step(b, c, "operation");
+		step(c, a, "operation");
+		// A translates what it consumes from C's neighbour, not from C.
+		const d = ws.addBoundedContext("D", { description: "" });
+		const app = d.addService("D App", { description: "", type: "application" });
+		a.app.consumes(
+			app.provides("D op", { description: "", type: "operation" }),
+			{
+				pattern: "anti-corruption-layer",
+			},
+		);
+		d.upstreamOf(a.bc, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		expect(cycles(ws)).toHaveLength(1);
 	});
 
 	it("counts customer-supplier as directed too, so a mixed ring still closes", () => {
@@ -2717,8 +2904,8 @@ describe("relationship-cycle", () => {
 				.sort(),
 		).toEqual(
 			[
-				'Calls run in a cycle: "A" -> "B" -> "C" -> "A"; each of these contexts shapes its model around the next, so every model on the ring is shaped around one that is shaped around itself and none can change first. Declare a partnership where two of them really do move as one, or reverse a dependency by turning that call into an event the other side reacts to',
-				'Calls run in a cycle: "B" -> "C" -> "B"; each of these contexts shapes its model around the next, so every model on the ring is shaped around one that is shaped around itself and none can change first. Declare a partnership where two of them really do move as one, or reverse a dependency by turning that call into an event the other side reacts to',
+				'Calls run in a cycle: "A" -> "B" -> "C" -> "A"; each of these contexts calls the next, so all of them depend on each other\'s contracts. Put an anti-corruption layer on one of the steps, so that side translates and is free to change; or declare a partnership where two of them really do move as one; or reverse a dependency by turning that call into an event the other side reacts to',
+				'Calls run in a cycle: "B" -> "C" -> "B"; each of these contexts calls the next, so all of them depend on each other\'s contracts. Put an anti-corruption layer on one of the steps, so that side translates and is free to change; or declare a partnership where two of them really do move as one; or reverse a dependency by turning that call into an event the other side reacts to',
 			].sort(),
 		);
 	});

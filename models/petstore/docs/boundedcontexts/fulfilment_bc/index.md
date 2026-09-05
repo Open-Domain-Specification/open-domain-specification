@@ -42,10 +42,10 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 > No invariants across aggregates.
 
 ## Value Objects
-| Name | Description | Attributes | Used by |
-| --- | --- | --- | --- |
-| TrackingNumber | Carrier reference; a value because two shipments never share one | value: `string` | Shipment |
-| ShipmentStatus | planned, in-transit or delivered | value: `'planned' | 'in-transit' | 'delivered'` | Shipment |
+| Name | Description | Attributes | Invariants | Used by |
+| --- | --- | --- | --- | --- |
+| TrackingNumber | Carrier reference; a value because two shipments never share one | value: `string` | - | Shipment |
+| ShipmentStatus | planned, in-transit or delivered | value: `'planned' | 'in-transit' | 'delivered'` | - | Shipment |
 
 
 ## Schemas

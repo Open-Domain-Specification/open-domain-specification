@@ -72,8 +72,8 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
 - Every required collection is present even when empty. A context always has `aggregates`,
   `services`, `policies`, `processes`, `glossary`, `valueobjects`, `schemas`, `invariants`
   and `subdomains`;
-  an aggregate always has `entities`, `invariants`, `provides`, `consumes`; an entity or value
-  object always has `attributes` and `relations`. See `references/model-reference.md`.
+  an aggregate always has `entities`, `invariants`, `provides`, `consumes`; an entity always
+  has `attributes` and `relations`, and a value object those and `invariants`. See `references/model-reference.md`.
 - Every `$ref` resolves to an element that exists. A dangling ref is a load failure, not a
   warning: the whole file stops loading.
 - Consumables (events and operations) live only under `provides` of an aggregate or a
@@ -84,10 +84,12 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   and relation of that one, plus its own, and it never repeats one of them. An entity is a kind
   of an entity of its own aggregate and is never itself `root`; a value object is a kind of one
   its own context declares or borrows over a `shared-kernel`.
-- An invariant belongs to an aggregate when it holds inside that boundary on every save, and to
-  the context when it holds across instances or aggregates — uniqueness, a quota, a limit. A
-  context's invariant names at least one operation of the context that checks it before acting,
-  and reaches no further than that context.
+- An invariant belongs to a value object when it holds by construction of the value — an IBAN's
+  checksum, a Money's single currency — and then it constrains that value's own attributes and
+  nothing else, and needs no guard. It belongs to an aggregate when it holds inside that
+  boundary on every save, and to the context when it holds across instances or aggregates —
+  uniqueness, a quota, a limit. A context's invariant names at least one operation of the
+  context that checks it before acting, and reaches no further than that context.
 - A payload schema belongs to the context that publishes the consumable. A value object or a
   schema may be named across a boundary only where the two contexts declare a `shared-kernel`
   relationship.

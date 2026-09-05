@@ -163,3 +163,13 @@ Rejected
   name together), which is the Swagger shape; no pet owns or edits a category.
 - The discovery record is synthetic: it says so in its first paragraph. The source is a
   specification, not a client, and the record does not pretend otherwise.
+
+## 10. Optionality against cardinality (card 82)
+
+`attribute-relation-coherence` now reads an attribute's `optional` against its relation's
+cardinality, and it caught two contradictions here. `Pet.status` was optional — the v3
+contract does not require it — beside a `has-status` relation of cardinality `1`, which says
+every pet always has one. The relation was the wrong half: it is `0..1`, and a pet with no
+status is simply not listed by `findByStatus` and not counted by Inventory. `Order.shipDate`
+was required beside a `ships-on` of `0..1`; there the attribute was the wrong half, since
+Fulfilment sets the date when it plans the dispatch, so it is now optional.

@@ -20,7 +20,11 @@ export function pageRefs(ws: Workspace): string[] {
 	}
 	for (const bc of ws.boundedcontexts.values()) {
 		refs.push(bc.ref);
-		for (const v of bc.valueobjects.values()) refs.push(v.ref);
+		for (const v of bc.valueobjects.values()) {
+			refs.push(v.ref);
+			// A rule the value keeps by construction (decision 27).
+			for (const i of v.invariants.values()) refs.push(i.ref);
+		}
 		// A rule the context keeps rather than one aggregate (decision 27).
 		for (const i of bc.invariants.values()) refs.push(i.ref);
 		for (const a of bc.aggregates.values()) {
@@ -67,7 +71,16 @@ const PAGE_PATTERNS: [
 		(ws, m) => ws.domains.get(m[1])?.subdomains.get(m[2]),
 	],
 	[/^#\/domains\/([^/]+)/, (ws, m) => ws.domains.get(m[1])],
-	// A value object hangs off the context, not the aggregate (decision 16).
+	// A value object hangs off the context, not the aggregate (decision 16), and
+	// its own rules hang off it, so they are matched first.
+	[
+		/^#\/boundedcontexts\/([^/]+)\/valueobjects\/([^/]+)\/invariants\/([^/]+)/,
+		(ws, m) =>
+			ws.boundedcontexts
+				.get(m[1])
+				?.valueobjects.get(m[2])
+				?.invariants.get(m[3]),
+	],
 	[
 		/^#\/boundedcontexts\/([^/]+)\/valueobjects\/([^/]+)/,
 		(ws, m) => ws.boundedcontexts.get(m[1])?.valueobjects.get(m[2]),

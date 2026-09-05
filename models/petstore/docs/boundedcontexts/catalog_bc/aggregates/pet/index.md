@@ -23,7 +23,7 @@ A pet listed in the store. One aggregate because a pet's photos, tags and status
 | [Pet - Pet](./index.md#entities-and-value-objects) | categorized-as | Catalog BC - Category | uses | 0..1 |
 | [Pet - Pet](./index.md#entities-and-value-objects) | tagged-with | Catalog BC - Tag | uses | * |
 | [Pet - Pet](./index.md#entities-and-value-objects) | has-photo | Catalog BC - PhotoUrl | uses | 1..* |
-| [Pet - Pet](./index.md#entities-and-value-objects) | has-status | Catalog BC - PetStatus | uses | 1 |
+| [Pet - Pet](./index.md#entities-and-value-objects) | has-status | Catalog BC - PetStatus | uses | 0..1 |
 
 
 ## Invariants

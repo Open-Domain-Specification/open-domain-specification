@@ -723,10 +723,10 @@
         },
         "InvariantSchema": {
             "additionalProperties": false,
-            "description": "A rule that holds inside an aggregate on every save, or across the instances and aggregates of a bounded context.",
+            "description": "A rule that holds by construction of a value object, inside an aggregate on every save, or across the instances and aggregates of a bounded context.",
             "properties": {
                 "constrains": {
-                    "description": "What this invariant is a rule about: the entities, value objects and\nattributes it holds over, and the operations it constrains, for a rule\nabout what an operation may do. An aggregate's invariant reaches inside\nits own aggregate and the value objects of its context; a context's\ninvariant reaches anywhere in the context and names at least one\noperation that guards it.",
+                    "description": "What this invariant is a rule about: the entities, value objects and\nattributes it holds over, and the operations it constrains, for a rule\nabout what an operation may do. A value object's invariant reaches its\nown attributes and nothing else; an aggregate's reaches inside its own\naggregate and the value objects of its context; a context's reaches\nanywhere in the context and names at least one operation that guards it.",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -1112,6 +1112,13 @@
                 "description": {
                     "type": "string"
                 },
+                "invariants": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/InvariantSchema"
+                    },
+                    "description": "The rules that hold of every instance of this value: a Money's two\namounts in one currency, an IBAN's mod-97 checksum. Such a rule holds by\nconstruction — a value that breaks it is never made — so it constrains\nthis value's own attributes and needs no operation to guard it\n(decision 27).",
+                    "type": "object"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -1138,6 +1145,7 @@
             "required": [
                 "attributes",
                 "description",
+                "invariants",
                 "name",
                 "relations"
             ],

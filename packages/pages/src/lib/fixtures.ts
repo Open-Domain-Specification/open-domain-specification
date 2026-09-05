@@ -127,6 +127,20 @@ export function edgeCaseModel(): Model {
 		description: "Points at the plain entity.",
 	});
 	voLinker.addRelation(ePlain, { relation: "references", cardinality: "1" });
+	// A rule of the value's own, which holds by construction: the third kind of
+	// invariant, and the one no operation guards (decision 27).
+	const voRuled = bcMain.addValueObject("Ruled Value Object", {
+		description: "Keeps a rule of its own.",
+	});
+	const voRuledField = voRuled.addAttribute("Field", { type: "string" });
+	voRuled
+		.addInvariant("Value Invariant", {
+			description: "Holds of every instance of this value.",
+		})
+		.constrains(voRuledField);
+	voRuled.addInvariant("Whole-Value Invariant", {
+		description: "Constrains nothing named in particular.",
+	});
 	aggNoRoot.addInvariant("Whole-Aggregate Invariant", {
 		description: "Constrains nothing named in particular.",
 	});

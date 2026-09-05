@@ -36,12 +36,12 @@ Open-host service for /pet endpoints
 > No invariants across aggregates.
 
 ## Value Objects
-| Name | Description | Attributes | Used by |
-| --- | --- | --- | --- |
-| Category | The kind of animal, e.g. Dogs. A value because two pets in Dogs share one category | id: `int64`, name: `string` | Pet |
-| Tag | Free-form label on a pet | name: `string` | Pet |
-| PhotoUrl | Where a photo of the pet can be fetched | url: `string (URL)` | Pet |
-| PetStatus | Where the pet is in its sales lifecycle. Shared with Inventory, which keys its counts by these values | value: `'available' | 'pending' | 'sold'` | Pet |
+| Name | Description | Attributes | Invariants | Used by |
+| --- | --- | --- | --- | --- |
+| Category | The kind of animal, e.g. Dogs. A value because two pets in Dogs share one category | id: `int64`, name: `string` | - | Pet |
+| Tag | Free-form label on a pet | name: `string` | - | Pet |
+| PhotoUrl | Where a photo of the pet can be fetched | url: `string (URL)` | - | Pet |
+| PetStatus | Where the pet is in its sales lifecycle. Shared with Inventory, which keys its counts by these values | value: `'available' | 'pending' | 'sold'` | - | Pet |
 
 
 ## Schemas

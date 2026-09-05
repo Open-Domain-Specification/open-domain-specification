@@ -19,6 +19,7 @@ import type {
 	Process,
 	Service,
 	Subdomain,
+	ValueObject,
 	Workspace,
 } from "./workspace";
 
@@ -76,7 +77,7 @@ class TestVisitor extends AbstractVisitor implements Visitor {
 		this.visitedEntity(node);
 		super.visitEntity(node);
 	}
-	visitValueObject(node: Entity) {
+	visitValueObject(node: ValueObject) {
 		this.visitedValueObject(node);
 		super.visitValueObject(node);
 	}

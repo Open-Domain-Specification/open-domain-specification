@@ -325,13 +325,21 @@ export class Workspace
 		return valueObject;
 	}
 
-	/** An invariant of any aggregate, or of any context (decision 27). */
+	/**
+	 * An invariant of any value object, aggregate or context: the three kinds a
+	 * rule may be kept true by (decision 27).
+	 */
 	getInvariantByRef(ref: string): Invariant | undefined {
 		const inAggregate = this.findAggregateMember((it) => it.invariants, ref);
 		if (inAggregate) return inAggregate;
 		for (const bc of this.boundedcontexts.values()) {
 			for (const invariant of bc.invariants.values()) {
 				if (invariant.ref === ref) return invariant;
+			}
+			for (const vo of bc.valueobjects.values()) {
+				for (const invariant of vo.invariants.values()) {
+					if (invariant.ref === ref) return invariant;
+				}
 			}
 		}
 	}
@@ -1406,6 +1414,8 @@ export class ValueObject
 	description: string;
 	attributes = new Map<string, Attribute>();
 	relations = [] as EntityRelation[];
+	/** The rules that hold of every instance of this value (decision 27). */
+	invariants = new Map<string, Invariant>();
 	boundedcontext: BoundedContext;
 	/**
 	 * The value object this one is a kind of, when it is one: a nominal ledger
@@ -1478,6 +1488,15 @@ export class ValueObject
 		return new Attribute(this, name, options);
 	}
 
+	/**
+	 * Declares a rule that holds of every instance of this value: chain
+	 * `.constrains(...)` with this value object's own attributes. It needs no
+	 * guard, because a value that breaks it is never constructed.
+	 */
+	addInvariant(name: string, attributes: InvariantAttributes): Invariant {
+		return new Invariant(this, name, attributes);
+	}
+
 	addRelation(
 		target: Entity | ValueObject,
 		attributes: EntityRelationAttributes,
@@ -1539,6 +1558,7 @@ export class ValueObject
 			specialises: this.specialises && { $ref: this.specialises.ref },
 			attributes: asRecords(this.attributes),
 			relations: asArray(this.relations),
+			invariants: asRecords(this.invariants),
 		};
 	}
 }
@@ -1562,11 +1582,12 @@ export function constrainableLabel(target: Constrainable): string {
 }
 
 /**
- * Which boundary a rule is kept true inside: an aggregate's invariant holds
- * inside that aggregate on every save, a context's holds across the instances
- * and aggregates of the context and is checked by an operation (decision 27).
+ * Which boundary a rule is kept true inside: a value object's invariant holds
+ * by construction of the value, an aggregate's holds inside that aggregate on
+ * every save, and a context's holds across the instances and aggregates of the
+ * context and is checked by an operation before it acts (decision 27).
  */
-export type InvariantKind = "aggregate" | "context";
+export type InvariantKind = "value" | "aggregate" | "context";
 
 export class Invariant
 	implements Visitable, SchemaConvertible<ods.InvariantSchema>
@@ -1574,8 +1595,8 @@ export class Invariant
 	id: string;
 	name: string;
 	description: string;
-	/** The aggregate or the bounded context this rule belongs to. */
-	owner: Aggregate | BoundedContext;
+	/** The value object, aggregate or bounded context this rule belongs to. */
+	owner: Aggregate | BoundedContext | ValueObject;
 	/** The elements this invariant constrains. */
 	targets: Constrainable[] = [];
 
@@ -1587,20 +1608,21 @@ export class Invariant
 		return `#/${this.path}`;
 	}
 
-	/** Whether the rule is kept true by one aggregate or by the whole context. */
+	/** Whether the rule is kept true by a value, by one aggregate or by the whole context. */
 	get kind(): InvariantKind {
+		if (this.owner instanceof ValueObject) return "value";
 		return this.owner instanceof Aggregate ? "aggregate" : "context";
 	}
 
-	/** The context the rule belongs to, directly or through its aggregate. */
+	/** The context the rule belongs to, directly or through its owner. */
 	get boundedcontext(): BoundedContext {
-		return this.owner instanceof Aggregate
-			? this.owner.boundedcontext
-			: this.owner;
+		return this.owner instanceof BoundedContext
+			? this.owner
+			: this.owner.boundedcontext;
 	}
 
 	constructor(
-		owner: Aggregate | BoundedContext,
+		owner: Aggregate | BoundedContext | ValueObject,
 		name: string,
 		attributes: InvariantAttributes,
 	) {

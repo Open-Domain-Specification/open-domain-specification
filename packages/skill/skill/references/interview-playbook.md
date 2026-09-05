@@ -118,6 +118,10 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   the transition is made, and the operation then shows the rule it has to uphold. Only an
   operation of the same aggregate; if the user names the API endpoint, the aggregate's own
   operation behind it is the one to name.
+- Per rule: "is this true of the value itself, whatever holds it?" → a rule that is about a
+  value alone — a checksum, a currency, a range — is that value object's:
+  `valueObject.addInvariant(...)`, constraining its own attributes and nothing else. Nothing
+  guards it, because a value that breaks it is never constructed.
 - Per rule: "is this true of one of these, or of all of them together?" → one of them is the
   aggregate's invariant, checked every time that one is saved. All of them together — at most
   one open application per customer, one active offer per seller and SKU, a daily total — is

@@ -583,7 +583,9 @@ catalogueEpisode.addAttribute("playableRenditionSet", {
 catalogueEpisode.addAttribute("rating", {
 	type: "MaturityRating",
 	valueobject: ratingVO,
-	description: "An episode may be rated above its series",
+	optional: true,
+	description:
+		"An episode may be rated above its series; absent means the series rating",
 });
 // Seasons hang off the series, not off every title: a film has none, and the
 // "*" that used to say so said nothing about which titles it meant.
@@ -596,11 +598,14 @@ title.addAttribute("artwork", {
 title.addAttribute("availability", {
 	type: "Availability[]",
 	valueobject: availabilityVO,
-	description: "One entry per territory and window the title is playable in",
+	optional: true,
+	description:
+		"One entry per territory and window the title is playable in; absent while nothing is licensed",
 });
 catalogueEpisode.addAttribute("artwork", {
 	type: "Artwork",
 	valueobject: artworkVO,
+	optional: true,
 	description:
 		"An episode may carry its own still; absent means the series artwork",
 });
@@ -758,7 +763,17 @@ const ladderVO = encodingBC.addValueObject("Ladder", {
 	description:
 		"The planned rungs: bitrate and resolution pairs chosen for this title's content",
 });
-ladderVO.addAttribute("rungs", { type: "{bitrateKbps, height}[]" });
+const ladderRungs = ladderVO.addAttribute("rungs", {
+	type: "{bitrateKbps, height}[]",
+});
+// The value's own rule: a ladder without a low rung is not a ladder anything
+// may be encoded against, and it is refused when the ladder is made.
+ladderVO
+	.addInvariant("LadderHasLowestRung", {
+		description:
+			"Every ladder has a rung under 300 kbit/s so a stream starts on a bad network",
+	})
+	.constrains(ladderRungs);
 job.addAttribute("jobId", { type: "string", identity: true });
 job.addAttribute("titleId", { type: "string", identifies: title });
 job.addAttribute("sourceUri", { type: "string (URI)" });
@@ -776,12 +791,6 @@ job.addAttribute("ladder", {
 });
 job.uses(ladderVO, "planned-as", "1");
 
-jobAgg
-	.addInvariant("LadderHasLowestRung", {
-		description:
-			"Every ladder has a rung under 300 kbit/s so a stream starts on a bad network",
-	})
-	.constrains(ladderVO);
 jobAgg
 	.addInvariant("RenditionsMatchLadder", {
 		description: "A completed job has exactly one rendition per planned rung",
@@ -1377,7 +1386,9 @@ taste.includes(signal, "built-from", "*");
 taste.addAttribute("affinities", {
 	type: "Affinity[]",
 	valueobject: affinityVO,
-	description: "What the profile leans to, strongest first",
+	optional: true,
+	description:
+		"What the profile leans to, strongest first; absent until it has watched something",
 });
 taste.uses(affinityVO, "leans-to", "*");
 // The Title root is in Catalogue, another bounded context, so the signal holds
@@ -1561,6 +1572,7 @@ profile.addAttribute("maturity", {
 profile.addAttribute("pin", {
 	type: "ProfilePin",
 	valueobject: pinVO,
+	optional: true,
 	description: "Absent on an unlocked profile",
 });
 profile.uses(maturityVO, "limited-to", "1");

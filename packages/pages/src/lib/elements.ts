@@ -97,14 +97,20 @@ export function termsEmbodying(
 	return [...termsOf(ws)].filter((t) => t.embodiedBy?.ref === target.ref);
 }
 
+/**
+ * The crumbs above a page owned by an aggregate or by a value object: the
+ * workspace, the context, then the owner. An invariant hangs under any of the
+ * three kinds of owner (decision 27), and the two that are not the context
+ * itself read the same way.
+ */
 export function ownerCrumbs(
 	ws: Workspace,
-	aggregate: Aggregate,
+	owner: Aggregate | ValueObject,
 ): [string, string][] {
 	return [
 		["#", ws.name],
-		[aggregate.boundedcontext.ref, aggregate.boundedcontext.name],
-		[aggregate.ref, aggregate.name],
+		[owner.boundedcontext.ref, owner.boundedcontext.name],
+		[owner.ref, owner.name],
 	];
 }
 

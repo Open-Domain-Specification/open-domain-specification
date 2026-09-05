@@ -182,8 +182,8 @@ describe("ContextPage", () => {
 		expect(screen.getAllByText("not modelled").length).toBeGreaterThan(0);
 		// The policy fires on nothing and issues nothing, the process starts on
 		// nothing, waits for nothing, issues nothing and ends on nothing, and
-		// neither of the context's two value objects is held by an aggregate.
-		expect(screen.getAllByText("nothing").length).toBe(8);
+		// none of the context's three value objects is held by an aggregate.
+		expect(screen.getAllByText("nothing").length).toBe(9);
 		expect(
 			screen.getByText("The schema has no attributes."),
 		).toBeInTheDocument();

@@ -565,17 +565,18 @@ function saysWhatItPointsAt(relation: EntityRelation): boolean {
 
 /**
  * Within one aggregate `includes` says whole-part: it points at entities and
- * `uses` points at value objects (decision 10's conventions), and the parts of
- * one instance form a tree hanging off the root.
+ * `uses` points at value objects (decision 10's conventions), and every entity
+ * is reachable from the root, because the aggregate is loaded and saved as one
+ * thing through it.
  *
- * The claim is about instances, not about types, which is why the rule reads
- * the type graph only for what a type graph can say. A Category whose parts are
- * Categories is the composite pattern, and the instances still form a tree; a
- * Waypoint included by both a FreightLeg and an AccessorialLeg still belongs to
- * one leg at a time. Neither is reported. A ring through two or more distinct
- * types is: there is then no type a reader can name as the one that holds the
- * other, so no instance tree can be laid out either. Relations that leave the
- * aggregate belong to `cross-aggregate-reference`.
+ * What the rule does not do is judge cycles among types. The tree is a tree of
+ * instances and the model declares types, and a ring in the type graph says
+ * nothing conclusive about the instances: a questionnaire's groups contain
+ * questions that contain groups, and every questionnaire is still a finite
+ * tree. Earlier wordings forbade self-inclusion, then mutual inclusion, and
+ * were wrong both times for the same reason (decision 15, card 82); keeping
+ * the instance tree a tree is the code's job, not the model's. Relations that
+ * leave the aggregate belong to `cross-aggregate-reference`.
  */
 const aggregateTree: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -605,19 +606,6 @@ const aggregateTree: Rule = (workspace) => {
 		}
 	}
 	for (const aggregate of aggregatesOf(workspace)) {
-		const children = new Map<Entity, Entity[]>();
-		for (const entity of aggregate.entities.values()) {
-			for (const relation of entity.relations) {
-				if (relation.relation !== "includes") continue;
-				if (!(relation.target instanceof Entity)) continue;
-				if (relation.target.aggregate !== aggregate) continue;
-				// A type that includes itself nests its own instances, so the edge
-				// says nothing about whether the instances form a ring.
-				if (relation.target === entity) continue;
-				append(children, entity, relation.target);
-			}
-		}
-		diagnostics.push(...includesCycles(aggregate, children));
 		diagnostics.push(...orphanEntities(aggregate));
 	}
 	return diagnostics;
@@ -630,9 +618,7 @@ const aggregateTree: Rule = (workspace) => {
  *
  * A kind is reached wherever the entity it is a kind of is reached, because
  * an instance of the kind is an instance of that entity — a kind of the root
- * is reached through the root (decision 22). Specialisation is still not
- * containment: it is not an edge of the `includes` graph the cycle check
- * walks, only a way for a reader to get to the type.
+ * is reached through the root (decision 22).
  */
 function orphanEntities(aggregate: Aggregate): Diagnostic[] {
 	const roots = Array.from(aggregate.entities.values()).filter((e) => e.root);
@@ -663,48 +649,74 @@ function orphanEntities(aggregate: Aggregate): Diagnostic[] {
 }
 
 /**
- * One diagnostic per back edge of an aggregate's `includes` graph between
- * distinct entity types; a type that includes itself never reaches this graph.
+ * The `uses` relations in `relations` that point at `vo`.
+ *
+ * An entity may use one value object twice — a current address and an address
+ * history are both Addresses — so the pair of an attribute and its relation is
+ * a match, not a lookup: with one relation to the value object it is that one,
+ * and with several it is the one whose label is the attribute's name.
  */
-function includesCycles(
-	aggregate: Aggregate,
-	children: Map<Entity, Entity[]>,
+function usesOfValueObject(
+	relations: EntityRelation[],
+	vo: ValueObject,
+): EntityRelation[] {
+	return relations.filter((r) => r.relation === "uses" && r.target === vo);
+}
+
+/**
+ * What one relation says about how many there are, against what the attribute
+ * says: a list-typed attribute is a `*` or a `1..*`, an optional one a `0..1`
+ * or a `*`, and a required one a `1` or a `1..*`. A relation with no
+ * cardinality says nothing and is left alone.
+ */
+function cardinalityDiagnostics(
+	member: Entity | ValueObject,
+	attribute: Attribute,
+	relation: EntityRelation,
 ): Diagnostic[] {
+	const cardinality = relation.cardinality;
+	if (!cardinality) return [];
+	const target = relation.target.name;
+	const says = (what: string) =>
+		`"${member.name}" types attribute "${attribute.name}" ${what} but its "uses" relation to "${target}" has cardinality "${cardinality}"`;
 	const diagnostics: Diagnostic[] = [];
-	const onStack = new Set<Entity>();
-	const walked = new Set<Entity>();
-	const walk = (entity: Entity) => {
-		onStack.add(entity);
-		for (const child of children.get(entity) ?? []) {
-			if (onStack.has(child)) {
-				diagnostics.push({
-					severity: "error",
-					rule: "aggregate-tree",
-					message: `"${entity.name}" includes "${child.name}", which already includes "${entity.name}" further up aggregate "${aggregate.name}"; with each holding the other there is no whole to start the instance tree from`,
-					ref: entity.ref,
-				});
-				continue;
-			}
-			if (!walked.has(child)) walk(child);
-		}
-		onStack.delete(entity);
-		walked.add(entity);
-	};
-	for (const entity of aggregate.entities.values()) {
-		if (!walked.has(entity)) walk(entity);
+	const warn = (message: string) =>
+		diagnostics.push({
+			severity: "warning" as const,
+			rule: "attribute-relation-coherence",
+			message,
+			ref: member.ref,
+		});
+	if (
+		attribute.type.trim().endsWith("[]") &&
+		(cardinality === "1" || cardinality === "0..1")
+	) {
+		warn(says(`as a list ("${attribute.type}")`));
+	}
+	if (attribute.optional && (cardinality === "1" || cardinality === "1..*")) {
+		warn(`${says("as optional")}, which says there is always at least one`);
+	}
+	if (!attribute.optional && (cardinality === "0..1" || cardinality === "*")) {
+		warn(`${says("as required")}, which says there may be none`);
 	}
 	return diagnostics;
 }
 
 /**
  * An attribute typed by a value object and a `uses` relation to it are two
- * halves of the same statement, and a list-typed attribute is a `*` or `1..*`
- * relation.
+ * halves of the same statement, and each half has to say the same about how
+ * many there are and whether there is one at all.
  *
  * The attribute's `type` is free text by decision 15, so the validator does
  * not parse it and never asks it to spell the value object's name. The one
  * exception is the trailing `[]`, the convention the cardinality check reads
- * as "many".
+ * as "many"; `optional` and the relation's cardinality are read as themselves.
+ *
+ * When several relations point at one value object the halves are paired by
+ * label: a customer with a current address and an address history declares two
+ * `uses` relations to Address, and the label of each is the name of the
+ * attribute it belongs to. With a single relation no label is needed, which is
+ * the common case and stays unwritten.
  *
  * Inherited attributes and relations are the subtype's (decision 22): a kind
  * that adds an attribute typed by a value object its parent already uses is
@@ -716,19 +728,14 @@ const attributeRelationCoherence: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const member of modelMembersOf(workspace)) {
 		const context = member.boundedcontext;
-		const usesOf = (relations: EntityRelation[]) =>
-			relations.filter(
-				(r) => r.relation === "uses" && r.target.boundedcontext === context,
-			);
-		const uses = usesOf(member.allRelations);
 		for (const attribute of member.attributes.values()) {
 			const vo = attribute.valueobject;
 			// A relation may not leave the context, so only ask for one that
 			// could exist: a value object reached over a shared kernel is typed
 			// by ref alone.
 			if (!vo || vo.boundedcontext !== context) continue;
-			const relation = uses.find((r) => r.target === vo);
-			if (!relation) {
+			const candidates = usesOfValueObject(member.allRelations, vo);
+			if (candidates.length === 0) {
 				diagnostics.push({
 					severity: "warning",
 					rule: "attribute-relation-coherence",
@@ -737,27 +744,42 @@ const attributeRelationCoherence: Rule = (workspace) => {
 				});
 				continue;
 			}
-			const type = attribute.type.trim();
-			const single =
-				relation.cardinality === "1" || relation.cardinality === "0..1";
-			if (type.endsWith("[]") && single) {
+			const relation =
+				candidates.length === 1
+					? candidates[0]
+					: candidates.find((r) => r.label === attribute.name);
+			if (!relation) {
 				diagnostics.push({
 					severity: "warning",
 					rule: "attribute-relation-coherence",
-					message: `"${member.name}" types attribute "${attribute.name}" as a list ("${attribute.type}") but its "uses" relation to "${vo.name}" has cardinality "${relation.cardinality}"`,
+					message: `"${member.name}" types attribute "${attribute.name}" by value object "${vo.name}", and ${candidates.length} "uses" relations point at "${vo.name}" with none of them labelled "${attribute.name}"; where one value object is used twice the label says which relation belongs to which attribute`,
 					ref: member.ref,
 				});
+				continue;
 			}
+			diagnostics.push(...cardinalityDiagnostics(member, attribute, relation));
 		}
-		for (const relation of usesOf(member.relations)) {
-			const typed = member.allAttributes.some(
-				(a) => a.valueobject === relation.target,
+		for (const relation of member.relations) {
+			if (relation.relation !== "uses") continue;
+			const target = relation.target;
+			if (!(target instanceof ValueObject)) continue;
+			if (target.boundedcontext !== context) continue;
+			const typed = member.allAttributes.filter(
+				(a) => a.valueobject === target,
 			);
-			if (typed) continue;
+			const siblings = usesOfValueObject(member.allRelations, target);
+			const matched =
+				siblings.length === 1
+					? typed.length > 0
+					: typed.some((a) => a.name === relation.label);
+			if (matched) continue;
 			diagnostics.push({
 				severity: "warning",
 				rule: "attribute-relation-coherence",
-				message: `"${member.name}" uses "${relation.target.name}" but no attribute of "${member.name}" is typed by "${relation.target.name}", so the page says the relation exists and never shows where`,
+				message:
+					siblings.length === 1
+						? `"${member.name}" uses "${target.name}" but no attribute of "${member.name}" is typed by "${target.name}", so the page says the relation exists and never shows where`
+						: `"${member.name}" uses "${target.name}" ${siblings.length} times and this relation is labelled ${relation.label ? `"${relation.label}"` : "nothing"}, which names no attribute of "${member.name}" typed by "${target.name}"; where one value object is used twice the label says which relation belongs to which attribute`,
 				ref: member.ref,
 			});
 		}
@@ -820,6 +842,40 @@ function scopeOf(
 	if (owner instanceof ValueObject) return owner.boundedcontext;
 	return undefined;
 }
+
+/** Every invariant a value object owns, in declaration order. */
+function* valueObjectInvariantsOf(
+	workspace: Workspace,
+): Iterable<[ValueObject, Invariant]> {
+	for (const bc of modelledContexts(workspace))
+		for (const vo of bc.valueobjects.values())
+			for (const invariant of vo.invariants.values()) yield [vo, invariant];
+}
+
+/**
+ * A value object's invariant is a rule about that value and nothing else: a
+ * Money's two amounts in one currency, an IBAN's mod-97 checksum. It holds by
+ * construction, because a value that breaks it is never made, so it needs no
+ * guard and it may not reach for an entity, another value or an operation —
+ * anything it reached for would be a rule about something the value cannot
+ * see, and that rule belongs to the aggregate or the context (decision 27).
+ */
+const invariantInValueObject: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const [vo, invariant] of valueObjectInvariantsOf(workspace)) {
+		const own = new Set<Constrainable>([vo, ...vo.allAttributes]);
+		for (const target of invariant.targets) {
+			if (own.has(target)) continue;
+			diagnostics.push({
+				severity: "error",
+				rule: "invariant-in-value-object",
+				message: `Invariant "${invariant.name}" of value object "${vo.name}" constrains "${constrainableLabel(target)}", which is not an attribute of "${vo.name}"; a value's rule holds by construction of that value and reaches nothing outside it`,
+				ref: invariant.ref,
+			});
+		}
+	}
+	return diagnostics;
+};
 
 /**
  * An aggregate's invariant holds inside its boundary on every save, so
@@ -1238,17 +1294,30 @@ function callCrosses(
 }
 
 /**
+ * Whether this relationship's downstream has declared an anti-corruption
+ * layer toward its upstream. An ACL is a translation the downstream owns: the
+ * upstream's contract stops at it, and the model behind it is free to change
+ * on its own schedule, which is the whole reason the pattern exists. A step
+ * through one therefore does not bind the two models together and does not
+ * count toward a ring (decision 20's 2026-09-08 amendment).
+ */
+function translatedByAcl(relationship: ContextRelationship): boolean {
+	return relationship.downstreamRoles.includes("anti-corruption-layer");
+}
+
+/**
  * The directed relationships whose traffic is calls form no cycle.
  *
  * Upstream and downstream is a statement about models: the downstream context
- * shapes its own model around what the upstream offers. A ring of those means
- * every context on it is shaped around a model that is shaped around its own,
- * so none of them can settle or change first. Only a call counts as a step
- * (decision 20): a step carried only by events, or by a policy subscribing to
- * the other side's event, is choreography, and rings of those are
- * `reaction-cycle`'s business. That makes the common shape honest: two
- * contexts, each upstream in one respect and downstream in another, are a ring
- * only when both directions are calls.
+ * shapes its own model around what the upstream offers, and a ring of those
+ * means the contexts on it depend on each other's contracts. Two things do not
+ * count as a step (decision 20). A step carried only by events, or by a policy
+ * subscribing to the other side's event, is choreography, and rings of those
+ * are `reaction-cycle`'s business. And a step whose downstream translates
+ * behind an anti-corruption layer is not a ring either: the ACL is exactly
+ * what lets the two models evolve independently, so a pair that calls each
+ * other through one is not stuck. What is left is the honest case: contexts
+ * calling each other with nothing between them.
  */
 const relationshipCycle: Rule = (workspace) => {
 	// The contexts are the nodes, so every ring found is a ring of distinct
@@ -1257,6 +1326,7 @@ const relationshipCycle: Rule = (workspace) => {
 	const startingAt = new Map<BoundedContext, ContextRelationship[]>();
 	for (const relationship of workspace.relationships) {
 		if (!isDirectedRelationshipType(relationship.type)) continue;
+		if (translatedByAcl(relationship)) continue;
 		if (!callCrosses(workspace, relationship.source, relationship.target))
 			continue;
 		append(startingAt, relationship.source, relationship);
@@ -1281,7 +1351,7 @@ const relationshipCycle: Rule = (workspace) => {
 					.map((c) => `"${c.name}"`)
 					.join(
 						" -> ",
-					)}; each of these contexts shapes its model around the next, so every model on the ring is shaped around one that is shaped around itself and none can change first. Declare a partnership where two of them really do move as one, or reverse a dependency by turning that call into an event the other side reacts to`,
+					)}; each of these contexts calls the next, so all of them depend on each other's contracts. Put an anti-corruption layer on one of the steps, so that side translates and is free to change; or declare a partnership where two of them really do move as one; or reverse a dependency by turning that call into an event the other side reacts to`,
 				ref: link.ref,
 			},
 		];
@@ -2352,18 +2422,18 @@ const RULES: CataloguedRule[] = [
 		rule: "aggregate-tree",
 		severities: ["error", "warning"],
 		summary:
-			"Inside an aggregate, includes points at entities and uses at value objects, no ring of two or more entity types includes itself, and every entity is reachable from the root.",
-		why: "The aggregate is loaded and saved as one thing through its root, so the parts of one instance hang off it as a tree. That is a claim about instances, not about types: an entity whose parts are of its own type is the composite pattern and still a tree per instance, and a part type included by two different wholes still belongs to one of them at a time, so neither is reported. A ring through two or more distinct types is, because then no type can be named as the one that holds the other and there is no whole to start from. An includes onto a value object or a uses onto an entity says the opposite of what the author means, and an entity nothing reaches is either dead or a missing relation. A kind is reached wherever the entity it is a kind of is reached, since an instance of it is one of those; specialisation is not containment and never joins the tree itself.",
-		fix: "Point includes at entities and uses at value objects, break a ring of distinct types by making the back edge a references, and give an unreachable entity the relation that reaches it — or move it to its own aggregate.",
+			"Inside an aggregate, includes points at entities and uses at value objects, and every entity is reachable from the root.",
+		why: "The aggregate is loaded and saved as one thing through its root, so the parts of one instance hang off it as a tree. That is a claim about instances, and the model declares types, so no ring in the type graph is reported at all: a questionnaire whose groups hold questions that hold groups is a finite tree in every instance, and so is a category of categories. Keeping the instance tree a tree is the code's job. What the type graph can say is checked: an includes onto a value object or a uses onto an entity says the opposite of what the author means, and an entity nothing reaches is either dead or a missing relation. A kind is reached wherever the entity it is a kind of is reached, since an instance of it is one of those; specialisation is not containment and never joins the tree itself.",
+		fix: "Point includes at entities and uses at value objects, and give an unreachable entity the relation that reaches it — or move it to its own aggregate.",
 		check: aggregateTree,
 	},
 	{
 		rule: "attribute-relation-coherence",
 		severities: ["warning"],
 		summary:
-			"An attribute typed by a value object has a matching uses relation, of a matching cardinality.",
-		why: "The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened, and a list-typed attribute against a single-valued relation says two different things about how many there are. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.",
-		fix: "Add the missing uses relation or the missing attribute, and set the relation's cardinality to * or 1..* for a list-typed attribute. The type itself is free text and is never checked against the value object's name; only a trailing [] is read, as \"many\".",
+			"An attribute typed by a value object has a matching uses relation, matched by label where one value object is used twice, and the two agree about how many there are.",
+		why: "The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened; and when they disagree about number the model says two things at once — a list-typed attribute against a single-valued relation, an optional attribute against a relation that says there is always one, a required attribute against a relation that says there may be none. One value object may be used twice, a current address beside an address history, so with several relations to it the label is what pairs each with its attribute. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.",
+		fix: 'Add the missing uses relation or the missing attribute, and give the relation the cardinality the attribute already implies: * or 1..* for a list, 0..1 or * for an optional one, 1 or 1..* for a required one. Where two relations point at the same value object, label each with the name of its attribute. The type itself is free text and is never checked against the value object\'s name; only a trailing [] is read, as "many".',
 		check: attributeRelationCoherence,
 	},
 	{
@@ -2374,6 +2444,15 @@ const RULES: CataloguedRule[] = [
 		why: "A value object and a schema are two different things to be. A value object is a concept the context models and compares by value; a schema is a payload shape the context publishes to whoever is listening. An attribute claiming both leaves a reader unable to say which model the field belongs to, and a change to either shape becomes a change nobody can scope. For the same reason an entity or a value object holds only value objects: a payload shape belongs at the boundary, and letting one inside puts the vocabulary of the wire into the model the boundary exists to protect.",
 		fix: "Keep the value object when the attribute is a concept of the domain, and the schema when it is a nested part of a payload; drop the other. On an entity or a value object, declare the value object the field really is and point at that. Collections stay in the type string, so a list of a nested shape is OrderLine[] beside one schema reference.",
 		check: attributeOneShape,
+	},
+	{
+		rule: "invariant-in-value-object",
+		severities: ["error"],
+		summary:
+			"Every element a value object's invariant constrains is an attribute of that value object, or the value object itself.",
+		why: "A value is defined by what it holds, and a rule about it is kept by refusing to make one that breaks it: an IBAN whose checksum fails is not a badly configured IBAN, it is not an IBAN. Such a rule needs no save and no guard, and it can only be about what the value carries — a value object knows nothing of the entity holding it, of another value, or of any operation, so a rule naming one of those is a rule the value cannot keep.",
+		fix: "Point the invariant at this value object's own attributes. If the rule is really about the thing that holds the value — a transition, a balance across two entities — move it to that aggregate; if it is about several instances at once, it is the context's (decision 27).",
+		check: invariantInValueObject,
 	},
 	{
 		rule: "invariant-in-aggregate",
@@ -2433,9 +2512,9 @@ const RULES: CataloguedRule[] = [
 		rule: "relationship-cycle",
 		severities: ["warning"],
 		summary:
-			"The directed relationships whose traffic is calls form no cycle; steps carried only by events do not count.",
-		why: "Downstream means a context shapes its model around what the upstream offers. In a ring of calls every context is shaped around a model that is shaped around its own, so none of them can settle or change first and the coupling has no end to start from. Events are different: reacting to a fact commits nobody to another model's shape, so a ring of contexts joined by events is fine, and rings of reactions are reaction-cycle's business instead.",
-		fix: "Declare a partnership where two of the contexts really do move as one, which says the mutual shaping is deliberate; otherwise reverse one dependency by turning that call into an event the other side reacts to, which is what DDD recommends anyway.",
+			"The directed relationships whose traffic is calls form no cycle; steps carried only by events, and steps the downstream translates behind an anti-corruption layer, do not count.",
+		why: "Downstream means a context shapes its model around what the upstream offers. In a ring of calls the contexts depend on each other's contracts: each one is written against a neighbour's model that is written against its own. Two kinds of step are exempt because neither creates that dependency. Events are one: reacting to a fact commits nobody to another model's shape, and rings of reactions are reaction-cycle's business instead. An anti-corruption layer is the other: the downstream translates at its edge, so the upstream's contract stops there and each side stays free to change, which is the whole point of the pattern.",
+		fix: "Put an anti-corruption layer on one of the steps, so that context translates what it calls and can change behind it; or declare a partnership where two of the contexts really do move as one, which says the mutual dependency is deliberate; or reverse a dependency by turning that call into an event the other side reacts to.",
 		check: relationshipCycle,
 	},
 	{
