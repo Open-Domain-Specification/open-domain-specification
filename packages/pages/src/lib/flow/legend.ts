@@ -11,6 +11,7 @@ import {
 import { DISPOSITION_LABELS, DISPOSITION_SUMMARIES } from "../evidence/labels";
 import type { ConsumableNodeData } from "./consumable-graph";
 import type { ContextNodeData } from "./context-graph";
+import { ENDS_LABEL, type FlowNodeData, type FlowStep } from "./flow-graph";
 import type { Graph } from "./graph";
 import type { DiagramKind } from "./kind";
 import { roleLabel } from "./roles";
@@ -182,6 +183,55 @@ function relationLegend(graph: Graph): LegendEntry[] {
 	];
 }
 
+/** Shape per step of the reaction chain, in the order a reader meets them. */
+const STEPS: { step: FlowStep; mark: string; name: string }[] = [
+	{ step: "event", mark: "stadium", name: "Event" },
+	{ step: "command", mark: "box", name: "Operation" },
+	{ step: "policy", mark: "note", name: "Policy" },
+	{ step: "process", mark: "folder", name: "Process" },
+];
+
+function flowLegend(graph: Graph): LegendEntry[] {
+	const nodes = graph.nodes as FlowNodeData[];
+	const drawn = new Set(nodes.map((n) => n.step));
+	return [
+		...STEPS.filter(({ step }) => drawn.has(step)).map(({ mark, name }) => ({
+			mark,
+			name,
+		})),
+		...(graph.edges.some((e) => !e.dashed)
+			? [
+					{
+						mark: "arrow",
+						name: "What happens next",
+						title:
+							"One step of the reaction chain: an event wakes a policy, a policy issues an operation, an operation raises an event.",
+					},
+				]
+			: []),
+		...(graph.edges.some((e) => e.dashed)
+			? [
+					{
+						mark: `dashed ${ENDS_LABEL}`,
+						name: "What completes a process",
+						title:
+							"The fact that finishes an instance. A process does not cause it, so it is drawn and never followed.",
+					},
+				]
+			: []),
+		...(nodes.some((n) => n.focus)
+			? [
+					{
+						mark: "bold outline",
+						name: "This page's reaction",
+						title:
+							"The policy or process this page is about, drawn among everything it reaches.",
+					},
+				]
+			: []),
+	];
+}
+
 /** The legend for a graph of the given kind; empty when it shows nothing worth naming. */
 export function legendEntries(graph: Graph, kind: DiagramKind): LegendEntry[] {
 	switch (kind) {
@@ -189,6 +239,8 @@ export function legendEntries(graph: Graph, kind: DiagramKind): LegendEntry[] {
 			return consumableLegend(graph);
 		case "relation":
 			return relationLegend(graph);
+		case "flow":
+			return flowLegend(graph);
 		default:
 			return contextLegend(graph);
 	}

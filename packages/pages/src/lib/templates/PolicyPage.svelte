@@ -7,8 +7,14 @@ export const sections = [
 </script>
 
 <script lang="ts">
-import type { Consumable, Policy } from "@open-domain-specification/core";
+import {
+	type Consumable,
+	ODSFlowMap,
+	type Policy,
+} from "@open-domain-specification/core";
 import { problemsUnder, useModel } from "../model";
+import { flowGraph } from "../flow/graph";
+import { FLOW_MAP_EMPTY, flowMapCaption } from "../flow/flow-graph";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Definition from "../atoms/Definition.svelte";
@@ -17,6 +23,7 @@ import Lockup from "../atoms/Lockup.svelte";
 import ConsumableKeywords from "../molecules/ConsumableKeywords.svelte";
 import { contextCrumbs } from "../molecules/crumbs";
 import { kindOf } from "../molecules/element-kind";
+import DiagramFigure from "../organisms/DiagramFigure.svelte";
 import LanguageSection from "../organisms/LanguageSection.svelte";
 import PageHeader from "../organisms/PageHeader.svelte";
 import Section from "../organisms/Section.svelte";
@@ -26,6 +33,9 @@ const { policy: p }: { policy: Policy } = $props();
 const model = useModel();
 const bc = $derived(p.boundedcontext);
 const crumbs = $derived(contextCrumbs(model.workspace, bc));
+// The whole context's chain, with this policy marked: what it sets off is
+// drawn in its neighbours' rows, which is the reason to draw it at all.
+const flowMap = $derived(ODSFlowMap.fromBoundedContext(bc));
 
 /** The "When" table lists events, which are all of one kind; only "Then" needs the kind column. */
 const columnsFor = (label: string, withKind: boolean): Column[] => [
@@ -76,6 +86,12 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 
 <Section id="then" title="Then" lead="The operations the policy issues. Whenever X happens, do Y." count={p.commands.length}>
 	{@render consumables(p.commands, "Operation", true, "Issues nothing.")}
+	<!-- The map comes after the last section it summarises. -->
+	<DiagramFigure
+		caption={flowMapCaption(bc.name)}
+		emptyText={FLOW_MAP_EMPTY}
+		graph={flowGraph(flowMap, p.ref)}
+	/>
 </Section>
 
 <LanguageSection target={p} />

@@ -116,4 +116,5 @@ export const groupPathOf = (ns: { name: string }[]) =>
 export { isSymmetricRelationship } from "@open-domain-specification/core";
 export { consumableGraph } from "./consumable-graph";
 export { contextGraph } from "./context-graph";
+export { flowGraph } from "./flow-graph";
 export { relationGraph } from "./relation-graph";
