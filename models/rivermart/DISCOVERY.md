@@ -345,7 +345,7 @@ to integrate.
 
 ## 7. Validation and what we left in
 
-Running `validate()` on the finished model gives four diagnostics. Each corresponds to a
+Running `validate()` on the finished model gives three diagnostics. Each corresponds to a
 real finding, and the client asked that they stay in the model so the owning team sees them:
 
 - `aggregate-root` on the Wishlist: the growth squad marked both Wishlist and WishlistItem
@@ -353,15 +353,21 @@ real finding, and the client asked that they stay in the model so the owning tea
 - `cross-aggregate-reference` on Case: the case system `includes` order lines that belong to
   the Order aggregate. This is the stale-lines problem behind the wrong refunds. The fix is
   to hold the line ids and read through the Orders API.
-- `role-coherence` on Last Mile's consumption of `ShipmentDispatched`: no downstream role,
-  because the two teams have never agreed one. The relationship is declared with only the
-  upstream role, which is the honest state.
 - `partnership-backed` on Search and Advertising: the two teams call the results page one
   product and release it together, but every dependency runs one way — Search calls
   `GetSponsoredResults` and reports clicks through `RecordAdClick`, and Advertising consumes
-  nothing of Search's. On the traffic alone this is customer-supplier with Advertising
-  supplying. Whether the joint release train is enough to call it a partnership is the
-  Discovery Team's call, so the claim stays and the warning stays with it.
+  nothing of Search's. The declaration is true: a partnership in DDD is two teams whose
+  success is mutual and whose releases are planned as one, which is exactly the results
+  page, and it does not require consumption in both directions. The rule over-claims, and
+  decision 20's amendment relaxes it to traffic in at least one direction. This entry is
+  listed here because it is what `validate()` prints today; it disappears when that change
+  lands, and nothing about the model changes with it.
+
+Last Mile's consumption of `ShipmentDispatched` still declares no downstream role, because
+the two teams have never agreed one. That used to raise `role-coherence`; card 47 found the
+rule right to stay quiet, since Warehouse and Last Mile share a kernel and neither end is
+upstream of the other, so there is no role for either to declare. The model is unchanged and
+the diagnostic is gone.
 
 ## 8. What the model leaves out
 
