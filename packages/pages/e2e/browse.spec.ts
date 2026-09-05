@@ -57,6 +57,35 @@ test("table of contents entries scroll to their section", async ({ page }) => {
 	await expect(page.locator("#health")).toBeInViewport();
 });
 
+test("the context page's reactions are one section: both tables, then the map", async ({
+	page,
+}) => {
+	await page.goto(viewerAt("#/boundedcontexts/sales_bc"));
+	await expect(page.locator("main h1")).toContainText("Sales BC");
+
+	// One table-of-contents entry for the two reaction tables (card 88).
+	const toc = page.locator("aside.toc");
+	await expect(toc.getByRole("link", { name: "Reactions" })).toBeVisible();
+	await expect(toc.getByRole("link", { name: "Policies" })).toHaveCount(0);
+	await expect(toc.getByRole("link", { name: "Processes" })).toHaveCount(0);
+
+	const reactions = page.locator("#reactions");
+	await expect(reactions.locator("h2")).toContainText("Reactions");
+	await expect(reactions.locator("h3")).toHaveText([/Policies/, /Processes/]);
+	// The map summarises both tables, so it comes under the pair.
+	await expect(reactions.locator("figure.diagram")).toContainText(
+		"Sales BC flow map",
+	);
+	const map = await reactions.locator("figure.diagram").boundingBox();
+	const processes = await reactions.getByRole("table").last().boundingBox();
+	expect(map?.y).toBeGreaterThan(
+		(processes?.y ?? 0) + (processes?.height ?? 0),
+	);
+
+	await toc.getByRole("link", { name: "Reactions" }).click();
+	await expect(reactions).toBeInViewport();
+});
+
 test("the workspace's health strip links out to the full report", async ({
 	page,
 }) => {

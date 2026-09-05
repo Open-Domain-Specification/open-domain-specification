@@ -37,7 +37,10 @@ Integration surface  (14)                        (Section)
   Provides  (14)                                 (Heading 3, provides DataTable, sortable Consumable and Kind)
   Consumes  (0)                                  (Heading 3, consumes DataTable)
 
-Policies  (0)                                    (Section: DataTable policy, when, then, description)
+Reactions  (1)                                   (Section)
+  Policies  (0)                                  (Heading 3, DataTable policy, when, then, description)
+  Processes  (1)                                 (Heading 3, DataTable process, starts, while it runs, then, ends, description)
+  [flow map figure]                              (under the pair, it summarises both)
 
 Schemas  (4)                                     (Section)
   ⬚ PetRegistered  carried by 📡 PetRegistered   (Heading 3 lockup + secondary detail)
@@ -58,3 +61,11 @@ The aggregate table's `Value objects` count is the number each aggregate
 holds, not owns. Schemas are subsections with their attribute table, not
 cards in a grid. The provides table is the densest surface on any page and
 is the reference for `DataTable`'s density story.
+
+Policies and processes are one **Reactions** section, not two sections
+(card 88): they answer one question — what this context does when something
+happens — and they differ only in whether the reaction remembers what has
+arrived. They are the paired level-3 headings the language asks for, both
+drawn at zero, and the flow map comes under the pair because it summarises
+both tables rather than either one. The section's count badge is the
+policies and the processes together.

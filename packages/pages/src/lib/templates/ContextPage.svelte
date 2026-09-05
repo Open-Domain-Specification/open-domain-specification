@@ -5,8 +5,7 @@ export const sections = [
 	{ id: "invariants", label: "Invariants" },
 	{ id: "values", label: "Value objects" },
 	{ id: "integration", label: "Integration surface" },
-	{ id: "behaviour", label: "Policies" },
-	{ id: "processes", label: "Processes" },
+	{ id: "reactions", label: "Reactions" },
 	{ id: "schemas", label: "Schemas" },
 	{ id: "language", label: "Ubiquitous language" },
 ];
@@ -290,12 +289,13 @@ const termColumns: Column[] = [
 </Section>
 
 <Section
-	id="behaviour"
-	title="Policies"
-	lead="Reactions: when these events happen, issue these operations. Policies are where cross-aggregate workflow lives."
-	count={policies.length}
-	problems={policies.flatMap((p) => problemsUnder(model, p.ref))}
+	id="reactions"
+	title="Reactions"
+	lead="What this context does when something happens. A policy acts the moment its events arrive; a process remembers which of its events have arrived and says what finishes it. Both are where cross-aggregate workflow lives."
+	count={policies.length + processes.length}
+	problems={[...policies, ...processes].flatMap((p) => problemsUnder(model, p.ref))}
 >
+	<Heading level={3} count={policies.length}>Policies</Heading>
 	<DataTable columns={policyColumns} rows={policies} rowId={(p) => p.ref} empty="No policies.">
 		{#snippet cell(p, col)}
 			{#if col.key === "name"}
@@ -309,15 +309,8 @@ const termColumns: Column[] = [
 			{/if}
 		{/snippet}
 	</DataTable>
-</Section>
 
-<Section
-	id="processes"
-	title="Processes"
-	lead="Reactions that hold state across events: each one remembers which of its events have arrived, and says what finishes it. A policy that finds itself waiting for a second event belongs here."
-	count={processes.length}
-	problems={processes.flatMap((p) => problemsUnder(model, p.ref))}
->
+	<Heading level={3} count={processes.length}>Processes</Heading>
 	<DataTable columns={processColumns} rows={processes} rowId={(p) => p.ref} empty="No processes. Nothing here waits for more than one event before it acts.">
 		{#snippet cell(p, col)}
 			{#if col.key === "name"}
@@ -335,8 +328,9 @@ const termColumns: Column[] = [
 			{/if}
 		{/snippet}
 	</DataTable>
-	<!-- The map summarises both reaction sections, so it comes after the last
-	     of them: by here every policy and process it draws has been named. -->
+
+	<!-- The map summarises both tables, so it comes under the pair: by here
+	     every policy and process it draws has been named. -->
 	<DiagramFigure
 		caption={flowCaption}
 		emptyText={FLOW_MAP_EMPTY}

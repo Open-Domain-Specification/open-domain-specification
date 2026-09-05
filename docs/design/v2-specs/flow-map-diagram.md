@@ -124,9 +124,17 @@ puzzle to solve first.
 
 | Page             | Section     | Caption                        |
 | ---------------- | ----------- | ------------------------------- |
-| Context page     | Processes   | `<Context> flow map`            |
+| Context page     | Reactions   | `<Context> flow map`            |
 | Policy page      | Then        | `<Context> flow map`            |
 | Process page     | Ends        | `<Context> flow map`            |
+
+On the context page the map belongs to two tables at once, so the section it
+ends is the one that holds both. Card 88 replaced the page's Policies and
+Processes sections with a single **Reactions** section — the paired level-3
+headings the language asks for (Aggregates and Services, Provides and
+Consumes, now Policies and Processes), the two tables under them, and the map
+beneath the pair. One table-of-contents entry, one lead sentence, and the map
+still comes after every reaction it draws has been named in prose above it.
 
 The map is always the whole context's, because that is the scope core offers
 (`ODSFlowMap.fromBoundedContext`) and because a policy's neighbours are the
@@ -142,15 +150,20 @@ Empty is a real state: a context with no policies and no processes has an
 empty flow map, and `DiagramFigure` renders the sentence "Nothing reacts to
 anything here yet." instead of a canvas, as it does for the other three.
 
-### The one alternative considered, and why not
+### The alternative card 80 shipped, and why it was replaced
 
-On the context page the map belongs to two sections at once, Policies and
-Processes, and a third choice would be a new "Reactions" section holding both
-tables with the map under them. That reads better than either half owning it —
-but it is an information-architecture change to a shipped page, it renames a
-table of contents entry a reader may have linked to, and it is the lead's call
-rather than the designer's. Ending the Processes section with the map costs
-nothing and says the same thing: by then both tables have been read.
+Card 80 ended the Processes section with the map and left the two reaction
+sections as they were. That was the cheap move: the map still came after both
+tables, so it said the same thing, and it avoided renaming a table-of-contents
+entry a reader may have linked to on a shipped page. What it could not say is
+that the map belongs to both tables rather than to the second one — a reader
+scanning the contents saw Policies and Processes as two unrelated sections
+with a drawing tacked onto the end of one of them.
+
+The lead took the information-architecture call on card 88 and the Reactions
+section is what shipped. The rename is the whole cost, and the anchors it
+breaks are `#behaviour` and `#processes`; this repo keeps no aliases for old
+anchors any more than it does for old schema names.
 
 ## States implemented
 
