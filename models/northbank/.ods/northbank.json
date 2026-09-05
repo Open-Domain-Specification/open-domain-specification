@@ -3989,11 +3989,17 @@
                 },
                 "customer_id": {
                   "name": "customerId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+                  }
                 },
                 "account_id": {
                   "name": "accountId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
+                  }
                 },
                 "status": {
                   "name": "status",

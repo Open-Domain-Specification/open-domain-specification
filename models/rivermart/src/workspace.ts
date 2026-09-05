@@ -2052,8 +2052,9 @@ resolutionVO.addAttribute("kind", {
 	type: "'refund' | 'replacement' | 'information' | 'no-action'",
 });
 caseRoot.addAttribute("caseId", { type: "string", identity: true });
-caseRoot.addAttribute("customerId", { type: "string" });
 caseRoot.addAttribute("orderId", { type: "string", identifies: order });
+// `customerId` is declared with the CustomerAccount root further down, because
+// the root it identifies has to exist before the attribute can name it.
 interaction.addAttribute("interactionId", { type: "string", identity: true });
 interaction.addAttribute("channel", { type: "'call' | 'chat' | 'email'" });
 interaction.addAttribute("at", { type: "date-time" });
@@ -2185,6 +2186,9 @@ const customer = customerAgg.addRootEntity("CustomerAccount", {
 });
 customer.addAttribute("customerId", { type: "string", identity: true });
 customer.addAttribute("email", { type: "string" });
+// The support case is in Customer Service and the customer is here, so the
+// case holds this root's identity and nothing else of it.
+caseRoot.addAttribute("customerId", { type: "string", identifies: customer });
 
 const customerRegistered = customerAgg.provides("CustomerRegistered", {
 	description: "A new customer account exists",

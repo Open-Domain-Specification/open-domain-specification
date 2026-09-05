@@ -4116,10 +4116,6 @@
                   "type": "string",
                   "identity": true
                 },
-                "customer_id": {
-                  "name": "customerId",
-                  "type": "string"
-                },
                 "order_id": {
                   "name": "orderId",
                   "type": "string",
@@ -4133,6 +4129,13 @@
                   "description": "Absent while the case is open",
                   "valueobject": {
                     "$ref": "#/boundedcontexts/customer_service/valueobjects/resolution"
+                  }
+                },
+                "customer_id": {
+                  "name": "customerId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/identity/aggregates/customer_account/entities/customer_account"
                   }
                 }
               },

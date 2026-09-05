@@ -1382,8 +1382,10 @@ caseStatusVO.addAttribute("value", {
 	type: "'open' | 'confirmed' | 'dismissed'",
 });
 fraudCase.addAttribute("caseId", { type: "string", identity: true });
-fraudCase.addAttribute("customerId", { type: "string" });
-fraudCase.addAttribute("accountId", { type: "string" });
+// The customer and the account a case is about both live in other contexts, so
+// the case holds their identities and says which roots they are of.
+fraudCase.addAttribute("customerId", { type: "string", identifies: customer });
+fraudCase.addAttribute("accountId", { type: "string", identifies: account });
 alert.addAttribute("alertId", { type: "string", identity: true });
 alert.addAttribute("transactionRef", { type: "string" });
 alert.addAttribute("score", { type: "RiskScore", valueobject: riskScoreVO });
