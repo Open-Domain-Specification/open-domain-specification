@@ -100,11 +100,11 @@ function tacticalEdges(): Model {
 		})
 		.raises(first, second);
 
-	// A policy that waits on an answer rather than an event: the shape an
-	// operation this context calls comes back with (decision 23). Two of them,
-	// because the provider column has two readings — the operation that answers,
-	// and nothing at all where the model names a shape nothing answers with,
-	// which is what a reader sees while a model is half-written.
+	// A policy that waits on an answer rather than an event: what an operation
+	// this context calls comes back with, named by that call (decision 23). Two
+	// of them, because the kind column has two readings — the successful answer
+	// and a refusal — and the second is one the operation never declares, which
+	// is what a reader sees while a model is half-written.
 	const answering = workspace.addBoundedContext("Answering Context", {
 		description: "Answers the edge context's one call.",
 	});
@@ -116,7 +116,7 @@ function tacticalEdges(): Model {
 		description: "What the call comes back with.",
 	});
 	const unanswered = answering.addSchema("Unanswered Shape", {
-		description: "A shape no operation the edge context calls answers with.",
+		description: "A shape the operation never says it refuses with.",
 	});
 	const score = answeringApi.addConsumable("Score", {
 		type: "operation",
@@ -133,7 +133,7 @@ function tacticalEdges(): Model {
 	bc.addPolicy("Act on the verdict", {
 		description: "Waits for the answer to come back, and acts on it.",
 	})
-		.on(verdict, unanswered)
+		.on(score.returned(), score.rejected(unanswered))
 		.issues(askForScore);
 
 	// Two words of the language name the same element, so the terms list needs
@@ -305,8 +305,8 @@ describe("the tactical templates on the shapes no shared fixture carries", () =>
 		const rows = [...container.querySelectorAll("#when tbody tr")].map((r) =>
 			[...r.querySelectorAll("td")].map((c) => c.textContent?.trim()),
 		);
-		// The shape, marked as an answer, with the operation that answers with it
-		// in the provider column and the context that owns the shape beside it.
+		// The shape, marked as an answer, with the operation it comes back from
+		// in the provider column and that operation's context beside it.
 		expect(rows[0]).toEqual([
 			"Verdict",
 			"answer",
@@ -314,13 +314,12 @@ describe("the tactical templates on the shapes no shared fixture carries", () =>
 			"Answering Context",
 			"What the call comes back with.",
 		]);
-		// And the half-written case: a shape nothing this context calls answers
-		// with has no operation to name, which the row says rather than leaving
-		// the cell blank.
+		// A refusal reads as one, and still names the call it would come back
+		// from, even where the operation never declares it.
 		expect(rows[1]?.slice(0, 3)).toEqual([
 			"Unanswered Shape",
-			"answer",
-			"nothing",
+			"rejection",
+			"Score",
 		]);
 	});
 });

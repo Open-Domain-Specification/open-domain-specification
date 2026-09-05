@@ -6,7 +6,6 @@ import {
 } from "./evidence";
 import { attributeOwnersIn, identityCrossings } from "./identity-crossings";
 import {
-	answersOf,
 	operationsCalledBy,
 	ReactionChain,
 	type Reactor,
@@ -15,6 +14,7 @@ import {
 import type { UpstreamRole } from "./schema";
 import {
 	Aggregate,
+	Answer,
 	Attribute,
 	type AttributeOwner,
 	BoundedContext,
@@ -154,25 +154,20 @@ function subscribedTriggers(reactor: Policy | Process): ReactionTrigger[] {
  */
 function subscribedEvents(reactor: Policy | Process): Consumable[] {
 	return subscribedTriggers(reactor).filter(
-		(it): it is Consumable => !(it instanceof DataSchema),
+		(it): it is Consumable => !(it instanceof Answer),
 	);
 }
 
 /**
- * Every schema the operations one context consumes answer with: what it
- * returns and what it rejects with, on every consumption that context declares
- * (decisions 13 and 25).
+ * The operations one context calls, as a set: what a reaction of that context
+ * may wait on an answer from.
  *
- * This is the whole of what a reaction in that context may wait on as an
- * answer. A context hears an answer because it made the call, so the call has
- * to be one it makes: an answer from an operation nobody here consumes is a
- * shape this context never sees come back.
+ * A context hears an answer because it made the call, so the call has to be
+ * one it makes: an answer of an operation nobody here consumes is something
+ * this context never sees come back (decisions 13 and 25).
  */
-function answersAwaitedIn(bc: BoundedContext): Set<DataSchema> {
-	const answers = new Set<DataSchema>();
-	for (const operation of operationsCalledBy(bc))
-		for (const answer of answersOf(operation)) answers.add(answer);
-	return answers;
+function operationsCalledIn(bc: BoundedContext): Set<Consumable> {
+	return new Set(operationsCalledBy(bc));
 }
 
 /** Every policy and process of a context, in declaration order. */
@@ -1108,14 +1103,14 @@ const invariantInValueObject: Rule = (workspace) => {
  * transition rule is a rule about what that operation may do, and naming it is
  * how the model says which change the rule guards (decision 19).
  *
- * Naming one changes what the rule promises, which is why the rule's text and
- * the invariant's page say so. An invariant that names no operation is true
- * again every time the aggregate is saved. One that names an operation is a
- * guard on it: a precondition checked when that operation runs, which nothing
- * re-establishes afterwards, because what it was checked against — a balance, an
- * entitlement, the status it was in — may have moved on by the next save
- * (decision 27's third note). The boundary is the same for both; the promise is
- * not.
+ * Naming one says which operation keeps the rule, and nothing more. What kind
+ * of rule it is, the invariant states with `precondition`: set, it is checked
+ * before that operation runs and nothing re-establishes it afterwards, because
+ * what it was checked against — a balance, an entitlement, another context's
+ * answer — may have moved on by the next save; unset, the operation is named
+ * for responsibility and the rule is still true after it, as balanced postings
+ * are after `PostEntry`. Inferring the one fact from the other conflated them
+ * (decision 27, second amendment).
  *
  * A value object borrowed from another context is inside the boundary as well,
  * as long as an entity or a value inside the aggregate holds one: what is
@@ -1247,6 +1242,40 @@ const contextInvariantGuarded: Rule = (workspace) => {
 			severity: "error",
 			rule: "context-invariant-guarded",
 			message: `Invariant "${invariant.name}" of bounded context "${bc.name}" names no operation that guards it; a rule across instances is kept true by whoever checks it before acting`,
+			ref: invariant.ref,
+		});
+	}
+	return diagnostics;
+};
+
+/** Every invariant in the workspace, whatever it belongs to. */
+function* invariantsOf(workspace: Workspace): Iterable<Invariant> {
+	for (const bc of modelledContexts(workspace)) {
+		yield* bc.invariants.values();
+		for (const vo of bc.valueobjects.values()) yield* vo.invariants.values();
+		for (const aggregate of bc.aggregates.values())
+			yield* aggregate.invariants.values();
+	}
+}
+
+/**
+ * A precondition is checked before one operation runs, so it has to say which
+ * one. Without a guard the flag says a rule is not kept true afterwards and
+ * names no moment at which it was ever checked, which leaves a reader with a
+ * sentence and nowhere to look (decision 27, second amendment).
+ */
+const preconditionNamesOperation: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const invariant of invariantsOf(workspace)) {
+		if (
+			!invariant.precondition ||
+			invariant.guarded.some((it) => it.type === "operation")
+		)
+			continue;
+		diagnostics.push({
+			severity: "error",
+			rule: "precondition-names-operation",
+			message: `Invariant "${invariant.name}" is marked a precondition but names no operation; a precondition is checked before something runs, so say what`,
 			ref: invariant.ref,
 		});
 	}
@@ -1472,13 +1501,13 @@ const relationshipDeclared: Rule = (workspace) => {
 		for (const reactor of reactorsOf(bc)) {
 			for (const trigger of subscribedTriggers(reactor)) {
 				const upstream =
-					trigger instanceof DataSchema
-						? trigger.boundedcontext
+					trigger instanceof Answer
+						? trigger.operation.boundedcontext
 						: trigger.provider.boundedcontext;
 				if (upstream === bc) continue;
 				const what =
-					trigger instanceof DataSchema
-						? `waits for "${trigger.name}" to come back from`
+					trigger instanceof Answer
+						? `waits for "${trigger.origin}" to come back from`
 						: `reacts to "${trigger.name}" from`;
 				note(
 					upstream,
@@ -2662,13 +2691,14 @@ const rejectsOnOperation: Rule = (workspace) => {
  * their context calls come back with; they issue operations, and operations
  * raise events.
  *
- * An answer is a schema an operation returns or rejects with, and the schema
- * has to be one of those: waiting on a payload nobody answers with is waiting
- * for something that never arrives. The operation also has to be one the
- * reactor's own context consumes, because a context hears an answer by having
- * made the call (see {@link answersAwaitedIn}). What the model does not check
- * is which branch the reactor takes on it; that is the code's, as every other
- * condition in a process is (decisions 15 and 23).
+ * An answer names the operation it comes back from, and two things have to be
+ * true of it. The operation has to be one the reactor's own context consumes,
+ * because a context hears an answer by having made the call (see
+ * {@link operationsCalledIn}); and the operation has to answer that way — a
+ * refusal it never declared is a reply that never arrives, however many other
+ * operations refuse with the same shape (decision 23, third amendment). What
+ * the model does not check is which branch the reactor takes on it; that is
+ * the code's, as every other condition in a process is (decisions 15 and 23).
  */
 const consumableKinds: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -2676,18 +2706,26 @@ const consumableKinds: Rule = (workspace) => {
 		// An external context's policies and processes are refused outright by
 		// external-is-boundary; there is nothing here to say about them.
 		const reactors = bc.external ? [] : reactorsOf(bc);
-		const answers: Set<DataSchema> = reactors.length
-			? answersAwaitedIn(bc)
+		const called: Set<Consumable> = reactors.length
+			? operationsCalledIn(bc)
 			: new Set();
 		for (const reactor of reactors) {
 			for (const trigger of subscribedTriggers(reactor)) {
-				if (!(trigger instanceof DataSchema) || answers.has(trigger)) continue;
-				diagnostics.push({
-					severity: "error",
-					rule: "consumable-kind",
-					message: `${reactorLabel(reactor)} "${reactor.name}" waits for "${trigger.name}", which no operation "${bc.name}" consumes answers with; name the operation that returns or rejects with "${trigger.name}", and consume it, or react to an event instead`,
-					ref: reactor.ref,
-				});
+				if (!(trigger instanceof Answer)) continue;
+				if (!trigger.declared)
+					diagnostics.push({
+						severity: "error",
+						rule: "consumable-kind",
+						message: `${reactorLabel(reactor)} "${reactor.name}" waits for "${trigger.origin}", which "${trigger.operation.name}" never declares; wait for an answer the operation says it comes back with, or react to an event instead`,
+						ref: reactor.ref,
+					});
+				else if (!called.has(trigger.operation))
+					diagnostics.push({
+						severity: "error",
+						rule: "consumable-kind",
+						message: `${reactorLabel(reactor)} "${reactor.name}" waits for "${trigger.origin}", but nothing in "${bc.name}" consumes "${trigger.operation.name}"; a context hears an answer by having made the call, so consume that operation, or react to an event instead`,
+						ref: reactor.ref,
+					});
 			}
 			for (const c of subscribedEvents(reactor).filter(
 				(c) => c.type !== "event",
@@ -3227,7 +3265,7 @@ const RULES: CataloguedRule[] = [
 		severities: ["error"],
 		summary:
 			"An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object of its context, or one borrowed from elsewhere that something in the aggregate holds, or is an operation of a service of its own context, application or domain, that guards it.",
-		why: "An aggregate's invariant is one of two things, and which one is said by whether it names an operation. Naming none, it is the rule the aggregate itself upholds: checked as the aggregate is saved, and true again the moment the save returns. Naming one, it is a guard on that operation — a precondition, checked when the operation runs, and not something the aggregate re-establishes on every save: enough funds at initiation, an entitlement at playback start, a status that may not go backwards. The invariant's page says which of the two it is reading, because the two promise different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts.",
+		why: "Naming an operation says which operation keeps the rule; it does not say what kind of rule it is. The invariant says that itself, with precondition: set, it is checked before that operation runs and nothing re-establishes it afterwards — enough funds at initiation, an entitlement at playback start, a pet still available at approval. Unset, the operation is named for responsibility and the rule is still true after it: PostEntry must produce balanced postings and the postings stay balanced. The invariant's page says which of the two it is reading, because the two promise different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts.",
 		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object from another context, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door.",
 		check: invariantInAggregate,
 	},
@@ -3248,6 +3286,15 @@ const RULES: CataloguedRule[] = [
 		why: "No instance can see its siblings, so nothing enforces a cross-instance rule as a side effect of being saved. It holds only because something checks it before acting: the operation that refuses the second open application, the one that counts the household's open sessions before starting another. Naming that operation is the difference between a rule the model can be read for and a sentence with nowhere to look.",
 		fix: "Name the operation that does the checking in constrains, alongside what the rule is about. If no operation checks it, the rule is not being kept: either the check belongs somewhere and has not been modelled, or the rule holds inside one aggregate and belongs there instead.",
 		check: contextInvariantGuarded,
+	},
+	{
+		rule: "precondition-names-operation",
+		severities: ["error"],
+		summary:
+			"An invariant marked a precondition names at least one operation it guards.",
+		why: "A precondition is a rule checked at one moment — before a particular call runs — and not kept true afterwards. Marking one without naming that call says a rule stops holding after something the model never identifies, which leaves a reader with a sentence and nowhere to look for the check. It is also how the flag stays a statement rather than a way of quietly weakening every rule it is put on.",
+		fix: "Name the operation that does the checking in constrains, alongside what the rule is about. If nothing checks it before acting, the rule is not a precondition: drop the flag, and the operations it names — if any — keep it and it holds after them.",
+		check: preconditionNamesOperation,
 	},
 	{
 		rule: "relationship-roles-backed",

@@ -88,6 +88,14 @@ operation that makes the transition, because that is where it is enforced;
 the operation then reads as the rule it has to uphold. Invariants stay
 prose; there is no expression language.
 
+Naming an operation says which operation keeps the rule, and nothing more. A
+rule checked before that operation runs and not kept true afterwards — enough
+funds at initiation, an entitlement at playback start — says so with
+`precondition: true`, and must name the operation it guards
+(`precondition-names-operation`). Without the flag the rule is still true after
+the operation it names: `PostEntry` must produce balanced postings, and the
+postings stay balanced.
+
 An invariant may instead belong to a value object. A rule that is about a
 value alone — an IBAN's mod-97 checksum, a Money's single currency — holds by
 construction: a value that breaks it is never made, so no save keeps it and no
@@ -167,9 +175,12 @@ common case; it is optional detail, not a call graph.
 A **policy** lives on a bounded context and says "on these events, then
 these operations" (`policy.on(...events).issues(...operations)`). The
 consumables may belong to other contexts as long as they are not internal.
-`on` may also name a schema an operation this context consumes returns or
-rejects with, which means "when that answer comes back": a call is answered
-and the reaction is to the answer, not to an event somebody invented for it.
+`on` may also name an answer of an operation this context consumes
+(`operation.returned()`, `operation.rejected(schema)`), which means "when that
+answer comes back": a call is answered and the reaction is to the answer, not
+to an event somebody invented for it. An answer is named by the call it comes
+back from, never by the shape alone, so two operations refusing with one shared
+schema wake only whoever named the call that was made.
 The flow map walks from the policies of a context through what they react
 to, the operations they issue and the events those raise.
 
@@ -181,9 +192,8 @@ A policy is stateless and any-of; a process remembers which of its events
 have arrived, so it can wait for two facts before it acts, and it says what
 finishes an instance. `starts`, `on` and `ends` may name another context's
 events, exactly as a policy's `on` may, and `on` and `ends` may name an
-answer — the shape an operation this context calls returns or rejects with —
-which is what the commonest process is made of: it calls, waits, and branches
-on what came back. `then` names operations of the process's own context. What it correlates on, how long it waits and what it
+answer of an operation this context calls, which is what the commonest process
+is made of: it calls, waits, and branches on what came back. `then` names operations of the process's own context. What it correlates on, how long it waits and what it
 compensates are prose in its description: the model says a process exists
 and what it listens to and does, and leaves how it decides to the code. An
 author who finds a policy waiting for a second event promotes it to a

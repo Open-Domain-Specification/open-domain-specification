@@ -1,7 +1,7 @@
 import {
+	type Answer,
 	type BoundedContext,
 	type Consumable,
-	type DataSchema,
 	Policy,
 	Process,
 	type ReactionTrigger,
@@ -12,18 +12,18 @@ export type Reactor = Consumable | Policy | Process;
 
 /**
  * One step of the chain: what happens next, and — when what carried it was an
- * operation answering its caller — the schema that answer is named by.
+ * operation answering its caller — the answer that step is named by.
  *
  * The answer is not a step of its own. A returned or rejected shape is not
  * something that happens on its way somewhere: it is the operation coming
  * back, so the step runs from the operation to whoever was waiting, and the
- * schema is what that step is called (decision 23, second amendment).
+ * answer is what that step is called (decision 23, second amendment).
  */
 export type ReactionStep = {
 	/** The next step of the chain. */
 	to: Reactor;
-	/** The shape the answer came back as, on a step an answer carries. */
-	answer?: DataSchema;
+	/** The answer the step carries, when it is one. */
+	answer?: Answer;
 };
 
 /**
@@ -67,19 +67,14 @@ export type ReactionStep = {
 export class ReactionChain {
 	/**
 	 * Which policies and processes each event, and each answer, wakes for the
-	 * contexts in scope.
+	 * contexts in scope. An answer is one object per operation and shape, so
+	 * two operations refusing with the same schema are two different keys and
+	 * wake only whoever named them (decision 23, third amendment).
 	 */
 	private readonly listeners = new Map<
 		ReactionTrigger,
 		Array<Policy | Process>
 	>();
-	/**
-	 * Which operations answer with each schema: the ones the contexts in scope
-	 * provide, and the ones they call. Both belong here because an answer comes
-	 * back from wherever the call went, and a map drawn for one context has to
-	 * show the neighbour's operation the answer came from.
-	 */
-	private readonly answerers = new Map<DataSchema, Consumable[]>();
 	/** Every policy in scope, in declaration order. */
 	readonly policies: Policy[] = [];
 	/** Every process in scope, in declaration order. */
@@ -96,11 +91,8 @@ export class ReactionChain {
 				...bc.aggregates.values(),
 				...bc.services.values(),
 			])
-				for (const consumable of provider.consumables.values()) {
+				for (const consumable of provider.consumables.values())
 					this.steps.push(consumable);
-					this.answers(consumable);
-				}
-			for (const called of operationsCalledBy(bc)) this.answers(called);
 			for (const policy of bc.policies.values()) {
 				this.policies.push(policy);
 				this.steps.push(policy);
@@ -111,15 +103,6 @@ export class ReactionChain {
 				this.steps.push(process);
 				this.listen(process, [...process.startEvents, ...process.events]);
 			}
-		}
-	}
-
-	/** Records that `operation` answers with each of the shapes it names. */
-	private answers(operation: Consumable) {
-		for (const answer of answersOf(operation)) {
-			const existing = this.answerers.get(answer);
-			if (!existing) this.answerers.set(answer, [operation]);
-			else if (!existing.includes(operation)) existing.push(operation);
 		}
 	}
 
@@ -143,8 +126,8 @@ export class ReactionChain {
 		].map((to) => ({ to }));
 		// An answer wakes whoever was waiting for it, and the step is drawn from
 		// the operation that answered rather than from a node of its own: the
-		// shape is what the step is called, not something that happens.
-		for (const answer of answersOf(node))
+		// answer is what the step is called, not something that happens.
+		for (const answer of node.answers)
 			for (const reactor of this.listeners.get(answer) ?? [])
 				steps.push({ to: reactor, answer });
 		return steps;
@@ -155,29 +138,10 @@ export class ReactionChain {
 		return this.stepsFrom(node).map((step) => step.to);
 	}
 
-	/**
-	 * The operations that answer with `schema` for the contexts in scope, in
-	 * declaration order: what a reaction waiting on that answer is waiting for.
-	 */
-	answerersOf(schema: DataSchema): Consumable[] {
-		return this.answerers.get(schema) ?? [];
-	}
-
 	/** The operations this one calls out to; see `callsOut`. */
 	private consumedThrough(operation: Consumable): Consumable[] {
 		return callsOut(operation);
 	}
-}
-
-/**
- * The shapes an operation answers its caller with: what it returns, and what
- * it rejects with. Both are answers — one is the call succeeding and the other
- * the call refused — and a reaction may wait on either (decisions 13 and 25).
- */
-export function answersOf(operation: Consumable): DataSchema[] {
-	return operation.returns
-		? [operation.returns, ...operation.rejects]
-		: operation.rejects;
 }
 
 /**
@@ -189,22 +153,6 @@ export function* operationsCalledBy(bc: BoundedContext): Iterable<Consumable> {
 	for (const member of [...bc.aggregates.values(), ...bc.services.values()])
 		for (const { consumable } of member.consumptions)
 			if (consumable.type === "operation") yield consumable;
-}
-
-/**
- * The operations `bc` calls that answer with `schema`: what a reaction waiting
- * on that answer is really waiting for, and what the surfaces name beside it so
- * a reader can see where the answer comes from.
- */
-export function answeredBy(
-	bc: BoundedContext,
-	schema: DataSchema,
-): Consumable[] {
-	const answering: Consumable[] = [];
-	for (const operation of operationsCalledBy(bc))
-		if (answersOf(operation).includes(schema) && !answering.includes(operation))
-			answering.push(operation);
-	return answering;
 }
 
 /**

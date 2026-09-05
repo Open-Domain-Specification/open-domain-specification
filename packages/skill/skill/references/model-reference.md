@@ -232,9 +232,10 @@ A rule that holds by construction of a value object, inside an aggregate on ever
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `constrains` | array of `{ "$ref": string }` | yes | What this invariant is a rule about: the entities, value objects and attributes it holds over, and the operations it constrains, for a rule about what an operation may do. A value object's invariant reaches its own attributes and nothing else; an aggregate's reaches inside its own aggregate and the value objects of its context; a context's reaches anywhere in the context and names at least one operation that guards it. An aggregate's invariant naming a value object means that aggregate's instances of it — the amounts this payment holds, not every Money in the context — because what is saved with an aggregate is the value, not the definition. A rule about every instance of a value wherever it is held is the value's own invariant, and a rule across the instances of several aggregates is the context's (decisions 16 and 27). Naming an operation says which of two things the invariant is: with one it is a guard, a precondition checked when that operation runs; with none it is a rule true again after every save. |
+| `constrains` | array of `{ "$ref": string }` | yes | What this invariant is a rule about: the entities, value objects and attributes it holds over, and the operations it constrains, for a rule about what an operation may do. A value object's invariant reaches its own attributes and nothing else; an aggregate's reaches inside its own aggregate and the value objects of its context; a context's reaches anywhere in the context and names at least one operation that guards it. An aggregate's invariant naming a value object means that aggregate's instances of it — the amounts this payment holds, not every Money in the context — because what is saved with an aggregate is the value, not the definition. A rule about every instance of a value wherever it is held is the value's own invariant, and a rule across the instances of several aggregates is the context's (decisions 16 and 27). Naming an operation says which operation keeps the rule, not what kind of rule it is: `precondition` says that. |
 | `description` | string | yes |  |
 | `name` | string | yes |  |
+| `precondition` | boolean | no | Whether this rule is a precondition: checked before the operation it names runs, and not kept true afterwards — enough funds at initiation, an entitlement at playback start, a pet still available at approval. What it was checked against may move on the moment the call returns, so nothing re-establishes it. Absent or false means the operations it names keep it and it is still true after them: `PostEntry` must produce balanced postings and the postings stay balanced. A precondition names the operation it guards (`precondition-names-operation`), because a check before nothing in particular is a check nowhere (decision 27, second amendment). |
 
 No other fields are allowed.
 
@@ -246,7 +247,7 @@ A reaction: when these events happen, issue these commands.
 |---|---|---|---|
 | `description` | string | yes |  |
 | `name` | string | yes |  |
-| `on` | array of `{ "$ref": string }` | yes | What triggers this policy: an event consumable, or a `DataSchema` an operation of this context's consumptions returns or rejects with, which means "when that answer comes back". The answer is synchronous because the operation is, so nothing else says so (decision 23). |
+| `on` | array of `{ "$ref": string }` | yes | What triggers this policy: an event consumable, or an answer of an operation this context consumes, which means "when that answer comes back". An answer is named by its origin — `<operation ref>/returns` or `<operation ref>/rejects/<schema id>` — and never by the shape alone, so two operations refusing with one schema wake only whoever named the call that was made. The answer is synchronous because the operation is, so nothing else says so (decision 23). |
 | `then` | array of `{ "$ref": string }` | yes | The operation consumables this policy issues. |
 
 No other fields are allowed.
@@ -262,7 +263,7 @@ A long-running reaction that holds state across events: it remembers which of it
 | `disposition` | "by-design" | "refactor" | "tolerated" | no | What the architecture thinks of this process. Absent means `by-design`. |
 | `ends` | array of `{ "$ref": string }` | yes | What completes an instance: an event consumable, or an answer named the same way `on` names one. |
 | `name` | string | yes |  |
-| `on` | array of `{ "$ref": string }` | yes | Further event consumables the process waits for or reacts to while an instance is alive, and the `DataSchema`s it waits to come back: a schema an operation of this context's consumptions returns or rejects with means "when that answer comes back", which is the call-and-branch a process manager is usually made of. Like a policy's `on`, one of these may belong to another context: subscribing to a published fact, or calling out and waiting, is how contexts integrate (decision 23). |
+| `on` | array of `{ "$ref": string }` | yes | Further event consumables the process waits for or reacts to while an instance is alive, and the answers it waits to come back: an answer of an operation this context consumes, named by its origin the way a policy's `on` names one, means "when that answer comes back", which is the call-and-branch a process manager is usually made of. Like a policy's `on`, one of these may belong to another context: subscribing to a published fact, or calling out and waiting, is how contexts integrate (decision 23). |
 | `starts` | array of `{ "$ref": string }` | yes | The event consumables that begin an instance of this process. An answer is what a caller gets back from a call, so something was already waiting for it and an instance that did not exist cannot have been: only an event starts one. |
 | `then` | array of `{ "$ref": string }` | yes | The operation consumables of this process's own context that it issues. |
 
@@ -378,11 +379,15 @@ Every cross-link is an object `{ "$ref": "<path>" }`. Paths are JSON pointers in
 | Process | `#/boundedcontexts/<bc>/processes/<process>` |
 | Glossary term | `#/boundedcontexts/<bc>/glossary/<term>` |
 | Schema | `#/boundedcontexts/<bc>/schemas/<schema>` |
+| Answer an operation returns | `<operation path>/returns` |
+| Answer an operation rejects with | `<operation path>/rejects/<schema>` |
 | Consumption | `<consumer path>/consumes/<consumable path, with ~ for />`, plus `/<id of the first caller in by>` where the consumer takes that consumable more than once |
 | Relationship | `#/relationships/<source>~<type>~<target>` |
 
 A consumption has no id of its own, so its path is derived from the pair it joins: `#/boundedcontexts/sales/services/order_app/consumes/boundedcontexts~catalog~services~pet_app~provides~get_pet` is Order App's consumption of Pet App's Get Pet. It is never the position in `consumes[]`, so reordering the array changes no ref, and it is computed rather than stored, so nothing writes it in a file: it is what a diagnostic about a consumption points at. One consumer may take one consumable more than once when the exchanges differ — an archive keeping the response as it stands, a decision translating it through an anti-corruption layer — and the pair alone then no longer identifies a consumption: each of them names the callers that make it, no two of them name the same caller (`consumption-once`), and the id of the first caller in `by` is appended as a further segment. A pair declared once keeps the plain ref.
 
 A relationship has no id of its own either: its path is the two contexts it joins and the type that joins them, so `#/relationships/catalog_bc~customer-supplier~sales_bc` is the customer-supplier relationship from Catalog to Sales. It too is computed rather than stored, and it is what a diagnostic about a relationship points at.
+
+An answer has no id of its own either: it is one operation coming back, so its path is that operation's plus what it came back as. `#/boundedcontexts/payments/services/payments_api/provides/authorise_payment/rejects/payment_declined` is what AuthorisePayment refuses with, and the same path ending `/returns` is what it answers with when it succeeds. A reaction waiting on an answer names it this way and never by the schema alone: schemas are shared, so two operations may refuse with one shape, and the shape alone cannot say which call came back. The schema id in a `/rejects/` path is one the operation declares in `rejects`; anything else resolves to nothing.
 
 A bounded context path never embeds the domain or subdomain, so moving a context between subdomains breaks no refs. A ref that points at nothing makes the whole file fail to load.

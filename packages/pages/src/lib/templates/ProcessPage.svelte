@@ -11,8 +11,7 @@ export const sections = [
 
 <script lang="ts">
 import {
-	answeredBy,
-	DataSchema,
+	Answer,
 	ODSFlowMap,
 	type Process,
 	type ReactionTrigger,
@@ -31,7 +30,6 @@ import Lockup from "../atoms/Lockup.svelte";
 import ConsumableKeywords from "../molecules/ConsumableKeywords.svelte";
 import { contextCrumbs } from "../molecules/crumbs";
 import { kindOf } from "../molecules/element-kind";
-import Joined from "../molecules/Joined.svelte";
 import DiagramFigure from "../organisms/DiagramFigure.svelte";
 import LanguageSection from "../organisms/LanguageSection.svelte";
 import PageHeader from "../organisms/PageHeader.svelte";
@@ -54,10 +52,19 @@ const flowMap = $derived(ODSFlowMap.fromBoundedContext(bc));
 
 /**
  * Where a trigger comes from: an event's provider, or — for an answer — the
- * operations this context calls that come back with that shape (decision 23).
+ * one operation the answer names, which is the call this process made
+ * (decision 23, third amendment).
  */
-const sourcesOf = (trigger: ReactionTrigger) =>
-	trigger instanceof DataSchema ? answeredBy(bc, trigger) : [trigger.provider];
+const sourceOf = (trigger: ReactionTrigger) =>
+	trigger instanceof Answer ? trigger.operation : trigger.provider;
+
+/**
+ * What the name in the first column links to. An answer has no page of its
+ * own — it is a call coming back, not an element — so it links to the shape it
+ * came back as, and the Provider column says which call.
+ */
+const linkOf = (trigger: ReactionTrigger) =>
+	trigger instanceof Answer ? trigger.schema.ref : trigger.ref;
 
 /** Every table names the kind, since what a process waits for may be an answer. */
 const columnsFor = (label: string, withKind: boolean): Column[] => [
@@ -73,11 +80,12 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 	<DataTable columns={columnsFor(label, withKind)} {rows} {empty} rowId={(c) => c.ref}>
 		{#snippet cell(c, col)}
 			{#if col.key === "name"}
-				<Lockup kind={kindOf(c)} name={c.name} ref={c.ref} />
+				<Lockup kind={kindOf(c)} name={c.name} ref={linkOf(c)} />
 			{:else if col.key === "kind"}
-				{#if c instanceof DataSchema}<Keyword text="answer" />{:else}<ConsumableKeywords consumable={c} />{/if}
+				{#if c instanceof Answer}<Keyword text={c.rejection ? "rejection" : "answer"} />{:else}<ConsumableKeywords consumable={c} />{/if}
 			{:else if col.key === "provider"}
-				<Joined>{#each sourcesOf(c) as source (source.ref)}<Lockup kind={kindOf(source)} name={source.name} ref={source.ref} />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+				{@const source = sourceOf(c)}
+				<Lockup kind={kindOf(source)} name={source.name} ref={source.ref} />
 			{:else if col.key === "context"}
 				<Lockup kind="boundedcontext" name={c.boundedcontext.name} ref={c.boundedcontext.ref} />
 			{:else}

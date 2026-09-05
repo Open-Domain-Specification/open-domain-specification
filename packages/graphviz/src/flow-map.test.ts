@@ -88,7 +88,7 @@ describe("flowMapToDigraph", () => {
 		order.consumes(score, { pattern: "conformist", by: [ask] });
 		bc.addProcess("Order to approval", { description: "" })
 			.starts(placed)
-			.on(verdict)
+			.on(score.returned())
 			.issues(ask)
 			.ends(placed);
 		const dot = flowMapToDigraph(ODSFlowMap.fromWorkspace(ws)).toDot();

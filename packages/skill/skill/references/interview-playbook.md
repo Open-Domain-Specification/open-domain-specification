@@ -118,6 +118,12 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   the transition is made, and the operation then shows the rule it has to uphold. Only an
   operation of the same aggregate; if the user names the API endpoint, the aggregate's own
   operation behind it is the one to name.
+- Per rule that names an operation: "is it still true after that runs, or only checked as it
+  runs?" → only checked as it runs is a precondition: `precondition: true`, and it must name
+  the operation it guards. Enough funds at initiation, an entitlement at playback start, the
+  pet still available at approval — each was read somewhere else and may have moved on by the
+  next save. Still true after is the ordinary case and takes no flag: a posting operation has
+  to balance its postings, and they stay balanced.
 - Per rule: "is this true of the value itself, whatever holds it?" → a rule that is about a
   value alone — a checksum, a currency, a range — is that value object's:
   `valueObject.addInvariant(...)`, constraining its own attributes and nothing else. Nothing
@@ -185,7 +191,10 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   cover. If the answer is a status code and nothing else, leave `rejects` off rather than
   inventing a shape, and never put one on an event.
 - "When <event> happens, what do you then do automatically?" → a policy with `on` the event
-  and `then` the operation. The event in `on` may belong to another context, because reacting
+  and `then` the operation. If what it waits for is a reply rather than a fact — "when the
+  authorisation comes back declined" — that is an answer, and `on` names it as the call it
+  comes back from: `operation.returned()` or `operation.rejected(schema)`, never the schema
+  alone, since two operations may refuse with one shape. The event in `on` may belong to another context, because reacting
   to a published fact is a consumption; the operation in `then` is always the policy's own
   context's. To act on a neighbour, name a local operation that consumes theirs.
 - Then, once: "Does anything here wait for more than one event before it acts, and what tells

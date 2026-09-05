@@ -730,7 +730,7 @@
             "description": "A rule that holds by construction of a value object, inside an aggregate on every save, or across the instances and aggregates of a bounded context.",
             "properties": {
                 "constrains": {
-                    "description": "What this invariant is a rule about: the entities, value objects and\nattributes it holds over, and the operations it constrains, for a rule\nabout what an operation may do. A value object's invariant reaches its\nown attributes and nothing else; an aggregate's reaches inside its own\naggregate and the value objects of its context; a context's reaches\nanywhere in the context and names at least one operation that guards it.\n\nAn aggregate's invariant naming a value object means that aggregate's\ninstances of it — the amounts this payment holds, not every Money in the\ncontext — because what is saved with an aggregate is the value, not the\ndefinition. A rule about every instance of a value wherever it is held is\nthe value's own invariant, and a rule across the instances of several\naggregates is the context's (decisions 16 and 27).\n\nNaming an operation says which of two things the invariant is: with one it\nis a guard, a precondition checked when that operation runs; with none it\nis a rule true again after every save.",
+                    "description": "What this invariant is a rule about: the entities, value objects and\nattributes it holds over, and the operations it constrains, for a rule\nabout what an operation may do. A value object's invariant reaches its\nown attributes and nothing else; an aggregate's reaches inside its own\naggregate and the value objects of its context; a context's reaches\nanywhere in the context and names at least one operation that guards it.\n\nAn aggregate's invariant naming a value object means that aggregate's\ninstances of it — the amounts this payment holds, not every Money in the\ncontext — because what is saved with an aggregate is the value, not the\ndefinition. A rule about every instance of a value wherever it is held is\nthe value's own invariant, and a rule across the instances of several\naggregates is the context's (decisions 16 and 27).\n\nNaming an operation says which operation keeps the rule, not what kind of\nrule it is: `precondition` says that.",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -750,6 +750,10 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "precondition": {
+                    "description": "Whether this rule is a precondition: checked before the operation it\nnames runs, and not kept true afterwards — enough funds at initiation, an\nentitlement at playback start, a pet still available at approval. What it\nwas checked against may move on the moment the call returns, so nothing\nre-establishes it.\n\nAbsent or false means the operations it names keep it and it is still\ntrue after them: `PostEntry` must produce balanced postings and the\npostings stay balanced. A precondition names the operation it guards\n(`precondition-names-operation`), because a check before nothing in\nparticular is a check nowhere (decision 27, second amendment).",
+                    "type": "boolean"
                 }
             },
             "required": [
@@ -771,7 +775,7 @@
                     "type": "string"
                 },
                 "on": {
-                    "description": "What triggers this policy: an event consumable, or a `DataSchema` an\noperation of this context's consumptions returns or rejects with, which\nmeans \"when that answer comes back\". The answer is synchronous because\nthe operation is, so nothing else says so (decision 23).",
+                    "description": "What triggers this policy: an event consumable, or an answer of an\noperation this context consumes, which means \"when that answer comes\nback\". An answer is named by its origin — `<operation ref>/returns` or\n`<operation ref>/rejects/<schema id>` — and never by the shape alone, so\ntwo operations refusing with one schema wake only whoever named the call\nthat was made. The answer is synchronous because the operation is, so\nnothing else says so (decision 23).",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -850,7 +854,7 @@
                     "type": "string"
                 },
                 "on": {
-                    "description": "Further event consumables the process waits for or reacts to while an\ninstance is alive, and the `DataSchema`s it waits to come back: a schema\nan operation of this context's consumptions returns or rejects with means\n\"when that answer comes back\", which is the call-and-branch a process\nmanager is usually made of. Like a policy's `on`, one of these may belong\nto another context: subscribing to a published fact, or calling out and\nwaiting, is how contexts integrate (decision 23).",
+                    "description": "Further event consumables the process waits for or reacts to while an\ninstance is alive, and the answers it waits to come back: an answer of an\noperation this context consumes, named by its origin the way a policy's\n`on` names one, means \"when that answer comes back\", which is the\ncall-and-branch a process manager is usually made of. Like a policy's\n`on`, one of these may belong to another context: subscribing to a\npublished fact, or calling out and waiting, is how contexts integrate\n(decision 23).",
                     "items": {
                         "additionalProperties": false,
                         "properties": {

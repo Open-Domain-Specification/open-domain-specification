@@ -113,10 +113,13 @@ export interface PolicySchema {
 	name: string;
 	description: string;
 	/**
-	 * What triggers this policy: an event consumable, or a `DataSchema` an
-	 * operation of this context's consumptions returns or rejects with, which
-	 * means "when that answer comes back". The answer is synchronous because
-	 * the operation is, so nothing else says so (decision 23).
+	 * What triggers this policy: an event consumable, or an answer of an
+	 * operation this context consumes, which means "when that answer comes
+	 * back". An answer is named by its origin — `<operation ref>/returns` or
+	 * `<operation ref>/rejects/<schema id>` — and never by the shape alone, so
+	 * two operations refusing with one schema wake only whoever named the call
+	 * that was made. The answer is synchronous because the operation is, so
+	 * nothing else says so (decision 23).
 	 */
 	on: { $ref: string }[];
 	/** The operation consumables this policy issues. */
@@ -139,12 +142,13 @@ export interface ProcessSchema {
 	starts: { $ref: string }[];
 	/**
 	 * Further event consumables the process waits for or reacts to while an
-	 * instance is alive, and the `DataSchema`s it waits to come back: a schema
-	 * an operation of this context's consumptions returns or rejects with means
-	 * "when that answer comes back", which is the call-and-branch a process
-	 * manager is usually made of. Like a policy's `on`, one of these may belong
-	 * to another context: subscribing to a published fact, or calling out and
-	 * waiting, is how contexts integrate (decision 23).
+	 * instance is alive, and the answers it waits to come back: an answer of an
+	 * operation this context consumes, named by its origin the way a policy's
+	 * `on` names one, means "when that answer comes back", which is the
+	 * call-and-branch a process manager is usually made of. Like a policy's
+	 * `on`, one of these may belong to another context: subscribing to a
+	 * published fact, or calling out and waiting, is how contexts integrate
+	 * (decision 23).
 	 */
 	on: { $ref: string }[];
 	/** The operation consumables of this process's own context that it issues. */
@@ -470,11 +474,24 @@ export interface InvariantSchema {
 	 * the value's own invariant, and a rule across the instances of several
 	 * aggregates is the context's (decisions 16 and 27).
 	 *
-	 * Naming an operation says which of two things the invariant is: with one it
-	 * is a guard, a precondition checked when that operation runs; with none it
-	 * is a rule true again after every save.
+	 * Naming an operation says which operation keeps the rule, not what kind of
+	 * rule it is: `precondition` says that.
 	 */
 	constrains: { $ref: string }[];
+	/**
+	 * Whether this rule is a precondition: checked before the operation it
+	 * names runs, and not kept true afterwards — enough funds at initiation, an
+	 * entitlement at playback start, a pet still available at approval. What it
+	 * was checked against may move on the moment the call returns, so nothing
+	 * re-establishes it.
+	 *
+	 * Absent or false means the operations it names keep it and it is still
+	 * true after them: `PostEntry` must produce balanced postings and the
+	 * postings stay balanced. A precondition names the operation it guards
+	 * (`precondition-names-operation`), because a check before nothing in
+	 * particular is a check nowhere (decision 27, second amendment).
+	 */
+	precondition?: boolean;
 }
 
 /**

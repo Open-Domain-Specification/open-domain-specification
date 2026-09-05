@@ -175,6 +175,12 @@ function everythingWrong(): Workspace {
 	// invariant-in-context: a context's rule counting another context's entity,
 	// and context-invariant-guarded: no operation of A checks either of them
 	a.addInvariant("Counts Elsewhere", { description: "" }).constrains(otherRoot);
+	// precondition-names-operation: a rule that says it stops holding after
+	// something, and never says after what
+	tree.addInvariant("Checked Before Nothing", {
+		description: "",
+		precondition: true,
+	});
 	// attribute-relation-coherence: attribute without relation, relation
 	// without attribute, and a list against a single-valued relation
 	const coherence = a.addAggregate("Coherence", { description: "" });

@@ -2,8 +2,8 @@ import { contextMemberNamespace, type ODSNamespace } from "./namespace";
 import { ReactionChain, type Reactor } from "./reaction-walk";
 import { ScopeManager } from "./scope-manager";
 import {
+	Answer,
 	BoundedContext,
-	DataSchema,
 	Policy,
 	Process,
 	type ReactionTrigger,
@@ -20,11 +20,14 @@ import {
  * even when they live in another context; operations no policy issues, and
  * nothing a policy issues reaches, are not.
  *
- * An answer is drawn as one more edge from the operation that answers, carrying
+ * An answer is drawn as one more edge from the operation it names, carrying
  * the name of the shape it came back as. It gets no node of its own: a returned
- * or rejected schema is the operation coming back, not something that happens
+ * or rejected shape is the operation coming back, not something that happens
  * on the way somewhere, and a reader following the arrow wants the two things
- * the call joined rather than a third box between them (decision 23).
+ * the call joined rather than a third box between them. The edge starts at
+ * exactly the operation the reactor named, so two operations refusing with one
+ * shared shape draw two edges and neither claims the other's caller
+ * (decision 23).
  *
  * That is also why a front need not restate what it calls raises: the map
  * already draws the front, the operation it calls and the event that
@@ -77,19 +80,17 @@ export class ODSFlowMap {
 			// it is drawn and never walked from the process (decision 23), which is
 			// what keeps the normal shape out of `reaction-cycle`.
 			for (const ending of process.endEvents) {
-				if (ending instanceof DataSchema) {
+				if (ending instanceof Answer) {
 					// An ending answer runs the other way: the call comes back into
 					// the process and that is what completes the instance, so the
-					// edge starts at the operation that answered.
-					for (const operation of chain.answerersOf(ending)) {
-						this.addEdge({
-							source: this.addNode(nodeFor(operation)),
-							target: node,
-							kind: "ends",
-							answer: ending.name,
-						});
-						this.walk(operation, chain, walked);
-					}
+					// edge starts at the operation the answer names.
+					this.addEdge({
+						source: this.addNode(nodeFor(ending.operation)),
+						target: node,
+						kind: "ends",
+						answer: ending.name,
+					});
+					this.walk(ending.operation, chain, walked);
 					continue;
 				}
 				this.addEdge({
@@ -104,20 +105,19 @@ export class ODSFlowMap {
 
 	/**
 	 * Draws the chain from where a reaction is woken. An event is walked from
-	 * itself; an answer has no node, so the walk starts at each operation that
-	 * answers with it and the answer is drawn as that operation's own step.
+	 * itself; an answer has no node, so the walk starts at the operation the
+	 * answer names and the answer is drawn as that operation's own step.
 	 */
 	private enter(
 		trigger: ReactionTrigger,
 		chain: ReactionChain,
 		walked: Set<Reactor>,
 	) {
-		if (trigger instanceof DataSchema) {
-			for (const operation of chain.answerersOf(trigger))
-				this.walk(operation, chain, walked);
-			return;
-		}
-		this.walk(trigger, chain, walked);
+		this.walk(
+			trigger instanceof Answer ? trigger.operation : trigger,
+			chain,
+			walked,
+		);
 	}
 
 	/** Draws one step of the chain and everything it reaches, each edge once. */

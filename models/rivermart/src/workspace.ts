@@ -1563,7 +1563,7 @@ const checkout = cartBC
 			"From the customer confirming the basket to an order existing. It asks Payments to hold the cart total and then waits: on a hold the order is placed, on a decline — the answer AuthorisePayment refuses with — the cart is unfrozen so another instrument can be tried and the same instance waits for the next attempt. Correlation is by cartId, which the authorisation carries back. An instance nobody comes back to ends when the hold does: the authorisation expires, Payments says so, and the instance is over without anybody timing the cart out",
 	})
 	.starts(cartCheckedOut)
-	.on(paymentAuthorised, paymentDeclinedSchema)
+	.on(paymentAuthorised, authorisePayment.rejected(paymentDeclinedSchema))
 	.issues(requestAuthorisation, placeOrderForCart, reopenCart)
 	.ends(orderPlaced, authorisationExpired);
 // Everything the checkout reaches for, declared together now that both the

@@ -54,24 +54,23 @@ const KIND = {
 		title: "Holds inside the aggregate's boundary, every time it is saved.",
 		lead: "The elements this rule is about, all inside the aggregate that is saved as one.",
 		guards:
-			"The operations this rule is about. A transition rule is enforced where the transition is made, so these are the ones that have to uphold it.",
+			"The operations this rule is about. Naming one says which operation keeps the rule, not that the rule stops holding after it: balanced postings are still balanced once the posting is made.",
 		empty:
 			"No operation names this rule; it is checked wherever the aggregate is saved.",
 	},
-	// An aggregate's rule that names an operation is a different promise from
-	// one that does not, and the page says which: a guard is checked when that
-	// operation runs — a funds check at initiation, a status transition — and is
-	// not re-established every time the aggregate is saved (decision 27's third
-	// note).
-	guard: {
-		label: "guard",
+	// A precondition is a different promise from a rule kept true afterwards,
+	// and the page says which — but it reads that from the flag the invariant
+	// sets, never from the fact that an operation is named (decision 27's
+	// second amendment).
+	precondition: {
+		label: "precondition",
 		title:
-			"A precondition of the operations it names: checked when one of them runs, not a rule true again after every save.",
-		lead: "The elements this rule is about, all inside the aggregate that is saved as one.",
+			"Checked before the operations it names run, and not true again after them.",
+		lead: "The elements this rule is about, all inside the boundary that states it.",
 		guards:
-			"The operations this rule guards. It is checked at the moment one of them runs, which is what makes it a precondition rather than something the aggregate re-establishes on every save.",
+			"The operations this rule is checked before. What it was checked against — a balance, an entitlement, another context's answer — may move on the moment the call returns, so nothing re-establishes it afterwards.",
 		empty:
-			"No operation names this rule; it is checked wherever the aggregate is saved.",
+			"No operation names this rule, so nothing checks it: a precondition is checked before something runs, and the model has to say what.",
 	},
 	context: {
 		label: "context invariant",
@@ -89,11 +88,9 @@ const KIND = {
 // what each target is: a consumable is an operation the rule guards, anything
 // else is something the rule is about.
 const guarded = $derived(i.guarded);
-// An aggregate's rule that names an operation is a guard on that operation. A
-// context's already reads that way, and a value's can name none.
-const words = $derived(
-	KIND[i.kind === "aggregate" && guarded.length > 0 ? "guard" : i.kind],
-);
+// Which of the two an invariant is, the invariant states: naming an operation
+// says who keeps the rule, and `precondition` says whether it survives them.
+const words = $derived(KIND[i.precondition ? "precondition" : i.kind]);
 const targets = $derived(i.targets.filter((t) => !(t instanceof Consumable)));
 const columns: Column[] = [
 	{ key: "name", label: "Element" },

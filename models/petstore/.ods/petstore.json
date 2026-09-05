@@ -868,6 +868,7 @@
             "approve_only_when_available": {
               "name": "ApproveOnlyWhenAvailable",
               "description": "Move to approved only after the catalogue's summary reported the pet available; the catalogue's status itself is outside this aggregate, so the check is a read through the ACL, not a shared invariant",
+              "precondition": true,
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/sales_bc/valueobjects/order_status"

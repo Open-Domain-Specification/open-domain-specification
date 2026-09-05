@@ -1,8 +1,9 @@
 import {
 	type Aggregate,
+	Answer,
 	type BoundedContext,
 	constrainableLabel,
-	DataSchema,
+	type DataSchema,
 	type Invariant,
 	ODSConsumptionGraph,
 	type Policy,
@@ -32,13 +33,18 @@ ${aggregate.description}
 `;
 
 /**
- * What a reaction waits for, named in one cell. An answer is marked, because
- * in a column of event names a schema would otherwise read as one more event
- * rather than as a call coming back (decision 23).
+ * What a reaction waits for, named in one cell. An answer is named by the call
+ * it comes back from, because in a column of event names a shape would
+ * otherwise read as one more event, and two operations may answer with the
+ * same one (decision 23).
  */
 const triggerList = (triggers: ReactionTrigger[]) =>
 	triggers
-		.map((it) => (it instanceof DataSchema ? `${it.name} (answer)` : it.name))
+		.map((it) =>
+			it instanceof Answer
+				? `${it.name} (answer to ${it.operation.name})`
+				: it.name,
+		)
 		.join(", ") || "-";
 
 const policySection = (policy: Policy) => [

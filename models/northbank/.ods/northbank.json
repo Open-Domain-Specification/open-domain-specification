@@ -2008,6 +2008,7 @@
             "funds_available_at_initiation": {
               "name": "FundsAvailableAtInitiation",
               "description": "An instruction is created only if the payer's available balance, read through AccountServicing, covers the amount; the overdraft itself is Accounts' rule at posting",
+              "precondition": true,
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction/attributes/amount"
@@ -2156,7 +2157,7 @@
               "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_rejected"
             },
             {
-              "$ref": "#/boundedcontexts/fraud/schemas/transaction_verdict"
+              "$ref": "#/boundedcontexts/fraud/services/fraud_app/provides/score_transaction/returns"
             }
           ],
           "then": [
@@ -2706,6 +2707,7 @@
             "auth_within_available_balance": {
               "name": "AuthWithinAvailableBalance",
               "description": "An authorisation is approved only if the available balance read from AccountServicing at that moment covers it; Accounts then holds the amount",
+              "precondition": true,
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/cards/aggregates/card/entities/authorisation"
