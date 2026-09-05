@@ -18,6 +18,7 @@ Three leftovers from card 70. `ODSContextMap.fromScope` keeps only relationships
 - [ ] StreamLine's DISCOVERY.md names `RecommendationsAPI`, not `TasteProfile`, for its deliberate `internal-consumable` finding, after card 73 moved the consumption
 - [ ] The ref grammar in the skill reference gains the relationship row (`#/relationships/<source>~<type>~<target>`), which diagnostics already point at
 - [ ] The `AttributeTable` Storybook harness shows an inherited group (a kind of an entity), so the designer can see what card 59 drew
+- [ ] Petstore's `orderApp.consumes(deliverOrder)` names `by: [confirmDelivery]`, so the chain no longer stops at `ConfirmDelivery`
 - [ ] `bash scripts/verify-all.sh` green
 
 ## Comments

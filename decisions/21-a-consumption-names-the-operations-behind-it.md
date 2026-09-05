@@ -73,3 +73,7 @@ interview, asked only when the honest answer is "one or two of them".
 ## Amendment (2026-09-07)
 
 The record said no rule reads `by` as causality. The architect review showed the cost: a policy issues a local operation that calls out through the boundary, and there the flow map and `reaction-cycle` stopped, so a ring through two contexts validated clean. `by` is the one causal link the model has across a boundary, and it is read as one: the flow map and the cycle walk continue from a local operation through the consumption it makes to the consumed operation and what that raises (card 69). Only a consumed operation continues the chain — consuming an event is a subscription, not something the consumer causes — and the new `raises-in-context` rule keeps that link the only one there is, by refusing an operation that claims to raise another context's event. Order and timing are still not modelled.
+
+## Amendment (2026-09-08, second)
+
+The Consequences said petstore's `MarkPetSoldForOrder` consumption was left plain so both readings appear in one model. Card 77 gave it its `by`, because the reaction chain needed it; the plain reading now appears on `GetPetSummary` and `DeliverOrder` instead, and card 78 gives the latter its `by` too. A front that calls out declares no `raises` of its own for what it reaches (`raises-restated`); the pages say what it reaches beneath its Raises list.
