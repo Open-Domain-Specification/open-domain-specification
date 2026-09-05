@@ -1302,15 +1302,44 @@ describe("attribute-relation-coherence", () => {
 			valueobject: money,
 			optional: true,
 		});
-		root.uses(money, "Deposit", "0..1");
+		root.uses(money, "paid down by", "0..1", { for: "Deposit" });
 		root.addAttribute("Instalments", { type: "Money[]", valueobject: money });
-		root.uses(money, "Instalments", "1..*");
+		root.uses(money, "paid in", "1..*", { for: "Instalments" });
 		expect(coherenceRules(ws)).toEqual([]);
 	});
 
 	// Codex's case: a customer's current address and its address history are
-	// both Addresses, and the two halves are paired by label.
-	it("matches an attribute to its relation by label when one value object is used twice", () => {
+	// both Addresses, and the two halves are paired by "for" while each label
+	// stays the phrase the relation map draws.
+	it("matches an attribute to its relation by for when one value object is used twice", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("currentAddress", { type: "Money", valueobject: money });
+		root.addAttribute("addressHistory", {
+			type: "Money[]",
+			valueobject: money,
+			optional: true,
+		});
+		root.uses(money, "lives at", "1", { for: "currentAddress" });
+		root.uses(money, "has lived at", "*", { for: "addressHistory" });
+		expect(coherenceRules(ws)).toEqual([]);
+	});
+
+	it("reads the cardinality of the relation for names, not the first one it finds", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("currentAddress", { type: "Money", valueobject: money });
+		root.addAttribute("addressHistory", {
+			type: "Money[]",
+			valueobject: money,
+			optional: true,
+		});
+		root.uses(money, "lives at", "1", { for: "currentAddress" });
+		root.uses(money, "has lived at", "0..1", { for: "addressHistory" });
+		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
+			'"Order" types attribute "addressHistory" as a list ("Money[]") but its "uses" relation to "Money" has cardinality "0..1"',
+		]);
+	});
+
+	it("does not pair by label: a phrase that happens to spell an attribute is still ambiguous", () => {
 		const { ws, root, money } = pair();
 		root.addAttribute("currentAddress", { type: "Money", valueobject: money });
 		root.addAttribute("addressHistory", {
@@ -1320,25 +1349,15 @@ describe("attribute-relation-coherence", () => {
 		});
 		root.uses(money, "currentAddress", "1");
 		root.uses(money, "addressHistory", "*");
-		expect(coherenceRules(ws)).toEqual([]);
-	});
-
-	it("reads each labelled relation's own cardinality, not the first one it finds", () => {
-		const { ws, root, money } = pair();
-		root.addAttribute("currentAddress", { type: "Money", valueobject: money });
-		root.addAttribute("addressHistory", {
-			type: "Money[]",
-			valueobject: money,
-			optional: true,
-		});
-		root.uses(money, "currentAddress", "1");
-		root.uses(money, "addressHistory", "0..1");
 		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
-			'"Order" types attribute "addressHistory" as a list ("Money[]") but its "uses" relation to "Money" has cardinality "0..1"',
+			'"Order" types attribute "currentAddress" by value object "Money", and 2 "uses" relations point at "Money" with none of them declaring `for: "currentAddress"`; where one value object is used twice each relation names the attribute it draws',
+			'"Order" types attribute "addressHistory" by value object "Money", and 2 "uses" relations point at "Money" with none of them declaring `for: "addressHistory"`; where one value object is used twice each relation names the attribute it draws',
+			'"Order" uses "Money" 2 times and this relation draws no named attribute, which is no attribute of "Order" typed by "Money"; where one value object is used twice each relation names the attribute it draws with `for`',
+			'"Order" uses "Money" 2 times and this relation draws no named attribute, which is no attribute of "Order" typed by "Money"; where one value object is used twice each relation names the attribute it draws with `for`',
 		]);
 	});
 
-	it("reports an attribute that no label picks out among several relations, and the relation with it", () => {
+	it("reports an attribute that no for picks out among several relations, and the relation with it", () => {
 		const { ws, root, money } = pair();
 		root.addAttribute("currentAddress", { type: "Money", valueobject: money });
 		root.addAttribute("addressHistory", {
@@ -1346,11 +1365,24 @@ describe("attribute-relation-coherence", () => {
 			valueobject: money,
 			optional: true,
 		});
-		root.uses(money, "currentAddress", "1");
+		root.uses(money, "lives at", "1", { for: "currentAddress" });
 		root.uses(money, "lived at", "*");
 		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
-			'"Order" types attribute "addressHistory" by value object "Money", and 2 "uses" relations point at "Money" with none of them labelled "addressHistory"; where one value object is used twice the label says which relation belongs to which attribute',
-			'"Order" uses "Money" 2 times and this relation is labelled "lived at", which names no attribute of "Order" typed by "Money"; where one value object is used twice the label says which relation belongs to which attribute',
+			'"Order" types attribute "addressHistory" by value object "Money", and 2 "uses" relations point at "Money" with none of them declaring `for: "addressHistory"`; where one value object is used twice each relation names the attribute it draws',
+			'"Order" uses "Money" 2 times and this relation draws no named attribute, which is no attribute of "Order" typed by "Money"; where one value object is used twice each relation names the attribute it draws with `for`',
+		]);
+	});
+
+	it("reports a for that names an attribute typed by something else", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("Total", { type: "Money", valueobject: money });
+		root.addAttribute("Reference", { type: "string" });
+		root.uses(money, "totalled in", "1", { for: "Reference" });
+		// The only relation to Money still pairs with the only attribute typed
+		// by it, so the attribute half is quiet; the relation half says the
+		// name it was given is not one of them.
+		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
+			'"Order" uses "Money" 1 time and this relation draws `for: "Reference"`, which is no attribute of "Order" typed by "Money"; where one value object is used twice each relation names the attribute it draws with `for`',
 		]);
 	});
 
@@ -1515,12 +1547,13 @@ describe("specialisation", () => {
 	it("reads an inherited relation and an inherited attribute as the kind's own", () => {
 		const { ws, account, loan, money } = accounts();
 		account.addAttribute("Balance", { type: "Money", valueobject: money });
-		account.uses(money, "Balance", "1");
+		account.uses(money, "balanced at", "1", { for: "Balance" });
 		// The kind adds an attribute typed by a value object its parent already
 		// uses, and a relation to one its parent's attribute already names. The
-		// kind holds two of each in all, so the labels pair them.
+		// kind holds two of each in all, so each relation names the attribute
+		// it draws.
 		loan.addAttribute("Arrears", { type: "Money", valueobject: money });
-		loan.uses(money, "Arrears", "1");
+		loan.uses(money, "in arrears of", "1", { for: "Arrears" });
 		expect(
 			ws.validate().filter((d) => d.rule === "attribute-relation-coherence"),
 		).toEqual([]);

@@ -16,6 +16,7 @@ exports[`Visitor Example > should compile  1`] = `
               "relations": [
                 {
                   "cardinality": undefined,
+                  "for": undefined,
                   "label": "addressable by",
                   "relation": "uses",
                   "target": {
@@ -110,6 +111,7 @@ exports[`Visitor Example > should compile  1`] = `
               "relations": [
                 {
                   "cardinality": undefined,
+                  "for": undefined,
                   "label": "totals",
                   "relation": "uses",
                   "target": {

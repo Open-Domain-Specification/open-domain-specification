@@ -42,7 +42,7 @@ element lives in a workspace file; `DSL` is the core call that creates it.
 | "only one of these per customer", "no more than five a day in total", "never twice for the same pair" | Invariant of the **context**, across its instances | `boundedcontexts.<id>.invariants.<id>`, `constrains` naming what it counts and the operation that checks it | `bc.addInvariant(name, {description}).constrains(attribute, operation)` |
 | "an order points at a pet" (another cluster) | references relation | `relations[]` `relation: "references"` to the other root | `entity.references(otherRoot, label, cardinality)` |
 | "it contains lines that can't exist alone" | includes relation | `relation: "includes"` | `entity.includes(child, label, cardinality)` |
-| "it has an address / a status" | uses relation | `relation: "uses"` | `entity.uses(vo, label, cardinality)` |
+| "it has an address / a status" | uses relation | `relation: "uses"` | `entity.uses(vo, label, cardinality)`; where the same value object is used for two attributes, `entity.uses(vo, label, cardinality, { for: "attribute" })` |
 | "exactly one / at most one / any number / at least one" | cardinality | `"1"` / `"0..1"` / `"*"` / `"1..*"` | third argument |
 | "you can ask it to ...", "POST /x", "the button does ..." | operation | `provides.<id>` `type: "operation"` | `provides(name, {type: "operation", ...})` |
 | "then we tell everyone that ...", a past-tense fact | event | `provides.<id>` `type: "event"` | `provides(name, {type: "event", ...})` |

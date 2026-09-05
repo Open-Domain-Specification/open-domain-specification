@@ -713,10 +713,12 @@ function cardinalityDiagnostics(
  * as "many"; `optional` and the relation's cardinality are read as themselves.
  *
  * When several relations point at one value object the halves are paired by
- * label: a customer with a current address and an address history declares two
- * `uses` relations to Address, and the label of each is the name of the
- * attribute it belongs to. With a single relation no label is needed, which is
- * the common case and stays unwritten.
+ * `for`: a customer with a current address and an address history declares two
+ * `uses` relations to Address, and each names the attribute it draws. The
+ * label stays the phrase the relation map reads. With a single relation to the
+ * value object nothing is named, which is the common case; where several point
+ * at it and none names the attribute, the pairing is ambiguous and reported
+ * rather than guessed.
  *
  * Inherited attributes and relations are the subtype's (decision 22): a kind
  * that adds an attribute typed by a value object its parent already uses is
@@ -745,14 +747,13 @@ const attributeRelationCoherence: Rule = (workspace) => {
 				continue;
 			}
 			const relation =
-				candidates.length === 1
-					? candidates[0]
-					: candidates.find((r) => r.label === attribute.name);
+				candidates.find((r) => r.for === attribute.name) ??
+				(candidates.length === 1 ? candidates[0] : undefined);
 			if (!relation) {
 				diagnostics.push({
 					severity: "warning",
 					rule: "attribute-relation-coherence",
-					message: `"${member.name}" types attribute "${attribute.name}" by value object "${vo.name}", and ${candidates.length} "uses" relations point at "${vo.name}" with none of them labelled "${attribute.name}"; where one value object is used twice the label says which relation belongs to which attribute`,
+					message: `"${member.name}" types attribute "${attribute.name}" by value object "${vo.name}", and ${candidates.length} "uses" relations point at "${vo.name}" with none of them declaring \`for: "${attribute.name}"\`; where one value object is used twice each relation names the attribute it draws`,
 					ref: member.ref,
 				});
 				continue;
@@ -768,18 +769,44 @@ const attributeRelationCoherence: Rule = (workspace) => {
 				(a) => a.valueobject === target,
 			);
 			const siblings = usesOfValueObject(member.allRelations, target);
-			const matched =
-				siblings.length === 1
-					? typed.length > 0
-					: typed.some((a) => a.name === relation.label);
+			const matched = relation.for
+				? typed.some((a) => a.name === relation.for)
+				: siblings.length === 1 && typed.length > 0;
 			if (matched) continue;
 			diagnostics.push({
 				severity: "warning",
 				rule: "attribute-relation-coherence",
 				message:
-					siblings.length === 1
+					siblings.length === 1 && !relation.for
 						? `"${member.name}" uses "${target.name}" but no attribute of "${member.name}" is typed by "${target.name}", so the page says the relation exists and never shows where`
-						: `"${member.name}" uses "${target.name}" ${siblings.length} times and this relation is labelled ${relation.label ? `"${relation.label}"` : "nothing"}, which names no attribute of "${member.name}" typed by "${target.name}"; where one value object is used twice the label says which relation belongs to which attribute`,
+						: `"${member.name}" uses "${target.name}" ${siblings.length} time${siblings.length === 1 ? "" : "s"} and this relation draws ${relation.for ? `\`for: "${relation.for}"\`` : "no named attribute"}, which is no attribute of "${member.name}" typed by "${target.name}"; where one value object is used twice each relation names the attribute it draws with \`for\``,
+				ref: member.ref,
+			});
+		}
+	}
+	return diagnostics;
+};
+
+/**
+ * A relation's `for` names an attribute of the thing that declares the
+ * relation.
+ *
+ * `for` exists to pair one half of a statement with the other, so a `for` that
+ * points at nothing pairs nothing: the attribute it names was renamed, or
+ * belongs to the target rather than to the source. Inherited attributes count
+ * as the subtype's own (decision 22), so a kind may draw an attribute its
+ * parent declares.
+ */
+const relationForResolves: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const member of modelMembersOf(workspace)) {
+		for (const relation of member.relations) {
+			if (!relation.for) continue;
+			if (member.allAttributes.some((a) => a.name === relation.for)) continue;
+			diagnostics.push({
+				severity: "error",
+				rule: "relation-for-resolves",
+				message: `"${member.name}" relates to "${relation.target.name}" for attribute "${relation.for}", which is no attribute of "${member.name}"`,
 				ref: member.ref,
 			});
 		}
@@ -2537,10 +2564,19 @@ const RULES: CataloguedRule[] = [
 		rule: "attribute-relation-coherence",
 		severities: ["warning"],
 		summary:
-			"An attribute typed by a value object has a matching uses relation, matched by label where one value object is used twice, and the two agree about how many there are.",
-		why: "The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened; and when they disagree about number the model says two things at once — a list-typed attribute against a single-valued relation, an optional attribute against a relation that says there is always one, a required attribute against a relation that says there may be none. One value object may be used twice, a current address beside an address history, so with several relations to it the label is what pairs each with its attribute. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.",
-		fix: 'Add the missing uses relation or the missing attribute, and give the relation the cardinality the attribute already implies: * or 1..* for a list, 0..1 or * for an optional one, 1 or 1..* for a required one. Where two relations point at the same value object, label each with the name of its attribute. The type itself is free text and is never checked against the value object\'s name; only a trailing [] is read, as "many".',
+			"An attribute typed by a value object has a matching uses relation, matched by the relation's for where one value object is used twice, and the two agree about how many there are.",
+		why: "The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened; and when they disagree about number the model says two things at once — a list-typed attribute against a single-valued relation, an optional attribute against a relation that says there is always one, a required attribute against a relation that says there may be none. One value object may be used twice, a current address beside an address history, so with several relations to it each says with for which attribute it draws; the label stays the phrase the map reads. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.",
+		fix: 'Add the missing uses relation or the missing attribute, and give the relation the cardinality the attribute already implies: * or 1..* for a list, 0..1 or * for an optional one, 1 or 1..* for a required one. Where two relations point at the same value object, set for on each to the name of the attribute it draws. The type itself is free text and is never checked against the value object\'s name; only a trailing [] is read, as "many".',
 		check: attributeRelationCoherence,
+	},
+	{
+		rule: "relation-for-resolves",
+		severities: ["error"],
+		summary:
+			"A relation's for names an attribute of the entity or value object that declares the relation.",
+		why: "for is how a relation says which attribute it draws, so that a label can stay a phrase where one value object is used twice. A for naming nothing pairs nothing: the attribute has been renamed or removed, or the name written is the target's rather than the source's, and the coherence check silently loses the half it was meant to find.",
+		fix: "Write the name of the attribute on this entity or value object that the relation draws, spelled as the attribute is; an attribute a parent declares counts as this one's own. Where the relation is the only one to its target, drop for altogether and the two halves pair by themselves.",
+		check: relationForResolves,
 	},
 	{
 		rule: "attribute-one-shape",

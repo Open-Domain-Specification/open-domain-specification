@@ -191,6 +191,7 @@ No other fields are allowed.
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `cardinality` | "*" | "0..1" | "1" | "1..*" | no |  |
+| `for` | string | no | The attribute of the source this relation draws, named where the source uses one value object for more than one attribute: a customer's current address beside its address history. The label stays the phrase the relation map reads ("lives at", "in arrears of"); this is the field it belongs to. Absent where the source uses the target once, which is the common case. |
 | `label` | string | no |  |
 | `relation` | "includes" | "references" | "uses" | yes |  |
 | `target` | `{ "$ref": string }` | yes |  |

@@ -1347,12 +1347,20 @@ export class Entity
 		return this.addRelation(target, attributes);
 	}
 
+	/**
+	 * Declares that this holds the target: the label is the phrase the
+	 * relation map draws ("lives at"), the cardinality how many. Where this
+	 * uses one value object for more than one attribute, `{ for }` names the
+	 * attribute this relation draws, so the phrase need not be a field name.
+	 */
 	uses(
 		target: Entity | ValueObject,
 		label: string,
 		cardinality?: RelationCardinality,
+		options: EntityRelationOptions = {},
 	) {
 		this.addRelation(target, {
+			...options,
 			label,
 			relation: RelationType.Uses,
 			cardinality,
@@ -1363,8 +1371,10 @@ export class Entity
 		target: Entity | ValueObject,
 		label: string,
 		cardinality?: RelationCardinality,
+		options: EntityRelationOptions = {},
 	) {
 		this.addRelation(target, {
+			...options,
 			label,
 			relation: RelationType.Includes,
 			cardinality,
@@ -1375,8 +1385,10 @@ export class Entity
 		target: Entity | ValueObject,
 		label: string,
 		cardinality?: RelationCardinality,
+		options: EntityRelationOptions = {},
 	) {
 		this.addRelation(target, {
+			...options,
 			label,
 			relation: RelationType.References,
 			cardinality,
@@ -1511,12 +1523,20 @@ export class ValueObject
 		return this.addRelation(target, attributes);
 	}
 
+	/**
+	 * Declares that this holds the target: the label is the phrase the
+	 * relation map draws ("lives at"), the cardinality how many. Where this
+	 * uses one value object for more than one attribute, `{ for }` names the
+	 * attribute this relation draws, so the phrase need not be a field name.
+	 */
 	uses(
 		target: Entity | ValueObject,
 		label: string,
 		cardinality?: RelationCardinality,
+		options: EntityRelationOptions = {},
 	) {
 		this.addRelation(target, {
+			...options,
 			label,
 			relation: RelationType.Uses,
 			cardinality,
@@ -1527,8 +1547,10 @@ export class ValueObject
 		target: Entity | ValueObject,
 		label: string,
 		cardinality?: RelationCardinality,
+		options: EntityRelationOptions = {},
 	) {
 		this.addRelation(target, {
+			...options,
 			label,
 			relation: RelationType.Includes,
 			cardinality,
@@ -1539,8 +1561,10 @@ export class ValueObject
 		target: Entity | ValueObject,
 		label: string,
 		cardinality?: RelationCardinality,
+		options: EntityRelationOptions = {},
 	) {
 		this.addRelation(target, {
+			...options,
 			label,
 			relation: RelationType.References,
 			cardinality,
@@ -1668,6 +1692,15 @@ export type EntityRelationAttributes = {
 	label?: string;
 	relation: EntityRelationType;
 	cardinality?: RelationCardinality;
+} & EntityRelationOptions;
+
+/**
+ * What a relation carries beyond its target, its kind and its number: which
+ * attribute of the source it draws. See {@link EntityRelation.for}.
+ */
+export type EntityRelationOptions = {
+	/** The attribute of the source this relation draws; see {@link EntityRelation.for}. */
+	for?: string;
 };
 
 export class EntityRelation
@@ -1678,6 +1711,15 @@ export class EntityRelation
 	label?: string;
 	relation: EntityRelationType;
 	cardinality?: RelationCardinality;
+	/**
+	 * The attribute of the source this relation draws, where the source uses
+	 * one value object for more than one attribute: a customer's current
+	 * address beside its address history. The label stays a phrase; this says
+	 * which field the phrase is about, and `attribute-relation-coherence`
+	 * pairs the two halves by it. Absent where the source uses the target
+	 * once, which is the common case.
+	 */
+	for?: string;
 
 	constructor(
 		source: Entity | ValueObject,
@@ -1689,6 +1731,7 @@ export class EntityRelation
 		this.label = attributes.label;
 		this.relation = attributes.relation;
 		this.cardinality = attributes.cardinality;
+		this.for = attributes.for;
 		source.relations.push(this);
 	}
 
@@ -1702,6 +1745,7 @@ export class EntityRelation
 			relation: this.relation,
 			label: this.label,
 			cardinality: this.cardinality,
+			for: this.for,
 		};
 	}
 }
