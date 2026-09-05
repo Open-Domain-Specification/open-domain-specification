@@ -32,7 +32,7 @@ independently of the name.
 | `Aggregate` | `addEntity(name, { description, root? })` | an entity |
 | `Aggregate` | `addInvariant(name, { description })` | an invariant; chain `.constrains(...entities, valueObjects, attributes or the aggregate's own consumables)` |
 | `Aggregate`, `Service` | `provides(name, { type, description, pattern?, internal?, schema?, returns?, comments?, disposition? })` | a consumable; `type` is `"event" \| "operation"`, `pattern` is `"open-host-service" \| "published-language"`; `schema` is what the caller sends and `returns` what an operation answers with, both schemas of the provider's own context |
-| `Aggregate`, `Service` | `consumes(consumable, { pattern?, comments?, disposition? })` | a consumption; `pattern` is `"conformist" \| "anti-corruption-layer"` |
+| `Aggregate`, `Service` | `consumes(consumable, { pattern?, by?, comments?, disposition? })` | a consumption; `pattern` is `"conformist" \| "anti-corruption-layer"`; `by` names the consumer's own operations, or policies of its context, that make this exchange, and is left off when the whole consumer depends on it |
 | `Consumable` | `raises(...events)` | the events an operation raises |
 | `Entity`, `ValueObject`, `DataSchema` | `addAttribute(name, { type, description?, identity?, valueobject?, schema?, identifies? })` | an attribute; `type` is free text, `valueobject` and `schema` are mutually exclusive, and only a `DataSchema`'s attribute may use `schema`; `identifies` is the root entity whose identity the attribute holds, and may be in another context |
 | `Entity`, `ValueObject` | `uses(target, label, cardinality?)` | a `uses` relation, at a value object of the same context |

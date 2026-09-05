@@ -126,6 +126,7 @@ Represents a consumption in the Open Domain Specification (ODS).
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
+| `by` | array of `{ "$ref": string }` | no | The consumer's own operations or policies that make this exchange, when only some of them do: a subscription service consumes a payment gateway when it renews, not when it lists entitlements. Absent means the whole consumer depends on the consumable, which is the common case. Optional detail, not a call graph. |
 | `comments` | array of [Comment](#comment) | no | Grounded statements about the real system behind this consumption. |
 | `consumable` | `{ "$ref": string }` | yes |  |
 | `disposition` | "by-design" | "refactor" | "tolerated" | no | What the architecture thinks of this consumption. Absent means `by-design`. |

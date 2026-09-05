@@ -198,6 +198,14 @@ export interface ConsumptionSchema {
 	consumable: { $ref: string };
 	/** The downstream role the consumer adopts for this consumable. */
 	pattern?: DownstreamRole;
+	/**
+	 * The consumer's own operations or policies that make this exchange, when
+	 * only some of them do: a subscription service consumes a payment gateway
+	 * when it renews, not when it lists entitlements. Absent means the whole
+	 * consumer depends on the consumable, which is the common case. Optional
+	 * detail, not a call graph.
+	 */
+	by?: { $ref: string }[];
 	/** Grounded statements about the real system behind this consumption. */
 	comments?: Comment[];
 	/** What the architecture thinks of this consumption. Absent means `by-design`. */

@@ -365,6 +365,22 @@ export class Workspace
 		return target;
 	}
 
+	/** Resolves any ref a consumption's `by` may name. */
+	getConsumptionCallerByRef(ref: string): ConsumptionCaller | undefined {
+		const target = this.getByRef(ref);
+		return target instanceof Consumable || target instanceof Policy
+			? target
+			: undefined;
+	}
+
+	getConsumptionCallerByRefOrThrow(ref: string): ConsumptionCaller {
+		const target = this.getConsumptionCallerByRef(ref);
+		if (!target) {
+			throw new Error(`Consumable or Policy with ref ${ref} not found`);
+		}
+		return target;
+	}
+
 	private *terms(): Iterable<GlossaryTerm> {
 		for (const boundedContext of this.boundedcontexts.values()) {
 			yield* boundedContext.glossary.values();
@@ -1432,8 +1448,19 @@ export class EntityRelation
 	}
 }
 
+/**
+ * What can be named as making a consumption: one of the consumer's own
+ * operations, or a policy of the consumer's context that issues them.
+ */
+export type ConsumptionCaller = Consumable | Policy;
+
 export type ConsumptionAttributes = {
 	pattern?: DownstreamRole;
+	/**
+	 * The consumer's own operations or policies behind this exchange. Absent
+	 * means the whole consumer (decision 21).
+	 */
+	by?: ConsumptionCaller[];
 } & EvidenceOptions;
 
 export class Consumption
@@ -1442,6 +1469,8 @@ export class Consumption
 	consumer: Aggregate | Service;
 	consumable: Consumable;
 	pattern?: DownstreamRole;
+	/** The consumer's own operations or policies that make this exchange. */
+	by: ConsumptionCaller[];
 	comments: ods.Comment[];
 	disposition?: ods.Disposition;
 
@@ -1454,6 +1483,7 @@ export class Consumption
 		this.consumer.consumptions.push(this);
 		this.consumable = consumable;
 		this.pattern = attributes.pattern;
+		this.by = attributes.by ?? [];
 		this.comments = attributes.comments ?? [];
 		this.disposition = normaliseDisposition(attributes.disposition);
 		this.consumable.consumptions.push(this);
@@ -1467,6 +1497,7 @@ export class Consumption
 		return {
 			consumable: { $ref: this.consumable.ref },
 			pattern: this.pattern,
+			by: this.by.length ? this.by.map((it) => ({ $ref: it.ref })) : undefined,
 			comments: this.comments.length ? this.comments : undefined,
 			disposition: this.disposition,
 		};

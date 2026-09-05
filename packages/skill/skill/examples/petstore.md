@@ -110,6 +110,12 @@ const _addPetOp = petApp
 
 ```ts
 orderApp.consumes(getPetSummaryOp, { pattern: "anti-corruption-layer" });
+// Placing or deleting an order never calls Catalog; one operation does, and
+// `by` says so. Left off, a consumption means the whole consumer.
+orderApp.consumes(reservePetForOrder, {
+	pattern: "anti-corruption-layer",
+	by: [reservePetForApproved],
+});
 
 salesBC.downstreamOf(catalogBC, {
 	type: "customer-supplier",

@@ -38,6 +38,23 @@ describe("schema round-trip", () => {
 		expect(consumption.consumable.provider.name).toBe("Order");
 	});
 
+	it("re-links what makes a consumption", () => {
+		const invoiceAgg = rebuilt.getAggregateByRefOrThrow(
+			"#/boundedcontexts/invoicing_bc/aggregates/invoice",
+		);
+		expect(invoiceAgg.consumptions[0].by.map((it) => it.ref)).toEqual([
+			"#/boundedcontexts/invoicing_bc/policies/invoice_on_order_placed",
+		]);
+	});
+
+	it("leaves by absent when the whole consumer depends on the consumable", () => {
+		const invoiceApp = rebuilt.getServiceByRefOrThrow(
+			"#/boundedcontexts/invoicing_bc/services/invoice_app",
+		);
+		expect(invoiceApp.consumptions[0].by).toEqual([]);
+		expect(invoiceApp.consumptions[0].toSchema().by).toBeUndefined();
+	});
+
 	it("re-links consumables to their schema and schema attributes to value objects", () => {
 		const consumable = rebuilt.getConsumableByRefOrThrow(
 			"#/boundedcontexts/ordering_bc/aggregates/order/provides/order_placed",

@@ -34,6 +34,11 @@ export type GraphEdge = {
 	/** Text at each end, e.g. roles or cardinality. */
 	sourceLabel?: string;
 	targetLabel?: string;
+	/**
+	 * On a consumable edge, the consumer's own operations or policies that make
+	 * the exchange. Empty means the whole consumer (decision 21).
+	 */
+	by?: string[];
 	/** Handle ids at each end, when a node offers more than one. */
 	sourceHandle?: string;
 	targetHandle?: string;

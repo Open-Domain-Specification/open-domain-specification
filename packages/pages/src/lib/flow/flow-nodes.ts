@@ -22,6 +22,11 @@ export type ContextEdgeData = {
 	summary?: string;
 	/** Given the badge's flow coordinates, so the card can be anchored to it. */
 	onBadgeClick?: (at: { x: number; y: number }) => void;
+	/**
+	 * On a consumable edge, the consumer's own operations or policies behind the
+	 * consumption; the edge shows them when the line is hovered.
+	 */
+	by?: string[];
 };
 
 /** What shapes the Svelte Flow nodes beyond the layout: the options and the map's freedoms. */
@@ -131,6 +136,7 @@ export function flowEdges(positioned: Positioned): Edge[] {
 		data: {
 			sourceLabel: e.sourceLabel,
 			targetLabel: e.targetLabel,
+			by: e.by,
 			...(e.intent && {
 				disposition: dispositionOf(e.intent),
 				summary: intentSummary(e.intent),

@@ -353,6 +353,22 @@
             "additionalProperties": false,
             "description": "Represents a consumption in the Open Domain Specification (ODS).",
             "properties": {
+                "by": {
+                    "description": "The consumer's own operations or policies that make this exchange, when\nonly some of them do: a subscription service consumes a payment gateway\nwhen it renews, not when it lists entitlements. Absent means the whole\nconsumer depends on the consumable, which is the common case. Optional\ndetail, not a call graph.",
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
                 "comments": {
                     "description": "Grounded statements about the real system behind this consumption.",
                     "items": {

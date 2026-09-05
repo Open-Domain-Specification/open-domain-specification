@@ -10,6 +10,7 @@ import {
 import { attributeListMd } from "./attributes.md";
 import { contextBreadcrumbsMd } from "./breadcrumbs.md";
 import { providesTableMd } from "./consumables.md";
+import { consumptionSectionMd } from "./consumptions.md";
 import { markdownTable } from "./lib/markdown-table";
 import {
 	pathToConsumableMapSvg,
@@ -44,12 +45,6 @@ const invariantSection = (invariant: Invariant) => [
 	invariant.description,
 	invariant.targets.map(constrainableLabel).join(", ") || "-",
 ];
-
-const consumptionSection = (consumption: Consumption) => `
-### ${consumption.consumable.name} ${consumption.pattern ? `[${consumption.pattern}]` : ""}
-${consumption.consumable.description}
-- **Provider**: [${consumption.consumable.provider.name}](${pathToIndexMd(consumption.consumable.provider.path, consumption.consumer.path)})
-`;
 
 export const aggergateMd = (aggregate: Aggregate, options?: Options) => `
 ${options?.breadcrumbs ? contextBreadcrumbsMd(aggregate.boundedcontext) : ""}
@@ -113,7 +108,7 @@ ${providesTableMd(aggregate.consumables, aggregate.path)}
 ${
 	aggregate.consumptions.length > 0
 		? Array.from(aggregate.consumptions.entries())
-				.map(([_name, consumption]) => consumptionSection(consumption))
+				.map(([_name, consumption]) => consumptionSectionMd(consumption))
 				.join("")
 		: "> No consumptions."
 }

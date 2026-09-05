@@ -52,6 +52,8 @@ describe("ConsumableMap", () => {
 			target: a2Slot,
 			sourcePattern: "conformist",
 			targetPattern: "open-host-service",
+			// The whole consumer depends on it, which is the common case.
+			by: [],
 		});
 
 		expect(

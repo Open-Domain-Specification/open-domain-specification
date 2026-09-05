@@ -164,6 +164,14 @@
 
 **Usual fix:** Drop internal and give the consumable an upstream role, or stop the other context from using it.
 
+## `consumption-by-resolves` (error)
+
+**Requires:** A consumption's by names the consumer's own operations, or policies of the consumer's context.
+
+**Why it matters:** A consumption belongs to the consumer: it is that node saying what it depends on, and by is the detail of which of its own operations or reactions make the exchange. Naming another node's operation would have one part of the model declare behaviour it does not own, and the reader would have no way to check it against the node's own page.
+
+**Usual fix:** Point by at operations the consumer itself provides, or at policies of its bounded context, and let the node that really makes the call declare its own consumption. If nothing narrower than the whole consumer is true, drop by — absent means the whole consumer, which is the common case.
+
 ## `policy-in-context` (error)
 
 **Requires:** A policy issues operations of its own bounded context; it may still react to another context's event.

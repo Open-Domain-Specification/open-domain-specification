@@ -139,10 +139,19 @@ ${strategicPositionMd(boundedcontext)}
 
 ## Consumptions
 ${markdownTable(
-	["Consumer", "Consumed As", "Provider", "Consumable", "Provided As"],
+	[
+		"Consumer",
+		"Made By",
+		"Consumed As",
+		"Provider",
+		"Consumable",
+		"Provided As",
+	],
 	ODSConsumptionGraph.fromBoundedContext(boundedcontext).consumptions.map(
 		(it) => [
 			`[${it.consumer.name}](${pathToIndexMd(it.consumer.path, boundedcontext.path)})`,
+			// Absent means the whole consumer, which is the common case.
+			it.by.map((by) => by.name).join(", ") || "-",
 			it.pattern ?? "-",
 			it.consumable.provider.name,
 			it.consumable.name,

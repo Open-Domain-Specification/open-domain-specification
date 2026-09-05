@@ -99,19 +99,19 @@ Open-host service for /store/order endpoints
 - `separate-ways` — **Separate Ways** (SW). A deliberate decision to forego integration and develop independently.
 
 ## Consumptions
-| Consumer | Consumed As | Provider | Consumable | Provided As |
-| --- | --- | --- | --- | --- |
-| [ShipmentApp](../fulfilment_bc/services/shipment_app/index.md) | - | OrderApp | ConfirmDelivery | open-host-service |
-| [OrderApp](services/order_app/index.md) | - | Order | DeliverOrder | - |
-| [Shipment](../fulfilment_bc/aggregates/shipment/index.md) | conformist | Order | OrderApproved | published-language |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Order | OrderApproved | published-language |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Order | OrderDelivered | published-language |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Order | OrderDeleted | published-language |
-| [OrderApp](services/order_app/index.md) | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
-| [PetApp](../catalog_bc/services/pet_app/index.md) | - | Pet | ReservePet | - |
-| [PetApp](../catalog_bc/services/pet_app/index.md) | - | Pet | MarkPetSold | - |
-| [OrderApp](services/order_app/index.md) | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
-| [OrderApp](services/order_app/index.md) | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
-| [OrderApp](services/order_app/index.md) | - | Shipment | ShipmentDelivered | published-language |
+| Consumer | Made By | Consumed As | Provider | Consumable | Provided As |
+| --- | --- | --- | --- | --- | --- |
+| [ShipmentApp](../fulfilment_bc/services/shipment_app/index.md) | - | - | OrderApp | ConfirmDelivery | open-host-service |
+| [OrderApp](services/order_app/index.md) | - | - | Order | DeliverOrder | - |
+| [Shipment](../fulfilment_bc/aggregates/shipment/index.md) | - | conformist | Order | OrderApproved | published-language |
+| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | - | conformist | Order | OrderApproved | published-language |
+| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | - | conformist | Order | OrderDelivered | published-language |
+| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | - | conformist | Order | OrderDeleted | published-language |
+| [OrderApp](services/order_app/index.md) | - | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [PetApp](../catalog_bc/services/pet_app/index.md) | - | - | Pet | ReservePet | - |
+| [PetApp](../catalog_bc/services/pet_app/index.md) | - | - | Pet | MarkPetSold | - |
+| [OrderApp](services/order_app/index.md) | - | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
+| [OrderApp](services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
+| [OrderApp](services/order_app/index.md) | - | - | Shipment | ShipmentDelivered | published-language |
 
 

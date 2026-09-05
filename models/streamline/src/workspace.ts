@@ -1640,14 +1640,19 @@ const registerHousehold = subscriptionAgg.provides("RegisterHousehold", {
 	type: "operation",
 	internal: true,
 });
-subscriptionAgg.consumes(householdCreated, { pattern: "conformist" });
-billingBC
+const awaitPlan = billingBC
 	.addPolicy("Await plan on household", {
 		description:
 			"A new household is registered in billing until it picks a plan",
 	})
 	.on(householdCreated)
 	.then(registerHousehold);
+// Nothing in billing reads Identity's event except this reaction; renewing,
+// dunning and answering entitlement never touch it.
+subscriptionAgg.consumes(householdCreated, {
+	pattern: "conformist",
+	by: [awaitPlan],
+});
 billingBC
 	.addPolicy("Dun on failed payment", {
 		description:
@@ -1883,16 +1888,19 @@ const discRentalInvoiced = queueAgg.provides("DiscRentalInvoiced", {
 	schema: discInvoicedSchema,
 });
 
-subscriptionAgg.consumes(discRentalInvoiced, {
-	pattern: "anti-corruption-layer",
-});
-billingBC
+const addDiscCharge = billingBC
 	.addPolicy("Add disc charge to bill", {
 		description:
 			"The legacy export is translated into an invoice line on the household",
 	})
 	.on(discRentalInvoiced)
 	.then(addInvoiceLine);
+// The monthly export reaches billing through this one reaction; the rest of
+// the subscription lifecycle knows nothing about discs.
+subscriptionAgg.consumes(discRentalInvoiced, {
+	pattern: "anti-corruption-layer",
+	by: [addDiscCharge],
+});
 
 /* =======================
    CONTEXT RELATIONSHIPS

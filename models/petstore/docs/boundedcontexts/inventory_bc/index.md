@@ -72,14 +72,14 @@ Open-host service for /store/inventory
 - `shared-kernel` — **Shared Kernel** (SK). A shared subset of domain model and code, co-owned by both teams.
 
 ## Consumptions
-| Consumer | Consumed As | Provider | Consumable | Provided As |
-| --- | --- | --- | --- | --- |
-| [InventoryQuery](services/inventory_query/index.md) | - | InventoryProjection | InventoryUpdated | published-language |
-| [InventoryProjection](aggregates/inventory_projection/index.md) | conformist | Pet | PetRegistered | published-language |
-| [InventoryProjection](aggregates/inventory_projection/index.md) | conformist | Pet | PetDeleted | published-language |
-| [InventoryProjection](aggregates/inventory_projection/index.md) | conformist | Pet | PetStatusChanged | published-language |
-| [InventoryProjection](aggregates/inventory_projection/index.md) | conformist | Order | OrderApproved | published-language |
-| [InventoryProjection](aggregates/inventory_projection/index.md) | conformist | Order | OrderDelivered | published-language |
-| [InventoryProjection](aggregates/inventory_projection/index.md) | conformist | Order | OrderDeleted | published-language |
+| Consumer | Made By | Consumed As | Provider | Consumable | Provided As |
+| --- | --- | --- | --- | --- | --- |
+| [InventoryQuery](services/inventory_query/index.md) | - | - | InventoryProjection | InventoryUpdated | published-language |
+| [InventoryProjection](aggregates/inventory_projection/index.md) | - | conformist | Pet | PetRegistered | published-language |
+| [InventoryProjection](aggregates/inventory_projection/index.md) | - | conformist | Pet | PetDeleted | published-language |
+| [InventoryProjection](aggregates/inventory_projection/index.md) | - | conformist | Pet | PetStatusChanged | published-language |
+| [InventoryProjection](aggregates/inventory_projection/index.md) | - | conformist | Order | OrderApproved | published-language |
+| [InventoryProjection](aggregates/inventory_projection/index.md) | - | conformist | Order | OrderDelivered | published-language |
+| [InventoryProjection](aggregates/inventory_projection/index.md) | - | conformist | Order | OrderDeleted | published-language |
 
 

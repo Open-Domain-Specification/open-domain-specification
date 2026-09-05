@@ -83,17 +83,21 @@ nonEmpty.constrains(removeLine);
 
 // Policies react to events with operations, even across contexts.
 const billing = ws.addBoundedContext("Billing", { description: "" });
-const raise = billing
-	.addAggregate("Invoice", { description: "" })
-	.provides("Raise Invoice", {
-		description: "",
-		type: "operation",
-		internal: true,
-	});
-billing
+const invoice = billing.addAggregate("Invoice", { description: "" });
+const raise = invoice.provides("Raise Invoice", {
+	description: "",
+	type: "operation",
+	internal: true,
+});
+const invoiceOnPlaced = billing
 	.addPolicy("Invoice on order placed", { description: "" })
 	.on(placed)
 	.then(raise);
+
+// A consumption is what draws the dependency between two nodes. `by` says
+// what of the consumer makes it: here only the policy reads the other
+// context's event. Left off, it means the whole consumer.
+invoice.consumes(placed, { pattern: "conformist", by: [invoiceOnPlaced] });
 
 // Each context keeps its ubiquitous language.
 ordering.addTerm("Order", {

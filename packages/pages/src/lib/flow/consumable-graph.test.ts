@@ -50,10 +50,15 @@ const edges: [string, ODSConsumptionMapEdge][] = [
 			target: reserve,
 			sourcePattern: "anti-corruption-layer",
 			targetPattern: "open-host-service",
+			// One operation of the consumer makes this call; the rest do not.
+			by: ["Approve Order"],
 		},
 	],
-	["e2", { source: consumer, target: changed }],
-	["e3", { source: provider, target: changed, sourcePattern: "conformist" }],
+	["e2", { source: consumer, target: changed, by: [] }],
+	[
+		"e3",
+		{ source: provider, target: changed, sourcePattern: "conformist", by: [] },
+	],
 ];
 const map = {
 	nodes: new Map([
@@ -128,6 +133,7 @@ describe("consumableGraph", () => {
 				directed: false,
 				sourceLabel: "anti-corruption-layer",
 				targetLabel: "open-host-service",
+				by: ["Approve Order"],
 			},
 			{
 				id: "e2",
@@ -140,6 +146,7 @@ describe("consumableGraph", () => {
 				directed: false,
 				sourceLabel: undefined,
 				targetLabel: undefined,
+				by: [],
 			},
 			{
 				id: "e3",
@@ -152,6 +159,7 @@ describe("consumableGraph", () => {
 				directed: false,
 				sourceLabel: "conformist",
 				targetLabel: undefined,
+				by: [],
 			},
 		]);
 	});

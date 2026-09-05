@@ -73,16 +73,16 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 - `partnership` — **Partnership** (P). Mutual co-operation where teams coordinate development and releases.
 
 ## Consumptions
-| Consumer | Consumed As | Provider | Consumable | Provided As |
-| --- | --- | --- | --- | --- |
-| [ShipmentApp](services/shipment_app/index.md) | - | OrderApp | ConfirmDelivery | open-host-service |
-| [OrderApp](../sales_bc/services/order_app/index.md) | - | Order | DeliverOrder | - |
-| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
-| [PetApp](../catalog_bc/services/pet_app/index.md) | - | Pet | ReservePet | - |
-| [PetApp](../catalog_bc/services/pet_app/index.md) | - | Pet | MarkPetSold | - |
-| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
-| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
-| [OrderApp](../sales_bc/services/order_app/index.md) | - | Shipment | ShipmentDelivered | published-language |
-| [Shipment](aggregates/shipment/index.md) | conformist | Order | OrderApproved | published-language |
+| Consumer | Made By | Consumed As | Provider | Consumable | Provided As |
+| --- | --- | --- | --- | --- | --- |
+| [ShipmentApp](services/shipment_app/index.md) | - | - | OrderApp | ConfirmDelivery | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | - | - | Order | DeliverOrder | - |
+| [OrderApp](../sales_bc/services/order_app/index.md) | - | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [PetApp](../catalog_bc/services/pet_app/index.md) | - | - | Pet | ReservePet | - |
+| [PetApp](../catalog_bc/services/pet_app/index.md) | - | - | Pet | MarkPetSold | - |
+| [OrderApp](../sales_bc/services/order_app/index.md) | - | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | - | - | Shipment | ShipmentDelivered | published-language |
+| [Shipment](aggregates/shipment/index.md) | - | conformist | Order | OrderApproved | published-language |
 
 

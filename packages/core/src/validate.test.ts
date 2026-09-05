@@ -254,6 +254,89 @@ describe("Workspace.validate", () => {
 		expect(rulesOf(ws)).not.toContain("warning:role-coherence");
 	});
 
+	it("accepts a consumption made by the consumer's own operation or its context's policy", () => {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const evt = up
+			.addService("S", { description: "", type: "application" })
+			.provides("Happened", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			});
+		const consumer = down.addService("T", {
+			description: "",
+			type: "application",
+		});
+		const renew = consumer.provides("Renew", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const react = down.addPolicy("React", { description: "" });
+		consumer.consumes(evt, { pattern: "conformist", by: [renew, react] });
+		expect(rulesOf(ws)).not.toContain("error:consumption-by-resolves");
+	});
+
+	it("flags a consumption made by another node's operation or another context's policy", () => {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const provider = up.addService("S", {
+			description: "",
+			type: "application",
+		});
+		const op = provider.provides("Op", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		const poll = provider.provides("Poll", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		const elsewhere = up.addPolicy("Elsewhere", { description: "" });
+		down
+			.addService("T", { description: "", type: "application" })
+			.consumes(op, { pattern: "conformist", by: [poll, elsewhere] });
+		const diagnostics = ws
+			.validate()
+			.filter((d) => d.rule === "consumption-by-resolves");
+		expect(diagnostics).toHaveLength(2);
+		expect(diagnostics[0].message).toContain('provided by "S"');
+		expect(diagnostics[1].message).toContain('belongs to "Up"');
+	});
+
+	it("flags a consumption said to be made by one of the consumer's events", () => {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const op = up
+			.addService("S", { description: "", type: "application" })
+			.provides("Op", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			});
+		const consumer = down.addService("T", {
+			description: "",
+			type: "application",
+		});
+		const raised = consumer.provides("Raised", {
+			description: "",
+			type: "event",
+			internal: true,
+		});
+		consumer.consumes(op, { pattern: "conformist", by: [raised] });
+		const diagnostics = ws
+			.validate()
+			.filter((d) => d.rule === "consumption-by-resolves");
+		expect(diagnostics).toHaveLength(1);
+		expect(diagnostics[0].message).toContain('the event "Raised"');
+	});
+
 	it("keeps payload schemas inside the publishing context", () => {
 		const ws = emptyWorkspace();
 		const a = ws.addBoundedContext("A", { description: "" });

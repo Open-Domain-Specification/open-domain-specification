@@ -79,15 +79,15 @@ Open-host service for /pet endpoints
 - `shared-kernel` — **Shared Kernel** (SK). A shared subset of domain model and code, co-owned by both teams.
 
 ## Consumptions
-| Consumer | Consumed As | Provider | Consumable | Provided As |
-| --- | --- | --- | --- | --- |
-| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
-| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
-| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
-| [PetApp](services/pet_app/index.md) | - | Pet | ReservePet | - |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Pet | PetRegistered | published-language |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Pet | PetStatusChanged | published-language |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Pet | PetDeleted | published-language |
-| [PetApp](services/pet_app/index.md) | - | Pet | MarkPetSold | - |
+| Consumer | Made By | Consumed As | Provider | Consumable | Provided As |
+| --- | --- | --- | --- | --- | --- |
+| [OrderApp](../sales_bc/services/order_app/index.md) | - | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | - | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
+| [PetApp](services/pet_app/index.md) | - | - | Pet | ReservePet | - |
+| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | - | conformist | Pet | PetRegistered | published-language |
+| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | - | conformist | Pet | PetStatusChanged | published-language |
+| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | - | conformist | Pet | PetDeleted | published-language |
+| [PetApp](services/pet_app/index.md) | - | - | Pet | MarkPetSold | - |
 
 

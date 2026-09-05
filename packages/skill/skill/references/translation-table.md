@@ -46,6 +46,7 @@ element lives in a workspace file; `DSL` is the core call that creates it.
 | "what you get back", "the response body", "it returns ..." | Schema on the operation | operation `returns: {$ref}` on the provider's own context | `provides(name, {type: "operation", returns: s})` |
 | "when X happens we then Y", "automatically after X" | Policy | `policies.<id>` with `on: [event refs]`, `then: [operation refs]` | `bc.addPolicy(name, {description}).on(e).then(op)` |
 | "we listen for their X" | consumption | `consumes: [{consumable: {$ref}, pattern}]` | `agg.consumes(theirEvent, {pattern})` |
+| "only renewal calls them", "just the dunning job talks to it" | the operations behind a consumption | consumption `by: [{$ref}, ...]`, the consumer's own operations or its context's policies | `svc.consumes(theirOp, {by: [renew]})` |
 | "the API layer", "the endpoint handler", "the use case" | application service | `services.<id>` `type: "application"` | `bc.addService(name, {type: "application", description})` |
 | "logic that doesn't belong to one thing", "pricing across orders" | domain service | `type: "domain"` | `type: "domain"` |
 | "we call it ...", "a.k.a.", "sales say purchase" | Glossary term | `glossary.<id>` with `definition`, `aliases`, `embodiedBy` | `bc.addTerm(name, {definition, aliases, embodiedBy})` |

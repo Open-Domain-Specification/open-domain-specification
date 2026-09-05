@@ -641,7 +641,6 @@ orderApp.consumes(getPetSummaryOp, {
 });
 // The same ACL calls the two catalogue transitions Sales is responsible for,
 // through the open host PetApp offers rather than the Pet aggregate itself.
-orderApp.consumes(reservePetForOrder, { pattern: "anti-corruption-layer" });
 orderApp.consumes(markPetSoldForOrder, { pattern: "anti-corruption-layer" });
 
 // A policy names operations of its own context (decision 17), so the two
@@ -661,6 +660,12 @@ const markPetSoldForDelivered = orderApp.provides("MarkPetSold", {
 	type: "operation",
 	internal: true,
 	schema: orderIdSchema,
+});
+// Placing, reading or deleting an order never calls Catalog; one operation
+// does, and naming it keeps the dependency where it really is.
+orderApp.consumes(reservePetForOrder, {
+	pattern: "anti-corruption-layer",
+	by: [reservePetForApproved],
 });
 
 // A policy is "when this happens, do that". It may react to events from
