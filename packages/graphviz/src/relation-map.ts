@@ -36,6 +36,11 @@ type EdgeKind = ODSRelationMapEdge["relation"];
  * the one line allowed to leave a bounded context (decision 14). When that
  * entity is a child, the line lands on the child inside its aggregate's
  * cluster, where the root it is reached through is drawn beside it.
+ *
+ * A specialisation is UML's generalisation: a solid line with a hollow
+ * triangle at the thing the kind is a kind of (`onormal`, Graphviz's unfilled
+ * triangle), and no label or multiplicity, because the line says the whole of
+ * it (decision 22).
  */
 const UML_ARROWS: Record<EdgeKind, EdgeAttributesObject> = {
 	[RelationType.References]: {
@@ -59,6 +64,11 @@ const UML_ARROWS: Record<EdgeKind, EdgeAttributesObject> = {
 		arrowtail: "none",
 		style: "dashed",
 	},
+	specialises: {
+		arrowhead: "onormal",
+		arrowtail: "none",
+		style: "solid",
+	},
 };
 
 /** PlantUML connector for each relation, mirroring {@link UML_ARROWS}. */
@@ -67,6 +77,7 @@ const PLANTUML_ARROWS: Record<EdgeKind, string> = {
 	[RelationType.Includes]: "*--",
 	[RelationType.Uses]: "..>",
 	identifies: "..>",
+	specialises: "--|>",
 };
 
 /** The identity edge says what it is, since its line alone cannot. */

@@ -1,6 +1,5 @@
 import {
 	type Aggregate,
-	type Consumption,
 	constrainableLabel,
 	Entity,
 	type Invariant,
@@ -20,13 +19,25 @@ import {
 import { valueObjectsUsedBy } from "./lib/value-objects";
 import type { Options } from "./options";
 
+/**
+ * What kind of thing a row is, and what it is a kind of. A kind says so in
+ * this column rather than in a column of its own, because it is the answer to
+ * the same question: what am I looking at (decision 22).
+ */
+const kindOf = (member: Entity | ValueObject, type: string) =>
+	member.specialises ? `${type} (a kind of ${member.specialises.name})` : type;
+
 /** A value object the aggregate holds, linked to the context that declares it. */
 const valueObjectSection =
 	(aggregate: Aggregate) => (valueObject: ValueObject) => [
-		"Value Object",
+		kindOf(valueObject, "Value Object"),
 		`[${valueObject.name}](${pathToIndexMd(valueObject.boundedcontext.path, aggregate.path)}#value-objects)`,
 		valueObject.description,
-		attributeListMd(valueObject.attributes, aggregate.path),
+		attributeListMd(
+			valueObject.attributes,
+			aggregate.path,
+			valueObject.inheritedAttributes,
+		),
 	];
 
 /** Where a relation end is documented: its aggregate, or its context. */
@@ -34,10 +45,14 @@ const ownerOf = (member: Entity | ValueObject) =>
 	member instanceof Entity ? member.aggregate : member.boundedcontext;
 
 const entitySection = (aggregate: Aggregate) => (entity: Entity) => [
-	entity.root ? "Entity (Root)" : "Entity",
+	kindOf(entity, entity.root ? "Entity (Root)" : "Entity"),
 	entity.root ? `**${entity.name}**` : entity.name,
 	entity.description,
-	attributeListMd(entity.attributes, aggregate.path),
+	attributeListMd(
+		entity.attributes,
+		aggregate.path,
+		entity.inheritedAttributes,
+	),
 ];
 
 const invariantSection = (invariant: Invariant) => [

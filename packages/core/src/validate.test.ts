@@ -78,7 +78,7 @@ describe("Workspace.validate", () => {
 			.filter((d) => d.rule === "cross-aggregate-reference")
 			.map((d) => d.message);
 		expect(messages).toHaveLength(2);
-		expect(messages[0]).toContain("is not the root");
+		expect(messages[0]).toContain("neither the root");
 		expect(messages[1]).toContain('only "references" is allowed');
 	});
 
@@ -1033,6 +1033,158 @@ describe("attribute-relation-coherence", () => {
 		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
 			'"Order" types attribute "Instalments" as a list ("decimal[]") but its "uses" relation to "Money" has cardinality "1"',
 		]);
+	});
+});
+
+describe("specialisation", () => {
+	/** An aggregate whose root has one kind, and a value object to hang off. */
+	function accounts() {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const agg = bc.addAggregate("Account", { description: "" });
+		const account = agg.addRootEntity("Account", { description: "" });
+		account.addAttribute("Id", { type: "uuid", identity: true });
+		const money = bc.addValueObject("Money", { description: "" });
+		money.addAttribute("Amount", { type: "int64" });
+		const loan = agg.addEntity("Loan Account", {
+			description: "",
+			specialises: account,
+		});
+		return { ws, bc, agg, account, loan, money };
+	}
+
+	const specialisationRules = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule.startsWith("specialisation-"));
+
+	it("is quiet on a kind of the root: it is identified by, and reached through, what it is a kind of", () => {
+		const { ws, loan } = accounts();
+		loan.addAttribute("Term", { type: "months" });
+		// No entity-identity warning (the identity is inherited) and no
+		// aggregate-tree orphan warning (a kind is reached where its parent is).
+		expect(
+			ws.validate().filter((d) => d.rule !== "context-serves-subdomain"),
+		).toEqual([]);
+	});
+
+	it("refuses an entity that is a kind of one in another aggregate", () => {
+		const { ws, bc, account } = accounts();
+		const other = bc.addAggregate("Card", { description: "" });
+		const card = other.addRootEntity("Card", { description: "" });
+		card.addAttribute("Id", { type: "uuid", identity: true });
+		const stretched = other.addEntity("Stretched", {
+			description: "",
+			specialises: account,
+		});
+		card.includes(stretched, "holds");
+		expect(
+			specialisationRules(ws).map((d) => [d.severity, d.message, d.ref]),
+		).toEqual([
+			[
+				"error",
+				'"Stretched" in aggregate "Card" is a kind of "Account", which is not an entity of that aggregate; an entity is a kind of an entity of its own aggregate, since both are saved through the same root',
+				stretched.ref,
+			],
+		]);
+	});
+
+	it("lets a value object be a kind of one borrowed through a shared kernel, and refuses one without", () => {
+		const { ws, bc, money } = accounts();
+		const kernel = ws.addBoundedContext("Kernel", { description: "" });
+		const shared = kernel.addValueObject("Amount", { description: "" });
+		const borrowed = bc.addValueObject("Fee", {
+			description: "",
+			specialises: shared,
+		});
+		expect(specialisationRules(ws).map((d) => d.ref)).toEqual([borrowed.ref]);
+		bc.sharesKernelWith(kernel);
+		expect(specialisationRules(ws)).toEqual([]);
+		// A kind of one its own context declares needs no relationship at all.
+		bc.addValueObject("Discount", { description: "", specialises: money });
+		expect(specialisationRules(ws)).toEqual([]);
+	});
+
+	it("refuses a chain of kinds that returns to where it started", () => {
+		const { ws, agg, account } = accounts();
+		const ring = agg.addEntity("Ring", {
+			description: "",
+			specialises: account,
+		});
+		account.specialises = ring;
+		// The root being a kind of anything is `specialisation-not-root`'s to
+		// report as well; this test is about the ring.
+		expect(
+			specialisationRules(ws)
+				.filter((d) => d.rule === "specialisation-cycle")
+				.map((d) => [d.message, d.ref]),
+		).toEqual([
+			[
+				'"Account" is a kind of "Ring" is a kind of "Account"; a chain of kinds ends at the thing every one of them is, so nothing is a kind of itself',
+				account.ref,
+			],
+		]);
+	});
+
+	it("refuses a kind that is also marked the aggregate's root", () => {
+		const { ws, loan } = accounts();
+		loan.root = true;
+		expect(
+			specialisationRules(ws).map((d) => [d.rule, d.message, d.ref]),
+		).toEqual([
+			[
+				"specialisation-not-root",
+				'"Loan Account" is a kind of "Account" and is also marked the root of aggregate "Account"; an aggregate has one root, and a kind of it is reached through that root',
+				loan.ref,
+			],
+		]);
+	});
+
+	it("refuses a kind that redeclares an attribute it already has, naming where it came from", () => {
+		const { ws, loan } = accounts();
+		const repeated = loan.addAttribute("Id", { type: "uuid" });
+		expect(
+			specialisationRules(ws).map((d) => [d.rule, d.message, d.ref]),
+		).toEqual([
+			[
+				"specialisation-redeclares",
+				'"Loan Account" declares attribute "Id", which it already has from "Account"; a kind adds to what it is a kind of and never restates it, or a reader cannot tell which of the two applies',
+				repeated.ref,
+			],
+		]);
+	});
+
+	it("lets another aggregate reference a kind of a root, but not a plain child", () => {
+		const { ws, bc, loan, agg } = accounts();
+		const child = agg.addEntity("Statement", { description: "" });
+		child.addAttribute("Id", { type: "uuid", identity: true });
+		const caller = bc.addAggregate("Arrears", { description: "" });
+		const arrears = caller.addRootEntity("Arrears", { description: "" });
+		arrears.addAttribute("Id", { type: "uuid", identity: true });
+		arrears.references(loan, "against");
+		expect(
+			ws.validate().filter((d) => d.rule === "cross-aggregate-reference"),
+		).toEqual([]);
+		arrears.references(child, "and this");
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "cross-aggregate-reference")
+				.map((d) => d.message),
+		).toEqual([
+			'"Arrears" references "Statement", which is neither the root of aggregate "Account" nor a kind of that root; reference other aggregates by their root\'s identity',
+		]);
+	});
+
+	it("reads an inherited relation and an inherited attribute as the kind's own", () => {
+		const { ws, account, loan, money } = accounts();
+		account.addAttribute("Balance", { type: "Money", valueobject: money });
+		account.uses(money, "held in", "1");
+		// The kind adds an attribute typed by a value object its parent already
+		// uses, and a relation to one its parent's attribute already names.
+		loan.addAttribute("Arrears", { type: "Money", valueobject: money });
+		loan.uses(money, "in arrears of", "1");
+		expect(
+			ws.validate().filter((d) => d.rule === "attribute-relation-coherence"),
+		).toEqual([]);
 	});
 });
 

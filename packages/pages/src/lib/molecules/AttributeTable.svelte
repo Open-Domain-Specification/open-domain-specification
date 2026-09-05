@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Attribute } from "@open-domain-specification/core";
-import type { Column } from "../atoms/DataTable.svelte";
+import type { Column, Group } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Keyword from "../atoms/Keyword.svelte";
 import Ref from "../atoms/Ref.svelte";
@@ -22,13 +22,42 @@ import Ref from "../atoms/Ref.svelte";
  * its type (decision 24), the design language's word for a classification
  * rather than a new mark: only the exception is written, so a column of types
  * with one word beside a few of them reads as the list of what may be missing.
+ *
+ * A kind's own attributes come first and what it inherits follows, under a
+ * label row naming where each one comes from (decision 22). The kind has them
+ * all — that is what being a kind of something means — but which ones it adds
+ * is the thing a reader has come to the page for, and the origin is where
+ * they go to change one.
  */
 const {
 	attributes,
+	inherited = [],
 	empty = "No attributes.",
-}: { attributes: Iterable<Attribute>; empty?: string } = $props();
+}: {
+	attributes: Iterable<Attribute>;
+	/** What the owner has from whatever it is a kind of; empty for everything else. */
+	inherited?: Iterable<Attribute>;
+	empty?: string;
+} = $props();
 
 const rows = $derived([...attributes]);
+/** One group per origin, in the order the chain of parents is walked. */
+const groups = $derived.by(() => {
+	const byOwner = new Map<string, Group<Attribute>>();
+	for (const attribute of inherited) {
+		const { owner } = attribute;
+		const group = byOwner.get(owner.path) ?? {
+			id: owner.path,
+			label: `Inherited from ${owner.name}`,
+			rows: [],
+		};
+		group.rows.push(attribute);
+		byOwner.set(owner.path, group);
+	}
+	return byOwner.size
+		? [{ id: "own", label: "", rows }, ...byOwner.values()]
+		: undefined;
+});
 const columns: Column[] = [
 	{ key: "identity", label: "", width: "16px" },
 	{ key: "name", label: "Attribute" },
@@ -37,7 +66,7 @@ const columns: Column[] = [
 ];
 </script>
 
-<DataTable {columns} {rows} rowId={(a) => a.ref} {empty}>
+<DataTable {columns} {rows} {groups} rowId={(a) => a.ref} {empty}>
 	{#snippet cell(a, col)}
 		{#if col.key === "identity"}
 			{#if a.identity}<i class="codicon codicon-key" title="identity"></i>{/if}

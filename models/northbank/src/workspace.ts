@@ -937,17 +937,32 @@ const ledgerAccountNumberVO = kernelAccountNumberVO;
 // Otherwise a disbursement (debit loan book, credit customer) could not balance.
 const ledgerAccountVO = ledgerBC.addValueObject("LedgerAccount", {
 	description:
-		"Where a posting lands: a customer account by its AccountNumber, or a nominal from the chart of accounts (loan book, scheme suspense, fee income)",
+		"Where a posting lands. No posting lands on a LedgerAccount as such: every one of them is a customer account or a nominal, and the two are named differently",
 });
-ledgerAccountVO.addAttribute("kind", { type: "'customer' | 'nominal'" });
-ledgerAccountVO.addAttribute("accountNumber", {
+// DISCOVERY: Core Banking lead, "a ledger account is a customer's account
+// number or a nominal: the loan book, scheme suspense, fee income". The two
+// hold different things, so they are kinds of LedgerAccount rather than one
+// value with a `kind` flag beside two fields each set only sometimes
+// (decision 22).
+const customerLedgerAccountVO = ledgerBC.addValueObject(
+	"CustomerLedgerAccount",
+	{
+		description: "A customer's account, named by its account number",
+		specialises: ledgerAccountVO,
+	},
+);
+customerLedgerAccountVO.addAttribute("accountNumber", {
 	type: "AccountNumber",
 	valueobject: ledgerAccountNumberVO,
-	description: "Set when kind is customer",
 });
-ledgerAccountVO.addAttribute("nominalCode", {
+const nominalLedgerAccountVO = ledgerBC.addValueObject("NominalLedgerAccount", {
+	description:
+		"An account of the bank's own chart rather than a customer's: the loan book, scheme suspense, fee income",
+	specialises: ledgerAccountVO,
+});
+nominalLedgerAccountVO.addAttribute("nominalCode", {
 	type: "string",
-	description: "Set when kind is nominal, e.g. LOAN-BOOK, SCHEME-SUSPENSE",
+	description: "From the chart of accounts, e.g. LOAN-BOOK, SCHEME-SUSPENSE",
 });
 const directionVO = ledgerBC.addValueObject("PostingDirection", {
 	description: "debit or credit",

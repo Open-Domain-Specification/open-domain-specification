@@ -51,6 +51,22 @@ export function rivermartModel(): Model {
 }
 
 /**
+ * StreamLine as a model. Its catalogue is the reference model with kinds — a
+ * title is a film or a series (decision 22) — so it is what a test or a story
+ * about specialisation draws.
+ */
+export function streamlineModel(): Model {
+	const workspace = Workspace.fromSchema(
+		streamline as Parameters<typeof Workspace.fromSchema>[0],
+	);
+	return {
+		workspace,
+		fileLabel: "streamline.json",
+		diagnostics: workspace.validate(),
+	};
+}
+
+/**
  * A hand-built workspace exercising the alternate branches the petstore
  * fixture never reaches: teams that own nothing, aggregates without a root,
  * empty schemas, orphan glossary terms, a duplicate term name across

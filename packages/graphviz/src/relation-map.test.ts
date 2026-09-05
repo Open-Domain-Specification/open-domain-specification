@@ -156,6 +156,36 @@ describe("relationMapToDigraph", () => {
 		);
 	});
 
+	it("draws a kind as a generalisation: a solid line with a hollow triangle at the parent", () => {
+		const map = buildMap();
+		const parent = map.nodes.get(
+			"#/boundedcontexts/ordering/aggregates/order/entities/order",
+		);
+		const kind = map.addNode({
+			id: "#/boundedcontexts/ordering/aggregates/order/entities/gift_order",
+			name: "Gift Order",
+			type: "entity",
+			namespace,
+			attributes: [],
+		});
+		if (!parent) throw new Error("fixture missing the order node");
+		map.addEdge({
+			source: kind,
+			target: parent,
+			label: "",
+			relation: "specialises",
+		});
+		const drawn = relationMapToDigraph(map);
+		// The triangle sits at the head, which is the parent: the line points
+		// from the kind at what it is a kind of, and carries no label.
+		expect(drawn.toDot()).toContain(
+			'"#/boundedcontexts/ordering/aggregates/order/entities/gift_order" -> "#/boundedcontexts/ordering/aggregates/order/entities/order" [\n    arrowhead = "onormal";\n    arrowtail = "none";\n    style = "solid";\n    label = "";',
+		);
+		expect(drawn.toPlantUML()).toContain(
+			"boundedcontexts_ordering_aggregates_order_entities_gift_order --|> boundedcontexts_ordering_aggregates_order_entities_order",
+		);
+	});
+
 	it("marks an optional attribute with {opt} beside {id}", () => {
 		const map = new ODSRelationMap([]);
 		map.addNode({

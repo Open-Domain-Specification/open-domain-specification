@@ -114,6 +114,23 @@ describe("RelationEdge", () => {
 		expect(bare.container.querySelector(".edge-label")).toBeNull();
 	});
 
+	it("draws a kind as a generalisation: a solid line with a hollow triangle at the parent", async () => {
+		const { container } = edge({ type: "relation-specialises", label: "" });
+		await waitFor(() => expect(edgePath(container)).toBeTruthy());
+		const path = edgePath(container) as SVGElement;
+		expect(path).toHaveClass("specialises");
+		expect(path).not.toHaveClass("dashed");
+		expect(path.getAttribute("marker-end")).toBe("url(#e-triangle)");
+		expect(path.getAttribute("marker-start")).toBeNull();
+		// Hollow, not filled: the background shows through the triangle.
+		const marker = container.querySelector("marker#e-triangle .marker-hollow");
+		expect(marker).toBeTruthy();
+		expect(marker?.getAttribute("d")).toBe("M0,0 L10,5 L0,10 Z");
+		// The line says the whole of it: no role label, no multiplicity.
+		expect(container.querySelector(".edge-label")).toBeNull();
+		expect(cardinality(container)).toBeNull();
+	});
+
 	it("places the cardinality port on the side the edge enters from", async () => {
 		const at = async (targetPosition: Position) => {
 			const { container } = edge({

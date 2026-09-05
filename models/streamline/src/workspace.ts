@@ -501,7 +501,21 @@ const titleAgg = catalogueBC.addAggregate("Title", {
 		"A film or series as members see it, with seasons, episodes, artwork, rating and availability",
 });
 const title = titleAgg.addRootEntity("Title", {
-	description: "One film or series",
+	description:
+		"What a member browses to: a name, a rating, artwork and where it plays. No title is ever just a Title; every one of them is a film or a series",
+});
+// DISCOVERY: Catalogue Team lead, "a title is a film or a series; a series has
+// seasons and seasons have episodes". The two kinds hold different things — a
+// film plays one encode, a series plays through its episodes — so they are
+// kinds of Title rather than one entity with a `kind` flag and attributes that
+// apply only sometimes (decision 22).
+const film = titleAgg.addEntity("Film", {
+	description: "A title a member watches in one sitting, playing one encode",
+	specialises: title,
+});
+const series = titleAgg.addEntity("Series", {
+	description: "A title watched an episode at a time, through its seasons",
+	specialises: title,
 });
 const season = titleAgg.addEntity("Season", {
 	description: "A numbered group of episodes",
@@ -538,7 +552,6 @@ windowSchema.addAttribute("titleId", {
 	identifies: title,
 });
 title.addAttribute("name", { type: "string" });
-title.addAttribute("kind", { type: "'film' | 'series'" });
 title.addAttribute("rating", { type: "MaturityRating", valueobject: ratingVO });
 // DISCOVERY: Catalogue Team lead, peer review. The correlation keys: a
 // delivered master names a production and an episode number, and the
@@ -551,10 +564,10 @@ title.addAttribute("productionId", {
 		"The studio production behind an original, or absent for a licensed title; how MasterDelivered is matched to a title",
 	identifies: production,
 });
-title.addAttribute("playableRenditionSet", {
+film.addAttribute("playableRenditionSet", {
 	type: "string",
 	description:
-		"For a film, the encoding job whose renditions it plays; a series plays through its episodes",
+		"The encoding job whose renditions this film plays; a series plays through its episodes instead",
 });
 season.addAttribute("seasonNumber", { type: "int", identity: true });
 catalogueEpisode.addAttribute("episodeId", { type: "string", identity: true });
@@ -572,7 +585,9 @@ catalogueEpisode.addAttribute("rating", {
 	valueobject: ratingVO,
 	description: "An episode may be rated above its series",
 });
-title.includes(season, "has-seasons", "*");
+// Seasons hang off the series, not off every title: a film has none, and the
+// "*" that used to say so said nothing about which titles it meant.
+series.includes(season, "has-seasons", "1..*");
 season.includes(catalogueEpisode, "has-episodes", "1..*");
 title.addAttribute("artwork", {
 	type: "Artwork",
@@ -629,6 +644,8 @@ const titleDetailSchema = catalogueBC.addSchema("TitleDetail", {
 });
 titleDetailSchema.addAttribute("titleId", { type: "string", identity: true });
 titleDetailSchema.addAttribute("name", { type: "string" });
+// The payload keeps the discriminator the model no longer needs: a caller
+// reading JSON has no kinds to dispatch on, so the wire says which it is.
 titleDetailSchema.addAttribute("kind", { type: "'film' | 'series'" });
 titleDetailSchema.addAttribute("rating", {
 	type: "MaturityRating",

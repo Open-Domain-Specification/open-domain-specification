@@ -304,6 +304,39 @@ describe("ODSRelationMap", () => {
 		expect(map.nodes.get(household.ref)?.type).toBe("entity_root");
 	});
 
+	it("draws a kind as a generalisation pointing at what it is a kind of", () => {
+		const ws = new Workspace("Kinds", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "1.0.0",
+		});
+		const bc = ws.addBoundedContext("Catalogue", { description: "" });
+		const agg = bc.addAggregate("Title", { description: "" });
+		const title = agg.addRootEntity("Title", { description: "" });
+		title.addAttribute("titleId", { type: "string", identity: true });
+		agg.addEntity("Series", { description: "", specialises: title });
+		const ledger = bc.addValueObject("Ledger Account", { description: "" });
+		bc.addValueObject("Nominal Account", {
+			description: "",
+			specialises: ledger,
+		});
+
+		const graph = ODSRelationGraph.fromWorkspace(ws);
+		expect(graph.subtypes.map((it) => it.name)).toEqual([
+			"Nominal Account",
+			"Series",
+		]);
+		const edges = Array.from(
+			ODSRelationMap.fromGraph(graph).edges.values(),
+		).filter((e) => e.relation === "specialises");
+		expect(edges.map((e) => [e.source.name, e.target.name, e.label])).toEqual([
+			["Nominal Account", "Ledger Account", ""],
+			["Series", "Title", ""],
+		]);
+		// A generalisation carries no multiplicity: it is not a "how many".
+		expect(edges.every((e) => e.cardinality === undefined)).toBe(true);
+	});
+
 	it("collects the identity attributes in scope and no others", () => {
 		expect(
 			ODSRelationGraph.fromBoundedContext(f.invoicingBc).identities.map(

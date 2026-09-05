@@ -24,6 +24,7 @@ exports[`Visitor Example > should compile  1`] = `
                 },
               ],
               "root": true,
+              "specialises": undefined,
             },
           },
           "invariants": {
@@ -90,6 +91,7 @@ exports[`Visitor Example > should compile  1`] = `
           "description": "URL-safe identifier",
           "name": "Slug",
           "relations": [],
+          "specialises": undefined,
         },
       },
     },
@@ -114,6 +116,7 @@ exports[`Visitor Example > should compile  1`] = `
                 },
               ],
               "root": true,
+              "specialises": undefined,
             },
           },
           "invariants": {
@@ -180,6 +183,7 @@ exports[`Visitor Example > should compile  1`] = `
           "description": "Amount + currency",
           "name": "Money",
           "relations": [],
+          "specialises": undefined,
         },
       },
     },

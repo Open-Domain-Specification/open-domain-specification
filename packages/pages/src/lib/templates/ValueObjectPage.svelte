@@ -34,6 +34,9 @@ const ws = model.workspace;
 // A value object belongs to the context, so any aggregate of that context may
 // hold it and any of their invariants may name it (decision 16).
 const bc = $derived(v.boundedcontext);
+// A kind of a value object may live in a context that borrows this one over a
+// shared kernel, so the kinds are looked up across the workspace, not here.
+const kinds = $derived(v.kinds);
 const usages = $derived(usagesOf(ws, v));
 const invariants = $derived(
 	[...bc.aggregates.values()]
@@ -59,12 +62,23 @@ const relationColumns: Column[] = [
 	{#snippet facts()}
 		<DefinitionList>
 			<Definition term="Context"><Lockup kind="boundedcontext" name={bc.name} ref={bc.ref} /></Definition>
+			{#if v.specialises}
+				<Definition term="A kind of">
+					<Lockup kind="valueobject" name={v.specialises.name} ref={v.specialises.ref} />
+				</Definition>
+			{/if}
+			{#if kinds.length}
+				<Definition term="Kinds">
+					{#each kinds as k, i (k.ref)}{#if i}, {/if}<Lockup kind="valueobject" name={k.name} ref={k.ref} />{/each}
+				</Definition>
+			{/if}
 		</DefinitionList>
 	{/snippet}
 </PageHeader>
 
 <AttributesSection
 	attributes={v.attributes.values()}
+	inherited={v.inheritedAttributes}
 	lead="A value object is its attributes. Two with the same values are the same thing; change one and you have a new one."
 />
 

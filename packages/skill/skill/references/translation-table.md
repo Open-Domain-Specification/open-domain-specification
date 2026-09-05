@@ -28,6 +28,9 @@ element lives in a workspace file; `DSL` is the core call that creates it.
 | "this specific order", "the thing with a number" | Entity | `aggregates.<a>.entities.<id>` | `agg.addEntity(name, {description})` |
 | "the main thing", "the one we name the rule about" | root entity | `"root": true` | `agg.addRootEntity(name, {description})` |
 | "just a value", "an address", "money", "same values, same thing" | Value Object | `boundedcontexts.<bc>.valueobjects.<id>` | `bc.addValueObject(name, {description})` |
+| "a title is a film or a series", "there are three sorts of account", "it's a kind of X" | kind of an entity or value object, each with what it adds | `specialises: {$ref}` on the entity or value object | `agg.addEntity(name, {description, specialises: parent})` |
+| "that field only applies to the other sort" | the kinds, not one element with a flag | the attribute moves onto the kind that has it | declare the attribute on the kind |
+| "they're all X really, nobody has a plain X" | the parent, with its description saying so | no abstract flag exists | say it in `description` |
 | "it has a field", "it's made of" | Attribute | `attributes.<id>` with `type` in the user's words | `entity.addAttribute(name, {type})` |
 | "the number that identifies it" | identity attribute | `"identity": true` | `identity: true` |
 | "its status is one of these values" | attribute backed by a value object | `attributes.<id>.valueobject: {$ref}` | `addAttribute(name, {type, valueobject: vo})` |

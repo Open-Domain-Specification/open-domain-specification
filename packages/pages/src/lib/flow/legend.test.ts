@@ -309,6 +309,12 @@ describe("legendEntries for the relation map", () => {
 						source: "#/a",
 						target: "#/b",
 					},
+					{
+						id: "e",
+						type: "relation-specialises",
+						source: "#/a",
+						target: "#/b",
+					},
 				],
 			},
 			"relation",
@@ -318,6 +324,7 @@ describe("legendEntries for the relation map", () => {
 			"open arrow",
 			"dashed",
 			"dashed «identifies»",
+			"hollow triangle",
 		]);
 	});
 });

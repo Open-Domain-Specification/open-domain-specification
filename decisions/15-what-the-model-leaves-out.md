@@ -40,7 +40,7 @@ A context serving several subdomains draws in the cluster of its first; the othe
 
 ### There is no subtyping between entities or value objects
 
-Relations are `references`, `includes` and `uses`; there is no `extends`. A class hierarchy is an implementation choice, and in a domain model it usually hides a missing concept: the kinds of account, or the formats of a title, are better said as a value object with a closed set of values, or as separate aggregates when they behave differently. Modelling a hierarchy as `includes` would be wrong, so the model refuses rather than misdraws. Reopened only if a reference model cannot name its concept without inheritance.
+Superseded by [decision 22](22-an-entity-may-be-a-kind-of-another.md): the condition this section set for reopening — a reference model that cannot name its concept without inheritance — was met by two, so `specialises` exists and says "is a kind of" directly. The reasoning that a hierarchy usually hides a missing concept stands, and is now the interview's question rather than a refusal.
 
 ### An aggregate is a boundary; its root is the entity you reach it by
 

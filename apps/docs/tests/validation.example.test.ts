@@ -43,7 +43,7 @@ describe("Validation", () => {
 			ws.validate().map((d) => `${d.severity} ${d.rule}: ${d.message}`),
 		).toMatchInlineSnapshot(`
 			[
-			  "error cross-aggregate-reference: "Order" references "Price", which is not the root of aggregate "Product"; reference other aggregates by their root's identity",
+			  "error cross-aggregate-reference: "Order" references "Price", which is neither the root of aggregate "Product" nor a kind of that root; reference other aggregates by their root's identity",
 			  "error cross-context-relation: "Order" in "Ordering" references "Price" in "Catalog"; a relation never crosses a bounded context, so hold "Price"'s identity as an attribute on "Order" instead",
 			  "error root-identity: Root entity "Order" of aggregate "Order" declares no identity attribute, so nothing says which "Order" a reference means",
 			  "error root-identity: Root entity "Product" of aggregate "Product" declares no identity attribute, so nothing says which "Product" a reference means",

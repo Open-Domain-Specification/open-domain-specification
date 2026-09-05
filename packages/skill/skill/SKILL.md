@@ -79,6 +79,10 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   service. Policies and consumptions point at them by ref.
 - A value object belongs to the context, not to an aggregate: declare it once there and any
   aggregate may hold it.
+- An entity or a value object may be a kind of another: `specialises` gives it every attribute
+  and relation of that one, plus its own, and it never repeats one of them. An entity is a kind
+  of an entity of its own aggregate and is never itself `root`; a value object is a kind of one
+  its own context declares or borrows over a `shared-kernel`.
 - An invariant belongs to an aggregate when it holds inside that boundary on every save, and to
   the context when it holds across instances or aggregates — uniqueness, a quota, a limit. A
   context's invariant names at least one operation of the context that checks it before acting,

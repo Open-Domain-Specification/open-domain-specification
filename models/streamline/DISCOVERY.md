@@ -56,7 +56,8 @@ update availability; a window expiring means we unpublish. Everything comes in t
 own translation; nobody else's model gets into our tables. We expose a documented read API
 that Playback uses."
 
-Recorded as: Catalogue as supporting; Title with Season and Episode `includes`, Artwork,
+Recorded as: Catalogue as supporting; Title with Film and Series as kinds of it (card 59,
+section 11), Season and Episode `includes` under Series, Artwork,
 MaturityRating and Availability; invariants `PublishedTitleHasPlayableAsset`,
 `RatingRequiredBeforePublish`, `AvailabilityMatchesLicence`; four policies; anti-corruption
 consumptions of Studio, Licensing and Encoding; customer-supplier towards Encoding
@@ -421,3 +422,24 @@ monthly export of charges to billing" — so the model now names the job: a `Mon
 service with one internal operation, `RunMonthlyExport`, raising the event. The monolith is
 still modelled at its edge; the edge just says what pushes the file now. The three deliberate
 diagnostics of section 7 are untouched.
+
+## 11. Revision (card 59): a title is a film or a series
+
+The first sentence of the Catalogue interview is "a title is a film or a series; a series has
+seasons and seasons have episodes", and the model could not say it. It flattened the two into
+one Title with a `kind: 'film' | 'series'` attribute, a `playableRenditionSet` whose
+description read "for a film, the encoding job whose renditions it plays; a series plays
+through its episodes", and `has-seasons` at `*` because a film has none. Three fields
+apologising for a distinction the business states in its first breath.
+
+Decision 22 lets the model write it. Title keeps what every title has — the id, the name, the
+rating, the artwork, the availability, the production it came from — and gains two kinds:
+**Film**, which holds `playableRenditionSet`, and **Series**, which `includes` Season at
+`1..*`. The `kind` attribute is gone, and so is the `*` that meant "unless it is a film". The
+relation map draws the two as generalisations, a hollow triangle at Title, and their pages
+list what they inherit under the heading of where it comes from.
+
+Neither kind is the root: an aggregate has one, and a Film is reached through Title exactly as
+before, which is why nothing outside the aggregate changed. `TitleDetail`, the shape `GetTitle`
+answers with, keeps its `kind` field: a caller parsing JSON has no kinds to dispatch on, so the
+wire still says which it is. The three deliberate diagnostics of section 7 are untouched.

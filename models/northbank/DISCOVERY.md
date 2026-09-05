@@ -83,7 +83,8 @@ what it is."
 
 Recorded as: Ledger as supporting; JournalEntry with Posting `includes`, Money and
 AccountNumber (both borrowed from the Shared Kernel context, card 56), LedgerAccount
-(customer or nominal), PostingDirection and ValueDate; invariants `EntryBalances`,
+with CustomerLedgerAccount and NominalLedgerAccount as kinds of it (card 59,
+section 12), PostingDirection and ValueDate; invariants `EntryBalances`,
 `AtLeastTwoPostings`, `SingleCurrencyPerEntry`, `ImmutableOncePosted`; `PostEntry` and
 `ReverseEntry` as open hosts; `EntryPosted` published; the "Import nightly batch" policy
 translating the legacy event; Sovereign Core (legacy) flagged as a big ball of mud with
@@ -464,3 +465,32 @@ model now names that job: a `NightlyBatch` service with one internal operation,
 `RunNightlyBatch`, raising the event. Nothing else moved, and validation still returns
 exactly the four deliberate diagnostics of section 7 plus card 70's second reading of the
 quick-quote crossing.
+
+## 12. Revision (card 59): a ledger account is a customer's or a nominal
+
+The Core Banking lead defines the ledger account in one sentence: "a ledger account is a
+customer's account number or a nominal: the loan book, scheme suspense, fee income." The model
+had that as one value object with a `kind: 'customer' | 'nominal'` flag beside two fields, one
+described "set when kind is customer" and the other "set when kind is nominal" — a shape that
+tells a reader which fields to ignore, and tells the validator nothing.
+
+Decision 22 lets the two be said. LedgerAccount stays as the thing a posting lands on, and
+becomes what no instance is ever just: its description now says so, since there is no
+abstractness flag and there does not need to be. **CustomerLedgerAccount** holds the
+`accountNumber` (still the Shared Kernel's AccountNumber, borrowed by reference), and
+**NominalLedgerAccount** holds the `nominalCode`. Posting still `uses` LedgerAccount at `1`,
+because a posting lands on one ledger account whichever kind it is, and the relation map draws
+the two kinds hanging off it with a hollow triangle.
+
+Nothing else in the Ledger moved: `EntryBalances`, `AtLeastTwoPostings`,
+`SingleCurrencyPerEntry` and `ImmutableOncePosted` are unchanged, and so is the disbursement
+the split existed for — debit the loan book (a nominal), credit the customer (an account
+number), one entry that balances. Validation still returns exactly the four diagnostics of
+section 7 plus card 70's second reading of the quick-quote crossing.
+
+The accounts themselves were considered and left alone. Decision 22's context reads NorthBank's
+accounts as current, savings and loan accounts, but this record does not: the Accounts Team
+lead says "on our platform that means current accounts; savings are still Sovereign rows and
+will be the same shape when they come across", and loans are Lending's own aggregate in
+another context. Kinds of Account would be a claim no interview here supports. When savings
+migrate, that is the moment to ask whether they are a kind of Account or the same shape.

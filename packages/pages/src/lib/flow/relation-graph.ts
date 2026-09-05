@@ -25,6 +25,8 @@ const TONES: Record<ODSRelationMapNode["type"], GraphNode["tone"]> = {
  * `identifies` is one of them: the identity an attribute holds of another
  * entity, which is the only line allowed to leave a bounded context. It lands
  * on that entity, child or root, inside the entity's own aggregate group.
+ * `specialises` is another: a generalisation from a kind to what it is a kind
+ * of, which leaves the context only when the parent is a kernel's.
  */
 export const relationEdgeType = (relation: ODSRelationMapEdge["relation"]) =>
 	`relation-${relation}` as const;

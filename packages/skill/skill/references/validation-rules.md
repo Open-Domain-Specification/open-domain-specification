@@ -14,11 +14,11 @@
 
 ## `cross-aggregate-reference` (error)
 
-**Requires:** A relation into another aggregate uses references and targets that aggregate's root; a relation to a value object crosses nothing.
+**Requires:** A relation into another aggregate uses references and targets that aggregate's root, or a kind of that root; a relation to a value object crosses nothing.
 
-**Why it matters:** Aggregates are consistency boundaries; reaching inside another one couples the two so they can no longer change or be stored independently. A value object belongs to the whole context rather than to one aggregate, so using one is not reaching into anybody.
+**Why it matters:** Aggregates are consistency boundaries; reaching inside another one couples the two so they can no longer change or be stored independently. A value object belongs to the whole context rather than to one aggregate, so using one is not reaching into anybody. A kind of the root is the root said more precisely — an instance of it is an instance of the root, carrying the same identity — so naming the kind the business names reaches no further inside than naming the root would.
 
-**Usual fix:** Change the relation to "references" and point it at the other aggregate's root entity, holding only its identity.
+**Usual fix:** Change the relation to "references" and point it at the other aggregate's root entity, or at a kind of that root, holding only its identity.
 
 ## `cross-context-relation` (error)
 
@@ -48,7 +48,7 @@
 
 **Requires:** Every non-root entity in an aggregate declares at least one identity attribute.
 
-**Why it matters:** An entity is precisely the thing you can still tell apart from another one holding exactly the same values. Without an identity attribute nothing does the telling apart, so the element is a value object that has been filed under the wrong heading, and readers will expect a lifecycle and a history it does not have.
+**Why it matters:** An entity is precisely the thing you can still tell apart from another one holding exactly the same values. Without an identity attribute nothing does the telling apart, so the element is a value object that has been filed under the wrong heading, and readers will expect a lifecycle and a history it does not have. A kind counts as identified by what it is a kind of, since it has that entity's attributes as its own.
 
 **Usual fix:** Give the entity the attribute the business identifies it by — the line number, the reference — with identity: true, or make it a value object, which is usually what an entity with nothing to identify really was.
 
@@ -68,11 +68,43 @@
 
 **Usual fix:** Drop optional: true from the identity attribute. If the value genuinely is sometimes missing, it is not the identity — mark the attribute the business always has as the identity instead, or make the element a value object if there is nothing it is always identified by.
 
+## `specialisation-in-boundary` (error)
+
+**Requires:** An entity is a kind of an entity of its own aggregate; a value object is a kind of one its own context declares or borrows through a shared kernel.
+
+**Why it matters:** A kind is the same thing said more precisely, so it lives where the thing lives. An entity and the entity it is a kind of are loaded, saved and kept consistent through one root, and a parent in another aggregate would make one boundary's rules depend on another's. A value object is part of a context's ubiquitous language, and the one place that language is legitimately shared is a shared kernel, which is the declaration that two contexts keep part of one model between them.
+
+**Usual fix:** Move the parent into the same aggregate as the kind, or the kind into the parent's; for a value object, declare the parent in this context, or declare the shared kernel with the context that owns it if the two really do keep it in step.
+
+## `specialisation-cycle` (error)
+
+**Requires:** No chain of "is a kind of" returns to where it started.
+
+**Why it matters:** A kind adds to what it is a kind of, so the chain has to end somewhere at the thing all of them are. A ring has no such end: no reader and no tool can list what any element on it holds, because every answer needs the next one first, and whatever concept the chain was refining has been lost.
+
+**Usual fix:** Point one of the links at the thing both of them really are, or drop it: two elements that are each a kind of the other are one element, or they are two kinds of a third that has not been named yet.
+
+## `specialisation-not-root` (error)
+
+**Requires:** An entity that is a kind of another is not itself marked root.
+
+**Why it matters:** An aggregate has exactly one root, and it is what everything else reaches the aggregate by. A kind of the root is reached through the root — an instance of the kind is an instance of it — so marking the kind root as well leaves a reference with two entities to land on and no way to say which the aggregate is saved through.
+
+**Usual fix:** Drop root: true from the kind and leave it on the entity it is a kind of. If the kind really does lead a cluster of its own, it is another aggregate rather than a kind.
+
+## `specialisation-redeclares` (error)
+
+**Requires:** A kind does not declare an attribute it already has from what it is a kind of.
+
+**Why it matters:** The kind already has every attribute of its parent; declaring one of them again gives the same name two types, two descriptions and two places to change, and a reader has no way to tell which of them applies. It is also the usual sign of a hierarchy drawn after the fact over two elements that were written separately.
+
+**Usual fix:** Delete the attribute from the kind and leave the parent's. If the kind genuinely holds something different under that name, the two are not the same attribute: give the kind's its own name, or the parent's attribute belongs on its other kinds rather than on the parent.
+
 ## `aggregate-tree` (error, warning)
 
 **Requires:** Inside an aggregate, includes points at entities and uses at value objects, no ring of two or more entity types includes itself, and every entity is reachable from the root.
 
-**Why it matters:** The aggregate is loaded and saved as one thing through its root, so the parts of one instance hang off it as a tree. That is a claim about instances, not about types: an entity whose parts are of its own type is the composite pattern and still a tree per instance, and a part type included by two different wholes still belongs to one of them at a time, so neither is reported. A ring through two or more distinct types is, because then no type can be named as the one that holds the other and there is no whole to start from. An includes onto a value object or a uses onto an entity says the opposite of what the author means, and an entity nothing reaches is either dead or a missing relation.
+**Why it matters:** The aggregate is loaded and saved as one thing through its root, so the parts of one instance hang off it as a tree. That is a claim about instances, not about types: an entity whose parts are of its own type is the composite pattern and still a tree per instance, and a part type included by two different wholes still belongs to one of them at a time, so neither is reported. A ring through two or more distinct types is, because then no type can be named as the one that holds the other and there is no whole to start from. An includes onto a value object or a uses onto an entity says the opposite of what the author means, and an entity nothing reaches is either dead or a missing relation. A kind is reached wherever the entity it is a kind of is reached, since an instance of it is one of those; specialisation is not containment and never joins the tree itself.
 
 **Usual fix:** Point includes at entities and uses at value objects, break a ring of distinct types by making the back edge a references, and give an unreachable entity the relation that reaches it — or move it to its own aggregate.
 
@@ -80,7 +112,7 @@
 
 **Requires:** An attribute typed by a value object has a matching uses relation, of a matching cardinality.
 
-**Why it matters:** The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened, and a list-typed attribute against a single-valued relation says two different things about how many there are.
+**Why it matters:** The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened, and a list-typed attribute against a single-valued relation says two different things about how many there are. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.
 
 **Usual fix:** Add the missing uses relation or the missing attribute, and set the relation's cardinality to * or 1..* for a list-typed attribute. The type itself is free text and is never checked against the value object's name; only a trailing [] is read, as "many".
 

@@ -120,11 +120,25 @@ const aggregateRoot: Rule = (workspace) => {
 	return diagnostics;
 };
 
+/** Whether an entity is the root of its aggregate, or a kind of that root. */
+function reachedAsRoot(member: Entity | ValueObject): boolean {
+	if (!(member instanceof Entity)) return false;
+	return member.root || member.ancestors.some((it) => it.root);
+}
+
 /**
  * A relation into another aggregate may only reference that aggregate's root,
  * and may not include or use its members directly. A value object at either
  * end crosses no aggregate boundary: it belongs to the context, and every
  * aggregate of that context may hold one.
+ *
+ * A kind of the root counts as the root at the target end: an instance of it
+ * is an instance of the root, reached through the same identity, so a
+ * reference that names the kind the business names is holding the root's
+ * identity all the same (decision 22). The source end needs no such reading,
+ * because an entity is a kind of an entity of its own aggregate: an inherited
+ * relation crosses exactly what the parent's crosses, and is reported once,
+ * against the parent that declares it.
  */
 const crossAggregateReference: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -139,11 +153,11 @@ const crossAggregateReference: Rule = (workspace) => {
 				message: `"${relation.source.name}" ${relation.relation} "${relation.target.name}" in another aggregate; across aggregates only "references" is allowed`,
 				ref: relation.source.ref,
 			});
-		} else if (!(relation.target instanceof Entity && relation.target.root)) {
+		} else if (!reachedAsRoot(relation.target)) {
 			diagnostics.push({
 				severity: "error",
 				rule: "cross-aggregate-reference",
-				message: `"${relation.source.name}" references "${relation.target.name}", which is not the root of aggregate "${target.name}"; reference other aggregates by their root's identity`,
+				message: `"${relation.source.name}" references "${relation.target.name}", which is neither the root of aggregate "${target.name}" nor a kind of that root; reference other aggregates by their root's identity`,
 				ref: relation.source.ref,
 			});
 		}
@@ -232,15 +246,16 @@ const rootIdentity: Rule = (workspace) => {
  * and an error there because a reference cannot land without it; inside the
  * boundary it is a warning, because the modeller may simply not have named the
  * identity yet.
+ *
+ * A kind is identified by whatever it is a kind of: an inherited identity is
+ * the subtype's, and repeating it would be `specialisation-redeclares`.
  */
 const entityIdentity: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const aggregate of aggregatesOf(workspace)) {
 		for (const entity of aggregate.entities.values()) {
 			if (entity.root) continue;
-			const identified = Array.from(entity.attributes.values()).some(
-				(a) => a.identity,
-			);
+			const identified = entity.allAttributes.some((a) => a.identity);
 			if (identified) continue;
 			diagnostics.push({
 				severity: "warning",
@@ -302,6 +317,120 @@ const identityNotOptional: Rule = (workspace) => {
 				severity: "error",
 				rule: "identity-not-optional",
 				message: `"${owner.name}" marks attribute "${attribute.name}" as both an identity and optional; an identity that may be missing cannot say which "${owner.name}" a reference means`,
+				ref: attribute.ref,
+			});
+		}
+	}
+	return diagnostics;
+};
+
+/** Everything that says it is a kind of something else (decision 22). */
+function* subtypesOf(workspace: Workspace): Iterable<Entity | ValueObject> {
+	for (const member of modelMembersOf(workspace))
+		if (member.specialises) yield member;
+}
+
+/**
+ * A kind is a kind of something inside the same boundary.
+ *
+ * An entity is a kind of an entity of its own aggregate, because the subtype
+ * is the same thing said more precisely: it is loaded, saved and kept
+ * consistent through the one root, and a parent in another aggregate would
+ * make one boundary's invariants depend on another's. A value object is a
+ * kind of one its own context declares, or of one it borrows over a shared
+ * kernel — the one relationship that says two contexts keep part of one model
+ * between them (decision 16), and so the one place a kind may reach across.
+ */
+const specialisationInBoundary: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const member of subtypesOf(workspace)) {
+		const parent = member.specialises;
+		if (!parent) continue;
+		if (member instanceof Entity) {
+			if (aggregateOfEnd(parent) === member.aggregate) continue;
+			diagnostics.push({
+				severity: "error",
+				rule: "specialisation-in-boundary",
+				message: `"${member.name}" in aggregate "${member.aggregate.name}" is a kind of "${parent.name}", which is not an entity of that aggregate; an entity is a kind of an entity of its own aggregate, since both are saved through the same root`,
+				ref: member.ref,
+			});
+			continue;
+		}
+		const context = member.boundedcontext;
+		const owner = parent.boundedcontext;
+		if (owner === context || sharesKernelWith(workspace, context, owner))
+			continue;
+		diagnostics.push({
+			severity: "error",
+			rule: "specialisation-in-boundary",
+			message: `"${member.name}" in "${context.name}" is a kind of "${parent.name}" in "${owner.name}", which "${context.name}" shares no kernel with; a value object is a kind of one its own context declares, or of one it borrows through a shared kernel`,
+			ref: member.ref,
+		});
+	}
+	return diagnostics;
+};
+
+/**
+ * The chain of kinds ends. A thing that is, at some remove, a kind of itself
+ * has no attributes anybody can list and no page anybody can read to the end,
+ * and the model has lost the concept the chain was meant to refine.
+ */
+const specialisationCycle: Rule = (workspace) => {
+	const rings = cyclesOf(
+		modelMembersOf(workspace),
+		(member) => (member.specialises ? [member.specialises] : []),
+		(member) => member.ref,
+	);
+	return rings.map((ring) => ({
+		severity: "error" as const,
+		rule: "specialisation-cycle",
+		message: `${ring.map((it) => `"${it.name}"`).join(" is a kind of ")} is a kind of "${ring[0].name}"; a chain of kinds ends at the thing every one of them is, so nothing is a kind of itself`,
+		ref: ring[0].ref,
+	}));
+};
+
+/**
+ * A kind of an entity is never itself the aggregate's root. The aggregate has
+ * one root, which is what the rest of the model reaches it by, and a kind of
+ * that root is reached through it: naming two roots would leave a reference
+ * unable to say which of them it lands on.
+ */
+const specialisationNotRoot: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const member of subtypesOf(workspace)) {
+		if (!(member instanceof Entity) || !member.root) continue;
+		diagnostics.push({
+			severity: "error",
+			rule: "specialisation-not-root",
+			message: `"${member.name}" is a kind of "${member.specialises?.name}" and is also marked the root of aggregate "${member.aggregate.name}"; an aggregate has one root, and a kind of it is reached through that root`,
+			ref: member.ref,
+		});
+	}
+	return diagnostics;
+};
+
+/**
+ * A kind does not repeat an attribute it already has. Two declarations of one
+ * name leave a reader unable to say which applies — the parent's type and
+ * description, or the kind's — and whichever the answer, one of the two is
+ * saying something the model never asked for.
+ */
+const specialisationRedeclares: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const member of subtypesOf(workspace)) {
+		// Nearest parent first, so the origin named is the one a reader meets
+		// first walking up the chain.
+		const inherited = new Map<string, Attribute>();
+		for (const attribute of member.inheritedAttributes)
+			if (!inherited.has(attribute.name))
+				inherited.set(attribute.name, attribute);
+		for (const attribute of member.attributes.values()) {
+			const already = inherited.get(attribute.name);
+			if (!already) continue;
+			diagnostics.push({
+				severity: "error",
+				rule: "specialisation-redeclares",
+				message: `"${member.name}" declares attribute "${attribute.name}", which it already has from "${already.owner.name}"; a kind adds to what it is a kind of and never restates it, or a reader cannot tell which of the two applies`,
 				ref: attribute.ref,
 			});
 		}
@@ -447,6 +576,12 @@ const aggregateTree: Rule = (workspace) => {
  * One diagnostic per entity that no chain of `includes` or `references`
  * reaches from a root of the aggregate. An aggregate with no root at all is
  * `aggregate-root`'s business, so this says nothing about it.
+ *
+ * A kind is reached wherever the entity it is a kind of is reached, because
+ * an instance of the kind is an instance of that entity — a kind of the root
+ * is reached through the root (decision 22). Specialisation is still not
+ * containment: it is not an edge of the `includes` graph the cycle check
+ * walks, only a way for a reader to get to the type.
  */
 function orphanEntities(aggregate: Aggregate): Diagnostic[] {
 	const roots = Array.from(aggregate.entities.values()).filter((e) => e.root);
@@ -455,6 +590,7 @@ function orphanEntities(aggregate: Aggregate): Diagnostic[] {
 	const walk = (entity: Entity) => {
 		if (reached.has(entity)) return;
 		reached.add(entity);
+		for (const kind of entity.kinds) walk(kind);
 		for (const relation of entity.relations) {
 			if (relation.relation === "uses") continue;
 			const { target } = relation;
@@ -518,14 +654,22 @@ function includesCycles(
  * not parse it and never asks it to spell the value object's name. The one
  * exception is the trailing `[]`, the convention the cardinality check reads
  * as "many".
+ *
+ * Inherited attributes and relations are the subtype's (decision 22): a kind
+ * that adds an attribute typed by a value object its parent already uses is
+ * coherent, and so is a kind that uses one the parent's attribute is typed by.
+ * Only what the member declares itself is reported, so a parent's own mismatch
+ * is one diagnostic on the parent rather than one per kind of it.
  */
 const attributeRelationCoherence: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const member of modelMembersOf(workspace)) {
 		const context = member.boundedcontext;
-		const uses = member.relations.filter(
-			(r) => r.relation === "uses" && r.target.boundedcontext === context,
-		);
+		const usesOf = (relations: EntityRelation[]) =>
+			relations.filter(
+				(r) => r.relation === "uses" && r.target.boundedcontext === context,
+			);
+		const uses = usesOf(member.allRelations);
 		for (const attribute of member.attributes.values()) {
 			const vo = attribute.valueobject;
 			// A relation may not leave the context, so only ask for one that
@@ -554,8 +698,8 @@ const attributeRelationCoherence: Rule = (workspace) => {
 				});
 			}
 		}
-		for (const relation of uses) {
-			const typed = Array.from(member.attributes.values()).some(
+		for (const relation of usesOf(member.relations)) {
+			const typed = member.allAttributes.some(
 				(a) => a.valueobject === relation.target,
 			);
 			if (typed) continue;
@@ -1846,9 +1990,9 @@ const RULES: CataloguedRule[] = [
 		rule: "cross-aggregate-reference",
 		severities: ["error"],
 		summary:
-			"A relation into another aggregate uses references and targets that aggregate's root; a relation to a value object crosses nothing.",
-		why: "Aggregates are consistency boundaries; reaching inside another one couples the two so they can no longer change or be stored independently. A value object belongs to the whole context rather than to one aggregate, so using one is not reaching into anybody.",
-		fix: 'Change the relation to "references" and point it at the other aggregate\'s root entity, holding only its identity.',
+			"A relation into another aggregate uses references and targets that aggregate's root, or a kind of that root; a relation to a value object crosses nothing.",
+		why: "Aggregates are consistency boundaries; reaching inside another one couples the two so they can no longer change or be stored independently. A value object belongs to the whole context rather than to one aggregate, so using one is not reaching into anybody. A kind of the root is the root said more precisely — an instance of it is an instance of the root, carrying the same identity — so naming the kind the business names reaches no further inside than naming the root would.",
+		fix: 'Change the relation to "references" and point it at the other aggregate\'s root entity, or at a kind of that root, holding only its identity.',
 		check: crossAggregateReference,
 	},
 	{
@@ -1883,7 +2027,7 @@ const RULES: CataloguedRule[] = [
 		severities: ["warning"],
 		summary:
 			"Every non-root entity in an aggregate declares at least one identity attribute.",
-		why: "An entity is precisely the thing you can still tell apart from another one holding exactly the same values. Without an identity attribute nothing does the telling apart, so the element is a value object that has been filed under the wrong heading, and readers will expect a lifecycle and a history it does not have.",
+		why: "An entity is precisely the thing you can still tell apart from another one holding exactly the same values. Without an identity attribute nothing does the telling apart, so the element is a value object that has been filed under the wrong heading, and readers will expect a lifecycle and a history it does not have. A kind counts as identified by what it is a kind of, since it has that entity's attributes as its own.",
 		fix: "Give the entity the attribute the business identifies it by — the line number, the reference — with identity: true, or make it a value object, which is usually what an entity with nothing to identify really was.",
 		check: entityIdentity,
 	},
@@ -1905,11 +2049,45 @@ const RULES: CataloguedRule[] = [
 		check: identityNotOptional,
 	},
 	{
+		rule: "specialisation-in-boundary",
+		severities: ["error"],
+		summary:
+			"An entity is a kind of an entity of its own aggregate; a value object is a kind of one its own context declares or borrows through a shared kernel.",
+		why: "A kind is the same thing said more precisely, so it lives where the thing lives. An entity and the entity it is a kind of are loaded, saved and kept consistent through one root, and a parent in another aggregate would make one boundary's rules depend on another's. A value object is part of a context's ubiquitous language, and the one place that language is legitimately shared is a shared kernel, which is the declaration that two contexts keep part of one model between them.",
+		fix: "Move the parent into the same aggregate as the kind, or the kind into the parent's; for a value object, declare the parent in this context, or declare the shared kernel with the context that owns it if the two really do keep it in step.",
+		check: specialisationInBoundary,
+	},
+	{
+		rule: "specialisation-cycle",
+		severities: ["error"],
+		summary: 'No chain of "is a kind of" returns to where it started.',
+		why: "A kind adds to what it is a kind of, so the chain has to end somewhere at the thing all of them are. A ring has no such end: no reader and no tool can list what any element on it holds, because every answer needs the next one first, and whatever concept the chain was refining has been lost.",
+		fix: "Point one of the links at the thing both of them really are, or drop it: two elements that are each a kind of the other are one element, or they are two kinds of a third that has not been named yet.",
+		check: specialisationCycle,
+	},
+	{
+		rule: "specialisation-not-root",
+		severities: ["error"],
+		summary: "An entity that is a kind of another is not itself marked root.",
+		why: "An aggregate has exactly one root, and it is what everything else reaches the aggregate by. A kind of the root is reached through the root — an instance of the kind is an instance of it — so marking the kind root as well leaves a reference with two entities to land on and no way to say which the aggregate is saved through.",
+		fix: "Drop root: true from the kind and leave it on the entity it is a kind of. If the kind really does lead a cluster of its own, it is another aggregate rather than a kind.",
+		check: specialisationNotRoot,
+	},
+	{
+		rule: "specialisation-redeclares",
+		severities: ["error"],
+		summary:
+			"A kind does not declare an attribute it already has from what it is a kind of.",
+		why: "The kind already has every attribute of its parent; declaring one of them again gives the same name two types, two descriptions and two places to change, and a reader has no way to tell which of them applies. It is also the usual sign of a hierarchy drawn after the fact over two elements that were written separately.",
+		fix: "Delete the attribute from the kind and leave the parent's. If the kind genuinely holds something different under that name, the two are not the same attribute: give the kind's its own name, or the parent's attribute belongs on its other kinds rather than on the parent.",
+		check: specialisationRedeclares,
+	},
+	{
 		rule: "aggregate-tree",
 		severities: ["error", "warning"],
 		summary:
 			"Inside an aggregate, includes points at entities and uses at value objects, no ring of two or more entity types includes itself, and every entity is reachable from the root.",
-		why: "The aggregate is loaded and saved as one thing through its root, so the parts of one instance hang off it as a tree. That is a claim about instances, not about types: an entity whose parts are of its own type is the composite pattern and still a tree per instance, and a part type included by two different wholes still belongs to one of them at a time, so neither is reported. A ring through two or more distinct types is, because then no type can be named as the one that holds the other and there is no whole to start from. An includes onto a value object or a uses onto an entity says the opposite of what the author means, and an entity nothing reaches is either dead or a missing relation.",
+		why: "The aggregate is loaded and saved as one thing through its root, so the parts of one instance hang off it as a tree. That is a claim about instances, not about types: an entity whose parts are of its own type is the composite pattern and still a tree per instance, and a part type included by two different wholes still belongs to one of them at a time, so neither is reported. A ring through two or more distinct types is, because then no type can be named as the one that holds the other and there is no whole to start from. An includes onto a value object or a uses onto an entity says the opposite of what the author means, and an entity nothing reaches is either dead or a missing relation. A kind is reached wherever the entity it is a kind of is reached, since an instance of it is one of those; specialisation is not containment and never joins the tree itself.",
 		fix: "Point includes at entities and uses at value objects, break a ring of distinct types by making the back edge a references, and give an unreachable entity the relation that reaches it — or move it to its own aggregate.",
 		check: aggregateTree,
 	},
@@ -1918,7 +2096,7 @@ const RULES: CataloguedRule[] = [
 		severities: ["warning"],
 		summary:
 			"An attribute typed by a value object has a matching uses relation, of a matching cardinality.",
-		why: "The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened, and a list-typed attribute against a single-valued relation says two different things about how many there are.",
+		why: "The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened, and a list-typed attribute against a single-valued relation says two different things about how many there are. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.",
 		fix: "Add the missing uses relation or the missing attribute, and set the relation's cardinality to * or 1..* for a list-typed attribute. The type itself is free text and is never checked against the value object's name; only a trailing [] is read, as \"many\".",
 		check: attributeRelationCoherence,
 	},

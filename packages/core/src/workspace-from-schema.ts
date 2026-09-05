@@ -219,9 +219,12 @@ function addBoundedContext(
 	for (const [valueobjectId, valueobjectSchema] of Object.entries(
 		boundedcontextSchema.valueobjects,
 	)) {
+		// What it is a kind of is joined later: the parent may be in a context
+		// this pass has not reached (linkSpecialisations).
 		boundedcontext.addValueObject(valueobjectSchema.name, {
 			...valueobjectSchema,
 			id: valueobjectId,
+			specialises: undefined,
 		});
 	}
 
@@ -247,7 +250,11 @@ function addBoundedContext(
 		for (const [entityId, entitySchema] of Object.entries(
 			aggregateSchema.entities,
 		)) {
-			aggregate.addEntity(entitySchema.name, { ...entitySchema, id: entityId });
+			aggregate.addEntity(entitySchema.name, {
+				...entitySchema,
+				id: entityId,
+				specialises: undefined,
+			});
 		}
 	}
 
@@ -371,6 +378,46 @@ function linkReferences(
 	}
 }
 
+/**
+ * A kind is joined to what it is a kind of once every entity and value object
+ * exists: an entity's parent is declared in the same aggregate, but a value
+ * object's may be in the context it borrows from over a shared kernel, which
+ * the loader may not have reached yet (decision 22).
+ */
+function linkSpecialisations(
+	workspace: Workspace,
+	workspaceSchema: WorkspaceSchema,
+) {
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
+		workspaceSchema.boundedcontexts,
+	)) {
+		for (const [valueobjectId, valueobjectSchema] of Object.entries(
+			boundedcontextSchema.valueobjects,
+		)) {
+			if (!valueobjectSchema.specialises) continue;
+			workspace.getValueObjectByRefOrThrow(
+				valueObjectRef(boundedcontextId, valueobjectId).$ref,
+			).specialises = workspace.getValueObjectByRefOrThrow(
+				valueobjectSchema.specialises.$ref,
+			);
+		}
+		for (const [aggregateId, aggregateSchema] of Object.entries(
+			boundedcontextSchema.aggregates,
+		)) {
+			for (const [entityId, entitySchema] of Object.entries(
+				aggregateSchema.entities,
+			)) {
+				if (!entitySchema.specialises) continue;
+				workspace.getEntityByRefOrThrow(
+					entityRef(boundedcontextId, aggregateId, entityId).$ref,
+				).specialises = workspace.getEntityByRefOrThrow(
+					entitySchema.specialises.$ref,
+				);
+			}
+		}
+	}
+}
+
 /** A term may be embodied by any element, so it is linked once all exist. */
 function linkGlossary(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
@@ -473,6 +520,7 @@ export function getWorkspaceFromSchema(
 	)) {
 		addBoundedContext(workspace, id, boundedcontextSchema);
 	}
+	linkSpecialisations(workspace, workspaceSchema);
 	linkReferences(workspace, workspaceSchema);
 	linkPolicies(workspace, workspaceSchema);
 	linkGlossary(workspace, workspaceSchema);

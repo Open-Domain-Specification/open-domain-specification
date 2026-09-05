@@ -207,6 +207,7 @@ Represents an entity in the Open Domain Specification (ODS).
 | `name` | string | yes |  |
 | `relations` | array of [EntityRelation](#entityrelation) | yes |  |
 | `root` | boolean | no |  |
+| `specialises` | `{ "$ref": string }` | no | The entity this one is a kind of: it has every attribute and relation of that entity, plus its own. The target is an entity of the same aggregate, and a subtype is never itself the root, because the aggregate has one root and a kind of it is reached through it (decision 22). |
 
 No other fields are allowed.
 
@@ -320,6 +321,7 @@ Represents a value object in the Open Domain Specification (ODS).
 | `description` | string | yes |  |
 | `name` | string | yes |  |
 | `relations` | array of [EntityRelation](#entityrelation) | yes |  |
+| `specialises` | `{ "$ref": string }` | no | The value object this one is a kind of: it has every attribute and relation of that value object, plus its own. The target belongs to this context, or to a context this one shares a kernel with (decision 22). |
 
 No other fields are allowed.
 

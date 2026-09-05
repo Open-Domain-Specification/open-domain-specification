@@ -15,3 +15,4 @@ const { Story } = defineMeta({
 <Story name="References (association)" args={{ type: "relation-references", label: "for-pet", data: { targetLabel: "1" } }} />
 <Story name="Uses (dependency)" args={{ type: "relation-uses", label: "has-status", data: { targetLabel: "0..1" } }} />
 <Story name="Identifies (foreign root)" args={{ type: "relation-identifies", label: "petId" }} />
+<Story name="Specialises (generalisation)" args={{ type: "relation-specialises", label: "" }} />

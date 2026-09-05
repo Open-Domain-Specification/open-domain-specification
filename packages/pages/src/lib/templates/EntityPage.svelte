@@ -40,7 +40,10 @@ const incoming = $derived(
 const invariants = $derived(
 	[...a.invariants.values()].filter((i) => i.targets.includes(e)),
 );
-const identity = $derived([...e.attributes.values()].filter((x) => x.identity));
+// What identifies a kind may be declared by what it is a kind of, so the
+// identity fact reads the inherited attributes too (decision 22).
+const identity = $derived(e.allAttributes.filter((x) => x.identity));
+const kinds = $derived(e.kinds);
 
 const outgoingColumns: Column[] = [
 	{ key: "relation", label: "Relation" },
@@ -67,6 +70,16 @@ const incomingColumns: Column[] = [
 	{#snippet facts()}
 		<DefinitionList>
 			<Definition term="Aggregate"><Lockup kind="aggregate" name={a.name} ref={a.ref} /></Definition>
+			{#if e.specialises}
+				<Definition term="A kind of">
+					<Lockup kind="entity" name={e.specialises.name} ref={e.specialises.ref} />
+				</Definition>
+			{/if}
+			{#if kinds.length}
+				<Definition term="Kinds">
+					{#each kinds as k, i (k.ref)}{#if i}, {/if}<Lockup kind="entity" name={k.name} ref={k.ref} />{/each}
+				</Definition>
+			{/if}
 			<Definition term="Identity">
 				{#each identity as x, i (x.ref)}{#if i}, {/if}<Code text={x.name} />{:else}<Keyword text="no identity attribute marked" />{/each}
 			</Definition>
@@ -76,6 +89,7 @@ const incomingColumns: Column[] = [
 
 <AttributesSection
 	attributes={e.attributes.values()}
+	inherited={e.inheritedAttributes}
 	lead="An entity is known by its identity, not its attributes; the key marks what identifies it."
 />
 
