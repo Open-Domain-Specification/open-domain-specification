@@ -4,7 +4,7 @@ Date: 2026-09-07
 
 ## Status
 
-Proposed (finalised after the sprint 02 architect review)
+Accepted (2026-09-07; the architect review raised no objection and the reasoning stands)
 
 ## Context
 
