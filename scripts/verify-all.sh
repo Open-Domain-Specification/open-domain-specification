@@ -68,6 +68,7 @@ for model in northbank petstore rivermart streamline; do
 	(cd "$ROOT/models/$model" && npm run build)
 	run_vitest "$model" "models/$model"
 done
+run_vitest "models/_shared" models/_shared
 
 echo "==> building pages"
 (cd "$ROOT/packages/pages" && npm run build)

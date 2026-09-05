@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [models, tests]
 priority: medium
 agent: ratchet
