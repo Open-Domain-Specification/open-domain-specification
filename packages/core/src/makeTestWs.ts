@@ -264,7 +264,7 @@ export function makeRichTestWs() {
 	// identity rather than a relation to it: the only thing that crosses the
 	// boundary. The dependency itself reads on the consumable map, through the
 	// Order Placed event this aggregate consumes below.
-	invoice.addAttribute("Order Id", { type: "OrderId" });
+	invoice.addAttribute("Order Id", { type: "OrderId", identifies: order });
 	const invoiceConsumesOrderPlaced = invoiceAgg.consumes(orderPlaced, {
 		pattern: "conformist",
 	});

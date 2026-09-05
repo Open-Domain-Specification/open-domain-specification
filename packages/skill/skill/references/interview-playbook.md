@@ -94,9 +94,10 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   product?" → first ask "is that other cluster inside this same part of the business, or
   somewhere else?" Inside the same context → `references` to that cluster's root; ask "one
   or many?" for cardinality. In another context → no relation at all: ask "which id does it
-  hold?" and add that as an attribute, then pick the dependency up in Phase F as a
-  consumable the source consumes. Explain once: a relation is one model's object graph, and
-  two contexts are two models, so only the id crosses.
+  hold?" and add that as an attribute with `identifies` pointing at the other root, then pick
+  the dependency up in Phase F as a consumable the source consumes. Explain once: a relation
+  is one model's object graph, and two contexts are two models, so only the id crosses — and
+  `identifies` is how the id still says which thing it is of.
 - "Does it contain things that cannot exist without it?" → `includes`.
 - "Does it use a value like an address, money or a status?" → `uses`.
 
@@ -120,6 +121,16 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   concept of this context's own model, a schema a payload it publishes. Only a schema's own
   attribute may name a schema — if the thing with parts is an entity's or a value object's
   field, it is a value object, so declare one and use `valueobject`.
+- When an attribute is an id of something the part does not own — "the order this
+  invoice bills", "the pet the order is for" — ask "which root does that id identify?" and
+  point `identifies` at that root entity. It may be in another bounded context: an identity is
+  the only thing allowed to cross one (a relation never does), and `identifies` is what keeps
+  that dependency structural instead of leaving it in the description. If the honest answer
+  names something inside another aggregate rather than its root, the id is the wrong one to
+  hold: ask for the root's. Apply it everywhere rather than case by case: any attribute whose
+  name or description says it is another root's id sets `identifies`. The one exception is a
+  same-context id already drawn as a `references` relation to that root, where `identifies`
+  would say the same thing twice.
 - For an operation, follow up: "and what comes back?" → a second schema on the same context,
   attached with `returns`. A command that answers with nothing leaves `returns` off; a query
   that answers with nothing is not a query, so keep asking. Never put `returns` on an event.

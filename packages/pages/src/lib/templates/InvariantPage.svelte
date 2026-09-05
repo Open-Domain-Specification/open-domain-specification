@@ -7,7 +7,7 @@ export const sections = [
 </script>
 
 <script lang="ts">
-import type { Invariant } from "@open-domain-specification/core";
+import { Consumable, type Invariant } from "@open-domain-specification/core";
 import { nameOf, problemsUnder, useModel } from "../model";
 import { ownerCrumbs } from "../elements";
 import type { Column } from "../atoms/DataTable.svelte";
@@ -26,9 +26,11 @@ const { invariant: i }: { invariant: Invariant } = $props();
 const model = useModel();
 const a = $derived(i.aggregate);
 // The elements the rule holds true of, and the operations that have to uphold
-// it, are two different readings of the same list, so the page splits them.
+// it, are two different readings of the same list, so the page splits them by
+// what each target is: a consumable is an operation the rule guards, anything
+// else is something the rule is about.
 const guarded = $derived(i.guarded);
-const targets = $derived(i.targets.filter((t) => !guarded.includes(t)));
+const targets = $derived(i.targets.filter((t) => !(t instanceof Consumable)));
 const columns: Column[] = [
 	{ key: "name", label: "Element" },
 	{ key: "description", label: "Description" },

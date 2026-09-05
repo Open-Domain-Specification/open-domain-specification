@@ -8,12 +8,13 @@ import type { EntityRelationType, RelationCardinality } from "./schema";
 import { AbstractVisitor } from "./visitor";
 import {
 	type Aggregate,
+	type Attribute,
 	type BoundedContext,
 	type Domain,
 	Entity,
 	type EntityRelation,
 	type Subdomain,
-	type ValueObject,
+	ValueObject,
 	type Workspace,
 } from "./workspace";
 
@@ -45,9 +46,19 @@ function relationNode(node: Entity | ValueObject): ODSRelationMapNode {
 
 export class ODSRelationGraph extends AbstractVisitor {
 	protected readonly _relations = new Set<EntityRelation>();
+	protected readonly _identities = new Set<Attribute>();
 
 	get relations(): EntityRelation[] {
 		return Array.from(this._relations.values());
+	}
+
+	/**
+	 * The attributes in scope that hold another root's identity. They are the
+	 * only dependency allowed to leave a bounded context, so the map would
+	 * otherwise show nothing where the model says the most (decision 14).
+	 */
+	get identities(): Attribute[] {
+		return Array.from(this._identities.values());
 	}
 
 	constructor() {
@@ -57,6 +68,21 @@ export class ODSRelationGraph extends AbstractVisitor {
 	visitEntityRelation(relation: EntityRelation) {
 		this._relations.add(relation);
 		super.visitEntityRelation(relation);
+	}
+
+	visitEntity(entity: Entity) {
+		this.collectIdentities(entity);
+		super.visitEntity(entity);
+	}
+
+	visitValueObject(valueobject: ValueObject) {
+		this.collectIdentities(valueobject);
+		super.visitValueObject(valueobject);
+	}
+
+	private collectIdentities(node: Entity | ValueObject) {
+		for (const attribute of node.attributes.values())
+			if (attribute.identifies) this._identities.add(attribute);
 	}
 
 	static fromWorkspace(workspace: Workspace) {
@@ -117,7 +143,7 @@ export class ODSRelationMap {
 		return edge;
 	}
 
-	constructor(relations: EntityRelation[]) {
+	constructor(relations: EntityRelation[], identities: Attribute[] = []) {
 		for (const relation of relations) {
 			const sourceNode = this.addNode(relationNode(relation.source));
 			const targetNode = this.addNode(relationNode(relation.target));
@@ -130,34 +156,46 @@ export class ODSRelationMap {
 				cardinality: relation.cardinality,
 			});
 		}
+		// An identity attribute draws too: it is the dependency the model keeps
+		// when a relation may not be had, and the root it names is often in
+		// another context, so the map reaches out of the cluster to show it.
+		for (const attribute of identities) {
+			const { owner, identifies: target } = attribute;
+			const drawable = owner instanceof Entity || owner instanceof ValueObject;
+			if (!target || !drawable) continue;
+			this.addEdge({
+				source: this.addNode(relationNode(owner)),
+				target: this.addNode(relationNode(target)),
+				relation: "identifies",
+				label: attribute.name,
+			});
+		}
+	}
+
+	static fromGraph(graph: ODSRelationGraph) {
+		return new ODSRelationMap(graph.relations, graph.identities);
 	}
 
 	static fromWorkspace(workspace: Workspace) {
-		return new ODSRelationMap(
-			ODSRelationGraph.fromWorkspace(workspace).relations,
-		);
+		return ODSRelationMap.fromGraph(ODSRelationGraph.fromWorkspace(workspace));
 	}
 
 	static fromDomain(domain: Domain) {
-		return new ODSRelationMap(ODSRelationGraph.fromDomain(domain).relations);
+		return ODSRelationMap.fromGraph(ODSRelationGraph.fromDomain(domain));
 	}
 
 	static fromSubdomain(subdomain: Subdomain) {
-		return new ODSRelationMap(
-			ODSRelationGraph.fromSubdomain(subdomain).relations,
-		);
+		return ODSRelationMap.fromGraph(ODSRelationGraph.fromSubdomain(subdomain));
 	}
 
 	static fromBoundedContext(boundedcontext: BoundedContext) {
-		return new ODSRelationMap(
-			ODSRelationGraph.fromBoundedContext(boundedcontext).relations,
+		return ODSRelationMap.fromGraph(
+			ODSRelationGraph.fromBoundedContext(boundedcontext),
 		);
 	}
 
 	static fromAggregate(aggregate: Aggregate) {
-		return new ODSRelationMap(
-			ODSRelationGraph.fromAggregate(aggregate).relations,
-		);
+		return ODSRelationMap.fromGraph(ODSRelationGraph.fromAggregate(aggregate));
 	}
 }
 
@@ -184,7 +222,11 @@ export type ODSRelationMapNode = {
 export type ODSRelationMapEdge = {
 	source: ODSRelationMapNode;
 	target: ODSRelationMapNode;
-	relation: EntityRelationType;
+	/**
+	 * The relation drawn, or `identifies` for the identity an attribute holds
+	 * of another root: the one dependency that may cross a context boundary.
+	 */
+	relation: EntityRelationType | "identifies";
 	label: string;
 	cardinality?: RelationCardinality;
 };

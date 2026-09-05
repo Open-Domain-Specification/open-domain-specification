@@ -251,10 +251,21 @@ describe("legendEntries for the relation map", () => {
 						target: "#/b",
 					},
 					{ id: "c", type: "relation-uses", source: "#/a", target: "#/b" },
+					{
+						id: "d",
+						type: "relation-identifies",
+						source: "#/a",
+						target: "#/b",
+					},
 				],
 			},
 			"relation",
 		);
-		expect(marks(all)).toEqual(["filled diamond", "open arrow", "dashed"]);
+		expect(marks(all)).toEqual([
+			"filled diamond",
+			"open arrow",
+			"dashed",
+			"dashed «identifies»",
+		]);
 	});
 });

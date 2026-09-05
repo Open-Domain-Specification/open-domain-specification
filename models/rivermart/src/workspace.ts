@@ -774,9 +774,9 @@ const cartLine = cartAgg.addEntity("CartLine", {
 });
 const cartMoney = money(cartBC);
 cart.addAttribute("cartId", { type: "string", identity: true });
-cart.addAttribute("customerId", { type: "string" });
+// `customerId` is declared with the CustomerAccount root further down.
 cartLine.addAttribute("lineId", { type: "string", identity: true });
-cartLine.addAttribute("offerId", { type: "string" });
+cartLine.addAttribute("offerId", { type: "string", identifies: offer });
 cartLine.addAttribute("quantity", { type: "int" });
 cartLine.addAttribute("unitPrice", { type: "Money", valueobject: cartMoney });
 cart.includes(cartLine, "contains", "*");
@@ -833,7 +833,11 @@ const wishlistItem = wishlistAgg.addRootEntity("WishlistItem", {
 	description: "One saved product",
 });
 wishlist.addAttribute("wishlistId", { type: "string", identity: true });
-wishlistItem.addAttribute("productId", { type: "string", identity: true });
+wishlistItem.addAttribute("productId", {
+	type: "string",
+	identity: true,
+	identifies: product,
+});
 wishlist.includes(wishlistItem, "saves", "*");
 // DELIBERATE (cross-aggregate-reference): the cart "includes" wishlist items
 // from the Wishlist aggregate. The basket screen wanted the saved items beside
@@ -919,7 +923,7 @@ const trackingRefVO = orderBC.addValueObject("TrackingReference", {
 trackingRefVO.addAttribute("value", { type: "string" });
 
 order.addAttribute("orderId", { type: "string", identity: true });
-order.addAttribute("customerId", { type: "string" });
+// `customerId` is declared with the CustomerAccount root further down.
 order.addAttribute("total", { type: "Money", valueobject: orderMoney });
 order.addAttribute("shippingAddress", {
 	type: "Address",
@@ -935,6 +939,7 @@ orderLine.addAttribute("offerId", {
 	type: "string",
 	description:
 		"Identity of the Offer root in Offers; only the id crosses the boundary. `sku` is the catalogue code the line was bought under, which is not the same thing",
+	identifies: offer,
 });
 orderLine.addAttribute("quantity", { type: "int" });
 orderLine.addAttribute("unitPrice", { type: "Money", valueobject: orderMoney });
@@ -1148,7 +1153,7 @@ const refund = paymentAgg.addEntity("Refund", {
 });
 const paymentMoney = money(paymentsBC);
 paymentIntent.addAttribute("paymentId", { type: "string", identity: true });
-paymentIntent.addAttribute("orderId", { type: "string" });
+paymentIntent.addAttribute("orderId", { type: "string", identifies: order });
 paymentIntent.addAttribute("amount", {
 	type: "Money",
 	valueobject: paymentMoney,
@@ -1480,7 +1485,10 @@ position.addAttribute("sku", { type: "string", identity: true });
 position.addAttribute("siteId", { type: "string", identity: true });
 const onHand = position.addAttribute("onHand", { type: "int" });
 reservation.addAttribute("reservationId", { type: "string", identity: true });
-reservation.addAttribute("orderId", { type: "string" });
+reservation.addAttribute("orderId", {
+	type: "string",
+	identifies: order,
+});
 reservation.addAttribute("quantity", { type: "int" });
 position.includes(reservation, "reserved-by", "*");
 position.addAttribute("bins", {
@@ -1527,7 +1535,7 @@ fulfilmentOrder.addAttribute("fulfilmentOrderId", {
 	type: "string",
 	identity: true,
 });
-fulfilmentOrder.addAttribute("orderId", { type: "string" });
+fulfilmentOrder.addAttribute("orderId", { type: "string", identifies: order });
 pickTask.addAttribute("taskId", { type: "string", identity: true });
 pickTask.addAttribute("sku", { type: "string" });
 pickTask.addAttribute("quantity", { type: "int" });
@@ -1793,7 +1801,7 @@ parcel.addAttribute("label", {
 	valueobject: lastMileLabelVO,
 });
 parcel.addAttribute("parcelId", { type: "string", identity: true });
-parcel.addAttribute("orderId", { type: "string" });
+parcel.addAttribute("orderId", { type: "string", identifies: order });
 route.includes(stop, "visits", "1..*");
 stop.includes(parcel, "hands-over", "1..*");
 stop.addAttribute("proofOfDelivery", {
@@ -1910,6 +1918,7 @@ adGroup.addAttribute("productId", {
 	type: "string",
 	description:
 		"Identity of the Product root in Catalogue; only the id crosses the boundary",
+	identifies: product,
 });
 campaign.includes(adGroup, "spends-through", "1..*");
 campaign.uses(campaignMoney, "budgeted", "1");
@@ -2046,8 +2055,9 @@ resolutionVO.addAttribute("kind", {
 	type: "'refund' | 'replacement' | 'information' | 'no-action'",
 });
 caseRoot.addAttribute("caseId", { type: "string", identity: true });
-caseRoot.addAttribute("customerId", { type: "string" });
-caseRoot.addAttribute("orderId", { type: "string" });
+caseRoot.addAttribute("orderId", { type: "string", identifies: order });
+// `customerId` is declared with the CustomerAccount root further down, because
+// the root it identifies has to exist before the attribute can name it.
 interaction.addAttribute("interactionId", { type: "string", identity: true });
 interaction.addAttribute("channel", { type: "'call' | 'chat' | 'email'" });
 interaction.addAttribute("at", { type: "date-time" });
@@ -2179,6 +2189,13 @@ const customer = customerAgg.addRootEntity("CustomerAccount", {
 });
 customer.addAttribute("customerId", { type: "string", identity: true });
 customer.addAttribute("email", { type: "string" });
+// Every customer id in the model is declared here, because an attribute can
+// only name a root that already exists and this is where the CustomerAccount
+// root is. Each of these aggregates is in another bounded context, so this
+// identity is the whole of what it holds of a customer.
+cart.addAttribute("customerId", { type: "string", identifies: customer });
+order.addAttribute("customerId", { type: "string", identifies: customer });
+caseRoot.addAttribute("customerId", { type: "string", identifies: customer });
 
 const customerRegistered = customerAgg.provides("CustomerRegistered", {
 	description: "A new customer account exists",

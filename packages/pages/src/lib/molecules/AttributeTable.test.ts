@@ -44,6 +44,18 @@ describe("AttributeTable", () => {
 		expect(screen.getAllByRole("link")[0].closest("code")).toBeInTheDocument();
 	});
 
+	it("names the root an identity attribute identifies, as a ref", () => {
+		const petId = petstoreModel()
+			.workspace.getEntityByRefOrThrow(
+				"#/boundedcontexts/sales_bc/aggregates/order/entities/order",
+			)
+			.attributes.get("pet_id");
+		if (!petId) throw new Error("petstore no longer holds Order.petId");
+		render(AttributeTable, { attributes: [petId] });
+		const link = screen.getByRole("link", { name: "Pet" });
+		expect(link.closest(".identifies")).toBeInTheDocument();
+	});
+
 	it("says what would fill it when nothing is declared", () => {
 		render(AttributeTable, {
 			attributes: [],

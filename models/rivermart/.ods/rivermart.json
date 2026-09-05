@@ -1237,7 +1237,10 @@
                 },
                 "customer_id": {
                   "name": "customerId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/identity/aggregates/customer_account/entities/customer_account"
+                  }
                 }
               },
               "relations": [
@@ -1271,7 +1274,10 @@
                 },
                 "offer_id": {
                   "name": "offerId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer"
+                  }
                 },
                 "quantity": {
                   "name": "quantity",
@@ -1354,7 +1360,10 @@
                 "product_id": {
                   "name": "productId",
                   "type": "string",
-                  "identity": true
+                  "identity": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/product"
+                  }
                 }
               },
               "relations": []
@@ -1665,10 +1674,6 @@
                   "type": "string",
                   "identity": true
                 },
-                "customer_id": {
-                  "name": "customerId",
-                  "type": "string"
-                },
                 "total": {
                   "name": "total",
                   "type": "Money",
@@ -1688,6 +1693,13 @@
                   "type": "OrderStatus",
                   "valueobject": {
                     "$ref": "#/boundedcontexts/order_management/valueobjects/order_status"
+                  }
+                },
+                "customer_id": {
+                  "name": "customerId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/identity/aggregates/customer_account/entities/customer_account"
                   }
                 }
               },
@@ -1759,7 +1771,10 @@
                 "offer_id": {
                   "name": "offerId",
                   "type": "string",
-                  "description": "Identity of the Offer root in Offers; only the id crosses the boundary. `sku` is the catalogue code the line was bought under, which is not the same thing"
+                  "description": "Identity of the Offer root in Offers; only the id crosses the boundary. `sku` is the catalogue code the line was bought under, which is not the same thing",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer"
+                  }
                 },
                 "quantity": {
                   "name": "quantity",
@@ -2332,7 +2347,10 @@
                 },
                 "order_id": {
                   "name": "orderId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
                 },
                 "amount": {
                   "name": "amount",
@@ -3038,7 +3056,10 @@
                 },
                 "order_id": {
                   "name": "orderId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
                 },
                 "quantity": {
                   "name": "quantity",
@@ -3147,7 +3168,10 @@
                 },
                 "order_id": {
                   "name": "orderId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
                 }
               },
               "relations": [
@@ -3607,7 +3631,10 @@
                 },
                 "order_id": {
                   "name": "orderId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
                 }
               },
               "relations": []
@@ -3836,7 +3863,10 @@
                 "product_id": {
                   "name": "productId",
                   "type": "string",
-                  "description": "Identity of the Product root in Catalogue; only the id crosses the boundary"
+                  "description": "Identity of the Product root in Catalogue; only the id crosses the boundary",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/product"
+                  }
                 }
               },
               "relations": [
@@ -4101,13 +4131,12 @@
                   "type": "string",
                   "identity": true
                 },
-                "customer_id": {
-                  "name": "customerId",
-                  "type": "string"
-                },
                 "order_id": {
                   "name": "orderId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
                 },
                 "resolution": {
                   "name": "resolution",
@@ -4115,6 +4144,13 @@
                   "description": "Absent while the case is open",
                   "valueobject": {
                     "$ref": "#/boundedcontexts/customer_service/valueobjects/resolution"
+                  }
+                },
+                "customer_id": {
+                  "name": "customerId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/identity/aggregates/customer_account/entities/customer_account"
                   }
                 }
               },

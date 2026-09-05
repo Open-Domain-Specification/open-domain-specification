@@ -1077,7 +1077,10 @@
                 "customer_id": {
                   "name": "customerId",
                   "type": "string",
-                  "identity": true
+                  "identity": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+                  }
                 },
                 "powers": {
                   "name": "powers",
@@ -1919,7 +1922,10 @@
                 },
                 "payer_account_id": {
                   "name": "payerAccountId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
+                  }
                 },
                 "amount": {
                   "name": "amount",
@@ -2587,7 +2593,10 @@
                 },
                 "account_id": {
                   "name": "accountId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
+                  }
                 },
                 "pan": {
                   "name": "pan",
@@ -3009,7 +3018,10 @@
                 },
                 "customer_id": {
                   "name": "customerId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+                  }
                 },
                 "requested": {
                   "name": "requested",
@@ -3165,7 +3177,10 @@
                 "account_id": {
                   "name": "accountId",
                   "type": "string",
-                  "description": "Identity of the Account the loan is disbursed to, in Accounts; only the id crosses the boundary"
+                  "description": "Identity of the Account the loan is disbursed to, in Accounts; only the id crosses the boundary",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
+                  }
                 },
                 "principal": {
                   "name": "principal",
@@ -3974,11 +3989,17 @@
                 },
                 "customer_id": {
                   "name": "customerId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+                  }
                 },
                 "account_id": {
                   "name": "accountId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
+                  }
                 },
                 "status": {
                   "name": "status",
@@ -4574,7 +4595,10 @@
                 },
                 "customer_id": {
                   "name": "customerId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+                  }
                 },
                 "authenticated": {
                   "name": "authenticated",
@@ -4867,7 +4891,10 @@
                 "customer_id": {
                   "name": "customerId",
                   "type": "string",
-                  "identity": true
+                  "identity": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+                  }
                 },
                 "username": {
                   "name": "username",

@@ -97,6 +97,23 @@ describe("RelationEdge", () => {
 		expect(cardinality(uses.container)).toBeNull();
 	});
 
+	it("draws an identity as a dashed dependency, stereotyped so it never reads as a uses", async () => {
+		const held = edge({ type: "relation-identifies", label: "petId" });
+		await waitFor(() => expect(edgePath(held.container)).toBeTruthy());
+		const path = edgePath(held.container) as SVGElement;
+		expect(path).toHaveClass("identifies");
+		expect(path).toHaveClass("dashed");
+		expect(path.getAttribute("marker-end")).toBe("url(#e-vee)");
+		expect(held.container.querySelector(".edge-label")).toHaveTextContent(
+			"«identifies» petId",
+		);
+
+		// An identity the map has no attribute name for says nothing extra.
+		const bare = edge({ type: "relation-identifies", label: "" });
+		await waitFor(() => expect(edgePath(bare.container)).toBeTruthy());
+		expect(bare.container.querySelector(".edge-label")).toBeNull();
+	});
+
 	it("places the cardinality port on the side the edge enters from", async () => {
 		const at = async (targetPosition: Position) => {
 			const { container } = edge({

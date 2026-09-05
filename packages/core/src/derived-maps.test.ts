@@ -167,6 +167,30 @@ describe("ODSRelationMap", () => {
 		expect(map.nodes.get(f.money.ref)?.type).toBe("valueobject");
 	});
 
+	it("draws an identity attribute as an edge to the root it identifies", () => {
+		const map = ODSRelationMap.fromBoundedContext(f.invoicingBc);
+		const edge = Array.from(map.edges.values()).find(
+			(e) => e.relation === "identifies",
+		);
+		expect(edge?.source.name).toBe("Invoice");
+		expect(edge?.target.name).toBe("Order");
+		expect(edge?.label).toBe("Order Id");
+		// The root it names is another context's, and the map reaches it anyway:
+		// that is the one dependency allowed to cross (decision 14).
+		expect(map.nodes.get(f.order.ref)?.type).toBe("entity_root");
+	});
+
+	it("collects the identity attributes in scope and no others", () => {
+		expect(
+			ODSRelationGraph.fromBoundedContext(f.invoicingBc).identities.map(
+				(a) => a.name,
+			),
+		).toEqual(["Order Id"]);
+		expect(
+			ODSRelationGraph.fromBoundedContext(f.orderingBc).identities,
+		).toEqual([]);
+	});
+
 	it("follows cross-aggregate relations transitively and namespaces targets by their own aggregate", () => {
 		const map = ODSRelationMap.fromAggregate(f.basketAgg);
 		const target = map.nodes.get(f.order.ref);

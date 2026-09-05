@@ -1652,6 +1652,8 @@ export type AttributeOptions = {
 	valueobject?: ValueObject;
 	/** The schema that models this attribute's type, when it is a shape of its own. */
 	schema?: DataSchema;
+	/** The root entity this attribute holds the identity of, in any context. */
+	identifies?: Entity;
 	id?: string;
 };
 
@@ -1672,6 +1674,8 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 	valueobject?: ValueObject;
 	/** The schema that models this attribute's type, when it is a shape of its own. */
 	schema?: DataSchema;
+	/** The root entity this attribute holds the identity of, in any context. */
+	identifies?: Entity;
 	owner: AttributeOwner;
 
 	get path(): string {
@@ -1694,6 +1698,7 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 		this.identity = attributes.identity ?? false;
 		this.valueobject = attributes.valueobject;
 		this.schema = attributes.schema;
+		this.identifies = attributes.identifies;
 		this.owner = owner;
 		this.owner.attributes.set(this.id, this);
 	}
@@ -1706,6 +1711,7 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 			identity: this.identity || undefined,
 			valueobject: this.valueobject && { $ref: this.valueobject.ref },
 			schema: this.schema && { $ref: this.schema.ref },
+			identifies: this.identifies && { $ref: this.identifies.ref },
 		};
 	}
 }

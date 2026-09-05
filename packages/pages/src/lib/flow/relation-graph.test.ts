@@ -150,5 +150,6 @@ describe("relationGraph", () => {
 		expect(edges[1].sourceLabel).toBeUndefined();
 		expect(edges[2].sourceLabel).toBeUndefined();
 		expect(relationEdgeType("uses")).toBe("relation-uses");
+		expect(relationEdgeType("identifies")).toBe("relation-identifies");
 	});
 });

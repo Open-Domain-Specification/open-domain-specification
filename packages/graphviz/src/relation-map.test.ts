@@ -124,6 +124,38 @@ describe("relationMapToDigraph", () => {
 		`);
 	});
 
+	it("draws an identity as a dotted, stereotyped edge to the foreign root", () => {
+		const map = buildMap();
+		const order = map.nodes.get(
+			"#/boundedcontexts/ordering/aggregates/order/entities/order",
+		);
+		const pet = map.addNode({
+			id: "#/boundedcontexts/catalog/aggregates/pet/entities/pet",
+			name: "Pet",
+			type: "entity_root",
+			namespace: [
+				{ id: "ws", name: "Shop" },
+				{ id: "#/boundedcontexts/catalog", name: "Catalog" },
+				{ id: "#/boundedcontexts/catalog/aggregates/pet", name: "Pet" },
+			],
+			attributes: [],
+		});
+		if (!order) throw new Error("fixture missing the order node");
+		map.addEdge({
+			source: order,
+			target: pet,
+			label: "petId",
+			relation: "identifies",
+		});
+		const drawn = relationMapToDigraph(map);
+		expect(drawn.toDot()).toContain(
+			'arrowhead = "vee";\n    arrowtail = "none";\n    style = "dashed";\n    label = "«identifies» petId"',
+		);
+		expect(drawn.toPlantUML()).toContain(
+			"boundedcontexts_ordering_aggregates_order_entities_order ..> boundedcontexts_catalog_aggregates_pet_entities_pet : «identifies» petId",
+		);
+	});
+
 	it("escapes HTML in attribute types", () => {
 		expect(relationMapToDigraph(buildMap()).toDot()).toContain(
 			"Decimal &lt;2dp&gt;",

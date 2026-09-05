@@ -24,11 +24,18 @@ import {
 
 const debug = getDebug("relation-map");
 
+/** Every line the map can draw: the three relations, and the identity. */
+type EdgeKind = ODSRelationMapEdge["relation"];
+
 /**
  * UML arrow for each relation: `references` is a navigable association,
  * `includes` a composition with the diamond on the whole, `uses` a dependency.
+ * An identity is a dependency too, and draws as one: dashed, with an
+ * «identifies» stereotype that says which kind it is. The holder knows the
+ * other root's id and nothing else about it, which is exactly why this is the
+ * one line allowed to leave a bounded context (decision 14).
  */
-const UML_ARROWS: Record<RelationType, EdgeAttributesObject> = {
+const UML_ARROWS: Record<EdgeKind, EdgeAttributesObject> = {
 	[RelationType.References]: {
 		arrowhead: "vee",
 		arrowtail: "none",
@@ -45,14 +52,24 @@ const UML_ARROWS: Record<RelationType, EdgeAttributesObject> = {
 		arrowtail: "none",
 		style: "dashed",
 	},
+	identifies: {
+		arrowhead: "vee",
+		arrowtail: "none",
+		style: "dashed",
+	},
 };
 
 /** PlantUML connector for each relation, mirroring {@link UML_ARROWS}. */
-const PLANTUML_ARROWS: Record<RelationType, string> = {
+const PLANTUML_ARROWS: Record<EdgeKind, string> = {
 	[RelationType.References]: "-->",
 	[RelationType.Includes]: "*--",
 	[RelationType.Uses]: "..>",
+	identifies: "..>",
 };
+
+/** The identity edge says what it is, since its line alone cannot. */
+const edgeLabel = (edge: ODSRelationMapEdge) =>
+	edge.relation === "identifies" ? `«identifies» ${edge.label}` : edge.label;
 
 /** The aggregate is the innermost namespace; the rest is its context path. */
 function aggregateOf(node: ODSRelationMapNode) {
@@ -84,7 +101,7 @@ function classLabel(node: ODSRelationMapNode): string {
 function edgeAttributes(edge: ODSRelationMapEdge): EdgeAttributesObject {
 	return {
 		...UML_ARROWS[edge.relation],
-		label: edge.label,
+		label: edgeLabel(edge),
 		headlabel: edge.cardinality ?? "",
 		labeldistance: 1.5,
 		fontsize: 10,
@@ -107,7 +124,8 @@ function plantUmlClass(node: ODSRelationMapNode): string {
 
 function plantUmlEdge(edge: ODSRelationMapEdge): string {
 	const cardinality = edge.cardinality ? ` "${edge.cardinality}"` : "";
-	const label = edge.label ? ` : ${edge.label}` : "";
+	const text = edgeLabel(edge);
+	const label = text ? ` : ${text}` : "";
 	return `${plantUmlAlias(edge.source)} ${PLANTUML_ARROWS[edge.relation]}${cardinality} ${plantUmlAlias(edge.target)}${label}`;
 }
 

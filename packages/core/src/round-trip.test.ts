@@ -51,6 +51,17 @@ describe("schema round-trip", () => {
 		expect(consumable.internal).toBe(false);
 	});
 
+	it("re-links an identity attribute to the root it identifies", () => {
+		const invoice = rebuilt.getEntityByRefOrThrow(
+			"#/boundedcontexts/invoicing_bc/aggregates/invoice/entities/invoice",
+		);
+		const orderId = invoice.attributes.get("order_id");
+		expect(orderId?.identifies?.ref).toBe(
+			"#/boundedcontexts/ordering_bc/aggregates/order/entities/order",
+		);
+		expect(orderId?.identifies?.root).toBe(true);
+	});
+
 	it("re-links operations to the events they raise and keeps internal flags", () => {
 		const placeOrder = rebuilt.getConsumableByRefOrThrow(
 			"#/boundedcontexts/ordering_bc/services/order_app/provides/place_order",

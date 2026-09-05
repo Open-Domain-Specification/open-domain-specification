@@ -13,8 +13,11 @@ import PortBadge from "./PortBadge.svelte";
  * A UML connector for one entity relation, picked by the edge `type`:
  * `relation-includes` is a composition (filled diamond on the whole),
  * `relation-references` a navigable association (open arrow) and
- * `relation-uses` a dependency (dashed, open arrow). The core expresses no
- * aggregation, so there is no hollow diamond. The role label sits at the
+ * `relation-uses` a dependency (dashed, open arrow). `relation-identifies` is
+ * a dependency too — the identity an attribute holds of another root, the one
+ * line allowed to cross a bounded context — and says so with an «identifies»
+ * stereotype, since its dashes alone would read as a "uses". The core
+ * expresses no aggregation, so there is no hollow diamond. The role label sits at the
  * midpoint and the multiplicities are ports at the ends: the cardinality at
  * the target, as in the Graphviz image, and "1" at the whole of a
  * composition. Ends follow the diagram options: fixed handles or floating
@@ -37,8 +40,11 @@ const sourceNode = useInternalNode(source);
 const targetNode = useInternalNode(target);
 
 const relation = $derived(type.replace(/^relation-/, ""));
-const dashed = $derived(relation === "uses");
+const dashed = $derived(relation === "uses" || relation === "identifies");
 const diamond = $derived(relation === "includes");
+const text = $derived(
+	relation === "identifies" && label ? `«identifies» ${label}` : label,
+);
 
 const params = $derived(
 	edgeEndpoints(ends, sourceNode.current, targetNode.current),
@@ -72,8 +78,8 @@ const path = $derived(
 		markerStart={diamond ? `url(#${id}-diamond)` : undefined}
 		markerEnd={diamond ? undefined : `url(#${id}-vee)`}
 	/>
-	{#if label}
-		<text class="edge-label" x={path[1]} y={path[2]} text-anchor="middle" dominant-baseline="middle">{label}</text>
+	{#if text}
+		<text class="edge-label" x={path[1]} y={path[2]} text-anchor="middle" dominant-baseline="middle">{text}</text>
 	{/if}
 	{#if data?.sourceLabel}
 		{@const at = portCentre(params.sourceX, params.sourceY, params.sourcePosition)}

@@ -875,7 +875,7 @@ const sessionHousehold = session.addAttribute("householdId", {
 	description:
 		"The paying unit the profile belongs to; what entitlement is checked for",
 });
-session.addAttribute("titleId", { type: "string" });
+session.addAttribute("titleId", { type: "string", identifies: title });
 session.addAttribute("episodeId", {
 	type: "string",
 	description:
@@ -1253,7 +1253,7 @@ affinityVO.addAttribute("genre", { type: "string" });
 affinityVO.addAttribute("score", { type: "float 0..1" });
 taste.addAttribute("profileId", { type: "string", identity: true });
 signal.addAttribute("signalId", { type: "string", identity: true });
-signal.addAttribute("titleId", { type: "string" });
+signal.addAttribute("titleId", { type: "string", identifies: title });
 signal.addAttribute("kind", {
 	type: "'watched' | 'completed' | 'abandoned' | 'rated'",
 });

@@ -20,6 +20,10 @@ const price = product.addEntity("Price", { description: "" });
 // order holds the product's identity and consumes what Catalog publishes.
 orderRoot.references(price, "priced at");
 
+// The identity an attribute holds must be a root's: a Price lives inside the
+// Product boundary, so nobody outside can ask for one on its own.
+orderRoot.addAttribute("priceId", { type: "string", identifies: price });
+
 // An internal consumable is not offered to other contexts, and a policy
 // reacts to events, not operations.
 const reprice = product.provides("Reprice", {
@@ -40,6 +44,7 @@ describe("Validation", () => {
 			[
 			  "error cross-aggregate-reference: "Order" references "Price", which is not the root of aggregate "Product"; reference other aggregates by their root's identity",
 			  "error cross-context-relation: "Order" in "Ordering" references "Price" in "Catalog"; a relation never crosses a bounded context, so hold "Price"'s identity as an attribute on "Order" instead",
+			  "error identifies-root: "Order" holds attribute "priceId" as the identity of "Price", which is not the root of aggregate "Product"; an identity names the root the aggregate is reached by",
 			  "error root-identity: Root entity "Order" of aggregate "Order" declares no identity attribute, so nothing says which "Order" a reference means",
 			  "error root-identity: Root entity "Product" of aggregate "Product" declares no identity attribute, so nothing says which "Product" a reference means",
 			  "warning entity-identity: Entity "Price" in aggregate "Product" declares no identity attribute; an entity is what you tell apart from another holding the same values, so without one "Price" is a value object",

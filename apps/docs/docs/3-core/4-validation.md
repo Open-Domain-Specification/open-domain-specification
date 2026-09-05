@@ -14,6 +14,7 @@ severity, a rule id, a message and the ref of the element concerned.
 | `aggregate-root` | error / warning | exactly one root entity per aggregate |
 | `cross-aggregate-reference` | error | relations into another aggregate are `references` to its root; a relation to a value object crosses no aggregate, since the context declares it |
 | `cross-context-relation` | error | a relation never crosses a bounded context; the source holds the other root's identity instead |
+| `identifies-root` | error | an attribute's `identifies` names the root entity of an aggregate; the root is what an aggregate is reached by, which is what lets an identity cross a context boundary |
 | `root-identity` | error | an aggregate's root entity declares at least one identity attribute |
 | `entity-identity` | warning | every other entity in an aggregate declares at least one identity attribute; without one it is a value object |
 | `value-object-shape` | error | a value object declares no identity attribute and includes nothing |

@@ -55,13 +55,15 @@ shipmentRoot.references(carrierRoot, "shipped-by", "1");
 ## Another context reached by identity only, never by a relation
 
 The order is in Sales and the pet is in Catalog, so the order stores the pet's
-id and no relation. The dependency between the two contexts reads on the
-consumable map instead, through what Sales consumes from Catalog.
+id and no relation. `identifies` says which root that id is of, so the
+dependency stays structural: the relation map draws it as a dashed edge across
+the boundary, and the consumable map carries the traffic behind it.
 
 ```ts
 orderRoot.addAttribute("petId", {
 	type: "int64",
 	description: "Identity of the Pet root in Catalog; only the id crosses the boundary",
+	identifies: petRoot,
 });
 ```
 
