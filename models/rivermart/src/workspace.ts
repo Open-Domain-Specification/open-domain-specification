@@ -293,7 +293,12 @@ dimensionVO.addAttribute("lengthMm", { type: "int" });
 
 product.addAttribute("productId", { type: "string", identity: true });
 product.addAttribute("title", { type: "string" });
-product.addAttribute("brand", { type: "Brand", valueobject: brandVO });
+product.addAttribute("brand", {
+	type: "Brand",
+	valueobject: brandVO,
+	optional: true,
+	description: "Absent on own-label and unbranded goods",
+});
 variant.addAttribute("sku", { type: "string", identity: true });
 variant.addAttribute("option", {
 	type: "string",
@@ -1002,6 +1007,8 @@ shipment.addAttribute("shipmentId", { type: "string", identity: true });
 shipment.addAttribute("tracking", {
 	type: "TrackingReference",
 	valueobject: trackingRefVO,
+	optional: true,
+	description: "Absent until the carrier has given a reference",
 });
 returnEntity.addAttribute("returnId", { type: "string", identity: true });
 returnEntity.addAttribute("reason", { type: "string" });

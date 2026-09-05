@@ -201,7 +201,8 @@ describe("the tactical templates on the alternate branches", () => {
 		);
 		expect(text).toContain("Nothing uses this value object as a type yet.");
 		expect(text).toContain("No relations.");
-		expect(text).toContain("No invariant names this value object.");
+		expect(text).toContain("This value keeps no rule of its own.");
+		expect(text).toContain("No aggregate's rule names this value object.");
 	});
 
 	it("ValueObjectPage: a relation carries its cardinality as a code keyword", () => {
@@ -288,6 +289,38 @@ describe("the tactical templates on the alternate branches", () => {
 				).$ref,
 			),
 		).toContain("Applies to the aggregate as a whole.");
+	});
+
+	it("InvariantPage: a value's rule says it holds by construction and names its owner", () => {
+		const text = textOf(
+			`${valueObjectRef("main_context", "ruled_value_object").$ref}/invariants/value_invariant`,
+		);
+		expect(text).toContain("value invariant");
+		expect(text).toContain("Ruled Value Object");
+		expect(text).toContain("Nothing guards a value's rule.");
+	});
+
+	it("InvariantPage: applies to the whole value", () => {
+		expect(
+			textOf(
+				`${valueObjectRef("main_context", "ruled_value_object").$ref}/invariants/whole_value_invariant`,
+			),
+		).toContain("Applies to the value as a whole.");
+	});
+
+	it("ValueObjectPage: lists the value's own rules apart from the ones that name it", () => {
+		const { container } = render(Harness, {
+			model,
+			ref: valueObjectRef("main_context", "ruled_value_object").$ref,
+		});
+		const own = container.querySelector("#invariants") as HTMLElement;
+		expect(own.querySelector("h2")).toHaveTextContent("Invariants");
+		expect(own.textContent).toContain("Value Invariant");
+		expect(own.textContent).toContain("whole value");
+		const named = container.querySelector("#constrained-by") as HTMLElement;
+		expect(named.textContent).toContain(
+			"No aggregate's rule names this value object.",
+		);
 	});
 
 	it("PolicyPage: triggered by nothing and issues nothing", () => {

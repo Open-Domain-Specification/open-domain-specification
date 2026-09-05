@@ -36,9 +36,9 @@ Open-host service for /user endpoints
 > No invariants across aggregates.
 
 ## Value Objects
-| Name | Description | Attributes | Used by |
-| --- | --- | --- | --- |
-| UserStatus | Untyped int per the Petstore v3 model; nobody remembers the meaning of each value | value: `int` | User |
+| Name | Description | Attributes | Invariants | Used by |
+| --- | --- | --- | --- | --- |
+| UserStatus | Untyped int per the Petstore v3 model; nobody remembers the meaning of each value | value: `int` | - | User |
 
 
 ## Schemas

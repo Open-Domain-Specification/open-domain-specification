@@ -585,7 +585,8 @@
               "type": "date"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "address": {
           "name": "Address",
@@ -600,7 +601,8 @@
               "type": "string"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "kyc_status": {
           "name": "KycStatus",
@@ -611,7 +613,8 @@
               "type": "'pending' | 'held' | 'verified'"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "consent_purpose": {
           "name": "ConsentPurpose",
@@ -622,7 +625,8 @@
               "type": "'marketing' | 'data-sharing' | 'open-banking'"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "consent_scope": {
           "name": "ConsentScope",
@@ -637,7 +641,8 @@
               "type": "string[]"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -846,7 +851,8 @@
               "type": "int 0..100"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -1063,15 +1069,6 @@
             }
           },
           "invariants": {
-            "iban_checksum_valid": {
-              "name": "IbanChecksumValid",
-              "description": "The IBAN's mod-97 checksum holds, or the account does not exist",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/accounts/valueobjects/iban"
-                }
-              ]
-            },
             "balance_within_overdraft": {
               "name": "BalanceWithinOverdraft",
               "description": "The available balance never falls below minus the overdraft limit",
@@ -1286,7 +1283,18 @@
               "type": "string (ISO 13616)"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {
+            "iban_checksum_valid": {
+              "name": "IbanChecksumValid",
+              "description": "The IBAN's mod-97 checksum holds, or the value is not an IBAN at all",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/accounts/valueobjects/iban/attributes/value"
+                }
+              ]
+            }
+          }
         },
         "overdraft_limit": {
           "name": "OverdraftLimit",
@@ -1300,7 +1308,8 @@
               }
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "account_status": {
           "name": "AccountStatus",
@@ -1311,7 +1320,8 @@
               "type": "'open' | 'frozen' | 'closed'"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -1678,7 +1688,8 @@
           "name": "LedgerAccount",
           "description": "Where a posting lands. No posting lands on a LedgerAccount as such: every one of them is a customer account or a nominal, and the two are named differently",
           "attributes": {},
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "customer_ledger_account": {
           "name": "CustomerLedgerAccount",
@@ -1695,7 +1706,8 @@
               }
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "nominal_ledger_account": {
           "name": "NominalLedgerAccount",
@@ -1710,7 +1722,8 @@
               "description": "From the chart of accounts, e.g. LOAN-BOOK, SCHEME-SUSPENSE"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "posting_direction": {
           "name": "PostingDirection",
@@ -1721,7 +1734,8 @@
               "type": "'debit' | 'credit'"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "value_date": {
           "name": "ValueDate",
@@ -1732,7 +1746,8 @@
               "type": "date"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -2221,7 +2236,8 @@
               "type": "string (ISO 13616)"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "execution_date": {
           "name": "ExecutionDate",
@@ -2232,7 +2248,8 @@
               "type": "date"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "payment_status": {
           "name": "PaymentStatus",
@@ -2243,7 +2260,8 @@
               "type": "'initiated' | 'cleared' | 'flagged' | 'submitted' | 'settled' | 'rejected'"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -2458,7 +2476,8 @@
               "type": "'pacs.008' | 'pacs.002' | 'pain.001'"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -2656,15 +2675,6 @@
             }
           },
           "invariants": {
-            "pan_luhn_valid": {
-              "name": "PanLuhnValid",
-              "description": "A PAN value is only ever created from a full number that passed the Luhn check; the token and last four are never re-checked because they cannot be",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/cards/valueobjects/pan"
-                }
-              ]
-            },
             "no_auth_on_blocked_card": {
               "name": "NoAuthOnBlockedCard",
               "description": "A blocked card authorises nothing",
@@ -2834,7 +2844,18 @@
               "type": "string"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {
+            "pan_luhn_valid": {
+              "name": "PanLuhnValid",
+              "description": "A PAN value is only ever created from a full number that passed the Luhn check; the token and last four are never re-checked because they cannot be",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/cards/valueobjects/pan"
+                }
+              ]
+            }
+          }
         },
         "expiry": {
           "name": "Expiry",
@@ -2849,7 +2870,8 @@
               "type": "int"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "card_status": {
           "name": "CardStatus",
@@ -2860,7 +2882,8 @@
               "type": "'active' | 'blocked' | 'expired'"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -3029,7 +3052,8 @@
                 "decision": {
                   "name": "decision",
                   "type": "Decision",
-                  "description": "Set once Credit Decisioning has answered",
+                  "description": "Absent until Credit Decisioning has answered",
+                  "optional": true,
                   "valueobject": {
                     "$ref": "#/boundedcontexts/lending/valueobjects/decision"
                   }
@@ -3502,7 +3526,8 @@
               "type": "int"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "decision": {
           "name": "Decision",
@@ -3517,7 +3542,8 @@
               "type": "string[]"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "interest_rate": {
           "name": "InterestRate",
@@ -3528,7 +3554,8 @@
               "type": "decimal"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "loan_status": {
           "name": "LoanStatus",
@@ -3539,7 +3566,8 @@
               "type": "'approved' | 'signed' | 'disbursed' | 'in-arrears' | 'repaid'"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -3820,7 +3848,8 @@
               "type": "date-time"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "affordability": {
           "name": "Affordability",
@@ -3839,7 +3868,8 @@
               "type": "decimal"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "credit_score": {
           "name": "CreditScore",
@@ -3854,7 +3884,8 @@
               "type": "string[]"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -4054,15 +4085,6 @@
                   "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/entities/alert"
                 }
               ]
-            },
-            "score_explained": {
-              "name": "ScoreExplained",
-              "description": "A score carries its reasons, because the customer may be entitled to them",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
-                }
-              ]
             }
           }
         }
@@ -4175,7 +4197,18 @@
               "type": "string[]"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {
+            "score_explained": {
+              "name": "ScoreExplained",
+              "description": "A score carries its reasons, because the customer may be entitled to them",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score/attributes/reasons"
+                }
+              ]
+            }
+          }
         },
         "case_status": {
           "name": "CaseStatus",
@@ -4186,7 +4219,8 @@
               "type": "'open' | 'confirmed' | 'dismissed'"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -4485,7 +4519,8 @@
               "type": "boolean"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {}
@@ -4751,7 +4786,8 @@
               "type": "'branch' | 'phone' | 'chat'"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "request_status": {
           "name": "RequestStatus",
@@ -4762,7 +4798,8 @@
               "type": "'open' | 'resolved'"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {}
@@ -4969,7 +5006,8 @@
               "type": "ISO 4217 code"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "account_number": {
           "name": "AccountNumber",
@@ -4984,7 +5022,8 @@
               "type": "string"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {}

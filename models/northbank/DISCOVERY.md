@@ -500,3 +500,14 @@ lead says "on our platform that means current accounts; savings are still Sovere
 will be the same shape when they come across", and loans are Lending's own aggregate in
 another context. Kinds of Account would be a claim no interview here supports. When savings
 migrate, that is the moment to ask whether they are a kind of Account or the same shape.
+
+## Value invariants (card 82)
+
+A value object may now own the rules it keeps by construction, so three rules moved off the
+aggregates that happened to hold the value. `IbanChecksumValid` belongs to `IBAN`: an IBAN
+whose mod-97 checksum fails is not a badly configured account, it is not an IBAN, and no save
+of `Account` is what keeps that true. `PanLuhnValid` belongs to `PAN` for the same reason,
+and `ScoreExplained` to `RiskScore`, which carries its reasons or is not a score the bank may
+act on. What stayed on the aggregates is everything a value cannot see for itself: a frozen
+account refusing debits, a balance against an overdraft limit, a decision explained by a
+bureau report.

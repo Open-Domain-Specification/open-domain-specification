@@ -276,11 +276,15 @@ export abstract class AbstractVisitor implements Visitor {
 	}
 
 	/**
-	 * Visits a ValueObject node and traverses its relations.
+	 * Visits a ValueObject node and traverses the rules that hold of it and its
+	 * relations.
 	 * @param node - The ValueObject node to visit.
 	 */
 	visitValueObject(node: ValueObject): void {
 		this.before(node);
+		for (const invariant of node.invariants.values()) {
+			invariant.accept(this);
+		}
 		if (this.followRelations) {
 			for (const rel of node.relations) rel.accept(this);
 		}

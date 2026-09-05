@@ -45,6 +45,7 @@ Workspace
 │   │   └── Consumptions
 │   ├── Glossary Term                       (ubiquitous language, optionally embodied by an element)
 │   ├── Value Object (with attributes)      (a value of the context's language; any aggregate may hold one)
+│   │   └── Invariants                      (rules the value keeps by construction)
 │   ├── Schema                              (payload shape with attributes, shared by consumables)
 │   ├── Policy                              (on event consumables → then operation consumables)
 │   └── Aggregate

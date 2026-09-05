@@ -28,23 +28,26 @@
 <g id="node1" class="node">
 <title>#/boundedcontexts/sales_bc/aggregates/order/entities/order</title>
 <g id="a_node1"><a xlink:title="The customer&#39;s request to buy one pet">
-<polygon fill="white" stroke="none" points="143.17,-353 55.13,-353 55.13,-213 143.17,-213 143.17,-353"/>
-<polygon fill="none" stroke="black" points="55.13,-323 55.13,-353 143.17,-353 143.17,-323 55.13,-323"/>
+<polygon fill="white" stroke="none" points="155.61,-353 42.69,-353 42.69,-213 155.61,-213 155.61,-353"/>
+<polygon fill="none" stroke="black" points="42.69,-323 42.69,-353 155.61,-353 155.61,-323 42.69,-323"/>
 <text xml:space="preserve" text-anchor="start" x="73.46" y="-340" font-family="sans-serif" font-size="10.00">«root entity»</text>
 <text xml:space="preserve" text-anchor="start" x="85.82" y="-330" font-family="sans-serif" font-weight="bold" font-size="10.00">Order</text>
-<polygon fill="none" stroke="black" points="55.13,-301 55.13,-323 143.17,-323 143.17,-301 55.13,-301"/>
-<text xml:space="preserve" text-anchor="start" x="60.13" y="-309" font-family="sans-serif" font-size="10.00">{id} id: int64</text>
+<polygon fill="none" stroke="black" points="42.69,-301 42.69,-323 155.61,-323 155.61,-301 42.69,-301"/>
+<text xml:space="preserve" text-anchor="start" x="47.69" y="-309" font-family="sans-serif" font-size="10.00">{id} id: int64</text>
 <g id="a_node1_0"><a xlink:title="Identity of the Pet root in Catalog; only the id crosses the boundary">
-<polygon fill="none" stroke="black" points="55.13,-279 55.13,-301 143.17,-301 143.17,-279 55.13,-279"/>
-<text xml:space="preserve" text-anchor="start" x="60.13" y="-287" font-family="sans-serif" font-size="10.00">petId: int64</text>
+<polygon fill="none" stroke="black" points="42.69,-279 42.69,-301 155.61,-301 155.61,-279 42.69,-279"/>
+<text xml:space="preserve" text-anchor="start" x="47.69" y="-287" font-family="sans-serif" font-size="10.00">petId: int64</text>
 </a>
 </g>
-<polygon fill="none" stroke="black" points="55.13,-257 55.13,-279 143.17,-279 143.17,-257 55.13,-257"/>
-<text xml:space="preserve" text-anchor="start" x="60.13" y="-265" font-family="sans-serif" font-size="10.00">quantity: Quantity</text>
-<polygon fill="none" stroke="black" points="55.13,-235 55.13,-257 143.17,-257 143.17,-235 55.13,-235"/>
-<text xml:space="preserve" text-anchor="start" x="60.13" y="-243" font-family="sans-serif" font-size="10.00">shipDate: ShipDate</text>
-<polygon fill="none" stroke="black" points="55.13,-213 55.13,-235 143.17,-235 143.17,-213 55.13,-213"/>
-<text xml:space="preserve" text-anchor="start" x="60.13" y="-221" font-family="sans-serif" font-size="10.00">status: OrderStatus</text>
+<polygon fill="none" stroke="black" points="42.69,-257 42.69,-279 155.61,-279 155.61,-257 42.69,-257"/>
+<text xml:space="preserve" text-anchor="start" x="47.69" y="-265" font-family="sans-serif" font-size="10.00">quantity: Quantity</text>
+<g id="a_node1_1"><a xlink:title="Absent until Fulfilment has planned the dispatch">
+<polygon fill="none" stroke="black" points="42.69,-235 42.69,-257 155.61,-257 155.61,-235 42.69,-235"/>
+<text xml:space="preserve" text-anchor="start" x="47.69" y="-243" font-family="sans-serif" font-size="10.00">{opt} shipDate: ShipDate</text>
+</a>
+</g>
+<polygon fill="none" stroke="black" points="42.69,-213 42.69,-235 155.61,-235 155.61,-213 42.69,-213"/>
+<text xml:space="preserve" text-anchor="start" x="47.69" y="-221" font-family="sans-serif" font-size="10.00">status: OrderStatus</text>
 </a>
 </g>
 </g>
@@ -64,7 +67,7 @@
 <!-- #/boundedcontexts/sales_bc/aggregates/order/entities/order&#45;&gt;#/boundedcontexts/sales_bc/valueobjects/order_status -->
 <g id="edge1" class="edge">
 <title>#/boundedcontexts/sales_bc/aggregates/order/entities/order&#45;&gt;#/boundedcontexts/sales_bc/valueobjects/order_status</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M142.91,-299.17C181.23,-313.56 239.01,-335.06 289.56,-353 294.65,-354.81 299.89,-356.65 305.18,-358.49"/>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M155.54,-303.9C193.23,-318.02 244.3,-336.94 289.56,-353 294.65,-354.81 299.89,-356.65 305.18,-358.49"/>
 <polygon fill="black" stroke="black" points="314.25,-361.64 303.32,-362.61 310.67,-360.4 304.8,-358.36 304.8,-358.36 304.8,-358.36 310.67,-360.4 306.27,-354.11 314.25,-361.64"/>
 <text xml:space="preserve" text-anchor="middle" x="244.43" y="-352.35" font-family="sans-serif" font-size="10.00">has&#45;status</text>
 <text xml:space="preserve" text-anchor="middle" x="300.48" y="-360.57" font-family="sans-serif" font-size="10.00">1</text>
@@ -85,10 +88,10 @@
 <!-- #/boundedcontexts/sales_bc/aggregates/order/entities/order&#45;&gt;#/boundedcontexts/sales_bc/valueobjects/quantity -->
 <g id="edge2" class="edge">
 <title>#/boundedcontexts/sales_bc/aggregates/order/entities/order&#45;&gt;#/boundedcontexts/sales_bc/valueobjects/quantity</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M142.96,-288.13C198,-294.72 293.06,-306.1 348.59,-312.75"/>
-<polygon fill="black" stroke="black" points="358.27,-313.91 347.81,-317.19 354.52,-313.46 348.34,-312.72 348.34,-312.72 348.34,-312.72 354.52,-313.46 348.88,-308.25 358.27,-313.91"/>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M155.47,-289.62C211.32,-296.31 296.5,-306.51 348.07,-312.69"/>
+<polygon fill="black" stroke="black" points="357.96,-313.87 347.5,-317.15 354.21,-313.42 348.03,-312.68 348.03,-312.68 348.03,-312.68 354.21,-313.42 348.57,-308.22 357.96,-313.87"/>
 <text xml:space="preserve" text-anchor="middle" x="244.43" y="-306.63" font-family="sans-serif" font-size="10.00">has&#45;quantity</text>
-<text xml:space="preserve" text-anchor="middle" x="345.23" y="-315.73" font-family="sans-serif" font-size="10.00">1</text>
+<text xml:space="preserve" text-anchor="middle" x="344.92" y="-315.7" font-family="sans-serif" font-size="10.00">1</text>
 </g>
 <!-- #/boundedcontexts/sales_bc/valueobjects/ship_date -->
 <g id="node4" class="node">
@@ -106,10 +109,10 @@
 <!-- #/boundedcontexts/sales_bc/aggregates/order/entities/order&#45;&gt;#/boundedcontexts/sales_bc/valueobjects/ship_date -->
 <g id="edge3" class="edge">
 <title>#/boundedcontexts/sales_bc/aggregates/order/entities/order&#45;&gt;#/boundedcontexts/sales_bc/valueobjects/ship_date</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M142.96,-277.87C196.96,-271.41 289.49,-260.33 345.41,-253.63"/>
-<polygon fill="black" stroke="black" points="355.21,-252.46 345.81,-258.11 351.45,-252.91 345.28,-253.65 345.28,-253.65 345.28,-253.65 351.45,-252.91 344.74,-249.18 355.21,-252.46"/>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M155.47,-276.38C210.36,-269.8 293.57,-259.84 345.38,-253.63"/>
+<polygon fill="black" stroke="black" points="355.04,-252.48 345.65,-258.13 351.29,-252.93 345.11,-253.67 345.11,-253.67 345.11,-253.67 351.29,-252.93 344.58,-249.2 355.04,-252.48"/>
 <text xml:space="preserve" text-anchor="middle" x="244.43" y="-272.66" font-family="sans-serif" font-size="10.00">ships&#45;on</text>
-<text xml:space="preserve" text-anchor="middle" x="343.67" y="-257.22" font-family="sans-serif" font-size="10.00">0..1</text>
+<text xml:space="preserve" text-anchor="middle" x="343.51" y="-257.24" font-family="sans-serif" font-size="10.00">0..1</text>
 </g>
 <!-- #/boundedcontexts/catalog_bc/aggregates/pet/entities/pet -->
 <g id="node5" class="node">
@@ -137,8 +140,8 @@
 <!-- #/boundedcontexts/sales_bc/aggregates/order/entities/order&#45;&gt;#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet -->
 <g id="edge4" class="edge">
 <title>#/boundedcontexts/sales_bc/aggregates/order/entities/order&#45;&gt;#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M142.96,-255.75C191.93,-224.59 272.58,-173.27 328.88,-137.44"/>
-<polygon fill="black" stroke="black" points="337.02,-132.26 331,-141.43 333.83,-134.29 328.59,-137.63 328.59,-137.63 328.59,-137.63 333.83,-134.29 326.17,-133.83 337.02,-132.26"/>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M155.47,-247.8C204.7,-216.47 276.72,-170.64 328.43,-137.73"/>
+<polygon fill="black" stroke="black" points="336.81,-132.4 330.79,-141.56 333.62,-134.43 328.37,-137.77 328.37,-137.77 328.37,-137.77 333.62,-134.43 325.95,-133.97 336.81,-132.4"/>
 <text xml:space="preserve" text-anchor="middle" x="244.43" y="-215.13" font-family="sans-serif" font-size="10.00">«identifies» petId</text>
 </g>
 </g>

@@ -102,19 +102,19 @@
 
 ## `aggregate-tree` (error, warning)
 
-**Requires:** Inside an aggregate, includes points at entities and uses at value objects, no ring of two or more entity types includes itself, and every entity is reachable from the root.
+**Requires:** Inside an aggregate, includes points at entities and uses at value objects, and every entity is reachable from the root.
 
-**Why it matters:** The aggregate is loaded and saved as one thing through its root, so the parts of one instance hang off it as a tree. That is a claim about instances, not about types: an entity whose parts are of its own type is the composite pattern and still a tree per instance, and a part type included by two different wholes still belongs to one of them at a time, so neither is reported. A ring through two or more distinct types is, because then no type can be named as the one that holds the other and there is no whole to start from. An includes onto a value object or a uses onto an entity says the opposite of what the author means, and an entity nothing reaches is either dead or a missing relation. A kind is reached wherever the entity it is a kind of is reached, since an instance of it is one of those; specialisation is not containment and never joins the tree itself.
+**Why it matters:** The aggregate is loaded and saved as one thing through its root, so the parts of one instance hang off it as a tree. That is a claim about instances, and the model declares types, so no ring in the type graph is reported at all: a questionnaire whose groups hold questions that hold groups is a finite tree in every instance, and so is a category of categories. Keeping the instance tree a tree is the code's job. What the type graph can say is checked: an includes onto a value object or a uses onto an entity says the opposite of what the author means, and an entity nothing reaches is either dead or a missing relation. A kind is reached wherever the entity it is a kind of is reached, since an instance of it is one of those; specialisation is not containment and never joins the tree itself.
 
-**Usual fix:** Point includes at entities and uses at value objects, break a ring of distinct types by making the back edge a references, and give an unreachable entity the relation that reaches it — or move it to its own aggregate.
+**Usual fix:** Point includes at entities and uses at value objects, and give an unreachable entity the relation that reaches it — or move it to its own aggregate.
 
 ## `attribute-relation-coherence` (warning)
 
-**Requires:** An attribute typed by a value object has a matching uses relation, of a matching cardinality.
+**Requires:** An attribute typed by a value object has a matching uses relation, matched by label where one value object is used twice, and the two agree about how many there are.
 
-**Why it matters:** The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened, and a list-typed attribute against a single-valued relation says two different things about how many there are. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.
+**Why it matters:** The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened; and when they disagree about number the model says two things at once — a list-typed attribute against a single-valued relation, an optional attribute against a relation that says there is always one, a required attribute against a relation that says there may be none. One value object may be used twice, a current address beside an address history, so with several relations to it the label is what pairs each with its attribute. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.
 
-**Usual fix:** Add the missing uses relation or the missing attribute, and set the relation's cardinality to * or 1..* for a list-typed attribute. The type itself is free text and is never checked against the value object's name; only a trailing [] is read, as "many".
+**Usual fix:** Add the missing uses relation or the missing attribute, and give the relation the cardinality the attribute already implies: * or 1..* for a list, 0..1 or * for an optional one, 1 or 1..* for a required one. Where two relations point at the same value object, label each with the name of its attribute. The type itself is free text and is never checked against the value object's name; only a trailing [] is read, as "many".
 
 ## `attribute-one-shape` (error)
 
@@ -123,6 +123,14 @@
 **Why it matters:** A value object and a schema are two different things to be. A value object is a concept the context models and compares by value; a schema is a payload shape the context publishes to whoever is listening. An attribute claiming both leaves a reader unable to say which model the field belongs to, and a change to either shape becomes a change nobody can scope. For the same reason an entity or a value object holds only value objects: a payload shape belongs at the boundary, and letting one inside puts the vocabulary of the wire into the model the boundary exists to protect.
 
 **Usual fix:** Keep the value object when the attribute is a concept of the domain, and the schema when it is a nested part of a payload; drop the other. On an entity or a value object, declare the value object the field really is and point at that. Collections stay in the type string, so a list of a nested shape is OrderLine[] beside one schema reference.
+
+## `invariant-in-value-object` (error)
+
+**Requires:** Every element a value object's invariant constrains is an attribute of that value object, or the value object itself.
+
+**Why it matters:** A value is defined by what it holds, and a rule about it is kept by refusing to make one that breaks it: an IBAN whose checksum fails is not a badly configured IBAN, it is not an IBAN. Such a rule needs no save and no guard, and it can only be about what the value carries — a value object knows nothing of the entity holding it, of another value, or of any operation, so a rule naming one of those is a rule the value cannot keep.
+
+**Usual fix:** Point the invariant at this value object's own attributes. If the rule is really about the thing that holds the value — a transition, a balance across two entities — move it to that aggregate; if it is about several instances at once, it is the context's (decision 27).
 
 ## `invariant-in-aggregate` (error)
 
@@ -174,11 +182,11 @@
 
 ## `relationship-cycle` (warning)
 
-**Requires:** The directed relationships whose traffic is calls form no cycle; steps carried only by events do not count.
+**Requires:** The directed relationships whose traffic is calls form no cycle; steps carried only by events, and steps the downstream translates behind an anti-corruption layer, do not count.
 
-**Why it matters:** Downstream means a context shapes its model around what the upstream offers. In a ring of calls every context is shaped around a model that is shaped around its own, so none of them can settle or change first and the coupling has no end to start from. Events are different: reacting to a fact commits nobody to another model's shape, so a ring of contexts joined by events is fine, and rings of reactions are reaction-cycle's business instead.
+**Why it matters:** Downstream means a context shapes its model around what the upstream offers. In a ring of calls the contexts depend on each other's contracts: each one is written against a neighbour's model that is written against its own. Two kinds of step are exempt because neither creates that dependency. Events are one: reacting to a fact commits nobody to another model's shape, and rings of reactions are reaction-cycle's business instead. An anti-corruption layer is the other: the downstream translates at its edge, so the upstream's contract stops there and each side stays free to change, which is the whole point of the pattern.
 
-**Usual fix:** Declare a partnership where two of the contexts really do move as one, which says the mutual shaping is deliberate; otherwise reverse one dependency by turning that call into an event the other side reacts to, which is what DDD recommends anyway.
+**Usual fix:** Put an anti-corruption layer on one of the steps, so that context translates what it calls and can change behind it; or declare a partnership where two of the contexts really do move as one, which says the mutual dependency is deliberate; or reverse a dependency by turning that call into an event the other side reacts to.
 
 ## `partnership-backed` (warning)
 

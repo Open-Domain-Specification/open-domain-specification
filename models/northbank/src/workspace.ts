@@ -705,7 +705,18 @@ const ibanVO = accountsBC.addValueObject("IBAN", {
 	description:
 		"Country, check digits, bank and account identifiers; valid only if the mod-97 checksum holds",
 });
-ibanVO.addAttribute("value", { type: "string (ISO 13616)" });
+const ibanValue = ibanVO.addAttribute("value", {
+	type: "string (ISO 13616)",
+});
+// A value's own rule: an IBAN whose mod-97 checksum fails is not a badly
+// configured IBAN, it is not an IBAN, so the rule holds by construction and
+// needs no aggregate to save it (decision 27's 2026-09-08 amendment).
+ibanVO
+	.addInvariant("IbanChecksumValid", {
+		description:
+			"The IBAN's mod-97 checksum holds, or the value is not an IBAN at all",
+	})
+	.constrains(ibanValue);
 // AccountNumber and Money are the Shared Kernel's; borrowed by reference,
 // not declared here (decision 16's amendment).
 const accountNumberVO = kernelAccountNumberVO;
@@ -768,12 +779,6 @@ account.uses(accountStatusVO, "has-status", "1");
 // and Money are the Shared Kernel's, so they are typed by `valueobject`
 // reference only; a relation never crosses a context boundary either.
 
-accountAgg
-	.addInvariant("IbanChecksumValid", {
-		description:
-			"The IBAN's mod-97 checksum holds, or the account does not exist",
-	})
-	.constrains(ibanVO);
 accountAgg
 	.addInvariant("BalanceWithinOverdraft", {
 		description:
@@ -1504,7 +1509,15 @@ const riskScoreVO = fraudBC.addValueObject("RiskScore", {
 	description: "0 to 1000 with the reasons that produced it",
 });
 riskScoreVO.addAttribute("value", { type: "int 0..1000" });
-riskScoreVO.addAttribute("reasons", { type: "string[]" });
+const riskReasons = riskScoreVO.addAttribute("reasons", { type: "string[]" });
+// The value's own rule: a score without its reasons is not a score the bank
+// may act on, and no save is involved in keeping that true.
+riskScoreVO
+	.addInvariant("ScoreExplained", {
+		description:
+			"A score carries its reasons, because the customer may be entitled to them",
+	})
+	.constrains(riskReasons);
 const caseStatusVO = fraudBC.addValueObject("CaseStatus", {
 	description: "open, confirmed, dismissed",
 });
@@ -1532,12 +1545,6 @@ fraudCaseAgg
 		description: "A case always has at least one alert",
 	})
 	.constrains(fraudCase, alert);
-fraudCaseAgg
-	.addInvariant("ScoreExplained", {
-		description:
-			"A score carries its reasons, because the customer may be entitled to them",
-	})
-	.constrains(riskScoreVO);
 
 const scoreTransactionSchema = fraudBC.addSchema("ScoreTransaction", {
 	description:
@@ -1693,6 +1700,17 @@ const panVO = cardsBC.addValueObject("PAN", {
 });
 panVO.addAttribute("token", { type: "string" });
 panVO.addAttribute("lastFour", { type: "string" });
+// A construction rule, and so the value's own: the stored value is a token and
+// four digits, on which Luhn cannot be run, so the check happens once, before
+// tokenisation, and a value that failed it is never made at all. It names the
+// value rather than either attribute, because the number it checked is neither
+// of them (decision 27's 2026-09-08 amendment).
+panVO
+	.addInvariant("PanLuhnValid", {
+		description:
+			"A PAN value is only ever created from a full number that passed the Luhn check; the token and last four are never re-checked because they cannot be",
+	})
+	.constrains(panVO);
 const expiryVO = cardsBC.addValueObject("Expiry", {
 	description: "Month and year after which nothing authorises",
 });
@@ -1736,14 +1754,6 @@ card.uses(cardStatusVO, "has-status", "1");
 // the boundary. Money is the Shared Kernel's, so it is typed by
 // `valueobject` reference only, with no `uses` relation to cross with it.
 
-// A construction rule: the stored value is a token and four digits, on which
-// Luhn cannot be run, so the check happens once, before tokenisation.
-cardAgg
-	.addInvariant("PanLuhnValid", {
-		description:
-			"A PAN value is only ever created from a full number that passed the Luhn check; the token and last four are never re-checked because they cannot be",
-	})
-	.constrains(panVO);
 cardAgg
 	.addInvariant("NoAuthOnBlockedCard", {
 		description: "A blocked card authorises nothing",
@@ -1955,7 +1965,8 @@ application.addAttribute("term", { type: "Term", valueobject: termVO });
 application.addAttribute("decision", {
 	type: "Decision",
 	valueobject: decisionVO,
-	description: "Set once Credit Decisioning has answered",
+	optional: true,
+	description: "Absent until Credit Decisioning has answered",
 });
 application.uses(termVO, "over", "1");
 application.uses(decisionVO, "decided", "0..1");

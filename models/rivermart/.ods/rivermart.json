@@ -165,6 +165,8 @@
                 "brand": {
                   "name": "brand",
                   "type": "Brand",
+                  "description": "Absent on own-label and unbranded goods",
+                  "optional": true,
                   "valueobject": {
                     "$ref": "#/boundedcontexts/catalogue/valueobjects/brand"
                   }
@@ -329,7 +331,8 @@
               "type": "string"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "dimensions": {
           "name": "Dimensions",
@@ -344,7 +347,8 @@
               "type": "int"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -909,7 +913,8 @@
               "type": "ISO 4217 code"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "condition": {
           "name": "Condition",
@@ -920,7 +925,8 @@
               "type": "'new' | 'used-like-new' | 'used-good'"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -1233,7 +1239,8 @@
               "type": "'registered' | 'active' | 'suspended'"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -1566,7 +1573,8 @@
               "type": "ISO 4217 code"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -1826,6 +1834,8 @@
                 "tracking": {
                   "name": "tracking",
                   "type": "TrackingReference",
+                  "description": "Absent until the carrier has given a reference",
+                  "optional": true,
                   "valueobject": {
                     "$ref": "#/boundedcontexts/order_management/valueobjects/tracking_reference"
                   }
@@ -2194,7 +2204,8 @@
               "type": "ISO 4217 code"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "address": {
           "name": "Address",
@@ -2213,7 +2224,8 @@
               "type": "ISO 3166 code"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "order_status": {
           "name": "OrderStatus",
@@ -2224,7 +2236,8 @@
               "type": "'placed' | 'awaiting-stock' | 'cancelled' | 'partially-shipped' | 'shipped' | 'completed'"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "tracking_reference": {
           "name": "TrackingReference",
@@ -2235,7 +2248,8 @@
               "type": "string"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -2796,7 +2810,8 @@
               "type": "ISO 4217 code"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -3057,7 +3072,8 @@
               "type": "int 0..1000"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "signal": {
           "name": "Signal",
@@ -3072,7 +3088,8 @@
               "type": "int"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -3609,7 +3626,8 @@
               "type": "string"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "tracking_label": {
           "name": "TrackingLabel",
@@ -3624,7 +3642,8 @@
               "type": "string"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -3921,7 +3940,8 @@
               "type": "date-time"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -4249,7 +4269,8 @@
               "type": "ISO 4217 code"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         },
         "bid": {
           "name": "Bid",
@@ -4272,7 +4293,8 @@
               "label": "capped-at",
               "cardinality": "1"
             }
-          ]
+          ],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -4543,7 +4565,8 @@
               "type": "'refund' | 'replacement' | 'information' | 'no-action'"
             }
           },
-          "relations": []
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {}

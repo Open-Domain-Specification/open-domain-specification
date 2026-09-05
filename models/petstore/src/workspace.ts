@@ -195,11 +195,16 @@ petRoot.addAttribute("status", {
 	optional: true,
 });
 
-// `uses` is the relation to a value object; the cardinalities cover 0..1, *, 1..* and 1.
+// `uses` is the relation to a value object; between the Pet here and the
+// Order below the cardinalities cover 0..1, *, 1..* and 1. The status is
+// "0..1" and not "1" because the attribute is optional: the v3 contract does
+// not require it, and the two halves of that statement have to agree (card
+// 82). A pet without a status is not listed by findByStatus and is not
+// counted by Inventory, which is what the contract already implies.
 petRoot.uses(categoryVO, "categorized-as", "0..1");
 petRoot.uses(tagVO, "tagged-with", "*");
 petRoot.uses(photoUrlVO, "has-photo", "1..*");
-petRoot.uses(petStatusVO, "has-status", "1");
+petRoot.uses(petStatusVO, "has-status", "0..1");
 
 // Invariants name the rule and point at what it constrains: an attribute here,
 // the root entity below (a lifecycle rule belongs to the thing with the
@@ -555,6 +560,8 @@ orderRoot.addAttribute("quantity", {
 orderRoot.addAttribute("shipDate", {
 	type: "ShipDate",
 	valueobject: shipDateVO,
+	optional: true,
+	description: "Absent until Fulfilment has planned the dispatch",
 });
 orderRoot.addAttribute("status", {
 	type: "OrderStatus",

@@ -227,11 +227,11 @@ No other fields are allowed.
 
 ## Invariant
 
-A rule that holds inside an aggregate on every save, or across the instances and aggregates of a bounded context.
+A rule that holds by construction of a value object, inside an aggregate on every save, or across the instances and aggregates of a bounded context.
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `constrains` | array of `{ "$ref": string }` | yes | What this invariant is a rule about: the entities, value objects and attributes it holds over, and the operations it constrains, for a rule about what an operation may do. An aggregate's invariant reaches inside its own aggregate and the value objects of its context; a context's invariant reaches anywhere in the context and names at least one operation that guards it. |
+| `constrains` | array of `{ "$ref": string }` | yes | What this invariant is a rule about: the entities, value objects and attributes it holds over, and the operations it constrains, for a rule about what an operation may do. A value object's invariant reaches its own attributes and nothing else; an aggregate's reaches inside its own aggregate and the value objects of its context; a context's reaches anywhere in the context and names at least one operation that guards it. |
 | `description` | string | yes |  |
 | `name` | string | yes |  |
 
@@ -337,6 +337,7 @@ Represents a value object in the Open Domain Specification (ODS).
 |---|---|---|---|
 | `attributes` | map of id to [Attribute](#attribute) | yes |  |
 | `description` | string | yes |  |
+| `invariants` | map of id to [Invariant](#invariant) | yes | The rules that hold of every instance of this value: a Money's two amounts in one currency, an IBAN's mod-97 checksum. Such a rule holds by construction — a value that breaks it is never made — so it constrains this value's own attributes and needs no operation to guard it (decision 27). |
 | `name` | string | yes |  |
 | `relations` | array of [EntityRelation](#entityrelation) | yes |  |
 | `specialises` | `{ "$ref": string }` | no | The value object this one is a kind of: it has every attribute and relation of that value object, plus its own. The target belongs to this context, or to a context this one shares a kernel with (decision 22). |

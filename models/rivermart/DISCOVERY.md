@@ -496,3 +496,10 @@ the interview — "the nightly export of received vendor stock" — so the model
 job: a `NightlyExport` service with one internal operation, `RunNightlyExport`, raising the
 event. It is still the legacy system modelled at its edge; it just no longer publishes a
 fact out of thin air. The two deliberate diagnostics of section 7 are untouched.
+
+## Optionality against cardinality (card 82)
+
+`attribute-relation-coherence` now reads an attribute's `optional` against its relation's
+cardinality. `Product.brand` and `Shipment.tracking` were required beside relations of
+`0..1`; own-label goods carry no brand and a shipment has no carrier reference until the
+carrier gives one, so both attributes are optional and the two halves agree.

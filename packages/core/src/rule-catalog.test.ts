@@ -120,10 +120,11 @@ function everythingWrong(): Workspace {
 	const vo = a.addValueObject("Vo", { description: "" });
 	vo.addAttribute("Id", { type: "string", identity: true });
 	vo.includes(r1, "owns-a-root");
-	// aggregate-tree: includes onto a value object, uses onto an entity, a cycle
-	// through two types, and an entity the root cannot be walked to. Twice is
-	// included by two parent types and Child nests its own type; both are legal
-	// per instance, so neither is expected to fire.
+	// aggregate-tree: includes onto a value object, uses onto an entity, and an
+	// entity the root cannot be walked to. No ring of types is reported at all:
+	// Twice is included by two parent types, Child nests its own type, and
+	// Child includes TreeRoot back; every instance of each is still a finite
+	// tree, which is the only claim the rule makes (card 82).
 	const tree = a.addAggregate("Tree", { description: "" });
 	const treeRoot = tree.addRootEntity("TreeRoot", { description: "" });
 	const child = tree.addEntity("Child", { description: "" });
@@ -163,6 +164,9 @@ function everythingWrong(): Workspace {
 	ring.specialises = ringToo;
 	// invariant-in-aggregate: a rule reaching into another aggregate
 	tree.addInvariant("Stretched", { description: "" }).constrains(r1);
+	// invariant-in-value-object: a value's rule reaching for an entity, which a
+	// value cannot see
+	vo.addInvariant("Reaches Out", { description: "" }).constrains(r1);
 	// invariant-in-context: a context's rule counting another context's entity,
 	// and context-invariant-guarded: no operation of A checks either of them
 	a.addInvariant("Counts Elsewhere", { description: "" }).constrains(otherRoot);
@@ -209,9 +213,9 @@ function everythingWrong(): Workspace {
 		pattern: "conformist",
 		by: [legacy.provides("Poll", { type: "operation", description: "" })],
 	});
-	// relationship-cycle: a call each way, which since decision 20 is what
-	// makes a ring — A calls C's Ask, C calls A's Answer. The event feed above
-	// would not have been enough on its own.
+	// A calls C's Ask and C calls A's Answer, which since decision 20 is the
+	// traffic a ring is made of. It is still not a ring: A translates behind an
+	// anti-corruption layer, so the two are free to change (card 82).
 	consumer.consumes(
 		legacy.provides("Ask", { type: "operation", description: "" }),
 		{},
@@ -224,7 +228,6 @@ function everythingWrong(): Workspace {
 		upstreamRoles: ["open-host-service"],
 		downstreamRoles: ["anti-corruption-layer"],
 	});
-	// relationship-cycle: A is upstream of C, and C is already upstream of A
 	a.upstreamOf(c, {});
 	// partnership-backed: partners with no traffic either way, and
 	// disposition-needs-comment: a disposition on it with nothing written down
@@ -235,6 +238,21 @@ function everythingWrong(): Workspace {
 	// conformist-backed: D says it conforms to C and then names nothing of C's
 	// and calls nothing C offers
 	d.downstreamOf(c, { downstreamRoles: ["conformist"] });
+	// relationship-cycle: B and D call each other with nothing in between, so
+	// each is written against the other's contract
+	const dService = d.addService("D Service", {
+		description: "",
+		type: "application",
+	});
+	const dAsk = dService.provides("D Ask", {
+		type: "operation",
+		description: "",
+	});
+	const bAsk = other.provides("B Ask", { type: "operation", description: "" });
+	dService.consumes(bAsk, {});
+	other.consumes(dAsk, {});
+	b.upstreamOf(d, {});
+	d.upstreamOf(b, {});
 	// relationship-duplicate: the same kernel again, participants the other way
 	// round. A symmetric type has no direction, so this is the second copy.
 	b.sharesKernelWith(d);

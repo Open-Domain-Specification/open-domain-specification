@@ -67,6 +67,13 @@ const valueObjectSection = (valueObject: ValueObject) => [
 		valueObject.boundedcontext.path,
 		valueObject.inheritedAttributes,
 	),
+	// A value's own rules, which hold by construction: no save keeps them and
+	// no operation guards them, so they read as one sentence each and stay on
+	// the value's row (decision 27).
+	Array.from(
+		valueObject.invariants.values(),
+		(it) => `${it.name}: ${it.description}`,
+	).join("; ") || "-",
 	aggregatesHolding(valueObject)
 		.map((it) => it.name)
 		.join(", ") || "-",
@@ -154,7 +161,7 @@ ${markdownTable(
 ${
 	boundedcontext.valueobjects.size > 0
 		? markdownTable(
-				["Name", "Description", "Attributes", "Used by"],
+				["Name", "Description", "Attributes", "Invariants", "Used by"],
 				Array.from(boundedcontext.valueobjects.values()).map(
 					valueObjectSection,
 				),
@@ -188,9 +195,9 @@ ${
 		? `Reactions that hold state across events: each one remembers which of its events have arrived and says what finishes it.
 
 ${boundedcontext.policies.size === 0 ? flowMapMd(boundedcontext) : ""}${markdownTable(
-				["Name", "Description", "Starts", "On", "Then", "Ends"],
-				Array.from(boundedcontext.processes.values()).map(processSection),
-			)}`
+	["Name", "Description", "Starts", "On", "Then", "Ends"],
+	Array.from(boundedcontext.processes.values()).map(processSection),
+)}`
 		: "> No processes."
 }
 

@@ -405,7 +405,7 @@ export interface EntityRelationSchema {
 
 /**
  * @title Invariant
- * @description A rule that holds inside an aggregate on every save, or across the instances and aggregates of a bounded context.
+ * @description A rule that holds by construction of a value object, inside an aggregate on every save, or across the instances and aggregates of a bounded context.
  */
 export interface InvariantSchema {
 	name: string;
@@ -413,10 +413,10 @@ export interface InvariantSchema {
 	/**
 	 * What this invariant is a rule about: the entities, value objects and
 	 * attributes it holds over, and the operations it constrains, for a rule
-	 * about what an operation may do. An aggregate's invariant reaches inside
-	 * its own aggregate and the value objects of its context; a context's
-	 * invariant reaches anywhere in the context and names at least one
-	 * operation that guards it.
+	 * about what an operation may do. A value object's invariant reaches its
+	 * own attributes and nothing else; an aggregate's reaches inside its own
+	 * aggregate and the value objects of its context; a context's reaches
+	 * anywhere in the context and names at least one operation that guards it.
 	 */
 	constrains: { $ref: string }[];
 }
@@ -465,6 +465,14 @@ export interface ValueObjectSchema {
 	specialises?: { $ref: string };
 	attributes: { [attribute: string]: AttributeSchema };
 	relations: EntityRelationSchema[];
+	/**
+	 * The rules that hold of every instance of this value: a Money's two
+	 * amounts in one currency, an IBAN's mod-97 checksum. Such a rule holds by
+	 * construction — a value that breaks it is never made — so it constrains
+	 * this value's own attributes and needs no operation to guard it
+	 * (decision 27).
+	 */
+	invariants: { [invariant: string]: InvariantSchema };
 }
 
 /**
@@ -605,6 +613,19 @@ export function invariantRef(
 	invariant: string,
 ) {
 	const { $ref } = aggregateRef(boundedcontext, aggregate);
+
+	return {
+		$ref: `${$ref}/invariants/${invariant}`,
+	};
+}
+
+/** The ref of an invariant a value object owns: a rule about its own attributes. */
+export function valueObjectInvariantRef(
+	boundedcontext: string,
+	valueobject: string,
+	invariant: string,
+) {
+	const { $ref } = valueObjectRef(boundedcontext, valueobject);
 
 	return {
 		$ref: `${$ref}/invariants/${invariant}`,

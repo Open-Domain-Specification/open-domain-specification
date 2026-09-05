@@ -82,6 +82,13 @@ operation that makes the transition, because that is where it is enforced;
 the operation then reads as the rule it has to uphold. Invariants stay
 prose; there is no expression language.
 
+An invariant may instead belong to a value object. A rule that is about a
+value alone — an IBAN's mod-97 checksum, a Money's single currency — holds by
+construction: a value that breaks it is never made, so no save keeps it and no
+operation guards it. It constrains that value object's own attributes and
+nothing else (`invariant-in-value-object`); a rule that reaches for the entity
+holding the value is that aggregate's.
+
 An invariant may instead belong to the bounded context rather than to one
 aggregate: one open application per customer, one active offer per seller
 and SKU, a daily transfer limit are true across instances, or across

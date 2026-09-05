@@ -37,6 +37,14 @@ const {
 	problems?: Diagnostic[];
 } = $props();
 
+// What a rule that names nothing in particular is about: whichever boundary
+// keeps it (decision 27).
+const WHOLE = {
+	value: "whole value",
+	aggregate: "whole aggregate",
+	context: "whole context",
+} as const;
+
 const columns = $derived<Column[]>([
 	{ key: "name", label: "Invariant" },
 	...(constrains ? [{ key: "constrains", label: "Constrains" }] : []),
@@ -50,7 +58,7 @@ const columns = $derived<Column[]>([
 			{#if col.key === "name"}
 				<Lockup kind="invariant" name={i.name} ref={i.ref} />
 			{:else if col.key === "constrains"}
-				{#each i.targets as t, n (t.ref)}{#if n}{", "}{/if}<Ref ref={t.ref} label={constrainableLabel(t)} />{:else}<Keyword text={i.kind === "context" ? "whole context" : "whole aggregate"} />{/each}
+				{#each i.targets as t, n (t.ref)}{#if n}{", "}{/if}<Ref ref={t.ref} label={constrainableLabel(t)} />{:else}<Keyword text={WHOLE[i.kind]} />{/each}
 			{:else}
 				{i.description}
 			{/if}
