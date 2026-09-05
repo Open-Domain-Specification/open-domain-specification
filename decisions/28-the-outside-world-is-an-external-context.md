@@ -21,3 +21,7 @@ Every provider in the model is an aggregate or service inside a bounded context 
 
 - Schema, workspace model, DSL (`addBoundedContext(name, { external: true })`), JSON schema; `feat!`. NorthBank's kernel context stays a real context (a shared library is inside the enterprise); NorthBank gains external contexts for the card scheme and the sanctions provider, RiverMart for its payment provider, StreamLine for its licensors, where the discovery notes already name them.
 - Context map draws an external context with a distinct stereotype; pages and the tree show it; the doc generator and skill follow.
+
+## Amendment (2026-09-08)
+
+An external context has no entities, so an identity attribute names the context itself when the id belongs to that system (decision 14, amended). A conformist downstream of an external upstream may borrow its schemas, which is how a regulator's message formats or a scheme's record layouts enter a model without pretending they are ours (card 81).

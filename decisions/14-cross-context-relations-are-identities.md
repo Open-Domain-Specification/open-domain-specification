@@ -44,3 +44,7 @@ identity across a boundary needs no consumable, so the consumable map has
 nothing to draw when nothing is consumed. The sentence is corrected. The
 context map now draws such a dependency as an implied edge under an `«id»`
 stereotype, and `relationship-declared` asks for the relationship behind it.
+
+## Amendment (2026-09-08)
+
+An identity may also name an external context (decision 28): a card scheme's authorisation id or a payment provider's customer id is an id in a system whose entities are not ours to state, and the attribute says which system. The map draws the dependency to that context (card 81).

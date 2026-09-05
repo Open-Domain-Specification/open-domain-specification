@@ -26,3 +26,7 @@ A shared kernel among many contexts is not many pairs. The kernel is a context o
 ## Note (2026-09-07)
 
 Reviewers ask for aggregate-private value objects, for two reasons: an aggregate's internal calculation structures have no meaning outside it, and two aggregates in one context may want the same name for different values. The first is not a value object of the model; an intermediate that nobody else names is an implementation detail and stays in code. The second is the ubiquitous language's own rule: one term has one meaning inside a bounded context, and two meanings for one name are the sign that a context boundary runs between the two aggregates. The model keeps value objects on the context for exactly that reason.
+
+## Amendment (2026-09-08)
+
+A shared kernel is co-owned. Where one team owns the library and others merely use it, the relationship is directed: the owner is upstream with a published language, and each user is a downstream conformist, which decision 03's conformist role now lets borrow the upstream's schemas and value objects in that one direction (card 81). NorthBank's kernel is co-owned by a kernel team and stays a shared kernel; a model whose primitives belong to one team declares the directed form instead.
