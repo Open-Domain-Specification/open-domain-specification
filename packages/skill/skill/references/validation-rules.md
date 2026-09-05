@@ -124,6 +124,22 @@
 
 **Usual fix:** Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a schema, since a published language is a data shape rather than a second flag.
 
+## `relationship-declared` (warning)
+
+**Requires:** Two contexts joined by a crossing — a consumption of the other's consumable, or an identity naming the other's entity — declare a relationship in that direction.
+
+**Why it matters:** Decision 03 made the relationship the place where the terms of an integration are written: who is upstream, what the provider commits to, whether the consumer translates. A crossing with no relationship still draws on the context map, as a dashed implied edge, but that edge only says a dependency exists; the relationship is what says on what terms, and it is the thing a team can argue about, comment on and change. An identity counts because since decision 14 it is the only structural record that one context's model depends on another's, even when nothing is consumed.
+
+**Usual fix:** Declare the relationship the two contexts really have, naming both of them: upstream-downstream or customer-supplier from the provider to the consumer, or a partnership or shared kernel if they meet as equals — either of those counts whichever way round the crossing runs. Separate ways does not count: it says the two do not integrate, so it contradicts the crossing instead of explaining it. If neither context should depend on the other, remove the crossing rather than declaring a relationship for it.
+
+## `relationship-duplicate` (error)
+
+**Requires:** A pair of contexts declares at most one relationship of each type and direction; a symmetric type has no direction, so either order counts as the same one.
+
+**Why it matters:** A relationship is the one model element with no id of its own — its ref is the two contexts and the type. Declare the same one twice and both carry the same ref, so only the first can ever be reached: the second's description, comments and disposition are written somewhere no reader, link or tool will land, and the model has quietly lost them.
+
+**Usual fix:** Roles go on one relationship: keep a single declaration between the pair and give it every upstream and downstream role the crossings carry, then delete the other. If the two contexts really do stand in two different ways, one of those ways is a different type of relationship, not a second copy of the same one.
+
 ## `relationship-cycle` (warning)
 
 **Requires:** The directed relationships whose traffic is calls form no cycle; steps carried only by events do not count.

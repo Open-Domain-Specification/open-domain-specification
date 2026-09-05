@@ -49,6 +49,7 @@ describe("Validation", () => {
 			  "error root-identity: Root entity "Product" of aggregate "Product" declares no identity attribute, so nothing says which "Product" a reference means",
 			  "warning entity-identity: Entity "Price" in aggregate "Product" declares no identity attribute; an entity is what you tell apart from another holding the same values, so without one "Price" is a value object",
 			  "warning aggregate-tree: "Price" is in aggregate "Product" but no chain of "includes" or "references" reaches it from "Product", so nothing inside the boundary can get to it",
+			  "warning relationship-declared: "Ordering" holds "priceId", the identity of "Price" in "Catalog", but no relationship says how "Catalog" and "Ordering" stand to each other",
 			  "error internal-consumable: Policy "Reprice on order" reacts to "Reprice", which is internal to "Catalog"",
 			  "error internal-consumable: Policy "Reprice on order" issues "Reprice", which is internal to "Catalog"",
 			  "error policy-in-context: Policy "Reprice on order" in "Ordering" issues "Reprice", which belongs to "Catalog"",

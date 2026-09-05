@@ -2366,3 +2366,194 @@ describe("relationship-roles-backed and published languages", () => {
 		]);
 	});
 });
+
+describe("relationship-declared", () => {
+	const declared = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "relationship-declared");
+
+	/** Two contexts, one consuming an event of the other, nothing declared. */
+	function crossing() {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const provider = up.addService("Feed", {
+			description: "",
+			type: "application",
+		});
+		const happened = provider.provides("Happened", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+		});
+		const consumer = down.addService("Reader", {
+			description: "",
+			type: "application",
+		});
+		const consumption = consumer.consumes(happened, { pattern: "conformist" });
+		return { ws, up, down, consumer, consumption };
+	}
+
+	/** Two contexts, one holding the identity of the other's root, nothing else. */
+	function identityOnly() {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const thing = up
+			.addAggregate("Thing", { description: "" })
+			.addRootEntity("Thing", { description: "" });
+		thing.addAttribute("Id", { type: "uuid", identity: true });
+		const holder = down
+			.addAggregate("Holder", { description: "" })
+			.addRootEntity("Holder", { description: "" });
+		holder.addAttribute("Id", { type: "uuid", identity: true });
+		const thingId = holder.addAttribute("Thing Id", {
+			type: "uuid",
+			identifies: thing,
+		});
+		return { ws, up, down, thingId };
+	}
+
+	it("warns about a consumption between contexts with no relationship", () => {
+		const { ws, consumer } = crossing();
+		expect(declared(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"warning",
+				'"Down" consumes "Happened" from "Up", but no relationship says how "Up" and "Down" stand to each other',
+				consumer.ref,
+			],
+		]);
+	});
+
+	it("warns about an identity into another context with nothing consumed", () => {
+		const { ws, thingId } = identityOnly();
+		expect(declared(ws).map((d) => [d.message, d.ref])).toEqual([
+			[
+				'"Down" holds "Thing Id", the identity of "Thing" in "Up", but no relationship says how "Up" and "Down" stand to each other',
+				thingId.ref,
+			],
+		]);
+	});
+
+	it("goes quiet when the relationship points the way the crossing runs", () => {
+		const { ws, up, down } = crossing();
+		up.upstreamOf(down, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		expect(declared(ws)).toEqual([]);
+	});
+
+	it("still warns when the only relationship points the other way", () => {
+		const { ws, up, down } = crossing();
+		down.upstreamOf(up, {});
+		expect(declared(ws)).toHaveLength(1);
+	});
+
+	it("takes a partnership either way round", () => {
+		const { ws, up, down } = crossing();
+		down.partnerOf(up);
+		expect(declared(ws)).toEqual([]);
+	});
+
+	it("takes a shared kernel either way round", () => {
+		const { ws, up, down } = crossing();
+		down.sharesKernelWith(up);
+		expect(declared(ws)).toEqual([]);
+	});
+
+	it("does not take separate ways as an answer; the contexts still cross", () => {
+		const { ws, up, down } = crossing();
+		up.separateWaysFrom(down);
+		expect(declared(ws)).toHaveLength(1);
+	});
+
+	it("warns once per pair and direction however many crossings there are", () => {
+		const { ws, up, down } = crossing();
+		const more = up.addService("More", {
+			description: "",
+			type: "application",
+		});
+		down.addService("Also", { description: "", type: "application" }).consumes(
+			more.provides("Again", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			}),
+			{ pattern: "conformist" },
+		);
+		expect(declared(ws)).toHaveLength(1);
+	});
+
+	it("says nothing about a consumption or an identity inside one context", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const agg = bc.addAggregate("A", { description: "" });
+		const root = agg.addRootEntity("A", { description: "" });
+		root.addAttribute("Id", { type: "uuid", identity: true });
+		const other = bc.addAggregate("B", { description: "" });
+		const otherRoot = other.addRootEntity("B", { description: "" });
+		otherRoot.addAttribute("Id", { type: "uuid", identity: true });
+		otherRoot.addAttribute("A Id", { type: "uuid", identifies: root });
+		other.consumes(
+			agg.provides("Done", { description: "", type: "event" }),
+			{},
+		);
+		expect(declared(ws)).toEqual([]);
+	});
+});
+
+describe("relationship-duplicate", () => {
+	const duplicates = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "relationship-duplicate");
+
+	function pair() {
+		const ws = emptyWorkspace();
+		return {
+			ws,
+			a: ws.addBoundedContext("A", { description: "" }),
+			b: ws.addBoundedContext("B", { description: "" }),
+		};
+	}
+
+	it("errors on a second relationship of the same type and direction", () => {
+		const { ws, a, b } = pair();
+		a.upstreamOf(b, { upstreamRoles: ["open-host-service"] });
+		const second = a.upstreamOf(b, { downstreamRoles: ["conformist"] });
+		expect(duplicates(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"error",
+				'"A" and "B" declare a upstream-downstream relationship more than once; the two share a ref, so only the first can be reached and everything said on this one is lost',
+				second.ref,
+			],
+		]);
+	});
+
+	it("counts a symmetric relationship declared either way round as the same one", () => {
+		const { ws, a, b } = pair();
+		a.partnerOf(b);
+		b.partnerOf(a);
+		expect(duplicates(ws)).toHaveLength(1);
+	});
+
+	it("allows two relationships of different types between one pair", () => {
+		const { ws, a, b } = pair();
+		a.upstreamOf(b, {});
+		b.upstreamOf(a, { type: "customer-supplier" });
+		expect(duplicates(ws)).toEqual([]);
+	});
+
+	it("allows the same type in each direction, which are two dependencies", () => {
+		const { ws, a, b } = pair();
+		a.upstreamOf(b, {});
+		b.upstreamOf(a, {});
+		expect(duplicates(ws)).toEqual([]);
+	});
+
+	it("reports every copy after the first", () => {
+		const { ws, a, b } = pair();
+		a.upstreamOf(b, {});
+		a.upstreamOf(b, {});
+		a.upstreamOf(b, {});
+		expect(duplicates(ws)).toHaveLength(2);
+	});
+});

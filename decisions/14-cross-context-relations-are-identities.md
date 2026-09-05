@@ -12,7 +12,7 @@ The `cross-aggregate-reference` rule checks that a relation into another aggrega
 
 - A relation whose target entity belongs to another bounded context is a validation error, `cross-context-relation`, with a fix that names the identity attribute the source should hold instead.
 - Crossing a context is an integration, and the model already has the vocabulary for it: the consumable the source consumes, the identity it stores, and the context relationship between the two. Nothing new is added.
-- Petstore drops the `Order -> Pet` relation and keeps `petId`; the consumable map, not the relation map, is where that dependency reads.
+- Petstore drops the `Order -> Pet` relation and keeps `petId`; the context map, not the relation map, is where that dependency reads.
 - Decision 08's rule that `EntityRelationSchema.target` may not cross a file is now implied and consistent.
 
 ## Amendment (2026-09-06)
@@ -35,3 +35,12 @@ workspace and nothing more, since root or child is now the modeller's call, and
 needs no new node kind — the identity edge already lands on the entity named,
 and a child's node carries its own aggregate's namespace, so it draws inside
 that cluster beside the root it is reached through.
+
+## Amendment (2026-09-07, card 70)
+
+The Decision above said the consumable map is where the dropped relation's
+dependency reads. It is the context map, as the Consequences already said: an
+identity across a boundary needs no consumable, so the consumable map has
+nothing to draw when nothing is consumed. The sentence is corrected. The
+context map now draws such a dependency as an implied edge under an `«id»`
+stereotype, and `relationship-declared` asks for the relationship behind it.

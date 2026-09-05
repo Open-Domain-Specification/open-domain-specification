@@ -2610,6 +2610,12 @@ lendingBC.downstreamOf(ledgerBC, {
 	upstreamRoles: ["open-host-service"],
 	downstreamRoles: ["anti-corruption-layer"],
 });
+accountsBC.downstreamOf(ledgerBC, {
+	upstreamRoles: ["published-language"],
+	downstreamRoles: ["conformist"],
+	description:
+		"Balances follow the ledger: Accounts takes EntryPosted as published, with no translation",
+});
 paymentsBC.downstreamOf(fraudBC, {
 	type: "customer-supplier",
 	upstreamRoles: ["open-host-service", "published-language"],
@@ -2682,6 +2688,42 @@ ledgerBC.downstreamOf(sovereignBC, {
 reportingBC.downstreamOf(sovereignBC, {
 	upstreamRoles: ["published-language"],
 	downstreamRoles: ["anti-corruption-layer"],
+});
+
+// Identity-only dependencies. Each of these pairs is joined by nothing but an
+// identity attribute naming the other context's entity, which since decision
+// 14 is how the model records a dependency on another context's model. Nothing
+// is exchanged, so neither end plays an upstream or downstream role and both
+// lists stay empty; what the relationship says is which way the dependency
+// runs and that somebody looked at it (`relationship-declared`, card 70).
+schemeBC.downstreamOf(paymentsBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A scheme submission carries the instruction id it was raised for; the gateway never reads the instruction back",
+});
+lendingBC.downstreamOf(accountsBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A loan event names the account it settles against; Lending holds the number, not the balance",
+});
+fraudBC.downstreamOf(customerBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A fraud case names the customer it is about; the case file carries the id and nothing of the customer model",
+});
+fraudBC.downstreamOf(accountsBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description: "A fraud case names the account it is about, by id",
+});
+identityBC.downstreamOf(customerBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A credential names the customer it belongs to; who they are stays in Customer & KYC",
 });
 
 // Shared kernel: six contexts compile against one Money/AccountNumber

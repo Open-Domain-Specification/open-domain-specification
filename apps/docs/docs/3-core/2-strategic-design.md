@@ -55,8 +55,10 @@ one kernel context, not fifteen among themselves.
 
 Where two contexts exchange consumables and no relationship is declared, the
 context map draws an **implied** upstream-downstream edge (dashed) with the
-roles collected from the consumables involved. Declaring a relationship
-replaces the implied edge.
+roles collected from the consumables involved. An identity attribute naming
+another context's entity implies an edge in the same way, marked `«id»` and
+carrying no roles, since nothing is exchanged. Declaring a relationship
+replaces the implied edge, and `relationship-declared` warns until one is.
 
 ```ts file=../../tests/strategic.example.test.ts
 ```

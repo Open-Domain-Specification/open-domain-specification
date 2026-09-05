@@ -18,6 +18,7 @@ import {
 import { getDebug } from "./debug";
 import {
 	DOWNSTREAM_ROLE_LABELS,
+	IDENTITY_EDGE_LABEL,
 	RELATIONSHIP_LABELS,
 	UPSTREAM_ROLE_LABELS,
 } from "./role-labels";
@@ -68,14 +69,24 @@ function nodeAttributes(node: ODSContextMapNode): NodeAttributesObject {
 	};
 }
 
-/** Graphviz attributes that express one context-map edge. */
+/**
+ * Graphviz attributes that express one context-map edge. An edge implied by an
+ * identity is drawn like any other implied one — dashed, no roles — under the
+ * `«id»` stereotype, so the map says both that the dependency exists and what
+ * put it there.
+ */
 function edgeAttributes(edge: ODSContextMapEdge): EdgeAttributesObject {
 	const isDirected = isDirectedRelationshipType(edge.type);
+	const byIdentity = edge.implied === "identity";
 	const roles = (labels: Record<string, string>, values: string[]) =>
 		values.map((it) => labels[it]).join("+");
 	return {
-		label: RELATIONSHIP_LABELS[edge.type],
-		tooltip: edge.description ?? edge.type,
+		label: byIdentity ? IDENTITY_EDGE_LABEL : RELATIONSHIP_LABELS[edge.type],
+		tooltip:
+			edge.description ??
+			(byIdentity
+				? "implied by an identity attribute naming an entity of the other context"
+				: edge.type),
 		dir: isDirected ? "forward" : "none",
 		style: edge.implied ? "dashed" : "solid",
 		color: SYMMETRIC_EDGE_COLORS[edge.type] ?? "black",

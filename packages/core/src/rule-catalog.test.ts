@@ -205,6 +205,9 @@ function everythingWrong(): Workspace {
 	// shared-kernel-backed: a kernel declared with nothing in it
 	const d = ws.addBoundedContext("D", { description: "" });
 	d.sharesKernelWith(b);
+	// relationship-duplicate: the same kernel again, participants the other way
+	// round. A symmetric type has no direction, so this is the second copy.
+	b.sharesKernelWith(d);
 	// context-serves-subdomain: A, B, C and D serve nothing
 	return ws;
 }

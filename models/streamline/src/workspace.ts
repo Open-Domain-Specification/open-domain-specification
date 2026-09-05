@@ -2160,6 +2160,42 @@ billingBC.downstreamOf(discsBC, {
 		"The monthly export is translated; nothing else of Discs is touched",
 });
 
+// Identity-only dependencies. Each pair below is joined by nothing but an
+// identity attribute naming the other context's entity, which since decision
+// 14 is how the model records a dependency on another context's model. Nothing
+// is exchanged, so neither end plays an upstream or downstream role and both
+// lists stay empty; the relationship says which way the dependency runs and
+// that somebody looked at it (`relationship-declared`, card 70).
+licensingBC.downstreamOf(catalogueBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A licence window names the title it covers; the rights are Licensing's own model and the title stays Catalogue's",
+});
+encodingBC.downstreamOf(catalogueBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"An encode request carries the title id it is for; Encoding never reads the catalogue entry",
+});
+playbackBC.downstreamOf(householdsBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A session names the profile watching, by id; who that profile is stays with Households",
+});
+playbackBC.downstreamOf(encodingBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A manifest lists the renditions it can offer, by id; the renditions themselves are Encoding's",
+});
+adsBC.downstreamOf(householdsBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description: "An ad break names the household it was served to, by id",
+});
+
 // Shared kernel: one manifest and segment format library, changed by both.
 playbackBC.sharesKernelWith(edgeBC, {
 	description:

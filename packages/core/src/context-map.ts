@@ -1,4 +1,5 @@
 import { ODSConsumptionGraph } from "./consumption-graph";
+import { identityCrossings } from "./identity-crossings";
 import { boundedContextNamespace, type ODSNamespace } from "./namespace";
 import type {
 	ContextRelationshipType,
@@ -35,6 +36,12 @@ function pairKey(a: BoundedContext, b: BoundedContext): string {
  * drawn as declared; where two contexts exchange consumables without a
  * declared relationship an *implied* upstream/downstream edge is drawn with
  * the roles collected from the consumables and consumptions involved.
+ *
+ * An identity attribute naming another context's entity is a dependency too —
+ * decision 14 made it the only structural record of one — so a pair joined by
+ * nothing else gets an implied edge for that as well, marked `identity` so a
+ * reader can tell what put it there. It carries no roles: nothing is
+ * exchanged, so neither end plays a part in an exchange.
  */
 export class ODSContextMap {
 	readonly nodes = new Map<string, ODSContextMapNode>();
@@ -95,10 +102,26 @@ export class ODSContextMap {
 				type: "upstream-downstream",
 				upstreamRoles: [],
 				downstreamRoles: [],
-				implied: true,
+				implied: "consumption",
 			});
 			addRole(edge.upstreamRoles, consumption.consumable.pattern);
 			addRole(edge.downstreamRoles, consumption.pattern);
+		}
+
+		// Identities come last so a pair that already exchanges something keeps
+		// the consumption edge, which says strictly more: the identity travels on
+		// the traffic that edge stands for. The context holding the identity is
+		// the downstream end — it is the one shaped by the other's model.
+		for (const crossing of identityCrossings(contexts)) {
+			if (declared.has(pairKey(crossing.from, crossing.to))) continue;
+			this.addEdge({
+				source: this.addNode(contextNode(crossing.to)),
+				target: this.addNode(contextNode(crossing.from)),
+				type: "upstream-downstream",
+				upstreamRoles: [],
+				downstreamRoles: [],
+				implied: "identity",
+			});
 		}
 	}
 
@@ -147,6 +170,12 @@ function addRole<R>(roles: R[], role: R | undefined) {
 	if (role !== undefined && !roles.includes(role)) roles.push(role);
 }
 
+/**
+ * Why an undeclared edge is on the map: traffic between the two contexts, or
+ * an identity in one naming an entity of the other.
+ */
+export type ImpliedBy = "consumption" | "identity";
+
 export type ODSContextMapNamespace = ODSNamespace;
 
 export type ODSContextMapNode = {
@@ -169,6 +198,9 @@ export type ODSContextMapEdge = {
 	upstreamRoles: UpstreamRole[];
 	downstreamRoles: DownstreamRole[];
 	description?: string;
-	/** True when derived from consumptions rather than declared. */
-	implied: boolean;
+	/**
+	 * What put the edge on the map when no relationship declares it, or `false`
+	 * when one does. See {@link ImpliedBy}.
+	 */
+	implied: ImpliedBy | false;
 };

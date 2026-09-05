@@ -4,6 +4,7 @@ import {
 	relationshipsWithoutComments,
 	type StrategicIntent,
 } from "./evidence";
+import { attributeOwnersIn, identityCrossings } from "./identity-crossings";
 import { ReactionChain } from "./reaction-walk";
 import type { UpstreamRole } from "./schema";
 import {
@@ -54,15 +55,7 @@ function* modelMembersOf(workspace: Workspace): Iterable<Entity | ValueObject> {
 	}
 }
 
-/** Everything one context declares that carries attributes. */
-function* attributeOwnersIn(context: BoundedContext): Iterable<AttributeOwner> {
-	yield* context.schemas.values();
-	yield* context.valueobjects.values();
-	for (const aggregate of context.aggregates.values())
-		yield* aggregate.entities.values();
-}
-
-/** The same walk across the workspace, each owner with the context it is in. */
+/** The attribute-owner walk of one context, with the context it is in. */
 function* attributeOwnersOf(
 	workspace: Workspace,
 ): Iterable<{ owner: AttributeOwner; context: BoundedContext }> {
@@ -742,6 +735,132 @@ function symmetricallyRelated(
 			r.involves(other),
 	);
 }
+
+/**
+ * Whether a relationship accounts for a crossing running from `upstream` to
+ * `downstream`.
+ *
+ * A partnership or a shared kernel counts either way round: the two contexts
+ * meet as equals, so there is no direction to get wrong. A directed
+ * relationship counts only the way it points — a crossing running against it
+ * is a second dependency the map has never been told about. Separate ways
+ * counts for nothing: it is the declaration that the two do *not* integrate,
+ * so it contradicts the crossing rather than explaining it.
+ */
+function relationshipJoins(
+	workspace: Workspace,
+	upstream: BoundedContext,
+	downstream: BoundedContext,
+): boolean {
+	return workspace.relationships.some((r) =>
+		isDirectedRelationshipType(r.type)
+			? r.source === upstream && r.target === downstream
+			: (r.type === "partnership" || r.type === "shared-kernel") &&
+				r.involves(upstream) &&
+				r.involves(downstream),
+	);
+}
+
+/**
+ * Every crossing between two contexts has a relationship saying how they
+ * stand to each other.
+ *
+ * Decision 03 made relationships explicit and decision 08 promised this rule.
+ * A crossing is a consumption of another context's consumable or, since
+ * decision 14, an identity naming another context's entity — the two ways the
+ * model records that one context depends on another. Either way the context
+ * map still draws an implied edge, so nothing disappears; what is missing is
+ * the answer to the question the edge raises, which is on what terms.
+ *
+ * One diagnostic per undeclared pair and direction, not per crossing: one
+ * relationship is what would clear them all, so one warning is what a reader
+ * can act on.
+ */
+const relationshipDeclared: Rule = (workspace) => {
+	const missing = new Map<string, Diagnostic>();
+	const note = (
+		upstream: BoundedContext,
+		downstream: BoundedContext,
+		message: string,
+		ref: string,
+	) => {
+		const key = `${upstream.ref}|${downstream.ref}`;
+		if (missing.has(key) || relationshipJoins(workspace, upstream, downstream))
+			return;
+		missing.set(key, {
+			severity: "warning",
+			rule: "relationship-declared",
+			message,
+			ref,
+		});
+	};
+
+	for (const consumption of consumptionsOf(workspace)) {
+		const upstream = consumption.consumable.provider.boundedcontext;
+		const downstream = consumption.consumer.boundedcontext;
+		if (upstream === downstream) continue;
+		note(
+			upstream,
+			downstream,
+			`"${downstream.name}" consumes "${consumption.consumable.name}" from "${upstream.name}", but no relationship says how "${upstream.name}" and "${downstream.name}" stand to each other`,
+			consumption.consumer.ref,
+		);
+	}
+	for (const crossing of identityCrossings([
+		...workspace.boundedcontexts.values(),
+	])) {
+		note(
+			crossing.to,
+			crossing.from,
+			`"${crossing.from.name}" holds "${crossing.attribute.name}", the identity of "${crossing.entity.name}" in "${crossing.to.name}", but no relationship says how "${crossing.to.name}" and "${crossing.from.name}" stand to each other`,
+			crossing.attribute.ref,
+		);
+	}
+	return [...missing.values()];
+};
+
+/**
+ * What two relationships collide on: the type and, for a directed type, the
+ * order of the pair. A symmetric type has no direction, so participants either
+ * way round are the same relationship declared twice.
+ */
+function relationshipKey(relationship: ContextRelationship): string {
+	const { source, target, type } = relationship;
+	const ends = isDirectedRelationshipType(type)
+		? [source.id, target.id]
+		: [source.id, target.id].sort();
+	return `${ends[0]}~${type}~${ends[1]}`;
+}
+
+/**
+ * One relationship per type and direction between a pair of contexts.
+ *
+ * A relationship is the one model element with no id of its own: its ref is
+ * the two contexts and the type. Declare the same one twice and the two share
+ * a ref, so the second is unreachable — nothing can link to it, and a comment
+ * or a disposition on it is written where no reader will ever land. It is an
+ * error rather than a warning because the model has lost information the
+ * moment it is written.
+ */
+const relationshipDuplicate: Rule = (workspace) => {
+	const seen = new Set<string>();
+	const diagnostics: Diagnostic[] = [];
+	for (const relationship of workspace.relationships) {
+		const key = relationshipKey(relationship);
+		if (!seen.has(key)) {
+			seen.add(key);
+			continue;
+		}
+		const { source, target, type } = relationship;
+		diagnostics.push({
+			severity: "error",
+			rule: "relationship-duplicate",
+			message: `"${source.name}" and "${target.name}" declare a ${type} relationship more than once; the two share a ref, so only the first can be reached and everything said on this one is lost`,
+			ref: relationship.ref,
+		});
+	}
+	return diagnostics;
+};
 
 /** Consumables and consumptions declare roles that fit their type. */
 const roleCoherence: Rule = (workspace) => {
@@ -1732,6 +1851,24 @@ const RULES: CataloguedRule[] = [
 		why: "The context map and the consumable map are the same integration told twice, strategically and concretely. A role on the map that nothing carries is a claim about a team's way of working with nothing behind it, and a consumption whose role the map never mentions is an integration decision made without the map noticing.",
 		fix: "Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a schema, since a published language is a data shape rather than a second flag.",
 		check: relationshipRolesBacked,
+	},
+	{
+		rule: "relationship-declared",
+		severities: ["warning"],
+		summary:
+			"Two contexts joined by a crossing — a consumption of the other's consumable, or an identity naming the other's entity — declare a relationship in that direction.",
+		why: "Decision 03 made the relationship the place where the terms of an integration are written: who is upstream, what the provider commits to, whether the consumer translates. A crossing with no relationship still draws on the context map, as a dashed implied edge, but that edge only says a dependency exists; the relationship is what says on what terms, and it is the thing a team can argue about, comment on and change. An identity counts because since decision 14 it is the only structural record that one context's model depends on another's, even when nothing is consumed.",
+		fix: "Declare the relationship the two contexts really have, naming both of them: upstream-downstream or customer-supplier from the provider to the consumer, or a partnership or shared kernel if they meet as equals — either of those counts whichever way round the crossing runs. Separate ways does not count: it says the two do not integrate, so it contradicts the crossing instead of explaining it. If neither context should depend on the other, remove the crossing rather than declaring a relationship for it.",
+		check: relationshipDeclared,
+	},
+	{
+		rule: "relationship-duplicate",
+		severities: ["error"],
+		summary:
+			"A pair of contexts declares at most one relationship of each type and direction; a symmetric type has no direction, so either order counts as the same one.",
+		why: "A relationship is the one model element with no id of its own — its ref is the two contexts and the type. Declare the same one twice and both carry the same ref, so only the first can ever be reached: the second's description, comments and disposition are written somewhere no reader, link or tool will land, and the model has quietly lost them.",
+		fix: "Roles go on one relationship: keep a single declaration between the pair and give it every upstream and downstream role the crossings carry, then delete the other. If the two contexts really do stand in two different ways, one of those ways is a different type of relationship, not a second copy of the same one.",
+		check: relationshipDuplicate,
 	},
 	{
 		rule: "relationship-cycle",
