@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [backend, extension, pages]
 priority: medium
 agent: ironhide

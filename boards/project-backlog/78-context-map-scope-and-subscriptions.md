@@ -16,6 +16,7 @@ Three leftovers from card 70. `ODSContextMap.fromScope` keeps only relationships
 - [ ] `narrative.ts` says what implied the edge, consumption or identity, from `impliedBy`
 - [ ] `consumption-once` (error): the same consumer consumes the same consumable twice; card 73 hit it as a Svelte `each_key_duplicate` crash on the pages render instead of a diagnostic; fix text says merge the two, keeping every `by`
 - [ ] StreamLine's DISCOVERY.md names `RecommendationsAPI`, not `TasteProfile`, for its deliberate `internal-consumable` finding, after card 73 moved the consumption
+- [ ] The ref grammar in the skill reference gains the relationship row (`#/relationships/<source>~<type>~<target>`), which diagnostics already point at
 - [ ] `bash scripts/verify-all.sh` green
 
 ## Comments
