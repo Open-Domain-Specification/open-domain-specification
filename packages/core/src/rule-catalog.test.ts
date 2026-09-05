@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { RULE_CATALOG } from "./validate";
-import { Workspace } from "./workspace";
+import { type Entity, Workspace } from "./workspace";
+
+/** A root entity that belongs to some other workspace than the fixture's. */
+function strangerEntity(): Entity {
+	return new Workspace("Elsewhere", {
+		odsVersion: "1.0.0",
+		description: "",
+		version: "0",
+	})
+		.addBoundedContext("Elsewhere", { description: "" })
+		.addAggregate("Stranger", { description: "" })
+		.addRootEntity("Stranger", { description: "" });
+}
 
 /** A workspace that trips every rule at least once. */
 function everythingWrong(): Workspace {
@@ -22,9 +34,24 @@ function everythingWrong(): Workspace {
 	// cross-aggregate-reference: includes across aggregates, references non-root
 	r1.includes(inner, "owns");
 	r1.references(inner, "points-at");
+	// identifies-entity: an identity naming an entity of a different workspace,
+	// which this one cannot reach at all. A child of an aggregate here is fine.
+	r1.addAttribute("innerId", { type: "string", identifies: inner });
+	r1.addAttribute("strangerId", {
+		type: "string",
+		identifies: strangerEntity(),
+	});
+	// identity-not-optional: an identity that is allowed to go missing
+	r1.addAttribute("maybeId", {
+		type: "string",
+		identity: true,
+		optional: true,
+	});
 	// role-coherence and internal-consumable and separate-ways
 	const other = b.addAggregate("Other", { description: "" });
-	other.addRootEntity("Other", { description: "" });
+	const otherRoot = other.addRootEntity("Other", { description: "" });
+	// cross-context-relation: a relation reaching out of context A into B
+	r1.references(otherRoot, "across-contexts");
 	const plain = other.provides("Plain", { type: "event", description: "" });
 	const secret = other.provides("Secret", {
 		type: "event",
@@ -42,12 +69,241 @@ function everythingWrong(): Workspace {
 		description: "",
 		schema: foreign,
 	});
+	// returns-on-operation: an event that says what it gives back
+	other.provides("Answered", {
+		type: "event",
+		description: "",
+		returns: b.addSchema("Answer"),
+	});
+	// rejects-on-operation: an event that says what it refuses with
+	other.provides("Refused", {
+		type: "event",
+		description: "",
+		rejects: [b.addSchema("Refusal")],
+	});
 	// consumable-kind: event raises, policy on operation / then event
 	plain.raises(carries);
-	a.addPolicy("Backwards", { description: "" }).on(carries).then(plain);
+	a.addPolicy("Backwards", { description: "" }).on(carries).issues(plain);
 	// policy-complete: empty policy
 	a.addPolicy("Empty", { description: "" });
-	// context-serves-subdomain: A and B serve nothing
+	// separate-ways again, this time reached through a policy subscription
+	const listensAcross = a
+		.addPolicy("Listens Across", { description: "" })
+		.on(plain)
+		.issues(carries);
+	// aggregate-not-public: an aggregate offering an operation outward, and a
+	// second context reaching for it
+	const reachIn = other.provides("Reach In", {
+		type: "operation",
+		description: "",
+		pattern: "open-host-service",
+	});
+	a.addService("Reacher", { description: "", type: "application" }).consumes(
+		reachIn,
+		{},
+	);
+	// domain-service-internal: a domain service doing the same
+	const engine = b.addService("Rules Engine", {
+		description: "",
+		type: "domain",
+	});
+	const decide = engine.provides("Decide", {
+		type: "operation",
+		description: "",
+		pattern: "open-host-service",
+	});
+	twoRoots.consumes(decide, {});
+	// domain-service-consumes-inside: the inside of B's model calling out to A
+	engine.consumes(carries, {});
+	// policy-in-context: a policy acting inside the context next door
+	a.addPolicy("Acts Elsewhere", { description: "" }).on(plain).issues(reachIn);
+	// process-in-context, process-starts and process-has-ends at once: a
+	// process nothing begins, nothing ends, acting inside the context next door
+	a.addProcess("Runs Elsewhere", { description: "" }).issues(reachIn);
+	// root-identity: no root in this fixture declares an identity attribute
+	// value-object-shape: a value object with an identity, and one that includes
+	const vo = a.addValueObject("Vo", { description: "" });
+	vo.addAttribute("Id", { type: "string", identity: true });
+	vo.includes(r1, "owns-a-root");
+	// aggregate-tree: includes onto a value object, uses onto an entity, and an
+	// entity the root cannot be walked to. No ring of types is reported at all:
+	// Twice is included by two parent types, Child nests its own type, and
+	// Child includes TreeRoot back; every instance of each is still a finite
+	// tree, which is the only claim the rule makes (card 82).
+	const tree = a.addAggregate("Tree", { description: "" });
+	const treeRoot = tree.addRootEntity("TreeRoot", { description: "" });
+	const child = tree.addEntity("Child", { description: "" });
+	const twice = tree.addEntity("Twice", { description: "" });
+	tree.addEntity("Orphan", { description: "" });
+	const shape = a.addValueObject("Shape", { description: "" });
+	treeRoot.includes(child, "owns");
+	treeRoot.includes(twice, "owns");
+	child.includes(twice, "owns too");
+	child.includes(child, "nests");
+	child.includes(treeRoot, "back up");
+	treeRoot.includes(shape, "includes a value object");
+	child.uses(twice, "uses an entity");
+	// specialisation-in-boundary: an entity that is a kind of one in another
+	// aggregate, and a value object that is a kind of one in a context it
+	// shares no kernel with
+	tree.addEntity("Stretched Kind", { description: "", specialises: r1 });
+	a.addValueObject("Borrowed Kind", {
+		description: "",
+		specialises: b.addValueObject("Theirs", { description: "" }),
+	});
+	// specialisation-not-root: a root that is also a kind of another entity,
+	// and specialisation-redeclares: it restates an attribute it already has
+	const alsoRoot = twoRoots.addEntity("Also Root", {
+		description: "",
+		root: true,
+		specialises: r1,
+	});
+	alsoRoot.addAttribute("innerId", { type: "string" });
+	// specialisation-cycle: two entities each a kind of the other, which only
+	// an edit after the fact can produce
+	const ring = tree.addEntity("Ring", { description: "" });
+	const ringToo = tree.addEntity("Ring Too", {
+		description: "",
+		specialises: ring,
+	});
+	ring.specialises = ringToo;
+	// invariant-in-aggregate: a rule reaching into another aggregate
+	tree.addInvariant("Stretched", { description: "" }).constrains(r1);
+	// invariant-in-value-object: a value's rule reaching for an entity, which a
+	// value cannot see
+	vo.addInvariant("Reaches Out", { description: "" }).constrains(r1);
+	// invariant-in-context: a context's rule counting another context's entity,
+	// and context-invariant-guarded: no operation of A checks either of them
+	a.addInvariant("Counts Elsewhere", { description: "" }).constrains(otherRoot);
+	// precondition-names-operation: a rule that says it stops holding after
+	// something, and never says after what
+	tree.addInvariant("Checked Before Nothing", {
+		description: "",
+		precondition: true,
+	});
+	// attribute-relation-coherence: attribute without relation, relation
+	// without attribute, and a list against a single-valued relation
+	const coherence = a.addAggregate("Coherence", { description: "" });
+	const holder = coherence.addRootEntity("Holder", { description: "" });
+	const price = a.addValueObject("Price", { description: "" });
+	const size = a.addValueObject("Size", { description: "" });
+	const weight = a.addValueObject("Weight", { description: "" });
+	const colour = a.addValueObject("Colour", { description: "" });
+	holder.addAttribute("Price", { type: "Price", valueobject: price });
+	holder.uses(size, "sized", "1");
+	holder.uses(weight, "weighs", "0..1");
+	holder.addAttribute("Weights", { type: "Weight[]", valueobject: weight });
+	holder.uses(colour, "coloured", "1");
+	holder.addAttribute("Shade", { type: "string", valueobject: colour });
+	// relation-for-resolves: a relation drawing an attribute nobody declares
+	holder.uses(size, "measured", "1", { for: "Dimensions" });
+	// valueobject-context: an attribute typed by B's value object, and A and B
+	// share no kernel and A conforms to nothing of B's
+	holder.addAttribute("Their Money", {
+		type: "Money",
+		valueobject: b.addValueObject("Money", { description: "" }),
+	});
+	// attribute-one-shape: one attribute claiming a value object and a schema
+	holder.addAttribute("Both", {
+		type: "Colour",
+		valueobject: colour,
+		schema: a.addSchema("Both Ways"),
+	});
+	// term-in-context: A's glossary points at B's aggregate
+	a.addTerm("Foreign Word", { definition: "", embodiedBy: other });
+	// relationship-roles-backed and mud-needs-acl: a legacy context whose
+	// declared roles nothing carries, consumed as a conformist
+	const c = ws.addBoundedContext("C", { description: "", bigBallOfMud: true });
+	const legacy = c.addService("Legacy", {
+		description: "",
+		type: "application",
+	});
+	const legacyFeed = legacy.provides("Legacy Feed", {
+		type: "event",
+		description: "",
+	});
+	const consumer = a.addService("Consumer", {
+		description: "",
+		type: "application",
+	});
+	// consumption-by-resolves: what makes the consumption is said to be an
+	// operation of the provider, not of the consumer itself
+	consumer.consumes(legacyFeed, {
+		pattern: "conformist",
+		by: [legacy.provides("Poll", { type: "operation", description: "" })],
+	});
+	// consumption-once: the same consumer takes the same feed a second time, so
+	// both consumptions carry the one ref and only the first is reachable
+	consumer.consumes(legacyFeed, { pattern: "anti-corruption-layer" });
+	// A calls C's Ask and C calls A's Answer, which since decision 20 is the
+	// traffic a ring is made of. It is still not a ring: A translates behind an
+	// anti-corruption layer, so the two are free to change (card 82).
+	// consumption-by-operation: the policy is named as what makes the call,
+	// which skips the local operation decision 17 puts at the boundary
+	consumer.consumes(
+		legacy.provides("Ask", { type: "operation", description: "" }),
+		{ by: [listensAcross] },
+	);
+	legacy.consumes(
+		consumer.provides("Answer", { type: "operation", description: "" }),
+		{},
+	);
+	c.upstreamOf(a, {
+		upstreamRoles: ["open-host-service"],
+		downstreamRoles: ["anti-corruption-layer"],
+	});
+	a.upstreamOf(c, {});
+	// partnership-backed: partners with no traffic either way, and
+	// disposition-needs-comment: a disposition on it with nothing written down
+	b.partnerOf(c, { disposition: "refactor" });
+	// shared-kernel-backed: a kernel declared with nothing in it. E is a context
+	// of its own because B and D go on to call each other, and a call across a
+	// kernel is one of the things that backs it (decision 16, second amendment).
+	const d = ws.addBoundedContext("D", { description: "" });
+	ws.addBoundedContext("E", { description: "" }).sharesKernelWith(a);
+	d.sharesKernelWith(b);
+	// conformist-backed: D says it conforms to C and then names nothing of C's
+	// and calls nothing C offers
+	d.downstreamOf(c, { downstreamRoles: ["conformist"] });
+	// relationship-cycle: B and D call each other with nothing in between, so
+	// each is written against the other's contract
+	const dService = d.addService("D Service", {
+		description: "",
+		type: "application",
+	});
+	const dAsk = dService.provides("D Ask", {
+		type: "operation",
+		description: "",
+	});
+	// raises-restated: a front that copies the event of the operation it calls,
+	// naming itself in the consumption's by, so the chain already carries it
+	const dDone = dService.provides("D Done", { type: "event", description: "" });
+	const dRun = dService
+		.provides("D Run", { type: "operation", description: "" })
+		.raises(dDone);
+	const dFront = dService
+		.provides("D Front", { type: "operation", description: "" })
+		.raises(dDone);
+	dService.consumes(dRun, { by: [dFront] });
+	const bAsk = other.provides("B Ask", { type: "operation", description: "" });
+	dService.consumes(bAsk, {});
+	other.consumes(dAsk, {});
+	b.upstreamOf(d, {});
+	d.upstreamOf(b, {});
+	// subscription-consumed: D hears C's legacy feed and nothing in D takes it
+	// in, so the dependency is on no map at all
+	d.addPolicy("Hears Legacy", { description: "" }).on(legacyFeed).issues(dAsk);
+	// relationship-duplicate: the same kernel again, participants the other way
+	// round. A symmetric type has no direction, so this is the second copy.
+	b.sharesKernelWith(d);
+	// external-is-boundary: a system we do not own, with insides stated anyway
+	const outside = ws.addBoundedContext("Scheme", {
+		description: "",
+		external: true,
+	});
+	outside.addAggregate("Ledger", { description: "" });
+	// context-serves-subdomain: A, B, C and D serve nothing; Scheme is external
+	// and serves none by design
 	return ws;
 }
 

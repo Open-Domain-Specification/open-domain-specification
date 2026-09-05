@@ -1,13 +1,16 @@
 import {
 	Aggregate,
+	Answer,
 	BoundedContext,
 	Consumable,
 	DataSchema,
+	Deadline,
 	Domain,
 	Entity,
 	GlossaryTerm,
 	Invariant,
 	Policy,
+	Process,
 	Service,
 	Subdomain,
 	Team,
@@ -33,8 +36,13 @@ export const kindOf = (element: unknown): Kind => {
 	if (element instanceof BoundedContext) return "boundedcontext";
 	if (element instanceof Subdomain) return "subdomain";
 	if (element instanceof Domain) return "domain";
-	if (element instanceof DataSchema) return "schema";
+	// An answer is read as the shape it came back as: what a reader clicks is
+	// the schema, and which call it came from is said beside it.
+	if (element instanceof DataSchema || element instanceof Answer)
+		return "schema";
 	if (element instanceof Policy) return "policy";
+	if (element instanceof Process) return "process";
+	if (element instanceof Deadline) return "deadline";
 	if (element instanceof Invariant) return "invariant";
 	if (element instanceof GlossaryTerm) return "term";
 	if (element instanceof Team) return "team";

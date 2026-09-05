@@ -1,5 +1,5 @@
 ---
-status: Accepted
+status: Proposed (was Accepted; set back on 2026-09-07 because WorkspaceSet is unimplemented and decisions 14 and 17 cite it as if in force; it returns to Accepted when the set loads)
 date: 2026-09-02
 ---
 # Decision 08 — Several workspace files per project, linked by JSON References
@@ -49,13 +49,18 @@ See board vsc-extension card 07.
   | `ContextRelationshipSchema.upstream`, `downstream`, `participants` | yes |
   | `BoundedContextSchema.subdomains` | yes |
   | `BoundedContextSchema.team` | yes |
-  | `AttributeSchema.valueobject` | no |
-  | `CommandSchema.raises` | no |
+  | `AttributeSchema.valueobject` | no, except into a context this one shares a kernel with (decision 16, card 49) |
+  | `ConsumableSchema.raises` | no (an operation raises its own context's events; card 69) |
   | `EntityRelationSchema.target` | no |
   | `InvariantSchema.constrains` | no |
-  | `ConsumableSchema.event`, `command` | no |
-  | `PolicySchema.on`, `then` | no |
+  | `PolicySchema.on` | yes: a consumption, through the file's dependency (decision 17) |
+  | `PolicySchema.then` | no (decision 17) |
   | `GlossaryTermSchema.embodiedBy` | no |
+  | `AttributeSchema.schema` | no (decision 18) |
+  | `AttributeSchema.identifies` | yes, through the file's dependency, like a consumption (decision 14) |
+  | `ConsumptionSchema.by` | no (it names the consumer's own operations, decision 21) |
+  | `ProcessSchema.starts`, `on`, `ends` | yes, as `PolicySchema.on` (decision 23) |
+  | `ProcessSchema.then` | no |
 
   Everything below a context is that context's own model, and DDD says a
   context reaches another only through published language, open host
@@ -128,3 +133,7 @@ See board vsc-extension card 07.
   project. Also rejected: workspace-id-qualified refs (`orders#/...`).
   They need an index from id to file before anything resolves, and they are
   not JSON References, so generic tooling could not follow them.
+
+## Amendment (2026-09-07)
+
+The architect review found this record cited as in force while nothing implements it, and its crossing table naming fields decision 09 removed and missing fields decisions 14, 18, 21 and 23 added. The table is corrected above and the status is Proposed until the set loads. The promised set rule, that a consumption of another file's consumable needs a matching relationship, is written now for the single-file case as `relationship-declared` (card 70); the set version inherits it.

@@ -84,7 +84,9 @@ test("the interactive context map draws context nodes with stereotypes and roles
 		legend.locator("dd", { hasText: PATTERNS["open-host-service"].name }),
 	).toBeVisible();
 	await legend.getByRole("button", { name: "Legend" }).click();
-	await expect(legend.locator("dl")).toHaveCount(0);
+	// Closed, the terms stay in the DOM under `hidden`, so the header's
+	// `aria-controls` still names something (card 64).
+	await expect(legend.locator("dl")).toBeHidden();
 	await legend.getByRole("button", { name: "Legend" }).click();
 	await expect(legend.locator("dl")).toBeVisible();
 	// Ports follow the floating ends.

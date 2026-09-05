@@ -33,3 +33,23 @@ const { Story } = defineMeta({
 <Story name="Event">
 	{#snippet template()}<Theme mode="light"><Page {model} ref={PETSTORE_REFS.event} /></Theme>{/snippet}
 </Story>
+
+<!-- A query: asked with one schema, answered with another, so the Returns section draws under Payload. -->
+<Story name="Query with returns">
+	{#snippet template()}<Theme mode="light"><Page {model} ref={PETSTORE_REFS.query} /></Theme>{/snippet}
+</Story>
+
+<!-- An operation that names what it refuses with, so the Rejects with section draws one attribute table per rejection. -->
+<Story name="Operation with rejections">
+	{#snippet template()}<Theme mode="light"><Page {model} ref={PETSTORE_REFS.operation} /></Theme>{/snippet}
+</Story>
+
+<!-- A front: it raises nothing of its own, so the Raises section is one sentence naming what the chain reaches through the operation it calls. -->
+<Story name="Front that reaches rather than raises">
+	{#snippet template()}<Theme mode="light"><Page {model} ref={PETSTORE_REFS.operation} /></Theme>{/snippet}
+</Story>
+
+<!-- An operation an invariant names, so the Invariants section lists the rule it has to uphold. -->
+<Story name="Guarded operation">
+	{#snippet template()}<Theme mode="light"><Page {model} ref={PETSTORE_REFS.guardedOperation} /></Theme>{/snippet}
+</Story>

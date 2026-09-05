@@ -5,10 +5,17 @@ export const sectionsFor = (c: Consumable) => {
 	const isEvent = c.type === "event";
 	return [
 		{ id: "payload", label: "Payload" },
+		// Only an operation answers its caller, and only when it named a shape.
+		...(c.returns ? [{ id: "returns", label: "Returns" }] : []),
+		// Likewise for a refusal: only an operation is refused, and only when
+		// it named the shape it refuses with.
+		...(c.rejects.length ? [{ id: "rejects", label: "Rejects with" }] : []),
 		isEvent
 			? { id: "raised", label: "Raised by" }
 			: { id: "raises", label: "Raises" },
+		{ id: "invariants", label: "Invariants" },
 		{ id: "policies", label: isEvent ? "Reacted to by" : "Issued by" },
+		{ id: "processes", label: isEvent ? "Part of" : "Issued by processes" },
 		{ id: "consumers", label: "Consumed by" },
 		{ id: "comments", label: "Comments" },
 		{ id: "language", label: "Language" },
@@ -17,20 +24,23 @@ export const sectionsFor = (c: Consumable) => {
 </script>
 
 <script lang="ts">
+import { reachedEvents } from "@open-domain-specification/core";
 import { problemsUnder, useModel } from "../model";
-import { consumablesOf, policiesOf } from "../elements";
+import { consumablesOf, policiesOf, processesOf } from "../elements";
 import Comments from "../atoms/Comments.svelte";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Definition from "../atoms/Definition.svelte";
 import DefinitionList from "../atoms/DefinitionList.svelte";
 import Disposition from "../atoms/Disposition.svelte";
+import Heading from "../atoms/Heading.svelte";
 import EmptyState from "../atoms/EmptyState.svelte";
 import Keyword from "../atoms/Keyword.svelte";
 import Lockup from "../atoms/Lockup.svelte";
 import AttributeTable from "../molecules/AttributeTable.svelte";
 import ConsumableKeywords from "../molecules/ConsumableKeywords.svelte";
 import ConsumesTable from "../molecules/ConsumesTable.svelte";
+import Joined from "../molecules/Joined.svelte";
 import { contextCrumbs } from "../molecules/crumbs";
 import { kindOf } from "../molecules/element-kind";
 import RefList from "../molecules/RefList.svelte";
@@ -48,13 +58,51 @@ const isEvent = $derived(c.type === "event");
 const raisedBy = $derived(
 	[...consumablesOf(ws)].filter((o) => o.raisedEvents.includes(c)),
 );
+/**
+ * The events this operation reaches through the operations it calls, minus
+ * anything it raises itself. A front that runs an aggregate's transition
+ * declares no `raises` of its own, so without this line its Raises section
+ * would read as though nothing happens (card 77).
+ */
+const reached = $derived(
+	isEvent
+		? []
+		: reachedEvents(c).filter((e) => !c.raisedEvents.includes(e)),
+);
 const policies = $derived(
 	[...policiesOf(ws)].filter((p) =>
 		isEvent ? p.events.includes(c) : p.commands.includes(c),
 	),
 );
+/**
+ * The processes this consumable takes part in, and where in a lifecycle it
+ * sits: an event may begin an instance, be waited for, or finish one, and the
+ * page says which rather than leaving a reader to open the process (decision
+ * 23).
+ */
+const processes = $derived(
+	[...processesOf(ws)].flatMap((p) => {
+		const roles = isEvent
+			? [
+					...(p.startEvents.includes(c) ? ["starts it"] : []),
+					...(p.events.includes(c) ? ["waits for it"] : []),
+					...(p.endEvents.includes(c) ? ["ends on it"] : []),
+				]
+			: p.commands.includes(c)
+				? ["issues it"]
+				: [];
+		return roles.length ? [{ process: p, roles }] : [];
+	}),
+);
 const schemaAttributes = $derived(
 	c.schema ? [...c.schema.attributes.values()] : [],
+);
+// The rules that name this consumable: a transition rule is enforced where the
+// transition is made, so it reads from the operation as well as from the
+// aggregate that declares it.
+const invariants = $derived(c.invariants);
+const returnsAttributes = $derived(
+	c.returns ? [...c.returns.attributes.values()] : [],
 );
 const crumbs = $derived<[string, string][]>([
 	...contextCrumbs(ws, bc),
@@ -62,6 +110,12 @@ const crumbs = $derived<[string, string][]>([
 ]);
 const policyColumns: Column[] = [
 	{ key: "name", label: "Policy" },
+	{ key: "context", label: "Context" },
+	{ key: "description", label: "Description" },
+];
+const processColumns: Column[] = [
+	{ key: "name", label: "Process" },
+	{ key: "role", label: "In its lifecycle" },
 	{ key: "context", label: "Context" },
 	{ key: "description", label: "Description" },
 ];
@@ -82,6 +136,12 @@ const policyColumns: Column[] = [
 			<Definition term="Payload">
 				{#if c.schema}<Lockup kind="schema" name={c.schema.name} ref={c.schema.ref} />{:else}<Keyword text="no schema" />{/if}
 			</Definition>
+			{#if c.returns}
+				<Definition term="Returns"><Lockup kind="schema" name={c.returns.name} ref={c.returns.ref} /></Definition>
+			{/if}
+			{#if c.rejects.length}
+				<Definition term="Rejects with"><RefList items={c.rejects} kind="schema" /></Definition>
+			{/if}
 			{#if c.disposition && c.disposition !== "by-design"}
 				<Definition term="Disposition"><Disposition disposition={c.disposition} /></Definition>
 			{/if}
@@ -105,6 +165,36 @@ const policyColumns: Column[] = [
 	{/if}
 </Section>
 
+{#if c.returns}
+	<Section
+		id="returns"
+		title="Returns"
+		lead="What the caller gets back. Callers depend on every attribute here, so removing one is a breaking change."
+		count={returnsAttributes.length}
+	>
+		<AttributeTable attributes={returnsAttributes} empty="The returned schema has no attributes." />
+	</Section>
+{/if}
+
+{#if c.rejects.length}
+	<Section
+		id="rejects"
+		title="Rejects with"
+		lead="What the operation answers with when it refuses. Nothing happened, so none of these is an event; a caller reads them to know why it was told no."
+		count={c.rejects.length}
+	>
+		{#each c.rejects as rejection (rejection.ref)}
+			<div class="subsection">
+				<Heading level={3} id={rejection.ref}>
+					<Lockup kind="schema" name={rejection.name} ref={rejection.ref} />
+				</Heading>
+				{#if rejection.description}<p class="description">{rejection.description}</p>{/if}
+				<AttributeTable attributes={rejection.attributes.values()} empty="The rejection schema has no attributes." />
+			</div>
+		{/each}
+	</Section>
+{/if}
+
 {#if isEvent}
 	<Section id="raised" title="Raised by" lead="Operations whose success produces this event." count={raisedBy.length}>
 		{#if raisedBy.length}
@@ -117,11 +207,27 @@ const policyColumns: Column[] = [
 	<Section id="raises" title="Raises" lead="Events produced when the operation is accepted." count={c.raisedEvents.length}>
 		{#if c.raisedEvents.length}
 			<RefList items={c.raisedEvents} kind="event" block />
-		{:else}
+		{:else if !reached.length}
 			<EmptyState text="Raises nothing. Its effect is invisible to the rest of the system." />
+		{/if}
+		{#if reached.length}
+			<p class="reached">Through the operations it calls, it also reaches <RefList items={reached} kind="event" />, raised where they happen rather than restated here.</p>
 		{/if}
 	</Section>
 {/if}
+
+<Section
+	id="invariants"
+	title="Invariants"
+	lead="The rules this consumable has to uphold every time it runs."
+	count={invariants.length}
+>
+	{#if invariants.length}
+		<RefList items={invariants} kind="invariant" block />
+	{:else}
+		<EmptyState text="No invariant names this one." />
+	{/if}
+</Section>
 
 <Section
 	id="policies"
@@ -152,6 +258,36 @@ const policyColumns: Column[] = [
 </Section>
 
 <Section
+	id="processes"
+	title={isEvent ? "Part of" : "Issued by processes"}
+	lead={isEvent
+		? "Processes this event takes part in, and where in each lifecycle it sits."
+		: "Processes that issue this operation while an instance of them is running."}
+	count={processes.length}
+>
+	<DataTable
+		columns={processColumns}
+		rows={processes}
+		empty={isEvent
+			? "No process starts, waits for or ends on this event."
+			: "No process issues this operation."}
+		rowId={(row) => row.process.ref}
+	>
+		{#snippet cell(row, col)}
+			{#if col.key === "name"}
+				<Lockup kind="process" name={row.process.name} ref={row.process.ref} />
+			{:else if col.key === "role"}
+				<Joined>{#each row.roles as role (role)}<Keyword text={role} />{/each}</Joined>
+			{:else if col.key === "context"}
+				<Lockup kind="boundedcontext" name={row.process.boundedcontext.name} ref={row.process.boundedcontext.ref} />
+			{:else}
+				{row.process.description}
+			{/if}
+		{/snippet}
+	</DataTable>
+</Section>
+
+<Section
 	id="consumers"
 	title="Consumed by"
 	lead={c.internal
@@ -176,3 +312,26 @@ const policyColumns: Column[] = [
 </Section>
 
 <LanguageSection target={c} />
+
+<style>
+	/* One rejection, told from the next by the space above it rather than by a
+	   frame, the same way an entity is told from its neighbour. */
+	.subsection {
+		margin-bottom: 16px;
+	}
+	.description {
+		margin: 0 0 4px;
+		padding: 0 8px;
+		max-width: 80ch;
+		line-height: 1.5;
+	}
+	/* A sentence, not a new mark: what the chain reaches reads as prose under
+	   the list of what this operation declares (card 77). */
+	.reached {
+		margin: 4px 0 0;
+		padding: 0 8px;
+		max-width: 80ch;
+		line-height: 1.5;
+		color: var(--vscode-descriptionForeground);
+	}
+</style>

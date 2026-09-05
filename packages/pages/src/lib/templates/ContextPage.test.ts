@@ -14,12 +14,14 @@ const page = (
 ) => render(Harness, { model, component: ContextPage, args: { context } });
 
 describe("ContextPage", () => {
-	it("names its six sections for the table of contents", () => {
+	it("names its eight sections for the table of contents", () => {
 		expect(sections.map((s) => s.id)).toEqual([
 			"position",
 			"model",
+			"invariants",
+			"values",
 			"integration",
-			"behaviour",
+			"reactions",
 			"schemas",
 			"language",
 		]);
@@ -78,6 +80,76 @@ describe("ContextPage", () => {
 		).toEqual(["Term", "Definition", "Also", "Embodied by"]);
 	});
 
+	it("holds both reaction tables in one section with the map under the pair", () => {
+		const { model, context } = petstoreSales();
+		const { container } = page(model, context);
+		const reactions = container.querySelector("#reactions") as HTMLElement;
+		expect(reactions.querySelector("h2")).toHaveTextContent("Reactions");
+		// The paired level-3 headings are the fixed shape of the section, and
+		// the map summarises both, so it comes last (card 34, card 88).
+		expect(
+			[...reactions.querySelectorAll("h3")].map((h) =>
+				h.textContent?.replace(/\d+$/, "").trim(),
+			),
+		).toEqual(["Policies", "Processes"]);
+		// Sales declares no policy, so that half is its empty sentence; the
+		// pair of headings stays either way (card 34).
+		expect(
+			[...reactions.querySelectorAll("h3, table, p.empty, figure.diagram")].map(
+				(el) => el.className.split(" ")[0],
+			),
+		).toEqual(["heading", "empty", "heading", "data", "diagram"]);
+		// The badge counts the reactions of both kinds together.
+		expect(reactions.querySelector("h2 .count")).toHaveTextContent("1");
+	});
+
+	it("reads a process across its row, from what starts it to what ends it", () => {
+		const { model, context } = petstoreSales();
+		const { container } = page(model, context);
+		const processes = container.querySelector(
+			"#reactions table",
+		) as HTMLElement;
+		expect(
+			[...processes.querySelectorAll("thead th")].map((th) =>
+				th.textContent?.trim(),
+			),
+		).toEqual([
+			"Process",
+			"Starts",
+			"While it runs",
+			"Then",
+			"Ends",
+			"Description",
+		]);
+		const row = processes.querySelector("tbody tr") as HTMLElement;
+		expect(row).toHaveTextContent("Order fulfilment");
+		expect(row).toHaveTextContent("OrderPlaced");
+		expect(row).toHaveTextContent("PetStatusChanged");
+		expect(row).toHaveTextContent("OrderDelivered");
+	});
+
+	it("says nothing four times over for a process with an empty lifecycle", () => {
+		const model = edgeCaseModel();
+		const main = model.workspace.boundedcontexts.get(
+			"main_context",
+		) as BoundedContext;
+		const { container } = page(model, main);
+		const row = container
+			.querySelectorAll("#reactions table")[1]
+			?.querySelector("tbody tr") as HTMLElement;
+		expect(row).toHaveTextContent("Idle Process");
+		// Nothing to start it and nothing to end it are the two the model warns
+		// about, so those two read as warnings and the middle two do not.
+		const words = [...row.querySelectorAll(".keyword")];
+		expect(words.map((w) => w.textContent)).toEqual([
+			"nothing",
+			"nothing",
+			"nothing",
+			"nothing",
+		]);
+		expect(words.filter((w) => w.classList.contains("warn"))).toHaveLength(2);
+	});
+
 	it("makes each schema a subsection with its attribute table, naming what carries it", () => {
 		const { model, context } = petstoreSales();
 		const { container } = page(model, context);
@@ -108,6 +180,11 @@ describe("ContextPage", () => {
 		).toBeInTheDocument();
 		expect(screen.getByText("No policies.")).toBeInTheDocument();
 		expect(
+			screen.getByText(
+				"No processes. Nothing here waits for more than one event before it acts.",
+			),
+		).toBeInTheDocument();
+		expect(
 			screen.getByText("No schemas. Consumables carry no declared payload."),
 		).toBeInTheDocument();
 		expect(
@@ -129,7 +206,10 @@ describe("ContextPage", () => {
 		expect(screen.getAllByText("no root")[0]).toHaveClass("warn");
 		expect(screen.getByText("unused")).toHaveClass("keyword");
 		expect(screen.getAllByText("not modelled").length).toBeGreaterThan(0);
-		expect(screen.getAllByText("nothing").length).toBe(2);
+		// The policy fires on nothing and issues nothing, the process starts on
+		// nothing, waits for nothing, issues nothing and ends on nothing, and
+		// none of the context's three value objects is held by an aggregate.
+		expect(screen.getAllByText("nothing").length).toBe(9);
 		expect(
 			screen.getByText("The schema has no attributes."),
 		).toBeInTheDocument();

@@ -105,6 +105,17 @@ describe("every template, through the shipped route", () => {
 		].map((c) => c.textContent?.trim());
 		expect(cells).toContain("Pet");
 		expect(cells).toContain("Catalog BC");
+		// The sidebar label names the section the same way the section itself
+		// does, so a reader following the link lands on what they expected.
+		const h2 = usage?.querySelector("h2");
+		const heading = h2?.textContent
+			?.replace(h2.querySelector(".count")?.textContent ?? "", "")
+			.trim();
+		const sidebarLabel = container
+			.querySelector('.toc a[href="#usage"]')
+			?.textContent?.trim();
+		expect(sidebarLabel).toBe(heading);
+		expect(sidebarLabel).toBe("Used as a type by");
 	});
 
 	it("ServicePage: the type is a keyword line and provides and consumes are the shared tables", () => {
@@ -168,6 +179,89 @@ describe("every template, through the shipped route", () => {
 		expect(container.querySelector("#raises")).toBeInTheDocument();
 	});
 
+	it("ConsumablePage: a query draws Returns as a second fact and a second attribute table", () => {
+		const container = draw(PETSTORE_REFS.query);
+		const terms = [...container.querySelectorAll("dt")].map(
+			(t) => t.textContent,
+		);
+		expect(terms).toContain("Payload");
+		expect(terms).toContain("Returns");
+		const returns = container.querySelector("#returns");
+		expect(returns).toBeInTheDocument();
+		// The returned shape, not the sent one: PetId goes in, PetSummary comes back.
+		const names = (root: Element | null) =>
+			[...(root?.querySelectorAll("tbody tr code") ?? [])]
+				.map((c) => c.textContent?.trim())
+				.filter((t) => t && !t.includes("`"));
+		expect(names(returns)).toEqual([
+			"petId",
+			"int64",
+			"name",
+			"string",
+			"status",
+			"PetStatus",
+		]);
+		expect(names(container.querySelector("#payload"))).toEqual([
+			"petId",
+			"int64",
+		]);
+	});
+
+	it("ConsumablePage: a front says what it reaches rather than restating it under Raises", () => {
+		// ReservePetForOrder fronts the Pet aggregate's ReservePet and declares
+		// no raises of its own, so the Raises section carries one sentence
+		// naming the event the chain reaches instead of an empty state (card 77).
+		const raises = draw(PETSTORE_REFS.operation).querySelector("#raises");
+		expect(raises).toBeInTheDocument();
+		expect(raises?.textContent).toContain(
+			"Through the operations it calls, it also reaches",
+		);
+		expect(raises?.textContent).toContain("PetReserved");
+		expect(raises?.textContent).not.toContain("Raises nothing.");
+	});
+
+	it("ConsumablePage: an operation that calls nothing gets no reached sentence", () => {
+		const raises = draw(PETSTORE_REFS.guardedOperation).querySelector(
+			"#raises",
+		);
+		expect(raises?.textContent).not.toContain("it also reaches");
+	});
+
+	it("ConsumablePage: an operation that returns nothing draws no Returns anywhere", () => {
+		const container = draw(PETSTORE_REFS.operation);
+		expect(container.querySelector("#returns")).not.toBeInTheDocument();
+		expect(
+			[...container.querySelectorAll("dt")].map((t) => t.textContent),
+		).not.toContain("Returns");
+	});
+
+	it("ConsumablePage: an operation that names a refusal draws Rejects with as a fact and a table per rejection", () => {
+		const container = draw(PETSTORE_REFS.operation);
+		expect(
+			[...container.querySelectorAll("dt")].map((t) => t.textContent),
+		).toContain("Rejects with");
+		const rejects = container.querySelector("#rejects");
+		expect(rejects).toBeInTheDocument();
+		// One subsection per rejection, each headed by the schema it names.
+		const headings = [...(rejects?.querySelectorAll("h3") ?? [])].map((h) =>
+			h.textContent?.trim(),
+		);
+		expect(headings).toHaveLength(1);
+		expect(headings[0]).toContain("PetUnavailable");
+		// The refusal's own attributes, not the payload's: the payload is a
+		// bare PetId, the refusal adds the status that says why.
+		expect(rejects?.textContent).toContain("status");
+		expect(rejects?.querySelectorAll("table")).toHaveLength(1);
+	});
+
+	it("ConsumablePage: a query that refuses with nothing draws no Rejects with anywhere", () => {
+		const container = draw(PETSTORE_REFS.query);
+		expect(container.querySelector("#rejects")).not.toBeInTheDocument();
+		expect(
+			[...container.querySelectorAll("dt")].map((t) => t.textContent),
+		).not.toContain("Rejects with");
+	});
+
 	it("ConsumablePage: an event lists what raises it and the policies that react", () => {
 		const container = draw(PETSTORE_REFS.event);
 		expect(container.querySelector("#raised")).toBeInTheDocument();
@@ -182,22 +276,117 @@ describe("every template, through the shipped route", () => {
 			[...container.querySelectorAll("#carriers thead th")].map((h) =>
 				h.textContent?.trim(),
 			),
-		).toEqual(["Consumable", "Kind", "Provider"]);
+		).toEqual(["Consumable", "Kind", "Carried as", "Provider"]);
 		expect(container.querySelector("#carriers .keyword")).toBeInTheDocument();
+		// PetId is only ever sent, so every row of its table says payload.
+		const directions = [
+			...container.querySelectorAll("#carriers tbody tr"),
+		].map((r) => r.querySelectorAll("td")[2]?.textContent?.trim());
+		expect(new Set(directions)).toEqual(new Set(["payload"]));
 	});
 
-	it("PolicyPage: when and then are tables, and only then names the kind", () => {
+	it("SchemaPage: a schema that only ever comes back lists the operation that returns it", () => {
+		const container = draw(PETSTORE_REFS.returnedSchema);
+		const rows = [...container.querySelectorAll("#carriers tbody tr")].map(
+			(r) => [...r.querySelectorAll("td")].map((c) => c.textContent?.trim()),
+		);
+		expect(rows).toHaveLength(1);
+		expect(rows[0][0]).toContain("GetPetSummary");
+		expect(rows[0][2]).toBe("returns");
+		expect(container.textContent).not.toContain(
+			"Nothing carries this schema yet",
+		);
+	});
+
+	it("SchemaPage: a schema that only ever comes back as a refusal names the operation that rejects with it", () => {
+		const container = draw(PETSTORE_REFS.rejectionSchema);
+		const rows = [...container.querySelectorAll("#carriers tbody tr")].map(
+			(r) => [...r.querySelectorAll("td")].map((c) => c.textContent?.trim()),
+		);
+		expect(rows).toHaveLength(1);
+		expect(rows[0][0]).toContain("ReservePetForOrder");
+		expect(rows[0][2]).toBe("rejects with");
+	});
+
+	it("PolicyPage: when and then are tables, and both name the kind", () => {
 		const container = draw(PETSTORE_REFS.policy);
+		// What triggers a policy may be an event or an answer, so the When table
+		// names the kind too (decision 23).
 		expect(
 			[...container.querySelectorAll("#when thead th")].map((h) =>
 				h.textContent?.trim(),
 			),
-		).toEqual(["Event", "Provider", "Context", "Description"]);
+		).toEqual([
+			"Event or answer",
+			"Kind",
+			"Provider",
+			"Context",
+			"Description",
+		]);
 		expect(
 			[...container.querySelectorAll("#then thead th")].map((h) =>
 				h.textContent?.trim(),
 			),
 		).toEqual(["Operation", "Kind", "Provider", "Context", "Description"]);
+	});
+
+	it("ProcessPage: the lifecycle is four tables, and the three that may hold an answer name the kind", () => {
+		const container = draw(PETSTORE_REFS.process);
+		const headers = (id: string) =>
+			[...container.querySelectorAll(`#${id} thead th`)].map((h) =>
+				h.textContent?.trim(),
+			);
+		// The policy page's two tables, with what begins an instance and what
+		// finishes it around them (decision 23).
+		expect(headers("starts")).toEqual([
+			"Event",
+			"Provider",
+			"Context",
+			"Description",
+		]);
+		expect(headers("when")).toEqual([
+			"Event, answer or deadline",
+			"Kind",
+			"Provider",
+			"Context",
+			"Description",
+		]);
+		expect(headers("then")).toEqual([
+			"Operation",
+			"Kind",
+			"Provider",
+			"Context",
+			"Description",
+		]);
+		expect(headers("ends")).toEqual([
+			"Event, answer or deadline",
+			"Kind",
+			"Provider",
+			"Context",
+			"Description",
+		]);
+		expect(container.querySelector("#starts tbody")).toHaveTextContent(
+			"OrderPlaced",
+		);
+		expect(container.querySelector("#ends tbody")).toHaveTextContent(
+			"OrderDelivered",
+		);
+		// It says what a policy may not be: something that remembers.
+		expect(container.querySelector("h1")).toHaveTextContent("Process");
+		expect(container.textContent).toContain("stateful");
+	});
+
+	it("ConsumablePage: an event says which processes it takes part in and where", () => {
+		const container = draw(PETSTORE_REFS.event);
+		const processes = container.querySelector("#processes") as HTMLElement;
+		expect(
+			[...processes.querySelectorAll("thead th")].map((h) =>
+				h.textContent?.trim(),
+			),
+		).toEqual(["Process", "In its lifecycle", "Context", "Description"]);
+		const row = processes.querySelector("tbody tr") as HTMLElement;
+		expect(row).toHaveTextContent("Order fulfilment");
+		expect(row).toHaveTextContent("waits for it");
 	});
 
 	it("InvariantPage: the targets become a two-column table", () => {
@@ -208,6 +397,33 @@ describe("every template, through the shipped route", () => {
 			),
 		).toEqual(["Element", "Description"]);
 		expect(container.querySelectorAll("#constrains tbody tr").length).toBe(2);
+	});
+
+	it("InvariantPage: a transition rule lists the operation it is enforced by apart from what it holds true of", () => {
+		const container = draw(PETSTORE_REFS.transitionInvariant);
+		// The Pet is what the rule holds true of; ChangePetStatus is where it is
+		// enforced, so the two read in their own sections.
+		expect(container.querySelector("#constrains")?.textContent).toContain(
+			"Pet",
+		);
+		expect(container.querySelector("#constrains")?.textContent).not.toContain(
+			"ChangePetStatus",
+		);
+		expect(container.querySelector("#guards")?.textContent).toContain(
+			"ChangePetStatus",
+		);
+	});
+
+	it("ConsumablePage: an operation an invariant names lists the rule it upholds", () => {
+		const guarded = draw(PETSTORE_REFS.guardedOperation);
+		expect(guarded.querySelector("#invariants")?.textContent).toContain(
+			"SoldNotReopen",
+		);
+		// An operation no rule names says so rather than showing an empty list.
+		const plain = draw(PETSTORE_REFS.operation);
+		expect(plain.querySelector("#invariants")?.textContent).toContain(
+			"No invariant names this one.",
+		);
 	});
 
 	it("TermPage: the embodied element is one row and the same word elsewhere is a table", () => {

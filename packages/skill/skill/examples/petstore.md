@@ -18,13 +18,33 @@ const identityBC = usersSD.addBoundedcontext("Identity BC", {
 });
 ```
 
+## Value objects declared on the context
+
+A value object is part of the context's language, so it is declared once there
+and any aggregate of the context may hold it. Only a `shared-kernel`
+relationship lets a second context name it.
+
+```ts
+const petStatusVO = catalogBC.addValueObject("PetStatus", {
+	description: "Where the pet is in its sales lifecycle",
+});
+petStatusVO.addAttribute("value", { type: "'available' | 'pending' | 'sold'" });
+```
+
 ## Attributes backed by value objects, relations with cardinality, invariants on attributes
 
 ```ts
 petRoot.addAttribute("id", { type: "int64", identity: true });
-petRoot.addAttribute("status", { type: "PetStatus", valueobject: petStatusVO });
+// Optional, and the relation says "0..1" to match: the v3 contract does not
+// require a status, and the two halves of that statement have to agree.
+petRoot.addAttribute("status", {
+	type: "PetStatus",
+	valueobject: petStatusVO,
+	optional: true,
+});
 petRoot.uses(categoryVO, "categorized-as", "0..1");
-petRoot.uses(photoUrlVO, "has-photo", "1..*");
+petRoot.uses(petStatusVO, "has-status", "0..1");
+petRoot.uses(photoUrlVO, "has-photo", "*");
 petAgg
 	.addInvariant("NameRequired", { description: "Pet.name must be non-empty" })
 	.constrains(petRoot.attributes.get("name")!);
@@ -32,8 +52,26 @@ petAgg
 
 ## A cross-aggregate reference by identity to the other root
 
+Both aggregates are in Fulfilment BC. A relation may cross an aggregate, never a
+bounded context.
+
 ```ts
-orderRoot.references(petRoot, "for-pet", "1");
+shipmentRoot.references(carrierRoot, "shipped-by", "1");
+```
+
+## Another context reached by identity only, never by a relation
+
+The order is in Sales and the pet is in Catalog, so the order stores the pet's
+id and no relation. `identifies` says which root that id is of, so the
+dependency stays structural: the relation map draws it as a dashed edge across
+the boundary, and the consumable map carries the traffic behind it.
+
+```ts
+orderRoot.addAttribute("petId", {
+	type: "int64",
+	description: "Identity of the Pet root in Catalog; only the id crosses the boundary",
+	identifies: petRoot,
+});
 ```
 
 ## Published events with a payload schema, and an internal operation that raises one
@@ -79,6 +117,12 @@ const _addPetOp = petApp
 
 ```ts
 orderApp.consumes(getPetSummaryOp, { pattern: "anti-corruption-layer" });
+// Placing or deleting an order never calls Catalog; one operation does, and
+// `by` says so. Left off, a consumption means the whole consumer.
+orderApp.consumes(reservePetForOrder, {
+	pattern: "anti-corruption-layer",
+	by: [reservePetForApproved],
+});
 
 salesBC.downstreamOf(catalogBC, {
 	type: "customer-supplier",
@@ -157,7 +201,7 @@ salesBC
 		description: "When a pet becomes available and an order for it is placed, approve the order",
 	})
 	.on(petStatusChanged, orderPlaced)
-	.then(approveOrder);
+	.issues(approveOrder);
 ```
 
 ## Conformist consumptions feeding a projection

@@ -32,11 +32,26 @@ Open-host service for /user endpoints
 
 
 
+## Invariants
+> No invariants across aggregates.
+
+## Value Objects
+| Name | Description | Attributes | Invariants | Used by |
+| --- | --- | --- | --- | --- |
+| UserStatus | Untyped int per the Petstore v3 model; nobody remembers the meaning of each value | value: `int` | - | User |
+
+
 ## Schemas
-> No schemas.
+| Name | Description | Attributes | Used by |
+| --- | --- | --- | --- |
+| User | The legacy user record, as GET /user/{username} answers with it | **username**: `string`, email: `string`, userStatus: `UserStatus` | GetUserByUsername |
+
 
 ## Policies
 > No policies.
+
+## Processes
+> No processes.
 
 ## Context Relationships
 ### Works alongside

@@ -12,22 +12,41 @@ const consumptions = (): Consumption[] =>
 	);
 
 describe("ConsumesTable", () => {
-	it("names what is consumed, who provides it, from which context, and the protection", () => {
+	it("names what is consumed, who provides it, from which context, what makes the call, and the protection", () => {
 		const rows = consumptions();
 		const { container } = render(ConsumesTable, { consumptions: rows });
 		expect(
 			[...container.querySelectorAll("thead th")].map((th) =>
 				th.textContent?.trim(),
 			),
-		).toEqual(["Consumable", "Provider", "Context", "Protection"]);
+		).toEqual(["Consumable", "Provider", "Context", "Made By", "Protection"]);
 		expect(container.querySelectorAll("tbody tr")).toHaveLength(rows.length);
 		expect(
 			container.querySelector(".codicon-symbol-class"),
 		).toBeInTheDocument();
 		// The protection is a code from the pattern table, in the editor font.
 		expect(
-			container.querySelector("tbody td:nth-child(4) .keyword"),
-		).toHaveClass("mono");
+			container.querySelector("tbody td:nth-child(5) .keyword.mono"),
+		).toBeInTheDocument();
+	});
+
+	it("names the consumer's own operation behind a consumption, and says so when it is the whole consumer", () => {
+		// Sales asks Catalog to reserve a pet, to mark it sold and to read its
+		// summary, from one operation of its own each — a call is made by an
+		// operation (card 92); the whole of Inventory's projection takes the pet
+		// facts.
+		const { container } = render(ConsumesTable, {
+			consumptions: consumptions(),
+		});
+		const madeBy = [...container.querySelectorAll("tbody tr")].map((tr) => [
+			tr.querySelector("td:nth-child(1)")?.textContent?.trim(),
+			tr.querySelector("td:nth-child(4)")?.textContent?.trim(),
+		]);
+		expect(madeBy).toContainEqual(["ReservePetForOrder", "ReservePet"]);
+		expect(madeBy).toContainEqual(["MarkPetSoldForOrder", "MarkPetSold"]);
+		expect(madeBy).toContainEqual(["GetPetSummary", "CheckPetAvailable"]);
+		expect(madeBy).toContainEqual(["PetRegistered", "whole consumer"]);
+		expect(screen.getAllByText("whole consumer")[0]).toHaveClass("keyword");
 	});
 
 	it("says a consumption with no declared protection is unspecified", () => {

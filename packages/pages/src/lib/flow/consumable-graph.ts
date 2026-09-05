@@ -57,7 +57,8 @@ export const slotIcon = (kind?: ConsumableType) =>
  * consumption from the consumer's socket to the provider's lollipop, both
  * handles named by the consumable's ref. The edge label is the consumable
  * name and the end labels are the raw patterns; the components abbreviate
- * them on the ports. Every namespace level is a group, as the image nests
+ * them on the ports. An edge also carries what makes the consumption, which
+ * the edge shows on hover. Every namespace level is a group, as the image nests
  * its clusters.
  */
 export function consumableGraph(map: ODSConsumableMap): Graph {
@@ -122,6 +123,7 @@ export function consumableGraph(map: ODSConsumableMap): Graph {
 			directed: false,
 			sourceLabel: e.sourcePattern,
 			targetLabel: e.targetPattern,
+			by: e.by,
 		})),
 	};
 }

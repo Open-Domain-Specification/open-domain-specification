@@ -41,27 +41,43 @@ Each relationship type appears exactly once, and the reasoning is written on eac
 - Sales to Inventory is upstream-downstream: the projection conforms to whatever Sales
   publishes.
 - Catalog and Inventory share a kernel: one team, one PetStatus definition.
-- Sales and Fulfilment are partners: one team, released together, each issuing the other's
-  operations or reacting to its events.
+- Sales and Fulfilment are partners: one team, released together. The traffic runs one way —
+  Fulfilment reacts to `OrderApproved` and calls Sales' `ConfirmDelivery`, and Sales asks
+  Fulfilment for nothing — which decision 20's second amendment accepts: what binds the two
+  is the release train, not the direction of the arrows.
 - Identity and Sales go separate ways: orders are anonymous.
 
 ## Inside the contexts
 
 Pet is the root of its aggregate, with Category, Tag, PhotoUrl and PetStatus as value
-objects and `uses` relations of every cardinality. Order references Pet by identity across
-the boundary. Shipment includes DeliveryAttempt, which cannot exist alone, and is the home
-of the entity-level invariant and the domain service. InventoryProjection is a projection
-modelled as an aggregate. User keeps the legacy shape as found.
+objects and `uses` relations of every cardinality. Order holds Pet's identity in a `petId`
+attribute across the boundary; a relation never crosses a context (decision 14). Shipment
+includes DeliveryAttempt, which cannot exist alone, and is the home
+of the entity-level invariant and the domain service. Inventory's availability projection
+is InventoryQuery, an application service: a projection is a service that provides a query
+operation, not an aggregate with an invented root (decision 15). User keeps the legacy
+shape as found.
 
 ## Behaviour
 
 PetApp, OrderApp, InventoryQuery and UserApp are the application services (the API layer);
 DispatchPlanner is the domain service. Events are published language with schemas; the
-operations that only their own context uses are internal. Five policies: approve an order
-when its pet is available (reacting to events from two contexts), reserve the pet on
-approval and mark it sold on delivery (Sales issuing Catalog's open-host operations, so the
-order lifecycle walks the pet lifecycle), plan dispatch on approval, and deliver the order
-in Sales when Fulfilment reports delivery (a policy issuing another context's operation).
+operations that only their own context uses are internal.
+
+Sales runs one process, "Order fulfilment": it starts on `OrderPlaced` and waits, because
+the pet may not be free yet, approves the order when a relisting says it is, reserves the
+pet on approval, marks it sold once the order is delivered, and ends on `OrderDelivered`.
+Until card 60 that was three policies, and none of them could say that the order placed on
+Monday was still waiting on Thursday; each operation it issues is Sales' own and calls out
+to Catalog's open host through the ACL, so the order lifecycle walks the pet lifecycle
+without naming another context's operation (decision 17).
+
+Three policies remain, each a single stateless reaction: plan dispatch on approval, deliver
+the order in Sales when Fulfilment reports delivery through Sales' own `ConfirmDelivery`
+open host (a policy names only its own context's operations, decision 17), and recount the
+inventory projection when anything it counts changes.
+`ReservePetForOrder` rejects with `PetUnavailable` when the pet is already pending or sold:
+nothing happened, so Sales is told the status rather than sent an event.
 
 ## Validation
 
@@ -89,14 +105,24 @@ Accepted
   `MarkPetSold` (pending → sold) as open-host operations; Sales issues them from two new
   policies on `OrderApproved` and `OrderDelivered`, consumed through the same ACL. The
   `Available` term now names the two transitions.
+- One event for three facts: `PetStatusChanged` announced the catalogue's own status edits,
+  the reservation and the sale alike, so `Approve when pet available` — which only ever meant
+  the first — heard the reservation its own approval had just caused, and the chain ran in a
+  ring across Catalog and Sales (card 69). Changed: `ReservePet` raises `PetReserved` and
+  `MarkPetSold` raises `PetSold`, each carrying the pet id; `PetStatusChanged` keeps the
+  from/to payload and now means the catalogue moved a pet itself, e.g. relisting a returned
+  pet. Inventory takes all three, because the projection counts all three.
 - DispatchPlanner grouped shipments by pet category, which Fulfilment never receives.
   Changed: it groups orders approved on the same day, which `OrderApproved` does give it.
 
 Partially accepted
 
 - Policy correlation: `Approve when pet available` could not say how a `PetStatusChanged`
-  led to an `orderId`. The DSL does not model correlation, so the description now says the
-  policy looks up placed orders for the petId and confirms availability before approving.
+  led to an `orderId`. The DSL does not model correlation, so the description said instead
+  that the policy looks up placed orders for the petId and confirms availability before
+  approving. Card 60 went further: the three Sales policies are one "Order fulfilment"
+  process, which is the element that may hold state between events, and what it correlates
+  on is stated in its description (decision 23).
 - Lifecycle invariants on value objects: `SoldNotReopen` now constrains the `Pet` root,
   because the transition belongs to the entity. `DeliverOnlyWhenApproved` stays on value
   objects, now `OrderStatus` and `ShipDate`, since it genuinely reads both; that keeps the
@@ -108,15 +134,23 @@ Partially accepted
   to Sales, embodied by `Order.petId`, saying that in Sales a pet is an identity to check
   and reserve, nothing more. The status vocabularies are now linked by the two new policies
   rather than left informal.
+- InventoryProjection should not be an aggregate: at the time this record said ODS had no
+  projection element, so the materialised view stayed an aggregate with an invented root.
+  Decision 15 settled it the other way: a projection is a service that provides a query
+  operation. Changed (card 72): `InventoryProjection` and its `InventoryView` root are gone;
+  `InventoryQuery` now provides `GetInventory` (a query with `returns`) and `RecountInventory`
+  (the update the feeding policy issues), and consumes the six events the projection used to.
 
 Rejected
 
 - Fulfilment is invented: the brief says "deliver it" and asks for every element once; a
   partnership needs two contexts owned by one team, and Fulfilment is where child entities
   and a domain service naturally live.
-- Fulfilment's policy issuing Sales' `DeliverOrder` is a violation: it is the pattern the
-  DSL exists to show (a policy issuing another context's open-host operation) inside a
-  declared partnership. Kept.
+- Fulfilment's policy issuing Sales' `DeliverOrder` is a violation: decision 17 forbids a
+  policy naming another context's operation, so `DeliverOrder` became internal and Sales'
+  `ConfirmDelivery` open host is what Fulfilment's own `ReportDelivery` calls; the policy
+  now names only its own context's operation, and the partnership still crosses through the
+  consumption.
 - Checklist architecture: that is the brief. The petstore is the demonstration reference,
   and the test suite asserts each relationship type exactly once.
 - Inventory as a micro-context, the shared kernel and the customer-supplier ACL are
@@ -127,9 +161,65 @@ Rejected
   context serving two subdomains.
 - Identity is not a big ball of mud: the brief says nobody wants to touch it and it is
   modelled at its boundary only, which is exactly what the flag means in ODS. Kept.
-- InventoryProjection should not be an aggregate: ODS has no projection element; the
-  description says it is a materialised view rebuilt as one unit.
 - Category has an id so it is an entity: it is reference data compared by value (id and
   name together), which is the Swagger shape; no pet owns or edits a category.
 - The discovery record is synthetic: it says so in its first paragraph. The source is a
   specification, not a client, and the record does not pretend otherwise.
+
+## 10. Optionality against cardinality (card 82)
+
+`attribute-relation-coherence` now reads an attribute's `optional` against its relation's
+cardinality, and it caught two contradictions here. `Pet.status` was optional — the v3
+contract does not require it — beside a `has-status` relation of cardinality `1`, which says
+every pet always has one. The relation was the wrong half: it is `0..1`, and a pet with no
+status is simply not listed by `findByStatus` and not counted by Inventory. `Order.shipDate`
+was required beside a `ships-on` of `0..1`; there the attribute was the wrong half, since
+Fulfilment sets the date when it plans the dispatch, so it is now optional.
+
+## 11. Two consumptions that said nothing (card 90)
+
+Two of the model's consumptions recorded no dependency, and both came out.
+
+`OrderApp` consumed Fulfilment's `ShipmentDelivered`. Nothing in Sales ever read it: no
+policy or process reacts to it, and `OrderDetail` — the shape the order page is built from —
+carries neither a shipment nor a delivery time. It was added so the partnership had traffic
+in both directions, and decision 20's second amendment has since said a partnership needs
+none: the order moves to delivered because Fulfilment calls `ConfirmDelivery`, which is the
+whole of the exchange between the two.
+
+`InventoryQuery` consumed its own `InventoryUpdated`. A consumption is one node depending on
+another's consumable, and a node taking in what it itself provides depends on nobody; the
+`raises` on `RecountInventory` already says where the fact comes from. It stood as the
+example of a same-context consumption needing no downstream role, which `PetApp`'s
+`ReservePet` and `OrderApp`'s `DeliverOrder` both show for real.
+
+Two things went in. Sales' `Order fulfilment` process waits on Catalog's `PetStatusChanged`,
+and nothing in Sales consumed it, so neither map drew the dependency and the anti-corruption
+layer between the two contexts was invisible on that edge; `OrderApp` now takes the fact in
+through the same ACL, with the process named as the caller (decision 17;
+`subscription-consumed`). And the consumption of `GetPetSummary` names the process as its
+caller too: it is the process that looks up the placed orders for a petId and asks whether
+the pet is free before approving, and no operation of `OrderApp` does that.
+`ApproveOnlyWhenAvailable` now names `ApproveOrder`, the transition it guards, instead of
+describing it in prose. The model still validates clean.
+
+## Revision (card 92): the call has an operation, and a search answers with a list
+
+Two things the model said loosely.
+
+The consumption of `GetPetSummary` named the `Order fulfilment` process as its caller, and
+the note above defended it: "no operation of `OrderApp` does that". That was the model
+describing itself rather than the shop. Sales does read the pet's summary before approving —
+the ACL that translates it has a name and a file, `PetSummaryClient` — and a read through an
+anti-corruption layer is a step of Sales' own boundary, exactly as `ReservePet` and
+`MarkPetSold` are. So `OrderApp` gains `CheckPetAvailable`, the process issues it, and the
+consumption names it in `by`. The process still decides when to ask; what asks is an
+operation, which is where decision 17 puts a call out and where the flow map and the
+reaction walk read the crossing (`consumption-by-operation`). Consuming `PetStatusChanged`
+still names the process, and rightly: nothing stands between a published fact arriving and
+the reaction to it.
+
+`FindPetsByStatus` said it returned one `Pet`. The Swagger source returns an array, and
+decision 13's note says how the model spells that: `returns` names one shape, and the shape
+says it is many. Catalog gains a `Pets` schema whose single attribute holds `PetSummary[]`,
+which is what a caller gets back and what RiverMart's `SearchResults` has always done.

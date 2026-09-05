@@ -4,24 +4,30 @@ import {
 	type AttributeSchema,
 	aggregateRef,
 	type BoundedContextSchema,
+	contextInvariantRef,
 	entityRef,
 	invariantRef,
 	policyRef,
+	processRef,
 	type ServiceSchema,
 	schemaRef,
 	serviceRef,
 	termRef,
+	valueObjectInvariantRef,
 	valueObjectRef,
 	type WorkspaceSchema,
 } from "./schema";
 import type {
 	Aggregate,
 	AttributeOwner,
-	BoundedContext,
 	Service,
 	Workspace,
 } from "./workspace";
-import { Workspace as WorkspaceModel } from "./workspace";
+import {
+	BoundedContext,
+	Entity,
+	Workspace as WorkspaceModel,
+} from "./workspace";
 
 const debug = getDebug("get-workspace-from-schema");
 
@@ -33,11 +39,21 @@ function addProvides(
 ) {
 	for (const [id, consumableSchema] of Object.entries(schema.provides)) {
 		debug(`Adding consumable: ${consumableSchema.name} to ${provider.name}`);
-		const { raises: _raises, schema: schemaRef, ...rest } = consumableSchema;
+		const {
+			raises: _raises,
+			schema: schemaRef,
+			returns: returnsRef,
+			rejects: rejectsRefs,
+			...rest
+		} = consumableSchema;
 		provider.addConsumable(consumableSchema.name, {
 			...rest,
 			id,
 			schema: schemaRef && workspace.getSchemaByRefOrThrow(schemaRef.$ref),
+			returns: returnsRef && workspace.getSchemaByRefOrThrow(returnsRef.$ref),
+			rejects: rejectsRefs?.map(({ $ref }) =>
+				workspace.getSchemaByRefOrThrow($ref),
+			),
 		});
 	}
 }
@@ -73,11 +89,38 @@ function addConsumes(
 		const consumable = workspace.getConsumableByRefOrThrow(
 			consumption.consumable.$ref,
 		);
-		consumer.addConsumption(consumable, consumption);
+		consumer.addConsumption(consumable, {
+			...consumption,
+			by: consumption.by?.map(({ $ref }) =>
+				workspace.getConsumptionCallerByRefOrThrow($ref),
+			),
+		});
 	}
 }
 
-/** Attributes may point at value objects, so they are added in the second pass. */
+/**
+ * What an identity attribute names: an entity anywhere in the workspace, or a
+ * bounded context, for an id that belongs to a system whose entities are not
+ * modelled (decision 28). Whether that context is really external is
+ * `identifies-entity`'s to say; the loader only resolves what the ref points
+ * at, so a model that names the wrong kind of context loads and is reported
+ * rather than throwing.
+ */
+function identifiedBy(
+	workspace: Workspace,
+	ref: string,
+): Entity | BoundedContext {
+	const target = workspace.getByRef(ref);
+	if (target instanceof Entity || target instanceof BoundedContext)
+		return target;
+	throw new Error(`Entity or Bounded Context with ref ${ref} not found`);
+}
+
+/**
+ * Attributes may point at a value object, at another schema, or at the entity
+ * or external context whose identity they hold, so they are added in the
+ * second pass, once everything they can name exists.
+ */
 function addAttributes(
 	owner: AttributeOwner,
 	attributes: Record<string, AttributeSchema>,
@@ -90,6 +133,12 @@ function addAttributes(
 			valueobject:
 				attributeSchema.valueobject &&
 				workspace.getValueObjectByRefOrThrow(attributeSchema.valueobject.$ref),
+			schema:
+				attributeSchema.schema &&
+				workspace.getSchemaByRefOrThrow(attributeSchema.schema.$ref),
+			identifies:
+				attributeSchema.identifies &&
+				identifiedBy(workspace, attributeSchema.identifies.$ref),
 		});
 	}
 }
@@ -163,13 +212,51 @@ function addBoundedContext(
 		});
 	}
 
+	for (const [invariantId, invariantSchema] of Object.entries(
+		boundedcontextSchema.invariants,
+	)) {
+		boundedcontext.addInvariant(invariantSchema.name, {
+			...invariantSchema,
+			id: invariantId,
+		});
+	}
+
+	// The consumables a policy joins may live in any context, so its two lists
+	// are dropped here and joined in the second pass (linkPolicies).
 	for (const [policyId, policySchema] of Object.entries(
 		boundedcontextSchema.policies,
 	)) {
-		boundedcontext.addPolicy(policySchema.name, {
-			...policySchema,
-			id: policyId,
+		const { on: _on, then: _then, ...rest } = policySchema;
+		boundedcontext.addPolicy(policySchema.name, { ...rest, id: policyId });
+	}
+
+	// The consumables a process joins may live in any context, so its four
+	// lists are dropped here and joined in the second pass (linkProcesses),
+	// exactly as a policy's are. Its deadlines are its own, so they are made
+	// here, before anything can name one.
+	for (const [processId, processSchema] of Object.entries(
+		boundedcontextSchema.processes,
+	)) {
+		const {
+			starts: _starts,
+			on: _on,
+			then: _then,
+			ends: _ends,
+			deadlines,
+			...rest
+		} = processSchema;
+		const process = boundedcontext.addProcess(processSchema.name, {
+			...rest,
+			id: processId,
 		});
+		for (const [deadlineId, deadlineSchema] of Object.entries(
+			deadlines ?? {},
+		)) {
+			process.addDeadline(deadlineSchema.name, {
+				...deadlineSchema,
+				id: deadlineId,
+			});
+		}
 	}
 
 	for (const [schemaId, schemaSchema] of Object.entries(
@@ -179,6 +266,27 @@ function addBoundedContext(
 			...schemaSchema,
 			id: schemaId,
 		});
+	}
+
+	for (const [valueobjectId, valueobjectSchema] of Object.entries(
+		boundedcontextSchema.valueobjects,
+	)) {
+		// What it is a kind of is joined later: the parent may be in a context
+		// this pass has not reached (linkSpecialisations).
+		const valueobject = boundedcontext.addValueObject(valueobjectSchema.name, {
+			...valueobjectSchema,
+			id: valueobjectId,
+			specialises: undefined,
+		});
+
+		for (const [invariantId, invariantSchema] of Object.entries(
+			valueobjectSchema.invariants,
+		)) {
+			valueobject.addInvariant(invariantSchema.name, {
+				...invariantSchema,
+				id: invariantId,
+			});
+		}
 	}
 
 	for (const [aggregateId, aggregateSchema] of Object.entries(
@@ -203,14 +311,10 @@ function addBoundedContext(
 		for (const [entityId, entitySchema] of Object.entries(
 			aggregateSchema.entities,
 		)) {
-			aggregate.addEntity(entitySchema.name, { ...entitySchema, id: entityId });
-		}
-		for (const [valueobjectId, valueobjectSchema] of Object.entries(
-			aggregateSchema.valueobjects,
-		)) {
-			aggregate.addValueObject(valueobjectSchema.name, {
-				...valueobjectSchema,
-				id: valueobjectId,
+			aggregate.addEntity(entitySchema.name, {
+				...entitySchema,
+				id: entityId,
+				specialises: undefined,
 			});
 		}
 	}
@@ -274,6 +378,35 @@ function linkReferences(
 			);
 		}
 
+		for (const [valueobjectId, valueobjectSchema] of Object.entries(
+			boundedcontextSchema.valueobjects,
+		)) {
+			const valueobject = workspace.getValueObjectByRefOrThrow(
+				valueObjectRef(boundedcontextId, valueobjectId).$ref,
+			);
+			addAttributes(valueobject, valueobjectSchema.attributes, workspace);
+			for (const relation of valueobjectSchema.relations) {
+				valueobject.addRelation(
+					workspace.getEntityOrValueobjectByRefOrThrow(relation.target.$ref),
+					relation,
+				);
+			}
+
+			// A value's rule is about its own attributes, so it is wired once
+			// they exist, the way an aggregate's is below.
+			for (const [invariantId, invariantSchema] of Object.entries(
+				valueobjectSchema.invariants,
+			)) {
+				const invariant = workspace.getInvariantByRefOrThrow(
+					valueObjectInvariantRef(boundedcontextId, valueobjectId, invariantId)
+						.$ref,
+				);
+				for (const { $ref } of invariantSchema.constrains) {
+					invariant.constrains(workspace.getConstrainableByRefOrThrow($ref));
+				}
+			}
+		}
+
 		for (const [aggregateId, aggregateSchema] of Object.entries(
 			boundedcontextSchema.aggregates,
 		)) {
@@ -292,21 +425,6 @@ function linkReferences(
 				}
 			}
 
-			for (const [valueobjectId, valueobjectSchema] of Object.entries(
-				aggregateSchema.valueobjects,
-			)) {
-				const valueobject = workspace.getValueObjectByRefOrThrow(
-					valueObjectRef(boundedcontextId, aggregateId, valueobjectId).$ref,
-				);
-				addAttributes(valueobject, valueobjectSchema.attributes, workspace);
-				for (const relation of valueobjectSchema.relations) {
-					valueobject.addRelation(
-						workspace.getEntityOrValueobjectByRefOrThrow(relation.target.$ref),
-						relation,
-					);
-				}
-			}
-
 			// Invariants come last: they may constrain attributes added just above.
 			for (const [invariantId, invariantSchema] of Object.entries(
 				aggregateSchema.invariants,
@@ -317,6 +435,59 @@ function linkReferences(
 				for (const { $ref } of invariantSchema.constrains) {
 					invariant.constrains(workspace.getConstrainableByRefOrThrow($ref));
 				}
+			}
+		}
+
+		// A context's invariants reach into any of its aggregates, so they are
+		// wired once all of them have their attributes (decision 27).
+		for (const [invariantId, invariantSchema] of Object.entries(
+			boundedcontextSchema.invariants,
+		)) {
+			const invariant = workspace.getInvariantByRefOrThrow(
+				contextInvariantRef(boundedcontextId, invariantId).$ref,
+			);
+			for (const { $ref } of invariantSchema.constrains) {
+				invariant.constrains(workspace.getConstrainableByRefOrThrow($ref));
+			}
+		}
+	}
+}
+
+/**
+ * A kind is joined to what it is a kind of once every entity and value object
+ * exists: an entity's parent is declared in the same aggregate, but a value
+ * object's may be in the context it borrows from over a shared kernel, which
+ * the loader may not have reached yet (decision 22).
+ */
+function linkSpecialisations(
+	workspace: Workspace,
+	workspaceSchema: WorkspaceSchema,
+) {
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
+		workspaceSchema.boundedcontexts,
+	)) {
+		for (const [valueobjectId, valueobjectSchema] of Object.entries(
+			boundedcontextSchema.valueobjects,
+		)) {
+			if (!valueobjectSchema.specialises) continue;
+			workspace.getValueObjectByRefOrThrow(
+				valueObjectRef(boundedcontextId, valueobjectId).$ref,
+			).specialises = workspace.getValueObjectByRefOrThrow(
+				valueobjectSchema.specialises.$ref,
+			);
+		}
+		for (const [aggregateId, aggregateSchema] of Object.entries(
+			boundedcontextSchema.aggregates,
+		)) {
+			for (const [entityId, entitySchema] of Object.entries(
+				aggregateSchema.entities,
+			)) {
+				if (!entitySchema.specialises) continue;
+				workspace.getEntityByRefOrThrow(
+					entityRef(boundedcontextId, aggregateId, entityId).$ref,
+				).specialises = workspace.getEntityByRefOrThrow(
+					entitySchema.specialises.$ref,
+				);
 			}
 		}
 	}
@@ -351,14 +522,40 @@ function linkPolicies(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 			);
 			policy.on(
 				...policySchema.on.map(({ $ref }) =>
-					workspace.getConsumableByRefOrThrow($ref),
+					workspace.getReactionTriggerByRefOrThrow($ref),
 				),
 			);
-			policy.then(
+			policy.issues(
 				...policySchema.then.map(({ $ref }) =>
 					workspace.getConsumableByRefOrThrow($ref),
 				),
 			);
+		}
+	}
+}
+
+/** Processes join consumables that may live in any context. */
+function linkProcesses(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
+		workspaceSchema.boundedcontexts,
+	)) {
+		for (const [processId, processSchema] of Object.entries(
+			boundedcontextSchema.processes,
+		)) {
+			const process = workspace.getProcessByRefOrThrow(
+				processRef(boundedcontextId, processId).$ref,
+			);
+			const consumables = (refs: { $ref: string }[]) =>
+				refs.map(({ $ref }) => workspace.getConsumableByRefOrThrow($ref));
+			// What a process waits for, and what completes it, may be an answer
+			// or one of its own deadlines rather than an event, so both resolve
+			// to any of the three (decision 23).
+			const triggers = (refs: { $ref: string }[]) =>
+				refs.map(({ $ref }) => workspace.getProcessTriggerByRefOrThrow($ref));
+			process.starts(...consumables(processSchema.starts));
+			process.on(...triggers(processSchema.on));
+			process.issues(...consumables(processSchema.then));
+			process.ends(...triggers(processSchema.ends));
 		}
 	}
 }
@@ -424,8 +621,10 @@ export function getWorkspaceFromSchema(
 	)) {
 		addBoundedContext(workspace, id, boundedcontextSchema);
 	}
+	linkSpecialisations(workspace, workspaceSchema);
 	linkReferences(workspace, workspaceSchema);
 	linkPolicies(workspace, workspaceSchema);
+	linkProcesses(workspace, workspaceSchema);
 	linkGlossary(workspace, workspaceSchema);
 	addRelationships(workspace, workspaceSchema);
 

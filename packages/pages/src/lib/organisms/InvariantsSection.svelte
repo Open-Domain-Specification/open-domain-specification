@@ -13,8 +13,9 @@ import Section from "./Section.svelte";
  * single sentence; v2 gives it a row, because a rule and its wording read
  * faster down a column than across a column of frames.
  *
- * `constrains` adds the column the aggregate page needs, listing what each
- * rule names — the whole aggregate when it names nothing in particular.
+ * `constrains` adds the column the aggregate and context pages need, listing
+ * what each rule names — the boundary that keeps it when it names nothing in
+ * particular.
  * `problems` are the diagnostics about the rules themselves, which the
  * section heading carries the way every other section does.
  */
@@ -36,6 +37,14 @@ const {
 	problems?: Diagnostic[];
 } = $props();
 
+// What a rule that names nothing in particular is about: whichever boundary
+// keeps it (decision 27).
+const WHOLE = {
+	value: "whole value",
+	aggregate: "whole aggregate",
+	context: "whole context",
+} as const;
+
 const columns = $derived<Column[]>([
 	{ key: "name", label: "Invariant" },
 	...(constrains ? [{ key: "constrains", label: "Constrains" }] : []),
@@ -49,7 +58,7 @@ const columns = $derived<Column[]>([
 			{#if col.key === "name"}
 				<Lockup kind="invariant" name={i.name} ref={i.ref} />
 			{:else if col.key === "constrains"}
-				{#each i.targets as t, n (t.ref)}{#if n}{", "}{/if}<Ref ref={t.ref} label={constrainableLabel(t)} />{:else}<Keyword text="whole aggregate" />{/each}
+				{#each i.targets as t, n (t.ref)}{#if n}{", "}{/if}<Ref ref={t.ref} label={constrainableLabel(t)} />{:else}<Keyword text={WHOLE[i.kind]} />{/each}
 			{:else}
 				{i.description}
 			{/if}

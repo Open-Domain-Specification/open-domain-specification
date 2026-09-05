@@ -103,7 +103,7 @@ describe("contextGraph", () => {
 						type: "customer-supplier",
 						upstreamRoles: ["open-host-service", "published-language"],
 						downstreamRoles: ["anti-corruption-layer"],
-						implied: true,
+						implied: "consumption",
 					}),
 				],
 			),
@@ -115,6 +115,20 @@ describe("contextGraph", () => {
 			targetLabel: "ACL",
 			dashed: true,
 			directed: true,
+		});
+	});
+	it("stereotypes an edge implied by an identity «id» rather than U/D", () => {
+		const [e] = contextGraph(
+			mapOf(
+				[node({ id: "#/a" }), node({ id: "#/b" })],
+				[edge({ implied: "identity" })],
+			),
+		).edges;
+		expect(e).toMatchObject({
+			label: "«id»",
+			dashed: true,
+			directed: true,
+			impliedBy: "identity",
 		});
 	});
 	it("omits role labels when none are declared", () => {
@@ -159,7 +173,7 @@ describe("contextGraph", () => {
 		] as unknown as Parameters<typeof contextGraph>[1];
 		const nodes = [node({ id: "#/a" }), node({ id: "#/b" })];
 		const [implied] = contextGraph(
-			mapOf(nodes, [edge({ implied: true })]),
+			mapOf(nodes, [edge({ implied: "consumption" })]),
 			relationships,
 		).edges;
 		expect(implied.intent).toBeUndefined();

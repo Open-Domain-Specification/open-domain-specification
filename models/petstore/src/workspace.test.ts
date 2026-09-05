@@ -1,4 +1,4 @@
-import { Workspace } from "@open-domain-specification/core";
+import { ODSContextMap, Workspace } from "@open-domain-specification/core";
 import { assertDocSite } from "@open-domain-specification/model-tools";
 import { describe, expect, it } from "vitest";
 import { workspace } from "./workspace";
@@ -181,12 +181,13 @@ describe("Swagger Petstore Example Workspace", () => {
 		for (const [_, domain] of workspace.domains) {
 			for (const [_, subdomain] of domain.subdomains) {
 				for (const [_, bc] of subdomain.boundedcontexts) {
+					// Value objects hang off the context, not the aggregate.
+					if (bc.valueobjects.size > 0) {
+						foundValueObject = true;
+					}
 					for (const [_, aggregate] of bc.aggregates) {
 						if (aggregate.entities.size > 0) {
 							foundEntity = true;
-						}
-						if (aggregate.valueobjects.size > 0) {
-							foundValueObject = true;
 						}
 						if (aggregate.invariants.size > 0) {
 							foundInvariant = true;
@@ -274,6 +275,46 @@ describe("Swagger Petstore Example Workspace", () => {
 			"references",
 			"uses",
 		]);
+	});
+
+	// The fulfilment subdomain holds only Fulfilment, but its consumption walk
+	// follows Sales out to Catalog, so both ends of the declared
+	// Catalog → Sales relationship are on the page's map and it has to be drawn
+	// as the workspace declares it (card 78).
+	it("draws a declared relationship as declared on a scope that only reaches it", () => {
+		const fulfilment = workspace
+			.getDomainByRefOrThrow("#/domains/petstore_commerce")
+			.subdomains.get("fulfilment");
+		if (!fulfilment) throw new Error("the Fulfilment subdomain is missing");
+		const map = ODSContextMap.fromSubdomain(fulfilment);
+		const catalogToSales = [...map.edges.values()].filter(
+			(e) =>
+				e.source.id === "#/boundedcontexts/catalog_bc" &&
+				e.target.id === "#/boundedcontexts/sales_bc",
+		);
+		expect(catalogToSales).toHaveLength(1);
+		expect(catalogToSales[0].implied).toBe(false);
+		expect(catalogToSales[0].type).toBe("customer-supplier");
+		expect([...map.edges.values()].some((e) => e.implied)).toBe(false);
+	});
+
+	// The Sales map reaches Catalog and Inventory, but Sales' walk finds nothing
+	// crossing between those two, so their shared kernel belongs to a
+	// neighbouring map and not to this one (card 87).
+	it("leaves out a declared relationship between two contexts it only reaches", () => {
+		const salesBc = workspace.getBoundedContextByRefOrThrow(
+			"#/boundedcontexts/sales_bc",
+		);
+		const map = ODSContextMap.fromBoundedContext(salesBc);
+		const refs = [...map.nodes.keys()];
+		expect(refs).toContain("#/boundedcontexts/catalog_bc");
+		expect(refs).toContain("#/boundedcontexts/inventory_bc");
+		const between = [...map.edges.values()].filter((e) =>
+			["#/boundedcontexts/catalog_bc", "#/boundedcontexts/inventory_bc"].every(
+				(ref) => e.source.id === ref || e.target.id === ref,
+			),
+		);
+		expect(between).toEqual([]);
 	});
 
 	it("validates clean: the demonstration reference has no diagnostics", () => {

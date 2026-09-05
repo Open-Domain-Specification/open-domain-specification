@@ -1,20 +1,29 @@
 <script module lang="ts">
 export const sections = [
 	{ id: "constrains", label: "Constrains" },
+	{ id: "guards", label: "Guarded by" },
 	{ id: "language", label: "Language" },
 ];
 </script>
 
 <script lang="ts">
-import type { Invariant } from "@open-domain-specification/core";
+import {
+	Aggregate,
+	BoundedContext,
+	Consumable,
+	type Invariant,
+} from "@open-domain-specification/core";
 import { nameOf, problemsUnder, useModel } from "../model";
 import { ownerCrumbs } from "../elements";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Definition from "../atoms/Definition.svelte";
 import DefinitionList from "../atoms/DefinitionList.svelte";
+import Keyword from "../atoms/Keyword.svelte";
 import Lockup from "../atoms/Lockup.svelte";
+import { contextCrumbs } from "../molecules/crumbs";
 import { kindOf } from "../molecules/element-kind";
+import RefList from "../molecules/RefList.svelte";
 import LanguageSection from "../organisms/LanguageSection.svelte";
 import PageHeader from "../organisms/PageHeader.svelte";
 import Section from "../organisms/Section.svelte";
@@ -22,19 +31,94 @@ import Section from "../organisms/Section.svelte";
 /** One rule that must hold after every change, and the elements it is about. */
 const { invariant: i }: { invariant: Invariant } = $props();
 const model = useModel();
-const a = $derived(i.aggregate);
-const targets = $derived(i.targets);
+// A rule belongs to a value object, where it holds by construction, to one
+// aggregate, where it holds on every save, or to the whole context, where it
+// holds across instances and something checks it before acting (decision 27).
+// The header says which, because the three promise different things.
+const owner = $derived(i.owner);
+const inAggregate = $derived(owner instanceof Aggregate);
+const inContext = $derived(owner instanceof BoundedContext);
+const KIND = {
+	value: {
+		label: "value invariant",
+		title:
+			"Holds by construction of the value: one that breaks it is never made.",
+		lead: "The attributes of this value the rule is about. A value knows nothing outside itself, so the list goes no further.",
+		guards:
+			"Nothing guards a value's rule. It is kept by refusing to construct a value that breaks it, which is why no operation appears here.",
+		empty:
+			"No operation guards this rule, and none needs to: the value is never made without it.",
+	},
+	aggregate: {
+		label: "aggregate invariant",
+		title: "Holds inside the aggregate's boundary, every time it is saved.",
+		lead: "The elements this rule is about, all inside the aggregate that is saved as one.",
+		guards:
+			"The operations this rule is about. Naming one says which operation keeps the rule, not that the rule stops holding after it: balanced postings are still balanced once the posting is made.",
+		empty:
+			"No operation names this rule; it is checked wherever the aggregate is saved.",
+	},
+	// A precondition is a different promise from a rule kept true afterwards,
+	// and the page says which — but it reads that from the flag the invariant
+	// sets, never from the fact that an operation is named (decision 27's
+	// second amendment).
+	precondition: {
+		label: "precondition",
+		title:
+			"Checked before the operations it names run, and not true again after them.",
+		lead: "The elements this rule is about, all inside the boundary that states it.",
+		guards:
+			"The operations this rule is checked before. What it was checked against — a balance, an entitlement, another context's answer — may move on the moment the call returns, so nothing re-establishes it afterwards.",
+		empty:
+			"No operation names this rule, so nothing checks it: a precondition is checked before something runs, and the model has to say what.",
+	},
+	context: {
+		label: "context invariant",
+		title:
+			"Holds across the instances and aggregates of the context; an operation checks it before acting.",
+		lead: "The elements this rule is about. They may sit in any aggregate of the context, because no one instance can see the others.",
+		guards:
+			"The operations this rule is about. Nothing enforces a rule across instances as a side effect, so it holds only because these check it before acting.",
+		empty:
+			"No operation names this rule, so nothing keeps it: a rule across instances needs a guard.",
+	},
+} as const;
+// The elements the rule holds true of, and the operations that have to uphold
+// it, are two different readings of the same list, so the page splits them by
+// what each target is: a consumable is an operation the rule guards, anything
+// else is something the rule is about.
+const guarded = $derived(i.guarded);
+// Which of the two an invariant is, the invariant states: naming an operation
+// says who keeps the rule, and `precondition` says whether it survives them.
+const words = $derived(KIND[i.precondition ? "precondition" : i.kind]);
+const targets = $derived(i.targets.filter((t) => !(t instanceof Consumable)));
 const columns: Column[] = [
 	{ key: "name", label: "Element" },
 	{ key: "description", label: "Description" },
 ];
 </script>
 
-<PageHeader description={i.description} crumbs={ownerCrumbs(model.workspace, a)}>
+<PageHeader
+	description={i.description}
+	crumbs={owner instanceof BoundedContext
+		? contextCrumbs(model.workspace, owner)
+		: ownerCrumbs(model.workspace, owner)}
+>
 	{#snippet title()}<Lockup kind="invariant" name={i.name} id={i.id} detail="Invariant" size="title" />{/snippet}
+	{#snippet meta()}
+		<Keyword text={words.label} title={words.title} />
+	{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
-			<Definition term="Enforced by"><Lockup kind="aggregate" name={a.name} ref={a.ref} /></Definition>
+			<Definition term="Enforced by">
+				{#if inAggregate}
+					<Lockup kind="aggregate" name={owner.name} ref={owner.ref} />
+				{:else if inContext}
+					<Lockup kind="boundedcontext" name={owner.name} ref={owner.ref} />
+				{:else}
+					<Lockup kind="valueobject" name={owner.name} ref={owner.ref} />
+				{/if}
+			</Definition>
 		</DefinitionList>
 	{/snippet}
 </PageHeader>
@@ -42,11 +126,20 @@ const columns: Column[] = [
 <Section
 	id="constrains"
 	title="Constrains"
-	lead="The elements this rule is about. An invariant that spans aggregates cannot be guaranteed in one transaction."
+	lead={words.lead}
 	count={targets.length}
 	problems={problemsUnder(model, i.ref)}
 >
-	<DataTable {columns} rows={targets} empty="Applies to the aggregate as a whole." rowId={(t) => t.ref}>
+	<DataTable
+		{columns}
+		rows={targets}
+		empty={inAggregate
+			? "Applies to the aggregate as a whole."
+			: inContext
+				? "Applies to the context as a whole."
+				: "Applies to the value as a whole."}
+		rowId={(t) => t.ref}
+	>
 		{#snippet cell(t, col)}
 			{#if col.key === "name"}
 				<Lockup kind={kindOf(t)} name={nameOf(t)} ref={t.ref} />
@@ -55,6 +148,15 @@ const columns: Column[] = [
 			{/if}
 		{/snippet}
 	</DataTable>
+</Section>
+
+<Section
+	id="guards"
+	title="Guarded by"
+	lead={words.guards}
+	count={guarded.length}
+>
+	<RefList items={guarded} kind="command" block empty={words.empty} />
 </Section>
 
 <LanguageSection target={i} />

@@ -124,6 +124,146 @@ describe("relationMapToDigraph", () => {
 		`);
 	});
 
+	it("draws an identity as a dotted, stereotyped edge to the foreign root", () => {
+		const map = buildMap();
+		const order = map.nodes.get(
+			"#/boundedcontexts/ordering/aggregates/order/entities/order",
+		);
+		const pet = map.addNode({
+			id: "#/boundedcontexts/catalog/aggregates/pet/entities/pet",
+			name: "Pet",
+			type: "entity_root",
+			namespace: [
+				{ id: "ws", name: "Shop" },
+				{ id: "#/boundedcontexts/catalog", name: "Catalog" },
+				{ id: "#/boundedcontexts/catalog/aggregates/pet", name: "Pet" },
+			],
+			attributes: [],
+		});
+		if (!order) throw new Error("fixture missing the order node");
+		map.addEdge({
+			source: order,
+			target: pet,
+			label: "petId",
+			relation: "identifies",
+		});
+		const drawn = relationMapToDigraph(map);
+		expect(drawn.toDot()).toContain(
+			'arrowhead = "vee";\n    arrowtail = "none";\n    style = "dashed";\n    label = "«identifies» petId"',
+		);
+		expect(drawn.toPlantUML()).toContain(
+			"boundedcontexts_ordering_aggregates_order_entities_order ..> boundedcontexts_catalog_aggregates_pet_entities_pet : «identifies» petId",
+		);
+	});
+
+	it("draws an identity of an external system as a box in the external stereotype", () => {
+		const map = buildMap();
+		const order = map.nodes.get(
+			"#/boundedcontexts/ordering/aggregates/order/entities/order",
+		);
+		const scheme = map.addNode({
+			id: "#/boundedcontexts/cardco",
+			name: "CardCo",
+			type: "external_context",
+			namespace: [
+				{ id: "ws", name: "Shop" },
+				{ id: "#/boundedcontexts/cardco", name: "CardCo" },
+			],
+			attributes: [],
+		});
+		if (!order) throw new Error("fixture missing the order node");
+		map.addEdge({
+			source: order,
+			target: scheme,
+			label: "schemeRef",
+			relation: "identifies",
+		});
+		const drawn = relationMapToDigraph(map);
+		expect(drawn.toDot()).toContain("«external system»<BR/><B>CardCo</B>");
+		expect(drawn.toDot()).toContain('label = "«identifies» schemeRef"');
+	});
+
+	it("draws a borrowed value object in the lending context's package, in the borrowed stereotype", () => {
+		const map = buildMap();
+		const order = map.nodes.get(
+			"#/boundedcontexts/ordering/aggregates/order/entities/order",
+		);
+		const kernelMoney = map.addNode({
+			id: "#/boundedcontexts/shared_kernel/valueobjects/money",
+			name: "Money",
+			type: "foreign_valueobject",
+			namespace: [
+				{ id: "ws", name: "Shop" },
+				{ id: "#/boundedcontexts/shared_kernel", name: "Shared Kernel" },
+			],
+			attributes: [{ name: "amountMinor", type: "int64", identity: false }],
+		});
+		if (!order) throw new Error("fixture missing the order node");
+		map.addEdge({
+			source: order,
+			target: kernelMoney,
+			label: "total",
+			relation: "uses",
+		});
+		const drawn = relationMapToDigraph(map);
+		// The stereotype is the foreign mark, and the cluster names the context
+		// the value belongs to.
+		expect(drawn.toDot()).toContain("«borrowed value object»<BR/><B>Money</B>");
+		expect(drawn.toDot()).toContain('label = "Shared Kernel"');
+		expect(drawn.toPlantUML()).toContain(
+			'class "Money" as boundedcontexts_shared_kernel_valueobjects_money <<borrowed value object>>',
+		);
+		expect(drawn.toPlantUML()).toContain('package "Shared Kernel" {');
+	});
+
+	it("draws a kind as a generalisation: a solid line with a hollow triangle at the parent", () => {
+		const map = buildMap();
+		const parent = map.nodes.get(
+			"#/boundedcontexts/ordering/aggregates/order/entities/order",
+		);
+		const kind = map.addNode({
+			id: "#/boundedcontexts/ordering/aggregates/order/entities/gift_order",
+			name: "Gift Order",
+			type: "entity",
+			namespace,
+			attributes: [],
+		});
+		if (!parent) throw new Error("fixture missing the order node");
+		map.addEdge({
+			source: kind,
+			target: parent,
+			label: "",
+			relation: "specialises",
+		});
+		const drawn = relationMapToDigraph(map);
+		// The triangle sits at the head, which is the parent: the line points
+		// from the kind at what it is a kind of, and carries no label.
+		expect(drawn.toDot()).toContain(
+			'"#/boundedcontexts/ordering/aggregates/order/entities/gift_order" -> "#/boundedcontexts/ordering/aggregates/order/entities/order" [\n    arrowhead = "onormal";\n    arrowtail = "none";\n    style = "solid";\n    label = "";',
+		);
+		expect(drawn.toPlantUML()).toContain(
+			"boundedcontexts_ordering_aggregates_order_entities_gift_order --|> boundedcontexts_ordering_aggregates_order_entities_order",
+		);
+	});
+
+	it("marks an optional attribute with {opt} beside {id}", () => {
+		const map = new ODSRelationMap([]);
+		map.addNode({
+			id: "#/boundedcontexts/ordering/aggregates/order/entities/order",
+			name: "Order",
+			type: "entity_root",
+			namespace,
+			attributes: [
+				{ name: "id", type: "OrderId", identity: true },
+				{ name: "note", type: "string", identity: false, optional: true },
+			],
+		});
+		expect(relationMapToDigraph(map).toDot()).toContain("{id} id: OrderId");
+		expect(relationMapToDigraph(map).toDot()).toContain("{opt} note: string");
+		expect(relationMapToPlantUML(map)).toContain("{field} {id} id: OrderId");
+		expect(relationMapToPlantUML(map)).toContain("{opt} note: string");
+	});
+
 	it("escapes HTML in attribute types", () => {
 		expect(relationMapToDigraph(buildMap()).toDot()).toContain(
 			"Decimal &lt;2dp&gt;",

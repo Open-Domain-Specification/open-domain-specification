@@ -15,7 +15,6 @@ export type DiagramOptions = {
 	handles?: HandleMode;
 	edges: EdgeStyle;
 	style: DiagramStyle;
-	legendCollapsed: boolean;
 };
 
 export const HANDLE_MODES: HandleMode[] = ["fixed", "floating"];
@@ -31,7 +30,6 @@ const KEY = "ods-diagram-options";
 const DEFAULTS: Omit<DiagramOptions, "handles"> = {
 	edges: "bezier",
 	style: "sketch",
-	legendCollapsed: false,
 };
 
 /** Context maps default to floating handles; every other kind stays fixed. */
@@ -54,7 +52,6 @@ function read(): DiagramOptions {
 			style: DIAGRAM_STYLES.includes(parsed.style as DiagramStyle)
 				? (parsed.style as DiagramStyle)
 				: DEFAULTS.style,
-			legendCollapsed: parsed.legendCollapsed === true,
 		};
 	} catch {
 		return { ...DEFAULTS };
@@ -85,9 +82,6 @@ export function createDiagramOptions() {
 		},
 		get style() {
 			return current.style;
-		},
-		get legendCollapsed() {
-			return current.legendCollapsed;
 		},
 		set(patch: Partial<DiagramOptions>) {
 			current = { ...current, ...patch };

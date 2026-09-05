@@ -12,7 +12,7 @@ const domain = [...ws.domains.values()][0];
 describe("kindOf", () => {
 	it("names every kind the pages link to", () => {
 		expect(kindOf([...aggregate.entities.values()][0])).toBe("entity");
-		expect(kindOf([...aggregate.valueobjects.values()][0])).toBe("valueobject");
+		expect(kindOf([...bc.valueobjects.values()][0])).toBe("valueobject");
 		expect(kindOf(aggregate)).toBe("aggregate");
 		expect(kindOf([...bc.services.values()][0])).toBe("service");
 		expect(kindOf(bc)).toBe("boundedcontext");
@@ -26,6 +26,13 @@ describe("kindOf", () => {
 				])[0],
 			),
 		).toBe("policy");
+		expect(
+			kindOf(
+				[...ws.boundedcontexts.values()].flatMap((c) => [
+					...c.processes.values(),
+				])[0],
+			),
+		).toBe("process");
 		expect(kindOf([...aggregate.invariants.values()][0])).toBe("invariant");
 		expect(kindOf([...bc.glossary.values()][0])).toBe("term");
 		expect(kindOf([...ws.teams.values()][0])).toBe("team");

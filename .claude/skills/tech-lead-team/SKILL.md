@@ -95,7 +95,8 @@ record first and link it from the answer.
 
 - Read `git diff` and the card journal together; every ticked item should map
   to a test the diff adds or changes.
-- Run the suites the card names, headed where a human will watch
+- Run `npm run verify` (the landing gate; see `repodoc-workflow`'s "Landing a
+  card"), plus any suite the card names headed where a human will watch
   (`npx playwright test --headed`, `npm run test:vscode`). See the
   `qa-is-automated-tests` rule: reviewers watch tests, they do not click.
 - Commit with the card number in the subject, `(card NN)`, push `develop`,

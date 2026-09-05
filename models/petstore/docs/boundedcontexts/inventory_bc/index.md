@@ -14,33 +14,42 @@ Projection for /store/inventory (status→count)
 ## Glossary
 | Term | Definition | Aliases | Embodied by |
 | --- | --- | --- | --- |
-| **Availability** | How many pets are available, pending and sold right now; a projection, not a source of truth | Stock | InventoryProjection |
+| **Availability** | How many pets are available, pending and sold right now; a projection, not a source of truth | Stock | InventoryQuery |
 
 
 ## Aggregates
-
-### [InventoryProjection](aggregates/inventory_projection/index.md)
-Materialized view: { available: number, pending: number, sold: number }. An aggregate because the counts are rebuilt as one unit
-
-
+> No aggregates.
 	
 ## Services
 
 ### [InventoryQuery](services/inventory_query/index.md)
-Open-host service for /store/inventory
+Open-host service for /store/inventory: a projection is a service that provides a query (decision 15), not an aggregate with an invented root
 
 
+
+## Invariants
+> No invariants across aggregates.
+
+## Value Objects
+> No value objects.
 
 ## Schemas
-> No schemas.
+| Name | Description | Attributes | Used by |
+| --- | --- | --- | --- |
+| InventoryCounts | How many pets stand in each status right now | available: `int32`, pending: `int32`, sold: `int32` | GetInventory |
+| InventoryUpdatedPayload | Which status's count changed | status: `PetStatus` | InventoryUpdated |
+
 
 ## Policies
 ![flowmap](./flowmap.svg)
 
 | Name | Description | On | Then |
 | --- | --- | --- | --- |
-| Recount on stock change | Keep the availability projection current | PetRegistered, PetDeleted, PetStatusChanged, OrderApproved, OrderDelivered, OrderDeleted | RecountInventory |
+| Recount on stock change | Keep the availability projection current | PetRegistered, PetDeleted, PetStatusChanged, PetReserved, PetSold, OrderApproved, OrderDelivered, OrderDeleted | RecountInventory |
 
+
+## Processes
+> No processes.
 
 ## Context Relationships
 ### Depends on
@@ -66,14 +75,15 @@ Open-host service for /store/inventory
 - `shared-kernel` — **Shared Kernel** (SK). A shared subset of domain model and code, co-owned by both teams.
 
 ## Consumptions
-| Consumer | Consumed As | Provider | Consumable | Provided As |
-| --- | --- | --- | --- | --- |
-| [InventoryQuery](services/inventory_query/index.md) | - | InventoryProjection | InventoryUpdated | published-language |
-| [InventoryProjection](aggregates/inventory_projection/index.md) | conformist | Pet | PetRegistered | published-language |
-| [InventoryProjection](aggregates/inventory_projection/index.md) | conformist | Pet | PetDeleted | published-language |
-| [InventoryProjection](aggregates/inventory_projection/index.md) | conformist | Pet | PetStatusChanged | published-language |
-| [InventoryProjection](aggregates/inventory_projection/index.md) | conformist | Order | OrderApproved | published-language |
-| [InventoryProjection](aggregates/inventory_projection/index.md) | conformist | Order | OrderDelivered | published-language |
-| [InventoryProjection](aggregates/inventory_projection/index.md) | conformist | Order | OrderDeleted | published-language |
+| Consumer | Made By | Consumed As | Provider | Consumable | Provided As |
+| --- | --- | --- | --- | --- | --- |
+| [InventoryQuery](services/inventory_query/index.md) | - | conformist | Pet | PetRegistered | published-language |
+| [InventoryQuery](services/inventory_query/index.md) | - | conformist | Pet | PetDeleted | published-language |
+| [InventoryQuery](services/inventory_query/index.md) | - | conformist | Pet | PetStatusChanged | published-language |
+| [InventoryQuery](services/inventory_query/index.md) | - | conformist | Pet | PetReserved | published-language |
+| [InventoryQuery](services/inventory_query/index.md) | - | conformist | Pet | PetSold | published-language |
+| [InventoryQuery](services/inventory_query/index.md) | - | conformist | Order | OrderApproved | published-language |
+| [InventoryQuery](services/inventory_query/index.md) | - | conformist | Order | OrderDelivered | published-language |
+| [InventoryQuery](services/inventory_query/index.md) | - | conformist | Order | OrderDeleted | published-language |
 
 

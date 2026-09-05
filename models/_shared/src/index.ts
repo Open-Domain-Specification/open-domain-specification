@@ -3,28 +3,12 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import {
-	type Aggregate,
 	type BoundedContext,
 	Workspace,
 } from "@open-domain-specification/core";
 import { toDoc } from "@open-domain-specification/doc";
 
 const require = createRequire(import.meta.url);
-
-/**
- * Money as a value object, declared once in every aggregate that carries an
- * amount. Minor units and an ISO 4217 code, so no float ever touches a price.
- * The description can say what the organisation makes of it.
- */
-export function money(
-	aggregate: Aggregate,
-	description = "An amount in a currency: minor units and an ISO 4217 code",
-) {
-	const vo = aggregate.addValueObject("Money", { description });
-	vo.addAttribute("amountMinor", { type: "int64" });
-	vo.addAttribute("currency", { type: "ISO 4217 code" });
-	return vo;
-}
 
 /**
  * Generates one reference model package's build output: the docsify docs
@@ -68,11 +52,26 @@ export async function generate(
 
 /**
  * The assertions shared, byte-for-byte, by RiverMart's, StreamLine's and
- * NorthBank's workspace tests: every relationship type is used and there is
- * one big ball of mud, every context has a team, there's a glossary,
- * policies and schemas on cross-context events, `validate()` reports exactly
- * the deliberate problems (by rule id and severity), and the workspace
+ * NorthBank's workspace tests: at least three relationship types are used and
+ * there is one big ball of mud, every context the enterprise owns has a team,
+ * there's a glossary, policies and at least one process, `validate()` reports
+ * exactly the deliberate problems (by rule id and severity), and the workspace
  * round-trips through `Workspace.fromSchema`.
+ *
+ * It used to demand a schema on every cross-context event too, and that one is
+ * gone. It was never a rule of the model -- a published fact whose name is the
+ * whole of it, `NightlyBatchCompleted`, is an honest event and nothing in the
+ * catalogue asks it for a payload -- and by keeping the reference models free
+ * of the case it hid a real gap: `conformist-backed` counted only
+ * schema-carrying consumptions, so a context conforming to a bare notification
+ * was told there was nothing to conform to and no model ever showed it
+ * (card 95).
+ *
+ * The relationship check is a floor, not a census. Requiring all five types of
+ * every model would make a model invent a relationship it does not have -- a
+ * partnership with traffic one way, say, which `partnership-backed` rightly
+ * warns about. Covering all five is the reference set's job together, and
+ * `relationship-types.test.ts` in this package asserts it.
  *
  * Each reference package keeps only its own id assertion, its `deliberate`
  * array, and a single `it` that calls this helper.
@@ -82,41 +81,33 @@ export function assertStressTestWorkspace(
 	deliberate: Array<{ rule: string; severity: "error" | "warning" }>,
 ): void {
 	const types = new Set(workspace.relationships.map((r) => r.type));
-	assert.deepStrictEqual([...types].sort(), [
-		"customer-supplier",
-		"partnership",
-		"separate-ways",
-		"shared-kernel",
-		"upstream-downstream",
-	]);
+	assert.ok(
+		types.size >= 3,
+		`${workspace.name} shows only ${types.size} relationship type(s): ${[...types].sort().join(", ")}`,
+	);
 	const legacy = [...workspace.boundedcontexts.values()].filter(
 		(bc) => bc.bigBallOfMud,
 	);
 	assert.strictEqual(legacy.length, 1);
 
+	// Every context the enterprise owns has a team. An external context is
+	// somebody else's system, so nobody here owns it and the model does not
+	// invent a team to satisfy the check (decision 28).
 	for (const bc of workspace.boundedcontexts.values()) {
+		if (bc.external) continue;
 		assert.notStrictEqual(bc.team, undefined, `${bc.name} has no team`);
 	}
 
 	const contexts = [...workspace.boundedcontexts.values()];
 	assert.ok(contexts.some((bc) => bc.glossary.size > 0));
 	assert.ok(contexts.reduce((n, bc) => n + bc.policies.size, 0) > 5);
-	for (const bc of contexts) {
-		for (const provider of [
-			...bc.aggregates.values(),
-			...bc.services.values(),
-		]) {
-			for (const c of provider.consumables.values()) {
-				const consumedElsewhere = c.consumptions.some(
-					(it) => it.consumer.boundedcontext !== bc,
-				);
-				if (c.type === "event" && consumedElsewhere && !c.internal) {
-					assert.notStrictEqual(c.schema, undefined, `${c.name} has no schema`);
-				}
-			}
-		}
-	}
-
+	// Every organisation of this size runs something that waits for more than
+	// one event before it acts, so each stress model names at least one, and
+	// every surface that draws a process is exercised by all three.
+	assert.ok(
+		contexts.reduce((n, bc) => n + bc.processes.size, 0) > 0,
+		`${workspace.name} names no process`,
+	);
 	const diagnostics = workspace
 		.validate()
 		.map(({ rule, severity }) => ({ rule, severity }))

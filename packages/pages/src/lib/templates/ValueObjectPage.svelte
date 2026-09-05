@@ -1,9 +1,10 @@
 <script module lang="ts">
 export const sections = [
 	{ id: "attributes", label: "Attributes" },
-	{ id: "usage", label: "Used by" },
+	{ id: "usage", label: "Used as a type by" },
 	{ id: "relations", label: "Relations" },
-	{ id: "invariants", label: "Constrained by" },
+	{ id: "invariants", label: "Invariants" },
+	{ id: "constrained-by", label: "Constrained by" },
 	{ id: "language", label: "Language" },
 ];
 </script>
@@ -11,17 +12,14 @@ export const sections = [
 <script lang="ts">
 import type { ValueObject } from "@open-domain-specification/core";
 import { problemsUnder, useModel } from "../model";
-import {
-	type AttributeOwner,
-	ownerCrumbs,
-	usagesOf,
-} from "../elements";
+import { type AttributeOwner, usagesOf } from "../elements";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Definition from "../atoms/Definition.svelte";
 import DefinitionList from "../atoms/DefinitionList.svelte";
 import Keyword from "../atoms/Keyword.svelte";
 import Code from "../molecules/Code.svelte";
+import { contextCrumbs } from "../molecules/crumbs";
 import Lockup from "../atoms/Lockup.svelte";
 import AttributesSection from "../organisms/AttributesSection.svelte";
 import { kindOf } from "../molecules/element-kind";
@@ -34,10 +32,21 @@ import Section from "../organisms/Section.svelte";
 const { valueobject: v }: { valueobject: ValueObject } = $props();
 const model = useModel();
 const ws = model.workspace;
-const a = $derived(v.aggregate);
+// A value object belongs to the context, so any aggregate of that context may
+// hold it and any of their invariants may name it (decision 16).
+const bc = $derived(v.boundedcontext);
+// A kind of a value object may live in a context that borrows this one over a
+// shared kernel, so the kinds are looked up across the workspace, not here.
+const kinds = $derived(v.kinds);
 const usages = $derived(usagesOf(ws, v));
-const invariants = $derived(
-	[...a.invariants.values()].filter((i) => i.targets.includes(v)),
+// The value's own rules, which hold by construction, and separately the rules
+// of the aggregates that hold one, which name this value as part of a wider
+// statement (decision 27).
+const invariants = $derived([...v.invariants.values()]);
+const constrainedBy = $derived(
+	[...bc.aggregates.values()]
+		.flatMap((a) => [...a.invariants.values()])
+		.filter((i) => i.targets.includes(v)),
 );
 const ownerOf = (u: { owner: unknown }) => u.owner as AttributeOwner;
 
@@ -53,23 +62,34 @@ const relationColumns: Column[] = [
 ];
 </script>
 
-<PageHeader description={v.description} crumbs={ownerCrumbs(ws, a)}>
+<PageHeader description={v.description} crumbs={contextCrumbs(ws, bc)}>
 	{#snippet title()}<Lockup kind="valueobject" name={v.name} id={v.id} detail="Value object" size="title" />{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
-			<Definition term="Aggregate"><Lockup kind="aggregate" name={a.name} ref={a.ref} /></Definition>
+			<Definition term="Context"><Lockup kind="boundedcontext" name={bc.name} ref={bc.ref} /></Definition>
+			{#if v.specialises}
+				<Definition term="A kind of">
+					<Lockup kind="valueobject" name={v.specialises.name} ref={v.specialises.ref} />
+				</Definition>
+			{/if}
+			{#if kinds.length}
+				<Definition term="Kinds">
+					{#each kinds as k, i (k.ref)}{#if i}, {/if}<Lockup kind="valueobject" name={k.name} ref={k.ref} />{/each}
+				</Definition>
+			{/if}
 		</DefinitionList>
 	{/snippet}
 </PageHeader>
 
 <AttributesSection
 	attributes={v.attributes.values()}
+	inherited={v.inheritedAttributes}
 	lead="A value object is its attributes. Two with the same values are the same thing; change one and you have a new one."
 />
 
 <Section
 	id="usage"
-	title="Used as a type by"
+	title={sections.find((s) => s.id === "usage")!.label}
 	lead="Attributes across the workspace whose type is this value object."
 	count={usages.length}
 	problems={problemsUnder(model, v.ref)}
@@ -98,7 +118,7 @@ const relationColumns: Column[] = [
 <Section
 	id="relations"
 	title="Relations"
-	lead="Value objects may hold other value objects; they should not point at entities in other aggregates."
+	lead="Value objects may hold other value objects of the same context; they should not point at entities in other aggregates."
 	count={v.relations.length}
 >
 	<DataTable columns={relationColumns} rows={v.relations} empty="No relations.">
@@ -115,9 +135,19 @@ const relationColumns: Column[] = [
 </Section>
 
 <InvariantsSection
+	title="Invariants"
 	{invariants}
-	lead="Invariants that name this value object."
-	emptyText="No invariant names this value object."
+	constrains
+	lead="Rules this value keeps by being constructed at all: one that breaks them is never made, so nothing guards them."
+	emptyText="This value keeps no rule of its own."
+/>
+
+<InvariantsSection
+	id="constrained-by"
+	title="Constrained by"
+	invariants={constrainedBy}
+	lead="Rules of the aggregates that hold this value, which name it as part of a wider statement."
+	emptyText="No aggregate's rule names this value object."
 />
 
 <LanguageSection target={v} />

@@ -70,14 +70,29 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   id (in the DSL, pass `id` explicitly at the moment of renaming). Rewriting a key means
   updating every ref that uses it, and confirming with the user first.
 - Every required collection is present even when empty. A context always has `aggregates`,
-  `services`, `policies`, `glossary`, `schemas` and `subdomains`; an aggregate always has
-  `entities`, `valueobjects`, `invariants`, `provides`, `consumes`; an entity or value object
-  always has `attributes` and `relations`. See `references/model-reference.md`.
+  `services`, `policies`, `processes`, `glossary`, `valueobjects`, `schemas`, `invariants`
+  and `subdomains`;
+  an aggregate always has `entities`, `invariants`, `provides`, `consumes`; an entity always
+  has `attributes` and `relations`, and a value object those and `invariants`. See `references/model-reference.md`.
 - Every `$ref` resolves to an element that exists. A dangling ref is a load failure, not a
   warning: the whole file stops loading.
 - Consumables (events and operations) live only under `provides` of an aggregate or a
-  service. Policies and consumptions point at them by ref.
-- A payload schema belongs to the context that publishes the consumable.
+  service. Policies, processes and consumptions point at them by ref.
+- A value object belongs to the context, not to an aggregate: declare it once there and any
+  aggregate may hold it.
+- An entity or a value object may be a kind of another: `specialises` gives it every attribute
+  and relation of that one, plus its own, and it never repeats one of them. An entity is a kind
+  of an entity of its own aggregate and is never itself `root`; a value object is a kind of one
+  its own context declares or borrows over a `shared-kernel`.
+- An invariant belongs to a value object when it holds by construction of the value — an IBAN's
+  checksum, a Money's single currency — and then it constrains that value's own attributes and
+  nothing else, and needs no guard. It belongs to an aggregate when it holds inside that
+  boundary on every save, and to the context when it holds across instances or aggregates —
+  uniqueness, a quota, a limit. A context's invariant names at least one operation of the
+  context that checks it before acting, and reaches no further than that context.
+- A payload schema belongs to the context that publishes the consumable. A value object or a
+  schema may be named across a boundary only where the two contexts declare a `shared-kernel`
+  relationship.
 - Reference another aggregate only through its root entity, with `references`.
 
 ## Step 5: validate and explain
@@ -132,6 +147,8 @@ correctly. Say "command" in conversation if it helps, but the model's word is `o
 | Operation used by another context | `pattern: "open-host-service"` |
 | Event used by another context | `pattern: "published-language"` |
 | Consuming from a legacy or `bigBallOfMud` context | `pattern: "anti-corruption-layer"` |
+| A system outside the business the model has to name | a context of its own with `external: true` |
+| An event nothing in its context raises | ask which operation raises it; if it comes from outside, it belongs to an external context |
 | Consuming from any other context | `pattern: "conformist"` |
 | Two contexts exchange consumables, nothing else known | relationship `upstream-downstream` |
 | Cardinality unknown | omit it |

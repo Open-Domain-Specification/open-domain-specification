@@ -24,7 +24,7 @@
 <text xml:space="preserve" text-anchor="middle" x="277.95" y="-13.63" font-family="sans-serif" font-size="10.00">(Order)</text>
 </g>
 <!-- #/boundedcontexts/ordering/policies/auto_approve&#45;&gt;#/boundedcontexts/ordering/aggregates/order/provides/approve_order -->
-<g id="edge3" class="edge">
+<g id="edge2" class="edge">
 <title>#/boundedcontexts/ordering/policies/auto_approve&#45;&gt;#/boundedcontexts/ordering/aggregates/order/provides/approve_order</title>
 <path fill="none" stroke="black" d="M203.88,-22.63C211.58,-22.63 219.87,-22.63 228.01,-22.63"/>
 <polygon fill="black" stroke="black" points="227.83,-26.13 237.83,-22.63 227.83,-19.13 227.83,-26.13"/>
@@ -50,7 +50,7 @@
 <text xml:space="preserve" text-anchor="middle" x="410.21" y="-13.63" font-family="sans-serif" font-size="10.00">(Order)</text>
 </g>
 <!-- #/boundedcontexts/ordering/aggregates/order/provides/approve_order&#45;&gt;#/boundedcontexts/ordering/aggregates/order/provides/order_approved -->
-<g id="edge2" class="edge">
+<g id="edge3" class="edge">
 <title>#/boundedcontexts/ordering/aggregates/order/provides/approve_order&#45;&gt;#/boundedcontexts/ordering/aggregates/order/provides/order_approved</title>
 <path fill="none" stroke="black" d="M316.63,-22.63C324.27,-22.63 332.53,-22.63 340.87,-22.63"/>
 <polygon fill="black" stroke="black" points="340.71,-26.13 350.71,-22.63 340.71,-19.13 340.71,-26.13"/>

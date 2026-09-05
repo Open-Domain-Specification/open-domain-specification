@@ -1,5 +1,6 @@
 import {
 	aggregateRef,
+	policyRef,
 	serviceRef,
 	Workspace,
 } from "@open-domain-specification/core";
@@ -37,7 +38,7 @@ function tacticalEdges(): Model {
 		root: true,
 	});
 	root.addAttribute("id", { type: "string", identity: true });
-	const vo = aggregate.addValueObject("Edge Value", {
+	const vo = bc.addValueObject("Edge Value", {
 		description: "The target of the unlabelled relation.",
 	});
 	root.addRelation(vo, { relation: "uses", cardinality: "1" });
@@ -51,6 +52,19 @@ function tacticalEdges(): Model {
 		relation: "references",
 		label: "points-at",
 		cardinality: "1",
+	});
+
+	// A kind of the root and a kind of the value object, so the two tactical
+	// pages have their "A kind of" and "Kinds" facts and their inherited
+	// attribute group to draw (decision 22).
+	const kind = aggregate.addEntity("Edge Kind", {
+		description: "A kind of the root: it has the root's id and one more field.",
+		specialises: root,
+	});
+	kind.addAttribute("kindOnly", { type: "string" });
+	bc.addValueObject("Edge Value Kind", {
+		description: "A kind of the value object, declared in the same context.",
+		specialises: vo,
 	});
 
 	const first = aggregate.addConsumable("First Happened", {
@@ -86,6 +100,42 @@ function tacticalEdges(): Model {
 		})
 		.raises(first, second);
 
+	// A policy that waits on an answer rather than an event: what an operation
+	// this context calls comes back with, named by that call (decision 23). Two
+	// of them, because the kind column has two readings — the successful answer
+	// and a refusal — and the second is one the operation never declares, which
+	// is what a reader sees while a model is half-written.
+	const answering = workspace.addBoundedContext("Answering Context", {
+		description: "Answers the edge context's one call.",
+	});
+	const answeringApi = answering.addService("Answering API", {
+		description: "The boundary the edge context asks through.",
+		type: "application",
+	});
+	const verdict = answering.addSchema("Verdict", {
+		description: "What the call comes back with.",
+	});
+	const unanswered = answering.addSchema("Unanswered Shape", {
+		description: "A shape the operation never says it refuses with.",
+	});
+	const score = answeringApi.addConsumable("Score", {
+		type: "operation",
+		description: "Answers its caller with a verdict.",
+		pattern: "open-host-service",
+		returns: verdict,
+	});
+	const askForScore = service.addConsumable("Ask For Score", {
+		type: "operation",
+		description: "The edge context's own step: it makes the call.",
+		internal: true,
+	});
+	service.consumes(score, { pattern: "conformist", by: [askForScore] });
+	bc.addPolicy("Act on the verdict", {
+		description: "Waits for the answer to come back, and acts on it.",
+	})
+		.on(score.returned(), score.rejected(unanswered))
+		.issues(askForScore);
+
 	// Two words of the language name the same element, so the terms list needs
 	// its separator.
 	bc.addTerm("Edge", {
@@ -113,6 +163,14 @@ function tacticalEdges(): Model {
 
 const model = tacticalEdges();
 const draw = (ref: string) => render(Harness, { model, ref }).container;
+/** The page header's facts, as term to what it says. */
+const facts = (container: Element) =>
+	Object.fromEntries(
+		[...container.querySelectorAll("dt")].map((t) => [
+			t.textContent?.trim(),
+			t.nextElementSibling?.textContent?.trim(),
+		]),
+	);
 
 describe("the tactical templates on the shapes no shared fixture carries", () => {
 	it("EntityPage: a relation with no label leaves its cell empty rather than inventing one", () => {
@@ -137,6 +195,43 @@ describe("the tactical templates on the shapes no shared fixture carries", () =>
 		][1];
 		expect(incoming?.textContent).toContain("Edge Neighbour");
 		expect(incoming?.textContent).toContain("points-at");
+	});
+
+	it("EntityPage: a kind names what it is a kind of, and its parent names its kinds", () => {
+		const kind = draw(
+			"#/boundedcontexts/edge_context/aggregates/edge_aggregate/entities/edge_kind",
+		);
+		expect(facts(kind)["A kind of"]).toBe("Edge Root");
+		// It has no identity of its own; the one it is identified by is the
+		// root's, and the fact reads it as the kind's.
+		expect(facts(kind).Identity).toBe("id");
+		// Own attributes first, then a group naming where the rest come from.
+		const groups = [...kind.querySelectorAll("#attributes tr.group th")].map(
+			(th) => th.textContent?.trim(),
+		);
+		expect(groups).toEqual(["Inherited from Edge Root"]);
+		expect(kind.querySelector("#attributes .count")?.textContent).toContain(
+			"2",
+		);
+
+		const parent = draw(
+			"#/boundedcontexts/edge_context/aggregates/edge_aggregate/entities/edge_root",
+		);
+		expect(facts(parent).Kinds).toBe("Edge Kind");
+		expect(facts(parent)["A kind of"]).toBeUndefined();
+		expect(parent.querySelector("#attributes tr.group")).toBeNull();
+	});
+
+	it("ValueObjectPage: a kind names what it is a kind of, and its parent names its kinds", () => {
+		const kind = draw(
+			"#/boundedcontexts/edge_context/valueobjects/edge_value_kind",
+		);
+		expect(facts(kind)["A kind of"]).toBe("Edge Value");
+		const parent = draw(
+			"#/boundedcontexts/edge_context/valueobjects/edge_value",
+		);
+		expect(facts(parent).Kinds).toBe("Edge Value Kind");
+		expect(facts(parent)["A kind of"]).toBeUndefined();
 	});
 
 	it("ConsumablePage: an operation raising two events separates them", () => {
@@ -201,5 +296,30 @@ describe("the tactical templates on the shapes no shared fixture carries", () =>
 			.filter((t) => t.textContent === "Consumed by")
 			.map((t) => t.nextElementSibling?.textContent ?? "");
 		expect(consumed.some((t) => t.split(",").length > 1)).toBe(true);
+	});
+
+	it("PolicyPage: an answer is a row of its own, naming the operation it comes back from", () => {
+		const container = draw(
+			policyRef("edge_context", "act_on_the_verdict").$ref,
+		);
+		const rows = [...container.querySelectorAll("#when tbody tr")].map((r) =>
+			[...r.querySelectorAll("td")].map((c) => c.textContent?.trim()),
+		);
+		// The shape, marked as an answer, with the operation it comes back from
+		// in the provider column and that operation's context beside it.
+		expect(rows[0]).toEqual([
+			"Verdict",
+			"answer",
+			"Score",
+			"Answering Context",
+			"What the call comes back with.",
+		]);
+		// A refusal reads as one, and still names the call it would come back
+		// from, even where the operation never declares it.
+		expect(rows[1]?.slice(0, 3)).toEqual([
+			"Unanswered Shape",
+			"rejection",
+			"Score",
+		]);
 	});
 });

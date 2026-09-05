@@ -14,6 +14,12 @@ export const ICONS = {
 	event: "broadcast",
 	command: "zap",
 	policy: "law",
+	// A policy is the rule pinned to the wall; a process is the rule running,
+	// with an instance alive somewhere waiting for its next event.
+	process: "server-process",
+	// A process's own time limit: a watch face, because what it says is how
+	// long an instance had and nothing else.
+	deadline: "watch",
 	term: "book",
 	team: "organization",
 	consumable: "export",

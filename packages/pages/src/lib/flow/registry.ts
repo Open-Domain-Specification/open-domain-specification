@@ -4,6 +4,8 @@ import ConsumableEdge from "./ConsumableEdge.svelte";
 import ConsumableNode from "./ConsumableNode.svelte";
 import ContextEdge from "./ContextEdge.svelte";
 import ContextNode from "./ContextNode.svelte";
+import FlowEdge from "./FlowEdge.svelte";
+import FlowNode from "./FlowNode.svelte";
 import RelationEdge from "./RelationEdge.svelte";
 import RelationNode from "./RelationNode.svelte";
 
@@ -16,6 +18,7 @@ export const nodeTypes: Record<string, Component<any>> = {
 	context: ContextNode,
 	relation: RelationNode,
 	consumable: ConsumableNode,
+	flow: FlowNode,
 	cluster: ClusterNode,
 };
 // biome-ignore lint/suspicious/noExplicitAny: same as above
@@ -24,5 +27,8 @@ export const edgeTypes: Record<string, Component<any>> = {
 	"relation-includes": RelationEdge,
 	"relation-references": RelationEdge,
 	"relation-uses": RelationEdge,
+	"relation-identifies": RelationEdge,
+	"relation-specialises": RelationEdge,
 	consumable: ConsumableEdge,
+	flow: FlowEdge,
 };

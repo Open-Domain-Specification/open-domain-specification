@@ -1,4 +1,11 @@
-import type { Aggregate, BoundedContext, Policy, Service } from "./workspace";
+import type {
+	Aggregate,
+	BoundedContext,
+	Policy,
+	Process,
+	Service,
+	ValueObject,
+} from "./workspace";
 
 export type ODSNamespace = {
 	id: string;
@@ -25,10 +32,10 @@ export function boundedContextNamespace(bc: BoundedContext): ODSNamespace[] {
 
 /**
  * {@link boundedContextNamespace} extended with the context itself, for a
- * service or aggregate that lives inside it.
+ * service, aggregate, policy, process or value object that lives inside it.
  */
 export function contextMemberNamespace(
-	member: Aggregate | Service | Policy,
+	member: Aggregate | Service | Policy | Process | ValueObject,
 ): ODSNamespace[] {
 	return [
 		...boundedContextNamespace(member.boundedcontext),

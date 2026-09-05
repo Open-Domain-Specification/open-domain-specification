@@ -14,8 +14,11 @@ import RefList from "./RefList.svelte";
  * One operation or event where the aggregate that provides it lists it: the
  * lockup and its keywords as the heading, the description, then the facts a
  * reader needs before opening the consumable's own page — what it carries,
- * what it produces or what produces it, and who consumes it — and the payload
- * itself. v1 spent a card and a `·`-joined meta line on the same thing.
+ * what it answers with and what it refuses with when it is an operation that
+ * says, what it produces or what produces it, and who consumes it — and the
+ * payload itself. The rejection shapes are named here and drawn in full on the
+ * consumable's own page, the same way the returned one is. v1 spent a card and
+ * a `·`-joined meta line on the same thing.
  */
 const {
 	consumable: c,
@@ -33,6 +36,12 @@ const {
 		<Definition term="Payload">
 			{#if c.schema}<Lockup kind="schema" name={c.schema.name} ref={c.schema.ref} />{:else}<Keyword text="no schema" />{/if}
 		</Definition>
+		{#if c.returns}
+			<Definition term="Returns"><Lockup kind="schema" name={c.returns.name} ref={c.returns.ref} /></Definition>
+		{/if}
+		{#if c.rejects.length}
+			<Definition term="Rejects with"><RefList items={c.rejects} kind="schema" /></Definition>
+		{/if}
 		{#if c.type === "event"}
 			<Definition term="Raised by">
 				<RefList items={raisedBy} kind="command" empty="nothing raises it" />

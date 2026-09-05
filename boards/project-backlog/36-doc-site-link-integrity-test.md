@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 live: false
 labels: [infra, docs, backend]
 priority: high

@@ -18,6 +18,7 @@ let {
 	markerEnd = undefined,
 	style = undefined,
 	data = undefined,
+	edgeClass = undefined,
 	sourcePosition = Position.Right,
 	targetPosition = Position.Left,
 	targetHandleId = undefined,
@@ -30,6 +31,8 @@ let {
 	markerEnd?: string;
 	style?: string;
 	data?: ContextEdgeData;
+	/** A class the graph puts on the edge itself, such as the flow map's dashed `ends`. */
+	edgeClass?: string;
 	sourcePosition?: Position;
 	targetPosition?: Position;
 	targetHandleId?: string | null;
@@ -79,6 +82,7 @@ let edges = $state.raw<Edge[]>([
 		markerEnd,
 		style,
 		data,
+		class: edgeClass,
 	},
 ]);
 // svelte-ignore state_referenced_locally

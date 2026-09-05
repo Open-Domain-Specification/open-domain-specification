@@ -309,7 +309,7 @@ describe("Workspace lookup methods", () => {
 			description: "Order entity",
 		});
 
-		valueObject = aggregate.addValueObject("Money", {
+		valueObject = boundedContext.addValueObject("Money", {
 			description: "Money value object",
 		});
 	});
@@ -385,5 +385,215 @@ describe("Workspace lookup methods", () => {
 		expect(() =>
 			workspace.getEntityOrValueobjectByRefOrThrow("#/invalid/ref"),
 		).toThrow("Entity or Value Object with ref #/invalid/ref not found");
+	});
+});
+
+describe("an external bounded context", () => {
+	function workspaceWith(external: boolean) {
+		const ws = new Workspace("W", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0",
+		});
+		return {
+			ws,
+			bc: ws.addBoundedContext("Card Scheme", { description: "", external }),
+		};
+	}
+
+	it("is not external unless the model says so", () => {
+		const { bc } = workspaceWith(false);
+		expect(bc.external).toBe(false);
+		expect(bc.toSchema().external).toBeUndefined();
+	});
+
+	it("carries the flag into the schema and back out again", () => {
+		const { ws, bc } = workspaceWith(true);
+		expect(bc.toSchema().external).toBe(true);
+		const rebuilt = Workspace.fromSchema(
+			JSON.parse(JSON.stringify(ws.toSchema())),
+		);
+		expect(rebuilt.getBoundedContextByRefOrThrow(bc.ref).external).toBe(true);
+	});
+});
+
+describe("a process", () => {
+	/** A context with the four consumables one lifecycle needs. */
+	function lifecycle() {
+		const ws = new Workspace("W", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0",
+		});
+		const bc = ws.addBoundedContext("Orders", { description: "" });
+		const app = bc.addService("App", { description: "", type: "application" });
+		return {
+			ws,
+			bc,
+			placed: app.provides("Placed", { description: "", type: "event" }),
+			paid: app.provides("Paid", { description: "", type: "event" }),
+			ship: app.provides("Ship", { description: "", type: "operation" }),
+			shipped: app.provides("Shipped", { description: "", type: "event" }),
+		};
+	}
+
+	it("takes its lifecycle as attributes or by chaining, and keeps each list distinct", () => {
+		const { bc, placed, paid, ship, shipped } = lifecycle();
+		const declared = bc.addProcess("Order to shipment", {
+			description: "Waits for payment before it ships",
+			starts: [placed],
+			on: [paid],
+			issues: [ship],
+			ends: [shipped],
+		});
+		const chained = bc
+			.addProcess("The same, chained", { description: "" })
+			.starts(placed)
+			.on(paid)
+			.issues(ship)
+			.ends(shipped);
+		for (const process of [declared, chained]) {
+			expect(process.startEvents).toEqual([placed]);
+			expect(process.events).toEqual([paid]);
+			expect(process.commands).toEqual([ship]);
+			expect(process.endEvents).toEqual([shipped]);
+		}
+		// Naming the same consumable twice is the same statement, so it is kept once.
+		declared.starts(placed).on(paid).issues(ship).ends(shipped);
+		expect(declared.startEvents).toEqual([placed]);
+		expect(declared.endEvents).toEqual([shipped]);
+		expect(declared.ref).toBe(
+			"#/boundedcontexts/orders/processes/order_to_shipment",
+		);
+	});
+
+	it("round-trips its lifecycle, its comments and its disposition", () => {
+		const { ws, bc, placed, paid, ship, shipped } = lifecycle();
+		const process = bc
+			.addProcess("Order to shipment", {
+				description: "Waits for payment before it ships",
+				comments: [{ text: "Implemented as a saga in orders/process/." }],
+				disposition: "tolerated",
+			})
+			.starts(placed)
+			.on(paid)
+			.issues(ship)
+			.ends(shipped);
+		const rebuilt = Workspace.fromSchema(
+			JSON.parse(JSON.stringify(ws.toSchema())),
+		).getProcessByRefOrThrow(process.ref);
+		expect(rebuilt.toSchema()).toEqual(process.toSchema());
+		expect(rebuilt.disposition).toBe("tolerated");
+		expect(rebuilt.comments).toHaveLength(1);
+	});
+
+	it("writes no comments key and no disposition when nothing was said", () => {
+		const { bc, placed } = lifecycle();
+		const schema = bc
+			.addProcess("Bare", { description: "", starts: [placed] })
+			.toSchema();
+		expect(schema.comments).toBeUndefined();
+		// by-design is what an absent disposition means, so it is never written.
+		expect(
+			bc.addProcess("By design", { description: "", disposition: "by-design" })
+				.disposition,
+		).toBeUndefined();
+		expect(schema.on).toEqual([]);
+	});
+});
+
+describe("a kind of another entity or value object", () => {
+	/** Account with two kinds, and a kernel value object with one. */
+	function kinds() {
+		const ws = new Workspace("W", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0",
+		});
+		const kernel = ws.addBoundedContext("Kernel", { description: "" });
+		const shared = kernel.addValueObject("Amount", { description: "" });
+		const bc = ws.addBoundedContext("Accounts", { description: "" });
+		const fee = bc.addValueObject("Fee", {
+			description: "",
+			specialises: shared,
+		});
+		const agg = bc.addAggregate("Account", { description: "" });
+		const account = agg.addRootEntity("Account", { description: "" });
+		const id = account.addAttribute("Id", { type: "uuid", identity: true });
+		const status = bc.addValueObject("Status", { description: "" });
+		account.uses(status, "has-status", "1");
+		const loan = agg.addEntity("Loan Account", {
+			description: "",
+			specialises: account,
+		});
+		const term = loan.addAttribute("Term", { type: "months" });
+		const savings = agg.addEntity("Savings Account", {
+			description: "",
+			specialises: account,
+		});
+		return {
+			ws,
+			bc,
+			agg,
+			shared,
+			fee,
+			account,
+			id,
+			status,
+			loan,
+			term,
+			savings,
+		};
+	}
+
+	it("names what it is a kind of, and what is a kind of it", () => {
+		const { account, loan, savings, shared, fee } = kinds();
+		expect(loan.specialises).toBe(account);
+		expect(account.kinds).toEqual([loan, savings]);
+		expect(loan.kinds).toEqual([]);
+		// A kernel's value object is specialised from the context that borrows
+		// it, so its kinds are found across the workspace, not in its own
+		// context.
+		expect(shared.kinds).toEqual([fee]);
+		expect(fee.ancestors).toEqual([shared]);
+	});
+
+	it("has its parent's attributes and relations as its own, its own first", () => {
+		const { account, id, loan, term, status } = kinds();
+		expect(loan.ancestors).toEqual([account]);
+		expect(loan.allAttributes).toEqual([term, id]);
+		expect(loan.inheritedAttributes).toEqual([id]);
+		expect(loan.allRelations.map((r) => r.target)).toEqual([status]);
+		expect(loan.relations).toEqual([]);
+		// The parent gains nothing from its kinds; inheritance runs one way.
+		expect(account.allAttributes).toEqual([id]);
+	});
+
+	it("stops walking a chain that returns to where it started", () => {
+		const { account, loan } = kinds();
+		account.specialises = loan;
+		expect(loan.ancestors).toEqual([account]);
+		expect(account.ancestors).toEqual([loan]);
+		expect(loan.allAttributes.length).toBe(2);
+	});
+
+	it("carries what it is a kind of into the schema and back out again", () => {
+		const { ws, account, loan, shared, fee } = kinds();
+		expect(loan.toSchema().specialises).toEqual({ $ref: account.ref });
+		expect(account.toSchema().specialises).toBeUndefined();
+		expect(fee.toSchema().specialises).toEqual({ $ref: shared.ref });
+		const rebuilt = Workspace.fromSchema(
+			JSON.parse(JSON.stringify(ws.toSchema())),
+		);
+		expect(rebuilt.getEntityByRefOrThrow(loan.ref).specialises?.ref).toBe(
+			account.ref,
+		);
+		// The kernel's value object is loaded before the context that borrows
+		// it or after it, depending on declaration order; either way the link
+		// is joined once every context exists.
+		expect(rebuilt.getValueObjectByRefOrThrow(fee.ref).specialises?.ref).toBe(
+			shared.ref,
+		);
+		expect(rebuilt.toSchema()).toEqual(ws.toSchema());
 	});
 });

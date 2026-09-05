@@ -165,8 +165,10 @@
                 "brand": {
                   "name": "brand",
                   "type": "Brand",
+                  "description": "Absent on own-label and unbranded goods",
+                  "optional": true,
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/valueobjects/brand"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/brand"
                   }
                 }
               },
@@ -181,7 +183,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/valueobjects/brand"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/brand"
                   },
                   "relation": "uses",
                   "label": "made-by",
@@ -208,48 +210,20 @@
                   "name": "dimensions",
                   "type": "Dimensions",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/valueobjects/dimensions"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/dimensions"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/valueobjects/dimensions"
+                    "$ref": "#/boundedcontexts/catalogue/valueobjects/dimensions"
                   },
                   "relation": "uses",
                   "label": "packaged-as",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "brand": {
-              "name": "Brand",
-              "description": "The maker's name; a value shared by every product of that brand",
-              "attributes": {
-                "name": {
-                  "name": "name",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "dimensions": {
-              "name": "Dimensions",
-              "description": "Packaged size and weight, which the warehouse needs to slot it",
-              "attributes": {
-                "weight_grams": {
-                  "name": "weightGrams",
-                  "type": "int"
-                },
-                "length_mm": {
-                  "name": "lengthMm",
-                  "type": "int"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -274,6 +248,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "catalogue_api": {
           "name": "CatalogueAPI",
@@ -310,11 +285,14 @@
             },
             "get_product": {
               "name": "GetProduct",
-              "description": "Read one product with its variants",
+              "description": "Asked with a ProductRef, answers with one product and its variants",
               "pattern": "open-host-service",
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/catalogue/schemas/product_ref"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/catalogue/schemas/product_detail"
               }
             }
           },
@@ -322,6 +300,7 @@
         }
       },
       "policies": {},
+      "processes": {},
       "glossary": {
         "product": {
           "name": "Product",
@@ -340,6 +319,36 @@
           "embodiedBy": {
             "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/variant"
           }
+        }
+      },
+      "valueobjects": {
+        "brand": {
+          "name": "Brand",
+          "description": "The maker's name; a value shared by every product of that brand",
+          "attributes": {
+            "name": {
+              "name": "name",
+              "type": "string"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "dimensions": {
+          "name": "Dimensions",
+          "description": "Packaged size and weight, which the warehouse needs to slot it",
+          "attributes": {
+            "weight_grams": {
+              "name": "weightGrams",
+              "type": "int"
+            },
+            "length_mm": {
+              "name": "lengthMm",
+              "type": "int"
+            }
+          },
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -371,6 +380,32 @@
               "identity": true
             }
           }
+        },
+        "product_detail": {
+          "name": "ProductDetail",
+          "description": "One product with its variants, as GetProduct answers it",
+          "attributes": {
+            "product_id": {
+              "name": "productId",
+              "type": "string",
+              "identity": true
+            },
+            "title": {
+              "name": "title",
+              "type": "string"
+            },
+            "brand": {
+              "name": "brand",
+              "type": "Brand",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalogue/valueobjects/brand"
+              }
+            },
+            "variants": {
+              "name": "variants",
+              "type": "Variant[]"
+            }
+          }
         }
       }
     },
@@ -385,11 +420,40 @@
       "team": {
         "$ref": "#/teams/discovery_team"
       },
-      "aggregates": {
-        "search_index": {
-          "name": "SearchIndex",
-          "description": "The searchable documents. A projection: it holds copies, never the truth",
+      "aggregates": {},
+      "invariants": {},
+      "services": {
+        "ranker": {
+          "name": "Ranker",
+          "description": "Orders candidates by relevance, price and delivery promise; spans every document so it is a domain service",
+          "type": "domain",
           "provides": {
+            "rank_candidates": {
+              "name": "RankCandidates",
+              "description": "Score and sort a candidate set",
+              "type": "operation",
+              "internal": true,
+              "returns": {
+                "$ref": "#/boundedcontexts/search/schemas/search_results"
+              }
+            }
+          },
+          "consumes": []
+        },
+        "search_api": {
+          "name": "SearchAPI",
+          "description": "The results page endpoint and the index it is read from: a projection modelled as a query service (decision 15)",
+          "type": "application",
+          "provides": {
+            "search_products": {
+              "name": "SearchProducts",
+              "description": "Query → ranked page, with sponsored slots merged in",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "returns": {
+                "$ref": "#/boundedcontexts/search/schemas/search_results"
+              }
+            },
             "document_indexed": {
               "name": "DocumentIndexed",
               "description": "A document was (re)written into the index",
@@ -403,13 +467,19 @@
               "internal": true,
               "raises": [
                 {
-                  "$ref": "#/boundedcontexts/search/aggregates/search_index/provides/document_indexed"
+                  "$ref": "#/boundedcontexts/search/services/search_api/provides/document_indexed"
                 }
               ]
             },
             "remove_document": {
               "name": "RemoveDocument",
               "description": "Drop a retired product from the index",
+              "type": "operation",
+              "internal": true
+            },
+            "report_ad_click": {
+              "name": "ReportAdClick",
+              "description": "Tell Advertising that a sponsored slot on the results page was clicked; the click, not the impression, is what the seller pays for",
               "type": "operation",
               "internal": true
             }
@@ -432,75 +502,28 @@
                 "$ref": "#/boundedcontexts/offers/aggregates/offer/provides/buy_box_awarded"
               },
               "pattern": "conformist"
-            }
-          ],
-          "entities": {
-            "search_document": {
-              "name": "SearchDocument",
-              "description": "One indexed product with the fields ranking needs",
-              "root": true,
-              "attributes": {
-                "product_id": {
-                  "name": "productId",
-                  "type": "string",
-                  "identity": true
-                },
-                "buy_box_price_minor": {
-                  "name": "buyBoxPriceMinor",
-                  "type": "int64"
-                },
-                "next_day_eligible": {
-                  "name": "nextDayEligible",
-                  "type": "boolean",
-                  "description": "The badge: the buy box offer ships from a RiverMart warehouse, so next-day is the default"
-                }
-              },
-              "relations": []
-            }
-          },
-          "valueobjects": {},
-          "invariants": {}
-        }
-      },
-      "services": {
-        "ranker": {
-          "name": "Ranker",
-          "description": "Orders candidates by relevance, price and delivery promise; spans every document so it is a domain service",
-          "type": "domain",
-          "provides": {
-            "rank_candidates": {
-              "name": "RankCandidates",
-              "description": "Score and sort a candidate set",
-              "type": "operation",
-              "internal": true
-            }
-          },
-          "consumes": []
-        },
-        "search_api": {
-          "name": "SearchAPI",
-          "description": "The results page endpoint",
-          "type": "application",
-          "provides": {
-            "search_products": {
-              "name": "SearchProducts",
-              "description": "Query → ranked page, with sponsored slots merged in",
-              "pattern": "open-host-service",
-              "type": "operation"
-            }
-          },
-          "consumes": [
+            },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/advertising/services/ads_api/provides/get_sponsored_results"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/search/services/search_api/provides/search_products"
+                }
+              ]
             },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/advertising/services/ads_api/provides/record_ad_click"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/search/services/search_api/provides/report_ad_click"
+                }
+              ]
             }
           ]
         }
@@ -516,7 +539,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/search/aggregates/search_index/provides/index_product"
+              "$ref": "#/boundedcontexts/search/services/search_api/provides/index_product"
             }
           ]
         },
@@ -530,7 +553,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/search/aggregates/search_index/provides/remove_document"
+              "$ref": "#/boundedcontexts/search/services/search_api/provides/remove_document"
             }
           ]
         },
@@ -544,11 +567,12 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/search/aggregates/search_index/provides/index_product"
+              "$ref": "#/boundedcontexts/search/services/search_api/provides/index_product"
             }
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "relevance": {
           "name": "Relevance",
@@ -558,7 +582,45 @@
           }
         }
       },
-      "schemas": {}
+      "valueobjects": {},
+      "schemas": {
+        "search_hit": {
+          "name": "SearchHit",
+          "description": "One indexed product with the fields ranking needs",
+          "attributes": {
+            "product_id": {
+              "name": "productId",
+              "type": "string",
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/product"
+              }
+            },
+            "buy_box_price_minor": {
+              "name": "buyBoxPriceMinor",
+              "type": "int64"
+            },
+            "next_day_eligible": {
+              "name": "nextDayEligible",
+              "type": "boolean",
+              "description": "The badge: the buy box offer ships from a RiverMart warehouse, so next-day is the default"
+            }
+          }
+        },
+        "search_results": {
+          "name": "SearchResults",
+          "description": "A ranked page of hits",
+          "attributes": {
+            "hits": {
+              "name": "hits",
+              "type": "SearchHit[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/search/schemas/search_hit"
+              }
+            }
+          }
+        }
+      }
     },
     "offers": {
       "name": "Offers",
@@ -615,32 +677,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/catalogue/aggregates/product/provides/product_listed"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/catalogue/aggregates/product/provides/product_retired"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_activated"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_suspended"
-              },
-              "pattern": "conformist"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "offer": {
               "name": "Offer",
@@ -652,19 +689,18 @@
                   "type": "string",
                   "identity": true
                 },
-                "seller_id": {
-                  "name": "sellerId",
-                  "type": "string"
-                },
                 "sku": {
                   "name": "sku",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/variant"
+                  }
                 },
                 "price": {
                   "name": "price",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/offers/aggregates/offer/valueobjects/money"
+                    "$ref": "#/boundedcontexts/offers/valueobjects/money"
                   }
                 },
                 "available_quantity": {
@@ -675,7 +711,7 @@
                   "name": "condition",
                   "type": "Condition",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/offers/aggregates/offer/valueobjects/condition"
+                    "$ref": "#/boundedcontexts/offers/valueobjects/condition"
                   }
                 },
                 "fulfilled_by_river_mart": {
@@ -687,12 +723,19 @@
                   "name": "sellerRating",
                   "type": "int 0..100",
                   "description": "The marketplace's rolling score for the seller, weighed against price and delivery in the buy box"
+                },
+                "seller_id": {
+                  "name": "sellerId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/entities/seller_account"
+                  }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/offers/aggregates/offer/valueobjects/money"
+                    "$ref": "#/boundedcontexts/offers/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "priced-at",
@@ -700,41 +743,13 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/offers/aggregates/offer/valueobjects/condition"
+                    "$ref": "#/boundedcontexts/offers/valueobjects/condition"
                   },
                   "relation": "uses",
                   "label": "in-condition",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "money": {
-              "name": "Money",
-              "description": "An amount in a currency: minor units and an ISO 4217 code",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
-            },
-            "condition": {
-              "name": "Condition",
-              "description": "new, used-like-new, used-good; buyers filter on it",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'new' | 'used-like-new' | 'used-good'"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -746,20 +761,25 @@
                   "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer/attributes/price"
                 }
               ]
-            },
-            "one_active_offer_per_seller_sku": {
-              "name": "OneActiveOfferPerSellerSku",
-              "description": "A seller has at most one active offer per SKU, so the buy box compares like with like. Enforced by PublishOffer over the seller's existing offers, since one Offer cannot see another",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer/attributes/seller_id"
-                },
-                {
-                  "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer/attributes/sku"
-                }
-              ]
             }
           }
+        }
+      },
+      "invariants": {
+        "one_active_offer_per_seller_sku": {
+          "name": "OneActiveOfferPerSellerSku",
+          "description": "A seller has at most one active offer per SKU, so the buy box compares like with like. PublishOffer checks the seller's existing offers, since one Offer cannot see another",
+          "constrains": [
+            {
+              "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer/attributes/seller_id"
+            },
+            {
+              "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer/attributes/sku"
+            },
+            {
+              "$ref": "#/boundedcontexts/offers/services/offer_api/provides/publish_offer"
+            }
+          ]
         }
       },
       "services": {
@@ -808,13 +828,79 @@
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/offers/schemas/offer_ref"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/offers/schemas/offer_detail"
               }
+            },
+            "record_catalogue_sku": {
+              "name": "RecordCatalogueSku",
+              "description": "Add a listed product to Offers' own SKU list, or take a retired one off it; the list is Offers' translation of the catalogue and holds no product model",
+              "type": "operation",
+              "internal": true
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/product/provides/product_listed"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/offers/policies/keep_the_sku_list_in_step"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/product/provides/product_retired"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/offers/policies/keep_the_sku_list_in_step"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_activated"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/offers/services/offer_api/provides/publish_offer"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_suspended"
+              },
+              "pattern": "conformist"
+            }
+          ]
         }
       },
       "policies": {
+        "keep_the_sku_list_in_step": {
+          "name": "Keep the SKU list in step",
+          "description": "Offers may only be published against a SKU the catalogue has, so the list follows every listing and retirement",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/catalogue/aggregates/product/provides/product_listed"
+            },
+            {
+              "$ref": "#/boundedcontexts/catalogue/aggregates/product/provides/product_retired"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/offers/services/offer_api/provides/record_catalogue_sku"
+            }
+          ]
+        },
         "recompute_buy_box_on_offer_change": {
           "name": "Recompute buy box on offer change",
           "description": "Any published offer can win or lose the buy box",
@@ -847,6 +933,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "buy_box": {
           "name": "Buy Box",
@@ -866,6 +953,36 @@
           }
         }
       },
+      "valueobjects": {
+        "money": {
+          "name": "Money",
+          "description": "An amount in a currency: minor units and an ISO 4217 code",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "condition": {
+          "name": "Condition",
+          "description": "new, used-like-new, used-good; buyers filter on it",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'new' | 'used-like-new' | 'used-good'"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        }
+      },
       "schemas": {
         "offer_published": {
           "name": "OfferPublished",
@@ -877,13 +994,16 @@
             },
             "sku": {
               "name": "sku",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/variant"
+              }
             },
             "price": {
               "name": "price",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/offers/aggregates/offer/valueobjects/money"
+                "$ref": "#/boundedcontexts/offers/valueobjects/money"
               }
             }
           }
@@ -894,7 +1014,10 @@
             "sku": {
               "name": "sku",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/variant"
+              }
             },
             "offer_id": {
               "name": "offerId",
@@ -909,6 +1032,28 @@
               "name": "offerId",
               "type": "string",
               "identity": true
+            }
+          }
+        },
+        "offer_detail": {
+          "name": "OfferDetail",
+          "description": "One offer with its current price and stock",
+          "attributes": {
+            "offer_id": {
+              "name": "offerId",
+              "type": "string",
+              "identity": true
+            },
+            "price": {
+              "name": "price",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/offers/valueobjects/money"
+              }
+            },
+            "available_quantity": {
+              "name": "availableQuantity",
+              "type": "int"
             }
           }
         }
@@ -964,6 +1109,106 @@
                   "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_activated"
                 }
               ]
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "seller_account": {
+              "name": "SellerAccount",
+              "description": "The legal entity selling on RiverMart",
+              "root": true,
+              "attributes": {
+                "seller_id": {
+                  "name": "sellerId",
+                  "type": "string",
+                  "identity": true
+                },
+                "legal_name": {
+                  "name": "legalName",
+                  "type": "string"
+                },
+                "status": {
+                  "name": "status",
+                  "type": "SellerStatus",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/seller_onboarding/valueobjects/seller_status"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/entities/verification_check"
+                  },
+                  "relation": "includes",
+                  "label": "verified-by",
+                  "cardinality": "*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/seller_onboarding/valueobjects/seller_status"
+                  },
+                  "relation": "uses",
+                  "label": "has-status",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "verification_check": {
+              "name": "VerificationCheck",
+              "description": "One identity or bank check run on the seller; kept for audit",
+              "root": false,
+              "attributes": {
+                "check_id": {
+                  "name": "checkId",
+                  "type": "string",
+                  "identity": true
+                },
+                "check_type": {
+                  "name": "checkType",
+                  "type": "'identity' | 'bank-account' | 'address'"
+                },
+                "passed": {
+                  "name": "passed",
+                  "type": "boolean"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "active_only_after_checks": {
+              "name": "ActiveOnlyAfterChecks",
+              "description": "A seller becomes active only when identity and bank checks both passed",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/seller_onboarding/valueobjects/seller_status"
+                },
+                {
+                  "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/entities/verification_check"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "invariants": {},
+      "services": {
+        "seller_central_api": {
+          "name": "SellerCentralAPI",
+          "description": "The seller sign-up endpoints",
+          "type": "application",
+          "provides": {
+            "register_seller": {
+              "name": "RegisterSeller",
+              "description": "Start a seller account",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_registered"
+                }
+              ]
             },
             "suspend_seller": {
               "name": "SuspendSeller",
@@ -987,114 +1232,7 @@
               },
               "pattern": "anti-corruption-layer"
             }
-          ],
-          "entities": {
-            "seller_account": {
-              "name": "SellerAccount",
-              "description": "The legal entity selling on RiverMart",
-              "root": true,
-              "attributes": {
-                "seller_id": {
-                  "name": "sellerId",
-                  "type": "string",
-                  "identity": true
-                },
-                "legal_name": {
-                  "name": "legalName",
-                  "type": "string"
-                },
-                "status": {
-                  "name": "status",
-                  "type": "SellerStatus",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/valueobjects/seller_status"
-                  }
-                }
-              },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/entities/verification_check"
-                  },
-                  "relation": "includes",
-                  "label": "verified-by",
-                  "cardinality": "*"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/valueobjects/seller_status"
-                  },
-                  "relation": "uses",
-                  "label": "has-status",
-                  "cardinality": "1"
-                }
-              ]
-            },
-            "verification_check": {
-              "name": "VerificationCheck",
-              "description": "One identity or bank check run on the seller; kept for audit",
-              "root": false,
-              "attributes": {
-                "check_type": {
-                  "name": "checkType",
-                  "type": "'identity' | 'bank-account' | 'address'"
-                },
-                "passed": {
-                  "name": "passed",
-                  "type": "boolean"
-                }
-              },
-              "relations": []
-            }
-          },
-          "valueobjects": {
-            "seller_status": {
-              "name": "SellerStatus",
-              "description": "registered, active or suspended",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'registered' | 'active' | 'suspended'"
-                }
-              },
-              "relations": []
-            }
-          },
-          "invariants": {
-            "active_only_after_checks": {
-              "name": "ActiveOnlyAfterChecks",
-              "description": "A seller becomes active only when identity and bank checks both passed",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/valueobjects/seller_status"
-                },
-                {
-                  "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/entities/verification_check"
-                }
-              ]
-            }
-          }
-        }
-      },
-      "services": {
-        "seller_central_api": {
-          "name": "SellerCentralAPI",
-          "description": "The seller sign-up endpoints",
-          "type": "application",
-          "provides": {
-            "register_seller": {
-              "name": "RegisterSeller",
-              "description": "Start a seller account",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_registered"
-                }
-              ]
-            }
-          },
-          "consumes": []
+          ]
         }
       },
       "policies": {
@@ -1122,11 +1260,12 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/suspend_seller"
+              "$ref": "#/boundedcontexts/seller_onboarding/services/seller_central_api/provides/suspend_seller"
             }
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "seller": {
           "name": "Seller",
@@ -1141,10 +1280,21 @@
         },
         "vendor": {
           "name": "Vendor",
-          "definition": "Not a seller. A wholesale supplier to first-party retail, handled by Vendor Purchasing; the two accounts were never unified and will not be",
-          "embodiedBy": {
-            "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)"
-          }
+          "definition": "Not a seller. A wholesale supplier to first-party retail, handled by Vendor Purchasing; the two accounts were never unified and will not be. Seller Onboarding has no vendor of its own, which is the point: the word is a false friend and nothing here embodies it"
+        }
+      },
+      "valueobjects": {
+        "seller_status": {
+          "name": "SellerStatus",
+          "description": "registered, active or suspended",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'registered' | 'active' | 'suspended'"
+            }
+          },
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -1185,26 +1335,6 @@
                 "$ref": "#/boundedcontexts/cart_&_checkout/schemas/cart_checked_out"
               }
             },
-            "add_to_cart": {
-              "name": "AddToCart",
-              "description": "Add or increase a line",
-              "pattern": "open-host-service",
-              "type": "operation"
-            },
-            "checkout": {
-              "name": "Checkout",
-              "description": "Freeze the cart and start the purchase",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/cart_&_checkout/schemas/cart_checked_out"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/provides/cart_checked_out"
-                }
-              ]
-            },
             "reopen_cart": {
               "name": "ReopenCart",
               "description": "Unfreeze a checked-out cart after a declined payment so the customer can try again",
@@ -1226,7 +1356,10 @@
                 },
                 "customer_id": {
                   "name": "customerId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/identity/aggregates/customer_account/entities/customer_account"
+                  }
                 }
               },
               "relations": [
@@ -1237,6 +1370,14 @@
                   "relation": "includes",
                   "label": "contains",
                   "cardinality": "*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/wishlist/entities/wishlist_item"
+                  },
+                  "relation": "includes",
+                  "label": "saves-for-later",
+                  "cardinality": "*"
                 }
               ]
             },
@@ -1245,9 +1386,17 @@
               "description": "An offer and a quantity",
               "root": false,
               "attributes": {
+                "line_id": {
+                  "name": "lineId",
+                  "type": "string",
+                  "identity": true
+                },
                 "offer_id": {
                   "name": "offerId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer"
+                  }
                 },
                 "quantity": {
                   "name": "quantity",
@@ -1257,45 +1406,20 @@
                   "name": "unitPrice",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/valueobjects/money"
+                    "$ref": "#/boundedcontexts/cart_&_checkout/valueobjects/money"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/valueobjects/money"
+                    "$ref": "#/boundedcontexts/cart_&_checkout/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "priced-at",
                   "cardinality": "1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer"
-                  },
-                  "relation": "references",
-                  "label": "for-offer",
-                  "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "money": {
-              "name": "Money",
-              "description": "An amount in a currency: minor units and an ISO 4217 code",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -1354,96 +1478,171 @@
               "attributes": {
                 "product_id": {
                   "name": "productId",
-                  "type": "string"
+                  "type": "string",
+                  "identity": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/product"
+                  }
                 }
               },
               "relations": []
             }
           },
-          "valueobjects": {},
           "invariants": {}
         }
       },
+      "invariants": {},
       "services": {
         "checkout_orchestrator": {
           "name": "CheckoutOrchestrator",
           "description": "Drives a checkout through payment authorisation and order placement; an application service because it coordinates other contexts",
           "type": "application",
-          "provides": {},
+          "provides": {
+            "add_to_cart": {
+              "name": "AddToCart",
+              "description": "Add or increase a line",
+              "pattern": "open-host-service",
+              "type": "operation"
+            },
+            "checkout": {
+              "name": "Checkout",
+              "description": "Freeze the cart and start the purchase",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/cart_&_checkout/schemas/cart_checked_out"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/provides/cart_checked_out"
+                }
+              ]
+            },
+            "request_authorisation": {
+              "name": "RequestAuthorisation",
+              "description": "Ask Payments to hold the cart total, through the ACL; the checkout's own step",
+              "type": "operation",
+              "internal": true
+            },
+            "place_order_for_cart": {
+              "name": "PlaceOrderForCart",
+              "description": "Ask Order Management to create the order for an authorised cart, through the ACL",
+              "type": "operation",
+              "internal": true
+            }
+          },
           "consumes": [
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/offers/services/offer_api/provides/get_offer"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/cart_&_checkout/services/checkout_orchestrator/provides/add_to_cart"
+                }
+              ]
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/authorise_payment"
+                "$ref": "#/boundedcontexts/payments/services/payments_api/provides/authorise_payment"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/cart_&_checkout/services/checkout_orchestrator/provides/request_authorisation"
+                }
+              ]
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/place_order"
+                "$ref": "#/boundedcontexts/order_management/services/order_api/provides/place_order"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/cart_&_checkout/services/checkout_orchestrator/provides/place_order_for_cart"
+                }
+              ]
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_declined"
+                "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_authorised"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/cart_&_checkout/processes/checkout"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/cart_&_checkout/processes/checkout"
+                }
+              ]
             },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/identity/services/identity_api/provides/get_customer"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/cart_&_checkout/services/checkout_orchestrator/provides/checkout"
+                }
+              ]
             }
           ]
         }
       },
-      "policies": {
-        "authorise_on_checkout": {
-          "name": "Authorise on checkout",
-          "description": "A checked-out cart is paid for before anything else happens",
-          "on": [
+      "policies": {},
+      "processes": {
+        "checkout": {
+          "name": "Checkout",
+          "description": "From the customer confirming the basket to an order existing. It asks Payments to hold the cart total and then waits: on a hold the order is placed, on a decline — the answer AuthorisePayment refuses with — the cart is unfrozen so another instrument can be tried and the same instance waits for the next attempt. Correlation is by cartId, which the authorisation carries back. An instance nobody comes back to ends when its own clock runs out: the hold Payments took lasts thirty minutes, and after that the checkout is over. The cart is not: a cart nobody returns to is the customer's to abandon",
+          "deadlines": {
+            "authorisation_expiry": {
+              "name": "Authorisation expiry",
+              "description": "The hold Payments took is released and the checkout is over; the cart stays open for the customer to come back to",
+              "after": "when the hold expires; the interviews give no interval"
+            }
+          },
+          "starts": [
             {
               "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/provides/cart_checked_out"
             }
           ],
-          "then": [
-            {
-              "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/authorise_payment"
-            }
-          ]
-        },
-        "place_order_on_authorisation": {
-          "name": "Place order on authorisation",
-          "description": "Once funds are held the order becomes real",
           "on": [
             {
               "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_authorised"
+            },
+            {
+              "$ref": "#/boundedcontexts/payments/services/payments_api/provides/authorise_payment/rejects/payment_declined"
             }
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/place_order"
-            }
-          ]
-        },
-        "reopen_cart_on_decline": {
-          "name": "Reopen cart on decline",
-          "description": "A declined hold leaves the cart open so the customer can try another instrument",
-          "on": [
+              "$ref": "#/boundedcontexts/cart_&_checkout/services/checkout_orchestrator/provides/request_authorisation"
+            },
             {
-              "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_declined"
-            }
-          ],
-          "then": [
+              "$ref": "#/boundedcontexts/cart_&_checkout/services/checkout_orchestrator/provides/place_order_for_cart"
+            },
             {
               "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/provides/reopen_cart"
+            }
+          ],
+          "ends": [
+            {
+              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
+            },
+            {
+              "$ref": "#/boundedcontexts/cart_&_checkout/processes/checkout/deadlines/authorisation_expiry"
             }
           ]
         }
@@ -1460,6 +1659,24 @@
           }
         }
       },
+      "valueobjects": {
+        "money": {
+          "name": "Money",
+          "description": "An amount in a currency: minor units and an ISO 4217 code",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        }
+      },
       "schemas": {
         "cart_checked_out": {
           "name": "CartCheckedOut",
@@ -1470,15 +1687,18 @@
               "type": "string",
               "identity": true
             },
-            "customer_id": {
-              "name": "customerId",
-              "type": "string"
-            },
             "total": {
               "name": "total",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/valueobjects/money"
+                "$ref": "#/boundedcontexts/cart_&_checkout/valueobjects/money"
+              }
+            },
+            "customer_id": {
+              "name": "customerId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/identity/aggregates/customer_account/entities/customer_account"
               }
             }
           }
@@ -1537,53 +1757,11 @@
                 "$ref": "#/boundedcontexts/order_management/schemas/order_ref"
               }
             },
-            "place_order": {
-              "name": "PlaceOrder",
-              "description": "Create the order from a checked-out cart",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/order_management/schemas/order_placed"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
-                }
-              ]
-            },
-            "cancel_order": {
-              "name": "CancelOrder",
-              "description": "Cancel before anything ships",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/order_management/schemas/order_ref"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_cancelled"
-                }
-              ]
-            },
             "record_shipment": {
               "name": "RecordShipment",
               "description": "Attach a warehouse dispatch to the order as a customer-visible shipment",
               "type": "operation",
               "internal": true
-            },
-            "request_return": {
-              "name": "RequestReturn",
-              "description": "Open a return for some lines",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/order_management/schemas/return_requested"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/return_requested"
-                }
-              ]
             },
             "complete_order": {
               "name": "CompleteOrder",
@@ -1603,44 +1781,7 @@
               "internal": true
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/provides/order_risk_flagged"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/shipment_dispatched"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/return_received"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_short"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/refund_payment"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/provides/parcel_delivered"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "order": {
               "name": "Order",
@@ -1652,29 +1793,32 @@
                   "type": "string",
                   "identity": true
                 },
-                "customer_id": {
-                  "name": "customerId",
-                  "type": "string"
-                },
                 "total": {
                   "name": "total",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/money"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/money"
                   }
                 },
                 "shipping_address": {
                   "name": "shippingAddress",
                   "type": "Address",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/address"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/address"
                   }
                 },
                 "status": {
                   "name": "status",
                   "type": "OrderStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/order_status"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/order_status"
+                  }
+                },
+                "customer_id": {
+                  "name": "customerId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/identity/aggregates/customer_account/entities/customer_account"
                   }
                 }
               },
@@ -1705,7 +1849,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/money"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "totals",
@@ -1713,7 +1857,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/address"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/address"
                   },
                   "relation": "uses",
                   "label": "ships-to",
@@ -1721,7 +1865,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/order_status"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/order_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
@@ -1741,7 +1885,18 @@
                 },
                 "sku": {
                   "name": "sku",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/variant"
+                  }
+                },
+                "offer_id": {
+                  "name": "offerId",
+                  "type": "string",
+                  "description": "Identity of the Offer root in Offers; only the id crosses the boundary. `sku` is the catalogue code the line was bought under, which is not the same thing",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer"
+                  }
                 },
                 "quantity": {
                   "name": "quantity",
@@ -1751,17 +1906,17 @@
                   "name": "unitPrice",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/money"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/money"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/money"
                   },
-                  "relation": "references",
-                  "label": "bought-from-offer",
+                  "relation": "uses",
+                  "label": "priced-at",
                   "cardinality": "1"
                 }
               ]
@@ -1779,8 +1934,10 @@
                 "tracking": {
                   "name": "tracking",
                   "type": "TrackingReference",
+                  "description": "Absent until the carrier has given a reference",
+                  "optional": true,
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/tracking_reference"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/tracking_reference"
                   }
                 }
               },
@@ -1795,7 +1952,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/tracking_reference"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/tracking_reference"
                   },
                   "relation": "uses",
                   "label": "tracked-as",
@@ -1821,7 +1978,7 @@
                   "name": "refund",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/money"
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/money"
                   }
                 }
               },
@@ -1833,6 +1990,14 @@
                   "relation": "includes",
                   "label": "for-lines",
                   "cardinality": "1..*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/order_management/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "refunds",
+                  "cardinality": "1"
                 }
               ]
             },
@@ -1841,6 +2006,11 @@
               "description": "One order line and the quantity returned from it",
               "root": false,
               "attributes": {
+                "return_line_id": {
+                  "name": "returnLineId",
+                  "type": "string",
+                  "identity": true
+                },
                 "quantity": {
                   "name": "quantity",
                   "type": "int"
@@ -1856,64 +2026,6 @@
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "money": {
-              "name": "Money",
-              "description": "An amount in a currency: minor units and an ISO 4217 code",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
-            },
-            "address": {
-              "name": "Address",
-              "description": "Where it ships; a value because the same address on two orders is the same place",
-              "attributes": {
-                "lines": {
-                  "name": "lines",
-                  "type": "string[]"
-                },
-                "postcode": {
-                  "name": "postcode",
-                  "type": "string"
-                },
-                "country": {
-                  "name": "country",
-                  "type": "ISO 3166 code"
-                }
-              },
-              "relations": []
-            },
-            "order_status": {
-              "name": "OrderStatus",
-              "description": "placed, awaiting-stock, cancelled, partially-shipped, shipped, completed",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'placed' | 'awaiting-stock' | 'cancelled' | 'partially-shipped' | 'shipped' | 'completed'"
-                }
-              },
-              "relations": []
-            },
-            "tracking_reference": {
-              "name": "TrackingReference",
-              "description": "The carrier reference the customer sees",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "string"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -1952,13 +2064,14 @@
               "description": "An order with a shipment is returned, not cancelled",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/order_status"
+                  "$ref": "#/boundedcontexts/order_management/valueobjects/order_status"
                 }
               ]
             }
           }
         }
       },
+      "invariants": {},
       "services": {
         "order_api": {
           "name": "OrderAPI",
@@ -1972,10 +2085,108 @@
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/order_management/schemas/order_ref"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/order_management/schemas/order_detail"
               }
+            },
+            "place_order": {
+              "name": "PlaceOrder",
+              "description": "Create the order from a checked-out cart",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/order_management/schemas/order_placed"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
+                }
+              ]
+            },
+            "cancel_order": {
+              "name": "CancelOrder",
+              "description": "Cancel before anything ships",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/order_management/schemas/order_ref"
+              },
+              "rejects": [
+                {
+                  "$ref": "#/boundedcontexts/order_management/schemas/cancel_refused"
+                }
+              ],
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_cancelled"
+                }
+              ]
+            },
+            "request_return": {
+              "name": "RequestReturn",
+              "description": "Open a return for some lines",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/order_management/schemas/return_requested"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/return_requested"
+                }
+              ]
+            },
+            "request_refund": {
+              "name": "RequestRefund",
+              "description": "Ask Payments to return the money for a graded return, through the ACL",
+              "type": "operation",
+              "internal": true
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/provides/order_risk_flagged"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/shipment_dispatched"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/return_received"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_short"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/payments/services/payments_api/provides/refund_payment"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/order_management/services/order_api/provides/request_refund"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/provides/parcel_delivered"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
         }
       },
       "policies": {
@@ -1989,35 +2200,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/cancel_order"
-            }
-          ]
-        },
-        "record_dispatch": {
-          "name": "Record dispatch",
-          "description": "A dispatched package appears on the order as a shipment",
-          "on": [
-            {
-              "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/shipment_dispatched"
-            }
-          ],
-          "then": [
-            {
-              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/record_shipment"
-            }
-          ]
-        },
-        "hold_on_stock_short": {
-          "name": "Hold on stock short",
-          "description": "When no site can reserve for the order it waits as awaiting-stock rather than silently stalling",
-          "on": [
-            {
-              "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_short"
-            }
-          ],
-          "then": [
-            {
-              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/hold_for_stock"
+              "$ref": "#/boundedcontexts/order_management/services/order_api/provides/cancel_order"
             }
           ]
         },
@@ -2031,21 +2214,48 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/refund_payment"
+              "$ref": "#/boundedcontexts/order_management/services/order_api/provides/request_refund"
             }
           ]
-        },
-        "complete_on_delivery": {
-          "name": "Complete on delivery",
-          "description": "When the last package is delivered the order is done",
+        }
+      },
+      "processes": {
+        "order_to_delivery": {
+          "name": "Order to delivery",
+          "description": "From a paid-for order to every line in the customer's hands. It waits for the warehouse: a dispatch becomes a customer-visible shipment, a stock shortage puts the order into awaiting-stock rather than letting it stall silently, and the last parcel handed over completes it. Correlation is by orderId, which every fact it waits for carries; it ends when the order is completed, or earlier if the order is cancelled before anything ships",
+          "starts": [
+            {
+              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
+            }
+          ],
           "on": [
+            {
+              "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/shipment_dispatched"
+            },
+            {
+              "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_short"
+            },
             {
               "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/provides/parcel_delivered"
             }
           ],
           "then": [
             {
+              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/record_shipment"
+            },
+            {
+              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/hold_for_stock"
+            },
+            {
               "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/complete_order"
+            }
+          ],
+          "ends": [
+            {
+              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_completed"
+            },
+            {
+              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_cancelled"
             }
           ]
         }
@@ -2080,7 +2290,84 @@
           }
         }
       },
+      "valueobjects": {
+        "money": {
+          "name": "Money",
+          "description": "An amount in a currency: minor units and an ISO 4217 code",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "address": {
+          "name": "Address",
+          "description": "Where it ships; a value because the same address on two orders is the same place",
+          "attributes": {
+            "lines": {
+              "name": "lines",
+              "type": "string[]"
+            },
+            "postcode": {
+              "name": "postcode",
+              "type": "string"
+            },
+            "country": {
+              "name": "country",
+              "type": "ISO 3166 code"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "order_status": {
+          "name": "OrderStatus",
+          "description": "placed, awaiting-stock, cancelled, partially-shipped, shipped, completed",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'placed' | 'awaiting-stock' | 'cancelled' | 'partially-shipped' | 'shipped' | 'completed'"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "tracking_reference": {
+          "name": "TrackingReference",
+          "description": "The carrier reference the customer sees",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "string"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        }
+      },
       "schemas": {
+        "order_line": {
+          "name": "OrderLine",
+          "description": "One line of an order, as the fact carries it",
+          "attributes": {
+            "sku": {
+              "name": "sku",
+              "type": "string",
+              "identity": true
+            },
+            "quantity": {
+              "name": "quantity",
+              "type": "int32"
+            }
+          }
+        },
         "order_placed": {
           "name": "OrderPlaced",
           "description": "The fact warehouse, fraud and payments react to",
@@ -2090,19 +2377,25 @@
               "type": "string",
               "identity": true
             },
-            "customer_id": {
-              "name": "customerId",
-              "type": "string"
-            },
             "lines": {
               "name": "lines",
-              "type": "{sku, quantity}[]"
+              "type": "OrderLine[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/order_management/schemas/order_line"
+              }
             },
             "total": {
               "name": "total",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/valueobjects/money"
+                "$ref": "#/boundedcontexts/order_management/valueobjects/money"
+              }
+            },
+            "customer_id": {
+              "name": "customerId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/identity/aggregates/customer_account/entities/customer_account"
               }
             }
           }
@@ -2117,21 +2410,107 @@
             }
           }
         },
+        "order_detail": {
+          "name": "OrderDetail",
+          "description": "One order with its lines, shipments and returns",
+          "attributes": {
+            "order_id": {
+              "name": "orderId",
+              "type": "string",
+              "identity": true
+            },
+            "status": {
+              "name": "status",
+              "type": "OrderStatus",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/order_management/valueobjects/order_status"
+              }
+            },
+            "total": {
+              "name": "total",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/order_management/valueobjects/money"
+              }
+            },
+            "lines": {
+              "name": "lines",
+              "type": "OrderLine[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/order_management/schemas/order_line"
+              }
+            },
+            "shipment_ids": {
+              "name": "shipmentIds",
+              "type": "string[]",
+              "description": "Shipments dispatched for this order"
+            },
+            "return_ids": {
+              "name": "returnIds",
+              "type": "string[]",
+              "description": "Returns opened for this order"
+            }
+          }
+        },
+        "return_line": {
+          "name": "ReturnLine",
+          "description": "One line of a return: which line of the order, and how many",
+          "attributes": {
+            "line_id": {
+              "name": "lineId",
+              "type": "string",
+              "identity": true
+            },
+            "quantity": {
+              "name": "quantity",
+              "type": "int32"
+            }
+          }
+        },
+        "cancel_refused": {
+          "name": "CancelRefused",
+          "description": "Why the order could not be cancelled: a shipment has already left the dock",
+          "attributes": {
+            "order_id": {
+              "name": "orderId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+              }
+            },
+            "shipment_id": {
+              "name": "shipmentId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/shipment"
+              }
+            }
+          }
+        },
         "return_requested": {
           "name": "ReturnRequested",
           "attributes": {
             "return_id": {
               "name": "returnId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/return"
+              }
             },
             "order_id": {
               "name": "orderId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+              }
             },
             "lines": {
               "name": "lines",
-              "type": "{lineId, quantity}[]"
+              "type": "ReturnLine[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/order_management/schemas/return_line"
+              }
             }
           }
         }
@@ -2162,15 +2541,6 @@
                 "$ref": "#/boundedcontexts/payments/schemas/payment_authorised"
               }
             },
-            "payment_declined": {
-              "name": "PaymentDeclined",
-              "description": "The provider refused; checkout shows an error",
-              "pattern": "published-language",
-              "type": "event",
-              "schema": {
-                "$ref": "#/boundedcontexts/payments/schemas/payment_ref"
-              }
-            },
             "payment_captured": {
               "name": "PaymentCaptured",
               "description": "Money was taken for a dispatched shipment",
@@ -2189,20 +2559,213 @@
                 "$ref": "#/boundedcontexts/payments/schemas/payment_ref"
               }
             },
+            "attach_order": {
+              "name": "AttachOrder",
+              "description": "Record the order id on the payment intent so captures and refunds can find it",
+              "type": "operation",
+              "internal": true
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "payment_intent": {
+              "name": "PaymentIntent",
+              "description": "The amount RiverMart may take for an order",
+              "root": true,
+              "attributes": {
+                "payment_id": {
+                  "name": "paymentId",
+                  "type": "string",
+                  "identity": true
+                },
+                "order_id": {
+                  "name": "orderId",
+                  "type": "string",
+                  "description": "Absent until the order exists; AttachOrder fills it",
+                  "optional": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
+                },
+                "amount": {
+                  "name": "amount",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/payments/valueobjects/money"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/payments/aggregates/payment/entities/authorisation"
+                  },
+                  "relation": "includes",
+                  "label": "held-by",
+                  "cardinality": "0..1"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/payments/aggregates/payment/entities/capture"
+                  },
+                  "relation": "includes",
+                  "label": "captured-by",
+                  "cardinality": "*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/payments/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "for-amount",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "authorisation": {
+              "name": "Authorisation",
+              "description": "The provider's hold on the customer's funds",
+              "root": false,
+              "attributes": {
+                "provider_ref": {
+                  "name": "providerRef",
+                  "type": "string",
+                  "identity": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/payment_provider"
+                  }
+                },
+                "expires_at": {
+                  "name": "expiresAt",
+                  "type": "date-time"
+                }
+              },
+              "relations": []
+            },
+            "capture": {
+              "name": "Capture",
+              "description": "Money actually taken; one per shipment",
+              "root": false,
+              "attributes": {
+                "capture_id": {
+                  "name": "captureId",
+                  "type": "string",
+                  "identity": true
+                },
+                "amount": {
+                  "name": "amount",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/payments/valueobjects/money"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/payments/aggregates/payment/entities/refund"
+                  },
+                  "relation": "includes",
+                  "label": "refunded-by",
+                  "cardinality": "*"
+                },
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/payments/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "of-amount",
+                  "cardinality": "1"
+                }
+              ]
+            },
+            "refund": {
+              "name": "Refund",
+              "description": "Money given back against a capture",
+              "root": false,
+              "attributes": {
+                "refund_id": {
+                  "name": "refundId",
+                  "type": "string",
+                  "identity": true
+                },
+                "amount": {
+                  "name": "amount",
+                  "type": "Money",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/payments/valueobjects/money"
+                  }
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/payments/valueobjects/money"
+                  },
+                  "relation": "uses",
+                  "label": "of-amount",
+                  "cardinality": "1"
+                }
+              ]
+            }
+          },
+          "invariants": {
+            "captures_within_authorisation": {
+              "name": "CapturesWithinAuthorisation",
+              "description": "Captures never sum to more than the authorised amount",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/payments/aggregates/payment/entities/capture"
+                },
+                {
+                  "$ref": "#/boundedcontexts/payments/aggregates/payment/entities/authorisation"
+                }
+              ]
+            },
+            "refunds_within_capture": {
+              "name": "RefundsWithinCapture",
+              "description": "Refunds against a capture never exceed it",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/payments/aggregates/payment/entities/refund"
+                }
+              ]
+            },
+            "single_currency": {
+              "name": "SingleCurrency",
+              "description": "Every amount on one payment shares the intent's currency",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/payments/valueobjects/money"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "invariants": {},
+      "services": {
+        "payments_api": {
+          "name": "PaymentsAPI",
+          "description": "Payments' application service: the boundary checkout and order management ask for money through",
+          "type": "application",
+          "provides": {
             "authorise_payment": {
               "name": "AuthorisePayment",
-              "description": "Hold the cart total on the customer's instrument",
+              "description": "Hold the cart total on the customer's instrument; the caller waits, and is told either that the money is held or why it is not",
               "pattern": "open-host-service",
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/payments/schemas/authorise_payment"
               },
+              "rejects": [
+                {
+                  "$ref": "#/boundedcontexts/payments/schemas/payment_declined"
+                }
+              ],
               "raises": [
                 {
                   "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_authorised"
-                },
-                {
-                  "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_declined"
                 }
               ]
             },
@@ -2233,15 +2796,42 @@
                   "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/refund_issued"
                 }
               ]
-            },
-            "attach_order": {
-              "name": "AttachOrder",
-              "description": "Record the order id on the payment intent so captures and refunds can find it",
-              "type": "operation",
-              "internal": true
             }
           },
           "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/payment_provider/services/acquirer_api/provides/hold_funds"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/payments/services/payments_api/provides/authorise_payment"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/payment_provider/services/acquirer_api/provides/take_funds"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/payments/services/payments_api/provides/capture_payment"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/payment_provider/services/acquirer_api/provides/return_funds"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/payments/services/payments_api/provides/refund_payment"
+                }
+              ]
+            },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
@@ -2254,176 +2844,9 @@
               },
               "pattern": "anti-corruption-layer"
             }
-          ],
-          "entities": {
-            "payment_intent": {
-              "name": "PaymentIntent",
-              "description": "The amount RiverMart may take for an order",
-              "root": true,
-              "attributes": {
-                "payment_id": {
-                  "name": "paymentId",
-                  "type": "string",
-                  "identity": true
-                },
-                "order_id": {
-                  "name": "orderId",
-                  "type": "string"
-                },
-                "amount": {
-                  "name": "amount",
-                  "type": "Money",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/payments/aggregates/payment/valueobjects/money"
-                  }
-                }
-              },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/payments/aggregates/payment/entities/authorisation"
-                  },
-                  "relation": "includes",
-                  "label": "held-by",
-                  "cardinality": "0..1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/payments/aggregates/payment/entities/capture"
-                  },
-                  "relation": "includes",
-                  "label": "captured-by",
-                  "cardinality": "*"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/payments/aggregates/payment/valueobjects/money"
-                  },
-                  "relation": "uses",
-                  "label": "for-amount",
-                  "cardinality": "1"
-                }
-              ]
-            },
-            "authorisation": {
-              "name": "Authorisation",
-              "description": "The provider's hold on the customer's funds",
-              "root": false,
-              "attributes": {
-                "provider_ref": {
-                  "name": "providerRef",
-                  "type": "string",
-                  "identity": true
-                },
-                "expires_at": {
-                  "name": "expiresAt",
-                  "type": "date-time"
-                }
-              },
-              "relations": []
-            },
-            "capture": {
-              "name": "Capture",
-              "description": "Money actually taken; one per shipment",
-              "root": false,
-              "attributes": {
-                "capture_id": {
-                  "name": "captureId",
-                  "type": "string",
-                  "identity": true
-                },
-                "amount": {
-                  "name": "amount",
-                  "type": "Money",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/payments/aggregates/payment/valueobjects/money"
-                  }
-                }
-              },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/payments/aggregates/payment/entities/refund"
-                  },
-                  "relation": "includes",
-                  "label": "refunded-by",
-                  "cardinality": "*"
-                }
-              ]
-            },
-            "refund": {
-              "name": "Refund",
-              "description": "Money given back against a capture",
-              "root": false,
-              "attributes": {
-                "refund_id": {
-                  "name": "refundId",
-                  "type": "string",
-                  "identity": true
-                },
-                "amount": {
-                  "name": "amount",
-                  "type": "Money",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/payments/aggregates/payment/valueobjects/money"
-                  }
-                }
-              },
-              "relations": []
-            }
-          },
-          "valueobjects": {
-            "money": {
-              "name": "Money",
-              "description": "An amount in a currency: minor units and an ISO 4217 code",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
-            }
-          },
-          "invariants": {
-            "captures_within_authorisation": {
-              "name": "CapturesWithinAuthorisation",
-              "description": "Captures never sum to more than the authorised amount",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/payments/aggregates/payment/entities/capture"
-                },
-                {
-                  "$ref": "#/boundedcontexts/payments/aggregates/payment/entities/authorisation"
-                }
-              ]
-            },
-            "refunds_within_capture": {
-              "name": "RefundsWithinCapture",
-              "description": "Refunds against a capture never exceed it",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/payments/aggregates/payment/entities/refund"
-                }
-              ]
-            },
-            "single_currency": {
-              "name": "SingleCurrency",
-              "description": "Every amount on one payment shares the intent's currency",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/payments/aggregates/payment/valueobjects/money"
-                }
-              ]
-            }
-          }
+          ]
         }
       },
-      "services": {},
       "policies": {
         "attach_order_to_payment": {
           "name": "Attach order to payment",
@@ -2449,11 +2872,12 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/capture_payment"
+              "$ref": "#/boundedcontexts/payments/services/payments_api/provides/capture_payment"
             }
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "authorisation": {
           "name": "Authorisation",
@@ -2467,6 +2891,24 @@
           }
         }
       },
+      "valueobjects": {
+        "money": {
+          "name": "Money",
+          "description": "An amount in a currency: minor units and an ISO 4217 code",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        }
+      },
       "schemas": {
         "payment_authorised": {
           "name": "PaymentAuthorised",
@@ -2478,7 +2920,10 @@
             },
             "cart_id": {
               "name": "cartId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/entities/cart"
+              }
             }
           }
         },
@@ -2492,19 +2937,38 @@
             }
           }
         },
+        "payment_declined": {
+          "name": "PaymentDeclined",
+          "description": "Why the hold was refused, in the words the customer is shown",
+          "attributes": {
+            "payment_id": {
+              "name": "paymentId",
+              "type": "string",
+              "identity": true
+            },
+            "reason": {
+              "name": "reason",
+              "type": "'insufficient-funds' | 'instrument-refused' | 'provider-unavailable'",
+              "description": "What the storefront tells the customer to try instead"
+            }
+          }
+        },
         "authorise_payment": {
           "name": "AuthorisePayment",
           "description": "What checkout sends: the cart total and the customer's instrument token",
           "attributes": {
             "cart_id": {
               "name": "cartId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/entities/cart"
+              }
             },
             "amount": {
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/payments/aggregates/payment/valueobjects/money"
+                "$ref": "#/boundedcontexts/payments/valueobjects/money"
               }
             },
             "instrument_token": {
@@ -2550,20 +3014,7 @@
               }
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_activated"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "risk_assessment": {
               "name": "RiskAssessment",
@@ -2575,23 +3026,44 @@
                   "type": "string",
                   "identity": true
                 },
-                "subject_id": {
-                  "name": "subjectId",
+                "order_id": {
+                  "name": "orderId",
                   "type": "string",
-                  "description": "An order id or a seller id"
+                  "description": "Set when the assessment is of an order",
+                  "optional": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
+                },
+                "seller_id": {
+                  "name": "sellerId",
+                  "type": "string",
+                  "description": "Set when the assessment is of a seller",
+                  "optional": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/entities/seller_account"
+                  }
                 },
                 "score": {
                   "name": "score",
                   "type": "RiskScore",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/risk_score"
+                    "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
+                  }
+                },
+                "signals": {
+                  "name": "signals",
+                  "type": "Signal[]",
+                  "description": "What the score is made of; at least one, or the score is unexplained",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/fraud/valueobjects/signal"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/risk_score"
+                    "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
                   },
                   "relation": "uses",
                   "label": "scored",
@@ -2599,7 +3071,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/signal"
+                    "$ref": "#/boundedcontexts/fraud/valueobjects/signal"
                   },
                   "relation": "uses",
                   "label": "explained-by",
@@ -2608,47 +3080,32 @@
               ]
             }
           },
-          "valueobjects": {
-            "risk_score": {
-              "name": "RiskScore",
-              "description": "0 to 1000; above the threshold is flagged",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "int 0..1000"
-                }
-              },
-              "relations": []
-            },
-            "signal": {
-              "name": "Signal",
-              "description": "A named contribution to the score, e.g. 'new account, high value'",
-              "attributes": {
-                "name": {
-                  "name": "name",
-                  "type": "string"
-                },
-                "weight": {
-                  "name": "weight",
-                  "type": "int"
-                }
-              },
-              "relations": []
-            }
-          },
           "invariants": {
+            "one_subject": {
+              "name": "OneSubject",
+              "description": "Exactly one of orderId and sellerId is set: an assessment is of an order or of a seller, never both and never neither",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/entities/risk_assessment/attributes/order_id"
+                },
+                {
+                  "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/entities/risk_assessment/attributes/seller_id"
+                }
+              ]
+            },
             "score_explained": {
               "name": "ScoreExplained",
               "description": "A flagged score always carries at least one signal, so an agent can defend it",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/signal"
+                  "$ref": "#/boundedcontexts/fraud/valueobjects/signal"
                 }
               ]
             }
           }
         }
       },
+      "invariants": {},
       "services": {
         "risk_scorer": {
           "name": "RiskScorer",
@@ -2679,6 +3136,26 @@
             }
           },
           "consumes": []
+        },
+        "fraud_api": {
+          "name": "FraudAPI",
+          "description": "Trust & Safety's application service: the boundary through which the orders and sellers to be scored arrive",
+          "type": "application",
+          "provides": {},
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_activated"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
         }
       },
       "policies": {
@@ -2711,13 +3188,44 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "flag": {
           "name": "Flag",
           "definition": "A score above threshold; it pauses the subject until reviewed",
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/risk_score"
+            "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
           }
+        }
+      },
+      "valueobjects": {
+        "risk_score": {
+          "name": "RiskScore",
+          "description": "0 to 1000; above the threshold is flagged",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "int 0..1000"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "signal": {
+          "name": "Signal",
+          "description": "A named contribution to the score, e.g. 'new account, high value'",
+          "attributes": {
+            "name": {
+              "name": "name",
+              "type": "string"
+            },
+            "weight": {
+              "name": "weight",
+              "type": "int"
+            }
+          },
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -2727,13 +3235,16 @@
             "order_id": {
               "name": "orderId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+              }
             },
             "score": {
               "name": "score",
               "type": "RiskScore",
               "valueobject": {
-                "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/risk_score"
+                "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
               }
             }
           }
@@ -2744,13 +3255,16 @@
             "seller_id": {
               "name": "sellerId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/entities/seller_account"
+              }
             },
             "score": {
               "name": "score",
               "type": "RiskScore",
               "valueobject": {
-                "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/valueobjects/risk_score"
+                "$ref": "#/boundedcontexts/fraud/valueobjects/risk_score"
               }
             }
           }
@@ -2803,23 +3317,6 @@
               "type": "event",
               "internal": true
             },
-            "reserve_stock": {
-              "name": "ReserveStock",
-              "description": "Hold stock for an order, choosing the nearest site that has it",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/warehouse/schemas/stock_reserved"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_reserved"
-                },
-                {
-                  "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_short"
-                }
-              ]
-            },
             "receive_stock": {
               "name": "ReceiveStock",
               "description": "Book in a vendor delivery",
@@ -2832,26 +3329,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_cancelled"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)/aggregates/purchase_order/provides/purchase_order_received"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "inventory_position": {
               "name": "InventoryPosition",
@@ -2871,6 +3349,14 @@
                 "on_hand": {
                   "name": "onHand",
                   "type": "int"
+                },
+                "bins": {
+                  "name": "bins",
+                  "type": "Bin[]",
+                  "description": "Where in the site the stock physically sits",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/warehouse/valueobjects/bin"
+                  }
                 }
               },
               "relations": [
@@ -2884,7 +3370,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/valueobjects/bin"
+                    "$ref": "#/boundedcontexts/warehouse/valueobjects/bin"
                   },
                   "relation": "uses",
                   "label": "stored-in",
@@ -2897,26 +3383,21 @@
               "description": "Stock promised to an order but not yet picked",
               "root": false,
               "attributes": {
+                "reservation_id": {
+                  "name": "reservationId",
+                  "type": "string",
+                  "identity": true
+                },
                 "order_id": {
                   "name": "orderId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
                 },
                 "quantity": {
                   "name": "quantity",
                   "type": "int"
-                }
-              },
-              "relations": []
-            }
-          },
-          "valueobjects": {
-            "bin": {
-              "name": "Bin",
-              "description": "Aisle, shelf, slot",
-              "attributes": {
-                "code": {
-                  "name": "code",
-                  "type": "string"
                 }
               },
               "relations": []
@@ -2994,20 +3475,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/return_requested"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_cancelled"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "fulfilment_order": {
               "name": "FulfilmentOrder",
@@ -3021,7 +3489,10 @@
                 },
                 "order_id": {
                   "name": "orderId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
                 }
               },
               "relations": [
@@ -3040,14 +3511,6 @@
                   "relation": "includes",
                   "label": "packed-into",
                   "cardinality": "*"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
-                  },
-                  "relation": "references",
-                  "label": "fulfils",
-                  "cardinality": "1"
                 }
               ]
             },
@@ -3056,6 +3519,11 @@
               "description": "One SKU and quantity for a picker to collect",
               "root": false,
               "attributes": {
+                "task_id": {
+                  "name": "taskId",
+                  "type": "string",
+                  "identity": true
+                },
                 "sku": {
                   "name": "sku",
                   "type": "string"
@@ -3086,7 +3554,7 @@
                   "name": "label",
                   "type": "TrackingLabel",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/valueobjects/tracking_label"
+                    "$ref": "#/boundedcontexts/warehouse/valueobjects/tracking_label"
                   }
                 }
               },
@@ -3101,30 +3569,13 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/valueobjects/tracking_label"
+                    "$ref": "#/boundedcontexts/warehouse/valueobjects/tracking_label"
                   },
                   "relation": "uses",
                   "label": "labelled",
                   "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "tracking_label": {
-              "name": "TrackingLabel",
-              "description": "Carrier barcode and scan vocabulary. Part of the kernel shared with Last Mile: one library, one format",
-              "attributes": {
-                "barcode": {
-                  "name": "barcode",
-                  "type": "string"
-                },
-                "carrier": {
-                  "name": "carrier",
-                  "type": "string"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -3143,7 +3594,59 @@
           }
         }
       },
-      "services": {},
+      "invariants": {},
+      "services": {
+        "warehouse_api": {
+          "name": "WarehouseAPI",
+          "description": "The warehouse's application service: the boundary stock is reserved through",
+          "type": "application",
+          "provides": {
+            "reserve_stock": {
+              "name": "ReserveStock",
+              "description": "Hold stock for an order, choosing the nearest site that has it",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/warehouse/schemas/stock_reserved"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_reserved"
+                },
+                {
+                  "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_short"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/return_requested"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_cancelled"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)/aggregates/purchase_order/provides/purchase_order_received"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
+        }
+      },
       "policies": {
         "reserve_on_order": {
           "name": "Reserve on order",
@@ -3155,7 +3658,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/reserve_stock"
+              "$ref": "#/boundedcontexts/warehouse/services/warehouse_api/provides/reserve_stock"
             }
           ]
         },
@@ -3219,6 +3722,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "on_hand": {
           "name": "On hand",
@@ -3248,6 +3752,36 @@
           }
         }
       },
+      "valueobjects": {
+        "bin": {
+          "name": "Bin",
+          "description": "Aisle, shelf, slot",
+          "attributes": {
+            "code": {
+              "name": "code",
+              "type": "string"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "tracking_label": {
+          "name": "TrackingLabel",
+          "description": "Carrier barcode and scan vocabulary. Part of the kernel shared with Last Mile: one library, one format",
+          "attributes": {
+            "barcode": {
+              "name": "barcode",
+              "type": "string"
+            },
+            "carrier": {
+              "name": "carrier",
+              "type": "string"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        }
+      },
       "schemas": {
         "stock_reserved": {
           "name": "StockReserved",
@@ -3255,7 +3789,10 @@
             "order_id": {
               "name": "orderId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+              }
             },
             "site_id": {
               "name": "siteId",
@@ -3270,17 +3807,23 @@
             "package_id": {
               "name": "packageId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/entities/package"
+              }
             },
             "order_id": {
               "name": "orderId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+              }
             },
             "label": {
               "name": "label",
               "type": "TrackingLabel",
               "valueobject": {
-                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/valueobjects/tracking_label"
+                "$ref": "#/boundedcontexts/warehouse/valueobjects/tracking_label"
               }
             }
           }
@@ -3291,7 +3834,10 @@
             "return_id": {
               "name": "returnId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/return"
+              }
             },
             "condition": {
               "name": "condition",
@@ -3356,13 +3902,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/shipment_dispatched"
-              }
-            }
-          ],
+          "consumes": [],
           "entities": {
             "delivery_route": {
               "name": "DeliveryRoute",
@@ -3397,7 +3937,17 @@
               "attributes": {
                 "sequence": {
                   "name": "sequence",
-                  "type": "int"
+                  "type": "int",
+                  "identity": true
+                },
+                "proof_of_delivery": {
+                  "name": "proofOfDelivery",
+                  "type": "ProofOfDelivery",
+                  "description": "Captured at the door; absent until the stop is completed",
+                  "optional": true,
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/last_mile/valueobjects/proof_of_delivery"
+                  }
                 }
               },
               "relations": [
@@ -3411,7 +3961,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/valueobjects/proof_of_delivery"
+                    "$ref": "#/boundedcontexts/last_mile/valueobjects/proof_of_delivery"
                   },
                   "relation": "uses",
                   "label": "proven-by",
@@ -3428,49 +3978,20 @@
                   "name": "label",
                   "type": "TrackingLabel",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/valueobjects/tracking_label"
+                    "$ref": "#/boundedcontexts/warehouse/valueobjects/tracking_label"
                   }
+                },
+                "parcel_id": {
+                  "name": "parcelId",
+                  "type": "string",
+                  "identity": true
                 },
                 "order_id": {
                   "name": "orderId",
-                  "type": "string"
-                }
-              },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/valueobjects/tracking_label"
-                  },
-                  "relation": "uses",
-                  "label": "scanned-as",
-                  "cardinality": "1"
-                }
-              ]
-            }
-          },
-          "valueobjects": {
-            "tracking_label": {
-              "name": "TrackingLabel",
-              "description": "The same barcode and scan vocabulary the warehouse prints; the shared kernel means both contexts read one format",
-              "attributes": {
-                "barcode": {
-                  "name": "barcode",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "proof_of_delivery": {
-              "name": "ProofOfDelivery",
-              "description": "Photo, signature or safe-place note",
-              "attributes": {
-                "kind": {
-                  "name": "kind",
-                  "type": "'photo' | 'signature' | 'safe-place'"
-                },
-                "captured_at": {
-                  "name": "capturedAt",
-                  "type": "date-time"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
                 }
               },
               "relations": []
@@ -3489,7 +4010,22 @@
           }
         }
       },
-      "services": {},
+      "invariants": {},
+      "services": {
+        "last_mile_api": {
+          "name": "LastMileAPI",
+          "description": "Last Mile's application service: the boundary through which dispatched packages arrive to be routed",
+          "type": "application",
+          "provides": {},
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/shipment_dispatched"
+              }
+            }
+          ]
+        }
+      },
       "policies": {
         "route_dispatched_packages": {
           "name": "Route dispatched packages",
@@ -3506,6 +4042,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "stop": {
           "name": "Stop",
@@ -3525,6 +4062,24 @@
           }
         }
       },
+      "valueobjects": {
+        "proof_of_delivery": {
+          "name": "ProofOfDelivery",
+          "description": "Photo, signature or safe-place note",
+          "attributes": {
+            "kind": {
+              "name": "kind",
+              "type": "'photo' | 'signature' | 'safe-place'"
+            },
+            "captured_at": {
+              "name": "capturedAt",
+              "type": "date-time"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        }
+      },
       "schemas": {
         "parcel_delivered": {
           "name": "ParcelDelivered",
@@ -3536,7 +4091,10 @@
             },
             "order_id": {
               "name": "orderId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+              }
             },
             "delivered_at": {
               "name": "deliveredAt",
@@ -3554,7 +4112,10 @@
             },
             "order_id": {
               "name": "orderId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+              }
             },
             "reason": {
               "name": "reason",
@@ -3608,14 +4169,7 @@
               "internal": true
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_suspended"
-              },
-              "pattern": "conformist"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "campaign": {
               "name": "Campaign",
@@ -3629,13 +4183,16 @@
                 },
                 "seller_id": {
                   "name": "sellerId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/entities/seller_account"
+                  }
                 },
                 "daily_budget": {
                   "name": "dailyBudget",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/money"
+                    "$ref": "#/boundedcontexts/advertising/valueobjects/money"
                   }
                 }
               },
@@ -3650,7 +4207,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/money"
+                    "$ref": "#/boundedcontexts/advertising/valueobjects/money"
                   },
                   "relation": "uses",
                   "label": "budgeted",
@@ -3676,59 +4233,28 @@
                   "name": "bid",
                   "type": "Bid",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/bid"
+                    "$ref": "#/boundedcontexts/advertising/valueobjects/bid"
+                  }
+                },
+                "product_id": {
+                  "name": "productId",
+                  "type": "string",
+                  "description": "Identity of the Product root in Catalogue; only the id crosses the boundary",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/product"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/bid"
+                    "$ref": "#/boundedcontexts/advertising/valueobjects/bid"
                   },
                   "relation": "uses",
                   "label": "bids",
                   "cardinality": "1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/product"
-                  },
-                  "relation": "references",
-                  "label": "advertises",
-                  "cardinality": "1..*"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "money": {
-              "name": "Money",
-              "description": "An amount in a currency: minor units and an ISO 4217 code",
-              "attributes": {
-                "amount_minor": {
-                  "name": "amountMinor",
-                  "type": "int64"
-                },
-                "currency": {
-                  "name": "currency",
-                  "type": "ISO 4217 code"
-                }
-              },
-              "relations": []
-            },
-            "bid": {
-              "name": "Bid",
-              "description": "What the seller pays per click, at most",
-              "attributes": {
-                "max_cpc": {
-                  "name": "maxCpc",
-                  "type": "Money",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/money"
-                  }
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -3737,7 +4263,7 @@
               "description": "No bid exceeds the daily budget",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/bid"
+                  "$ref": "#/boundedcontexts/advertising/valueobjects/bid"
                 },
                 {
                   "$ref": "#/boundedcontexts/advertising/aggregates/campaign/entities/campaign/attributes/daily_budget"
@@ -3756,6 +4282,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "auction_service": {
           "name": "AuctionService",
@@ -3767,6 +4294,9 @@
               "description": "Pick winners for a query's sponsored slots",
               "type": "operation",
               "internal": true,
+              "returns": {
+                "$ref": "#/boundedcontexts/advertising/schemas/sponsored_results"
+              },
               "raises": [
                 {
                   "$ref": "#/boundedcontexts/advertising/aggregates/campaign/provides/slots_awarded"
@@ -3796,7 +4326,10 @@
               "name": "GetSponsoredResults",
               "description": "Sponsored slots for a query, merged into organic results by Search",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "returns": {
+                "$ref": "#/boundedcontexts/advertising/schemas/sponsored_results"
+              }
             },
             "record_ad_click": {
               "name": "RecordAdClick",
@@ -3817,6 +4350,17 @@
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/catalogue/services/catalogue_api/provides/get_product"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/advertising/services/ads_api/provides/create_campaign"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_suspended"
               },
               "pattern": "conformist"
             }
@@ -3839,6 +4383,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "sponsored_slot": {
           "name": "Sponsored slot",
@@ -3849,6 +4394,48 @@
           "embodiedBy": {
             "$ref": "#/boundedcontexts/advertising/services/auction_service"
           }
+        }
+      },
+      "valueobjects": {
+        "money": {
+          "name": "Money",
+          "description": "An amount in a currency: minor units and an ISO 4217 code",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "bid": {
+          "name": "Bid",
+          "description": "What the seller pays per click, at most",
+          "attributes": {
+            "max_cpc": {
+              "name": "maxCpc",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/advertising/valueobjects/money"
+              }
+            }
+          },
+          "relations": [
+            {
+              "target": {
+                "$ref": "#/boundedcontexts/advertising/valueobjects/money"
+              },
+              "relation": "uses",
+              "label": "capped-at",
+              "cardinality": "1"
+            }
+          ],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -3862,13 +4449,50 @@
             },
             "product_id": {
               "name": "productId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/product"
+              }
             },
             "cost": {
               "name": "cost",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/advertising/aggregates/campaign/valueobjects/money"
+                "$ref": "#/boundedcontexts/advertising/valueobjects/money"
+              }
+            }
+          }
+        },
+        "sponsored_slot": {
+          "name": "SponsoredSlot",
+          "description": "One paid placement won for a query",
+          "attributes": {
+            "product_id": {
+              "name": "productId",
+              "type": "string",
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/product"
+              }
+            },
+            "bid": {
+              "name": "bid",
+              "type": "Bid",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/advertising/valueobjects/bid"
+              }
+            }
+          }
+        },
+        "sponsored_results": {
+          "name": "SponsoredResults",
+          "description": "The winning slots for a query, ranked",
+          "attributes": {
+            "slots": {
+              "name": "slots",
+              "type": "SponsoredSlot[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/advertising/schemas/sponsored_slot"
               }
             }
           }
@@ -3897,17 +4521,6 @@
               "pattern": "published-language",
               "type": "event"
             },
-            "open_case": {
-              "name": "OpenCase",
-              "description": "Create a case for a customer, optionally about an order",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/customer_service/aggregates/case/provides/case_opened"
-                }
-              ]
-            },
             "resolve_case": {
               "name": "ResolveCase",
               "description": "Close the case with a resolution",
@@ -3915,32 +4528,7 @@
               "internal": true
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/order_management/services/order_api/provides/get_order"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/request_return"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/provides/delivery_attempt_failed"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/identity/services/identity_api/provides/get_customer"
-              },
-              "pattern": "conformist"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "case": {
               "name": "Case",
@@ -3952,13 +4540,29 @@
                   "type": "string",
                   "identity": true
                 },
-                "customer_id": {
-                  "name": "customerId",
-                  "type": "string"
-                },
                 "order_id": {
                   "name": "orderId",
-                  "type": "string"
+                  "type": "string",
+                  "optional": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
+                },
+                "resolution": {
+                  "name": "resolution",
+                  "type": "Resolution",
+                  "description": "Absent while the case is open",
+                  "optional": true,
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/customer_service/valueobjects/resolution"
+                  }
+                },
+                "customer_id": {
+                  "name": "customerId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/identity/aggregates/customer_account/entities/customer_account"
+                  }
                 }
               },
               "relations": [
@@ -3972,27 +4576,11 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/customer_service/aggregates/case/valueobjects/resolution"
+                    "$ref": "#/boundedcontexts/customer_service/valueobjects/resolution"
                   },
                   "relation": "uses",
                   "label": "resolved-as",
                   "cardinality": "0..1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
-                  },
-                  "relation": "references",
-                  "label": "about-order",
-                  "cardinality": "0..1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order_line"
-                  },
-                  "relation": "includes",
-                  "label": "disputes",
-                  "cardinality": "*"
                 }
               ]
             },
@@ -4001,6 +4589,11 @@
               "description": "A call, chat or email on the case",
               "root": false,
               "attributes": {
+                "interaction_id": {
+                  "name": "interactionId",
+                  "type": "string",
+                  "identity": true
+                },
                 "channel": {
                   "name": "channel",
                   "type": "'call' | 'chat' | 'email'"
@@ -4008,19 +4601,6 @@
                 "at": {
                   "name": "at",
                   "type": "date-time"
-                }
-              },
-              "relations": []
-            }
-          },
-          "valueobjects": {
-            "resolution": {
-              "name": "Resolution",
-              "description": "How it ended: refund, replacement, information, no action",
-              "attributes": {
-                "kind": {
-                  "name": "kind",
-                  "type": "'refund' | 'replacement' | 'information' | 'no-action'"
                 }
               },
               "relations": []
@@ -4039,7 +4619,63 @@
           }
         }
       },
-      "services": {},
+      "invariants": {},
+      "services": {
+        "case_api": {
+          "name": "CaseAPI",
+          "description": "Customer Service's application service: the boundary cases are opened through",
+          "type": "application",
+          "provides": {
+            "open_case": {
+              "name": "OpenCase",
+              "description": "Create a case for a customer, optionally about an order",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/customer_service/aggregates/case/provides/case_opened"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/services/order_api/provides/get_order"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/customer_service/services/case_api/provides/open_case"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/services/order_api/provides/request_return"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/provides/delivery_attempt_failed"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/identity/services/identity_api/provides/get_customer"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/customer_service/services/case_api/provides/open_case"
+                }
+              ]
+            }
+          ]
+        }
+      },
       "policies": {
         "open_case_on_failed_delivery": {
           "name": "Open case on failed delivery",
@@ -4051,11 +4687,12 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/customer_service/aggregates/case/provides/open_case"
+              "$ref": "#/boundedcontexts/customer_service/services/case_api/provides/open_case"
             }
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "case": {
           "name": "Case",
@@ -4067,6 +4704,20 @@
           "embodiedBy": {
             "$ref": "#/boundedcontexts/customer_service/aggregates/case"
           }
+        }
+      },
+      "valueobjects": {
+        "resolution": {
+          "name": "Resolution",
+          "description": "How it ended: refund, replacement, information, no action",
+          "attributes": {
+            "kind": {
+              "name": "kind",
+              "type": "'refund' | 'replacement' | 'information' | 'no-action'"
+            }
+          },
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {}
@@ -4118,12 +4769,13 @@
               "relations": []
             }
           },
-          "valueobjects": {},
           "invariants": {}
         }
       },
+      "invariants": {},
       "services": {},
       "policies": {},
+      "processes": {},
       "glossary": {
         "purchase_order": {
           "name": "Purchase order",
@@ -4136,7 +4788,23 @@
           }
         }
       },
+      "valueobjects": {},
       "schemas": {
+        "purchase_order_line": {
+          "name": "PurchaseOrderLine",
+          "description": "One line of the nightly export",
+          "attributes": {
+            "sku": {
+              "name": "sku",
+              "type": "string",
+              "identity": true
+            },
+            "quantity": {
+              "name": "quantity",
+              "type": "int32"
+            }
+          }
+        },
         "purchase_order_received": {
           "name": "PurchaseOrderReceived",
           "description": "The nightly export the warehouse reads",
@@ -4148,7 +4816,10 @@
             },
             "lines": {
               "name": "lines",
-              "type": "{sku, quantity}[]"
+              "type": "PurchaseOrderLine[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)/schemas/purchase_order_line"
+              }
             }
           }
         }
@@ -4197,10 +4868,10 @@
               "relations": []
             }
           },
-          "valueobjects": {},
           "invariants": {}
         }
       },
+      "invariants": {},
       "services": {
         "identity_api": {
           "name": "IdentityAPI",
@@ -4222,13 +4893,17 @@
               "name": "GetCustomer",
               "description": "Read a customer's profile",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "returns": {
+                "$ref": "#/boundedcontexts/identity/schemas/customer_profile"
+              }
             }
           },
           "consumes": []
         }
       },
       "policies": {},
+      "processes": {},
       "glossary": {
         "customer": {
           "name": "Customer",
@@ -4241,10 +4916,117 @@
           }
         }
       },
-      "schemas": {}
+      "valueobjects": {},
+      "schemas": {
+        "customer_profile": {
+          "name": "CustomerProfile",
+          "description": "A customer's profile",
+          "attributes": {
+            "customer_id": {
+              "name": "customerId",
+              "type": "string",
+              "identity": true
+            },
+            "email": {
+              "name": "email",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "payment_provider": {
+      "name": "Payment Provider",
+      "description": "The acquirer that actually holds, takes and returns the customer's money. RiverMart calls it and translates everything it says",
+      "subdomains": [],
+      "external": true,
+      "aggregates": {},
+      "invariants": {},
+      "services": {
+        "acquirer_api": {
+          "name": "Acquirer API",
+          "description": "The provider's documented interface, and all RiverMart sees",
+          "type": "application",
+          "provides": {
+            "hold_funds": {
+              "name": "HoldFunds",
+              "description": "Put a hold on the customer's instrument",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/payment_provider/schemas/provider_request"
+              }
+            },
+            "take_funds": {
+              "name": "TakeFunds",
+              "description": "Take money against an existing hold",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/payment_provider/schemas/provider_request"
+              }
+            },
+            "return_funds": {
+              "name": "ReturnFunds",
+              "description": "Send money back against something already taken",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/payment_provider/schemas/provider_request"
+              }
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {},
+      "processes": {},
+      "glossary": {},
+      "valueobjects": {},
+      "schemas": {
+        "provider_request": {
+          "name": "ProviderRequest",
+          "description": "The acquirer's wire format, which RiverMart does not shape",
+          "attributes": {
+            "merchant_reference": {
+              "name": "merchantReference",
+              "type": "string",
+              "identity": true
+            },
+            "amount_minor_units": {
+              "name": "amountMinorUnits",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            },
+            "instrument_token": {
+              "name": "instrumentToken",
+              "type": "string"
+            }
+          }
+        }
+      }
     }
   },
   "relationships": [
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/payment_provider"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/payments"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "The acquirer's API is the acquirer's; Payments keeps its own intent, capture and refund and translates at the edge"
+    },
     {
       "type": "upstream-downstream",
       "upstream": {
@@ -4376,13 +5158,57 @@
       "downstream": {
         "$ref": "#/boundedcontexts/order_management"
       },
-      "upstreamRoles": [
-        "open-host-service"
-      ],
-      "downstreamRoles": [
-        "conformist"
-      ],
-      "description": "Order lines carry the offer id they were bought from; Orders never reads Offers back, so the coupling is identity only"
+      "upstreamRoles": [],
+      "downstreamRoles": [],
+      "description": "Order lines carry the offer id they were bought from; Orders never reads Offers back, so the coupling is identity only and neither side plays a role in an exchange that does not happen"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/catalogue"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/cart_&_checkout"
+      },
+      "upstreamRoles": [],
+      "downstreamRoles": [],
+      "description": "A wishlist item names the product it saves; the shopper's list holds ids, and prices and titles come from Offers"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/catalogue"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/order_management"
+      },
+      "upstreamRoles": [],
+      "downstreamRoles": [],
+      "description": "An order line names the variant it was bought as, by SKU; the order never reads the catalogue back"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/identity"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/order_management"
+      },
+      "upstreamRoles": [],
+      "downstreamRoles": [],
+      "description": "An order names the customer account it was placed by, by id"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/order_management"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/last_mile"
+      },
+      "upstreamRoles": [],
+      "downstreamRoles": [],
+      "description": "A delivery event names the order it belongs to; Last Mile keeps the id, not the order"
     },
     {
       "type": "upstream-downstream",
@@ -4553,7 +5379,7 @@
         "published-language"
       ],
       "downstreamRoles": [],
-      "description": "Roles on the consumption were never agreed; see the role-coherence warning"
+      "description": "Last Mile takes the dispatch feed as the warehouse publishes it, and declares no downstream role: the two also share a kernel, so neither is upstream of the other and neither has a role to declare (card 47)"
     },
     {
       "type": "upstream-downstream",

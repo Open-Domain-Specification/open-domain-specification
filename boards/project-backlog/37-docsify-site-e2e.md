@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [infra, docs, frontend]
 priority: med
 agent: dev-opus

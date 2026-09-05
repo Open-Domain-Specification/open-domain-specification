@@ -22,6 +22,8 @@ const kindLabel: Record<keyof typeof ICONS, string> = {
 	event: "Event",
 	command: "Operation",
 	policy: "Policy",
+	process: "Process",
+	deadline: "Deadline",
 	term: "Glossary Term",
 	team: "Team",
 	consumable: "Consumable",
@@ -82,13 +84,17 @@ export function* searchIndex(file: WorkspaceFile): Iterable<Hit> {
 	}
 	for (const bc of ws.boundedcontexts.values()) {
 		yield hit(file, "boundedcontext", bc, []);
+		// A value object belongs to the context, not to one of its aggregates.
+		for (const v of bc.valueobjects.values())
+			yield hit(file, "valueobject", v, [bc.name]);
+		// So does a rule no one aggregate can keep (decision 27).
+		for (const i of bc.invariants.values())
+			yield hit(file, "invariant", i, [bc.name], "across aggregates");
 		for (const a of bc.aggregates.values()) {
 			const trail = [bc.name, a.name];
 			yield hit(file, "aggregate", a, [bc.name]);
 			for (const e of a.entities.values())
 				yield hit(file, "entity", e, trail, e.root ? "root" : undefined);
-			for (const v of a.valueobjects.values())
-				yield hit(file, "valueobject", v, trail);
 			for (const i of a.invariants.values())
 				yield hit(file, "invariant", i, trail);
 			for (const c of a.consumables.values())
@@ -113,6 +119,8 @@ export function* searchIndex(file: WorkspaceFile): Iterable<Hit> {
 		}
 		for (const p of bc.policies.values())
 			yield hit(file, "policy", p, [bc.name]);
+		for (const p of bc.processes.values())
+			yield hit(file, "process", p, [bc.name]);
 		for (const sc of bc.schemas.values())
 			yield hit(file, "schema", sc, [bc.name]);
 		for (const t of bc.glossary.values())

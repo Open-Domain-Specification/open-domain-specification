@@ -27,7 +27,7 @@ Structure  (5)                               (Section)
     🔑  id          int64
         name        string
     includes ⬚ Category  0..1  categorised-as   (relations: rows of keyword + Ref + secondary)
-  Value objects  (4)
+  Value objects  (4)                         (the context's, held by this aggregate)
   ⬚ Category
     ...
 
@@ -52,7 +52,11 @@ Integration                                  (Section)
 Each entity, value object and consumable is a level-3 subsection headed by
 its lockup and keywords, then its description, then a definition list of its
 facts and its attribute table. Subsections are separated by 16px, not by
-frames. The root entity is marked by the keyword `aggregate root` after its
+frames. The aggregate owns no value objects; they belong to the context
+(decision 16), and the `Value objects` subsection lists the ones this
+aggregate holds, meaning every value object an attribute or relation of one
+of its entities is typed by. A value object's own page sits under the
+context, not the aggregate. The root entity is marked by the keyword `aggregate root` after its
 name; the purple glow goes. Relations render as rows: relation word as a
 keyword, target `Ref`, cardinality and label in secondary text.
 

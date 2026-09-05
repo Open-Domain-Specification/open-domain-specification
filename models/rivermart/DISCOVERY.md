@@ -35,8 +35,8 @@ the seller rating is a score we keep ourselves."
 
 Recorded as: the Offers context serving the core "Offers & Buy Box" subdomain; the Offer
 aggregate with `fulfilledByRiverMart` and `sellerRating` beside price, `PricePositive` and
-`OneActiveOfferPerSellerSku` (a uniqueness rule that `PublishOffer` enforces, since one
-offer cannot see another); the BuyBoxService domain service; the `WithdrawSellerOffers`
+`OneActiveOfferPerSellerSku` (a uniqueness rule the context holds and `PublishOffer`
+keeps, since one offer cannot see another); the BuyBoxService domain service; the `WithdrawSellerOffers`
 policy on `SellerSuspended`; an anti-corruption consumption of catalogue events;
 customer-supplier towards Cart & Checkout. First-party retail is a seller id in Offers, not
 a context of its own.
@@ -70,8 +70,10 @@ their campaigns pause the same moment."
 Both: "We used to break each other. Now we plan the results page as one product and
 release together. Neither of us changes it alone."
 
-Recorded as: Search with a projection aggregate (SearchIndex), the Ranker domain service and
-a conformist stance to Catalogue and Offers; Advertising with the Campaign aggregate,
+Recorded as: Search with SearchAPI as its query service — a projection is a service that
+provides a query operation, not an aggregate with an invented root (decision 15) — the
+Ranker domain service and a conformist stance to Catalogue and Offers; Advertising with the
+Campaign aggregate,
 `BidWithinBudget`, the AuctionService (which awards slots and charges nothing) and
 `RecordAdClick`, the open-host operation the results page calls, which is what raises
 `AdClicked`; the `PauseSellerCampaigns` policy; a partnership between Search and
@@ -101,10 +103,12 @@ built last year; I honestly don't know how it's modelled."
 
 Recorded as: Cart & Checkout serving "Ordering"; Cart aggregate with CartLine `includes`,
 `LineQuantityAtLeastOne` and `MaxFiftyLines`; the CheckoutOrchestrator application service
-consuming `AuthorisePayment` and `PlaceOrder` through anti-corruption layers; the two
-policies that chain `CartCheckedOut` to `AuthorisePayment` and `PaymentAuthorised` to
-`PlaceOrder`, and a third, "Reopen cart on decline", for the failure path ("the cart stays
-open"). The wishlist was modelled as found (see section 7).
+consuming `AuthorisePayment` and `PlaceOrder` through anti-corruption layers; the
+"Checkout" process, which starts on `CartCheckedOut`, asks for the hold and waits, places
+the order on `PaymentAuthorised` and reopens the cart on `PaymentDeclined` ("the cart stays
+open"), ending on `OrderPlaced`. It was three chained policies until card 60, none of which
+could say that the checkout was waiting for an answer. The wishlist was modelled as found
+(see section 7).
 
 ### Orders Team lead
 
@@ -120,11 +124,17 @@ sit as placed forever; the customer sees that. We call Payments to refund once t
 warehouse has graded a return."
 
 Recorded as: the Order aggregate with OrderLine, Shipment, Return and ReturnLine as
-`includes`; four invariants; policies "Record dispatch", "Complete on delivery", "Refund on
-received return", "Cancel flagged orders" and "Hold on stock short"; anti-corruption
+`includes`; four invariants; the "Order to delivery" process, which starts on
+`OrderPlaced`, waits for the warehouse and the last mile, records dispatches, holds the
+order when stock is short, completes it when the last parcel is handed over and ends on
+`OrderCompleted` or `OrderCancelled` (card 60: it was three policies that between them
+could not say when the order was done); policies "Refund on received return" and
+"Cancel flagged orders"; anti-corruption
 consumptions of Warehouse, Last Mile, Fraud and Payments; the glossary entries for Order,
 Shipment and Return. Orders is downstream of Payments for the refund call and of Offers for
-the offer id each line carries; both are on the map.
+the offer id each line carries; both are on the map. `CancelOrder` rejects with
+`CancelRefused` once a shipment has left the dock: nothing was cancelled, and the storefront
+is told which shipment blocked it so it can offer a return instead.
 
 ### Payments engineering lead
 
@@ -148,9 +158,12 @@ A score is 0 to 1000 with the signals that produced it; a flag without an explan
 is useless to an agent. We publish flags; Orders cancels, Seller Services suspends. We don't
 sit in the checkout path and we don't want to."
 
-Recorded as: Fraud as supporting; RiskAssessment with `ScoreExplained`; the RiskScorer domain
-service with `ScoreOrder` and `ScoreSeller`; two policies; published flags consumed
-downstream.
+Recorded as: Fraud as supporting; RiskAssessment with `ScoreExplained` and `OneSubject`;
+the RiskScorer domain service with `ScoreOrder` and `ScoreSeller`; two policies; published
+flags consumed downstream. "We score orders or sellers" is two subjects, and the assessment
+says which one it is with `orderId` and `sellerId`, each optional and each identifying its
+own target: card 95 replaced the single `subjectId` that was typed string, described as "an
+order id or a seller id", and identified nothing.
 
 ### Head of Fulfilment
 
@@ -242,7 +255,9 @@ marked every place two people disagreed about a word. The main timeline, condens
 | OfferPublished / OfferWithdrawn | PublishOffer / WithdrawSellerOffers | Recompute buy box |
 | BuyBoxAwarded | AwardBuyBox | Search reindexes price |
 | CartCheckedOut | Checkout | Authorise on checkout |
-| PaymentAuthorised / PaymentDeclined | AuthorisePayment | Place order on authorisation / Reopen cart on decline |
+| PaymentAuthorised | AuthorisePayment | Checkout places the order |
+| PaymentDeclined (an answer, not an event) | AuthorisePayment rejects with it | Checkout reopens the cart |
+| Authorisation expiry (a deadline, not an event) | the Checkout process's own clock | Checkout ends: nobody came back |
 | OrderPlaced | PlaceOrder | Warehouse reserves; Fraud scores order; Payments attaches the order id |
 | OrderRiskFlagged | ScoreOrder | Cancel flagged orders |
 | OrderCancelled | CancelOrder | Warehouse releases the reservation and voids pick tasks |
@@ -264,15 +279,16 @@ own context uses are `internal`.
 The wall was not this tidy. The table is the happy path; the red hotspot stickies, each of
 which is now somewhere in the model, were:
 
-- A payment declined after the cart was frozen (Checkout: "the cart stays open"; now a policy).
+- A payment declined after the cart was frozen (Checkout: "the cart stays open"; the decline is
+  what `AuthorisePayment` rejects with and the Checkout process waits on it, card 92).
 - No site able to reserve for an order (Warehouse: "it waits or is split"; now `StockShort`
   puts the order into awaiting-stock in Orders).
 - A fraud flag arriving after the warehouse had already reserved (Fulfilment and Trust &
   Safety disagreed on who guaranteed no pick; now `OrderCancelled` releases and voids).
 - Order lines copied onto cases (Customer Service; left in as the deliberate
   `cross-aggregate-reference`, section 7).
-- Who translates the dispatch feed (Logistics; left in as the deliberate `role-coherence`
-  warning, section 7).
+- Who translates the dispatch feed (Logistics; still unagreed, and the relationship says so,
+  section 7).
 - Charging on impression versus on click (Ads and Search; the auction awards, the click pays).
 
 ## 4. Language collisions
@@ -280,8 +296,9 @@ which is now somewhere in the model, were:
 Pink stickies from the wall, each of which became a context boundary or a glossary entry:
 
 - **Order.** Customer order (Orders), purchase order (Vendor Purchasing), fulfilment order
-  (Warehouse). Three contexts, three aggregates; the warehouse's `FulfilmentOrder`
-  `references` the customer `Order` by identity only.
+  (Warehouse). Three contexts, three aggregates; the warehouse's `FulfilmentOrder` holds the
+  customer `Order`'s identity in an `orderId` attribute, since decision 14 a relation never
+  crosses a context.
 - **Shipment / Package / Parcel.** Orders says shipment and means the customer-visible
   group of lines; Warehouse says package and means a box with a label; Logistics says
   parcel and means the thing at a stop. Modelled as three entities in three aggregates, with
@@ -327,9 +344,12 @@ to integrate.
   on the documented APIs, conformist where the downstream "takes it as published",
   anti-corruption layer where it "keeps its own shape".
 - **Shared kernel** between Warehouse and Last Mile: the label library is one codebase both
-  teams change. Each context still has its own `TrackingLabel` value object in the model,
-  with the description saying it is the shared one, because a value object belongs to an
-  aggregate.
+  teams change. `TrackingLabel` is declared once, in Warehouse, and Last Mile's `Parcel`
+  types its label by that same value object: a shared kernel is the one relationship over
+  which a value object may be borrowed (decision 16), so the model holds one definition
+  where the library holds one file. It used to be declared twice, once in each context, with
+  each description claiming it was the shared one; two definitions that must not drift is
+  what the kernel exists to avoid, and card 89 removed the copy.
 - **Partnership** between Search and Advertising: one results page, one planning cycle, a
   joint release calendar.
 - **Separate ways** between Vendor Purchasing and Seller Onboarding: decided policy since
@@ -339,13 +359,14 @@ to integrate.
   than inventing a partnership that neither team recognised. Orders and Payments are the same
   shape: the order id goes to Payments on `OrderPlaced`, refunds come back through the
   payments API.
-- Every `references` across a context boundary has a relationship on the map: Orders to
-  Offers (the offer id on a line) and Advertising to Catalogue (the products an ad group
-  advertises), both conformist because only an id crosses.
+- Every cross-context identity has a relationship on the map: Orders to Offers (the offer
+  id on a line) and Advertising to Catalogue (the product id an ad group advertises), both
+  conformist because only an id crosses; since decision 14 the relation stays inside its
+  own context and the identity attribute is what carries the dependency.
 
 ## 7. Validation and what we left in
 
-Running `validate()` on the finished model gives three diagnostics. Each corresponds to a
+Running `validate()` on the finished model gives two diagnostics. Each corresponds to a
 real finding, and the client asked that they stay in the model so the owning team sees them:
 
 - `aggregate-root` on the Wishlist: the growth squad marked both Wishlist and WishlistItem
@@ -353,9 +374,21 @@ real finding, and the client asked that they stay in the model so the owning tea
 - `cross-aggregate-reference` on Case: the case system `includes` order lines that belong to
   the Order aggregate. This is the stale-lines problem behind the wrong refunds. The fix is
   to hold the line ids and read through the Orders API.
-- `role-coherence` on Last Mile's consumption of `ShipmentDispatched`: no downstream role,
-  because the two teams have never agreed one. The relationship is declared with only the
-  upstream role, which is the honest state.
+
+The partnership between Search and Advertising used to raise `partnership-backed` as a third
+finding. The two teams call the results page one product and release it together, but every
+dependency runs one way — Search calls `GetSponsoredResults` and reports clicks through
+`RecordAdClick`, and Advertising consumes nothing of Search's. The declaration is true: a
+partnership in DDD is two teams whose success is mutual and whose releases are planned as
+one, which is exactly the results page, and it does not require consumption in both
+directions. Decision 20's second amendment relaxed the rule to traffic in at least one
+direction; the model is unchanged and the diagnostic is gone.
+
+Last Mile's consumption of `ShipmentDispatched` still declares no downstream role, because
+the two teams have never agreed one. That used to raise `role-coherence`; card 47 found the
+rule right to stay quiet, since Warehouse and Last Mile share a kernel and neither end is
+upstream of the other, so there is no role for either to declare. The model is unchanged and
+the diagnostic is gone.
 
 ## 8. What the model leaves out
 
@@ -419,9 +452,11 @@ Partially accepted
 - First-party retail had no place in Offers. Accepted that it needed saying, not that it
   needs a context: RiverMart's retail arm is a seller id in Offers, now stated on the
   aggregate, the glossary and in the interview.
-- `OneActiveOfferPerSellerSku` cannot be enforced by one Offer instance. ODS invariants
-  belong to an aggregate, so it stays, now constraining the (sellerId, sku) pair and saying
-  `PublishOffer` enforces it over the seller's existing offers.
+- `OneActiveOfferPerSellerSku` cannot be enforced by one Offer instance. Since decision 27
+  a bounded context may hold an invariant across its instances, guarded by an operation
+  that checks it before acting; the rule moves to the Offers context, constraining the
+  (sellerId, sku) pair and naming `PublishOffer`, which checks the seller's existing offers,
+  as its guard.
 - The event storming table was a sterile happy path. Changed: the hotspots from the wall are
   listed under it, and the failure rows (decline, stock short, cancellation, click) added.
   The half-day session stands; the table was always described as condensed.
@@ -446,3 +481,109 @@ Rejected
 - The interviews read like a textbook: the quoted speech is plain ("we take it as
   published", "nothing special about us"); the DDD terms appear only in the "Recorded as"
   lines, which is where they belong.
+
+## 10. Revision (card 71): the payment provider becomes an external context
+
+The Payments pages already spoke of somebody who was not in the model: Authorisation is "the
+provider's hold on the customer's funds" and `PaymentDeclined` is "the provider refused". The
+provider itself appeared nowhere, so the map showed RiverMart holding and taking money by
+itself. Decision 28 gives it a place: **Payment Provider**, a bounded context with
+`external: true` — no subdomain, no team, no aggregates, because the acquirer's insides are
+not RiverMart's to state — with one service offering `HoldFunds`, `TakeFunds` and
+`ReturnFunds` in its own wire format. Payments consumes all three through an anti-corruption
+layer, made by `AuthorisePayment`, `CapturePayment` and `RefundPayment` respectively, and the
+map carries one upstream-downstream relationship: open host upstream, anti-corruption layer
+downstream. That is the shape the Payments lead described, "we would buy this from a provider
+tomorrow if the provider's API were good enough" — RiverMart keeps its own intent, capture
+and refund and translates at the edge.
+
+Card 71 also added `event-unraised`, a warning about an event no operation of its context
+raises. RiverMart had one: Vendor Purchasing's `PurchaseOrderReceived`, which the Warehouse
+reads and which nothing in the model caused. The Retail Systems engineer named the cause in
+the interview — "the nightly export of received vendor stock" — so the model named the job:
+a `NightlyExport` service with one internal operation, `RunNightlyExport`, raising the
+event. The two deliberate diagnostics of section 7 are untouched.
+
+## Revision (card 90): the export job comes back out
+
+The engineer's exact words were "I can describe the export; I can't describe the rest", and
+the service the model built from them called itself "the one job of the ninety that anyone
+can describe". Ninety jobs nobody can read is what `bigBallOfMud` means, and inventing one
+service so a rule had something to point at claimed a shape of the inside that nobody at
+RiverMart could confirm. A big ball of mud is now exempt from `event-unraised`, as an
+external context is (decision 28's second amendment), so `NightlyExport` and
+`RunNightlyExport` are gone. Vendor Purchasing keeps the aggregate, the event and the
+export's shape: it says what it emits and not how, which is all anyone knows.
+
+Two other things came out of the same card. `Cart & Checkout` was declared upstream of
+`Payments` with no roles, for the cart id that `PaymentAuthorised` and `AuthorisePayment`
+carry — "so checkout can match it back", as its own description said. An id echoed in a
+payload is not a dependency: Payments stores no cart and asks Checkout for nothing
+(decision 14's second amendment), so that relationship is gone and the customer-supplier
+one that runs the other way is the whole of the pair. And every cross-context call that
+could name its caller now does: `SearchAPI` gained `ReportAdClick`, the operation the Ads
+interview described as "Search tells us when one of them is clicked" and which the model had
+never named, so the consumption of `RecordAdClick` no longer reads as the whole of Search
+calling out. `CaseAPI`'s consumption of `RequestReturn` stays without a caller on purpose:
+an agent raises a return while resolving a case, and `ResolveCase` is the Case aggregate's
+operation, not CaseAPI's to name.
+
+## Optionality against cardinality (card 82)
+
+`attribute-relation-coherence` now reads an attribute's `optional` against its relation's
+cardinality. `Product.brand` and `Shipment.tracking` were required beside relations of
+`0..1`; own-label goods carry no brand and a shipment has no carrier reference until the
+carrier gives one, so both attributes are optional and the two halves agree.
+
+## Revision (card 92): the decline is an answer, and a hold that expires ends the checkout
+
+The Checkout tech lead described one call and two outcomes — "we ask Payments to hold the
+money, and only when the hold succeeds do we tell Orders to create the order. If the hold
+fails the customer sees an error and the cart stays open" — and the model published the
+failure as `PaymentDeclined`, an event with a published language, against decision 25's own
+example. Nothing happened when a hold was declined; a call came back refused, and the only
+party who hears it is the caller who asked. `AuthorisePayment` now **rejects with**
+`PaymentDeclined`, a schema of Payments carrying the payment id and the reason the storefront
+shows, and the Checkout process waits on that answer (decision 23's second amendment). The
+consumption of the event is gone with it: the answer arrives down the `AuthorisePayment`
+call the orchestrator already declares, which is what makes it Checkout's to hear.
+
+The same interview left a question the model had never answered: what finishes a checkout
+nobody comes back to? Its own description said the instance "stays open with the cart",
+which is a process that never ends. The Payments lead and the Authorisation glossary entry
+both say what really happens — a hold "expires if not captured", and `Authorisation` has
+carried `expiresAt` since the first draft. So Payments' application service gains
+`ExpireAuthorisations`, which a scheduler runs every few minutes and which raises
+`AuthorisationExpired` for every hold past its expiry. Nothing in the model consumes the
+operation, which is what an operation called from outside the software looks like
+(decision 28); the released hold is a published fact, and the Checkout process ends on it.
+A cart nobody returns to is still the customer's to abandon: what ends is the checkout, not
+the cart.
+
+The deliberate diagnostics of section 7 are untouched.
+
+## Revision (card 95): the checkout's clock is its own, and an assessment says what it is of
+
+Two of card 92's answers were right and one of its mechanisms was not. What finishes a
+checkout nobody comes back to is still the hold running out — the Payments lead and the
+Authorisation glossary entry both say a hold "expires if not captured", and neither gives an
+interval, so the deadline says that and no more — but the model wrote that as an `ExpireAuthorisations` operation on Payments
+that "a scheduler runs every few minutes" and an `AuthorisationExpired` event that only the
+checkout ever heard. That is five declarations, and one of them is a claim about the world:
+that something outside the software sweeps holds on a timer. Nobody said so.
+
+A per-instance limit is the process's own. It starts when this instance asks for the hold,
+nobody outside knows the instance exists, and running out of time is how the instance
+finishes. So the Checkout process declares a deadline, "Authorisation expiry", after 30
+minutes, and ends on it; the scheduler operation and the event are gone with it. Decision
+23's fourth amendment is the general form, and decision 28's Clock stays for what it was
+meant for: calendar events every context shares.
+
+And `RiskAssessment.subjectId` now follows the answer decision 15 gave in its own name. One
+attribute typed string and described as "an order id or a seller id" identified nothing,
+because `identifies` names one kind of thing. It is two optional attributes, `orderId` and
+`sellerId`, each identifying its target, with `OneSubject` saying in prose that exactly one
+is set — which is the model's answer to a polymorphic reference, and the decision cited this
+very attribute as an example of it while the model did something else.
+
+The deliberate diagnostics of section 7 are untouched.

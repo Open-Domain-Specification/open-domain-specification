@@ -20,11 +20,17 @@ export function pageRefs(ws: Workspace): string[] {
 	}
 	for (const bc of ws.boundedcontexts.values()) {
 		refs.push(bc.ref);
+		for (const v of bc.valueobjects.values()) {
+			refs.push(v.ref);
+			// A rule the value keeps by construction (decision 27).
+			for (const i of v.invariants.values()) refs.push(i.ref);
+		}
+		// A rule the context keeps rather than one aggregate (decision 27).
+		for (const i of bc.invariants.values()) refs.push(i.ref);
 		for (const a of bc.aggregates.values()) {
 			refs.push(a.ref);
 			for (const m of [
 				...a.entities.values(),
-				...a.valueobjects.values(),
 				...a.invariants.values(),
 				...a.consumables.values(),
 			])
@@ -35,6 +41,7 @@ export function pageRefs(ws: Workspace): string[] {
 			for (const c of s.consumables.values()) refs.push(c.ref);
 		}
 		for (const p of bc.policies.values()) refs.push(p.ref);
+		for (const p of bc.processes.values()) refs.push(p.ref);
 		for (const s of bc.schemas.values()) refs.push(s.ref);
 		for (const t of bc.glossary.values()) refs.push(t.ref);
 	}
@@ -44,7 +51,7 @@ export function pageRefs(ws: Workspace): string[] {
 const AGG = /^#\/boundedcontexts\/([^/]+)\/aggregates\/([^/]+)/;
 const aggregateOf = (ws: Workspace, m: RegExpMatchArray) =>
 	ws.boundedcontexts.get(m[1])?.aggregates.get(m[2]);
-const memberOf = (kind: "entities" | "valueobjects" | "invariants") => [
+const memberOf = (kind: "entities" | "invariants") => [
 	new RegExp(`${AGG.source}\\/${kind}\\/([^/]+)`),
 	(ws: Workspace, m: RegExpMatchArray) => aggregateOf(ws, m)?.[kind].get(m[3]),
 ];
@@ -64,7 +71,21 @@ const PAGE_PATTERNS: [
 		(ws, m) => ws.domains.get(m[1])?.subdomains.get(m[2]),
 	],
 	[/^#\/domains\/([^/]+)/, (ws, m) => ws.domains.get(m[1])],
-	...(["entities", "valueobjects", "invariants"] as const).map(
+	// A value object hangs off the context, not the aggregate (decision 16), and
+	// its own rules hang off it, so they are matched first.
+	[
+		/^#\/boundedcontexts\/([^/]+)\/valueobjects\/([^/]+)\/invariants\/([^/]+)/,
+		(ws, m) =>
+			ws.boundedcontexts
+				.get(m[1])
+				?.valueobjects.get(m[2])
+				?.invariants.get(m[3]),
+	],
+	[
+		/^#\/boundedcontexts\/([^/]+)\/valueobjects\/([^/]+)/,
+		(ws, m) => ws.boundedcontexts.get(m[1])?.valueobjects.get(m[2]),
+	],
+	...(["entities", "invariants"] as const).map(
 		(k) =>
 			memberOf(k) as [RegExp, (ws: Workspace, m: RegExpMatchArray) => unknown],
 	),
@@ -87,12 +108,21 @@ const PAGE_PATTERNS: [
 		(ws, m) => ws.boundedcontexts.get(m[1])?.policies.get(m[2]),
 	],
 	[
+		/^#\/boundedcontexts\/([^/]+)\/processes\/([^/]+)/,
+		(ws, m) => ws.boundedcontexts.get(m[1])?.processes.get(m[2]),
+	],
+	[
 		/^#\/boundedcontexts\/([^/]+)\/schemas\/([^/]+)/,
 		(ws, m) => ws.boundedcontexts.get(m[1])?.schemas.get(m[2]),
 	],
 	[
 		/^#\/boundedcontexts\/([^/]+)\/glossary\/([^/]+)/,
 		(ws, m) => ws.boundedcontexts.get(m[1])?.glossary.get(m[2]),
+	],
+	// An invariant the context owns; the aggregate's is matched further up.
+	[
+		/^#\/boundedcontexts\/([^/]+)\/invariants\/([^/]+)/,
+		(ws, m) => ws.boundedcontexts.get(m[1])?.invariants.get(m[2]),
 	],
 	[/^#\/boundedcontexts\/([^/]+)/, (ws, m) => ws.boundedcontexts.get(m[1])],
 ];

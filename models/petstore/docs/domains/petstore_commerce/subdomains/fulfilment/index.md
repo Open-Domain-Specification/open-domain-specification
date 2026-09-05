@@ -15,12 +15,21 @@ Plans and tracks the shipment of an approved order until it is delivered
 ## Context Relationships
 | Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |
+| Catalog BC | customer-supplier | Sales BC | open-host-service | anti-corruption-layer |
 | Sales BC | partnership | Fulfilment BC | - | - |
 
 
 ## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
-| [Shipment](../../../../boundedcontexts/fulfilment_bc/aggregates/shipment/index.md) | conformist | Order | OrderApproved | published-language |
+| [ShipmentApp](../../../../boundedcontexts/fulfilment_bc/services/shipment_app/index.md) | - | OrderApp | ConfirmDelivery | open-host-service |
+| [OrderApp](../../../../boundedcontexts/sales_bc/services/order_app/index.md) | - | Order | DeliverOrder | - |
+| [OrderApp](../../../../boundedcontexts/sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
+| [PetApp](../../../../boundedcontexts/catalog_bc/services/pet_app/index.md) | - | Pet | ReservePet | - |
+| [PetApp](../../../../boundedcontexts/catalog_bc/services/pet_app/index.md) | - | Pet | MarkPetSold | - |
+| [OrderApp](../../../../boundedcontexts/sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
+| [OrderApp](../../../../boundedcontexts/sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [OrderApp](../../../../boundedcontexts/sales_bc/services/order_app/index.md) | anti-corruption-layer | Pet | PetStatusChanged | published-language |
+| [ShipmentApp](../../../../boundedcontexts/fulfilment_bc/services/shipment_app/index.md) | conformist | Order | OrderApproved | published-language |
 	
 	

@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [infra, perf, frontend]
 priority: high
 agent: dev-opus

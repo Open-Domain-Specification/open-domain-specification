@@ -10,10 +10,10 @@
 ## Layout
 
 ```
-Swagger Petstore (v3) › Catalog BC › Pet
+Swagger Petstore (v3) › Catalog BC
 ⬚ Category  category  Value object
 The kind of animal, e.g. Dogs ...
-Aggregate   ⬚ Pet
+Context     ⬚ Catalog BC
 
 Attributes  (2)                                  (AttributesSection)
 
@@ -27,5 +27,8 @@ Constrained by  (0)                              (InvariantsSection)
 In the ubiquitous language                       (LanguageSection)
 ```
 
-Same shape as the entity page; the usage table is already a table and only
+Same shape as the entity page, except the value object belongs to the
+context (decision 16): the crumbs stop at the context, the one header fact
+is `Context`, and `Constrained by` gathers the invariants of every aggregate
+in the context that name it. The usage table is already a table and only
 its cells change (attribute in the editor font, owners as lockups).

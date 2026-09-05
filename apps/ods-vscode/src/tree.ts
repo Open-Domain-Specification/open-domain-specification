@@ -276,10 +276,25 @@ export class ModelTree
 					group(node, "Services", "symbol-method", () =>
 						[...bc.services.values()].map((s) => this.serviceNode(node, s)),
 					),
+					group(node, "Invariants", "shield", () =>
+						this.leaves(file, bc.invariants.values(), "shield"),
+					),
+					group(node, "Value Objects", "symbol-constant", () =>
+						this.leaves(file, bc.valueobjects.values(), "symbol-constant"),
+					),
 					group(node, "Policies", "law", () =>
 						[...bc.policies.values()].map(
 							(p) =>
 								new ModelNode(file, p.name, "law", undefined, {
+									ref: p.ref,
+									description: p.id,
+								}),
+						),
+					),
+					group(node, "Processes", "server-process", () =>
+						[...bc.processes.values()].map(
+							(p) =>
+								new ModelNode(file, p.name, "server-process", undefined, {
 									ref: p.ref,
 									description: p.id,
 								}),
@@ -300,7 +315,11 @@ export class ModelTree
 				].filter((n): n is ModelNode => !!n),
 			{
 				ref: bc.ref,
-				description: [bc.id, bc.bigBallOfMud ? "big ball of mud" : undefined]
+				description: [
+					bc.id,
+					bc.bigBallOfMud ? "big ball of mud" : undefined,
+					bc.external ? "external system" : undefined,
+				]
 					.filter(Boolean)
 					.join(" · "),
 				parent,
@@ -355,9 +374,6 @@ export class ModelTree
 				[
 					group(node, "Entities", "symbol-field", () =>
 						this.leaves(file, a.entities.values(), "symbol-field"),
-					),
-					group(node, "Value Objects", "symbol-constant", () =>
-						this.leaves(file, a.valueobjects.values(), "symbol-constant"),
 					),
 					group(node, "Invariants", "shield", () =>
 						this.leaves(file, a.invariants.values(), "shield"),

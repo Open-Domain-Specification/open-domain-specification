@@ -5,7 +5,11 @@ import type {
 } from "@open-domain-specification/core";
 import { STEREOTYPES } from "@open-domain-specification/graphviz";
 import { describe, expect, it } from "vitest";
-import { relationEdgeType, relationGraph } from "./relation-graph";
+import {
+	type RelationNodeData,
+	relationEdgeType,
+	relationGraph,
+} from "./relation-graph";
 
 function node(overrides: Partial<ODSRelationMapNode> = {}): ODSRelationMapNode {
 	return {
@@ -49,6 +53,30 @@ describe("relationGraph", () => {
 		expect(vo.chips).toEqual(["value object"]);
 		expect(vo.tone).toBe("muted");
 		expect(vo.icon).not.toBe(entity.icon);
+	});
+
+	it("marks a borrowed value object with its stereotype and the context that owns it", () => {
+		const [own, borrowed] = relationGraph(
+			mapOf([
+				node({ id: "#/v", type: "valueobject" }),
+				node({
+					id: "#/k",
+					type: "foreign_valueobject",
+					namespace: [
+						{ id: "ws", name: "Workspace" },
+						{ id: "kernel", name: "Shared Kernel" },
+					],
+				}),
+			]),
+		).nodes as RelationNodeData[];
+		expect(own.borrowed).toBe(false);
+		expect(borrowed.borrowed).toBe(true);
+		expect(borrowed.chips).toEqual([STEREOTYPES.foreign_valueobject]);
+		// It recedes like any value object, and its subtitle names the context
+		// the value belongs to.
+		expect(borrowed.tone).toBe("muted");
+		expect(borrowed.groupPath).toBe("Shared Kernel");
+		expect(borrowed.icon).toBe(own.icon);
 	});
 
 	it("labels a nameless node with its ref", () => {
@@ -150,5 +178,6 @@ describe("relationGraph", () => {
 		expect(edges[1].sourceLabel).toBeUndefined();
 		expect(edges[2].sourceLabel).toBeUndefined();
 		expect(relationEdgeType("uses")).toBe("relation-uses");
+		expect(relationEdgeType("identifies")).toBe("relation-identifies");
 	});
 });

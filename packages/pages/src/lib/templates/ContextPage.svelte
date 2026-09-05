@@ -2,8 +2,10 @@
 export const sections = [
 	{ id: "position", label: "Strategic position" },
 	{ id: "model", label: "Model" },
+	{ id: "invariants", label: "Invariants" },
+	{ id: "values", label: "Value objects" },
 	{ id: "integration", label: "Integration surface" },
-	{ id: "behaviour", label: "Policies" },
+	{ id: "reactions", label: "Reactions" },
 	{ id: "schemas", label: "Schemas" },
 	{ id: "language", label: "Ubiquitous language" },
 ];
@@ -12,11 +14,18 @@ export const sections = [
 <script lang="ts">
 import {
 	type Aggregate,
+	Answer,
 	type BoundedContext,
+	Deadline,
 	ODSConsumableMap,
 	ODSContextMap,
+	ODSFlowMap,
+	type ProcessTrigger,
+	type ValueObject,
 } from "@open-domain-specification/core";
-import { consumableGraph, contextGraph } from "../flow/graph";
+import { valueObjectsOf } from "../elements";
+import { consumableGraph, contextGraph, flowGraph } from "../flow/graph";
+import { FLOW_MAP_EMPTY, flowMapCaption } from "../flow/flow-graph";
 import {
 	consumableIcon,
 	ICONS,
@@ -36,11 +45,13 @@ import Keyword from "../atoms/Keyword.svelte";
 import Lockup from "../atoms/Lockup.svelte";
 import AttributeTable from "../molecules/AttributeTable.svelte";
 import ConsumesTable from "../molecules/ConsumesTable.svelte";
-import { MUD } from "../molecules/ContextLockup.svelte";
+import { EXTERNAL, MUD } from "../molecules/ContextLockup.svelte";
+import { kindOf } from "../molecules/element-kind";
 import Joined from "../molecules/Joined.svelte";
 import ProvidesTable from "../molecules/ProvidesTable.svelte";
 import TeamLockup from "../molecules/TeamLockup.svelte";
 import DiagramFigure from "../organisms/DiagramFigure.svelte";
+import InvariantsSection from "../organisms/InvariantsSection.svelte";
 import PageHeader from "../organisms/PageHeader.svelte";
 import Section from "../organisms/Section.svelte";
 import StrategicPositionTable from "../organisms/StrategicPositionTable.svelte";
@@ -60,8 +71,13 @@ const ws = model.workspace;
 const aggregates = $derived([...bc.aggregates.values()]);
 const services = $derived([...bc.services.values()]);
 const policies = $derived([...bc.policies.values()]);
+const processes = $derived([...bc.processes.values()]);
 const terms = $derived([...bc.glossary.values()]);
 const schemas = $derived([...bc.schemas.values()]);
+const valueobjects = $derived([...bc.valueobjects.values()]);
+// The rules no single instance can keep: they belong to the context and each
+// names the operation that checks it before acting (decision 27).
+const invariants = $derived([...bc.invariants.values()]);
 const members = $derived([...aggregates, ...services]);
 const provides = $derived(members.flatMap((m) => [...m.consumables.values()]));
 const consumes = $derived(members.flatMap((m) => m.consumptions));
@@ -71,10 +87,16 @@ const relationships = $derived(
 const contextMap = $derived(ODSContextMap.fromBoundedContext(bc));
 const consumableMap = $derived(ODSConsumableMap.fromBoundedContext(bc));
 const mapCaption = $derived(`${bc.name} context map`);
+const flowMap = $derived(ODSFlowMap.fromBoundedContext(bc));
 const consumableCaption = $derived(`${bc.name} consumable map`);
+const flowCaption = $derived(flowMapCaption(bc.name));
 
 const countOf = (kind: "operation" | "event", a: Aggregate) =>
 	[...a.consumables.values()].filter((c) => c.type === kind).length;
+
+/** The aggregates of this context that hold a value object. */
+const holdersOf = (v: ValueObject) =>
+	aggregates.filter((a) => valueObjectsOf(a).includes(v));
 
 const aggregateColumns: Column[] = [
 	{ key: "name", label: "Aggregate" },
@@ -86,15 +108,47 @@ const aggregateColumns: Column[] = [
 	{ key: "events", label: "Events", numeric: true },
 	{ key: "description", label: "Description" },
 ];
+const valueObjectColumns: Column[] = [
+	{ key: "name", label: "Value object" },
+	{ key: "attributes", label: "Attributes", numeric: true },
+	{ key: "heldby", label: "Held by" },
+	{ key: "description", label: "Description" },
+];
 const serviceColumns: Column[] = [
 	{ key: "name", label: "Service" },
 	{ key: "type", label: "Kind" },
 	{ key: "description", label: "Description" },
 ];
+/**
+ * What one cell of a reaction's row links to and says. An answer has no page
+ * of its own, so it links to the shape it came back as and names the call it
+ * came back from in the tooltip: two operations may answer with one shape, and
+ * the row has to say which one this reaction waits on (decision 23).
+ */
+const triggerLink = (trigger: ProcessTrigger) => {
+	if (trigger instanceof Answer)
+		return { ref: trigger.schema.ref, title: trigger.origin };
+	// A deadline has no page either: it is declared on the process, and how
+	// long the instance had is the whole of what it says.
+	if (trigger instanceof Deadline)
+		return { ref: trigger.process.ref, title: `after ${trigger.after}` };
+	return { ref: trigger.ref, title: undefined };
+};
 const policyColumns: Column[] = [
 	{ key: "name", label: "Policy" },
 	{ key: "when", label: "When" },
 	{ key: "then", label: "Then" },
+	{ key: "description", label: "Description" },
+];
+// The lifecycle in the order it runs, so a reader follows one instance
+// across the row: what begins it, what it waits for, what it does, what
+// finishes it.
+const processColumns: Column[] = [
+	{ key: "name", label: "Process" },
+	{ key: "starts", label: "Starts" },
+	{ key: "when", label: "While it runs" },
+	{ key: "then", label: "Then" },
+	{ key: "ends", label: "Ends" },
 	{ key: "description", label: "Description" },
 ];
 const termColumns: Column[] = [
@@ -109,6 +163,7 @@ const termColumns: Column[] = [
 	{#snippet title()}<Lockup kind="boundedcontext" name={bc.name} id={bc.id} detail="Bounded context" size="title" />{/snippet}
 	{#snippet meta()}
 		{#if bc.bigBallOfMud}<Keyword text={MUD.label} tone="warn" title={MUD.title} />{/if}
+		{#if bc.external}<Keyword text={EXTERNAL.label} title={EXTERNAL.title} />{/if}
 	{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
@@ -119,7 +174,7 @@ const termColumns: Column[] = [
 								ref={s.ref}
 							/> <Keyword text={s.type} title={SUBDOMAIN_TYPE[s.type]} /></span>{:else}<Keyword text="no subdomain" />{/each}</Joined>
 			</Definition>
-			<Definition term="Owned by"><TeamLockup team={bc.team} /></Definition>
+			<Definition term="Owned by">{#if bc.external}Nobody here; the enterprise integrates with it and does not run it{:else}<TeamLockup team={bc.team} />{/if}</Definition>
 		</DefinitionList>
 	{/snippet}
 </PageHeader>
@@ -166,7 +221,7 @@ const termColumns: Column[] = [
 			{:else if col.key === "entities"}
 				{a.entities.size}
 			{:else if col.key === "valueobjects"}
-				{a.valueobjects.size}
+				{valueObjectsOf(a).length}
 			{:else if col.key === "invariants"}
 				{a.invariants.size}
 			{:else if col.key === "operations"}
@@ -198,6 +253,43 @@ const termColumns: Column[] = [
 	</DataTable>
 </Section>
 
+<InvariantsSection
+	{invariants}
+	id="invariants"
+	title="Invariants"
+	constrains
+	lead="Rules that hold across this context's instances and aggregates: uniqueness, quotas, limits. No one instance can see the others, so each names the operation that checks it before acting."
+	emptyText="No invariants across aggregates. Every rule here is one an aggregate keeps on its own."
+	problems={invariants.flatMap((i) => problemsUnder(model, i.ref))}
+/>
+
+<Section
+	id="values"
+	title="Value objects"
+	lead="The values this context defines once. Any of its aggregates may hold one, so a change to a value object is a change everywhere it is held."
+	count={valueobjects.length}
+	problems={valueobjects.flatMap((v) => problemsUnder(model, v.ref))}
+>
+	<DataTable
+		columns={valueObjectColumns}
+		rows={valueobjects}
+		rowId={(v) => v.ref}
+		empty="No value objects. Every attribute here is a bare type."
+	>
+		{#snippet cell(v, col)}
+			{#if col.key === "name"}
+				<Lockup kind="valueobject" name={v.name} ref={v.ref} />
+			{:else if col.key === "attributes"}
+				{v.attributes.size}
+			{:else if col.key === "heldby"}
+				<Joined>{#each holdersOf(v) as a (a.ref)}<Lockup kind="aggregate" name={a.name} ref={a.ref} />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+			{:else}
+				{v.description}
+			{/if}
+		{/snippet}
+	</DataTable>
+</Section>
+
 <Section
 	id="integration"
 	title="Integration surface"
@@ -216,18 +308,19 @@ const termColumns: Column[] = [
 </Section>
 
 <Section
-	id="behaviour"
-	title="Policies"
-	lead="Reactions: when these events happen, issue these operations. Policies are where cross-aggregate workflow lives."
-	count={policies.length}
-	problems={policies.flatMap((p) => problemsUnder(model, p.ref))}
+	id="reactions"
+	title="Reactions"
+	lead="What this context does when something happens. A policy acts the moment its events arrive; a process remembers which of its events have arrived and says what finishes it. Both are where cross-aggregate workflow lives."
+	count={policies.length + processes.length}
+	problems={[...policies, ...processes].flatMap((p) => problemsUnder(model, p.ref))}
 >
+	<Heading level={3} count={policies.length}>Policies</Heading>
 	<DataTable columns={policyColumns} rows={policies} rowId={(p) => p.ref} empty="No policies.">
 		{#snippet cell(p, col)}
 			{#if col.key === "name"}
 				<Lockup kind="policy" name={p.name} ref={p.ref} />
 			{:else if col.key === "when"}
-				<Joined>{#each p.events as e (e.ref)}<Ref ref={e.ref} label={e.name} icon={ICONS.event} kind="event" />{:else}<Keyword text="nothing" />{/each}</Joined>
+				<Joined>{#each p.events as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={e.name} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else if col.key === "then"}
 				<Joined>{#each p.commands as c (c.ref)}<Ref ref={c.ref} label={c.name} icon={ICONS.command} kind="command" />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else}
@@ -235,6 +328,33 @@ const termColumns: Column[] = [
 			{/if}
 		{/snippet}
 	</DataTable>
+
+	<Heading level={3} count={processes.length}>Processes</Heading>
+	<DataTable columns={processColumns} rows={processes} rowId={(p) => p.ref} empty="No processes. Nothing here waits for more than one event before it acts.">
+		{#snippet cell(p, col)}
+			{#if col.key === "name"}
+				<Lockup kind="process" name={p.name} ref={p.ref} />
+			{:else if col.key === "starts"}
+				<Joined>{#each p.startEvents as e (e.ref)}<Ref ref={e.ref} label={e.name} icon={ICONS.event} kind="event" />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+			{:else if col.key === "when"}
+				<Joined>{#each p.events as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={e.name} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" />{/each}</Joined>
+			{:else if col.key === "then"}
+				<Joined>{#each p.commands as c (c.ref)}<Ref ref={c.ref} label={c.name} icon={ICONS.command} kind="command" />{:else}<Keyword text="nothing" />{/each}</Joined>
+			{:else if col.key === "ends"}
+				<Joined>{#each p.endEvents as e (e.ref)}{@const link = triggerLink(e)}<Ref ref={link.ref} title={link.title} label={e.name} icon={ICONS[kindOf(e)]} kind={kindOf(e)} />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+			{:else}
+				{p.description}
+			{/if}
+		{/snippet}
+	</DataTable>
+
+	<!-- The map summarises both tables, so it comes under the pair: by here
+	     every policy and process it draws has been named. -->
+	<DiagramFigure
+		caption={flowCaption}
+		emptyText={FLOW_MAP_EMPTY}
+		graph={flowGraph(flowMap)}
+	/>
 </Section>
 
 <Section

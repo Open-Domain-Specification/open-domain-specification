@@ -82,6 +82,7 @@ export class ODSConsumableMap {
 				target: targetSlot,
 				sourcePattern: consumption.pattern,
 				targetPattern: consumption.consumable.pattern,
+				by: consumption.by.map((it) => it.name),
 			});
 		}
 	}
@@ -147,4 +148,9 @@ export type ODSConsumptionMapEdge = {
 	sourcePattern?: DownstreamRole;
 	target: ODSConsumptionMapNodeSlot;
 	targetPattern?: UpstreamRole;
+	/**
+	 * The consumer's own operations or policies that make this exchange, by
+	 * name. Empty means the whole consumer, which is the common case.
+	 */
+	by: string[];
 };

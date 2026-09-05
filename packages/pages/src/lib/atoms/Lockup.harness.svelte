@@ -20,7 +20,7 @@ const kinds: [Kind, string, string][] = [
 	["valueobject", "Category", "category"],
 	["invariant", "NameRequired", "name_required"],
 	["event", "PetRegistered", "pet_registered"],
-	["command", "ReservePet", "reserve_pet"],
+	["command", "ReservePetForOrder", "reserve_pet_for_order"],
 	["policy", "ReserveOnOrderApproved", "reserve_on_order_approved"],
 	["term", "Available", "available"],
 	["team", "Pet Shop Team", "pet_shop_team"],

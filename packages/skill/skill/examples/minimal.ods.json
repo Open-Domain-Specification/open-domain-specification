@@ -39,29 +39,25 @@
 									"type": "order number",
 									"identity": true
 								},
-								"total": { "name": "total", "type": "money" }
+								"total": { "name": "total", "type": "money" },
+								"ships_to": {
+									"name": "shipsTo",
+									"type": "Address",
+									"valueobject": {
+										"$ref": "#/boundedcontexts/orders/valueobjects/address"
+									}
+								}
 							},
 							"relations": [
 								{
 									"target": {
-										"$ref": "#/boundedcontexts/orders/aggregates/order/valueobjects/address"
+										"$ref": "#/boundedcontexts/orders/valueobjects/address"
 									},
 									"relation": "uses",
 									"label": "ships-to",
 									"cardinality": "1"
 								}
 							]
-						}
-					},
-					"valueobjects": {
-						"address": {
-							"name": "Address",
-							"description": "Where the order ships to",
-							"attributes": {
-								"lines": { "name": "lines", "type": "text" },
-								"postcode": { "name": "postcode", "type": "postcode" }
-							},
-							"relations": []
 						}
 					},
 					"invariants": {
@@ -89,6 +85,7 @@
 					"consumes": []
 				}
 			},
+			"invariants": {},
 			"services": {
 				"order_api": {
 					"name": "Order API",
@@ -111,12 +108,25 @@
 				}
 			},
 			"policies": {},
+			"processes": {},
 			"glossary": {
 				"order": {
 					"name": "Order",
 					"definition": "A customer's request to buy some books, paid up front",
 					"aliases": ["Purchase"],
 					"embodiedBy": { "$ref": "#/boundedcontexts/orders/aggregates/order" }
+				}
+			},
+			"valueobjects": {
+				"address": {
+					"name": "Address",
+					"description": "Where the order ships to",
+					"attributes": {
+						"lines": { "name": "lines", "type": "text" },
+						"postcode": { "name": "postcode", "type": "postcode" }
+					},
+					"relations": [],
+					"invariants": {}
 				}
 			},
 			"schemas": {

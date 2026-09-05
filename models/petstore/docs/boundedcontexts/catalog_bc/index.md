@@ -32,17 +32,36 @@ Open-host service for /pet endpoints
 
 
 
+## Invariants
+> No invariants across aggregates.
+
+## Value Objects
+| Name | Description | Attributes | Invariants | Used by |
+| --- | --- | --- | --- | --- |
+| Category | The kind of animal, e.g. Dogs. A value because two pets in Dogs share one category | id: `int64`, name: `string` | - | Pet |
+| Tag | Free-form label on a pet | name: `string` | - | Pet |
+| PhotoUrl | Where a photo of the pet can be fetched | url: `string (URL)` | - | Pet |
+| PetStatus | Where the pet is in its sales lifecycle. Shared with Inventory, which keys its counts by these values | value: `'available' | 'pending' | 'sold'` | - | Pet |
+
+
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
 | PetRegistered | What the outside learns when a pet joins the catalog | **petId**: `int64`, name: `string`, category: `Category` | PetRegistered |
 | PetStatusChanged | - | **petId**: `int64`, from: `PetStatus`, to: `PetStatus` | PetStatusChanged, ChangePetStatus |
 | RegisterPet | Request body for adding a pet | name: `string`, category: `Category` | AddPet |
-| PetId | Identifies one pet; shared by every consumable that only needs the id | **petId**: `int64` | PetUpdated, PetDeleted, ReservePet, MarkPetSold, GetPetById, UploadImage, DeletePet, GetPetSummary |
+| PetId | Identifies one pet; shared by every consumable that only needs the id | **petId**: `int64` | PetUpdated, PetReserved, PetSold, PetDeleted, ReservePet, MarkPetSold, GetPetById, UploadImage, DeletePet, GetPetSummary, ReservePetForOrder, MarkPetSoldForOrder |
+| Pet | The full pet resource, as GET /pet/{petId} answers with it | **petId**: `int64`, name: `string`, category: `Category`, photoUrls: `PhotoUrl[]`, tags: `Tag[]`, status: `PetStatus` | GetPetById |
+| PetSummary | The slim read of a pet other contexts are allowed to hold | **petId**: `int64`, name: `string`, status: `PetStatus` | GetPetSummary |
+| Pets | The pets matching a status search, in the order found | pets: [`PetSummary[]`](./index.md#schemas) | FindPetsByStatus |
+| PetUnavailable | Why the pet could not be held: it is already pending or sold | **petId**: `int64`, status: `PetStatus` | ReservePetForOrder |
 
 
 ## Policies
 > No policies.
+
+## Processes
+> No processes.
 
 ## Context Relationships
 ### Depended on by
@@ -69,13 +88,18 @@ Open-host service for /pet endpoints
 - `shared-kernel` — **Shared Kernel** (SK). A shared subset of domain model and code, co-owned by both teams.
 
 ## Consumptions
-| Consumer | Consumed As | Provider | Consumable | Provided As |
-| --- | --- | --- | --- | --- |
-| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Pet | PetRegistered | published-language |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Pet | PetStatusChanged | published-language |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Pet | PetDeleted | published-language |
-| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | Pet | ReservePet | open-host-service |
-| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | Pet | MarkPetSold | open-host-service |
+| Consumer | Made By | Consumed As | Provider | Consumable | Provided As |
+| --- | --- | --- | --- | --- | --- |
+| [OrderApp](../sales_bc/services/order_app/index.md) | CheckPetAvailable | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | MarkPetSold | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
+| [PetApp](services/pet_app/index.md) | ReservePetForOrder | - | Pet | ReservePet | - |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetRegistered | published-language |
+| [OrderApp](../sales_bc/services/order_app/index.md) | Order fulfilment | anti-corruption-layer | Pet | PetStatusChanged | published-language |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetStatusChanged | published-language |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetReserved | published-language |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetSold | published-language |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetDeleted | published-language |
+| [PetApp](services/pet_app/index.md) | MarkPetSoldForOrder | - | Pet | MarkPetSold | - |
 
 

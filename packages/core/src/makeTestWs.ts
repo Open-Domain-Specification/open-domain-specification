@@ -20,8 +20,10 @@ export function makeTestWs() {
 		description: "",
 	});
 
+	// An application service, because what a context offers outward leaves its
+	// boundary and never an aggregate or a domain service (decision 17).
 	const d1Sd1Bc1S1 = d1Sd1Bc1.addService([d1Sd1Bc1.name, "S1"].join("."), {
-		type: "domain",
+		type: "application",
 		description: "",
 	});
 
@@ -52,7 +54,7 @@ export function makeTestWs() {
 		},
 	);
 
-	const d1Sd1Bc1Ag1Vo1 = d1Sd1Bc1Ag1.addValueObject(
+	const d1Sd1Bc1Ag1Vo1 = d1Sd1Bc1.addValueObject(
 		[d1Sd1Bc1Ag1.name, "Vo1"].join("."),
 		{
 			description: "",
@@ -95,7 +97,7 @@ export function makeTestWs() {
 		},
 	);
 
-	const d2Sd1Bc1S1Ag1Vo1 = d2Sd1Bc1S1Ag1.addValueObject(
+	const d2Sd1Bc1S1Ag1Vo1 = d2Sd1Bc1.addValueObject(
 		[d2Sd1Bc1S1Ag1.name, "Vo1"].join("."),
 		{
 			description: "",
@@ -127,8 +129,8 @@ export function makeTestWs() {
 /**
  * A fixture with distinct descriptions, a root entity, entity relations,
  * schemas, a published event, internal event and operation pairs joined by
- * raises and a policy, and an aggregate consumption, so that round-trips and
- * derived maps exercise every reference kind.
+ * raises, a policy, a process and an aggregate consumption, so that
+ * round-trips and derived maps exercise every reference kind.
  */
 export function makeRichTestWs() {
 	const ws = new Workspace("Rich WS", {
@@ -164,15 +166,43 @@ export function makeRichTestWs() {
 	const orderLine = orderAgg.addEntity("Order Line", {
 		description: "A line on the order",
 	});
-	const money = orderAgg.addValueObject("Money", {
+	const money = orderingBc.addValueObject("Money", {
 		description: "Amount and currency",
 	});
 	money.addAttribute("Amount", { type: "decimal" });
 	money.addAttribute("Currency", { type: "ISO 4217" });
+	// A rule the value keeps by being constructed at all: no save, no guard,
+	// and nothing outside the value in it (decision 27).
+	money
+		.addInvariant("Amount Is Scaled To Its Currency", {
+			description: "The amount carries the number of decimals its currency has",
+		})
+		.constrains(...money.attributes.values());
 	order.addAttribute("Order Id", { type: "OrderId", identity: true });
 	order.addAttribute("Total", { type: "Money", valueobject: money });
+	// A note the customer may or may not leave: the one attribute here that is
+	// sometimes absent, so the round trip has an optional flag to carry.
+	order.addAttribute("Note", { type: "string", optional: true });
+	// A line is told apart from its neighbours by its position on the order, so
+	// it is an entity and not a value object; entity-identity wants that said.
+	orderLine.addAttribute("Line No", { type: "int", identity: true });
+	orderLine.addAttribute("Price", { type: "Money", valueobject: money });
 	order.includes(orderLine, "has lines", "1..*");
+	// Both the total and the line price are Money, so both carry the attribute
+	// and the relation that draws it; attribute-relation-coherence wants the pair.
+	order.uses(money, "totalled in", "1");
 	orderLine.uses(money, "priced in", "1");
+	// A second aggregate in the same context, so the fixture still has a
+	// relation that crosses an aggregate boundary without crossing a context
+	// boundary -- the only kind there is.
+	const basketAgg = orderingBc.addAggregate("Basket", {
+		description: "Basket aggregate",
+	});
+	const basket = basketAgg.addRootEntity("Basket", {
+		description: "Basket root",
+	});
+	basket.addAttribute("Basket Id", { type: "BasketId", identity: true });
+	basket.references(order, "became");
 	const nonEmpty = orderAgg
 		.addInvariant("Non-empty", {
 			description: "An order has at least one line",
@@ -198,8 +228,23 @@ export function makeRichTestWs() {
 		aliases: ["Purchase order"],
 		embodiedBy: orderAgg,
 	});
+	// A payload with a shape inside it: the request nests the line schema
+	// rather than flattening it, and the collection stays in the type string.
+	const orderLineShape = orderingBc.addSchema("Order Line Shape", {
+		description: "One line of an order request",
+	});
+	orderLineShape.addAttribute("Sku", { type: "string" });
 	const orderRequest = orderingBc.addSchema("Order Request");
-	orderRequest.addAttribute("Lines", { type: "OrderLine[]" });
+	orderRequest.addAttribute("Lines", {
+		type: "OrderLine[]",
+		schema: orderLineShape,
+	});
+	// The shape Place Order answers with when it says no: nothing happened, and
+	// the caller is told why in a shape the contract names (decision 25).
+	const orderRefused = orderingBc.addSchema("Order Refused", {
+		description: "Why an order was not accepted",
+	});
+	orderRefused.addAttribute("Reason", { type: "string" });
 	const orderApp = orderingBc.addService("Order App", {
 		description: "Order application service",
 		type: "application",
@@ -210,8 +255,19 @@ export function makeRichTestWs() {
 			type: "operation",
 			pattern: "open-host-service",
 			schema: orderRequest,
+			returns: orderSummary,
+			rejects: [orderRefused],
 		})
 		.raises(orderPlaced);
+
+	// A rule the context keeps rather than one aggregate: no order instance can
+	// see its siblings, so the application service's operation checks it before
+	// acting (decision 27).
+	const oneOpenOrder = orderingBc
+		.addInvariant("One open order per customer", {
+			description: "A customer has at most one open order at a time",
+		})
+		.constrains(order, placeOrder);
 
 	const billing = ws.addDomain("Billing", {
 		description: "Billing domain",
@@ -229,10 +285,12 @@ export function makeRichTestWs() {
 	const invoice = invoiceAgg.addRootEntity("Invoice", {
 		description: "Invoice root",
 	});
-	invoice.references(order, "bills");
-	const invoiceConsumesOrderPlaced = invoiceAgg.consumes(orderPlaced, {
-		pattern: "conformist",
-	});
+	invoice.addAttribute("Id", { type: "InvoiceId", identity: true });
+	// Invoicing bills an order in another context, so it holds the order's
+	// identity rather than a relation to it: the only thing that crosses the
+	// boundary. The dependency itself reads on the consumable map, through the
+	// Order Placed event this aggregate consumes below.
+	invoice.addAttribute("Order Id", { type: "OrderId", identifies: order });
 	const invoiceRaised = invoiceAgg.provides("Invoice Raised", {
 		description: "An invoice was raised",
 		type: "event",
@@ -245,18 +303,63 @@ export function makeRichTestWs() {
 			internal: true,
 		})
 		.raises(invoiceRaised);
+	// A transition rule: what it is about is the operation that makes the
+	// transition, so the invariant names the operation rather than a value.
+	const billedOnce = invoiceAgg
+		.addInvariant("Billed once", {
+			description: "An order is invoiced at most once",
+		})
+		.constrains(raiseInvoice);
 	const invoiceOnOrderPlaced = invoicingBc
 		.addPolicy("Invoice on order placed", {
 			description: "When an order is placed, raise an invoice",
 		})
 		.on(orderPlaced)
-		.then(raiseInvoice);
+		.issues(raiseInvoice);
+	// The second half of the invoicing lifecycle, and the one thing a policy
+	// cannot express: the process waits from the moment an invoice is raised
+	// until the customer has been sent it, and knows which fact ends it
+	// (decision 23).
+	const invoiceSent = invoiceAgg.provides("Invoice Sent", {
+		description: "The invoice reached the customer",
+		type: "event",
+		internal: true,
+	});
+	const sendInvoice = invoiceAgg
+		.provides("Send Invoice", {
+			description: "Sends a raised invoice to the customer",
+			type: "operation",
+			internal: true,
+		})
+		.raises(invoiceSent);
+	const invoiceToCustomer = invoicingBc
+		.addProcess("Invoice to customer", {
+			description:
+				"From the invoice being raised to the customer having it: it holds the invoice while the send is attempted, and retries are its own business",
+		})
+		.starts(invoiceRaised)
+		.issues(sendInvoice)
+		.ends(invoiceSent);
 	const invoiceApp = invoicingBc.addService("Invoice App", {
 		description: "Invoice application service",
 		type: "application",
 	});
 	const invoiceAppConsumesPlaceOrder = invoiceApp.consumes(placeOrder, {
 		pattern: "anti-corruption-layer",
+	});
+	// The context takes the other one's event in at its own boundary, not on
+	// the aggregate (decision 17): only the policy reaches for it, nothing else
+	// in Invoicing touches it, and that is what `by` says.
+	const invoiceConsumesOrderPlaced = invoiceApp.consumes(orderPlaced, {
+		pattern: "conformist",
+		by: [invoiceOnOrderPlaced],
+	});
+	// Both of those crossings need a relationship saying on what terms
+	// (`relationship-declared`), and it carries every role they play.
+	const orderingSuppliesInvoicing = orderingBc.upstreamOf(invoicingBc, {
+		description: "Invoicing bills what ordering places",
+		upstreamRoles: ["published-language", "open-host-service"],
+		downstreamRoles: ["conformist", "anti-corruption-layer"],
 	});
 
 	const reportingBc = ws.addBoundedContext("Reporting BC", {
@@ -265,6 +368,39 @@ export function makeRichTestWs() {
 	});
 	const salesReportsPartnership = reportingBc.partnerOf(orderingBc, {
 		description: "Reporting and ordering plan releases together",
+	});
+	// A partnership is a two-way dependency, so the fixture backs it with
+	// traffic each way: reporting reads ordering's events, ordering reads
+	// reporting's figures back. Partners are exempt from role-coherence, but
+	// reporting is a big ball of mud, so what comes out of it is translated.
+	const reportingApp = reportingBc.addService("Reporting App", {
+		description: "Reporting application service",
+		type: "application",
+	});
+	const salesFigures = reportingApp.provides("Sales Figures", {
+		description: "Yesterday's sales, as reporting sees them",
+		type: "event",
+		pattern: "open-host-service",
+	});
+	// Something has to make the figures happen, or `event-unraised` rightly
+	// says the model never explains where they come from.
+	const compileSalesFigures = reportingApp
+		.provides("Compile Sales Figures", {
+			description: "Totals yesterday's orders",
+			type: "operation",
+			internal: true,
+		})
+		.raises(salesFigures);
+	// Neither subscription is reacted to by a policy, and both are honest: one
+	// operation accumulates the orders it hears, and the other reads the figures
+	// when it plans. `by` is what says so, and what keeps both backed
+	// (`subscription-backed`).
+	const reportingConsumesOrderPlaced = reportingApp.consumes(orderPlaced, {
+		by: [compileSalesFigures],
+	});
+	const orderAppConsumesSalesFigures = orderApp.consumes(salesFigures, {
+		pattern: "anti-corruption-layer",
+		by: [placeOrder],
 	});
 
 	return {
@@ -276,10 +412,15 @@ export function makeRichTestWs() {
 		orderAgg,
 		order,
 		orderLine,
+		basketAgg,
+		basket,
 		money,
 		nonEmpty,
+		oneOpenOrder,
 		orderSummary,
 		orderRequest,
+		orderRefused,
+		orderLineShape,
 		orderPlaced,
 		orderTerm,
 		orderApp,
@@ -292,10 +433,19 @@ export function makeRichTestWs() {
 		invoiceConsumesOrderPlaced,
 		invoiceRaised,
 		raiseInvoice,
+		invoiceSent,
+		sendInvoice,
+		invoiceToCustomer,
+		billedOnce,
 		invoiceOnOrderPlaced,
 		invoiceApp,
 		invoiceAppConsumesPlaceOrder,
 		reportingBc,
 		salesReportsPartnership,
+		orderingSuppliesInvoicing,
+		reportingApp,
+		reportingConsumesOrderPlaced,
+		salesFigures,
+		orderAppConsumesSalesFigures,
 	};
 }

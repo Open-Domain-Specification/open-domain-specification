@@ -69,7 +69,7 @@ describe("relationMapToDigraph edge cases", () => {
 			description: "Order entity",
 		});
 
-		const money = aggregate.addValueObject("Money", {
+		const money = bc.addValueObject("Money", {
 			description: "Money value object",
 		});
 

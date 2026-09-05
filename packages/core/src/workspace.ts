@@ -117,6 +117,20 @@ export class Workspace
 		return this.relationships.find((r) => r.ref === ref);
 	}
 
+	/**
+	 * The consumption a {@link Consumption.ref} points at, if any. Like a
+	 * relationship, a consumption is a pairing rather than a named element, so
+	 * it is found here rather than through {@link Workspace.getByRef}, which
+	 * answers with things that have a name.
+	 */
+	findConsumption(ref: string): Consumption | undefined {
+		for (const consumer of [...this.aggregates(), ...this.services()]) {
+			for (const consumption of consumer.consumptions) {
+				if (consumption.ref === ref) return consumption;
+			}
+		}
+	}
+
 	getTeamByRef(ref: string): Team | undefined {
 		for (const team of this.teams.values()) {
 			if (team.ref === ref) return team;
@@ -295,7 +309,12 @@ export class Workspace
 	}
 
 	getValueObjectByRef(ref: string): ValueObject | undefined {
-		return this.findAggregateMember((it) => it.valueobjects, ref);
+		this.debug(`Searching for value object with ref: ${ref}`);
+		for (const bc of this.boundedcontexts.values()) {
+			for (const vo of bc.valueobjects.values()) {
+				if (vo.ref === ref) return vo;
+			}
+		}
 	}
 
 	getValueObjectByRefOrThrow(ref: string): ValueObject {
@@ -306,8 +325,23 @@ export class Workspace
 		return valueObject;
 	}
 
+	/**
+	 * An invariant of any value object, aggregate or context: the three kinds a
+	 * rule may be kept true by (decision 27).
+	 */
 	getInvariantByRef(ref: string): Invariant | undefined {
-		return this.findAggregateMember((it) => it.invariants, ref);
+		const inAggregate = this.findAggregateMember((it) => it.invariants, ref);
+		if (inAggregate) return inAggregate;
+		for (const bc of this.boundedcontexts.values()) {
+			for (const invariant of bc.invariants.values()) {
+				if (invariant.ref === ref) return invariant;
+			}
+			for (const vo of bc.valueobjects.values()) {
+				for (const invariant of vo.invariants.values()) {
+					if (invariant.ref === ref) return invariant;
+				}
+			}
+		}
 	}
 
 	getInvariantByRefOrThrow(ref: string): Invariant {
@@ -344,7 +378,8 @@ export class Workspace
 		const target = this.getByRef(ref);
 		return target instanceof Entity ||
 			target instanceof ValueObject ||
-			target instanceof Attribute
+			target instanceof Attribute ||
+			target instanceof Consumable
 			? target
 			: undefined;
 	}
@@ -353,7 +388,119 @@ export class Workspace
 		const target = this.getConstrainableByRef(ref);
 		if (!target) {
 			throw new Error(
-				`Entity, Value Object or Attribute with ref ${ref} not found`,
+				`Entity, Value Object, Attribute or Consumable with ref ${ref} not found`,
+			);
+		}
+		return target;
+	}
+
+	/**
+	 * Resolves an answer ref: `<operation ref>/returns`, or
+	 * `<operation ref>/rejects/<schema id>` for one of its refusals. The shape
+	 * is looked up among the ones that operation declares, because an answer is
+	 * the operation coming back and nothing else can say what it comes back as
+	 * (decision 23, third amendment).
+	 */
+	getAnswerByRef(ref: string): Answer | undefined {
+		const [operationRef, rejectionId] = ref.endsWith("/returns")
+			? [ref.slice(0, -"/returns".length)]
+			: ref.split("/rejects/");
+		if (!operationRef) return undefined;
+		const operation = this.getConsumableByRef(operationRef);
+		if (!operation) return undefined;
+		if (rejectionId === undefined)
+			return operation.returns ? operation.returned() : undefined;
+		const rejection = operation.rejects.find((it) => it.id === rejectionId);
+		return rejection && operation.rejected(rejection);
+	}
+
+	getAnswerByRefOrThrow(ref: string): Answer {
+		const answer = this.getAnswerByRef(ref);
+		if (!answer) {
+			throw new Error(`Answer with ref ${ref} not found`);
+		}
+		return answer;
+	}
+
+	/**
+	 * Resolves any ref a policy's `on`, or a process's `on` or `ends`, may
+	 * name: an event, or an answer of an operation (decision 23).
+	 */
+	getReactionTriggerByRef(ref: string): ReactionTrigger | undefined {
+		const target = this.getByRef(ref);
+		return target instanceof Consumable || target instanceof Answer
+			? target
+			: undefined;
+	}
+
+	getReactionTriggerByRefOrThrow(ref: string): ReactionTrigger {
+		const target = this.getReactionTriggerByRef(ref);
+		if (!target) {
+			throw new Error(`Consumable or Answer with ref ${ref} not found`);
+		}
+		return target;
+	}
+
+	/**
+	 * Resolves any ref a process's `on` or `ends` may name: everything a
+	 * policy's `on` may name, and the process's own deadlines (decision 23,
+	 * fourth amendment).
+	 */
+	getProcessTriggerByRef(ref: string): ProcessTrigger | undefined {
+		const target = this.getByRef(ref);
+		return target instanceof Consumable ||
+			target instanceof Answer ||
+			target instanceof Deadline
+			? target
+			: undefined;
+	}
+
+	getProcessTriggerByRefOrThrow(ref: string): ProcessTrigger {
+		const target = this.getProcessTriggerByRef(ref);
+		if (!target) {
+			throw new Error(
+				`Consumable, Answer or Deadline with ref ${ref} not found`,
+			);
+		}
+		return target;
+	}
+
+	/** Every deadline of every process, in declaration order. */
+	private *allDeadlines(): Iterable<Deadline> {
+		for (const boundedcontext of this.boundedcontexts.values())
+			for (const process of boundedcontext.processes.values())
+				yield* process.deadlines.values();
+	}
+
+	getDeadlineByRef(ref: string): Deadline | undefined {
+		for (const deadline of this.allDeadlines()) {
+			if (deadline.ref === ref) return deadline;
+		}
+	}
+
+	getDeadlineByRefOrThrow(ref: string): Deadline {
+		const deadline = this.getDeadlineByRef(ref);
+		if (!deadline) {
+			throw new Error(`Deadline with ref ${ref} not found`);
+		}
+		return deadline;
+	}
+
+	/** Resolves any ref a consumption's `by` may name. */
+	getConsumptionCallerByRef(ref: string): ConsumptionCaller | undefined {
+		const target = this.getByRef(ref);
+		return target instanceof Consumable ||
+			target instanceof Policy ||
+			target instanceof Process
+			? target
+			: undefined;
+	}
+
+	getConsumptionCallerByRefOrThrow(ref: string): ConsumptionCaller {
+		const target = this.getConsumptionCallerByRef(ref);
+		if (!target) {
+			throw new Error(
+				`Consumable, Policy or Process with ref ${ref} not found`,
 			);
 		}
 		return target;
@@ -415,12 +562,24 @@ export class Workspace
 				return this.getConsumableByRef(ref);
 			case "policies":
 				return this.getPolicyByRef(ref);
+			case "processes":
+				return this.getProcessByRef(ref);
+			case "deadlines":
+				return this.getDeadlineByRef(ref);
 			case "glossary":
 				return this.getTermByRef(ref);
 			case "attributes":
 				return this.getAttributeByRef(ref);
+			// An answer hangs off the operation it comes back from rather than
+			// off a collection, so the two shapes are read here: a refusal by the
+			// `rejects` segment before the shape's id, and the successful answer
+			// by its final `returns`, which no collection is named.
+			case "rejects":
+				return this.getAnswerByRef(ref);
 			default:
-				return undefined;
+				return segments[segments.length - 1] === "returns"
+					? this.getAnswerByRef(ref)
+					: undefined;
 		}
 	}
 
@@ -453,6 +612,29 @@ export class Workspace
 			throw new Error(`Policy with ref ${ref} not found`);
 		}
 		return policy;
+	}
+
+	private *processes(): Iterable<Process> {
+		for (const boundedContext of this.boundedcontexts.values()) {
+			yield* boundedContext.processes.values();
+		}
+	}
+
+	getProcessByRef(ref: string): Process | undefined {
+		this.debug(`Searching for process with ref: ${ref}`);
+		for (const process of this.processes()) {
+			if (process.ref === ref) {
+				return process;
+			}
+		}
+	}
+
+	getProcessByRefOrThrow(ref: string): Process {
+		const process = this.getProcessByRef(ref);
+		if (!process) {
+			throw new Error(`Process with ref ${ref} not found`);
+		}
+		return process;
 	}
 
 	getSchemaByRef(ref: string): DataSchema | undefined {
@@ -639,6 +821,8 @@ export type BoundedContextAttributes = {
 	subdomains?: Subdomain[];
 	/** See {@link ods.BoundedContextSchema.bigBallOfMud}. */
 	bigBallOfMud?: boolean;
+	/** See {@link ods.BoundedContextSchema.external}. */
+	external?: boolean;
 	/** The team that owns this context. */
 	team?: Team;
 	id?: string;
@@ -652,12 +836,19 @@ export class BoundedContext
 	description: string;
 	services = new Map<string, Service>();
 	aggregates = new Map<string, Aggregate>();
+	/** The rules that hold across this context's instances (decision 27). */
+	invariants = new Map<string, Invariant>();
 	policies = new Map<string, Policy>();
+	/** The reactions that hold state across events (decision 23). */
+	processes = new Map<string, Process>();
 	glossary = new Map<string, GlossaryTerm>();
+	valueobjects = new Map<string, ValueObject>();
 	schemas = new Map<string, DataSchema>();
 	workspace: Workspace;
 	subdomains = new Set<Subdomain>();
 	bigBallOfMud: boolean;
+	/** A system we integrate with and do not model inside (decision 28). */
+	external: boolean;
 	team?: Team;
 
 	get path(): string {
@@ -688,6 +879,7 @@ export class BoundedContext
 		this.description = attributes.description;
 		this.workspace = workspace;
 		this.bigBallOfMud = attributes.bigBallOfMud ?? false;
+		this.external = attributes.external ?? false;
 		this.team = attributes.team;
 		this.workspace.boundedcontexts.set(this.id, this);
 		for (const subdomain of attributes.subdomains ?? []) {
@@ -774,12 +966,41 @@ export class BoundedContext
 		return new Aggregate(this, name, attributes);
 	}
 
+	/**
+	 * Declares a rule that holds across the instances or the aggregates of this
+	 * context — uniqueness, a quota, a limit, conservation. Chain
+	 * `.constrains(...)` with what the rule is about and with the operations
+	 * that guard it, since no single instance can see the others.
+	 */
+	addInvariant(name: string, attributes: InvariantAttributes): Invariant {
+		return new Invariant(this, name, attributes);
+	}
+
 	addPolicy(name: string, attributes: PolicyAttributes): Policy {
 		return new Policy(this, name, attributes);
 	}
 
+	/**
+	 * Declares a process: the reaction that remembers which of its events have
+	 * arrived and acts when enough have. Give it `starts`, `on`, `issues` and
+	 * `ends` here, or chain the methods of the same names when the consumables
+	 * are declared after it.
+	 */
+	addProcess(name: string, attributes: ProcessAttributes): Process {
+		return new Process(this, name, attributes);
+	}
+
 	addTerm(name: string, attributes: GlossaryTermAttributes): GlossaryTerm {
 		return new GlossaryTerm(this, name, attributes);
+	}
+
+	/**
+	 * Declares a value this context defines once, for any of its aggregates to
+	 * use: a value object is part of the ubiquitous language of the context,
+	 * not of one aggregate.
+	 */
+	addValueObject(name: string, attributes: ValueObjectAttributes): ValueObject {
+		return new ValueObject(this, name, attributes);
 	}
 
 	/** Declares a payload shape consumables of this context can carry. */
@@ -797,11 +1018,15 @@ export class BoundedContext
 			description: this.description,
 			subdomains: Array.from(this.subdomains, (it) => ({ $ref: it.ref })),
 			bigBallOfMud: this.bigBallOfMud || undefined,
+			external: this.external || undefined,
 			team: this.team && { $ref: this.team.ref },
 			aggregates: asRecords(this.aggregates),
+			invariants: asRecords(this.invariants),
 			services: asRecords(this.services),
 			policies: asRecords(this.policies),
+			processes: asRecords(this.processes),
 			glossary: asRecords(this.glossary),
+			valueobjects: asRecords(this.valueobjects),
 			schemas: asRecords(this.schemas),
 		};
 	}
@@ -896,7 +1121,6 @@ export class Aggregate
 	consumables = new Map<string, Consumable>();
 	invariants = new Map<string, Invariant>();
 	entities = new Map<string, Entity>();
-	valueobjects = new Map<string, ValueObject>();
 	boundedcontext: BoundedContext;
 	consumptions: Consumption[] = [];
 
@@ -956,10 +1180,6 @@ export class Aggregate
 		return new Entity(this, name, { ...attributes, root: true });
 	}
 
-	addValueObject(name: string, attributes: ValueObjectAttributes): ValueObject {
-		return new ValueObject(this, name, attributes);
-	}
-
 	accept(v: Visitor) {
 		return v.visitAggregate(this);
 	}
@@ -971,7 +1191,6 @@ export class Aggregate
 			provides: asRecords(this.consumables),
 			consumes: asArray(this.consumptions),
 			entities: asRecords(this.entities),
-			valueobjects: asRecords(this.valueobjects),
 			invariants: asRecords(this.invariants),
 		};
 	}
@@ -983,8 +1202,19 @@ export type ConsumableAttributes = {
 	type: ods.ConsumableType;
 	/** Stays inside the context; never offered to other contexts. */
 	internal?: boolean;
-	/** The payload shape, one of the context's schemas. */
+	/** The payload the caller sends, one of the context's schemas. */
 	schema?: DataSchema;
+	/**
+	 * For operations: the payload shape the caller gets back. Absent means the
+	 * operation returns nothing worth naming. Never valid on an event.
+	 */
+	returns?: DataSchema;
+	/**
+	 * For operations: the shapes the operation answers with when it refuses.
+	 * Absent means it always succeeds, or refuses without a shape worth
+	 * naming. Never valid on an event.
+	 */
+	rejects?: DataSchema[];
 	id?: string;
 } & EvidenceOptions;
 
@@ -998,6 +1228,10 @@ export class Consumable
 	type: ods.ConsumableType;
 	internal: boolean;
 	schema?: DataSchema;
+	/** For operations: the payload shape the caller gets back. */
+	returns?: DataSchema;
+	/** For operations: the shapes the operation answers with when it refuses. */
+	rejects: DataSchema[] = [];
 	/** For operations: the event consumables this operation may raise. */
 	raisedEvents: Consumable[] = [];
 	provider: Aggregate | Service;
@@ -1025,10 +1259,59 @@ export class Consumable
 		this.type = attributes.type;
 		this.internal = attributes.internal ?? false;
 		this.schema = attributes.schema;
+		this.returns = attributes.returns;
+		this.rejects = attributes.rejects ?? [];
 		this.comments = attributes.comments ?? [];
 		this.disposition = normaliseDisposition(attributes.disposition);
 		this.provider = provider;
 		provider.consumables.set(this.id, this);
+	}
+
+	/**
+	 * The answers this operation has been asked for, kept so that naming one
+	 * twice names one object: a reaction's `on` is compared by identity, and
+	 * the walk keys what it wakes by the answer itself.
+	 */
+	private readonly answersGiven = new Map<string, Answer>();
+
+	/**
+	 * The successful answer: what a caller gets back when this operation does
+	 * what it was asked. An operation that returns nothing has no such answer,
+	 * so asking for one is a mistake in the model that is refused here rather
+	 * than carried as an answer with no shape.
+	 */
+	returned(): Answer {
+		if (!this.returns)
+			throw new Error(
+				`Operation ${this.name} returns nothing, so it has no answer to wait for`,
+			);
+		return this.answerFor(this.returns, false);
+	}
+
+	/**
+	 * One refusal: what a caller gets back when this operation says no. The
+	 * schema is named rather than looked up, because `consumable-kind` is where
+	 * a refusal the operation never declared is reported.
+	 */
+	rejected(schema: DataSchema): Answer {
+		return this.answerFor(schema, true);
+	}
+
+	/** Both answers of this operation: what it returns, then what it refuses with. */
+	get answers(): Answer[] {
+		return [
+			...(this.returns ? [this.returned()] : []),
+			...this.rejects.map((it) => this.rejected(it)),
+		];
+	}
+
+	private answerFor(schema: DataSchema, rejection: boolean): Answer {
+		const key = rejection ? `rejects/${schema.ref}` : "returns";
+		const existing = this.answersGiven.get(key);
+		if (existing) return existing;
+		const answer = new Answer(this, schema, rejection);
+		this.answersGiven.set(key, answer);
+		return answer;
 	}
 
 	/** Declares an event consumable this operation may raise. */
@@ -1044,6 +1327,22 @@ export class Consumable
 		return this.provider.boundedcontext;
 	}
 
+	/**
+	 * The invariants that name this consumable: the rules it has to uphold every
+	 * time it runs, whether its own aggregate's or its context's. No invariant
+	 * reaches across a context, so the search stays inside this one.
+	 */
+	get invariants(): Invariant[] {
+		const bc = this.boundedcontext;
+		const out: Invariant[] = [];
+		for (const aggregate of bc.aggregates.values())
+			for (const invariant of aggregate.invariants.values())
+				if (invariant.targets.includes(this)) out.push(invariant);
+		for (const invariant of bc.invariants.values())
+			if (invariant.targets.includes(this)) out.push(invariant);
+		return out;
+	}
+
 	accept(v: Visitor) {
 		return v.visitConsumable(this);
 	}
@@ -1056,6 +1355,10 @@ export class Consumable
 			type: this.type,
 			internal: this.internal || undefined,
 			schema: this.schema && { $ref: this.schema.ref },
+			returns: this.returns && { $ref: this.returns.ref },
+			rejects: this.rejects.length
+				? this.rejects.map((it) => ({ $ref: it.ref }))
+				: undefined,
 			raises: this.raisedEvents.length
 				? this.raisedEvents.map((it) => ({ $ref: it.ref }))
 				: undefined,
@@ -1065,9 +1368,107 @@ export class Consumable
 	}
 }
 
+/**
+ * One answer of one operation: what that call comes back with.
+ *
+ * An answer is named by where it comes from, not by the shape alone. Schemas
+ * are shared across consumables (decision 09), so two operations may refuse
+ * with the same `PaymentDeclined`; a reactor waiting on the shape would be
+ * woken by both, and the reaction walk would draw a causal step from a call
+ * nobody was waiting on. Naming the origin says which call came back:
+ * `<operation ref>/returns` is the successful answer and
+ * `<operation ref>/rejects/<schema id>` one of its refusals (decision 23,
+ * third amendment).
+ *
+ * Answers are made by {@link Consumable.returned} and
+ * {@link Consumable.rejected} and kept by the operation, so the same answer is
+ * the same object wherever it is named and the walk can key its listeners by
+ * it.
+ */
+export class Answer implements Referenceable {
+	/** The operation this answer comes back from. */
+	readonly operation: Consumable;
+	/** The shape it comes back as. */
+	readonly schema: DataSchema;
+	/** Whether this is a refusal rather than the successful answer. */
+	readonly rejection: boolean;
+
+	constructor(operation: Consumable, schema: DataSchema, rejection: boolean) {
+		this.operation = operation;
+		this.schema = schema;
+		this.rejection = rejection;
+	}
+
+	get ref(): string {
+		return this.rejection
+			? `${this.operation.ref}/rejects/${this.schema.id}`
+			: `${this.operation.ref}/returns`;
+	}
+
+	/** The shape's name: what the answer is read as in a list of triggers. */
+	get name(): string {
+		return this.schema.name;
+	}
+
+	/** The shape's description, which is what the answer carries. */
+	get description(): string | undefined {
+		return this.schema.description;
+	}
+
+	/** Where the answer comes from, in words: "X rejects with Y". */
+	get origin(): string {
+		return `${this.operation.name} ${this.rejection ? "rejects with" : "returns"} ${this.schema.name}`;
+	}
+
+	/** The context the call went to, which is where the answer comes from. */
+	get boundedcontext(): BoundedContext {
+		return this.operation.boundedcontext;
+	}
+
+	/**
+	 * Whether the operation really answers this way. A refusal is written by
+	 * naming a schema, so the DSL can name one the operation never declared;
+	 * `consumable-kind` reports that rather than the constructor refusing it,
+	 * because a model with a mistake in it still has to load and be validated.
+	 */
+	get declared(): boolean {
+		return this.rejection
+			? this.operation.rejects.includes(this.schema)
+			: this.operation.returns === this.schema;
+	}
+}
+
+/** Anything that may be a kind of another of its own sort (decision 22). */
+type Specialisable = {
+	specialises?: Specialisable;
+	attributes: Map<string, Attribute>;
+	relations: EntityRelation[];
+};
+
+/**
+ * The chain of parents above a subtype, nearest first.
+ *
+ * Cycle-safe on purpose: two things declared kinds of each other is a model
+ * `specialisation-cycle` reports, and every reader of the chain — a rule, a
+ * page, the relation map — has to survive being handed one rather than hang.
+ */
+function ancestorsOf<T extends Specialisable>(node: T): T[] {
+	const chain: T[] = [];
+	const seen = new Set<Specialisable>([node]);
+	let parent = node.specialises as T | undefined;
+	while (parent && !seen.has(parent)) {
+		chain.push(parent);
+		seen.add(parent);
+		parent = parent.specialises as T | undefined;
+	}
+	return chain;
+}
+
 export type EntityAttributes = {
 	description: string;
 	root?: boolean;
+	/** The entity this one is a kind of; see {@link Entity.specialises}. */
+	specialises?: Entity;
 	id?: string;
 };
 
@@ -1081,6 +1482,49 @@ export class Entity
 	attributes = new Map<string, Attribute>();
 	relations = [] as EntityRelation[];
 	aggregate: Aggregate;
+	/**
+	 * The entity this one is a kind of, when it is one: a LoanAccount is an
+	 * Account and has everything an Account has, plus its own (decision 22).
+	 * The parent is an entity of the same aggregate.
+	 */
+	specialises?: Entity;
+
+	/** The context this entity's aggregate belongs to. */
+	get boundedcontext(): BoundedContext {
+		return this.aggregate.boundedcontext;
+	}
+
+	/** The entities of this aggregate that are a kind of this one. */
+	get kinds(): Entity[] {
+		return Array.from(this.aggregate.entities.values()).filter(
+			(it) => it.specialises === this,
+		);
+	}
+
+	/** Every entity this one is a kind of, nearest parent first. */
+	get ancestors(): Entity[] {
+		return ancestorsOf(this);
+	}
+
+	/** The attributes this entity has because a parent declares them. */
+	get inheritedAttributes(): Attribute[] {
+		return this.ancestors.flatMap((it) => [...it.attributes.values()]);
+	}
+
+	/** Everything this entity holds: its own attributes, then the inherited ones. */
+	get allAttributes(): Attribute[] {
+		return [...this.attributes.values(), ...this.inheritedAttributes];
+	}
+
+	/** The relations this entity has because a parent declares them. */
+	get inheritedRelations(): EntityRelation[] {
+		return this.ancestors.flatMap((it) => it.relations);
+	}
+
+	/** Everything this entity points at: its own relations, then the inherited ones. */
+	get allRelations(): EntityRelation[] {
+		return [...this.relations, ...this.inheritedRelations];
+	}
 
 	get path(): string {
 		return `${this.aggregate.path}/entities/${this.id}`;
@@ -1099,6 +1543,7 @@ export class Entity
 		this.name = name;
 		this.description = attributes.description;
 		this.root = attributes.root || false;
+		this.specialises = attributes.specialises;
 		this.aggregate = aggregate;
 		this.aggregate.entities.set(this.id, this);
 	}
@@ -1121,12 +1566,20 @@ export class Entity
 		return this.addRelation(target, attributes);
 	}
 
+	/**
+	 * Declares that this holds the target: the label is the phrase the
+	 * relation map draws ("lives at"), the cardinality how many. Where this
+	 * uses one value object for more than one attribute, `{ for }` names the
+	 * attribute this relation draws, so the phrase need not be a field name.
+	 */
 	uses(
 		target: Entity | ValueObject,
 		label: string,
 		cardinality?: RelationCardinality,
+		options: EntityRelationOptions = {},
 	) {
 		this.addRelation(target, {
+			...options,
 			label,
 			relation: RelationType.Uses,
 			cardinality,
@@ -1137,8 +1590,10 @@ export class Entity
 		target: Entity | ValueObject,
 		label: string,
 		cardinality?: RelationCardinality,
+		options: EntityRelationOptions = {},
 	) {
 		this.addRelation(target, {
+			...options,
 			label,
 			relation: RelationType.Includes,
 			cardinality,
@@ -1149,8 +1604,10 @@ export class Entity
 		target: Entity | ValueObject,
 		label: string,
 		cardinality?: RelationCardinality,
+		options: EntityRelationOptions = {},
 	) {
 		this.addRelation(target, {
+			...options,
 			label,
 			relation: RelationType.References,
 			cardinality,
@@ -1166,6 +1623,7 @@ export class Entity
 			name: this.name,
 			description: this.description,
 			root: this.root,
+			specialises: this.specialises && { $ref: this.specialises.ref },
 			attributes: asRecords(this.attributes),
 			relations: asArray(this.relations),
 		};
@@ -1174,6 +1632,8 @@ export class Entity
 
 export type ValueObjectAttributes = {
 	description: string;
+	/** The value object this one is a kind of; see {@link ValueObject.specialises}. */
+	specialises?: ValueObject;
 	id?: string;
 };
 
@@ -1185,10 +1645,57 @@ export class ValueObject
 	description: string;
 	attributes = new Map<string, Attribute>();
 	relations = [] as EntityRelation[];
-	aggregate: Aggregate;
+	/** The rules that hold of every instance of this value (decision 27). */
+	invariants = new Map<string, Invariant>();
+	boundedcontext: BoundedContext;
+	/**
+	 * The value object this one is a kind of, when it is one: a nominal ledger
+	 * account is a ledger account and has everything one has, plus its own
+	 * (decision 22). The parent belongs to this context, or to a context this
+	 * one shares a kernel with.
+	 */
+	specialises?: ValueObject;
+
+	/**
+	 * The value objects that are a kind of this one, anywhere in the
+	 * workspace: a kernel's value object is specialised by the contexts that
+	 * borrow it, so the kinds of one are not all in its own context.
+	 */
+	get kinds(): ValueObject[] {
+		const out: ValueObject[] = [];
+		for (const bc of this.boundedcontext.workspace.boundedcontexts.values())
+			for (const vo of bc.valueobjects.values())
+				if (vo.specialises === this) out.push(vo);
+		return out;
+	}
+
+	/** Every value object this one is a kind of, nearest parent first. */
+	get ancestors(): ValueObject[] {
+		return ancestorsOf(this);
+	}
+
+	/** The attributes this value object has because a parent declares them. */
+	get inheritedAttributes(): Attribute[] {
+		return this.ancestors.flatMap((it) => [...it.attributes.values()]);
+	}
+
+	/** Everything this value object holds: its own attributes, then the inherited ones. */
+	get allAttributes(): Attribute[] {
+		return [...this.attributes.values(), ...this.inheritedAttributes];
+	}
+
+	/** The relations this value object has because a parent declares them. */
+	get inheritedRelations(): EntityRelation[] {
+		return this.ancestors.flatMap((it) => it.relations);
+	}
+
+	/** Everything this value object points at: its own relations, then the inherited ones. */
+	get allRelations(): EntityRelation[] {
+		return [...this.relations, ...this.inheritedRelations];
+	}
 
 	get path(): string {
-		return `${this.aggregate.path}/valueobjects/${this.id}`;
+		return `${this.boundedcontext.path}/valueobjects/${this.id}`;
 	}
 
 	get ref(): string {
@@ -1196,19 +1703,29 @@ export class ValueObject
 	}
 
 	constructor(
-		aggregate: Aggregate,
+		boundedcontext: BoundedContext,
 		name: string,
 		attributes: ValueObjectAttributes,
 	) {
 		this.id = attributes.id || snakeCase(name);
 		this.name = name;
 		this.description = attributes.description;
-		this.aggregate = aggregate;
-		this.aggregate.valueobjects.set(this.id, this);
+		this.specialises = attributes.specialises;
+		this.boundedcontext = boundedcontext;
+		this.boundedcontext.valueobjects.set(this.id, this);
 	}
 
 	addAttribute(name: string, options: AttributeOptions): Attribute {
 		return new Attribute(this, name, options);
+	}
+
+	/**
+	 * Declares a rule that holds of every instance of this value: chain
+	 * `.constrains(...)` with this value object's own attributes. It needs no
+	 * guard, because a value that breaks it is never constructed.
+	 */
+	addInvariant(name: string, attributes: InvariantAttributes): Invariant {
+		return new Invariant(this, name, attributes);
 	}
 
 	addRelation(
@@ -1225,12 +1742,20 @@ export class ValueObject
 		return this.addRelation(target, attributes);
 	}
 
+	/**
+	 * Declares that this holds the target: the label is the phrase the
+	 * relation map draws ("lives at"), the cardinality how many. Where this
+	 * uses one value object for more than one attribute, `{ for }` names the
+	 * attribute this relation draws, so the phrase need not be a field name.
+	 */
 	uses(
 		target: Entity | ValueObject,
 		label: string,
 		cardinality?: RelationCardinality,
+		options: EntityRelationOptions = {},
 	) {
 		this.addRelation(target, {
+			...options,
 			label,
 			relation: RelationType.Uses,
 			cardinality,
@@ -1241,8 +1766,10 @@ export class ValueObject
 		target: Entity | ValueObject,
 		label: string,
 		cardinality?: RelationCardinality,
+		options: EntityRelationOptions = {},
 	) {
 		this.addRelation(target, {
+			...options,
 			label,
 			relation: RelationType.Includes,
 			cardinality,
@@ -1253,8 +1780,10 @@ export class ValueObject
 		target: Entity | ValueObject,
 		label: string,
 		cardinality?: RelationCardinality,
+		options: EntityRelationOptions = {},
 	) {
 		this.addRelation(target, {
+			...options,
 			label,
 			relation: RelationType.References,
 			cardinality,
@@ -1269,18 +1798,26 @@ export class ValueObject
 		return {
 			name: this.name,
 			description: this.description,
+			specialises: this.specialises && { $ref: this.specialises.ref },
 			attributes: asRecords(this.attributes),
 			relations: asArray(this.relations),
+			invariants: asRecords(this.invariants),
 		};
 	}
 }
 
 export type InvariantAttributes = {
 	description: string;
+	/** Whether the rule is a precondition; see {@link Invariant.precondition}. */
+	precondition?: boolean;
 	id?: string;
 };
-/** What an invariant can be declared over. */
-export type Constrainable = Entity | ValueObject | Attribute;
+/**
+ * What an invariant can be declared over: the elements it holds true of, and
+ * the consumables that have to uphold it, for a rule about a transition rather
+ * than about a value (decision 19).
+ */
+export type Constrainable = Entity | ValueObject | Attribute | Consumable;
 
 /** "Owner.attribute" for an attribute, the element's name otherwise. */
 export function constrainableLabel(target: Constrainable): string {
@@ -1289,34 +1826,80 @@ export function constrainableLabel(target: Constrainable): string {
 		: target.name;
 }
 
+/**
+ * Which boundary a rule is kept true inside: a value object's invariant holds
+ * by construction of the value, an aggregate's holds inside that aggregate on
+ * every save, and a context's holds across the instances and aggregates of the
+ * context and is checked by an operation before it acts (decision 27).
+ */
+export type InvariantKind = "value" | "aggregate" | "context";
+
 export class Invariant
 	implements Visitable, SchemaConvertible<ods.InvariantSchema>
 {
 	id: string;
 	name: string;
 	description: string;
-	aggregate: Aggregate;
+	/** The value object, aggregate or bounded context this rule belongs to. */
+	owner: Aggregate | BoundedContext | ValueObject;
 	/** The elements this invariant constrains. */
 	targets: Constrainable[] = [];
+	/**
+	 * Whether the rule is a precondition: checked before the operation it names
+	 * runs, and not kept true afterwards. What it was checked against — a
+	 * balance, an entitlement, another context's answer — may move on the
+	 * moment the call returns.
+	 *
+	 * It is stated rather than inferred from naming an operation, because those
+	 * are two different facts: which operation keeps a rule, and what kind of
+	 * rule it is. `PostEntry` must produce balanced postings and the rule is
+	 * still true after it; the operation is named for responsibility, not to
+	 * weaken the rule (decision 27, second amendment).
+	 */
+	precondition: boolean;
 
 	get path(): string {
-		return `${this.aggregate.path}/invariants/${this.id}`;
+		return `${this.owner.path}/invariants/${this.id}`;
 	}
 
 	get ref(): string {
 		return `#/${this.path}`;
 	}
 
+	/** Whether the rule is kept true by a value, by one aggregate or by the whole context. */
+	get kind(): InvariantKind {
+		if (this.owner instanceof ValueObject) return "value";
+		return this.owner instanceof Aggregate ? "aggregate" : "context";
+	}
+
+	/** The context the rule belongs to, directly or through its owner. */
+	get boundedcontext(): BoundedContext {
+		return this.owner instanceof BoundedContext
+			? this.owner
+			: this.owner.boundedcontext;
+	}
+
 	constructor(
-		aggregate: Aggregate,
+		owner: Aggregate | BoundedContext | ValueObject,
 		name: string,
 		attributes: InvariantAttributes,
 	) {
 		this.id = attributes.id || snakeCase(name);
 		this.name = name;
 		this.description = attributes.description;
-		this.aggregate = aggregate;
-		this.aggregate.invariants.set(this.id, this);
+		this.precondition = attributes.precondition ?? false;
+		this.owner = owner;
+		this.owner.invariants.set(this.id, this);
+	}
+
+	/**
+	 * The consumables this invariant is a rule for: for an aggregate's rule the
+	 * operations that make the transition it describes, for a context's rule the
+	 * operations that check it before acting. Either way, the ones that have to
+	 * uphold it.
+	 */
+	get guarded(): Consumable[] {
+		return this.targets.filter((it) => it instanceof Consumable);
 	}
 
 	/** Declares an element this invariant constrains. */
@@ -1335,6 +1918,7 @@ export class Invariant
 		return {
 			name: this.name,
 			description: this.description,
+			precondition: this.precondition || undefined,
 			constrains: this.targets.map((it) => ({ $ref: it.ref })),
 		};
 	}
@@ -1344,6 +1928,15 @@ export type EntityRelationAttributes = {
 	label?: string;
 	relation: EntityRelationType;
 	cardinality?: RelationCardinality;
+} & EntityRelationOptions;
+
+/**
+ * What a relation carries beyond its target, its kind and its number: which
+ * attribute of the source it draws. See {@link EntityRelation.for}.
+ */
+export type EntityRelationOptions = {
+	/** The attribute of the source this relation draws; see {@link EntityRelation.for}. */
+	for?: string;
 };
 
 export class EntityRelation
@@ -1354,6 +1947,15 @@ export class EntityRelation
 	label?: string;
 	relation: EntityRelationType;
 	cardinality?: RelationCardinality;
+	/**
+	 * The attribute of the source this relation draws, where the source uses
+	 * one value object for more than one attribute: a customer's current
+	 * address beside its address history. The label stays a phrase; this says
+	 * which field the phrase is about, and `attribute-relation-coherence`
+	 * pairs the two halves by it. Absent where the source uses the target
+	 * once, which is the common case.
+	 */
+	for?: string;
 
 	constructor(
 		source: Entity | ValueObject,
@@ -1365,6 +1967,7 @@ export class EntityRelation
 		this.label = attributes.label;
 		this.relation = attributes.relation;
 		this.cardinality = attributes.cardinality;
+		this.for = attributes.for;
 		source.relations.push(this);
 	}
 
@@ -1378,12 +1981,37 @@ export class EntityRelation
 			relation: this.relation,
 			label: this.label,
 			cardinality: this.cardinality,
+			for: this.for,
 		};
 	}
 }
 
+/**
+ * What can be named as making a consumption: one of the consumer's own
+ * operations, or a policy or process of the consumer's context that issues
+ * them.
+ */
+export type ConsumptionCaller = Consumable | Policy | Process;
+
+/**
+ * How a caller reads inside a consumption's ref: the collection it lives in,
+ * then its id. Two callers of one consumer may share an id — an operation and
+ * the policy named after it — and only the collection tells them apart.
+ */
+function callerSegment(caller: ConsumptionCaller): string {
+	if (caller instanceof Policy) return `policies/${caller.id}`;
+	if (caller instanceof Process) return `processes/${caller.id}`;
+	return `provides/${caller.id}`;
+}
+
 export type ConsumptionAttributes = {
 	pattern?: DownstreamRole;
+	/**
+	 * The consumer's own operations, or the policies and processes of its
+	 * context, behind this exchange. Absent means the whole consumer
+	 * (decision 21).
+	 */
+	by?: ConsumptionCaller[];
 } & EvidenceOptions;
 
 export class Consumption
@@ -1392,8 +2020,48 @@ export class Consumption
 	consumer: Aggregate | Service;
 	consumable: Consumable;
 	pattern?: DownstreamRole;
+	/** The consumer's own operations, policies or processes that make this exchange. */
+	by: ConsumptionCaller[];
 	comments: ods.Comment[];
 	disposition?: ods.Disposition;
+
+	/**
+	 * A consumption has no id of its own, so its ref is derived from the pair
+	 * it joins: the consumer's path, `consumes`, and the consumable's path
+	 * with `/` replaced by `~`, the one ref-safe character no collection name
+	 * or id contains. Deriving it from the pair rather than the position in
+	 * `consumes[]` keeps it stable when the array is reordered, and flattening
+	 * the whole consumable path rather than its ids alone keeps two providers
+	 * of the same id — one aggregate, one service — apart.
+	 *
+	 * One consumer may take one consumable more than once when the exchanges
+	 * differ, an archive taking a response as it stands beside a decision that
+	 * translates it, so the pair alone does not always identify a consumption.
+	 * Where it does not, the first caller named in `by` is appended as a
+	 * further segment; `consumption-once` is what makes that caller present and
+	 * the callers of the sibling consumptions disjoint, so the segment tells
+	 * the two apart. A pair declared once keeps the ref it always had
+	 * (decision 26, card 89).
+	 *
+	 * That segment names the caller's collection as well as its id, because an
+	 * id is only unique within one. A context whose policy is named after the
+	 * operation it issues — Petstore's "Reserve Pet" is both — gave two
+	 * consumptions one ref while `consumption-once` saw two different callers
+	 * and said nothing (card 95). `provides`, `policies` or `processes` is the
+	 * same word the caller's own ref uses, so the two agree by construction.
+	 */
+	get path(): string {
+		const pair = `${this.consumer.path}/consumes/${this.consumable.path.split("/").join("~")}`;
+		const shared = this.consumer.consumptions.some(
+			(other) => other !== this && other.consumable === this.consumable,
+		);
+		const caller = this.by[0];
+		return shared && caller ? `${pair}/${callerSegment(caller)}` : pair;
+	}
+
+	get ref(): string {
+		return `#/${this.path}`;
+	}
 
 	constructor(
 		consumer: Aggregate | Service,
@@ -1404,6 +2072,7 @@ export class Consumption
 		this.consumer.consumptions.push(this);
 		this.consumable = consumable;
 		this.pattern = attributes.pattern;
+		this.by = attributes.by ?? [];
 		this.comments = attributes.comments ?? [];
 		this.disposition = normaliseDisposition(attributes.disposition);
 		this.consumable.consumptions.push(this);
@@ -1417,6 +2086,7 @@ export class Consumption
 		return {
 			consumable: { $ref: this.consumable.ref },
 			pattern: this.pattern,
+			by: this.by.length ? this.by.map((it) => ({ $ref: it.ref })) : undefined,
 			comments: this.comments.length ? this.comments : undefined,
 			disposition: this.disposition,
 		};
@@ -1599,7 +2269,17 @@ export type AttributeOptions = {
 	type: string;
 	description?: string;
 	identity?: boolean;
+	/** True when the attribute is sometimes absent; absent means required. */
+	optional?: boolean;
 	valueobject?: ValueObject;
+	/** The schema that models this attribute's type, when it is a shape of its own. */
+	schema?: DataSchema;
+	/**
+	 * What this attribute holds the identity of: an entity in any context, or
+	 * an external context itself when the id belongs to a system whose
+	 * entities are not ours to state (decisions 14 and 28).
+	 */
+	identifies?: Entity | BoundedContext;
 	id?: string;
 };
 
@@ -1617,7 +2297,17 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 	type: string;
 	description?: string;
 	identity: boolean;
+	/** True when the attribute is sometimes absent; false means required. */
+	optional: boolean;
 	valueobject?: ValueObject;
+	/** The schema that models this attribute's type, when it is a shape of its own. */
+	schema?: DataSchema;
+	/**
+	 * What this attribute holds the identity of: an entity in any context, or
+	 * an external context itself when the id belongs to a system whose
+	 * entities are not ours to state (decisions 14 and 28).
+	 */
+	identifies?: Entity | BoundedContext;
 	owner: AttributeOwner;
 
 	get path(): string {
@@ -1638,7 +2328,10 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 		this.type = attributes.type;
 		this.description = attributes.description;
 		this.identity = attributes.identity ?? false;
+		this.optional = attributes.optional ?? false;
 		this.valueobject = attributes.valueobject;
+		this.schema = attributes.schema;
+		this.identifies = attributes.identifies;
 		this.owner = owner;
 		this.owner.attributes.set(this.id, this);
 	}
@@ -1649,7 +2342,10 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 			type: this.type,
 			description: this.description,
 			identity: this.identity || undefined,
+			optional: this.optional || undefined,
 			valueobject: this.valueobject && { $ref: this.valueobject.ref },
+			schema: this.schema && { $ref: this.schema.ref },
+			identifies: this.identifies && { $ref: this.identifies.ref },
 		};
 	}
 }
@@ -1693,13 +2389,23 @@ export class DataSchema
 		return new Attribute(this, name, options);
 	}
 
-	/** Consumables across the workspace that carry this schema. */
+	/**
+	 * Consumables across the workspace that depend on this shape, whether they
+	 * send it as their payload, answer with it or refuse with it. All three are
+	 * the same promise: removing an attribute breaks whoever is on the other
+	 * end.
+	 */
 	get consumables(): Consumable[] {
 		const out: Consumable[] = [];
 		for (const bc of this.boundedcontext.workspace.boundedcontexts.values()) {
 			for (const p of [...bc.aggregates.values(), ...bc.services.values()])
 				for (const c of p.consumables.values())
-					if (c.schema === this) out.push(c);
+					if (
+						c.schema === this ||
+						c.returns === this ||
+						c.rejects.includes(this)
+					)
+						out.push(c);
 		}
 		return out;
 	}
@@ -1717,23 +2423,66 @@ export class DataSchema
 	}
 }
 
+/**
+ * What a reaction waits for: an event, or the answer an operation comes back
+ * with.
+ *
+ * The commonest process-manager shape is a call and a branch on what came
+ * back, and a model that could wait only on events made its authors publish a
+ * reply as a fact the world was told about: RiverMart published a declined
+ * payment against decision 25's own example and NorthBank modelled one
+ * synchronous verdict as two events. The answer is synchronous because the
+ * operation is, so delivery is still implied by the consumable's type and
+ * nothing new says it (decision 23, second amendment).
+ *
+ * An answer is named by its origin — `op.returned()`, `op.rejected(schema)` —
+ * and never by the shape alone, so waiting on a refusal wakes the reactor for
+ * that call and not for every other operation that happens to refuse with the
+ * same schema (see {@link Answer}).
+ */
+export type ReactionTrigger = Consumable | Answer;
+
+/**
+ * What a process waits for: everything a policy may wait for, and its own
+ * deadlines.
+ *
+ * A deadline is the one trigger that belongs to the reactor rather than to
+ * some provider, which is why only a process may name one: a policy is
+ * stateless and remembers no instance, so it has no clock of its own to run
+ * (decisions 15 and 23).
+ */
+export type ProcessTrigger = ReactionTrigger | Deadline;
+
 export type PolicyAttributes = {
 	description: string;
+	/** The events or answers that trigger it; also settable with `.on(...)`. */
+	on?: ReactionTrigger[];
+	/** The operations it issues; also settable with `.issues(...)`. */
+	issues?: Consumable[];
 	id?: string;
 };
 
 /**
- * A reaction that lives in a bounded context: when any of its event
- * consumables happen, it issues its operation consumables. Either side may
- * belong to another context.
+ * The schema field a policy or process writes its issued operations under.
+ * Held indirectly so the object literals in `toSchema` below use a computed
+ * key: written as `then:` they would be a synchronous, non-function `then`
+ * property, which `noThenProperty` treats as a thenable regardless of what
+ * it holds.
+ */
+const issuesSchemaKey = "then" as const;
+
+/**
+ * A reaction that lives in a bounded context: when any of the events it waits
+ * for happens, or one of the answers it waits for comes back, it issues its
+ * operation consumables. Either side may belong to another context.
  */
 export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 	id: string;
 	name: string;
 	description: string;
 	boundedcontext: BoundedContext;
-	/** Event consumables that trigger the policy. */
-	events: Consumable[] = [];
+	/** The events and answers that trigger the policy. */
+	events: ReactionTrigger[] = [];
 	/** Operation consumables the policy issues. */
 	commands: Consumable[] = [];
 
@@ -1755,10 +2504,12 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 		this.description = attributes.description;
 		this.boundedcontext = boundedcontext;
 		this.boundedcontext.policies.set(this.id, this);
+		this.on(...(attributes.on ?? []));
+		this.issues(...(attributes.issues ?? []));
 	}
 
-	/** Adds a triggering event consumable. */
-	on(...events: Consumable[]): this {
+	/** Adds a triggering event, or the answer an operation comes back with. */
+	on(...events: ReactionTrigger[]): this {
 		for (const event of events) {
 			if (!this.events.includes(event)) this.events.push(event);
 		}
@@ -1766,7 +2517,7 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 	}
 
 	/** Adds an operation consumable to issue. */
-	then(...commands: Consumable[]): this {
+	issues(...commands: Consumable[]): this {
 		for (const command of commands) {
 			if (!this.commands.includes(command)) this.commands.push(command);
 		}
@@ -1782,7 +2533,251 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 			name: this.name,
 			description: this.description,
 			on: this.events.map((it) => ({ $ref: it.ref })),
-			then: this.commands.map((it) => ({ $ref: it.ref })),
+			[issuesSchemaKey]: this.commands.map((it) => ({ $ref: it.ref })),
+		};
+	}
+}
+
+export type ProcessAttributes = {
+	description: string;
+	/** The events that begin an instance; also settable with `.starts(...)`. */
+	starts?: Consumable[];
+	/**
+	 * The events, answers and deadlines it waits for while alive; also settable
+	 * with `.on(...)`.
+	 */
+	on?: ProcessTrigger[];
+	/** The operations it issues; also settable with `.issues(...)`. */
+	issues?: Consumable[];
+	/**
+	 * The events, answers and deadlines that complete an instance; also
+	 * settable with `.ends(...)`.
+	 */
+	ends?: ProcessTrigger[];
+	id?: string;
+} & EvidenceOptions;
+
+export type DeadlineAttributes = {
+	description: string;
+	/**
+	 * How long the instance waits before the deadline falls, in the words the
+	 * business uses: "30 minutes", "two working days". Free text for the same
+	 * reason an attribute's type is (decision 15): the model says the limit
+	 * exists and how long it is, and leaves the arithmetic to the code.
+	 */
+	after: string;
+	id?: string;
+};
+
+/**
+ * A time limit a process keeps on its own instances: cancel the reservation if
+ * nobody has paid after thirty minutes.
+ *
+ * A deadline belongs to the process, not to a calendar. Decision 28's Clock is
+ * an external context whose events every context shares — the month end, the
+ * scheme cut-off — and a per-instance timer is not one of those: it starts
+ * when this instance starts waiting, and nothing outside knows the instance
+ * exists. Modelled as a Clock event it cost five declarations (an external
+ * context, a service, an event, a consumption on a service that provides
+ * nothing, and a relationship) to say one thing, and said the wrong thing
+ * besides (decision 23, fourth amendment).
+ *
+ * So it is an element of the process, and the process is the only thing that
+ * may name it: it may `on` a deadline, to act when the time is up, or `ends`
+ * on one, when running out of time is how the instance finishes. It behaves as
+ * an event the process raises to itself, and the reaction walk and the flow
+ * map draw it that way — one step from the process back to the process,
+ * labelled with how long the wait was.
+ */
+export class Deadline
+	implements Referenceable, SchemaConvertible<ods.DeadlineSchema>
+{
+	id: string;
+	name: string;
+	description: string;
+	/** How long the instance waits before it falls; see {@link DeadlineAttributes.after}. */
+	after: string;
+	/** The process whose instances keep it. */
+	process: Process;
+
+	get path(): string {
+		return `${this.process.path}/deadlines/${this.id}`;
+	}
+
+	get ref(): string {
+		return `#/${this.path}`;
+	}
+
+	/** The context the process belongs to, which is where the deadline is kept. */
+	get boundedcontext(): BoundedContext {
+		return this.process.boundedcontext;
+	}
+
+	constructor(process: Process, name: string, attributes: DeadlineAttributes) {
+		this.id = attributes.id || snakeCase(name);
+		this.name = name;
+		this.description = attributes.description;
+		this.after = attributes.after;
+		this.process = process;
+		process.deadlines.set(this.id, this);
+	}
+
+	toSchema(): ods.DeadlineSchema {
+		return {
+			name: this.name,
+			description: this.description,
+			after: this.after,
+		};
+	}
+}
+
+/**
+ * A reaction that outlives one event. A policy is stateless and any-of: it
+ * fires whenever one of its events happens. A process remembers — which of
+ * its events have arrived, what it has already issued — so it can wait for
+ * two facts before acting and can say how an instance finishes.
+ *
+ * `starts` begins an instance, `on` are the further facts it waits for,
+ * `issues` are the operations of its own context it issues, and `ends` are the
+ * facts that complete it. What it correlates on, how long it waits and what
+ * it compensates are prose in the description: the model states that the
+ * process exists and what it listens to and does, and leaves how it decides
+ * to the code (decision 23).
+ *
+ * What it waits for and what completes it may be an answer as well as an
+ * event, because the commonest process is a call and a branch on what came
+ * back (see {@link ReactionTrigger}). It may also be one of the process's own
+ * deadlines, because the second commonest is a wait with a time limit on it
+ * (see {@link Deadline}). What starts one is an event: an answer is what a
+ * caller gets back from a call and a deadline is counted from the moment an
+ * instance began waiting, so in both cases something was already there, and an
+ * instance that did not exist before cannot have been.
+ */
+export class Process
+	implements Visitable, Evidenced, SchemaConvertible<ods.ProcessSchema>
+{
+	id: string;
+	name: string;
+	description: string;
+	boundedcontext: BoundedContext;
+	/** Events that begin an instance. */
+	startEvents: Consumable[] = [];
+	/** The events, answers and deadlines an instance waits for while it is alive. */
+	events: ProcessTrigger[] = [];
+	/** Operation consumables the process issues. */
+	commands: Consumable[] = [];
+	/** The events, answers and deadlines that complete an instance. */
+	endEvents: ProcessTrigger[] = [];
+	/** The time limits this process keeps on its own instances, by id. */
+	deadlines = new Map<string, Deadline>();
+	comments: ods.Comment[];
+	disposition?: ods.Disposition;
+
+	get path(): string {
+		return `${this.boundedcontext.path}/processes/${this.id}`;
+	}
+
+	get ref(): string {
+		return `#/${this.path}`;
+	}
+
+	constructor(
+		boundedcontext: BoundedContext,
+		name: string,
+		attributes: ProcessAttributes,
+	) {
+		this.id = attributes.id || snakeCase(name);
+		this.name = name;
+		this.description = attributes.description;
+		this.boundedcontext = boundedcontext;
+		this.comments = attributes.comments ?? [];
+		this.disposition = normaliseDisposition(attributes.disposition);
+		this.boundedcontext.processes.set(this.id, this);
+		this.starts(...(attributes.starts ?? []));
+		this.on(...(attributes.on ?? []));
+		this.issues(...(attributes.issues ?? []));
+		this.ends(...(attributes.ends ?? []));
+	}
+
+	/** Adds an event that begins an instance. */
+	starts(...events: Consumable[]): this {
+		return this.add(this.startEvents, events);
+	}
+
+	/**
+	 * Adds an event an instance waits for while it is alive, an answer it waits
+	 * to come back, or one of its own deadlines.
+	 */
+	on(...events: ProcessTrigger[]): this {
+		for (const event of events) this.refuseForeignDeadline(event);
+		return this.add(this.events, events);
+	}
+
+	/** Adds an operation consumable to issue. */
+	issues(...commands: Consumable[]): this {
+		return this.add(this.commands, commands);
+	}
+
+	/** Adds an event, an answer, or a deadline that completes an instance. */
+	ends(...events: ProcessTrigger[]): this {
+		for (const event of events) this.refuseForeignDeadline(event);
+		return this.add(this.endEvents, events);
+	}
+
+	/**
+	 * Refuses a deadline that belongs to another process. A deadline counts
+	 * from the moment one instance began waiting, so no other reactor knows
+	 * the instance exists, let alone when its clock started; naming somebody
+	 * else's is not a rule to report but a sentence with no meaning, and it is
+	 * refused where it is written, as an answer of an operation that returns
+	 * nothing is.
+	 */
+	private refuseForeignDeadline(trigger: ProcessTrigger): void {
+		if (trigger instanceof Deadline && trigger.process !== this)
+			throw new Error(
+				`Deadline ${trigger.name} belongs to process ${trigger.process.name}, so ${this.name} cannot wait on it`,
+			);
+	}
+
+	/**
+	 * Declares a time limit this process keeps on its own instances. Name it
+	 * before naming it in `on` or `ends`, the way an operation exists before a
+	 * process issues it.
+	 */
+	addDeadline(name: string, attributes: DeadlineAttributes): Deadline {
+		return new Deadline(this, name, attributes);
+	}
+
+	private add<T extends ProcessTrigger>(target: T[], consumables: T[]): this {
+		for (const consumable of consumables) {
+			if (!target.includes(consumable)) target.push(consumable);
+		}
+		return this;
+	}
+
+	accept(v: Visitor) {
+		return v.visitProcess(this);
+	}
+
+	toSchema(): ods.ProcessSchema {
+		const refs = (triggers: ProcessTrigger[]) =>
+			triggers.map((it) => ({ $ref: it.ref }));
+		return {
+			name: this.name,
+			description: this.description,
+			// Deadlines come before the lists, because `on` and `ends` may name
+			// one and a reader meets it where it is declared.
+			deadlines: this.deadlines.size
+				? Object.fromEntries(
+						[...this.deadlines].map(([id, it]) => [id, it.toSchema()]),
+					)
+				: undefined,
+			starts: refs(this.startEvents),
+			on: refs(this.events),
+			[issuesSchemaKey]: refs(this.commands),
+			ends: refs(this.endEvents),
+			comments: this.comments.length ? this.comments : undefined,
+			disposition: this.disposition,
 		};
 	}
 }

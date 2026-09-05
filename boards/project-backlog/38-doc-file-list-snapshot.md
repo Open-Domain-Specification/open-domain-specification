@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [infra, docs, backend]
 priority: low
 agent: dev-sonnet

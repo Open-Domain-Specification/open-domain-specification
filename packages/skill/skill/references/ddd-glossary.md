@@ -23,8 +23,12 @@ Never repeat an explanation, and never explain a term the user already used corr
   identity attribute is the one that tells two entities apart.
 - **Aggregate** — the cluster of things you change together and check rules across, named after
   its *root*, the one thing you go through to change any of it; the order and its lines.
-- **Invariant** — a rule that must always hold inside an aggregate, such as "quantity is never
-  zero".
+- **Invariant** — a rule that must always hold. A value object's invariant holds by construction
+  of the value — "an IBAN's checksum adds up" — and is about that value's own attributes; a
+  value that breaks it is never made, so nothing guards it. An aggregate's invariant holds
+  inside that one cluster every time it is saved, such as "quantity is never zero". A context's
+  invariant holds across all of them at once — "one open application per customer" — and names
+  the operation that checks it before acting, because no one instance can see the others.
 - **Relation** — how one thing points at another: *includes* for parts that cannot exist alone,
   *uses* for values it carries, *references* for another aggregate's root by identity.
 - **Cardinality** — how many of the other thing: exactly one, at most one, any number, at least
@@ -36,6 +40,11 @@ Never repeat an explanation, and never explain a term the user already used corr
 - **Consumable** — an operation or event that a part offers, and **consumption** is another part
   using it.
 - **Schema** — the shape of the information that travels with an operation or event.
+- **Process** — the thing that remembers. A reaction that outlives one event: it knows which of
+  its events have arrived, so it can wait for two facts before acting, and it says what
+  finishes an instance. The DDD name is process manager (a saga in the messaging literature).
+  In ODS it is `starts`, `on`, `then` and `ends`; what it correlates on and how long it waits
+  are prose in its description. A policy that finds itself waiting is one of these.
 - **Policy** — a rule of the form "when this event happens, do that operation", possibly across
   contexts.
 - **Application service** — the part that fronts an API or a screen and turns requests into

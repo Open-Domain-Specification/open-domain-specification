@@ -97,6 +97,40 @@ describe("RelationEdge", () => {
 		expect(cardinality(uses.container)).toBeNull();
 	});
 
+	it("draws an identity as a dashed dependency, stereotyped so it never reads as a uses", async () => {
+		const held = edge({ type: "relation-identifies", label: "petId" });
+		await waitFor(() => expect(edgePath(held.container)).toBeTruthy());
+		const path = edgePath(held.container) as SVGElement;
+		expect(path).toHaveClass("identifies");
+		expect(path).toHaveClass("dashed");
+		expect(path.getAttribute("marker-end")).toBe("url(#e-vee)");
+		expect(held.container.querySelector(".edge-label")).toHaveTextContent(
+			"«identifies» petId",
+		);
+
+		// An identity the map has no attribute name for says nothing extra.
+		const bare = edge({ type: "relation-identifies", label: "" });
+		await waitFor(() => expect(edgePath(bare.container)).toBeTruthy());
+		expect(bare.container.querySelector(".edge-label")).toBeNull();
+	});
+
+	it("draws a kind as a generalisation: a solid line with a hollow triangle at the parent", async () => {
+		const { container } = edge({ type: "relation-specialises", label: "" });
+		await waitFor(() => expect(edgePath(container)).toBeTruthy());
+		const path = edgePath(container) as SVGElement;
+		expect(path).toHaveClass("specialises");
+		expect(path).not.toHaveClass("dashed");
+		expect(path.getAttribute("marker-end")).toBe("url(#e-triangle)");
+		expect(path.getAttribute("marker-start")).toBeNull();
+		// Hollow, not filled: the background shows through the triangle.
+		const marker = container.querySelector("marker#e-triangle .marker-hollow");
+		expect(marker).toBeTruthy();
+		expect(marker?.getAttribute("d")).toBe("M0,0 L10,5 L0,10 Z");
+		// The line says the whole of it: no role label, no multiplicity.
+		expect(container.querySelector(".edge-label")).toBeNull();
+		expect(cardinality(container)).toBeNull();
+	});
+
 	it("places the cardinality port on the side the edge enters from", async () => {
 		const at = async (targetPosition: Position) => {
 			const { container } = edge({
