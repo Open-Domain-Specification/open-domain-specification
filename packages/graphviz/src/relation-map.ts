@@ -84,7 +84,7 @@ function clusterLabel(node: ODSRelationMapNode): string {
 }
 
 function attributeRow(attribute: ODSRelationMapNode["attributes"][number]) {
-	const text = `${attribute.identity ? "{id} " : ""}${attribute.name}: ${attribute.type}`;
+	const text = `${attribute.identity ? "{id} " : ""}${attribute.optional ? "{opt} " : ""}${attribute.name}: ${attribute.type}`;
 	const title = attribute.description
 		? ` TITLE="${escapeHtml(attribute.description)}"`
 		: "";
@@ -118,7 +118,8 @@ function plantUmlAlias(node: ODSRelationMapNode): string {
 function plantUmlClass(node: ODSRelationMapNode): string {
 	const body = node.attributes
 		.map(
-			(it) => `    ${it.identity ? "{field} {id} " : ""}${it.name}: ${it.type}`,
+			(it) =>
+				`    ${it.identity ? "{field} {id} " : ""}${it.optional ? "{opt} " : ""}${it.name}: ${it.type}`,
 		)
 		.join("\n");
 	return `  class "${node.name}" as ${plantUmlAlias(node)} <<${STEREOTYPES[node.type]}>> {\n${body}${body ? "\n" : ""}  }`;

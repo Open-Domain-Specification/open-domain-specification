@@ -156,6 +156,24 @@ describe("relationMapToDigraph", () => {
 		);
 	});
 
+	it("marks an optional attribute with {opt} beside {id}", () => {
+		const map = new ODSRelationMap([]);
+		map.addNode({
+			id: "#/boundedcontexts/ordering/aggregates/order/entities/order",
+			name: "Order",
+			type: "entity_root",
+			namespace,
+			attributes: [
+				{ name: "id", type: "OrderId", identity: true },
+				{ name: "note", type: "string", identity: false, optional: true },
+			],
+		});
+		expect(relationMapToDigraph(map).toDot()).toContain("{id} id: OrderId");
+		expect(relationMapToDigraph(map).toDot()).toContain("{opt} note: string");
+		expect(relationMapToPlantUML(map)).toContain("{field} {id} id: OrderId");
+		expect(relationMapToPlantUML(map)).toContain("{opt} note: string");
+	});
+
 	it("escapes HTML in attribute types", () => {
 		expect(relationMapToDigraph(buildMap()).toDot()).toContain(
 			"Decimal &lt;2dp&gt;",

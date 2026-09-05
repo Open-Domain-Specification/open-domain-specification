@@ -39,6 +39,7 @@ function relationNode(node: Entity | ValueObject): ODSRelationMapNode {
 			name: it.name,
 			type: it.type,
 			identity: it.identity,
+			optional: it.optional,
 			description: it.description,
 		})),
 	};
@@ -208,6 +209,7 @@ export type ODSRelationMapAttribute = {
 	name: string;
 	type: string;
 	identity: boolean;
+	optional?: boolean;
 	description?: string;
 };
 
