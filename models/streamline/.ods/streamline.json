@@ -2409,7 +2409,10 @@
               "name": "RankRows",
               "description": "Build the home screen rows for a profile",
               "type": "operation",
-              "internal": true
+              "internal": true,
+              "returns": {
+                "$ref": "#/boundedcontexts/recommendations/schemas/homepage_rows"
+              }
             },
             "add_candidate": {
               "name": "AddCandidate",
@@ -2442,7 +2445,10 @@
               "name": "GetHomepageRows",
               "description": "Rows for a profile, ranked",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "returns": {
+                "$ref": "#/boundedcontexts/recommendations/schemas/homepage_rows"
+              }
             }
           },
           "consumes": []
@@ -2514,7 +2520,32 @@
           "relations": []
         }
       },
-      "schemas": {}
+      "schemas": {
+        "homepage_row": {
+          "name": "HomepageRow",
+          "description": "One ranked row: a title in a candidate pool the profile may see",
+          "attributes": {
+            "title_id": {
+              "name": "titleId",
+              "type": "string",
+              "identity": true
+            }
+          }
+        },
+        "homepage_rows": {
+          "name": "HomepageRows",
+          "description": "The ranked rows for a profile",
+          "attributes": {
+            "rows": {
+              "name": "rows",
+              "type": "HomepageRow[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/recommendations/schemas/homepage_row"
+              }
+            }
+          }
+        }
+      }
     },
     "households_&_profiles": {
       "name": "Households & Profiles",
@@ -3088,6 +3119,9 @@
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/billing_&_plans/schemas/entitlement_request"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/billing_&_plans/schemas/entitlement"
               }
             }
           },
@@ -3243,6 +3277,20 @@
             "household_id": {
               "name": "householdId",
               "type": "string"
+            }
+          }
+        },
+        "entitlement": {
+          "name": "Entitlement",
+          "description": "Whether the household may stream, and how many at once",
+          "attributes": {
+            "entitled": {
+              "name": "entitled",
+              "type": "boolean"
+            },
+            "max_concurrent_streams": {
+              "name": "maxConcurrentStreams",
+              "type": "int"
             }
           }
         }
@@ -3553,6 +3601,9 @@
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/ads_tier/schemas/resolve_ad_break"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/ads_tier/schemas/ad_break_slots"
               }
             }
           },
@@ -3629,6 +3680,34 @@
             "position_seconds": {
               "name": "positionSeconds",
               "type": "int"
+            }
+          }
+        },
+        "ad_slot": {
+          "name": "AdSlot",
+          "description": "One slot in the break, with the creative to show",
+          "attributes": {
+            "creative_id": {
+              "name": "creativeId",
+              "type": "string",
+              "identity": true
+            },
+            "duration_seconds": {
+              "name": "durationSeconds",
+              "type": "int"
+            }
+          }
+        },
+        "ad_break_slots": {
+          "name": "AdBreakSlots",
+          "description": "The slots for the break the player has reached",
+          "attributes": {
+            "slots": {
+              "name": "slots",
+              "type": "AdSlot[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/ads_tier/schemas/ad_slot"
+              }
             }
           }
         },

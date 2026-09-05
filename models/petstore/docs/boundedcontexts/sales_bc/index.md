@@ -46,6 +46,7 @@ Open-host service for /store/order endpoints
 | OrderPlaced | - | **orderId**: `int64`, petId: `int64`, quantity: `Quantity` | OrderPlaced |
 | PlaceOrder | Request body for placing an order | petId: `int64`, quantity: `Quantity` | PlaceOrder |
 | OrderId | - | **orderId**: `int64` | OrderApproved, OrderDelivered, OrderDeleted, ApproveOrder, DeliverOrder, GetOrderById, DeleteOrder, ConfirmDelivery, ReservePet, MarkPetSold |
+| OrderDetail | One order, as GET /store/order/{orderId} answers with it | **orderId**: `int64`, petId: `int64`, quantity: `Quantity`, shipDate: `ShipDate`, status: `OrderStatus` | GetOrderById |
 
 
 ## Policies
@@ -104,9 +105,9 @@ Open-host service for /store/order endpoints
 | [ShipmentApp](../fulfilment_bc/services/shipment_app/index.md) | - | - | OrderApp | ConfirmDelivery | open-host-service |
 | [OrderApp](services/order_app/index.md) | - | - | Order | DeliverOrder | - |
 | [Shipment](../fulfilment_bc/aggregates/shipment/index.md) | - | conformist | Order | OrderApproved | published-language |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | - | conformist | Order | OrderApproved | published-language |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | - | conformist | Order | OrderDelivered | published-language |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | - | conformist | Order | OrderDeleted | published-language |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Order | OrderApproved | published-language |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Order | OrderDelivered | published-language |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Order | OrderDeleted | published-language |
 | [OrderApp](services/order_app/index.md) | - | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
 | [PetApp](../catalog_bc/services/pet_app/index.md) | - | - | Pet | ReservePet | - |
 | [PetApp](../catalog_bc/services/pet_app/index.md) | - | - | Pet | MarkPetSold | - |

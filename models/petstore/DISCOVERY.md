@@ -50,8 +50,10 @@ Each relationship type appears exactly once, and the reasoning is written on eac
 Pet is the root of its aggregate, with Category, Tag, PhotoUrl and PetStatus as value
 objects and `uses` relations of every cardinality. Order references Pet by identity across
 the boundary. Shipment includes DeliveryAttempt, which cannot exist alone, and is the home
-of the entity-level invariant and the domain service. InventoryProjection is a projection
-modelled as an aggregate. User keeps the legacy shape as found.
+of the entity-level invariant and the domain service. Inventory's availability projection
+is InventoryQuery, an application service: a projection is a service that provides a query
+operation, not an aggregate with an invented root (decision 15). User keeps the legacy
+shape as found.
 
 ## Behaviour
 
@@ -108,6 +110,12 @@ Partially accepted
   to Sales, embodied by `Order.petId`, saying that in Sales a pet is an identity to check
   and reserve, nothing more. The status vocabularies are now linked by the two new policies
   rather than left informal.
+- InventoryProjection should not be an aggregate: at the time this record said ODS had no
+  projection element, so the materialised view stayed an aggregate with an invented root.
+  Decision 15 settled it the other way: a projection is a service that provides a query
+  operation. Changed (card 72): `InventoryProjection` and its `InventoryView` root are gone;
+  `InventoryQuery` now provides `GetInventory` (a query with `returns`) and `RecountInventory`
+  (the update the feeding policy issues), and consumes the six events the projection used to.
 
 Rejected
 
@@ -127,8 +135,6 @@ Rejected
   context serving two subdomains.
 - Identity is not a big ball of mud: the brief says nobody wants to touch it and it is
   modelled at its boundary only, which is exactly what the flag means in ODS. Kept.
-- InventoryProjection should not be an aggregate: ODS has no projection element; the
-  description says it is a materialised view rebuilt as one unit.
 - Category has an id so it is an entity: it is reference data compared by value (id and
   name together), which is the Swagger shape; no pet owns or edits a category.
 - The discovery record is synthetic: it says so in its first paragraph. The source is a

@@ -70,8 +70,10 @@ their campaigns pause the same moment."
 Both: "We used to break each other. Now we plan the results page as one product and
 release together. Neither of us changes it alone."
 
-Recorded as: Search with a projection aggregate (SearchIndex), the Ranker domain service and
-a conformist stance to Catalogue and Offers; Advertising with the Campaign aggregate,
+Recorded as: Search with SearchAPI as its query service — a projection is a service that
+provides a query operation, not an aggregate with an invented root (decision 15) — the
+Ranker domain service and a conformist stance to Catalogue and Offers; Advertising with the
+Campaign aggregate,
 `BidWithinBudget`, the AuctionService (which awards slots and charges nothing) and
 `RecordAdClick`, the open-host operation the results page calls, which is what raises
 `AdClicked`; the `PauseSellerCampaigns` policy; a partnership between Search and

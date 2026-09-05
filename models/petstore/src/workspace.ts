@@ -250,6 +250,26 @@ const petIdSchema = catalogBC.addSchema("PetId", {
 		"Identifies one pet; shared by every consumable that only needs the id",
 });
 petIdSchema.addAttribute("petId", { type: "int64", identity: true });
+// A returned shape: what GetPetById and FindPetsByStatus answer with, the
+// full resource behind the summary below.
+const petSchema = catalogBC.addSchema("Pet", {
+	description: "The full pet resource, as GET /pet/{petId} answers with it",
+});
+petSchema.addAttribute("petId", { type: "int64", identity: true });
+petSchema.addAttribute("name", { type: "string" });
+petSchema.addAttribute("category", {
+	type: "Category",
+	valueobject: categoryVO,
+});
+petSchema.addAttribute("photoUrls", {
+	type: "PhotoUrl[]",
+	valueobject: photoUrlVO,
+});
+petSchema.addAttribute("tags", { type: "Tag[]", valueobject: tagVO });
+petSchema.addAttribute("status", {
+	type: "PetStatus",
+	valueobject: petStatusVO,
+});
 // A returned shape: what GetPetSummary answers with, as opposed to the PetId
 // it is asked with. Sales depends on these three attributes and nothing else.
 const petSummarySchema = catalogBC.addSchema("PetSummary", {
@@ -352,12 +372,14 @@ petApp.provides("FindPetsByStatus", {
 	description: "GET /pet/findByStatus?status=available|pending|sold",
 	type: "operation",
 	pattern: "open-host-service",
+	returns: petSchema,
 });
 petApp.provides("GetPetById", {
 	description: "GET /pet/{petId}",
 	type: "operation",
 	pattern: "open-host-service",
 	schema: petIdSchema,
+	returns: petSchema,
 });
 petApp
 	.provides("UploadImage", {
@@ -552,6 +574,24 @@ placeOrderSchema.addAttribute("quantity", {
 });
 const orderIdSchema = salesBC.addSchema("OrderId");
 orderIdSchema.addAttribute("orderId", { type: "int64", identity: true });
+// A returned shape: what GetOrderById answers with.
+const orderDetailSchema = salesBC.addSchema("OrderDetail", {
+	description: "One order, as GET /store/order/{orderId} answers with it",
+});
+orderDetailSchema.addAttribute("orderId", { type: "int64", identity: true });
+orderDetailSchema.addAttribute("petId", { type: "int64" });
+orderDetailSchema.addAttribute("quantity", {
+	type: "Quantity",
+	valueobject: quantityVO,
+});
+orderDetailSchema.addAttribute("shipDate", {
+	type: "ShipDate",
+	valueobject: shipDateVO,
+});
+orderDetailSchema.addAttribute("status", {
+	type: "OrderStatus",
+	valueobject: orderStatusVO,
+});
 
 const orderPlaced = orderAgg.provides("OrderPlaced", {
 	description: "Order created (status=placed)",
@@ -619,6 +659,7 @@ orderApp.provides("GetOrderById", {
 	type: "operation",
 	pattern: "open-host-service",
 	schema: orderIdSchema,
+	returns: orderDetailSchema,
 });
 orderApp
 	.provides("DeleteOrder", {
@@ -918,39 +959,51 @@ fulfilmentBC.addTerm("Shipment", {
 
 /* =======================
    INVENTORY: projection and query service
-   Demonstrates: a projection modelled as an aggregate, conformist
-   consumptions of events from two contexts, and a policy fanning many
-   events into one internal operation.
+   Demonstrates: a projection modelled as a query service (decision 15),
+   conformist consumptions of events from two contexts, and a policy issuing
+   the service's own update operation.
    ======================= */
 
-const inventoryAgg = inventoryBC.addAggregate("InventoryProjection", {
-	description:
-		"Materialized view: { available: number, pending: number, sold: number }. An aggregate because the counts are rebuilt as one unit",
+// The counts the projection answers with. A query that takes no request body
+// still has a shape worth naming: this is what callers depend on.
+const inventoryCountsSchema = inventoryBC.addSchema("InventoryCounts", {
+	description: "How many pets stand in each status right now",
 });
+inventoryCountsSchema.addAttribute("available", { type: "int32" });
+inventoryCountsSchema.addAttribute("pending", { type: "int32" });
+inventoryCountsSchema.addAttribute("sold", { type: "int32" });
 
-const inventoryView = inventoryAgg.addRootEntity("InventoryView", {
-	description: "Status→count map for /store/inventory",
+const inventoryQuery = inventoryBC.addService("InventoryQuery", {
+	description:
+		"Open-host service for /store/inventory: a projection is a service that provides a query (decision 15), not an aggregate with an invented root",
+	type: "application",
 });
-// A projection still needs to say which row it is: one view per status. The
-// status is Catalog's PetStatus, reached across the shared kernel the two
-// contexts declare: one definition, counted here rather than restated.
-inventoryView.addAttribute("status", {
+inventoryQuery.provides("GetInventory", {
+	description: "GET /store/inventory; takes nothing, answers with the counts",
+	type: "operation",
+	pattern: "open-host-service",
+	returns: inventoryCountsSchema,
+});
+// The status is Catalog's PetStatus, reached across the shared kernel the
+// two contexts declare: one definition, named here rather than restated.
+const inventoryUpdatedSchema = inventoryBC.addSchema(
+	"InventoryUpdatedPayload",
+	{
+		description: "Which status's count changed",
+	},
+);
+inventoryUpdatedSchema.addAttribute("status", {
 	type: "PetStatus",
-	description: "The status this row counts; the identity of the view",
-	identity: true,
+	description: "The status whose count moved",
 	valueobject: petStatusVO,
 });
-inventoryView.addAttribute("count", {
-	type: "int32",
-	description: "How many pets are in that status",
-});
-
-const inventoryUpdated = inventoryAgg.provides("InventoryUpdated", {
+const inventoryUpdated = inventoryQuery.provides("InventoryUpdated", {
 	description: "Inventory counts changed",
 	type: "event",
 	pattern: "published-language",
+	schema: inventoryUpdatedSchema,
 });
-const recountInventory = inventoryAgg
+const recountInventory = inventoryQuery
 	.provides("RecountInventory", {
 		description: "Recompute the status→count map from catalog and sales facts",
 		type: "operation",
@@ -960,12 +1013,15 @@ const recountInventory = inventoryAgg
 
 // Conformist: the projection adopts the published events as they are, which
 // is cheap because the shared kernel means the status vocabulary is the same.
-inventoryAgg.consumes(petRegistered, { pattern: "conformist" });
-inventoryAgg.consumes(petDeleted, { pattern: "conformist" });
-inventoryAgg.consumes(petStatusChanged, { pattern: "conformist" });
-inventoryAgg.consumes(orderApproved, { pattern: "conformist" });
-inventoryAgg.consumes(orderDelivered, { pattern: "conformist" });
-inventoryAgg.consumes(orderDeleted, { pattern: "conformist" });
+inventoryQuery.consumes(petRegistered, { pattern: "conformist" });
+inventoryQuery.consumes(petDeleted, { pattern: "conformist" });
+inventoryQuery.consumes(petStatusChanged, { pattern: "conformist" });
+inventoryQuery.consumes(orderApproved, { pattern: "conformist" });
+inventoryQuery.consumes(orderDelivered, { pattern: "conformist" });
+inventoryQuery.consumes(orderDeleted, { pattern: "conformist" });
+// A consumption inside one context needs no pattern: there is no boundary to
+// protect between GetInventory reading the fact and RecountInventory raising it.
+inventoryQuery.consumes(inventoryUpdated, {});
 
 inventoryBC
 	.addPolicy("Recount on stock change", {
@@ -981,33 +1037,11 @@ inventoryBC
 	)
 	.then(recountInventory);
 
-// The counts the projection answers with. A query that takes no request body
-// still has a shape worth naming: this is what callers depend on.
-const inventoryCountsSchema = inventoryBC.addSchema("InventoryCounts", {
-	description: "How many pets stand in each status right now",
-});
-inventoryCountsSchema.addAttribute("available", { type: "int32" });
-inventoryCountsSchema.addAttribute("pending", { type: "int32" });
-inventoryCountsSchema.addAttribute("sold", { type: "int32" });
-
-const inventoryQuery = inventoryBC.addService("InventoryQuery", {
-	description: "Open-host service for /store/inventory",
-	type: "application",
-});
-inventoryQuery.provides("GetInventory", {
-	description: "GET /store/inventory; takes nothing, answers with the counts",
-	type: "operation",
-	pattern: "open-host-service",
-	returns: inventoryCountsSchema,
-});
-// A consumption inside one context needs no pattern: there is no boundary to protect.
-inventoryQuery.consumes(inventoryUpdated, {});
-
 inventoryBC.addTerm("Availability", {
 	definition:
 		"How many pets are available, pending and sold right now; a projection, not a source of truth",
 	aliases: ["Stock"],
-	embodiedBy: inventoryAgg,
+	embodiedBy: inventoryQuery,
 });
 
 /* =======================
@@ -1081,10 +1115,22 @@ userApp
 		pattern: "open-host-service",
 	})
 	.raises(userLoggedOut);
+// A returned shape: what GetUserByUsername answers with.
+const userSchema = identityBC.addSchema("User", {
+	description:
+		"The legacy user record, as GET /user/{username} answers with it",
+});
+userSchema.addAttribute("username", { type: "string", identity: true });
+userSchema.addAttribute("email", { type: "string" });
+userSchema.addAttribute("userStatus", {
+	type: "UserStatus",
+	valueobject: userStatusVO,
+});
 userApp.provides("GetUserByUsername", {
 	description: "GET /user/{username}",
 	type: "operation",
 	pattern: "open-host-service",
+	returns: userSchema,
 });
 
 identityBC.addTerm("User", {

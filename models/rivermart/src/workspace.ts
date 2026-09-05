@@ -395,37 +395,26 @@ catalogueBC.addTerm("SKU", {
    DISCOVERY: Search product lead. "The index is a copy, never the truth."
    ======================= */
 
-const indexAgg = searchBC.addAggregate("SearchIndex", {
-	description:
-		"The searchable documents. A projection: it holds copies, never the truth",
-});
-const searchDoc = indexAgg.addRootEntity("SearchDocument", {
+// A projection is a service that provides a query operation, not an
+// aggregate with an invented root (decision 15). The index is a copy, never
+// the truth, and SearchAPI is that service: it answers SearchProducts and
+// takes the update operations the feeding policies below issue.
+const searchHitSchema = searchBC.addSchema("SearchHit", {
 	description: "One indexed product with the fields ranking needs",
 });
-searchDoc.addAttribute("productId", { type: "string", identity: true });
-searchDoc.addAttribute("buyBoxPriceMinor", { type: "int64" });
-searchDoc.addAttribute("nextDayEligible", {
+searchHitSchema.addAttribute("productId", { type: "string", identity: true });
+searchHitSchema.addAttribute("buyBoxPriceMinor", { type: "int64" });
+searchHitSchema.addAttribute("nextDayEligible", {
 	type: "boolean",
 	description:
 		"The badge: the buy box offer ships from a RiverMart warehouse, so next-day is the default",
 });
-
-const documentIndexed = indexAgg.provides("DocumentIndexed", {
-	description: "A document was (re)written into the index",
-	type: "event",
-	internal: true,
+const searchResultsSchema = searchBC.addSchema("SearchResults", {
+	description: "A ranked page of hits",
 });
-const indexProduct = indexAgg
-	.provides("IndexProduct", {
-		description: "Write or refresh a product's document",
-		type: "operation",
-		internal: true,
-	})
-	.raises(documentIndexed);
-const removeDocument = indexAgg.provides("RemoveDocument", {
-	description: "Drop a retired product from the index",
-	type: "operation",
-	internal: true,
+searchResultsSchema.addAttribute("hits", {
+	type: "SearchHit[]",
+	schema: searchHitSchema,
 });
 
 const ranker = searchBC.addService("Ranker", {
@@ -437,20 +426,40 @@ ranker.provides("RankCandidates", {
 	description: "Score and sort a candidate set",
 	type: "operation",
 	internal: true,
+	returns: searchResultsSchema,
 });
 
 const searchApi = searchBC.addService("SearchAPI", {
-	description: "The results page endpoint",
+	description:
+		"The results page endpoint and the index it is read from: a projection modelled as a query service (decision 15)",
 	type: "application",
 });
 searchApi.provides("SearchProducts", {
 	description: "Query → ranked page, with sponsored slots merged in",
 	type: "operation",
 	pattern: "open-host-service",
+	returns: searchResultsSchema,
+});
+const documentIndexed = searchApi.provides("DocumentIndexed", {
+	description: "A document was (re)written into the index",
+	type: "event",
+	internal: true,
+});
+const indexProduct = searchApi
+	.provides("IndexProduct", {
+		description: "Write or refresh a product's document",
+		type: "operation",
+		internal: true,
+	})
+	.raises(documentIndexed);
+const removeDocument = searchApi.provides("RemoveDocument", {
+	description: "Drop a retired product from the index",
+	type: "operation",
+	internal: true,
 });
 
-indexAgg.consumes(productListed, { pattern: "conformist" });
-indexAgg.consumes(productRetired, { pattern: "conformist" });
+searchApi.consumes(productListed, { pattern: "conformist" });
+searchApi.consumes(productRetired, { pattern: "conformist" });
 
 searchBC
 	.addPolicy("Index on listing", {
@@ -545,6 +554,16 @@ buyBoxAwardedSchema.addAttribute("sku", { type: "string", identity: true });
 buyBoxAwardedSchema.addAttribute("offerId", { type: "string" });
 const offerRefSchema = offersBC.addSchema("OfferRef");
 offerRefSchema.addAttribute("offerId", { type: "string", identity: true });
+// A returned shape: what GetOffer answers with.
+const offerDetailSchema = offersBC.addSchema("OfferDetail", {
+	description: "One offer with its current price and stock",
+});
+offerDetailSchema.addAttribute("offerId", { type: "string", identity: true });
+offerDetailSchema.addAttribute("price", {
+	type: "Money",
+	valueobject: offerMoney,
+});
+offerDetailSchema.addAttribute("availableQuantity", { type: "int" });
 
 const offerPublished = offerAgg.provides("OfferPublished", {
 	description: "A seller's offer went live",
@@ -602,6 +621,7 @@ const getOffer = offerApi.provides("GetOffer", {
 	type: "operation",
 	pattern: "open-host-service",
 	schema: offerRefSchema,
+	returns: offerDetailSchema,
 });
 
 // Offers translate the catalogue into their own SKU list rather than embedding Product.
@@ -627,7 +647,7 @@ offersBC.addTerm("Offer", {
 });
 
 // Search also indexes the buy box price, declared here because the event exists now.
-indexAgg.consumes(buyBoxAwarded, { pattern: "conformist" });
+searchApi.consumes(buyBoxAwarded, { pattern: "conformist" });
 searchBC
 	.addPolicy("Reindex on buy box change", {
 		description: "Results show the buy box price, so it must be refreshed",
@@ -1015,6 +1035,31 @@ orderPlacedSchema.addAttribute("total", {
 });
 const orderRefSchema = orderBC.addSchema("OrderRef");
 orderRefSchema.addAttribute("orderId", { type: "string", identity: true });
+// A returned shape: what GetOrder answers with.
+const orderDetailSchema = orderBC.addSchema("OrderDetail", {
+	description: "One order with its lines, shipments and returns",
+});
+orderDetailSchema.addAttribute("orderId", { type: "string", identity: true });
+orderDetailSchema.addAttribute("status", {
+	type: "OrderStatus",
+	valueobject: orderStatusVO,
+});
+orderDetailSchema.addAttribute("total", {
+	type: "Money",
+	valueobject: orderMoney,
+});
+orderDetailSchema.addAttribute("lines", {
+	type: "OrderLine[]",
+	schema: orderLineSchema,
+});
+orderDetailSchema.addAttribute("shipmentIds", {
+	type: "string[]",
+	description: "Shipments dispatched for this order",
+});
+orderDetailSchema.addAttribute("returnIds", {
+	type: "string[]",
+	description: "Returns opened for this order",
+});
 const returnLineSchema = orderBC.addSchema("ReturnLine", {
 	description: "One line of a return: which line of the order, and how many",
 });
@@ -1086,6 +1131,7 @@ const getOrder = orderApi.provides("GetOrder", {
 	type: "operation",
 	pattern: "open-host-service",
 	schema: orderRefSchema,
+	returns: orderDetailSchema,
 });
 // What a context offers outward leaves an application service; an
 // aggregate's operations are its own context's (decision 17).
@@ -1968,6 +2014,23 @@ const pauseCampaigns = campaignAgg.provides("PauseSellerCampaigns", {
 	internal: true,
 });
 
+// A returned shape: the winners RunAuction and GetSponsoredResults answer with.
+const sponsoredSlotSchema = adsBC.addSchema("SponsoredSlot", {
+	description: "One paid placement won for a query",
+});
+sponsoredSlotSchema.addAttribute("productId", {
+	type: "string",
+	identity: true,
+});
+sponsoredSlotSchema.addAttribute("bid", { type: "Bid", valueobject: bidVO });
+const sponsoredResultsSchema = adsBC.addSchema("SponsoredResults", {
+	description: "The winning slots for a query, ranked",
+});
+sponsoredResultsSchema.addAttribute("slots", {
+	type: "SponsoredSlot[]",
+	schema: sponsoredSlotSchema,
+});
+
 const auction = adsBC.addService("AuctionService", {
 	description:
 		"Runs the second-price auction for the sponsored slots on a results page",
@@ -1980,6 +2043,7 @@ auction
 		description: "Pick winners for a query's sponsored slots",
 		type: "operation",
 		internal: true,
+		returns: sponsoredResultsSchema,
 	})
 	.raises(slotsAwarded);
 
@@ -2000,6 +2064,7 @@ const getSponsoredResults = adsApi.provides("GetSponsoredResults", {
 		"Sponsored slots for a query, merged into organic results by Search",
 	type: "operation",
 	pattern: "open-host-service",
+	returns: sponsoredResultsSchema,
 });
 const recordAdClick = adsApi
 	.provides("RecordAdClick", {
@@ -2221,10 +2286,20 @@ identityApi
 		pattern: "open-host-service",
 	})
 	.raises(customerRegistered);
+// A returned shape: what GetCustomer answers with.
+const customerProfileSchema = identityBC.addSchema("CustomerProfile", {
+	description: "A customer's profile",
+});
+customerProfileSchema.addAttribute("customerId", {
+	type: "string",
+	identity: true,
+});
+customerProfileSchema.addAttribute("email", { type: "string" });
 const getCustomer = identityApi.provides("GetCustomer", {
 	description: "Read a customer's profile",
 	type: "operation",
 	pattern: "open-host-service",
+	returns: customerProfileSchema,
 });
 checkoutOrchestrator.consumes(getCustomer, { pattern: "conformist" });
 caseAgg.consumes(getCustomer, { pattern: "conformist" });

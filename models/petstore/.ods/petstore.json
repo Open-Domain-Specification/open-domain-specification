@@ -290,7 +290,10 @@
               "name": "FindPetsByStatus",
               "description": "GET /pet/findByStatus?status=available|pending|sold",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "returns": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet"
+              }
             },
             "get_pet_by_id": {
               "name": "GetPetById",
@@ -299,6 +302,9 @@
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet"
               }
             },
             "upload_image": {
@@ -557,6 +563,49 @@
             }
           }
         },
+        "pet": {
+          "name": "Pet",
+          "description": "The full pet resource, as GET /pet/{petId} answers with it",
+          "attributes": {
+            "pet_id": {
+              "name": "petId",
+              "type": "int64",
+              "identity": true
+            },
+            "name": {
+              "name": "name",
+              "type": "string"
+            },
+            "category": {
+              "name": "category",
+              "type": "Category",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/category"
+              }
+            },
+            "photo_urls": {
+              "name": "photoUrls",
+              "type": "PhotoUrl[]",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/photo_url"
+              }
+            },
+            "tags": {
+              "name": "tags",
+              "type": "Tag[]",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/tag"
+              }
+            },
+            "status": {
+              "name": "status",
+              "type": "PetStatus",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
+              }
+            }
+          }
+        },
         "pet_summary": {
           "name": "PetSummary",
           "description": "The slim read of a pet other contexts are allowed to hold",
@@ -793,6 +842,9 @@
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/order_detail"
               }
             },
             "delete_order": {
@@ -1040,6 +1092,42 @@
               "identity": true
             }
           }
+        },
+        "order_detail": {
+          "name": "OrderDetail",
+          "description": "One order, as GET /store/order/{orderId} answers with it",
+          "attributes": {
+            "order_id": {
+              "name": "orderId",
+              "type": "int64",
+              "identity": true
+            },
+            "pet_id": {
+              "name": "petId",
+              "type": "int64"
+            },
+            "quantity": {
+              "name": "quantity",
+              "type": "Quantity",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/sales_bc/valueobjects/quantity"
+              }
+            },
+            "ship_date": {
+              "name": "shipDate",
+              "type": "ShipDate",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/sales_bc/valueobjects/ship_date"
+              }
+            },
+            "status": {
+              "name": "status",
+              "type": "OrderStatus",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/sales_bc/valueobjects/order_status"
+              }
+            }
+          }
         }
       }
     },
@@ -1057,16 +1145,30 @@
       "team": {
         "$ref": "#/teams/pet_shop_team"
       },
-      "aggregates": {
-        "inventory_projection": {
-          "name": "InventoryProjection",
-          "description": "Materialized view: { available: number, pending: number, sold: number }. An aggregate because the counts are rebuilt as one unit",
+      "aggregates": {},
+      "services": {
+        "inventory_query": {
+          "name": "InventoryQuery",
+          "description": "Open-host service for /store/inventory: a projection is a service that provides a query (decision 15), not an aggregate with an invented root",
+          "type": "application",
           "provides": {
+            "get_inventory": {
+              "name": "GetInventory",
+              "description": "GET /store/inventory; takes nothing, answers with the counts",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "returns": {
+                "$ref": "#/boundedcontexts/inventory_bc/schemas/inventory_counts"
+              }
+            },
             "inventory_updated": {
               "name": "InventoryUpdated",
               "description": "Inventory counts changed",
               "pattern": "published-language",
-              "type": "event"
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/inventory_bc/schemas/inventory_updated_payload"
+              }
             },
             "recount_inventory": {
               "name": "RecountInventory",
@@ -1075,7 +1177,7 @@
               "internal": true,
               "raises": [
                 {
-                  "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection/provides/inventory_updated"
+                  "$ref": "#/boundedcontexts/inventory_bc/services/inventory_query/provides/inventory_updated"
                 }
               ]
             }
@@ -1116,55 +1218,10 @@
                 "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_deleted"
               },
               "pattern": "conformist"
-            }
-          ],
-          "entities": {
-            "inventory_view": {
-              "name": "InventoryView",
-              "description": "Status→count map for /store/inventory",
-              "root": true,
-              "attributes": {
-                "status": {
-                  "name": "status",
-                  "type": "PetStatus",
-                  "description": "The status this row counts; the identity of the view",
-                  "identity": true,
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
-                  }
-                },
-                "count": {
-                  "name": "count",
-                  "type": "int32",
-                  "description": "How many pets are in that status"
-                }
-              },
-              "relations": []
-            }
-          },
-          "invariants": {}
-        }
-      },
-      "services": {
-        "inventory_query": {
-          "name": "InventoryQuery",
-          "description": "Open-host service for /store/inventory",
-          "type": "application",
-          "provides": {
-            "get_inventory": {
-              "name": "GetInventory",
-              "description": "GET /store/inventory; takes nothing, answers with the counts",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "returns": {
-                "$ref": "#/boundedcontexts/inventory_bc/schemas/inventory_counts"
-              }
-            }
-          },
-          "consumes": [
+            },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection/provides/inventory_updated"
+                "$ref": "#/boundedcontexts/inventory_bc/services/inventory_query/provides/inventory_updated"
               }
             }
           ]
@@ -1196,7 +1253,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection/provides/recount_inventory"
+              "$ref": "#/boundedcontexts/inventory_bc/services/inventory_query/provides/recount_inventory"
             }
           ]
         }
@@ -1209,7 +1266,7 @@
             "Stock"
           ],
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection"
+            "$ref": "#/boundedcontexts/inventory_bc/services/inventory_query"
           }
         }
       },
@@ -1230,6 +1287,20 @@
             "sold": {
               "name": "sold",
               "type": "int32"
+            }
+          }
+        },
+        "inventory_updated_payload": {
+          "name": "InventoryUpdatedPayload",
+          "description": "Which status's count changed",
+          "attributes": {
+            "status": {
+              "name": "status",
+              "type": "PetStatus",
+              "description": "The status whose count moved",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
+              }
             }
           }
         }
@@ -1669,7 +1740,10 @@
               "name": "GetUserByUsername",
               "description": "GET /user/{username}",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "returns": {
+                "$ref": "#/boundedcontexts/identity_bc/schemas/user"
+              }
             }
           },
           "consumes": []
@@ -1701,7 +1775,30 @@
           "relations": []
         }
       },
-      "schemas": {}
+      "schemas": {
+        "user": {
+          "name": "User",
+          "description": "The legacy user record, as GET /user/{username} answers with it",
+          "attributes": {
+            "username": {
+              "name": "username",
+              "type": "string",
+              "identity": true
+            },
+            "email": {
+              "name": "email",
+              "type": "string"
+            },
+            "user_status": {
+              "name": "userStatus",
+              "type": "UserStatus",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/identity_bc/valueobjects/user_status"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "relationships": [

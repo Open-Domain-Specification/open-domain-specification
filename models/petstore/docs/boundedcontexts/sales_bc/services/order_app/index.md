@@ -10,7 +10,7 @@ Open-host service for /store/order endpoints
 | Name | Type | Internal | Pattern | Description | Schema | Returns | Raises | Guarded by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | PlaceOrder | operation | no | open-host-service | POST /store/order | [PlaceOrder](../../index.md#schemas) | - | OrderPlaced | - |
-| GetOrderById | operation | no | open-host-service | GET /store/order/{orderId} | [OrderId](../../index.md#schemas) | - | - | - |
+| GetOrderById | operation | no | open-host-service | GET /store/order/{orderId} | [OrderId](../../index.md#schemas) | [OrderDetail](../../index.md#schemas) | - | - |
 | DeleteOrder | operation | no | open-host-service | DELETE /store/order/{orderId} | [OrderId](../../index.md#schemas) | - | OrderDeleted | - |
 | ConfirmDelivery | operation | no | open-host-service | POST /store/order/{orderId}/delivered; Fulfilment reports the shipment arrived and the order moves to delivered | [OrderId](../../index.md#schemas) | - | - | - |
 | ReservePet | operation | yes | - | Ask Catalog to hold the ordered pet, through the ACL; Sales' own step in the order lifecycle | [OrderId](../../index.md#schemas) | - | - | - |

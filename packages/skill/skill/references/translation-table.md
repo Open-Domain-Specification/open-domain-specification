@@ -48,6 +48,7 @@ element lives in a workspace file; `DSL` is the core call that creates it.
 | "we listen for their X" | consumption | `consumes: [{consumable: {$ref}, pattern}]` | `agg.consumes(theirEvent, {pattern})` |
 | "only renewal calls them", "just the dunning job talks to it" | the operations behind a consumption | consumption `by: [{$ref}, ...]`, the consumer's own operations or its context's policies | `svc.consumes(theirOp, {by: [renew]})` |
 | "the API layer", "the endpoint handler", "the use case" | application service | `services.<id>` `type: "application"` | `bc.addService(name, {type: "application", description})` |
+| "a materialised view", "the read side", "a cache of X kept for fast reads" | read model → query service, not a `ReadModel` construct (decision 15) | a query operation on an application service, with `returns` | `bc.addService("InventoryQuery", {type: "application"}).provides("GetInventory", {type: "operation", returns: countsSchema})` |
 | "logic that doesn't belong to one thing", "pricing across orders" | domain service | `type: "domain"` | `type: "domain"` |
 | "we call it ...", "a.k.a.", "sales say purchase" | Glossary term | `glossary.<id>` with `definition`, `aliases`, `embodiedBy` | `bc.addTerm(name, {definition, aliases, embodiedBy})` |
 | "the database / queue / Kafka / the cloud" | not modelled | — | say it is infrastructure and out of scope |
