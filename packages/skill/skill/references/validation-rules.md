@@ -166,9 +166,9 @@
 
 ## `relationship-declared` (warning)
 
-**Requires:** Two contexts joined by a crossing — a consumption of the other's consumable, or an identity naming the other's entity — declare a relationship in that direction.
+**Requires:** Two contexts joined by a crossing — a consumption of the other's consumable, a policy or process reacting to the other's event, or an identity naming the other's entity — declare a relationship in that direction.
 
-**Why it matters:** Decision 03 made the relationship the place where the terms of an integration are written: who is upstream, what the provider commits to, whether the consumer translates. A crossing with no relationship still draws on the context map, as a dashed implied edge, but that edge only says a dependency exists; the relationship is what says on what terms, and it is the thing a team can argue about, comment on and change. An identity counts because since decision 14 it is the only structural record that one context's model depends on another's, even when nothing is consumed.
+**Why it matters:** Decision 03 made the relationship the place where the terms of an integration are written: who is upstream, what the provider commits to, whether the consumer translates. A crossing with no relationship still draws on the context map, as a dashed implied edge, but that edge only says a dependency exists; the relationship is what says on what terms, and it is the thing a team can argue about, comment on and change. A subscription counts because reacting to a neighbour's event is an integration by another route, the same one separate ways forbids and a partnership is backed by. An identity counts because since decision 14 it is the only structural record that one context's model depends on another's, even when nothing is consumed.
 
 **Usual fix:** Declare the relationship the two contexts really have, naming both of them: upstream-downstream or customer-supplier from the provider to the consumer, or a partnership or shared kernel if they meet as equals — either of those counts whichever way round the crossing runs. Separate ways does not count: it says the two do not integrate, so it contradicts the crossing instead of explaining it. If neither context should depend on the other, remove the crossing rather than declaring a relationship for it.
 
@@ -251,6 +251,14 @@
 **Why it matters:** internal means the consumable stays inside its context; anything outside depending on it makes that promise false.
 
 **Usual fix:** Drop internal and give the consumable an upstream role, or stop the other context from using it.
+
+## `consumption-once` (error)
+
+**Requires:** A consumer consumes a given consumable at most once.
+
+**Why it matters:** A consumption has no id of its own — its ref is the consumer and the consumable it joins — so a second consumption of the same consumable carries the same ref as the first. Only one of them can ever be reached: the other's pattern, by, comments and disposition are written where no reader, link or tool will land, and any surface keyed by the ref has two rows claiming one key, which is a render crash rather than a model a reader can follow.
+
+**Usual fix:** Merge the two into one consumption, keeping every operation, policy and process named in by, and the pattern, comments and disposition either of them carried. If the two really are different exchanges, they are different consumables or different consumers.
 
 ## `consumption-by-resolves` (error)
 

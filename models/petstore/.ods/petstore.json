@@ -943,7 +943,12 @@
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/deliver_order"
-              }
+              },
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/confirm_delivery"
+                }
+              ]
             },
             {
               "consumable": {

@@ -109,7 +109,7 @@ Reactions that hold state across events: each one remembers which of its events 
 | Consumer | Made By | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- | --- |
 | [ShipmentApp](../fulfilment_bc/services/shipment_app/index.md) | ReportDelivery | - | OrderApp | ConfirmDelivery | open-host-service |
-| [OrderApp](services/order_app/index.md) | - | - | Order | DeliverOrder | - |
+| [OrderApp](services/order_app/index.md) | ConfirmDelivery | - | Order | DeliverOrder | - |
 | [ShipmentApp](../fulfilment_bc/services/shipment_app/index.md) | Plan dispatch on approval | conformist | Order | OrderApproved | published-language |
 | [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Order | OrderApproved | published-language |
 | [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Order | OrderDelivered | published-language |

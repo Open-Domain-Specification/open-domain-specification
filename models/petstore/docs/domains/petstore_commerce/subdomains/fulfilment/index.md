@@ -15,8 +15,8 @@ Plans and tracks the shipment of an approved order until it is delivered
 ## Context Relationships
 | Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |
+| Catalog BC | customer-supplier | Sales BC | open-host-service | anti-corruption-layer |
 | Sales BC | partnership | Fulfilment BC | - | - |
-| Catalog BC | upstream-downstream (implied by consumption) | Sales BC | open-host-service | anti-corruption-layer |
 
 
 ## Consumptions

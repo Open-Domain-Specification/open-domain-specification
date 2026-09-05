@@ -217,7 +217,7 @@ describe("relationshipNarrative, implied links", () => {
 		target: SALES,
 		upstreamRoles: ["open-host-service"],
 		downstreamRoles: ["anti-corruption-layer"],
-		implied: true,
+		impliedBy: "consumption",
 	};
 
 	it("drops the roles and says where the link came from, from either end", () => {
@@ -226,6 +226,12 @@ describe("relationshipNarrative, implied links", () => {
 		);
 		expect(sentence(implied, SALES)).toBe(
 			"Sales BC depends on Catalog BC, and it takes the upstream model as it comes. Implied by consumptions; no explicit relationship is declared.",
+		);
+	});
+
+	it("names the identity when that is what implied the link", () => {
+		expect(sentence({ ...implied, impliedBy: "identity" }, SALES)).toBe(
+			"Sales BC depends on Catalog BC, and it takes the upstream model as it comes. Implied by an identity attribute naming the other context; no explicit relationship is declared.",
 		);
 	});
 

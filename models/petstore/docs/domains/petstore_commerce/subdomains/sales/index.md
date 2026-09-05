@@ -17,6 +17,7 @@ Owns the Order aggregate and the order-facing operations
 | --- | --- | --- | --- | --- |
 | Catalog BC | customer-supplier | Sales BC | open-host-service | anti-corruption-layer |
 | Sales BC | upstream-downstream | Inventory BC | published-language | conformist |
+| Catalog BC | shared-kernel | Inventory BC | - | - |
 | Sales BC | partnership | Fulfilment BC | - | - |
 | Identity BC | separate-ways | Sales BC | - | - |
 

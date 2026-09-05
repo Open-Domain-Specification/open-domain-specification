@@ -213,6 +213,9 @@ function everythingWrong(): Workspace {
 		pattern: "conformist",
 		by: [legacy.provides("Poll", { type: "operation", description: "" })],
 	});
+	// consumption-once: the same consumer takes the same feed a second time, so
+	// both consumptions carry the one ref and only the first is reachable
+	consumer.consumes(legacyFeed, { pattern: "anti-corruption-layer" });
 	// A calls C's Ask and C calls A's Answer, which since decision 20 is the
 	// traffic a ring is made of. It is still not a ring: A translates behind an
 	// anti-corruption layer, so the two are free to change (card 82).
