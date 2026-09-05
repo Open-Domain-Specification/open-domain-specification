@@ -81,3 +81,7 @@ The Consequences said petstore's `MarkPetSoldForOrder` consumption was left plai
 ## Amendment (2026-09-08, third)
 
 `by` is the causal link, and a model without it has a hollow reaction walk: twenty-five of forty-two cross-context operation consumptions in the reference models named no caller and NorthBank's instruction lifecycle dead-ended at every outbound step. Where the consumer provides more than one operation the caller is ambiguous, and `consumption-by-required` (warning) asks for it (card 90). A consumer with one operation is its own `by`.
+
+## Amendment (2026-09-09)
+
+The third amendment said a consumer with one operation is its own `by`, and the reaction walk did not read it that way, so a single-operation consumer's call reached nothing. The walk now infers the caller when the consumer provides exactly one operation and `by` is empty (card 95).

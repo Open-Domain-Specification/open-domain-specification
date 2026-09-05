@@ -35,3 +35,7 @@ A process could wait only on events, so the commonest process-manager shape, cal
 ## Amendment (2026-09-08, third)
 
 The second amendment let a reactor name an answer by its schema, and Codex's review showed the defect at once: two operations rejecting with one shared shape both reached the same reactor. An answer is named by its origin, `<operation>/returns` or `<operation>/rejects/<schema>`, refs of their own in the grammar, and the walk steps from exactly that operation (card 94). Decision 09's sharing of schemas across consumables stands untouched.
+
+## Amendment (2026-09-09)
+
+Two things Prowl's fourth review showed. A process that branches on the answer of an operation it issues itself, a local validation, had to declare a consumption nobody makes; an answer of an operation the reactor issues is now a trigger without one (card 95). And a per-instance deadline, cancel if unpaid after thirty minutes, is the process's own, not a calendar event from a Clock context: a process declares `deadlines`, each an event it raises to itself after a stated interval, and may wait on or end on it. Decision 28's Clock stays for calendar events every context shares.

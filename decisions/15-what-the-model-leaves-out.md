@@ -88,3 +88,7 @@ A glossary belongs to a bounded context because that is what a ubiquitous langua
 ### An identity names one kind of thing
 
 An attribute that is "an order id or a seller id" identifies nothing, because `identifies` names one entity. The model's answer is two optional attributes, each identifying its own target, with an invariant in prose that exactly one is set; RiverMart's `RiskAssessment.subjectId` is the case. A union identity would need a union type, which decision 18 leaves out. Reopened if a reference model needs more than two targets on one attribute.
+
+### `raises` lists what an operation may raise
+
+An operation that raises `StockReserved, StockShort` raises one of them; one that raises `HouseholdCreated, ProfileCreated` raises both. The list says what may follow, not which combination; the flow map reads every edge as "may raise", and the operation's description says whether they are outcomes or a fan-out. A structured either-or would need the conditions the model leaves out. Also corrected here: the polymorphic-identity entry cited RiverMart's `RiskAssessment.subjectId` as following its own answer, and it did not; card 95 makes it so.

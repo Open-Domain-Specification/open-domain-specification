@@ -42,3 +42,7 @@ A kernel context's aggregate is shared by being consumed: `shared-kernel-backed`
 ## Amendment (2026-09-08, third)
 
 This record promised the boundary was sealed for value objects and the validator never checked `attribute.valueobject` across contexts; Prowl's third review found a claim held on the specification's central rule with nothing under it. `valueobject-context` (card 92) refuses a borrowed value object unless a shared kernel or a conformist relationship carries it, with the same predicate `schema-context` uses, and `relationship-declared` counts the borrowing as a crossing. A borrowed value object is not drawn on the relation map today; card 93 draws it with its context named.
+
+## Amendment (2026-09-09)
+
+A shared kernel context serves its sharers' subdomains, not one of its own; `context-serves-subdomain` exempts a context whose relationships are all shared-kernel with two or more sharers (card 95). NorthBank's invented "Shared Financial Primitives" subdomain, which decision 28 named as a bend, comes out. The kernel-as-context reading remains a named cost: Evans's kernel is code both teams run inside their own contexts, and the model draws it as a third context both consume, which loses the pairwise fact and gains an honest owner.

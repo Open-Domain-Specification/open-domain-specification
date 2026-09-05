@@ -37,3 +37,7 @@ A legacy system the enterprise owns but cannot read is not external, and this re
 ## Amendment (2026-09-08, third)
 
 An external context states no aggregates, policies, processes or context invariants, because its insides are not ours. Its value objects are different: an IBAN's checksum, an ISO 20022 field rule, a scheme's record layout are the standard's published contract, known and citable, and a value object of an external context may carry them as invariants that the validator checks like any other (card 91). The second amendment's blanket refusal was too wide.
+
+## Amendment (2026-09-09)
+
+A standards body is a published language: its schemas are what a conformist borrows, and it provides nothing to consume. `relationship-roles-backed` now backs an upstream published-language role by a borrowed schema or value object as well as by a schema-carrying consumption (card 95), so FHIR or ISO 20022 declared as an external upstream validates clean with the one role that describes it.
