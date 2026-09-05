@@ -16,6 +16,8 @@ Open-host service for /store/order endpoints
 | ReservePet | operation | yes | - | Ask Catalog to hold the ordered pet, through the ACL; Sales' own step in the order lifecycle | [OrderId](../../index.md#schemas) | - | - | - | - |
 | MarkPetSold | operation | yes | - | Tell Catalog the ordered pet has gone to its owner, through the ACL | [OrderId](../../index.md#schemas) | - | - | - | - |
 
+- **ReservePet** also reaches PetReserved through the operations it calls, raised where they happen rather than restated here.
+- **MarkPetSold** also reaches PetSold through the operations it calls, raised where they happen rather than restated here.
 
 ## Consumes
 
@@ -27,14 +29,15 @@ Mark an approved order as delivered; run by OrderApp when Fulfilment reports the
 GET /pets/{id}/summary; asked with a PetId, answers with a PetSummary, so Sales can check availability without coupling to the full Pet
 - **Provider**: [PetApp](../../../catalog_bc/services/pet_app/index.md)
 
-### MarkPetSoldForOrder [anti-corruption-layer]
-POST /pet/{petId}/sold; records the sale by running the aggregate's MarkPetSold
-- **Provider**: [PetApp](../../../catalog_bc/services/pet_app/index.md)
-
 ### ReservePetForOrder [anti-corruption-layer]
 POST /pet/{petId}/reserve; holds the pet for an approved order by running the aggregate's ReservePet
 - **Provider**: [PetApp](../../../catalog_bc/services/pet_app/index.md)
 - **Made by**: ReservePet
+
+### MarkPetSoldForOrder [anti-corruption-layer]
+POST /pet/{petId}/sold; records the sale by running the aggregate's MarkPetSold
+- **Provider**: [PetApp](../../../catalog_bc/services/pet_app/index.md)
+- **Made by**: MarkPetSold
 
 ### ShipmentDelivered 
 The pet reached its owner

@@ -16,9 +16,11 @@ Open-host service for /pet endpoints
 | UploadImage | operation | no | open-host-service | POST /pet/{petId}/uploadImage; adds a PhotoUrl, so it is a profile update | [PetId](../../index.md#schemas) | - | - | PetUpdated | - |
 | DeletePet | operation | no | open-host-service | DELETE /pet/{petId} | [PetId](../../index.md#schemas) | - | - | PetDeleted | - |
 | GetPetSummary | operation | no | open-host-service | GET /pets/{id}/summary; asked with a PetId, answers with a PetSummary, so Sales can check availability without coupling to the full Pet | [PetId](../../index.md#schemas) | [PetSummary](../../index.md#schemas) | - | - | - |
-| ReservePetForOrder | operation | no | open-host-service | POST /pet/{petId}/reserve; holds the pet for an approved order by running the aggregate's ReservePet | [PetId](../../index.md#schemas) | - | [PetUnavailable](../../index.md#schemas) | PetReserved | - |
-| MarkPetSoldForOrder | operation | no | open-host-service | POST /pet/{petId}/sold; records the sale by running the aggregate's MarkPetSold | [PetId](../../index.md#schemas) | - | - | PetSold | - |
+| ReservePetForOrder | operation | no | open-host-service | POST /pet/{petId}/reserve; holds the pet for an approved order by running the aggregate's ReservePet | [PetId](../../index.md#schemas) | - | [PetUnavailable](../../index.md#schemas) | - | - |
+| MarkPetSoldForOrder | operation | no | open-host-service | POST /pet/{petId}/sold; records the sale by running the aggregate's MarkPetSold | [PetId](../../index.md#schemas) | - | - | - | - |
 
+- **ReservePetForOrder** also reaches PetReserved through the operations it calls, raised where they happen rather than restated here.
+- **MarkPetSoldForOrder** also reaches PetSold through the operations it calls, raised where they happen rather than restated here.
 - **GetPetSummary**
 	- The summary projection is the only Catalog read Sales is allowed to make. [GET /pets/{id}/summary](https://github.com/example/petstore/blob/main/catalog/openapi.yaml#/paths/~1pets~1{id}~1summary)
 - **ReservePetForOrder**

@@ -90,18 +90,54 @@ export class ReactionChain {
 		];
 	}
 
-	/**
-	 * The operations this one calls out to: the consumptions its own provider
-	 * declares that name it in `by`. A consumption's `by` names operations the
-	 * consumer itself provides (`consumption-by-resolves`), so the consumer is
-	 * always this operation's provider and no index is needed — which also
-	 * means the step is found the same way however narrow the scope is.
-	 */
+	/** The operations this one calls out to; see `callsOut`. */
 	private consumedThrough(operation: Consumable): Consumable[] {
-		return operation.provider.consumptions
-			.filter(
-				(c) => c.consumable.type === "operation" && c.by.includes(operation),
-			)
-			.map((c) => c.consumable);
+		return callsOut(operation);
 	}
+}
+
+/**
+ * The operations one operation calls out to: the consumptions its own
+ * provider declares that name it in `by`. A consumption's `by` names
+ * operations the consumer itself provides (`consumption-by-resolves`), so the
+ * consumer is always this operation's provider and no index is needed — which
+ * also means the step is found the same way however narrow the scope is.
+ */
+function callsOut(operation: Consumable): Consumable[] {
+	return operation.provider.consumptions
+		.filter(
+			(c) => c.consumable.type === "operation" && c.by.includes(operation),
+		)
+		.map((c) => c.consumable);
+}
+
+/**
+ * The events an operation reaches without raising them: what the operations
+ * it calls through a consumption's `by` raise, and what those in turn reach,
+ * following the same causal link the flow map draws and `reaction-cycle`
+ * walks (decision 21's amendment).
+ *
+ * This is what lets a front stop restating. An open-host operation that runs
+ * an aggregate's transition need not copy that transition's `raises`: the
+ * chain already carries the fact, and a copy can only drift from what the
+ * aggregate actually raises (`raises-restated`). The surfaces use this to say
+ * so in words — the events are reached, not declared — so a reader following
+ * the front is never left thinking nothing happens.
+ *
+ * A chain of calls is followed to its end and each operation is visited once,
+ * so a ring of calls terminates rather than looping.
+ */
+export function reachedEvents(operation: Consumable): Consumable[] {
+	const seen = new Set<Consumable>([operation]);
+	const events: Consumable[] = [];
+	const queue = callsOut(operation);
+	while (queue.length) {
+		const called = queue.shift();
+		if (!called || seen.has(called)) continue;
+		seen.add(called);
+		for (const event of called.raisedEvents)
+			if (!events.includes(event)) events.push(event);
+		queue.push(...callsOut(called));
+	}
+	return events;
 }

@@ -1,4 +1,8 @@
-import type { Consumable, DataSchema } from "@open-domain-specification/core";
+import {
+	type Consumable,
+	type DataSchema,
+	reachedEvents,
+} from "@open-domain-specification/core";
 import { commentsMd } from "./comments.md";
 import { markdownTable } from "./lib/markdown-table";
 import { pathToIndexMd } from "./lib/paths";
@@ -42,6 +46,24 @@ const consumableRow = (consumable: Consumable, fromPath: string) => [
 ];
 
 /**
+ * The events an operation reaches through the operations it calls, said in a
+ * sentence beneath the table rather than in a column of its own. A front that
+ * runs an aggregate's transition declares no `raises`, so its Raises cell is
+ * `-` and a reader would otherwise take it for an operation with no effect
+ * (card 77). Empty when the operation reaches nothing beyond what it raises,
+ * so a caller can filter it out.
+ */
+const reachesMd = (consumable: Consumable): string => {
+	if (consumable.type !== "operation") return "";
+	const reached = reachedEvents(consumable).filter(
+		(it) => !consumable.raisedEvents.includes(it),
+	);
+	return reached.length
+		? `- **${consumable.name}** also reaches ${reached.map((it) => it.name).join(", ")} through the operations it calls, raised where they happen rather than restated here.`
+		: "";
+};
+
+/**
  * The Provides table shared by aggregate and service pages, with whatever is
  * known about each consumable as a bullet list beneath it — the same shape a
  * relationship's comments take under their group's table, and the only place
@@ -68,9 +90,10 @@ export const providesTableMd = (
 		],
 		provided.map((it) => consumableRow(it, fromPath)),
 	);
+	const reaches = provided.map(reachesMd).filter(Boolean).join("\n");
 	const comments = provided
 		.map((it) => commentsMd(`**${it.name}**`, it.comments))
 		.filter(Boolean)
 		.join("\n");
-	return [table, comments].filter(Boolean).join("\n");
+	return [table, reaches, comments].filter(Boolean).join("\n");
 };

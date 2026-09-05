@@ -31,8 +31,9 @@ describe("ConsumesTable", () => {
 	});
 
 	it("names the consumer's own operation behind a consumption, and says so when it is the whole consumer", () => {
-		// Sales asks Catalog to reserve a pet from one operation of its own; the
-		// rest of its consumptions are the whole service.
+		// Sales asks Catalog to reserve a pet, and to mark it sold, from one
+		// operation of its own each; reading the catalogue summary is the whole
+		// service.
 		const { container } = render(ConsumesTable, {
 			consumptions: consumptions(),
 		});
@@ -41,7 +42,8 @@ describe("ConsumesTable", () => {
 			tr.querySelector("td:nth-child(4)")?.textContent?.trim(),
 		]);
 		expect(madeBy).toContainEqual(["ReservePetForOrder", "ReservePet"]);
-		expect(madeBy).toContainEqual(["MarkPetSoldForOrder", "whole consumer"]);
+		expect(madeBy).toContainEqual(["MarkPetSoldForOrder", "MarkPetSold"]);
+		expect(madeBy).toContainEqual(["GetPetSummary", "whole consumer"]);
 		expect(screen.getAllByText("whole consumer")[0]).toHaveClass("keyword");
 	});
 

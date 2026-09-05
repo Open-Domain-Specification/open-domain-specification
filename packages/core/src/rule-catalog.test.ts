@@ -248,6 +248,16 @@ function everythingWrong(): Workspace {
 		type: "operation",
 		description: "",
 	});
+	// raises-restated: a front that copies the event of the operation it calls,
+	// naming itself in the consumption's by, so the chain already carries it
+	const dDone = dService.provides("D Done", { type: "event", description: "" });
+	const dRun = dService
+		.provides("D Run", { type: "operation", description: "" })
+		.raises(dDone);
+	const dFront = dService
+		.provides("D Front", { type: "operation", description: "" })
+		.raises(dDone);
+	dService.consumes(dRun, { by: [dFront] });
 	const bAsk = other.provides("B Ask", { type: "operation", description: "" });
 	dService.consumes(bAsk, {});
 	other.consumes(dAsk, {});

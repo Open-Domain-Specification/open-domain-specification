@@ -207,6 +207,26 @@ describe("every template, through the shipped route", () => {
 		]);
 	});
 
+	it("ConsumablePage: a front says what it reaches rather than restating it under Raises", () => {
+		// ReservePetForOrder fronts the Pet aggregate's ReservePet and declares
+		// no raises of its own, so the Raises section carries one sentence
+		// naming the event the chain reaches instead of an empty state (card 77).
+		const raises = draw(PETSTORE_REFS.operation).querySelector("#raises");
+		expect(raises).toBeInTheDocument();
+		expect(raises?.textContent).toContain(
+			"Through the operations it calls, it also reaches",
+		);
+		expect(raises?.textContent).toContain("PetReserved");
+		expect(raises?.textContent).not.toContain("Raises nothing.");
+	});
+
+	it("ConsumablePage: an operation that calls nothing gets no reached sentence", () => {
+		const raises = draw(PETSTORE_REFS.guardedOperation).querySelector(
+			"#raises",
+		);
+		expect(raises?.textContent).not.toContain("it also reaches");
+	});
+
 	it("ConsumablePage: an operation that returns nothing draws no Returns anywhere", () => {
 		const container = draw(PETSTORE_REFS.operation);
 		expect(container.querySelector("#returns")).not.toBeInTheDocument();

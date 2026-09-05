@@ -55,6 +55,7 @@ severity, a rule id, a message and the ref of the element concerned.
 | `rejects-on-operation` | error | only an operation declares `rejects`; an event is a fact that already happened, so it has nothing left to refuse |
 | `consumable-kind` | error | policies react to events and issue operations; only operations raise, and only events |
 | `raises-in-context` | error | an operation raises only events its own bounded context provides; a context publishes its own facts |
+| `raises-restated` | warning | an operation does not restate under `raises` an event an operation it calls through a consumption's `by` already raises; the chain carries it, and a copy can drift |
 | `event-unraised` | warning | every event of a context we model is raised by one of that context's own operations |
 | `policy-complete` | warning | a policy reacts to at least one event and issues at least one operation |
 | `reaction-cycle` | warning | the reactions form no cycle: no operation raises an event whose policy issues an operation that leads back to it, following a consumption's `by` across a context boundary; a process fed by its own steps is a lifecycle rather than a ring, so a cycle is reported only when the walk returns to a reactor other than that one process |

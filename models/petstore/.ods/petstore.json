@@ -389,11 +389,6 @@
                   "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_unavailable"
                 }
               ],
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_reserved"
-                }
-              ],
               "comments": [
                 {
                   "text": "Reservation is a synchronous call into Catalog; it should become an order-placed subscription so Sales stops blocking on Catalog.",
@@ -413,12 +408,7 @@
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
-              },
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_sold"
-                }
-              ]
+              }
             }
           },
           "consumes": [
@@ -973,18 +963,23 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/catalog_bc/services/pet_app/provides/mark_pet_sold_for_order"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
                 "$ref": "#/boundedcontexts/catalog_bc/services/pet_app/provides/reserve_pet_for_order"
               },
               "pattern": "anti-corruption-layer",
               "by": [
                 {
                   "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/reserve_pet"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalog_bc/services/pet_app/provides/mark_pet_sold_for_order"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/mark_pet_sold"
                 }
               ]
             },
@@ -1602,7 +1597,12 @@
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/confirm_delivery"
-              }
+              },
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/fulfilment_bc/services/shipment_app/provides/report_delivery"
+                }
+              ]
             },
             {
               "consumable": {

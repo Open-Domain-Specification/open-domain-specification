@@ -12,6 +12,11 @@ import { BoundedContext, Policy, Process, type Workspace } from "./workspace";
  * where the chain used to stop. Consumables reached this way are included
  * even when they live in another context; operations no policy issues, and
  * nothing a policy issues reaches, are not.
+ *
+ * That is also why a front need not restate what it calls raises: the map
+ * already draws the front, the operation it calls and the event that
+ * operation raises, so the fact is reached rather than declared twice
+ * (`raises-restated`, card 77).
  */
 export class ODSFlowMap {
 	readonly nodes = new Map<string, ODSFlowMapNode>();

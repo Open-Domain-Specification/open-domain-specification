@@ -31,7 +31,9 @@ export const PETSTORE_REFS = {
 	valueobject: "#/boundedcontexts/catalog_bc/valueobjects/category",
 	service: "#/boundedcontexts/sales_bc/services/order_app",
 	// ReservePetForOrder is also the one operation that names what it refuses
-	// with, so it is the only route whose Rejects with section draws.
+	// with, so it is the only route whose Rejects with section draws, and it is
+	// a front: it raises nothing of its own, so its Raises section is the
+	// sentence naming what the chain reaches (card 77).
 	operation:
 		"#/boundedcontexts/catalog_bc/services/pet_app/provides/reserve_pet_for_order",
 	// GetPetSummary is the one operation asked with one schema and answered
