@@ -220,9 +220,11 @@ describe("the tactical templates on the alternate branches", () => {
 			"custom",
 		);
 		const petstore = petstoreModel();
+		// PetApp consumes its own aggregate's operations: inside one context
+		// there is no boundary to protect, so no downstream role is declared.
 		const { container } = render(Harness, {
 			model: petstore,
-			ref: serviceRef("inventory_bc", "inventory_query").$ref,
+			ref: serviceRef("catalog_bc", "pet_app").$ref,
 		});
 		expect(container.textContent).toContain("unspecified");
 	});

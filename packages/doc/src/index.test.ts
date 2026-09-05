@@ -484,8 +484,21 @@ describe("toDoc", () => {
 		expect(section("MarkPetSoldForOrder")).toContain(
 			"- **Made by**: MarkPetSold",
 		);
-		// The read beside them is the whole service, so the line is left off.
-		expect(section("GetPetSummary")).not.toContain("**Made by**");
+		// The read beside them is the process's, which a `by` may name because
+		// reacting is the commonest reason a consumption exists (decision 21).
+		expect(section("GetPetSummary")).toContain(
+			"- **Made by**: Order fulfilment",
+		);
+		// The line is left off where the whole consumer is the answer, which in
+		// this model is every event Inventory's projection takes in.
+		const inventory =
+			docs["boundedcontexts/inventory_bc/services/inventory_query/index.md"];
+		expect(
+			inventory
+				.split("## Consumes")[1]
+				.split("### PetRegistered")[1]
+				.split("###")[0],
+		).not.toContain("**Made by**");
 		// The context page reads the same rows as a table.
 		const contextDoc = docs["boundedcontexts/sales_bc/index.md"];
 		expect(contextDoc).toContain("| Consumer | Made By |");

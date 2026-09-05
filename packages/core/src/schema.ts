@@ -7,7 +7,22 @@ export interface AttributeSchema {
 	/** Free-form type name, e.g. `string`, `Money`, `Date`. */
 	type: string;
 	description?: string;
-	/** True when this attribute is (part of) the identity of an entity. */
+	/**
+	 * True when this attribute is (part of) the identity of an entity: the
+	 * thing that tells one instance from another that holds the same values,
+	 * and what `root-identity` and `entity-identity` look for.
+	 *
+	 * On a value object it is refused (`value-object-shape`): a value is what
+	 * it holds and has nothing to be identified by. On a schema it says which
+	 * field of the payload is the key a reader correlates on — the order number
+	 * in an `OrderPlaced`, the instruction id in a settlement message — which is
+	 * a fact about the payload and not a claim that the publishing context holds
+	 * anything. That is why an identity on a schema attribute draws no edge on
+	 * the context map and asks for no relationship: the payload carries the id
+	 * for its reader, and the context owes the other nothing for it (decision
+	 * 14, second amendment). Where the id belongs to another context, say so
+	 * with `identifies` beside it.
+	 */
 	identity?: boolean;
 	/**
 	 * True when the attribute is sometimes absent. Left off means required,
@@ -28,9 +43,13 @@ export interface AttributeSchema {
 	 * What this attribute holds the identity of, when it is an identity of
 	 * something else: `Order.petId` identifies Catalog's `Pet`. The target may
 	 * be in another bounded context — that is the point, since an identity is
-	 * the only thing that crosses a boundary (decision 14) — and it may be a
-	 * child rather than a root, since a session holds the id of a profile
-	 * inside a household; the child is reached through its own root.
+	 * the only thing that crosses a boundary (decision 14) — and there it may
+	 * be a child rather than a root, since a session holds the id of a profile
+	 * inside a household; the child is reached through its own root. Inside one
+	 * context an entity or a value object names only a root, because there the
+	 * whole model is in reach and a relation says it better; a payload schema
+	 * may still echo a child's id, since it stores nothing
+	 * (`identifies-entity`).
 	 *
 	 * It may also be a bounded context flagged `external`: a card scheme's
 	 * authorisation id or a payment provider's customer id belongs to a system

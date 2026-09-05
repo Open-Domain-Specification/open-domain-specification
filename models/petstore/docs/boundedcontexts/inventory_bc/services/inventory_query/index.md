@@ -48,8 +48,4 @@ Order delivered (status=delivered)
 Order deleted via DELETE /store/order/{orderId}
 - **Provider**: [Order](../../../sales_bc/aggregates/order/index.md)
 
-### InventoryUpdated 
-Inventory counts changed
-- **Provider**: [InventoryQuery](./index.md)
-
 	

@@ -45,6 +45,8 @@ severity, a rule id, a message and the ref of the element concerned.
 | `internal-consumable` | error / warning | an internal consumable is not consumed, reacted to or issued from another context |
 | `consumption-once` | error | a consumer consumes a given consumable once, or several times with each of those consumptions naming callers in `by` that no other of them names; the ref of a repeated pair is the pair plus its first caller, so unnamed or shared callers leave two consumptions with one ref and only the first can be reached |
 | `consumption-by-resolves` | error | a consumption's `by` names the consumer's own operations, or policies of the consumer's context; a consumption belongs to the consumer, so what makes it is the consumer's own |
+| `consumption-by-required` | warning | a consumption of another context's operation names in `by` which of the consumer's own operations makes the call, unless the consumer provides fewer than two and there is nothing to choose between; `by` is the only causal link the model has across a boundary |
+| `subscription-consumed` | error | a policy or process whose `on`, `starts` or `ends` names another context's event has a consumption of that event somewhere in its own context; a subscription is an integration and belongs on both maps |
 | `process-in-context` | error | a process issues operations of its own bounded context; what starts it, what it waits for and what ends it may be another context's events |
 | `process-has-ends` | warning | a process names at least one event that completes an instance |
 | `process-starts` | error | a process names at least one event that begins an instance |

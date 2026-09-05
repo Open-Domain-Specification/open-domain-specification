@@ -189,6 +189,9 @@ describe("crossingConsumables", () => {
 		expect(crossings.map((c) => c.consumable.id).sort()).toEqual([
 			"get_pet_summary",
 			"mark_pet_sold_for_order",
+			// The relisting Sales waits on is a consumption like the rest of them
+			// since card 90; a subscription crosses the boundary either way.
+			"pet_status_changed",
 			"reserve_pet_for_order",
 		]);
 		expect(

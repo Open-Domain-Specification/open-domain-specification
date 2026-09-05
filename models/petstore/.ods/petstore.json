@@ -840,15 +840,6 @@
                 }
               ]
             },
-            "approve_only_when_available": {
-              "name": "ApproveOnlyWhenAvailable",
-              "description": "Move to approved only after the catalogue's summary reported the pet available; the catalogue's status itself is outside this aggregate, so the check is a read through the ACL, not a shared invariant",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/sales_bc/valueobjects/order_status"
-                }
-              ]
-            },
             "deliver_only_when_approved": {
               "name": "DeliverOnlyWhenApproved",
               "description": "Deliver only from approved and only once a ship date is set, so nothing is marked delivered that was never checked or never dispatched",
@@ -858,6 +849,18 @@
                 },
                 {
                   "$ref": "#/boundedcontexts/sales_bc/valueobjects/ship_date"
+                }
+              ]
+            },
+            "approve_only_when_available": {
+              "name": "ApproveOnlyWhenAvailable",
+              "description": "Move to approved only after the catalogue's summary reported the pet available; the catalogue's status itself is outside this aggregate, so the check is a read through the ACL, not a shared invariant",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/valueobjects/order_status"
+                },
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/approve_order"
                 }
               ]
             }
@@ -952,22 +955,6 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/catalog_bc/services/pet_app/provides/get_pet_summary"
-              },
-              "pattern": "anti-corruption-layer",
-              "comments": [
-                {
-                  "text": "PetSummaryClient is the translator; nothing else in Sales knows the catalog payload shape.",
-                  "link": {
-                    "kind": "code",
-                    "url": "https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts",
-                    "label": "sales/acl/PetSummaryClient.ts"
-                  }
-                }
-              ]
-            },
-            {
-              "consumable": {
                 "$ref": "#/boundedcontexts/catalog_bc/services/pet_app/provides/reserve_pet_for_order"
               },
               "pattern": "anti-corruption-layer",
@@ -990,8 +977,45 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/fulfilment_bc/aggregates/shipment/provides/shipment_delivered"
-              }
+                "$ref": "#/boundedcontexts/catalog_bc/services/pet_app/provides/get_pet_summary"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/processes/order_fulfilment"
+                }
+              ],
+              "comments": [
+                {
+                  "text": "PetSummaryClient is the translator; nothing else in Sales knows the catalog payload shape.",
+                  "link": {
+                    "kind": "code",
+                    "url": "https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts",
+                    "label": "sales/acl/PetSummaryClient.ts"
+                  }
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/processes/order_fulfilment"
+                }
+              ],
+              "comments": [
+                {
+                  "text": "PetSummaryClient maps the catalogue's status change onto the process's one question, is this pet free.",
+                  "link": {
+                    "kind": "code",
+                    "url": "https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts",
+                    "label": "sales/acl/PetSummaryClient.ts"
+                  }
+                }
+              ]
             }
           ]
         }
@@ -1289,11 +1313,6 @@
                 "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_deleted"
               },
               "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/inventory_bc/services/inventory_query/provides/inventory_updated"
-              }
             }
           ]
         }
@@ -2007,7 +2026,7 @@
           "text": "Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged."
         },
         {
-          "text": "OrderApproved and ShipmentDelivered cross the boundary one way each, and Fulfilment calls ConfirmDelivery on top of that, all with no translation layer; each side depending on the other is what makes this a partnership rather than customer-supplier."
+          "text": "OrderApproved crosses into Fulfilment and Fulfilment calls ConfirmDelivery back, both with no translation layer. Neither side treats the other as a supplier to be protected from, which is what makes this a partnership rather than customer-supplier; the traffic happening to run one way says nothing about that."
         }
       ]
     },

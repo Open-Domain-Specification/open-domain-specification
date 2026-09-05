@@ -74,7 +74,7 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 
 - **Sales BC** (partnership)
 	- Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged.
-	- OrderApproved and ShipmentDelivered cross the boundary one way each, and Fulfilment calls ConfirmDelivery on top of that, all with no translation layer; each side depending on the other is what makes this a partnership rather than customer-supplier.
+	- OrderApproved crosses into Fulfilment and Fulfilment calls ConfirmDelivery back, both with no translation layer. Neither side treats the other as a supplier to be protected from, which is what makes this a partnership rather than customer-supplier; the traffic happening to run one way says nothing about that.
 
 - `partnership` — **Partnership** (P). Mutual co-operation where teams coordinate development and releases.
 
@@ -83,12 +83,12 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 | --- | --- | --- | --- | --- | --- |
 | [ShipmentApp](services/shipment_app/index.md) | ReportDelivery | - | OrderApp | ConfirmDelivery | open-host-service |
 | [OrderApp](../sales_bc/services/order_app/index.md) | ConfirmDelivery | - | Order | DeliverOrder | - |
-| [OrderApp](../sales_bc/services/order_app/index.md) | - | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
 | [PetApp](../catalog_bc/services/pet_app/index.md) | ReservePetForOrder | - | Pet | ReservePet | - |
 | [PetApp](../catalog_bc/services/pet_app/index.md) | MarkPetSoldForOrder | - | Pet | MarkPetSold | - |
-| [OrderApp](../sales_bc/services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
 | [OrderApp](../sales_bc/services/order_app/index.md) | MarkPetSold | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
-| [OrderApp](../sales_bc/services/order_app/index.md) | - | - | Shipment | ShipmentDelivered | published-language |
+| [OrderApp](../sales_bc/services/order_app/index.md) | Order fulfilment | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | Order fulfilment | anti-corruption-layer | Pet | PetStatusChanged | published-language |
 | [ShipmentApp](services/shipment_app/index.md) | Plan dispatch on approval | conformist | Order | OrderApproved | published-language |
 
 

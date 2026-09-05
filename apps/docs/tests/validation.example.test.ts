@@ -52,6 +52,7 @@ describe("Validation", () => {
 			  "warning relationship-declared: "Ordering" holds "priceId", the identity of "Price" in "Catalog", but no relationship says how "Catalog" and "Ordering" stand to each other",
 			  "error internal-consumable: Policy "Reprice on order" reacts to "Reprice", which is internal to "Catalog"",
 			  "error internal-consumable: Policy "Reprice on order" issues "Reprice", which is internal to "Catalog"",
+			  "error subscription-consumed: Policy "Reprice on order" reacts to "Reprice" from "Catalog", but nothing in "Ordering" consumes it; a context takes a foreign fact in at its own boundary, so the subscription is a consumption and reads as one on both maps",
 			  "error policy-in-context: Policy "Reprice on order" in "Ordering" issues "Reprice", which belongs to "Catalog"",
 			  "error consumable-kind: Policy "Reprice on order" reacts to "Reprice", which is an operation, not an event",
 			  "warning reaction-cycle: Reactions run in a cycle: "Reprice" -> "Reprice on order" -> "Reprice"; the chain triggers itself and nothing in the model says what ends it; it runs through "Catalog" and "Ordering", so no one context can see the whole ring",

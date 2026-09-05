@@ -422,10 +422,33 @@ external context says only what the record can support.
 Card 71 also added `event-unraised`, a warning about an event no operation of its context
 raises. StreamLine had one: Disc Rental's `DiscRentalInvoiced`, which Billing turns into an
 invoice line and which nothing in the model caused. Legacy Operations named the cause — "a
-monthly export of charges to billing" — so the model now names the job: a `MonthlyExport`
-service with one internal operation, `RunMonthlyExport`, raising the event. The monolith is
-still modelled at its edge; the edge just says what pushes the file now. The three deliberate
-diagnostics of section 7 are untouched.
+monthly export of charges to billing" — so the model named the job: a `MonthlyExport`
+service with one internal operation, `RunMonthlyExport`, raising the event. The three
+deliberate diagnostics of section 7 are untouched.
+
+## 12. Revision (card 90): the export job comes back out, and two guards are named
+
+Legacy Operations described four jobs and could explain one of them. `MonthlyExport` was
+built from that one sentence so an event had a raiser, and its own description called it
+"the charge export, the one job anyone will describe" — which is the model admitting it
+knows nothing about the other three. Disc Rental is flagged a big ball of mud for exactly
+that reason, and such a context is now exempt from `event-unraised`, `aggregate-root` and
+`root-identity` as an external one is (decision 28's second amendment). The service and its
+operation are gone; `DiscRentalInvoiced` still carries the export's shape and Billing still
+turns it into an invoice line.
+
+Two preconditions that were carried in prose now name their guards.
+`SessionNeedsEntitlement` is checked by `StartPlayback` on PlaybackAPI, which reads
+`GetEntitlement` before it creates a session — an aggregate invariant may name an operation
+of its context's application service when that operation is the guard (decision 19's
+2026-09-08 amendment). `AdsOnlyOnAdSupportedPlan` is checked by `PrepareBreaks`, which is the
+Ad Break aggregate's own operation and always could have been named. Both invariants now say
+where they are enforced instead of describing it.
+
+`CatalogueAPI`'s consumption of `SubmitEncode` also names its caller, `RequestEncode`. The
+service answers `GetTitle` too, so which of the two calls Encoding was a real question, and
+the chain from a delivered master through the encode to the publication now runs end to end
+on the flow map (decision 21's third amendment).
 
 ## 11. Revision (card 59): a title is a film or a series
 

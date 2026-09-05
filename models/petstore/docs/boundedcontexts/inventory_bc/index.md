@@ -77,7 +77,6 @@ Open-host service for /store/inventory: a projection is a service that provides 
 ## Consumptions
 | Consumer | Made By | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- | --- |
-| [InventoryQuery](services/inventory_query/index.md) | - | - | InventoryQuery | InventoryUpdated | published-language |
 | [InventoryQuery](services/inventory_query/index.md) | - | conformist | Pet | PetRegistered | published-language |
 | [InventoryQuery](services/inventory_query/index.md) | - | conformist | Pet | PetDeleted | published-language |
 | [InventoryQuery](services/inventory_query/index.md) | - | conformist | Pet | PetStatusChanged | published-language |

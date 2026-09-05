@@ -38,11 +38,14 @@ function pairKey(a: BoundedContext, b: BoundedContext): string {
  * declared relationship an *implied* upstream/downstream edge is drawn with
  * the roles collected from the consumables and consumptions involved.
  *
- * An identity attribute naming another context's entity is a dependency too —
- * decision 14 made it the only structural record of one — so a pair joined by
- * nothing else gets an implied edge for that as well, marked `identity` so a
- * reader can tell what put it there. It carries no roles: nothing is
- * exchanged, so neither end plays a part in an exchange.
+ * An identity attribute of an entity or a value object naming another context's
+ * entity is a dependency too — decision 14 made it the only structural record
+ * of one — so a pair joined by nothing else gets an implied edge for that as
+ * well, marked `identity` so a reader can tell what put it there. It carries no
+ * roles: nothing is exchanged, so neither end plays a part in an exchange. An
+ * identity echoed in a payload schema draws nothing: the payload carries it for
+ * its reader, and the context publishing it depends on nobody for that
+ * (decision 14, second amendment).
  */
 export class ODSContextMap {
 	readonly nodes = new Map<string, ODSContextMapNode>();

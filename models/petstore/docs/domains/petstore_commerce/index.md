@@ -43,18 +43,17 @@ Getting a sold pet to its owner. Supporting: needed, but a courier could do it j
 | [OrderApp](../../boundedcontexts/sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
 | [PetApp](../../boundedcontexts/catalog_bc/services/pet_app/index.md) | - | Pet | ReservePet | - |
 | [InventoryQuery](../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Pet | PetRegistered | published-language |
+| [OrderApp](../../boundedcontexts/sales_bc/services/order_app/index.md) | anti-corruption-layer | Pet | PetStatusChanged | published-language |
 | [InventoryQuery](../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Pet | PetStatusChanged | published-language |
 | [InventoryQuery](../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Pet | PetReserved | published-language |
 | [InventoryQuery](../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Pet | PetSold | published-language |
 | [InventoryQuery](../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Pet | PetDeleted | published-language |
 | [PetApp](../../boundedcontexts/catalog_bc/services/pet_app/index.md) | - | Pet | MarkPetSold | - |
-| [InventoryQuery](../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | - | InventoryQuery | InventoryUpdated | published-language |
 | [InventoryQuery](../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Order | OrderApproved | published-language |
 | [ShipmentApp](../../boundedcontexts/fulfilment_bc/services/shipment_app/index.md) | conformist | Order | OrderApproved | published-language |
 | [InventoryQuery](../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Order | OrderDelivered | published-language |
 | [InventoryQuery](../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Order | OrderDeleted | published-language |
 | [OrderApp](../../boundedcontexts/sales_bc/services/order_app/index.md) | - | Order | DeliverOrder | - |
 | [ShipmentApp](../../boundedcontexts/fulfilment_bc/services/shipment_app/index.md) | - | OrderApp | ConfirmDelivery | open-host-service |
-| [OrderApp](../../boundedcontexts/sales_bc/services/order_app/index.md) | - | Shipment | ShipmentDelivered | published-language |
 
 	

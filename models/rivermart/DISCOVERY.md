@@ -338,10 +338,12 @@ to integrate.
   on the documented APIs, conformist where the downstream "takes it as published",
   anti-corruption layer where it "keeps its own shape".
 - **Shared kernel** between Warehouse and Last Mile: the label library is one codebase both
-  teams change. Each context still declares its own `TrackingLabel` value object in the
-  model, with the description saying it is the shared one; a value object belongs to its
-  bounded context (decision 16), and this pair mirrors the library rather than borrowing
-  through a kernel context of its own.
+  teams change. `TrackingLabel` is declared once, in Warehouse, and Last Mile's `Parcel`
+  types its label by that same value object: a shared kernel is the one relationship over
+  which a value object may be borrowed (decision 16), so the model holds one definition
+  where the library holds one file. It used to be declared twice, once in each context, with
+  each description claiming it was the shared one; two definitions that must not drift is
+  what the kernel exists to avoid, and card 89 removed the copy.
 - **Partnership** between Search and Advertising: one results page, one planning cycle, a
   joint release calendar.
 - **Separate ways** between Vendor Purchasing and Seller Onboarding: decided policy since
@@ -492,10 +494,33 @@ and refund and translates at the edge.
 Card 71 also added `event-unraised`, a warning about an event no operation of its context
 raises. RiverMart had one: Vendor Purchasing's `PurchaseOrderReceived`, which the Warehouse
 reads and which nothing in the model caused. The Retail Systems engineer named the cause in
-the interview — "the nightly export of received vendor stock" — so the model now names the
-job: a `NightlyExport` service with one internal operation, `RunNightlyExport`, raising the
-event. It is still the legacy system modelled at its edge; it just no longer publishes a
-fact out of thin air. The two deliberate diagnostics of section 7 are untouched.
+the interview — "the nightly export of received vendor stock" — so the model named the job:
+a `NightlyExport` service with one internal operation, `RunNightlyExport`, raising the
+event. The two deliberate diagnostics of section 7 are untouched.
+
+## Revision (card 90): the export job comes back out
+
+The engineer's exact words were "I can describe the export; I can't describe the rest", and
+the service the model built from them called itself "the one job of the ninety that anyone
+can describe". Ninety jobs nobody can read is what `bigBallOfMud` means, and inventing one
+service so a rule had something to point at claimed a shape of the inside that nobody at
+RiverMart could confirm. A big ball of mud is now exempt from `event-unraised`, as an
+external context is (decision 28's second amendment), so `NightlyExport` and
+`RunNightlyExport` are gone. Vendor Purchasing keeps the aggregate, the event and the
+export's shape: it says what it emits and not how, which is all anyone knows.
+
+Two other things came out of the same card. `Cart & Checkout` was declared upstream of
+`Payments` with no roles, for the cart id that `PaymentAuthorised` and `AuthorisePayment`
+carry — "so checkout can match it back", as its own description said. An id echoed in a
+payload is not a dependency: Payments stores no cart and asks Checkout for nothing
+(decision 14's second amendment), so that relationship is gone and the customer-supplier
+one that runs the other way is the whole of the pair. And every cross-context call that
+could name its caller now does: `SearchAPI` gained `ReportAdClick`, the operation the Ads
+interview described as "Search tells us when one of them is clicked" and which the model had
+never named, so the consumption of `RecordAdClick` no longer reads as the whole of Search
+calling out. `CaseAPI`'s consumption of `RequestReturn` stays without a caller on purpose:
+an agent raises a return while resolving a case, and `ResolveCase` is the Case aggregate's
+operation, not CaseAPI's to name.
 
 ## Optionality against cardinality (card 82)
 

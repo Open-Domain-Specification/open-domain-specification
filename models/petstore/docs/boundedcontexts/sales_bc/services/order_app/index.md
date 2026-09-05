@@ -27,10 +27,6 @@ Mark an approved order as delivered; run by OrderApp when Fulfilment reports the
 - **Provider**: [Order](../../aggregates/order/index.md)
 - **Made by**: ConfirmDelivery
 
-### GetPetSummary [anti-corruption-layer]
-GET /pets/{id}/summary; asked with a PetId, answers with a PetSummary, so Sales can check availability without coupling to the full Pet
-- **Provider**: [PetApp](../../../catalog_bc/services/pet_app/index.md)
-
 ### ReservePetForOrder [anti-corruption-layer]
 POST /pet/{petId}/reserve; holds the pet for an approved order by running the aggregate's ReservePet
 - **Provider**: [PetApp](../../../catalog_bc/services/pet_app/index.md)
@@ -41,8 +37,14 @@ POST /pet/{petId}/sold; records the sale by running the aggregate's MarkPetSold
 - **Provider**: [PetApp](../../../catalog_bc/services/pet_app/index.md)
 - **Made by**: MarkPetSold
 
-### ShipmentDelivered 
-The pet reached its owner
-- **Provider**: [Shipment](../../../fulfilment_bc/aggregates/shipment/index.md)
+### GetPetSummary [anti-corruption-layer]
+GET /pets/{id}/summary; asked with a PetId, answers with a PetSummary, so Sales can check availability without coupling to the full Pet
+- **Provider**: [PetApp](../../../catalog_bc/services/pet_app/index.md)
+- **Made by**: Order fulfilment
+
+### PetStatusChanged [anti-corruption-layer]
+The catalogue moved a pet between statuses itself, e.g. relisting a returned pet as available
+- **Provider**: [Pet](../../../catalog_bc/aggregates/pet/index.md)
+- **Made by**: Order fulfilment
 
 	
