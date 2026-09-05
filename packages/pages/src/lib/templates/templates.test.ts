@@ -105,6 +105,17 @@ describe("every template, through the shipped route", () => {
 		].map((c) => c.textContent?.trim());
 		expect(cells).toContain("Pet");
 		expect(cells).toContain("Catalog BC");
+		// The sidebar label names the section the same way the section itself
+		// does, so a reader following the link lands on what they expected.
+		const h2 = usage?.querySelector("h2");
+		const heading = h2?.textContent
+			?.replace(h2.querySelector(".count")?.textContent ?? "", "")
+			.trim();
+		const sidebarLabel = container
+			.querySelector('.toc a[href="#usage"]')
+			?.textContent?.trim();
+		expect(sidebarLabel).toBe(heading);
+		expect(sidebarLabel).toBe("Used as a type by");
 	});
 
 	it("ServicePage: the type is a keyword line and provides and consumes are the shared tables", () => {
