@@ -52,7 +52,11 @@ job is to get the model out of their head without making them learn the vocabula
 - "When the upstream team changes something, does the downstream team get a say beforehand?"
   Yes → `customer-supplier`.
 - "Do those two teams plan and release together, as one?" → `partnership`.
-- "Do they share actual code or tables that both change?" → `shared-kernel`.
+- "Do they share actual code or tables that both change?" → `shared-kernel`, declared
+  directly between the two. If more than two contexts share the same library, model the
+  library as a bounded context of its own and give each sharer its own `shared-kernel`
+  relationship with that context — six sharers is six relationships to one kernel, not
+  fifteen among themselves.
 - "Are there two parts that you have decided, on purpose, should never integrate?" →
   `separate-ways`.
 - "How does the downstream side take the data: as it comes, or does it copy and reshape it
@@ -76,7 +80,10 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   them do several of these things carry?" → value objects, declared on the context
   (`context.addValueObject`), not on one aggregate: any aggregate here may hold one. If a
   value is genuinely the same in a neighbouring context, that is a `shared-kernel`
-  relationship, and it is the only way one context may name another's value object.
+  relationship, and it is the only way one context may name another's value object. If the
+  same value is genuinely the same in several contexts, it is not declared in any of them:
+  it belongs to a kernel context of its own, and each sharer borrows it over its own
+  `shared-kernel` relationship with that context.
 - "What identifies it: an order number, an email?" → an attribute with `identity: true`.
 - "What details does it carry?" → attributes, with `type` in the user's words.
 - "Which of these do you always change or check together? What must be true across all of

@@ -46,6 +46,13 @@ are `open-host-service` and `published-language`, downstream roles are
 `conformist` and `anti-corruption-layer`. The same roles appear on
 individual consumables and consumptions.
 
+Two contexts sharing a library declare `shared-kernel` directly between
+them. When several contexts share one library, model the library as a
+bounded context of its own and give each sharer a `shared-kernel`
+relationship with that context, rather than one relationship per pair: six
+contexts sharing a financial-primitives library are six relationships to
+one kernel context, not fifteen among themselves.
+
 Where two contexts exchange consumables and no relationship is declared, the
 context map draws an **implied** upstream-downstream edge (dashed) with the
 roles collected from the consumables involved. Declaring a relationship
