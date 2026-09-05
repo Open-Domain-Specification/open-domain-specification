@@ -24,3 +24,7 @@ Decision 15 refused subtyping: a hierarchy usually hides a missing concept, and 
 - Relation map draws a generalisation in UML's form, a hollow triangle at the parent; the entity page names the parent and lists the kinds, and its attribute table shows own attributes and, in a second group, inherited ones with their origin; the doc generator prints the same; the skill's interview asks "are there kinds of this that differ in what they hold?".
 - `aggregate-tree` walks `includes` only; specialisation is not containment. `cross-aggregate-reference` and `attribute-relation-coherence` see inherited relations and attributes as the subtype's.
 - Decision 15's subtyping section is removed and replaced by a pointer here.
+
+## Amendment (2026-09-07)
+
+The context above guessed NorthBank's accounts as the reference case. Its discovery notes say the platform holds current accounts only, so card 59 took the kinds the interviews actually state: a ledger account is a customer's or a nominal (NorthBank), and a title is a film or a series (StreamLine). Two mechanics settled at implementation: a kind is reached wherever its parent is, so `aggregate-tree`'s reachability walk follows specialisation while its containment checks do not; and a cross-aggregate `references` may target a kind of the other aggregate's root, never a kind of a non-root entity.
