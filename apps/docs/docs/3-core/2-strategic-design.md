@@ -23,11 +23,18 @@ A workspace lists its **teams** and a context may be owned by one. The
 context map prints the owner under each context and the generated docs list
 what each team owns.
 
-## Big ball of mud
+## Context flags
 
 A context whose model is not coherent, typically a legacy system, can be
 flagged `bigBallOfMud`. It is drawn as a muddy blob so that neighbours know
-to protect themselves with an anti-corruption layer.
+to protect themselves with an anti-corruption layer (`mud-needs-acl`).
+
+A context the enterprise does not own and does not model inside — a card
+scheme, a payment provider, a licensor, a regulator, a clock — can be
+flagged `external`. It may still provide and consume consumables and take
+part in relationships, but it needs no subdomain, no team and no internals:
+`external-is-boundary` refuses aggregates, policies, processes and
+invariants on it, because what happens inside it is not ours to state.
 
 ## Context relationships
 
