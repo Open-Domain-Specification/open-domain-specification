@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 live: false
 clean-code-swept: true
 labels: [backend, ddd]

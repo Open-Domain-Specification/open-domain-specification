@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [ddd, frontend, schema]
 priority: med
 updatedAt: 2026-09-05T11:20:00.000Z

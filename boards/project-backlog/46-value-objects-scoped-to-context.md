@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [backend, ddd]
 priority: med
 updatedAt: 2026-09-06T10:00:00.000Z
