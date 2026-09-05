@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [tooling]
 priority: medium
 agent: bumblebee-lite
