@@ -28,3 +28,10 @@ Removing the relation removed the only structural record that `Order` depends on
 ## Amendment (2026-09-07)
 
 The first rule required the identified entity to be a root. The architect review showed that is false to real systems: a playback session identifies a profile inside a household, a claim identifies a coverage inside a policy, an appeal identifies a decision inside a case, and each child stays inside its aggregate precisely because its parent's invariants need it there. An identity may name any entity; when it names a child, the dependency is on the aggregate reached through that child's root, and the map draws the edge to the child inside its cluster. `identifies-root` becomes `identifies-entity` (card 67).
+
+The mechanics: `identifies-entity` checks the target is an entity of this
+workspace and nothing more, since root or child is now the modeller's call, and
+`cross-context-relation`'s fix text stops promising a root. The relation map
+needs no new node kind — the identity edge already lands on the entity named,
+and a child's node carries its own aggregate's namespace, so it draws inside
+that cluster beside the root it is reached through.

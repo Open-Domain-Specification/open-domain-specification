@@ -1533,10 +1533,6 @@
                   "type": "string",
                   "identity": true
                 },
-                "profile_id": {
-                  "name": "profileId",
-                  "type": "string"
-                },
                 "household_id": {
                   "name": "householdId",
                   "type": "string",
@@ -1553,7 +1549,10 @@
                   "name": "episodeId",
                   "type": "string",
                   "description": "Absent for a film; for a series, the episode being played and bookmarked",
-                  "optional": true
+                  "optional": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/episode"
+                  }
                 },
                 "device_id": {
                   "name": "deviceId",
@@ -1577,6 +1576,13 @@
                   "type": "StreamManifest",
                   "valueobject": {
                     "$ref": "#/boundedcontexts/playback/valueobjects/stream_manifest"
+                  }
+                },
+                "profile_id": {
+                  "name": "profileId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/profile"
                   }
                 }
               },
@@ -1725,7 +1731,10 @@
           "attributes": {
             "rendition_ids": {
               "name": "renditionIds",
-              "type": "string[]"
+              "type": "string[]",
+              "identifies": {
+                "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/entities/rendition"
+              }
             },
             "edge_url": {
               "name": "edgeUrl",
@@ -1897,7 +1906,10 @@
                 "rendition_id": {
                   "name": "renditionId",
                   "type": "string",
-                  "identity": true
+                  "identity": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/entities/rendition"
+                  }
                 },
                 "bytes": {
                   "name": "bytes",
@@ -2296,17 +2308,20 @@
               "description": "One per member profile",
               "root": true,
               "attributes": {
-                "profile_id": {
-                  "name": "profileId",
-                  "type": "string",
-                  "identity": true
-                },
                 "affinities": {
                   "name": "affinities",
                   "type": "Affinity[]",
                   "description": "What the profile leans to, strongest first",
                   "valueobject": {
                     "$ref": "#/boundedcontexts/recommendations/valueobjects/affinity"
+                  }
+                },
+                "profile_id": {
+                  "name": "profileId",
+                  "type": "string",
+                  "identity": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/profile"
                   }
                 }
               },

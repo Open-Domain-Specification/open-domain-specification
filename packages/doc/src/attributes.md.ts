@@ -7,9 +7,11 @@ import { pathToIndexMd } from "./lib/paths";
  * question is what is inside it; a value object's type is left as the author
  * wrote it, since the value object has its own row on the context page.
  *
- * An attribute that holds another root's identity says whose, and links to it:
- * that identity is the whole of the dependency, often across a bounded
- * context, and a reader who cannot follow it is reading a bare id.
+ * An attribute that holds another entity's identity says whose, and links to
+ * it: that identity is the whole of the dependency, often across a bounded
+ * context, and a reader who cannot follow it is reading a bare id. The link
+ * goes to the aggregate page, which is where a child entity is written up
+ * alongside the root it is reached through.
  *
  * An attribute that is sometimes absent is marked `optional` after the type
  * (decision 24). Only the exception is written: everything unmarked is always

@@ -141,7 +141,7 @@ const crossAggregateReference: Rule = (workspace) => {
 
 /**
  * A relation never crosses a bounded context. Crossing a boundary is an
- * integration, so the source holds the other root's identity as an attribute
+ * integration, so the source holds the other entity's identity as an attribute
  * and the dependency reads on the consumable map instead.
  */
 const crossContextRelation: Rule = (workspace) => {
@@ -161,23 +161,26 @@ const crossContextRelation: Rule = (workspace) => {
 };
 
 /**
- * An attribute that holds an identity holds the identity of a root. The root
- * is the one thing you reach an aggregate by, so it is the only identity that
- * means anything on the outside: an id of something inside another boundary
- * names a part whose life its own whole controls, and the holder has no way
- * to ask for it. Naming the root instead keeps the dependency at the door,
- * which is what lets an identity cross a bounded context at all.
+ * An attribute that holds an identity names an entity of this workspace, root
+ * or child. A child id is what real systems hold: a playback session knows
+ * which profile inside a household it plays for, a claim which coverage of a
+ * policy it is against, and each of those children stays inside its aggregate
+ * precisely because its parent's invariants need it there. Only the id still
+ * crosses — the holder reaches the child through its root, so the dependency
+ * is on the aggregate that root leads (decision 14). What the rule refuses is
+ * an identity naming an entity this workspace does not have: one built
+ * against another workspace, or dropped since, where the id reaches nothing.
  */
-const identifiesRoot: Rule = (workspace) => {
+const identifiesEntity: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const { owner } of attributeOwnersOf(workspace)) {
 		for (const attribute of owner.attributes.values()) {
 			const target = attribute.identifies;
-			if (!target || target.root) continue;
+			if (!target || workspace.getEntityByRef(target.ref) === target) continue;
 			diagnostics.push({
 				severity: "error",
-				rule: "identifies-root",
-				message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of "${target.name}", which is not the root of aggregate "${target.aggregate.name}"; an identity names the root the aggregate is reached by`,
+				rule: "identifies-entity",
+				message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of "${target.name}", which is not an entity of this workspace; an identity names an entity here, root or child, and a child is reached through its root`,
 				ref: attribute.ref,
 			});
 		}
@@ -1495,16 +1498,17 @@ const RULES: CataloguedRule[] = [
 		summary:
 			"A relation never crosses a bounded context; only an identity does.",
 		why: "Each context is its own model with its own language and lifecycle (decision 03), so a relation across the boundary makes one context's entity part of the other's object graph and the two can no longer be loaded, changed or stored apart. Decision 08's crossing table already says an entity relation's target may not cross a file, and splitting the contexts into their own files is exactly what turns this relation into a load error.",
-		fix: "Delete the relation and give the source an attribute holding the other root's identity — an Order in Sales carries petId rather than a relation to Catalog's Pet. The dependency between the two contexts then reads where it belongs, on the consumable map: the consumable the source consumes and the context relationship between the two.",
+		fix: "Delete the relation and give the source an attribute holding the other entity's identity — an Order in Sales carries petId rather than a relation to Catalog's Pet. That identity may name a child of the other model as readily as its root, since the child is reached through that root. The dependency between the two contexts then reads where it belongs, on the consumable map: the consumable the source consumes and the context relationship between the two.",
 		check: crossContextRelation,
 	},
 	{
-		rule: "identifies-root",
+		rule: "identifies-entity",
 		severities: ["error"],
-		summary: "An attribute's identifies names the root entity of an aggregate.",
-		why: "An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about. Only a root can be that thing, because the root is what an aggregate is reached, loaded and saved by; an id of an entity inside someone else's boundary names a part whose whole controls its life, and nobody outside can ask for it on its own. This is also what makes an identity safe to cross a bounded context, which a relation may never do (decision 14): the dependency stops at the other model's front door.",
-		fix: "Point identifies at the root entity of the aggregate the thing belongs to, and hold that root's identity instead. If the part really is what matters to you, the model is saying it should be an aggregate of its own.",
-		check: identifiesRoot,
+		summary:
+			"An attribute's identifies names an entity of this workspace, root or child.",
+		why: "An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about, and it is the one dependency allowed to cross a bounded context (decision 14). That thing may be a child, because systems cross boundaries by child identity constantly — a playback session names a profile inside a household, a claim a coverage inside a policy — and the child stays inside its aggregate exactly because its parent's invariants need it there. You hold the child's id and reach it through its root, so the dependency is really on the aggregate that root leads. What the id may never name is something this workspace does not have, since then it reaches nothing.",
+		fix: "Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child — and check the entity has not been renamed or moved out from under the attribute.",
+		check: identifiesEntity,
 	},
 	{
 		rule: "root-identity",

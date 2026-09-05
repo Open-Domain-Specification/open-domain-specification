@@ -53,7 +53,7 @@ export class ODSRelationGraph extends AbstractVisitor {
 	}
 
 	/**
-	 * The attributes in scope that hold another root's identity. They are the
+	 * The attributes in scope that hold another entity's identity. They are the
 	 * only dependency allowed to leave a bounded context, so the map would
 	 * otherwise show nothing where the model says the most (decision 14).
 	 */
@@ -157,8 +157,10 @@ export class ODSRelationMap {
 			});
 		}
 		// An identity attribute draws too: it is the dependency the model keeps
-		// when a relation may not be had, and the root it names is often in
+		// when a relation may not be had, and the entity it names is often in
 		// another context, so the map reaches out of the cluster to show it.
+		// A child entity draws as itself, inside its own aggregate's cluster:
+		// that is where the reader sees the root the child is reached through.
 		for (const attribute of identities) {
 			const { owner, identifies: target } = attribute;
 			const drawable = owner instanceof Entity || owner instanceof ValueObject;
@@ -224,7 +226,7 @@ export type ODSRelationMapEdge = {
 	target: ODSRelationMapNode;
 	/**
 	 * The relation drawn, or `identifies` for the identity an attribute holds
-	 * of another root: the one dependency that may cross a context boundary.
+	 * of another entity: the one dependency that may cross a context boundary.
 	 */
 	relation: EntityRelationType | "identifies";
 	label: string;

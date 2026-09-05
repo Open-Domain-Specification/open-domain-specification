@@ -23,7 +23,8 @@ const TONES: Record<ODSRelationMapNode["type"], GraphNode["tone"]> = {
 /**
  * Edge component per line the map draws; each renders its own UML connector.
  * `identifies` is one of them: the identity an attribute holds of another
- * root, which is the only line allowed to leave a bounded context.
+ * entity, which is the only line allowed to leave a bounded context. It lands
+ * on that entity, child or root, inside the entity's own aggregate group.
  */
 export const relationEdgeType = (relation: ODSRelationMapEdge["relation"]) =>
 	`relation-${relation}` as const;

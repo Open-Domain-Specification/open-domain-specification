@@ -5,6 +5,7 @@ import { ODSContextMap } from "./context-map";
 import { ODSFlowMap } from "./flow-map";
 import { makeRichTestWs } from "./makeTestWs";
 import { ODSRelationGraph, ODSRelationMap } from "./relation-map";
+import { Workspace } from "./workspace";
 
 describe("ODSConsumptionGraph", () => {
 	const f = makeRichTestWs();
@@ -177,7 +178,7 @@ describe("ODSRelationMap", () => {
 		expect(map.nodes.get(f.money.ref)?.type).toBe("valueobject");
 	});
 
-	it("draws an identity attribute as an edge to the root it identifies", () => {
+	it("draws an identity attribute as an edge to the entity it identifies", () => {
 		const map = ODSRelationMap.fromBoundedContext(f.invoicingBc);
 		const edge = Array.from(map.edges.values()).find(
 			(e) => e.relation === "identifies",
@@ -188,6 +189,46 @@ describe("ODSRelationMap", () => {
 		// The root it names is another context's, and the map reaches it anyway:
 		// that is the one dependency allowed to cross (decision 14).
 		expect(map.nodes.get(f.order.ref)?.type).toBe("entity_root");
+	});
+
+	it("draws an identity of a child entity onto the child, in its own cluster", () => {
+		const ws = new Workspace("Child identity", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "1.0.0",
+		});
+		const playback = ws.addBoundedContext("Playback", { description: "" });
+		const sessionAgg = playback.addAggregate("Session", { description: "" });
+		const session = sessionAgg.addRootEntity("Session", { description: "" });
+		session.addAttribute("id", { type: "string", identity: true });
+		const identity = ws.addBoundedContext("Identity", { description: "" });
+		const householdAgg = identity.addAggregate("Household", {
+			description: "",
+		});
+		const household = householdAgg.addRootEntity("Household", {
+			description: "",
+		});
+		household.addAttribute("id", { type: "string", identity: true });
+		const profile = householdAgg.addEntity("Profile", { description: "" });
+		profile.addAttribute("profileId", { type: "string", identity: true });
+		household.includes(profile, "has profiles", "1..*");
+		session.addAttribute("profileId", { type: "string", identifies: profile });
+
+		const map = ODSRelationMap.fromWorkspace(ws);
+		const edge = Array.from(map.edges.values()).find(
+			(e) => e.relation === "identifies",
+		);
+		expect(edge?.source.name).toBe("Session");
+		// The edge lands on the child itself, not on the root standing in for it.
+		expect(edge?.target.name).toBe("Profile");
+		const child = map.nodes.get(profile.ref);
+		expect(child?.type).toBe("entity");
+		// And the child sits in its own aggregate's cluster, beside the root it
+		// is reached through, which is what makes the dependency readable.
+		expect(child?.namespace[child.namespace.length - 1]?.id).toBe(
+			householdAgg.ref,
+		);
+		expect(map.nodes.get(household.ref)?.type).toBe("entity_root");
 	});
 
 	it("collects the identity attributes in scope and no others", () => {

@@ -865,10 +865,12 @@ const manifestVO = playbackBC.addValueObject("StreamManifest", {
 	description:
 		"The renditions and the edge to fetch from, in the format shared with Edge Delivery",
 });
-manifestVO.addAttribute("renditionIds", { type: "string[]" });
+manifestVO.addAttribute("renditionIds", {
+	type: "string[]",
+	identifies: rendition,
+});
 manifestVO.addAttribute("edgeUrl", { type: "string (URL)" });
 session.addAttribute("sessionId", { type: "string", identity: true });
-session.addAttribute("profileId", { type: "string" });
 // DISCOVERY: peer review. The household is what entitlement and the stream
 // limit are about, and a series is watched an episode at a time, so both
 // identities belong on the session.
@@ -883,6 +885,7 @@ session.addAttribute("episodeId", {
 	optional: true,
 	description:
 		"Absent for a film; for a series, the episode being played and bookmarked",
+	identifies: catalogueEpisode,
 });
 const sessionDevice = session.addAttribute("deviceId", {
 	type: "string",
@@ -1054,7 +1057,11 @@ appliance.addAttribute("region", {
 	type: "string",
 	description: "A cache region; not a licensing territory",
 });
-cachedAsset.addAttribute("renditionId", { type: "string", identity: true });
+cachedAsset.addAttribute("renditionId", {
+	type: "string",
+	identity: true,
+	identifies: rendition,
+});
 cachedAsset.addAttribute("bytes", { type: "int64" });
 cachedAsset.addAttribute("lastHitAt", { type: "date-time" });
 appliance.includes(cachedAsset, "caches", "*");
@@ -1260,7 +1267,6 @@ const affinityVO = recsBC.addValueObject("Affinity", {
 });
 affinityVO.addAttribute("genre", { type: "string" });
 affinityVO.addAttribute("score", { type: "float 0..1" });
-taste.addAttribute("profileId", { type: "string", identity: true });
 signal.addAttribute("signalId", { type: "string", identity: true });
 signal.addAttribute("titleId", { type: "string", identifies: title });
 signal.addAttribute("kind", {
@@ -1383,6 +1389,17 @@ household.addAttribute("householdId", { type: "string", identity: true });
 household.addAttribute("accountId", { type: "string" });
 household.addAttribute("country", { type: "ISO 3166 code" });
 profile.addAttribute("profileId", { type: "string", identity: true });
+// Every profile id in the model is declared here, because an attribute can
+// only name an entity that already exists and this is where Profile is. A
+// profile is a child of its household and stays one — entitlement and the
+// stream limit are stated about the household — so what these hold is the
+// child's id, reached through the Household root (decision 14, amended).
+session.addAttribute("profileId", { type: "string", identifies: profile });
+taste.addAttribute("profileId", {
+	type: "string",
+	identity: true,
+	identifies: profile,
+});
 profile.addAttribute("name", { type: "string" });
 profile.addAttribute("kids", { type: "boolean" });
 profile.addAttribute("primary", { type: "boolean" });

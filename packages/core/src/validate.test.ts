@@ -146,7 +146,7 @@ describe("Workspace.validate", () => {
 			.validate()
 			.filter((d) =>
 				[
-					"identifies-root",
+					"identifies-entity",
 					"cross-context-relation",
 					"schema-context",
 				].includes(d.rule),
@@ -154,7 +154,7 @@ describe("Workspace.validate", () => {
 		expect(diagnostics).toEqual([]);
 	});
 
-	it("flags an identity attribute that names something other than a root", () => {
+	it("lets an identity attribute name a child entity of another aggregate", () => {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("Sales", { description: "" });
 		const orderAgg = bc.addAggregate("Order", { description: "" });
@@ -168,25 +168,14 @@ describe("Workspace.validate", () => {
 			.addAggregate("Parcel", { description: "" })
 			.addRootEntity("Parcel", { description: "" });
 		parcel.addAttribute("id", { type: "int64", identity: true });
-		const lineId = parcel.addAttribute("lineId", {
-			type: "int64",
-			identifies: line,
-		});
+		parcel.addAttribute("lineId", { type: "int64", identifies: line });
 		const diagnostics = ws
 			.validate()
-			.filter((d) => d.rule === "identifies-root");
-		expect(diagnostics).toEqual([
-			{
-				severity: "error",
-				rule: "identifies-root",
-				message:
-					'"Parcel" holds attribute "lineId" as the identity of "Order Line", which is not the root of aggregate "Order"; an identity names the root the aggregate is reached by',
-				ref: lineId.ref,
-			},
-		]);
+			.filter((d) => d.rule === "identifies-entity");
+		expect(diagnostics).toEqual([]);
 	});
 
-	it("flags an identity a schema's attribute holds of a non-root too", () => {
+	it("lets a schema's attribute name a child entity too", () => {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("Sales", { description: "" });
 		const orderAgg = bc.addAggregate("Order", { description: "" });
@@ -199,10 +188,38 @@ describe("Workspace.validate", () => {
 		payload.addAttribute("lineId", { type: "int64", identifies: line });
 		const messages = ws
 			.validate()
-			.filter((d) => d.rule === "identifies-root")
+			.filter((d) => d.rule === "identifies-entity")
 			.map((d) => d.message);
-		expect(messages).toEqual([
-			'"Order Summary" holds attribute "lineId" as the identity of "Order Line", which is not the root of aggregate "Order"; an identity names the root the aggregate is reached by',
+		expect(messages).toEqual([]);
+	});
+
+	it("flags an identity naming an entity this workspace does not have", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Sales", { description: "" });
+		const order = bc
+			.addAggregate("Order", { description: "" })
+			.addRootEntity("Order", { description: "" });
+		order.addAttribute("id", { type: "int64", identity: true });
+		const elsewhere = emptyWorkspace();
+		const stranger = elsewhere
+			.addBoundedContext("Catalog", { description: "" })
+			.addAggregate("Pet", { description: "" })
+			.addRootEntity("Pet", { description: "" });
+		const petId = order.addAttribute("petId", {
+			type: "int64",
+			identifies: stranger,
+		});
+		const diagnostics = ws
+			.validate()
+			.filter((d) => d.rule === "identifies-entity");
+		expect(diagnostics).toEqual([
+			{
+				severity: "error",
+				rule: "identifies-entity",
+				message:
+					'"Order" holds attribute "petId" as the identity of "Pet", which is not an entity of this workspace; an identity names an entity here, root or child, and a child is reached through its root',
+				ref: petId.ref,
+			},
 		]);
 	});
 

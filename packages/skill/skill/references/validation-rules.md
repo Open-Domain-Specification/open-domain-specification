@@ -26,15 +26,15 @@
 
 **Why it matters:** Each context is its own model with its own language and lifecycle (decision 03), so a relation across the boundary makes one context's entity part of the other's object graph and the two can no longer be loaded, changed or stored apart. Decision 08's crossing table already says an entity relation's target may not cross a file, and splitting the contexts into their own files is exactly what turns this relation into a load error.
 
-**Usual fix:** Delete the relation and give the source an attribute holding the other root's identity — an Order in Sales carries petId rather than a relation to Catalog's Pet. The dependency between the two contexts then reads where it belongs, on the consumable map: the consumable the source consumes and the context relationship between the two.
+**Usual fix:** Delete the relation and give the source an attribute holding the other entity's identity — an Order in Sales carries petId rather than a relation to Catalog's Pet. That identity may name a child of the other model as readily as its root, since the child is reached through that root. The dependency between the two contexts then reads where it belongs, on the consumable map: the consumable the source consumes and the context relationship between the two.
 
-## `identifies-root` (error)
+## `identifies-entity` (error)
 
-**Requires:** An attribute's identifies names the root entity of an aggregate.
+**Requires:** An attribute's identifies names an entity of this workspace, root or child.
 
-**Why it matters:** An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about. Only a root can be that thing, because the root is what an aggregate is reached, loaded and saved by; an id of an entity inside someone else's boundary names a part whose whole controls its life, and nobody outside can ask for it on its own. This is also what makes an identity safe to cross a bounded context, which a relation may never do (decision 14): the dependency stops at the other model's front door.
+**Why it matters:** An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about, and it is the one dependency allowed to cross a bounded context (decision 14). That thing may be a child, because systems cross boundaries by child identity constantly — a playback session names a profile inside a household, a claim a coverage inside a policy — and the child stays inside its aggregate exactly because its parent's invariants need it there. You hold the child's id and reach it through its root, so the dependency is really on the aggregate that root leads. What the id may never name is something this workspace does not have, since then it reaches nothing.
 
-**Usual fix:** Point identifies at the root entity of the aggregate the thing belongs to, and hold that root's identity instead. If the part really is what matters to you, the model is saying it should be an aggregate of its own.
+**Usual fix:** Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child — and check the entity has not been renamed or moved out from under the attribute.
 
 ## `root-identity` (error)
 
