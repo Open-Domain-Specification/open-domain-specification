@@ -25,3 +25,7 @@ Every provider in the model is an aggregate or service inside a bounded context 
 ## Amendment (2026-09-08)
 
 An external context has no entities, so an identity attribute names the context itself when the id belongs to that system (decision 14, amended). A conformist downstream of an external upstream may borrow its schemas, which is how a regulator's message formats or a scheme's record layouts enter a model without pretending they are ours (card 81).
+
+## Note (2026-09-08, second)
+
+An internal schedule is not a special trigger: a scheduler calls an operation, `RunNightlyBatch`, and that operation raises the event, which is how the reference models write their batch jobs. Telemetry from a fleet of devices comes from an external context, because the devices are outside the software, and that is a true statement rather than a workaround; the ingestion service that receives it is the context's own application service. A reviewer calling either a synthetic proxy is asking the model to say that events appear from nowhere, which it will not.

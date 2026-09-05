@@ -31,3 +31,7 @@ board card 15.
 - No schema change.
 - Opaque, generated ids were rejected: they make hand-written and reviewed
   JSON unreadable, which matters more for a specification than rename safety.
+
+## Note (2026-09-08)
+
+A composite or natural key is a value object, and an entity's identity attribute may be typed by one: `id: LedgerAccountId` with `identity: true` and `valueobject` naming the value, whose own attributes are the key's parts. No rule refuses it; a review claimed otherwise and a probe against the built core validates it clean. `value-object-shape` only refuses `identity: true` on the value object's own attributes, because a value has no identity of its own.
