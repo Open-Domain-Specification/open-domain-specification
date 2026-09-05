@@ -13,7 +13,7 @@ A consumable of type `operation` carries one payload, `schema`, and `raises` may
 - `ConsumableSchema` gains `returns?: { $ref: string }`, valid only when `type` is `operation`; a rule rejects it on an event.
 - `returns` points at a `DataSchema` and the `schema-context` rule covers it exactly as it covers `schema`: the schema belongs to the provider's context.
 - `schema` keeps its meaning: the payload the caller sends. Absent `returns` means the operation returns nothing worth naming, which is honest for commands.
-- Synchronous error shapes are not modelled. Failures that matter to the domain are events, as today; transport errors are outside the model.
+- Synchronous error shapes are not modelled. Failures that matter to the domain are events, as today; transport errors are outside the model. *Superseded on 2026-09-07 by decision 25: an operation names the shapes it rejects with.*
 
 ## Consequences
 
