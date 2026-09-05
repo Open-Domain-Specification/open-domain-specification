@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [models, ddd, docs]
 priority: medium
 agent: bumblebee
