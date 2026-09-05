@@ -14,6 +14,7 @@ Card 69 left PetApp's open-host operations restating the `raises` of the aggrega
 - [ ] `raises-restated` (warning): a service operation lists under `raises` an event that an operation it calls through a consumption's `by` already raises; fix text says drop it, the chain carries it
 - [ ] The flow map, consumable page "Raises" and doc generator show the front's reachable events as reached, not declared, where a reader would otherwise miss them (the lead decides the wording with Jazz if a new mark is needed; otherwise a sentence under the list)
 - [ ] Petstore's two fronts drop the restated `raises`; `.ods/` and `docs/` regenerated
+- [ ] Petstore's `shipmentApp.consumes(confirmDelivery)` and `orderApp.consumes(markPetSoldForOrder)` name their `by`, so the reaction chain carries through both boundaries
 - [ ] `bash scripts/verify-all.sh` green
 
 ## Comments
