@@ -1546,7 +1546,7 @@ const checkout = cartBC
 	.on(paymentAuthorised, authorisePayment.rejected(paymentDeclinedSchema))
 	.issues(requestAuthorisation, placeOrderForCart, reopenCart);
 // DISCOVERY: Payments engineering lead, and the Authorisation glossary entry:
-// a hold "expires if not captured", thirty minutes after it is taken. Card 92
+// a hold "expires if not captured"; neither gives an interval. Card 92
 // wrote that as an `ExpireAuthorisations` operation on Payments that a
 // scheduler ran and an `AuthorisationExpired` event only the checkout heard,
 // which is five declarations and a fact about the world — that something
@@ -1559,7 +1559,7 @@ checkout.ends(
 	checkout.addDeadline("Authorisation expiry", {
 		description:
 			"The hold Payments took is released and the checkout is over; the cart stays open for the customer to come back to",
-		after: "30 minutes",
+		after: "when the hold expires; the interviews give no interval",
 	}),
 );
 // Everything the checkout reaches for, declared together now that both the

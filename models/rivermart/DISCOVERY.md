@@ -566,8 +566,8 @@ The deliberate diagnostics of section 7 are untouched.
 
 Two of card 92's answers were right and one of its mechanisms was not. What finishes a
 checkout nobody comes back to is still the hold running out — the Payments lead and the
-Authorisation glossary entry both say a hold "expires if not captured", thirty minutes after
-it is taken — but the model wrote that as an `ExpireAuthorisations` operation on Payments
+Authorisation glossary entry both say a hold "expires if not captured", and neither gives an
+interval, so the deadline says that and no more — but the model wrote that as an `ExpireAuthorisations` operation on Payments
 that "a scheduler runs every few minutes" and an `AuthorisationExpired` event that only the
 checkout ever heard. That is five declarations, and one of them is a claim about the world:
 that something outside the software sweeps holds on a timer. Nobody said so.

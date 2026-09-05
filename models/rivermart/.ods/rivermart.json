@@ -1610,7 +1610,7 @@
             "authorisation_expiry": {
               "name": "Authorisation expiry",
               "description": "The hold Payments took is released and the checkout is over; the cart stays open for the customer to come back to",
-              "after": "30 minutes"
+              "after": "when the hold expires; the interviews give no interval"
             }
           },
           "starts": [
