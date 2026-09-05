@@ -156,6 +156,33 @@ describe("relationMapToDigraph", () => {
 		);
 	});
 
+	it("draws an identity of an external system as a box in the external stereotype", () => {
+		const map = buildMap();
+		const order = map.nodes.get(
+			"#/boundedcontexts/ordering/aggregates/order/entities/order",
+		);
+		const scheme = map.addNode({
+			id: "#/boundedcontexts/cardco",
+			name: "CardCo",
+			type: "external_context",
+			namespace: [
+				{ id: "ws", name: "Shop" },
+				{ id: "#/boundedcontexts/cardco", name: "CardCo" },
+			],
+			attributes: [],
+		});
+		if (!order) throw new Error("fixture missing the order node");
+		map.addEdge({
+			source: order,
+			target: scheme,
+			label: "schemeRef",
+			relation: "identifies",
+		});
+		const drawn = relationMapToDigraph(map);
+		expect(drawn.toDot()).toContain("«external system»<BR/><B>CardCo</B>");
+		expect(drawn.toDot()).toContain('label = "«identifies» schemeRef"');
+	});
+
 	it("draws a kind as a generalisation: a solid line with a hollow triangle at the parent", () => {
 		const map = buildMap();
 		const parent = map.nodes.get(

@@ -1940,8 +1940,12 @@ export type AttributeOptions = {
 	valueobject?: ValueObject;
 	/** The schema that models this attribute's type, when it is a shape of its own. */
 	schema?: DataSchema;
-	/** The root entity this attribute holds the identity of, in any context. */
-	identifies?: Entity;
+	/**
+	 * What this attribute holds the identity of: an entity in any context, or
+	 * an external context itself when the id belongs to a system whose
+	 * entities are not ours to state (decisions 14 and 28).
+	 */
+	identifies?: Entity | BoundedContext;
 	id?: string;
 };
 
@@ -1964,8 +1968,12 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 	valueobject?: ValueObject;
 	/** The schema that models this attribute's type, when it is a shape of its own. */
 	schema?: DataSchema;
-	/** The root entity this attribute holds the identity of, in any context. */
-	identifies?: Entity;
+	/**
+	 * What this attribute holds the identity of: an entity in any context, or
+	 * an external context itself when the id belongs to a system whose
+	 * entities are not ours to state (decisions 14 and 28).
+	 */
+	identifies?: Entity | BoundedContext;
 	owner: AttributeOwner;
 
 	get path(): string {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeRichTestWs } from "./makeTestWs";
-import { Workspace } from "./workspace";
+import { Entity, Workspace } from "./workspace";
 
 describe("schema round-trip", () => {
 	const { ws } = makeRichTestWs();
@@ -77,10 +77,11 @@ describe("schema round-trip", () => {
 			"#/boundedcontexts/invoicing_bc/aggregates/invoice/entities/invoice",
 		);
 		const orderId = invoice.attributes.get("order_id");
-		expect(orderId?.identifies?.ref).toBe(
+		const identified = orderId?.identifies;
+		expect(identified?.ref).toBe(
 			"#/boundedcontexts/ordering_bc/aggregates/order/entities/order",
 		);
-		expect(orderId?.identifies?.root).toBe(true);
+		expect(identified instanceof Entity && identified.root).toBe(true);
 	});
 
 	it("re-links operations to the events they raise and keeps internal flags", () => {

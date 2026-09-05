@@ -232,6 +232,9 @@ function everythingWrong(): Workspace {
 	// shared-kernel-backed: a kernel declared with nothing in it
 	const d = ws.addBoundedContext("D", { description: "" });
 	d.sharesKernelWith(b);
+	// conformist-backed: D says it conforms to C and then names nothing of C's
+	// and calls nothing C offers
+	d.downstreamOf(c, { downstreamRoles: ["conformist"] });
 	// relationship-duplicate: the same kernel again, participants the other way
 	// round. A symmetric type has no direction, so this is the second copy.
 	b.sharesKernelWith(d);

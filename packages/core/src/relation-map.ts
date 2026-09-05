@@ -1,6 +1,7 @@
 import objectHash from "object-hash";
 import {
 	aggregateNamespace,
+	boundedContextNamespace,
 	contextMemberNamespace,
 	type ODSNamespace,
 } from "./namespace";
@@ -9,7 +10,7 @@ import { AbstractVisitor } from "./visitor";
 import {
 	type Aggregate,
 	type Attribute,
-	type BoundedContext,
+	BoundedContext,
 	type Domain,
 	Entity,
 	type EntityRelation,
@@ -18,30 +19,52 @@ import {
 	type Workspace,
 } from "./workspace";
 
-function relationNodeType(
-	node: Entity | ValueObject,
-): ODSRelationMapNode["type"] {
+/** Anything the map can draw a box for. */
+type RelationMapMember = Entity | ValueObject | BoundedContext;
+
+function relationNodeType(node: RelationMapMember): ODSRelationMapNode["type"] {
+	if (node instanceof BoundedContext) return "external_context";
 	if (!(node instanceof Entity)) return "valueobject";
 	return node.root ? "entity_root" : "entity";
 }
 
-function relationNode(node: Entity | ValueObject): ODSRelationMapNode {
+/**
+ * The cluster a box hangs in. An external context is nobody's aggregate, so it
+ * stands in a cluster of its own named after itself: that is where a reader
+ * expects a system the enterprise does not own, outside every aggregate on the
+ * map (decision 28).
+ */
+function relationNamespace(node: RelationMapMember): ODSNamespace[] {
+	if (node instanceof BoundedContext)
+		return [
+			...boundedContextNamespace(node),
+			{ id: node.ref, name: node.name },
+		];
+	return node instanceof Entity
+		? aggregateNamespace(node.aggregate)
+		: contextMemberNamespace(node);
+}
+
+function relationNode(node: RelationMapMember): ODSRelationMapNode {
 	return {
 		id: node.ref,
 		name: node.name,
 		description: node.description,
 		type: relationNodeType(node),
-		namespace:
-			node instanceof Entity
-				? aggregateNamespace(node.aggregate)
-				: contextMemberNamespace(node),
-		attributes: [...node.attributes.values()].map((it) => ({
-			name: it.name,
-			type: it.type,
-			identity: it.identity,
-			optional: it.optional,
-			description: it.description,
-		})),
+		namespace: relationNamespace(node),
+		// An external context has no attributes of ours to list: what is inside
+		// it is not ours to state, so the box carries the name and the
+		// stereotype and nothing else.
+		attributes:
+			node instanceof BoundedContext
+				? []
+				: [...node.attributes.values()].map((it) => ({
+						name: it.name,
+						type: it.type,
+						identity: it.identity,
+						optional: it.optional,
+						description: it.description,
+					})),
 	};
 }
 
@@ -187,6 +210,9 @@ export class ODSRelationMap {
 			const { owner, identifies: target } = attribute;
 			const drawable = owner instanceof Entity || owner instanceof ValueObject;
 			if (!target || !drawable) continue;
+			// An id of a system nobody here models lands on that system's own box:
+			// there is no entity to point at, and the dependency is the point
+			// (decision 28).
 			this.addEdge({
 				source: this.addNode(relationNode(owner)),
 				target: this.addNode(relationNode(target)),
@@ -257,7 +283,7 @@ export type ODSRelationMapNode = {
 	name: string;
 	description?: string;
 	namespace: ODSRelationMapNamespace[];
-	type: "entity_root" | "entity" | "valueobject";
+	type: "entity_root" | "entity" | "valueobject" | "external_context";
 	/** Attributes drawn in the node's compartment; empty when none are declared. */
 	attributes: ODSRelationMapAttribute[];
 };
@@ -267,7 +293,8 @@ export type ODSRelationMapEdge = {
 	target: ODSRelationMapNode;
 	/**
 	 * The relation drawn; `identifies` for the identity an attribute holds of
-	 * another entity, the one dependency that may cross a context boundary;
+	 * another entity or of an external system, the one dependency that may
+	 * cross a context boundary;
 	 * or `specialises` for a kind pointing at what it is a kind of.
 	 */
 	relation: EntityRelationType | "identifies" | "specialises";

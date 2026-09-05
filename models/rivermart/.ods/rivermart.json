@@ -2523,7 +2523,10 @@
                 "provider_ref": {
                   "name": "providerRef",
                   "type": "string",
-                  "identity": true
+                  "identity": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/payment_provider"
+                  }
                 },
                 "expires_at": {
                   "name": "expiresAt",

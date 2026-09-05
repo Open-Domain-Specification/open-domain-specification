@@ -30,11 +30,11 @@
 
 ## `identifies-entity` (error)
 
-**Requires:** An attribute's identifies names an entity of this workspace, root or child.
+**Requires:** An attribute's identifies names an entity of this workspace, root or child, or a bounded context marked external.
 
-**Why it matters:** An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about, and it is the one dependency allowed to cross a bounded context (decision 14). That thing may be a child, because systems cross boundaries by child identity constantly — a playback session names a profile inside a household, a claim a coverage inside a policy — and the child stays inside its aggregate exactly because its parent's invariants need it there. You hold the child's id and reach it through its root, so the dependency is really on the aggregate that root leads. What the id may never name is something this workspace does not have, since then it reaches nothing.
+**Why it matters:** An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about, and it is the one dependency allowed to cross a bounded context (decision 14). That thing may be a child, because systems cross boundaries by child identity constantly — a playback session names a profile inside a household, a claim a coverage inside a policy — and the child stays inside its aggregate exactly because its parent's invariants need it there. You hold the child's id and reach it through its root, so the dependency is really on the aggregate that root leads. It may also be an external context: a card scheme's authorisation id or a payment provider's customer id belongs to a system whose entities are not ours to state (decision 28), so the attribute names the system and the maps still draw the dependency. A context that is not external is refused, because there the entity exists and naming the whole context would say less. What the id may never name is something this workspace does not have, since then it reaches nothing.
 
-**Usual fix:** Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child — and check the entity has not been renamed or moved out from under the attribute.
+**Usual fix:** Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child — or, for an id that belongs to a system you do not model inside, at that system's bounded context, marked external: true. Check the target has not been renamed or moved out from under the attribute.
 
 ## `root-identity` (error)
 
@@ -70,11 +70,11 @@
 
 ## `specialisation-in-boundary` (error)
 
-**Requires:** An entity is a kind of an entity of its own aggregate; a value object is a kind of one its own context declares or borrows through a shared kernel.
+**Requires:** An entity is a kind of an entity of its own aggregate; a value object is a kind of one its own context declares, or one it borrows through a shared kernel or as a conformist of the context that owns it.
 
-**Why it matters:** A kind is the same thing said more precisely, so it lives where the thing lives. An entity and the entity it is a kind of are loaded, saved and kept consistent through one root, and a parent in another aggregate would make one boundary's rules depend on another's. A value object is part of a context's ubiquitous language, and the one place that language is legitimately shared is a shared kernel, which is the declaration that two contexts keep part of one model between them.
+**Why it matters:** A kind is the same thing said more precisely, so it lives where the thing lives. An entity and the entity it is a kind of are loaded, saved and kept consistent through one root, and a parent in another aggregate would make one boundary's rules depend on another's. A value object is part of a context's ubiquitous language, and that language is legitimately shared in two places: a shared kernel, the declaration that two contexts keep part of one model between them, and a conformist's relationship with its upstream, where the downstream has said it takes that model as it stands.
 
-**Usual fix:** Move the parent into the same aggregate as the kind, or the kind into the parent's; for a value object, declare the parent in this context, or declare the shared kernel with the context that owns it if the two really do keep it in step.
+**Usual fix:** Move the parent into the same aggregate as the kind, or the kind into the parent's; for a value object, declare the parent in this context, declare the shared kernel with the context that owns it if the two really do keep it in step, or declare this context a conformist of that one if it takes that model as it stands.
 
 ## `specialisation-cycle` (error)
 
@@ -192,9 +192,17 @@
 
 **Requires:** Two contexts declaring a shared kernel share at least one value object or schema across it.
 
-**Why it matters:** A shared kernel is a piece of model two teams agree to keep in step, and it costs them the freedom to change it alone. Declaring one with nothing in it pays that price for nothing, and it stands in the model as the warrant for a sharing nobody has made: it is the one relationship over which a value object or a payload schema may be borrowed.
+**Why it matters:** A shared kernel is a piece of model two teams agree to keep in step, and it costs them the freedom to change it alone. Declaring one with nothing in it pays that price for nothing, and it stands in the model as the warrant for a sharing nobody has made: it is one of the two declarations over which a value object or a payload schema may be borrowed, and the only symmetric one — a conformist borrows downstream from its upstream and nothing comes back.
 
 **Usual fix:** Type an attribute by a value object the other context declares, nest one of its schemas in an attribute, or carry one on a consumable; or replace the shared kernel with the relationship the two contexts really have.
+
+## `conformist-backed` (warning)
+
+**Requires:** A downstream that declares the conformist role takes something of its upstream's: a schema or value object named here, something it publishes consumed here, or one of its operations called.
+
+**Why it matters:** Conformist is the strongest thing a downstream can say about itself: it gives up its own language for the upstream's and accepts every change the upstream makes. It is also what lets this context name the upstream's schemas and value objects at all, so a reader takes it as the warrant for a borrowing. Declared between two contexts that exchange nothing at all, it is a claim on the map with nothing under it, exactly as an empty shared kernel or an unbacked partnership is. What the rule does not ask is that the conforming show in the shapes: whether a downstream subscribing to a published event translates it or takes it as it comes is not something the model records, so asking for a borrowed schema would report every event-driven conformist there is.
+
+**Usual fix:** Consume what the upstream publishes, call one of its operations, or name one of its schemas or value objects here; or drop the conformist role if the two contexts really exchange nothing.
 
 ## `mud-needs-acl` (warning)
 
@@ -302,11 +310,11 @@
 
 ## `schema-context` (error)
 
-**Requires:** A schema named by a consumable's payload, by its returns, by one of its rejections or by a nested attribute belongs to the naming element's own context, or to one it shares a kernel with.
+**Requires:** A schema named by a consumable's payload, by its returns, by one of its rejections or by a nested attribute belongs to the naming element's own context, to one it shares a kernel with, or to an upstream it has declared itself a conformist of.
 
-**Why it matters:** The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A nested schema is the same borrowing one level down. A shared kernel is where two teams have said that in the model and accepted the price, so it is the one place the borrowing is allowed.
+**Why it matters:** The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A nested schema is the same borrowing one level down. Two declarations say the tie is intended. A shared kernel is where two teams have said they keep part of one model between them and accepted the price. A conformist is a downstream that has said it takes the upstream's model as it stands rather than translating it, which is exactly what carrying the upstream's shapes is — it is how a regulator's formats or a scheme's record layouts enter a model honestly. That borrowing runs downstream only; the upstream is never shaped by its conformists.
 
-**Usual fix:** Move or copy the schema into the publishing context and point the consumable or attribute at that one, or declare the shared kernel if the two contexts really do keep that shape between them.
+**Usual fix:** Move or copy the schema into the publishing context and point the consumable or attribute at that one; or declare the shared kernel if the two contexts really do keep that shape between them; or, if this context genuinely takes the other's model as it stands, declare the directed relationship with conformist among its downstreamRoles.
 
 ## `returns-on-operation` (error)
 
@@ -360,7 +368,7 @@
 
 **Requires:** The reactions form no cycle: no operation raises an event whose policy or process issues an operation that leads back to the first.
 
-**Why it matters:** A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with one difference that is the whole point of it: what ends an instance completes it rather than waking it again, so a process that ends on an event its own operations raise is the normal shape and no ring at all.
+**Why it matters:** A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with one exemption that is the whole point of it: a process fed by its own steps — it issues an operation, the operation raises the event it waits for next, and so on to the end — is a lifecycle, not a ring, because the process holds state and declares what ends it (decision 23). So a cycle is reported only when the walk comes back to a reactor other than the one process it started from: a ring through two processes, or through a process and a policy, is a genuine loop and is reported.
 
 **Usual fix:** Break the ring, usually one of the policies is reacting to too broad an event or issues an operation it should not. If the loop is a real feedback loop that converges, say what ends it in the description of the policy that closes the ring; the model has no conditions on purpose (decision 15), so the ending condition is prose a reader finds where the loop closes, and the warning stands to send them there.
 

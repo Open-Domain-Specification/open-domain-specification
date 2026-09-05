@@ -762,6 +762,13 @@
                   "type": "string",
                   "identity": true
                 },
+                "vendor_match_ref": {
+                  "name": "vendorMatchRef",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/screening_vendor"
+                  }
+                },
                 "party_name": {
                   "name": "partyName",
                   "type": "string"
@@ -802,7 +809,7 @@
               "pattern": "open-host-service",
               "type": "operation",
               "schema": {
-                "$ref": "#/boundedcontexts/sanctions_screening/schemas/screen_party"
+                "$ref": "#/boundedcontexts/screening_vendor/schemas/list_match_query"
               },
               "raises": [
                 {
@@ -843,23 +850,6 @@
         }
       },
       "schemas": {
-        "screen_party": {
-          "name": "ScreenParty",
-          "attributes": {
-            "name": {
-              "name": "name",
-              "type": "string"
-            },
-            "date_of_birth": {
-              "name": "dateOfBirth",
-              "type": "date"
-            },
-            "country": {
-              "name": "country",
-              "type": "ISO 3166 code"
-            }
-          }
-        },
         "party_matched": {
           "name": "PartyMatched",
           "attributes": {
@@ -2638,6 +2628,13 @@
                   "name": "authorisationId",
                   "type": "string",
                   "identity": true
+                },
+                "card_co_ref": {
+                  "name": "cardCoRef",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/card_co"
+                  }
                 },
                 "merchant": {
                   "name": "merchant",
