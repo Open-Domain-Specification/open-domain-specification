@@ -3,8 +3,8 @@ import { Panel } from "@xyflow/svelte";
 import type { Graph } from "./graph";
 import type { DiagramKind } from "./kind";
 import { legendEntries } from "./legend";
-import type { LegendState } from "./legend-state.svelte";
 import { LEGEND_PANEL_CLASS } from "./panel-fit";
+import type { PanelState } from "./panel-state.svelte";
 
 /**
  * Top-left index of the terms the diagram shows: abbreviations with their
@@ -14,14 +14,15 @@ import { LEGEND_PANEL_CLASS } from "./panel-fit";
  * does: a chevron and a label in one row, the row is the button, `aria-
  * expanded` says which way it is and `aria-controls` names the list it opens.
  * Collapsed it is that row and nothing else, so the fit reserves a corner
- * rather than a column. `legend-state.svelte.ts` holds which way it is.
+ * rather than a column. It is the first thing to give way when the fit runs
+ * out of room (`panel-fit.ts`); `panel-state.svelte.ts` holds which way it is.
  * Nothing renders for a graph with no terms.
  */
 let {
 	graph,
 	kind,
 	legend,
-}: { graph: Graph; kind: DiagramKind; legend: LegendState } = $props();
+}: { graph: Graph; kind: DiagramKind; legend: PanelState } = $props();
 const entries = $derived(legendEntries(graph, kind));
 const collapsed = $derived(legend.collapsed);
 const uid = $props.id();

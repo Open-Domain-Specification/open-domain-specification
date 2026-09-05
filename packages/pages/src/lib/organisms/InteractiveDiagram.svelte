@@ -12,17 +12,17 @@ import { onDestroy } from "svelte";
 import { fitClusters } from "../flow/cluster-fit";
 import DiagramOptionsPanel from "../flow/DiagramOptionsPanel.svelte";
 import { createDisclosure, withDisclosure } from "../flow/disclosure.svelte";
+import { createDiagramFit } from "../flow/fit.svelte";
 import { flowEdges, flowNodes, groupLabels } from "../flow/flow-nodes";
 import { createFullscreen } from "../flow/fullscreen.svelte";
 import type { Graph } from "../flow/graph";
 import { diagramKind, sketchApplies } from "../flow/kind";
 import LegendPanel from "../flow/LegendPanel.svelte";
 import { layout } from "../flow/layout";
-import { createLegendState } from "../flow/legend-state.svelte";
 import { minimapNodeClass } from "../flow/minimap";
 import { diagramOptions } from "../flow/options.svelte";
 import PanelFit from "../flow/PanelFit.svelte";
-import { MIN_ZOOM } from "../flow/panel-fit";
+
 import { edgeTypes, nodeTypes } from "../flow/registry";
 import SketchBackdrop from "../flow/SketchBackdrop.svelte";
 import { hostColorMode } from "../flow/theme.svelte";
@@ -58,8 +58,11 @@ $effect(() => {
 	edges = withDisclosure(flowEdges(positioned), positioned, disclosure);
 });
 const fullscreen = createFullscreen();
-/** Shared by the legend and the fit: the fit can close it, the reader can open it. */
-const legend = createLegendState();
+/**
+ * The panels, the air and the zoom floor this diagram fits with. The fit can
+ * close a panel to keep the map readable; the reader can open it again.
+ */
+const fit = createDiagramFit();
 /** Measured by the panel-aware fit, so it needs the box the panels float over. */
 let container = $state<HTMLElement>();
 onDestroy(fullscreen.stop);
@@ -70,15 +73,16 @@ const refit = () => {
 };
 </script>
 
-<div class="interactive" class:fullscreen={fullscreen.active} bind:this={container}>
-	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={MIN_ZOOM} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} onnodeclick={({ node }) => { if (node.id.startsWith("#")) { fullscreen.exit(); location.hash = node.id; } }} onnodedrag={refit} onnodedragstop={refit}>
+<!-- `data-fit` names the step of relief the fit had to take; the e2e reads it. -->
+<div class="interactive" class:fullscreen={fullscreen.active} data-fit={fit.step} bind:this={container}>
+	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={fit.minZoom} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} onnodeclick={({ node }) => { if (node.id.startsWith("#")) { fullscreen.exit(); location.hash = node.id; } }} onnodedrag={refit} onnodedragstop={refit}>
 		<Background />
 		{#if sketch}<SketchBackdrop {nodes} groupLabels={labels} />{/if}
 		<Controls showLock={false} />
 		<MiniMap pannable zoomable width={120} height={80} nodeClass={minimapNodeClass} />
-		<DiagramOptionsPanel {kind} {fullscreen} {container} />
-		<LegendPanel {graph} {kind} {legend} />
-		<PanelFit {container} {legend} />
+		<DiagramOptionsPanel {kind} {fullscreen} {container} panel={fit.options} />
+		<LegendPanel {graph} {kind} legend={fit.legend} />
+		<PanelFit {container} {fit} />
 		<DisclosureCard {disclosure} />
 	</SvelteFlow>
 </div>

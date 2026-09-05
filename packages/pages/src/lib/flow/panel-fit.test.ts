@@ -1,15 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 import {
 	basePadding,
+	crowded,
+	FLOOR_ZOOM,
 	fitPastPanels,
 	fittedZoom,
-	legendCrowded,
-	legendGivesWay,
 	MIN_ZOOM,
+	NO_AIR,
+	needsRelief,
 	PANEL_GUTTER,
 	type PanelPadding,
 	panelPadding,
 	READABLE_ZOOM,
+	RELIEF_STEPS,
 	type Rect,
 	type Size,
 } from "./panel-fit";
@@ -97,14 +100,24 @@ describe("panelPadding", () => {
 		expect(panelPadding(narrow, [huge]).left).toBe("120px");
 	});
 
-	it("reads a zero box as no claim at all", () => {
+	it("reads a zero box as no claim at all, keeping only the gutter", () => {
 		const none: Rect = { left: 0, right: 0, top: 0, bottom: 0 };
+		const gutter = `${PANEL_GUTTER}px`;
 		expect(panelPadding(none, [none])).toEqual({
-			top: "0px",
-			bottom: "0px",
-			left: "0px",
-			right: "0px",
+			top: gutter,
+			bottom: gutter,
+			left: gutter,
+			right: gutter,
 		});
+	});
+
+	it("drops to the gutter on a side no panel claims once the air gives way", () => {
+		const padding = panelPadding(VIEW, [tall(15, 215)], NO_AIR);
+		expect(padding.top).toBe(`${PANEL_GUTTER}px`);
+		expect(padding.bottom).toBe(`${PANEL_GUTTER}px`);
+		expect(padding.right).toBe(`${PANEL_GUTTER}px`);
+		// The panel's own strip is not air and is reserved as it was.
+		expect(padding.left).toBe(`${215 + PANEL_GUTTER}px`);
 	});
 });
 
@@ -174,36 +187,58 @@ describe("fittedZoom", () => {
 	});
 });
 
-describe("legendGivesWay", () => {
-	/** A wide map: fifteen contexts across, as NorthBank's is. */
-	const wide = { width: 4000, height: 900 };
+describe("needsRelief", () => {
+	/** A dense map: fifteen contexts across, as NorthBank's is. */
+	const map = { width: 3000, height: 1300 };
+	/** The boxes the fit measures, before and after each panel gives way. */
+	const expandedLegend = tall(15, 215);
+	const collapsedLegend: Rect = { left: 15, right: 80, top: 10, bottom: 35 };
+	const expandedOptions = rect(300, 780);
+	const collapsedOptions: Rect = { left: 680, right: 780, top: 10, bottom: 40 };
 
-	it("holds the legend while the map still fits above the floor", () => {
+	it("holds everything while the map fits above the readable floor", () => {
 		const roomy: Rect = { left: 0, right: 2400, top: 0, bottom: 1200 };
-		expect(legendGivesWay(roomy, [tall(15, 215)], wide)).toBe(false);
+		expect(needsRelief(roomy, [expandedLegend, expandedOptions], map)).toBe(
+			false,
+		);
 	});
 
-	it("gives way once the reserved column would fit the map below the floor", () => {
-		// A webview split thin: the legend's column takes what the map needed.
-		expect(legendGivesWay(VIEW, [tall(15, 215)], wide)).toBe(true);
-		// A map that fits in what is left leaves the legend alone.
+	it("asks for one more step at each stage, about the boxes as they are then", () => {
+		// 1. Both panels open: the map cannot clear the readable floor.
+		expect(needsRelief(VIEW, [expandedLegend, expandedOptions], map)).toBe(
+			true,
+		);
+		// 2. The legend is a row now; the options panel's band is still too much.
+		expect(needsRelief(VIEW, [collapsedLegend, expandedOptions], map)).toBe(
+			true,
+		);
+		// 3. Both are rows; what is left to give is the air.
+		expect(needsRelief(VIEW, [collapsedLegend, collapsedOptions], map)).toBe(
+			true,
+		);
+		// 4. With the air down to the gutter the map clears the floor: it stops.
 		expect(
-			legendGivesWay(VIEW, [tall(15, 215)], { width: 1000, height: 500 }),
+			needsRelief(VIEW, [collapsedLegend, collapsedOptions], map, NO_AIR),
 		).toBe(false);
 	});
 
-	it("takes the floor it is given", () => {
-		const bounds = { width: 1600, height: 400 };
-		expect(legendGivesWay(VIEW, [], bounds, 0.1)).toBe(false);
-		expect(legendGivesWay(VIEW, [], bounds, 0.9)).toBe(true);
+	it("gives the floor away last, and only for a map that still will not clear it", () => {
+		const huge = { width: 4000, height: 1800 };
+		const rows = [collapsedLegend, collapsedOptions];
+		// Everything given, and the map is still under the floor a map should keep.
+		expect(needsRelief(VIEW, rows, huge, NO_AIR, MIN_ZOOM)).toBe(true);
+		// The map of the step before was under the readable floor but over this one.
+		expect(needsRelief(VIEW, rows, map, NO_AIR, MIN_ZOOM)).toBe(false);
 	});
 
-	it("keeps the readable floor above the zoom floor", () => {
+	it("keeps the three floors in their order", () => {
 		expect(READABLE_ZOOM).toBeGreaterThan(MIN_ZOOM);
+		expect(MIN_ZOOM).toBeGreaterThan(FLOOR_ZOOM);
+		expect(RELIEF_STEPS).toEqual(["legend", "options", "air", "floor"]);
 	});
 });
 
-describe("legendCrowded", () => {
+describe("crowded", () => {
 	const flow = (bounds: Size) => ({
 		getNodes: () => [{ id: "a" }],
 		getNodesBounds: () => bounds,
@@ -211,17 +246,17 @@ describe("legendCrowded", () => {
 
 	it("measures the diagram and asks the same question of it", () => {
 		const canvas = () => container(VIEW, [tall(15, 215)]);
-		expect(legendCrowded(flow({ width: 4000, height: 900 }), canvas())).toBe(
-			true,
-		);
-		expect(legendCrowded(flow({ width: 400, height: 200 }), canvas())).toBe(
+		expect(crowded(flow({ width: 4000, height: 900 }), canvas())).toBe(true);
+		expect(crowded(flow({ width: 400, height: 200 }), canvas())).toBe(false);
+		// The air and the floor are the caller's to name, step by step: this map
+		// is under the readable floor with the default air and over it without.
+		expect(crowded(flow({ width: 2400, height: 900 }), canvas())).toBe(true);
+		expect(crowded(flow({ width: 2400, height: 900 }), canvas(), NO_AIR)).toBe(
 			false,
 		);
 	});
 
 	it("has nothing to give way for without a container", () => {
-		expect(legendCrowded(flow({ width: 4000, height: 900 }), undefined)).toBe(
-			false,
-		);
+		expect(crowded(flow({ width: 4000, height: 900 }), undefined)).toBe(false);
 	});
 });

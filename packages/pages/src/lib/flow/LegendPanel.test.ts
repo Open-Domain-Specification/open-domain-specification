@@ -5,7 +5,7 @@ import { petstoreModel } from "../fixtures";
 import { installXyflowTestEnv } from "../xyflow-test-env";
 import { contextGraph } from "./graph";
 import Harness from "./LegendPanel.harness.svelte";
-import { resetLegendChoice } from "./legend-state.svelte";
+import { resetPanelChoices } from "./panel-state.svelte";
 
 installXyflowTestEnv();
 
@@ -14,7 +14,7 @@ const graph = contextGraph(ODSContextMap.fromWorkspace(workspace));
 
 beforeEach(() => {
 	sessionStorage.clear();
-	resetLegendChoice();
+	resetPanelChoices();
 });
 
 describe("LegendPanel", () => {
