@@ -2557,3 +2557,165 @@ describe("relationship-duplicate", () => {
 		expect(duplicates(ws)).toHaveLength(2);
 	});
 });
+
+describe("external-is-boundary", () => {
+	/** A context we do not own, and a context of ours that talks to it. */
+	function scheme() {
+		const ws = emptyWorkspace();
+		const external = ws.addBoundedContext("Card Scheme", {
+			description: "",
+			external: true,
+		});
+		const ours = ws.addBoundedContext("Payments", { description: "" });
+		return { ws, external, ours };
+	}
+
+	const boundary = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "external-is-boundary")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("refuses an aggregate on a system we do not own", () => {
+		const { ws, external } = scheme();
+		const ledger = external.addAggregate("Scheme Ledger", { description: "" });
+		expect(boundary(ws)).toEqual([
+			[
+				"error",
+				'External context "Card Scheme" declares aggregate "Scheme Ledger"; what happens inside a system we do not own is not ours to state, only what it provides and what it consumes',
+				ledger.ref,
+			],
+		]);
+	});
+
+	it("refuses a policy and an invariant on it too", () => {
+		const { ws, external } = scheme();
+		const app = external.addService("Scheme API", {
+			description: "",
+			type: "application",
+		});
+		const settled = app.provides("Settled", { description: "", type: "event" });
+		const act = app.provides("Retry", { description: "", type: "operation" });
+		const policy = external
+			.addPolicy("Retry On Settlement", { description: "" })
+			.on(settled)
+			.then(act);
+		const invariant = external.addInvariant("One Settlement A Day", {
+			description: "",
+		});
+		expect(boundary(ws).map((d) => d[2])).toEqual([policy.ref, invariant.ref]);
+	});
+
+	it("leaves what the system provides and consumes alone", () => {
+		const { ws, external, ours } = scheme();
+		const api = external.addService("Scheme API", {
+			description: "",
+			type: "application",
+		});
+		const authorised = api.provides("Authorisation Returned", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+		});
+		const ourApp = ours.addService("Payments App", {
+			description: "",
+			type: "application",
+		});
+		ourApp.consumes(authorised, { pattern: "anti-corruption-layer" });
+		external.upstreamOf(ours, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		expect(boundary(ws)).toEqual([]);
+	});
+
+	it("asks an external context for no subdomain", () => {
+		const { ws, external } = scheme();
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "context-serves-subdomain")
+				.map((d) => d.ref),
+		).not.toContain(external.ref);
+	});
+});
+
+describe("event-unraised", () => {
+	function context(external = false) {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Sales", { description: "", external });
+		const app = bc.addService("Sales App", {
+			description: "",
+			type: "application",
+		});
+		return { ws, bc, app };
+	}
+
+	const unraised = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "event-unraised")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("warns about an event nothing in the context raises", () => {
+		const { ws, app } = context();
+		const event = app.provides("Order Placed", {
+			description: "",
+			type: "event",
+		});
+		expect(unraised(ws)).toEqual([
+			[
+				"warning",
+				'No operation of "Sales" raises "Order Placed", so the model never says what makes it happen',
+				event.ref,
+			],
+		]);
+	});
+
+	it("goes quiet once an operation of the context raises it", () => {
+		const { ws, app } = context();
+		const event = app.provides("Order Placed", {
+			description: "",
+			type: "event",
+		});
+		app
+			.provides("Place Order", { description: "", type: "operation" })
+			.raises(event);
+		expect(unraised(ws)).toEqual([]);
+	});
+
+	it("takes an aggregate's operation as the raiser just as well", () => {
+		const { ws, bc, app } = context();
+		const event = app.provides("Order Placed", {
+			description: "",
+			type: "event",
+		});
+		const order = bc.addAggregate("Order", { description: "" });
+		order.addRootEntity("Order", { description: "" });
+		order
+			.provides("Place", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(event);
+		expect(unraised(ws)).toEqual([]);
+	});
+
+	it("says nothing about an operation nobody consumes", () => {
+		// Most of a system's public surface is called by people through a user
+		// interface, and the model does not treat that as dead (decision 28).
+		const { ws, app } = context();
+		app.provides("Search Orders", { description: "", type: "operation" });
+		expect(unraised(ws)).toEqual([]);
+	});
+
+	it("stays quiet on an external context, whose events come from outside", () => {
+		const { ws, app } = context(true);
+		app.provides("Settlement File Arrived", {
+			description: "",
+			type: "event",
+		});
+		expect(unraised(ws)).toEqual([]);
+	});
+});

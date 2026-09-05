@@ -253,6 +253,16 @@ const identityBC = identitySD.addBoundedcontext("Identity", {
 	team: platformTeam,
 });
 
+// The one system RiverMart integrates with and does not run. Payments' own
+// pages already spoke of "the provider's hold" and "the provider refused"
+// without the provider being anywhere in the model; it is a bounded context
+// now, with no subdomain, no team and no insides of ours (decision 28).
+const paymentProviderBC = workspace.addBoundedContext("Payment Provider", {
+	description:
+		"The acquirer that actually holds, takes and returns the customer's money. RiverMart calls it and translates everything it says",
+	external: true,
+});
+
 /* =======================
    CATALOGUE
    DISCOVERY: Head of Catalogue. "A product is one thing that can be sold,
@@ -1361,6 +1371,60 @@ const refundPayment = paymentsApi
 	})
 	.raises(refundIssued);
 
+// DISCOVERY: Payments engineering lead. The hold, the take and the return all
+// happen at the acquirer; Payments is the model over them, and it translates
+// every answer into its own words (decision 28, card 71).
+const providerRequestSchema = paymentProviderBC.addSchema("ProviderRequest", {
+	description: "The acquirer's wire format, which RiverMart does not shape",
+});
+providerRequestSchema.addAttribute("merchantReference", {
+	type: "string",
+	identity: true,
+});
+providerRequestSchema.addAttribute("amountMinorUnits", { type: "int64" });
+providerRequestSchema.addAttribute("currency", { type: "ISO 4217 code" });
+providerRequestSchema.addAttribute("instrumentToken", { type: "string" });
+const acquirerApi = paymentProviderBC.addService("Acquirer API", {
+	description: "The provider's documented interface, and all RiverMart sees",
+	type: "application",
+});
+const holdFunds = acquirerApi.provides("HoldFunds", {
+	description: "Put a hold on the customer's instrument",
+	type: "operation",
+	pattern: "open-host-service",
+	schema: providerRequestSchema,
+});
+const takeFunds = acquirerApi.provides("TakeFunds", {
+	description: "Take money against an existing hold",
+	type: "operation",
+	pattern: "open-host-service",
+	schema: providerRequestSchema,
+});
+const returnFunds = acquirerApi.provides("ReturnFunds", {
+	description: "Send money back against something already taken",
+	type: "operation",
+	pattern: "open-host-service",
+	schema: providerRequestSchema,
+});
+paymentsApi.consumes(holdFunds, {
+	pattern: "anti-corruption-layer",
+	by: [authorisePayment],
+});
+paymentsApi.consumes(takeFunds, {
+	pattern: "anti-corruption-layer",
+	by: [capturePayment],
+});
+paymentsApi.consumes(returnFunds, {
+	pattern: "anti-corruption-layer",
+	by: [refundPayment],
+});
+paymentProviderBC.upstreamOf(paymentsBC, {
+	description:
+		"The acquirer's API is the acquirer's; Payments keeps its own intent, capture and refund and translates at the edge",
+	upstreamRoles: ["open-host-service"],
+	downstreamRoles: ["anti-corruption-layer"],
+});
+
 paymentsBC.addTerm("Authorisation", {
 	definition:
 		"A hold on funds that expires if not captured; the customer sees it as pending",
@@ -2310,6 +2374,22 @@ const purchaseOrderReceived = purchaseOrderAgg.provides(
 		schema: poReceivedSchema,
 	},
 );
+
+// DISCOVERY: Retail Systems engineer, "the nightly export of received vendor
+// stock". Nothing raised the export's event, so the model never said what
+// makes it happen (event-unraised). The job is VPS's own, named at the edge
+// like the rest of the legacy system.
+vendorBC
+	.addService("NightlyExport", {
+		description: "The one job of the ninety that anyone can describe",
+		type: "application",
+	})
+	.provides("RunNightlyExport", {
+		description: "Write the day's received vendor stock to the export file",
+		type: "operation",
+		internal: true,
+	})
+	.raises(purchaseOrderReceived);
 
 vendorBC.addTerm("Purchase order", {
 	definition:

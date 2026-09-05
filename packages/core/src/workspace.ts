@@ -668,6 +668,8 @@ export type BoundedContextAttributes = {
 	subdomains?: Subdomain[];
 	/** See {@link ods.BoundedContextSchema.bigBallOfMud}. */
 	bigBallOfMud?: boolean;
+	/** See {@link ods.BoundedContextSchema.external}. */
+	external?: boolean;
 	/** The team that owns this context. */
 	team?: Team;
 	id?: string;
@@ -690,6 +692,8 @@ export class BoundedContext
 	workspace: Workspace;
 	subdomains = new Set<Subdomain>();
 	bigBallOfMud: boolean;
+	/** A system we integrate with and do not model inside (decision 28). */
+	external: boolean;
 	team?: Team;
 
 	get path(): string {
@@ -720,6 +724,7 @@ export class BoundedContext
 		this.description = attributes.description;
 		this.workspace = workspace;
 		this.bigBallOfMud = attributes.bigBallOfMud ?? false;
+		this.external = attributes.external ?? false;
 		this.team = attributes.team;
 		this.workspace.boundedcontexts.set(this.id, this);
 		for (const subdomain of attributes.subdomains ?? []) {
@@ -848,6 +853,7 @@ export class BoundedContext
 			description: this.description,
 			subdomains: Array.from(this.subdomains, (it) => ({ $ref: it.ref })),
 			bigBallOfMud: this.bigBallOfMud || undefined,
+			external: this.external || undefined,
 			team: this.team && { $ref: this.team.ref },
 			aggregates: asRecords(this.aggregates),
 			invariants: asRecords(this.invariants),

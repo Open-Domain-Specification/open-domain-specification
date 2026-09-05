@@ -276,6 +276,14 @@
 
 **Usual fix:** Raise an event of this context and let the other context react to it, or, if the point is to act over there, consume that context's operation and let it raise its own event.
 
+## `event-unraised` (warning)
+
+**Requires:** Every event of a context we model is raised by one of that context's own operations.
+
+**Why it matters:** An event says a fact became true, and the model says what made it true by naming the operation that raises it. An event nothing raises reads as dead model: a reader cannot follow the chain back to the behaviour that causes it, and a policy waiting on it looks like it will never fire.
+
+**Usual fix:** Name the operation that raises the event with raises, or, if the fact really comes from outside the business, move the event to the system that emits it and mark that context external: true.
+
 ## `policy-complete` (warning)
 
 **Requires:** A policy reacts to at least one event and issues at least one operation.
@@ -299,6 +307,14 @@
 **Why it matters:** A context that serves no subdomain has no place in the problem-space view, so nobody can see which part of the business it exists for.
 
 **Usual fix:** Add the subdomain the context serves to its subdomains list.
+
+## `external-is-boundary` (error)
+
+**Requires:** An external context declares no aggregates, no policies and no invariants.
+
+**Why it matters:** An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact.
+
+**Usual fix:** Move the aggregate, policy or invariant into the context of ours that actually holds it, or drop external: true if this is a system the enterprise really does model inside.
 
 ## `comments-required` (warning)
 

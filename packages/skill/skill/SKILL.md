@@ -140,6 +140,8 @@ correctly. Say "command" in conversation if it helps, but the model's word is `o
 | Operation used by another context | `pattern: "open-host-service"` |
 | Event used by another context | `pattern: "published-language"` |
 | Consuming from a legacy or `bigBallOfMud` context | `pattern: "anti-corruption-layer"` |
+| A system outside the business the model has to name | a context of its own with `external: true` |
+| An event nothing in its context raises | ask which operation raises it; if it comes from outside, it belongs to an external context |
 | Consuming from any other context | `pattern: "conformist"` |
 | Two contexts exchange consumables, nothing else known | relationship `upstream-downstream` |
 | Cardinality unknown | omit it |

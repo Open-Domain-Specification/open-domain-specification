@@ -53,7 +53,8 @@ export async function generate(
 /**
  * The assertions shared, byte-for-byte, by RiverMart's, StreamLine's and
  * NorthBank's workspace tests: at least three relationship types are used and
- * there is one big ball of mud, every context has a team, there's a glossary,
+ * there is one big ball of mud, every context the enterprise owns has a team,
+ * there's a glossary,
  * policies and schemas on cross-context events, `validate()` reports exactly
  * the deliberate problems (by rule id and severity), and the workspace
  * round-trips through `Workspace.fromSchema`.
@@ -81,7 +82,11 @@ export function assertStressTestWorkspace(
 	);
 	assert.strictEqual(legacy.length, 1);
 
+	// Every context the enterprise owns has a team. An external context is
+	// somebody else's system, so nobody here owns it and the model does not
+	// invent a team to satisfy the check (decision 28).
 	for (const bc of workspace.boundedcontexts.values()) {
+		if (bc.external) continue;
 		assert.notStrictEqual(bc.team, undefined, `${bc.name} has no team`);
 	}
 

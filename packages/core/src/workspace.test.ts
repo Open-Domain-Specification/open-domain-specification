@@ -387,3 +387,32 @@ describe("Workspace lookup methods", () => {
 		).toThrow("Entity or Value Object with ref #/invalid/ref not found");
 	});
 });
+
+describe("an external bounded context", () => {
+	function workspaceWith(external: boolean) {
+		const ws = new Workspace("W", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0",
+		});
+		return {
+			ws,
+			bc: ws.addBoundedContext("Card Scheme", { description: "", external }),
+		};
+	}
+
+	it("is not external unless the model says so", () => {
+		const { bc } = workspaceWith(false);
+		expect(bc.external).toBe(false);
+		expect(bc.toSchema().external).toBeUndefined();
+	});
+
+	it("carries the flag into the schema and back out again", () => {
+		const { ws, bc } = workspaceWith(true);
+		expect(bc.toSchema().external).toBe(true);
+		const rebuilt = Workspace.fromSchema(
+			JSON.parse(JSON.stringify(ws.toSchema())),
+		);
+		expect(rebuilt.getBoundedContextByRefOrThrow(bc.ref).external).toBe(true);
+	});
+});

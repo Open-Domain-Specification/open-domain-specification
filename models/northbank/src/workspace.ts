@@ -11,8 +11,9 @@ import { type Attribute, Workspace } from "@open-domain-specification/core";
  * identity are generic.
  *
  * The emphasis is on invariants and value objects: Money, IBAN, PAN, Consent,
- * a balanced journal entry, a loan schedule. Stress-test features: fifteen
- * contexts, a shared kernel (a Shared Kernel context, borrowed from by
+ * a balanced journal entry, a loan schedule. Stress-test features: seventeen
+ * contexts, two of them external (CardCo and the screening vendor), a shared
+ * kernel (a Shared Kernel context, borrowed from by
  * Accounts, Ledger, Payments, Cards, Lending and Reporting), a partnership
  * (lending and decisioning), a separate-ways pair (branches and
  * decisioning), a legacy mainframe big ball of mud, and three deliberate
@@ -252,6 +253,23 @@ const sharedKernelBC = sharedKernelSD.addBoundedcontext("Shared Kernel", {
 	description:
 		"The shared library the bank's contexts compile against: Money and AccountNumber, and nothing else. Not a product; nobody's customer journey runs through it",
 	team: sharedKernelTeam,
+});
+
+// The two systems the bank integrates with and does not run: the screening
+// vendor behind Sanctions Screening ("the lists are bought; the screening
+// engine is bought") and CardCo, which sends the authorisation requests Cards
+// answers. Neither has a subdomain or a team here, and neither has aggregates,
+// because what happens inside somebody else's machine is not ours to state
+// (decision 28).
+const screeningVendorBC = workspace.addBoundedContext("Screening Vendor", {
+	description:
+		"The bought sanctions lists and the bought screening engine, behind a documented API. Not the bank's",
+	external: true,
+});
+const cardCoBC = workspace.addBoundedContext("CardCo", {
+	description:
+		"The outsourced card processor: it sends the authorisation requests and takes the answers, in its own format",
+	external: true,
 });
 
 /* =======================
@@ -586,6 +604,36 @@ const screenParty = screeningApp
 		schema: screenPartySchema,
 	})
 	.raises(partyMatched);
+
+// DISCOVERY: Financial Crime lead. "The lists are bought; the screening
+// engine is bought; the API is documented" -- so the engine is a system the
+// bank calls, and Screening takes its answer as published (decision 28).
+const listMatchSchema = screeningVendorBC.addSchema("ListMatchQuery", {
+	description: "The vendor's query format, which the bank does not negotiate",
+});
+listMatchSchema.addAttribute("name", { type: "string" });
+listMatchSchema.addAttribute("dateOfBirth", { type: "date" });
+listMatchSchema.addAttribute("country", { type: "ISO 3166 code" });
+const vendorApi = screeningVendorBC.addService("Screening Engine API", {
+	description: "The vendor's documented interface, and all the bank can see",
+	type: "application",
+});
+const matchAgainstLists = vendorApi.provides("MatchAgainstLists", {
+	description: "Score a name against the bought lists",
+	type: "operation",
+	pattern: "open-host-service",
+	schema: listMatchSchema,
+});
+screeningApp.consumes(matchAgainstLists, {
+	pattern: "conformist",
+	by: [screenParty],
+});
+screeningVendorBC.upstreamOf(sanctionsBC, {
+	description:
+		"The engine's API is the vendor's; Screening calls it as documented and reshapes nothing",
+	upstreamRoles: ["open-host-service"],
+	downstreamRoles: ["conformist"],
+});
 
 kycScreening.consumes(screenParty, { pattern: "anti-corruption-layer" });
 customerAgg.consumes(partyMatched, { pattern: "anti-corruption-layer" });
@@ -1702,7 +1750,8 @@ cardAgg
 	.constrains(cardAuthorisation);
 
 const cardAuthRequestSchema = cardsBC.addSchema("CardAuthorisationRequest", {
-	description: "CardCo's format, translated on the way in",
+	description:
+		"What CardCo's message becomes once Cards has translated it (card 71: CardCo's own format is CardCo's, and lives there)",
 });
 cardAuthRequestSchema.addAttribute("panToken", { type: "string" });
 cardAuthRequestSchema.addAttribute("merchant", { type: "string" });
@@ -1756,7 +1805,7 @@ const cardsApp = cardsBC.addService("CardsApp", {
 		"Cards' application service: the boundary CardCo authorises against and channels block cards through",
 	type: "application",
 });
-cardsApp
+const authoriseCard = cardsApp
 	.provides("AuthoriseCard", {
 		description: "Approve or decline a merchant's request from CardCo",
 		type: "operation",
@@ -1764,6 +1813,37 @@ cardsApp
 		schema: cardAuthRequestSchema,
 	})
 	.raises(cardAuthorised);
+// DISCOVERY: Cards Team lead. "CardCo sends us the authorisation request in
+// their format and we translate it." CardCo is a system the bank does not
+// own, so the message it sends is CardCo's event, carrying CardCo's shape,
+// and the translating is what makes Cards' consumption of it (decision 28).
+const cardCoMessageSchema = cardCoBC.addSchema("CardCoAuthorisationMessage", {
+	description: "CardCo's wire format, as it arrives",
+});
+cardCoMessageSchema.addAttribute("panToken", { type: "string" });
+cardCoMessageSchema.addAttribute("merchant", { type: "string" });
+cardCoMessageSchema.addAttribute("amountMinorUnits", { type: "int64" });
+cardCoMessageSchema.addAttribute("currency", { type: "ISO 4217 code" });
+const cardCoFeed = cardCoBC.addService("CardCo Authorisation Feed", {
+	description: "The processor's outbound feed, and all the bank can see",
+	type: "application",
+});
+const authorisationRequested = cardCoFeed.provides("AuthorisationRequested", {
+	description: "A merchant asked CardCo to take an amount on one of our cards",
+	type: "event",
+	pattern: "published-language",
+	schema: cardCoMessageSchema,
+});
+cardsApp.consumes(authorisationRequested, {
+	pattern: "anti-corruption-layer",
+	by: [authoriseCard],
+});
+cardCoBC.upstreamOf(cardsBC, {
+	description:
+		"CardCo's format is CardCo's; Cards translates every message on the way in and answers in the same terms",
+	upstreamRoles: ["published-language"],
+	downstreamRoles: ["anti-corruption-layer"],
+});
 const blockCard = cardsApp
 	.provides("BlockCard", {
 		description:
@@ -2523,6 +2603,22 @@ const nightlyBatchCompleted = savingsRecordAgg.provides(
 		schema: batchSchema,
 	},
 );
+
+// DISCOVERY: Core Banking lead, "runs the nightly batch". Nothing raised the
+// batch event, so the model never said what makes it happen (event-unraised).
+// The job is Sovereign's own and stays modelled at its edge, like everything
+// else here: a name, and the fact it publishes.
+sovereignBC
+	.addService("NightlyBatch", {
+		description: "The mainframe's overnight job, seen from outside it",
+		type: "application",
+	})
+	.provides("RunNightlyBatch", {
+		description: "Cut the day's savings movements into the postings file",
+		type: "operation",
+		internal: true,
+	})
+	.raises(nightlyBatchCompleted);
 
 entryAgg.consumes(nightlyBatchCompleted, { pattern: "anti-corruption-layer" });
 ledgerBC

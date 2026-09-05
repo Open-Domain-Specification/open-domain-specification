@@ -351,6 +351,15 @@ export function makeRichTestWs() {
 		type: "event",
 		pattern: "open-host-service",
 	});
+	// Something has to make the figures happen, or `event-unraised` rightly
+	// says the model never explains where they come from.
+	reportingApp
+		.provides("Compile Sales Figures", {
+			description: "Totals yesterday's orders",
+			type: "operation",
+			internal: true,
+		})
+		.raises(salesFigures);
 	const orderAppConsumesSalesFigures = orderApp.consumes(salesFigures, {
 		pattern: "anti-corruption-layer",
 	});

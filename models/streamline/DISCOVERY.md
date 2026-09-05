@@ -395,3 +395,29 @@ Rejected
 - "We would happily buy all of this" is unrealistic at 41 countries: it is the Commerce
   lead's stance on differentiation, which is what the classification asks, not a claim that
   the work is small.
+
+## 10. Revision (card 71): the licensors become an external context
+
+Two lines of section 2 named companies outside StreamLine that the model never drew. The
+Head of Studio Technology: "our delivery portal is the documented way in; external post
+houses use it too." The Head of Content Acquisition: "a deal is with a licensor." Neither had
+anywhere to live, so `StudioPortal` was an open host with no caller and the licence deals
+were with nobody. Decision 28 gives them one context: **Licensors & Post Houses**, with
+`external: true` — no subdomain, no team, no aggregates, because a licensor's business is not
+StreamLine's to model — whose one service consumes `SubmitDelivery` as a conformist. The
+relationship on the map is Studio Production upstream, open host, with the licensors
+conformist downstream, which is what "the documented way in" means: they deliver to
+StreamLine's spec or the master is not accepted.
+
+The licence deal itself stays in Licensing, where the Head of Content Acquisition put it: the
+deal, its term and its windows are StreamLine's record of an agreement, and nothing in the
+interviews describes a system on the licensor's side that sends or receives anything. The
+external context says only what the record can support.
+
+Card 71 also added `event-unraised`, a warning about an event no operation of its context
+raises. StreamLine had one: Disc Rental's `DiscRentalInvoiced`, which Billing turns into an
+invoice line and which nothing in the model caused. Legacy Operations named the cause — "a
+monthly export of charges to billing" — so the model now names the job: a `MonthlyExport`
+service with one internal operation, `RunMonthlyExport`, raising the event. The monolith is
+still modelled at its edge; the edge just says what pushes the file now. The three deliberate
+diagnostics of section 7 are untouched.

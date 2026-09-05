@@ -2699,7 +2699,41 @@
               ]
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/payment_provider/services/acquirer_api/provides/hold_funds"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/payments/services/payments_api/provides/authorise_payment"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/payment_provider/services/acquirer_api/provides/take_funds"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/payments/services/payments_api/provides/capture_payment"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/payment_provider/services/acquirer_api/provides/return_funds"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/payments/services/payments_api/provides/refund_payment"
+                }
+              ]
+            }
+          ]
         }
       },
       "policies": {
@@ -4550,7 +4584,27 @@
         }
       },
       "invariants": {},
-      "services": {},
+      "services": {
+        "nightly_export": {
+          "name": "NightlyExport",
+          "description": "The one job of the ninety that anyone can describe",
+          "type": "application",
+          "provides": {
+            "run_nightly_export": {
+              "name": "RunNightlyExport",
+              "description": "Write the day's received vendor stock to the export file",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)/aggregates/purchase_order/provides/purchase_order_received"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {},
       "glossary": {
         "purchase_order": {
@@ -4709,9 +4763,98 @@
           }
         }
       }
+    },
+    "payment_provider": {
+      "name": "Payment Provider",
+      "description": "The acquirer that actually holds, takes and returns the customer's money. RiverMart calls it and translates everything it says",
+      "subdomains": [],
+      "external": true,
+      "aggregates": {},
+      "invariants": {},
+      "services": {
+        "acquirer_api": {
+          "name": "Acquirer API",
+          "description": "The provider's documented interface, and all RiverMart sees",
+          "type": "application",
+          "provides": {
+            "hold_funds": {
+              "name": "HoldFunds",
+              "description": "Put a hold on the customer's instrument",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/payment_provider/schemas/provider_request"
+              }
+            },
+            "take_funds": {
+              "name": "TakeFunds",
+              "description": "Take money against an existing hold",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/payment_provider/schemas/provider_request"
+              }
+            },
+            "return_funds": {
+              "name": "ReturnFunds",
+              "description": "Send money back against something already taken",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/payment_provider/schemas/provider_request"
+              }
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {},
+      "glossary": {},
+      "valueobjects": {},
+      "schemas": {
+        "provider_request": {
+          "name": "ProviderRequest",
+          "description": "The acquirer's wire format, which RiverMart does not shape",
+          "attributes": {
+            "merchant_reference": {
+              "name": "merchantReference",
+              "type": "string",
+              "identity": true
+            },
+            "amount_minor_units": {
+              "name": "amountMinorUnits",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            },
+            "instrument_token": {
+              "name": "instrumentToken",
+              "type": "string"
+            }
+          }
+        }
+      }
     }
   },
   "relationships": [
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/payment_provider"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/payments"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "The acquirer's API is the acquirer's; Payments keeps its own intent, capture and refund and translates at the edge"
+    },
     {
       "type": "upstream-downstream",
       "upstream": {

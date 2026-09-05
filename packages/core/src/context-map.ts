@@ -23,6 +23,7 @@ function contextNode(bc: BoundedContext): ODSContextMapNode {
 		description: bc.description,
 		namespace: boundedContextNamespace(bc),
 		bigBallOfMud: bc.bigBallOfMud,
+		external: bc.external,
 		team: bc.team && { id: bc.team.ref, name: bc.team.name },
 	};
 }
@@ -184,6 +185,8 @@ export type ODSContextMapNode = {
 	description?: string;
 	namespace: ODSContextMapNamespace[];
 	bigBallOfMud?: boolean;
+	/** A system the enterprise does not own, drawn as somebody else's. */
+	external?: boolean;
 	team?: { id: string; name: string };
 };
 

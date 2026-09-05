@@ -306,7 +306,11 @@ export class ModelTree
 				].filter((n): n is ModelNode => !!n),
 			{
 				ref: bc.ref,
-				description: [bc.id, bc.bigBallOfMud ? "big ball of mud" : undefined]
+				description: [
+					bc.id,
+					bc.bigBallOfMud ? "big ball of mud" : undefined,
+					bc.external ? "external system" : undefined,
+				]
 					.filter(Boolean)
 					.join(" · "),
 				parent,

@@ -4,7 +4,10 @@ import {
 	PATTERNS,
 	type PatternNature,
 } from "@open-domain-specification/core";
-import { IDENTITY_EDGE_LABEL } from "@open-domain-specification/graphviz";
+import {
+	EXTERNAL_STEREOTYPE,
+	IDENTITY_EDGE_LABEL,
+} from "@open-domain-specification/graphviz";
 import { DISPOSITION_LABELS, DISPOSITION_SUMMARIES } from "../evidence/labels";
 import type { ConsumableNodeData } from "./consumable-graph";
 import type { ContextNodeData } from "./context-graph";
@@ -106,6 +109,16 @@ function contextLegend(graph: Graph): LegendEntry[] {
 			: []),
 		...(nodes.some((n) => n.bigBallOfMud)
 			? [{ mark: "dashed octagon", name: "Big ball of mud" }]
+			: []),
+		...(nodes.some((n) => n.external)
+			? [
+					{
+						mark: EXTERNAL_STEREOTYPE,
+						name: "External system",
+						title:
+							"A system the enterprise does not own: only what it provides and consumes is modelled, never its insides.",
+					},
+				]
 			: []),
 		...(nodes.some((n) => n.cluster)
 			? [{ mark: "band", name: "Domain colour" }]

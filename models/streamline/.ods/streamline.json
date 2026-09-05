@@ -3908,7 +3908,27 @@
         }
       },
       "invariants": {},
-      "services": {},
+      "services": {
+        "monthly_export": {
+          "name": "MonthlyExport",
+          "description": "The charge export, the one job anyone will describe",
+          "type": "application",
+          "provides": {
+            "run_monthly_export": {
+              "name": "RunMonthlyExport",
+              "description": "Write the month's disc charges out to billing",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/disc_rental_(legacy)/aggregates/rental_queue/provides/disc_rental_invoiced"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {},
       "glossary": {},
       "valueobjects": {},
@@ -3929,9 +3949,53 @@
           }
         }
       }
+    },
+    "licensors_&_post_houses": {
+      "name": "Licensors & Post Houses",
+      "description": "The studios, distributors and post houses StreamLine licenses titles from and takes masters from. Somebody else's businesses; only what they do at our edge is modelled",
+      "subdomains": [],
+      "external": true,
+      "aggregates": {},
+      "invariants": {},
+      "services": {
+        "licensor_delivery": {
+          "name": "Licensor Delivery",
+          "description": "However a licensor or post house gets a master to us; all StreamLine sees is the upload",
+          "type": "application",
+          "provides": {},
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/studio_production/services/studio_portal/provides/submit_delivery"
+              },
+              "pattern": "conformist"
+            }
+          ]
+        }
+      },
+      "policies": {},
+      "glossary": {},
+      "valueobjects": {},
+      "schemas": {}
     }
   },
   "relationships": [
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/studio_production"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/licensors_&_post_houses"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "The delivery spec is StreamLine's and it is published; a licensor delivers to it or the master is not accepted"
+    },
     {
       "type": "upstream-downstream",
       "upstream": {

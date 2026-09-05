@@ -208,7 +208,14 @@ function everythingWrong(): Workspace {
 	// relationship-duplicate: the same kernel again, participants the other way
 	// round. A symmetric type has no direction, so this is the second copy.
 	b.sharesKernelWith(d);
-	// context-serves-subdomain: A, B, C and D serve nothing
+	// external-is-boundary: a system we do not own, with insides stated anyway
+	const outside = ws.addBoundedContext("Scheme", {
+		description: "",
+		external: true,
+	});
+	outside.addAggregate("Ledger", { description: "" });
+	// context-serves-subdomain: A, B, C and D serve nothing; Scheme is external
+	// and serves none by design
 	return ws;
 }
 

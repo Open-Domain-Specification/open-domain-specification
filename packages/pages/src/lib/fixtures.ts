@@ -232,6 +232,13 @@ export function edgeCaseModel(): Model {
 		description: "Has no aggregates and no services.",
 	});
 
+	// A system the enterprise does not own: no subdomain, no team, no
+	// aggregates, and the one surface every page has to draw differently.
+	workspace.addBoundedContext("Outside System", {
+		description: "Somebody else's machine, integrated with and not modelled.",
+		external: true,
+	});
+
 	bcMain.upstreamOf(bcSecond, {
 		type: "customer-supplier",
 		upstreamRoles: ["open-host-service", "published-language"],

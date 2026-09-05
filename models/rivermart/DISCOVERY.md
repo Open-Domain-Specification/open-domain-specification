@@ -467,3 +467,26 @@ Rejected
 - The interviews read like a textbook: the quoted speech is plain ("we take it as
   published", "nothing special about us"); the DDD terms appear only in the "Recorded as"
   lines, which is where they belong.
+
+## 10. Revision (card 71): the payment provider becomes an external context
+
+The Payments pages already spoke of somebody who was not in the model: Authorisation is "the
+provider's hold on the customer's funds" and `PaymentDeclined` is "the provider refused". The
+provider itself appeared nowhere, so the map showed RiverMart holding and taking money by
+itself. Decision 28 gives it a place: **Payment Provider**, a bounded context with
+`external: true` — no subdomain, no team, no aggregates, because the acquirer's insides are
+not RiverMart's to state — with one service offering `HoldFunds`, `TakeFunds` and
+`ReturnFunds` in its own wire format. Payments consumes all three through an anti-corruption
+layer, made by `AuthorisePayment`, `CapturePayment` and `RefundPayment` respectively, and the
+map carries one upstream-downstream relationship: open host upstream, anti-corruption layer
+downstream. That is the shape the Payments lead described, "we would buy this from a provider
+tomorrow if the provider's API were good enough" — RiverMart keeps its own intent, capture
+and refund and translates at the edge.
+
+Card 71 also added `event-unraised`, a warning about an event no operation of its context
+raises. RiverMart had one: Vendor Purchasing's `PurchaseOrderReceived`, which the Warehouse
+reads and which nothing in the model caused. The Retail Systems engineer named the cause in
+the interview — "the nightly export of received vendor stock" — so the model now names the
+job: a `NightlyExport` service with one internal operation, `RunNightlyExport`, raising the
+event. It is still the legacy system modelled at its edge; it just no longer publishes a
+fact out of thin air. The two deliberate diagnostics of section 7 are untouched.

@@ -31,7 +31,7 @@ job is to get the model out of their head without making them learn the vocabula
 - Explain once: a subdomain is one slice of the problem; calling it core only marks where your
   competitive effort goes.
 
-## Phase C: ownership (produces Teams, Bounded Contexts, `subdomains`, `bigBallOfMud`)
+## Phase C: ownership (produces Teams, Bounded Contexts, `subdomains`, `bigBallOfMud`, `external`)
 
 - "Which teams or people work on this, and which parts does each look after?" → teams, and a
   candidate context per part.
@@ -44,6 +44,12 @@ job is to get the model out of their head without making them learn the vocabula
 - "Is any of these an old system that nobody fully understands, where the data model is a
   mess?" → `bigBallOfMud: true`. Explain: we flag it so anything talking to it knows to
   translate rather than trust.
+- "Which systems outside the business does this talk to?" → one bounded context per system,
+  with `external: true`: a card scheme, a payment provider, a licensor, a regulator, a
+  clock. Explain: we draw it because you depend on it, and we write down only what it sends
+  you and what you send it; nobody here can say what happens inside it, so it gets no
+  aggregates, no team and no subdomain. Follow up with "what does it send you, and what do
+  you send it?" → its events and operations, and the consumption on your side.
 
 ## Phase D: the integration map (produces Relationships and seeds consumptions)
 
