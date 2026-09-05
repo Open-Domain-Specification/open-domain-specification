@@ -174,4 +174,62 @@ describe("locateRef on a consumption", () => {
 		);
 		expect(none.slice(span.start, span.end)).toBe('"order_app"');
 	});
+
+	/**
+	 * One consumer taking one consumable twice: the ref of each carries the id
+	 * of the first caller in `by`, and that is the only thing telling the two
+	 * elements of `consumes[]` apart (card 89).
+	 */
+	describe("when the consumer takes one consumable twice", () => {
+		const twice = JSON.stringify(
+			{
+				name: "Shop",
+				boundedcontexts: {
+					orders: {
+						services: {
+							order_app: {
+								name: "Order App",
+								consumes: [
+									{
+										consumable: {
+											$ref: "#/boundedcontexts/catalog/services/pet_app/provides/get_pet",
+										},
+										pattern: "conformist",
+										by: [
+											{
+												$ref: "#/boundedcontexts/orders/services/order_app/provides/archive",
+											},
+										],
+									},
+									{
+										consumable: {
+											$ref: "#/boundedcontexts/catalog/services/pet_app/provides/get_pet",
+										},
+										pattern: "anti-corruption-layer",
+										by: [{ $ref: "#/boundedcontexts/orders/policies/decide" }],
+									},
+								],
+							},
+						},
+					},
+				},
+			},
+			null,
+			2,
+		);
+		const pair = `${CONSUMER}/consumes/boundedcontexts~catalog~services~pet_app~provides~get_pet`;
+		const atTwice = (ref: string) => {
+			const span = locateRef(twice, ref);
+			return twice.slice(span.start, span.end);
+		};
+
+		it("picks the element whose first caller the ref names", () => {
+			expect(atTwice(`${pair}/archive`)).toContain("conformist");
+			expect(atTwice(`${pair}/decide`)).toContain("anti-corruption-layer");
+		});
+
+		it("falls back to the array when no element names that caller", () => {
+			expect(atTwice(`${pair}/nobody`)).toBe('"consumes"');
+		});
+	});
 });

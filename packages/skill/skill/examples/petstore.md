@@ -37,7 +37,7 @@ petStatusVO.addAttribute("value", { type: "'available' | 'pending' | 'sold'" });
 petRoot.addAttribute("id", { type: "int64", identity: true });
 petRoot.addAttribute("status", { type: "PetStatus", valueobject: petStatusVO });
 petRoot.uses(categoryVO, "categorized-as", "0..1");
-petRoot.uses(photoUrlVO, "has-photo", "1..*");
+petRoot.uses(photoUrlVO, "has-photo", "*");
 petAgg
 	.addInvariant("NameRequired", { description: "Pet.name must be non-empty" })
 	.constrains(petRoot.attributes.get("name")!);

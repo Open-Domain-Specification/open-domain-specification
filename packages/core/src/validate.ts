@@ -15,6 +15,7 @@ import {
 	type Constrainable,
 	Consumable,
 	Consumption,
+	type ConsumptionCaller,
 	ContextRelationship,
 	constrainableLabel,
 	DataSchema,
@@ -665,9 +666,16 @@ function usesOfValueObject(
 
 /**
  * What one relation says about how many there are, against what the attribute
- * says: a list-typed attribute is a `*` or a `1..*`, an optional one a `0..1`
- * or a `*`, and a required one a `1` or a `1..*`. A relation with no
- * cardinality says nothing and is left alone.
+ * says. Presence and size are two different facts: `optional` says whether the
+ * attribute is there at all, and the cardinality says how many the value may
+ * hold. A required list may hold none — Swagger's `photoUrls` is required with
+ * no minimum — so presence says nothing about size once the attribute is a
+ * list.
+ *
+ * That leaves three pairings. A list is a `*` or a `1..*` whether or not it is
+ * optional; an attribute that is not a list is a `1` when it is required and a
+ * `0..1` when it is optional. A relation with no cardinality says nothing and
+ * is left alone (card 89, decisions 24 and 26).
  */
 function cardinalityDiagnostics(
 	member: Entity | ValueObject,
@@ -687,17 +695,23 @@ function cardinalityDiagnostics(
 			message,
 			ref: member.ref,
 		});
-	if (
-		attribute.type.trim().endsWith("[]") &&
-		(cardinality === "1" || cardinality === "0..1")
-	) {
-		warn(says(`as a list ("${attribute.type}")`));
+	if (attribute.type.trim().endsWith("[]")) {
+		if (cardinality === "1" || cardinality === "0..1") {
+			warn(
+				`${says(`as a list ("${attribute.type}")`)}; presence says whether the list is there and cardinality says how many it may hold, so a list pairs with "*" or "1..*"`,
+			);
+		}
+		return diagnostics;
 	}
-	if (attribute.optional && (cardinality === "1" || cardinality === "1..*")) {
-		warn(`${says("as optional")}, which says there is always at least one`);
+	if (attribute.optional && cardinality !== "0..1") {
+		warn(
+			`${says("as optional")}; an attribute that is optional and not a list pairs with "0..1"`,
+		);
 	}
-	if (!attribute.optional && (cardinality === "0..1" || cardinality === "*")) {
-		warn(`${says("as required")}, which says there may be none`);
+	if (!attribute.optional && cardinality !== "1") {
+		warn(
+			`${says("as required")}; an attribute that is required and not a list pairs with "1"`,
+		);
 	}
 	return diagnostics;
 }
@@ -870,6 +884,46 @@ function scopeOf(
 	return undefined;
 }
 
+/** The value object a target is, or the one whose attribute it is. */
+function valueObjectOf(target: Constrainable): ValueObject | undefined {
+	const owner = target instanceof Attribute ? target.owner : target;
+	return owner instanceof ValueObject ? owner : undefined;
+}
+
+/**
+ * Every value object something inside `boundary` holds, followed through the
+ * values those values hold in turn.
+ *
+ * An invariant's boundary holds instances, not type definitions. A value
+ * object borrowed over a shared kernel or conformed to upstream is defined in
+ * the other context and lives inside whichever aggregate holds one, so an
+ * invariant of that aggregate may constrain the value and its attributes. A
+ * value nobody inside the boundary holds stays out of reach, wherever it is
+ * defined (decision 27, card 89).
+ */
+function valueObjectsHeldIn(
+	boundary: Aggregate | BoundedContext,
+): Set<ValueObject> {
+	const holders: (Entity | ValueObject)[] =
+		boundary instanceof Aggregate
+			? [...boundary.entities.values()]
+			: [...boundary.aggregates.values()].flatMap((a) => [
+					...a.entities.values(),
+				]);
+	const held = new Set<ValueObject>();
+	// `holders` grows as values are found, and a `for...of` over an array
+	// reads its length each step, so the walk follows nesting to the end.
+	for (const holder of holders) {
+		for (const attribute of holder.allAttributes) {
+			const vo = attribute.valueobject;
+			if (!vo || held.has(vo)) continue;
+			held.add(vo);
+			holders.push(vo);
+		}
+	}
+	return held;
+}
+
 /** Every invariant a value object owns, in declaration order. */
 function* valueObjectInvariantsOf(
 	workspace: Workspace,
@@ -912,21 +966,36 @@ const invariantInValueObject: Rule = (workspace) => {
  * inside it too: a transition rule is a rule about what that operation may do,
  * and naming it is how the model says which change the rule guards
  * (decision 19).
+ *
+ * A value object borrowed from another context is inside the boundary as well,
+ * as long as an entity or a value inside the aggregate holds one: what is
+ * saved with the aggregate is the value, not the definition, and where the
+ * definition lives — this context, a shared kernel, an upstream the context
+ * conforms to — says nothing about which aggregate holds an instance. A value
+ * nobody inside the aggregate holds is still refused (card 89).
  */
 const invariantInAggregate: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const aggregate of aggregatesOf(workspace)) {
+		if (aggregate.invariants.size === 0) continue;
+		const held = valueObjectsHeldIn(aggregate);
 		for (const invariant of aggregate.invariants.values()) {
 			for (const target of invariant.targets) {
 				const scope = scopeOf(target);
 				if (scope === aggregate || scope === aggregate.boundedcontext) continue;
-				const where = scope
-					? `${scope instanceof Aggregate ? "aggregate" : "bounded context"} "${scope.name}"`
-					: "no aggregate at all";
+				const vo = valueObjectOf(target);
+				if (vo && held.has(vo)) continue;
+				const where = vo
+					? `a value object of bounded context "${vo.boundedcontext.name}" that nothing in "${aggregate.name}" holds`
+					: `in ${
+							scope
+								? `${scope instanceof Aggregate ? "aggregate" : "bounded context"} "${scope.name}"`
+								: "no aggregate at all"
+						}`;
 				diagnostics.push({
 					severity: "error",
 					rule: "invariant-in-aggregate",
-					message: `Invariant "${invariant.name}" of aggregate "${aggregate.name}" constrains "${constrainableLabel(target)}", which is in ${where}; an aggregate's invariant holds inside the boundary on every save`,
+					message: `Invariant "${invariant.name}" of aggregate "${aggregate.name}" constrains "${constrainableLabel(target)}", which is ${where}; an aggregate's invariant holds inside the boundary on every save`,
 					ref: invariant.ref,
 				});
 			}
@@ -962,20 +1031,33 @@ function contextOf(target: Constrainable): BoundedContext | undefined {
  * uniqueness, a quota, a limit are rules about that context's own instances,
  * and a rule that names another context's model claims a consistency no
  * boundary offers (decision 27).
+ *
+ * As for an aggregate, a value object one of the context's own aggregates
+ * holds is inside the boundary wherever it is defined, so a rule counting a
+ * shared `Money`'s amount across instances is the context's to keep; a value
+ * nobody in the context holds is refused (card 89).
  */
 const invariantInContext: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
+	const heldIn = new Map<BoundedContext, Set<ValueObject>>();
 	for (const [bc, invariant] of contextInvariantsOf(workspace)) {
+		let held = heldIn.get(bc);
+		if (!held) {
+			held = valueObjectsHeldIn(bc);
+			heldIn.set(bc, held);
+		}
 		for (const target of invariant.targets) {
 			const context = contextOf(target);
 			if (context === bc) continue;
-			const where = context
-				? `bounded context "${context.name}"`
-				: "no bounded context at all";
+			const vo = valueObjectOf(target);
+			if (vo && held.has(vo)) continue;
+			const where = vo
+				? `a value object of bounded context "${vo.boundedcontext.name}" that nothing in "${bc.name}" holds`
+				: `in ${context ? `bounded context "${context.name}"` : "no bounded context at all"}`;
 			diagnostics.push({
 				severity: "error",
 				rule: "invariant-in-context",
-				message: `Invariant "${invariant.name}" of bounded context "${bc.name}" constrains "${constrainableLabel(target)}", which is in ${where}; a context's invariant holds across its own aggregates and no further`,
+				message: `Invariant "${invariant.name}" of bounded context "${bc.name}" constrains "${constrainableLabel(target)}", which is ${where}; a context's invariant holds across its own aggregates and no further`,
 				ref: invariant.ref,
 			});
 		}
@@ -1710,32 +1792,54 @@ const internalConsumable: Rule = (workspace) => {
 };
 
 /**
- * One consumer takes one consumable once.
+ * One consumer takes one consumable once, unless each of the consumptions says
+ * which of the consumer's callers makes it and no two of them say the same.
  *
- * A consumption has no id of its own: its ref is the consumer and the
- * consumable it joins (card 62). Declare the same pair twice and the two
- * consumptions share a ref, so the second is unreachable — its pattern, its
- * `by`, its comments and its disposition are written where nothing can link
- * to them — and every surface keyed by that ref has two rows claiming one key,
- * which is how card 73 met it: a Svelte `each_key_duplicate` crash on the
- * pages render rather than a diagnostic telling the author what was wrong.
- * An error, because the model has lost information the moment it is written.
+ * One pair may carry several exchanges: an archive takes a provider's response
+ * as it stands while a decision translates the same response through an
+ * anti-corruption layer, each with its own pattern and disposition, and the
+ * model has nowhere else to put that. What it may not do is leave the two
+ * indistinguishable. A consumption has no id of its own — its ref is the pair
+ * it joins, plus the first caller in `by` where the pair repeats (decision 26)
+ * — so the callers are what tell repeated consumptions apart: absent, or
+ * shared between two of them, the second consumption is unreachable, its
+ * pattern, comments and disposition written where nothing can link to them,
+ * and every surface keyed by the ref has two rows claiming one key. Card 73
+ * met that as a Svelte `each_key_duplicate` crash on the pages render rather
+ * than a diagnostic telling the author what was wrong. An error, because the
+ * model has lost information the moment it is written.
  */
 const consumptionOnce: Rule = (workspace) => {
-	const seen = new Map<string, Consumption>();
 	const diagnostics: Diagnostic[] = [];
+	const pairs = new Map<string, Consumption[]>();
 	for (const consumption of consumptionsOf(workspace)) {
-		const first = seen.get(consumption.ref);
-		if (!first) {
-			seen.set(consumption.ref, consumption);
-			continue;
+		const key = `${consumption.consumer.ref} ${consumption.consumable.ref}`;
+		const pair = pairs.get(key);
+		if (pair) pair.push(consumption);
+		else pairs.set(key, [consumption]);
+	}
+	for (const pair of pairs.values()) {
+		if (pair.length < 2) continue;
+		const callers = new Map<ConsumptionCaller, Consumption>();
+		for (const consumption of pair) {
+			const { consumer, consumable } = consumption;
+			const takes = `"${consumer.name}" consumes "${consumable.name}" from "${consumable.provider.name}" ${pair.length} times`;
+			const report = (says: string) =>
+				diagnostics.push({
+					severity: "error" as const,
+					rule: "consumption-once",
+					message: `${takes}, and ${says}; where one consumer takes one consumable more than once, each of those consumptions names the callers that make it and no two of them name the same caller`,
+					ref: consumption.ref,
+				});
+			if (consumption.by.length === 0) {
+				report("one of them names no caller in `by`");
+				continue;
+			}
+			for (const caller of consumption.by) {
+				if (callers.has(caller)) report(`"${caller.name}" makes more than one`);
+				else callers.set(caller, consumption);
+			}
 		}
-		diagnostics.push({
-			severity: "error",
-			rule: "consumption-once",
-			message: `"${consumption.consumer.name}" consumes "${consumption.consumable.name}" from "${consumption.consumable.provider.name}" more than once; the two share one ref, so only the first can ever be reached`,
-			ref: consumption.ref,
-		});
 	}
 	return diagnostics;
 };
@@ -2565,8 +2669,8 @@ const RULES: CataloguedRule[] = [
 		severities: ["warning"],
 		summary:
 			"An attribute typed by a value object has a matching uses relation, matched by the relation's for where one value object is used twice, and the two agree about how many there are.",
-		why: "The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened; and when they disagree about number the model says two things at once — a list-typed attribute against a single-valued relation, an optional attribute against a relation that says there is always one, a required attribute against a relation that says there may be none. One value object may be used twice, a current address beside an address history, so with several relations to it each says with for which attribute it draws; the label stays the phrase the map reads. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.",
-		fix: 'Add the missing uses relation or the missing attribute, and give the relation the cardinality the attribute already implies: * or 1..* for a list, 0..1 or * for an optional one, 1 or 1..* for a required one. Where two relations point at the same value object, set for on each to the name of the attribute it draws. The type itself is free text and is never checked against the value object\'s name; only a trailing [] is read, as "many".',
+		why: "The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened; and when they disagree about number the model says two things at once. Presence is not size: optional says whether the attribute is there and the cardinality says how many the value holds, so a required list may still hold none — Swagger's photoUrls is required with no minimum — and only three pairings are coherent. One value object may be used twice, a current address beside an address history, so with several relations to it each says with for which attribute it draws; the label stays the phrase the map reads. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.",
+		fix: 'Add the missing uses relation or the missing attribute, and give the relation the cardinality the attribute already implies: * or 1..* for a list whether or not it is optional, 1 for a required attribute that is not a list, 0..1 for an optional one that is not a list. Where two relations point at the same value object, set for on each to the name of the attribute it draws. The type itself is free text and is never checked against the value object\'s name; only a trailing [] is read, as "many".',
 		check: attributeRelationCoherence,
 	},
 	{
@@ -2600,18 +2704,18 @@ const RULES: CataloguedRule[] = [
 		rule: "invariant-in-aggregate",
 		severities: ["error"],
 		summary:
-			"An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object of its context.",
-		why: "This is the rule the aggregate itself upholds: it is checked as the aggregate is saved, and it is true again the moment the save returns. Something outside the boundary can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it belongs to the context and carries no state of its own, so it is saved as part of whichever aggregate holds one. The aggregate's own operations are the other: a rule about a transition is a rule about the operation that makes it, and naming it says which change the rule guards.",
-		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). If the target is an application service's operation, name the aggregate's own operation behind it: that is where the rule is enforced.",
+			"An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object of its context, or one borrowed from elsewhere that something in the aggregate holds.",
+		why: "This is the rule the aggregate itself upholds: it is checked as the aggregate is saved, and it is true again the moment the save returns. Something outside the boundary can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not. The aggregate's own operations are the other exception: a rule about a transition is a rule about the operation that makes it, and naming it says which change the rule guards.",
+		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object from another context, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). If the target is an application service's operation, name the aggregate's own operation behind it: that is where the rule is enforced.",
 		check: invariantInAggregate,
 	},
 	{
 		rule: "invariant-in-context",
 		severities: ["error"],
 		summary:
-			"Every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, one of its value objects, or one of its operations.",
-		why: "A context's invariant is the rule that holds across its own instances — one open application per customer, one active offer per seller and SKU — and the context can hold it because everything it counts is its own to read in one place. A rule reaching into another context counts what a neighbour owns and may change at any moment, which is a consistency no boundary offers. That rule is a policy or a process reacting to the other context's events instead.",
-		fix: "Point the invariant at this context's own model, or move the rule to the context that owns what it counts. Where the two contexts really must agree, model the reaction: the other context raises an event and a policy here issues the operation that responds.",
+			"Every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, one of its value objects or a borrowed one its aggregates hold, or one of its operations.",
+		why: "A context's invariant is the rule that holds across its own instances — one open application per customer, one active offer per seller and SKU — and the context can hold it because everything it counts is its own to read in one place. A value borrowed over a shared kernel is its own to read too, once one of its aggregates holds one: the instance is here even though the definition is not. A rule reaching into another context's entities, or into a value nothing here holds, counts what a neighbour owns and may change at any moment, which is a consistency no boundary offers. That rule is a policy or a process reacting to the other context's events instead.",
+		fix: "Point the invariant at this context's own model, or at a value object its aggregates hold, or move the rule to the context that owns what it counts. Where the two contexts really must agree, model the reaction: the other context raises an event and a policy here issues the operation that responds.",
 		check: invariantInContext,
 	},
 	{
@@ -2734,9 +2838,10 @@ const RULES: CataloguedRule[] = [
 	{
 		rule: "consumption-once",
 		severities: ["error"],
-		summary: "A consumer consumes a given consumable at most once.",
-		why: "A consumption has no id of its own — its ref is the consumer and the consumable it joins — so a second consumption of the same consumable carries the same ref as the first. Only one of them can ever be reached: the other's pattern, by, comments and disposition are written where no reader, link or tool will land, and any surface keyed by the ref has two rows claiming one key, which is a render crash rather than a model a reader can follow.",
-		fix: "Merge the two into one consumption, keeping every operation, policy and process named in by, and the pattern, comments and disposition either of them carried. If the two really are different exchanges, they are different consumables or different consumers.",
+		summary:
+			"A consumer consumes a given consumable once, or several times with each consumption naming callers in by that no other of them names.",
+		why: "One pair may carry more than one exchange — an archive taking a provider's response as it stands beside a decision that translates it through an anti-corruption layer, each with its own pattern and disposition — and the callers are what tell them apart. A consumption has no id of its own: its ref is the pair it joins, plus the first caller in by where the pair repeats. So a repeated pair whose consumptions name no caller, or name the same one, produces two consumptions with one ref. Only one of them can ever be reached: the other's pattern, by, comments and disposition are written where no reader, link or tool will land, and any surface keyed by the ref has two rows claiming one key, which is a render crash rather than a model a reader can follow.",
+		fix: "Name the callers. Give each consumption of the pair the operations, policies or processes of the consumer that make that exchange, and make sure no caller appears in two of them. If the callers are the same, the two are one exchange: merge them, keeping the pattern, comments and disposition either of them carried.",
 		check: consumptionOnce,
 	},
 	{
