@@ -25,7 +25,9 @@ export function nodeSize(n: GraphNode): { width: number; height: number } {
 }
 
 /**
- * Layered layout, left to right for maps, top to bottom for flows. Groups are
+ * Layered layout, left to right: every map this package draws, the flow map
+ * included, reads along the rank axis from left to right, and `direction`
+ * takes `"TB"` for a caller that wants the ranks stacked instead. Groups are
  * dagre clusters, so they come back as boxes around their members with dagre's
  * own padding; `positions` holds group boxes as well as node boxes, all in
  * absolute flow coordinates.
