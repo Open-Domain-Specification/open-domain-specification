@@ -302,8 +302,8 @@ beyond its monthly export. Each is a further session with its own owner.
 ## 9. Peer review
 
 An independent review of the model was taken as a second opinion. Each finding is listed
-with the outcome. The three deliberate problems in section 7 were out of bounds for the
-review and are unchanged; the workspace still reports exactly those three.
+with the outcome. The four deliberate problems in section 7 were out of bounds for the
+review and are unchanged; the workspace still reports exactly those four.
 
 Accepted
 
@@ -371,9 +371,10 @@ Partially accepted
 
 Rejected
 
-- Cross-context `references` from PlaybackSession and Signal to Title: `references` is the
-  DSL's way of holding another root's identity and is exactly what the cross-aggregate rule
-  permits; both entities also carry a scalar `titleId`.
+- Cross-context identity from PlaybackSession and Signal to Title: decision 14 makes a
+  relation that crosses a context an error, so neither entity holds a `references` relation
+  to Title; each carries a scalar `titleId` attribute whose `identifies` names the Title
+  root across the boundary, which is exactly what `cross-context-relation` requires.
 - Billing should not conform to Households, and cannot be customer-supplier with Playback,
   because it is generic: generic classifies the subdomain (buy rather than build), not the
   integration stance; the Commerce team is internal, said Playback is consulted, and

@@ -423,6 +423,6 @@ Payments, Cards, Lending and Reporting each borrow from, over one relationship a
 instead of a pairwise shared kernel between Accounts and Ledger and a private copy
 everywhere else. No aggregate, invariant, event or policy changed; a `uses` relation is
 never declared for the borrowed value objects, because a relation may not cross a context
-boundary (decision 15) and the attribute's `valueobject` reference is the only link. The
+boundary (decision 14) and the attribute's `valueobject` reference is the only link. The
 three deliberate diagnostics in section 7 are untouched, and validation still returns
 exactly those three.

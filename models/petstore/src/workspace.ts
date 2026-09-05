@@ -474,10 +474,10 @@ catalogBC.addTerm("Available", {
 
 /* =======================
    SALES: Order aggregate, OrderApp service
-   Demonstrates: a cross-aggregate `references` relation to another context's
+   Demonstrates: a cross-context identity attribute naming another context's
    root, an invariant that constrains two value objects, an anti-corruption
    consumption, a policy that reacts to events from two contexts, and policies
-   that issue another context's open-host operations.
+   that issue local operations which call out through the ACL (decision 17).
    ======================= */
 
 const orderAgg = salesBC.addAggregate("Order", {
