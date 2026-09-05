@@ -1,11 +1,4 @@
 <script lang="ts">
-	/**
-	 * The zoom floor bounds how far the panel-aware fit can pull a wide map in.
-	 * At 0.2 NorthBank's fifteen contexts no longer fit beside the legend in a
-	 * narrow webview and a node slid under the options panel; 0.1 leaves the fit
-	 * room on every shipped model, and fullscreen and zoom are there for reading.
-	 */
-	const MIN_ZOOM = 0.1;
 import {
 	Background,
 	Controls,
@@ -32,6 +25,14 @@ import { edgeTypes, nodeTypes } from "../flow/registry";
 import SketchBackdrop from "../flow/SketchBackdrop.svelte";
 import { hostColorMode } from "../flow/theme.svelte";
 import DisclosureCard from "./DisclosureCard.svelte";
+
+/**
+ * The zoom floor bounds how far the panel-aware fit can pull a wide map in.
+ * At 0.2 NorthBank's fifteen contexts no longer fit beside the legend in a
+ * narrow webview and a node slid under the options panel; 0.1 leaves the fit
+ * room on every shipped model, and fullscreen and zoom are there for reading.
+ */
+const MIN_ZOOM = 0.1;
 
 /**
  * A pannable, zoomable version of a figure. Nodes are refs, so clicking one
