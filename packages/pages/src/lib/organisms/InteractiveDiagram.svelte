@@ -18,21 +18,15 @@ import type { Graph } from "../flow/graph";
 import { diagramKind, sketchApplies } from "../flow/kind";
 import LegendPanel from "../flow/LegendPanel.svelte";
 import { layout } from "../flow/layout";
+import { createLegendState } from "../flow/legend-state.svelte";
 import { minimapNodeClass } from "../flow/minimap";
 import { diagramOptions } from "../flow/options.svelte";
 import PanelFit from "../flow/PanelFit.svelte";
+import { MIN_ZOOM } from "../flow/panel-fit";
 import { edgeTypes, nodeTypes } from "../flow/registry";
 import SketchBackdrop from "../flow/SketchBackdrop.svelte";
 import { hostColorMode } from "../flow/theme.svelte";
 import DisclosureCard from "./DisclosureCard.svelte";
-
-/**
- * The zoom floor bounds how far the panel-aware fit can pull a wide map in.
- * At 0.2 NorthBank's fifteen contexts no longer fit beside the legend in a
- * narrow webview and a node slid under the options panel; 0.1 leaves the fit
- * room on every shipped model, and fullscreen and zoom are there for reading.
- */
-const MIN_ZOOM = 0.1;
 
 /**
  * A pannable, zoomable version of a figure. Nodes are refs, so clicking one
@@ -64,6 +58,8 @@ $effect(() => {
 	edges = withDisclosure(flowEdges(positioned), positioned, disclosure);
 });
 const fullscreen = createFullscreen();
+/** Shared by the legend and the fit: the fit can close it, the reader can open it. */
+const legend = createLegendState();
 /** Measured by the panel-aware fit, so it needs the box the panels float over. */
 let container = $state<HTMLElement>();
 onDestroy(fullscreen.stop);
@@ -81,8 +77,8 @@ const refit = () => {
 		<Controls showLock={false} />
 		<MiniMap pannable zoomable width={120} height={80} nodeClass={minimapNodeClass} />
 		<DiagramOptionsPanel {kind} {fullscreen} {container} />
-		<LegendPanel {graph} {kind} />
-		<PanelFit {container} />
+		<LegendPanel {graph} {kind} {legend} />
+		<PanelFit {container} {legend} />
 		<DisclosureCard {disclosure} />
 	</SvelteFlow>
 </div>

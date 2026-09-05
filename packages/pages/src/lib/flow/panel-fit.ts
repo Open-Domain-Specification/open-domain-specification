@@ -150,3 +150,84 @@ export function fitPastPanels(
 	const { view, panels } = measurePanels(container);
 	flow.fitView({ padding: panelPadding(view, panels) });
 }
+
+/**
+ * How far Svelte Flow may pull a map out before it stops. Cards 20 and 56
+ * dropped this to 0.1 so NorthBank's fifteen contexts could fit beside an
+ * expanded legend in a narrow webview; at that scale a context is a smudge,
+ * which is not a map anyone can read. It is back at 0.2, and the legend gives
+ * way instead.
+ */
+export const MIN_ZOOM = 0.2;
+
+/**
+ * The readable floor: the zoom below which the fit stops asking the map to
+ * shrink and asks the legend to get out of the way instead. It sits a notch
+ * above `MIN_ZOOM` on purpose — a map fitted exactly at the floor is one the
+ * viewport is already clamping, so the legend gives way before the map
+ * reaches the wall, not once it is pressed against it.
+ */
+export const READABLE_ZOOM = 0.25;
+
+/** The box the graph's nodes span, in flow coordinates. */
+export type Size = { width: number; height: number };
+
+/**
+ * The zoom Svelte Flow would fit `bounds` at inside `view` with `padding`
+ * reserved, before any clamping: the smaller of the two axes' ratios, as
+ * `getViewportForBounds` computes it. A graph with no size is nothing to fit,
+ * so it reports infinity — no pressure on the legend at all.
+ */
+export function fittedZoom(
+	view: Rect,
+	padding: PanelPadding,
+	bounds: Size,
+): number {
+	if (bounds.width <= 0 || bounds.height <= 0) return Number.POSITIVE_INFINITY;
+	const reserved = (side: keyof PanelPadding) =>
+		Number.parseFloat(padding[side]);
+	const width = view.right - view.left - reserved("left") - reserved("right");
+	const height = view.bottom - view.top - reserved("top") - reserved("bottom");
+	return Math.min(width / bounds.width, height / bounds.height);
+}
+
+/**
+ * Whether the legend has to give way: reserving the strips `panels` claim
+ * inside `view` would fit `bounds` below the readable floor. Pure, so the
+ * decision is testable without a browser — give it the numbers a webview
+ * would have measured and it answers.
+ */
+export function legendGivesWay(
+	view: Rect,
+	panels: Rect[],
+	bounds: Size,
+	floor = READABLE_ZOOM,
+): boolean {
+	return fittedZoom(view, panelPadding(view, panels), bounds) < floor;
+}
+
+/** The slice of the Svelte Flow instance the decision measures the graph with. */
+export type Measurer<TNode> = {
+	getNodes: () => TNode[];
+	getNodesBounds: (nodes: TNode[]) => Size;
+};
+
+/**
+ * The same decision taken from a live diagram: the container gives the view
+ * and the panels, the flow gives the bounds. Without a container nothing has
+ * been measured and nothing has to give way.
+ */
+export function legendCrowded<TNode>(
+	flow: Measurer<TNode>,
+	container: Element | undefined | null,
+	floor = READABLE_ZOOM,
+): boolean {
+	if (!container) return false;
+	const { view, panels } = measurePanels(container);
+	return legendGivesWay(
+		view,
+		panels,
+		flow.getNodesBounds(flow.getNodes()),
+		floor,
+	);
+}

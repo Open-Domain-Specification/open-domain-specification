@@ -1,12 +1,14 @@
 import { render } from "@testing-library/svelte";
 import { describe, expect, it, vi } from "vitest";
 import { installXyflowTestEnv } from "../xyflow-test-env";
+import { createLegendState } from "./legend-state.svelte";
 import Harness from "./PanelFit.harness.svelte";
-import { fitPastPanels } from "./panel-fit";
+import { fitPastPanels, legendCrowded } from "./panel-fit";
 
 vi.mock("./panel-fit", async (original) => ({
 	...(await original<typeof import("./panel-fit")>()),
 	fitPastPanels: vi.fn(),
+	legendCrowded: vi.fn(() => false),
 }));
 
 installXyflowTestEnv();
@@ -29,6 +31,19 @@ describe("PanelFit", () => {
 			expect.objectContaining({ fitView: expect.any(Function) }),
 			container,
 		);
+		unmount();
+	});
+
+	it("collapses the legend first when the map has run out of room, then fits", async () => {
+		vi.mocked(legendCrowded).mockReturnValueOnce(true);
+		const container = document.createElement("div");
+		const legend = createLegendState();
+		const { unmount } = render(Harness, { container, legend });
+		await settled();
+		// The extra tick and frame the collapse costs before the fit is measured.
+		await settled();
+		expect(legend.crowded).toBe(true);
+		expect(fitPastPanels).toHaveBeenCalledWith(expect.anything(), container);
 		unmount();
 	});
 

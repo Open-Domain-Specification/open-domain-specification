@@ -2,9 +2,16 @@ import { describe, expect, it, vi } from "vitest";
 import {
 	basePadding,
 	fitPastPanels,
+	fittedZoom,
+	legendCrowded,
+	legendGivesWay,
+	MIN_ZOOM,
 	PANEL_GUTTER,
+	type PanelPadding,
 	panelPadding,
+	READABLE_ZOOM,
 	type Rect,
+	type Size,
 } from "./panel-fit";
 
 /** A canvas 800x400 with its top-left at the origin, as a diagram is measured. */
@@ -132,5 +139,89 @@ describe("fitPastPanels", () => {
 		const fitView = vi.fn();
 		fitPastPanels({ fitView }, undefined);
 		expect(fitView).not.toHaveBeenCalled();
+	});
+});
+
+describe("fittedZoom", () => {
+	const none: PanelPadding = {
+		top: "0px",
+		right: "0px",
+		bottom: "0px",
+		left: "0px",
+	};
+	it("is the tighter of the two axes, measured inside the padding", () => {
+		// 800x400 with nothing reserved, round a graph twice as wide as the canvas.
+		expect(fittedZoom(VIEW, none, { width: 1600, height: 400 })).toBe(0.5);
+		// The height is the tighter axis here, so it decides.
+		expect(fittedZoom(VIEW, none, { width: 800, height: 1600 })).toBe(0.25);
+		// Reserving the legend's column costs the fit its width.
+		expect(
+			fittedZoom(
+				VIEW,
+				{ ...none, left: "400px" },
+				{ width: 1600, height: 400 },
+			),
+		).toBe(0.25);
+	});
+
+	it("reads a graph with no size as nothing to fit", () => {
+		expect(fittedZoom(VIEW, none, { width: 0, height: 0 })).toBe(
+			Number.POSITIVE_INFINITY,
+		);
+		expect(fittedZoom(VIEW, none, { width: 800, height: 0 })).toBe(
+			Number.POSITIVE_INFINITY,
+		);
+	});
+});
+
+describe("legendGivesWay", () => {
+	/** A wide map: fifteen contexts across, as NorthBank's is. */
+	const wide = { width: 4000, height: 900 };
+
+	it("holds the legend while the map still fits above the floor", () => {
+		const roomy: Rect = { left: 0, right: 2400, top: 0, bottom: 1200 };
+		expect(legendGivesWay(roomy, [tall(15, 215)], wide)).toBe(false);
+	});
+
+	it("gives way once the reserved column would fit the map below the floor", () => {
+		// A webview split thin: the legend's column takes what the map needed.
+		expect(legendGivesWay(VIEW, [tall(15, 215)], wide)).toBe(true);
+		// A map that fits in what is left leaves the legend alone.
+		expect(
+			legendGivesWay(VIEW, [tall(15, 215)], { width: 1000, height: 500 }),
+		).toBe(false);
+	});
+
+	it("takes the floor it is given", () => {
+		const bounds = { width: 1600, height: 400 };
+		expect(legendGivesWay(VIEW, [], bounds, 0.1)).toBe(false);
+		expect(legendGivesWay(VIEW, [], bounds, 0.9)).toBe(true);
+	});
+
+	it("keeps the readable floor above the zoom floor", () => {
+		expect(READABLE_ZOOM).toBeGreaterThan(MIN_ZOOM);
+	});
+});
+
+describe("legendCrowded", () => {
+	const flow = (bounds: Size) => ({
+		getNodes: () => [{ id: "a" }],
+		getNodesBounds: () => bounds,
+	});
+
+	it("measures the diagram and asks the same question of it", () => {
+		const canvas = () => container(VIEW, [tall(15, 215)]);
+		expect(legendCrowded(flow({ width: 4000, height: 900 }), canvas())).toBe(
+			true,
+		);
+		expect(legendCrowded(flow({ width: 400, height: 200 }), canvas())).toBe(
+			false,
+		);
+	});
+
+	it("has nothing to give way for without a container", () => {
+		expect(legendCrowded(flow({ width: 4000, height: 900 }), undefined)).toBe(
+			false,
+		);
 	});
 });

@@ -18,6 +18,8 @@ Organisms: [AttributesSection](organism-attributes-section.md),
 [StrategicPositionTable](organism-strategic-position-table.md),
 [Toc](organism-toc.md).
 
+Diagram panels: [LegendPanel](flow-legend-panel.md).
+
 Templates: [AggregatePage](template-aggregate-page.md),
 [ConsumablePage](template-consumable-page.md),
 [ContextPage](template-context-page.md), [DomainPage](template-domain-page.md),
