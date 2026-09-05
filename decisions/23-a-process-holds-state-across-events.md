@@ -27,3 +27,7 @@ Decision 15 kept policies stateless: `on` is any-of, correlation is a process no
 ## Amendment (2026-09-08)
 
 A process's own steps feed it: it issues an operation, the operation raises the event the process waits for next, and so on to the end. The reaction walk reads that as the process's lifecycle, not as a ring; a cycle is reported only when the walk returns to a node other than the process itself (card 81). The first implementation exempted only the ending event and would have reported every multi-step process.
+
+## Amendment (2026-09-08, second)
+
+A process could wait only on events, so the commonest process-manager shape, call and branch on the answer, had no honest form: RiverMart published a declined payment as an event against decision 25's own example, and NorthBank described a synchronous verdict and modelled two events. A process's `on` and `ends`, and a policy's `on`, may name a schema an operation returns or rejects with, meaning when that answer comes back; the reaction walk and the flow map read the answer as a step from the operation (card 92). Delivery is still implied by the consumable's type: the answer is synchronous because the operation is.

@@ -21,3 +21,7 @@ Decision 13 gave operations `returns` and said synchronous error shapes are not 
 - One optional field in the schema, the workspace model, the DSL (`provides(..., { rejects: [...] })`), `toSchema`/`fromSchema`, and the regenerated JSON schema; `feat!` because the reference models change.
 - The consumable page gains a "Rejects with" table beside "Returns"; the generated docs print it; the skill's interview asks, for operations, "and when it says no, what does it say?".
 - Decision 13's line "synchronous error shapes are not modelled" is superseded by this record.
+
+## Note (2026-09-08)
+
+A rejection is something a process can wait on (decision 23, second amendment), which is what makes it usable: the process that called `AuthorisePayment` reacts to `PaymentDeclined` as the answer it was, not as an event the world was told about.

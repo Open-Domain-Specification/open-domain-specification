@@ -84,3 +84,7 @@ A glossary belongs to a bounded context because that is what a ubiquitous langua
 
 - A review that expects these constructs should find this record and argue with its reasoning rather than report their absence.
 - Each section names the condition under which it would be reopened.
+
+### An identity names one kind of thing
+
+An attribute that is "an order id or a seller id" identifies nothing, because `identifies` names one entity. The model's answer is two optional attributes, each identifying its own target, with an invariant in prose that exactly one is set; RiverMart's `RiskAssessment.subjectId` is the case. A union identity would need a union type, which decision 18 leaves out. Reopened if a reference model needs more than two targets on one attribute.

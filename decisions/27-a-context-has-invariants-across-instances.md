@@ -34,3 +34,7 @@ Three kinds, each named on the invariant's page. A value object's invariant hold
 ## Note (2026-09-08, second)
 
 An invariant's boundary holds instances, not type definitions. A value object borrowed from a shared kernel or a conformed-to upstream is inside the aggregate that holds it, and the aggregate's invariant may constrain that value and its attributes; what it may not constrain is a value nobody inside the boundary holds (card 89).
+
+## Note (2026-09-08, third)
+
+An aggregate invariant that constrains an operation is a guard, a precondition checked when that operation runs; it is not true again after every save, and the rule's text and the invariant's page say which of the two an invariant is by whether it names a guard (card 92).

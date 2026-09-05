@@ -21,3 +21,7 @@ A consumable of type `operation` carries one payload, `schema`, and `raises` may
 - Pages: the consumable page gains a "Returns" row and a second attribute table, shown only when set; the provides table gains no column.
 - Doc generator and skill follow; the interview's "what information travels with that request?" gains the follow-up "and what comes back?" for operations.
 - Read models need no construct of their own: a service providing a query with `returns` says it.
+
+## Note (2026-09-08)
+
+A query that answers with a list returns an answer schema whose attribute holds the list, `SearchResults { hits: SearchHit[] }`; `returns` names one shape and the shape says it is many. Petstore's `FindPetsByStatus` said it returned one Pet and now returns `Pets` (card 92).

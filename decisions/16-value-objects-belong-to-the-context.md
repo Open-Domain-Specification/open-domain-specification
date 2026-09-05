@@ -38,3 +38,7 @@ Evans's shared kernel is a bounded subset of model and code two teams own togeth
 ## Amendment (2026-09-08, second)
 
 A kernel context's aggregate is shared by being consumed: `shared-kernel-backed` counts a sharer's consumption of the kernel's operations as well as its borrowed value objects and schemas (card 90). The kernel's `team` is the team that keeps it, which for a co-owned kernel is the joint team the model names; the model does not list the co-owners, and that is a named cost.
+
+## Amendment (2026-09-08, third)
+
+This record promised the boundary was sealed for value objects and the validator never checked `attribute.valueobject` across contexts; Prowl's third review found a claim held on the specification's central rule with nothing under it. `valueobject-context` (card 92) refuses a borrowed value object unless a shared kernel or a conformist relationship carries it, with the same predicate `schema-context` uses, and `relationship-declared` counts the borrowing as a crossing. A borrowed value object is not drawn on the relation map today; card 93 draws it with its context named.
