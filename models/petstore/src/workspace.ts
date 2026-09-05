@@ -196,14 +196,18 @@ petRoot.addAttribute("status", {
 });
 
 // `uses` is the relation to a value object; between the Pet here and the
-// Order below the cardinalities cover 0..1, *, 1..* and 1. The status is
-// "0..1" and not "1" because the attribute is optional: the v3 contract does
-// not require it, and the two halves of that statement have to agree (card
-// 82). A pet without a status is not listed by findByStatus and is not
-// counted by Inventory, which is what the contract already implies.
+// Order below the cardinalities cover 0..1, * and 1. The status is "0..1" and
+// not "1" because the attribute is optional: the v3 contract does not require
+// it, and the two halves of that statement have to agree (card 82). A pet
+// without a status is not listed by findByStatus and is not counted by
+// Inventory, which is what the contract already implies.
+//
+// photoUrls is "*" and not "1..*" because presence is not size: the contract
+// requires the field and sets no minimum, so a pet with no photograph is a
+// valid pet and the model says so (card 89).
 petRoot.uses(categoryVO, "categorized-as", "0..1");
 petRoot.uses(tagVO, "tagged-with", "*");
-petRoot.uses(photoUrlVO, "has-photo", "1..*");
+petRoot.uses(photoUrlVO, "has-photo", "*");
 petRoot.uses(petStatusVO, "has-status", "0..1");
 
 // Invariants name the rule and point at what it constrains: an attribute here,

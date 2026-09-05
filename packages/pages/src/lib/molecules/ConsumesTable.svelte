@@ -18,7 +18,10 @@ import ContextLockup from "./ContextLockup.svelte";
  *
  * A consumption has no page of its own, so each row carries the consumption's
  * ref as its id: a link or a diagnostic at that ref lands on the consumer's
- * page and flashes the row (decision 26).
+ * page and flashes the row (decision 26). One consumer may take one consumable
+ * more than once, an archive beside a translation, and the ref of each such
+ * consumption carries the first caller in `by`, so the rows keep one id each
+ * (card 89).
  */
 const {
 	consumptions,

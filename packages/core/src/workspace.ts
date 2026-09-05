@@ -1786,9 +1786,23 @@ export class Consumption
 	 * `consumes[]` keeps it stable when the array is reordered, and flattening
 	 * the whole consumable path rather than its ids alone keeps two providers
 	 * of the same id — one aggregate, one service — apart.
+	 *
+	 * One consumer may take one consumable more than once when the exchanges
+	 * differ, an archive taking a response as it stands beside a decision that
+	 * translates it, so the pair alone does not always identify a consumption.
+	 * Where it does not, the first caller named in `by` is appended as a
+	 * further segment; `consumption-once` is what makes that caller present and
+	 * the callers of the sibling consumptions disjoint, so the segment tells
+	 * the two apart. A pair declared once keeps the ref it always had
+	 * (decision 26, card 89).
 	 */
 	get path(): string {
-		return `${this.consumer.path}/consumes/${this.consumable.path.split("/").join("~")}`;
+		const pair = `${this.consumer.path}/consumes/${this.consumable.path.split("/").join("~")}`;
+		const shared = this.consumer.consumptions.some(
+			(other) => other !== this && other.consumable === this.consumable,
+		);
+		const caller = this.by[0];
+		return shared && caller ? `${pair}/${caller.id}` : pair;
 	}
 
 	get ref(): string {

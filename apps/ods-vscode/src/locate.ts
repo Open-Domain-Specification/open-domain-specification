@@ -64,23 +64,31 @@ function locateRelationship(tree: Node, ref: string): Span | undefined {
 
 /**
  * A consumption's ref is `<consumer>/consumes/<consumable path with ~ for />`,
- * but in the file `consumes` is an array with no keys, so the consumable has
- * to be matched against each element's `$ref` rather than looked up by path.
+ * and, where the consumer takes that consumable more than once, a final
+ * segment holding the id of the first caller named in `by`. In the file
+ * `consumes` is an array with no keys, so the consumable has to be matched
+ * against each element's `$ref` rather than looked up by path, and the caller
+ * against the last segment of the element's first `by` ref.
  */
-const CONSUMPTION = /^(#\/.+)\/consumes\/([^/]+)$/;
+const CONSUMPTION = /^(#\/.+)\/consumes\/([^/]+)(?:\/([^/]+))?$/;
 
-type ConsumptionJson = { consumable?: { $ref?: string } };
+type ConsumptionJson = {
+	consumable?: { $ref?: string };
+	by?: { $ref?: string }[];
+};
 
 function locateConsumption(tree: Node, ref: string): Span | undefined {
 	const match = ref.match(CONSUMPTION);
 	if (!match) return undefined;
-	const [, consumer, flattened] = match;
+	const [, consumer, flattened, caller] = match;
 	const consumable = `#/${flattened.split("~").join("/")}`;
 	const array = findNodeAtLocation(tree, [...refToPath(consumer), "consumes"]);
 	for (const element of array?.children ?? []) {
 		const value = getNodeValue(element) as ConsumptionJson;
-		if (value.consumable?.$ref === consumable)
-			return { start: element.offset, end: element.offset + element.length };
+		if (value.consumable?.$ref !== consumable) continue;
+		if (caller && refToPath(value.by?.[0]?.$ref ?? "").pop() !== caller)
+			continue;
+		return { start: element.offset, end: element.offset + element.length };
 	}
 	return undefined;
 }

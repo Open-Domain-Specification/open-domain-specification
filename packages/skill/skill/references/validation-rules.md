@@ -112,9 +112,9 @@
 
 **Requires:** An attribute typed by a value object has a matching uses relation, matched by the relation's for where one value object is used twice, and the two agree about how many there are.
 
-**Why it matters:** The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened; and when they disagree about number the model says two things at once — a list-typed attribute against a single-valued relation, an optional attribute against a relation that says there is always one, a required attribute against a relation that says there may be none. One value object may be used twice, a current address beside an address history, so with several relations to it each says with for which attribute it draws; the label stays the phrase the map reads. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.
+**Why it matters:** The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened; and when they disagree about number the model says two things at once. Presence is not size: optional says whether the attribute is there and the cardinality says how many the value holds, so a required list may still hold none — Swagger's photoUrls is required with no minimum — and only three pairings are coherent. One value object may be used twice, a current address beside an address history, so with several relations to it each says with for which attribute it draws; the label stays the phrase the map reads. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.
 
-**Usual fix:** Add the missing uses relation or the missing attribute, and give the relation the cardinality the attribute already implies: * or 1..* for a list, 0..1 or * for an optional one, 1 or 1..* for a required one. Where two relations point at the same value object, set for on each to the name of the attribute it draws. The type itself is free text and is never checked against the value object's name; only a trailing [] is read, as "many".
+**Usual fix:** Add the missing uses relation or the missing attribute, and give the relation the cardinality the attribute already implies: * or 1..* for a list whether or not it is optional, 1 for a required attribute that is not a list, 0..1 for an optional one that is not a list. Where two relations point at the same value object, set for on each to the name of the attribute it draws. The type itself is free text and is never checked against the value object's name; only a trailing [] is read, as "many".
 
 ## `relation-for-resolves` (error)
 
@@ -142,19 +142,19 @@
 
 ## `invariant-in-aggregate` (error)
 
-**Requires:** An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object of its context.
+**Requires:** An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object of its context, or one borrowed from elsewhere that something in the aggregate holds.
 
-**Why it matters:** This is the rule the aggregate itself upholds: it is checked as the aggregate is saved, and it is true again the moment the save returns. Something outside the boundary can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it belongs to the context and carries no state of its own, so it is saved as part of whichever aggregate holds one. The aggregate's own operations are the other: a rule about a transition is a rule about the operation that makes it, and naming it says which change the rule guards.
+**Why it matters:** This is the rule the aggregate itself upholds: it is checked as the aggregate is saved, and it is true again the moment the save returns. Something outside the boundary can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not. The aggregate's own operations are the other exception: a rule about a transition is a rule about the operation that makes it, and naming it says which change the rule guards.
 
-**Usual fix:** Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). If the target is an application service's operation, name the aggregate's own operation behind it: that is where the rule is enforced.
+**Usual fix:** Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object from another context, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). If the target is an application service's operation, name the aggregate's own operation behind it: that is where the rule is enforced.
 
 ## `invariant-in-context` (error)
 
-**Requires:** Every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, one of its value objects, or one of its operations.
+**Requires:** Every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, one of its value objects or a borrowed one its aggregates hold, or one of its operations.
 
-**Why it matters:** A context's invariant is the rule that holds across its own instances — one open application per customer, one active offer per seller and SKU — and the context can hold it because everything it counts is its own to read in one place. A rule reaching into another context counts what a neighbour owns and may change at any moment, which is a consistency no boundary offers. That rule is a policy or a process reacting to the other context's events instead.
+**Why it matters:** A context's invariant is the rule that holds across its own instances — one open application per customer, one active offer per seller and SKU — and the context can hold it because everything it counts is its own to read in one place. A value borrowed over a shared kernel is its own to read too, once one of its aggregates holds one: the instance is here even though the definition is not. A rule reaching into another context's entities, or into a value nothing here holds, counts what a neighbour owns and may change at any moment, which is a consistency no boundary offers. That rule is a policy or a process reacting to the other context's events instead.
 
-**Usual fix:** Point the invariant at this context's own model, or move the rule to the context that owns what it counts. Where the two contexts really must agree, model the reaction: the other context raises an event and a policy here issues the operation that responds.
+**Usual fix:** Point the invariant at this context's own model, or at a value object its aggregates hold, or move the rule to the context that owns what it counts. Where the two contexts really must agree, model the reaction: the other context raises an event and a policy here issues the operation that responds.
 
 ## `context-invariant-guarded` (error)
 
@@ -262,11 +262,11 @@
 
 ## `consumption-once` (error)
 
-**Requires:** A consumer consumes a given consumable at most once.
+**Requires:** A consumer consumes a given consumable once, or several times with each consumption naming callers in by that no other of them names.
 
-**Why it matters:** A consumption has no id of its own — its ref is the consumer and the consumable it joins — so a second consumption of the same consumable carries the same ref as the first. Only one of them can ever be reached: the other's pattern, by, comments and disposition are written where no reader, link or tool will land, and any surface keyed by the ref has two rows claiming one key, which is a render crash rather than a model a reader can follow.
+**Why it matters:** One pair may carry more than one exchange — an archive taking a provider's response as it stands beside a decision that translates it through an anti-corruption layer, each with its own pattern and disposition — and the callers are what tell them apart. A consumption has no id of its own: its ref is the pair it joins, plus the first caller in by where the pair repeats. So a repeated pair whose consumptions name no caller, or name the same one, produces two consumptions with one ref. Only one of them can ever be reached: the other's pattern, by, comments and disposition are written where no reader, link or tool will land, and any surface keyed by the ref has two rows claiming one key, which is a render crash rather than a model a reader can follow.
 
-**Usual fix:** Merge the two into one consumption, keeping every operation, policy and process named in by, and the pattern, comments and disposition either of them carried. If the two really are different exchanges, they are different consumables or different consumers.
+**Usual fix:** Name the callers. Give each consumption of the pair the operations, policies or processes of the consumer that make that exchange, and make sure no caller appears in two of them. If the callers are the same, the two are one exchange: merge them, keeping the pattern, comments and disposition either of them carried.
 
 ## `consumption-by-resolves` (error)
 

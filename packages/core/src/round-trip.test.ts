@@ -278,3 +278,69 @@ describe("a relation that names the attribute it draws", () => {
 		);
 	});
 });
+
+describe("one pair, two exchanges", () => {
+	/**
+	 * A reader that takes one event twice: an archive keeps the provider's
+	 * shape as it stands, a decision translates it through an anti-corruption
+	 * layer. The two are told apart by the callers they name, and the ref of
+	 * each carries the first of them (decision 26, card 89).
+	 */
+	function twice() {
+		const ws = new Workspace("Round Trip", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0",
+		});
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		up.upstreamOf(down, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist", "anti-corruption-layer"],
+		});
+		const happened = up
+			.addService("Feed", { description: "", type: "application" })
+			.provides("Happened", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			});
+		const reader = down.addService("Reader", {
+			description: "",
+			type: "application",
+		});
+		const archive = reader.provides("Archive", {
+			description: "",
+			type: "operation",
+		});
+		const decide = down.addPolicy("Decide", { description: "" });
+		reader.consumes(happened, { pattern: "conformist", by: [archive] });
+		reader.consumes(happened, {
+			pattern: "anti-corruption-layer",
+			by: [decide],
+		});
+		return ws;
+	}
+
+	const pairRef =
+		"#/boundedcontexts/down/services/reader/consumes/boundedcontexts~up~services~feed~provides~happened";
+
+	it("carries both consumptions, and their refs, through toSchema and back", () => {
+		const schema = twice().toSchema();
+		const rebuilt = Workspace.fromSchema(JSON.parse(JSON.stringify(schema)));
+		expect(rebuilt.toSchema()).toEqual(schema);
+		const reader = rebuilt.getServiceByRefOrThrow(
+			"#/boundedcontexts/down/services/reader",
+		);
+		expect(reader.consumptions.map((it) => it.ref)).toEqual([
+			`${pairRef}/archive`,
+			`${pairRef}/decide`,
+		]);
+		expect(rebuilt.findConsumption(`${pairRef}/decide`)?.pattern).toBe(
+			"anti-corruption-layer",
+		);
+		expect(
+			rebuilt.validate().filter((d) => d.rule === "consumption-once"),
+		).toEqual([]);
+	});
+});

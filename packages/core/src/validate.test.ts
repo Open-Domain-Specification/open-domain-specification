@@ -952,6 +952,69 @@ describe("invariant-in-aggregate", () => {
 			],
 		]);
 	});
+
+	/**
+	 * A shared kernel holding Money and a Rate nobody borrows, and a context
+	 * whose Invoice holds a Money. The review's case: the invariant is about
+	 * the amount of the value the invoice holds, and the value happens to be
+	 * defined next door (card 89).
+	 */
+	function borrowed() {
+		const ws = emptyWorkspace();
+		const kernel = ws.addBoundedContext("Kernel", { description: "" });
+		const billing = ws.addBoundedContext("Billing", { description: "" });
+		billing.sharesKernelWith(kernel);
+		const money = kernel.addValueObject("Money", { description: "" });
+		const amount = money.addAttribute("amount", { type: "decimal" });
+		const rate = kernel.addValueObject("Rate", { description: "" });
+		const invoice = billing.addAggregate("Invoice", { description: "" });
+		const root = invoice.addRootEntity("Invoice", { description: "" });
+		root.addAttribute("Id", { type: "uuid", identity: true });
+		root.addAttribute("Total", { type: "Money", valueobject: money });
+		return { ws, billing, money, amount, rate, invoice };
+	}
+
+	it("lets an invariant constrain a value object of a shared kernel that its own entity holds", () => {
+		const { ws, money, amount, invoice } = borrowed();
+		invoice
+			.addInvariant("Total Is Positive", { description: "" })
+			.constrains(money, amount);
+		expect(
+			ws.validate().filter((d) => d.rule === "invariant-in-aggregate"),
+		).toEqual([]);
+	});
+
+	it("still refuses a value object nobody inside the aggregate holds", () => {
+		const { ws, rate, invoice } = borrowed();
+		const reaching = invoice
+			.addInvariant("Reaches Out", { description: "" })
+			.constrains(rate);
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "invariant-in-aggregate")
+				.map((d) => [d.message, d.ref]),
+		).toEqual([
+			[
+				'Invariant "Reaches Out" of aggregate "Invoice" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save',
+				reaching.ref,
+			],
+		]);
+	});
+
+	it("follows the values a held value holds", () => {
+		const { ws, money, invoice } = borrowed();
+		const currency = money.boundedcontext.addValueObject("Currency", {
+			description: "",
+		});
+		money.addAttribute("currency", { type: "Currency", valueobject: currency });
+		invoice
+			.addInvariant("One Currency", { description: "" })
+			.constrains(currency);
+		expect(
+			ws.validate().filter((d) => d.rule === "invariant-in-aggregate"),
+		).toEqual([]);
+	});
 });
 
 describe("invariant-in-context", () => {
@@ -1014,6 +1077,46 @@ describe("invariant-in-context", () => {
 			[
 				'Invariant "Counts A Payload" of bounded context "BC" constrains "Place Order.Customer Id", which is in no bounded context at all; a context\'s invariant holds across its own aggregates and no further',
 				rule.ref,
+			],
+		]);
+	});
+
+	/**
+	 * The same borrowing as an aggregate's: a value a context's own aggregate
+	 * holds is inside the context wherever it is defined, and one nothing
+	 * holds is not (card 89).
+	 */
+	it("lets a context's invariant constrain a borrowed value its aggregates hold, and no other", () => {
+		const ws = emptyWorkspace();
+		const kernel = ws.addBoundedContext("Kernel", { description: "" });
+		const billing = ws.addBoundedContext("Billing", { description: "" });
+		billing.sharesKernelWith(kernel);
+		const money = kernel.addValueObject("Money", { description: "" });
+		const amount = money.addAttribute("amount", { type: "decimal" });
+		const rate = kernel.addValueObject("Rate", { description: "" });
+		const invoice = billing.addAggregate("Invoice", { description: "" });
+		const root = invoice.addRootEntity("Invoice", { description: "" });
+		root.addAttribute("Id", { type: "uuid", identity: true });
+		root.addAttribute("Total", { type: "Money", valueobject: money });
+		const issue = invoice.provides("Issue", {
+			description: "",
+			type: "operation",
+		});
+		billing
+			.addInvariant("Total Owed Under The Limit", { description: "" })
+			.constrains(amount, issue);
+		const reaching = billing
+			.addInvariant("Reaches Out", { description: "" })
+			.constrains(rate, issue);
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "invariant-in-context")
+				.map((d) => [d.message, d.ref]),
+		).toEqual([
+			[
+				'Invariant "Reaches Out" of bounded context "Billing" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Billing" holds; a context\'s invariant holds across its own aggregates and no further',
+				reaching.ref,
 			],
 		]);
 	});
@@ -1269,11 +1372,11 @@ describe("attribute-relation-coherence", () => {
 		});
 		root.uses(money, "paid in", "0..1");
 		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
-			'"Order" types attribute "Instalments" as a list ("Money[]") but its "uses" relation to "Money" has cardinality "0..1"',
+			'"Order" types attribute "Instalments" as a list ("Money[]") but its "uses" relation to "Money" has cardinality "0..1"; presence says whether the list is there and cardinality says how many it may hold, so a list pairs with "*" or "1..*"',
 		]);
 	});
 
-	it("warns when an optional attribute has a relation that says there is always one", () => {
+	it("warns when an optional attribute that is not a list has anything but 0..1", () => {
 		const { ws, root, money } = pair();
 		root.addAttribute("Total", {
 			type: "Money",
@@ -1282,21 +1385,26 @@ describe("attribute-relation-coherence", () => {
 		});
 		root.uses(money, "totalled in", "1");
 		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
-			'"Order" types attribute "Total" as optional but its "uses" relation to "Money" has cardinality "1", which says there is always at least one',
+			'"Order" types attribute "Total" as optional but its "uses" relation to "Money" has cardinality "1"; an attribute that is optional and not a list pairs with "0..1"',
 		]);
 	});
 
-	it("warns when a required attribute has a relation that says there may be none", () => {
+	it("warns when a required attribute that is not a list has anything but 1", () => {
 		const { ws, root, money } = pair();
 		root.addAttribute("Total", { type: "Money", valueobject: money });
 		root.uses(money, "totalled in", "0..1");
 		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
-			'"Order" types attribute "Total" as required but its "uses" relation to "Money" has cardinality "0..1", which says there may be none',
+			'"Order" types attribute "Total" as required but its "uses" relation to "Money" has cardinality "0..1"; an attribute that is required and not a list pairs with "1"',
 		]);
 	});
 
-	it("accepts an optional attribute against 0..1 and a required list against 1..*", () => {
+	// The four coherent pairings, in one workspace: presence says whether the
+	// attribute is there and cardinality says how many it holds, so a list is
+	// * or 1..* whether or not it is optional (card 89).
+	it("accepts a required 1, an optional 0..1, and a list against * or 1..*", () => {
 		const { ws, root, money } = pair();
+		root.addAttribute("Total", { type: "Money", valueobject: money });
+		root.uses(money, "totalled in", "1", { for: "Total" });
 		root.addAttribute("Deposit", {
 			type: "Money",
 			valueobject: money,
@@ -1304,7 +1412,34 @@ describe("attribute-relation-coherence", () => {
 		});
 		root.uses(money, "paid down by", "0..1", { for: "Deposit" });
 		root.addAttribute("Instalments", { type: "Money[]", valueobject: money });
-		root.uses(money, "paid in", "1..*", { for: "Instalments" });
+		root.uses(money, "paid in", "*", { for: "Instalments" });
+		root.addAttribute("Fees", {
+			type: "Money[]",
+			valueobject: money,
+			optional: true,
+		});
+		root.uses(money, "charged", "1..*", { for: "Fees" });
+		expect(coherenceRules(ws)).toEqual([]);
+	});
+
+	// Swagger's photoUrls: required, with no minimum. Presence is not size, so
+	// a required list against * is coherent and the author is not pushed into
+	// promising at least one.
+	it("accepts a required list against *", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("Instalments", { type: "Money[]", valueobject: money });
+		root.uses(money, "paid in", "*");
+		expect(coherenceRules(ws)).toEqual([]);
+	});
+
+	it("accepts an optional list against 1..*, which says the list is sometimes absent and never empty", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("Instalments", {
+			type: "Money[]",
+			valueobject: money,
+			optional: true,
+		});
+		root.uses(money, "paid in", "1..*");
 		expect(coherenceRules(ws)).toEqual([]);
 	});
 
@@ -1335,7 +1470,7 @@ describe("attribute-relation-coherence", () => {
 		root.uses(money, "lives at", "1", { for: "currentAddress" });
 		root.uses(money, "has lived at", "0..1", { for: "addressHistory" });
 		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
-			'"Order" types attribute "addressHistory" as a list ("Money[]") but its "uses" relation to "Money" has cardinality "0..1"',
+			'"Order" types attribute "addressHistory" as a list ("Money[]") but its "uses" relation to "Money" has cardinality "0..1"; presence says whether the list is there and cardinality says how many it may hold, so a list pairs with "*" or "1..*"',
 		]);
 	});
 
@@ -1401,7 +1536,7 @@ describe("attribute-relation-coherence", () => {
 		root.addAttribute("Instalments", { type: "decimal[]", valueobject: money });
 		root.uses(money, "paid in", "1");
 		expect(coherenceRules(ws).map((d) => d.message)).toEqual([
-			'"Order" types attribute "Instalments" as a list ("decimal[]") but its "uses" relation to "Money" has cardinality "1"',
+			'"Order" types attribute "Instalments" as a list ("decimal[]") but its "uses" relation to "Money" has cardinality "1"; presence says whether the list is there and cardinality says how many it may hold, so a list pairs with "*" or "1..*"',
 		]);
 	});
 });
@@ -3698,17 +3833,78 @@ describe("consumption-once", () => {
 		return { ws, up, down, happened, consumer };
 	}
 
-	it("errors on a second consumption of the same consumable by the same consumer", () => {
+	it("errors on a second consumption of the same consumable when neither names a caller", () => {
 		const { ws, happened, consumer } = pair();
+		const first = consumer.consumes(happened, { pattern: "conformist" });
 		consumer.consumes(happened, { pattern: "conformist" });
-		const second = consumer.consumes(happened, { pattern: "conformist" });
+		const says =
+			'"Reader" consumes "Happened" from "Feed" 2 times, and one of them names no caller in `by`; where one consumer takes one consumable more than once, each of those consumptions names the callers that make it and no two of them name the same caller';
+		expect(once(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			["error", says, first.ref],
+			["error", says, first.ref],
+		]);
+	});
+
+	it("accepts two consumptions of one consumable made by different callers", () => {
+		const { ws, down, happened, consumer } = pair();
+		const archive = consumer.provides("Archive", {
+			description: "",
+			type: "operation",
+		});
+		const decide = down.addPolicy("Decide", { description: "" });
+		const asIs = consumer.consumes(happened, {
+			pattern: "conformist",
+			by: [archive],
+		});
+		const translated = consumer.consumes(happened, {
+			pattern: "anti-corruption-layer",
+			by: [decide],
+		});
+		expect(once(ws)).toEqual([]);
+		// The pair repeats, so each ref carries its first caller and the two
+		// are reachable one at a time (decision 26).
+		const pairRef =
+			"#/boundedcontexts/down/services/reader/consumes/boundedcontexts~up~services~feed~provides~happened";
+		expect(asIs.ref).toBe(`${pairRef}/archive`);
+		expect(translated.ref).toBe(`${pairRef}/decide`);
+		expect(ws.findConsumption(asIs.ref)).toBe(asIs);
+		expect(ws.findConsumption(translated.ref)).toBe(translated);
+	});
+
+	it("errors when two consumptions of one consumable name the same caller", () => {
+		const { ws, happened, consumer } = pair();
+		const archive = consumer.provides("Archive", {
+			description: "",
+			type: "operation",
+		});
+		consumer.consumes(happened, { pattern: "conformist", by: [archive] });
+		const second = consumer.consumes(happened, {
+			pattern: "anti-corruption-layer",
+			by: [archive],
+		});
 		expect(once(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 			[
 				"error",
-				'"Reader" consumes "Happened" from "Feed" more than once; the two share one ref, so only the first can ever be reached',
+				'"Reader" consumes "Happened" from "Feed" 2 times, and "Archive" makes more than one; where one consumer takes one consumable more than once, each of those consumptions names the callers that make it and no two of them name the same caller',
 				second.ref,
 			],
 		]);
+	});
+
+	it("keeps the ref of a pair declared once as the pair alone", () => {
+		const { ws, happened, consumer } = pair();
+		const archive = consumer.provides("Archive", {
+			description: "",
+			type: "operation",
+		});
+		const only = consumer.consumes(happened, {
+			pattern: "conformist",
+			by: [archive],
+		});
+		expect(only.ref).toBe(
+			"#/boundedcontexts/down/services/reader/consumes/boundedcontexts~up~services~feed~provides~happened",
+		);
+		expect(once(ws)).toEqual([]);
 	});
 
 	it("says nothing when the consumer takes it once", () => {
