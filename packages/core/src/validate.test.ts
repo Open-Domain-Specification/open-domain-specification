@@ -193,7 +193,7 @@ describe("Workspace.validate", () => {
 		expect(messages).toEqual([]);
 	});
 
-	it("refuses an entity storing another aggregate's child id inside one context", () => {
+	it("lets an entity hold another aggregate's child id inside one context", () => {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("Sales", { description: "" });
 		const orderAgg = bc.addAggregate("Order", { description: "" });
@@ -202,24 +202,17 @@ describe("Workspace.validate", () => {
 		const line = orderAgg.addEntity("Order Line", { description: "" });
 		line.addAttribute("id", { type: "int64", identity: true });
 		order.includes(line, "has-line", "*");
-		const basket = bc.addAggregate("Basket", { description: "" });
-		const cart = basket.addRootEntity("Basket", { description: "" });
-		cart.addAttribute("id", { type: "int64", identity: true });
-		const lineId = cart.addAttribute("lineId", {
-			type: "int64",
-			identifies: line,
-		});
-		expect(
-			ws
-				.validate()
-				.filter((d) => d.rule === "identifies-entity")
-				.map((d) => [d.message, d.ref]),
-		).toEqual([
-			[
-				'"Basket" holds attribute "lineId" as the identity of "Order Line", which is not the root of aggregate "Order" in this same context "Sales"; use a relation to its root, because inside one context nothing is reached by id alone',
-				lineId.ref,
-			],
-		]);
+		const shipment = bc
+			.addAggregate("Shipment", { description: "" })
+			.addRootEntity("Shipment", { description: "" });
+		shipment.addAttribute("id", { type: "int64", identity: true });
+		// The root's id and the child's beside it: how DDD points at a child
+		// without the relation cross-aggregate-reference refuses.
+		shipment.addAttribute("orderId", { type: "int64", identifies: order });
+		shipment.addAttribute("lineId", { type: "int64", identifies: line });
+		expect(ws.validate().filter((d) => d.rule === "identifies-entity")).toEqual(
+			[],
+		);
 	});
 
 	it("lets an entity hold the id of a child of its own aggregate, and of another context's", () => {
@@ -967,7 +960,7 @@ describe("invariant-in-aggregate", () => {
 				severity: "error",
 				rule: "invariant-in-aggregate",
 				message:
-					'Invariant "Stretched" of aggregate "Order" constrains "Customer", which is in aggregate "Customer"; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of an application service of its own context that guards it',
+					'Invariant "Stretched" of aggregate "Order" constrains "Customer", which is in aggregate "Customer"; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
 				ref: stretched.ref,
 			},
 		]);
@@ -1034,21 +1027,22 @@ describe("invariant-in-aggregate", () => {
 		expect(inAggregate(ws)).toEqual([]);
 	});
 
-	it("refuses a domain service's operation and a neighbouring context's", () => {
-		const { ws, order, price, theirs } = guards();
-		const internal = order
-			.addInvariant("Priced Right", { description: "" })
-			.constrains(price);
+	it("lets a domain service's operation of its own context guard", () => {
+		const { ws, order, price } = guards();
+		// A rule that reads two aggregates before it can say yes lives in a
+		// domain service (decision 19, second amendment).
+		order.addInvariant("Priced Right", { description: "" }).constrains(price);
+		expect(inAggregate(ws)).toEqual([]);
+	});
+
+	it("refuses a neighbouring context's service operation", () => {
+		const { ws, order, theirs } = guards();
 		const abroad = order
 			.addInvariant("Reaches Out", { description: "" })
 			.constrains(theirs);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Priced Right" of aggregate "Order" constrains "Price", which is a domain service\'s, on "Pricing" in bounded context "BC"; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of an application service of its own context that guards it',
-				internal.ref,
-			],
-			[
-				'Invariant "Reaches Out" of aggregate "Order" constrains "Check", which is an application service\'s, on "TheirApp" in bounded context "Next"; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of an application service of its own context that guards it',
+				'Invariant "Reaches Out" of aggregate "Order" constrains "Check", which is an application service\'s, on "TheirApp" in bounded context "Next"; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
 				abroad.ref,
 			],
 		]);
@@ -1097,7 +1091,7 @@ describe("invariant-in-aggregate", () => {
 				.map((d) => [d.message, d.ref]),
 		).toEqual([
 			[
-				'Invariant "Reaches Out" of aggregate "Invoice" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of an application service of its own context that guards it',
+				'Invariant "Reaches Out" of aggregate "Invoice" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
 				reaching.ref,
 			],
 		]);
@@ -1776,7 +1770,7 @@ describe("specialisation", () => {
 				.filter((d) => d.rule === "cross-aggregate-reference")
 				.map((d) => d.message),
 		).toEqual([
-			'"Arrears" references "Statement", which is neither the root of aggregate "Account" nor a kind of that root; reference other aggregates by their root\'s identity',
+			'"Arrears" references "Statement", which is neither the root of aggregate "Account" nor a kind of that root; reference "Account" by its root\'s identity, holding "Statement"\'s id beside it when the child is what you mean',
 		]);
 	});
 
@@ -4249,26 +4243,41 @@ describe("external-is-boundary", () => {
 		expect(boundary(ws)).toEqual([]);
 	});
 
-	it("refuses a rule kept on one of its value objects", () => {
+	it("lets a standard's own rule stay on one of its value objects", () => {
 		const { ws, external } = scheme();
-		// The value object stays: it is the vocabulary our own model carries. The
-		// rule on it is somebody else's, and `invariant-in-value-object` walks
-		// modelled contexts only, so refusal here is what checks it at all
-		// (decision 28, second amendment).
+		// A published rule — a checksum, a field constraint — is the standard's
+		// contract rather than a guess about the system's insides, so it stays
+		// (decision 28, third amendment).
 		const amount = external.addValueObject("Scheme Amount", {
 			description: "",
 		});
-		amount.addAttribute("minor units", { type: "int64" });
-		const invariant = amount.addInvariant("Never Negative", {
+		const minor = amount.addAttribute("minor units", { type: "int64" });
+		amount
+			.addInvariant("Never Negative", { description: "" })
+			.constrains(amount, minor);
+		expect(boundary(ws)).toEqual([]);
+		expect(
+			ws.validate().filter((d) => d.rule === "invariant-in-value-object"),
+		).toEqual([]);
+	});
+
+	it("checks that rule like any other value object's", () => {
+		const { ws, external } = scheme();
+		const amount = external.addValueObject("Scheme Amount", {
 			description: "",
 		});
-		expect(boundary(ws)).toEqual([
-			[
-				"error",
-				'External context "Card Scheme" declares invariant "Never Negative" on value object "Scheme Amount"; what happens inside a system we do not own is not ours to state, only what it provides and what it consumes',
-				invariant.ref,
-			],
-		]);
+		const reference = external.addValueObject("Scheme Reference", {
+			description: "",
+		});
+		const reaching = amount
+			.addInvariant("Reaches Out", { description: "" })
+			.constrains(reference);
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "invariant-in-value-object")
+				.map((d) => d.ref),
+		).toEqual([reaching.ref]);
 	});
 
 	it("leaves the value object itself alone", () => {
