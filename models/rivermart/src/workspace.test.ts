@@ -7,21 +7,19 @@ import { workspace } from "./workspace";
 
 /**
  * RiverMart plants structural problems on purpose; see the DELIBERATE
- * comments in workspace.ts and section 7 of DISCOVERY.md. The role-coherence
- * one was retired on card 47: it sat on a consumption between Warehouse and
- * Last Mile, and those two share a kernel, so neither end has a role to
- * declare and the rule is right to stay quiet. The partnership-backed one
- * arrived with card 53 and is on its way out: Search and Advertising release
- * as one product, which is what a partnership is, and decision 20's amendment
- * relaxes the rule to traffic in at least one direction. The entry stays until
- * that core change lands, because this list states what `validate()` prints
- * today rather than what it ought to. Rule coverage itself is the completeness
- * fixture's job in packages/core/src/rule-catalog.test.ts.
+ * comments in workspace.ts and section 7 of DISCOVERY.md. Two rules have been
+ * retired off this list rather than fixed in the model, because in both cases
+ * the model was right and the rule over-claimed: role-coherence on card 47
+ * (Warehouse and Last Mile share a kernel, so neither end has a role to
+ * declare) and partnership-backed on card 69 (Search and Advertising release
+ * as one product with the traffic running one way, which decision 20's second
+ * amendment accepts). The list states what `validate()` prints today. Rule
+ * coverage itself is the completeness fixture's job in
+ * packages/core/src/rule-catalog.test.ts.
  */
 const deliberate: Array<{ rule: string; severity: "error" | "warning" }> = [
 	{ rule: "aggregate-root", severity: "error" },
 	{ rule: "cross-aggregate-reference", severity: "error" },
-	{ rule: "partnership-backed", severity: "warning" },
 ];
 
 describe("RiverMart reference workspace", () => {

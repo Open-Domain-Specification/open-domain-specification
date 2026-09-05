@@ -97,6 +97,13 @@ Accepted
   `MarkPetSold` (pending → sold) as open-host operations; Sales issues them from two new
   policies on `OrderApproved` and `OrderDelivered`, consumed through the same ACL. The
   `Available` term now names the two transitions.
+- One event for three facts: `PetStatusChanged` announced the catalogue's own status edits,
+  the reservation and the sale alike, so `Approve when pet available` — which only ever meant
+  the first — heard the reservation its own approval had just caused, and the chain ran in a
+  ring across Catalog and Sales (card 69). Changed: `ReservePet` raises `PetReserved` and
+  `MarkPetSold` raises `PetSold`, each carrying the pet id; `PetStatusChanged` keeps the
+  from/to payload and now means the catalogue moved a pet itself, e.g. relisting a returned
+  pet. Inventory takes all three, because the projection counts all three.
 - DispatchPlanner grouped shipments by pet category, which Fulfilment never receives.
   Changed: it groups orders approved on the same day, which `OrderApproved` does give it.
 

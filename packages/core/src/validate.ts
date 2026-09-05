@@ -4,6 +4,7 @@ import {
 	relationshipsWithoutComments,
 	type StrategicIntent,
 } from "./evidence";
+import { ReactionChain } from "./reaction-walk";
 import type { UpstreamRole } from "./schema";
 import {
 	Aggregate,
@@ -20,7 +21,7 @@ import {
 	type EntityRelation,
 	type Invariant,
 	isDirectedRelationshipType,
-	Policy,
+	type Policy,
 	type Service,
 	ValueObject,
 	type Workspace,
@@ -976,31 +977,32 @@ function trafficCrosses(
 }
 
 /**
- * A partnership is a two-way dependency: the two contexts succeed or fail
- * together, which is only true when each actually depends on the other. One
- * with no traffic at all is a wish, and one with traffic only one way is a
- * directed relationship wearing a partner's badge, which quietly excuses both
- * ends from declaring the upstream and downstream roles they really have.
+ * A partnership is backed by traffic in at least one direction.
+ *
+ * A partnership is two teams whose success depends on each other's and who
+ * plan and release as one. That is a fact about how they work, not about the
+ * shape of the arrows: one team may consume everything and the other nothing
+ * and the joint release train still be real, so the rule does not demand the
+ * quiet direction — decision 20's second amendment, after the rule was found
+ * over-claiming on two reference models. What it does demand is that
+ * something crosses. A partnership with no exchange at all in either
+ * direction is a wish: nothing binds the two release trains together, and the
+ * relationship is a claim on the map with nothing under it.
  */
 const partnershipBacked: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const relationship of workspace.relationships) {
 		if (relationship.type !== "partnership") continue;
 		const { source, target } = relationship;
-		const missing = (
-			[
-				[source, target],
-				[target, source],
-			] as const
-		).filter(([from, to]) => !trafficCrosses(workspace, from, to));
-		if (missing.length === 0) continue;
-		const gaps = missing
-			.map(([from, to]) => `"${to.name}" consumes nothing from "${from.name}"`)
-			.join(" and ");
+		if (
+			trafficCrosses(workspace, source, target) ||
+			trafficCrosses(workspace, target, source)
+		)
+			continue;
 		diagnostics.push({
 			severity: "warning",
 			rule: "partnership-backed",
-			message: `"${source.name}" and "${target.name}" are declared partners, but ${gaps}; a partnership is a two-way dependency, so back it with consumables both ways or state the direction the dependency really runs`,
+			message: `"${source.name}" and "${target.name}" are declared partners, but nothing crosses between them in either direction; a partnership does not need traffic both ways — one team may consume everything and the other nothing and still share a release train — but with no exchange at all there is nothing holding the two together`,
 			ref: relationship.ref,
 		});
 	}
@@ -1420,6 +1422,43 @@ const consumableKinds: Rule = (workspace) => {
 	return diagnostics;
 };
 
+/**
+ * An operation raises events of its own context.
+ *
+ * A context publishes its own facts and nobody else's: an event is something
+ * that happened inside a boundary, named in that boundary's language, and the
+ * context it happened in is the only one that can say so. Claiming to raise
+ * the context next door's event says two things that are both false — that
+ * this operation can make a fact true over there, and that the other context's
+ * published event means whatever this one needs it to mean.
+ *
+ * It matters more since the flow map and `reaction-cycle` read `by` as the one
+ * causal link across a boundary: without this rule an author could write a
+ * foreign event under `raises` and fake that link, and the chain would read as
+ * though a context had reached through the wall. Acting on another context is
+ * a consumption, and what comes back is that context's own event.
+ */
+const raisesInContext: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const bc of workspace.boundedcontexts.values()) {
+		for (const p of [...bc.aggregates.values(), ...bc.services.values()]) {
+			for (const c of p.consumables.values()) {
+				for (const event of c.raisedEvents) {
+					const owner = event.provider.boundedcontext;
+					if (owner === bc) continue;
+					diagnostics.push({
+						severity: "error",
+						rule: "raises-in-context",
+						message: `"${c.name}" raises "${event.name}", which belongs to "${owner.name}"; a context publishes its own facts, so "${bc.name}" cannot raise another context's event`,
+						ref: c.ref,
+					});
+				}
+			}
+		}
+	}
+	return diagnostics;
+};
+
 /** A policy reacts to something and does something. */
 const policyComplete: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -1439,56 +1478,41 @@ const policyComplete: Rule = (workspace) => {
 	return diagnostics;
 };
 
-/** A step in the reaction chain: an operation, an event, or a policy. */
-type Reactor = Consumable | Policy;
-
-/**
- * What the reaction chain does next: an operation leads to the events it
- * raises, an event to the policies listening for it, and a policy to the
- * operations it issues.
- */
-function reactionsFrom(
-	node: Reactor,
-	listeners: Map<Consumable, Policy[]>,
-): Reactor[] {
-	if (node instanceof Policy) return node.commands;
-	return [...node.raisedEvents, ...(listeners.get(node) ?? [])];
-}
-
 /**
  * The reactions form no cycle: no operation raises an event whose policy
  * issues an operation that leads, however far around, back to the first.
  *
  * A ring like that runs forever unless something outside the model stops it,
  * and nothing in the model says what — so it is the modeller who has to look
- * and either break the ring or write down the condition that ends it.
+ * and either break the ring or write down the condition that ends it. The
+ * chain is `ReactionChain`'s, the one the flow map draws, so it follows a
+ * consumption's `by` out of a context and the ring may run through several
+ * of them; when it does, the message names every context on it, because a
+ * loop nobody owns end to end is the one worth spelling out.
  */
 const reactionCycle: Rule = (workspace) => {
-	const listeners = new Map<Consumable, Policy[]>();
-	const nodes: Reactor[] = [];
-	for (const bc of workspace.boundedcontexts.values()) {
-		for (const provider of [...bc.aggregates.values(), ...bc.services.values()])
-			nodes.push(...provider.consumables.values());
-		for (const policy of bc.policies.values()) {
-			nodes.push(policy);
-			for (const event of policy.events) append(listeners, event, policy);
-		}
-	}
-
+	const chain = new ReactionChain(workspace.boundedcontexts.values());
 	return cyclesOf(
-		nodes,
-		(node) => reactionsFrom(node, listeners),
+		chain.steps,
+		(node) => chain.after(node),
 		(node) => node.ref,
-	).map((cycle) => ({
-		severity: "warning" as const,
-		rule: "reaction-cycle",
-		message: `Reactions run in a cycle: ${[...cycle, cycle[0]]
-			.map((n) => `"${n.name}"`)
-			.join(
-				" -> ",
-			)}; the chain triggers itself and nothing in the model says what ends it`,
-		ref: cycle[0].ref,
-	}));
+	).map((cycle) => {
+		const contexts = [...new Set(cycle.map((n) => n.boundedcontext))];
+		const across =
+			contexts.length > 1
+				? `; it runs through ${contexts.map((c) => `"${c.name}"`).join(" and ")}, so no one context can see the whole ring`
+				: "";
+		return {
+			severity: "warning" as const,
+			rule: "reaction-cycle",
+			message: `Reactions run in a cycle: ${[...cycle, cycle[0]]
+				.map((n) => `"${n.name}"`)
+				.join(
+					" -> ",
+				)}; the chain triggers itself and nothing in the model says what ends it${across}`,
+			ref: cycle[0].ref,
+		};
+	});
 };
 
 /** Every context serves at least one subdomain. */
@@ -1722,9 +1746,9 @@ const RULES: CataloguedRule[] = [
 		rule: "partnership-backed",
 		severities: ["warning"],
 		summary:
-			"Two contexts declaring a partnership exchange consumables — or events a policy reacts to — in both directions.",
-		why: "A partnership says two teams succeed or fail together and so plan their releases as one, which is only worth the coordination when each really depends on the other. A partnership with no traffic at all is a wish, and one with traffic only one way is a directed relationship wearing a partner's badge — which quietly excuses both ends from declaring the upstream and downstream roles they actually have.",
-		fix: "Add the consumable the other direction is missing, or replace the partnership with the upstream-downstream or customer-supplier relationship the traffic really describes.",
+			"Two contexts declaring a partnership exchange consumables — or events a policy reacts to — in at least one direction.",
+		why: "A partnership says two teams succeed or fail together and plan their releases as one. That is a fact about the teams, not about the direction of the arrows, so traffic one way is enough: one side may consume everything the other publishes and give back nothing, and the joint release train is still real. What the rule will not accept is a partnership with no exchange at all, which is a wish — nothing in the model holds the two contexts together, and the relationship is a claim on the map with nothing under it.",
+		fix: "Add the consumable, or the event a policy reacts to, that the partnership is really about; or replace the partnership with the relationship the two contexts actually have — separate ways if they genuinely never meet.",
 		check: partnershipBacked,
 	},
 	{
@@ -1850,6 +1874,15 @@ const RULES: CataloguedRule[] = [
 		why: "An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable.",
 		fix: "Check the type of each consumable a policy or raises list points at and swap it for the right kind.",
 		check: consumableKinds,
+	},
+	{
+		rule: "raises-in-context",
+		severities: ["error"],
+		summary:
+			"An operation raises only events its own bounded context provides.",
+		why: "A context publishes its own facts. An event is something that happened inside one boundary, named in that boundary's language, and only the context it happened in is in a position to say so. Raising another context's event claims both that this operation can make a fact true over there and that the neighbour's published event means whatever this one needs — and since the flow map and reaction-cycle read a consumption's by as the causal link across a boundary, a foreign event under raises would fake that link and draw a chain that reaches through the wall.",
+		fix: "Raise an event of this context and let the other context react to it, or, if the point is to act over there, consume that context's operation and let it raise its own event.",
+		check: raisesInContext,
 	},
 	{
 		rule: "policy-complete",

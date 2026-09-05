@@ -308,11 +308,30 @@ const petUpdated = petAgg.provides("PetUpdated", {
 	pattern: "published-language",
 	schema: petIdSchema,
 });
+// Three facts, three events. One PetStatusChanged for all of them read as a
+// ring: reserving a pet republished the same fact that tells Sales a pet is
+// available, so approving an order caused another approval (card 69). The
+// status edit keeps the name and the from/to payload because that is the one
+// case where the pair of statuses is the news; the two lifecycle transitions
+// each say which transition happened, so the id is all they carry.
 const petStatusChanged = petAgg.provides("PetStatusChanged", {
-	description: "Pet status changed (available|pending|sold)",
+	description:
+		"The catalogue moved a pet between statuses itself, e.g. relisting a returned pet as available",
 	type: "event",
 	pattern: "published-language",
 	schema: petStatusChangedSchema,
+});
+const petReserved = petAgg.provides("PetReserved", {
+	description: "available → pending: the pet is held for an approved order",
+	type: "event",
+	pattern: "published-language",
+	schema: petIdSchema,
+});
+const petSold = petAgg.provides("PetSold", {
+	description: "pending → sold: the pet has gone to its owner",
+	type: "event",
+	pattern: "published-language",
+	schema: petIdSchema,
 });
 const petDeleted = petAgg.provides("PetDeleted", {
 	description: "Pet removed from catalog",
@@ -326,7 +345,7 @@ const petDeleted = petAgg.provides("PetDeleted", {
 const changePetStatus = petAgg
 	.provides("ChangePetStatus", {
 		description:
-			"Move a pet between available, pending and sold; the catalogue's own edits, e.g. relisting",
+			"Move a pet between available, pending and sold; the catalogue's own edits, e.g. relisting a returned pet",
 		type: "operation",
 		internal: true,
 		schema: petStatusChangedSchema,
@@ -348,7 +367,7 @@ const reservePet = petAgg
 		internal: true,
 		schema: petIdSchema,
 	})
-	.raises(petStatusChanged);
+	.raises(petReserved);
 const markPetSold = petAgg
 	.provides("MarkPetSold", {
 		description:
@@ -357,7 +376,7 @@ const markPetSold = petAgg
 		internal: true,
 		schema: petIdSchema,
 	})
-	.raises(petStatusChanged);
+	.raises(petSold);
 
 // Application service: the API layer. open-host-service says the contract is documented for others.
 const petApp = catalogBC.addService("PetApp", {
@@ -453,7 +472,7 @@ const reservePetForOrder = petApp
 			},
 		],
 	})
-	.raises(petStatusChanged);
+	.raises(petReserved);
 const markPetSoldForOrder = petApp
 	.provides("MarkPetSoldForOrder", {
 		description:
@@ -462,11 +481,13 @@ const markPetSoldForOrder = petApp
 		pattern: "open-host-service",
 		schema: petIdSchema,
 	})
-	.raises(petStatusChanged);
+	.raises(petSold);
 // A consumption inside one context needs no pattern: there is no boundary to
-// protect between the service and the aggregate it fronts.
-petApp.consumes(reservePet, {});
-petApp.consumes(markPetSold, {});
+// protect between the service and the aggregate it fronts. `by` names which
+// of the service's operations runs which transition (decision 21), and that
+// is the link the flow map follows into the aggregate.
+petApp.consumes(reservePet, { by: [reservePetForOrder] });
+petApp.consumes(markPetSold, { by: [markPetSoldForOrder] });
 
 // Glossary: the ubiquitous language of this context, each term pointing at
 // the element that embodies it. Aliases record what other people call it.
@@ -744,7 +765,7 @@ orderApp.consumes(reservePetForOrder, {
 salesBC
 	.addPolicy("Approve when pet available", {
 		description:
-			"On OrderPlaced, or on PetStatusChanged to available, look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest",
+			"On OrderPlaced, or when the catalogue relists a pet (PetStatusChanged), look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest. It does not listen to PetReserved: that is the fact this very chain produces",
 	})
 	.on(petStatusChanged, orderPlaced)
 	.then(approveOrder);
@@ -1031,7 +1052,10 @@ const recountInventory = inventoryQuery
 // is cheap because the shared kernel means the status vocabulary is the same.
 inventoryQuery.consumes(petRegistered, { pattern: "conformist" });
 inventoryQuery.consumes(petDeleted, { pattern: "conformist" });
+// The projection counts all three status facts, so it takes all three.
 inventoryQuery.consumes(petStatusChanged, { pattern: "conformist" });
+inventoryQuery.consumes(petReserved, { pattern: "conformist" });
+inventoryQuery.consumes(petSold, { pattern: "conformist" });
 inventoryQuery.consumes(orderApproved, { pattern: "conformist" });
 inventoryQuery.consumes(orderDelivered, { pattern: "conformist" });
 inventoryQuery.consumes(orderDeleted, { pattern: "conformist" });
@@ -1047,6 +1071,8 @@ inventoryBC
 		petRegistered,
 		petDeleted,
 		petStatusChanged,
+		petReserved,
+		petSold,
 		orderApproved,
 		orderDelivered,
 		orderDeleted,

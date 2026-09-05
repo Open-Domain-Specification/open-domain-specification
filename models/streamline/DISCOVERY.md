@@ -276,7 +276,7 @@ to connect them. The connected timeline, condensed:
 
 ## 7. Validation and what we left in
 
-Four diagnostics, each a finding the client asked to keep visible:
+Three diagnostics, each a finding the client asked to keep visible:
 
 - `policy-complete` on Devices' "Recertify on SDK release": reacts to `DeviceCertified` and
   issues nothing. It is the half-written automation the Partner Devices lead mentioned.
@@ -285,14 +285,14 @@ Four diagnostics, each a finding the client asked to keep visible:
   player's contract to the catalogue's.
 - `internal-consumable` on Recommendations' consumption of `BookmarkUpdated`: the resume
   point update is internal to the player and the dependency was never agreed.
-- `partnership-backed` on Playback and Devices: they ship on one release train and certify
-  in the same lab run, but the only traffic is Playback consuming `DeviceCertified`;
-  Devices consumes nothing of Playback's. The declaration is true: a partnership in DDD is
-  two teams whose success is mutual and whose releases are planned as one, which is exactly
-  what the player and the SDK have, and it does not require consumption in both directions.
-  The rule over-claims, and decision 20's amendment relaxes it to traffic in at least one
-  direction. This entry is listed here because it is what `validate()` prints today; it
-  disappears when that change lands, and nothing about the model changes with it.
+
+The partnership between Playback and Devices used to raise `partnership-backed` as a fourth
+finding. They ship on one release train and certify in the same lab run, but the only
+traffic is Playback consuming `DeviceCertified`; Devices consumes nothing of Playback's. The
+declaration is true: a partnership in DDD is two teams whose success is mutual and whose
+releases are planned as one, which is exactly what the player and the SDK have, and it does
+not require consumption in both directions. Decision 20's second amendment relaxed the rule
+to traffic in at least one direction; the model is unchanged and the diagnostic is gone.
 
 ## 8. What the model leaves out
 

@@ -271,10 +271,12 @@ describe("ODSFlowMap", () => {
 		const edges = Array.from(map.edges.values()).map(
 			(e) => `${e.source.name} -> ${e.target.name}`,
 		);
+		// The walk starts at what wakes the policy and follows the chain, so the
+		// edges come out in the order a reader would trace them.
 		expect(edges).toEqual([
 			"Order Placed -> Invoice on order placed",
-			"Raise Invoice -> Invoice Raised",
 			"Invoice on order placed -> Raise Invoice",
+			"Raise Invoice -> Invoice Raised",
 		]);
 	});
 
@@ -282,5 +284,66 @@ describe("ODSFlowMap", () => {
 		const map = ODSFlowMap.fromWorkspace(f.ws);
 		expect(map.nodes.has(f.placeOrder.ref)).toBe(false);
 		expect(map.nodes.size).toBe(4);
+	});
+
+	it("follows a consumption's by out of the context and on from what it raises", () => {
+		// Decision 17's shape: the policy issues its own context's operation, and
+		// that operation is what calls out. `by` says so, so the flow map carries
+		// on through it instead of stopping at the boundary.
+		const ws = new Workspace("Across", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "1.0.0",
+		});
+		const shipping = ws.addBoundedContext("Shipping", { description: "" });
+		const shippingApp = shipping.addService("Shipping App", {
+			description: "",
+			type: "application",
+		});
+		const dispatched = shippingApp.provides("Dispatched", {
+			description: "",
+			type: "event",
+		});
+		const dispatch = shippingApp
+			.provides("Dispatch", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			})
+			.raises(dispatched);
+		const ordering = ws.addBoundedContext("Ordering", { description: "" });
+		const orderApp = ordering.addService("Order App", {
+			description: "",
+			type: "application",
+		});
+		const paid = orderApp.provides("Paid", { description: "", type: "event" });
+		const askToDispatch = orderApp.provides("Ask To Dispatch", {
+			description: "",
+			type: "operation",
+		});
+		orderApp.consumes(dispatch, {
+			pattern: "conformist",
+			by: [askToDispatch],
+		});
+		ordering
+			.addPolicy("On paid", { description: "" })
+			.on(paid)
+			.then(askToDispatch);
+
+		const map = ODSFlowMap.fromWorkspace(ws);
+		expect(
+			Array.from(map.edges.values()).map(
+				(e) => `${e.source.name} -> ${e.target.name}`,
+			),
+		).toEqual([
+			"Paid -> On paid",
+			"On paid -> Ask To Dispatch",
+			"Ask To Dispatch -> Dispatch",
+			"Dispatch -> Dispatched",
+		]);
+		// The far side's operation clusters under the service that provides it.
+		expect(map.nodes.get(dispatch.ref)?.namespace.slice(-1)[0]?.id).toBe(
+			shippingApp.ref,
+		);
 	});
 });

@@ -50,7 +50,7 @@ Open-host service for /pet endpoints
 | PetRegistered | What the outside learns when a pet joins the catalog | **petId**: `int64`, name: `string`, category: `Category` | PetRegistered |
 | PetStatusChanged | - | **petId**: `int64`, from: `PetStatus`, to: `PetStatus` | PetStatusChanged, ChangePetStatus |
 | RegisterPet | Request body for adding a pet | name: `string`, category: `Category` | AddPet |
-| PetId | Identifies one pet; shared by every consumable that only needs the id | **petId**: `int64` | PetUpdated, PetDeleted, ReservePet, MarkPetSold, GetPetById, UploadImage, DeletePet, GetPetSummary, ReservePetForOrder, MarkPetSoldForOrder |
+| PetId | Identifies one pet; shared by every consumable that only needs the id | **petId**: `int64` | PetUpdated, PetReserved, PetSold, PetDeleted, ReservePet, MarkPetSold, GetPetById, UploadImage, DeletePet, GetPetSummary, ReservePetForOrder, MarkPetSoldForOrder |
 | Pet | The full pet resource, as GET /pet/{petId} answers with it | **petId**: `int64`, name: `string`, category: `Category`, photoUrls: `PhotoUrl[]`, tags: `Tag[]`, status: `PetStatus` | FindPetsByStatus, GetPetById |
 | PetSummary | The slim read of a pet other contexts are allowed to hold | **petId**: `int64`, name: `string`, status: `PetStatus` | GetPetSummary |
 | PetUnavailable | Why the pet could not be held: it is already pending or sold | **petId**: `int64`, status: `PetStatus` | ReservePetForOrder |
@@ -89,10 +89,12 @@ Open-host service for /pet endpoints
 | [OrderApp](../sales_bc/services/order_app/index.md) | - | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
 | [OrderApp](../sales_bc/services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
 | [OrderApp](../sales_bc/services/order_app/index.md) | - | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
-| [PetApp](services/pet_app/index.md) | - | - | Pet | ReservePet | - |
+| [PetApp](services/pet_app/index.md) | ReservePetForOrder | - | Pet | ReservePet | - |
 | [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetRegistered | published-language |
 | [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetStatusChanged | published-language |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetReserved | published-language |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetSold | published-language |
 | [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetDeleted | published-language |
-| [PetApp](services/pet_app/index.md) | - | - | Pet | MarkPetSold | - |
+| [PetApp](services/pet_app/index.md) | MarkPetSoldForOrder | - | Pet | MarkPetSold | - |
 
 

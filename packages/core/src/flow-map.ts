@@ -1,18 +1,17 @@
 import { contextMemberNamespace, type ODSNamespace } from "./namespace";
+import { ReactionChain, type Reactor } from "./reaction-walk";
 import { ScopeManager } from "./scope-manager";
-import {
-	BoundedContext,
-	type Consumable,
-	type Policy,
-	type Workspace,
-} from "./workspace";
+import { BoundedContext, Policy, type Workspace } from "./workspace";
 
 /**
- * The reactive flow through a scope, walked from its policies: the event
- * consumables a policy reacts to, the operation consumables it issues, and
- * the events those operations raise. Consumables reached this way are
- * included even when they live in another context; operations no policy
- * issues are not.
+ * The reactive flow through a scope, walked from its policies along the
+ * causal chain `ReactionChain` defines: the event consumables a policy
+ * reacts to, the operation consumables it issues, the events those raise,
+ * the policies those wake, and — through a consumption whose `by` names the
+ * operation — the operation called on the other side of a boundary, which is
+ * where the chain used to stop. Consumables reached this way are included
+ * even when they live in another context; operations no policy issues, and
+ * nothing a policy issues reaches, are not.
  */
 export class ODSFlowMap {
 	readonly nodes = new Map<string, ODSFlowMapNode>();
@@ -33,54 +32,34 @@ export class ODSFlowMap {
 		return edge;
 	}
 
-	constructor(policies: Policy[]) {
-		for (const policy of policies) {
-			const policyNode = this.addNode({
-				id: policy.ref,
-				name: policy.name,
-				description: policy.description,
-				type: "policy",
-				namespace: contextMemberNamespace(policy),
-			});
-			for (const event of policy.events) {
-				this.addEdge({ source: this.addEvent(event), target: policyNode });
-			}
-			for (const command of policy.commands) {
-				this.addEdge({ source: policyNode, target: this.addCommand(command) });
-			}
+	constructor(chain: ReactionChain) {
+		const walked = new Set<Reactor>();
+		for (const policy of chain.policies) {
+			// Every policy in scope is drawn whether anything reaches it or not, and
+			// the walk starts at what wakes it, so the flow reads from its cause.
+			this.addNode(nodeFor(policy));
+			for (const event of policy.events) this.walk(event, chain, walked);
+			// A policy nothing wakes still issues what it issues.
+			this.walk(policy, chain, walked);
 		}
 	}
 
-	private addEvent(event: Consumable): ODSFlowMapNode {
-		return this.addNode({
-			id: event.ref,
-			name: event.name,
-			description: event.description,
-			type: "event",
-			namespace: providerNamespace(event),
-		});
-	}
-
-	private addCommand(command: Consumable): ODSFlowMapNode {
-		const node = this.addNode({
-			id: command.ref,
-			name: command.name,
-			description: command.description,
-			type: "command",
-			namespace: providerNamespace(command),
-		});
-		for (const event of command.raisedEvents) {
-			this.addEdge({ source: node, target: this.addEvent(event) });
+	/** Draws one step of the chain and everything it reaches, each edge once. */
+	private walk(node: Reactor, chain: ReactionChain, walked: Set<Reactor>) {
+		if (walked.has(node)) return;
+		walked.add(node);
+		const from = this.addNode(nodeFor(node));
+		for (const next of chain.after(node)) {
+			this.addEdge({ source: from, target: this.addNode(nodeFor(next)) });
+			this.walk(next, chain, walked);
 		}
-		return node;
 	}
 
 	private static fromScope(scope: ScopeManager) {
 		const contexts = scope.scopes.filter(
 			(it): it is BoundedContext => it instanceof BoundedContext,
 		);
-		const policies = contexts.flatMap((bc) => Array.from(bc.policies.values()));
-		return new ODSFlowMap(policies);
+		return new ODSFlowMap(new ReactionChain(contexts));
 	}
 
 	static fromWorkspace(workspace: Workspace) {
@@ -94,10 +73,32 @@ export class ODSFlowMap {
 	}
 }
 
-/** The provider's namespace extended with the provider itself, so consumables cluster under it. */
-function providerNamespace(consumable: Consumable): ODSNamespace[] {
-	const p = consumable.provider;
-	return [...contextMemberNamespace(p), { id: p.ref, name: p.name }];
+/**
+ * How one step of the chain is drawn. A policy sits directly under its
+ * context; a consumable clusters under the provider that offers it, which is
+ * how a step reached in another context reads as belonging over there.
+ */
+function nodeFor(step: Reactor): ODSFlowMapNode {
+	const shared = {
+		id: step.ref,
+		name: step.name,
+		description: step.description,
+	};
+	if (step instanceof Policy)
+		return {
+			...shared,
+			type: "policy",
+			namespace: contextMemberNamespace(step),
+		};
+	const provider = step.provider;
+	return {
+		...shared,
+		type: step.type === "event" ? "event" : "command",
+		namespace: [
+			...contextMemberNamespace(provider),
+			{ id: provider.ref, name: provider.name },
+		],
+	};
 }
 
 export type ODSFlowMapNode = {

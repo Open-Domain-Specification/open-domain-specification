@@ -26,7 +26,7 @@ severity, a rule id, a message and the ref of the element concerned.
 | `relationship-roles-backed` | warning | a directed relationship's declared roles are carried by real crossings, and a crossing consumption's role is declared on the relationship; a crossing consumable's `schema` backs a `published-language` role |
 | `relationship-cycle` | warning | the directed relationships whose traffic is calls form no cycle; a step carried only by events is choreography and does not count (decision 20). The message lists the ring's contexts in order |
 | `shared-kernel-backed` | warning | two contexts declaring a shared kernel share at least one value object or schema across it |
-| `partnership-backed` | warning | two contexts declaring a partnership exchange consumables, or events a policy reacts to, in both directions |
+| `partnership-backed` | warning | two contexts declaring a partnership exchange consumables, or events a policy reacts to, in at least one direction |
 | `mud-needs-acl` | warning | a consumption from a big ball of mud is translated behind an anti-corruption layer |
 | `term-in-context` | error | a glossary term's `embodiedBy` names an element of the term's own context |
 | `role-coherence` | warning | consumables and consumptions crossing contexts declare their roles, unless the two contexts are partners or share a kernel |
@@ -40,8 +40,9 @@ severity, a rule id, a message and the ref of the element concerned.
 | `returns-on-operation` | error | only an operation declares `returns`; an event has no caller to answer |
 | `rejects-on-operation` | error | only an operation declares `rejects`; an event is a fact that already happened, so it has nothing left to refuse |
 | `consumable-kind` | error | policies react to events and issue operations; only operations raise, and only events |
+| `raises-in-context` | error | an operation raises only events its own bounded context provides; a context publishes its own facts |
 | `policy-complete` | warning | a policy reacts to at least one event and issues at least one operation |
-| `reaction-cycle` | warning | the reactions form no cycle: no operation raises an event whose policy issues an operation that leads back to it |
+| `reaction-cycle` | warning | the reactions form no cycle: no operation raises an event whose policy issues an operation that leads back to it, following a consumption's `by` across a context boundary |
 | `context-serves-subdomain` | warning | every context serves a subdomain |
 | `comments-required` | warning | every context relationship carries a comment; opt in with `options.rules.commentsRequired` |
 | `disposition-needs-comment` | warning | an intent whose disposition is `tolerated` or `refactor` carries at least one comment |

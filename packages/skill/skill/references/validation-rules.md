@@ -134,11 +134,11 @@
 
 ## `partnership-backed` (warning)
 
-**Requires:** Two contexts declaring a partnership exchange consumables — or events a policy reacts to — in both directions.
+**Requires:** Two contexts declaring a partnership exchange consumables — or events a policy reacts to — in at least one direction.
 
-**Why it matters:** A partnership says two teams succeed or fail together and so plan their releases as one, which is only worth the coordination when each really depends on the other. A partnership with no traffic at all is a wish, and one with traffic only one way is a directed relationship wearing a partner's badge — which quietly excuses both ends from declaring the upstream and downstream roles they actually have.
+**Why it matters:** A partnership says two teams succeed or fail together and plan their releases as one. That is a fact about the teams, not about the direction of the arrows, so traffic one way is enough: one side may consume everything the other publishes and give back nothing, and the joint release train is still real. What the rule will not accept is a partnership with no exchange at all, which is a wish — nothing in the model holds the two contexts together, and the relationship is a claim on the map with nothing under it.
 
-**Usual fix:** Add the consumable the other direction is missing, or replace the partnership with the upstream-downstream or customer-supplier relationship the traffic really describes.
+**Usual fix:** Add the consumable, or the event a policy reacts to, that the partnership is really about; or replace the partnership with the relationship the two contexts actually have — separate ways if they genuinely never meet.
 
 ## `shared-kernel-backed` (warning)
 
@@ -251,6 +251,14 @@
 **Why it matters:** An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable.
 
 **Usual fix:** Check the type of each consumable a policy or raises list points at and swap it for the right kind.
+
+## `raises-in-context` (error)
+
+**Requires:** An operation raises only events its own bounded context provides.
+
+**Why it matters:** A context publishes its own facts. An event is something that happened inside one boundary, named in that boundary's language, and only the context it happened in is in a position to say so. Raising another context's event claims both that this operation can make a fact true over there and that the neighbour's published event means whatever this one needs — and since the flow map and reaction-cycle read a consumption's by as the causal link across a boundary, a foreign event under raises would fake that link and draw a chain that reaches through the wall.
+
+**Usual fix:** Raise an event of this context and let the other context react to it, or, if the point is to act over there, consume that context's operation and let it raise its own event.
 
 ## `policy-complete` (warning)
 
