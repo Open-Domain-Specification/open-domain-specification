@@ -421,7 +421,10 @@ const consentSchema = customerBC.addSchema("ConsentChanged", {
 		"Used by both consent events; the contact centre acts on it the same day",
 });
 consentSchema.addAttribute("consentId", { type: "string", identity: true });
-consentSchema.addAttribute("customerId", { type: "string" });
+consentSchema.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
 consentSchema.addAttribute("purpose", {
 	type: "ConsentPurpose",
 	valueobject: purposeVO,
@@ -761,10 +764,16 @@ accountOpenedSchema.addAttribute("accountId", {
 	identity: true,
 });
 accountOpenedSchema.addAttribute("iban", { type: "IBAN", valueobject: ibanVO });
-accountOpenedSchema.addAttribute("customerId", { type: "string" });
+accountOpenedSchema.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
 accountOpenedSchema.addAttribute("productCode", { type: "'current'" });
 const openAccountSchema = accountsBC.addSchema("OpenAccount");
-openAccountSchema.addAttribute("customerId", { type: "string" });
+openAccountSchema.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
 openAccountSchema.addAttribute("productCode", { type: "'current'" });
 
 const accountOpened = accountAgg.provides("AccountOpened", {
@@ -1148,7 +1157,10 @@ instructionAgg
 	.constrains(paymentStatusVO);
 
 const initiatePaymentSchema = paymentsBC.addSchema("InitiatePayment");
-initiatePaymentSchema.addAttribute("payerAccountId", { type: "string" });
+initiatePaymentSchema.addAttribute("payerAccountId", {
+	type: "string",
+	identifies: account,
+});
 initiatePaymentSchema.addAttribute("payee", {
 	type: "Payee",
 	valueobject: payeeVO,
@@ -1168,7 +1180,10 @@ paymentEventSchema.addAttribute("instructionId", {
 	type: "string",
 	identity: true,
 });
-paymentEventSchema.addAttribute("payerAccountId", { type: "string" });
+paymentEventSchema.addAttribute("payerAccountId", {
+	type: "string",
+	identifies: account,
+});
 paymentEventSchema.addAttribute("amount", {
 	type: "Money",
 	valueobject: paymentMoney,
@@ -1298,6 +1313,7 @@ const submissionSchema = schemeBC.addSchema("SchemeSubmission", {
 submissionSchema.addAttribute("instructionId", {
 	type: "string",
 	identity: true,
+	identifies: instruction,
 });
 submissionSchema.addAttribute("messageType", {
 	type: "SchemeFormat",
@@ -1307,6 +1323,7 @@ const settlementSchema = schemeBC.addSchema("SchemeSettlement");
 settlementSchema.addAttribute("instructionId", {
 	type: "string",
 	identity: true,
+	identifies: instruction,
 });
 settlementSchema.addAttribute("schemeRef", { type: "string" });
 
@@ -1678,14 +1695,23 @@ const cardEventSchema = cardsBC.addSchema("CardEvent", {
 	description: "Card and account; shared by the card events",
 });
 cardEventSchema.addAttribute("cardId", { type: "string", identity: true });
-cardEventSchema.addAttribute("accountId", { type: "string" });
+cardEventSchema.addAttribute("accountId", {
+	type: "string",
+	identifies: account,
+});
 const cardAuthorisedSchema = cardsBC.addSchema("CardAuthorised", {
 	description:
 		"Card, account and the authorised amount; Accounts needs the amount to place the hold",
 });
 cardAuthorisedSchema.addAttribute("cardId", { type: "string", identity: true });
-cardAuthorisedSchema.addAttribute("accountId", { type: "string" });
-cardAuthorisedSchema.addAttribute("authorisationId", { type: "string" });
+cardAuthorisedSchema.addAttribute("accountId", {
+	type: "string",
+	identifies: account,
+});
+cardAuthorisedSchema.addAttribute("authorisationId", {
+	type: "string",
+	identifies: cardAuthorisation,
+});
 cardAuthorisedSchema.addAttribute("amount", {
 	type: "Money",
 	valueobject: cardMoney,
@@ -1906,7 +1932,10 @@ applicationSubmittedSchema.addAttribute("applicationId", {
 	type: "string",
 	identity: true,
 });
-applicationSubmittedSchema.addAttribute("customerId", { type: "string" });
+applicationSubmittedSchema.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
 applicationSubmittedSchema.addAttribute("requested", {
 	type: "Money",
 	valueobject: applicationMoney,
@@ -1919,7 +1948,10 @@ const loanEventSchema = lendingBC.addSchema("LoanEvent", {
 	description: "Loan, account and amount; shared by the loan events",
 });
 loanEventSchema.addAttribute("loanId", { type: "string", identity: true });
-loanEventSchema.addAttribute("accountId", { type: "string" });
+loanEventSchema.addAttribute("accountId", {
+	type: "string",
+	identifies: account,
+});
 loanEventSchema.addAttribute("amount", {
 	type: "Money",
 	valueobject: loanMoney,
@@ -2097,7 +2129,12 @@ const creditScoreVO = decisioningBC.addValueObject("CreditScore", {
 creditScoreVO.addAttribute("value", { type: "int" });
 creditScoreVO.addAttribute("reasonCodes", { type: "string[]" });
 creditDecision.addAttribute("decisionId", { type: "string", identity: true });
-creditDecision.addAttribute("applicationId", { type: "string" });
+// The application it decides on lives in Lending, another bounded context: a
+// relation never crosses one, so this is the only thing that crosses.
+creditDecision.addAttribute("applicationId", {
+	type: "string",
+	identifies: application,
+});
 creditDecision.addAttribute("outcome", { type: "'approved' | 'declined'" });
 creditDecision.addAttribute("bureauReport", {
 	type: "BureauReport",
@@ -2137,14 +2174,19 @@ const decisionRequestSchema = decisioningBC.addSchema("DecisionRequest");
 decisionRequestSchema.addAttribute("applicationId", {
 	type: "string",
 	identity: true,
+	identifies: application,
 });
-decisionRequestSchema.addAttribute("customerId", { type: "string" });
+decisionRequestSchema.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
 decisionRequestSchema.addAttribute("requestedMinor", { type: "int64" });
 decisionRequestSchema.addAttribute("termMonths", { type: "int" });
 const decisionMadeSchema = decisioningBC.addSchema("DecisionMade");
 decisionMadeSchema.addAttribute("applicationId", {
 	type: "string",
 	identity: true,
+	identifies: application,
 });
 decisionMadeSchema.addAttribute("outcome", { type: "'approved' | 'declined'" });
 decisionMadeSchema.addAttribute("score", {

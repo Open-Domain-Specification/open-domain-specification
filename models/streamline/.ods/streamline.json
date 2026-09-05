@@ -353,7 +353,10 @@
             },
             "episode_number": {
               "name": "episodeNumber",
-              "type": "int"
+              "type": "int",
+              "identifies": {
+                "$ref": "#/boundedcontexts/studio_production/aggregates/production/entities/episode"
+              }
             },
             "mezzanine_uri": {
               "name": "mezzanineUri",
@@ -485,10 +488,6 @@
                   "type": "string",
                   "identity": true
                 },
-                "title_id": {
-                  "name": "titleId",
-                  "type": "string"
-                },
                 "start": {
                   "name": "start",
                   "type": "date"
@@ -506,6 +505,13 @@
                   "type": "Territory",
                   "valueobject": {
                     "$ref": "#/boundedcontexts/licensing/valueobjects/territory"
+                  }
+                },
+                "title_id": {
+                  "name": "titleId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
                   }
                 }
               },
@@ -597,11 +603,6 @@
           "name": "LicenseWindow",
           "description": "Title, territories and dates; used by both window events",
           "attributes": {
-            "title_id": {
-              "name": "titleId",
-              "type": "string",
-              "identity": true
-            },
             "territory": {
               "name": "territory",
               "type": "Territory",
@@ -616,6 +617,14 @@
             "end": {
               "name": "end",
               "type": "date"
+            },
+            "title_id": {
+              "name": "titleId",
+              "type": "string",
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
+              }
             }
           }
         }
@@ -751,7 +760,10 @@
                   "name": "productionId",
                   "type": "string",
                   "description": "The studio production behind an original, or absent for a licensed title; how MasterDelivered is matched to a title",
-                  "optional": true
+                  "optional": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/studio_production/aggregates/production/entities/production"
+                  }
                 },
                 "playable_rendition_set": {
                   "name": "playableRenditionSet",
@@ -1098,7 +1110,10 @@
             "episode_id": {
               "name": "episodeId",
               "type": "string",
-              "optional": true
+              "optional": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/episode"
+              }
             }
           }
         },
@@ -1229,7 +1244,10 @@
                 },
                 "title_id": {
                   "name": "titleId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
+                  }
                 },
                 "source_uri": {
                   "name": "sourceUri",
@@ -1409,7 +1427,10 @@
           "attributes": {
             "title_id": {
               "name": "titleId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
+              }
             },
             "source_uri": {
               "name": "sourceUri",
@@ -1428,11 +1449,17 @@
             },
             "title_id": {
               "name": "titleId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
+              }
             },
             "rendition_ids": {
               "name": "renditionIds",
-              "type": "string[]"
+              "type": "string[]",
+              "identifies": {
+                "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/entities/rendition"
+              }
             }
           }
         }
@@ -1533,11 +1560,6 @@
                   "type": "string",
                   "identity": true
                 },
-                "household_id": {
-                  "name": "householdId",
-                  "type": "string",
-                  "description": "The paying unit the profile belongs to; what entitlement is checked for"
-                },
                 "title_id": {
                   "name": "titleId",
                   "type": "string",
@@ -1559,11 +1581,6 @@
                   "type": "string",
                   "description": "The individual unit (an installation), not the partner model"
                 },
-                "device_model_id": {
-                  "name": "deviceModelId",
-                  "type": "string",
-                  "description": "The partner model the unit is an instance of; what certification is checked against"
-                },
                 "bookmark": {
                   "name": "bookmark",
                   "type": "Bookmark",
@@ -1578,11 +1595,27 @@
                     "$ref": "#/boundedcontexts/playback/valueobjects/stream_manifest"
                   }
                 },
+                "device_model_id": {
+                  "name": "deviceModelId",
+                  "type": "string",
+                  "description": "The partner model the unit is an instance of; what certification is checked against",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/devices/aggregates/device/entities/device"
+                  }
+                },
                 "profile_id": {
                   "name": "profileId",
                   "type": "string",
                   "identifies": {
                     "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/profile"
+                  }
+                },
+                "household_id": {
+                  "name": "householdId",
+                  "type": "string",
+                  "description": "The paying unit the profile belongs to; what entitlement is checked for",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/household"
                   }
                 }
               },
@@ -1616,21 +1649,21 @@
                 }
               ]
             },
-            "within_stream_limit": {
-              "name": "WithinStreamLimit",
-              "description": "A session starts only if the household's open sessions are fewer than the plan's stream count from GetEntitlement; checked at StartPlayback because a session cannot see its siblings",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/entities/playback_session/attributes/household_id"
-                }
-              ]
-            },
             "bookmark_within_runtime": {
               "name": "BookmarkWithinRuntime",
               "description": "The resume point never exceeds the title's runtime",
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/playback/valueobjects/bookmark"
+                }
+              ]
+            },
+            "within_stream_limit": {
+              "name": "WithinStreamLimit",
+              "description": "A session starts only if the household's open sessions are fewer than the plan's stream count from GetEntitlement; checked at StartPlayback because a session cannot see its siblings",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/entities/playback_session/attributes/household_id"
                 }
               ]
             }
@@ -1748,22 +1781,20 @@
         "start_playback": {
           "name": "StartPlayback",
           "attributes": {
-            "profile_id": {
-              "name": "profileId",
-              "type": "string"
-            },
-            "household_id": {
-              "name": "householdId",
-              "type": "string"
-            },
             "title_id": {
               "name": "titleId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
+              }
             },
             "episode_id": {
               "name": "episodeId",
               "type": "string",
-              "optional": true
+              "optional": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/episode"
+              }
             },
             "device_id": {
               "name": "deviceId",
@@ -1771,7 +1802,24 @@
             },
             "device_model_id": {
               "name": "deviceModelId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/devices/aggregates/device/entities/device"
+              }
+            },
+            "profile_id": {
+              "name": "profileId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/profile"
+              }
+            },
+            "household_id": {
+              "name": "householdId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/household"
+              }
             }
           }
         },
@@ -1784,18 +1832,20 @@
               "type": "string",
               "identity": true
             },
-            "profile_id": {
-              "name": "profileId",
-              "type": "string"
-            },
             "title_id": {
               "name": "titleId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
+              }
             },
             "episode_id": {
               "name": "episodeId",
               "type": "string",
-              "optional": true
+              "optional": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/episode"
+              }
             },
             "watched_seconds": {
               "name": "watchedSeconds",
@@ -1804,6 +1854,13 @@
             "completed": {
               "name": "completed",
               "type": "boolean"
+            },
+            "profile_id": {
+              "name": "profileId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/profile"
+              }
             }
           }
         }
@@ -2019,7 +2076,10 @@
             },
             "rendition_ids": {
               "name": "renditionIds",
-              "type": "string[]"
+              "type": "string[]",
+              "identifies": {
+                "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/entities/rendition"
+              }
             }
           }
         },
@@ -2528,7 +2588,10 @@
             "title_id": {
               "name": "titleId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
+              }
             }
           }
         },
@@ -2615,13 +2678,16 @@
                   "type": "string",
                   "identity": true
                 },
-                "account_id": {
-                  "name": "accountId",
-                  "type": "string"
-                },
                 "country": {
                   "name": "country",
                   "type": "ISO 3166 code"
+                },
+                "account_id": {
+                  "name": "accountId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/identity/aggregates/account/entities/account"
+                  }
                 }
               },
               "relations": [
@@ -2822,13 +2888,16 @@
               "type": "string",
               "identity": true
             },
-            "account_id": {
-              "name": "accountId",
-              "type": "string"
-            },
             "country": {
               "name": "country",
               "type": "ISO 3166 code"
+            },
+            "account_id": {
+              "name": "accountId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/identity/aggregates/account/entities/account"
+              }
             }
           }
         },
@@ -2838,7 +2907,10 @@
             "profile_id": {
               "name": "profileId",
               "type": "string",
-              "identity": true
+              "identity": true,
+              "identifies": {
+                "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/profile"
+              }
             },
             "household_id": {
               "name": "householdId",
@@ -2970,7 +3042,10 @@
                 },
                 "household_id": {
                   "name": "householdId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/household"
+                  }
                 },
                 "status": {
                   "name": "status",
@@ -3266,7 +3341,10 @@
             },
             "household_id": {
               "name": "householdId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/household"
+              }
             }
           }
         },
@@ -3276,7 +3354,10 @@
           "attributes": {
             "household_id": {
               "name": "householdId",
-              "type": "string"
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/household"
+              }
             }
           }
         },
@@ -3470,11 +3551,17 @@
                 },
                 "session_id": {
                   "name": "sessionId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/playback/aggregates/playback_session/entities/playback_session"
+                  }
                 },
                 "household_id": {
                   "name": "householdId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/household"
+                  }
                 },
                 "plan_tier": {
                   "name": "planTier",

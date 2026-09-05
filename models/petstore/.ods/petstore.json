@@ -1055,7 +1055,10 @@
             },
             "pet_id": {
               "name": "petId",
-              "type": "int64"
+              "type": "int64",
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet"
+              }
             },
             "quantity": {
               "name": "quantity",
@@ -1072,7 +1075,10 @@
           "attributes": {
             "pet_id": {
               "name": "petId",
-              "type": "int64"
+              "type": "int64",
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet"
+              }
             },
             "quantity": {
               "name": "quantity",
@@ -1104,7 +1110,10 @@
             },
             "pet_id": {
               "name": "petId",
-              "type": "int64"
+              "type": "int64",
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet"
+              }
             },
             "quantity": {
               "name": "quantity",
@@ -1612,7 +1621,10 @@
             },
             "order_id": {
               "name": "orderId",
-              "type": "int64"
+              "type": "int64",
+              "identifies": {
+                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/entities/order"
+              }
             },
             "delivered_at": {
               "name": "deliveredAt",

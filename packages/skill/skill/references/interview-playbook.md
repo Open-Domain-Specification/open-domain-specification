@@ -144,7 +144,8 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   aggregate that root leads. Apply it everywhere rather than case by case: any attribute whose
   name or description says it is another entity's id sets `identifies`. The one exception is a
   same-context id already drawn as a `references` relation to that entity, where `identifies`
-  would say the same thing twice.
+  would say the same thing twice. Schema attributes follow the same rule, because a payload
+  that carries an id says whose it is.
 - For an operation, follow up: "and what comes back?" → a second schema on the same context,
   attached with `returns`. A command that answers with nothing leaves `returns` off; a query
   that answers with nothing is not a query, so keep asking. Never put `returns` on an event.

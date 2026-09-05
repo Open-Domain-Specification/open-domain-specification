@@ -48,7 +48,7 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| ShipmentDelivered | - | **shipmentId**: `int64`, orderId: `int64`, deliveredAt: `date-time` | ShipmentDelivered, ReportDelivery |
+| ShipmentDelivered | - | **shipmentId**: `int64`, orderId: `int64` (identifies [Order](../sales_bc/aggregates/order/index.md)), deliveredAt: `date-time` | ShipmentDelivered, ReportDelivery |
 
 
 ## Policies

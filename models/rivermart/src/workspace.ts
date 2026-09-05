@@ -402,7 +402,11 @@ catalogueBC.addTerm("SKU", {
 const searchHitSchema = searchBC.addSchema("SearchHit", {
 	description: "One indexed product with the fields ranking needs",
 });
-searchHitSchema.addAttribute("productId", { type: "string", identity: true });
+searchHitSchema.addAttribute("productId", {
+	type: "string",
+	identity: true,
+	identifies: product,
+});
 searchHitSchema.addAttribute("buyBoxPriceMinor", { type: "int64" });
 searchHitSchema.addAttribute("nextDayEligible", {
 	type: "boolean",
@@ -500,8 +504,12 @@ conditionVO.addAttribute("value", {
 	type: "'new' | 'used-like-new' | 'used-good'",
 });
 offer.addAttribute("offerId", { type: "string", identity: true });
-const offerSellerId = offer.addAttribute("sellerId", { type: "string" });
-const offerSku = offer.addAttribute("sku", { type: "string" });
+// `sellerId` is declared with the SellerAccount root further down, because the
+// root it identifies has to exist before the attribute can name it.
+const offerSku = offer.addAttribute("sku", {
+	type: "string",
+	identifies: variant,
+});
 offer.addAttribute("price", { type: "Money", valueobject: offerMoney });
 offer.addAttribute("availableQuantity", { type: "int" });
 offer.addAttribute("condition", {
@@ -529,28 +537,29 @@ offerAgg
 		description: "An offer's price is greater than zero",
 	})
 	.constrains(offer.attributes.get("price")!);
-// A uniqueness rule across offers: no single Offer can see the others, so
-// PublishOffer enforces it by looking up the seller's offers for the SKU
-// before creating a new one. The invariant names the pair that must be unique.
-offerAgg
-	.addInvariant("OneActiveOfferPerSellerSku", {
-		description:
-			"A seller has at most one active offer per SKU, so the buy box compares like with like. Enforced by PublishOffer over the seller's existing offers, since one Offer cannot see another",
-	})
-	.constrains(offerSellerId, offerSku);
+// `OneActiveOfferPerSellerSku` is declared with the SellerAccount root further
+// down, because it constrains `sellerId`, and that attribute can only be
+// declared once the root it identifies exists.
 
 const offerPublishedSchema = offersBC.addSchema("OfferPublished");
 offerPublishedSchema.addAttribute("offerId", {
 	type: "string",
 	identity: true,
 });
-offerPublishedSchema.addAttribute("sku", { type: "string" });
+offerPublishedSchema.addAttribute("sku", {
+	type: "string",
+	identifies: variant,
+});
 offerPublishedSchema.addAttribute("price", {
 	type: "Money",
 	valueobject: offerMoney,
 });
 const buyBoxAwardedSchema = offersBC.addSchema("BuyBoxAwarded");
-buyBoxAwardedSchema.addAttribute("sku", { type: "string", identity: true });
+buyBoxAwardedSchema.addAttribute("sku", {
+	type: "string",
+	identity: true,
+	identifies: variant,
+});
 buyBoxAwardedSchema.addAttribute("offerId", { type: "string" });
 const offerRefSchema = offersBC.addSchema("OfferRef");
 offerRefSchema.addAttribute("offerId", { type: "string", identity: true });
@@ -696,6 +705,21 @@ sellerAgg
 			"A seller becomes active only when identity and bank checks both passed",
 	})
 	.constrains(sellerStatusVO, verificationCheck);
+// `sellerId` on Offer is declared here, because an attribute can only name a
+// root that already exists and this is where the SellerAccount root is.
+const offerSellerId = offer.addAttribute("sellerId", {
+	type: "string",
+	identifies: seller,
+});
+// A uniqueness rule across offers: no single Offer can see the others, so
+// PublishOffer enforces it by looking up the seller's offers for the SKU
+// before creating a new one. The invariant names the pair that must be unique.
+offerAgg
+	.addInvariant("OneActiveOfferPerSellerSku", {
+		description:
+			"A seller has at most one active offer per SKU, so the buy box compares like with like. Enforced by PublishOffer over the seller's existing offers, since one Offer cannot see another",
+	})
+	.constrains(offerSellerId, offerSku);
 
 const sellerRefSchema = sellerBC.addSchema("SellerRef");
 sellerRefSchema.addAttribute("sellerId", { type: "string", identity: true });
@@ -820,7 +844,7 @@ const cartCheckedOutSchema = cartBC.addSchema("CartCheckedOut", {
 	description: "The snapshot handed to payments and orders",
 });
 cartCheckedOutSchema.addAttribute("cartId", { type: "string", identity: true });
-cartCheckedOutSchema.addAttribute("customerId", { type: "string" });
+// `customerId` is declared with the CustomerAccount root further down.
 cartCheckedOutSchema.addAttribute("total", {
 	type: "Money",
 	valueobject: cartMoney,
@@ -954,7 +978,7 @@ order.addAttribute("status", {
 	valueobject: orderStatusVO,
 });
 orderLine.addAttribute("lineId", { type: "string", identity: true });
-orderLine.addAttribute("sku", { type: "string" });
+orderLine.addAttribute("sku", { type: "string", identifies: variant });
 orderLine.addAttribute("offerId", {
 	type: "string",
 	description:
@@ -1024,7 +1048,7 @@ const orderPlacedSchema = orderBC.addSchema("OrderPlaced", {
 	description: "The fact warehouse, fraud and payments react to",
 });
 orderPlacedSchema.addAttribute("orderId", { type: "string", identity: true });
-orderPlacedSchema.addAttribute("customerId", { type: "string" });
+// `customerId` is declared with the CustomerAccount root further down.
 orderPlacedSchema.addAttribute("lines", {
 	type: "OrderLine[]",
 	schema: orderLineSchema,
@@ -1069,8 +1093,12 @@ const returnRequestedSchema = orderBC.addSchema("ReturnRequested");
 returnRequestedSchema.addAttribute("returnId", {
 	type: "string",
 	identity: true,
+	identifies: returnEntity,
 });
-returnRequestedSchema.addAttribute("orderId", { type: "string" });
+returnRequestedSchema.addAttribute("orderId", {
+	type: "string",
+	identifies: order,
+});
 returnRequestedSchema.addAttribute("lines", {
 	type: "ReturnLine[]",
 	schema: returnLineSchema,
@@ -1238,14 +1266,20 @@ paymentAuthorisedSchema.addAttribute("paymentId", {
 	type: "string",
 	identity: true,
 });
-paymentAuthorisedSchema.addAttribute("cartId", { type: "string" });
+paymentAuthorisedSchema.addAttribute("cartId", {
+	type: "string",
+	identifies: cart,
+});
 const paymentRefSchema = paymentsBC.addSchema("PaymentRef");
 paymentRefSchema.addAttribute("paymentId", { type: "string", identity: true });
 const authorisePaymentSchema = paymentsBC.addSchema("AuthorisePayment", {
 	description:
 		"What checkout sends: the cart total and the customer's instrument token",
 });
-authorisePaymentSchema.addAttribute("cartId", { type: "string" });
+authorisePaymentSchema.addAttribute("cartId", {
+	type: "string",
+	identifies: cart,
+});
 authorisePaymentSchema.addAttribute("amount", {
 	type: "Money",
 	valueobject: paymentMoney,
@@ -1427,13 +1461,21 @@ assessmentAgg
 	.constrains(signalVO);
 
 const orderRiskSchema = fraudBC.addSchema("OrderRiskFlagged");
-orderRiskSchema.addAttribute("orderId", { type: "string", identity: true });
+orderRiskSchema.addAttribute("orderId", {
+	type: "string",
+	identity: true,
+	identifies: order,
+});
 orderRiskSchema.addAttribute("score", {
 	type: "RiskScore",
 	valueobject: riskScoreVO,
 });
 const sellerRiskSchema = fraudBC.addSchema("SellerRiskFlagged");
-sellerRiskSchema.addAttribute("sellerId", { type: "string", identity: true });
+sellerRiskSchema.addAttribute("sellerId", {
+	type: "string",
+	identity: true,
+	identifies: seller,
+});
 sellerRiskSchema.addAttribute("score", {
 	type: "RiskScore",
 	valueobject: riskScoreVO,
@@ -1611,7 +1653,11 @@ fulfilmentOrderAgg
 	.constrains(packageEntity, pickStatus);
 
 const stockReservedSchema = warehouseBC.addSchema("StockReserved");
-stockReservedSchema.addAttribute("orderId", { type: "string", identity: true });
+stockReservedSchema.addAttribute("orderId", {
+	type: "string",
+	identity: true,
+	identifies: order,
+});
 stockReservedSchema.addAttribute("siteId", { type: "string" });
 const shipmentDispatchedSchema = warehouseBC.addSchema("ShipmentDispatched", {
 	description: "The fact orders, payments and last mile all react to",
@@ -1619,8 +1665,12 @@ const shipmentDispatchedSchema = warehouseBC.addSchema("ShipmentDispatched", {
 shipmentDispatchedSchema.addAttribute("packageId", {
 	type: "string",
 	identity: true,
+	identifies: packageEntity,
 });
-shipmentDispatchedSchema.addAttribute("orderId", { type: "string" });
+shipmentDispatchedSchema.addAttribute("orderId", {
+	type: "string",
+	identifies: order,
+});
 shipmentDispatchedSchema.addAttribute("label", {
 	type: "TrackingLabel",
 	valueobject: trackingLabelVO,
@@ -1629,6 +1679,7 @@ const returnReceivedSchema = warehouseBC.addSchema("ReturnReceived");
 returnReceivedSchema.addAttribute("returnId", {
 	type: "string",
 	identity: true,
+	identifies: returnEntity,
 });
 returnReceivedSchema.addAttribute("condition", {
 	type: "'resellable' | 'damaged'",
@@ -1869,11 +1920,17 @@ parcelDeliveredSchema.addAttribute("barcode", {
 	type: "string",
 	identity: true,
 });
-parcelDeliveredSchema.addAttribute("orderId", { type: "string" });
+parcelDeliveredSchema.addAttribute("orderId", {
+	type: "string",
+	identifies: order,
+});
 parcelDeliveredSchema.addAttribute("deliveredAt", { type: "date-time" });
 const attemptFailedSchema = lastMileBC.addSchema("DeliveryAttemptFailed");
 attemptFailedSchema.addAttribute("barcode", { type: "string", identity: true });
-attemptFailedSchema.addAttribute("orderId", { type: "string" });
+attemptFailedSchema.addAttribute("orderId", {
+	type: "string",
+	identifies: order,
+});
 attemptFailedSchema.addAttribute("reason", { type: "string" });
 
 const parcelDelivered = routeAgg.provides("ParcelDelivered", {
@@ -1953,7 +2010,7 @@ const bidVO = adsBC.addValueObject("Bid", {
 bidVO.addAttribute("maxCpc", { type: "Money", valueobject: campaignMoney });
 bidVO.uses(campaignMoney, "capped-at", "1");
 campaign.addAttribute("campaignId", { type: "string", identity: true });
-campaign.addAttribute("sellerId", { type: "string" });
+campaign.addAttribute("sellerId", { type: "string", identifies: seller });
 const dailyBudget = campaign.addAttribute("dailyBudget", {
 	type: "Money",
 	valueobject: campaignMoney,
@@ -1985,7 +2042,10 @@ campaignAgg
 
 const adClickedSchema = adsBC.addSchema("AdClicked");
 adClickedSchema.addAttribute("campaignId", { type: "string", identity: true });
-adClickedSchema.addAttribute("productId", { type: "string" });
+adClickedSchema.addAttribute("productId", {
+	type: "string",
+	identifies: product,
+});
 adClickedSchema.addAttribute("cost", {
 	type: "Money",
 	valueobject: campaignMoney,
@@ -2021,6 +2081,7 @@ const sponsoredSlotSchema = adsBC.addSchema("SponsoredSlot", {
 sponsoredSlotSchema.addAttribute("productId", {
 	type: "string",
 	identity: true,
+	identifies: product,
 });
 sponsoredSlotSchema.addAttribute("bid", { type: "Bid", valueobject: bidVO });
 const sponsoredResultsSchema = adsBC.addSchema("SponsoredResults", {
@@ -2269,6 +2330,16 @@ customer.addAttribute("email", { type: "string" });
 cart.addAttribute("customerId", { type: "string", identifies: customer });
 order.addAttribute("customerId", { type: "string", identifies: customer });
 caseRoot.addAttribute("customerId", { type: "string", identifies: customer });
+// The same customer id, carried on two payloads declared earlier: a payload
+// that carries an id says whose it is, same as an attribute.
+cartCheckedOutSchema.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
+orderPlacedSchema.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
 
 const customerRegistered = customerAgg.provides("CustomerRegistered", {
 	description: "A new customer account exists",
