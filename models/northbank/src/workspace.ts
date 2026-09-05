@@ -1110,14 +1110,6 @@ instructionAgg
 		description: "The amount is greater than zero",
 	})
 	.constrains(paymentAmount);
-// A rule across instructions, not inside one: the hub checks it when it
-// creates the instruction, over the account's instructions for the day.
-instructionAgg
-	.addInvariant("DailyLimit", {
-		description:
-			"Instructions from one account never exceed the daily limit in total; checked at initiation over the day's instructions for the payer account, since no single instruction can know the others",
-	})
-	.constrains(paymentAmount);
 // DISCOVERY: Payments Hub lead. "The account has to cover it."
 instructionAgg
 	.addInvariant("FundsAvailableAtInitiation", {
@@ -1198,7 +1190,7 @@ const paymentsApp = paymentsBC.addService("PaymentsApp", {
 		"The hub's application service: the boundary channels initiate payments through, and the one that calls the scheme, the ledger and fraud",
 	type: "application",
 });
-paymentsApp
+const initiatePayment = paymentsApp
 	.provides("InitiatePayment", {
 		description:
 			"Create an instruction from a channel, once AccountServicing confirms the available balance covers it and the daily limit holds",
@@ -1207,6 +1199,15 @@ paymentsApp
 		schema: initiatePaymentSchema,
 	})
 	.raises(paymentInitiated);
+// A rule across instructions, not inside one: the context holds it and
+// InitiatePayment keeps it, summing the day's instructions for the payer
+// account, since no single instruction can know the others (decision 27).
+paymentsBC
+	.addInvariant("DailyLimit", {
+		description:
+			"Instructions from one account never exceed the daily limit in total; InitiatePayment sums the day's instructions for the payer account, since no single instruction can know the others",
+	})
+	.constrains(paymentAmount, initiatePayment);
 // The funds check is a read of Accounts' documented API, translated: the hub
 // keeps its own notion of "covered" rather than Accounts' balance model.
 instructionAgg.consumes(getAvailableBalance, {
@@ -1807,14 +1808,6 @@ application.uses(decisionVO, "decided", "0..1");
 // Customer lives in Customer & KYC: `customerId` above is the only thing that
 // crosses the boundary. Money is the Shared Kernel's, so it is typed by
 // `valueobject` reference only, with no `uses` relation to cross with it.
-// A rule across applications, so it is checked when SubmitApplication runs,
-// over the customer's applications; one instance cannot see the others.
-applicationAgg
-	.addInvariant("OneOpenApplicationPerCustomer", {
-		description:
-			"A customer has at most one open application; SubmitApplication refuses a second while one is open",
-	})
-	.constrains(application);
 
 const loanAgg = lendingBC.addAggregate("Loan", {
 	description:
@@ -1938,7 +1931,7 @@ const lendingApp = lendingBC.addService("LendingApp", {
 		"Lending's application service: the boundary applications arrive through, and the one that calls decisioning and the ledger",
 	type: "application",
 });
-lendingApp
+const submitApplication = lendingApp
 	.provides("SubmitApplication", {
 		description: "Ask for an amount over a term",
 		type: "operation",
@@ -1946,6 +1939,15 @@ lendingApp
 		schema: applicationSubmittedSchema,
 	})
 	.raises(applicationSubmitted);
+// A rule across applications, so it belongs to the context and names the
+// operation that keeps it: SubmitApplication looks over the customer's
+// applications, because one instance cannot see the others (decision 27).
+lendingBC
+	.addInvariant("OneOpenApplicationPerCustomer", {
+		description:
+			"A customer has at most one open application; SubmitApplication refuses a second while one is open",
+	})
+	.constrains(application, submitApplication);
 const recordDecision = applicationAgg
 	.provides("RecordDecision", {
 		description: "Store decisioning's outcome and reasons",

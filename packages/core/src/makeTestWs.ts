@@ -246,6 +246,15 @@ export function makeRichTestWs() {
 		})
 		.raises(orderPlaced);
 
+	// A rule the context keeps rather than one aggregate: no order instance can
+	// see its siblings, so the application service's operation checks it before
+	// acting (decision 27).
+	const oneOpenOrder = orderingBc
+		.addInvariant("One open order per customer", {
+			description: "A customer has at most one open order at a time",
+		})
+		.constrains(order, placeOrder);
+
 	const billing = ws.addDomain("Billing", {
 		description: "Billing domain",
 	});
@@ -345,6 +354,7 @@ export function makeRichTestWs() {
 		basket,
 		money,
 		nonEmpty,
+		oneOpenOrder,
 		orderSummary,
 		orderRequest,
 		orderLineShape,

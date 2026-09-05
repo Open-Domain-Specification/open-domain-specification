@@ -520,15 +520,6 @@ offerAgg
 		description: "An offer's price is greater than zero",
 	})
 	.constrains(offer.attributes.get("price")!);
-// A uniqueness rule across offers: no single Offer can see the others, so
-// PublishOffer enforces it by looking up the seller's offers for the SKU
-// before creating a new one. The invariant names the pair that must be unique.
-offerAgg
-	.addInvariant("OneActiveOfferPerSellerSku", {
-		description:
-			"A seller has at most one active offer per SKU, so the buy box compares like with like. Enforced by PublishOffer over the seller's existing offers, since one Offer cannot see another",
-	})
-	.constrains(offerSellerId, offerSku);
 
 const offerPublishedSchema = offersBC.addSchema("OfferPublished");
 offerPublishedSchema.addAttribute("offerId", {
@@ -589,7 +580,7 @@ const offerApi = offersBC.addService("OfferAPI", {
 	description: "Seller-facing and internal offer endpoints",
 	type: "application",
 });
-offerApi
+const publishOffer = offerApi
 	.provides("PublishOffer", {
 		description: "Create or update an offer",
 		type: "operation",
@@ -597,6 +588,16 @@ offerApi
 		schema: offerPublishedSchema,
 	})
 	.raises(offerPublished);
+// A uniqueness rule across offers: no single Offer can see the others, so the
+// context holds the rule and names the operation that keeps it. PublishOffer
+// looks up the seller's offers for the SKU before creating a new one, and the
+// invariant names the pair that must be unique (decision 27).
+offersBC
+	.addInvariant("OneActiveOfferPerSellerSku", {
+		description:
+			"A seller has at most one active offer per SKU, so the buy box compares like with like. PublishOffer checks the seller's existing offers, since one Offer cannot see another",
+	})
+	.constrains(offerSellerId, offerSku, publishOffer);
 const getOffer = offerApi.provides("GetOffer", {
 	description: "Read one offer with its current price and stock",
 	type: "operation",

@@ -52,7 +52,7 @@ An aggregate has its own name and description because it is more than its root: 
 
 ### A rule that spans aggregates is not an invariant
 
-An invariant belongs to one aggregate because an aggregate is the boundary inside which a rule can be kept true in one transaction; that is what the boundary is for. A rule across several aggregates, a customer's daily limit summed over all their accounts, cannot be kept true that way, and calling it an invariant would promise a consistency the system does not have. The model holds it where DDD holds it: as an operation of a domain service, whose description states the rule and whose consumers are the application services that must ask before acting. Invariants therefore stay on aggregates, and may constrain that aggregate's operations (decision 19) but not a service's; the application service's operation reaches the invariant through the aggregate operation it consumes.
+Superseded by [decision 27](27-a-context-has-invariants-across-instances.md): a rule across the instances or aggregates of one context is an invariant of that context, guarded by an operation that checks it before acting.
 
 ### A context has no modules
 

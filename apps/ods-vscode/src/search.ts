@@ -85,6 +85,9 @@ export function* searchIndex(file: WorkspaceFile): Iterable<Hit> {
 		// A value object belongs to the context, not to one of its aggregates.
 		for (const v of bc.valueobjects.values())
 			yield hit(file, "valueobject", v, [bc.name]);
+		// So does a rule no one aggregate can keep (decision 27).
+		for (const i of bc.invariants.values())
+			yield hit(file, "invariant", i, [bc.name], "across aggregates");
 		for (const a of bc.aggregates.values()) {
 			const trail = [bc.name, a.name];
 			yield hit(file, "aggregate", a, [bc.name]);

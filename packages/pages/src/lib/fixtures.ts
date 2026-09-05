@@ -136,7 +136,7 @@ export function edgeCaseModel(): Model {
 	});
 	schemaAnswer.addAttribute("Result", { type: "string" });
 
-	aggNoRoot.addConsumable("Silent Operation", {
+	const opSilent = aggNoRoot.addConsumable("Silent Operation", {
 		type: "operation",
 		description: "Carries a payload with no attributes.",
 		schema: schemaEmpty,
@@ -161,6 +161,18 @@ export function edgeCaseModel(): Model {
 		description: "Takes and answers with the same shape.",
 		schema: schemaEchoed,
 		returns: schemaEchoed,
+	});
+
+	// The context's own rules (decision 27): one that counts across instances
+	// and names the operation checking it, and one that names nothing at all,
+	// which is the unguarded case a reader has to be shown.
+	bcMain
+		.addInvariant("Cross-Instance Invariant", {
+			description: "Counts the plain entities and is checked before acting.",
+		})
+		.constrains(ePlain, opSilent);
+	bcMain.addInvariant("Unguarded Context Invariant", {
+		description: "Names nothing, so nothing keeps it.",
 	});
 
 	bcMain.addPolicy("Idle Policy", {

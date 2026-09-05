@@ -32,6 +32,9 @@ Open-host service for /pet endpoints
 
 
 
+## Invariants
+> No invariants across aggregates.
+
 ## Value Objects
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |

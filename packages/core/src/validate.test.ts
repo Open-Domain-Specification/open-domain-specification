@@ -664,7 +664,7 @@ describe("invariant-in-aggregate", () => {
 				severity: "error",
 				rule: "invariant-in-aggregate",
 				message:
-					'Invariant "Stretched" of aggregate "Order" constrains "Customer", which is in aggregate "Customer"; an invariant holds inside the boundary that is saved as one',
+					'Invariant "Stretched" of aggregate "Order" constrains "Customer", which is in aggregate "Customer"; an aggregate\'s invariant holds inside the boundary on every save',
 				ref: stretched.ref,
 			},
 		]);
@@ -699,10 +699,138 @@ describe("invariant-in-aggregate", () => {
 				.map((d) => [d.message, d.ref]),
 		).toEqual([
 			[
-				'Invariant "Reaches Out" of aggregate "Order" constrains "Submit", which is in no aggregate at all; an invariant holds inside the boundary that is saved as one',
+				'Invariant "Reaches Out" of aggregate "Order" constrains "Submit", which is in no aggregate at all; an aggregate\'s invariant holds inside the boundary on every save',
 				misplaced.ref,
 			],
 		]);
+	});
+});
+
+describe("invariant-in-context", () => {
+	it("lets a context's invariant reach across its own aggregates, and no further", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const order = bc.addAggregate("Order", { description: "" });
+		const root = order.addRootEntity("Order", { description: "" });
+		const customerId = root.addAttribute("Customer Id", { type: "uuid" });
+		const basket = bc.addAggregate("Basket", { description: "" });
+		basket.addRootEntity("Basket", { description: "" });
+		const place = order.provides("Place", {
+			description: "",
+			type: "operation",
+		});
+		const elsewhere = ws.addBoundedContext("Elsewhere", { description: "" });
+		const foreign = elsewhere.addAggregate("Ledger", { description: "" });
+		const entry = foreign.addRootEntity("Entry", { description: "" });
+		// One open order per customer: a rule about the aggregate's instances,
+		// so it counts an attribute of one aggregate and is guarded by that
+		// aggregate's operation. Both belong to this context, so nothing is
+		// reported.
+		bc.addInvariant("One Open Order Per Customer", {
+			description: "",
+		}).constrains(customerId, place);
+		const foreignRule = bc
+			.addInvariant("Reaches Out", { description: "" })
+			.constrains(entry, place);
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "invariant-in-context")
+				.map((d) => [d.severity, d.message, d.ref]),
+		).toEqual([
+			[
+				"error",
+				'Invariant "Reaches Out" of bounded context "BC" constrains "Entry", which is in bounded context "Elsewhere"; a context\'s invariant holds across its own aggregates and no further',
+				foreignRule.ref,
+			],
+		]);
+	});
+
+	it("reports a target that sits in no context at all, such as a schema's attribute", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const agg = bc.addAggregate("Order", { description: "" });
+		agg.addRootEntity("Order", { description: "" });
+		const place = agg.provides("Place", { description: "", type: "operation" });
+		const payload = bc.addSchema("Place Order");
+		const field = payload.addAttribute("Customer Id", { type: "uuid" });
+		const rule = bc
+			.addInvariant("Counts A Payload", { description: "" })
+			.constrains(field, place);
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "invariant-in-context")
+				.map((d) => [d.message, d.ref]),
+		).toEqual([
+			[
+				'Invariant "Counts A Payload" of bounded context "BC" constrains "Place Order.Customer Id", which is in no bounded context at all; a context\'s invariant holds across its own aggregates and no further',
+				rule.ref,
+			],
+		]);
+	});
+});
+
+describe("context-invariant-guarded", () => {
+	it("requires an operation of the context to guard the rule", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const agg = bc.addAggregate("Order", { description: "" });
+		const root = agg.addRootEntity("Order", { description: "" });
+		const customerId = root.addAttribute("Customer Id", { type: "uuid" });
+		const place = agg.provides("Place", { description: "", type: "operation" });
+		const placed = agg.provides("Placed", { description: "", type: "event" });
+		bc.addInvariant("Guarded", { description: "" }).constrains(
+			customerId,
+			place,
+		);
+		// An event is not a guard: nothing can be refused after the fact.
+		const byEvent = bc
+			.addInvariant("Guarded By An Event", { description: "" })
+			.constrains(customerId, placed);
+		const unguarded = bc
+			.addInvariant("Unguarded", { description: "" })
+			.constrains(customerId);
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "context-invariant-guarded")
+				.map((d) => [d.severity, d.message, d.ref]),
+		).toEqual([
+			[
+				"error",
+				'Invariant "Guarded By An Event" of bounded context "BC" names no operation that guards it; a rule across instances is kept true by whoever checks it before acting',
+				byEvent.ref,
+			],
+			[
+				"error",
+				'Invariant "Unguarded" of bounded context "BC" names no operation that guards it; a rule across instances is kept true by whoever checks it before acting',
+				unguarded.ref,
+			],
+		]);
+	});
+
+	it("accepts an application service's operation as the guard", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const agg = bc.addAggregate("Order", { description: "" });
+		const root = agg.addRootEntity("Order", { description: "" });
+		const customerId = root.addAttribute("Customer Id", { type: "uuid" });
+		const app = bc.addService("Checkout", {
+			description: "",
+			type: "application",
+		});
+		const submit = app.provides("Submit", {
+			description: "",
+			type: "operation",
+		});
+		bc.addInvariant("One Open Order", { description: "" }).constrains(
+			customerId,
+			submit,
+		);
+		expect(
+			ws.validate().filter((d) => d.rule === "context-invariant-guarded"),
+		).toEqual([]);
 	});
 });
 

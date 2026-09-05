@@ -211,6 +211,54 @@ describe("toDoc", () => {
 		expect(docs).toHaveProperty("boundedcontexts/ordering/flowmap.svg");
 	});
 
+	it("prints a context's own invariants, with the operation that guards each", async () => {
+		const workspace = new Workspace("Across", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0.1.0",
+		});
+		const lending = workspace.addBoundedContext("Lending", {
+			description: "Loans",
+		});
+		const application = lending.addAggregate("Application", {
+			description: "",
+		});
+		const root = application.addRootEntity("Application", { description: "" });
+		const submit = application.provides("Submit Application", {
+			type: "operation",
+			description: "Ask for an amount",
+		});
+		lending
+			.addInvariant("One open application per customer", {
+				description: "A customer has at most one open application",
+			})
+			.constrains(root, submit);
+
+		const docs = await toDoc(workspace);
+		const contextDoc = docs["boundedcontexts/lending/index.md"];
+		expect(contextDoc).toContain("## Invariants");
+		expect(contextDoc).toContain(
+			"| One open application per customer | A customer has at most one open application | Application, Submit Application |",
+		);
+		// The rule belongs to the context, so the aggregate page does not claim it.
+		expect(
+			docs["boundedcontexts/lending/aggregates/application/index.md"],
+		).toContain("> No invariants.");
+	});
+
+	it("says a context has no invariants across aggregates when it has none", async () => {
+		const workspace = new Workspace("Quiet", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0.1.0",
+		});
+		workspace.addBoundedContext("Quiet", { description: "" });
+		const docs = await toDoc(workspace);
+		expect(docs["boundedcontexts/quiet/index.md"]).toContain(
+			"> No invariants across aggregates.",
+		);
+	});
+
 	it("should emit a docsify shell so the folder is a complete static site", async () => {
 		const workspace = new Workspace('Ac"me & <Co>', {
 			odsVersion: "1.0.0",

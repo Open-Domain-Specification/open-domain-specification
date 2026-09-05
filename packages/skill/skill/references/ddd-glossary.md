@@ -23,8 +23,10 @@ Never repeat an explanation, and never explain a term the user already used corr
   identity attribute is the one that tells two entities apart.
 - **Aggregate** — the cluster of things you change together and check rules across, named after
   its *root*, the one thing you go through to change any of it; the order and its lines.
-- **Invariant** — a rule that must always hold inside an aggregate, such as "quantity is never
-  zero".
+- **Invariant** — a rule that must always hold. An aggregate's invariant holds inside that one
+  cluster every time it is saved, such as "quantity is never zero". A context's invariant holds
+  across all of them at once — "one open application per customer" — and names the operation
+  that checks it before acting, because no one instance can see the others.
 - **Relation** — how one thing points at another: *includes* for parts that cannot exist alone,
   *uses* for values it carries, *references* for another aggregate's root by identity.
 - **Cardinality** — how many of the other thing: exactly one, at most one, any number, at least

@@ -435,6 +435,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "onboarding_app": {
           "name": "OnboardingApp",
@@ -785,6 +786,7 @@
           "invariants": {}
         }
       },
+      "invariants": {},
       "services": {
         "screening_app": {
           "name": "ScreeningApp",
@@ -1146,6 +1148,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "account_servicing": {
           "name": "AccountServicing",
@@ -1538,6 +1541,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "ledger_app": {
           "name": "LedgerApp",
@@ -1954,15 +1958,6 @@
                 }
               ]
             },
-            "daily_limit": {
-              "name": "DailyLimit",
-              "description": "Instructions from one account never exceed the daily limit in total; checked at initiation over the day's instructions for the payer account, since no single instruction can know the others",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction/attributes/amount"
-                }
-              ]
-            },
             "funds_available_at_initiation": {
               "name": "FundsAvailableAtInitiation",
               "description": "An instruction is created only if the payer's available balance, read through AccountServicing, covers the amount; the overdraft itself is Accounts' rule at posting",
@@ -1991,6 +1986,20 @@
               ]
             }
           }
+        }
+      },
+      "invariants": {
+        "daily_limit": {
+          "name": "DailyLimit",
+          "description": "Instructions from one account never exceed the daily limit in total; InitiatePayment sums the day's instructions for the payer account, since no single instruction can know the others",
+          "constrains": [
+            {
+              "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction/attributes/amount"
+            },
+            {
+              "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/initiate_payment"
+            }
+          ]
         }
       },
       "services": {
@@ -2370,6 +2379,7 @@
           "invariants": {}
         }
       },
+      "invariants": {},
       "services": {
         "scheme_gateway_app": {
           "name": "SchemeGatewayApp",
@@ -2658,6 +2668,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "cards_app": {
           "name": "CardsApp",
@@ -2974,17 +2985,7 @@
               ]
             }
           },
-          "invariants": {
-            "one_open_application_per_customer": {
-              "name": "OneOpenApplicationPerCustomer",
-              "description": "A customer has at most one open application; SubmitApplication refuses a second while one is open",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/lending/aggregates/loan_application/entities/loan_application"
-                }
-              ]
-            }
-          }
+          "invariants": {}
         },
         "loan": {
           "name": "Loan",
@@ -3226,6 +3227,20 @@
               ]
             }
           }
+        }
+      },
+      "invariants": {
+        "one_open_application_per_customer": {
+          "name": "OneOpenApplicationPerCustomer",
+          "description": "A customer has at most one open application; SubmitApplication refuses a second while one is open",
+          "constrains": [
+            {
+              "$ref": "#/boundedcontexts/lending/aggregates/loan_application/entities/loan_application"
+            },
+            {
+              "$ref": "#/boundedcontexts/lending/services/lending_app/provides/submit_application"
+            }
+          ]
         }
       },
       "services": {
@@ -3633,6 +3648,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "decisioning_app": {
           "name": "DecisioningApp",
@@ -3951,6 +3967,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "transaction_scorer": {
           "name": "TransactionScorer",
@@ -4293,6 +4310,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {},
       "policies": {
         "accumulate_on_posting": {
@@ -4534,6 +4552,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "channels_app": {
           "name": "ChannelsApp",
@@ -4680,6 +4699,7 @@
           "invariants": {}
         }
       },
+      "invariants": {},
       "services": {},
       "policies": {},
       "glossary": {},
@@ -4751,6 +4771,7 @@
           "invariants": {}
         }
       },
+      "invariants": {},
       "services": {
         "identity_app": {
           "name": "IdentityApp",
@@ -4789,6 +4810,7 @@
         "$ref": "#/teams/shared_kernel_team"
       },
       "aggregates": {},
+      "invariants": {},
       "services": {},
       "policies": {},
       "glossary": {},

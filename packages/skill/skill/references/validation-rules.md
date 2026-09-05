@@ -94,11 +94,27 @@
 
 ## `invariant-in-aggregate` (error)
 
-**Requires:** Every element an invariant constrains belongs to the invariant's own aggregate — an entity, an attribute, one of its operations — or is a value object of its context.
+**Requires:** An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object of its context.
 
-**Why it matters:** An invariant is the rule that holds every time its aggregate is saved. Something outside the boundary can change between one save and the next with nothing to stop it, so a rule stretched across two aggregates is a rule nobody can enforce. A value object is one exception: it belongs to the context and carries no state of its own, so it is saved as part of whichever aggregate holds one. The aggregate's own operations are the other: a rule about a transition is a rule about the operation that makes it, and naming it says which change the rule guards.
+**Why it matters:** This is the rule the aggregate itself upholds: it is checked as the aggregate is saved, and it is true again the moment the save returns. Something outside the boundary can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it belongs to the context and carries no state of its own, so it is saved as part of whichever aggregate holds one. The aggregate's own operations are the other: a rule about a transition is a rule about the operation that makes it, and naming it says which change the rule guards.
 
-**Usual fix:** Move the invariant to the aggregate that owns what it constrains, drop the foreign target, or model the guarantee as a policy reacting to the other aggregate's event, which is eventual by nature. If the target is an application service's operation, name the aggregate's own operation behind it instead: that is where the rule is enforced.
+**Usual fix:** Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). If the target is an application service's operation, name the aggregate's own operation behind it: that is where the rule is enforced.
+
+## `invariant-in-context` (error)
+
+**Requires:** Every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, one of its value objects, or one of its operations.
+
+**Why it matters:** A context's invariant is the rule that holds across its own instances — one open application per customer, one active offer per seller and SKU — and the context can hold it because everything it counts is its own to read in one place. A rule reaching into another context counts what a neighbour owns and may change at any moment, which is a consistency no boundary offers. That rule is a policy or a process reacting to the other context's events instead.
+
+**Usual fix:** Point the invariant at this context's own model, or move the rule to the context that owns what it counts. Where the two contexts really must agree, model the reaction: the other context raises an event and a policy here issues the operation that responds.
+
+## `context-invariant-guarded` (error)
+
+**Requires:** A context's invariant names at least one operation of that context as a guard.
+
+**Why it matters:** No instance can see its siblings, so nothing enforces a cross-instance rule as a side effect of being saved. It holds only because something checks it before acting: the operation that refuses the second open application, the one that counts the household's open sessions before starting another. Naming that operation is the difference between a rule the model can be read for and a sentence with nowhere to look.
+
+**Usual fix:** Name the operation that does the checking in constrains, alongside what the rule is about. If no operation checks it, the rule is not being kept: either the check belongs somewhere and has not been modelled, or the rule holds inside one aggregate and belongs there instead.
 
 ## `relationship-roles-backed` (warning)
 

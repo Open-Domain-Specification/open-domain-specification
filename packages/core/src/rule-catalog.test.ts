@@ -130,6 +130,9 @@ function everythingWrong(): Workspace {
 	child.uses(twice, "uses an entity");
 	// invariant-in-aggregate: a rule reaching into another aggregate
 	tree.addInvariant("Stretched", { description: "" }).constrains(r1);
+	// invariant-in-context: a context's rule counting another context's entity,
+	// and context-invariant-guarded: no operation of A checks either of them
+	a.addInvariant("Counts Elsewhere", { description: "" }).constrains(otherRoot);
 	// attribute-relation-coherence: attribute without relation, relation
 	// without attribute, and a list against a single-valued relation
 	const coherence = a.addAggregate("Coherence", { description: "" });

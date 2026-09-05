@@ -102,6 +102,13 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   the transition is made, and the operation then shows the rule it has to uphold. Only an
   operation of the same aggregate; if the user names the API endpoint, the aggregate's own
   operation behind it is the one to name.
+- Per rule: "is this true of one of these, or of all of them together?" → one of them is the
+  aggregate's invariant, checked every time that one is saved. All of them together — at most
+  one open application per customer, one active offer per seller and SKU, a daily total — is
+  the context's invariant: `boundedContext.addInvariant(...)`, constraining what it counts in
+  any of the context's aggregates. Then ask "who checks that before acting?" and name that
+  operation in `constrains` too; nothing keeps a rule across instances as a side effect of
+  being saved, so a context invariant without a guard is a rule nobody keeps.
 - "Does a <root> point at things in another cluster, for example an order pointing at a
   product?" → first ask "is that other cluster inside this same part of the business, or
   somewhere else?" Inside the same context → `references` to that cluster's root; ask "one

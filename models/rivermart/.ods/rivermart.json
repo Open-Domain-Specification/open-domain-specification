@@ -246,6 +246,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "catalogue_api": {
           "name": "CatalogueAPI",
@@ -490,6 +491,7 @@
           "invariants": {}
         }
       },
+      "invariants": {},
       "services": {
         "ranker": {
           "name": "Ranker",
@@ -747,20 +749,25 @@
                   "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer/attributes/price"
                 }
               ]
-            },
-            "one_active_offer_per_seller_sku": {
-              "name": "OneActiveOfferPerSellerSku",
-              "description": "A seller has at most one active offer per SKU, so the buy box compares like with like. Enforced by PublishOffer over the seller's existing offers, since one Offer cannot see another",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer/attributes/seller_id"
-                },
-                {
-                  "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer/attributes/sku"
-                }
-              ]
             }
           }
+        }
+      },
+      "invariants": {
+        "one_active_offer_per_seller_sku": {
+          "name": "OneActiveOfferPerSellerSku",
+          "description": "A seller has at most one active offer per SKU, so the buy box compares like with like. PublishOffer checks the seller's existing offers, since one Offer cannot see another",
+          "constrains": [
+            {
+              "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer/attributes/seller_id"
+            },
+            {
+              "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer/attributes/sku"
+            },
+            {
+              "$ref": "#/boundedcontexts/offers/services/offer_api/provides/publish_offer"
+            }
+          ]
         }
       },
       "services": {
@@ -1083,6 +1090,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "seller_central_api": {
           "name": "SellerCentralAPI",
@@ -1372,6 +1380,7 @@
           "invariants": {}
         }
       },
+      "invariants": {},
       "services": {
         "checkout_orchestrator": {
           "name": "CheckoutOrchestrator",
@@ -1947,6 +1956,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "order_api": {
           "name": "OrderAPI",
@@ -2505,6 +2515,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "payments_api": {
           "name": "PaymentsAPI",
@@ -2782,6 +2793,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "risk_scorer": {
           "name": "RiskScorer",
@@ -3273,6 +3285,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "warehouse_api": {
           "name": "WarehouseAPI",
@@ -3654,6 +3667,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {},
       "policies": {
         "route_dispatched_packages": {
@@ -3907,6 +3921,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "auction_service": {
           "name": "AuctionService",
@@ -4211,6 +4226,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "case_api": {
           "name": "CaseAPI",
@@ -4326,6 +4342,7 @@
           "invariants": {}
         }
       },
+      "invariants": {},
       "services": {},
       "policies": {},
       "glossary": {
@@ -4423,6 +4440,7 @@
           "invariants": {}
         }
       },
+      "invariants": {},
       "services": {
         "identity_api": {
           "name": "IdentityAPI",

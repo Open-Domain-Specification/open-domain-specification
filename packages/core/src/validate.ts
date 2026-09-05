@@ -18,6 +18,7 @@ import {
 	DataSchema,
 	Entity,
 	type EntityRelation,
+	type Invariant,
 	isDirectedRelationshipType,
 	Policy,
 	type Service,
@@ -615,12 +616,13 @@ function scopeOf(
 }
 
 /**
- * An invariant is enforced when its aggregate is saved, so everything it
- * constrains has to be inside that aggregate — or be a value object of the
- * aggregate's own context, which is saved as part of whichever aggregate holds
- * one (decision 16). An operation of the same aggregate is inside it too: a
- * transition rule is a rule about what that operation may do, and naming it is
- * how the model says which change the rule guards (decision 19).
+ * An aggregate's invariant holds inside its boundary on every save, so
+ * everything it constrains has to be inside that aggregate — or be a value
+ * object of the aggregate's own context, which is saved as part of whichever
+ * aggregate holds one (decision 16). An operation of the same aggregate is
+ * inside it too: a transition rule is a rule about what that operation may do,
+ * and naming it is how the model says which change the rule guards
+ * (decision 19).
  */
 const invariantInAggregate: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -635,11 +637,82 @@ const invariantInAggregate: Rule = (workspace) => {
 				diagnostics.push({
 					severity: "error",
 					rule: "invariant-in-aggregate",
-					message: `Invariant "${invariant.name}" of aggregate "${aggregate.name}" constrains "${constrainableLabel(target)}", which is in ${where}; an invariant holds inside the boundary that is saved as one`,
+					message: `Invariant "${invariant.name}" of aggregate "${aggregate.name}" constrains "${constrainableLabel(target)}", which is in ${where}; an aggregate's invariant holds inside the boundary on every save`,
 					ref: invariant.ref,
 				});
 			}
 		}
+	}
+	return diagnostics;
+};
+
+/** Every invariant a bounded context owns, in declaration order. */
+function* contextInvariantsOf(
+	workspace: Workspace,
+): Iterable<[BoundedContext, Invariant]> {
+	for (const bc of workspace.boundedcontexts.values())
+		for (const invariant of bc.invariants.values()) yield [bc, invariant];
+}
+
+/**
+ * The context an element belongs to, for a rule the context keeps rather than
+ * one aggregate (decision 27). A schema's attribute belongs to the boundary
+ * rather than the model, so it reports as out of reach the way it does for an
+ * aggregate's invariant.
+ */
+function contextOf(target: Constrainable): BoundedContext | undefined {
+	if (target instanceof Consumable) return target.boundedcontext;
+	const owner = target instanceof Attribute ? target.owner : target;
+	if (owner instanceof Entity) return owner.aggregate.boundedcontext;
+	if (owner instanceof ValueObject) return owner.boundedcontext;
+	return undefined;
+}
+
+/**
+ * A context's invariant reaches across its own aggregates and no further:
+ * uniqueness, a quota, a limit are rules about that context's own instances,
+ * and a rule that names another context's model claims a consistency no
+ * boundary offers (decision 27).
+ */
+const invariantInContext: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const [bc, invariant] of contextInvariantsOf(workspace)) {
+		for (const target of invariant.targets) {
+			const context = contextOf(target);
+			if (context === bc) continue;
+			const where = context
+				? `bounded context "${context.name}"`
+				: "no bounded context at all";
+			diagnostics.push({
+				severity: "error",
+				rule: "invariant-in-context",
+				message: `Invariant "${invariant.name}" of bounded context "${bc.name}" constrains "${constrainableLabel(target)}", which is in ${where}; a context's invariant holds across its own aggregates and no further`,
+				ref: invariant.ref,
+			});
+		}
+	}
+	return diagnostics;
+};
+
+/**
+ * A rule no single instance can see is kept true only by whoever checks it
+ * before acting, so a context's invariant names the operation that does the
+ * checking. Without one the model states a rule and says nothing about where
+ * it is upheld (decision 27).
+ */
+const contextInvariantGuarded: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const [bc, invariant] of contextInvariantsOf(workspace)) {
+		const guards = invariant.guarded.filter(
+			(it) => it.type === "operation" && it.boundedcontext === bc,
+		);
+		if (guards.length > 0) continue;
+		diagnostics.push({
+			severity: "error",
+			rule: "context-invariant-guarded",
+			message: `Invariant "${invariant.name}" of bounded context "${bc.name}" names no operation that guards it; a rule across instances is kept true by whoever checks it before acting`,
+			ref: invariant.ref,
+		});
 	}
 	return diagnostics;
 };
@@ -1576,10 +1649,28 @@ const RULES: CataloguedRule[] = [
 		rule: "invariant-in-aggregate",
 		severities: ["error"],
 		summary:
-			"Every element an invariant constrains belongs to the invariant's own aggregate — an entity, an attribute, one of its operations — or is a value object of its context.",
-		why: "An invariant is the rule that holds every time its aggregate is saved. Something outside the boundary can change between one save and the next with nothing to stop it, so a rule stretched across two aggregates is a rule nobody can enforce. A value object is one exception: it belongs to the context and carries no state of its own, so it is saved as part of whichever aggregate holds one. The aggregate's own operations are the other: a rule about a transition is a rule about the operation that makes it, and naming it says which change the rule guards.",
-		fix: "Move the invariant to the aggregate that owns what it constrains, drop the foreign target, or model the guarantee as a policy reacting to the other aggregate's event, which is eventual by nature. If the target is an application service's operation, name the aggregate's own operation behind it instead: that is where the rule is enforced.",
+			"An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object of its context.",
+		why: "This is the rule the aggregate itself upholds: it is checked as the aggregate is saved, and it is true again the moment the save returns. Something outside the boundary can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it belongs to the context and carries no state of its own, so it is saved as part of whichever aggregate holds one. The aggregate's own operations are the other: a rule about a transition is a rule about the operation that makes it, and naming it says which change the rule guards.",
+		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). If the target is an application service's operation, name the aggregate's own operation behind it: that is where the rule is enforced.",
 		check: invariantInAggregate,
+	},
+	{
+		rule: "invariant-in-context",
+		severities: ["error"],
+		summary:
+			"Every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, one of its value objects, or one of its operations.",
+		why: "A context's invariant is the rule that holds across its own instances — one open application per customer, one active offer per seller and SKU — and the context can hold it because everything it counts is its own to read in one place. A rule reaching into another context counts what a neighbour owns and may change at any moment, which is a consistency no boundary offers. That rule is a policy or a process reacting to the other context's events instead.",
+		fix: "Point the invariant at this context's own model, or move the rule to the context that owns what it counts. Where the two contexts really must agree, model the reaction: the other context raises an event and a policy here issues the operation that responds.",
+		check: invariantInContext,
+	},
+	{
+		rule: "context-invariant-guarded",
+		severities: ["error"],
+		summary:
+			"A context's invariant names at least one operation of that context as a guard.",
+		why: "No instance can see its siblings, so nothing enforces a cross-instance rule as a side effect of being saved. It holds only because something checks it before acting: the operation that refuses the second open application, the one that counts the household's open sessions before starting another. Naming that operation is the difference between a rule the model can be read for and a sentence with nowhere to look.",
+		fix: "Name the operation that does the checking in constrains, alongside what the rule is about. If no operation checks it, the rule is not being kept: either the check belongs somewhere and has not been modelled, or the rule holds inside one aggregate and belongs there instead.",
+		check: contextInvariantGuarded,
 	},
 	{
 		rule: "relationship-roles-backed",

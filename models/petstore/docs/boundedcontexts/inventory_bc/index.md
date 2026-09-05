@@ -31,6 +31,9 @@ Open-host service for /store/inventory
 
 
 
+## Invariants
+> No invariants across aggregates.
+
 ## Value Objects
 > No value objects.
 

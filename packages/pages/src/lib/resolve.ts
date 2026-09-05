@@ -21,6 +21,8 @@ export function pageRefs(ws: Workspace): string[] {
 	for (const bc of ws.boundedcontexts.values()) {
 		refs.push(bc.ref);
 		for (const v of bc.valueobjects.values()) refs.push(v.ref);
+		// A rule the context keeps rather than one aggregate (decision 27).
+		for (const i of bc.invariants.values()) refs.push(i.ref);
 		for (const a of bc.aggregates.values()) {
 			refs.push(a.ref);
 			for (const m of [
@@ -98,6 +100,11 @@ const PAGE_PATTERNS: [
 	[
 		/^#\/boundedcontexts\/([^/]+)\/glossary\/([^/]+)/,
 		(ws, m) => ws.boundedcontexts.get(m[1])?.glossary.get(m[2]),
+	],
+	// An invariant the context owns; the aggregate's is matched further up.
+	[
+		/^#\/boundedcontexts\/([^/]+)\/invariants\/([^/]+)/,
+		(ws, m) => ws.boundedcontexts.get(m[1])?.invariants.get(m[2]),
 	],
 	[/^#\/boundedcontexts\/([^/]+)/, (ws, m) => ws.boundedcontexts.get(m[1])],
 ];

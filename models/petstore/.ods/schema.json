@@ -140,6 +140,13 @@
                     },
                     "type": "object"
                 },
+                "invariants": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/InvariantSchema"
+                    },
+                    "description": "The rules that hold across the instances or the aggregates of this\ncontext: uniqueness, quotas, limits, conservation. Each one names at\nleast one operation of the context that guards it, because a rule no\nsingle instance can see is kept true only by whoever checks it before\nacting (decision 27).",
+                    "type": "object"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -203,6 +210,7 @@
                 "aggregates",
                 "description",
                 "glossary",
+                "invariants",
                 "name",
                 "policies",
                 "schemas",
@@ -674,10 +682,10 @@
         },
         "InvariantSchema": {
             "additionalProperties": false,
-            "description": "Represents an invariant in the Open Domain Specification (ODS).",
+            "description": "A rule that holds inside an aggregate on every save, or across the instances and aggregates of a bounded context.",
             "properties": {
                 "constrains": {
-                    "description": "What this invariant is a rule about: the entities, value objects and\nattributes it holds over, and the consumables of its own aggregate it\nconstrains, for a rule about what an operation may do.",
+                    "description": "What this invariant is a rule about: the entities, value objects and\nattributes it holds over, and the operations it constrains, for a rule\nabout what an operation may do. An aggregate's invariant reaches inside\nits own aggregate and the value objects of its context; a context's\ninvariant reaches anywhere in the context and names at least one\noperation that guards it.",
                     "items": {
                         "additionalProperties": false,
                         "properties": {

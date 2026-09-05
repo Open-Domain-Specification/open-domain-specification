@@ -93,7 +93,8 @@ said the breaks were asked for before the start; the Ads lead's account is the o
 teams confirmed, and the model follows it.)
 
 Recorded as: Playback as core; PlaybackSession with Bookmark and StreamManifest; invariants
-`SessionNeedsEntitlement`, `WithinStreamLimit`, `BookmarkWithinRuntime`; the
+`SessionNeedsEntitlement` and `BookmarkWithinRuntime` on the aggregate and
+`WithinStreamLimit` on the context, guarded by `StartPlayback`; the
 AdaptiveBitrateSelector domain service; `PlaybackStarted` and `PlaybackStopped` published,
 `BookmarkUpdated` internal; anti-corruption consumptions of Billing, Catalogue and Ads;
 conformist consumption of Edge's `ResolveEdge` (shared kernel) and Devices'
@@ -150,8 +151,9 @@ consulted on changes. The disc business posts a monthly charge to us through an 
 translate it into an invoice line. We would happily buy all of this."
 
 Recorded as: Billing & Plans as generic; Subscription with Invoice `includes`, Plan, Price
-and BillingPeriod; invariants `OneActiveSubscriptionPerHousehold`,
-`SubscriptionLineEqualsPlanPrice`, `NoEntitlementWhenLapsed`; `GetEntitlement` as an open
+and BillingPeriod; invariants `SubscriptionLineEqualsPlanPrice` and `NoEntitlementWhenLapsed`
+on the aggregate and `OneActiveSubscriptionPerHousehold` on the context, guarded by
+`StartSubscription`; `GetEntitlement` as an open
 host; policies "Await plan on household", "Dun on failed payment" and "Add disc charge to
 bill"; customer-supplier towards Playback; anti-corruption consumption of the legacy event.
 
@@ -348,12 +350,15 @@ Accepted
 Partially accepted
 
 - `WithinStreamLimit` on a single session: a session cannot count its siblings. The rule is
-  real and is enforced at start, using the stream count `GetEntitlement` returns. Changed:
-  PlaybackSession has `householdId`, the invariant constrains it and says where the check
-  runs. No new "lease" aggregate: that is a design choice for the Playback team.
-- `OneActiveSubscriptionPerHousehold` on a single subscription: same shape. Changed: the
-  invariant constrains `householdId` and says `StartSubscription` enforces it. No
-  BillingAccount root was invented; the Commerce lead described none.
+  real and is kept at start, using the stream count `GetEntitlement` returns. Changed:
+  PlaybackSession has `householdId`, and since decision 27 the rule is Playback's own
+  invariant rather than the session aggregate's, constraining `householdId` and naming
+  `StartPlayback` as its guard. No new "lease" aggregate: that is a design choice for the
+  Playback team.
+- `OneActiveSubscriptionPerHousehold` on a single subscription: same shape. Changed: it is
+  the Billing & Plans context's invariant, constraining `householdId` and naming
+  `StartSubscription` as its guard. No BillingAccount root was invented; the Commerce lead
+  described none.
 - Playback and Ads are mutually downstream, and the Playback summary said breaks were asked
   for before the start. The two interviews disagreed and the record hid it. The Ads lead's
   sequence (start event, then resolve each break when reached) is what both teams confirmed,

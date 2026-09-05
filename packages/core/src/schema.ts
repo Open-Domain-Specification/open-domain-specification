@@ -110,6 +110,14 @@ export interface BoundedContextSchema {
 	/** The team that owns this context. */
 	team?: { $ref: string };
 	aggregates: { [aggregate: string]: AggregateSchema };
+	/**
+	 * The rules that hold across the instances or the aggregates of this
+	 * context: uniqueness, quotas, limits, conservation. Each one names at
+	 * least one operation of the context that guards it, because a rule no
+	 * single instance can see is kept true only by whoever checks it before
+	 * acting (decision 27).
+	 */
+	invariants: { [invariant: string]: InvariantSchema };
 	services: { [service: string]: ServiceSchema };
 	policies: { [policy: string]: PolicySchema };
 	glossary: { [term: string]: GlossaryTermSchema };
@@ -332,15 +340,18 @@ export interface EntityRelationSchema {
 
 /**
  * @title Invariant
- * @description Represents an invariant in the Open Domain Specification (ODS).
+ * @description A rule that holds inside an aggregate on every save, or across the instances and aggregates of a bounded context.
  */
 export interface InvariantSchema {
 	name: string;
 	description: string;
 	/**
 	 * What this invariant is a rule about: the entities, value objects and
-	 * attributes it holds over, and the consumables of its own aggregate it
-	 * constrains, for a rule about what an operation may do.
+	 * attributes it holds over, and the operations it constrains, for a rule
+	 * about what an operation may do. An aggregate's invariant reaches inside
+	 * its own aggregate and the value objects of its context; a context's
+	 * invariant reaches anywhere in the context and names at least one
+	 * operation that guards it.
 	 */
 	constrains: { $ref: string }[];
 }
@@ -515,6 +526,15 @@ export function invariantRef(
 	invariant: string,
 ) {
 	const { $ref } = aggregateRef(boundedcontext, aggregate);
+
+	return {
+		$ref: `${$ref}/invariants/${invariant}`,
+	};
+}
+
+/** The ref of an invariant a bounded context owns rather than an aggregate. */
+export function contextInvariantRef(boundedcontext: string, invariant: string) {
+	const { $ref } = boundedcontextRef(boundedcontext);
 
 	return {
 		$ref: `${$ref}/invariants/${invariant}`,

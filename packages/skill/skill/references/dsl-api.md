@@ -28,9 +28,10 @@ independently of the name.
 | `BoundedContext` | `addTerm(name, { definition, aliases?, embodiedBy? })` | a glossary term; or chain `.embody(element)` |
 | `BoundedContext` | `addSchema(name, { description? })` | a payload schema; add fields with `addAttribute` |
 | `BoundedContext` | `addValueObject(name, { description })` | a value object of this context; every aggregate in it may hold one |
+| `BoundedContext` | `addInvariant(name, { description })` | a rule that holds across the context's instances or aggregates — uniqueness, a quota, a limit; chain `.constrains(...entities, valueObjects, attributes of any of its aggregates, and at least one operation of the context that checks it before acting)` |
 | `Aggregate` | `addRootEntity(name, { description })` | the root entity |
 | `Aggregate` | `addEntity(name, { description, root? })` | an entity |
-| `Aggregate` | `addInvariant(name, { description })` | an invariant; chain `.constrains(...entities, valueObjects, attributes or the aggregate's own consumables)` |
+| `Aggregate` | `addInvariant(name, { description })` | a rule that holds inside the aggregate on every save; chain `.constrains(...entities, valueObjects, attributes or the aggregate's own consumables)` |
 | `Aggregate`, `Service` | `provides(name, { type, description, pattern?, internal?, schema?, returns?, comments?, disposition? })` | a consumable; `type` is `"event" \| "operation"`, `pattern` is `"open-host-service" \| "published-language"`; `schema` is what the caller sends and `returns` what an operation answers with, both schemas of the provider's own context |
 | `Aggregate`, `Service` | `consumes(consumable, { pattern?, by?, comments?, disposition? })` | a consumption; `pattern` is `"conformist" \| "anti-corruption-layer"`; `by` names the consumer's own operations, or policies of its context, that make this exchange, and is left off when the whole consumer depends on it |
 | `Consumable` | `raises(...events)` | the events an operation raises |

@@ -70,15 +70,19 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   id (in the DSL, pass `id` explicitly at the moment of renaming). Rewriting a key means
   updating every ref that uses it, and confirming with the user first.
 - Every required collection is present even when empty. A context always has `aggregates`,
-  `services`, `policies`, `glossary`, `valueobjects`, `schemas` and `subdomains`; an aggregate
-  always has `entities`, `invariants`, `provides`, `consumes`; an entity or value object
-  always has `attributes` and `relations`. See `references/model-reference.md`.
+  `services`, `policies`, `glossary`, `valueobjects`, `schemas`, `invariants` and `subdomains`;
+  an aggregate always has `entities`, `invariants`, `provides`, `consumes`; an entity or value
+  object always has `attributes` and `relations`. See `references/model-reference.md`.
 - Every `$ref` resolves to an element that exists. A dangling ref is a load failure, not a
   warning: the whole file stops loading.
 - Consumables (events and operations) live only under `provides` of an aggregate or a
   service. Policies and consumptions point at them by ref.
 - A value object belongs to the context, not to an aggregate: declare it once there and any
   aggregate may hold it.
+- An invariant belongs to an aggregate when it holds inside that boundary on every save, and to
+  the context when it holds across instances or aggregates — uniqueness, a quota, a limit. A
+  context's invariant names at least one operation of the context that checks it before acting,
+  and reaches no further than that context.
 - A payload schema belongs to the context that publishes the consumable. A value object or a
   schema may be named across a boundary only where the two contexts declare a `shared-kernel`
   relationship.

@@ -85,6 +85,7 @@
 					"consumes": []
 				}
 			},
+			"invariants": {},
 			"services": {
 				"order_api": {
 					"name": "Order API",

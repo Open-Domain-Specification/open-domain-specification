@@ -38,6 +38,9 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 
 
 
+## Invariants
+> No invariants across aggregates.
+
 ## Value Objects
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |

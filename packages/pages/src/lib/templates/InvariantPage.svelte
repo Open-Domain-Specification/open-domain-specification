@@ -7,14 +7,20 @@ export const sections = [
 </script>
 
 <script lang="ts">
-import { Consumable, type Invariant } from "@open-domain-specification/core";
+import {
+	Aggregate,
+	Consumable,
+	type Invariant,
+} from "@open-domain-specification/core";
 import { nameOf, problemsUnder, useModel } from "../model";
 import { ownerCrumbs } from "../elements";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Definition from "../atoms/Definition.svelte";
 import DefinitionList from "../atoms/DefinitionList.svelte";
+import Keyword from "../atoms/Keyword.svelte";
 import Lockup from "../atoms/Lockup.svelte";
+import { contextCrumbs } from "../molecules/crumbs";
 import { kindOf } from "../molecules/element-kind";
 import RefList from "../molecules/RefList.svelte";
 import LanguageSection from "../organisms/LanguageSection.svelte";
@@ -24,7 +30,34 @@ import Section from "../organisms/Section.svelte";
 /** One rule that must hold after every change, and the elements it is about. */
 const { invariant: i }: { invariant: Invariant } = $props();
 const model = useModel();
-const a = $derived(i.aggregate);
+// A rule belongs either to one aggregate, where it holds on every save, or to
+// the whole context, where it holds across instances and something checks it
+// before acting (decision 27). The header says which, because the two promise
+// different things.
+const owner = $derived(i.owner);
+const inAggregate = $derived(owner instanceof Aggregate);
+const KIND = {
+	aggregate: {
+		label: "aggregate invariant",
+		title: "Holds inside the aggregate's boundary, every time it is saved.",
+		lead: "The elements this rule is about, all inside the aggregate that is saved as one.",
+		guards:
+			"The operations this rule is about. A transition rule is enforced where the transition is made, so these are the ones that have to uphold it.",
+		empty:
+			"No operation names this rule; it is checked wherever the aggregate is saved.",
+	},
+	context: {
+		label: "context invariant",
+		title:
+			"Holds across the instances and aggregates of the context; an operation checks it before acting.",
+		lead: "The elements this rule is about. They may sit in any aggregate of the context, because no one instance can see the others.",
+		guards:
+			"The operations this rule is about. Nothing enforces a rule across instances as a side effect, so it holds only because these check it before acting.",
+		empty:
+			"No operation names this rule, so nothing keeps it: a rule across instances needs a guard.",
+	},
+} as const;
+const words = $derived(KIND[i.kind]);
 // The elements the rule holds true of, and the operations that have to uphold
 // it, are two different readings of the same list, so the page splits them by
 // what each target is: a consumable is an operation the rule guards, anything
@@ -37,11 +70,25 @@ const columns: Column[] = [
 ];
 </script>
 
-<PageHeader description={i.description} crumbs={ownerCrumbs(model.workspace, a)}>
+<PageHeader
+	description={i.description}
+	crumbs={owner instanceof Aggregate
+		? ownerCrumbs(model.workspace, owner)
+		: contextCrumbs(model.workspace, owner)}
+>
 	{#snippet title()}<Lockup kind="invariant" name={i.name} id={i.id} detail="Invariant" size="title" />{/snippet}
+	{#snippet meta()}
+		<Keyword text={words.label} title={words.title} />
+	{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
-			<Definition term="Enforced by"><Lockup kind="aggregate" name={a.name} ref={a.ref} /></Definition>
+			<Definition term="Enforced by">
+				{#if inAggregate}
+					<Lockup kind="aggregate" name={owner.name} ref={owner.ref} />
+				{:else}
+					<Lockup kind="boundedcontext" name={owner.name} ref={owner.ref} />
+				{/if}
+			</Definition>
 		</DefinitionList>
 	{/snippet}
 </PageHeader>
@@ -49,11 +96,18 @@ const columns: Column[] = [
 <Section
 	id="constrains"
 	title="Constrains"
-	lead="The elements this rule is about. An invariant that spans aggregates cannot be guaranteed in one transaction."
+	lead={words.lead}
 	count={targets.length}
 	problems={problemsUnder(model, i.ref)}
 >
-	<DataTable {columns} rows={targets} empty="Applies to the aggregate as a whole." rowId={(t) => t.ref}>
+	<DataTable
+		{columns}
+		rows={targets}
+		empty={inAggregate
+			? "Applies to the aggregate as a whole."
+			: "Applies to the context as a whole."}
+		rowId={(t) => t.ref}
+	>
 		{#snippet cell(t, col)}
 			{#if col.key === "name"}
 				<Lockup kind={kindOf(t)} name={nameOf(t)} ref={t.ref} />
@@ -67,10 +121,10 @@ const columns: Column[] = [
 <Section
 	id="guards"
 	title="Guarded by"
-	lead="The operations this rule is about. A transition rule is enforced where the transition is made, so these are the ones that have to uphold it."
+	lead={words.guards}
 	count={guarded.length}
 >
-	<RefList items={guarded} kind="command" block empty="No operation names this rule; it is checked wherever the aggregate is saved." />
+	<RefList items={guarded} kind="command" block empty={words.empty} />
 </Section>
 
 <LanguageSection target={i} />
