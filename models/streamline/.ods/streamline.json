@@ -2887,13 +2887,23 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/household_created"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/billing_&_plans/policies/await_plan_on_household"
+                }
+              ]
             },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/disc_rental_(legacy)/aggregates/rental_queue/provides/disc_rental_invoiced"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/billing_&_plans/policies/add_disc_charge_to_bill"
+                }
+              ]
             }
           ],
           "entities": {

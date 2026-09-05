@@ -31,6 +31,7 @@ severity, a rule id, a message and the ref of the element concerned.
 | `role-coherence` | warning | consumables and consumptions crossing contexts declare their roles, unless the two contexts are partners or share a kernel |
 | `separate-ways` | error | contexts that declared separate ways exchange no consumables, and neither reacts to the other's events |
 | `internal-consumable` | error | an internal consumable is not consumed, reacted to or issued from another context |
+| `consumption-by-resolves` | error | a consumption's `by` names the consumer's own operations, or policies of the consumer's context; a consumption belongs to the consumer, so what makes it is the consumer's own |
 | `policy-in-context` | error | a policy issues operations of its own context; it may still react to another context's event |
 | `aggregate-not-public` | error | an aggregate's operations declare no upstream role and are consumed only inside their own context |
 | `domain-service-internal` | error | a domain service's operations declare no upstream role and are consumed only inside their own context |

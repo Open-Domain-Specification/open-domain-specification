@@ -140,6 +140,10 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   context's. To act on a neighbour, name a local operation that consumes theirs.
 - "Who outside this part listens for <event>?" → a consumption on their aggregate or service,
   with a downstream `pattern`.
+- For each consumption: "which operations of this service actually make that call?" → `by`,
+  naming the consumer's own operations, or the policy of its context that reacts. Only ask
+  it back if the answer is one or two of several; "all of it" is the common case and leaves
+  `by` off. Never guess a call graph from names — if the author does not know, it stays absent.
 - Close: "Which of the words we used should I define, and does each map to one of the things
   we modelled?" → glossary terms with `embodiedBy`.
 - Ask the two evidence questions (see below) for each consumable or consumption that came out

@@ -123,6 +123,19 @@ describe("ConsumableEdge without a measured socket", () => {
 			expect(pathD(container)).toBeTruthy();
 		}
 	});
+	it("shows what makes the consumption on hover, and nothing when it is the whole consumer", async () => {
+		diagramOptions.set({ handles: "fixed", edges: "bezier" });
+		const { container } = edge({
+			data: { sourceLabel: "conformist", by: ["ReservePet", "MarkPetSold"] },
+		});
+		await waitFor(() => expect(container.querySelector("path")).toBeTruthy());
+		expect(container.querySelector(".edge-label title")?.textContent).toBe(
+			"Made by ReservePet, MarkPetSold",
+		);
+		const { container: whole } = edge({ data: { by: [] } });
+		await waitFor(() => expect(whole.querySelector("path")).toBeTruthy());
+		expect(whole.querySelector(".edge-label title")).toBeNull();
+	});
 	it("omits what it has none for and falls back to the fixed target, drawing the provider port itself, when the slot handle is not measured or not named", async () => {
 		diagramOptions.set({ handles: "fixed", edges: "bezier" });
 		boxes["#/b"] = { ...provider(), handles: undefined };

@@ -91,6 +91,20 @@ describe("Workspace ref lookups", () => {
 		);
 	});
 
+	it("resolves what makes a consumption", () => {
+		expect(ws.getConsumptionCallerByRef(fixture.invoiceOnOrderPlaced.ref)).toBe(
+			fixture.invoiceOnOrderPlaced,
+		);
+		expect(ws.getConsumptionCallerByRef(fixture.raiseInvoice.ref)).toBe(
+			fixture.raiseInvoice,
+		);
+		// An aggregate is a node, not something that calls out on its own.
+		expect(ws.getConsumptionCallerByRef(fixture.orderAgg.ref)).toBeUndefined();
+		expect(() => ws.getConsumptionCallerByRefOrThrow("#/nope")).toThrow(
+			/Consumable or Policy/,
+		);
+	});
+
 	it("resolves policies and what they join", () => {
 		expect(ws.getPolicyByRef(fixture.invoiceOnOrderPlaced.ref)).toBe(
 			fixture.invoiceOnOrderPlaced,

@@ -41,8 +41,9 @@ let {
 	sourceHandleId,
 	targetHandleId,
 	data,
-}: EdgeProps & { data?: { sourceLabel?: string; targetLabel?: string } } =
-	$props();
+}: EdgeProps & {
+	data?: { sourceLabel?: string; targetLabel?: string; by?: string[] };
+} = $props();
 // An edge's ends never change once created, so the initial ids are the ids.
 // svelte-ignore state_referenced_locally
 const sourceNode = useInternalNode(source);
@@ -89,6 +90,11 @@ const params: EdgeEndpoints = $derived.by(() => {
 	};
 });
 
+/** The consumer's operations or policies behind the consumption, for the hover. */
+const madeBy = $derived(
+	data?.by?.length ? `Made by ${data.by.join(", ")}` : undefined,
+);
+
 /** The socket is the consumer's port; without one the edge draws it. */
 const sourcePort = $derived(
 	socketPoint ? undefined : roleLabel(data?.sourceLabel),
@@ -109,7 +115,8 @@ const path = $derived(
 
 <BaseEdge {id} path={path[0]} {style} class="assembly" />
 {#if label}
-	<text class="edge-label" x={path[1]} y={path[2]} text-anchor="middle" dominant-baseline="middle">{label}</text>
+	<!-- The hover says what of the consumer makes it; absent means all of it. -->
+	<text class="edge-label" x={path[1]} y={path[2]} text-anchor="middle" dominant-baseline="middle">{#if madeBy}<title>{madeBy}</title>{/if}{label}</text>
 {/if}
 {#if sourcePort && data?.sourceLabel}
 	{@const at = portCentre(params.sourceX, params.sourceY, params.sourcePosition)}

@@ -47,6 +47,7 @@ exports[`Visitor Example > should compile  1`] = `
         "content_renderer": {
           "consumes": [
             {
+              "by": undefined,
               "comments": undefined,
               "consumable": {
                 "$ref": "#/boundedcontexts/ordering/services/checkout_app/provides/place_order",
@@ -133,6 +134,7 @@ exports[`Visitor Example > should compile  1`] = `
         "checkout_app": {
           "consumes": [
             {
+              "by": undefined,
               "comments": undefined,
               "consumable": {
                 "$ref": "#/boundedcontexts/cms/services/content_renderer/provides/get_article",

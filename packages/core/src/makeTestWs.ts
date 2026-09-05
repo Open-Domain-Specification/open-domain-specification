@@ -265,9 +265,6 @@ export function makeRichTestWs() {
 	// boundary. The dependency itself reads on the consumable map, through the
 	// Order Placed event this aggregate consumes below.
 	invoice.addAttribute("Order Id", { type: "OrderId", identifies: order });
-	const invoiceConsumesOrderPlaced = invoiceAgg.consumes(orderPlaced, {
-		pattern: "conformist",
-	});
 	const invoiceRaised = invoiceAgg.provides("Invoice Raised", {
 		description: "An invoice was raised",
 		type: "event",
@@ -293,6 +290,12 @@ export function makeRichTestWs() {
 		})
 		.on(orderPlaced)
 		.then(raiseInvoice);
+	// Only the policy reaches for the other context's event; nothing else in
+	// the aggregate touches it, and that is what `by` says.
+	const invoiceConsumesOrderPlaced = invoiceAgg.consumes(orderPlaced, {
+		pattern: "conformist",
+		by: [invoiceOnOrderPlaced],
+	});
 	const invoiceApp = invoicingBc.addService("Invoice App", {
 		description: "Invoice application service",
 		type: "application",

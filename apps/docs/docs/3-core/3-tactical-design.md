@@ -87,6 +87,17 @@ a command only the context's own policies or application services issue, an
 internal event is one the outside never sees. Consuming an internal
 consumable from another context is a validation error.
 
+## Consumptions
+
+An aggregate or service **consumes** a consumable
+(`node.consumes(consumable, { pattern })`), which is what draws the
+dependency on the consumable map. The consumption may also say what of the
+consumer makes it: `by` names the consumer's own operations, or policies of
+its context. A subscription service calls the payment gateway when it
+renews, not when it lists entitlements, and `by` is where that reads. Leave
+`by` off when the whole consumer depends on the consumable, which is the
+common case; it is optional detail, not a call graph.
+
 ## Policies
 
 A **policy** lives on a bounded context and says "on these events, then

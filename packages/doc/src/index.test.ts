@@ -364,6 +364,25 @@ describe("toDoc", () => {
 		);
 	});
 
+	it("names what makes a consumption, and says nothing where it is the whole consumer", async () => {
+		const docs = await toDoc(petstore);
+		const orderApp =
+			docs["boundedcontexts/sales_bc/services/order_app/index.md"];
+		const consumes = orderApp.split("## Consumes")[1];
+		const section = (name: string) =>
+			consumes.split(`### ${name}`)[1].split("###")[0];
+
+		expect(section("ReservePetForOrder")).toContain(
+			"- **Made by**: ReservePet",
+		);
+		// The pair beside it is the whole service, so the line is left off.
+		expect(section("MarkPetSoldForOrder")).not.toContain("**Made by**");
+		// The context page reads the same rows as a table.
+		const contextDoc = docs["boundedcontexts/sales_bc/index.md"];
+		expect(contextDoc).toContain("| Consumer | Made By |");
+		expect(contextDoc).toContain("| ReservePet |");
+	});
+
 	it("prints nothing beneath a Provides table whose consumables carry no comments", async () => {
 		const docs = await toDoc(petstore);
 		const shipment =

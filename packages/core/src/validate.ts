@@ -1046,6 +1046,46 @@ const internalConsumable: Rule = (workspace) => {
 };
 
 /**
+ * A consumption belongs to the consumer, so the operations named behind it are
+ * the consumer's own: what it does with a dependency is its business, and no
+ * node gets to say that someone else's operation calls out on its behalf. A
+ * policy may be named too, because a policy is how its context reacts, but it
+ * has to be a policy of that same context (decision 21).
+ */
+const consumptionByResolves: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const consumption of consumptionsOf(workspace)) {
+		const { consumer } = consumption;
+		for (const caller of consumption.by) {
+			const wrong =
+				caller instanceof Consumable
+					? caller.provider !== consumer &&
+						`"${caller.name}" is provided by "${caller.provider.name}"`
+					: caller.boundedcontext !== consumer.boundedcontext &&
+						`policy "${caller.name}" belongs to "${caller.boundedcontext.name}"`;
+			if (wrong) {
+				diagnostics.push({
+					severity: "error",
+					rule: "consumption-by-resolves",
+					message: `"${consumer.name}" says its consumption of "${consumption.consumable.name}" is made by ${wrong}; a consumption names the consumer's own operations or its context's policies`,
+					ref: consumer.ref,
+				});
+				continue;
+			}
+			if (caller instanceof Consumable && caller.type !== "operation") {
+				diagnostics.push({
+					severity: "error",
+					rule: "consumption-by-resolves",
+					message: `"${consumer.name}" says its consumption of "${consumption.consumable.name}" is made by the event "${caller.name}"; an event is something that has happened, so it calls nothing`,
+					ref: consumer.ref,
+				});
+			}
+		}
+	}
+	return diagnostics;
+};
+
+/**
  * A policy names operations of its own context. Reacting to another context's
  * event is a consumption and crosses the boundary; acting inside another
  * context does not (decision 17).
@@ -1584,6 +1624,15 @@ const RULES: CataloguedRule[] = [
 		why: "internal means the consumable stays inside its context; anything outside depending on it makes that promise false.",
 		fix: "Drop internal and give the consumable an upstream role, or stop the other context from using it.",
 		check: internalConsumable,
+	},
+	{
+		rule: "consumption-by-resolves",
+		severities: ["error"],
+		summary:
+			"A consumption's by names the consumer's own operations, or policies of the consumer's context.",
+		why: "A consumption belongs to the consumer: it is that node saying what it depends on, and by is the detail of which of its own operations or reactions make the exchange. Naming another node's operation would have one part of the model declare behaviour it does not own, and the reader would have no way to check it against the node's own page.",
+		fix: "Point by at operations the consumer itself provides, or at policies of its bounded context, and let the node that really makes the call declare its own consumption. If nothing narrower than the whole consumer is true, drop by — absent means the whole consumer, which is the common case.",
+		check: consumptionByResolves,
 	},
 	{
 		rule: "policy-in-context",

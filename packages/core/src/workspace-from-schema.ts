@@ -79,7 +79,12 @@ function addConsumes(
 		const consumable = workspace.getConsumableByRefOrThrow(
 			consumption.consumable.$ref,
 		);
-		consumer.addConsumption(consumable, consumption);
+		consumer.addConsumption(consumable, {
+			...consumption,
+			by: consumption.by?.map(({ $ref }) =>
+				workspace.getConsumptionCallerByRefOrThrow($ref),
+			),
+		});
 	}
 }
 

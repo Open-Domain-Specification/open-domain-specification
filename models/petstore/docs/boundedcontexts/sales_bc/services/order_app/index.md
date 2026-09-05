@@ -27,13 +27,14 @@ Mark an approved order as delivered; run by OrderApp when Fulfilment reports the
 GET /pets/{id}/summary; asked with a PetId, answers with a PetSummary, so Sales can check availability without coupling to the full Pet
 - **Provider**: [PetApp](../../../catalog_bc/services/pet_app/index.md)
 
-### ReservePetForOrder [anti-corruption-layer]
-POST /pet/{petId}/reserve; holds the pet for an approved order by running the aggregate's ReservePet
-- **Provider**: [PetApp](../../../catalog_bc/services/pet_app/index.md)
-
 ### MarkPetSoldForOrder [anti-corruption-layer]
 POST /pet/{petId}/sold; records the sale by running the aggregate's MarkPetSold
 - **Provider**: [PetApp](../../../catalog_bc/services/pet_app/index.md)
+
+### ReservePetForOrder [anti-corruption-layer]
+POST /pet/{petId}/reserve; holds the pet for an approved order by running the aggregate's ReservePet
+- **Provider**: [PetApp](../../../catalog_bc/services/pet_app/index.md)
+- **Made by**: ReservePet
 
 ### ShipmentDelivered 
 The pet reached its owner

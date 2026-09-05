@@ -144,7 +144,12 @@ function everythingWrong(): Workspace {
 		description: "",
 		type: "application",
 	});
-	consumer.consumes(legacyFeed, { pattern: "conformist" });
+	// consumption-by-resolves: what makes the consumption is said to be an
+	// operation of the provider, not of the consumer itself
+	consumer.consumes(legacyFeed, {
+		pattern: "conformist",
+		by: [legacy.provides("Poll", { type: "operation", description: "" })],
+	});
 	// relationship-cycle: a call each way, which since decision 20 is what
 	// makes a ring — A calls C's Ask, C calls A's Answer. The event feed above
 	// would not have been enough on its own.

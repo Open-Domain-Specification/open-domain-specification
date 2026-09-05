@@ -142,6 +142,16 @@ describe("ODSConsumableMap", () => {
 		expect(edge.sourcePattern).toBe("conformist");
 		expect(edge.targetPattern).toBe("published-language");
 	});
+
+	it("names what makes the consumption on the edge, and nothing when it is the whole consumer", () => {
+		const map = ODSConsumableMap.fromAggregate(f.invoiceAgg);
+		const [edge] = Array.from(map.edges.values());
+		expect(edge.by).toEqual(["Invoice on order placed"]);
+		const whole = ODSConsumableMap.fromService(f.reportingApp);
+		expect(Array.from(whole.edges.values()).map((it) => it.by)).toContainEqual(
+			[],
+		);
+	});
 });
 
 describe("ODSRelationMap", () => {
