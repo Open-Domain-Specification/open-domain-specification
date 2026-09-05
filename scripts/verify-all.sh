@@ -104,18 +104,18 @@ if [ ! -d "$BROWSERS_PATH" ] || [ -z "$(ls -A "$BROWSERS_PATH" 2>/dev/null)" ]; 
 fi
 
 e2e_log="$(mktemp)"
-(cd "$ROOT/packages/pages" && npx playwright test e2e/diagram-panel-fit.spec.ts) 2>&1 | tee "$e2e_log"
+(cd "$ROOT/packages/pages" && npx playwright test) 2>&1 | tee "$e2e_log"
 e2e_status=${PIPESTATUS[0]}
 if [ "$e2e_status" -ne 0 ]; then
 	if grep -qi "executable doesn't exist" "$e2e_log"; then
 		echo "playwright browsers are not installed; run: npx playwright install --with-deps chromium (in packages/pages)" >&2
 	fi
 	rm -f "$e2e_log"
-	summary "pages e2e (diagram-panel-fit): FAILED"
+	summary "pages e2e (full suite): FAILED"
 	exit "$e2e_status"
 fi
 rm -f "$e2e_log"
-summary "pages e2e (diagram-panel-fit): passed"
+summary "pages e2e (full suite): passed"
 
 # --- schema drift after the build ---
 # Not a failure: the build wrote the right file and the gate above checked it.
