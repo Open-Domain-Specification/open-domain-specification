@@ -5,6 +5,7 @@ import {
 	type PatternNature,
 } from "@open-domain-specification/core";
 import {
+	BORROWED_STEREOTYPE,
 	EXTERNAL_STEREOTYPE,
 	IDENTITY_EDGE_LABEL,
 } from "@open-domain-specification/graphviz";
@@ -14,6 +15,7 @@ import type { ContextNodeData } from "./context-graph";
 import { ENDS_LABEL, type FlowNodeData, type FlowStep } from "./flow-graph";
 import type { Graph } from "./graph";
 import type { DiagramKind } from "./kind";
+import type { RelationNodeData } from "./relation-graph";
 import { roleLabel } from "./roles";
 
 /**
@@ -154,6 +156,7 @@ function consumableLegend(graph: Graph): LegendEntry[] {
 
 function relationLegend(graph: Graph): LegendEntry[] {
 	const types = new Set(graph.edges.map((e) => e.type));
+	const nodes = graph.nodes as RelationNodeData[];
 	return [
 		...(types.has("relation-includes")
 			? [{ mark: "filled diamond", name: "Composition (includes)" }]
@@ -174,6 +177,16 @@ function relationLegend(graph: Graph): LegendEntry[] {
 						name: "Generalisation (is a kind of)",
 						title:
 							"The kind has every attribute and relation of what it points at, plus its own; the triangle sits at the parent.",
+					},
+				]
+			: []),
+		...(nodes.some((n) => n.borrowed)
+			? [
+					{
+						mark: `«${BORROWED_STEREOTYPE}»`,
+						name: "Borrowed value object",
+						title:
+							"A value object of another bounded context, held here over a shared kernel or as a conformist to an upstream. It is drawn in the cluster of the context that owns it, and nobody here may change it.",
 					},
 				]
 			: []),

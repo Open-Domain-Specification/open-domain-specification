@@ -416,6 +416,51 @@ describe("ODSRelationMap", () => {
 		expect(edges.every((e) => e.cardinality === undefined)).toBe(true);
 	});
 
+	it("draws a value object borrowed from another context, in that context's cluster", () => {
+		const ws = new Workspace("Borrowed values", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "1.0.0",
+		});
+		const kernel = ws.addBoundedContext("Shared Kernel", { description: "" });
+		const money = kernel.addValueObject("Money", { description: "" });
+		money.addAttribute("amountMinor", { type: "int64" });
+		const accounts = ws.addBoundedContext("Accounts", { description: "" });
+		const accountAgg = accounts.addAggregate("Account", { description: "" });
+		const account = accountAgg.addRootEntity("Account", { description: "" });
+		account.addAttribute("id", { type: "string", identity: true });
+		account.addAttribute("postedBalance", {
+			type: "Money",
+			valueobject: money,
+		});
+
+		const graph = ODSRelationGraph.fromAggregate(accountAgg);
+		expect(graph.borrowings.map((a) => a.name)).toEqual(["postedBalance"]);
+		const map = ODSRelationMap.fromGraph(graph);
+		const edge = Array.from(map.edges.values()).find(
+			(e) => e.relation === "uses",
+		);
+		// No relation says so — one may not cross a boundary — so the line is
+		// derived from the attribute and named by it.
+		expect(edge?.source.name).toBe("Account");
+		expect(edge?.target.name).toBe("Money");
+		expect(edge?.label).toBe("postedBalance");
+		const node = map.nodes.get(money.ref);
+		expect(node?.type).toBe("foreign_valueobject");
+		// The box stands in the lending context's own cluster, which is how the
+		// map says whose value it is.
+		expect(node?.namespace[node.namespace.length - 1]?.id).toBe(kernel.ref);
+		expect(node?.attributes.map((a) => a.name)).toEqual(["amountMinor"]);
+	});
+
+	it("leaves a value object of this context unborrowed", () => {
+		// f.money is Ordering's own, held by Ordering's entities: the map draws
+		// it from the declared `uses` relation and marks nothing foreign.
+		const map = ODSRelationMap.fromAggregate(f.orderAgg);
+		expect(ODSRelationGraph.fromAggregate(f.orderAgg).borrowings).toEqual([]);
+		expect(map.nodes.get(f.money.ref)?.type).toBe("valueobject");
+	});
+
 	it("collects the identity attributes in scope and no others", () => {
 		expect(
 			ODSRelationGraph.fromBoundedContext(f.invoicingBc).identities.map(
