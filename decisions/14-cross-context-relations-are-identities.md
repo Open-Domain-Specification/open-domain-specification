@@ -52,3 +52,7 @@ An identity may also name an external context (decision 28): a card scheme's aut
 ## Amendment (2026-09-08, second)
 
 An identity held by an entity is the context's dependency on another context's identity scheme and asks for a relationship. An identity echoed in a payload, a correlation id on an event or a request, is not: the payload carries it for its reader and the context holding the schema owes the other nothing. `relationship-declared` reads entity and value object attributes only (card 90); the sixteen empty-role relationships the models added for echoed ids were the rule's invention and come out.
+
+## Amendment (2026-09-08, third)
+
+Card 90 refused an identity naming a child of another aggregate in the same context, calling it a side door around reference-by-root. Codex's review put it right: a shipment holds an order's id and the line's id beside it, and that pair is exactly how DDD points at a child without a relation; the relation is what `cross-aggregate-reference` refuses, the id is what it recommends. `identifies` accepts any entity anywhere (card 91).

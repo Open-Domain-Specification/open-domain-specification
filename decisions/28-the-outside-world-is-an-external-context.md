@@ -33,3 +33,7 @@ An internal schedule is not a special trigger: a scheduler calls an operation, `
 ## Amendment (2026-09-08, second)
 
 A legacy system the enterprise owns but cannot read is not external, and this record's own argument, that stating a system's insides is invention, applied to it too: three reference models invented a nightly batch service so an event had a raiser. A `bigBallOfMud` context is exempt from `event-unraised`, `aggregate-root` and `root-identity` as an external one is (card 90); it may state what it emits without stating how. An external context states no rules of its own: `external-is-boundary` refuses value object invariants on it too.
+
+## Amendment (2026-09-08, third)
+
+An external context states no aggregates, policies, processes or context invariants, because its insides are not ours. Its value objects are different: an IBAN's checksum, an ISO 20022 field rule, a scheme's record layout are the standard's published contract, known and citable, and a value object of an external context may carry them as invariants that the validator checks like any other (card 91). The second amendment's blanket refusal was too wide.

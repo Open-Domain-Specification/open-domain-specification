@@ -20,3 +20,7 @@ date: 2026-09-06
 ## Amendment (2026-09-08)
 
 An invariant may also name an operation of an application service of its own context when that operation is the guard: a funds check at initiation, an entitlement check at playback start. Decision 17 put the public operation on the service, so the guard often lives there and the invariant must be able to point at it (card 90). The five precondition invariants in the reference models that carried their guard in prose now name it.
+
+## Amendment (2026-09-08, second)
+
+The guard may be an operation of any service of the invariant's own context, domain or application. A rule that reads two aggregates before acting lives in a domain service, and refusing it as a guard sent the model back to prose (card 91).
