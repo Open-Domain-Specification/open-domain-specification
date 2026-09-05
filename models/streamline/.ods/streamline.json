@@ -246,6 +246,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "studio_portal": {
           "name": "StudioPortal",
@@ -552,6 +553,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {},
       "policies": {},
       "glossary": {
@@ -934,6 +936,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "catalogue_api": {
           "name": "CatalogueAPI",
@@ -1335,6 +1338,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "encoding_api": {
           "name": "EncodingAPI",
@@ -1657,17 +1661,22 @@
                   "$ref": "#/boundedcontexts/playback/valueobjects/bookmark"
                 }
               ]
-            },
-            "within_stream_limit": {
-              "name": "WithinStreamLimit",
-              "description": "A session starts only if the household's open sessions are fewer than the plan's stream count from GetEntitlement; checked at StartPlayback because a session cannot see its siblings",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/entities/playback_session/attributes/household_id"
-                }
-              ]
             }
           }
+        }
+      },
+      "invariants": {
+        "within_stream_limit": {
+          "name": "WithinStreamLimit",
+          "description": "A session starts only if the household's open sessions are fewer than the plan's stream count from GetEntitlement; StartPlayback counts them, because a session cannot see its siblings",
+          "constrains": [
+            {
+              "$ref": "#/boundedcontexts/playback/aggregates/playback_session/entities/playback_session/attributes/household_id"
+            },
+            {
+              "$ref": "#/boundedcontexts/playback/services/playback_api/provides/start_playback"
+            }
+          ]
         }
       },
       "services": {
@@ -1996,6 +2005,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "edge_api": {
           "name": "EdgeAPI",
@@ -2232,6 +2242,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "devices_api": {
           "name": "DevicesAPI",
@@ -2459,6 +2470,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "ranker": {
           "name": "Ranker",
@@ -2796,6 +2808,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "profiles_api": {
           "name": "ProfilesAPI",
@@ -3134,15 +3147,6 @@
             }
           },
           "invariants": {
-            "one_active_subscription_per_household": {
-              "name": "OneActiveSubscriptionPerHousehold",
-              "description": "A household has at most one active subscription; enforced by StartSubscription on householdId, since one subscription cannot see another",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/entities/subscription/attributes/household_id"
-                }
-              ]
-            },
             "subscription_line_equals_plan_price": {
               "name": "SubscriptionLineEqualsPlanPrice",
               "description": "The subscription line on an invoice is exactly the plan price for its period; other lines of business (the disc charge) add their own lines and the total is their sum",
@@ -3165,6 +3169,20 @@
               ]
             }
           }
+        }
+      },
+      "invariants": {
+        "one_active_subscription_per_household": {
+          "name": "OneActiveSubscriptionPerHousehold",
+          "description": "A household has at most one active subscription; StartSubscription refuses a second on householdId, since one subscription cannot see another",
+          "constrains": [
+            {
+              "$ref": "#/boundedcontexts/billing_&_plans/aggregates/subscription/entities/subscription/attributes/household_id"
+            },
+            {
+              "$ref": "#/boundedcontexts/billing_&_plans/services/billing_api/provides/start_subscription"
+            }
+          ]
         }
       },
       "services": {
@@ -3426,6 +3444,7 @@
           "invariants": {}
         }
       },
+      "invariants": {},
       "services": {
         "identity_api": {
           "name": "IdentityAPI",
@@ -3675,6 +3694,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "ads_api": {
           "name": "AdsAPI",
@@ -3865,6 +3885,7 @@
           "invariants": {}
         }
       },
+      "invariants": {},
       "services": {},
       "policies": {},
       "glossary": {},

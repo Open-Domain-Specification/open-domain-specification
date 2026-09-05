@@ -35,8 +35,8 @@ the seller rating is a score we keep ourselves."
 
 Recorded as: the Offers context serving the core "Offers & Buy Box" subdomain; the Offer
 aggregate with `fulfilledByRiverMart` and `sellerRating` beside price, `PricePositive` and
-`OneActiveOfferPerSellerSku` (a uniqueness rule that `PublishOffer` enforces, since one
-offer cannot see another); the BuyBoxService domain service; the `WithdrawSellerOffers`
+`OneActiveOfferPerSellerSku` (a uniqueness rule the context holds and `PublishOffer`
+keeps, since one offer cannot see another); the BuyBoxService domain service; the `WithdrawSellerOffers`
 policy on `SellerSuspended`; an anti-corruption consumption of catalogue events;
 customer-supplier towards Cart & Checkout. First-party retail is a seller id in Offers, not
 a context of its own.

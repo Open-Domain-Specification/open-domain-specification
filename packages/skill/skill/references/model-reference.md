@@ -69,6 +69,7 @@ Represents a bounded context in the Open Domain Specification (ODS).
 | `bigBallOfMud` | boolean | no | Marks a context whose model is not coherent (typically legacy) so that neighbours know to protect themselves from it. |
 | `description` | string | yes |  |
 | `glossary` | map of id to [GlossaryTerm](#glossaryterm) | yes |  |
+| `invariants` | map of id to [Invariant](#invariant) | yes | The rules that hold across the instances or the aggregates of this context: uniqueness, quotas, limits, conservation. Each one names at least one operation of the context that guards it, because a rule no single instance can see is kept true only by whoever checks it before acting (decision 27). |
 | `name` | string | yes |  |
 | `policies` | map of id to [Policy](#policy) | yes |  |
 | `schemas` | map of id to [DataSchema](#dataschema) | yes | Payload shapes this context publishes or accepts, referenced by its consumables. |
@@ -222,11 +223,11 @@ No other fields are allowed.
 
 ## Invariant
 
-Represents an invariant in the Open Domain Specification (ODS).
+A rule that holds inside an aggregate on every save, or across the instances and aggregates of a bounded context.
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `constrains` | array of `{ "$ref": string }` | yes | What this invariant is a rule about: the entities, value objects and attributes it holds over, and the consumables of its own aggregate it constrains, for a rule about what an operation may do. |
+| `constrains` | array of `{ "$ref": string }` | yes | What this invariant is a rule about: the entities, value objects and attributes it holds over, and the operations it constrains, for a rule about what an operation may do. An aggregate's invariant reaches inside its own aggregate and the value objects of its context; a context's invariant reaches anywhere in the context and names at least one operation that guards it. |
 | `description` | string | yes |  |
 | `name` | string | yes |  |
 
@@ -343,7 +344,8 @@ Every cross-link is an object `{ "$ref": "<path>" }`. Paths are JSON pointers in
 | Aggregate | `#/boundedcontexts/<bc>/aggregates/<aggregate>` |
 | Entity | `#/boundedcontexts/<bc>/aggregates/<aggregate>/entities/<entity>` |
 | Value object | `#/boundedcontexts/<bc>/valueobjects/<vo>` |
-| Invariant | `#/boundedcontexts/<bc>/aggregates/<aggregate>/invariants/<invariant>` |
+| Invariant of an aggregate | `#/boundedcontexts/<bc>/aggregates/<aggregate>/invariants/<invariant>` |
+| Invariant of a context | `#/boundedcontexts/<bc>/invariants/<invariant>` |
 | Attribute | `<owner path>/attributes/<attribute>` (owner is an entity, value object or schema) |
 | Consumable of an aggregate | `#/boundedcontexts/<bc>/aggregates/<aggregate>/provides/<consumable>` |
 | Service | `#/boundedcontexts/<bc>/services/<service>` |

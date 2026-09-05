@@ -311,8 +311,15 @@ export class Workspace
 		return valueObject;
 	}
 
+	/** An invariant of any aggregate, or of any context (decision 27). */
 	getInvariantByRef(ref: string): Invariant | undefined {
-		return this.findAggregateMember((it) => it.invariants, ref);
+		const inAggregate = this.findAggregateMember((it) => it.invariants, ref);
+		if (inAggregate) return inAggregate;
+		for (const bc of this.boundedcontexts.values()) {
+			for (const invariant of bc.invariants.values()) {
+				if (invariant.ref === ref) return invariant;
+			}
+		}
 	}
 
 	getInvariantByRefOrThrow(ref: string): Invariant {
@@ -674,6 +681,8 @@ export class BoundedContext
 	description: string;
 	services = new Map<string, Service>();
 	aggregates = new Map<string, Aggregate>();
+	/** The rules that hold across this context's instances (decision 27). */
+	invariants = new Map<string, Invariant>();
 	policies = new Map<string, Policy>();
 	glossary = new Map<string, GlossaryTerm>();
 	valueobjects = new Map<string, ValueObject>();
@@ -797,6 +806,16 @@ export class BoundedContext
 		return new Aggregate(this, name, attributes);
 	}
 
+	/**
+	 * Declares a rule that holds across the instances or the aggregates of this
+	 * context — uniqueness, a quota, a limit, conservation. Chain
+	 * `.constrains(...)` with what the rule is about and with the operations
+	 * that guard it, since no single instance can see the others.
+	 */
+	addInvariant(name: string, attributes: InvariantAttributes): Invariant {
+		return new Invariant(this, name, attributes);
+	}
+
 	addPolicy(name: string, attributes: PolicyAttributes): Policy {
 		return new Policy(this, name, attributes);
 	}
@@ -831,6 +850,7 @@ export class BoundedContext
 			bigBallOfMud: this.bigBallOfMud || undefined,
 			team: this.team && { $ref: this.team.ref },
 			aggregates: asRecords(this.aggregates),
+			invariants: asRecords(this.invariants),
 			services: asRecords(this.services),
 			policies: asRecords(this.policies),
 			glossary: asRecords(this.glossary),
@@ -1081,14 +1101,17 @@ export class Consumable
 
 	/**
 	 * The invariants that name this consumable: the rules it has to uphold every
-	 * time it runs. Only an aggregate's own invariants can reach it, so the
-	 * search stays inside this consumable's context.
+	 * time it runs, whether its own aggregate's or its context's. No invariant
+	 * reaches across a context, so the search stays inside this one.
 	 */
 	get invariants(): Invariant[] {
+		const bc = this.boundedcontext;
 		const out: Invariant[] = [];
-		for (const aggregate of this.boundedcontext.aggregates.values())
+		for (const aggregate of bc.aggregates.values())
 			for (const invariant of aggregate.invariants.values())
 				if (invariant.targets.includes(this)) out.push(invariant);
+		for (const invariant of bc.invariants.values())
+			if (invariant.targets.includes(this)) out.push(invariant);
 		return out;
 	}
 
@@ -1347,39 +1370,61 @@ export function constrainableLabel(target: Constrainable): string {
 		: target.name;
 }
 
+/**
+ * Which boundary a rule is kept true inside: an aggregate's invariant holds
+ * inside that aggregate on every save, a context's holds across the instances
+ * and aggregates of the context and is checked by an operation (decision 27).
+ */
+export type InvariantKind = "aggregate" | "context";
+
 export class Invariant
 	implements Visitable, SchemaConvertible<ods.InvariantSchema>
 {
 	id: string;
 	name: string;
 	description: string;
-	aggregate: Aggregate;
+	/** The aggregate or the bounded context this rule belongs to. */
+	owner: Aggregate | BoundedContext;
 	/** The elements this invariant constrains. */
 	targets: Constrainable[] = [];
 
 	get path(): string {
-		return `${this.aggregate.path}/invariants/${this.id}`;
+		return `${this.owner.path}/invariants/${this.id}`;
 	}
 
 	get ref(): string {
 		return `#/${this.path}`;
 	}
 
+	/** Whether the rule is kept true by one aggregate or by the whole context. */
+	get kind(): InvariantKind {
+		return this.owner instanceof Aggregate ? "aggregate" : "context";
+	}
+
+	/** The context the rule belongs to, directly or through its aggregate. */
+	get boundedcontext(): BoundedContext {
+		return this.owner instanceof Aggregate
+			? this.owner.boundedcontext
+			: this.owner;
+	}
+
 	constructor(
-		aggregate: Aggregate,
+		owner: Aggregate | BoundedContext,
 		name: string,
 		attributes: InvariantAttributes,
 	) {
 		this.id = attributes.id || snakeCase(name);
 		this.name = name;
 		this.description = attributes.description;
-		this.aggregate = aggregate;
-		this.aggregate.invariants.set(this.id, this);
+		this.owner = owner;
+		this.owner.invariants.set(this.id, this);
 	}
 
 	/**
-	 * The consumables this invariant is a rule for: the operations that make the
-	 * transition it describes, and so the ones that have to uphold it.
+	 * The consumables this invariant is a rule for: for an aggregate's rule the
+	 * operations that make the transition it describes, for a context's rule the
+	 * operations that check it before acting. Either way, the ones that have to
+	 * uphold it.
 	 */
 	get guarded(): Consumable[] {
 		return this.targets.filter((it) => it instanceof Consumable);

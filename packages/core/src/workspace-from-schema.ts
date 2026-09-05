@@ -4,6 +4,7 @@ import {
 	type AttributeSchema,
 	aggregateRef,
 	type BoundedContextSchema,
+	contextInvariantRef,
 	entityRef,
 	invariantRef,
 	policyRef,
@@ -184,6 +185,15 @@ function addBoundedContext(
 		});
 	}
 
+	for (const [invariantId, invariantSchema] of Object.entries(
+		boundedcontextSchema.invariants,
+	)) {
+		boundedcontext.addInvariant(invariantSchema.name, {
+			...invariantSchema,
+			id: invariantId,
+		});
+	}
+
 	for (const [policyId, policySchema] of Object.entries(
 		boundedcontextSchema.policies,
 	)) {
@@ -339,6 +349,19 @@ function linkReferences(
 				for (const { $ref } of invariantSchema.constrains) {
 					invariant.constrains(workspace.getConstrainableByRefOrThrow($ref));
 				}
+			}
+		}
+
+		// A context's invariants reach into any of its aggregates, so they are
+		// wired once all of them have their attributes (decision 27).
+		for (const [invariantId, invariantSchema] of Object.entries(
+			boundedcontextSchema.invariants,
+		)) {
+			const invariant = workspace.getInvariantByRefOrThrow(
+				contextInvariantRef(boundedcontextId, invariantId).$ref,
+			);
+			for (const { $ref } of invariantSchema.constrains) {
+				invariant.constrains(workspace.getConstrainableByRefOrThrow($ref));
 			}
 		}
 	}

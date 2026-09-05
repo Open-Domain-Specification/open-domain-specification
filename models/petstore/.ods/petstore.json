@@ -255,6 +255,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "pet_app": {
           "name": "PetApp",
@@ -815,6 +816,7 @@
           }
         }
       },
+      "invariants": {},
       "services": {
         "order_app": {
           "name": "OrderApp",
@@ -1155,6 +1157,7 @@
         "$ref": "#/teams/pet_shop_team"
       },
       "aggregates": {},
+      "invariants": {},
       "services": {
         "inventory_query": {
           "name": "InventoryQuery",
@@ -1500,6 +1503,7 @@
           "invariants": {}
         }
       },
+      "invariants": {},
       "services": {
         "dispatch_planner": {
           "name": "DispatchPlanner",
@@ -1709,6 +1713,7 @@
           "invariants": {}
         }
       },
+      "invariants": {},
       "services": {
         "user_app": {
           "name": "UserApp",

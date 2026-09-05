@@ -14,10 +14,11 @@ const page = (
 ) => render(Harness, { model, component: ContextPage, args: { context } });
 
 describe("ContextPage", () => {
-	it("names its seven sections for the table of contents", () => {
+	it("names its eight sections for the table of contents", () => {
 		expect(sections.map((s) => s.id)).toEqual([
 			"position",
 			"model",
+			"invariants",
 			"values",
 			"integration",
 			"behaviour",

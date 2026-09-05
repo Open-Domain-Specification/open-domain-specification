@@ -145,6 +145,19 @@ describe("schema round-trip", () => {
 		]);
 	});
 
+	it("re-links a context's invariant to what it counts and what guards it", () => {
+		const invariant = rebuilt.getInvariantByRefOrThrow(
+			"#/boundedcontexts/ordering_bc/invariants/one_open_order_per_customer",
+		);
+		expect(invariant.kind).toBe("context");
+		expect(invariant.boundedcontext.ref).toBe("#/boundedcontexts/ordering_bc");
+		expect(invariant.targets.map((it) => it.ref)).toEqual([
+			"#/boundedcontexts/ordering_bc/aggregates/order/entities/order",
+			"#/boundedcontexts/ordering_bc/services/order_app/provides/place_order",
+		]);
+		expect(invariant.guarded.map((it) => it.name)).toEqual(["Place Order"]);
+	});
+
 	it("re-links policies to consumables across contexts", () => {
 		const policy = rebuilt.getPolicyByRefOrThrow(
 			"#/boundedcontexts/invoicing_bc/policies/invoice_on_order_placed",

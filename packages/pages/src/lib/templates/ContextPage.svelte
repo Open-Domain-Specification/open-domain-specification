@@ -2,6 +2,7 @@
 export const sections = [
 	{ id: "position", label: "Strategic position" },
 	{ id: "model", label: "Model" },
+	{ id: "invariants", label: "Invariants" },
 	{ id: "values", label: "Value objects" },
 	{ id: "integration", label: "Integration surface" },
 	{ id: "behaviour", label: "Policies" },
@@ -44,6 +45,7 @@ import Joined from "../molecules/Joined.svelte";
 import ProvidesTable from "../molecules/ProvidesTable.svelte";
 import TeamLockup from "../molecules/TeamLockup.svelte";
 import DiagramFigure from "../organisms/DiagramFigure.svelte";
+import InvariantsSection from "../organisms/InvariantsSection.svelte";
 import PageHeader from "../organisms/PageHeader.svelte";
 import Section from "../organisms/Section.svelte";
 import StrategicPositionTable from "../organisms/StrategicPositionTable.svelte";
@@ -66,6 +68,9 @@ const policies = $derived([...bc.policies.values()]);
 const terms = $derived([...bc.glossary.values()]);
 const schemas = $derived([...bc.schemas.values()]);
 const valueobjects = $derived([...bc.valueobjects.values()]);
+// The rules no single instance can keep: they belong to the context and each
+// names the operation that checks it before acting (decision 27).
+const invariants = $derived([...bc.invariants.values()]);
 const members = $derived([...aggregates, ...services]);
 const provides = $derived(members.flatMap((m) => [...m.consumables.values()]));
 const consumes = $derived(members.flatMap((m) => m.consumptions));
@@ -211,6 +216,16 @@ const termColumns: Column[] = [
 		{/snippet}
 	</DataTable>
 </Section>
+
+<InvariantsSection
+	{invariants}
+	id="invariants"
+	title="Invariants"
+	constrains
+	lead="Rules that hold across this context's instances and aggregates: uniqueness, quotas, limits. No one instance can see the others, so each names the operation that checks it before acting."
+	emptyText="No invariants across aggregates. Every rule here is one an aggregate keeps on its own."
+	problems={invariants.flatMap((i) => problemsUnder(model, i.ref))}
+/>
 
 <Section
 	id="values"

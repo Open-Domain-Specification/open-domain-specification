@@ -1001,7 +1001,7 @@ const playbackApi = playbackBC.addService("PlaybackAPI", {
 		"Playback's application service: the boundary players start and stop sessions through",
 	type: "application",
 });
-playbackApi
+const startPlayback = playbackApi
 	.provides("StartPlayback", {
 		description: "Check entitlement and device, build the manifest, start",
 		type: "operation",
@@ -1474,15 +1474,16 @@ const sessionHousehold = session.addAttribute("householdId", {
 		"The paying unit the profile belongs to; what entitlement is checked for",
 	identifies: household,
 });
-// One session cannot see its siblings, so the limit is checked at start:
-// GetEntitlement returns the plan's stream count and Playback counts the
-// household's open sessions before it creates another.
-sessionAgg
+// One session cannot see its siblings, so the limit is the context's rule and
+// StartPlayback is where it is kept: GetEntitlement returns the plan's stream
+// count and Playback counts the household's open sessions before it creates
+// another (decision 27).
+playbackBC
 	.addInvariant("WithinStreamLimit", {
 		description:
-			"A session starts only if the household's open sessions are fewer than the plan's stream count from GetEntitlement; checked at StartPlayback because a session cannot see its siblings",
+			"A session starts only if the household's open sessions are fewer than the plan's stream count from GetEntitlement; StartPlayback counts them, because a session cannot see its siblings",
 	})
-	.constrains(sessionHousehold);
+	.constrains(sessionHousehold, startPlayback);
 startPlaybackSchema.addAttribute("householdId", {
 	type: "string",
 	identifies: household,
@@ -1645,15 +1646,6 @@ invoice.addAttribute("period", {
 invoice.uses(periodVO, "covers", "1");
 invoice.uses(planMoney, "charges", "1");
 
-// One Subscription cannot see its siblings, so the rule is enforced where a
-// subscription is created: StartSubscription refuses a household that already
-// has an active one, keyed on householdId.
-subscriptionAgg
-	.addInvariant("OneActiveSubscriptionPerHousehold", {
-		description:
-			"A household has at most one active subscription; enforced by StartSubscription on householdId, since one subscription cannot see another",
-	})
-	.constrains(subscriptionHousehold);
 // DISCOVERY: Commerce lead, peer review. "Equals the plan price" was said of
 // the subscription line; the disc export adds a separate line, so the invoice
 // total is the sum of its lines.
@@ -1719,7 +1711,7 @@ const billingApi = billingBC.addService("BillingAPI", {
 		"Billing & Plans' application service: the boundary plans are bought and entitlement is read through",
 	type: "application",
 });
-billingApi
+const startSubscription = billingApi
 	.provides("StartSubscription", {
 		description: "Put a household on a plan",
 		type: "operation",
@@ -1727,6 +1719,15 @@ billingApi
 		schema: subscriptionSchema,
 	})
 	.raises(subscriptionActivated);
+// One Subscription cannot see its siblings, so the rule belongs to the context
+// and names the operation that keeps it: StartSubscription refuses a household
+// that already has an active one, keyed on householdId (decision 27).
+billingBC
+	.addInvariant("OneActiveSubscriptionPerHousehold", {
+		description:
+			"A household has at most one active subscription; StartSubscription refuses a second on householdId, since one subscription cannot see another",
+	})
+	.constrains(subscriptionHousehold, startSubscription);
 const getEntitlement = billingApi.provides("GetEntitlement", {
 	description: "Whether a household may stream, and how many at once",
 	type: "operation",

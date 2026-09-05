@@ -125,8 +125,8 @@ export abstract class AbstractVisitor implements Visitor {
 	}
 
 	/**
-	 * Visits a BoundedContext node and traverses its services, aggregates and
-	 * the value objects the context defines.
+	 * Visits a BoundedContext node and traverses its services, aggregates, the
+	 * value objects the context defines and the invariants it holds across them.
 	 * @param node - The BoundedContext node to visit.
 	 */
 	visitBoundedContext(node: BoundedContext): void {
@@ -142,6 +142,10 @@ export abstract class AbstractVisitor implements Visitor {
 
 		for (const aggregate of node.aggregates.values()) {
 			aggregate.accept(this);
+		}
+
+		for (const invariant of node.invariants.values()) {
+			invariant.accept(this);
 		}
 
 		for (const policy of node.policies.values()) {

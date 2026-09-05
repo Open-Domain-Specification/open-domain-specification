@@ -103,9 +103,10 @@ you don't negotiate with a scheme. When settlement is confirmed we post to the l
 say instruction; cards say payment and mean a card transaction; the branches say transfer."
 
 Recorded as: Payments as supporting; PaymentInstruction with Payee, Money, ExecutionDate
-and PaymentStatus; invariants `PayerNotPayee`, `AmountPositive`, `DailyLimit`,
+and PaymentStatus; invariants `PayerNotPayee`, `AmountPositive`,
 `FundsAvailableAtInitiation` (a read of `GetAvailableBalance` through an ACL),
-`CutOffRespected`, `FlaggedNeverSubmitted`; seven policies chaining
+`CutOffRespected`, `FlaggedNeverSubmitted`, and `DailyLimit` on the context itself,
+guarded by `InitiatePayment`; seven policies chaining
 `PaymentInitiated` → `ScoreTransaction`, `TransactionCleared` → `SubmitPayment`,
 `TransactionFlagged` → `RejectPayment`, `PaymentSubmitted` → `SubmitToScheme`,
 `SchemeSettlementConfirmed` → `ConfirmSettlement`, `SchemeRejected` → `RejectPayment`,
@@ -151,8 +152,9 @@ entitled to them. Our API is documented but Lending doesn't translate it; we pla
 release together, one board, two directors."
 
 Recorded as: Lending and Credit Decisioning both core; LoanApplication and Loan aggregates,
-the latter with RepaymentSchedule and Installment `includes`; invariants
-`OneOpenApplicationPerCustomer`, `NoDrawdownBeforeSignature`, `AprWithinCap`,
+the latter with RepaymentSchedule and Installment `includes`; `OneOpenApplicationPerCustomer`
+on the context, guarded by `SubmitApplication`; invariants `NoDrawdownBeforeSignature`,
+`AprWithinCap`,
 `InstallmentsSumToPrincipalPlusInterest`, `ArrearsAfterMissedInstallment`; the
 CreditDecision aggregate with BureauReport, Affordability and CreditScore, invariants
 `AffordabilityRatioCap`, `DecisionExplained`, `BureauReportFresh`; the Scorecard domain
@@ -364,9 +366,9 @@ Accepted
 Partially accepted
 
 - Multi-instance invariants (`DailyLimit`, `OneOpenApplicationPerCustomer`): correct that
-  one instance cannot see its siblings, but ODS has no other place for a rule the business
-  states. Kept on the aggregate, reworded to say they are checked at initiation and
-  submission over the account's or customer's instances.
+  one instance cannot see its siblings. ODS now has a place for them: decision 27 gives the
+  bounded context invariants of its own, so both moved off their aggregate to Payments and
+  Lending and name the operation that keeps them, `InitiatePayment` and `SubmitApplication`.
 - Cross-context invariants (`AuthWithinAvailableBalance`, `LinesReconcileToLedger`):
   reworded as a check through the ACL at authorisation time and as a precondition of
   filing (constraining the return as well as the line), because the rules are real even

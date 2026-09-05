@@ -1,6 +1,7 @@
 import {
 	aggregateRef,
 	consumableRef,
+	contextInvariantRef,
 	entityRef,
 	invariantRef,
 	policyRef,
@@ -35,6 +36,77 @@ describe("the tactical templates on the alternate branches", () => {
 			"no root entity",
 		);
 		expect(container.textContent).toContain("whole aggregate");
+	});
+
+	it("ContextPage: lists the rules the context keeps, with what each names", () => {
+		const { container } = render(Harness, {
+			model,
+			ref: "#/boundedcontexts/main_context",
+		});
+		const section = container.querySelector("#invariants") as HTMLElement;
+		expect(section.querySelector("h2")).toHaveTextContent("Invariants");
+		const rows = [...section.querySelectorAll("tbody tr")].map(
+			(r) => r.textContent ?? "",
+		);
+		expect(rows).toHaveLength(2);
+		expect(rows[0]).toContain("Cross-Instance Invariant");
+		expect(rows[0]).toContain("Plain Entity");
+		expect(rows[0]).toContain("Silent Operation");
+		// A rule naming nothing binds the whole boundary, and here that is the
+		// context rather than an aggregate.
+		expect(rows[1]).toContain("whole context");
+	});
+
+	it("InvariantPage: a context's rule says which kind it is and which boundary keeps it", () => {
+		const { container } = render(Harness, {
+			model,
+			ref: contextInvariantRef("main_context", "cross_instance_invariant").$ref,
+		});
+		expect(container.querySelector(".page-header .keyword")).toHaveTextContent(
+			"context invariant",
+		);
+		const facts = container.querySelector(".page-header dd") as HTMLElement;
+		expect(facts).toHaveTextContent("Main Context");
+		expect(facts.querySelector("a")).toHaveAttribute(
+			"href",
+			"#/boundedcontexts/main_context",
+		);
+		expect(container.textContent).toContain(
+			"no one instance can see the others",
+		);
+		const guards = container.querySelector("#guards") as HTMLElement;
+		expect(guards.textContent).toContain("Silent Operation");
+	});
+
+	it("InvariantPage: an unguarded context rule says nothing keeps it, and binds the context as a whole", () => {
+		const { container } = render(Harness, {
+			model,
+			ref: contextInvariantRef("main_context", "unguarded_context_invariant")
+				.$ref,
+		});
+		expect(container.textContent).toContain(
+			"Applies to the context as a whole.",
+		);
+		expect(container.textContent).toContain(
+			"a rule across instances needs a guard",
+		);
+	});
+
+	it("InvariantPage: an aggregate's rule still says it is the aggregate that keeps it", () => {
+		const { container } = render(Harness, {
+			model,
+			ref: invariantRef(
+				"main_context",
+				"rootless_aggregate",
+				"linked_invariant",
+			).$ref,
+		});
+		expect(container.querySelector(".page-header .keyword")).toHaveTextContent(
+			"aggregate invariant",
+		);
+		expect(container.querySelector(".page-header dd")).toHaveTextContent(
+			"Rootless Aggregate",
+		);
 	});
 
 	it("AggregatePage: an operation an aggregate provides shows what it answers with, and one that answers with nothing shows no Returns", () => {

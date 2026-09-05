@@ -1,7 +1,9 @@
 import {
 	type Aggregate,
 	type BoundedContext,
+	constrainableLabel,
 	type DataSchema,
+	type Invariant,
 	ODSConsumptionGraph,
 	type Policy,
 	type Service,
@@ -48,6 +50,14 @@ const valueObjectSection = (valueObject: ValueObject) => [
 	aggregatesHolding(valueObject)
 		.map((it) => it.name)
 		.join(", ") || "-",
+];
+
+// The same three columns the aggregate page uses, because a rule reads the
+// same either way; what changes is which boundary keeps it (decision 27).
+const invariantSection = (invariant: Invariant) => [
+	invariant.name,
+	invariant.description,
+	invariant.targets.map(constrainableLabel).join(", ") || "-",
 ];
 
 const serviceSection = (service: Service) => `
@@ -98,6 +108,18 @@ ${
 				.map(([_name, service]) => serviceSection(service))
 				.join("")
 		: "> No services."
+}
+
+## Invariants
+${
+	boundedcontext.invariants.size > 0
+		? `Rules that hold across this context's instances and aggregates; each names the operation that checks it before acting.
+
+${markdownTable(
+	["Name", "Description", "Constrains"],
+	Array.from(boundedcontext.invariants.values()).map(invariantSection),
+)}`
+		: "> No invariants across aggregates."
 }
 
 ## Value Objects
