@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [models, docs]
 priority: low
 agent: bumblebee-lite
