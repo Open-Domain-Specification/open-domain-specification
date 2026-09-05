@@ -65,8 +65,8 @@ Recorded as: Accounts as core; the Account aggregate (current accounts only) wit
 pending authorisations and available balance; six invariants including
 `AvailableIsPostedLessHolds`; `OpenAccount`, `FreezeAccount` and `GetAvailableBalance` as
 open hosts; `PlaceHold` internal; the "Freeze on fraud case", "Update balance on posting"
-and "Hold on card authorisation" policies; a shared kernel with Ledger; the glossary entry
-for Balance with the three meanings.
+and "Hold on card authorisation" policies; a shared kernel with the Shared Kernel context
+(card 56, section 6); the glossary entry for Balance with the three meanings.
 
 ### Core Banking lead (ledger and Sovereign)
 
@@ -81,8 +81,8 @@ holds savings and runs the nightly batch; the batch file is how we learn about s
 movements, and we translate every line of it. Nobody touches Sovereign's tables. It is
 what it is."
 
-Recorded as: Ledger as supporting; JournalEntry with Posting `includes`, Money,
-AccountNumber (the shared kernel's second type, declared here as well), LedgerAccount
+Recorded as: Ledger as supporting; JournalEntry with Posting `includes`, Money and
+AccountNumber (both borrowed from the Shared Kernel context, card 56), LedgerAccount
 (customer or nominal), PostingDirection and ValueDate; invariants `EntryBalances`,
 `AtLeastTwoPostings`, `SingleCurrencyPerEntry`, `ImmutableOncePosted`; `PostEntry` and
 `ReverseEntry` as open hosts; `EntryPosted` published; the "Import nightly batch" policy
@@ -278,11 +278,17 @@ The connected timeline, condensed:
 | Scheme Connectivity | generic | The scheme's format, not the bank's |
 | Cards | generic | "We would outsource it if the contract allowed" |
 | Identity & Access | generic | Vendor built |
+| Shared Financial Primitives | supporting | A library, not a product; nobody's customer journey runs through it (card 56) |
 
 ## 6. The context map
 
-- **Shared kernel** between Accounts and Ledger: the Money and AccountNumber library both
-  teams change and release together. Each context still declares its own value objects.
+- **Shared kernel**, card 56: Money and AccountNumber are declared once, in a Shared Kernel
+  context of its own (a supporting subdomain, its own team), and every context that carries
+  an amount or a ledger account declares one shared-kernel relationship with it and borrows
+  what it needs. Six sharers (Accounts, Ledger, Payments, Cards, Lending, Reporting) is six
+  relationships to one kernel, not fifteen pairwise agreements among themselves (decision
+  16's amendment). Accounts and Ledger also borrow AccountNumber; the rest borrow Money
+  only.
 - **Partnership** between Lending and Credit Decisioning: one board, joint releases, no
   translation between them.
 - **Separate ways** between Branch & Contact Centre and Credit Decisioning: conduct policy;
@@ -400,3 +406,21 @@ Rejected
   the quick-quote investigation, the 2022 fine and the Sovereign stalemate are the friction.
 - The event storming is sanitised: it is declared condensed; compensations and dead ends
   are among the further sessions in section 8.
+
+## 10. Revision (card 56): the shared kernel becomes a context
+
+A review of the metamodel (issue 8, seventh run) pointed out that Accounts, Ledger,
+Payments, Cards, Lending and Reporting each declared their own copy of Money, with a
+comment saying one library implements it; the model was drawing six declarations of a
+fact the business states once. Decision 16's amendment says how many contexts share one
+kernel: the kernel is a context of its own, owning the value objects it shares, and every
+sharer declares one shared-kernel relationship with it. NorthBank's Money and AccountNumber
+are exactly that library, so the model now says so: a Shared Kernel context (a supporting
+subdomain of Platform, its own team, its own two value objects) that Accounts, Ledger,
+Payments, Cards, Lending and Reporting each borrow from, over one relationship apiece,
+instead of a pairwise shared kernel between Accounts and Ledger and a private copy
+everywhere else. No aggregate, invariant, event or policy changed; a `uses` relation is
+never declared for the borrowed value objects, because a relation may not cross a context
+boundary (decision 15) and the attribute's `valueobject` reference is the only link. The
+three deliberate diagnostics in section 7 are untouched, and validation still returns
+exactly those three.

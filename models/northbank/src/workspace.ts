@@ -1,24 +1,4 @@
-import {
-	type Attribute,
-	type BoundedContext,
-	Workspace,
-} from "@open-domain-specification/core";
-
-/**
- * NorthBank's Money, declared once in each context that carries an amount:
- * a value object belongs to the context's language, and every aggregate in
- * that context holds the same one. Accounts' Money is the shared kernel's,
- * and Ledger holds that one rather than a copy.
- */
-const money = (boundedcontext: BoundedContext) => {
-	const vo = boundedcontext.addValueObject("Money", {
-		description:
-			"Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
-	});
-	vo.addAttribute("amountMinor", { type: "int64" });
-	vo.addAttribute("currency", { type: "ISO 4217 code" });
-	return vo;
-};
+import { type Attribute, Workspace } from "@open-domain-specification/core";
 
 /**
  * NorthBank: a fictional mid-sized retail bank.
@@ -31,12 +11,13 @@ const money = (boundedcontext: BoundedContext) => {
  * identity are generic.
  *
  * The emphasis is on invariants and value objects: Money, IBAN, PAN, Consent,
- * a balanced journal entry, a loan schedule. Stress-test features: fourteen
- * contexts, a shared kernel (accounts and ledger), a partnership (lending and
- * decisioning), a separate-ways pair (branches and decisioning), a legacy
- * mainframe big ball of mud, and three deliberate mistakes (marked
- * DELIBERATE) that trigger separate-ways, context-serves-subdomain and
- * consumable-kind.
+ * a balanced journal entry, a loan schedule. Stress-test features: fifteen
+ * contexts, a shared kernel (a Shared Kernel context, borrowed from by
+ * Accounts, Ledger, Payments, Cards, Lending and Reporting), a partnership
+ * (lending and decisioning), a separate-ways pair (branches and
+ * decisioning), a legacy mainframe big ball of mud, and three deliberate
+ * mistakes (marked DELIBERATE) that trigger separate-ways,
+ * context-serves-subdomain and consumable-kind.
  *
  * Provenance: BRIEF.md and DISCOVERY.md. Comments "DISCOVERY: <who>" point at
  * the interview an element came from.
@@ -141,6 +122,11 @@ platform.addSubdomain("Identity & Access", {
 	description:
 		"Login and step-up authentication. Vendor built; never placed on the capability map",
 });
+const sharedKernelSD = platform.addSubdomain("Shared Financial Primitives", {
+	type: "supporting",
+	description:
+		"Money and AccountNumber: the one library every context that carries an amount or a ledger account compiles against. A library, not a product; nobody builds a customer journey on it",
+});
 
 /* =======================
    TEAMS
@@ -153,8 +139,7 @@ const financialCrimeTeam = workspace.addTeam("Financial Crime Team", {
 	description: "Sanctions screening, fraud scoring, cases",
 });
 const accountsTeam = workspace.addTeam("Accounts Team", {
-	description:
-		"The account platform; co-owns the Money library with Core Banking",
+	description: "The account platform",
 });
 const coreBankingTeam = workspace.addTeam("Core Banking Team", {
 	description: "The ledger, and Sovereign",
@@ -182,6 +167,10 @@ const channelsTeam = workspace.addTeam("Channels Team", {
 });
 const digitalPlatformTeam = workspace.addTeam("Digital Platform Team", {
 	description: "Identity and access",
+});
+const sharedKernelTeam = workspace.addTeam("Shared Kernel Team", {
+	description:
+		"Owns Money and AccountNumber; changes only by agreement of the teams that borrow them",
 });
 
 /* =======================
@@ -254,6 +243,15 @@ const sovereignBC = accountsSD.addBoundedcontext("Sovereign Core (legacy)", {
 const identityBC = workspace.addBoundedContext("Identity & Access", {
 	description: "Usernames, credentials, step-up authentication",
 	team: digitalPlatformTeam,
+});
+// Six contexts carry an amount or a ledger account, so the library is a
+// context of its own rather than fifteen pairwise agreements (decision 16's
+// amendment): each sharer declares one shared-kernel relationship with this
+// one and borrows what it needs.
+const sharedKernelBC = sharedKernelSD.addBoundedcontext("Shared Kernel", {
+	description:
+		"The shared library the bank's contexts compile against: Money and AccountNumber, and nothing else. Not a product; nobody's customer journey runs through it",
+	team: sharedKernelTeam,
 });
 
 /* =======================
@@ -602,6 +600,29 @@ customerBC
 	.then(holdOnboarding);
 
 /* =======================
+   SHARED KERNEL
+   DISCOVERY: card 56. Money and AccountNumber are declared once here and
+   borrowed, over a shared-kernel relationship, by every context that carries
+   an amount or a ledger account. Neither is typed by a `uses` relation from
+   the borrower: a relation never crosses a context boundary (decision 15),
+   so the attribute's `valueobject` reference is the only link, exactly as
+   decision 16's amendment describes.
+   ======================= */
+
+const kernelMoneyVO = sharedKernelBC.addValueObject("Money", {
+	description:
+		"Minor units and an ISO 4217 code. Never a float; @northbank/money is the one implementation",
+});
+kernelMoneyVO.addAttribute("amountMinor", { type: "int64" });
+kernelMoneyVO.addAttribute("currency", { type: "ISO 4217 code" });
+const kernelAccountNumberVO = sharedKernelBC.addValueObject("AccountNumber", {
+	description:
+		"Sort code and eight-digit number, from the same library as Money",
+});
+kernelAccountNumberVO.addAttribute("sortCode", { type: "string" });
+kernelAccountNumberVO.addAttribute("number", { type: "string" });
+
+/* =======================
    ACCOUNTS
    DISCOVERY: Accounts Team lead. IBAN checksum; balance within overdraft;
    frozen accepts no debits; closed has zero balance; mandates are verified customers.
@@ -624,18 +645,14 @@ const ibanVO = accountsBC.addValueObject("IBAN", {
 		"Country, check digits, bank and account identifiers; valid only if the mod-97 checksum holds",
 });
 ibanVO.addAttribute("value", { type: "string (ISO 13616)" });
-const accountNumberVO = accountsBC.addValueObject("AccountNumber", {
-	description:
-		"Sort code and eight-digit number; part of the shared kernel library",
-});
-accountNumberVO.addAttribute("sortCode", { type: "string" });
-accountNumberVO.addAttribute("number", { type: "string" });
-const accountMoney = money(accountsBC);
+// AccountNumber and Money are the Shared Kernel's; borrowed by reference,
+// not declared here (decision 16's amendment).
+const accountNumberVO = kernelAccountNumberVO;
+const accountMoney = kernelMoneyVO;
 const overdraftVO = accountsBC.addValueObject("OverdraftLimit", {
 	description: "How far below zero the available balance may go",
 });
 overdraftVO.addAttribute("limit", { type: "Money", valueobject: accountMoney });
-overdraftVO.uses(accountMoney, "limited-to", "1");
 const accountStatusVO = accountsBC.addValueObject("AccountStatus", {
 	description: "open, frozen or closed",
 });
@@ -683,12 +700,12 @@ account.addAttribute("overdraft", {
 	valueobject: overdraftVO,
 });
 account.uses(ibanVO, "identified-by", "1");
-account.uses(accountNumberVO, "numbered", "1");
-account.uses(accountMoney, "balance", "1");
 account.uses(overdraftVO, "overdraft", "1");
 account.uses(accountStatusVO, "has-status", "1");
 // Customer lives in Customer & KYC: a relation never crosses a bounded
-// context, so the mandate holds `customerId` and nothing more.
+// context, so the mandate holds `customerId` and nothing more. AccountNumber
+// and Money are the Shared Kernel's, so they are typed by `valueobject`
+// reference only; a relation never crosses a context boundary either.
 
 accountAgg
 	.addInvariant("IbanChecksumValid", {
@@ -842,12 +859,12 @@ const entry = entryAgg.addRootEntity("JournalEntry", {
 const posting = entryAgg.addEntity("Posting", {
 	description: "A debit or credit of an amount to one ledger account",
 });
-// Money and AccountNumber are the shared kernel Accounts and Ledger keep
-// between them, so the ledger holds Accounts' own value objects rather than a
-// copy of each. A relation may not cross a context boundary, so the link is
-// the attribute's `valueobject` and nothing else.
-const ledgerMoney = accountMoney;
-const ledgerAccountNumberVO = accountNumberVO;
+// Money and AccountNumber are the Shared Kernel's, borrowed here just as
+// Accounts borrows them, rather than a copy of each. A relation may not cross
+// a context boundary, so the link is the attribute's `valueobject` and
+// nothing else.
+const ledgerMoney = kernelMoneyVO;
+const ledgerAccountNumberVO = kernelAccountNumberVO;
 // A posting goes to a ledger account, not to an Accounts product: a customer's
 // account number or a nominal such as the loan book or scheme suspense.
 // Otherwise a disbursement (debit loan book, credit customer) could not balance.
@@ -914,8 +931,8 @@ entryAgg
 	.addInvariant("SingleCurrencyPerEntry", {
 		description: "Every posting in an entry shares one currency",
 	})
-	// Money itself is Accounts', held here over the shared kernel; the rule
-	// belongs to the posting amount inside this aggregate.
+	// Money itself is the Shared Kernel's, held here over that relationship;
+	// the rule belongs to the posting amount inside this aggregate.
 	.constrains(posting.attributes.get("amount") as Attribute);
 entryAgg
 	.addInvariant("ImmutableOncePosted", {
@@ -1045,7 +1062,8 @@ const payeeVO = paymentsBC.addValueObject("Payee", {
 });
 payeeVO.addAttribute("name", { type: "string" });
 payeeVO.addAttribute("iban", { type: "string (ISO 13616)" });
-const paymentMoney = money(paymentsBC);
+// Money is the Shared Kernel's, borrowed by reference (decision 16's amendment).
+const paymentMoney = kernelMoneyVO;
 const executionDateVO = paymentsBC.addValueObject("ExecutionDate", {
 	description: "When to send it; today means before the scheme cut-off",
 });
@@ -1075,11 +1093,11 @@ instruction.addAttribute("executionDate", {
 	valueobject: executionDateVO,
 });
 instruction.uses(payeeVO, "to", "1");
-instruction.uses(paymentMoney, "of", "1");
 instruction.uses(executionDateVO, "on", "1");
 instruction.uses(paymentStatusVO, "has-status", "1");
 // Account lives in Accounts: `payerAccountId` above is the only thing that
-// crosses the boundary.
+// crosses the boundary. Money is the Shared Kernel's, so it is typed by
+// `valueobject` reference only, with no `uses` relation to cross with it.
 
 instructionAgg
 	.addInvariant("PayerNotPayee", {
@@ -1584,7 +1602,8 @@ const cardStatusVO = cardsBC.addValueObject("CardStatus", {
 cardStatusVO.addAttribute("value", {
 	type: "'active' | 'blocked' | 'expired'",
 });
-const cardMoney = money(cardsBC);
+// Money is the Shared Kernel's, borrowed by reference (decision 16's amendment).
+const cardMoney = kernelMoneyVO;
 card.addAttribute("cardId", { type: "string", identity: true });
 card.addAttribute("accountId", { type: "string", identifies: account });
 card.addAttribute("pan", { type: "PAN", valueobject: panVO });
@@ -1604,9 +1623,9 @@ card.includes(cardAuthorisation, "authorised", "*");
 card.uses(panVO, "numbered", "1");
 card.uses(expiryVO, "expires", "1");
 card.uses(cardStatusVO, "has-status", "1");
-cardAuthorisation.uses(cardMoney, "of", "1");
 // Account lives in Accounts: `accountId` above is the only thing that crosses
-// the boundary.
+// the boundary. Money is the Shared Kernel's, so it is typed by
+// `valueobject` reference only, with no `uses` relation to cross with it.
 
 // A construction rule: the stored value is a token and four digits, on which
 // Luhn cannot be run, so the check happens once, before tokenisation.
@@ -1752,7 +1771,8 @@ const applicationAgg = lendingBC.addAggregate("LoanApplication", {
 const application = applicationAgg.addRootEntity("LoanApplication", {
 	description: "One request for credit",
 });
-const applicationMoney = money(lendingBC);
+// Money is the Shared Kernel's, borrowed by reference (decision 16's amendment).
+const applicationMoney = kernelMoneyVO;
 const termVO = lendingBC.addValueObject("Term", {
 	description: "Months to repay over",
 });
@@ -1781,11 +1801,11 @@ application.addAttribute("decision", {
 	valueobject: decisionVO,
 	description: "Set once Credit Decisioning has answered",
 });
-application.uses(applicationMoney, "requests", "1");
 application.uses(termVO, "over", "1");
 application.uses(decisionVO, "decided", "0..1");
 // Customer lives in Customer & KYC: `customerId` above is the only thing that
-// crosses the boundary.
+// crosses the boundary. Money is the Shared Kernel's, so it is typed by
+// `valueobject` reference only, with no `uses` relation to cross with it.
 // A rule across applications, so it is checked when SubmitApplication runs,
 // over the customer's applications; one instance cannot see the others.
 applicationAgg
@@ -1809,7 +1829,7 @@ const schedule = loanAgg.addEntity("RepaymentSchedule", {
 const installment = loanAgg.addEntity("Installment", {
 	description: "One due payment",
 });
-// Lending's Money is the context's, declared with the application above.
+// Lending's Money is the Shared Kernel's, borrowed with the application above.
 const loanMoney = applicationMoney;
 const aprVO = lendingBC.addValueObject("InterestRate", {
 	description: "Annual percentage rate, within the regulatory cap",
@@ -1838,14 +1858,14 @@ installment.addAttribute("amount", { type: "Money", valueobject: loanMoney });
 installment.addAttribute("paid", { type: "boolean" });
 loan.includes(schedule, "repaid-under", "1");
 schedule.includes(installment, "due", "1..*");
-loan.uses(loanMoney, "principal", "1");
 loan.uses(aprVO, "charged-at", "1");
 loan.uses(loanStatusVO, "has-status", "1");
-installment.uses(loanMoney, "of", "1");
 loan.references(application, "from-application", "1");
 // The account the loan is disbursed to lives in Accounts: `accountId` above is
 // the only thing that crosses the boundary. The application it came from is in
-// Lending too, so that one stays a relation.
+// Lending too, so that one stays a relation. Money is the Shared Kernel's, so
+// it is typed by `valueobject` reference only, with no `uses` relation to
+// cross with it.
 
 loanAgg
 	.addInvariant("NoDrawdownBeforeSignature", {
@@ -2210,7 +2230,8 @@ const periodVO = reportingBC.addValueObject("ReportingPeriod", {
 periodVO.addAttribute("from", { type: "date" });
 periodVO.addAttribute("to", { type: "date" });
 periodVO.addAttribute("closed", { type: "boolean" });
-const reportMoney = money(reportingBC);
+// Money is the Shared Kernel's, borrowed by reference (decision 16's amendment).
+const reportMoney = kernelMoneyVO;
 regReturn.addAttribute("returnId", { type: "string", identity: true });
 regReturn.addAttribute("reportCode", { type: "string" });
 regReturn.addAttribute("filedAt", { type: "date-time" });
@@ -2222,7 +2243,8 @@ regReturn.addAttribute("period", {
 	valueobject: periodVO,
 });
 regReturn.uses(periodVO, "for-period", "1");
-reportLine.uses(reportMoney, "of", "1");
+// Money is the Shared Kernel's, so it is typed by `valueobject` reference
+// only, with no `uses` relation to cross with it.
 
 // The ledger is another context, so this is a precondition of filing: a
 // reconciliation run before FileReturn, not a rule one line can hold alone.
@@ -2589,12 +2611,16 @@ reportingBC.downstreamOf(sovereignBC, {
 	downstreamRoles: ["anti-corruption-layer"],
 });
 
-// Shared kernel: the Money and AccountNumber library, changed and released together.
-accountsBC.sharesKernelWith(ledgerBC, {
-	description: "Money and AccountNumber are one library owned by both teams",
+// Shared kernel: six contexts compile against one Money/AccountNumber
+// library, so each declares one relationship with the kernel context rather
+// than fifteen pairwise agreements among themselves (decision 16's
+// amendment). Accounts and Ledger also borrow AccountNumber; the rest borrow
+// Money only.
+accountsBC.sharesKernelWith(sharedKernelBC, {
+	description: "Money and AccountNumber, from @northbank/money",
 	comments: [
 		{
-			text: "Money and AccountNumber live in @northbank/money; both services compile against the same version.",
+			text: "Money and AccountNumber live in @northbank/money; every borrowing context compiles against the same version.",
 			link: {
 				kind: "code",
 				url: "https://github.com/example/northbank/blob/main/packages/money/src/Money.ts",
@@ -2602,7 +2628,7 @@ accountsBC.sharesKernelWith(ledgerBC, {
 			},
 		},
 		{
-			text: "Kept deliberately tiny: two value objects and their parsers, changed only by agreement of both teams.",
+			text: "Kept deliberately tiny: two value objects and their parsers, changed only by agreement of the teams that borrow them.",
 			link: {
 				kind: "adr",
 				url: "https://github.com/example/northbank/blob/main/docs/adr/006-money-kernel.md",
@@ -2610,6 +2636,21 @@ accountsBC.sharesKernelWith(ledgerBC, {
 			},
 		},
 	],
+});
+ledgerBC.sharesKernelWith(sharedKernelBC, {
+	description: "Money and AccountNumber, from @northbank/money",
+});
+paymentsBC.sharesKernelWith(sharedKernelBC, {
+	description: "Money, from @northbank/money",
+});
+cardsBC.sharesKernelWith(sharedKernelBC, {
+	description: "Money, from @northbank/money",
+});
+lendingBC.sharesKernelWith(sharedKernelBC, {
+	description: "Money, from @northbank/money",
+});
+reportingBC.sharesKernelWith(sharedKernelBC, {
+	description: "Money, from @northbank/money",
 });
 // Partnership: one planning board, joint releases, no translation.
 lendingBC.partnerOf(decisioningBC, {

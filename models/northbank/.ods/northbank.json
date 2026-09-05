@@ -110,6 +110,11 @@
           "name": "Identity & Access",
           "type": "generic",
           "description": "Login and step-up authentication. Vendor built; never placed on the capability map"
+        },
+        "shared_financial_primitives": {
+          "name": "Shared Financial Primitives",
+          "type": "supporting",
+          "description": "Money and AccountNumber: the one library every context that carries an amount or a ledger account compiles against. A library, not a product; nobody builds a customer journey on it"
         }
       }
     }
@@ -976,7 +981,7 @@
                   "name": "accountNumber",
                   "type": "AccountNumber",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/accounts/valueobjects/account_number"
+                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/account_number"
                   }
                 },
                 "posted_balance": {
@@ -984,7 +989,7 @@
                   "type": "Money",
                   "description": "What the ledger has posted to this account",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/accounts/valueobjects/money"
+                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
                   }
                 },
                 "pending_authorisations": {
@@ -992,7 +997,7 @@
                   "type": "Money",
                   "description": "Card authorisations approved but not yet captured; a hold placed on CardAuthorised and released when the capture posts",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/accounts/valueobjects/money"
+                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
                   }
                 },
                 "available_balance": {
@@ -1000,7 +1005,7 @@
                   "type": "Money",
                   "description": "Posted balance less pending card authorisations",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/accounts/valueobjects/money"
+                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
                   }
                 },
                 "status": {
@@ -1033,22 +1038,6 @@
                   },
                   "relation": "uses",
                   "label": "identified-by",
-                  "cardinality": "1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/accounts/valueobjects/account_number"
-                  },
-                  "relation": "uses",
-                  "label": "numbered",
-                  "cardinality": "1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/accounts/valueobjects/money"
-                  },
-                  "relation": "uses",
-                  "label": "balance",
                   "cardinality": "1"
                 },
                 {
@@ -1286,36 +1275,6 @@
           },
           "relations": []
         },
-        "account_number": {
-          "name": "AccountNumber",
-          "description": "Sort code and eight-digit number; part of the shared kernel library",
-          "attributes": {
-            "sort_code": {
-              "name": "sortCode",
-              "type": "string"
-            },
-            "number": {
-              "name": "number",
-              "type": "string"
-            }
-          },
-          "relations": []
-        },
-        "money": {
-          "name": "Money",
-          "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
-          "attributes": {
-            "amount_minor": {
-              "name": "amountMinor",
-              "type": "int64"
-            },
-            "currency": {
-              "name": "currency",
-              "type": "ISO 4217 code"
-            }
-          },
-          "relations": []
-        },
         "overdraft_limit": {
           "name": "OverdraftLimit",
           "description": "How far below zero the available balance may go",
@@ -1324,20 +1283,11 @@
               "name": "limit",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/accounts/valueobjects/money"
+                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
               }
             }
           },
-          "relations": [
-            {
-              "target": {
-                "$ref": "#/boundedcontexts/accounts/valueobjects/money"
-              },
-              "relation": "uses",
-              "label": "limited-to",
-              "cardinality": "1"
-            }
-          ]
+          "relations": []
         },
         "account_status": {
           "name": "AccountStatus",
@@ -1516,7 +1466,7 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/accounts/valueobjects/money"
+                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
                   }
                 },
                 "direction": {
@@ -1702,7 +1652,7 @@
               "type": "AccountNumber",
               "description": "Set when kind is customer",
               "valueobject": {
-                "$ref": "#/boundedcontexts/accounts/valueobjects/account_number"
+                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/account_number"
               }
             },
             "nominal_code": {
@@ -1931,7 +1881,7 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/payments_hub/valueobjects/money"
+                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
                   }
                 },
                 "status": {
@@ -1963,14 +1913,6 @@
                   },
                   "relation": "uses",
                   "label": "to",
-                  "cardinality": "1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/payments_hub/valueobjects/money"
-                  },
-                  "relation": "uses",
-                  "label": "of",
                   "cardinality": "1"
                 },
                 {
@@ -2264,21 +2206,6 @@
           },
           "relations": []
         },
-        "money": {
-          "name": "Money",
-          "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
-          "attributes": {
-            "amount_minor": {
-              "name": "amountMinor",
-              "type": "int64"
-            },
-            "currency": {
-              "name": "currency",
-              "type": "ISO 4217 code"
-            }
-          },
-          "relations": []
-        },
         "execution_date": {
           "name": "ExecutionDate",
           "description": "When to send it; today means before the scheme cut-off",
@@ -2321,7 +2248,7 @@
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/payments_hub/valueobjects/money"
+                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
               }
             },
             "execution_date": {
@@ -2350,7 +2277,7 @@
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/payments_hub/valueobjects/money"
+                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
               }
             },
             "payee": {
@@ -2673,7 +2600,7 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/cards/valueobjects/money"
+                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
                   }
                 },
                 "at": {
@@ -2681,16 +2608,7 @@
                   "type": "date-time"
                 }
               },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/cards/valueobjects/money"
-                  },
-                  "relation": "uses",
-                  "label": "of",
-                  "cardinality": "1"
-                }
-              ]
+              "relations": []
             }
           },
           "invariants": {
@@ -2857,21 +2775,6 @@
             }
           },
           "relations": []
-        },
-        "money": {
-          "name": "Money",
-          "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
-          "attributes": {
-            "amount_minor": {
-              "name": "amountMinor",
-              "type": "int64"
-            },
-            "currency": {
-              "name": "currency",
-              "type": "ISO 4217 code"
-            }
-          },
-          "relations": []
         }
       },
       "schemas": {
@@ -2891,7 +2794,7 @@
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/cards/valueobjects/money"
+                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
               }
             }
           }
@@ -2932,7 +2835,7 @@
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/cards/valueobjects/money"
+                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
               }
             }
           }
@@ -3027,7 +2930,7 @@
                   "name": "requested",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/lending/valueobjects/money"
+                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
                   }
                 },
                 "status": {
@@ -3051,14 +2954,6 @@
                 }
               },
               "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/lending/valueobjects/money"
-                  },
-                  "relation": "uses",
-                  "label": "requests",
-                  "cardinality": "1"
-                },
                 {
                   "target": {
                     "$ref": "#/boundedcontexts/lending/valueobjects/term"
@@ -3186,7 +3081,7 @@
                   "name": "principal",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/lending/valueobjects/money"
+                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
                   }
                 },
                 "apr": {
@@ -3211,14 +3106,6 @@
                   },
                   "relation": "includes",
                   "label": "repaid-under",
-                  "cardinality": "1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/lending/valueobjects/money"
-                  },
-                  "relation": "uses",
-                  "label": "principal",
                   "cardinality": "1"
                 },
                 {
@@ -3283,7 +3170,7 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/lending/valueobjects/money"
+                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
                   }
                 },
                 "paid": {
@@ -3291,16 +3178,7 @@
                   "type": "boolean"
                 }
               },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/lending/valueobjects/money"
-                  },
-                  "relation": "uses",
-                  "label": "of",
-                  "cardinality": "1"
-                }
-              ]
+              "relations": []
             }
           },
           "invariants": {
@@ -3511,21 +3389,6 @@
         }
       },
       "valueobjects": {
-        "money": {
-          "name": "Money",
-          "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
-          "attributes": {
-            "amount_minor": {
-              "name": "amountMinor",
-              "type": "int64"
-            },
-            "currency": {
-              "name": "currency",
-              "type": "ISO 4217 code"
-            }
-          },
-          "relations": []
-        },
         "term": {
           "name": "Term",
           "description": "Months to repay over",
@@ -3593,7 +3456,7 @@
               "name": "requested",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/lending/valueobjects/money"
+                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
               }
             },
             "term": {
@@ -3622,7 +3485,7 @@
               "name": "amount",
               "type": "Money",
               "valueobject": {
-                "$ref": "#/boundedcontexts/lending/valueobjects/money"
+                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
               }
             }
           }
@@ -4388,20 +4251,11 @@
                   "name": "amount",
                   "type": "Money",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/regulatory_reporting/valueobjects/money"
+                    "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
                   }
                 }
               },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/regulatory_reporting/valueobjects/money"
-                  },
-                  "relation": "uses",
-                  "label": "of",
-                  "cardinality": "1"
-                }
-              ]
+              "relations": []
             }
           },
           "invariants": {
@@ -4493,21 +4347,6 @@
             "closed": {
               "name": "closed",
               "type": "boolean"
-            }
-          },
-          "relations": []
-        },
-        "money": {
-          "name": "Money",
-          "description": "Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
-          "attributes": {
-            "amount_minor": {
-              "name": "amountMinor",
-              "type": "int64"
-            },
-            "currency": {
-              "name": "currency",
-              "type": "ISO 4217 code"
             }
           },
           "relations": []
@@ -4936,6 +4775,55 @@
       "glossary": {},
       "valueobjects": {},
       "schemas": {}
+    },
+    "shared_kernel": {
+      "name": "Shared Kernel",
+      "description": "The shared library the bank's contexts compile against: Money and AccountNumber, and nothing else. Not a product; nobody's customer journey runs through it",
+      "subdomains": [
+        {
+          "$ref": "#/domains/platform/subdomains/shared_financial_primitives"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/shared_kernel_team"
+      },
+      "aggregates": {},
+      "services": {},
+      "policies": {},
+      "glossary": {},
+      "valueobjects": {
+        "money": {
+          "name": "Money",
+          "description": "Minor units and an ISO 4217 code. Never a float; @northbank/money is the one implementation",
+          "attributes": {
+            "amount_minor": {
+              "name": "amountMinor",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          },
+          "relations": []
+        },
+        "account_number": {
+          "name": "AccountNumber",
+          "description": "Sort code and eight-digit number, from the same library as Money",
+          "attributes": {
+            "sort_code": {
+              "name": "sortCode",
+              "type": "string"
+            },
+            "number": {
+              "name": "number",
+              "type": "string"
+            }
+          },
+          "relations": []
+        }
+      },
+      "schemas": {}
     }
   },
   "relationships": [
@@ -5304,13 +5192,13 @@
           "$ref": "#/boundedcontexts/accounts"
         },
         {
-          "$ref": "#/boundedcontexts/ledger"
+          "$ref": "#/boundedcontexts/shared_kernel"
         }
       ],
-      "description": "Money and AccountNumber are one library owned by both teams",
+      "description": "Money and AccountNumber, from @northbank/money",
       "comments": [
         {
-          "text": "Money and AccountNumber live in @northbank/money; both services compile against the same version.",
+          "text": "Money and AccountNumber live in @northbank/money; every borrowing context compiles against the same version.",
           "link": {
             "kind": "code",
             "url": "https://github.com/example/northbank/blob/main/packages/money/src/Money.ts",
@@ -5318,7 +5206,7 @@
           }
         },
         {
-          "text": "Kept deliberately tiny: two value objects and their parsers, changed only by agreement of both teams.",
+          "text": "Kept deliberately tiny: two value objects and their parsers, changed only by agreement of the teams that borrow them.",
           "link": {
             "kind": "adr",
             "url": "https://github.com/example/northbank/blob/main/docs/adr/006-money-kernel.md",
@@ -5326,6 +5214,66 @@
           }
         }
       ]
+    },
+    {
+      "type": "shared-kernel",
+      "participants": [
+        {
+          "$ref": "#/boundedcontexts/ledger"
+        },
+        {
+          "$ref": "#/boundedcontexts/shared_kernel"
+        }
+      ],
+      "description": "Money and AccountNumber, from @northbank/money"
+    },
+    {
+      "type": "shared-kernel",
+      "participants": [
+        {
+          "$ref": "#/boundedcontexts/payments_hub"
+        },
+        {
+          "$ref": "#/boundedcontexts/shared_kernel"
+        }
+      ],
+      "description": "Money, from @northbank/money"
+    },
+    {
+      "type": "shared-kernel",
+      "participants": [
+        {
+          "$ref": "#/boundedcontexts/cards"
+        },
+        {
+          "$ref": "#/boundedcontexts/shared_kernel"
+        }
+      ],
+      "description": "Money, from @northbank/money"
+    },
+    {
+      "type": "shared-kernel",
+      "participants": [
+        {
+          "$ref": "#/boundedcontexts/lending"
+        },
+        {
+          "$ref": "#/boundedcontexts/shared_kernel"
+        }
+      ],
+      "description": "Money, from @northbank/money"
+    },
+    {
+      "type": "shared-kernel",
+      "participants": [
+        {
+          "$ref": "#/boundedcontexts/regulatory_reporting"
+        },
+        {
+          "$ref": "#/boundedcontexts/shared_kernel"
+        }
+      ],
+      "description": "Money, from @northbank/money"
     },
     {
       "type": "partnership",
@@ -5382,7 +5330,7 @@
     },
     "accounts_team": {
       "name": "Accounts Team",
-      "description": "The account platform; co-owns the Money library with Core Banking"
+      "description": "The account platform"
     },
     "core_banking_team": {
       "name": "Core Banking Team",
@@ -5419,6 +5367,10 @@
     "digital_platform_team": {
       "name": "Digital Platform Team",
       "description": "Identity and access"
+    },
+    "shared_kernel_team": {
+      "name": "Shared Kernel Team",
+      "description": "Owns Money and AccountNumber; changes only by agreement of the teams that borrow them"
     }
   }
 }
