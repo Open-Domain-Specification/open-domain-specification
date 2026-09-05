@@ -48,13 +48,20 @@ draws it as a dashed edge to the entity named, inside that entity's own
 aggregate cluster, and the `identifies-entity` rule checks the target is an
 entity of this workspace.
 
+Some ids belong to a system nobody here models inside — a card scheme's
+authorisation reference, a payment provider's customer id. An external context
+has no entities of ours to name, so `identifies` points at that context itself
+and the maps draw the dependency on it. A context that is not external is
+refused: there the entity exists, and it is what the id is of.
+
 ## Specialisation
 
 An entity or value object may be a **kind of** another
 (`entity.specialises(other)`): it has every attribute and relation of the
 one it specialises, plus its own. An entity is a kind of an entity of its
-own aggregate; a value object is a kind of one its own context declares or
-borrows through a shared kernel. A subtype is never itself `root: true` — a
+own aggregate; a value object is a kind of one its own context declares, or
+one it borrows through a shared kernel or as a conformist of the context that
+owns it. A subtype is never itself `root: true` — a
 kind of the root is reached through it — and does not redeclare an
 attribute it already has from its parent. NorthBank's current, savings and
 loan accounts, or StreamLine's films and series, are kinds of one account

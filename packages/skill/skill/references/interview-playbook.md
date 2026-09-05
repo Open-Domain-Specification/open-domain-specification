@@ -164,11 +164,14 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   names something inside another aggregate rather than its root — the profile inside a
   household, the coverage inside a policy — that child is the right target: take the answer as
   given, because the holder reaches the child through its root and the dependency is on the
-  aggregate that root leads. Apply it everywhere rather than case by case: any attribute whose
-  name or description says it is another entity's id sets `identifies`. The one exception is a
-  same-context id already drawn as a `references` relation to that entity, where `identifies`
-  would say the same thing twice. Schema attributes follow the same rule, because a payload
-  that carries an id says whose it is.
+  aggregate that root leads. If the id belongs to a system nobody here models inside — the card
+  scheme's authorisation reference, the payment provider's customer id, the regulator's case
+  number — there is no entity to name, so point `identifies` at that system's bounded context,
+  which is declared `external: true`. Apply it everywhere rather than case by case: any
+  attribute whose name or description says it is another entity's or another system's id sets
+  `identifies`. The one exception is a same-context id already drawn as a `references` relation
+  to that entity, where `identifies` would say the same thing twice. Schema attributes follow
+  the same rule, because a payload that carries an id says whose it is.
 - For an operation, follow up: "and what comes back?" → a second schema on the same context,
   attached with `returns`. A command that answers with nothing leaves `returns` off; a query
   that answers with nothing is not a query, so keep asking. Never put `returns` on an event.

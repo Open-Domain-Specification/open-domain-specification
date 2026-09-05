@@ -57,7 +57,7 @@
                 },
                 "identifies": {
                     "additionalProperties": false,
-                    "description": "The entity this attribute holds the identity of, when it is an identity\nof something else: `Order.petId` identifies Catalog's `Pet`. The target\nmay be in another bounded context — that is the point, since an identity\nis the only thing that crosses a boundary (decision 14) — and it may be\na child rather than a root, since a session holds the id of a profile\ninside a household; the child is reached through its own root.",
+                    "description": "What this attribute holds the identity of, when it is an identity of\nsomething else: `Order.petId` identifies Catalog's `Pet`. The target may\nbe in another bounded context — that is the point, since an identity is\nthe only thing that crosses a boundary (decision 14) — and it may be a\nchild rather than a root, since a session holds the id of a profile\ninside a household; the child is reached through its own root.\n\nIt may also be a bounded context flagged `external`: a card scheme's\nauthorisation id or a payment provider's customer id belongs to a system\nwhose entities are not ours to state (decision 28), so the attribute\nnames the system instead of an entity inside it. A context that is not\nexternal is refused, because there the entity exists and is what the id\nis of.",
                     "properties": {
                         "$ref": {
                             "type": "string"

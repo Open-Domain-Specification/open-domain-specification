@@ -14,12 +14,12 @@ severity, a rule id, a message and the ref of the element concerned.
 | `aggregate-root` | error / warning | exactly one root entity per aggregate |
 | `cross-aggregate-reference` | error | relations into another aggregate are `references` to its root, or a kind of that root; a relation to a value object crosses no aggregate, since the context declares it |
 | `cross-context-relation` | error | a relation never crosses a bounded context; the source holds the other entity's identity instead |
-| `identifies-entity` | error | an attribute's `identifies` names an entity of this workspace, root or child; a child is reached through its own root, so the dependency is on the aggregate that root leads |
+| `identifies-entity` | error | an attribute's `identifies` names an entity of this workspace, root or child, or a bounded context marked `external`; a child is reached through its own root, so the dependency is on the aggregate that root leads, and an external context is named when the id belongs to a system whose entities are not ours to state |
 | `root-identity` | error | an aggregate's root entity declares at least one identity attribute |
 | `entity-identity` | warning | every other entity in an aggregate declares at least one identity attribute; without one it is a value object |
 | `value-object-shape` | error | a value object declares no identity attribute and includes nothing |
 | `identity-not-optional` | error | an identity attribute is not marked `optional`; an identity that may be missing cannot say which instance a reference means |
-| `specialisation-in-boundary` | error | an entity is a kind of an entity of its own aggregate; a value object is a kind of one its own context declares or borrows through a shared kernel |
+| `specialisation-in-boundary` | error | an entity is a kind of an entity of its own aggregate; a value object is a kind of one its own context declares, or one it borrows through a shared kernel or as a conformist of the context that owns it |
 | `specialisation-cycle` | error | no chain of "is a kind of" returns to where it started |
 | `specialisation-not-root` | error | an entity that is a kind of another is not itself marked root |
 | `specialisation-redeclares` | error | a kind does not declare an attribute it already has from what it is a kind of |
@@ -35,6 +35,7 @@ severity, a rule id, a message and the ref of the element concerned.
 | `relationship-cycle` | warning | the directed relationships whose traffic is calls form no cycle; a step carried only by events is choreography and does not count (decision 20). The message lists the ring's contexts in order |
 | `partnership-backed` | warning | two contexts declaring a partnership exchange consumables, or events a policy reacts to, in at least one direction |
 | `shared-kernel-backed` | warning | two contexts declaring a shared kernel share at least one value object or schema across it |
+| `conformist-backed` | warning | a downstream that declares the `conformist` role takes something of its upstream's: a schema or value object named here, something it publishes consumed here, or one of its operations called |
 | `mud-needs-acl` | warning | a consumption from a big ball of mud is translated behind an anti-corruption layer |
 | `term-in-context` | error | a glossary term's `embodiedBy` names an element of the term's own context |
 | `role-coherence` | warning | consumables and consumptions crossing contexts declare their roles, unless the two contexts are partners or share a kernel |
@@ -48,14 +49,14 @@ severity, a rule id, a message and the ref of the element concerned.
 | `aggregate-not-public` | error | an aggregate's operations declare no upstream role and are consumed only inside their own context |
 | `aggregate-consumes-inside` | error | an aggregate consumes only consumables of its own bounded context; a foreign operation or event is consumed by an application service or a policy |
 | `domain-service-internal` | error | a domain service's operations declare no upstream role and are consumed only inside their own context |
-| `schema-context` | error | a schema named by a consumable's payload, by its `returns` or by a nested attribute belongs to the naming element's own context, or to one it shares a kernel with |
+| `schema-context` | error | a schema named by a consumable's payload, by its `returns` or by a nested attribute belongs to the naming element's own context, to one it shares a kernel with, or to an upstream it has declared itself a `conformist` of |
 | `returns-on-operation` | error | only an operation declares `returns`; an event has no caller to answer |
 | `rejects-on-operation` | error | only an operation declares `rejects`; an event is a fact that already happened, so it has nothing left to refuse |
 | `consumable-kind` | error | policies react to events and issue operations; only operations raise, and only events |
 | `raises-in-context` | error | an operation raises only events its own bounded context provides; a context publishes its own facts |
 | `event-unraised` | warning | every event of a context we model is raised by one of that context's own operations |
 | `policy-complete` | warning | a policy reacts to at least one event and issues at least one operation |
-| `reaction-cycle` | warning | the reactions form no cycle: no operation raises an event whose policy issues an operation that leads back to it, following a consumption's `by` across a context boundary |
+| `reaction-cycle` | warning | the reactions form no cycle: no operation raises an event whose policy issues an operation that leads back to it, following a consumption's `by` across a context boundary; a process fed by its own steps is a lifecycle rather than a ring, so a cycle is reported only when the walk returns to a reactor other than that one process |
 | `context-serves-subdomain` | warning | every context serves a subdomain |
 | `external-is-boundary` | error | an external context declares no aggregates, no policies, no processes and no invariants |
 | `comments-required` | warning | every context relationship carries a comment; opt in with `options.rules.commentsRequired` |

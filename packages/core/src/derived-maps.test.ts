@@ -132,6 +132,31 @@ describe("ODSContextMap", () => {
 		expect(edges[0].downstreamRoles).toEqual([]);
 	});
 
+	it("implies an edge from an identity that names an external context", () => {
+		// An external context has no entities of ours to name, so the attribute
+		// names the system and the dependency reads all the same (decision 28).
+		const ws = new Workspace("W", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0",
+		});
+		const scheme = ws.addBoundedContext("CardCo", {
+			description: "",
+			external: true,
+		});
+		const cards = ws.addBoundedContext("Cards", { description: "" });
+		cards
+			.addAggregate("Authorisation", { description: "" })
+			.addRootEntity("Authorisation", { description: "" })
+			.addAttribute("scheme Ref", { type: "string", identifies: scheme });
+		const edges = Array.from(ODSContextMap.fromWorkspace(ws).edges.values());
+		expect(edges).toHaveLength(1);
+		expect(edges[0].source.id).toBe(scheme.ref);
+		expect(edges[0].target.id).toBe(cards.ref);
+		expect(edges[0].implied).toBe("identity");
+		expect(edges[0].source.external).toBe(true);
+	});
+
 	it("leaves the consumption edge in place when an identity runs the same way", () => {
 		// The identity travels on the traffic the consumption edge stands for, so
 		// that edge — which also carries the roles — is the one to keep.
@@ -302,6 +327,38 @@ describe("ODSRelationMap", () => {
 			householdAgg.ref,
 		);
 		expect(map.nodes.get(household.ref)?.type).toBe("entity_root");
+	});
+
+	it("draws an identity of an external context onto that context's own box", () => {
+		const ws = new Workspace("External identity", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "1.0.0",
+		});
+		const cards = ws.addBoundedContext("Cards", { description: "" });
+		const scheme = ws.addBoundedContext("CardCo", {
+			description: "",
+			external: true,
+		});
+		const authAgg = cards.addAggregate("Authorisation", { description: "" });
+		const auth = authAgg.addRootEntity("Authorisation", { description: "" });
+		auth.addAttribute("id", { type: "string", identity: true });
+		auth.addAttribute("schemeRef", { type: "string", identifies: scheme });
+
+		const map = ODSRelationMap.fromWorkspace(ws);
+		const edge = Array.from(map.edges.values()).find(
+			(e) => e.relation === "identifies",
+		);
+		expect(edge?.source.name).toBe("Authorisation");
+		expect(edge?.target.name).toBe("CardCo");
+		expect(edge?.label).toBe("schemeRef");
+		const node = map.nodes.get(scheme.ref);
+		// The box carries the external stereotype and no attribute compartment:
+		// what is inside that system is not ours to state.
+		expect(node?.type).toBe("external_context");
+		expect(node?.attributes).toEqual([]);
+		// And it stands in a cluster of its own, outside every aggregate.
+		expect(node?.namespace[node.namespace.length - 1]?.id).toBe(scheme.ref);
 	});
 
 	it("draws a kind as a generalisation pointing at what it is a kind of", () => {

@@ -1259,7 +1259,16 @@ paymentIntent.addAttribute("amount", {
 	type: "Money",
 	valueobject: paymentMoney,
 });
-authorisation.addAttribute("providerRef", { type: "string", identity: true });
+// The acquirer's own reference for the hold: it identifies the Authorisation
+// here and it is the provider's id out there. The provider has no entities of
+// RiverMart's to name -- what happens inside the acquirer is not RiverMart's
+// to state -- so the attribute names the system the id belongs to
+// (decision 28, card 81).
+authorisation.addAttribute("providerRef", {
+	type: "string",
+	identity: true,
+	identifies: paymentProviderBC,
+});
 authorisation.addAttribute("expiresAt", { type: "date-time" });
 capture.addAttribute("captureId", { type: "string", identity: true });
 capture.addAttribute("amount", { type: "Money", valueobject: paymentMoney });

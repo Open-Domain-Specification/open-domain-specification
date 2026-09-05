@@ -1,8 +1,8 @@
-import type {
-	Attribute,
-	AttributeOwner,
+import {
+	type Attribute,
+	type AttributeOwner,
 	BoundedContext,
-	Entity,
+	type Entity,
 } from "./workspace";
 
 /** Everything one context declares that carries attributes. */
@@ -16,22 +16,33 @@ export function* attributeOwnersIn(
 }
 
 /**
- * An identity attribute in one context naming an entity of another. Decision 14
- * made this the only way a model records a dependency on another context's
- * model, so it is a crossing in its own right: it wants a declared
- * relationship (`relationship-declared`) and it draws on the context map even
- * when nothing is consumed.
+ * An identity attribute in one context naming an entity of another, or an
+ * external context itself. Decision 14 made this the only way a model records
+ * a dependency on another context's model, so it is a crossing in its own
+ * right: it wants a declared relationship (`relationship-declared`) and it
+ * draws on the context map even when nothing is consumed.
  */
 export type IdentityCrossing = {
-	/** The identity attribute that names the other context's entity. */
+	/** The identity attribute that names the other context. */
 	attribute: Attribute;
-	/** The entity it identifies. */
-	entity: Entity;
+	/**
+	 * What it identifies: the other context's entity, or that context itself
+	 * when the id belongs to a system whose entities are not ours to state
+	 * (decision 28).
+	 */
+	target: Entity | BoundedContext;
 	/** The context holding the identity, and so depending on the other. */
 	from: BoundedContext;
-	/** The context that owns the entity identified. */
+	/** The context the identity reaches: the one that owns what it names. */
 	to: BoundedContext;
 };
+
+/** The context an identity attribute's target belongs to. */
+export function contextIdentified(
+	target: Entity | BoundedContext,
+): BoundedContext {
+	return target instanceof BoundedContext ? target : target.boundedcontext;
+}
 
 /**
  * Every identity that reaches out of its own context, among the contexts
@@ -45,10 +56,11 @@ export function* identityCrossings(
 	for (const from of contexts) {
 		for (const owner of attributeOwnersIn(from)) {
 			for (const attribute of owner.attributes.values()) {
-				const entity = attribute.identifies;
-				const to = entity?.boundedcontext;
-				if (!entity || !to || to === from || !inScope.has(to)) continue;
-				yield { attribute, entity, from, to };
+				const target = attribute.identifies;
+				if (!target) continue;
+				const to = contextIdentified(target);
+				if (to === from || !inScope.has(to)) continue;
+				yield { attribute, target, from, to };
 			}
 		}
 	}

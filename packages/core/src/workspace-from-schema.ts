@@ -16,14 +16,12 @@ import {
 	valueObjectRef,
 	type WorkspaceSchema,
 } from "./schema";
-import type {
-	Aggregate,
-	AttributeOwner,
+import type { Aggregate, AttributeOwner, Service, Workspace } from "./workspace";
+import {
 	BoundedContext,
-	Service,
-	Workspace,
+	Entity,
+	Workspace as WorkspaceModel,
 } from "./workspace";
-import { Workspace as WorkspaceModel } from "./workspace";
 
 const debug = getDebug("get-workspace-from-schema");
 
@@ -95,9 +93,27 @@ function addConsumes(
 }
 
 /**
- * Attributes may point at a value object, at another schema, or at the root
- * entity whose identity they hold, so they are added in the second pass, once
- * everything they can name exists.
+ * What an identity attribute names: an entity anywhere in the workspace, or a
+ * bounded context, for an id that belongs to a system whose entities are not
+ * modelled (decision 28). Whether that context is really external is
+ * `identifies-entity`'s to say; the loader only resolves what the ref points
+ * at, so a model that names the wrong kind of context loads and is reported
+ * rather than throwing.
+ */
+function identifiedBy(
+	workspace: Workspace,
+	ref: string,
+): Entity | BoundedContext {
+	const target = workspace.getByRef(ref);
+	if (target instanceof Entity || target instanceof BoundedContext)
+		return target;
+	throw new Error(`Entity or Bounded Context with ref ${ref} not found`);
+}
+
+/**
+ * Attributes may point at a value object, at another schema, or at the entity
+ * or external context whose identity they hold, so they are added in the
+ * second pass, once everything they can name exists.
  */
 function addAttributes(
 	owner: AttributeOwner,
@@ -116,7 +132,7 @@ function addAttributes(
 				workspace.getSchemaByRefOrThrow(attributeSchema.schema.$ref),
 			identifies:
 				attributeSchema.identifies &&
-				workspace.getEntityByRefOrThrow(attributeSchema.identifies.$ref),
+				identifiedBy(workspace, attributeSchema.identifies.$ref),
 		});
 	}
 }

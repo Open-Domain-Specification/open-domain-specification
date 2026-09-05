@@ -43,9 +43,15 @@ export const IDENTITY_EDGE_LABEL = "«id»";
  */
 export const EXTERNAL_STEREOTYPE = "«external system»";
 
-/** UML stereotype above a relation-map class name. */
+/**
+ * UML stereotype above a relation-map class name. A system nobody here owns
+ * carries the same words on the relation map as on the context map: it is on
+ * this map at all only because an identity attribute names it, and the box
+ * has to say it is not one of ours (decision 28).
+ */
 export const STEREOTYPES: Record<ODSRelationMapNode["type"], string> = {
 	entity_root: "root entity",
 	entity: "entity",
 	valueobject: "value object",
+	external_context: "external system",
 };

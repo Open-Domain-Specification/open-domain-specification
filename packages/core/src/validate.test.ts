@@ -217,10 +217,62 @@ describe("Workspace.validate", () => {
 				severity: "error",
 				rule: "identifies-entity",
 				message:
-					'"Order" holds attribute "petId" as the identity of "Pet", which is not an entity of this workspace; an identity names an entity here, root or child, and a child is reached through its root',
+					'"Order" holds attribute "petId" as the identity of "Pet", which is not an entity of this workspace; an identity names an entity here, root or child, and a child is reached through its root, or an external context when the id belongs to a system whose entities are not ours to state',
 				ref: petId.ref,
 			},
 		]);
+	});
+
+	it("lets an identity name an external context, whose entities are not ours", () => {
+		const ws = emptyWorkspace();
+		const payments = ws.addBoundedContext("Payments", { description: "" });
+		const provider = ws.addBoundedContext("Payment Provider", {
+			description: "",
+			external: true,
+		});
+		const authorisation = payments
+			.addAggregate("Payment", { description: "" })
+			.addRootEntity("Payment", { description: "" });
+		authorisation.addAttribute("id", { type: "string", identity: true });
+		authorisation.addAttribute("providerRef", {
+			type: "string",
+			identifies: provider,
+		});
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "identifies-entity")
+				.map((d) => d.message),
+		).toEqual([]);
+	});
+
+	it("refuses an identity naming a context whose insides the model states", () => {
+		const ws = emptyWorkspace();
+		const sales = ws.addBoundedContext("Sales", { description: "" });
+		const catalog = ws.addBoundedContext("Catalog", { description: "" });
+		catalog
+			.addAggregate("Pet", { description: "" })
+			.addRootEntity("Pet", { description: "" })
+			.addAttribute("id", { type: "string", identity: true });
+		const order = sales
+			.addAggregate("Order", { description: "" })
+			.addRootEntity("Order", { description: "" });
+		order.addAttribute("id", { type: "string", identity: true });
+		const petId = order.addAttribute("petId", {
+			type: "string",
+			identifies: catalog,
+		});
+		expect(ws.validate().filter((d) => d.rule === "identifies-entity")).toEqual(
+			[
+				{
+					severity: "error",
+					rule: "identifies-entity",
+					message:
+						'"Order" holds attribute "petId" as the identity of bounded context "Catalog", which is not external; a context whose insides the model states has the entity the id is of, so name that entity instead',
+					ref: petId.ref,
+				},
+			],
+		);
 	});
 
 	it("warns when cross-context consumptions lack roles", () => {
@@ -460,6 +512,145 @@ describe("Workspace.validate", () => {
 				borrowed.ref,
 			],
 		]);
+	});
+
+	it("lets a conformist carry its upstream's schema, downstream only", () => {
+		const ws = emptyWorkspace();
+		const scheme = ws.addBoundedContext("Scheme", {
+			description: "",
+			external: true,
+		});
+		const cards = ws.addBoundedContext("Cards", { description: "" });
+		scheme.upstreamOf(cards, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		const layout = scheme.addSchema("Auth Record");
+		// Cards conforms, so it may carry the scheme's record layout as it is.
+		cards
+			.addService("Cards App", { description: "", type: "application" })
+			.provides("Answer", {
+				description: "",
+				type: "operation",
+				schema: layout,
+			});
+		// Nothing runs the other way: the upstream is never shaped by its
+		// conformists, so the scheme carrying Cards' shape is still an error.
+		const ours = cards.addSchema("Ours");
+		scheme
+			.addService("Scheme API", { description: "", type: "application" })
+			.provides("Ask", {
+				description: "",
+				type: "operation",
+				schema: ours,
+			});
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "schema-context")
+				.map((d) => d.message),
+		).toEqual([
+			'"Ask" carries schema "Ours" from "Cards"; a payload belongs to the context that publishes it',
+		]);
+	});
+
+	it("lets a conformist's value object be a kind of its upstream's", () => {
+		const ws = emptyWorkspace();
+		const regulator = ws.addBoundedContext("Regulator", {
+			description: "",
+			external: true,
+		});
+		const reporting = ws.addBoundedContext("Reporting", { description: "" });
+		regulator.upstreamOf(reporting, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		const filing = regulator.addValueObject("Filing", { description: "" });
+		reporting.addValueObject("Quarterly Filing", {
+			description: "",
+			specialises: filing,
+		});
+		expect(
+			ws.validate().filter((d) => d.rule === "specialisation-in-boundary"),
+		).toEqual([]);
+	});
+
+	it("asks a declared conformist to borrow or call something", () => {
+		const ws = emptyWorkspace();
+		const scheme = ws.addBoundedContext("Scheme", {
+			description: "",
+			external: true,
+		});
+		const cards = ws.addBoundedContext("Cards", { description: "" });
+		const relationship = scheme.upstreamOf(cards, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "conformist-backed")
+				.map((d) => [d.severity, d.message, d.ref]),
+		).toEqual([
+			[
+				"warning",
+				'"Cards" declares itself a conformist of "Scheme", but it names none of "Scheme"\'s schemas or value objects, consumes nothing it publishes and calls none of its operations, so there is nothing here to conform to',
+				relationship.ref,
+			],
+		]);
+	});
+
+	it("takes a subscription to what the upstream publishes as backing the role", () => {
+		// The ordinary event-driven conformist: it subscribes to the upstream's
+		// fact and reads the shape as published. Whether it translates on the way
+		// in is not in the model, so the rule asks no more than this.
+		const ws = emptyWorkspace();
+		const sales = ws.addBoundedContext("Sales", { description: "" });
+		const inventory = ws.addBoundedContext("Inventory", { description: "" });
+		sales.upstreamOf(inventory, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		const placed = sales
+			.addAggregate("Order", { description: "" })
+			.provides("Order Placed", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+				schema: sales.addSchema("Order Summary"),
+			});
+		inventory
+			.addService("Projection", { description: "", type: "application" })
+			.consumes(placed, { pattern: "conformist" });
+		expect(ws.validate().filter((d) => d.rule === "conformist-backed")).toEqual(
+			[],
+		);
+	});
+
+	it("takes a call on the upstream's operation as backing the conformist role", () => {
+		const ws = emptyWorkspace();
+		const scheme = ws.addBoundedContext("Scheme", {
+			description: "",
+			external: true,
+		});
+		const cards = ws.addBoundedContext("Cards", { description: "" });
+		scheme.upstreamOf(cards, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["conformist"],
+		});
+		const authorise = scheme
+			.addService("Scheme API", { description: "", type: "application" })
+			.provides("Authorise", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			});
+		cards
+			.addService("Cards App", { description: "", type: "application" })
+			.consumes(authorise, { pattern: "conformist" });
+		expect(ws.validate().filter((d) => d.rule === "conformist-backed")).toEqual(
+			[],
+		);
 	});
 
 	it("rejects returns on an event, and allows it on an operation", () => {
@@ -1853,24 +2044,115 @@ describe("process rules", () => {
 			expect(ruleOf(ws, "reaction-cycle")).toEqual([]);
 		});
 
-		it("still finds the ring when the process waits on what it caused", () => {
-			const { ws, bc, begun, finish, finished } = lifecycle();
-			// `on` is a reaction, not an ending: a process that reacts to the fact
-			// its own operation raises does trigger itself, and nothing says what
-			// stops it.
-			const process = bc
-				.addProcess("Run", { description: "" })
-				.starts(begun)
-				.on(finished)
-				.issues(finish)
-				.ends(finished);
+		it("reads a process fed by its own steps as one lifecycle", () => {
+			// The ordinary multi-step process: it starts on a fact, issues an
+			// operation, waits for the fact that operation raises, issues the
+			// next, and ends. The chain walks that as a ring back into the same
+			// process, and it is not one (decision 23).
+			const ws = emptyWorkspace();
+			const bc = ws.addBoundedContext("Fulfilment", { description: "" });
+			const app = bc.addService("App", {
+				description: "",
+				type: "application",
+			});
+			const orderPlaced = app.provides("OrderPlaced", {
+				description: "",
+				type: "event",
+			});
+			const paymentAuthorized = app.provides("PaymentAuthorized", {
+				description: "",
+				type: "event",
+			});
+			const inventoryReserved = app.provides("InventoryReserved", {
+				description: "",
+				type: "event",
+			});
+			const orderDispatched = app.provides("OrderDispatched", {
+				description: "",
+				type: "event",
+			});
+			const authorize = app
+				.provides("AuthorizePayment", { description: "", type: "operation" })
+				.raises(paymentAuthorized);
+			const reserve = app
+				.provides("ReserveInventory", { description: "", type: "operation" })
+				.raises(inventoryReserved);
+			const dispatch = app
+				.provides("DispatchOrder", { description: "", type: "operation" })
+				.raises(orderDispatched);
+			bc.addProcess("Order Fulfilment", { description: "" })
+				.starts(orderPlaced)
+				.on(paymentAuthorized, inventoryReserved)
+				.issues(authorize, reserve, dispatch)
+				.ends(orderDispatched);
+			expect(ruleOf(ws, "reaction-cycle")).toEqual([]);
+		});
+
+		it("still finds a ring that runs through two processes", () => {
+			const ws = emptyWorkspace();
+			const bc = ws.addBoundedContext("BC", { description: "" });
+			const app = bc.addService("App", {
+				description: "",
+				type: "application",
+			});
+			const there = app.provides("There", { description: "", type: "event" });
+			const back = app.provides("Back", { description: "", type: "event" });
+			const go = app
+				.provides("Go", { description: "", type: "operation" })
+				.raises(there);
+			const returnOp = app
+				.provides("Return", { description: "", type: "operation" })
+				.raises(back);
+			bc.addProcess("Out", { description: "" })
+				.starts(back)
+				.issues(go)
+				.ends(there);
+			const home = bc
+				.addProcess("Home", { description: "" })
+				.starts(there)
+				.issues(returnOp)
+				.ends(back);
 			expect(ruleOf(ws, "reaction-cycle")).toEqual([
 				[
 					"warning",
-					'Reactions run in a cycle: "Run" -> "Finish" -> "Finished" -> "Run"; the chain triggers itself and nothing in the model says what ends it',
-					process.ref,
+					'Reactions run in a cycle: "Home" -> "Return" -> "Back" -> "Out" -> "Go" -> "There" -> "Home"; the chain triggers itself and nothing in the model says what ends it',
+					home.ref,
 				],
 			]);
+			expect(go.name).toBe("Go");
+		});
+
+		it("still finds a ring that runs through a process and a policy", () => {
+			const ws = emptyWorkspace();
+			const bc = ws.addBoundedContext("BC", { description: "" });
+			const app = bc.addService("App", {
+				description: "",
+				type: "application",
+			});
+			const there = app.provides("There", { description: "", type: "event" });
+			const back = app.provides("Back", { description: "", type: "event" });
+			const go = app
+				.provides("Go", { description: "", type: "operation" })
+				.raises(there);
+			const returnOp = app
+				.provides("Return", { description: "", type: "operation" })
+				.raises(back);
+			bc.addProcess("Out", { description: "" })
+				.starts(back)
+				.issues(go)
+				.ends(there);
+			const comesHome = bc
+				.addPolicy("Comes Home", { description: "" })
+				.on(there)
+				.issues(returnOp);
+			expect(ruleOf(ws, "reaction-cycle")).toEqual([
+				[
+					"warning",
+					'Reactions run in a cycle: "Comes Home" -> "Return" -> "Back" -> "Out" -> "Go" -> "There" -> "Comes Home"; the chain triggers itself and nothing in the model says what ends it',
+					comesHome.ref,
+				],
+			]);
+			expect(go.name).toBe("Go");
 		});
 	});
 });

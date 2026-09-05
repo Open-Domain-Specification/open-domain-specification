@@ -5,13 +5,13 @@ import {
 	type StrategicIntent,
 } from "./evidence";
 import { attributeOwnersIn, identityCrossings } from "./identity-crossings";
-import { ReactionChain } from "./reaction-walk";
+import { ReactionChain, type Reactor } from "./reaction-walk";
 import type { UpstreamRole } from "./schema";
 import {
 	Aggregate,
 	Attribute,
 	type AttributeOwner,
-	type BoundedContext,
+	BoundedContext,
 	type Constrainable,
 	Consumable,
 	Consumption,
@@ -22,7 +22,7 @@ import {
 	type EntityRelation,
 	type Invariant,
 	isDirectedRelationshipType,
-	type Policy,
+	Policy,
 	Process,
 	type Service,
 	ValueObject,
@@ -216,25 +216,46 @@ const crossContextRelation: Rule = (workspace) => {
 
 /**
  * An attribute that holds an identity names an entity of this workspace, root
- * or child. A child id is what real systems hold: a playback session knows
- * which profile inside a household it plays for, a claim which coverage of a
- * policy it is against, and each of those children stays inside its aggregate
- * precisely because its parent's invariants need it there. Only the id still
- * crosses — the holder reaches the child through its root, so the dependency
- * is on the aggregate that root leads (decision 14). What the rule refuses is
- * an identity naming an entity this workspace does not have: one built
- * against another workspace, or dropped since, where the id reaches nothing.
+ * or child, or an external context. A child id is what real systems hold: a
+ * playback session knows which profile inside a household it plays for, a
+ * claim which coverage of a policy it is against, and each of those children
+ * stays inside its aggregate precisely because its parent's invariants need it
+ * there. Only the id still crosses — the holder reaches the child through its
+ * root, so the dependency is on the aggregate that root leads (decision 14).
+ *
+ * An external context has no entities of ours to name (decision 28), and a
+ * card scheme's authorisation id or a payment provider's customer id is still
+ * an id of something: the attribute names the system it belongs to, and the
+ * maps draw the dependency on that context. A context that is not external is
+ * refused, because there the entity does exist and is what the id is of —
+ * naming the whole context instead would say less than the model already
+ * holds.
+ *
+ * What the rule otherwise refuses is an identity naming an entity this
+ * workspace does not have: one built against another workspace, or dropped
+ * since, where the id reaches nothing.
  */
 const identifiesEntity: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const { owner } of attributeOwnersOf(workspace)) {
 		for (const attribute of owner.attributes.values()) {
 			const target = attribute.identifies;
-			if (!target || workspace.getEntityByRef(target.ref) === target) continue;
+			if (!target) continue;
+			if (target instanceof BoundedContext) {
+				if (target.external) continue;
+				diagnostics.push({
+					severity: "error",
+					rule: "identifies-entity",
+					message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of bounded context "${target.name}", which is not external; a context whose insides the model states has the entity the id is of, so name that entity instead`,
+					ref: attribute.ref,
+				});
+				continue;
+			}
+			if (workspace.getEntityByRef(target.ref) === target) continue;
 			diagnostics.push({
 				severity: "error",
 				rule: "identifies-entity",
-				message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of "${target.name}", which is not an entity of this workspace; an identity names an entity here, root or child, and a child is reached through its root`,
+				message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of "${target.name}", which is not an entity of this workspace; an identity names an entity here, root or child, and a child is reached through its root, or an external context when the id belongs to a system whose entities are not ours to state`,
 				ref: attribute.ref,
 			});
 		}
@@ -365,9 +386,12 @@ function* subtypesOf(workspace: Workspace): Iterable<Entity | ValueObject> {
  * is the same thing said more precisely: it is loaded, saved and kept
  * consistent through the one root, and a parent in another aggregate would
  * make one boundary's invariants depend on another's. A value object is a
- * kind of one its own context declares, or of one it borrows over a shared
- * kernel — the one relationship that says two contexts keep part of one model
- * between them (decision 16), and so the one place a kind may reach across.
+ * kind of one its own context declares, or of one it borrows: over a shared
+ * kernel, the relationship that says two contexts keep part of one model
+ * between them (decision 16), or down a relationship it has declared itself a
+ * conformist on, where it takes the upstream's model as it stands rather than
+ * translating it (decision 03). Those are the two places a kind may reach
+ * across, and the conformist one reaches in one direction only.
  */
 const specialisationInBoundary: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -386,12 +410,11 @@ const specialisationInBoundary: Rule = (workspace) => {
 		}
 		const context = member.boundedcontext;
 		const owner = parent.boundedcontext;
-		if (owner === context || sharesKernelWith(workspace, context, owner))
-			continue;
+		if (owner === context || mayBorrowFrom(workspace, context, owner)) continue;
 		diagnostics.push({
 			severity: "error",
 			rule: "specialisation-in-boundary",
-			message: `"${member.name}" in "${context.name}" is a kind of "${parent.name}" in "${owner.name}", which "${context.name}" shares no kernel with; a value object is a kind of one its own context declares, or of one it borrows through a shared kernel`,
+			message: `"${member.name}" in "${context.name}" is a kind of "${parent.name}" in "${owner.name}", which "${context.name}" neither shares a kernel with nor conforms to; a value object is a kind of one its own context declares, or of one it borrows through a shared kernel or as a conformist of the context that owns it`,
 			ref: member.ref,
 		});
 	}
@@ -911,6 +934,48 @@ function sharesKernelWith(
 	);
 }
 
+/**
+ * Whether `downstream` has declared itself a conformist of `upstream`: a
+ * directed relationship from the one to the other whose `downstreamRoles`
+ * carry `conformist` (decision 03).
+ *
+ * The direction is the whole of it. A conformist adopts the upstream's model
+ * as it stands rather than translating it, so the borrowing runs downstream
+ * from upstream and never the other way: the upstream owes the conformist
+ * nothing and must not be shaped by it.
+ */
+function conformsTo(
+	workspace: Workspace,
+	downstream: BoundedContext,
+	upstream: BoundedContext,
+): boolean {
+	return workspace.relationships.some(
+		(r) =>
+			isDirectedRelationshipType(r.type) &&
+			r.source === upstream &&
+			r.target === downstream &&
+			r.downstreamRoles.includes("conformist"),
+	);
+}
+
+/**
+ * Whether `borrower` may name a schema or a value object that `owner`
+ * declares. Two contexts keeping part of one model between them is a shared
+ * kernel, which is symmetric; a downstream that has said it conforms is the
+ * other case, and it is one-way (decisions 16 and 03). Everything else stays
+ * sealed.
+ */
+function mayBorrowFrom(
+	workspace: Workspace,
+	borrower: BoundedContext,
+	owner: BoundedContext,
+): boolean {
+	return (
+		sharesKernelWith(workspace, borrower, owner) ||
+		conformsTo(workspace, borrower, owner)
+	);
+}
+
 /** Whether the two contexts meet as equals, as partners or over a shared kernel. */
 function symmetricallyRelated(
 	workspace: Workspace,
@@ -998,10 +1063,17 @@ const relationshipDeclared: Rule = (workspace) => {
 	for (const crossing of identityCrossings([
 		...workspace.boundedcontexts.values(),
 	])) {
+		// An identity naming an external context names no entity, because that
+		// system's entities are not ours to state (decision 28); the crossing is
+		// the same one either way, so only the phrase changes.
+		const what =
+			crossing.target instanceof BoundedContext
+				? `an id belonging to "${crossing.to.name}"`
+				: `the identity of "${crossing.target.name}" in "${crossing.to.name}"`;
 		note(
 			crossing.to,
 			crossing.from,
-			`"${crossing.from.name}" holds "${crossing.attribute.name}", the identity of "${crossing.entity.name}" in "${crossing.to.name}", but no relationship says how "${crossing.to.name}" and "${crossing.from.name}" stand to each other`,
+			`"${crossing.from.name}" holds "${crossing.attribute.name}", ${what}, but no relationship says how "${crossing.to.name}" and "${crossing.from.name}" stand to each other`,
 			crossing.attribute.ref,
 		);
 	}
@@ -1261,6 +1333,67 @@ const sharedKernelBacked: Rule = (workspace) => {
 			severity: "warning",
 			rule: "shared-kernel-backed",
 			message: `"${source.name}" and "${target.name}" declare a shared kernel, but neither types an attribute by a value object the other declares or carries one of its schemas, so nothing is in the kernel`,
+			ref: relationship.ref,
+		});
+	}
+	return diagnostics;
+};
+
+/**
+ * Whether `downstream` takes any of `upstream`'s shapes as they stand.
+ *
+ * Three things count, and they are the three ways the model can record it.
+ * The downstream names one of the upstream's schemas or value objects on
+ * something of its own, which is `borrowsFrom` and is the borrowing the
+ * conformist role now warrants. It consumes something the upstream publishes
+ * that carries one of the upstream's schemas, which is taking a published
+ * language as published — the ordinary shape of an event-driven conformist,
+ * and the one the reference models are full of. Or it calls one of the
+ * upstream's operations, which is conforming to an interface that may carry
+ * no schema at all.
+ */
+function conformsInSubstance(
+	workspace: Workspace,
+	downstream: BoundedContext,
+	upstream: BoundedContext,
+): boolean {
+	if (borrowsFrom(downstream, upstream)) return true;
+	if (callCrosses(workspace, upstream, downstream)) return true;
+	return crossingsBetween(workspace, upstream, downstream).some(
+		(c) => c.consumable.schema?.boundedcontext === upstream,
+	);
+}
+
+/**
+ * A declared conformist actually takes something from its upstream.
+ *
+ * Conformist is the strongest thing a downstream can say about itself: it
+ * gives up its own language for somebody else's and accepts every change the
+ * upstream makes. It is also what lets this context name the upstream's
+ * schemas and value objects at all, so a reader takes the role as the warrant
+ * for exactly the borrowing `schema-context` and `specialisation-in-boundary`
+ * allow over it. Declared between two contexts that exchange nothing, it is a
+ * claim on the map with nothing under it, in the way `partnership-backed` and
+ * `shared-kernel-backed` mean.
+ *
+ * What the rule does not ask is that the conforming be visible in the shapes.
+ * Whether a downstream that subscribes to a published event translates it or
+ * takes it as it comes is not in the model and was never meant to be
+ * (decision 15), so demanding a borrowed schema here would report every
+ * event-driven conformist there is.
+ */
+const conformistBacked: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const relationship of workspace.relationships) {
+		if (!isDirectedRelationshipType(relationship.type)) continue;
+		if (!relationship.downstreamRoles.includes("conformist")) continue;
+		const upstream = relationship.source;
+		const downstream = relationship.target;
+		if (conformsInSubstance(workspace, downstream, upstream)) continue;
+		diagnostics.push({
+			severity: "warning",
+			rule: "conformist-backed",
+			message: `"${downstream.name}" declares itself a conformist of "${upstream.name}", but it names none of "${upstream.name}"'s schemas or value objects, consumes nothing it publishes and calls none of its operations, so there is nothing here to conform to`,
 			ref: relationship.ref,
 		});
 	}
@@ -1675,17 +1808,22 @@ const domainServiceInternal: Rule = (workspace) =>
 
 /**
  * A payload shape is its own context's, wherever it is named: on a consumable
- * that sends, answers or refuses with it, and on an attribute that nests it (decision
- * 18). The exception is a context this one shares a kernel with: that
- * relationship is the declaration that the two keep part of one model between
- * them, and it is the only place a payload may be borrowed (decision 16).
+ * that sends, answers or refuses with it, and on an attribute that nests it
+ * (decision 18). There are two exceptions, and both are declarations the model
+ * already carries. One is a context this one shares a kernel with: that
+ * relationship says the two keep part of one model between them (decision 16).
+ * The other is an upstream this context has declared itself a conformist of:
+ * a conformist adopts the upstream's model as it stands, which is precisely
+ * what carrying its shapes is, and it is how a regulator's message formats or
+ * a scheme's record layouts enter a model without anybody pretending they are
+ * ours (decisions 03 and 28). The borrowing runs downstream only.
  */
 const schemaContext: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
-	/** Whether the schema is another context's and no kernel is shared with it. */
+	/** Whether the schema is another context's and nothing lets this one borrow it. */
 	const borrowedBy = (schema: DataSchema, bc: BoundedContext) =>
 		schema.boundedcontext !== bc &&
-		!sharesKernelWith(workspace, bc, schema.boundedcontext);
+		!mayBorrowFrom(workspace, bc, schema.boundedcontext);
 	for (const { owner, context } of attributeOwnersOf(workspace)) {
 		for (const attribute of owner.attributes.values()) {
 			if (!attribute.schema || !borrowedBy(attribute.schema, context)) continue;
@@ -1925,6 +2063,28 @@ const policyComplete: Rule = (workspace) => {
 };
 
 /**
+ * Whether a ring is one process's own lifecycle rather than a cycle.
+ *
+ * A process issues an operation, the operation raises the event the process
+ * waits for next, and so on to the end: that is the ordinary multi-step
+ * process, and the chain walks it as a ring back into the same process. It is
+ * not one. The process holds state — it remembers which of its events have
+ * arrived — so the second pass round is a different instance's, or a later
+ * step of the same one, and what ends it is the `ends` the process declares
+ * (decision 23). What makes it safe to say is that the walk came back to the
+ * process itself and to no other reactor: a ring through two processes, or
+ * through a process and a policy, is a genuine loop nobody on it can see the
+ * whole of, and is reported.
+ */
+function isProcessLifecycle(cycle: Reactor[]): boolean {
+	const reactors = cycle.filter(
+		(node): node is Policy | Process =>
+			node instanceof Process || node instanceof Policy,
+	);
+	return reactors.length === 1 && reactors[0] instanceof Process;
+}
+
+/**
  * The reactions form no cycle: no operation raises an event whose policy or
  * process issues an operation that leads, however far around, back to the
  * first.
@@ -1936,6 +2096,9 @@ const policyComplete: Rule = (workspace) => {
  * consumption's `by` out of a context and the ring may run through several
  * of them; when it does, the message names every context on it, because a
  * loop nobody owns end to end is the one worth spelling out.
+ *
+ * One shape is exempt: a process fed by its own steps, which is a lifecycle
+ * and not a ring (see {@link isProcessLifecycle}).
  */
 const reactionCycle: Rule = (workspace) => {
 	const chain = new ReactionChain(workspace.boundedcontexts.values());
@@ -1943,23 +2106,25 @@ const reactionCycle: Rule = (workspace) => {
 		chain.steps,
 		(node) => chain.after(node),
 		(node) => node.ref,
-	).map((cycle) => {
-		const contexts = [...new Set(cycle.map((n) => n.boundedcontext))];
-		const across =
-			contexts.length > 1
-				? `; it runs through ${contexts.map((c) => `"${c.name}"`).join(" and ")}, so no one context can see the whole ring`
-				: "";
-		return {
-			severity: "warning" as const,
-			rule: "reaction-cycle",
-			message: `Reactions run in a cycle: ${[...cycle, cycle[0]]
-				.map((n) => `"${n.name}"`)
-				.join(
-					" -> ",
-				)}; the chain triggers itself and nothing in the model says what ends it${across}`,
-			ref: cycle[0].ref,
-		};
-	});
+	)
+		.filter((cycle) => !isProcessLifecycle(cycle))
+		.map((cycle) => {
+			const contexts = [...new Set(cycle.map((n) => n.boundedcontext))];
+			const across =
+				contexts.length > 1
+					? `; it runs through ${contexts.map((c) => `"${c.name}"`).join(" and ")}, so no one context can see the whole ring`
+					: "";
+			return {
+				severity: "warning" as const,
+				rule: "reaction-cycle",
+				message: `Reactions run in a cycle: ${[...cycle, cycle[0]]
+					.map((n) => `"${n.name}"`)
+					.join(
+						" -> ",
+					)}; the chain triggers itself and nothing in the model says what ends it${across}`,
+				ref: cycle[0].ref,
+			};
+		});
 };
 
 /**
@@ -2109,9 +2274,9 @@ const RULES: CataloguedRule[] = [
 		rule: "identifies-entity",
 		severities: ["error"],
 		summary:
-			"An attribute's identifies names an entity of this workspace, root or child.",
-		why: "An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about, and it is the one dependency allowed to cross a bounded context (decision 14). That thing may be a child, because systems cross boundaries by child identity constantly — a playback session names a profile inside a household, a claim a coverage inside a policy — and the child stays inside its aggregate exactly because its parent's invariants need it there. You hold the child's id and reach it through its root, so the dependency is really on the aggregate that root leads. What the id may never name is something this workspace does not have, since then it reaches nothing.",
-		fix: "Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child — and check the entity has not been renamed or moved out from under the attribute.",
+			"An attribute's identifies names an entity of this workspace, root or child, or a bounded context marked external.",
+		why: "An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about, and it is the one dependency allowed to cross a bounded context (decision 14). That thing may be a child, because systems cross boundaries by child identity constantly — a playback session names a profile inside a household, a claim a coverage inside a policy — and the child stays inside its aggregate exactly because its parent's invariants need it there. You hold the child's id and reach it through its root, so the dependency is really on the aggregate that root leads. It may also be an external context: a card scheme's authorisation id or a payment provider's customer id belongs to a system whose entities are not ours to state (decision 28), so the attribute names the system and the maps still draw the dependency. A context that is not external is refused, because there the entity exists and naming the whole context would say less. What the id may never name is something this workspace does not have, since then it reaches nothing.",
+		fix: "Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child — or, for an id that belongs to a system you do not model inside, at that system's bounded context, marked external: true. Check the target has not been renamed or moved out from under the attribute.",
 		check: identifiesEntity,
 	},
 	{
@@ -2153,9 +2318,9 @@ const RULES: CataloguedRule[] = [
 		rule: "specialisation-in-boundary",
 		severities: ["error"],
 		summary:
-			"An entity is a kind of an entity of its own aggregate; a value object is a kind of one its own context declares or borrows through a shared kernel.",
-		why: "A kind is the same thing said more precisely, so it lives where the thing lives. An entity and the entity it is a kind of are loaded, saved and kept consistent through one root, and a parent in another aggregate would make one boundary's rules depend on another's. A value object is part of a context's ubiquitous language, and the one place that language is legitimately shared is a shared kernel, which is the declaration that two contexts keep part of one model between them.",
-		fix: "Move the parent into the same aggregate as the kind, or the kind into the parent's; for a value object, declare the parent in this context, or declare the shared kernel with the context that owns it if the two really do keep it in step.",
+			"An entity is a kind of an entity of its own aggregate; a value object is a kind of one its own context declares, or one it borrows through a shared kernel or as a conformist of the context that owns it.",
+		why: "A kind is the same thing said more precisely, so it lives where the thing lives. An entity and the entity it is a kind of are loaded, saved and kept consistent through one root, and a parent in another aggregate would make one boundary's rules depend on another's. A value object is part of a context's ubiquitous language, and that language is legitimately shared in two places: a shared kernel, the declaration that two contexts keep part of one model between them, and a conformist's relationship with its upstream, where the downstream has said it takes that model as it stands.",
+		fix: "Move the parent into the same aggregate as the kind, or the kind into the parent's; for a value object, declare the parent in this context, declare the shared kernel with the context that owns it if the two really do keep it in step, or declare this context a conformist of that one if it takes that model as it stands.",
 		check: specialisationInBoundary,
 	},
 	{
@@ -2287,9 +2452,18 @@ const RULES: CataloguedRule[] = [
 		severities: ["warning"],
 		summary:
 			"Two contexts declaring a shared kernel share at least one value object or schema across it.",
-		why: "A shared kernel is a piece of model two teams agree to keep in step, and it costs them the freedom to change it alone. Declaring one with nothing in it pays that price for nothing, and it stands in the model as the warrant for a sharing nobody has made: it is the one relationship over which a value object or a payload schema may be borrowed.",
+		why: "A shared kernel is a piece of model two teams agree to keep in step, and it costs them the freedom to change it alone. Declaring one with nothing in it pays that price for nothing, and it stands in the model as the warrant for a sharing nobody has made: it is one of the two declarations over which a value object or a payload schema may be borrowed, and the only symmetric one — a conformist borrows downstream from its upstream and nothing comes back.",
 		fix: "Type an attribute by a value object the other context declares, nest one of its schemas in an attribute, or carry one on a consumable; or replace the shared kernel with the relationship the two contexts really have.",
 		check: sharedKernelBacked,
+	},
+	{
+		rule: "conformist-backed",
+		severities: ["warning"],
+		summary:
+			"A downstream that declares the conformist role takes something of its upstream's: a schema or value object named here, something it publishes consumed here, or one of its operations called.",
+		why: "Conformist is the strongest thing a downstream can say about itself: it gives up its own language for the upstream's and accepts every change the upstream makes. It is also what lets this context name the upstream's schemas and value objects at all, so a reader takes it as the warrant for a borrowing. Declared between two contexts that exchange nothing at all, it is a claim on the map with nothing under it, exactly as an empty shared kernel or an unbacked partnership is. What the rule does not ask is that the conforming show in the shapes: whether a downstream subscribing to a published event translates it or takes it as it comes is not something the model records, so asking for a borrowed schema would report every event-driven conformist there is.",
+		fix: "Consume what the upstream publishes, call one of its operations, or name one of its schemas or value objects here; or drop the conformist role if the two contexts really exchange nothing.",
+		check: conformistBacked,
 	},
 	{
 		rule: "mud-needs-acl",
@@ -2410,9 +2584,9 @@ const RULES: CataloguedRule[] = [
 		rule: "schema-context",
 		severities: ["error"],
 		summary:
-			"A schema named by a consumable's payload, by its returns, by one of its rejections or by a nested attribute belongs to the naming element's own context, or to one it shares a kernel with.",
-		why: "The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A nested schema is the same borrowing one level down. A shared kernel is where two teams have said that in the model and accepted the price, so it is the one place the borrowing is allowed.",
-		fix: "Move or copy the schema into the publishing context and point the consumable or attribute at that one, or declare the shared kernel if the two contexts really do keep that shape between them.",
+			"A schema named by a consumable's payload, by its returns, by one of its rejections or by a nested attribute belongs to the naming element's own context, to one it shares a kernel with, or to an upstream it has declared itself a conformist of.",
+		why: "The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A nested schema is the same borrowing one level down. Two declarations say the tie is intended. A shared kernel is where two teams have said they keep part of one model between them and accepted the price. A conformist is a downstream that has said it takes the upstream's model as it stands rather than translating it, which is exactly what carrying the upstream's shapes is — it is how a regulator's formats or a scheme's record layouts enter a model honestly. That borrowing runs downstream only; the upstream is never shaped by its conformists.",
+		fix: "Move or copy the schema into the publishing context and point the consumable or attribute at that one; or declare the shared kernel if the two contexts really do keep that shape between them; or, if this context genuinely takes the other's model as it stands, declare the directed relationship with conformist among its downstreamRoles.",
 		check: schemaContext,
 	},
 	{
@@ -2472,7 +2646,7 @@ const RULES: CataloguedRule[] = [
 		severities: ["warning"],
 		summary:
 			"The reactions form no cycle: no operation raises an event whose policy or process issues an operation that leads back to the first.",
-		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with one difference that is the whole point of it: what ends an instance completes it rather than waking it again, so a process that ends on an event its own operations raise is the normal shape and no ring at all.",
+		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with one exemption that is the whole point of it: a process fed by its own steps — it issues an operation, the operation raises the event it waits for next, and so on to the end — is a lifecycle, not a ring, because the process holds state and declares what ends it (decision 23). So a cycle is reported only when the walk comes back to a reactor other than the one process it started from: a ring through two processes, or through a process and a policy, is a genuine loop and is reported.",
 		fix: "Break the ring, usually one of the policies is reacting to too broad an event or issues an operation it should not. If the loop is a real feedback loop that converges, say what ends it in the description of the policy that closes the ring; the model has no conditions on purpose (decision 15), so the ending condition is prose a reader finds where the loop closes, and the warning stands to send them there.",
 		check: reactionCycle,
 	},

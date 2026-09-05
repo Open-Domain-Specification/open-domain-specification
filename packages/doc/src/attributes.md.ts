@@ -11,7 +11,9 @@ import { pathToIndexMd } from "./lib/paths";
  * it: that identity is the whole of the dependency, often across a bounded
  * context, and a reader who cannot follow it is reading a bare id. The link
  * goes to the aggregate page, which is where a child entity is written up
- * alongside the root it is reached through.
+ * alongside the root it is reached through. An id belonging to a system the
+ * enterprise does not model inside names that system's context instead, and
+ * links to its page (decision 28).
  *
  * An attribute that is sometimes absent is marked `optional` after the type
  * (decision 24). Only the exception is written: everything unmarked is always
@@ -26,8 +28,18 @@ const attributeMd = (
 	const type = attribute.schema
 		? `[\`${attribute.type}\`](${pathToIndexMd(attribute.schema.boundedcontext.path, fromPath)}#schemas)`
 		: `\`${attribute.type}\``;
-	const identifies = attribute.identifies
-		? ` (identifies [${attribute.identifies.name}](${pathToIndexMd(attribute.identifies.aggregate.path, fromPath)}))`
+	const identified = attribute.identifies;
+	// An entity links to its aggregate's page, where a child is written up
+	// beside the root it is reached through; an external context links to its
+	// own. They are told apart by what only an entity has, rather than by
+	// `instanceof`, because the generator and the workspace it renders need not
+	// have loaded core through the same entry point.
+	const identifiesPath =
+		identified && "aggregate" in identified
+			? identified.aggregate.path
+			: identified?.path;
+	const identifies = identified
+		? ` (identifies [${identified.name}](${pathToIndexMd(identifiesPath ?? "", fromPath)}))`
 		: "";
 	const optional = attribute.optional ? " (optional)" : "";
 	// A kind has its parent's attributes as its own, so they are listed here

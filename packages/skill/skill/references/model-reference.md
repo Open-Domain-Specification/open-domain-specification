@@ -49,7 +49,7 @@ A named, typed property of an entity, value object or schema.
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `description` | string | no |  |
-| `identifies` | `{ "$ref": string }` | no | The entity this attribute holds the identity of, when it is an identity of something else: `Order.petId` identifies Catalog's `Pet`. The target may be in another bounded context — that is the point, since an identity is the only thing that crosses a boundary (decision 14) — and it may be a child rather than a root, since a session holds the id of a profile inside a household; the child is reached through its own root. |
+| `identifies` | `{ "$ref": string }` | no | What this attribute holds the identity of, when it is an identity of something else: `Order.petId` identifies Catalog's `Pet`. The target may be in another bounded context — that is the point, since an identity is the only thing that crosses a boundary (decision 14) — and it may be a child rather than a root, since a session holds the id of a profile inside a household; the child is reached through its own root. It may also be a bounded context flagged `external`: a card scheme's authorisation id or a payment provider's customer id belongs to a system whose entities are not ours to state (decision 28), so the attribute names the system instead of an entity inside it. A context that is not external is refused, because there the entity exists and is what the id is of. |
 | `identity` | boolean | no | True when this attribute is (part of) the identity of an entity. |
 | `name` | string | yes |  |
 | `optional` | boolean | no | True when the attribute is sometimes absent. Left off means required, which is the common case and stays unwritten (decision 24). An identity attribute is never optional. |

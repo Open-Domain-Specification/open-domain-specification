@@ -565,45 +565,19 @@ const matchScoreVO = sanctionsBC.addValueObject("MatchScore", {
 });
 matchScoreVO.addAttribute("value", { type: "int 0..100" });
 screening.addAttribute("resultId", { type: "string", identity: true });
+// The engine's own reference for the match. The vendor has no entities here
+// to name -- what is inside a bought engine is not the bank's to state -- so
+// the attribute names the system the id belongs to (decision 28, card 81).
+screening.addAttribute("vendorMatchRef", {
+	type: "string",
+	identifies: screeningVendorBC,
+});
 screening.addAttribute("partyName", { type: "string" });
 screening.addAttribute("score", {
 	type: "MatchScore",
 	valueobject: matchScoreVO,
 });
 screening.uses(matchScoreVO, "scored", "1");
-
-const screenPartySchema = sanctionsBC.addSchema("ScreenParty");
-screenPartySchema.addAttribute("name", { type: "string" });
-screenPartySchema.addAttribute("dateOfBirth", { type: "date" });
-screenPartySchema.addAttribute("country", { type: "ISO 3166 code" });
-const partyMatchedSchema = sanctionsBC.addSchema("PartyMatched");
-partyMatchedSchema.addAttribute("resultId", { type: "string", identity: true });
-partyMatchedSchema.addAttribute("score", {
-	type: "MatchScore",
-	valueobject: matchScoreVO,
-});
-
-const partyMatched = screeningAgg.provides("PartyMatched", {
-	description: "The name matched a list; the caller stops",
-	type: "event",
-	pattern: "published-language",
-	schema: partyMatchedSchema,
-});
-// What a context offers outward leaves an application service; an
-// aggregate's operations are its own context's (decision 17).
-const screeningApp = sanctionsBC.addService("ScreeningApp", {
-	description:
-		"Sanctions Screening's application service: the boundary the bank screens names through",
-	type: "application",
-});
-const screenParty = screeningApp
-	.provides("ScreenParty", {
-		description: "Check a name, date of birth and country against the lists",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: screenPartySchema,
-	})
-	.raises(partyMatched);
 
 // DISCOVERY: Financial Crime lead. "The lists are bought; the screening
 // engine is bought; the API is documented" -- so the engine is a system the
@@ -624,6 +598,42 @@ const matchAgainstLists = vendorApi.provides("MatchAgainstLists", {
 	pattern: "open-host-service",
 	schema: listMatchSchema,
 });
+
+const partyMatchedSchema = sanctionsBC.addSchema("PartyMatched");
+partyMatchedSchema.addAttribute("resultId", { type: "string", identity: true });
+partyMatchedSchema.addAttribute("score", {
+	type: "MatchScore",
+	valueobject: matchScoreVO,
+});
+
+const partyMatched = screeningAgg.provides("PartyMatched", {
+	description: "The name matched a list; the caller stops",
+	type: "event",
+	pattern: "published-language",
+	schema: partyMatchedSchema,
+});
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const screeningApp = sanctionsBC.addService("ScreeningApp", {
+	description:
+		"Sanctions Screening's application service: the boundary the bank screens names through",
+	type: "application",
+});
+// Screening asks for a name in the vendor's own words: it is the vendor's
+// query format that goes in at the bank's boundary and straight out at the
+// vendor's, which is what "reshapes nothing" means. A conformist may carry
+// its upstream's schema, and that borrowing is the whole of the role
+// (decisions 03 and 16, card 81); the duplicate shape Screening used to
+// declare said the same thing twice and let the two drift apart.
+const screenParty = screeningApp
+	.provides("ScreenParty", {
+		description: "Check a name, date of birth and country against the lists",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: listMatchSchema,
+	})
+	.raises(partyMatched);
+
 screeningApp.consumes(matchAgainstLists, {
 	pattern: "conformist",
 	by: [screenParty],
@@ -1704,6 +1714,13 @@ card.addAttribute("status", { type: "CardStatus", valueobject: cardStatusVO });
 cardAuthorisation.addAttribute("authorisationId", {
 	type: "string",
 	identity: true,
+});
+// CardCo's own reference for the same authorisation, quoted back on every
+// message. CardCo is a system the bank does not model inside, so the id names
+// the processor rather than an entity of theirs (decision 28, card 81).
+cardAuthorisation.addAttribute("cardCoRef", {
+	type: "string",
+	identifies: cardCoBC,
 });
 cardAuthorisation.addAttribute("merchant", { type: "string" });
 cardAuthorisation.addAttribute("amount", {

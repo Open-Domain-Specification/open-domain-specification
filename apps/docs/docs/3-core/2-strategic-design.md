@@ -53,6 +53,13 @@ are `open-host-service` and `published-language`, downstream roles are
 `conformist` and `anti-corruption-layer`. The same roles appear on
 individual consumables and consumptions.
 
+A downstream that declares the `conformist` role says it takes the upstream's
+model as it stands, so it may name that upstream's schemas and value objects
+directly — the one borrowing that runs in a single direction, downstream from
+upstream. That is how an external system's formats enter a model without
+anybody pretending they are ours, and `conformist-backed` asks in return that
+the two contexts really exchange something.
+
 Two contexts sharing a library declare `shared-kernel` directly between
 them. When several contexts share one library, model the library as a
 bounded context of its own and give each sharer a `shared-kernel`
@@ -64,7 +71,9 @@ Where two contexts exchange consumables and no relationship is declared, the
 context map draws an **implied** upstream-downstream edge (dashed) with the
 roles collected from the consumables involved. An identity attribute naming
 another context's entity implies an edge in the same way, marked `«id»` and
-carrying no roles, since nothing is exchanged. Declaring a relationship
+carrying no roles, since nothing is exchanged; so does an identity naming an
+external context, which is how an id belonging to a system nobody here models
+inside still shows as a dependency. Declaring a relationship
 replaces the implied edge, and `relationship-declared` warns until one is.
 
 ```ts file=../../tests/strategic.example.test.ts
