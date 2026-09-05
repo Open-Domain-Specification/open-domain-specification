@@ -108,6 +108,7 @@
 				}
 			},
 			"policies": {},
+			"processes": {},
 			"glossary": {
 				"order": {
 					"name": "Order",

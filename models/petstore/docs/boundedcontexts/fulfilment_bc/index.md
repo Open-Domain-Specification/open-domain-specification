@@ -63,6 +63,9 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 | Deliver order on delivery | When a shipment is delivered, report it to Sales so the order moves to delivered | ShipmentDelivered | ReportDelivery |
 
 
+## Processes
+> No processes.
+
 ## Context Relationships
 ### Works alongside
 | With | Description | Type | Upstream Roles | Downstream Roles |

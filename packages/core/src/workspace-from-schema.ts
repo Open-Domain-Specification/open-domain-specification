@@ -8,6 +8,7 @@ import {
 	entityRef,
 	invariantRef,
 	policyRef,
+	processRef,
 	type ServiceSchema,
 	schemaRef,
 	serviceRef,
@@ -205,6 +206,22 @@ function addBoundedContext(
 			...policySchema,
 			id: policyId,
 		});
+	}
+
+	// The consumables a process joins may live in any context, so its four
+	// lists are dropped here and joined in the second pass (linkProcesses),
+	// exactly as a policy's are.
+	for (const [processId, processSchema] of Object.entries(
+		boundedcontextSchema.processes,
+	)) {
+		const {
+			starts: _starts,
+			on: _on,
+			then: _then,
+			ends: _ends,
+			...rest
+		} = processSchema;
+		boundedcontext.addProcess(processSchema.name, { ...rest, id: processId });
 	}
 
 	for (const [schemaId, schemaSchema] of Object.entries(
@@ -459,6 +476,27 @@ function linkPolicies(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 	}
 }
 
+/** Processes join consumables that may live in any context. */
+function linkProcesses(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
+	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
+		workspaceSchema.boundedcontexts,
+	)) {
+		for (const [processId, processSchema] of Object.entries(
+			boundedcontextSchema.processes,
+		)) {
+			const process = workspace.getProcessByRefOrThrow(
+				processRef(boundedcontextId, processId).$ref,
+			);
+			const consumables = (refs: { $ref: string }[]) =>
+				refs.map(({ $ref }) => workspace.getConsumableByRefOrThrow($ref));
+			process.starts(...consumables(processSchema.starts));
+			process.on(...consumables(processSchema.on));
+			process.then(...consumables(processSchema.then));
+			process.ends(...consumables(processSchema.ends));
+		}
+	}
+}
+
 function addRelationships(
 	workspace: Workspace,
 	workspaceSchema: WorkspaceSchema,
@@ -523,6 +561,7 @@ export function getWorkspaceFromSchema(
 	linkSpecialisations(workspace, workspaceSchema);
 	linkReferences(workspace, workspaceSchema);
 	linkPolicies(workspace, workspaceSchema);
+	linkProcesses(workspace, workspaceSchema);
 	linkGlossary(workspace, workspaceSchema);
 	addRelationships(workspace, workspaceSchema);
 

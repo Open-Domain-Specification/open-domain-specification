@@ -446,6 +446,7 @@
         }
       },
       "policies": {},
+      "processes": {},
       "glossary": {
         "pet": {
           "name": "Pet",
@@ -989,49 +990,35 @@
           ]
         }
       },
-      "policies": {
-        "approve_when_pet_available": {
-          "name": "Approve when pet available",
-          "description": "On OrderPlaced, or when the catalogue relists a pet (PetStatusChanged), look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest. It does not listen to PetReserved: that is the fact this very chain produces",
+      "policies": {},
+      "processes": {
+        "order_fulfilment": {
+          "name": "Order fulfilment",
+          "description": "From an order being placed to the pet being sold. It starts on OrderPlaced and waits, because the pet may not be available yet: a relisting (PetStatusChanged) makes it look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest. On approval it holds the pet (available → pending), and once the order is delivered it tells the catalogue the pet has gone to its owner (pending → sold). It does not listen to PetReserved: that is the fact this very chain produces. Correlation is by petId and then orderId; an order nobody can fulfil is cancelled by hand, which is why there is no timeout here",
+          "starts": [
+            {
+              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_placed"
+            }
+          ],
           "on": [
             {
               "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
-            },
-            {
-              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_placed"
             }
           ],
           "then": [
             {
               "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/approve_order"
-            }
-          ]
-        },
-        "reserve_pet_on_approval": {
-          "name": "Reserve pet on approval",
-          "description": "When an order is approved, hold its pet (available → pending) so nobody else can be approved for the same animal",
-          "on": [
-            {
-              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_approved"
-            }
-          ],
-          "then": [
+            },
             {
               "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/reserve_pet"
-            }
-          ]
-        },
-        "mark_pet_sold_on_delivery": {
-          "name": "Mark pet sold on delivery",
-          "description": "When an order is delivered, the pet is sold (pending → sold)",
-          "on": [
-            {
-              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_delivered"
-            }
-          ],
-          "then": [
+            },
             {
               "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/mark_pet_sold"
+            }
+          ],
+          "ends": [
+            {
+              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_delivered"
             }
           ]
         }
@@ -1339,6 +1326,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "availability": {
           "name": "Availability",
@@ -1651,6 +1639,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "shipment": {
           "name": "Shipment",
@@ -1840,6 +1829,7 @@
         }
       },
       "policies": {},
+      "processes": {},
       "glossary": {
         "user": {
           "name": "User",

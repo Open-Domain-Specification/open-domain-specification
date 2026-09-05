@@ -1,13 +1,23 @@
-import { type BoundedContext, type Consumable, Policy } from "./workspace";
+import {
+	type BoundedContext,
+	type Consumable,
+	Policy,
+	Process,
+} from "./workspace";
 
-/** A step in a reaction chain: an operation, an event, or a policy. */
-export type Reactor = Consumable | Policy;
+/** A step in a reaction chain: an operation, an event, a policy or a process. */
+export type Reactor = Consumable | Policy | Process;
 
 /**
  * The causal chain the model can follow, one step at a time.
  *
  * A policy issues its operations, an operation raises its events, and an
- * event wakes the policies listening for it. Those three steps stay inside a
+ * event wakes the policies listening for it. A process is walked the same
+ * way: what wakes it is what starts an instance and what it waits for while
+ * alive, and what it does is what it issues. What ends it takes no step —
+ * an ending fact completes the instance rather than waking it again, which
+ * is why a process that ends on an event its own operations raise is the
+ * normal shape and no ring at all (decision 23). Those steps stay inside a
  * context, and on their own the chain dead-ends the moment a context acts on
  * another: under decision 17 a policy issues an operation of its own context,
  * and that operation calls out through a consumption.
@@ -29,11 +39,16 @@ export type Reactor = Consumable | Policy;
  * them, so a chain a reader can see drawn is the same chain the rule walks.
  */
 export class ReactionChain {
-	/** Which policies each event wakes, for the contexts in scope. */
-	private readonly listeners = new Map<Consumable, Policy[]>();
+	/** Which policies and processes each event wakes, for the contexts in scope. */
+	private readonly listeners = new Map<Consumable, Array<Policy | Process>>();
 	/** Every policy in scope, in declaration order. */
 	readonly policies: Policy[] = [];
-	/** Every step in scope: the consumables the contexts provide, then their policies. */
+	/** Every process in scope, in declaration order. */
+	readonly processes: Process[] = [];
+	/**
+	 * Every step in scope: the consumables the contexts provide, then their
+	 * policies and processes.
+	 */
 	readonly steps: Reactor[] = [];
 
 	constructor(contexts: Iterable<BoundedContext>) {
@@ -46,18 +61,28 @@ export class ReactionChain {
 			for (const policy of bc.policies.values()) {
 				this.policies.push(policy);
 				this.steps.push(policy);
-				for (const event of policy.events) {
-					const existing = this.listeners.get(event);
-					if (existing) existing.push(policy);
-					else this.listeners.set(event, [policy]);
-				}
+				this.listen(policy, policy.events);
 			}
+			for (const process of bc.processes.values()) {
+				this.processes.push(process);
+				this.steps.push(process);
+				this.listen(process, [...process.startEvents, ...process.events]);
+			}
+		}
+	}
+
+	/** Records that `reactor` wakes on each of `events`. */
+	private listen(reactor: Policy | Process, events: Consumable[]) {
+		for (const event of events) {
+			const existing = this.listeners.get(event);
+			if (existing) existing.push(reactor);
+			else this.listeners.set(event, [reactor]);
 		}
 	}
 
 	/** What the chain does next from one step. */
 	after(node: Reactor): Reactor[] {
-		if (node instanceof Policy) return node.commands;
+		if (node instanceof Policy || node instanceof Process) return node.commands;
 		return [
 			...node.raisedEvents,
 			...this.consumedThrough(node),

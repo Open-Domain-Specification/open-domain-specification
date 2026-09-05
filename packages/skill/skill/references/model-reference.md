@@ -68,11 +68,12 @@ Represents a bounded context in the Open Domain Specification (ODS).
 | `aggregates` | map of id to [Aggregate](#aggregate) | yes |  |
 | `bigBallOfMud` | boolean | no | Marks a context whose model is not coherent (typically legacy) so that neighbours know to protect themselves from it. |
 | `description` | string | yes |  |
-| `external` | boolean | no | Marks a system the enterprise does not own and does not model inside: a card scheme, a payment provider, a licensor, a regulator, a clock. An external context provides and consumes consumables and takes part in relationships, and it needs no subdomain, no team and no internals — `external-is-boundary` refuses aggregates, policies and invariants on it, because what happens inside it is not ours to state (decision 28). |
+| `external` | boolean | no | Marks a system the enterprise does not own and does not model inside: a card scheme, a payment provider, a licensor, a regulator, a clock. An external context provides and consumes consumables and takes part in relationships, and it needs no subdomain, no team and no internals — `external-is-boundary` refuses aggregates, policies, processes and invariants on it, because what happens inside it is not ours to state (decision 28). |
 | `glossary` | map of id to [GlossaryTerm](#glossaryterm) | yes |  |
 | `invariants` | map of id to [Invariant](#invariant) | yes | The rules that hold across the instances or the aggregates of this context: uniqueness, quotas, limits, conservation. Each one names at least one operation of the context that guards it, because a rule no single instance can see is kept true only by whoever checks it before acting (decision 27). |
 | `name` | string | yes |  |
 | `policies` | map of id to [Policy](#policy) | yes |  |
+| `processes` | map of id to [Process](#process) | yes | The processes this context runs: the reactions that hold state across events, waiting for several of them before they act and knowing how they finish. A policy that finds itself waiting for a second event is one of these (decision 23). |
 | `schemas` | map of id to [DataSchema](#dataschema) | yes | Payload shapes this context publishes or accepts, referenced by its consumables. |
 | `services` | map of id to [Service](#service) | yes |  |
 | `subdomains` | array of `{ "$ref": string }` | yes | The subdomains this context serves; a context may serve several. |
@@ -249,6 +250,23 @@ A reaction: when these events happen, issue these commands.
 
 No other fields are allowed.
 
+## Process
+
+A long-running reaction that holds state across events: it remembers which of its events have arrived and acts when enough of them have. What it correlates on, how long it waits and what it undoes are prose in its description rather than fields, because the model says that a process exists and what it listens to and does; how it decides is the code's (decisions 15 and 23).
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `comments` | array of [Comment](#comment) | no | Grounded statements about the real system behind this process. |
+| `description` | string | yes |  |
+| `disposition` | "by-design" | "refactor" | "tolerated" | no | What the architecture thinks of this process. Absent means `by-design`. |
+| `ends` | array of `{ "$ref": string }` | yes | The event consumables that complete an instance. |
+| `name` | string | yes |  |
+| `on` | array of `{ "$ref": string }` | yes | Further event consumables the process waits for or reacts to while an instance is alive. Like a policy's `on`, one of these may belong to another context: subscribing to a published fact is how contexts integrate (decision 23). |
+| `starts` | array of `{ "$ref": string }` | yes | The event consumables that begin an instance of this process. |
+| `then` | array of `{ "$ref": string }` | yes | The operation consumables of this process's own context that it issues. |
+
+No other fields are allowed.
+
 ## RuleOptions
 
 Opt-in validation rules. A rule listed here is off unless the workspace turns it on.
@@ -355,6 +373,7 @@ Every cross-link is an object `{ "$ref": "<path>" }`. Paths are JSON pointers in
 | Service | `#/boundedcontexts/<bc>/services/<service>` |
 | Consumable of a service | `#/boundedcontexts/<bc>/services/<service>/provides/<consumable>` |
 | Policy | `#/boundedcontexts/<bc>/policies/<policy>` |
+| Process | `#/boundedcontexts/<bc>/processes/<process>` |
 | Glossary term | `#/boundedcontexts/<bc>/glossary/<term>` |
 | Schema | `#/boundedcontexts/<bc>/schemas/<schema>` |
 | Consumption | `<consumer path>/consumes/<consumable path, with ~ for />` |

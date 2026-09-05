@@ -31,8 +31,11 @@ Recorded as: Customer & KYC serving both the "Onboarding & KYC" and "Consent" su
 the Customer aggregate with IdentityDocument `includes`, DateOfBirth, Address and
 KycStatus, invariants `AdultOnly`, `VerifiedNeedsDocument`, `DocumentNotExpired`; the
 Consent aggregate with ConsentPurpose and ConsentScope, invariants `WithdrawnIsFinal`,
-`PurposeRequired`, `OpenBankingConsentExpires`; the KycScreening domain service; policies
-"Screen on onboarding" and "Hold on sanctions match"; `CustomerVerified`, `ConsentGiven`
+`PurposeRequired`, `OpenBankingConsentExpires`; the KycScreening domain service; the
+"Customer onboarding" process, which starts on `OnboardingStarted`, screens, waits for the
+engine's answer, holds on a match and ends on `CustomerVerified` (card 60: it was two
+policies, and neither could hold the prospective customer between the two events);
+`CustomerVerified`, `ConsentGiven`
 and `ConsentWithdrawn` published with schemas; the glossary entry for Customer with aliases
 Member and Party.
 
@@ -107,11 +110,14 @@ Recorded as: Payments as supporting; PaymentInstruction with Payee, Money, Execu
 and PaymentStatus; invariants `PayerNotPayee`, `AmountPositive`,
 `FundsAvailableAtInitiation` (a read of `GetAvailableBalance` through an ACL),
 `CutOffRespected`, `FlaggedNeverSubmitted`, and `DailyLimit` on the context itself,
-guarded by `InitiatePayment`; seven policies chaining
-`PaymentInitiated` → `ScoreTransaction`, `TransactionCleared` → `SubmitPayment`,
-`TransactionFlagged` → `RejectPayment`, `PaymentSubmitted` → `SubmitToScheme`,
-`SchemeSettlementConfirmed` → `ConfirmSettlement`, `SchemeRejected` → `RejectPayment`,
-`PaymentSettled` → `PostEntry`;
+guarded by `InitiatePayment`; the "Instruction lifecycle"
+process, which starts on `PaymentInitiated`, waits for the scorer's verdict
+(`TransactionCleared` or `TransactionFlagged`) and then for the scheme's answer
+(`SchemeSettlementConfirmed` or `SchemeRejected`), issues `ScoreInstruction`,
+`SubmitPayment`, `SendToScheme`, `ConfirmSettlement`, `RejectPayment` and `PostSettlement`,
+and ends on `PaymentSettled` or `PaymentRejected`. It was recorded as seven chained
+policies until card 60; the lead described one instruction going from initiated to settled,
+and the seven could not say that anything was being waited for.
 conformist consumption of the scheme gateway; customer-supplier towards Ledger.
 `InitiatePayment` rejects with `InstructionRefused` when the daily limit, the funds check or
 the cut-off stops it: no instruction exists, so the channel is told which rule stopped it.

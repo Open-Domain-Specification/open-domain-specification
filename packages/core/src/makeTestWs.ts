@@ -129,8 +129,8 @@ export function makeTestWs() {
 /**
  * A fixture with distinct descriptions, a root entity, entity relations,
  * schemas, a published event, internal event and operation pairs joined by
- * raises and a policy, and an aggregate consumption, so that round-trips and
- * derived maps exercise every reference kind.
+ * raises, a policy, a process and an aggregate consumption, so that
+ * round-trips and derived maps exercise every reference kind.
  */
 export function makeRichTestWs() {
 	const ws = new Workspace("Rich WS", {
@@ -309,6 +309,30 @@ export function makeRichTestWs() {
 		})
 		.on(orderPlaced)
 		.then(raiseInvoice);
+	// The second half of the invoicing lifecycle, and the one thing a policy
+	// cannot express: the process waits from the moment an invoice is raised
+	// until the customer has been sent it, and knows which fact ends it
+	// (decision 23).
+	const invoiceSent = invoiceAgg.provides("Invoice Sent", {
+		description: "The invoice reached the customer",
+		type: "event",
+		internal: true,
+	});
+	const sendInvoice = invoiceAgg
+		.provides("Send Invoice", {
+			description: "Sends a raised invoice to the customer",
+			type: "operation",
+			internal: true,
+		})
+		.raises(invoiceSent);
+	const invoiceToCustomer = invoicingBc
+		.addProcess("Invoice to customer", {
+			description:
+				"From the invoice being raised to the customer having it: it holds the invoice while the send is attempted, and retries are its own business",
+		})
+		.starts(invoiceRaised)
+		.then(sendInvoice)
+		.ends(invoiceSent);
 	const invoiceApp = invoicingBc.addService("Invoice App", {
 		description: "Invoice application service",
 		type: "application",
@@ -395,6 +419,9 @@ export function makeRichTestWs() {
 		invoiceConsumesOrderPlaced,
 		invoiceRaised,
 		raiseInvoice,
+		invoiceSent,
+		sendInvoice,
+		invoiceToCustomer,
 		billedOnce,
 		invoiceOnOrderPlaced,
 		invoiceApp,

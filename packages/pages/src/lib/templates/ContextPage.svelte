@@ -6,6 +6,7 @@ export const sections = [
 	{ id: "values", label: "Value objects" },
 	{ id: "integration", label: "Integration surface" },
 	{ id: "behaviour", label: "Policies" },
+	{ id: "processes", label: "Processes" },
 	{ id: "schemas", label: "Schemas" },
 	{ id: "language", label: "Ubiquitous language" },
 ];
@@ -65,6 +66,7 @@ const ws = model.workspace;
 const aggregates = $derived([...bc.aggregates.values()]);
 const services = $derived([...bc.services.values()]);
 const policies = $derived([...bc.policies.values()]);
+const processes = $derived([...bc.processes.values()]);
 const terms = $derived([...bc.glossary.values()]);
 const schemas = $derived([...bc.schemas.values()]);
 const valueobjects = $derived([...bc.valueobjects.values()]);
@@ -114,6 +116,17 @@ const policyColumns: Column[] = [
 	{ key: "name", label: "Policy" },
 	{ key: "when", label: "When" },
 	{ key: "then", label: "Then" },
+	{ key: "description", label: "Description" },
+];
+// The lifecycle in the order it runs, so a reader follows one instance
+// across the row: what begins it, what it waits for, what it does, what
+// finishes it.
+const processColumns: Column[] = [
+	{ key: "name", label: "Process" },
+	{ key: "starts", label: "Starts" },
+	{ key: "when", label: "While it runs" },
+	{ key: "then", label: "Then" },
+	{ key: "ends", label: "Ends" },
 	{ key: "description", label: "Description" },
 ];
 const termColumns: Column[] = [
@@ -287,6 +300,32 @@ const termColumns: Column[] = [
 				<Joined>{#each p.events as e (e.ref)}<Ref ref={e.ref} label={e.name} icon={ICONS.event} kind="event" />{:else}<Keyword text="nothing" />{/each}</Joined>
 			{:else if col.key === "then"}
 				<Joined>{#each p.commands as c (c.ref)}<Ref ref={c.ref} label={c.name} icon={ICONS.command} kind="command" />{:else}<Keyword text="nothing" />{/each}</Joined>
+			{:else}
+				{p.description}
+			{/if}
+		{/snippet}
+	</DataTable>
+</Section>
+
+<Section
+	id="processes"
+	title="Processes"
+	lead="Reactions that hold state across events: each one remembers which of its events have arrived, and says what finishes it. A policy that finds itself waiting for a second event belongs here."
+	count={processes.length}
+	problems={processes.flatMap((p) => problemsUnder(model, p.ref))}
+>
+	<DataTable columns={processColumns} rows={processes} rowId={(p) => p.ref} empty="No processes. Nothing here waits for more than one event before it acts.">
+		{#snippet cell(p, col)}
+			{#if col.key === "name"}
+				<Lockup kind="process" name={p.name} ref={p.ref} />
+			{:else if col.key === "starts"}
+				<Joined>{#each p.startEvents as e (e.ref)}<Ref ref={e.ref} label={e.name} icon={ICONS.event} kind="event" />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
+			{:else if col.key === "when"}
+				<Joined>{#each p.events as e (e.ref)}<Ref ref={e.ref} label={e.name} icon={ICONS.event} kind="event" />{:else}<Keyword text="nothing" />{/each}</Joined>
+			{:else if col.key === "then"}
+				<Joined>{#each p.commands as c (c.ref)}<Ref ref={c.ref} label={c.name} icon={ICONS.command} kind="command" />{:else}<Keyword text="nothing" />{/each}</Joined>
+			{:else if col.key === "ends"}
+				<Joined>{#each p.endEvents as e (e.ref)}<Ref ref={e.ref} label={e.name} icon={ICONS.event} kind="event" />{:else}<Keyword text="nothing" tone="warn" />{/each}</Joined>
 			{:else}
 				{p.description}
 			{/if}

@@ -212,6 +212,15 @@ export function edgeCaseModel(): Model {
 		description: "Reacts to nothing and issues nothing.",
 	});
 
+	// The empty process: nothing begins it, nothing ends it, and it is marked
+	// for refactoring with a note saying why, so every branch a process page
+	// and a context row can take is drawn somewhere.
+	bcMain.addProcess("Idle Process", {
+		description: "Nothing starts it, it waits for nothing and it never ends.",
+		comments: [{ text: "Two cron jobs and a spreadsheet, in truth." }],
+		disposition: "refactor",
+	});
+
 	bcMain.addTerm("Ticket", {
 		definition: "Definition A, in the main context.",
 	});

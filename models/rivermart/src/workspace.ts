@@ -1432,7 +1432,9 @@ paymentsBC.addTerm("Authorisation", {
 	embodiedBy: authorisation,
 });
 
-// Checkout chains: cart checked out → authorise; authorised → place order.
+// Checkout is one process, not three policies: it holds the frozen cart from
+// the moment the customer confirms it until an order exists, and what it does
+// next depends on which answer comes back from Payments.
 checkoutOrchestrator.consumes(authorisePayment, {
 	pattern: "anti-corruption-layer",
 });
@@ -1454,28 +1456,18 @@ const placeOrderForCart = checkoutOrchestrator.provides("PlaceOrderForCart", {
 	type: "operation",
 	internal: true,
 });
-cartBC
-	.addPolicy("Authorise on checkout", {
-		description: "A checked-out cart is paid for before anything else happens",
-	})
-	.on(cartCheckedOut)
-	.then(requestAuthorisation);
-cartBC
-	.addPolicy("Place order on authorisation", {
-		description: "Once funds are held the order becomes real",
-	})
-	.on(paymentAuthorised)
-	.then(placeOrderForCart);
 checkoutOrchestrator.consumes(paymentDeclined, {
 	pattern: "anti-corruption-layer",
 });
 cartBC
-	.addPolicy("Reopen cart on decline", {
+	.addProcess("Checkout", {
 		description:
-			"A declined hold leaves the cart open so the customer can try another instrument",
+			"From the customer confirming the basket to an order existing. It asks Payments to hold the cart total and then waits: on a hold the order is placed, on a decline the cart is unfrozen so another instrument can be tried and the same instance waits for the next attempt. Correlation is by cartId, which the authorisation carries back; an instance that is never paid for stays open with the cart, because a cart nobody returns to is the customer's to abandon and not ours to time out",
 	})
-	.on(paymentDeclined)
-	.then(reopenCart);
+	.starts(cartCheckedOut)
+	.on(paymentAuthorised, paymentDeclined)
+	.then(requestAuthorisation, placeOrderForCart, reopenCart)
+	.ends(orderPlaced);
 
 // The intent is authorised against a cart; the order id only exists after
 // PlaceOrder, and captures at dispatch arrive by order id, so Payments
@@ -1922,19 +1914,19 @@ orderApi.consumes(refundPayment, {
 	pattern: "anti-corruption-layer",
 	by: [requestRefund],
 });
-orderBC
-	.addPolicy("Record dispatch", {
-		description: "A dispatched package appears on the order as a shipment",
-	})
-	.on(shipmentDispatched)
-	.then(recordShipment);
-orderBC
-	.addPolicy("Hold on stock short", {
+// One order, from placed to delivered, is a process: it remembers which of its
+// shipments have gone and which have arrived, so nothing completes the order
+// until the last parcel is handed over. The last mile's fact is joined to it
+// further down, once ParcelDelivered exists.
+const orderToDelivery = orderBC
+	.addProcess("Order to delivery", {
 		description:
-			"When no site can reserve for the order it waits as awaiting-stock rather than silently stalling",
+			"From a paid-for order to every line in the customer's hands. It waits for the warehouse: a dispatch becomes a customer-visible shipment, a stock shortage puts the order into awaiting-stock rather than letting it stall silently, and the last parcel handed over completes it. Correlation is by orderId, which every fact it waits for carries; it ends when the order is completed, or earlier if the order is cancelled before anything ships",
 	})
-	.on(stockShort)
-	.then(holdForStock);
+	.starts(orderPlaced)
+	.on(shipmentDispatched, stockShort)
+	.then(recordShipment, holdForStock)
+	.ends(orderCompleted, orderCancelled);
 orderBC
 	.addPolicy("Refund on received return", {
 		description: "Money goes back once the warehouse has graded the return",
@@ -2077,12 +2069,9 @@ lastMileBC.addTerm("Parcel", {
 });
 
 orderApi.consumes(parcelDelivered, { pattern: "anti-corruption-layer" });
-orderBC
-	.addPolicy("Complete on delivery", {
-		description: "When the last package is delivered the order is done",
-	})
-	.on(parcelDelivered)
-	.then(completeOrder);
+// The last step of the order-to-delivery process above: it is written here
+// because ParcelDelivered belongs to Last Mile, which is declared below Orders.
+orderToDelivery.on(parcelDelivered).then(completeOrder);
 
 /* =======================
    ADVERTISING

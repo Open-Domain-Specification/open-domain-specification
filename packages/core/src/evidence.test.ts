@@ -117,6 +117,19 @@ describe("intentsWithoutComments", () => {
 		expect(intentsWithoutComments(ws)).not.toContain(internal);
 	});
 
+	it("counts a process, which spans several exchanges of its own", () => {
+		const { ws, catalog, sales, summary } = makeEvidenceWs();
+		catalog.upstreamOf(sales, { comments: [{ text: "Documented." }] });
+		const process = sales.addProcess("Order fulfilment", {
+			description: "",
+			starts: [summary],
+		});
+
+		expect(intentsWithoutComments(ws)).toContain(process);
+		process.comments.push({ text: "Implemented as a saga in sales/process/." });
+		expect(intentsWithoutComments(ws)).not.toContain(process);
+	});
+
 	it("is empty once every intent carries a comment", () => {
 		const { ws, catalog, sales } = makeEvidenceWs();
 		catalog.upstreamOf(sales, { comments: [{ text: "Documented." }] });

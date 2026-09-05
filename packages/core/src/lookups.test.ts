@@ -101,7 +101,7 @@ describe("Workspace ref lookups", () => {
 		// An aggregate is a node, not something that calls out on its own.
 		expect(ws.getConsumptionCallerByRef(fixture.orderAgg.ref)).toBeUndefined();
 		expect(() => ws.getConsumptionCallerByRefOrThrow("#/nope")).toThrow(
-			/Consumable or Policy/,
+			/Consumable, Policy or Process/,
 		);
 	});
 
@@ -114,6 +114,22 @@ describe("Workspace ref lookups", () => {
 			fixture.raiseInvoice,
 		]);
 		expect(() => ws.getPolicyByRefOrThrow("#/nope")).toThrow(/Policy/);
+	});
+
+	it("resolves processes and the lifecycle they join", () => {
+		expect(ws.getProcessByRef(fixture.invoiceToCustomer.ref)).toBe(
+			fixture.invoiceToCustomer,
+		);
+		expect(fixture.invoiceToCustomer.startEvents).toEqual([
+			fixture.invoiceRaised,
+		]);
+		expect(fixture.invoiceToCustomer.commands).toEqual([fixture.sendInvoice]);
+		expect(fixture.invoiceToCustomer.endEvents).toEqual([fixture.invoiceSent]);
+		// A process is a caller a consumption may name, like a policy.
+		expect(ws.getConsumptionCallerByRef(fixture.invoiceToCustomer.ref)).toBe(
+			fixture.invoiceToCustomer,
+		);
+		expect(() => ws.getProcessByRefOrThrow("#/nope")).toThrow(/Process/);
 	});
 
 	it("resolves glossary terms and what embodies them", () => {
@@ -137,6 +153,7 @@ describe("Workspace ref lookups", () => {
 			fixture.placeOrder,
 			fixture.orderPlaced,
 			fixture.invoiceOnOrderPlaced,
+			fixture.invoiceToCustomer,
 			fixture.orderTerm,
 			fixture.order.attributes.get("total"),
 		]) {

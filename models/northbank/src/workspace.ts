@@ -637,18 +637,18 @@ screeningVendorBC.upstreamOf(sanctionsBC, {
 
 kycScreening.consumes(screenParty, { pattern: "anti-corruption-layer" });
 onboardingApp.consumes(partyMatched, { pattern: "anti-corruption-layer" });
+// Onboarding is a process, not two policies: it holds the prospective
+// customer from the moment their details arrive until KYC passes, and a
+// sanctions match keeps that same instance alive rather than ending it.
 customerBC
-	.addPolicy("Screen on onboarding", {
-		description: "Every prospective customer is screened before anything else",
+	.addProcess("Customer onboarding", {
+		description:
+			"From a prospective customer's details to a verified one. Everyone is screened before anything else, and the process then waits for the engine's answer: a match holds the onboarding until Financial Crime clears it by hand, which is why there is no timeout. Correlation is by customerId, which the screening answer carries back; the instance ends when KYC passes and accounts may be opened",
 	})
-	.on(onboardingStarted)
-	.then(screenCustomer);
-customerBC
-	.addPolicy("Hold on sanctions match", {
-		description: "A match holds onboarding until Financial Crime clears it",
-	})
+	.starts(onboardingStarted)
 	.on(partyMatched)
-	.then(holdOnboarding);
+	.then(screenCustomer, holdOnboarding)
+	.ends(customerVerified);
 
 /* =======================
    SHARED KERNEL
@@ -1453,36 +1453,27 @@ const sendToScheme = paymentsApp.provides("SendToScheme", {
 	type: "operation",
 	internal: true,
 });
-paymentsBC
-	.addPolicy("Submit to scheme", {
-		description: "A submitted instruction goes to the gateway",
-	})
-	.on(paymentSubmitted)
-	.then(sendToScheme);
-paymentsBC
-	.addPolicy("Confirm settlement", {
-		description: "The scheme's confirmation settles the instruction",
-	})
-	.on(schemeSettlementConfirmed)
-	.then(confirmSettlement);
-paymentsBC
-	.addPolicy("Reject on scheme refusal", {
-		description: "A refused message rejects the instruction",
-	})
-	.on(schemeRejected)
-	.then(rejectPayment);
 const postSettlement = paymentsApp.provides("PostSettlement", {
 	description:
 		"Post the settled instruction to the ledger, through the ACL over PostEntry",
 	type: "operation",
 	internal: true,
 });
-paymentsBC
-	.addPolicy("Post on settlement", {
-		description: "A settled instruction posts to the ledger",
+// The hub lead described one instruction going from initiated to settled, and
+// the model used to spell it as seven policies. It is one process: it holds
+// the instruction while the scorer and then the scheme answer, and each step
+// it takes is an operation of the hub's own boundary (decisions 17 and 23).
+// What it waits for from Fraud is joined further down, where those events are
+// declared.
+const instructionLifecycle = paymentsBC
+	.addProcess("Instruction lifecycle", {
+		description:
+			"From an instruction being initiated to the money having moved. It scores every instruction with Fraud and waits: a flag rejects it and it is never submitted, a clearance submits it to the scheme in the scheme's own format, and the process then waits again for the scheme's answer. A confirmation settles the instruction and posts it to the ledger; a refusal rejects it. Correlation is by instructionId, which the scorer's verdict and the scheme's response both carry; an instruction the scheme never answers stays open for the operations team, because the scheme's own timings are not the bank's to model",
 	})
-	.on(paymentSettled)
-	.then(postSettlement);
+	.starts(paymentInitiated)
+	.on(schemeSettlementConfirmed, schemeRejected)
+	.then(sendToScheme, confirmSettlement, rejectPayment, postSettlement)
+	.ends(paymentSettled, paymentRejected);
 
 /* =======================
    FRAUD
@@ -1652,24 +1643,12 @@ const scoreInstruction = paymentsApp.provides("ScoreInstruction", {
 	type: "operation",
 	internal: true,
 });
-paymentsBC
-	.addPolicy("Score on initiation", {
-		description: "Every instruction is scored before it goes anywhere",
-	})
-	.on(paymentInitiated)
-	.then(scoreInstruction);
-paymentsBC
-	.addPolicy("Submit on clear", {
-		description: "A cleared instruction is submitted",
-	})
-	.on(transactionCleared)
-	.then(submitPayment);
-paymentsBC
-	.addPolicy("Reject on flag", {
-		description: "A flagged instruction is rejected, never submitted",
-	})
-	.on(transactionFlagged)
-	.then(rejectPayment);
+// The first half of the instruction lifecycle above: scoring, and what the
+// two verdicts do. It is written here because Fraud's events are declared in
+// this section.
+instructionLifecycle
+	.on(transactionCleared, transactionFlagged)
+	.then(scoreInstruction, submitPayment);
 // Accounts freezes when a case opens.
 accountServicing.consumes(fraudCaseOpened, {
 	pattern: "anti-corruption-layer",

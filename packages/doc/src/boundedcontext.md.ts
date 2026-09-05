@@ -6,6 +6,7 @@ import {
 	type Invariant,
 	ODSConsumptionGraph,
 	type Policy,
+	type Process,
 	type Service,
 	type ValueObject,
 } from "@open-domain-specification/core";
@@ -34,6 +35,17 @@ const policySection = (policy: Policy) => [
 	policy.description,
 	policy.events.map((it) => it.name).join(", ") || "-",
 	policy.commands.map((it) => it.name).join(", ") || "-",
+];
+
+// The lifecycle in four columns, in the order it runs: what begins an
+// instance, what it waits for, what it does and what finishes it.
+const processSection = (process: Process) => [
+	process.name,
+	process.description,
+	process.startEvents.map((it) => it.name).join(", ") || "-",
+	process.events.map((it) => it.name).join(", ") || "-",
+	process.commands.map((it) => it.name).join(", ") || "-",
+	process.endEvents.map((it) => it.name).join(", ") || "-",
 ];
 
 const schemaSection = (schema: DataSchema) => [
@@ -67,6 +79,14 @@ const invariantSection = (invariant: Invariant) => [
 	invariant.description,
 	invariant.targets.map(constrainableLabel).join(", ") || "-",
 ];
+
+/**
+ * The flow map image, for whichever of the two behaviour sections comes
+ * first: one diagram draws the policies and the processes together, so the
+ * second section names its rows and leaves the picture where it is.
+ */
+const flowMapMd = (boundedcontext: BoundedContext) =>
+	`![flowmap](${pathToFlowMapSvg(boundedcontext.path, boundedcontext.path)})\n\n`;
 
 const serviceSection = (service: Service) => `
 ### [${service.name}](${pathToIndexMd(service.path, service.boundedcontext.path)})
@@ -155,13 +175,23 @@ ${
 ## Policies
 ${
 	boundedcontext.policies.size > 0
-		? `![flowmap](${pathToFlowMapSvg(boundedcontext.path, boundedcontext.path)})
-
-${markdownTable(
-	["Name", "Description", "On", "Then"],
-	Array.from(boundedcontext.policies.values()).map(policySection),
-)}`
+		? `${flowMapMd(boundedcontext)}${markdownTable(
+				["Name", "Description", "On", "Then"],
+				Array.from(boundedcontext.policies.values()).map(policySection),
+			)}`
 		: "> No policies."
+}
+
+## Processes
+${
+	boundedcontext.processes.size > 0
+		? `Reactions that hold state across events: each one remembers which of its events have arrived and says what finishes it.
+
+${boundedcontext.policies.size === 0 ? flowMapMd(boundedcontext) : ""}${markdownTable(
+				["Name", "Description", "Starts", "On", "Then", "Ends"],
+				Array.from(boundedcontext.processes.values()).map(processSection),
+			)}`
+		: "> No processes."
 }
 
 ## Context Relationships

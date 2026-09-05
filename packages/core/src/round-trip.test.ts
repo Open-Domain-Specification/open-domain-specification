@@ -178,6 +178,18 @@ describe("schema round-trip", () => {
 		expect(invariant.guarded.map((it) => it.name)).toEqual(["Place Order"]);
 	});
 
+	it("re-links a process to the consumables of its whole lifecycle", () => {
+		const process = rebuilt.getProcessByRefOrThrow(
+			"#/boundedcontexts/invoicing_bc/processes/invoice_to_customer",
+		);
+		expect(process.startEvents.map((it) => it.name)).toEqual([
+			"Invoice Raised",
+		]);
+		expect(process.commands.map((it) => it.name)).toEqual(["Send Invoice"]);
+		expect(process.endEvents.map((it) => it.name)).toEqual(["Invoice Sent"]);
+		expect(process.events).toEqual([]);
+	});
+
 	it("re-links policies to consumables across contexts", () => {
 		const policy = rebuilt.getPolicyByRefOrThrow(
 			"#/boundedcontexts/invoicing_bc/policies/invoice_on_order_placed",

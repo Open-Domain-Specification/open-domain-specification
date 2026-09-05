@@ -302,6 +302,63 @@ describe("every template, through the shipped route", () => {
 		).toEqual(["Operation", "Kind", "Provider", "Context", "Description"]);
 	});
 
+	it("ProcessPage: the lifecycle is four tables, and only then names the kind", () => {
+		const container = draw(PETSTORE_REFS.process);
+		const headers = (id: string) =>
+			[...container.querySelectorAll(`#${id} thead th`)].map((h) =>
+				h.textContent?.trim(),
+			);
+		// The policy page's two tables, with what begins an instance and what
+		// finishes it around them (decision 23).
+		expect(headers("starts")).toEqual([
+			"Event",
+			"Provider",
+			"Context",
+			"Description",
+		]);
+		expect(headers("when")).toEqual([
+			"Event",
+			"Provider",
+			"Context",
+			"Description",
+		]);
+		expect(headers("then")).toEqual([
+			"Operation",
+			"Kind",
+			"Provider",
+			"Context",
+			"Description",
+		]);
+		expect(headers("ends")).toEqual([
+			"Event",
+			"Provider",
+			"Context",
+			"Description",
+		]);
+		expect(container.querySelector("#starts tbody")).toHaveTextContent(
+			"OrderPlaced",
+		);
+		expect(container.querySelector("#ends tbody")).toHaveTextContent(
+			"OrderDelivered",
+		);
+		// It says what a policy may not be: something that remembers.
+		expect(container.querySelector("h1")).toHaveTextContent("Process");
+		expect(container.textContent).toContain("stateful");
+	});
+
+	it("ConsumablePage: an event says which processes it takes part in and where", () => {
+		const container = draw(PETSTORE_REFS.event);
+		const processes = container.querySelector("#processes") as HTMLElement;
+		expect(
+			[...processes.querySelectorAll("thead th")].map((h) =>
+				h.textContent?.trim(),
+			),
+		).toEqual(["Process", "In its lifecycle", "Context", "Description"]);
+		const row = processes.querySelector("tbody tr") as HTMLElement;
+		expect(row).toHaveTextContent("Order fulfilment");
+		expect(row).toHaveTextContent("waits for it");
+	});
+
 	it("InvariantPage: the targets become a two-column table", () => {
 		const container = draw(PETSTORE_REFS.invariant);
 		expect(

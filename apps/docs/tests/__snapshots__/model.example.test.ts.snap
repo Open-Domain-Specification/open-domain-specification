@@ -45,6 +45,7 @@ exports[`Visitor Example > should compile  1`] = `
       "invariants": {},
       "name": "CMS",
       "policies": {},
+      "processes": {},
       "schemas": {},
       "services": {
         "content_renderer": {
@@ -137,6 +138,7 @@ exports[`Visitor Example > should compile  1`] = `
       "invariants": {},
       "name": "Ordering",
       "policies": {},
+      "processes": {},
       "schemas": {},
       "services": {
         "checkout_app": {

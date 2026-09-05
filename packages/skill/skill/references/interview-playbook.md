@@ -136,7 +136,7 @@ Repeat for each context the user wants detailed. Ask which one to start with.
 - "Does it contain things that cannot exist without it?" → `includes`.
 - "Does it use a value like an address, money or a status?" → `uses`.
 
-## Phase F: behaviour (produces Consumables, `raises`, Policies, Schemas)
+## Phase F: behaviour (produces Consumables, `raises`, Policies, Processes, Schemas)
 
 - "What can someone ask this part to do?" → `operation` consumables. Put an API entry point on
   an application service, and a state change of one aggregate on that aggregate. What an
@@ -181,10 +181,21 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   and `then` the operation. The event in `on` may belong to another context, because reacting
   to a published fact is a consumption; the operation in `then` is always the policy's own
   context's. To act on a neighbour, name a local operation that consumes theirs.
+- Then, once: "Does anything here wait for more than one event before it acts, and what tells
+  it that it is done?" → a process. Take the answer in the order it runs: what starts an
+  instance (`starts`), what it waits for while it is alive (`on`), what it issues (`then`,
+  always its own context's operations), and what finishes it (`ends`). Two signs an author is
+  describing one: a policy that would have to remember something between two events ("we hold
+  the order until the payment clears"), and a chain of policies the author names as one thing
+  ("checkout", "onboarding", "order to delivery") — that chain is one process, not three
+  policies. What it correlates on, how long it waits and what it undoes go in the
+  description, in the author's own words; the model has no fields for them, and inventing a
+  timeout the author did not state is worse than saying nothing. A reaction that fires on any
+  one event and remembers nothing stays a policy.
 - "Who outside this part listens for <event>?" → a consumption on their aggregate or service,
   with a downstream `pattern`.
 - For each consumption: "which operations of this service actually make that call?" → `by`,
-  naming the consumer's own operations, or the policy of its context that reacts. Only ask
+  naming the consumer's own operations, or the policy or process of its context that reacts. Only ask
   it back if the answer is one or two of several; "all of it" is the common case and leaves
   `by` off. Never guess a call graph from names — if the author does not know, it stays absent.
 - Close: "Which of the words we used should I define, and does each map to one of the things

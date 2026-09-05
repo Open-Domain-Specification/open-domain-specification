@@ -12,6 +12,7 @@ import type {
 	GlossaryTerm,
 	Invariant,
 	Policy,
+	Process,
 	Service,
 	Subdomain,
 	ValueObject,
@@ -34,6 +35,7 @@ export interface Visitor {
 	visitContextRelationship(node: ContextRelationship): void;
 	visitDataSchema(node: DataSchema): void;
 	visitPolicy(node: Policy): void;
+	visitProcess(node: Process): void;
 	visitGlossaryTerm(node: GlossaryTerm): void;
 }
 
@@ -152,6 +154,10 @@ export abstract class AbstractVisitor implements Visitor {
 			policy.accept(this);
 		}
 
+		for (const process of node.processes.values()) {
+			process.accept(this);
+		}
+
 		for (const term of node.glossary.values()) {
 			term.accept(this);
 		}
@@ -178,6 +184,16 @@ export abstract class AbstractVisitor implements Visitor {
 	 * @param node - The Policy node to visit.
 	 */
 	visitPolicy(node: Policy): void {
+		this.before(node);
+		this.after(node);
+	}
+
+	/**
+	 * Visits a Process node. Processes are leaves, like policies; the
+	 * consumables they join are reached through their providers.
+	 * @param node - The Process node to visit.
+	 */
+	visitProcess(node: Process): void {
 		this.before(node);
 		this.after(node);
 	}

@@ -26,6 +26,13 @@ describe("kindOf", () => {
 				])[0],
 			),
 		).toBe("policy");
+		expect(
+			kindOf(
+				[...ws.boundedcontexts.values()].flatMap((c) => [
+					...c.processes.values(),
+				])[0],
+			),
+		).toBe("process");
 		expect(kindOf([...aggregate.invariants.values()][0])).toBe("invariant");
 		expect(kindOf([...bc.glossary.values()][0])).toBe("term");
 		expect(kindOf([...ws.teams.values()][0])).toBe("team");

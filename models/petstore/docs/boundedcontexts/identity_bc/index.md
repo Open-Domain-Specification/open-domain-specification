@@ -50,6 +50,9 @@ Open-host service for /user endpoints
 ## Policies
 > No policies.
 
+## Processes
+> No processes.
+
 ## Context Relationships
 ### Works alongside
 | With | Description | Type | Upstream Roles | Downstream Roles |

@@ -70,13 +70,14 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   id (in the DSL, pass `id` explicitly at the moment of renaming). Rewriting a key means
   updating every ref that uses it, and confirming with the user first.
 - Every required collection is present even when empty. A context always has `aggregates`,
-  `services`, `policies`, `glossary`, `valueobjects`, `schemas`, `invariants` and `subdomains`;
+  `services`, `policies`, `processes`, `glossary`, `valueobjects`, `schemas`, `invariants`
+  and `subdomains`;
   an aggregate always has `entities`, `invariants`, `provides`, `consumes`; an entity or value
   object always has `attributes` and `relations`. See `references/model-reference.md`.
 - Every `$ref` resolves to an element that exists. A dangling ref is a load failure, not a
   warning: the whole file stops loading.
 - Consumables (events and operations) live only under `provides` of an aggregate or a
-  service. Policies and consumptions point at them by ref.
+  service. Policies, processes and consumptions point at them by ref.
 - A value object belongs to the context, not to an aggregate: declare it once there and any
   aggregate may hold it.
 - An entity or a value object may be a kind of another: `specialises` gives it every attribute

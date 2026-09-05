@@ -376,13 +376,38 @@ describe("ODSFlowMap", () => {
 			"Order Placed -> Invoice on order placed",
 			"Invoice on order placed -> Raise Invoice",
 			"Raise Invoice -> Invoice Raised",
+			"Invoice Raised -> Invoice to customer",
+			"Invoice to customer -> Send Invoice",
+			"Send Invoice -> Invoice Sent",
+			"Invoice to customer -> Invoice Sent",
 		]);
 	});
 
-	it("leaves out operations no policy issues", () => {
+	it("draws a process with what starts it coming in and what ends it going out", () => {
+		const map = ODSFlowMap.fromBoundedContext(f.invoicingBc);
+		expect(map.nodes.get(f.invoiceToCustomer.ref)?.type).toBe("process");
+		const from = (ref: string) =>
+			Array.from(map.edges.values())
+				.filter((e) => e.source.id === ref)
+				.map((e) => e.target.name);
+		const into = (ref: string) =>
+			Array.from(map.edges.values())
+				.filter((e) => e.target.id === ref)
+				.map((e) => e.source.name);
+		expect(into(f.invoiceToCustomer.ref)).toEqual(["Invoice Raised"]);
+		// What it issues, and the fact that completes an instance: the ending
+		// event is drawn from the process and never walked back into it, which is
+		// why the normal shape is no cycle (decision 23).
+		expect(from(f.invoiceToCustomer.ref)).toEqual([
+			"Send Invoice",
+			"Invoice Sent",
+		]);
+	});
+
+	it("leaves out operations no policy or process issues", () => {
 		const map = ODSFlowMap.fromWorkspace(f.ws);
 		expect(map.nodes.has(f.placeOrder.ref)).toBe(false);
-		expect(map.nodes.size).toBe(4);
+		expect(map.nodes.size).toBe(7);
 	});
 
 	it("follows a consumption's by out of the context and on from what it raises", () => {

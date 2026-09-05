@@ -298,6 +298,7 @@
         }
       },
       "policies": {},
+      "processes": {},
       "glossary": {
         "product": {
           "name": "Product",
@@ -551,6 +552,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "relevance": {
           "name": "Relevance",
@@ -873,6 +875,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "buy_box": {
           "name": "Buy Box",
@@ -1202,6 +1205,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "seller": {
           "name": "Seller",
@@ -1500,46 +1504,38 @@
           ]
         }
       },
-      "policies": {
-        "authorise_on_checkout": {
-          "name": "Authorise on checkout",
-          "description": "A checked-out cart is paid for before anything else happens",
-          "on": [
+      "policies": {},
+      "processes": {
+        "checkout": {
+          "name": "Checkout",
+          "description": "From the customer confirming the basket to an order existing. It asks Payments to hold the cart total and then waits: on a hold the order is placed, on a decline the cart is unfrozen so another instrument can be tried and the same instance waits for the next attempt. Correlation is by cartId, which the authorisation carries back; an instance that is never paid for stays open with the cart, because a cart nobody returns to is the customer's to abandon and not ours to time out",
+          "starts": [
             {
               "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/provides/cart_checked_out"
             }
           ],
-          "then": [
-            {
-              "$ref": "#/boundedcontexts/cart_&_checkout/services/checkout_orchestrator/provides/request_authorisation"
-            }
-          ]
-        },
-        "place_order_on_authorisation": {
-          "name": "Place order on authorisation",
-          "description": "Once funds are held the order becomes real",
           "on": [
             {
               "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_authorised"
-            }
-          ],
-          "then": [
-            {
-              "$ref": "#/boundedcontexts/cart_&_checkout/services/checkout_orchestrator/provides/place_order_for_cart"
-            }
-          ]
-        },
-        "reopen_cart_on_decline": {
-          "name": "Reopen cart on decline",
-          "description": "A declined hold leaves the cart open so the customer can try another instrument",
-          "on": [
+            },
             {
               "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_declined"
             }
           ],
           "then": [
             {
+              "$ref": "#/boundedcontexts/cart_&_checkout/services/checkout_orchestrator/provides/request_authorisation"
+            },
+            {
+              "$ref": "#/boundedcontexts/cart_&_checkout/services/checkout_orchestrator/provides/place_order_for_cart"
+            },
+            {
               "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/provides/reopen_cart"
+            }
+          ],
+          "ends": [
+            {
+              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
             }
           ]
         }
@@ -2098,34 +2094,6 @@
             }
           ]
         },
-        "record_dispatch": {
-          "name": "Record dispatch",
-          "description": "A dispatched package appears on the order as a shipment",
-          "on": [
-            {
-              "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/shipment_dispatched"
-            }
-          ],
-          "then": [
-            {
-              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/record_shipment"
-            }
-          ]
-        },
-        "hold_on_stock_short": {
-          "name": "Hold on stock short",
-          "description": "When no site can reserve for the order it waits as awaiting-stock rather than silently stalling",
-          "on": [
-            {
-              "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_short"
-            }
-          ],
-          "then": [
-            {
-              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/hold_for_stock"
-            }
-          ]
-        },
         "refund_on_received_return": {
           "name": "Refund on received return",
           "description": "Money goes back once the warehouse has graded the return",
@@ -2139,18 +2107,45 @@
               "$ref": "#/boundedcontexts/order_management/services/order_api/provides/request_refund"
             }
           ]
-        },
-        "complete_on_delivery": {
-          "name": "Complete on delivery",
-          "description": "When the last package is delivered the order is done",
+        }
+      },
+      "processes": {
+        "order_to_delivery": {
+          "name": "Order to delivery",
+          "description": "From a paid-for order to every line in the customer's hands. It waits for the warehouse: a dispatch becomes a customer-visible shipment, a stock shortage puts the order into awaiting-stock rather than letting it stall silently, and the last parcel handed over completes it. Correlation is by orderId, which every fact it waits for carries; it ends when the order is completed, or earlier if the order is cancelled before anything ships",
+          "starts": [
+            {
+              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
+            }
+          ],
           "on": [
+            {
+              "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/shipment_dispatched"
+            },
+            {
+              "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_short"
+            },
             {
               "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/provides/parcel_delivered"
             }
           ],
           "then": [
             {
+              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/record_shipment"
+            },
+            {
+              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/hold_for_stock"
+            },
+            {
               "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/complete_order"
+            }
+          ],
+          "ends": [
+            {
+              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_completed"
+            },
+            {
+              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_cancelled"
             }
           ]
         }
@@ -2770,6 +2765,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "authorisation": {
           "name": "Authorisation",
@@ -3038,6 +3034,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "flag": {
           "name": "Flag",
@@ -3569,6 +3566,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "on_hand": {
           "name": "On hand",
@@ -3886,6 +3884,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "stop": {
           "name": "Stop",
@@ -4220,6 +4219,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "sponsored_slot": {
           "name": "Sponsored slot",
@@ -4516,6 +4516,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "case": {
           "name": "Case",
@@ -4617,6 +4618,7 @@
         }
       },
       "policies": {},
+      "processes": {},
       "glossary": {
         "purchase_order": {
           "name": "Purchase order",
@@ -4744,6 +4746,7 @@
         }
       },
       "policies": {},
+      "processes": {},
       "glossary": {
         "customer": {
           "name": "Customer",
@@ -4820,6 +4823,7 @@
         }
       },
       "policies": {},
+      "processes": {},
       "glossary": {},
       "valueobjects": {},
       "schemas": {

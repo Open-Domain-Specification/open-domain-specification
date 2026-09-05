@@ -389,7 +389,9 @@ export class Workspace
 	/** Resolves any ref a consumption's `by` may name. */
 	getConsumptionCallerByRef(ref: string): ConsumptionCaller | undefined {
 		const target = this.getByRef(ref);
-		return target instanceof Consumable || target instanceof Policy
+		return target instanceof Consumable ||
+			target instanceof Policy ||
+			target instanceof Process
 			? target
 			: undefined;
 	}
@@ -397,7 +399,9 @@ export class Workspace
 	getConsumptionCallerByRefOrThrow(ref: string): ConsumptionCaller {
 		const target = this.getConsumptionCallerByRef(ref);
 		if (!target) {
-			throw new Error(`Consumable or Policy with ref ${ref} not found`);
+			throw new Error(
+				`Consumable, Policy or Process with ref ${ref} not found`,
+			);
 		}
 		return target;
 	}
@@ -458,6 +462,8 @@ export class Workspace
 				return this.getConsumableByRef(ref);
 			case "policies":
 				return this.getPolicyByRef(ref);
+			case "processes":
+				return this.getProcessByRef(ref);
 			case "glossary":
 				return this.getTermByRef(ref);
 			case "attributes":
@@ -496,6 +502,29 @@ export class Workspace
 			throw new Error(`Policy with ref ${ref} not found`);
 		}
 		return policy;
+	}
+
+	private *processes(): Iterable<Process> {
+		for (const boundedContext of this.boundedcontexts.values()) {
+			yield* boundedContext.processes.values();
+		}
+	}
+
+	getProcessByRef(ref: string): Process | undefined {
+		this.debug(`Searching for process with ref: ${ref}`);
+		for (const process of this.processes()) {
+			if (process.ref === ref) {
+				return process;
+			}
+		}
+	}
+
+	getProcessByRefOrThrow(ref: string): Process {
+		const process = this.getProcessByRef(ref);
+		if (!process) {
+			throw new Error(`Process with ref ${ref} not found`);
+		}
+		return process;
 	}
 
 	getSchemaByRef(ref: string): DataSchema | undefined {
@@ -700,6 +729,8 @@ export class BoundedContext
 	/** The rules that hold across this context's instances (decision 27). */
 	invariants = new Map<string, Invariant>();
 	policies = new Map<string, Policy>();
+	/** The reactions that hold state across events (decision 23). */
+	processes = new Map<string, Process>();
 	glossary = new Map<string, GlossaryTerm>();
 	valueobjects = new Map<string, ValueObject>();
 	schemas = new Map<string, DataSchema>();
@@ -839,6 +870,16 @@ export class BoundedContext
 		return new Policy(this, name, attributes);
 	}
 
+	/**
+	 * Declares a process: the reaction that remembers which of its events have
+	 * arrived and acts when enough have. Give it `starts`, `on`, `then` and
+	 * `ends` here, or chain the methods of the same names when the consumables
+	 * are declared after it.
+	 */
+	addProcess(name: string, attributes: ProcessAttributes): Process {
+		return new Process(this, name, attributes);
+	}
+
 	addTerm(name: string, attributes: GlossaryTermAttributes): GlossaryTerm {
 		return new GlossaryTerm(this, name, attributes);
 	}
@@ -873,6 +914,7 @@ export class BoundedContext
 			invariants: asRecords(this.invariants),
 			services: asRecords(this.services),
 			policies: asRecords(this.policies),
+			processes: asRecords(this.processes),
 			glossary: asRecords(this.glossary),
 			valueobjects: asRecords(this.valueobjects),
 			schemas: asRecords(this.schemas),
@@ -1644,15 +1686,17 @@ export class EntityRelation
 
 /**
  * What can be named as making a consumption: one of the consumer's own
- * operations, or a policy of the consumer's context that issues them.
+ * operations, or a policy or process of the consumer's context that issues
+ * them.
  */
-export type ConsumptionCaller = Consumable | Policy;
+export type ConsumptionCaller = Consumable | Policy | Process;
 
 export type ConsumptionAttributes = {
 	pattern?: DownstreamRole;
 	/**
-	 * The consumer's own operations or policies behind this exchange. Absent
-	 * means the whole consumer (decision 21).
+	 * The consumer's own operations, or the policies and processes of its
+	 * context, behind this exchange. Absent means the whole consumer
+	 * (decision 21).
 	 */
 	by?: ConsumptionCaller[];
 } & EvidenceOptions;
@@ -1663,7 +1707,7 @@ export class Consumption
 	consumer: Aggregate | Service;
 	consumable: Consumable;
 	pattern?: DownstreamRole;
-	/** The consumer's own operations or policies that make this exchange. */
+	/** The consumer's own operations, policies or processes that make this exchange. */
 	by: ConsumptionCaller[];
 	comments: ods.Comment[];
 	disposition?: ods.Disposition;
@@ -2086,6 +2130,7 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 	}
 
 	/** Adds an operation consumable to issue. */
+	// biome-ignore lint/suspicious/noThenProperty: "then" is the model's own word for what a reaction issues, and the DSL reads as the model does
 	then(...commands: Consumable[]): this {
 		for (const command of commands) {
 			if (!this.commands.includes(command)) this.commands.push(command);
@@ -2102,7 +2147,127 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 			name: this.name,
 			description: this.description,
 			on: this.events.map((it) => ({ $ref: it.ref })),
+			// biome-ignore lint/suspicious/noThenProperty: the schema field is named after the model, not after a promise
 			then: this.commands.map((it) => ({ $ref: it.ref })),
+		};
+	}
+}
+
+export type ProcessAttributes = {
+	description: string;
+	/** The events that begin an instance; also settable with `.starts(...)`. */
+	starts?: Consumable[];
+	/** The events it waits for while alive; also settable with `.on(...)`. */
+	on?: Consumable[];
+	/** The operations it issues; also settable with `.then(...)`. */
+	then?: Consumable[];
+	/** The events that complete an instance; also settable with `.ends(...)`. */
+	ends?: Consumable[];
+	id?: string;
+} & EvidenceOptions;
+
+/**
+ * A reaction that outlives one event. A policy is stateless and any-of: it
+ * fires whenever one of its events happens. A process remembers — which of
+ * its events have arrived, what it has already issued — so it can wait for
+ * two facts before acting and can say how an instance finishes.
+ *
+ * `starts` begins an instance, `on` are the further facts it waits for,
+ * `then` are the operations of its own context it issues, and `ends` are the
+ * facts that complete it. What it correlates on, how long it waits and what
+ * it compensates are prose in the description: the model states that the
+ * process exists and what it listens to and does, and leaves how it decides
+ * to the code (decision 23).
+ */
+export class Process
+	implements Visitable, Evidenced, SchemaConvertible<ods.ProcessSchema>
+{
+	id: string;
+	name: string;
+	description: string;
+	boundedcontext: BoundedContext;
+	/** Events that begin an instance. */
+	startEvents: Consumable[] = [];
+	/** Events an instance waits for or reacts to while it is alive. */
+	events: Consumable[] = [];
+	/** Operation consumables the process issues. */
+	commands: Consumable[] = [];
+	/** Events that complete an instance. */
+	endEvents: Consumable[] = [];
+	comments: ods.Comment[];
+	disposition?: ods.Disposition;
+
+	get path(): string {
+		return `${this.boundedcontext.path}/processes/${this.id}`;
+	}
+
+	get ref(): string {
+		return `#/${this.path}`;
+	}
+
+	constructor(
+		boundedcontext: BoundedContext,
+		name: string,
+		attributes: ProcessAttributes,
+	) {
+		this.id = attributes.id || snakeCase(name);
+		this.name = name;
+		this.description = attributes.description;
+		this.boundedcontext = boundedcontext;
+		this.comments = attributes.comments ?? [];
+		this.disposition = normaliseDisposition(attributes.disposition);
+		this.boundedcontext.processes.set(this.id, this);
+		this.starts(...(attributes.starts ?? []));
+		this.on(...(attributes.on ?? []));
+		this.then(...(attributes.then ?? []));
+		this.ends(...(attributes.ends ?? []));
+	}
+
+	/** Adds an event that begins an instance. */
+	starts(...events: Consumable[]): this {
+		return this.add(this.startEvents, events);
+	}
+
+	/** Adds an event an instance waits for while it is alive. */
+	on(...events: Consumable[]): this {
+		return this.add(this.events, events);
+	}
+
+	/** Adds an operation consumable to issue. */
+	// biome-ignore lint/suspicious/noThenProperty: "then" is the model's own word for what a reaction issues, and the DSL reads as the model does
+	then(...commands: Consumable[]): this {
+		return this.add(this.commands, commands);
+	}
+
+	/** Adds an event that completes an instance. */
+	ends(...events: Consumable[]): this {
+		return this.add(this.endEvents, events);
+	}
+
+	private add(target: Consumable[], consumables: Consumable[]): this {
+		for (const consumable of consumables) {
+			if (!target.includes(consumable)) target.push(consumable);
+		}
+		return this;
+	}
+
+	accept(v: Visitor) {
+		return v.visitProcess(this);
+	}
+
+	toSchema(): ods.ProcessSchema {
+		const refs = (consumables: Consumable[]) =>
+			consumables.map((it) => ({ $ref: it.ref }));
+		return {
+			name: this.name,
+			description: this.description,
+			starts: refs(this.startEvents),
+			on: refs(this.events),
+			// biome-ignore lint/suspicious/noThenProperty: the schema field is named after the model, not after a promise
+			then: refs(this.commands),
+			ends: refs(this.endEvents),
+			comments: this.comments.length ? this.comments : undefined,
+			disposition: this.disposition,
 		};
 	}
 }

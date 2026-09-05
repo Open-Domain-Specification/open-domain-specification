@@ -5,6 +5,7 @@ import {
 	entityRef,
 	invariantRef,
 	policyRef,
+	processRef,
 	schemaRef,
 	serviceRef,
 	termRef,
@@ -293,6 +294,28 @@ describe("the tactical templates on the alternate branches", () => {
 		const text = textOf(policyRef("main_context", "idle_policy").$ref);
 		expect(text).toContain("Triggered by nothing.");
 		expect(text).toContain("Issues nothing.");
+	});
+
+	it("ProcessPage: an empty lifecycle says so at each of its four points", () => {
+		const { container } = render(Harness, {
+			model,
+			ref: processRef("main_context", "idle_process").$ref,
+		});
+		const text = container.textContent ?? "";
+		expect(text).toContain("Nothing begins an instance.");
+		expect(text).toContain("Waits for nothing else once it has started.");
+		expect(text).toContain("Issues nothing.");
+		expect(text).toContain(
+			"Nothing completes an instance, so the model never says how it finishes.",
+		);
+		// A process is an intent like any other, so what the architecture thinks
+		// of it and what is known about the real one read on the page.
+		expect(
+			[...container.querySelectorAll(".page-header dt")].map(
+				(dt) => dt.textContent,
+			),
+		).toEqual(["Lives in", "Disposition"]);
+		expect(text).toContain("Two cron jobs and a spreadsheet, in truth.");
 	});
 
 	it("SchemaPage: nothing carries it", () => {

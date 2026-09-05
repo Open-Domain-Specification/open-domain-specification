@@ -417,6 +417,92 @@ describe("an external bounded context", () => {
 	});
 });
 
+describe("a process", () => {
+	/** A context with the four consumables one lifecycle needs. */
+	function lifecycle() {
+		const ws = new Workspace("W", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0",
+		});
+		const bc = ws.addBoundedContext("Orders", { description: "" });
+		const app = bc.addService("App", { description: "", type: "application" });
+		return {
+			ws,
+			bc,
+			placed: app.provides("Placed", { description: "", type: "event" }),
+			paid: app.provides("Paid", { description: "", type: "event" }),
+			ship: app.provides("Ship", { description: "", type: "operation" }),
+			shipped: app.provides("Shipped", { description: "", type: "event" }),
+		};
+	}
+
+	it("takes its lifecycle as attributes or by chaining, and keeps each list distinct", () => {
+		const { bc, placed, paid, ship, shipped } = lifecycle();
+		const declared = bc.addProcess("Order to shipment", {
+			description: "Waits for payment before it ships",
+			starts: [placed],
+			on: [paid],
+			// biome-ignore lint/suspicious/noThenProperty: "then" is the model's word for what a process issues, as it is on a policy
+			then: [ship],
+			ends: [shipped],
+		});
+		const chained = bc
+			.addProcess("The same, chained", { description: "" })
+			.starts(placed)
+			.on(paid)
+			.then(ship)
+			.ends(shipped);
+		for (const process of [declared, chained]) {
+			expect(process.startEvents).toEqual([placed]);
+			expect(process.events).toEqual([paid]);
+			expect(process.commands).toEqual([ship]);
+			expect(process.endEvents).toEqual([shipped]);
+		}
+		// Naming the same consumable twice is the same statement, so it is kept once.
+		declared.starts(placed).on(paid).then(ship).ends(shipped);
+		expect(declared.startEvents).toEqual([placed]);
+		expect(declared.endEvents).toEqual([shipped]);
+		expect(declared.ref).toBe(
+			"#/boundedcontexts/orders/processes/order_to_shipment",
+		);
+	});
+
+	it("round-trips its lifecycle, its comments and its disposition", () => {
+		const { ws, bc, placed, paid, ship, shipped } = lifecycle();
+		const process = bc
+			.addProcess("Order to shipment", {
+				description: "Waits for payment before it ships",
+				comments: [{ text: "Implemented as a saga in orders/process/." }],
+				disposition: "tolerated",
+			})
+			.starts(placed)
+			.on(paid)
+			.then(ship)
+			.ends(shipped);
+		const rebuilt = Workspace.fromSchema(
+			JSON.parse(JSON.stringify(ws.toSchema())),
+		).getProcessByRefOrThrow(process.ref);
+		expect(rebuilt.toSchema()).toEqual(process.toSchema());
+		expect(rebuilt.disposition).toBe("tolerated");
+		expect(rebuilt.comments).toHaveLength(1);
+	});
+
+	it("writes no comments key and no disposition when nothing was said", () => {
+		const { bc, placed } = lifecycle();
+		const schema = bc
+			.addProcess("Bare", { description: "", starts: [placed] })
+			.toSchema();
+		expect(schema.comments).toBeUndefined();
+		// by-design is what an absent disposition means, so it is never written.
+		expect(
+			bc.addProcess("By design", { description: "", disposition: "by-design" })
+				.disposition,
+		).toBeUndefined();
+		expect(schema.on).toEqual([]);
+	});
+});
+
 describe("a kind of another entity or value object", () => {
 	/** Account with two kinds, and a kernel value object with one. */
 	function kinds() {

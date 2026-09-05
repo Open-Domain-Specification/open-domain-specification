@@ -94,7 +94,7 @@ export async function toDoc(
 			ODSContextMap.fromBoundedContext(boundedcontext),
 		).toSVG();
 
-		if (boundedcontext.policies.size > 0) {
+		if (boundedcontext.policies.size + boundedcontext.processes.size > 0) {
 			docs[pathToFlowMapSvg(boundedcontext.path)] = await flowMapToDigraph(
 				ODSFlowMap.fromBoundedContext(boundedcontext),
 			).toSVG();

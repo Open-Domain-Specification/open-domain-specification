@@ -14,7 +14,7 @@ const page = (
 ) => render(Harness, { model, component: ContextPage, args: { context } });
 
 describe("ContextPage", () => {
-	it("names its eight sections for the table of contents", () => {
+	it("names its nine sections for the table of contents", () => {
 		expect(sections.map((s) => s.id)).toEqual([
 			"position",
 			"model",
@@ -22,6 +22,7 @@ describe("ContextPage", () => {
 			"values",
 			"integration",
 			"behaviour",
+			"processes",
 			"schemas",
 			"language",
 		]);
@@ -80,6 +81,49 @@ describe("ContextPage", () => {
 		).toEqual(["Term", "Definition", "Also", "Embodied by"]);
 	});
 
+	it("reads a process across its row, from what starts it to what ends it", () => {
+		const { model, context } = petstoreSales();
+		const { container } = page(model, context);
+		const processes = container.querySelector("#processes") as HTMLElement;
+		expect(
+			[...processes.querySelectorAll("thead th")].map((th) =>
+				th.textContent?.trim(),
+			),
+		).toEqual([
+			"Process",
+			"Starts",
+			"While it runs",
+			"Then",
+			"Ends",
+			"Description",
+		]);
+		const row = processes.querySelector("tbody tr") as HTMLElement;
+		expect(row).toHaveTextContent("Order fulfilment");
+		expect(row).toHaveTextContent("OrderPlaced");
+		expect(row).toHaveTextContent("PetStatusChanged");
+		expect(row).toHaveTextContent("OrderDelivered");
+	});
+
+	it("says nothing four times over for a process with an empty lifecycle", () => {
+		const model = edgeCaseModel();
+		const main = model.workspace.boundedcontexts.get(
+			"main_context",
+		) as BoundedContext;
+		const { container } = page(model, main);
+		const row = container.querySelector("#processes tbody tr") as HTMLElement;
+		expect(row).toHaveTextContent("Idle Process");
+		// Nothing to start it and nothing to end it are the two the model warns
+		// about, so those two read as warnings and the middle two do not.
+		const words = [...row.querySelectorAll(".keyword")];
+		expect(words.map((w) => w.textContent)).toEqual([
+			"nothing",
+			"nothing",
+			"nothing",
+			"nothing",
+		]);
+		expect(words.filter((w) => w.classList.contains("warn"))).toHaveLength(2);
+	});
+
 	it("makes each schema a subsection with its attribute table, naming what carries it", () => {
 		const { model, context } = petstoreSales();
 		const { container } = page(model, context);
@@ -110,6 +154,11 @@ describe("ContextPage", () => {
 		).toBeInTheDocument();
 		expect(screen.getByText("No policies.")).toBeInTheDocument();
 		expect(
+			screen.getByText(
+				"No processes. Nothing here waits for more than one event before it acts.",
+			),
+		).toBeInTheDocument();
+		expect(
 			screen.getByText("No schemas. Consumables carry no declared payload."),
 		).toBeInTheDocument();
 		expect(
@@ -131,9 +180,10 @@ describe("ContextPage", () => {
 		expect(screen.getAllByText("no root")[0]).toHaveClass("warn");
 		expect(screen.getByText("unused")).toHaveClass("keyword");
 		expect(screen.getAllByText("not modelled").length).toBeGreaterThan(0);
-		// The policy fires on nothing and issues nothing, and neither of the
-		// context's two value objects is held by an aggregate.
-		expect(screen.getAllByText("nothing").length).toBe(4);
+		// The policy fires on nothing and issues nothing, the process starts on
+		// nothing, waits for nothing, issues nothing and ends on nothing, and
+		// neither of the context's two value objects is held by an aggregate.
+		expect(screen.getAllByText("nothing").length).toBe(8);
 		expect(
 			screen.getByText("The schema has no attributes."),
 		).toBeInTheDocument();

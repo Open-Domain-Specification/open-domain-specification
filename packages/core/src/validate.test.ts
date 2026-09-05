@@ -1620,6 +1620,259 @@ describe("policy-in-context", () => {
 	});
 });
 
+describe("process rules", () => {
+	/**
+	 * Two contexts: an upstream that publishes a fact and offers an operation,
+	 * and a downstream whose process listens for the fact.
+	 */
+	function reachingProcess() {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const upApp = up.addService("Up App", {
+			description: "",
+			type: "application",
+		});
+		const happened = upApp.provides("Happened", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+		});
+		const react = upApp.provides("React", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		const downApp = down.addService("Down App", {
+			description: "",
+			type: "application",
+		});
+		const act = downApp.provides("Act", { description: "", type: "operation" });
+		const done = downApp.provides("Done", { description: "", type: "event" });
+		const process = down
+			.addProcess("Long Running", { description: "" })
+			.starts(happened)
+			.then(act)
+			.ends(done);
+		return { ws, down, downApp, upApp, happened, react, act, done, process };
+	}
+
+	const ruleOf = (ws: Workspace, rule: string) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === rule)
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	describe("process-in-context", () => {
+		it("flags a process whose then names another context's operation", () => {
+			const { ws, react, process } = reachingProcess();
+			process.then(react);
+			expect(ruleOf(ws, "process-in-context")).toEqual([
+				[
+					"error",
+					'Process "Long Running" in "Down" issues "React", which belongs to "Up"',
+					process.ref,
+				],
+			]);
+		});
+
+		it("leaves the events it starts, waits and ends on free to cross", () => {
+			const { ws, upApp, process } = reachingProcess();
+			const settled = upApp.provides("Settled", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			});
+			const cancelled = upApp.provides("Cancelled", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			});
+			process.on(settled).ends(cancelled);
+			expect(ruleOf(ws, "process-in-context")).toEqual([]);
+		});
+	});
+
+	describe("process-starts", () => {
+		it("wants an event that begins an instance", () => {
+			const { ws, down, downApp } = reachingProcess();
+			const nothing = down.addProcess("Never Begins", { description: "" }).then(
+				downApp.provides("Something", {
+					description: "",
+					type: "operation",
+				}),
+			);
+			expect(ruleOf(ws, "process-starts")).toEqual([
+				[
+					"error",
+					'Process "Never Begins" names no event that begins an instance, so nothing in the model says when one exists',
+					nothing.ref,
+				],
+			]);
+		});
+
+		it("says nothing about a process that names one", () => {
+			const { ws } = reachingProcess();
+			expect(ruleOf(ws, "process-starts")).toEqual([]);
+		});
+	});
+
+	describe("process-has-ends", () => {
+		it("warns about a process that never says how it finishes", () => {
+			const { ws, process } = reachingProcess();
+			process.endEvents.length = 0;
+			expect(ruleOf(ws, "process-has-ends")).toEqual([
+				[
+					"warning",
+					'Process "Long Running" names no event that completes an instance, so the model never says how it finishes',
+					process.ref,
+				],
+			]);
+		});
+
+		it("says nothing when the process names an ending event", () => {
+			const { ws } = reachingProcess();
+			expect(ruleOf(ws, "process-has-ends")).toEqual([]);
+		});
+	});
+
+	describe("the rules a process shares with a policy", () => {
+		it("reads its three event lists as reactions the boundary rules see", () => {
+			const { ws, down, downApp, upApp, process } = reachingProcess();
+			const secret = upApp.provides("Secret", {
+				description: "",
+				type: "event",
+				internal: true,
+			});
+			process.on(secret);
+			down.separateWaysFrom(
+				ws.getBoundedContextByRefOrThrow("#/boundedcontexts/up"),
+			);
+			expect(ruleOf(ws, "internal-consumable")).toContainEqual([
+				"error",
+				'Process "Long Running" reacts to "Secret", which is internal to "Up"',
+				process.ref,
+			]);
+			expect(ruleOf(ws, "separate-ways")).toContainEqual([
+				"error",
+				'Process "Long Running" in "Down" reacts to "Happened" from "Up" although the contexts declare separate ways',
+				process.ref,
+			]);
+			// An operation in `starts` is a kind error, exactly as it is on a policy.
+			const wrong = down
+				.addProcess("Kinds", { description: "" })
+				.starts(downApp.provides("Ask", { description: "", type: "operation" }))
+				.ends(downApp.provides("Finished", { description: "", type: "event" }));
+			expect(ruleOf(ws, "consumable-kind")).toContainEqual([
+				"error",
+				'Process "Kinds" reacts to "Ask", which is an operation, not an event',
+				wrong.ref,
+			]);
+		});
+
+		it("refuses a process on a system we do not own", () => {
+			const ws = emptyWorkspace();
+			const scheme = ws.addBoundedContext("Scheme", {
+				description: "",
+				external: true,
+			});
+			const process = scheme.addProcess("Settlement", { description: "" });
+			expect(ruleOf(ws, "external-is-boundary")).toContainEqual([
+				"error",
+				'External context "Scheme" declares process "Settlement"; what happens inside a system we do not own is not ours to state, only what it provides and what it consumes',
+				process.ref,
+			]);
+		});
+
+		it("accepts a process of the consumer's context in a consumption's by", () => {
+			const { ws, downApp, react, process } = reachingProcess();
+			downApp.consumes(react, {
+				pattern: "anti-corruption-layer",
+				by: [process],
+			});
+			expect(ruleOf(ws, "consumption-by-resolves")).toEqual([]);
+		});
+
+		it("refuses a process of somebody else's context in a consumption's by", () => {
+			const { ws, down, downApp, upApp, react } = reachingProcess();
+			const theirs = ws
+				.getBoundedContextByRefOrThrow("#/boundedcontexts/up")
+				.addProcess("Theirs", { description: "" })
+				.starts(
+					upApp.provides("Started Over There", {
+						description: "",
+						type: "event",
+					}),
+				);
+			const consumption = downApp.consumes(react, {
+				pattern: "anti-corruption-layer",
+				by: [theirs],
+			});
+			expect(down.processes.size).toBe(1);
+			expect(ruleOf(ws, "consumption-by-resolves")).toEqual([
+				[
+					"error",
+					`"Down App" says its consumption of "React" is made by process "Theirs" belongs to "Up"; a consumption names the consumer's own operations, or the policies and processes of its context`,
+					consumption.ref,
+				],
+			]);
+		});
+	});
+
+	describe("reaction-cycle", () => {
+		/** A process that issues an operation whose event ends it: the normal shape. */
+		function lifecycle() {
+			const ws = emptyWorkspace();
+			const bc = ws.addBoundedContext("BC", { description: "" });
+			const app = bc.addService("App", {
+				description: "",
+				type: "application",
+			});
+			const begun = app.provides("Begun", { description: "", type: "event" });
+			const finished = app.provides("Finished", {
+				description: "",
+				type: "event",
+			});
+			const finish = app
+				.provides("Finish", { description: "", type: "operation" })
+				.raises(finished);
+			app
+				.provides("Begin", { description: "", type: "operation" })
+				.raises(begun);
+			return { ws, bc, begun, finish, finished };
+		}
+
+		it("does not call a process that ends on what it raises a cycle", () => {
+			const { ws, bc, begun, finish, finished } = lifecycle();
+			bc.addProcess("Run", { description: "" })
+				.starts(begun)
+				.then(finish)
+				.ends(finished);
+			expect(ruleOf(ws, "reaction-cycle")).toEqual([]);
+		});
+
+		it("still finds the ring when the process waits on what it caused", () => {
+			const { ws, bc, begun, finish, finished } = lifecycle();
+			// `on` is a reaction, not an ending: a process that reacts to the fact
+			// its own operation raises does trigger itself, and nothing says what
+			// stops it.
+			const process = bc
+				.addProcess("Run", { description: "" })
+				.starts(begun)
+				.on(finished)
+				.then(finish)
+				.ends(finished);
+			expect(ruleOf(ws, "reaction-cycle")).toEqual([
+				[
+					"warning",
+					'Reactions run in a cycle: "Run" -> "Finish" -> "Finished" -> "Run"; the chain triggers itself and nothing in the model says what ends it',
+					process.ref,
+				],
+			]);
+		});
+	});
+});
+
 describe("raises-in-context", () => {
 	/** Two contexts, each with a service, an operation and an event of its own. */
 	function twoContexts() {

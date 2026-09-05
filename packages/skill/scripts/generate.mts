@@ -130,6 +130,7 @@ Every cross-link is an object \`{ "$ref": "<path>" }\`. Paths are JSON pointers 
 | Service | \`#/boundedcontexts/<bc>/services/<service>\` |
 | Consumable of a service | \`#/boundedcontexts/<bc>/services/<service>/provides/<consumable>\` |
 | Policy | \`#/boundedcontexts/<bc>/policies/<policy>\` |
+| Process | \`#/boundedcontexts/<bc>/processes/<process>\` |
 | Glossary term | \`#/boundedcontexts/<bc>/glossary/<term>\` |
 | Schema | \`#/boundedcontexts/<bc>/schemas/<schema>\` |
 | Consumption | \`<consumer path>/consumes/<consumable path, with ~ for />\` |

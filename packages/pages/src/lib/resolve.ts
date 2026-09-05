@@ -37,6 +37,7 @@ export function pageRefs(ws: Workspace): string[] {
 			for (const c of s.consumables.values()) refs.push(c.ref);
 		}
 		for (const p of bc.policies.values()) refs.push(p.ref);
+		for (const p of bc.processes.values()) refs.push(p.ref);
 		for (const s of bc.schemas.values()) refs.push(s.ref);
 		for (const t of bc.glossary.values()) refs.push(t.ref);
 	}
@@ -92,6 +93,10 @@ const PAGE_PATTERNS: [
 	[
 		/^#\/boundedcontexts\/([^/]+)\/policies\/([^/]+)/,
 		(ws, m) => ws.boundedcontexts.get(m[1])?.policies.get(m[2]),
+	],
+	[
+		/^#\/boundedcontexts\/([^/]+)\/processes\/([^/]+)/,
+		(ws, m) => ws.boundedcontexts.get(m[1])?.processes.get(m[2]),
 	],
 	[
 		/^#\/boundedcontexts\/([^/]+)\/schemas\/([^/]+)/,

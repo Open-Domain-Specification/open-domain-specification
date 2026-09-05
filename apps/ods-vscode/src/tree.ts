@@ -291,6 +291,15 @@ export class ModelTree
 								}),
 						),
 					),
+					group(node, "Processes", "server-process", () =>
+						[...bc.processes.values()].map(
+							(p) =>
+								new ModelNode(file, p.name, "server-process", undefined, {
+									ref: p.ref,
+									description: p.id,
+								}),
+						),
+					),
 					group(node, "Schemas", "json", () =>
 						this.leaves(file, bc.schemas.values(), "json"),
 					),
