@@ -298,6 +298,25 @@ describe("Swagger Petstore Example Workspace", () => {
 		expect([...map.edges.values()].some((e) => e.implied)).toBe(false);
 	});
 
+	// The Sales map reaches Catalog and Inventory, but Sales' walk finds nothing
+	// crossing between those two, so their shared kernel belongs to a
+	// neighbouring map and not to this one (card 87).
+	it("leaves out a declared relationship between two contexts it only reaches", () => {
+		const salesBc = workspace.getBoundedContextByRefOrThrow(
+			"#/boundedcontexts/sales_bc",
+		);
+		const map = ODSContextMap.fromBoundedContext(salesBc);
+		const refs = [...map.nodes.keys()];
+		expect(refs).toContain("#/boundedcontexts/catalog_bc");
+		expect(refs).toContain("#/boundedcontexts/inventory_bc");
+		const between = [...map.edges.values()].filter((e) =>
+			["#/boundedcontexts/catalog_bc", "#/boundedcontexts/inventory_bc"].every(
+				(ref) => e.source.id === ref || e.target.id === ref,
+			),
+		);
+		expect(between).toEqual([]);
+	});
+
 	it("validates clean: the demonstration reference has no diagnostics", () => {
 		expect(workspace.validate()).toEqual([]);
 	});
