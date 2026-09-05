@@ -414,11 +414,39 @@
       "team": {
         "$ref": "#/teams/discovery_team"
       },
-      "aggregates": {
-        "search_index": {
-          "name": "SearchIndex",
-          "description": "The searchable documents. A projection: it holds copies, never the truth",
+      "aggregates": {},
+      "services": {
+        "ranker": {
+          "name": "Ranker",
+          "description": "Orders candidates by relevance, price and delivery promise; spans every document so it is a domain service",
+          "type": "domain",
           "provides": {
+            "rank_candidates": {
+              "name": "RankCandidates",
+              "description": "Score and sort a candidate set",
+              "type": "operation",
+              "internal": true,
+              "returns": {
+                "$ref": "#/boundedcontexts/search/schemas/search_results"
+              }
+            }
+          },
+          "consumes": []
+        },
+        "search_api": {
+          "name": "SearchAPI",
+          "description": "The results page endpoint and the index it is read from: a projection modelled as a query service (decision 15)",
+          "type": "application",
+          "provides": {
+            "search_products": {
+              "name": "SearchProducts",
+              "description": "Query → ranked page, with sponsored slots merged in",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "returns": {
+                "$ref": "#/boundedcontexts/search/schemas/search_results"
+              }
+            },
             "document_indexed": {
               "name": "DocumentIndexed",
               "description": "A document was (re)written into the index",
@@ -432,7 +460,7 @@
               "internal": true,
               "raises": [
                 {
-                  "$ref": "#/boundedcontexts/search/aggregates/search_index/provides/document_indexed"
+                  "$ref": "#/boundedcontexts/search/services/search_api/provides/document_indexed"
                 }
               ]
             },
@@ -461,63 +489,7 @@
                 "$ref": "#/boundedcontexts/offers/aggregates/offer/provides/buy_box_awarded"
               },
               "pattern": "conformist"
-            }
-          ],
-          "entities": {
-            "search_document": {
-              "name": "SearchDocument",
-              "description": "One indexed product with the fields ranking needs",
-              "root": true,
-              "attributes": {
-                "product_id": {
-                  "name": "productId",
-                  "type": "string",
-                  "identity": true
-                },
-                "buy_box_price_minor": {
-                  "name": "buyBoxPriceMinor",
-                  "type": "int64"
-                },
-                "next_day_eligible": {
-                  "name": "nextDayEligible",
-                  "type": "boolean",
-                  "description": "The badge: the buy box offer ships from a RiverMart warehouse, so next-day is the default"
-                }
-              },
-              "relations": []
-            }
-          },
-          "invariants": {}
-        }
-      },
-      "services": {
-        "ranker": {
-          "name": "Ranker",
-          "description": "Orders candidates by relevance, price and delivery promise; spans every document so it is a domain service",
-          "type": "domain",
-          "provides": {
-            "rank_candidates": {
-              "name": "RankCandidates",
-              "description": "Score and sort a candidate set",
-              "type": "operation",
-              "internal": true
-            }
-          },
-          "consumes": []
-        },
-        "search_api": {
-          "name": "SearchAPI",
-          "description": "The results page endpoint",
-          "type": "application",
-          "provides": {
-            "search_products": {
-              "name": "SearchProducts",
-              "description": "Query → ranked page, with sponsored slots merged in",
-              "pattern": "open-host-service",
-              "type": "operation"
-            }
-          },
-          "consumes": [
+            },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/advertising/services/ads_api/provides/get_sponsored_results"
@@ -544,7 +516,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/search/aggregates/search_index/provides/index_product"
+              "$ref": "#/boundedcontexts/search/services/search_api/provides/index_product"
             }
           ]
         },
@@ -558,7 +530,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/search/aggregates/search_index/provides/remove_document"
+              "$ref": "#/boundedcontexts/search/services/search_api/provides/remove_document"
             }
           ]
         },
@@ -572,7 +544,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/search/aggregates/search_index/provides/index_product"
+              "$ref": "#/boundedcontexts/search/services/search_api/provides/index_product"
             }
           ]
         }
@@ -587,7 +559,41 @@
         }
       },
       "valueobjects": {},
-      "schemas": {}
+      "schemas": {
+        "search_hit": {
+          "name": "SearchHit",
+          "description": "One indexed product with the fields ranking needs",
+          "attributes": {
+            "product_id": {
+              "name": "productId",
+              "type": "string",
+              "identity": true
+            },
+            "buy_box_price_minor": {
+              "name": "buyBoxPriceMinor",
+              "type": "int64"
+            },
+            "next_day_eligible": {
+              "name": "nextDayEligible",
+              "type": "boolean",
+              "description": "The badge: the buy box offer ships from a RiverMart warehouse, so next-day is the default"
+            }
+          }
+        },
+        "search_results": {
+          "name": "SearchResults",
+          "description": "A ranked page of hits",
+          "attributes": {
+            "hits": {
+              "name": "hits",
+              "type": "SearchHit[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/search/schemas/search_hit"
+              }
+            }
+          }
+        }
+      }
     },
     "offers": {
       "name": "Offers",
@@ -809,6 +815,9 @@
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/offers/schemas/offer_ref"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/offers/schemas/offer_detail"
               }
             }
           },
@@ -938,6 +947,28 @@
               "name": "offerId",
               "type": "string",
               "identity": true
+            }
+          }
+        },
+        "offer_detail": {
+          "name": "OfferDetail",
+          "description": "One offer with its current price and stock",
+          "attributes": {
+            "offer_id": {
+              "name": "offerId",
+              "type": "string",
+              "identity": true
+            },
+            "price": {
+              "name": "price",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/offers/valueobjects/money"
+              }
+            },
+            "available_quantity": {
+              "name": "availableQuantity",
+              "type": "int"
             }
           }
         }
@@ -1960,6 +1991,9 @@
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/order_management/schemas/order_ref"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/order_management/schemas/order_detail"
               }
             },
             "place_order": {
@@ -2220,6 +2254,48 @@
               "name": "orderId",
               "type": "string",
               "identity": true
+            }
+          }
+        },
+        "order_detail": {
+          "name": "OrderDetail",
+          "description": "One order with its lines, shipments and returns",
+          "attributes": {
+            "order_id": {
+              "name": "orderId",
+              "type": "string",
+              "identity": true
+            },
+            "status": {
+              "name": "status",
+              "type": "OrderStatus",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/order_management/valueobjects/order_status"
+              }
+            },
+            "total": {
+              "name": "total",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/order_management/valueobjects/money"
+              }
+            },
+            "lines": {
+              "name": "lines",
+              "type": "OrderLine[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/order_management/schemas/order_line"
+              }
+            },
+            "shipment_ids": {
+              "name": "shipmentIds",
+              "type": "string[]",
+              "description": "Shipments dispatched for this order"
+            },
+            "return_ids": {
+              "name": "returnIds",
+              "type": "string[]",
+              "description": "Returns opened for this order"
             }
           }
         },
@@ -3917,6 +3993,9 @@
               "description": "Pick winners for a query's sponsored slots",
               "type": "operation",
               "internal": true,
+              "returns": {
+                "$ref": "#/boundedcontexts/advertising/schemas/sponsored_results"
+              },
               "raises": [
                 {
                   "$ref": "#/boundedcontexts/advertising/aggregates/campaign/provides/slots_awarded"
@@ -3946,7 +4025,10 @@
               "name": "GetSponsoredResults",
               "description": "Sponsored slots for a query, merged into organic results by Search",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "returns": {
+                "$ref": "#/boundedcontexts/advertising/schemas/sponsored_results"
+              }
             },
             "record_ad_click": {
               "name": "RecordAdClick",
@@ -4059,6 +4141,37 @@
               "type": "Money",
               "valueobject": {
                 "$ref": "#/boundedcontexts/advertising/valueobjects/money"
+              }
+            }
+          }
+        },
+        "sponsored_slot": {
+          "name": "SponsoredSlot",
+          "description": "One paid placement won for a query",
+          "attributes": {
+            "product_id": {
+              "name": "productId",
+              "type": "string",
+              "identity": true
+            },
+            "bid": {
+              "name": "bid",
+              "type": "Bid",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/advertising/valueobjects/bid"
+              }
+            }
+          }
+        },
+        "sponsored_results": {
+          "name": "SponsoredResults",
+          "description": "The winning slots for a query, ranked",
+          "attributes": {
+            "slots": {
+              "name": "slots",
+              "type": "SponsoredSlot[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/advertising/schemas/sponsored_slot"
               }
             }
           }
@@ -4441,7 +4554,10 @@
               "name": "GetCustomer",
               "description": "Read a customer's profile",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "returns": {
+                "$ref": "#/boundedcontexts/identity/schemas/customer_profile"
+              }
             }
           },
           "consumes": []
@@ -4461,7 +4577,23 @@
         }
       },
       "valueobjects": {},
-      "schemas": {}
+      "schemas": {
+        "customer_profile": {
+          "name": "CustomerProfile",
+          "description": "A customer's profile",
+          "attributes": {
+            "customer_id": {
+              "name": "customerId",
+              "type": "string",
+              "identity": true
+            },
+            "email": {
+              "name": "email",
+              "type": "string"
+            }
+          }
+        }
+      }
     }
   },
   "relationships": [

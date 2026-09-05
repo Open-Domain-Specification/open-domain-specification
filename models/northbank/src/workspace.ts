@@ -744,6 +744,15 @@ accountAgg
 
 const accountRefSchema = accountsBC.addSchema("AccountRef");
 accountRefSchema.addAttribute("accountId", { type: "string", identity: true });
+// A returned shape: what GetAvailableBalance answers with.
+const availableBalanceSchema = accountsBC.addSchema("AvailableBalance", {
+	description:
+		"Posted balance less pending authorisations, at the moment of the call",
+});
+availableBalanceSchema.addAttribute("amount", {
+	type: "Money",
+	valueobject: accountMoney,
+});
 const accountOpenedSchema = accountsBC.addSchema("AccountOpened", {
 	description: "What reporting and the ledger learn about a new account",
 });
@@ -813,6 +822,7 @@ const getAvailableBalance = accountServicing.provides("GetAvailableBalance", {
 	type: "operation",
 	pattern: "open-host-service",
 	schema: accountRefSchema,
+	returns: availableBalanceSchema,
 });
 // What a context offers outward leaves an application service; an
 // aggregate's operations are its own context's (decision 17).

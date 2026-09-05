@@ -1287,6 +1287,20 @@ const recordSignal = tasteAgg.provides("RecordSignal", {
 	internal: true,
 });
 
+// A returned shape: what RankRows and GetHomepageRows answer with.
+const homepageRowSchema = recsBC.addSchema("HomepageRow", {
+	description:
+		"One ranked row: a title in a candidate pool the profile may see",
+});
+homepageRowSchema.addAttribute("titleId", { type: "string", identity: true });
+const homepageRowsSchema = recsBC.addSchema("HomepageRows", {
+	description: "The ranked rows for a profile",
+});
+homepageRowsSchema.addAttribute("rows", {
+	type: "HomepageRow[]",
+	schema: homepageRowSchema,
+});
+
 const ranker = recsBC.addService("Ranker", {
 	description:
 		"Orders candidate titles into rows for a profile; a domain service because it reads across every taste profile's affinities",
@@ -1296,6 +1310,7 @@ ranker.provides("RankRows", {
 	description: "Build the home screen rows for a profile",
 	type: "operation",
 	internal: true,
+	returns: homepageRowsSchema,
 });
 // DISCOVERY: Head of Personalisation ("we consume ... new titles"), peer
 // review. The candidate pool is what the ranker orders; a title enters it when
@@ -1314,6 +1329,7 @@ recsApi.provides("GetHomepageRows", {
 	description: "Rows for a profile, ranked",
 	type: "operation",
 	pattern: "open-host-service",
+	returns: homepageRowsSchema,
 });
 
 tasteAgg.consumes(playbackStopped, { pattern: "anti-corruption-layer" });
@@ -1564,6 +1580,12 @@ const entitlementSchema = billingBC.addSchema("EntitlementRequest", {
 	description: "What Playback asks: which household, for how many streams",
 });
 entitlementSchema.addAttribute("householdId", { type: "string" });
+// A returned shape: what GetEntitlement answers with.
+const entitlementResultSchema = billingBC.addSchema("Entitlement", {
+	description: "Whether the household may stream, and how many at once",
+});
+entitlementResultSchema.addAttribute("entitled", { type: "boolean" });
+entitlementResultSchema.addAttribute("maxConcurrentStreams", { type: "int" });
 
 const subscriptionActivated = subscriptionAgg.provides(
 	"SubscriptionActivated",
@@ -1605,6 +1627,7 @@ const getEntitlement = billingApi.provides("GetEntitlement", {
 	type: "operation",
 	pattern: "open-host-service",
 	schema: entitlementSchema,
+	returns: entitlementResultSchema,
 });
 subscriptionAgg
 	.provides("ChargeRenewal", {
@@ -1799,6 +1822,19 @@ breakAgg
 const resolveBreakSchema = adsBC.addSchema("ResolveAdBreak");
 resolveBreakSchema.addAttribute("sessionId", { type: "string" });
 resolveBreakSchema.addAttribute("positionSeconds", { type: "int" });
+// A returned shape: what ResolveAdBreak answers with.
+const adSlotSchema = adsBC.addSchema("AdSlot", {
+	description: "One slot in the break, with the creative to show",
+});
+adSlotSchema.addAttribute("creativeId", { type: "string", identity: true });
+adSlotSchema.addAttribute("durationSeconds", { type: "int" });
+const adBreakResultSchema = adsBC.addSchema("AdBreakSlots", {
+	description: "The slots for the break the player has reached",
+});
+adBreakResultSchema.addAttribute("slots", {
+	type: "AdSlot[]",
+	schema: adSlotSchema,
+});
 const impressionSchema = adsBC.addSchema("AdImpressionRecorded", {
 	description: "What advertiser billing consumes; out of scope here",
 });
@@ -1824,6 +1860,7 @@ const resolveAdBreak = adsApi.provides("ResolveAdBreak", {
 	type: "operation",
 	pattern: "open-host-service",
 	schema: resolveBreakSchema,
+	returns: adBreakResultSchema,
 });
 const prepareBreaks = breakAgg.provides("PrepareBreaks", {
 	description:

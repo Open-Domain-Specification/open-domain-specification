@@ -1173,6 +1173,9 @@
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/accounts/schemas/account_ref"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/accounts/schemas/available_balance"
               }
             },
             "freeze_account": {
@@ -1309,6 +1312,19 @@
               "name": "accountId",
               "type": "string",
               "identity": true
+            }
+          }
+        },
+        "available_balance": {
+          "name": "AvailableBalance",
+          "description": "Posted balance less pending authorisations, at the moment of the call",
+          "attributes": {
+            "amount": {
+              "name": "amount",
+              "type": "Money",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
+              }
             }
           }
         },

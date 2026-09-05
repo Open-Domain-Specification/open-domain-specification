@@ -48,6 +48,7 @@ Open-host service for /pet endpoints
 | PetStatusChanged | - | **petId**: `int64`, from: `PetStatus`, to: `PetStatus` | PetStatusChanged, ChangePetStatus |
 | RegisterPet | Request body for adding a pet | name: `string`, category: `Category` | AddPet |
 | PetId | Identifies one pet; shared by every consumable that only needs the id | **petId**: `int64` | PetUpdated, PetDeleted, ReservePet, MarkPetSold, GetPetById, UploadImage, DeletePet, GetPetSummary, ReservePetForOrder, MarkPetSoldForOrder |
+| Pet | The full pet resource, as GET /pet/{petId} answers with it | **petId**: `int64`, name: `string`, category: `Category`, photoUrls: `PhotoUrl[]`, tags: `Tag[]`, status: `PetStatus` | FindPetsByStatus, GetPetById |
 | PetSummary | The slim read of a pet other contexts are allowed to hold | **petId**: `int64`, name: `string`, status: `PetStatus` | GetPetSummary |
 
 
@@ -85,9 +86,9 @@ Open-host service for /pet endpoints
 | [OrderApp](../sales_bc/services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
 | [OrderApp](../sales_bc/services/order_app/index.md) | - | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
 | [PetApp](services/pet_app/index.md) | - | - | Pet | ReservePet | - |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | - | conformist | Pet | PetRegistered | published-language |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | - | conformist | Pet | PetStatusChanged | published-language |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | - | conformist | Pet | PetDeleted | published-language |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetRegistered | published-language |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetStatusChanged | published-language |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetDeleted | published-language |
 | [PetApp](services/pet_app/index.md) | - | - | Pet | MarkPetSold | - |
 
 
