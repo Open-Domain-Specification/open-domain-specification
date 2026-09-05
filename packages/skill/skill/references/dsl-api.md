@@ -39,10 +39,10 @@ independently of the name.
 | `Aggregate`, `Service` | `consumes(consumable, { pattern?, by?, comments?, disposition? })` | a consumption; `pattern` is `"conformist" \| "anti-corruption-layer"`; `by` names the consumer's own operations, or the policies and processes of its context, that make this exchange, and is left off when the whole consumer depends on it |
 | `Consumable` | `raises(...events)` | the events an operation raises |
 | `Entity`, `ValueObject`, `DataSchema` | `addAttribute(name, { type, description?, identity?, optional?, valueobject?, schema?, identifies? })` | an attribute; `type` is free text, `valueobject` and `schema` are mutually exclusive, and only a `DataSchema`'s attribute may use `schema`; `identifies` is what the attribute holds the identity of — an entity, root or child, in this or another context, or an external bounded context when the id belongs to a system nobody here models inside; `optional: true` marks an attribute that is sometimes absent, and is left off for everything always present, which an identity attribute always is |
-| `Entity`, `ValueObject` | `uses(target, label, cardinality?)` | a `uses` relation, at a value object of the same context. The cardinality says what the attribute already says — `*` or `1..*` for a list, `0..1` or `*` for an optional one, `1` or `1..*` for a required one — and where two relations point at the same value object, each `label` is the name of its attribute |
-| `Entity`, `ValueObject` | `includes(target, label, cardinality?)` | an `includes` relation |
-| `Entity`, `ValueObject` | `references(target, label, cardinality?)` | a `references` relation; across aggregates target the root |
-| `Entity`, `ValueObject` | `addRelation(target, { relation, label?, cardinality? })` | any relation explicitly |
+| `Entity`, `ValueObject` | `uses(target, label, cardinality?, { for? })` | a `uses` relation, at a value object of the same context. The cardinality says what the attribute already says — `*` or `1..*` for a list, `0..1` or `*` for an optional one, `1` or `1..*` for a required one — and where two relations point at the same value object, `for` is the name of the attribute each one draws, so the label stays a phrase |
+| `Entity`, `ValueObject` | `includes(target, label, cardinality?, { for? })` | an `includes` relation |
+| `Entity`, `ValueObject` | `references(target, label, cardinality?, { for? })` | a `references` relation; across aggregates target the root |
+| `Entity`, `ValueObject` | `addRelation(target, { relation, label?, cardinality?, for? })` | any relation explicitly |
 | `Entity` | `.attributes.get("name")` | look an attribute up, e.g. to constrain it |
 
 Every relationship, consumable and consumption also takes the evidence pair from

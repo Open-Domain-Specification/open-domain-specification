@@ -239,3 +239,42 @@ describe("schema round-trip", () => {
 		expect(order.relations[0].cardinality).toBe("1..*");
 	});
 });
+
+describe("a relation that names the attribute it draws", () => {
+	/** A customer whose current address and address history are both Addresses. */
+	function addresses() {
+		const ws = new Workspace("Round Trip", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0",
+		});
+		const bc = ws.addBoundedContext("CRM", { description: "" });
+		const address = bc.addValueObject("Address", { description: "" });
+		const customer = bc
+			.addAggregate("Customer", { description: "" })
+			.addRootEntity("Customer", { description: "" });
+		customer.addAttribute("Current Address", {
+			type: "Address",
+			valueobject: address,
+		});
+		customer.uses(address, "lives at", "1", { for: "Current Address" });
+		return ws;
+	}
+
+	it("carries for through toSchema and back", () => {
+		const schema = addresses().toSchema();
+		const relation =
+			schema.boundedcontexts.crm.aggregates.customer.entities.customer
+				.relations[0];
+		expect(relation.for).toBe("Current Address");
+		const rebuilt = Workspace.fromSchema(
+			JSON.parse(JSON.stringify(schema)),
+		).getEntityByRefOrThrow(
+			"#/boundedcontexts/crm/aggregates/customer/entities/customer",
+		);
+		expect(rebuilt.relations[0].for).toBe("Current Address");
+		expect(rebuilt.toSchema()).toEqual(
+			schema.boundedcontexts.crm.aggregates.customer.entities.customer,
+		);
+	});
+});

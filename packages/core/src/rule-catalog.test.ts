@@ -184,6 +184,8 @@ function everythingWrong(): Workspace {
 	holder.addAttribute("Weights", { type: "Weight[]", valueobject: weight });
 	holder.uses(colour, "coloured", "1");
 	holder.addAttribute("Shade", { type: "string", valueobject: colour });
+	// relation-for-resolves: a relation drawing an attribute nobody declares
+	holder.uses(size, "measured", "1", { for: "Dimensions" });
 	// attribute-one-shape: one attribute claiming a value object and a schema
 	holder.addAttribute("Both", {
 		type: "Colour",

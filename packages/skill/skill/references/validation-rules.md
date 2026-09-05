@@ -110,11 +110,19 @@
 
 ## `attribute-relation-coherence` (warning)
 
-**Requires:** An attribute typed by a value object has a matching uses relation, matched by label where one value object is used twice, and the two agree about how many there are.
+**Requires:** An attribute typed by a value object has a matching uses relation, matched by the relation's for where one value object is used twice, and the two agree about how many there are.
 
-**Why it matters:** The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened; and when they disagree about number the model says two things at once — a list-typed attribute against a single-valued relation, an optional attribute against a relation that says there is always one, a required attribute against a relation that says there may be none. One value object may be used twice, a current address beside an address history, so with several relations to it the label is what pairs each with its attribute. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.
+**Why it matters:** The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened; and when they disagree about number the model says two things at once — a list-typed attribute against a single-valued relation, an optional attribute against a relation that says there is always one, a required attribute against a relation that says there may be none. One value object may be used twice, a current address beside an address history, so with several relations to it each says with for which attribute it draws; the label stays the phrase the map reads. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.
 
-**Usual fix:** Add the missing uses relation or the missing attribute, and give the relation the cardinality the attribute already implies: * or 1..* for a list, 0..1 or * for an optional one, 1 or 1..* for a required one. Where two relations point at the same value object, label each with the name of its attribute. The type itself is free text and is never checked against the value object's name; only a trailing [] is read, as "many".
+**Usual fix:** Add the missing uses relation or the missing attribute, and give the relation the cardinality the attribute already implies: * or 1..* for a list, 0..1 or * for an optional one, 1 or 1..* for a required one. Where two relations point at the same value object, set for on each to the name of the attribute it draws. The type itself is free text and is never checked against the value object's name; only a trailing [] is read, as "many".
+
+## `relation-for-resolves` (error)
+
+**Requires:** A relation's for names an attribute of the entity or value object that declares the relation.
+
+**Why it matters:** for is how a relation says which attribute it draws, so that a label can stay a phrase where one value object is used twice. A for naming nothing pairs nothing: the attribute has been renamed or removed, or the name written is the target's rather than the source's, and the coherence check silently loses the half it was meant to find.
+
+**Usual fix:** Write the name of the attribute on this entity or value object that the relation draws, spelled as the attribute is; an attribute a parent declares counts as this one's own. Where the relation is the only one to its target, drop for altogether and the two halves pair by themselves.
 
 ## `attribute-one-shape` (error)
 

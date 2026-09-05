@@ -603,6 +603,10 @@
                 "cardinality": {
                     "$ref": "#/definitions/RelationCardinality"
                 },
+                "for": {
+                    "description": "The attribute of the source this relation draws, named where the source\nuses one value object for more than one attribute: a customer's current\naddress beside its address history. The label stays the phrase the\nrelation map reads (\"lives at\", \"in arrears of\"); this is the field it\nbelongs to. Absent where the source uses the target once, which is the\ncommon case.",
+                    "type": "string"
+                },
                 "label": {
                     "type": "string"
                 },

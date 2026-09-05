@@ -75,6 +75,12 @@ cardinality: `1`, `0..1`, `*` or `1..*`. Across aggregates only `references`
 is allowed and it must target the other aggregate's root, or a kind of that
 root.
 
+A relation's label is a phrase the relation map draws ("lives at", "in
+arrears of"). Where one entity uses the same value object for more than one
+attribute — a customer's current address beside its address history — the
+relation says which attribute it draws with `for`, and the validator pairs
+each attribute with its relation by that rather than by the phrase.
+
 Invariants list what they **constrain**: entities, value objects, single
 attributes, and the consumables of their own aggregate. A rule about a
 transition — "once sold, a pet does not go back to available" — names the
