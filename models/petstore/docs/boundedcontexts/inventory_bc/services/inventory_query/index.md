@@ -7,11 +7,11 @@ Open-host service for /store/inventory: a projection is a service that provides 
 ![consumablemap](./consumablemap.svg)
 
 ## Provides
-| Name | Type | Internal | Pattern | Description | Schema | Returns | Raises | Guarded by |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| GetInventory | operation | no | open-host-service | GET /store/inventory; takes nothing, answers with the counts | - | [InventoryCounts](../../index.md#schemas) | - | - |
-| InventoryUpdated | event | no | published-language | Inventory counts changed | [InventoryUpdatedPayload](../../index.md#schemas) | - | - | - |
-| RecountInventory | operation | yes | - | Recompute the status→count map from catalog and sales facts | - | - | InventoryUpdated | - |
+| Name | Type | Internal | Pattern | Description | Schema | Returns | Rejects with | Raises | Guarded by |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| GetInventory | operation | no | open-host-service | GET /store/inventory; takes nothing, answers with the counts | - | [InventoryCounts](../../index.md#schemas) | - | - | - |
+| InventoryUpdated | event | no | published-language | Inventory counts changed | [InventoryUpdatedPayload](../../index.md#schemas) | - | - | - | - |
+| RecountInventory | operation | yes | - | Recompute the status→count map from catalog and sales facts | - | - | - | InventoryUpdated | - |
 
 
 ## Consumes

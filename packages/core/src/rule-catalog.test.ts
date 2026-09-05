@@ -75,6 +75,12 @@ function everythingWrong(): Workspace {
 		description: "",
 		returns: b.addSchema("Answer"),
 	});
+	// rejects-on-operation: an event that says what it refuses with
+	other.provides("Refused", {
+		type: "event",
+		description: "",
+		rejects: [b.addSchema("Refusal")],
+	});
 	// consumable-kind: event raises, policy on operation / then event
 	plain.raises(carries);
 	a.addPolicy("Backwards", { description: "" }).on(carries).then(plain);

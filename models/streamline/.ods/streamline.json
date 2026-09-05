@@ -1693,6 +1693,11 @@
               "schema": {
                 "$ref": "#/boundedcontexts/playback/schemas/start_playback"
               },
+              "rejects": [
+                {
+                  "$ref": "#/boundedcontexts/playback/schemas/playback_denied"
+                }
+              ],
               "raises": [
                 {
                   "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_started"
@@ -1828,6 +1833,23 @@
               "type": "string",
               "identifies": {
                 "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/entities/household"
+              }
+            }
+          }
+        },
+        "playback_denied": {
+          "name": "PlaybackDenied",
+          "description": "Why the session did not start: no entitlement, or a device that is not certified",
+          "attributes": {
+            "reason": {
+              "name": "reason",
+              "type": "string"
+            },
+            "title_id": {
+              "name": "titleId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
               }
             }
           }

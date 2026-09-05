@@ -98,7 +98,9 @@ Recorded as: Playback as core; PlaybackSession with Bookmark and StreamManifest;
 AdaptiveBitrateSelector domain service; `PlaybackStarted` and `PlaybackStopped` published,
 `BookmarkUpdated` internal; anti-corruption consumptions of Billing, Catalogue and Ads;
 conformist consumption of Edge's `ResolveEdge` (shared kernel) and Devices'
-`DeviceCertified` (partnership).
+`DeviceCertified` (partnership). `StartPlayback` rejects with `PlaybackDenied` when the
+subscription has lapsed or the device is not certified: no session exists, so the player is
+told which of the two stopped it.
 
 ### Edge Delivery lead
 

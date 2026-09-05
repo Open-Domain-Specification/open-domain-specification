@@ -112,6 +112,8 @@ guarded by `InitiatePayment`; seven policies chaining
 `SchemeSettlementConfirmed` → `ConfirmSettlement`, `SchemeRejected` → `RejectPayment`,
 `PaymentSettled` → `PostEntry`;
 conformist consumption of the scheme gateway; customer-supplier towards Ledger.
+`InitiatePayment` rejects with `InstructionRefused` when the daily limit, the funds check or
+the cut-off stops it: no instruction exists, so the channel is told which rule stopped it.
 
 ### Scheme Connectivity lead
 

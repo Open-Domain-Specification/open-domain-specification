@@ -1037,6 +1037,12 @@ export type ConsumableAttributes = {
 	 * operation returns nothing worth naming. Never valid on an event.
 	 */
 	returns?: DataSchema;
+	/**
+	 * For operations: the shapes the operation answers with when it refuses.
+	 * Absent means it always succeeds, or refuses without a shape worth
+	 * naming. Never valid on an event.
+	 */
+	rejects?: DataSchema[];
 	id?: string;
 } & EvidenceOptions;
 
@@ -1052,6 +1058,8 @@ export class Consumable
 	schema?: DataSchema;
 	/** For operations: the payload shape the caller gets back. */
 	returns?: DataSchema;
+	/** For operations: the shapes the operation answers with when it refuses. */
+	rejects: DataSchema[] = [];
 	/** For operations: the event consumables this operation may raise. */
 	raisedEvents: Consumable[] = [];
 	provider: Aggregate | Service;
@@ -1080,6 +1088,7 @@ export class Consumable
 		this.internal = attributes.internal ?? false;
 		this.schema = attributes.schema;
 		this.returns = attributes.returns;
+		this.rejects = attributes.rejects ?? [];
 		this.comments = attributes.comments ?? [];
 		this.disposition = normaliseDisposition(attributes.disposition);
 		this.provider = provider;
@@ -1128,6 +1137,9 @@ export class Consumable
 			internal: this.internal || undefined,
 			schema: this.schema && { $ref: this.schema.ref },
 			returns: this.returns && { $ref: this.returns.ref },
+			rejects: this.rejects.length
+				? this.rejects.map((it) => ({ $ref: it.ref }))
+				: undefined,
 			raises: this.raisedEvents.length
 				? this.raisedEvents.map((it) => ({ $ref: it.ref }))
 				: undefined,
@@ -1839,15 +1851,21 @@ export class DataSchema
 
 	/**
 	 * Consumables across the workspace that depend on this shape, whether they
-	 * send it as their payload or answer with it. Both are the same promise:
-	 * removing an attribute breaks whoever is on the other end.
+	 * send it as their payload, answer with it or refuse with it. All three are
+	 * the same promise: removing an attribute breaks whoever is on the other
+	 * end.
 	 */
 	get consumables(): Consumable[] {
 		const out: Consumable[] = [];
 		for (const bc of this.boundedcontext.workspace.boundedcontexts.values()) {
 			for (const p of [...bc.aggregates.values(), ...bc.services.values()])
 				for (const c of p.consumables.values())
-					if (c.schema === this || c.returns === this) out.push(c);
+					if (
+						c.schema === this ||
+						c.returns === this ||
+						c.rejects.includes(this)
+					)
+						out.push(c);
 		}
 		return out;
 	}

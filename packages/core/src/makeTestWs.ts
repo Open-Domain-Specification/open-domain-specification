@@ -232,6 +232,12 @@ export function makeRichTestWs() {
 		type: "OrderLine[]",
 		schema: orderLineShape,
 	});
+	// The shape Place Order answers with when it says no: nothing happened, and
+	// the caller is told why in a shape the contract names (decision 25).
+	const orderRefused = orderingBc.addSchema("Order Refused", {
+		description: "Why an order was not accepted",
+	});
+	orderRefused.addAttribute("Reason", { type: "string" });
 	const orderApp = orderingBc.addService("Order App", {
 		description: "Order application service",
 		type: "application",
@@ -243,6 +249,7 @@ export function makeRichTestWs() {
 			pattern: "open-host-service",
 			schema: orderRequest,
 			returns: orderSummary,
+			rejects: [orderRefused],
 		})
 		.raises(orderPlaced);
 
@@ -357,6 +364,7 @@ export function makeRichTestWs() {
 		oneOpenOrder,
 		orderSummary,
 		orderRequest,
+		orderRefused,
 		orderLineShape,
 		orderPlaced,
 		orderTerm,

@@ -7,9 +7,9 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 ![consumablemap](./consumablemap.svg)
 
 ## Provides
-| Name | Type | Internal | Pattern | Description | Schema | Returns | Raises | Guarded by |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| ReportDelivery | operation | yes | - | Tell Sales the shipment arrived, by calling the order's ConfirmDelivery | [ShipmentDelivered](../../index.md#schemas) | - | - | - |
+| Name | Type | Internal | Pattern | Description | Schema | Returns | Rejects with | Raises | Guarded by |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| ReportDelivery | operation | yes | - | Tell Sales the shipment arrived, by calling the order's ConfirmDelivery | [ShipmentDelivered](../../index.md#schemas) | - | - | - | - |
 
 
 ## Consumes

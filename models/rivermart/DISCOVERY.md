@@ -126,7 +126,9 @@ Recorded as: the Order aggregate with OrderLine, Shipment, Return and ReturnLine
 received return", "Cancel flagged orders" and "Hold on stock short"; anti-corruption
 consumptions of Warehouse, Last Mile, Fraud and Payments; the glossary entries for Order,
 Shipment and Return. Orders is downstream of Payments for the refund call and of Offers for
-the offer id each line carries; both are on the map.
+the offer id each line carries; both are on the map. `CancelOrder` rejects with
+`CancelRefused` once a shipment has left the dock: nothing was cancelled, and the storefront
+is told which shipment blocked it so it can offer a return instead.
 
 ### Payments engineering lead
 

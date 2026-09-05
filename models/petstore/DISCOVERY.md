@@ -64,6 +64,8 @@ when its pet is available (reacting to events from two contexts), reserve the pe
 approval and mark it sold on delivery (Sales issuing Catalog's open-host operations, so the
 order lifecycle walks the pet lifecycle), plan dispatch on approval, and deliver the order
 in Sales when Fulfilment reports delivery (a policy issuing another context's operation).
+`ReservePetForOrder` rejects with `PetUnavailable` when the pet is already pending or sold:
+nothing happened, so Sales is told the status rather than sent an event.
 
 ## Validation
 

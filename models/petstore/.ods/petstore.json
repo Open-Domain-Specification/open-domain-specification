@@ -366,6 +366,11 @@
               "schema": {
                 "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
               },
+              "rejects": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_unavailable"
+                }
+              ],
               "raises": [
                 {
                   "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
@@ -619,6 +624,24 @@
             "name": {
               "name": "name",
               "type": "string"
+            },
+            "status": {
+              "name": "status",
+              "type": "PetStatus",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
+              }
+            }
+          }
+        },
+        "pet_unavailable": {
+          "name": "PetUnavailable",
+          "description": "Why the pet could not be held: it is already pending or sold",
+          "attributes": {
+            "pet_id": {
+              "name": "petId",
+              "type": "int64",
+              "identity": true
             },
             "status": {
               "name": "status",

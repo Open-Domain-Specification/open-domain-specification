@@ -39,6 +39,11 @@ const { Story } = defineMeta({
 	{#snippet template()}<Theme mode="light"><Page {model} ref={PETSTORE_REFS.query} /></Theme>{/snippet}
 </Story>
 
+<!-- An operation that names what it refuses with, so the Rejects with section draws one attribute table per rejection. -->
+<Story name="Operation with rejections">
+	{#snippet template()}<Theme mode="light"><Page {model} ref={PETSTORE_REFS.operation} /></Theme>{/snippet}
+</Story>
+
 <!-- An operation an invariant names, so the Invariants section lists the rule it has to uphold. -->
 <Story name="Guarded operation">
 	{#snippet template()}<Theme mode="light"><Page {model} ref={PETSTORE_REFS.guardedOperation} /></Theme>{/snippet}

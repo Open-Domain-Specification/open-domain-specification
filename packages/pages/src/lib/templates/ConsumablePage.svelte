@@ -7,6 +7,9 @@ export const sectionsFor = (c: Consumable) => {
 		{ id: "payload", label: "Payload" },
 		// Only an operation answers its caller, and only when it named a shape.
 		...(c.returns ? [{ id: "returns", label: "Returns" }] : []),
+		// Likewise for a refusal: only an operation is refused, and only when
+		// it named the shape it refuses with.
+		...(c.rejects.length ? [{ id: "rejects", label: "Rejects with" }] : []),
 		isEvent
 			? { id: "raised", label: "Raised by" }
 			: { id: "raises", label: "Raises" },
@@ -28,6 +31,7 @@ import DataTable from "../atoms/DataTable.svelte";
 import Definition from "../atoms/Definition.svelte";
 import DefinitionList from "../atoms/DefinitionList.svelte";
 import Disposition from "../atoms/Disposition.svelte";
+import Heading from "../atoms/Heading.svelte";
 import EmptyState from "../atoms/EmptyState.svelte";
 import Keyword from "../atoms/Keyword.svelte";
 import Lockup from "../atoms/Lockup.svelte";
@@ -95,6 +99,9 @@ const policyColumns: Column[] = [
 			{#if c.returns}
 				<Definition term="Returns"><Lockup kind="schema" name={c.returns.name} ref={c.returns.ref} /></Definition>
 			{/if}
+			{#if c.rejects.length}
+				<Definition term="Rejects with"><RefList items={c.rejects} kind="schema" /></Definition>
+			{/if}
 			{#if c.disposition && c.disposition !== "by-design"}
 				<Definition term="Disposition"><Disposition disposition={c.disposition} /></Definition>
 			{/if}
@@ -126,6 +133,25 @@ const policyColumns: Column[] = [
 		count={returnsAttributes.length}
 	>
 		<AttributeTable attributes={returnsAttributes} empty="The returned schema has no attributes." />
+	</Section>
+{/if}
+
+{#if c.rejects.length}
+	<Section
+		id="rejects"
+		title="Rejects with"
+		lead="What the operation answers with when it refuses. Nothing happened, so none of these is an event; a caller reads them to know why it was told no."
+		count={c.rejects.length}
+	>
+		{#each c.rejects as rejection (rejection.ref)}
+			<div class="subsection">
+				<Heading level={3} id={rejection.ref}>
+					<Lockup kind="schema" name={rejection.name} ref={rejection.ref} />
+				</Heading>
+				{#if rejection.description}<p class="description">{rejection.description}</p>{/if}
+				<AttributeTable attributes={rejection.attributes.values()} empty="The rejection schema has no attributes." />
+			</div>
+		{/each}
 	</Section>
 {/if}
 
@@ -213,3 +239,17 @@ const policyColumns: Column[] = [
 </Section>
 
 <LanguageSection target={c} />
+
+<style>
+	/* One rejection, told from the next by the space above it rather than by a
+	   frame, the same way an entity is told from its neighbour. */
+	.subsection {
+		margin-bottom: 16px;
+	}
+	.description {
+		margin: 0 0 4px;
+		padding: 0 8px;
+		max-width: 80ch;
+		line-height: 1.5;
+	}
+</style>

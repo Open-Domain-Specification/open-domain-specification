@@ -2049,6 +2049,11 @@
               "schema": {
                 "$ref": "#/boundedcontexts/order_management/schemas/order_ref"
               },
+              "rejects": [
+                {
+                  "$ref": "#/boundedcontexts/order_management/schemas/cancel_refused"
+                }
+              ],
               "raises": [
                 {
                   "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_cancelled"
@@ -2345,6 +2350,26 @@
             "quantity": {
               "name": "quantity",
               "type": "int32"
+            }
+          }
+        },
+        "cancel_refused": {
+          "name": "CancelRefused",
+          "description": "Why the order could not be cancelled: a shipment has already left the dock",
+          "attributes": {
+            "order_id": {
+              "name": "orderId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+              }
+            },
+            "shipment_id": {
+              "name": "shipmentId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/shipment"
+              }
             }
           }
         },

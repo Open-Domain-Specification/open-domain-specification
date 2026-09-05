@@ -2041,6 +2041,11 @@
               "schema": {
                 "$ref": "#/boundedcontexts/payments_hub/schemas/initiate_payment"
               },
+              "rejects": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/schemas/instruction_refused"
+                }
+              ],
               "raises": [
                 {
                   "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_initiated"
@@ -2294,6 +2299,31 @@
               "type": "ExecutionDate",
               "valueobject": {
                 "$ref": "#/boundedcontexts/payments_hub/valueobjects/execution_date"
+              }
+            }
+          }
+        },
+        "instruction_refused": {
+          "name": "InstructionRefused",
+          "description": "Why an instruction was not created: over the daily limit, not covered, or past the cut-off",
+          "attributes": {
+            "reason": {
+              "name": "reason",
+              "type": "string"
+            },
+            "payer_account_id": {
+              "name": "payerAccountId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/accounts/aggregates/account/entities/account"
+              }
+            },
+            "remaining_today": {
+              "name": "remainingToday",
+              "type": "Money",
+              "optional": true,
+              "valueobject": {
+                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
               }
             }
           }

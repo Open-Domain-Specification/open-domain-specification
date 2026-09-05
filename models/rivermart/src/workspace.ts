@@ -1090,6 +1090,21 @@ const returnLineSchema = orderBC.addSchema("ReturnLine", {
 });
 returnLineSchema.addAttribute("lineId", { type: "string", identity: true });
 returnLineSchema.addAttribute("quantity", { type: "int32" });
+// A rejection shape: what CancelOrder answers with once something has shipped.
+// Nothing was cancelled, so no OrderCancelled is raised; the storefront is
+// told which shipment blocked it so it can offer a return instead (decision 25).
+const cancelRefusedSchema = orderBC.addSchema("CancelRefused", {
+	description:
+		"Why the order could not be cancelled: a shipment has already left the dock",
+});
+cancelRefusedSchema.addAttribute("orderId", {
+	type: "string",
+	identifies: order,
+});
+cancelRefusedSchema.addAttribute("shipmentId", {
+	type: "string",
+	identifies: shipment,
+});
 const returnRequestedSchema = orderBC.addSchema("ReturnRequested");
 returnRequestedSchema.addAttribute("returnId", {
 	type: "string",
@@ -1178,6 +1193,7 @@ const cancelOrder = orderApi
 		type: "operation",
 		pattern: "open-host-service",
 		schema: orderRefSchema,
+		rejects: [cancelRefusedSchema],
 	})
 	.raises(orderCancelled);
 const requestReturn = orderApi
