@@ -172,14 +172,7 @@
               "internal": true
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/provides/party_matched"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "customer": {
               "name": "Customer",
@@ -494,7 +487,14 @@
               }
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/sanctions_screening/aggregates/screening_result/provides/party_matched"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
         },
         "kyc_screening": {
           "name": "KycScreening",
@@ -945,32 +945,7 @@
               "internal": true
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/provides/customer_verified"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/provides/fraud_case_opened"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/cards/aggregates/card/provides/card_authorised"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "account": {
               "name": "Account",
@@ -1211,7 +1186,32 @@
               ]
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/provides/customer_verified"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/provides/fraud_case_opened"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/cards/aggregates/card/provides/card_authorised"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
         }
       },
       "policies": {
@@ -1430,14 +1430,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/sovereign_core_(legacy)/aggregates/savings_account_record/provides/nightly_batch_completed"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "journal_entry": {
               "name": "JournalEntry",
@@ -1614,7 +1607,14 @@
               ]
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/sovereign_core_(legacy)/aggregates/savings_account_record/provides/nightly_batch_completed"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
         }
       },
       "policies": {
@@ -1869,38 +1869,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/get_available_balance"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_settlement_confirmed"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_rejected"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_cleared"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "payment_instruction": {
               "name": "PaymentInstruction",
@@ -2086,7 +2055,30 @@
           "consumes": [
             {
               "consumable": {
+                "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/get_available_balance"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/initiate_payment"
+                }
+              ]
+            },
+            {
+              "consumable": {
                 "$ref": "#/boundedcontexts/scheme_gateway/services/scheme_gateway_app/provides/submit_to_scheme"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_settlement_confirmed"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_rejected"
               },
               "pattern": "conformist"
             },
@@ -2099,6 +2091,18 @@
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/fraud/services/fraud_app/provides/score_transaction"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_cleared"
               },
               "pattern": "anti-corruption-layer"
             }
@@ -2577,26 +2581,7 @@
               "internal": true
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/get_available_balance"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/fraud/services/fraud_app/provides/score_transaction"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "card": {
               "name": "Card",
@@ -2794,6 +2779,34 @@
                   "$ref": "#/boundedcontexts/cards/services/cards_app/provides/authorise_card"
                 }
               ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/get_available_balance"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/cards/services/cards_app/provides/authorise_card"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/fraud/services/fraud_app/provides/score_transaction"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/cards/services/cards_app/provides/authorise_card"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged"
+              },
+              "pattern": "anti-corruption-layer"
             }
           ]
         }
@@ -3006,20 +3019,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/get_customer"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/provides/decision_made"
-              },
-              "pattern": "conformist"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "loan_application": {
               "name": "LoanApplication",
@@ -3399,7 +3399,24 @@
             },
             {
               "consumable": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/get_customer"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/lending/services/lending_app/provides/submit_application"
+                }
+              ]
+            },
+            {
+              "consumable": {
                 "$ref": "#/boundedcontexts/credit_decisioning/services/decisioning_app/provides/decide"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/credit_decisioning/aggregates/credit_decision/provides/decision_made"
               },
               "pattern": "conformist"
             }
@@ -3640,20 +3657,7 @@
               }
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/get_customer"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/lending/aggregates/loan_application/provides/application_submitted"
-              },
-              "pattern": "conformist"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "credit_decision": {
               "name": "CreditDecision",
@@ -3779,7 +3783,20 @@
               ]
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/get_customer"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/lending/aggregates/loan_application/provides/application_submitted"
+              },
+              "pattern": "conformist"
+            }
+          ]
         },
         "scorecard": {
           "name": "Scorecard",
@@ -3966,14 +3983,7 @@
               "internal": true
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/cards/aggregates/card/provides/card_authorised"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "fraud_case": {
               "name": "FraudCase",
@@ -4136,7 +4146,14 @@
               ]
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/cards/aggregates/card/provides/card_authorised"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
         }
       },
       "policies": {
@@ -4301,32 +4318,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/account_opened"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/loan_disbursed"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/sovereign_core_(legacy)/aggregates/savings_account_record/provides/nightly_batch_completed"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "regulatory_return": {
               "name": "RegulatoryReturn",
@@ -4429,7 +4421,40 @@
         }
       },
       "invariants": {},
-      "services": {},
+      "services": {
+        "reporting_app": {
+          "name": "ReportingApp",
+          "description": "Regulatory Reporting's application service: the boundary through which the postings, openings and disbursements a return is built from arrive",
+          "type": "application",
+          "provides": {},
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/ledger/aggregates/journal_entry/provides/entry_posted"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/account_opened"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/lending/aggregates/loan/provides/loan_disbursed"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/sovereign_core_(legacy)/aggregates/savings_account_record/provides/nightly_batch_completed"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
+        }
+      },
       "policies": {
         "accumulate_on_posting": {
           "name": "Accumulate on posting",
@@ -4520,44 +4545,7 @@
               "internal": true
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/get_customer"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/get_available_balance"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/cards/services/cards_app/provides/block_card"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/provides/consent_withdrawn"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/credit_decisioning/services/decisioning_app/provides/decide"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/identity_&_access/services/identity_app/provides/authenticate_customer"
-              },
-              "pattern": "conformist"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "service_request": {
               "name": "ServiceRequest",
@@ -4689,7 +4677,44 @@
               ]
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/get_customer"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/get_available_balance"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/cards/services/cards_app/provides/block_card"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/consent/provides/consent_withdrawn"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/credit_decisioning/services/decisioning_app/provides/decide"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/identity_&_access/services/identity_app/provides/authenticate_customer"
+              },
+              "pattern": "conformist"
+            }
+          ]
         }
       },
       "policies": {

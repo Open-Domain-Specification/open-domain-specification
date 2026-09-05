@@ -655,32 +655,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/catalogue/aggregates/product/provides/product_listed"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/catalogue/aggregates/product/provides/product_retired"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_activated"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_suspended"
-              },
-              "pattern": "conformist"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "offer": {
               "name": "Offer",
@@ -837,7 +812,32 @@
               }
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/product/provides/product_listed"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/product/provides/product_retired"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_activated"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_suspended"
+              },
+              "pattern": "conformist"
+            }
+          ]
         }
       },
       "policies": {
@@ -1048,14 +1048,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/provides/seller_risk_flagged"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "seller_account": {
               "name": "SellerAccount",
@@ -1169,7 +1162,14 @@
               ]
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/provides/seller_risk_flagged"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
         }
       },
       "policies": {
@@ -1675,52 +1675,9 @@
               "description": "Put the order into awaiting-stock when no site could reserve for it; it is retried when stock is received or cancelled by the customer",
               "type": "operation",
               "internal": true
-            },
-            "request_refund": {
-              "name": "RequestRefund",
-              "description": "Ask Payments to return the money for a graded return, through the ACL",
-              "type": "operation",
-              "internal": true
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/provides/order_risk_flagged"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/shipment_dispatched"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/return_received"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_short"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/payments/services/payments_api/provides/refund_payment"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/provides/parcel_delivered"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "order": {
               "name": "Order",
@@ -2073,9 +2030,57 @@
                   "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/return_requested"
                 }
               ]
+            },
+            "request_refund": {
+              "name": "RequestRefund",
+              "description": "Ask Payments to return the money for a graded return, through the ACL",
+              "type": "operation",
+              "internal": true
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/provides/order_risk_flagged"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/shipment_dispatched"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/return_received"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_short"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/payments/services/payments_api/provides/refund_payment"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/order_management/services/order_api/provides/request_refund"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/provides/parcel_delivered"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
         }
       },
       "policies": {
@@ -2131,7 +2136,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/request_refund"
+              "$ref": "#/boundedcontexts/order_management/services/order_api/provides/request_refund"
             }
           ]
         },
@@ -2461,20 +2466,7 @@
               "internal": true
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/shipment_dispatched"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "payment_intent": {
               "name": "PaymentIntent",
@@ -2732,6 +2724,18 @@
                   "$ref": "#/boundedcontexts/payments/services/payments_api/provides/refund_payment"
                 }
               ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/shipment_dispatched"
+              },
+              "pattern": "anti-corruption-layer"
             }
           ]
         }
@@ -2885,20 +2889,7 @@
               }
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_activated"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "risk_assessment": {
               "name": "RiskAssessment",
@@ -2995,6 +2986,26 @@
             }
           },
           "consumes": []
+        },
+        "fraud_api": {
+          "name": "FraudAPI",
+          "description": "Trust & Safety's application service: the boundary through which the orders and sellers to be scored arrive",
+          "type": "application",
+          "provides": {},
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_activated"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
         }
       },
       "policies": {
@@ -3165,26 +3176,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_cancelled"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)/aggregates/purchase_order/provides/purchase_order_received"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "inventory_position": {
               "name": "InventoryPosition",
@@ -3330,20 +3322,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/return_requested"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_cancelled"
-              },
-              "pattern": "anti-corruption-layer"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "fulfilment_order": {
               "name": "FulfilmentOrder",
@@ -3487,7 +3466,32 @@
               ]
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/return_requested"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_cancelled"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)/aggregates/purchase_order/provides/purchase_order_received"
+              },
+              "pattern": "anti-corruption-layer"
+            }
+          ]
         }
       },
       "policies": {
@@ -3742,13 +3746,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/shipment_dispatched"
-              }
-            }
-          ],
+          "consumes": [],
           "entities": {
             "delivery_route": {
               "name": "DeliveryRoute",
@@ -3857,7 +3855,21 @@
         }
       },
       "invariants": {},
-      "services": {},
+      "services": {
+        "last_mile_api": {
+          "name": "LastMileAPI",
+          "description": "Last Mile's application service: the boundary through which dispatched packages arrive to be routed",
+          "type": "application",
+          "provides": {},
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/warehouse/aggregates/fulfilment_order/provides/shipment_dispatched"
+              }
+            }
+          ]
+        }
+      },
       "policies": {
         "route_dispatched_packages": {
           "name": "Route dispatched packages",
@@ -3999,14 +4011,7 @@
               "internal": true
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_suspended"
-              },
-              "pattern": "conformist"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "campaign": {
               "name": "Campaign",
@@ -4189,6 +4194,12 @@
                 "$ref": "#/boundedcontexts/catalogue/services/catalogue_api/provides/get_product"
               },
               "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_suspended"
+              },
+              "pattern": "conformist"
             }
           ]
         }
@@ -4351,32 +4362,7 @@
               "internal": true
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/order_management/services/order_api/provides/get_order"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/order_management/services/order_api/provides/request_return"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/provides/delivery_attempt_failed"
-              },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/identity/services/identity_api/provides/get_customer"
-              },
-              "pattern": "conformist"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "case": {
               "name": "Case",
@@ -4486,7 +4472,32 @@
               ]
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/services/order_api/provides/get_order"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/services/order_api/provides/request_return"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/last_mile/aggregates/delivery_route/provides/delivery_attempt_failed"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/identity/services/identity_api/provides/get_customer"
+              },
+              "pattern": "conformist"
+            }
+          ]
         }
       },
       "policies": {

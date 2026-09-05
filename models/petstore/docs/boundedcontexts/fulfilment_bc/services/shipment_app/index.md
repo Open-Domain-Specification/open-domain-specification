@@ -18,4 +18,9 @@ Fulfilment's application service: the boundary through which Fulfilment reports 
 POST /store/order/{orderId}/delivered; Fulfilment reports the shipment arrived and the order moves to delivered
 - **Provider**: [OrderApp](../../../sales_bc/services/order_app/index.md)
 
+### OrderApproved [conformist]
+Order approved (status=approved); Inventory and Fulfilment both react
+- **Provider**: [Order](../../../sales_bc/aggregates/order/index.md)
+- **Made by**: Plan dispatch on approval
+
 	

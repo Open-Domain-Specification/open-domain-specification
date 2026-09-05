@@ -636,7 +636,7 @@ screeningVendorBC.upstreamOf(sanctionsBC, {
 });
 
 kycScreening.consumes(screenParty, { pattern: "anti-corruption-layer" });
-customerAgg.consumes(partyMatched, { pattern: "anti-corruption-layer" });
+onboardingApp.consumes(partyMatched, { pattern: "anti-corruption-layer" });
 customerBC
 	.addPolicy("Screen on onboarding", {
 		description: "Every prospective customer is screened before anything else",
@@ -892,7 +892,7 @@ const freezeAccount = accountServicing
 	})
 	.raises(accountFrozen);
 
-accountAgg.consumes(customerVerified, { pattern: "conformist" });
+accountServicing.consumes(customerVerified, { pattern: "conformist" });
 
 accountsBC.addTerm("Account", {
 	definition:
@@ -1104,7 +1104,7 @@ ledgerBC.addTerm("Value date", {
 });
 
 // Shared kernel: same library, so Accounts takes ledger events as published.
-accountAgg.consumes(entryPosted, { pattern: "conformist" });
+accountServicing.consumes(entryPosted, { pattern: "conformist" });
 accountsBC
 	.addPolicy("Update balance on posting", {
 		description: "Every posting to an account recomputes its available balance",
@@ -1301,8 +1301,9 @@ paymentsBC
 	.constrains(paymentAmount, initiatePayment);
 // The funds check is a read of Accounts' documented API, translated: the hub
 // keeps its own notion of "covered" rather than Accounts' balance model.
-instructionAgg.consumes(getAvailableBalance, {
+paymentsApp.consumes(getAvailableBalance, {
 	pattern: "anti-corruption-layer",
+	by: [initiatePayment],
 });
 const submitPayment = instructionAgg
 	.provides("SubmitPayment", {
@@ -1426,8 +1427,8 @@ const submitToScheme = schemeApp
 	.raises(schemeSettlementConfirmed, schemeRejected);
 
 paymentsApp.consumes(submitToScheme, { pattern: "conformist" });
-instructionAgg.consumes(schemeSettlementConfirmed, { pattern: "conformist" });
-instructionAgg.consumes(schemeRejected, { pattern: "conformist" });
+paymentsApp.consumes(schemeSettlementConfirmed, { pattern: "conformist" });
+paymentsApp.consumes(schemeRejected, { pattern: "conformist" });
 paymentsApp.consumes(postEntry, { pattern: "anti-corruption-layer" });
 // A policy names operations of its own context, so each step that reaches
 // another context is an operation of the hub's own app service (decision 17).
@@ -1624,10 +1625,10 @@ fraudBC.addTerm("APP scam", {
 
 // Payments waits on the scorer; flags reject, clears submit.
 paymentsApp.consumes(scoreTransaction, { pattern: "anti-corruption-layer" });
-instructionAgg.consumes(transactionFlagged, {
+paymentsApp.consumes(transactionFlagged, {
 	pattern: "anti-corruption-layer",
 });
-instructionAgg.consumes(transactionCleared, {
+paymentsApp.consumes(transactionCleared, {
 	pattern: "anti-corruption-layer",
 });
 const scoreInstruction = paymentsApp.provides("ScoreInstruction", {
@@ -1655,7 +1656,9 @@ paymentsBC
 	.on(transactionFlagged)
 	.then(rejectPayment);
 // Accounts freezes when a case opens.
-accountAgg.consumes(fraudCaseOpened, { pattern: "anti-corruption-layer" });
+accountServicing.consumes(fraudCaseOpened, {
+	pattern: "anti-corruption-layer",
+});
 accountsBC
 	.addPolicy("Freeze on fraud case", {
 		description: "An opened case freezes the account the same second",
@@ -1859,19 +1862,25 @@ cardAgg.provides("IssueCard", {
 	internal: true,
 });
 
-cardAgg.consumes(getAvailableBalance, { pattern: "anti-corruption-layer" });
-cardAgg.consumes(scoreTransaction, { pattern: "anti-corruption-layer" });
-cardAgg.consumes(transactionFlagged, { pattern: "anti-corruption-layer" });
+cardsApp.consumes(getAvailableBalance, {
+	pattern: "anti-corruption-layer",
+	by: [authoriseCard],
+});
+cardsApp.consumes(scoreTransaction, {
+	pattern: "anti-corruption-layer",
+	by: [authoriseCard],
+});
+cardsApp.consumes(transactionFlagged, { pattern: "anti-corruption-layer" });
 cardsBC
 	.addPolicy("Block on flagged card transaction", {
 		description: "A flag on a card-channel transaction blocks the card",
 	})
 	.on(transactionFlagged)
 	.then(blockCard);
-fraudCaseAgg.consumes(cardAuthorised, { pattern: "anti-corruption-layer" });
+fraudApp.consumes(cardAuthorised, { pattern: "anti-corruption-layer" });
 // DISCOVERY: Accounts Team lead. "Our balance is ledger balance less pending
 // card authorisations": Accounts must hear every authorisation to hold it.
-accountAgg.consumes(cardAuthorised, { pattern: "anti-corruption-layer" });
+accountServicing.consumes(cardAuthorised, { pattern: "anti-corruption-layer" });
 accountsBC
 	.addPolicy("Hold on card authorisation", {
 		description:
@@ -2180,7 +2189,10 @@ lendingBC
 	})
 	.on(loanDisbursed)
 	.then(postDisbursement);
-applicationAgg.consumes(getCustomer, { pattern: "anti-corruption-layer" });
+lendingApp.consumes(getCustomer, {
+	pattern: "anti-corruption-layer",
+	by: [submitApplication],
+});
 
 lendingBC.addTerm("Loan", {
 	definition: "Money lent under a signed agreement, repaid by a schedule",
@@ -2325,7 +2337,7 @@ scorecard.provides("ScoreApplication", {
 	type: "operation",
 	internal: true,
 });
-creditDecisionAgg.consumes(getCustomer, { pattern: "anti-corruption-layer" });
+decisioningApp.consumes(getCustomer, { pattern: "anti-corruption-layer" });
 
 // Partnership: one planning board, so Lending conforms rather than translates.
 lendingApp.consumes(decide, { pattern: "conformist" });
@@ -2333,13 +2345,13 @@ lendingApp.consumes(decide, { pattern: "conformist" });
 // ApplicationSubmitted's schema is named "What decisioning receives" and the
 // event says "decisioning runs". Without this consumption the partnership had
 // traffic one way only, and a partnership is a two-way dependency.
-creditDecisionAgg.consumes(applicationSubmitted, { pattern: "conformist" });
+decisioningApp.consumes(applicationSubmitted, { pattern: "conformist" });
 const requestDecision = lendingApp.provides("RequestDecision", {
 	description: "Send a submitted application to Credit Decisioning",
 	type: "operation",
 	internal: true,
 });
-applicationAgg.consumes(decisionMade, { pattern: "conformist" });
+lendingApp.consumes(decisionMade, { pattern: "conformist" });
 lendingBC
 	.addPolicy("Decide on submission", {
 		description: "Every submitted application is sent for a decision",
@@ -2436,9 +2448,17 @@ returnAgg
 	})
 	.raises(returnFiled);
 
-returnAgg.consumes(entryPosted, { pattern: "conformist" });
-returnAgg.consumes(accountOpened, { pattern: "conformist" });
-returnAgg.consumes(loanDisbursed, { pattern: "conformist" });
+// Reporting takes its facts in at its own boundary: an aggregate is a
+// consistency boundary, not a client, so ReportingApp is what subscribes and
+// the policy below is what accumulates (decision 17).
+const reportingApp = reportingBC.addService("ReportingApp", {
+	description:
+		"Regulatory Reporting's application service: the boundary through which the postings, openings and disbursements a return is built from arrive",
+	type: "application",
+});
+reportingApp.consumes(entryPosted, { pattern: "conformist" });
+reportingApp.consumes(accountOpened, { pattern: "conformist" });
+reportingApp.consumes(loanDisbursed, { pattern: "conformist" });
 reportingBC
 	.addPolicy("Accumulate on posting", {
 		description:
@@ -2535,14 +2555,14 @@ const suppressMarketing = requestAgg.provides("SuppressMarketing", {
 	internal: true,
 });
 
-requestAgg.consumes(getCustomer, { pattern: "conformist" });
-requestAgg.consumes(getAvailableBalance, { pattern: "conformist" });
-requestAgg.consumes(blockCard, { pattern: "conformist" });
-requestAgg.consumes(consentWithdrawn, { pattern: "conformist" });
+channelsApp.consumes(getCustomer, { pattern: "conformist" });
+channelsApp.consumes(getAvailableBalance, { pattern: "conformist" });
+channelsApp.consumes(blockCard, { pattern: "conformist" });
+channelsApp.consumes(consentWithdrawn, { pattern: "conformist" });
 // DELIBERATE (separate-ways): the quick-quote button. Front-line staff may
 // not influence a credit decision, and the relationship below says so; this
 // consumption contradicts it.
-requestAgg.consumes(decide, { pattern: "anti-corruption-layer" });
+channelsApp.consumes(decide, { pattern: "anti-corruption-layer" });
 channelsBC
 	.addPolicy("Suppress marketing on withdrawal", {
 		description:
@@ -2620,14 +2640,16 @@ sovereignBC
 	})
 	.raises(nightlyBatchCompleted);
 
-entryAgg.consumes(nightlyBatchCompleted, { pattern: "anti-corruption-layer" });
+ledgerApp.consumes(nightlyBatchCompleted, { pattern: "anti-corruption-layer" });
 ledgerBC
 	.addPolicy("Import nightly batch", {
 		description: "Each line of the batch file becomes a ledger entry",
 	})
 	.on(nightlyBatchCompleted)
 	.then(importBatch);
-returnAgg.consumes(nightlyBatchCompleted, { pattern: "anti-corruption-layer" });
+reportingApp.consumes(nightlyBatchCompleted, {
+	pattern: "anti-corruption-layer",
+});
 
 /* =======================
    IDENTITY & ACCESS
@@ -2667,7 +2689,7 @@ const authenticateCustomer = identityApp
 		pattern: "open-host-service",
 	})
 	.raises(customerAuthenticated);
-requestAgg.consumes(authenticateCustomer, { pattern: "conformist" });
+channelsApp.consumes(authenticateCustomer, { pattern: "conformist" });
 
 /* =======================
    CONTEXT RELATIONSHIPS

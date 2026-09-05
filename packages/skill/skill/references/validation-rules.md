@@ -228,6 +228,14 @@
 
 **Usual fix:** Mark the aggregate's operation internal: true and drop its pattern, then give the context's application service the public operation that consumes it; point the outside caller at that one.
 
+## `aggregate-consumes-inside` (error)
+
+**Requires:** An aggregate consumes only consumables of its own bounded context.
+
+**Why it matters:** An aggregate is a consistency boundary, not a client. A call out of the context is translation, latency and someone else's availability, and none of that belongs inside the transaction that holds an invariant true; an aggregate that waits on a neighbour has made that neighbour part of its consistency boundary. The context's application service owns the use case and calls out, and a policy is how the context reacts to a fact from outside.
+
+**Usual fix:** Move the consumption to the application service that owns the use case, naming its own operation in by where the caller plainly differs, and let that operation pass the result to the aggregate; for a foreign event, add a policy on that event issuing an operation of this context.
+
 ## `domain-service-internal` (error)
 
 **Requires:** A domain service's operations declare no upstream role and are consumed only inside their own context.

@@ -27,22 +27,26 @@ describe("schema round-trip", () => {
 		expect(bc.description).toBe("Ordering bounded context");
 	});
 
-	it("re-links consumptions to live objects", () => {
-		const invoiceAgg = rebuilt.getAggregateByRefOrThrow(
-			"#/boundedcontexts/invoicing_bc/aggregates/invoice",
+	/** Invoicing's consumption of Ordering's event, wherever it sits. */
+	const orderPlacedConsumption = () => {
+		const invoiceApp = rebuilt.getServiceByRefOrThrow(
+			"#/boundedcontexts/invoicing_bc/services/invoice_app",
 		);
-		expect(invoiceAgg.consumptions).toHaveLength(1);
-		const consumption = invoiceAgg.consumptions[0];
-		expect(consumption.consumable.name).toBe("Order Placed");
+		const consumption = invoiceApp.consumptions.find(
+			(it) => it.consumable.name === "Order Placed",
+		);
+		if (!consumption) throw new Error("Order Placed is not consumed");
+		return consumption;
+	};
+
+	it("re-links consumptions to live objects", () => {
+		const consumption = orderPlacedConsumption();
 		expect(consumption.consumable.consumptions).toContain(consumption);
 		expect(consumption.consumable.provider.name).toBe("Order");
 	});
 
 	it("re-links what makes a consumption", () => {
-		const invoiceAgg = rebuilt.getAggregateByRefOrThrow(
-			"#/boundedcontexts/invoicing_bc/aggregates/invoice",
-		);
-		expect(invoiceAgg.consumptions[0].by.map((it) => it.ref)).toEqual([
+		expect(orderPlacedConsumption().by.map((it) => it.ref)).toEqual([
 			"#/boundedcontexts/invoicing_bc/policies/invoice_on_order_placed",
 		]);
 	});

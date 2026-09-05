@@ -945,10 +945,6 @@ const planDispatch = dispatchPlanner
 	})
 	.raises(shipmentPlanned);
 
-// Conformist: the order events are taken as published, because both contexts
-// belong to the Orders Team and the partnership below makes them change together.
-shipmentAgg.consumes(orderApproved, { pattern: "conformist" });
-
 // Fulfilment's own boundary. The policy below cannot name Sales' operation,
 // so ShipmentApp offers the local one that does the calling (decision 17).
 const shipmentApp = fulfilmentBC.addService("ShipmentApp", {
@@ -972,12 +968,23 @@ shipmentApp.consumes(confirmDelivery, {});
 // partner's badge.
 orderApp.consumes(shipmentDelivered, {});
 
-fulfilmentBC
+const planOnApproval = fulfilmentBC
 	.addPolicy("Plan dispatch on approval", {
 		description: "Every approved order gets a shipment planned straight away",
 	})
 	.on(orderApproved)
 	.then(planDispatch);
+
+// Conformist: the order events are taken as published, because both contexts
+// belong to the Orders Team and the partnership below makes them change
+// together. The consumption sits on ShipmentApp, not on the Shipment
+// aggregate: an aggregate is a consistency boundary, not a client, so the
+// context takes the fact in at its own boundary and the policy above is what
+// reacts to it (decision 17).
+shipmentApp.consumes(orderApproved, {
+	pattern: "conformist",
+	by: [planOnApproval],
+});
 // A policy acts in its own context: Fulfilment names its own ReportDelivery,
 // and that operation is what calls the open host Sales offers.
 fulfilmentBC

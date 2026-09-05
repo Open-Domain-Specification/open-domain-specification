@@ -74,18 +74,18 @@
 <polygon fill="black" stroke="black" points="140.78,-171.83 138.54,-161.48 133.83,-170.97 140.78,-171.83"/>
 <text xml:space="preserve" text-anchor="middle" x="163.35" y="-181" font-family="sans-serif" font-size="10.00">DeliverOrder</text>
 </g>
-<!-- #/boundedcontexts/fulfilment_bc/aggregates/shipment -->
+<!-- #/boundedcontexts/fulfilment_bc/services/shipment_app -->
 <g id="node3" class="node">
-<title>#/boundedcontexts/fulfilment_bc/aggregates/shipment</title>
-<g id="a_node3"><a xlink:title="The journey of one approved order to its owner. Attempts live inside it because they mean nothing without the shipment">
+<title>#/boundedcontexts/fulfilment_bc/services/shipment_app</title>
+<g id="a_node3"><a xlink:title="Fulfilment&#39;s application service: the boundary through which Fulfilment reports delivery to Sales">
 <polygon fill="white" stroke="black" points="364.32,-238.1 367.84,-238.3 371.33,-238.59 374.76,-238.98 378.13,-239.47 381.42,-240.05 384.63,-240.73 387.72,-241.5 390.71,-242.35 393.56,-243.29 396.28,-244.32 398.85,-245.43 401.27,-246.62 403.53,-247.88 405.62,-249.21 407.53,-250.61 409.26,-252.08 410.81,-253.6 412.17,-255.18 413.35,-256.82 414.34,-258.5 415.14,-260.22 415.75,-261.98 416.18,-263.77 416.42,-265.59 416.49,-267.44 416.38,-269.3 416.1,-271.17 415.66,-273.06 415.06,-274.94 414.31,-276.83 413.41,-278.7 412.38,-280.56 411.22,-282.41 409.94,-284.23 408.54,-286.02 407.03,-287.78 405.43,-289.5 403.74,-291.18 401.96,-292.82 400.11,-294.4 398.19,-295.92 396.21,-297.39 394.17,-298.79 392.09,-300.12 389.96,-301.38 387.79,-302.57 385.58,-303.68 383.35,-304.71 381.1,-305.65 378.82,-306.5 376.52,-307.27 374.21,-307.95 371.89,-308.53 369.56,-309.02 367.22,-309.41 364.88,-309.7 362.53,-309.9 360.18,-310 357.82,-310 355.47,-309.9 353.12,-309.7 350.78,-309.41 348.44,-309.02 346.11,-308.53 343.79,-307.95 341.48,-307.27 339.18,-306.5 336.9,-305.65 334.65,-304.71 332.42,-303.68 330.21,-302.57 328.04,-301.38 325.91,-300.12 323.83,-298.79 321.79,-297.39 319.81,-295.92 317.89,-294.4 316.04,-292.82 314.26,-291.18 312.57,-289.5 310.97,-287.78 309.46,-286.02 308.06,-284.23 306.78,-282.41 305.62,-280.56 304.59,-278.7 303.69,-276.83 302.94,-274.94 302.34,-273.06 301.9,-271.17 301.62,-269.3 301.51,-267.44 301.58,-265.59 301.82,-263.77 302.25,-261.98 302.86,-260.22 303.66,-258.5 304.65,-256.82 305.83,-255.18 307.19,-253.6 308.74,-252.08 310.47,-250.61 312.38,-249.21 314.47,-247.88 316.73,-246.62 319.15,-245.43 321.72,-244.32 324.44,-243.29 327.29,-242.35 330.28,-241.5 333.37,-240.73 336.58,-240.05 339.87,-239.47 343.24,-238.98 346.67,-238.59 350.16,-238.3 353.68,-238.1 357.22,-238 360.78,-238 364.32,-238.1"/>
-<text xml:space="preserve" text-anchor="middle" x="359" y="-269.8" font-family="sans-serif" font-size="14.00">Shipment</text>
+<text xml:space="preserve" text-anchor="middle" x="359" y="-269.8" font-family="sans-serif" font-size="14.00">ShipmentApp</text>
 </a>
 </g>
 </g>
-<!-- #/boundedcontexts/fulfilment_bc/aggregates/shipment&#45;&gt;#/boundedcontexts/sales_bc/aggregates/order -->
+<!-- #/boundedcontexts/fulfilment_bc/services/shipment_app&#45;&gt;#/boundedcontexts/sales_bc/aggregates/order -->
 <g id="edge1" class="edge">
-<title>#/boundedcontexts/fulfilment_bc/aggregates/shipment&#45;&gt;#/boundedcontexts/sales_bc/aggregates/order</title>
+<title>#/boundedcontexts/fulfilment_bc/services/shipment_app&#45;&gt;#/boundedcontexts/sales_bc/aggregates/order</title>
 <path fill="none" stroke="black" d="M318.75,-245.16C281.91,-219.69 227.51,-182.06 189.42,-155.72"/>
 <polygon fill="black" stroke="black" points="191.57,-152.95 181.35,-150.14 187.59,-158.71 191.57,-152.95"/>
 <text xml:space="preserve" text-anchor="middle" x="264.49" y="-181" font-family="sans-serif" font-size="10.00">OrderApproved</text>

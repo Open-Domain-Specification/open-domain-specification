@@ -192,21 +192,28 @@ describe("ODSConsumableMap", () => {
 		const map = ODSConsumableMap.fromWorkspace(f.ws);
 		expect(map.slots.get(f.orderPlaced.ref)?.node.id).toBe(f.orderAgg.ref);
 		expect(map.slots.get(f.placeOrder.ref)?.node.id).toBe(f.orderApp.ref);
-		expect(map.nodes.size).toBe(5);
+		expect(map.nodes.size).toBe(4);
 		expect(map.edges.size).toBe(4);
 	});
 
+	/** The edge for Invoicing's consumption of Ordering's Order Placed. */
+	const orderPlacedEdge = () => {
+		const map = ODSConsumableMap.fromService(f.invoiceApp);
+		const edge = Array.from(map.edges.values()).find(
+			(it) => it.by.length > 0 || it.sourcePattern === "conformist",
+		);
+		if (!edge) throw new Error("Order Placed is not consumed");
+		return edge;
+	};
+
 	it("carries both patterns on the edge", () => {
-		const map = ODSConsumableMap.fromAggregate(f.invoiceAgg);
-		const [edge] = Array.from(map.edges.values());
+		const edge = orderPlacedEdge();
 		expect(edge.sourcePattern).toBe("conformist");
 		expect(edge.targetPattern).toBe("published-language");
 	});
 
 	it("names what makes the consumption on the edge, and nothing when it is the whole consumer", () => {
-		const map = ODSConsumableMap.fromAggregate(f.invoiceAgg);
-		const [edge] = Array.from(map.edges.values());
-		expect(edge.by).toEqual(["Invoice on order placed"]);
+		expect(orderPlacedEdge().by).toEqual(["Invoice on order placed"]);
 		const whole = ODSConsumableMap.fromService(f.reportingApp);
 		expect(Array.from(whole.edges.values()).map((it) => it.by)).toContainEqual(
 			[],

@@ -839,7 +839,7 @@ const planLadder = ladderPlanner.provides("PlanLadder", {
 });
 
 // The delivery spec is the industry format, so Encoding conforms to it.
-jobAgg.consumes(masterDelivered, { pattern: "conformist" });
+encodingApi.consumes(masterDelivered, { pattern: "conformist" });
 encodingBC
 	.addPolicy("Plan ladder on queue", {
 		description: "Every queued job gets a per-title ladder before it runs",
@@ -859,10 +859,10 @@ encodingBC.addTerm("Rendition", {
 });
 
 // The catalogue sits between studio, licensing and encoding: four reactions.
-titleAgg.consumes(masterDelivered, { pattern: "anti-corruption-layer" });
-titleAgg.consumes(encodingCompleted, { pattern: "anti-corruption-layer" });
-titleAgg.consumes(windowOpened, { pattern: "anti-corruption-layer" });
-titleAgg.consumes(windowExpired, { pattern: "anti-corruption-layer" });
+catalogueApi.consumes(masterDelivered, { pattern: "anti-corruption-layer" });
+catalogueApi.consumes(encodingCompleted, { pattern: "anti-corruption-layer" });
+catalogueApi.consumes(windowOpened, { pattern: "anti-corruption-layer" });
+catalogueApi.consumes(windowExpired, { pattern: "anti-corruption-layer" });
 // The call out to Encoding is made by Catalogue's own application service,
 // and it is that operation the policy below names (decision 17).
 catalogueApi.consumes(submitEncode, { pattern: "anti-corruption-layer" });
@@ -1075,7 +1075,10 @@ bitrateSelector.provides("SelectRendition", {
 	internal: true,
 });
 
-sessionAgg.consumes(getTitle, { pattern: "anti-corruption-layer" });
+playbackApi.consumes(getTitle, {
+	pattern: "anti-corruption-layer",
+	by: [startPlayback],
+});
 
 playbackBC.addTerm("Session", {
 	definition: "One profile watching one title on one device",
@@ -1181,7 +1184,7 @@ const prepositionAsset = applianceAgg
 	})
 	.raises(assetPrepositioned);
 
-applianceAgg.consumes(encodingCompleted, { pattern: "conformist" });
+edgeApi.consumes(encodingCompleted, { pattern: "conformist" });
 edgeBC
 	.addPolicy("Preposition on encode", {
 		description:
@@ -1191,7 +1194,10 @@ edgeBC
 	.then(prepositionAsset);
 
 // Shared kernel: the manifest format is one library, so Playback takes the answer as it is.
-sessionAgg.consumes(resolveEdge, { pattern: "conformist" });
+playbackApi.consumes(resolveEdge, {
+	pattern: "conformist",
+	by: [startPlayback],
+});
 
 edgeBC.addTerm("Appliance", {
 	definition: "A cache box installed in an ISP's network",
@@ -1316,7 +1322,7 @@ devicesBC
 	.on(deviceCertified);
 
 // Partnership: releases are planned as one, so Playback conforms.
-sessionAgg.consumes(deviceCertified, { pattern: "conformist" });
+playbackApi.consumes(deviceCertified, { pattern: "conformist" });
 
 devicesBC.addTerm("Device", {
 	definition: "A partner device model, not an individual unit",
@@ -1428,7 +1434,7 @@ recsApi.provides("GetHomepageRows", {
 	returns: homepageRowsSchema,
 });
 
-tasteAgg.consumes(playbackStopped, { pattern: "anti-corruption-layer" });
+recsApi.consumes(playbackStopped, { pattern: "anti-corruption-layer" });
 ranker.consumes(titlePublished, { pattern: "conformist" });
 ranker.consumes(availabilityChanged, { pattern: "conformist" });
 recsBC
@@ -1440,7 +1446,7 @@ recsBC
 	.then(addCandidate);
 // DELIBERATE (internal-consumable): Personalisation reads the player's
 // bookmark updates, which Playback declares internal. The dependency was never agreed.
-tasteAgg.consumes(bookmarkUpdated, { pattern: "anti-corruption-layer" });
+recsApi.consumes(bookmarkUpdated, { pattern: "anti-corruption-layer" });
 recsBC
 	.addPolicy("Record signal on stop", {
 		description:
@@ -1624,7 +1630,7 @@ householdsBC.addTerm("Profile", {
 	embodiedBy: profile,
 });
 
-tasteAgg.consumes(profileCreated, { pattern: "conformist" });
+recsApi.consumes(profileCreated, { pattern: "conformist" });
 
 /* =======================
    BILLING & PLANS
@@ -1818,7 +1824,7 @@ const awaitPlan = billingBC
 	.then(registerHousehold);
 // Nothing in billing reads Identity's event except this reaction; renewing,
 // dunning and answering entitlement never touch it.
-subscriptionAgg.consumes(householdCreated, {
+billingApi.consumes(householdCreated, {
 	pattern: "conformist",
 	by: [awaitPlan],
 });
@@ -1831,7 +1837,10 @@ billingBC
 	.then(startDunning);
 
 // Playback asks billing before every start, translating the answer to its own yes/no.
-sessionAgg.consumes(getEntitlement, { pattern: "anti-corruption-layer" });
+playbackApi.consumes(getEntitlement, {
+	pattern: "anti-corruption-layer",
+	by: [startPlayback],
+});
 
 billingBC.addTerm("Plan", {
 	definition: "A tier with a price, a stream limit and whether it carries ads",
@@ -1897,7 +1906,7 @@ identityBC.addTerm("Account", {
 	embodiedBy: accountAgg,
 });
 
-householdAgg.consumes(accountCreated, { pattern: "conformist" });
+profilesApi.consumes(accountCreated, { pattern: "conformist" });
 householdsBC
 	.addPolicy("Create household on account", {
 		description: "Every new account gets a household and a primary profile",
@@ -2033,9 +2042,12 @@ breakAgg
 	})
 	.raises(impressionRecorded);
 
-breakAgg.consumes(playbackStarted, { pattern: "anti-corruption-layer" });
+adsApi.consumes(playbackStarted, { pattern: "anti-corruption-layer" });
 // The plan is billing's fact; Ads asks for it the same way Playback does.
-breakAgg.consumes(getEntitlement, { pattern: "anti-corruption-layer" });
+adsApi.consumes(getEntitlement, {
+	pattern: "anti-corruption-layer",
+	by: [resolveAdBreak],
+});
 adsBC
 	.addPolicy("Prepare breaks on start", {
 		description:
@@ -2043,7 +2055,10 @@ adsBC
 	})
 	.on(playbackStarted)
 	.then(prepareBreaks);
-sessionAgg.consumes(resolveAdBreak, { pattern: "anti-corruption-layer" });
+playbackApi.consumes(resolveAdBreak, {
+	pattern: "anti-corruption-layer",
+	by: [startPlayback],
+});
 
 adsBC.addTerm("Pod", {
 	definition: "A break's worth of slots. The player says break",
@@ -2106,7 +2121,7 @@ const addDiscCharge = billingBC
 	.then(addInvoiceLine);
 // The monthly export reaches billing through this one reaction; the rest of
 // the subscription lifecycle knows nothing about discs.
-subscriptionAgg.consumes(discRentalInvoiced, {
+billingApi.consumes(discRentalInvoiced, {
 	pattern: "anti-corruption-layer",
 	by: [addDiscCharge],
 });

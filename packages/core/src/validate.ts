@@ -1392,6 +1392,38 @@ const aggregateNotPublic: Rule = (workspace) =>
 		),
 	);
 
+/**
+ * An aggregate consumes only its own context's consumables. An aggregate is a
+ * consistency boundary, not a client: reaching across a boundary means
+ * translation, failure and waiting on someone else's availability, none of
+ * which belong inside the transaction that keeps an invariant true. The
+ * context's application service makes the foreign call and hands the aggregate
+ * what it needs, or a policy reacts to the foreign event and issues an
+ * operation of this context (decision 17, amended 2026-09-07).
+ */
+const aggregateConsumesInside: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const bc of modelledContexts(workspace)) {
+		for (const aggregate of bc.aggregates.values()) {
+			for (const { consumable } of aggregate.consumptions) {
+				const owner = consumable.provider.boundedcontext;
+				if (owner === bc) continue;
+				const instead =
+					consumable.type === "event"
+						? `let a policy of "${bc.name}" react to it and issue an operation of "${bc.name}"`
+						: `let an application service of "${bc.name}" make the call`;
+				diagnostics.push({
+					severity: "error",
+					rule: "aggregate-consumes-inside",
+					message: `Aggregate "${aggregate.name}" consumes "${consumable.name}" from "${owner.name}"; an aggregate is a consistency boundary, not a client, so ${instead} and hand "${aggregate.name}" what it needs`,
+					ref: aggregate.ref,
+				});
+			}
+		}
+	}
+	return diagnostics;
+};
+
 /** A domain service is internal logic, so its operations stay inside too. */
 const domainServiceInternal: Rule = (workspace) =>
 	Array.from(workspace.boundedcontexts.values()).flatMap((bc) =>
@@ -2060,6 +2092,15 @@ const RULES: CataloguedRule[] = [
 		why: "An aggregate is a consistency boundary, not an integration boundary. When it offers operations outward as well as the application service in front of it, nothing in the model says which of the two is the context's public surface, and a caller outside can change the aggregate without passing the service that guards it. Its events are unaffected: publishing facts is how a context speaks outward.",
 		fix: "Mark the aggregate's operation internal: true and drop its pattern, then give the context's application service the public operation that consumes it; point the outside caller at that one.",
 		check: aggregateNotPublic,
+	},
+	{
+		rule: "aggregate-consumes-inside",
+		severities: ["error"],
+		summary:
+			"An aggregate consumes only consumables of its own bounded context.",
+		why: "An aggregate is a consistency boundary, not a client. A call out of the context is translation, latency and someone else's availability, and none of that belongs inside the transaction that holds an invariant true; an aggregate that waits on a neighbour has made that neighbour part of its consistency boundary. The context's application service owns the use case and calls out, and a policy is how the context reacts to a fact from outside.",
+		fix: "Move the consumption to the application service that owns the use case, naming its own operation in by where the caller plainly differs, and let that operation pass the result to the aggregate; for a foreign event, add a policy on that event issuing an operation of this context.",
+		check: aggregateConsumesInside,
 	},
 	{
 		rule: "domain-service-internal",

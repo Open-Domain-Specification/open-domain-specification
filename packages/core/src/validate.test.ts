@@ -1653,6 +1653,96 @@ describe("aggregate-not-public and domain-service-internal", () => {
 	});
 });
 
+describe("aggregate-consumes-inside", () => {
+	/**
+	 * An aggregate and an application service in one context, and a neighbour
+	 * offering an operation and an event for either of them to consume.
+	 */
+	function neighbours() {
+		const ws = emptyWorkspace();
+		const own = ws.addBoundedContext("Own", { description: "" });
+		const other = ws.addBoundedContext("Other", { description: "" });
+		const agg = own.addAggregate("Thing", { description: "" });
+		agg.addRootEntity("Thing", { description: "" }).addAttribute("Id", {
+			type: "string",
+			identity: true,
+		});
+		const app = own.addService("App", {
+			description: "",
+			type: "application",
+		});
+		const theirApp = other.addService("TheirApp", {
+			description: "",
+			type: "application",
+		});
+		const call = theirApp.provides("Check", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		const fact = theirApp.provides("Happened", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+		});
+		return { ws, own, agg, app, call, fact };
+	}
+
+	const inside = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "aggregate-consumes-inside")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("flags an aggregate calling another context's operation", () => {
+		const { ws, agg, call } = neighbours();
+		agg.consumes(call, { pattern: "anti-corruption-layer" });
+		expect(inside(ws)).toEqual([
+			[
+				"error",
+				'Aggregate "Thing" consumes "Check" from "Other"; an aggregate is a consistency boundary, not a client, so let an application service of "Own" make the call and hand "Thing" what it needs',
+				agg.ref,
+			],
+		]);
+	});
+
+	it("flags an aggregate subscribing to another context's event, and points at a policy", () => {
+		const { ws, agg, fact } = neighbours();
+		agg.consumes(fact, { pattern: "conformist" });
+		expect(inside(ws)).toEqual([
+			[
+				"error",
+				'Aggregate "Thing" consumes "Happened" from "Other"; an aggregate is a consistency boundary, not a client, so let a policy of "Own" react to it and issue an operation of "Own" and hand "Thing" what it needs',
+				agg.ref,
+			],
+		]);
+	});
+
+	it("says nothing when the application service consumes instead", () => {
+		const { ws, app, call, fact } = neighbours();
+		app.consumes(call, { pattern: "anti-corruption-layer" });
+		app.consumes(fact, { pattern: "conformist" });
+		expect(inside(ws)).toEqual([]);
+	});
+
+	it("leaves an aggregate consuming its own context alone", () => {
+		const { ws, own, agg } = neighbours();
+		const service = own.addService("Rules", {
+			description: "",
+			type: "domain",
+		});
+		agg.consumes(
+			service.provides("Decide", {
+				description: "",
+				type: "operation",
+				internal: true,
+			}),
+			{},
+		);
+		expect(inside(ws)).toEqual([]);
+	});
+});
+
 describe("entity-identity", () => {
 	/** An aggregate whose root is identified, and one plain entity beside it. */
 	function aggregate() {

@@ -644,8 +644,8 @@ const getOffer = offerApi.provides("GetOffer", {
 });
 
 // Offers translate the catalogue into their own SKU list rather than embedding Product.
-offerAgg.consumes(productListed, { pattern: "anti-corruption-layer" });
-offerAgg.consumes(productRetired, { pattern: "anti-corruption-layer" });
+offerApi.consumes(productListed, { pattern: "anti-corruption-layer" });
+offerApi.consumes(productRetired, { pattern: "anti-corruption-layer" });
 
 offersBC
 	.addPolicy("Recompute buy box on offer change", {
@@ -802,8 +802,8 @@ sellerBC.addTerm("Vendor", {
 		"Not a seller. A wholesale supplier to first-party retail, handled by Vendor Purchasing; the two accounts were never unified and will not be. Seller Onboarding has no vendor of its own, which is the point: the word is a false friend and nothing here embodies it",
 });
 
-offerAgg.consumes(sellerActivated, { pattern: "conformist" });
-offerAgg.consumes(sellerSuspended, { pattern: "conformist" });
+offerApi.consumes(sellerActivated, { pattern: "conformist" });
+offerApi.consumes(sellerSuspended, { pattern: "conformist" });
 offersBC
 	.addPolicy("Withdraw offers of suspended seller", {
 		description: "A suspended seller's offers come down immediately",
@@ -1486,7 +1486,7 @@ const attachOrder = paymentAgg.provides("AttachOrder", {
 	type: "operation",
 	internal: true,
 });
-paymentAgg.consumes(orderPlaced, { pattern: "anti-corruption-layer" });
+paymentsApi.consumes(orderPlaced, { pattern: "anti-corruption-layer" });
 paymentsBC
 	.addPolicy("Attach order to payment", {
 		description: "Every placed order is linked to the hold that paid for it",
@@ -1595,8 +1595,16 @@ const scoreSeller = riskScorer
 	})
 	.raises(sellerRiskFlagged);
 
-assessmentAgg.consumes(orderPlaced, { pattern: "anti-corruption-layer" });
-assessmentAgg.consumes(sellerActivated, { pattern: "anti-corruption-layer" });
+// Fraud takes the facts it scores in at its own boundary: an aggregate is a
+// consistency boundary, not a client, and the policies below are what react
+// (decision 17).
+const fraudApi = fraudBC.addService("FraudAPI", {
+	description:
+		"Trust & Safety's application service: the boundary through which the orders and sellers to be scored arrive",
+	type: "application",
+});
+fraudApi.consumes(orderPlaced, { pattern: "anti-corruption-layer" });
+fraudApi.consumes(sellerActivated, { pattern: "anti-corruption-layer" });
 fraudBC
 	.addPolicy("Score every order", {
 		description: "No order ships unscored",
@@ -1616,14 +1624,14 @@ fraudBC.addTerm("Flag", {
 });
 
 // Downstream reactions to fraud verdicts.
-orderAgg.consumes(orderRiskFlagged, { pattern: "anti-corruption-layer" });
+orderApi.consumes(orderRiskFlagged, { pattern: "anti-corruption-layer" });
 orderBC
 	.addPolicy("Cancel flagged orders", {
 		description: "A flagged order is cancelled before the warehouse picks it",
 	})
 	.on(orderRiskFlagged)
 	.then(cancelOrder);
-sellerAgg.consumes(sellerRiskFlagged, { pattern: "anti-corruption-layer" });
+sellerCentral.consumes(sellerRiskFlagged, { pattern: "anti-corruption-layer" });
 sellerBC
 	.addPolicy("Suspend flagged sellers", {
 		description: "Trust & Safety's verdict suspends the seller pending review",
@@ -1845,8 +1853,8 @@ const receiveReturn = fulfilmentOrderAgg
 	})
 	.raises(returnReceived);
 
-inventoryAgg.consumes(orderPlaced, { pattern: "anti-corruption-layer" });
-fulfilmentOrderAgg.consumes(returnRequested, {
+warehouseApi.consumes(orderPlaced, { pattern: "anti-corruption-layer" });
+warehouseApi.consumes(returnRequested, {
 	pattern: "anti-corruption-layer",
 });
 warehouseBC
@@ -1870,10 +1878,9 @@ warehouseBC
 // The guarantee the warehouse asked for: a cancellation (fraud or customer)
 // releases the reservation and voids the pick tasks, so a flagged order that
 // was reserved a moment earlier is never picked.
-inventoryAgg.consumes(orderCancelled, { pattern: "anti-corruption-layer" });
-fulfilmentOrderAgg.consumes(orderCancelled, {
-	pattern: "anti-corruption-layer",
-});
+// One consumption, though two aggregates act on it: the context takes the
+// cancellation in at its boundary and the policy below is what fans it out.
+warehouseApi.consumes(orderCancelled, { pattern: "anti-corruption-layer" });
 warehouseBC
 	.addPolicy("Release on cancellation", {
 		description:
@@ -1900,17 +1907,20 @@ warehouseBC.addTerm("Fulfilment order", {
 });
 
 // Order, payments and customer service react to warehouse facts.
-orderAgg.consumes(shipmentDispatched, { pattern: "anti-corruption-layer" });
-orderAgg.consumes(returnReceived, { pattern: "anti-corruption-layer" });
-orderAgg.consumes(stockShort, { pattern: "anti-corruption-layer" });
-orderAgg.consumes(refundPayment, { pattern: "anti-corruption-layer" });
-// The refund is asked for by an operation of Order Management's own, which is
-// what the policy below names (decision 17).
-const requestRefund = orderAgg.provides("RequestRefund", {
+orderApi.consumes(shipmentDispatched, { pattern: "anti-corruption-layer" });
+orderApi.consumes(returnReceived, { pattern: "anti-corruption-layer" });
+orderApi.consumes(stockShort, { pattern: "anti-corruption-layer" });
+// The refund is asked for by an operation of Order Management's own boundary,
+// which is what the policy below names and what makes the call (decision 17).
+const requestRefund = orderApi.provides("RequestRefund", {
 	description:
 		"Ask Payments to return the money for a graded return, through the ACL",
 	type: "operation",
 	internal: true,
+});
+orderApi.consumes(refundPayment, {
+	pattern: "anti-corruption-layer",
+	by: [requestRefund],
 });
 orderBC
 	.addPolicy("Record dispatch", {
@@ -1931,7 +1941,7 @@ orderBC
 	})
 	.on(returnReceived)
 	.then(requestRefund);
-paymentAgg.consumes(shipmentDispatched, { pattern: "anti-corruption-layer" });
+paymentsApi.consumes(shipmentDispatched, { pattern: "anti-corruption-layer" });
 paymentsBC
 	.addPolicy("Capture on dispatch", {
 		description: "Charge for each shipment as it leaves",
@@ -2042,7 +2052,12 @@ routeAgg
 // No downstream role, and none is wanted: Warehouse and Last Mile share a
 // kernel, so neither is upstream of the other and there is nothing to conform
 // to or translate. role-coherence exempts symmetric partners for that reason.
-routeAgg.consumes(shipmentDispatched, {});
+const lastMileApi = lastMileBC.addService("LastMileAPI", {
+	description:
+		"Last Mile's application service: the boundary through which dispatched packages arrive to be routed",
+	type: "application",
+});
+lastMileApi.consumes(shipmentDispatched, {});
 lastMileBC
 	.addPolicy("Route dispatched packages", {
 		description: "Every dispatched package gets a stop",
@@ -2061,7 +2076,7 @@ lastMileBC.addTerm("Parcel", {
 	embodiedBy: parcel,
 });
 
-orderAgg.consumes(parcelDelivered, { pattern: "anti-corruption-layer" });
+orderApi.consumes(parcelDelivered, { pattern: "anti-corruption-layer" });
 orderBC
 	.addPolicy("Complete on delivery", {
 		description: "When the last package is delivered the order is done",
@@ -2220,7 +2235,7 @@ const recordAdClick = adsApi
 // Ad groups advertise catalogue products; the ids are checked against the product API.
 adsApi.consumes(getProduct, { pattern: "conformist" });
 
-campaignAgg.consumes(sellerSuspended, { pattern: "conformist" });
+adsApi.consumes(sellerSuspended, { pattern: "conformist" });
 adsBC
 	.addPolicy("Pause campaigns of suspended seller", {
 		description:
@@ -2318,9 +2333,9 @@ caseAgg.provides("ResolveCase", {
 	internal: true,
 });
 
-caseAgg.consumes(getOrder, { pattern: "anti-corruption-layer" });
-caseAgg.consumes(requestReturn, { pattern: "anti-corruption-layer" });
-caseAgg.consumes(attemptFailed, { pattern: "anti-corruption-layer" });
+caseApi.consumes(getOrder, { pattern: "anti-corruption-layer" });
+caseApi.consumes(requestReturn, { pattern: "anti-corruption-layer" });
+caseApi.consumes(attemptFailed, { pattern: "anti-corruption-layer" });
 csBC
 	.addPolicy("Open case on failed delivery", {
 		description:
@@ -2398,7 +2413,7 @@ vendorBC.addTerm("Purchase order", {
 	embodiedBy: purchaseOrderAgg,
 });
 
-inventoryAgg.consumes(purchaseOrderReceived, {
+warehouseApi.consumes(purchaseOrderReceived, {
 	pattern: "anti-corruption-layer",
 });
 warehouseBC
@@ -2470,7 +2485,7 @@ const getCustomer = identityApi.provides("GetCustomer", {
 	returns: customerProfileSchema,
 });
 checkoutOrchestrator.consumes(getCustomer, { pattern: "conformist" });
-caseAgg.consumes(getCustomer, { pattern: "conformist" });
+caseApi.consumes(getCustomer, { pattern: "conformist" });
 
 // "Customer" is said in three contexts; only this one holds the record.
 identityBC.addTerm("Customer", {

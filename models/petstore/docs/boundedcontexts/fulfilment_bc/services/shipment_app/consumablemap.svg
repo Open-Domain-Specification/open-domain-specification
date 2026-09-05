@@ -168,18 +168,18 @@
 </a>
 </g>
 </g>
-<!-- #/boundedcontexts/fulfilment_bc/aggregates/shipment&#45;&gt;#/boundedcontexts/sales_bc/aggregates/order -->
+<!-- #/boundedcontexts/fulfilment_bc/services/shipment_app&#45;&gt;#/boundedcontexts/sales_bc/aggregates/order -->
 <g id="edge9" class="edge">
-<title>#/boundedcontexts/fulfilment_bc/aggregates/shipment&#45;&gt;#/boundedcontexts/sales_bc/aggregates/order</title>
-<path fill="none" stroke="black" d="M883.88,-482.41C868.02,-468.07 848.2,-451.26 829,-438 746.71,-381.15 642.56,-328.42 581.12,-299.09"/>
-<polygon fill="black" stroke="black" points="582.8,-296.01 572.27,-294.88 579.8,-302.34 582.8,-296.01"/>
-<text xml:space="preserve" text-anchor="middle" x="845.45" y="-421" font-family="sans-serif" font-size="10.00">OrderApproved</text>
+<title>#/boundedcontexts/fulfilment_bc/services/shipment_app&#45;&gt;#/boundedcontexts/sales_bc/aggregates/order</title>
+<path fill="none" stroke="black" d="M714.58,-481.4C675.3,-437.71 604.53,-359 562.65,-312.43"/>
+<polygon fill="black" stroke="black" points="565.48,-310.34 556.19,-305.24 560.28,-315.02 565.48,-310.34"/>
+<text xml:space="preserve" text-anchor="middle" x="699.33" y="-421" font-family="sans-serif" font-size="10.00">OrderApproved</text>
 <g id="a_edge9&#45;headlabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="570.9" y="-291.24" font-family="sans-serif" font-size="10.00">PL</text>
+<text xml:space="preserve" text-anchor="middle" x="555.18" y="-301.12" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
 <g id="a_edge9&#45;taillabel"><a xlink:title="conformist">
-<text xml:space="preserve" text-anchor="middle" x="883.88" y="-479.41" font-family="sans-serif" font-size="10.00">CF</text>
+<text xml:space="preserve" text-anchor="middle" x="714.58" y="-478.4" font-family="sans-serif" font-size="10.00">CF</text>
 </a>
 </g>
 </g>
