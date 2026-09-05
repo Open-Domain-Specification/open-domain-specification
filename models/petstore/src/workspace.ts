@@ -167,17 +167,32 @@ petStatusVO.addAttribute("value", {
 	type: "'available' | 'pending' | 'sold'",
 });
 
-// Attributes: `identity` marks the one that identifies the entity, and
-// `valueobject` links an attribute to the value object that types it.
+// Attributes: `identity` marks the one that identifies the entity,
+// `valueobject` links an attribute to the value object that types it, and
+// `optional` marks the ones the Swagger contract does not require. The v3
+// Pet schema requires only `name` and `photoUrls`; `id` is left required
+// because it identifies the pet, and an identity is never optional.
 petRoot.addAttribute("id", { type: "int64", identity: true });
 petRoot.addAttribute("name", { type: "string" });
-petRoot.addAttribute("category", { type: "Category", valueobject: categoryVO });
+petRoot.addAttribute("category", {
+	type: "Category",
+	valueobject: categoryVO,
+	optional: true,
+});
 petRoot.addAttribute("photoUrls", {
 	type: "PhotoUrl[]",
 	valueobject: photoUrlVO,
 });
-petRoot.addAttribute("tags", { type: "Tag[]", valueobject: tagVO });
-petRoot.addAttribute("status", { type: "PetStatus", valueobject: petStatusVO });
+petRoot.addAttribute("tags", {
+	type: "Tag[]",
+	valueobject: tagVO,
+	optional: true,
+});
+petRoot.addAttribute("status", {
+	type: "PetStatus",
+	valueobject: petStatusVO,
+	optional: true,
+});
 
 // `uses` is the relation to a value object; the cardinalities cover 0..1, *, 1..* and 1.
 petRoot.uses(categoryVO, "categorized-as", "0..1");

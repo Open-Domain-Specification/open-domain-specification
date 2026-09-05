@@ -10,6 +10,10 @@ import { pathToIndexMd } from "./lib/paths";
  * An attribute that holds another root's identity says whose, and links to it:
  * that identity is the whole of the dependency, often across a bounded
  * context, and a reader who cannot follow it is reading a bare id.
+ *
+ * An attribute that is sometimes absent is marked `optional` after the type
+ * (decision 24). Only the exception is written: everything unmarked is always
+ * present, which is the common case.
  */
 const attributeMd = (attribute: Attribute, fromPath: string) => {
 	const name = attribute.identity ? `**${attribute.name}**` : attribute.name;
@@ -19,10 +23,14 @@ const attributeMd = (attribute: Attribute, fromPath: string) => {
 	const identifies = attribute.identifies
 		? ` (identifies [${attribute.identifies.name}](${pathToIndexMd(attribute.identifies.aggregate.path, fromPath)}))`
 		: "";
-	return `${name}: ${type}${identifies}`;
+	const optional = attribute.optional ? " (optional)" : "";
+	return `${name}: ${type}${optional}${identifies}`;
 };
 
-/** Attributes as an inline `name: \`type\`` list; identity attributes in bold. */
+/**
+ * Attributes as an inline `name: \`type\`` list; identity attributes in bold,
+ * and an attribute that is sometimes absent marked `(optional)`.
+ */
 export const attributeListMd = (
 	attributes: ReadonlyMap<string, Attribute>,
 	fromPath: string,

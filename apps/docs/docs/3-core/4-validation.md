@@ -17,6 +17,7 @@ severity, a rule id, a message and the ref of the element concerned.
 | `identifies-root` | error | an attribute's `identifies` names the root entity of an aggregate; the root is what an aggregate is reached by, which is what lets an identity cross a context boundary |
 | `root-identity` | error | an aggregate's root entity declares at least one identity attribute |
 | `entity-identity` | warning | every other entity in an aggregate declares at least one identity attribute; without one it is a value object |
+| `identity-not-optional` | error | an identity attribute is not marked `optional`; an identity that may be missing cannot say which instance a reference means |
 | `value-object-shape` | error | a value object declares no identity attribute and includes nothing |
 | `aggregate-tree` | error / warning | inside an aggregate `includes` points at entities and `uses` at value objects, and every entity is reachable from the root. The tree is a claim about instances: a type that includes its own type, or one included by two different wholes, is legal; a ring through two or more distinct types is not |
 | `attribute-relation-coherence` | warning | an attribute typed by a value object has the matching `uses` relation, of a matching cardinality; the type itself is free text and is never checked against the value object's name |

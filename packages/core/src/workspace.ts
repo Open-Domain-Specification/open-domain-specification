@@ -1680,6 +1680,8 @@ export type AttributeOptions = {
 	type: string;
 	description?: string;
 	identity?: boolean;
+	/** True when the attribute is sometimes absent; absent means required. */
+	optional?: boolean;
 	valueobject?: ValueObject;
 	/** The schema that models this attribute's type, when it is a shape of its own. */
 	schema?: DataSchema;
@@ -1702,6 +1704,8 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 	type: string;
 	description?: string;
 	identity: boolean;
+	/** True when the attribute is sometimes absent; false means required. */
+	optional: boolean;
 	valueobject?: ValueObject;
 	/** The schema that models this attribute's type, when it is a shape of its own. */
 	schema?: DataSchema;
@@ -1727,6 +1731,7 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 		this.type = attributes.type;
 		this.description = attributes.description;
 		this.identity = attributes.identity ?? false;
+		this.optional = attributes.optional ?? false;
 		this.valueobject = attributes.valueobject;
 		this.schema = attributes.schema;
 		this.identifies = attributes.identifies;
@@ -1740,6 +1745,7 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 			type: this.type,
 			description: this.description,
 			identity: this.identity || undefined,
+			optional: this.optional || undefined,
 			valueobject: this.valueobject && { $ref: this.valueobject.ref },
 			schema: this.schema && { $ref: this.schema.ref },
 			identifies: this.identifies && { $ref: this.identifies.ref },

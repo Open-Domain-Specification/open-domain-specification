@@ -269,6 +269,31 @@ const valueObjectShape: Rule = (workspace) => {
 	return diagnostics;
 };
 
+/**
+ * An identity attribute is never optional.
+ *
+ * An identity is what tells one instance from another holding the same values,
+ * and what a reference, an event payload or a stored row names the instance by
+ * (decision 24). If it may be missing then some instances cannot be told apart
+ * or reached at all, and the element has no identity — it is a value object, or
+ * the model is missing the attribute that really identifies it.
+ */
+const identityNotOptional: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const { owner } of attributeOwnersOf(workspace)) {
+		for (const attribute of owner.attributes.values()) {
+			if (!attribute.identity || !attribute.optional) continue;
+			diagnostics.push({
+				severity: "error",
+				rule: "identity-not-optional",
+				message: `"${owner.name}" marks attribute "${attribute.name}" as both an identity and optional; an identity that may be missing cannot say which "${owner.name}" a reference means`,
+				ref: attribute.ref,
+			});
+		}
+	}
+	return diagnostics;
+};
+
 /** Adds one value to the list a key holds, starting the list if there is none. */
 function append<K, V>(index: Map<K, V[]>, key: K, value: V): void {
 	const existing = index.get(key);
@@ -1507,6 +1532,14 @@ const RULES: CataloguedRule[] = [
 		why: "Two value objects with the same values are the same value: that is what makes them safe to copy, compare and replace. An identity attribute contradicts that, and includes claims a lifecycle a value object does not own.",
 		fix: "Drop identity: true from the attribute, or promote the element to an entity if it really has a life of its own; change an includes on a value object to uses.",
 		check: valueObjectShape,
+	},
+	{
+		rule: "identity-not-optional",
+		severities: ["error"],
+		summary: "An identity attribute is not marked optional.",
+		why: "An identity is the one thing that tells an instance apart from another holding exactly the same values, and it is what a reference, an event payload or a stored row names that instance by. An identity that is sometimes absent cannot do either job: the instances without it are indistinguishable and unreachable, so what the element really has is no identity at all.",
+		fix: "Drop optional: true from the identity attribute. If the value genuinely is sometimes missing, it is not the identity — mark the attribute the business always has as the identity instead, or make the element a value object if there is nothing it is always identified by.",
+		check: identityNotOptional,
 	},
 	{
 		rule: "aggregate-tree",

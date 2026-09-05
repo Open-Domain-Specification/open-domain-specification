@@ -2,6 +2,7 @@
 import type { Attribute } from "@open-domain-specification/core";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
+import Keyword from "../atoms/Keyword.svelte";
 import Ref from "../atoms/Ref.svelte";
 
 /**
@@ -16,6 +17,11 @@ import Ref from "../atoms/Ref.svelte";
  * attribute that holds another root's identity names that root beside the
  * type, as a ref: the id is the whole of the dependency it carries, usually
  * into another bounded context, and a reader has to be able to follow it.
+ *
+ * An attribute that is sometimes absent carries the `optional` keyword after
+ * its type (decision 24), the design language's word for a classification
+ * rather than a new mark: only the exception is written, so a column of types
+ * with one word beside a few of them reads as the list of what may be missing.
  */
 const {
 	attributes,
@@ -44,6 +50,9 @@ const columns: Column[] = [
 				<code><Ref ref={a.schema.ref} label={a.type} /></code>
 			{:else}
 				<code>{a.type}</code>
+			{/if}
+			{#if a.optional}
+				<Keyword text="optional" title="Sometimes absent; everything unmarked is always present." />
 			{/if}
 			{#if a.identifies}
 				<span class="identifies">identifies <code><Ref ref={a.identifies.ref} label={a.identifies.name} /></code></span>

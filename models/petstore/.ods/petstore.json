@@ -165,6 +165,7 @@
                 "category": {
                   "name": "category",
                   "type": "Category",
+                  "optional": true,
                   "valueobject": {
                     "$ref": "#/boundedcontexts/catalog_bc/valueobjects/category"
                   }
@@ -179,6 +180,7 @@
                 "tags": {
                   "name": "tags",
                   "type": "Tag[]",
+                  "optional": true,
                   "valueobject": {
                     "$ref": "#/boundedcontexts/catalog_bc/valueobjects/tag"
                   }
@@ -186,6 +188,7 @@
                 "status": {
                   "name": "status",
                   "type": "PetStatus",
+                  "optional": true,
                   "valueobject": {
                     "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
                   }

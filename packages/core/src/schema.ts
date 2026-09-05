@@ -9,6 +9,12 @@ export interface AttributeSchema {
 	description?: string;
 	/** True when this attribute is (part of) the identity of an entity. */
 	identity?: boolean;
+	/**
+	 * True when the attribute is sometimes absent. Left off means required,
+	 * which is the common case and stays unwritten (decision 24). An identity
+	 * attribute is never optional.
+	 */
+	optional?: boolean;
 	/** The value object that models this attribute's type, when there is one. */
 	valueobject?: { $ref: string };
 	/**

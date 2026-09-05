@@ -1807,6 +1807,7 @@ stop.includes(parcel, "hands-over", "1..*");
 stop.addAttribute("proofOfDelivery", {
 	type: "ProofOfDelivery",
 	valueobject: proofVO,
+	optional: true,
 	description: "Captured at the door; absent until the stop is completed",
 });
 stop.uses(proofVO, "proven-by", "0..1");
@@ -2055,7 +2056,13 @@ resolutionVO.addAttribute("kind", {
 	type: "'refund' | 'replacement' | 'information' | 'no-action'",
 });
 caseRoot.addAttribute("caseId", { type: "string", identity: true });
-caseRoot.addAttribute("orderId", { type: "string", identifies: order });
+// OpenCase creates a case for a customer and only optionally about an order,
+// so a case that is about the account rather than an order holds no orderId.
+caseRoot.addAttribute("orderId", {
+	type: "string",
+	identifies: order,
+	optional: true,
+});
 // `customerId` is declared with the CustomerAccount root further down, because
 // the root it identifies has to exist before the attribute can name it.
 interaction.addAttribute("interactionId", { type: "string", identity: true });
@@ -2065,6 +2072,7 @@ caseRoot.includes(interaction, "logged", "*");
 caseRoot.addAttribute("resolution", {
 	type: "Resolution",
 	valueobject: resolutionVO,
+	optional: true,
 	description: "Absent while the case is open",
 });
 caseRoot.uses(resolutionVO, "resolved-as", "0..1");

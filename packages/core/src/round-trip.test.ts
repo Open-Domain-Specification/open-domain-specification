@@ -122,6 +122,13 @@ describe("schema round-trip", () => {
 		);
 		expect(order.attributes.get("order_id")?.identity).toBe(true);
 		expect(order.attributes.get("total")?.valueobject?.name).toBe("Money");
+		// Optional survives the trip; everything unmarked comes back required,
+		// and the flag is left out of the JSON rather than written as false.
+		expect(order.attributes.get("note")?.optional).toBe(true);
+		expect(order.attributes.get("order_id")?.optional).toBe(false);
+		expect(
+			order.attributes.get("order_id")?.toSchema().optional,
+		).toBeUndefined();
 		const money = rebuilt.getValueObjectByRefOrThrow(
 			"#/boundedcontexts/ordering_bc/valueobjects/money",
 		);

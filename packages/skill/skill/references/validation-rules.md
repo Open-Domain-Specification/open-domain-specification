@@ -60,6 +60,14 @@
 
 **Usual fix:** Drop identity: true from the attribute, or promote the element to an entity if it really has a life of its own; change an includes on a value object to uses.
 
+## `identity-not-optional` (error)
+
+**Requires:** An identity attribute is not marked optional.
+
+**Why it matters:** An identity is the one thing that tells an instance apart from another holding exactly the same values, and it is what a reference, an event payload or a stored row names that instance by. An identity that is sometimes absent cannot do either job: the instances without it are indistinguishable and unreachable, so what the element really has is no identity at all.
+
+**Usual fix:** Drop optional: true from the identity attribute. If the value genuinely is sometimes missing, it is not the identity — mark the attribute the business always has as the identity instead, or make the element a value object if there is nothing it is always identified by.
+
 ## `aggregate-tree` (error, warning)
 
 **Requires:** Inside an aggregate, includes points at entities and uses at value objects, no ring of two or more entity types includes itself, and every entity is reachable from the root.

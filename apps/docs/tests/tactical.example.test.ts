@@ -159,6 +159,7 @@ describe("Tactical design", () => {
 			  "identifies": undefined,
 			  "identity": undefined,
 			  "name": "total",
+			  "optional": undefined,
 			  "schema": undefined,
 			  "type": "Money",
 			  "valueobject": {
@@ -174,6 +175,7 @@ describe("Tactical design", () => {
 			  "identifies": undefined,
 			  "identity": undefined,
 			  "name": "lines",
+			  "optional": undefined,
 			  "schema": {
 			    "$ref": "#/boundedcontexts/ordering/schemas/line_summary",
 			  },

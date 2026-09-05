@@ -24,6 +24,12 @@ function everythingWrong(): Workspace {
 	r1.references(inner, "points-at");
 	// identifies-root: an identity attribute naming an entity that is not a root
 	r1.addAttribute("innerId", { type: "string", identifies: inner });
+	// identity-not-optional: an identity that is allowed to go missing
+	r1.addAttribute("maybeId", {
+		type: "string",
+		identity: true,
+		optional: true,
+	});
 	// role-coherence and internal-consumable and separate-ways
 	const other = b.addAggregate("Other", { description: "" });
 	const otherRoot = other.addRootEntity("Other", { description: "" });
