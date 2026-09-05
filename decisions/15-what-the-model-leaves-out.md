@@ -60,7 +60,7 @@ Aggregates, services, policies and schemas are flat within a context. A context 
 
 ### A relationship is between two contexts
 
-`partnership`, `shared-kernel` and `separate-ways` take exactly two participants. Three contexts in partnership are three pairs, each of which may differ in its comments and disposition; a single three-way edge would draw as one line and hide that. The map already composes pairs. When many contexts share one kernel, the kernel is a context of its own and each sharer declares one relationship with it (decision 16, amendment), so the count is the number of sharers, not the number of pairs.
+`partnership`, `shared-kernel` and `separate-ways` take exactly two participants. Three contexts in partnership are three pairs, each of which may differ in its comments and disposition; a single three-way edge would draw as one line and hide that. The map already composes pairs. (A loop of reactions that converges, a balancing mechanism or a negotiation, is legitimate; `reaction-cycle` still warns, because the model has no conditions and the ending condition lives in the closing policy's description, and the warning is what sends a reader there.) When many contexts share one kernel, the kernel is a context of its own and each sharer declares one relationship with it (decision 16, amendment), so the count is the number of sharers, not the number of pairs.
 
 ### The ubiquitous language lives in the bounded context, not the domain
 

@@ -234,7 +234,7 @@
 
 **Why it matters:** A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down.
 
-**Usual fix:** Break the ring — usually one of the policies is reacting to too broad an event, or issues an operation it should not — or, if the loop is real and ends on a condition, model that condition so the chain stops somewhere a reader can see.
+**Usual fix:** Break the ring, usually one of the policies is reacting to too broad an event or issues an operation it should not. If the loop is a real feedback loop that converges, say what ends it in the description of the policy that closes the ring; the model has no conditions on purpose (decision 15), so the ending condition is prose a reader finds where the loop closes, and the warning stands to send them there.
 
 ## `context-serves-subdomain` (warning)
 
