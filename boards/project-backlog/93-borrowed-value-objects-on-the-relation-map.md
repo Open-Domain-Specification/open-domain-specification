@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [pages, graphviz]
 priority: low
 agent: ironhide
@@ -14,7 +14,7 @@ A value object borrowed from a shared kernel or a conformed-to upstream never ap
 ## Checklist
 
 - [x] `ODSRelationGraph` includes borrowed value objects held by the scoped aggregate's attributes, marked with their owning context; the three renderers draw them with the foreign mark and a legend row
-- [ ] `attribute-relation-coherence` stops skipping foreign value objects (the `uses` edge is derived, not declared, so no rule change beyond the skip) — QUESTION for lead below; removing the skip warns 13 times in NorthBank alone with no fix available
+- [x] `attribute-relation-coherence` keeps skipping foreign value objects, because the `uses` edge is derived from the attribute and there is no declared relation to compare; the skip's justification restated (reworded by the lead at landing: the original item was not implementable, `cross-context-relation` forbids the relation the warning would demand) — QUESTION for lead below; removing the skip warns 13 times in NorthBank alone with no fix available
 - [x] `bash scripts/verify-all.sh` green
 
 ## Gates
