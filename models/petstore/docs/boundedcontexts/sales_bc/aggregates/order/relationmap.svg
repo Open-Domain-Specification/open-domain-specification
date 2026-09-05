@@ -115,30 +115,30 @@
 <g id="node5" class="node">
 <title>#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet</title>
 <g id="a_node5"><a xlink:title="The listed animal; everything else in the aggregate hangs off it">
-<polygon fill="white" stroke="none" points="442.74,-178 344.13,-178 344.13,-16 442.74,-16 442.74,-178"/>
-<polygon fill="none" stroke="black" points="344.13,-148 344.13,-178 442.74,-178 442.74,-148 344.13,-148"/>
+<polygon fill="white" stroke="none" points="449.05,-178 337.82,-178 337.82,-16 449.05,-16 449.05,-178"/>
+<polygon fill="none" stroke="black" points="337.82,-148 337.82,-178 449.05,-178 449.05,-148 337.82,-148"/>
 <text xml:space="preserve" text-anchor="start" x="367.74" y="-165" font-family="sans-serif" font-size="10.00">«root entity»</text>
 <text xml:space="preserve" text-anchor="start" x="386.5" y="-155" font-family="sans-serif" font-weight="bold" font-size="10.00">Pet</text>
-<polygon fill="none" stroke="black" points="344.13,-126 344.13,-148 442.74,-148 442.74,-126 344.13,-126"/>
-<text xml:space="preserve" text-anchor="start" x="349.13" y="-134" font-family="sans-serif" font-size="10.00">{id} id: int64</text>
-<polygon fill="none" stroke="black" points="344.13,-104 344.13,-126 442.74,-126 442.74,-104 344.13,-104"/>
-<text xml:space="preserve" text-anchor="start" x="349.13" y="-112" font-family="sans-serif" font-size="10.00">name: string</text>
-<polygon fill="none" stroke="black" points="344.13,-82 344.13,-104 442.74,-104 442.74,-82 344.13,-82"/>
-<text xml:space="preserve" text-anchor="start" x="349.13" y="-90" font-family="sans-serif" font-size="10.00">category: Category</text>
-<polygon fill="none" stroke="black" points="344.13,-60 344.13,-82 442.74,-82 442.74,-60 344.13,-60"/>
-<text xml:space="preserve" text-anchor="start" x="349.13" y="-68" font-family="sans-serif" font-size="10.00">photoUrls: PhotoUrl[]</text>
-<polygon fill="none" stroke="black" points="344.13,-38 344.13,-60 442.74,-60 442.74,-38 344.13,-38"/>
-<text xml:space="preserve" text-anchor="start" x="349.13" y="-46" font-family="sans-serif" font-size="10.00">tags: Tag[]</text>
-<polygon fill="none" stroke="black" points="344.13,-16 344.13,-38 442.74,-38 442.74,-16 344.13,-16"/>
-<text xml:space="preserve" text-anchor="start" x="349.13" y="-24" font-family="sans-serif" font-size="10.00">status: PetStatus</text>
+<polygon fill="none" stroke="black" points="337.82,-126 337.82,-148 449.05,-148 449.05,-126 337.82,-126"/>
+<text xml:space="preserve" text-anchor="start" x="342.82" y="-134" font-family="sans-serif" font-size="10.00">{id} id: int64</text>
+<polygon fill="none" stroke="black" points="337.82,-104 337.82,-126 449.05,-126 449.05,-104 337.82,-104"/>
+<text xml:space="preserve" text-anchor="start" x="342.82" y="-112" font-family="sans-serif" font-size="10.00">name: string</text>
+<polygon fill="none" stroke="black" points="337.82,-82 337.82,-104 449.05,-104 449.05,-82 337.82,-82"/>
+<text xml:space="preserve" text-anchor="start" x="342.82" y="-90" font-family="sans-serif" font-size="10.00">{opt} category: Category</text>
+<polygon fill="none" stroke="black" points="337.82,-60 337.82,-82 449.05,-82 449.05,-60 337.82,-60"/>
+<text xml:space="preserve" text-anchor="start" x="342.82" y="-68" font-family="sans-serif" font-size="10.00">photoUrls: PhotoUrl[]</text>
+<polygon fill="none" stroke="black" points="337.82,-38 337.82,-60 449.05,-60 449.05,-38 337.82,-38"/>
+<text xml:space="preserve" text-anchor="start" x="342.82" y="-46" font-family="sans-serif" font-size="10.00">{opt} tags: Tag[]</text>
+<polygon fill="none" stroke="black" points="337.82,-16 337.82,-38 449.05,-38 449.05,-16 337.82,-16"/>
+<text xml:space="preserve" text-anchor="start" x="342.82" y="-24" font-family="sans-serif" font-size="10.00">{opt} status: PetStatus</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/sales_bc/aggregates/order/entities/order&#45;&gt;#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet -->
 <g id="edge4" class="edge">
 <title>#/boundedcontexts/sales_bc/aggregates/order/entities/order&#45;&gt;#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M142.96,-255.75C193.73,-223.45 278.56,-169.46 335,-133.55"/>
-<polygon fill="black" stroke="black" points="343.12,-128.38 337.1,-137.55 339.93,-130.41 334.69,-133.75 334.69,-133.75 334.69,-133.75 339.93,-130.41 332.27,-129.95 343.12,-128.38"/>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M142.96,-255.75C191.93,-224.59 272.58,-173.27 328.88,-137.44"/>
+<polygon fill="black" stroke="black" points="337.02,-132.26 331,-141.43 333.83,-134.29 328.59,-137.63 328.59,-137.63 328.59,-137.63 333.83,-134.29 326.17,-133.83 337.02,-132.26"/>
 <text xml:space="preserve" text-anchor="middle" x="244.43" y="-215.13" font-family="sans-serif" font-size="10.00">«identifies» petId</text>
 </g>
 </g>
