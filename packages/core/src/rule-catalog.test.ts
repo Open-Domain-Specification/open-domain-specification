@@ -83,11 +83,11 @@ function everythingWrong(): Workspace {
 	});
 	// consumable-kind: event raises, policy on operation / then event
 	plain.raises(carries);
-	a.addPolicy("Backwards", { description: "" }).on(carries).then(plain);
+	a.addPolicy("Backwards", { description: "" }).on(carries).issues(plain);
 	// policy-complete: empty policy
 	a.addPolicy("Empty", { description: "" });
 	// separate-ways again, this time reached through a policy subscription
-	a.addPolicy("Listens Across", { description: "" }).on(plain).then(carries);
+	a.addPolicy("Listens Across", { description: "" }).on(plain).issues(carries);
 	// aggregate-not-public: an aggregate offering an operation outward, and a
 	// second context reaching for it
 	const reachIn = other.provides("Reach In", {
@@ -111,10 +111,10 @@ function everythingWrong(): Workspace {
 	});
 	twoRoots.consumes(decide, {});
 	// policy-in-context: a policy acting inside the context next door
-	a.addPolicy("Acts Elsewhere", { description: "" }).on(plain).then(reachIn);
+	a.addPolicy("Acts Elsewhere", { description: "" }).on(plain).issues(reachIn);
 	// process-in-context, process-starts and process-has-ends at once: a
 	// process nothing begins, nothing ends, acting inside the context next door
-	a.addProcess("Runs Elsewhere", { description: "" }).then(reachIn);
+	a.addProcess("Runs Elsewhere", { description: "" }).issues(reachIn);
 	// root-identity: no root in this fixture declares an identity attribute
 	// value-object-shape: a value object with an identity, and one that includes
 	const vo = a.addValueObject("Vo", { description: "" });

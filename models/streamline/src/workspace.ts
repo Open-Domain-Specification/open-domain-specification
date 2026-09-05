@@ -862,7 +862,7 @@ encodingBC
 		description: "Every queued job gets a per-title ladder before it runs",
 	})
 	.on(encodeQueued)
-	.then(planLadder);
+	.issues(planLadder);
 
 encodingBC.addTerm("Ladder", {
 	definition: "The set of bitrate and resolution rungs a title is encoded at",
@@ -899,20 +899,20 @@ catalogueBC
 	})
 	.starts(masterDelivered)
 	.on(encodingCompleted)
-	.then(requestEncode, publishTitle)
+	.issues(requestEncode, publishTitle)
 	.ends(titlePublished);
 catalogueBC
 	.addPolicy("Update availability on window", {
 		description: "An opened window changes where the title is live",
 	})
 	.on(windowOpened)
-	.then(updateAvailability);
+	.issues(updateAvailability);
 catalogueBC
 	.addPolicy("Unpublish on expiry", {
 		description: "An expired window takes the title down that day",
 	})
 	.on(windowExpired)
-	.then(unpublishTitle);
+	.issues(unpublishTitle);
 
 /* =======================
    PLAYBACK
@@ -1207,7 +1207,7 @@ edgeBC
 			"New renditions are pushed to appliances by predicted popularity",
 	})
 	.on(encodingCompleted)
-	.then(prepositionAsset);
+	.issues(prepositionAsset);
 
 // Shared kernel: the manifest format is one library, so Playback takes the answer as it is.
 playbackApi.consumes(resolveEdge, {
@@ -1459,7 +1459,7 @@ recsBC
 			"A published title joins the candidate pool; an availability change updates where it may be recommended",
 	})
 	.on(titlePublished, availabilityChanged)
-	.then(addCandidate);
+	.issues(addCandidate);
 // DELIBERATE (internal-consumable): Personalisation reads the player's
 // bookmark updates, which Playback declares internal. The dependency was never agreed.
 recsApi.consumes(bookmarkUpdated, { pattern: "anti-corruption-layer" });
@@ -1469,7 +1469,7 @@ recsBC
 			"Every stopped session becomes a signal on the profile's taste",
 	})
 	.on(playbackStopped)
-	.then(recordSignal);
+	.issues(recordSignal);
 
 recsBC.addTerm("Row", {
 	definition: "A horizontal list on the home screen, ranked for one profile",
@@ -1837,7 +1837,7 @@ const awaitPlan = billingBC
 			"A new household is registered in billing until it picks a plan",
 	})
 	.on(householdCreated)
-	.then(registerHousehold);
+	.issues(registerHousehold);
 // Nothing in billing reads Identity's event except this reaction; renewing,
 // dunning and answering entitlement never touch it.
 billingApi.consumes(householdCreated, {
@@ -1850,7 +1850,7 @@ billingBC
 			"A failed renewal starts the grace period, not an immediate lapse",
 	})
 	.on(paymentFailed)
-	.then(startDunning);
+	.issues(startDunning);
 
 // Playback asks billing before every start, translating the answer to its own yes/no.
 playbackApi.consumes(getEntitlement, {
@@ -1928,7 +1928,7 @@ householdsBC
 		description: "Every new account gets a household and a primary profile",
 	})
 	.on(accountCreated)
-	.then(createHousehold);
+	.issues(createHousehold);
 
 /* =======================
    ADS TIER
@@ -2070,7 +2070,7 @@ adsBC
 			"Breaks are planned when the session starts, before the first one is reached",
 	})
 	.on(playbackStarted)
-	.then(prepareBreaks);
+	.issues(prepareBreaks);
 playbackApi.consumes(resolveAdBreak, {
 	pattern: "anti-corruption-layer",
 	by: [startPlayback],
@@ -2134,7 +2134,7 @@ const addDiscCharge = billingBC
 			"The legacy export is translated into an invoice line on the household",
 	})
 	.on(discRentalInvoiced)
-	.then(addInvoiceLine);
+	.issues(addInvoiceLine);
 // The monthly export reaches billing through this one reaction; the rest of
 // the subscription lifecycle knows nothing about discs.
 billingApi.consumes(discRentalInvoiced, {

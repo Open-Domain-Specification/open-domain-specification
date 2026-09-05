@@ -35,7 +35,7 @@ const reprice = product.provides("Reprice", {
 ordering
 	.addPolicy("Reprice on order", { description: "" })
 	.on(reprice)
-	.then(reprice);
+	.issues(reprice);
 
 describe("Validation", () => {
 	it("reports structural DDD rule violations", () => {

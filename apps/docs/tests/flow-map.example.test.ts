@@ -38,11 +38,11 @@ const ship = ordering
 ordering
 	.addPolicy("Auto approve", { description: "" })
 	.on(placed)
-	.then(approve);
+	.issues(approve);
 ordering
 	.addPolicy("Ship when approved", { description: "" })
 	.on(approved)
-	.then(ship);
+	.issues(ship);
 
 describe("Flow map", () => {
 	it("renders the event → policy → operation chain", async () => {

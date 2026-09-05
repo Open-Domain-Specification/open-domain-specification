@@ -199,13 +199,13 @@ function addBoundedContext(
 		});
 	}
 
+	// The consumables a policy joins may live in any context, so its two lists
+	// are dropped here and joined in the second pass (linkPolicies).
 	for (const [policyId, policySchema] of Object.entries(
 		boundedcontextSchema.policies,
 	)) {
-		boundedcontext.addPolicy(policySchema.name, {
-			...policySchema,
-			id: policyId,
-		});
+		const { on: _on, then: _then, ...rest } = policySchema;
+		boundedcontext.addPolicy(policySchema.name, { ...rest, id: policyId });
 	}
 
 	// The consumables a process joins may live in any context, so its four
@@ -467,7 +467,7 @@ function linkPolicies(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 					workspace.getConsumableByRefOrThrow($ref),
 				),
 			);
-			policy.then(
+			policy.issues(
 				...policySchema.then.map(({ $ref }) =>
 					workspace.getConsumableByRefOrThrow($ref),
 				),
@@ -491,7 +491,7 @@ function linkProcesses(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 				refs.map(({ $ref }) => workspace.getConsumableByRefOrThrow($ref));
 			process.starts(...consumables(processSchema.starts));
 			process.on(...consumables(processSchema.on));
-			process.then(...consumables(processSchema.then));
+			process.issues(...consumables(processSchema.then));
 			process.ends(...consumables(processSchema.ends));
 		}
 	}

@@ -116,7 +116,7 @@ common case; it is optional detail, not a call graph.
 ## Policies
 
 A **policy** lives on a bounded context and says "on these events, then
-these operations" (`policy.on(...events).then(...operations)`). The
+these operations" (`policy.on(...events).issues(...operations)`). The
 consumables may belong to other contexts as long as they are not internal.
 The flow map walks from the policies of a context through the events they
 react to, the operations they issue and the events those raise.
@@ -124,7 +124,7 @@ react to, the operations they issue and the events those raise.
 ## Processes
 
 A **process** is the reaction that outlives one event
-(`bc.addProcess(name, { description }).starts(...events).on(...events).then(...operations).ends(...events)`).
+(`bc.addProcess(name, { description }).starts(...events).on(...events).issues(...operations).ends(...events)`).
 A policy is stateless and any-of; a process remembers which of its events
 have arrived, so it can wait for two facts before it acts, and it says what
 finishes an instance. `starts`, `on` and `ends` may name another context's

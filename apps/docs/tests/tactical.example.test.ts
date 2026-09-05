@@ -92,7 +92,7 @@ const raise = invoice.provides("Raise Invoice", {
 const invoiceOnPlaced = billing
 	.addPolicy("Invoice on order placed", { description: "" })
 	.on(placed)
-	.then(raise);
+	.issues(raise);
 
 // A consumption is what draws the dependency between two nodes. `by` says
 // what of the consumer makes it: here only the policy reads the other

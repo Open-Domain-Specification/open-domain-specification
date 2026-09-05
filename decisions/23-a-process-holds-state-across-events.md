@@ -20,6 +20,6 @@ Decision 15 kept policies stateless: `on` is any-of, correlation is a process no
 
 ## Consequences
 
-- Schema, workspace model, DSL (`bc.addProcess(name, { starts, on, then, ends })`), `toSchema`/`fromSchema`, JSON schema; `feat!`.
+- Schema, workspace model, DSL (`bc.addProcess(name, { starts, on, issues, ends })`), `toSchema`/`fromSchema`, JSON schema; `feat!`.
 - Flow map draws a process as a node with its lifecycle (start events in, end events out) distinguished from a policy's single reaction; the consumable page's "Reacted-to-by" lists processes; the context page gains a Processes section; a process page in the same shape as the policy page; doc generator and tree follow; the skill's interview asks "does anything wait for more than one event before it acts, and what tells it that it is done?".
 - Decision 15's "policies stay stateless" section is rewritten: the policy stays stateless because the process now exists.

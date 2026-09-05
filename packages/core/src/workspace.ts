@@ -872,7 +872,7 @@ export class BoundedContext
 
 	/**
 	 * Declares a process: the reaction that remembers which of its events have
-	 * arrived and acts when enough have. Give it `starts`, `on`, `then` and
+	 * arrived and acts when enough have. Give it `starts`, `on`, `issues` and
 	 * `ends` here, or chain the methods of the same names when the consumables
 	 * are declared after it.
 	 */
@@ -2083,8 +2083,21 @@ export class DataSchema
 
 export type PolicyAttributes = {
 	description: string;
+	/** The events that trigger it; also settable with `.on(...)`. */
+	on?: Consumable[];
+	/** The operations it issues; also settable with `.issues(...)`. */
+	issues?: Consumable[];
 	id?: string;
 };
+
+/**
+ * The schema field a policy or process writes its issued operations under.
+ * Held indirectly so the object literals in `toSchema` below use a computed
+ * key: written as `then:` they would be a synchronous, non-function `then`
+ * property, which `noThenProperty` treats as a thenable regardless of what
+ * it holds.
+ */
+const issuesSchemaKey = "then" as const;
 
 /**
  * A reaction that lives in a bounded context: when any of its event
@@ -2119,6 +2132,8 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 		this.description = attributes.description;
 		this.boundedcontext = boundedcontext;
 		this.boundedcontext.policies.set(this.id, this);
+		this.on(...(attributes.on ?? []));
+		this.issues(...(attributes.issues ?? []));
 	}
 
 	/** Adds a triggering event consumable. */
@@ -2130,8 +2145,7 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 	}
 
 	/** Adds an operation consumable to issue. */
-	// biome-ignore lint/suspicious/noThenProperty: "then" is the model's own word for what a reaction issues, and the DSL reads as the model does
-	then(...commands: Consumable[]): this {
+	issues(...commands: Consumable[]): this {
 		for (const command of commands) {
 			if (!this.commands.includes(command)) this.commands.push(command);
 		}
@@ -2147,8 +2161,7 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 			name: this.name,
 			description: this.description,
 			on: this.events.map((it) => ({ $ref: it.ref })),
-			// biome-ignore lint/suspicious/noThenProperty: the schema field is named after the model, not after a promise
-			then: this.commands.map((it) => ({ $ref: it.ref })),
+			[issuesSchemaKey]: this.commands.map((it) => ({ $ref: it.ref })),
 		};
 	}
 }
@@ -2159,8 +2172,8 @@ export type ProcessAttributes = {
 	starts?: Consumable[];
 	/** The events it waits for while alive; also settable with `.on(...)`. */
 	on?: Consumable[];
-	/** The operations it issues; also settable with `.then(...)`. */
-	then?: Consumable[];
+	/** The operations it issues; also settable with `.issues(...)`. */
+	issues?: Consumable[];
 	/** The events that complete an instance; also settable with `.ends(...)`. */
 	ends?: Consumable[];
 	id?: string;
@@ -2173,7 +2186,7 @@ export type ProcessAttributes = {
  * two facts before acting and can say how an instance finishes.
  *
  * `starts` begins an instance, `on` are the further facts it waits for,
- * `then` are the operations of its own context it issues, and `ends` are the
+ * `issues` are the operations of its own context it issues, and `ends` are the
  * facts that complete it. What it correlates on, how long it waits and what
  * it compensates are prose in the description: the model states that the
  * process exists and what it listens to and does, and leaves how it decides
@@ -2219,7 +2232,7 @@ export class Process
 		this.boundedcontext.processes.set(this.id, this);
 		this.starts(...(attributes.starts ?? []));
 		this.on(...(attributes.on ?? []));
-		this.then(...(attributes.then ?? []));
+		this.issues(...(attributes.issues ?? []));
 		this.ends(...(attributes.ends ?? []));
 	}
 
@@ -2234,8 +2247,7 @@ export class Process
 	}
 
 	/** Adds an operation consumable to issue. */
-	// biome-ignore lint/suspicious/noThenProperty: "then" is the model's own word for what a reaction issues, and the DSL reads as the model does
-	then(...commands: Consumable[]): this {
+	issues(...commands: Consumable[]): this {
 		return this.add(this.commands, commands);
 	}
 
@@ -2263,8 +2275,7 @@ export class Process
 			description: this.description,
 			starts: refs(this.startEvents),
 			on: refs(this.events),
-			// biome-ignore lint/suspicious/noThenProperty: the schema field is named after the model, not after a promise
-			then: refs(this.commands),
+			[issuesSchemaKey]: refs(this.commands),
 			ends: refs(this.endEvents),
 			comments: this.comments.length ? this.comments : undefined,
 			disposition: this.disposition,

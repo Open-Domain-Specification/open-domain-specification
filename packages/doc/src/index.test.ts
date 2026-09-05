@@ -182,7 +182,7 @@ describe("toDoc", () => {
 		ordering
 			.addPolicy("Auto approve", { description: "" })
 			.on(placed)
-			.then(approve);
+			.issues(approve);
 
 		const docs = await toDoc(workspace);
 

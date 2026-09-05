@@ -776,7 +776,7 @@ salesBC
 	})
 	.starts(orderPlaced)
 	.on(petStatusChanged)
-	.then(approveOrder, reservePetForApproved, markPetSoldForDelivered)
+	.issues(approveOrder, reservePetForApproved, markPetSoldForDelivered)
 	.ends(orderDelivered);
 
 salesBC.addTerm("Order", {
@@ -966,7 +966,7 @@ const planOnApproval = fulfilmentBC
 		description: "Every approved order gets a shipment planned straight away",
 	})
 	.on(orderApproved)
-	.then(planDispatch);
+	.issues(planDispatch);
 
 // Conformist: the order events are taken as published, because both contexts
 // belong to the Orders Team and the partnership below makes them change
@@ -986,7 +986,7 @@ fulfilmentBC
 			"When a shipment is delivered, report it to Sales so the order moves to delivered",
 	})
 	.on(shipmentDelivered)
-	.then(reportDelivery);
+	.issues(reportDelivery);
 
 fulfilmentBC.addTerm("Shipment", {
 	definition: "The consignment that carries one order to its owner",
@@ -1077,7 +1077,7 @@ inventoryBC
 		orderDelivered,
 		orderDeleted,
 	)
-	.then(recountInventory);
+	.issues(recountInventory);
 
 inventoryBC.addTerm("Availability", {
 	definition:

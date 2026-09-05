@@ -480,13 +480,13 @@ searchBC
 		description: "Every listed product becomes searchable",
 	})
 	.on(productListed)
-	.then(indexProduct);
+	.issues(indexProduct);
 searchBC
 	.addPolicy("Remove on retirement", {
 		description: "A retired product disappears from results",
 	})
 	.on(productRetired)
-	.then(removeDocument);
+	.issues(removeDocument);
 
 searchBC.addTerm("Relevance", {
 	definition:
@@ -652,7 +652,7 @@ offersBC
 		description: "Any published offer can win or lose the buy box",
 	})
 	.on(offerPublished, offerWithdrawn)
-	.then(awardBuyBox);
+	.issues(awardBuyBox);
 
 offersBC.addTerm("Buy Box", {
 	definition: "The default offer a customer adds to cart for a SKU",
@@ -672,7 +672,7 @@ searchBC
 		description: "Results show the buy box price, so it must be refreshed",
 	})
 	.on(buyBoxAwarded)
-	.then(indexProduct);
+	.issues(indexProduct);
 
 /* =======================
    SELLER ONBOARDING
@@ -789,7 +789,7 @@ sellerBC
 		description: "Every new seller is checked before selling",
 	})
 	.on(sellerRegistered)
-	.then(verifySeller);
+	.issues(verifySeller);
 
 sellerBC.addTerm("Seller", {
 	definition: "A third party selling through RiverMart under its own name",
@@ -809,7 +809,7 @@ offersBC
 		description: "A suspended seller's offers come down immediately",
 	})
 	.on(sellerSuspended)
-	.then(withdrawSellerOffers);
+	.issues(withdrawSellerOffers);
 
 /* =======================
    CART & CHECKOUT
@@ -1466,7 +1466,7 @@ cartBC
 	})
 	.starts(cartCheckedOut)
 	.on(paymentAuthorised, paymentDeclined)
-	.then(requestAuthorisation, placeOrderForCart, reopenCart)
+	.issues(requestAuthorisation, placeOrderForCart, reopenCart)
 	.ends(orderPlaced);
 
 // The intent is authorised against a cart; the order id only exists after
@@ -1484,7 +1484,7 @@ paymentsBC
 		description: "Every placed order is linked to the hold that paid for it",
 	})
 	.on(orderPlaced)
-	.then(attachOrder);
+	.issues(attachOrder);
 
 /* =======================
    FRAUD
@@ -1602,13 +1602,13 @@ fraudBC
 		description: "No order ships unscored",
 	})
 	.on(orderPlaced)
-	.then(scoreOrder);
+	.issues(scoreOrder);
 fraudBC
 	.addPolicy("Score every new seller", {
 		description: "Activation triggers a first assessment",
 	})
 	.on(sellerActivated)
-	.then(scoreSeller);
+	.issues(scoreSeller);
 
 fraudBC.addTerm("Flag", {
 	definition: "A score above threshold; it pauses the subject until reviewed",
@@ -1622,14 +1622,14 @@ orderBC
 		description: "A flagged order is cancelled before the warehouse picks it",
 	})
 	.on(orderRiskFlagged)
-	.then(cancelOrder);
+	.issues(cancelOrder);
 sellerCentral.consumes(sellerRiskFlagged, { pattern: "anti-corruption-layer" });
 sellerBC
 	.addPolicy("Suspend flagged sellers", {
 		description: "Trust & Safety's verdict suspends the seller pending review",
 	})
 	.on(sellerRiskFlagged)
-	.then(suspendSeller);
+	.issues(suspendSeller);
 
 /* =======================
    WAREHOUSE
@@ -1854,19 +1854,19 @@ warehouseBC
 		description: "Every placed order gets stock held immediately",
 	})
 	.on(orderPlaced)
-	.then(reserveStock);
+	.issues(reserveStock);
 warehouseBC
 	.addPolicy("Pick on reservation", {
 		description: "Held stock becomes pick tasks",
 	})
 	.on(stockReserved)
-	.then(createPickTasks);
+	.issues(createPickTasks);
 warehouseBC
 	.addPolicy("Expect requested returns", {
 		description: "A requested return is graded on arrival",
 	})
 	.on(returnRequested)
-	.then(receiveReturn);
+	.issues(receiveReturn);
 // The guarantee the warehouse asked for: a cancellation (fraud or customer)
 // releases the reservation and voids the pick tasks, so a flagged order that
 // was reserved a moment earlier is never picked.
@@ -1879,7 +1879,7 @@ warehouseBC
 			"A cancelled order gives its stock back and its pick tasks are voided before a picker reaches them",
 	})
 	.on(orderCancelled)
-	.then(releaseReservation, voidPickTasks);
+	.issues(releaseReservation, voidPickTasks);
 
 warehouseBC.addTerm("On hand", {
 	definition: "Physically present stock, whether or not reserved",
@@ -1925,21 +1925,21 @@ const orderToDelivery = orderBC
 	})
 	.starts(orderPlaced)
 	.on(shipmentDispatched, stockShort)
-	.then(recordShipment, holdForStock)
+	.issues(recordShipment, holdForStock)
 	.ends(orderCompleted, orderCancelled);
 orderBC
 	.addPolicy("Refund on received return", {
 		description: "Money goes back once the warehouse has graded the return",
 	})
 	.on(returnReceived)
-	.then(requestRefund);
+	.issues(requestRefund);
 paymentsApi.consumes(shipmentDispatched, { pattern: "anti-corruption-layer" });
 paymentsBC
 	.addPolicy("Capture on dispatch", {
 		description: "Charge for each shipment as it leaves",
 	})
 	.on(shipmentDispatched)
-	.then(capturePayment);
+	.issues(capturePayment);
 
 /* =======================
    LAST MILE
@@ -2055,7 +2055,7 @@ lastMileBC
 		description: "Every dispatched package gets a stop",
 	})
 	.on(shipmentDispatched)
-	.then(assignParcel);
+	.issues(assignParcel);
 
 lastMileBC.addTerm("Stop", {
 	definition: "One address on a route, however many parcels go there",
@@ -2071,7 +2071,7 @@ lastMileBC.addTerm("Parcel", {
 orderApi.consumes(parcelDelivered, { pattern: "anti-corruption-layer" });
 // The last step of the order-to-delivery process above: it is written here
 // because ParcelDelivered belongs to Last Mile, which is declared below Orders.
-orderToDelivery.on(parcelDelivered).then(completeOrder);
+orderToDelivery.on(parcelDelivered).issues(completeOrder);
 
 /* =======================
    ADVERTISING
@@ -2231,7 +2231,7 @@ adsBC
 			"A suspended seller stops spending the moment they are suspended",
 	})
 	.on(sellerSuspended)
-	.then(pauseCampaigns);
+	.issues(pauseCampaigns);
 
 // Partnership: search and ads tune the results page together, so Search
 // takes the sponsored slots as-is and reports clicks on them the same way.
@@ -2331,7 +2331,7 @@ csBC
 			"A failed attempt reaches an agent before the customer has to call",
 	})
 	.on(attemptFailed)
-	.then(openCase);
+	.issues(openCase);
 
 csBC.addTerm("Case", {
 	definition: "One customer problem tracked to an outcome",
@@ -2410,7 +2410,7 @@ warehouseBC
 		description: "The legacy export is translated into stock receipts",
 	})
 	.on(purchaseOrderReceived)
-	.then(receiveStock);
+	.issues(receiveStock);
 
 /* =======================
    IDENTITY

@@ -194,7 +194,7 @@ salesBC
 		description: "When a pet becomes available and an order for it is placed, approve the order",
 	})
 	.on(petStatusChanged, orderPlaced)
-	.then(approveOrder);
+	.issues(approveOrder);
 ```
 
 ## Conformist consumptions feeding a projection

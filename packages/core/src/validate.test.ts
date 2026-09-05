@@ -541,7 +541,7 @@ describe("Workspace.validate", () => {
 		const svc = bc.addService("S", { description: "", type: "application" });
 		const evt = svc.provides("Evt", { description: "", type: "event" });
 		const op = svc.provides("Op", { description: "", type: "operation" });
-		bc.addPolicy("Backwards", { description: "" }).on(op).then(evt);
+		bc.addPolicy("Backwards", { description: "" }).on(op).issues(evt);
 		evt.raises(op);
 		const rules = ws.validate().filter((d) => d.rule === "consumable-kind");
 		expect(rules.map((d) => d.message)).toEqual([
@@ -1430,7 +1430,7 @@ describe("separate-ways and policies", () => {
 			.addService("T", { description: "", type: "application" })
 			.provides("React", { description: "", type: "operation" });
 		const policy = down.addPolicy("On Happened", { description: "" });
-		policy.on(evt).then(op);
+		policy.on(evt).issues(op);
 		return { ws, up, down, policy };
 	}
 
@@ -1591,7 +1591,7 @@ describe("policy-in-context", () => {
 
 	it("flags a policy whose then names another context's operation", () => {
 		const { ws, react, policy } = reachingPolicy();
-		policy.then(react);
+		policy.issues(react);
 		expect(inContext(ws)).toEqual([
 			[
 				"error",
@@ -1608,7 +1608,7 @@ describe("policy-in-context", () => {
 			type: "operation",
 		});
 		downApp.consumes(react, { pattern: "anti-corruption-layer" });
-		policy.then(local);
+		policy.issues(local);
 		expect(inContext(ws)).toEqual([]);
 	});
 
@@ -1652,7 +1652,7 @@ describe("process rules", () => {
 		const process = down
 			.addProcess("Long Running", { description: "" })
 			.starts(happened)
-			.then(act)
+			.issues(act)
 			.ends(done);
 		return { ws, down, downApp, upApp, happened, react, act, done, process };
 	}
@@ -1666,7 +1666,7 @@ describe("process rules", () => {
 	describe("process-in-context", () => {
 		it("flags a process whose then names another context's operation", () => {
 			const { ws, react, process } = reachingProcess();
-			process.then(react);
+			process.issues(react);
 			expect(ruleOf(ws, "process-in-context")).toEqual([
 				[
 					"error",
@@ -1696,12 +1696,14 @@ describe("process rules", () => {
 	describe("process-starts", () => {
 		it("wants an event that begins an instance", () => {
 			const { ws, down, downApp } = reachingProcess();
-			const nothing = down.addProcess("Never Begins", { description: "" }).then(
-				downApp.provides("Something", {
-					description: "",
-					type: "operation",
-				}),
-			);
+			const nothing = down
+				.addProcess("Never Begins", { description: "" })
+				.issues(
+					downApp.provides("Something", {
+						description: "",
+						type: "operation",
+					}),
+				);
 			expect(ruleOf(ws, "process-starts")).toEqual([
 				[
 					"error",
@@ -1846,7 +1848,7 @@ describe("process rules", () => {
 			const { ws, bc, begun, finish, finished } = lifecycle();
 			bc.addProcess("Run", { description: "" })
 				.starts(begun)
-				.then(finish)
+				.issues(finish)
 				.ends(finished);
 			expect(ruleOf(ws, "reaction-cycle")).toEqual([]);
 		});
@@ -1860,7 +1862,7 @@ describe("process rules", () => {
 				.addProcess("Run", { description: "" })
 				.starts(begun)
 				.on(finished)
-				.then(finish)
+				.issues(finish)
 				.ends(finished);
 			expect(ruleOf(ws, "reaction-cycle")).toEqual([
 				[
@@ -2563,7 +2565,7 @@ describe("partnership-backed", () => {
 		// B, and B nothing from A. It still backs the partnership, because it is
 		// the same exchange told a different way.
 		const act = aApp.provides("Act", { description: "", type: "operation" });
-		a.addPolicy("On Other Thing", { description: "" }).on(fromB).then(act);
+		a.addPolicy("On Other Thing", { description: "" }).on(fromB).issues(act);
 		expect(backed(ws)).toEqual([]);
 	});
 
@@ -2605,7 +2607,7 @@ describe("reaction-cycle", () => {
 		app
 			.provides("Place", { description: "", type: "operation" })
 			.raises(placed);
-		bc.addPolicy("On Placed", { description: "" }).on(placed).then(invoice);
+		bc.addPolicy("On Placed", { description: "" }).on(placed).issues(invoice);
 		expect(reactions(ws)).toEqual([]);
 	});
 
@@ -2618,7 +2620,7 @@ describe("reaction-cycle", () => {
 		const policy = bc
 			.addPolicy("On Placed", { description: "" })
 			.on(placed)
-			.then(place);
+			.issues(place);
 		expect(reactions(ws)).toHaveLength(1);
 		const [diagnostic] = reactions(ws);
 		expect(diagnostic.severity).toBe("warning");
@@ -2641,8 +2643,8 @@ describe("reaction-cycle", () => {
 		const invoice = app
 			.provides("Invoice", { description: "", type: "operation" })
 			.raises(invoiced);
-		bc.addPolicy("On Placed", { description: "" }).on(placed).then(invoice);
-		bc.addPolicy("On Invoiced", { description: "" }).on(invoiced).then(place);
+		bc.addPolicy("On Placed", { description: "" }).on(placed).issues(invoice);
+		bc.addPolicy("On Invoiced", { description: "" }).on(invoiced).issues(place);
 		expect(reactions(ws)).toHaveLength(1);
 		expect(reactions(ws)[0].message).toContain('"On Invoiced"');
 	});
@@ -2709,9 +2711,9 @@ describe("reaction-cycle", () => {
 			by: [aLocal],
 		});
 		bApp.consumes(aPublic, { pattern: "conformist", by: [bLocal] });
-		a.addPolicy("A Policy", { description: "" }).on(aEvent).then(aLocal);
+		a.addPolicy("A Policy", { description: "" }).on(aEvent).issues(aLocal);
 		if (bReacts)
-			b.addPolicy("B Policy", { description: "" }).on(bEvent).then(bLocal);
+			b.addPolicy("B Policy", { description: "" }).on(bEvent).issues(bLocal);
 		return { ws, a, b, aLocal, bLocal, aPublic, bPublic };
 	}
 
@@ -3108,7 +3110,7 @@ describe("external-is-boundary", () => {
 		const policy = external
 			.addPolicy("Retry On Settlement", { description: "" })
 			.on(settled)
-			.then(act);
+			.issues(act);
 		const invariant = external.addInvariant("One Settlement A Day", {
 			description: "",
 		});
