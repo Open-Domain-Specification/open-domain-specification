@@ -5053,6 +5053,22 @@
       ]
     },
     {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/ledger"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/accounts"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "Balances follow the ledger: Accounts takes EntryPosted as published, with no translation"
+    },
+    {
       "type": "customer-supplier",
       "upstream": {
         "$ref": "#/boundedcontexts/fraud"
@@ -5301,6 +5317,66 @@
       "downstreamRoles": [
         "anti-corruption-layer"
       ]
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/payments_hub"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/scheme_gateway"
+      },
+      "upstreamRoles": [],
+      "downstreamRoles": [],
+      "description": "A scheme submission carries the instruction id it was raised for; the gateway never reads the instruction back"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/accounts"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/lending"
+      },
+      "upstreamRoles": [],
+      "downstreamRoles": [],
+      "description": "A loan event names the account it settles against; Lending holds the number, not the balance"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/customer_&_kyc"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/fraud"
+      },
+      "upstreamRoles": [],
+      "downstreamRoles": [],
+      "description": "A fraud case names the customer it is about; the case file carries the id and nothing of the customer model"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/accounts"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/fraud"
+      },
+      "upstreamRoles": [],
+      "downstreamRoles": [],
+      "description": "A fraud case names the account it is about, by id"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/customer_&_kyc"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/identity_&_access"
+      },
+      "upstreamRoles": [],
+      "downstreamRoles": [],
+      "description": "A credential names the customer it belongs to; who they are stays in Customer & KYC"
     },
     {
       "type": "shared-kernel",

@@ -3,6 +3,7 @@ export * from "./consumption-graph";
 export * from "./context-map";
 export * from "./evidence";
 export * from "./flow-map";
+export * from "./identity-crossings";
 export * from "./namespace";
 export * from "./narrative";
 export * from "./patterns";

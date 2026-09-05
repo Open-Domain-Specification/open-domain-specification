@@ -2447,11 +2447,48 @@ cartBC.downstreamOf(identityBC, {
 	upstreamRoles: ["open-host-service"],
 	downstreamRoles: ["conformist"],
 });
+// Identity-only dependencies. Each pair below is joined by nothing but an
+// identity attribute naming the other context's entity, which since decision
+// 14 is how the model records a dependency on another context's model. Nothing
+// is exchanged, so neither end plays an upstream or downstream role and both
+// lists stay empty; the relationship says which way the dependency runs and
+// that somebody looked at it, which is what `relationship-declared` asks for
+// (card 70). This first one was written before the rule existed and was read
+// then as an invention; it is now simply what the rule requires.
 orderBC.downstreamOf(offersBC, {
 	upstreamRoles: [],
 	downstreamRoles: [],
 	description:
 		"Order lines carry the offer id they were bought from; Orders never reads Offers back, so the coupling is identity only and neither side plays a role in an exchange that does not happen",
+});
+cartBC.downstreamOf(catalogueBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A wishlist item names the product it saves; the shopper's list holds ids, and prices and titles come from Offers",
+});
+orderBC.downstreamOf(catalogueBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"An order line names the variant it was bought as, by SKU; the order never reads the catalogue back",
+});
+orderBC.downstreamOf(identityBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description: "An order names the customer account it was placed by, by id",
+});
+paymentsBC.downstreamOf(cartBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"An authorisation carries the cart it was taken for, so checkout can match it back",
+});
+lastMileBC.downstreamOf(orderBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A delivery event names the order it belongs to; Last Mile keeps the id, not the order",
 });
 orderBC.downstreamOf(paymentsBC, {
 	upstreamRoles: ["open-host-service"],

@@ -25,6 +25,16 @@ export const RELATIONSHIP_LABELS: Record<ContextRelationshipType, string> = {
 	"separate-ways": "SW",
 };
 
+/**
+ * The stereotype an edge implied by an identity carries instead of a
+ * relationship type's. Such an edge is a dependency the model records with an
+ * identity attribute and nothing else (decision 14), so `U/D` would over-claim:
+ * there are no roles and no exchange, and what the reader wants to know is
+ * where the dependency came from. It matches the `«identifies»` stereotype the
+ * relation map already draws on the same fact.
+ */
+export const IDENTITY_EDGE_LABEL = "«id»";
+
 /** UML stereotype above a relation-map class name. */
 export const STEREOTYPES: Record<ODSRelationMapNode["type"], string> = {
 	entity_root: "root entity",

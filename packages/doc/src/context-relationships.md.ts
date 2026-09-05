@@ -13,7 +13,7 @@ export const contextRelationshipsMd = (map: ODSContextMap) =>
 		],
 		Array.from(map.edges.values()).map((edge) => [
 			edge.source.name,
-			edge.implied ? `${edge.type} (implied)` : edge.type,
+			edge.implied ? `${edge.type} (implied by ${edge.implied})` : edge.type,
 			edge.target.name,
 			edge.upstreamRoles.join(", ") || "-",
 			edge.downstreamRoles.join(", ") || "-",

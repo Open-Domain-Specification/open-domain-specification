@@ -6,6 +6,7 @@ import type {
 } from "@open-domain-specification/core";
 import {
 	DOWNSTREAM_ROLE_LABELS,
+	IDENTITY_EDGE_LABEL,
 	RELATIONSHIP_LABELS,
 	UPSTREAM_ROLE_LABELS,
 } from "@open-domain-specification/graphviz";
@@ -83,8 +84,10 @@ const intentOf = (
  * The context map as a graph: one ContextNode per bounded context and one
  * ContextEdge per relationship carrying the stereotype and role abbreviations
  * the Graphviz image shows. Symmetric types have no arrowhead; implied edges
- * are dashed. Every namespace level, the workspace included, is a group, as
- * the image nests its clusters.
+ * are dashed, and one implied by an identity rather than by traffic takes the
+ * `«id»` stereotype in place of a relationship type it cannot claim. Every
+ * namespace level, the workspace included, is a group, as the image nests its
+ * clusters.
  *
  * `relationships` are the workspace's own, which carry the evidence the map's
  * badges mark and disclose. Left out, the map draws exactly as it did before
@@ -96,13 +99,15 @@ export function contextGraph(
 ): Graph {
 	const edges: GraphEdge[] = [...map.edges.entries()].map(([id, e]) => {
 		const directed = !isSymmetricRelationship(e.type);
+		const byIdentity = e.implied === "identity";
 		return {
 			id,
 			type: "context",
 			source: e.source.id,
 			target: e.target.id,
-			label: RELATIONSHIP_LABELS[e.type],
-			dashed: e.implied,
+			label: byIdentity ? IDENTITY_EDGE_LABEL : RELATIONSHIP_LABELS[e.type],
+			dashed: e.implied !== false,
+			impliedBy: e.implied || undefined,
 			directed,
 			sourceLabel: directed
 				? roles(UPSTREAM_ROLE_LABELS, e.upstreamRoles)

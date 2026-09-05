@@ -134,6 +134,7 @@ describe("legendEntries for the context map", () => {
 						target: "#/a",
 						label: "SK",
 						dashed: true,
+						impliedBy: "consumption",
 						sourceLabel: "OHS+PL",
 						targetLabel: "CF+???",
 					},
@@ -154,6 +155,36 @@ describe("legendEntries for the context map", () => {
 		expect(full.find((e) => e.mark === "dashed")?.name).toBe(
 			"Implied relationship",
 		);
+	});
+
+	it("names an identity dependency in its own row, apart from a consumption's", () => {
+		const graph = {
+			nodes: [
+				{
+					id: "#/a",
+					type: "context",
+					label: "A",
+					icon: "x",
+					bigBallOfMud: false,
+				},
+			] as ContextNodeData[],
+			edges: [
+				{
+					id: "e",
+					type: "context",
+					source: "#/a",
+					target: "#/a",
+					label: "«id»",
+					dashed: true,
+					impliedBy: "identity" as const,
+				},
+			],
+		};
+		expect(marks(legendEntries(graph, "context"))).toEqual(["dashed «id»"]);
+		expect(
+			legendEntries(graph, "context").find((e) => e.mark === "dashed «id»")
+				?.name,
+		).toBe("Identity dependency");
 	});
 });
 

@@ -37,6 +37,19 @@ describe("ODSConsumptionGraph", () => {
 	});
 });
 
+/**
+ * The rich fixture with the ordering/invoicing relationship taken back off, so
+ * that the pair's two consumptions are all that joins them and the map has to
+ * imply the edge.
+ */
+function withoutOrderingRelationship() {
+	const f = makeRichTestWs();
+	f.ws.relationships = f.ws.relationships.filter(
+		(r) => r !== f.orderingSuppliesInvoicing,
+	);
+	return f;
+}
+
 describe("ODSContextMap", () => {
 	const f = makeRichTestWs();
 
@@ -48,9 +61,10 @@ describe("ODSContextMap", () => {
 	});
 
 	it("draws one implied upstream/downstream edge per consuming pair, merging roles", () => {
-		const map = ODSContextMap.fromWorkspace(f.ws);
+		const map = ODSContextMap.fromWorkspace(withoutOrderingRelationship().ws);
 		const implied = Array.from(map.edges.values()).filter((e) => e.implied);
 		expect(implied).toHaveLength(1);
+		expect(implied[0].implied).toBe("consumption");
 		const [edge] = implied;
 		expect(edge.source.id).toBe(f.orderingBc.ref);
 		expect(edge.target.id).toBe(f.invoicingBc.ref);
@@ -68,15 +82,17 @@ describe("ODSContextMap", () => {
 	it("draws declared relationships as-is", () => {
 		const map = ODSContextMap.fromWorkspace(f.ws);
 		const declared = Array.from(map.edges.values()).filter((e) => !e.implied);
-		expect(declared).toHaveLength(1);
-		expect(declared[0].type).toBe("partnership");
-		expect(declared[0].description).toBe(
+		expect(declared.map((e) => e.type).sort()).toEqual([
+			"partnership",
+			"upstream-downstream",
+		]);
+		expect(declared.find((e) => e.type === "partnership")?.description).toBe(
 			"Reporting and ordering plan releases together",
 		);
 	});
 
 	it("suppresses the implied edge when the pair has a declared relationship", () => {
-		const { ws, orderingBc, invoicingBc } = makeRichTestWs();
+		const { ws, orderingBc, invoicingBc } = withoutOrderingRelationship();
 		invoicingBc.downstreamOf(orderingBc, {
 			type: "customer-supplier",
 			upstreamRoles: ["open-host-service"],
@@ -87,6 +103,49 @@ describe("ODSContextMap", () => {
 		expect(edges.find((e) => e.type === "customer-supplier")?.source.id).toBe(
 			orderingBc.ref,
 		);
+	});
+
+	it("implies an edge from an identity into another context, with no roles", () => {
+		// Two contexts joined by nothing but Holder's Thing Id (decision 14).
+		const ws = new Workspace("W", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0",
+		});
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const thing = up
+			.addAggregate("Thing", { description: "" })
+			.addRootEntity("Thing", { description: "" });
+		down
+			.addAggregate("Holder", { description: "" })
+			.addRootEntity("Holder", { description: "" })
+			.addAttribute("Thing Id", { type: "uuid", identifies: thing });
+		const edges = Array.from(ODSContextMap.fromWorkspace(ws).edges.values());
+		expect(edges).toHaveLength(1);
+		// The context holding the identity is the downstream end: it is the one
+		// shaped by the other's model.
+		expect(edges[0].source.id).toBe(up.ref);
+		expect(edges[0].target.id).toBe(down.ref);
+		expect(edges[0].implied).toBe("identity");
+		expect(edges[0].upstreamRoles).toEqual([]);
+		expect(edges[0].downstreamRoles).toEqual([]);
+	});
+
+	it("leaves the consumption edge in place when an identity runs the same way", () => {
+		// The identity travels on the traffic the consumption edge stands for, so
+		// that edge — which also carries the roles — is the one to keep.
+		const { ws, orderingBc, invoicingBc } = withoutOrderingRelationship();
+		const order = orderingBc.aggregates.get("order");
+		const invoice = invoicingBc.aggregates.get("invoice");
+		const root = order && [...order.entities.values()].find((e) => e.root);
+		const holder =
+			invoice && [...invoice.entities.values()].find((e) => e.root);
+		if (!root || !holder) throw new Error("fixture changed");
+		holder.addAttribute("Order Id", { type: "uuid", identifies: root });
+		const edges = Array.from(ODSContextMap.fromWorkspace(ws).edges.values());
+		expect(edges.filter((e) => e.implied === "identity")).toEqual([]);
+		expect(edges.filter((e) => e.implied === "consumption")).toHaveLength(1);
 	});
 
 	it("nests nodes under workspace, domain and subdomain namespaces", () => {

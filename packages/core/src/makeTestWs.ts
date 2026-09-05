@@ -322,6 +322,13 @@ export function makeRichTestWs() {
 	const invoiceAppConsumesPlaceOrder = invoiceApp.consumes(placeOrder, {
 		pattern: "anti-corruption-layer",
 	});
+	// Both of those crossings need a relationship saying on what terms
+	// (`relationship-declared`), and it carries every role they play.
+	const orderingSuppliesInvoicing = orderingBc.upstreamOf(invoicingBc, {
+		description: "Invoicing bills what ordering places",
+		upstreamRoles: ["published-language", "open-host-service"],
+		downstreamRoles: ["conformist", "anti-corruption-layer"],
+	});
 
 	const reportingBc = ws.addBoundedContext("Reporting BC", {
 		description: "Reporting bounded context, serves no subdomain",
@@ -384,6 +391,7 @@ export function makeRichTestWs() {
 		invoiceAppConsumesPlaceOrder,
 		reportingBc,
 		salesReportsPartnership,
+		orderingSuppliesInvoicing,
 		reportingApp,
 		reportingConsumesOrderPlaced,
 		salesFigures,

@@ -96,6 +96,30 @@ describe("contextMapToDigraph edge cases", () => {
 		expect(svg).toContain("Payments");
 	});
 
+	it("draws an identity-only dependency dashed, under the «id» stereotype", () => {
+		const workspace = new Workspace("Identity Only", {
+			odsVersion: "1.0.0",
+			description: "One identity across a boundary and nothing else",
+			version: "0.1.0",
+		});
+		const up = workspace.addBoundedContext("Catalogue", { description: "" });
+		const down = workspace.addBoundedContext("Orders", { description: "" });
+		const product = up
+			.addAggregate("Product", { description: "" })
+			.addRootEntity("Product", { description: "" });
+		down
+			.addAggregate("Order", { description: "" })
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("Product Id", { type: "uuid", identifies: product });
+
+		const dot = contextMapToDigraph(
+			ODSContextMap.fromWorkspace(workspace),
+		).toDot();
+		expect(dot).toContain('label = "«id»"');
+		expect(dot).toContain('style = "dashed"');
+		expect(dot).not.toContain('label = "U/D"');
+	});
+
 	it("should handle error cases gracefully", async () => {
 		// Test with null/undefined input - this would be a development error
 		// but we want to ensure it doesn't crash the system

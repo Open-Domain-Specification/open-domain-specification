@@ -4,6 +4,7 @@ import {
 	PATTERNS,
 	type PatternNature,
 } from "@open-domain-specification/core";
+import { IDENTITY_EDGE_LABEL } from "@open-domain-specification/graphviz";
 import { DISPOSITION_LABELS, DISPOSITION_SUMMARIES } from "../evidence/labels";
 import type { ConsumableNodeData } from "./consumable-graph";
 import type { ContextNodeData } from "./context-graph";
@@ -83,8 +84,25 @@ function contextLegend(graph: Graph): LegendEntry[] {
 			.filter(([label]) => stereotypes.has(label))
 			.map(([mark, name]) => ({ mark, name })),
 		...roleEntries(endLabels(graph)),
-		...(graph.edges.some((e) => e.dashed)
-			? [{ mark: "dashed", name: "Implied relationship" }]
+		...(graph.edges.some((e) => e.impliedBy === "consumption")
+			? [
+					{
+						mark: "dashed",
+						name: "Implied relationship",
+						title:
+							"The two contexts exchange consumables but declare no relationship saying on what terms.",
+					},
+				]
+			: []),
+		...(graph.edges.some((e) => e.impliedBy === "identity")
+			? [
+					{
+						mark: `dashed ${IDENTITY_EDGE_LABEL}`,
+						name: "Identity dependency",
+						title:
+							"One context holds the identity of an entity in the other and nothing else joins them, so the dependency is drawn but has no declared relationship or roles.",
+					},
+				]
 			: []),
 		...(nodes.some((n) => n.bigBallOfMud)
 			? [{ mark: "dashed octagon", name: "Big ball of mud" }]

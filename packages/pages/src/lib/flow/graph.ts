@@ -1,4 +1,7 @@
-import type { ContextRelationship } from "@open-domain-specification/core";
+import type {
+	ContextRelationship,
+	ImpliedBy,
+} from "@open-domain-specification/core";
 
 /**
  * A host-neutral graph the interactive diagram draws. Each core map converts
@@ -48,6 +51,11 @@ export type GraphEdge = {
 	 * opens; an edge without one draws exactly as it always has.
 	 */
 	intent?: ContextRelationship;
+	/**
+	 * On a context-map edge no relationship declares, what put it there. The
+	 * legend names each kind it sees; a declared edge leaves it unset.
+	 */
+	impliedBy?: ImpliedBy;
 };
 
 /** A shaded region grouping nodes, nested through `parent`, as a Graphviz cluster. */
