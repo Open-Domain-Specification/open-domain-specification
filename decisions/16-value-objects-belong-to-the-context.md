@@ -22,3 +22,7 @@ date: 2026-09-06
 ## Amendment (2026-09-07)
 
 A shared kernel among many contexts is not many pairs. The kernel is a context of its own, owning the value objects and schemas it shares, and every context that uses the shared library declares one `shared-kernel` relationship with it and borrows what it needs. Six contexts sharing a financial-primitives library are six relationships to one kernel context, not fifteen among themselves, and `shared-kernel-backed` is satisfied on each by the borrowing it names. Card 56 makes NorthBank show this instead of declaring its Money once per context.
+
+## Note (2026-09-07)
+
+Reviewers ask for aggregate-private value objects, for two reasons: an aggregate's internal calculation structures have no meaning outside it, and two aggregates in one context may want the same name for different values. The first is not a value object of the model; an intermediate that nobody else names is an implementation detail and stays in code. The second is the ubiquitous language's own rule: one term has one meaning inside a bounded context, and two meanings for one name are the sign that a context boundary runs between the two aggregates. The model keeps value objects on the context for exactly that reason.
