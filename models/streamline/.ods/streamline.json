@@ -1384,7 +1384,12 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/studio_production/aggregates/production/provides/master_delivered"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/encoding/services/encoding_api/provides/submit_encode"
+                }
+              ]
             }
           ]
         },
@@ -1753,7 +1758,12 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/devices/aggregates/device/provides/device_certified"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/playback/services/playback_api/provides/start_playback"
+                }
+              ]
             },
             {
               "consumable": {
@@ -2436,6 +2446,12 @@
           "name": "TasteProfile",
           "description": "What one profile has watched and what it is inferred to like",
           "provides": {
+            "open_taste_profile": {
+              "name": "OpenTasteProfile",
+              "description": "Open the empty taste profile for a new member profile; signals arrive against it later",
+              "type": "operation",
+              "internal": true
+            },
             "record_signal": {
               "name": "RecordSignal",
               "description": "Add a viewing signal from a stopped session",
@@ -2565,20 +2581,7 @@
               "internal": true
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/title_published"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/title_availability_changed"
-              },
-              "pattern": "conformist"
-            }
-          ]
+          "consumes": []
         },
         "recommendations_api": {
           "name": "RecommendationsAPI",
@@ -2604,15 +2607,47 @@
             },
             {
               "consumable": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/title_published"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/recommendations/policies/add_candidate_on_publish"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/title_availability_changed"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/recommendations/policies/add_candidate_on_publish"
+                }
+              ]
+            },
+            {
+              "consumable": {
                 "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/bookmark_updated"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/recommendations/services/recommendations_api/provides/get_homepage_rows"
+                }
+              ]
             },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/profile_created"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/recommendations/policies/open_a_taste_profile_on_profile_created"
+                }
+              ]
             }
           ]
         }
@@ -2646,6 +2681,20 @@
           "then": [
             {
               "$ref": "#/boundedcontexts/recommendations/aggregates/taste_profile/provides/record_signal"
+            }
+          ]
+        },
+        "open_a_taste_profile_on_profile_created": {
+          "name": "Open a taste profile on profile created",
+          "description": "A new profile gets an empty taste profile, so its first signal has somewhere to go",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/households_&_profiles/aggregates/household/provides/profile_created"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/recommendations/aggregates/taste_profile/provides/open_taste_profile"
             }
           ]
         }

@@ -46,19 +46,19 @@
 
 ## `entity-identity` (warning)
 
-**Requires:** Every non-root entity in an aggregate declares at least one identity attribute.
+**Requires:** Every non-root entity of a context whose insides are knowable declares at least one identity attribute.
 
-**Why it matters:** An entity is precisely the thing you can still tell apart from another one holding exactly the same values. Without an identity attribute nothing does the telling apart, so the element is a value object that has been filed under the wrong heading, and readers will expect a lifecycle and a history it does not have. A kind counts as identified by what it is a kind of, since it has that entity's attributes as its own.
+**Why it matters:** An entity is precisely the thing you can still tell apart from another one holding exactly the same values. Without an identity attribute nothing does the telling apart, so the element is a value object that has been filed under the wrong heading, and readers will expect a lifecycle and a history it does not have. A kind counts as identified by what it is a kind of, since it has that entity's attributes as its own. A big ball of mud is exempt, as it is from aggregate-root and root-identity: nobody can read a legacy system well enough to say which of its columns tells one row from another, and asking only invites an invented key (decision 28).
 
-**Usual fix:** Give the entity the attribute the business identifies it by — the line number, the reference — with identity: true, or make it a value object, which is usually what an entity with nothing to identify really was.
+**Usual fix:** Give the entity the attribute the business identifies it by — the line number, the reference — with identity: true, or make it a value object, which is usually what an entity with nothing to identify really was. If the truth is that nobody knows, and the context really is one nobody can read, say so with bigBallOfMud: true rather than guessing.
 
 ## `value-object-shape` (error)
 
-**Requires:** A value object declares no identity attribute and includes nothing.
+**Requires:** A value object declares no identity attribute, and its relations use other value objects: it includes nothing, references nothing and reaches no entity.
 
-**Why it matters:** Two value objects with the same values are the same value: that is what makes them safe to copy, compare and replace. An identity attribute contradicts that, and includes claims a lifecycle a value object does not own.
+**Why it matters:** Two value objects with the same values are the same value: that is what makes them safe to copy, compare and replace. An identity attribute contradicts that; includes claims a lifecycle a value object does not own; and a reference holds another aggregate's identity, which a value has none of. Reaching an entity is the one cross-aggregate-reference cannot see — that rule reads the aggregate at each end and a value object sits in none, since it belongs to the whole context — so a value pointing into another aggregate's insides went unreported while the same relation from an entity was refused. The reason here is the value's own: a value is a value of something, and nothing is reached through it.
 
-**Usual fix:** Drop identity: true from the attribute, or promote the element to an entity if it really has a life of its own; change an includes on a value object to uses.
+**Usual fix:** Drop identity: true from the attribute, or promote the element to an entity if it really has a life of its own; change an includes or a references on a value object to uses; and where the target is an entity, hold its id as an attribute with identifies instead of relating to it.
 
 ## `identity-not-optional` (error)
 
@@ -144,7 +144,7 @@
 
 **Requires:** An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object of its context, or one borrowed from elsewhere that something in the aggregate holds, or is an operation of a service of its own context, application or domain, that guards it.
 
-**Why it matters:** This is the rule the aggregate itself upholds: it is checked as the aggregate is saved, and it is true again the moment the save returns. Something outside the boundary can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not. Operations are the other exception: a rule about a transition is a rule about the operation that makes it, and naming it says which change the rule guards. That operation is usually the aggregate's own, but a precondition — enough funds at initiation, an entitlement at playback start — is checked at the moment of the call, and decision 17 puts the public operation on the application service, so the guard may be named there instead of left in prose. A guard that has to read two aggregates before it can say yes belongs to a domain service, which is what a domain service is for, so an operation of either kind of service counts.
+**Why it matters:** An aggregate's invariant is one of two things, and which one is said by whether it names an operation. Naming none, it is the rule the aggregate itself upholds: checked as the aggregate is saved, and true again the moment the save returns. Naming one, it is a guard on that operation — a precondition, checked when the operation runs, and not something the aggregate re-establishes on every save: enough funds at initiation, an entitlement at playback start, a status that may not go backwards. The invariant's page says which of the two it is reading, because the two promise different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts.
 
 **Usual fix:** Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object from another context, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door.
 
@@ -276,6 +276,14 @@
 
 **Usual fix:** Point by at operations the consumer itself provides, or at the policies and processes of its bounded context, and let the node that really makes the call declare its own consumption. If nothing narrower than the whole consumer is true, drop by — absent means the whole consumer, which is the common case.
 
+## `consumption-by-operation` (error)
+
+**Requires:** A consumption of an operation names operations in its by; a policy or a process may only be named on a consumption of an event.
+
+**Why it matters:** A subscription is taken in by the reactor itself, with nothing between the fact arriving and the reaction, which is why a policy or a process is allowed there. A call is not like that: a reactor issues an operation of its own context and that operation makes the call (decision 17), and that local operation is where both the flow map and the reaction walk read the boundary. A by naming the reactor skips it — no local operation exists to be drawn, and the chain stops where the caller should have been — while the model reads as though a policy had reached across a boundary itself.
+
+**Usual fix:** Add the consumer's own operation that makes the call, name it in the reactor's then, and put it in by in place of the reactor. If the reactor really does nothing but subscribe, then what it consumes is the event, not the operation.
+
 ## `consumption-by-required` (warning)
 
 **Requires:** A consumption of another context's operation names, in by, which of the consumer's own operations makes the call — unless the consumer provides fewer than two operations, and so has nothing to choose between.
@@ -291,6 +299,14 @@
 **Why it matters:** Reacting to a neighbour's published fact is an integration, and decision 17 says a subscription is a consumption. Written only as a subscription it is nowhere else in the model: neither the context map nor the consumable map draws the dependency, no downstream role says whether the fact is translated or taken as it comes, and the rules that judge an exchange — the anti-corruption layer a big ball of mud needs, the roles a relationship claims — never see it at all.
 
 **Usual fix:** Declare the consumption on the service or aggregate that owns the reaction, which is the node providing the operations the reactor issues, and name the policy or process in its by. Give it the downstream role the reaction really has: conformist if the event is taken as published, anti-corruption-layer if something translates it. If the reactor should not depend on that context, react to an event of your own instead.
+
+## `subscription-backed` (warning)
+
+**Requires:** A consumed event is reacted to by a policy or a process of the consumer's context, or the consumption names in by which of the consumer's parts it is for.
+
+**Why it matters:** subscription-consumed asks the other half of this question, and between them the two say that a subscription and its reaction are one fact written from two sides. A consumption with neither is a claim with nothing under it: the model says this context takes that fact in, nothing in it does anything when the fact arrives, and the consumable map draws an edge a reader cannot follow anywhere. Usually the reaction was never written down; sometimes the dependency is stale.
+
+**Usual fix:** Add the policy or process that reacts to the event and the operation it issues, or name in by the consumer's own operation that reads the feed — a projection that updates, a report that accumulates. If nothing here acts on it, delete the consumption: the dependency is not real.
 
 ## `process-in-context` (error)
 
@@ -340,6 +356,14 @@
 
 **Usual fix:** Move the consumption to the application service that owns the use case, naming its own operation in by where the caller plainly differs, and let that operation pass the result to the aggregate; for a foreign event, add a policy on that event issuing an operation of this context.
 
+## `domain-service-consumes-inside` (error)
+
+**Requires:** A domain service consumes only consumables of its own bounded context.
+
+**Why it matters:** A domain service is the inside of the model: logic that belongs to no single aggregate, written in this context's own words. Decision 17 keeps it internal in the other direction already — nobody outside may call it — and the outbound half is the same principle. A call across a boundary is translation, failure and waiting on somebody else's availability, and logic that has to do that is not this context's own rule about its own model any more.
+
+**Usual fix:** Move the consumption to the application service that owns the use case, naming its own operation in by, and let that operation hand the domain service what it needs; for a foreign event, take it in at the application service with the policy or process that reacts to it named in by.
+
 ## `domain-service-internal` (error)
 
 **Requires:** A domain service's operations declare no upstream role and are consumed only inside their own context.
@@ -347,6 +371,14 @@
 **Why it matters:** A domain service holds domain logic that belongs to no single aggregate — it is the inside of the model, the same as an aggregate. Offering it outward makes another context depend on how this one arranges its logic instead of on what it promises.
 
 **Usual fix:** Mark the domain service's operation internal: true and drop its pattern, then let the context's application service provide the public operation that consumes it.
+
+## `valueobject-context` (error)
+
+**Requires:** An attribute types itself by a value object of its own bounded context, of one it shares a kernel with, or of an upstream it has declared itself a conformist of.
+
+**Why it matters:** A value object is part of a bounded context's ubiquitous language: what a Money, a PetStatus or an IBAN means is settled inside one boundary and may be resettled there. An attribute typed by another context's value writes this model in a word somebody else owns, and the day they redefine it this context changes without anybody editing it. A shared kernel is where two teams have said they keep part of one model between them and accepted the price; a conformist is a downstream that takes the upstream's model as it stands. Those are the two places the borrowing is declared, and the rule reads them exactly as schema-context does.
+
+**Usual fix:** Declare the value object in the context that uses it, in that context's own words; or declare the shared kernel if the two contexts really do keep that value between them; or, if this context takes the other's model as it stands, declare the directed relationship with conformist among its downstreamRoles.
 
 ## `schema-context` (error)
 

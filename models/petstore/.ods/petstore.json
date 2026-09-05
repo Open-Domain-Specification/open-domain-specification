@@ -311,7 +311,7 @@
               "pattern": "open-host-service",
               "type": "operation",
               "returns": {
-                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet"
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pets"
               }
             },
             "get_pet_by_id": {
@@ -657,6 +657,19 @@
             }
           }
         },
+        "pets": {
+          "name": "Pets",
+          "description": "The pets matching a status search, in the order found",
+          "attributes": {
+            "pets": {
+              "name": "pets",
+              "type": "PetSummary[]",
+              "schema": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_summary"
+              }
+            }
+          }
+        },
         "pet_unavailable": {
           "name": "PetUnavailable",
           "description": "Why the pet could not be held: it is already pending or sold",
@@ -940,6 +953,15 @@
               "schema": {
                 "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
               }
+            },
+            "check_pet_available": {
+              "name": "CheckPetAvailable",
+              "description": "Read the ordered pet's summary from Catalog, through the ACL, and decide whether Sales may approve the order",
+              "type": "operation",
+              "internal": true,
+              "schema": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
+              }
             }
           },
           "consumes": [
@@ -982,7 +1004,7 @@
               "pattern": "anti-corruption-layer",
               "by": [
                 {
-                  "$ref": "#/boundedcontexts/sales_bc/processes/order_fulfilment"
+                  "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/check_pet_available"
                 }
               ],
               "comments": [
@@ -1036,6 +1058,9 @@
             }
           ],
           "then": [
+            {
+              "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/check_pet_available"
+            },
             {
               "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/approve_order"
             },

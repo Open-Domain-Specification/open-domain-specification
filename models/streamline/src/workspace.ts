@@ -865,7 +865,14 @@ const planLadder = ladderPlanner.provides("PlanLadder", {
 });
 
 // The delivery spec is the industry format, so Encoding conforms to it.
-encodingApi.consumes(masterDelivered, { pattern: "conformist" });
+// DISCOVERY: Media Engineering lead, "we consume the studio's delivery spec as
+// it is". Nothing in Encoding reacts to a delivery — Catalogue's process is what
+// queues the encode, and it calls `SubmitEncode` — so what the subscription is
+// for is that operation, which reads the delivered master (`subscription-backed`).
+encodingApi.consumes(masterDelivered, {
+	pattern: "conformist",
+	by: [submitEncode],
+});
 encodingBC
 	.addPolicy("Plan ladder on queue", {
 		description: "Every queued job gets a per-title ladder before it runs",
@@ -1361,7 +1368,14 @@ devicesBC
 	.on(deviceCertified);
 
 // Partnership: releases are planned as one, so Playback conforms.
-playbackApi.consumes(deviceCertified, { pattern: "conformist" });
+// DISCOVERY: Playback engineering lead, "we don't start a session on a device
+// that isn't certified against the current SDK". Nothing here reacts to a
+// certification; `StartPlayback` is the part of Playback that reads it, and
+// refuses when the device is not certified (`subscription-backed`).
+playbackApi.consumes(deviceCertified, {
+	pattern: "conformist",
+	by: [startPlayback],
+});
 
 devicesBC.addTerm("Device", {
 	definition: "A partner device model, not an individual unit",
@@ -1420,6 +1434,12 @@ tasteAgg
 	})
 	.constrains(signal);
 
+const openTasteProfile = tasteAgg.provides("OpenTasteProfile", {
+	description:
+		"Open the empty taste profile for a new member profile; signals arrive against it later",
+	type: "operation",
+	internal: true,
+});
 const recordSignal = tasteAgg.provides("RecordSignal", {
 	description: "Add a viewing signal from a stopped session",
 	type: "operation",
@@ -1468,7 +1488,7 @@ const recsApi = recsBC.addService("RecommendationsAPI", {
 	description: "What the apps call for the home screen",
 	type: "application",
 });
-recsApi.provides("GetHomepageRows", {
+const getHomepageRows = recsApi.provides("GetHomepageRows", {
 	description: "Rows for a profile, ranked",
 	type: "operation",
 	pattern: "open-host-service",
@@ -1476,18 +1496,37 @@ recsApi.provides("GetHomepageRows", {
 });
 
 recsApi.consumes(playbackStopped, { pattern: "anti-corruption-layer" });
-ranker.consumes(titlePublished, { pattern: "conformist" });
-ranker.consumes(availabilityChanged, { pattern: "conformist" });
-recsBC
+const addCandidateOnPublish = recsBC
 	.addPolicy("Add candidate on publish", {
 		description:
 			"A published title joins the candidate pool; an availability change updates where it may be recommended",
 	})
 	.on(titlePublished, availabilityChanged)
 	.issues(addCandidate);
+// The two facts the candidate pool is built from. They came in at the Ranker
+// until card 92: a domain service is the inside of the model, the same as an
+// aggregate, so a foreign consumable is taken in at the application service and
+// handed on (decision 17's amendment). What reacts to each is the policy above,
+// and `by` says so, which is also what keeps the subscription backed.
+recsApi.consumes(titlePublished, {
+	pattern: "conformist",
+	by: [addCandidateOnPublish],
+});
+recsApi.consumes(availabilityChanged, {
+	pattern: "conformist",
+	by: [addCandidateOnPublish],
+});
 // DELIBERATE (internal-consumable): Personalisation reads the player's
-// bookmark updates, which Playback declares internal. The dependency was never agreed.
-recsApi.consumes(bookmarkUpdated, { pattern: "anti-corruption-layer" });
+// bookmark updates, which Playback declares internal. The dependency was never
+// agreed. DISCOVERY: Head of Personalisation, "we also started reading the
+// player's bookmark updates to make 'continue watching' fresher". No policy
+// reacts to one — the rows are built when they are asked for — so `by` names the
+// operation that reads them, which is also what says how far the unagreed
+// dependency reaches (`subscription-backed`).
+recsApi.consumes(bookmarkUpdated, {
+	pattern: "anti-corruption-layer",
+	by: [getHomepageRows],
+});
 recsBC
 	.addPolicy("Record signal on stop", {
 		description:
@@ -1672,7 +1711,22 @@ householdsBC.addTerm("Profile", {
 	embodiedBy: profile,
 });
 
-recsApi.consumes(profileCreated, { pattern: "conformist" });
+// DISCOVERY: Head of Personalisation, "every profile has a taste profile", and
+// the wall's "Recommendations creates taste profile" against `ProfileCreated`.
+// The reaction was on the wall and never in the model, so the consumption stood
+// on its own (`subscription-backed`, card 92). It is written here because the
+// event is declared in this section.
+const openOnProfileCreated = recsBC
+	.addPolicy("Open a taste profile on profile created", {
+		description:
+			"A new profile gets an empty taste profile, so its first signal has somewhere to go",
+	})
+	.on(profileCreated)
+	.issues(openTasteProfile);
+recsApi.consumes(profileCreated, {
+	pattern: "conformist",
+	by: [openOnProfileCreated],
+});
 
 /* =======================
    BILLING & PLANS

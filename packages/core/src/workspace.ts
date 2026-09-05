@@ -394,6 +394,25 @@ export class Workspace
 		return target;
 	}
 
+	/**
+	 * Resolves any ref a policy's `on`, or a process's `on` or `ends`, may
+	 * name: an event, or the schema an operation answers with (decision 23).
+	 */
+	getReactionTriggerByRef(ref: string): ReactionTrigger | undefined {
+		const target = this.getByRef(ref);
+		return target instanceof Consumable || target instanceof DataSchema
+			? target
+			: undefined;
+	}
+
+	getReactionTriggerByRefOrThrow(ref: string): ReactionTrigger {
+		const target = this.getReactionTriggerByRef(ref);
+		if (!target) {
+			throw new Error(`Consumable or Schema with ref ${ref} not found`);
+		}
+		return target;
+	}
+
 	/** Resolves any ref a consumption's `by` may name. */
 	getConsumptionCallerByRef(ref: string): ConsumptionCaller | undefined {
 		const target = this.getByRef(ref);
@@ -2169,10 +2188,26 @@ export class DataSchema
 	}
 }
 
+/**
+ * What a reaction waits for: an event, or the answer an operation comes back
+ * with.
+ *
+ * An answer is named by the schema the operation `returns` or `rejects` with,
+ * and means "when that answer comes back". The commonest process-manager
+ * shape is a call and a branch on what came back, and a model that could wait
+ * only on events made its authors publish a reply as a fact the world was
+ * told about: RiverMart published a declined payment against decision 25's own
+ * example and NorthBank modelled one synchronous verdict as two events. The
+ * answer is synchronous because the operation is, so delivery is still implied
+ * by the consumable's type and nothing new says it (decision 23, second
+ * amendment).
+ */
+export type ReactionTrigger = Consumable | DataSchema;
+
 export type PolicyAttributes = {
 	description: string;
-	/** The events that trigger it; also settable with `.on(...)`. */
-	on?: Consumable[];
+	/** The events or answers that trigger it; also settable with `.on(...)`. */
+	on?: ReactionTrigger[];
 	/** The operations it issues; also settable with `.issues(...)`. */
 	issues?: Consumable[];
 	id?: string;
@@ -2188,17 +2223,17 @@ export type PolicyAttributes = {
 const issuesSchemaKey = "then" as const;
 
 /**
- * A reaction that lives in a bounded context: when any of its event
- * consumables happen, it issues its operation consumables. Either side may
- * belong to another context.
+ * A reaction that lives in a bounded context: when any of the events it waits
+ * for happens, or one of the answers it waits for comes back, it issues its
+ * operation consumables. Either side may belong to another context.
  */
 export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 	id: string;
 	name: string;
 	description: string;
 	boundedcontext: BoundedContext;
-	/** Event consumables that trigger the policy. */
-	events: Consumable[] = [];
+	/** The events and answers that trigger the policy. */
+	events: ReactionTrigger[] = [];
 	/** Operation consumables the policy issues. */
 	commands: Consumable[] = [];
 
@@ -2224,8 +2259,8 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 		this.issues(...(attributes.issues ?? []));
 	}
 
-	/** Adds a triggering event consumable. */
-	on(...events: Consumable[]): this {
+	/** Adds a triggering event, or the answer an operation comes back with. */
+	on(...events: ReactionTrigger[]): this {
 		for (const event of events) {
 			if (!this.events.includes(event)) this.events.push(event);
 		}
@@ -2258,12 +2293,18 @@ export type ProcessAttributes = {
 	description: string;
 	/** The events that begin an instance; also settable with `.starts(...)`. */
 	starts?: Consumable[];
-	/** The events it waits for while alive; also settable with `.on(...)`. */
-	on?: Consumable[];
+	/**
+	 * The events and answers it waits for while alive; also settable with
+	 * `.on(...)`.
+	 */
+	on?: ReactionTrigger[];
 	/** The operations it issues; also settable with `.issues(...)`. */
 	issues?: Consumable[];
-	/** The events that complete an instance; also settable with `.ends(...)`. */
-	ends?: Consumable[];
+	/**
+	 * The events and answers that complete an instance; also settable with
+	 * `.ends(...)`.
+	 */
+	ends?: ReactionTrigger[];
 	id?: string;
 } & EvidenceOptions;
 
@@ -2279,6 +2320,12 @@ export type ProcessAttributes = {
  * it compensates are prose in the description: the model states that the
  * process exists and what it listens to and does, and leaves how it decides
  * to the code (decision 23).
+ *
+ * What it waits for and what completes it may be an answer as well as an
+ * event, because the commonest process is a call and a branch on what came
+ * back (see {@link ReactionTrigger}). What starts one is an event: an answer
+ * is what a caller gets back from a call, so something was already waiting for
+ * it, and an instance that did not exist before the call cannot have been.
  */
 export class Process
 	implements Visitable, Evidenced, SchemaConvertible<ods.ProcessSchema>
@@ -2289,12 +2336,12 @@ export class Process
 	boundedcontext: BoundedContext;
 	/** Events that begin an instance. */
 	startEvents: Consumable[] = [];
-	/** Events an instance waits for or reacts to while it is alive. */
-	events: Consumable[] = [];
+	/** The events and answers an instance waits for while it is alive. */
+	events: ReactionTrigger[] = [];
 	/** Operation consumables the process issues. */
 	commands: Consumable[] = [];
-	/** Events that complete an instance. */
-	endEvents: Consumable[] = [];
+	/** The events and answers that complete an instance. */
+	endEvents: ReactionTrigger[] = [];
 	comments: ods.Comment[];
 	disposition?: ods.Disposition;
 
@@ -2329,8 +2376,11 @@ export class Process
 		return this.add(this.startEvents, events);
 	}
 
-	/** Adds an event an instance waits for while it is alive. */
-	on(...events: Consumable[]): this {
+	/**
+	 * Adds an event an instance waits for while it is alive, or an answer it
+	 * waits to come back.
+	 */
+	on(...events: ReactionTrigger[]): this {
 		return this.add(this.events, events);
 	}
 
@@ -2339,12 +2389,12 @@ export class Process
 		return this.add(this.commands, commands);
 	}
 
-	/** Adds an event that completes an instance. */
-	ends(...events: Consumable[]): this {
+	/** Adds an event, or an answer, that completes an instance. */
+	ends(...events: ReactionTrigger[]): this {
 		return this.add(this.endEvents, events);
 	}
 
-	private add(target: Consumable[], consumables: Consumable[]): this {
+	private add<T extends ReactionTrigger>(target: T[], consumables: T[]): this {
 		for (const consumable of consumables) {
 			if (!target.includes(consumable)) target.push(consumable);
 		}
@@ -2356,8 +2406,8 @@ export class Process
 	}
 
 	toSchema(): ods.ProcessSchema {
-		const refs = (consumables: Consumable[]) =>
-			consumables.map((it) => ({ $ref: it.ref }));
+		const refs = (triggers: ReactionTrigger[]) =>
+			triggers.map((it) => ({ $ref: it.ref }));
 		return {
 			name: this.name,
 			description: this.description,

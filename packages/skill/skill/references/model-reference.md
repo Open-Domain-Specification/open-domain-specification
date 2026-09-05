@@ -232,7 +232,7 @@ A rule that holds by construction of a value object, inside an aggregate on ever
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `constrains` | array of `{ "$ref": string }` | yes | What this invariant is a rule about: the entities, value objects and attributes it holds over, and the operations it constrains, for a rule about what an operation may do. A value object's invariant reaches its own attributes and nothing else; an aggregate's reaches inside its own aggregate and the value objects of its context; a context's reaches anywhere in the context and names at least one operation that guards it. |
+| `constrains` | array of `{ "$ref": string }` | yes | What this invariant is a rule about: the entities, value objects and attributes it holds over, and the operations it constrains, for a rule about what an operation may do. A value object's invariant reaches its own attributes and nothing else; an aggregate's reaches inside its own aggregate and the value objects of its context; a context's reaches anywhere in the context and names at least one operation that guards it. An aggregate's invariant naming a value object means that aggregate's instances of it — the amounts this payment holds, not every Money in the context — because what is saved with an aggregate is the value, not the definition. A rule about every instance of a value wherever it is held is the value's own invariant, and a rule across the instances of several aggregates is the context's (decisions 16 and 27). Naming an operation says which of two things the invariant is: with one it is a guard, a precondition checked when that operation runs; with none it is a rule true again after every save. |
 | `description` | string | yes |  |
 | `name` | string | yes |  |
 
@@ -246,7 +246,7 @@ A reaction: when these events happen, issue these commands.
 |---|---|---|---|
 | `description` | string | yes |  |
 | `name` | string | yes |  |
-| `on` | array of `{ "$ref": string }` | yes | The event consumables that trigger this policy. |
+| `on` | array of `{ "$ref": string }` | yes | What triggers this policy: an event consumable, or a `DataSchema` an operation of this context's consumptions returns or rejects with, which means "when that answer comes back". The answer is synchronous because the operation is, so nothing else says so (decision 23). |
 | `then` | array of `{ "$ref": string }` | yes | The operation consumables this policy issues. |
 
 No other fields are allowed.
@@ -260,10 +260,10 @@ A long-running reaction that holds state across events: it remembers which of it
 | `comments` | array of [Comment](#comment) | no | Grounded statements about the real system behind this process. |
 | `description` | string | yes |  |
 | `disposition` | "by-design" | "refactor" | "tolerated" | no | What the architecture thinks of this process. Absent means `by-design`. |
-| `ends` | array of `{ "$ref": string }` | yes | The event consumables that complete an instance. |
+| `ends` | array of `{ "$ref": string }` | yes | What completes an instance: an event consumable, or an answer named the same way `on` names one. |
 | `name` | string | yes |  |
-| `on` | array of `{ "$ref": string }` | yes | Further event consumables the process waits for or reacts to while an instance is alive. Like a policy's `on`, one of these may belong to another context: subscribing to a published fact is how contexts integrate (decision 23). |
-| `starts` | array of `{ "$ref": string }` | yes | The event consumables that begin an instance of this process. |
+| `on` | array of `{ "$ref": string }` | yes | Further event consumables the process waits for or reacts to while an instance is alive, and the `DataSchema`s it waits to come back: a schema an operation of this context's consumptions returns or rejects with means "when that answer comes back", which is the call-and-branch a process manager is usually made of. Like a policy's `on`, one of these may belong to another context: subscribing to a published fact, or calling out and waiting, is how contexts integrate (decision 23). |
+| `starts` | array of `{ "$ref": string }` | yes | The event consumables that begin an instance of this process. An answer is what a caller gets back from a call, so something was already waiting for it and an instance that did not exist cannot have been: only an event starts one. |
 | `then` | array of `{ "$ref": string }` | yes | The operation consumables of this process's own context that it issues. |
 
 No other fields are allowed.

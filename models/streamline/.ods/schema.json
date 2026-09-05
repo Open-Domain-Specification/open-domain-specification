@@ -730,7 +730,7 @@
             "description": "A rule that holds by construction of a value object, inside an aggregate on every save, or across the instances and aggregates of a bounded context.",
             "properties": {
                 "constrains": {
-                    "description": "What this invariant is a rule about: the entities, value objects and\nattributes it holds over, and the operations it constrains, for a rule\nabout what an operation may do. A value object's invariant reaches its\nown attributes and nothing else; an aggregate's reaches inside its own\naggregate and the value objects of its context; a context's reaches\nanywhere in the context and names at least one operation that guards it.",
+                    "description": "What this invariant is a rule about: the entities, value objects and\nattributes it holds over, and the operations it constrains, for a rule\nabout what an operation may do. A value object's invariant reaches its\nown attributes and nothing else; an aggregate's reaches inside its own\naggregate and the value objects of its context; a context's reaches\nanywhere in the context and names at least one operation that guards it.\n\nAn aggregate's invariant naming a value object means that aggregate's\ninstances of it — the amounts this payment holds, not every Money in the\ncontext — because what is saved with an aggregate is the value, not the\ndefinition. A rule about every instance of a value wherever it is held is\nthe value's own invariant, and a rule across the instances of several\naggregates is the context's (decisions 16 and 27).\n\nNaming an operation says which of two things the invariant is: with one it\nis a guard, a precondition checked when that operation runs; with none it\nis a rule true again after every save.",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -771,7 +771,7 @@
                     "type": "string"
                 },
                 "on": {
-                    "description": "The event consumables that trigger this policy.",
+                    "description": "What triggers this policy: an event consumable, or a `DataSchema` an\noperation of this context's consumptions returns or rejects with, which\nmeans \"when that answer comes back\". The answer is synchronous because\nthe operation is, so nothing else says so (decision 23).",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -831,7 +831,7 @@
                     "description": "What the architecture thinks of this process. Absent means `by-design`."
                 },
                 "ends": {
-                    "description": "The event consumables that complete an instance.",
+                    "description": "What completes an instance: an event consumable, or an answer named the\nsame way `on` names one.",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -850,7 +850,7 @@
                     "type": "string"
                 },
                 "on": {
-                    "description": "Further event consumables the process waits for or reacts to while an\ninstance is alive. Like a policy's `on`, one of these may belong to\nanother context: subscribing to a published fact is how contexts\nintegrate (decision 23).",
+                    "description": "Further event consumables the process waits for or reacts to while an\ninstance is alive, and the `DataSchema`s it waits to come back: a schema\nan operation of this context's consumptions returns or rejects with means\n\"when that answer comes back\", which is the call-and-branch a process\nmanager is usually made of. Like a policy's `on`, one of these may belong\nto another context: subscribing to a published fact, or calling out and\nwaiting, is how contexts integrate (decision 23).",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -866,7 +866,7 @@
                     "type": "array"
                 },
                 "starts": {
-                    "description": "The event consumables that begin an instance of this process.",
+                    "description": "The event consumables that begin an instance of this process. An answer\nis what a caller gets back from a call, so something was already waiting\nfor it and an instance that did not exist cannot have been: only an event\nstarts one.",
                     "items": {
                         "additionalProperties": false,
                         "properties": {

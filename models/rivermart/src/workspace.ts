@@ -660,9 +660,32 @@ const getOffer = offerApi.provides("GetOffer", {
 	returns: offerDetailSchema,
 });
 
+// DISCOVERY: Head of Marketplace, "the catalogue sends us events when products
+// appear or disappear and we keep our own SKU list from them; we don't want
+// their whole product model in our tables". Keeping that list is the reaction,
+// and until card 92 the model had the consumptions with nothing under them.
+const recordCatalogueSku = offerApi.provides("RecordCatalogueSku", {
+	description:
+		"Add a listed product to Offers' own SKU list, or take a retired one off it; the list is Offers' translation of the catalogue and holds no product model",
+	type: "operation",
+	internal: true,
+});
 // Offers translate the catalogue into their own SKU list rather than embedding Product.
-offerApi.consumes(productListed, { pattern: "anti-corruption-layer" });
-offerApi.consumes(productRetired, { pattern: "anti-corruption-layer" });
+const keepSkuList = offersBC
+	.addPolicy("Keep the SKU list in step", {
+		description:
+			"Offers may only be published against a SKU the catalogue has, so the list follows every listing and retirement",
+	})
+	.on(productListed, productRetired)
+	.issues(recordCatalogueSku);
+offerApi.consumes(productListed, {
+	pattern: "anti-corruption-layer",
+	by: [keepSkuList],
+});
+offerApi.consumes(productRetired, {
+	pattern: "anti-corruption-layer",
+	by: [keepSkuList],
+});
 
 offersBC
 	.addPolicy("Recompute buy box on offer change", {
@@ -819,7 +842,14 @@ sellerBC.addTerm("Vendor", {
 		"Not a seller. A wholesale supplier to first-party retail, handled by Vendor Purchasing; the two accounts were never unified and will not be. Seller Onboarding has no vendor of its own, which is the point: the word is a false friend and nothing here embodies it",
 });
 
-offerApi.consumes(sellerActivated, { pattern: "conformist" });
+// DISCOVERY: Head of Seller Services and the wall's "Offers allows publishing".
+// Nothing in Offers reacts to an activation — no offer appears because a seller
+// was activated — so what the subscription is for is `PublishOffer`, the part of
+// Offers that refuses a seller who is not active yet (`subscription-backed`).
+offerApi.consumes(sellerActivated, {
+	pattern: "conformist",
+	by: [publishOffer],
+});
 offerApi.consumes(sellerSuspended, { pattern: "conformist" });
 offersBC
 	.addPolicy("Withdraw offers of suspended seller", {
@@ -1278,7 +1308,15 @@ const refund = paymentAgg.addEntity("Refund", {
 });
 const paymentMoney = money(paymentsBC);
 paymentIntent.addAttribute("paymentId", { type: "string", identity: true });
-paymentIntent.addAttribute("orderId", { type: "string", identifies: order });
+// Optional, because the model's own comment on `AttachOrder` says why: the hold
+// is taken against a cart and the order id only exists after PlaceOrder, so an
+// intent has none until the order is placed (decision 24; card 92).
+paymentIntent.addAttribute("orderId", {
+	type: "string",
+	identifies: order,
+	optional: true,
+	description: "Absent until the order exists; AttachOrder fills it",
+});
 paymentIntent.addAttribute("amount", {
 	type: "Money",
 	valueobject: paymentMoney,
@@ -1332,6 +1370,23 @@ paymentAuthorisedSchema.addAttribute("cartId", {
 });
 const paymentRefSchema = paymentsBC.addSchema("PaymentRef");
 paymentRefSchema.addAttribute("paymentId", { type: "string", identity: true });
+// DISCOVERY: Checkout tech lead, "if the hold fails the customer sees an error
+// and the cart stays open". A decline is the authorisation call refusing, not
+// a fact the world is told about: nothing happened, and the only party who
+// hears it is the caller who asked. It was published as an event until card 92,
+// against decision 25's own example; it is now what AuthorisePayment rejects
+// with, and the Checkout process waits on the answer (decision 23).
+const paymentDeclinedSchema = paymentsBC.addSchema("PaymentDeclined", {
+	description: "Why the hold was refused, in the words the customer is shown",
+});
+paymentDeclinedSchema.addAttribute("paymentId", {
+	type: "string",
+	identity: true,
+});
+paymentDeclinedSchema.addAttribute("reason", {
+	type: "'insufficient-funds' | 'instrument-refused' | 'provider-unavailable'",
+	description: "What the storefront tells the customer to try instead",
+});
 const authorisePaymentSchema = paymentsBC.addSchema("AuthorisePayment", {
 	description:
 		"What checkout sends: the cart total and the customer's instrument token",
@@ -1352,8 +1407,9 @@ const paymentAuthorised = paymentAgg.provides("PaymentAuthorised", {
 	pattern: "published-language",
 	schema: paymentAuthorisedSchema,
 });
-const paymentDeclined = paymentAgg.provides("PaymentDeclined", {
-	description: "The provider refused; checkout shows an error",
+const authorisationExpired = paymentAgg.provides("AuthorisationExpired", {
+	description:
+		"A hold reached its expiry without being captured and was released",
 	type: "event",
 	pattern: "published-language",
 	schema: paymentRefSchema,
@@ -1380,12 +1436,27 @@ const paymentsApi = paymentsBC.addService("PaymentsAPI", {
 });
 const authorisePayment = paymentsApi
 	.provides("AuthorisePayment", {
-		description: "Hold the cart total on the customer's instrument",
+		description:
+			"Hold the cart total on the customer's instrument; the caller waits, and is told either that the money is held or why it is not",
 		type: "operation",
 		pattern: "open-host-service",
 		schema: authorisePaymentSchema,
+		rejects: [paymentDeclinedSchema],
 	})
-	.raises(paymentAuthorised, paymentDeclined);
+	.raises(paymentAuthorised);
+// DISCOVERY: Payments engineering lead, and the Authorisation glossary entry:
+// a hold "expires if not captured". A scheduler calls this every few minutes;
+// nothing in the model consumes it, which is what an operation called from
+// outside the software looks like (decision 28), and the released hold is a
+// fact the checkout and the storefront both hear.
+paymentsApi
+	.provides("ExpireAuthorisations", {
+		description:
+			"Release every hold now past its Authorisation.expiresAt; a scheduler runs it",
+		type: "operation",
+		pattern: "open-host-service",
+	})
+	.raises(authorisationExpired);
 const capturePayment = paymentsApi
 	.provides("CapturePayment", {
 		description:
@@ -1489,18 +1560,21 @@ const placeOrderForCart = checkoutOrchestrator.provides("PlaceOrderForCart", {
 const checkout = cartBC
 	.addProcess("Checkout", {
 		description:
-			"From the customer confirming the basket to an order existing. It asks Payments to hold the cart total and then waits: on a hold the order is placed, on a decline the cart is unfrozen so another instrument can be tried and the same instance waits for the next attempt. Correlation is by cartId, which the authorisation carries back; an instance that is never paid for stays open with the cart, because a cart nobody returns to is the customer's to abandon and not ours to time out",
+			"From the customer confirming the basket to an order existing. It asks Payments to hold the cart total and then waits: on a hold the order is placed, on a decline — the answer AuthorisePayment refuses with — the cart is unfrozen so another instrument can be tried and the same instance waits for the next attempt. Correlation is by cartId, which the authorisation carries back. An instance nobody comes back to ends when the hold does: the authorisation expires, Payments says so, and the instance is over without anybody timing the cart out",
 	})
 	.starts(cartCheckedOut)
-	.on(paymentAuthorised, paymentDeclined)
+	.on(paymentAuthorised, paymentDeclinedSchema)
 	.issues(requestAuthorisation, placeOrderForCart, reopenCart)
-	.ends(orderPlaced);
+	.ends(orderPlaced, authorisationExpired);
 // Everything the checkout reaches for, declared together now that both the
 // operations and the process exist to be named. The orchestrator offers four
 // operations, so which one calls out is a real question and `by` answers it
-// (decision 21, third amendment); the three facts the process waits on are
+// (decision 21, third amendment); the facts the process waits on are
 // consumptions as well as subscriptions, because a context takes a foreign fact
-// in at its own boundary (decision 17; `subscription-consumed`).
+// in at its own boundary (decision 17; `subscription-consumed`). The decline
+// needs no consumption of its own: it comes back down the AuthorisePayment call
+// the line above already declares, which is what makes it this context's to
+// hear (decision 23).
 checkoutOrchestrator.consumes(authorisePayment, {
 	pattern: "anti-corruption-layer",
 	by: [requestAuthorisation],
@@ -1513,7 +1587,7 @@ checkoutOrchestrator.consumes(paymentAuthorised, {
 	pattern: "anti-corruption-layer",
 	by: [checkout],
 });
-checkoutOrchestrator.consumes(paymentDeclined, {
+checkoutOrchestrator.consumes(authorisationExpired, {
 	pattern: "anti-corruption-layer",
 	by: [checkout],
 });
@@ -2697,7 +2771,7 @@ sellerBC.downstreamOf(fraudBC, {
 lastMileBC.downstreamOf(warehouseBC, {
 	upstreamRoles: ["published-language"],
 	description:
-		"Roles on the consumption were never agreed; see the role-coherence warning",
+		"Last Mile takes the dispatch feed as the warehouse publishes it, and declares no downstream role: the two also share a kernel, so neither is upstream of the other and neither has a role to declare (card 47)",
 });
 orderBC.downstreamOf(lastMileBC, {
 	upstreamRoles: ["published-language"],

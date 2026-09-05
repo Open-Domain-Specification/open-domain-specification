@@ -260,8 +260,8 @@ const petIdSchema = catalogBC.addSchema("PetId", {
 		"Identifies one pet; shared by every consumable that only needs the id",
 });
 petIdSchema.addAttribute("petId", { type: "int64", identity: true });
-// A returned shape: what GetPetById and FindPetsByStatus answer with, the
-// full resource behind the summary below.
+// A returned shape: what GetPetById answers with, the full resource behind the
+// summary below.
 const petSchema = catalogBC.addSchema("Pet", {
 	description: "The full pet resource, as GET /pet/{petId} answers with it",
 });
@@ -290,6 +290,20 @@ petSummarySchema.addAttribute("name", { type: "string" });
 petSummarySchema.addAttribute("status", {
 	type: "PetStatus",
 	valueobject: petStatusVO,
+});
+
+// The shape a search answers with. `returns` names one shape, and the shape
+// says it is many: the Swagger source answers `GET /pet/findByStatus` with an
+// array, and the model spells that as an answer schema whose attribute holds
+// the list, as RiverMart's `SearchResults` does (decision 13's note, card 92).
+// It carries summaries rather than full pets, because a list of matches is the
+// slim read and a caller who wants everything asks for one pet by id.
+const petsSchema = catalogBC.addSchema("Pets", {
+	description: "The pets matching a status search, in the order found",
+});
+petsSchema.addAttribute("pets", {
+	type: "PetSummary[]",
+	schema: petSummarySchema,
 });
 
 // A rejection shape: what ReservePetForOrder answers with when it will not
@@ -413,7 +427,7 @@ petApp.provides("FindPetsByStatus", {
 	description: "GET /pet/findByStatus?status=available|pending|sold",
 	type: "operation",
 	pattern: "open-host-service",
-	returns: petSchema,
+	returns: petsSchema,
 });
 petApp.provides("GetPetById", {
 	description: "GET /pet/{petId}",
@@ -753,6 +767,18 @@ const markPetSoldForDelivered = orderApp.provides("MarkPetSold", {
 	internal: true,
 	schema: orderIdSchema,
 });
+// The third step of the same kind, and the one the model used to leave out: a
+// call is made by an operation, not by the process that issues it (decision 17;
+// `consumption-by-operation`). The process asked Catalog directly, through a
+// `by` naming itself, so the boundary had no local operation on it at all and
+// the reaction walk ran out of chain (card 92).
+const checkPetAvailable = orderApp.provides("CheckPetAvailable", {
+	description:
+		"Read the ordered pet's summary from Catalog, through the ACL, and decide whether Sales may approve the order",
+	type: "operation",
+	internal: true,
+	schema: orderIdSchema,
+});
 // Placing, reading or deleting an order never calls Catalog; one operation
 // does each of these, and naming it keeps the dependency where it really is.
 // The same ACL makes both calls, through the open host PetApp offers rather
@@ -783,22 +809,29 @@ const orderFulfilment = salesBC
 	})
 	.starts(orderPlaced)
 	.on(petStatusChanged)
-	.issues(approveOrder, reservePetForApproved, markPetSoldForDelivered)
+	.issues(
+		checkPetAvailable,
+		approveOrder,
+		reservePetForApproved,
+		markPetSoldForDelivered,
+	)
 	.ends(orderDelivered);
 
-// The two consumptions the process itself makes, declared here because both
-// name it. Anti-corruption layer: OrderApp translates the catalog's summary
+// The two consumptions the process drives, declared here because the relisting
+// one names it. Anti-corruption layer: OrderApp translates the catalog's summary
 // into its own notion of availability rather than adopting the catalog's model,
 // and it does the same with the relisting fact.
 //
-// The process is the caller of both. It is the thing that looks up the placed
-// orders for a petId and asks whether the pet is free before approving; no
-// operation of OrderApp does that, and inventing one so the caller could be an
-// operation would put a step in the model that nobody performs. A `by` may name
-// a policy or a process for exactly this reason (decision 21).
+// What makes the availability call is CheckPetAvailable, not the process. The
+// process is what remembers which order is waiting and decides when to ask; the
+// asking is a step of Sales' own boundary, with a translator behind it and a
+// place for a comment about it, and the flow map and the reaction walk both
+// read the crossing there (decisions 17 and 21). A `by` may name a process, but
+// only on an event: nothing stands between a fact arriving and a reaction to
+// it, while a call is something a part of this context does.
 orderApp.consumes(getPetSummaryOp, {
 	pattern: "anti-corruption-layer",
-	by: [orderFulfilment],
+	by: [checkPetAvailable],
 	comments: [
 		{
 			text: "PetSummaryClient is the translator; nothing else in Sales knows the catalog payload shape.",

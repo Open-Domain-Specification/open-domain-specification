@@ -167,8 +167,11 @@ common case; it is optional detail, not a call graph.
 A **policy** lives on a bounded context and says "on these events, then
 these operations" (`policy.on(...events).issues(...operations)`). The
 consumables may belong to other contexts as long as they are not internal.
-The flow map walks from the policies of a context through the events they
-react to, the operations they issue and the events those raise.
+`on` may also name a schema an operation this context consumes returns or
+rejects with, which means "when that answer comes back": a call is answered
+and the reaction is to the answer, not to an event somebody invented for it.
+The flow map walks from the policies of a context through what they react
+to, the operations they issue and the events those raise.
 
 ## Processes
 
@@ -177,8 +180,10 @@ A **process** is the reaction that outlives one event
 A policy is stateless and any-of; a process remembers which of its events
 have arrived, so it can wait for two facts before it acts, and it says what
 finishes an instance. `starts`, `on` and `ends` may name another context's
-events, exactly as a policy's `on` may; `then` names operations of the
-process's own context. What it correlates on, how long it waits and what it
+events, exactly as a policy's `on` may, and `on` and `ends` may name an
+answer — the shape an operation this context calls returns or rejects with —
+which is what the commonest process is made of: it calls, waits, and branches
+on what came back. `then` names operations of the process's own context. What it correlates on, how long it waits and what it
 compensates are prose in its description: the model says a process exists
 and what it listens to and does, and leaves how it decides to the code. An
 author who finds a policy waiting for a second event promotes it to a

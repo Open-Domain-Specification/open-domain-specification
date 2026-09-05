@@ -9,6 +9,11 @@ bounded context is drawn whole. The `flowMapToDigraph` function draws it left
 to right: events as ellipses, policies as notes, processes as folders,
 operations as boxes.
 
+An answer is drawn as one more edge from the operation that answers,
+labelled with the shape it came back as: a returned or rejected schema is
+the call coming back rather than something that happens on the way
+somewhere, so it gets no box of its own.
+
 A process is drawn with its lifecycle: what starts an instance comes in on
 the left with everything else it waits for, and what ends one leaves it on a
 dashed `ends` edge. That edge is drawn and never walked, because an ending

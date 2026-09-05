@@ -1,6 +1,7 @@
-import type {
-	ODSFlowMap,
-	ODSFlowMapNode,
+import {
+	flowEdgeLabel,
+	type ODSFlowMap,
+	type ODSFlowMapNode,
 } from "@open-domain-specification/core";
 import { ICONS } from "../icons";
 import {
@@ -31,7 +32,12 @@ export const flowMapCaption = (contextName: string) =>
 	`${contextName} flow map`;
 export const FLOW_MAP_EMPTY = "Nothing reacts to anything here yet.";
 
-/** The label an `ends` edge carries, so the dash is never read as a step. */
+/**
+ * The label an `ends` edge carries where what completes an instance is an
+ * event, so the dash is never read as a step. An ending answer is labelled by
+ * its shape instead, and core's {@link flowEdgeLabel} is what says so for
+ * every renderer at once.
+ */
 export const ENDS_LABEL = "ends";
 
 /** Codicon per step, the same glyph the tree, the tables and the docs use. */
@@ -47,8 +53,11 @@ export const stepIcon = (step: FlowStep): string =>
 /**
  * The reactions of a scope as a graph: one node per step of the causal chain
  * — an event, an operation, a policy or a process — and one edge per step the
- * chain takes, plus the dashed `ends` edge from a process to the fact that
- * completes an instance, which is not a step at all (decision 23).
+ * chain takes, plus the dashed `ends` edge joining a process and what completes
+ * an instance, which is not a step at all (decision 23).
+ *
+ * An answer has no node: it is an operation coming back, so it is drawn as that
+ * operation's own edge, labelled with the shape it answered with.
  *
  * Every namespace level is a group, as the consumable map nests its clusters:
  * a policy or a process sits under its context, a consumable under the
@@ -79,7 +88,9 @@ export function flowGraph(map: ODSFlowMap, focus?: string): Graph {
 			source: e.source.id,
 			target: e.target.id,
 			directed: true,
-			...(e.kind === "ends" && { dashed: true, label: ENDS_LABEL }),
+			...(e.kind === "ends" && { dashed: true }),
+			...(e.answer && { answer: true }),
+			...(flowEdgeLabel(e) && { label: flowEdgeLabel(e) }),
 		})),
 	};
 }

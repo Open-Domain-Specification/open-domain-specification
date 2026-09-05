@@ -308,13 +308,21 @@ describe("every template, through the shipped route", () => {
 		expect(rows[0][2]).toBe("rejects with");
 	});
 
-	it("PolicyPage: when and then are tables, and only then names the kind", () => {
+	it("PolicyPage: when and then are tables, and both name the kind", () => {
 		const container = draw(PETSTORE_REFS.policy);
+		// What triggers a policy may be an event or an answer, so the When table
+		// names the kind too (decision 23).
 		expect(
 			[...container.querySelectorAll("#when thead th")].map((h) =>
 				h.textContent?.trim(),
 			),
-		).toEqual(["Event", "Provider", "Context", "Description"]);
+		).toEqual([
+			"Event or answer",
+			"Kind",
+			"Provider",
+			"Context",
+			"Description",
+		]);
 		expect(
 			[...container.querySelectorAll("#then thead th")].map((h) =>
 				h.textContent?.trim(),
@@ -322,7 +330,7 @@ describe("every template, through the shipped route", () => {
 		).toEqual(["Operation", "Kind", "Provider", "Context", "Description"]);
 	});
 
-	it("ProcessPage: the lifecycle is four tables, and only then names the kind", () => {
+	it("ProcessPage: the lifecycle is four tables, and the three that may hold an answer name the kind", () => {
 		const container = draw(PETSTORE_REFS.process);
 		const headers = (id: string) =>
 			[...container.querySelectorAll(`#${id} thead th`)].map((h) =>
@@ -337,7 +345,8 @@ describe("every template, through the shipped route", () => {
 			"Description",
 		]);
 		expect(headers("when")).toEqual([
-			"Event",
+			"Event or answer",
+			"Kind",
 			"Provider",
 			"Context",
 			"Description",
@@ -350,7 +359,8 @@ describe("every template, through the shipped route", () => {
 			"Description",
 		]);
 		expect(headers("ends")).toEqual([
-			"Event",
+			"Event or answer",
+			"Kind",
 			"Provider",
 			"Context",
 			"Description",

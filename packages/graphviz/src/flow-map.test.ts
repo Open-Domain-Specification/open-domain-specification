@@ -66,6 +66,38 @@ describe("flowMapToDigraph", () => {
 		expect(ws.validate().map((d) => d.rule)).not.toContain("process-has-ends");
 	});
 
+	it("labels an answer with the shape it came back as", () => {
+		const { ws, bc, order, placed } = makeWorkspace();
+		const credit = ws.addBoundedContext("Credit", { description: "" });
+		const creditApp = credit.addService("Credit App", {
+			description: "",
+			type: "application",
+		});
+		const verdict = credit.addSchema("CreditVerdict");
+		const score = creditApp.provides("ScoreOrder", {
+			type: "operation",
+			pattern: "open-host-service",
+			description: "",
+			returns: verdict,
+		});
+		const ask = order.provides("AskForScore", {
+			type: "operation",
+			internal: true,
+			description: "",
+		});
+		order.consumes(score, { pattern: "conformist", by: [ask] });
+		bc.addProcess("Order to approval", { description: "" })
+			.starts(placed)
+			.on(verdict)
+			.issues(ask)
+			.ends(placed);
+		const dot = flowMapToDigraph(ODSFlowMap.fromWorkspace(ws)).toDot();
+		// The answer is a step, drawn from the operation that answered and named
+		// by the shape, so the reader sees which answer woke the process.
+		expect(dot).toMatch(/label = "CreditVerdict"/);
+		expect(dot).toContain("ScoreOrder");
+	});
+
 	it("renders an empty map without throwing", async () => {
 		const ws = new Workspace("Empty", {
 			odsVersion: "1.0.0",

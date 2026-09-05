@@ -522,13 +522,16 @@ const getCustomer = onboardingApp.provides("GetCustomer", {
 	returns: customerDetailsSchema,
 });
 
-const kycScreening = customerBC.addService("KycScreening", {
+// DISCOVERY: Head of Customer Platform, "onboarding starts, we screen the name
+// against the sanctions lists". That is one step and it leaves the bank's
+// boundary, so it is an operation of the application service that makes the
+// call (decision 17). It was the KycScreening domain service's until card 92:
+// a domain service is the inside of the model, the same as an aggregate, and
+// that one held nothing else — no rule, no reading across aggregates, only the
+// call — so what is left of it is this operation.
+const screenCustomer = onboardingApp.provides("ScreenCustomer", {
 	description:
-		"Runs sanctions and document checks; a domain service because it spans the customer and the screening result",
-	type: "domain",
-});
-const screenCustomer = kycScreening.provides("ScreenCustomer", {
-	description: "Screen the prospective customer against sanctions lists",
+		"Screen the prospective customer against the sanctions lists, through the ACL",
 	type: "operation",
 	internal: true,
 });
@@ -645,7 +648,7 @@ screeningVendorBC.upstreamOf(sanctionsBC, {
 	downstreamRoles: ["conformist"],
 });
 
-kycScreening.consumes(screenParty, {
+onboardingApp.consumes(screenParty, {
 	pattern: "anti-corruption-layer",
 	by: [screenCustomer],
 });
@@ -884,7 +887,7 @@ const accountServicing = accountsBC.addService("AccountServicing", {
 	description: "The documented account API for channels, cards and lending",
 	type: "application",
 });
-accountServicing
+const openAccount = accountServicing
 	.provides("OpenAccount", {
 		description: "Open a product for a verified customer",
 		type: "operation",
@@ -910,7 +913,15 @@ const freezeAccount = accountServicing
 	})
 	.raises(accountFrozen);
 
-accountServicing.consumes(customerVerified, { pattern: "conformist" });
+// DISCOVERY: Head of Customer Platform, "only then can an account be opened",
+// and the Accounts lead's "mandates saying which verified customers can operate
+// it". Nothing in Accounts reacts to a verification — no account opens by
+// itself — so what the subscription is for is `OpenAccount`, the part of
+// Accounts that needs to know (`subscription-backed`, decision 21).
+accountServicing.consumes(customerVerified, {
+	pattern: "conformist",
+	by: [openAccount],
+});
 
 accountsBC.addTerm("Account", {
 	definition:
@@ -1498,12 +1509,12 @@ paymentsApp.consumes(postEntry, {
 // the model used to spell it as seven policies. It is one process: it holds
 // the instruction while the scorer and then the scheme answer, and each step
 // it takes is an operation of the hub's own boundary (decisions 17 and 23).
-// What it waits for from Fraud is joined further down, where those events are
+// What it waits for from Fraud is joined further down, where that answer is
 // declared.
 const instructionLifecycle = paymentsBC
 	.addProcess("Instruction lifecycle", {
 		description:
-			"From an instruction being initiated to the money having moved. It scores every instruction with Fraud and waits: a flag rejects it and it is never submitted, a clearance submits it to the scheme in the scheme's own format, and the process then waits again for the scheme's answer. A confirmation settles the instruction and posts it to the ledger; a refusal rejects it. Correlation is by instructionId, which the scorer's verdict and the scheme's response both carry; an instruction the scheme never answers stays open for the operations team, because the scheme's own timings are not the bank's to model",
+			"From an instruction being initiated to the money having moved. It scores every instruction with Fraud and waits for the verdict to come back: above the threshold it rejects the instruction and never submits it, below it submits to the scheme in the scheme's own format, and the process then waits again for the scheme's answer. A confirmation settles the instruction and posts it to the ledger; a refusal rejects it. Correlation is by instructionId, which the scorer's verdict and the scheme's response both carry; an instruction the scheme never answers stays open for the operations team, because the scheme's own timings are not the bank's to model",
 	})
 	.starts(paymentInitiated)
 	.on(schemeSettlementConfirmed, schemeRejected)
@@ -1577,8 +1588,14 @@ scoreTransactionSchema.addAttribute("transactionRef", {
 scoreTransactionSchema.addAttribute("channel", { type: "'payment' | 'card'" });
 scoreTransactionSchema.addAttribute("amountMinor", { type: "int64" });
 scoreTransactionSchema.addAttribute("payeeIban", { type: "string" });
+// DISCOVERY: Financial Crime lead, "synchronous scoring": the caller waits and
+// is told. The verdict is what ScoreTransaction answers with, so it is the
+// operation's `returns` and the shape Payments' process waits on (decision 23).
+// It was a pair of published events until card 92, which made a caller
+// subscribe to hear the answer to its own question.
 const transactionVerdictSchema = fraudBC.addSchema("TransactionVerdict", {
-	description: "Shared by flagged and cleared",
+	description:
+		"What the scorer answers with: the transaction and its score, reasons and all; above the threshold is a flag",
 });
 transactionVerdictSchema.addAttribute("transactionRef", {
 	type: "string",
@@ -1595,21 +1612,19 @@ const fraudCaseSchema = fraudBC.addSchema("FraudCaseOpened");
 fraudCaseSchema.addAttribute("caseId", { type: "string", identity: true });
 fraudCaseSchema.addAttribute("accountId", { type: "string" });
 
-// The verdicts belong to the scorer, not the case: a cleared transaction
-// opens no case, so the FraudCase aggregate cannot be what raises it.
+// The flag belongs to the scorer, not the case: a flag opens a case, so the
+// FraudCase aggregate cannot be what raises it. A flag is a fact the bank acts
+// on wherever it happened — Cards blocks the card on one — which is why it is
+// still an event beside the answer the caller waited for; a clearance is not a
+// fact anybody publishes, it is the call coming back, and it was an event only
+// because the model had nowhere else to put it (card 92).
 const transactionScorer = fraudBC.addService("TransactionScorer", {
 	description:
 		"The bank's own model; a domain service because it reads across every customer's history",
 	type: "domain",
 });
 const transactionFlagged = transactionScorer.provides("TransactionFlagged", {
-	description: "Above threshold; the caller stops the transaction",
-	type: "event",
-	pattern: "published-language",
-	schema: transactionVerdictSchema,
-});
-const transactionCleared = transactionScorer.provides("TransactionCleared", {
-	description: "Below threshold; the caller proceeds",
+	description: "Above threshold; a case is opened and the card is blocked",
 	type: "event",
 	pattern: "published-language",
 	schema: transactionVerdictSchema,
@@ -1642,12 +1657,14 @@ const fraudApp = fraudBC.addService("FraudApp", {
 });
 const scoreTransaction = fraudApp
 	.provides("ScoreTransaction", {
-		description: "Score synchronously; callers wait on the verdict",
+		description:
+			"Score synchronously; the caller waits and is answered with the verdict, and a flag is published as well because other contexts act on it",
 		type: "operation",
 		pattern: "open-host-service",
 		schema: scoreTransactionSchema,
+		returns: transactionVerdictSchema,
 	})
-	.raises(transactionFlagged, transactionCleared);
+	.raises(transactionFlagged);
 
 fraudBC
 	.addPolicy("Open case on flag", {
@@ -1666,13 +1683,9 @@ fraudBC.addTerm("APP scam", {
 	embodiedBy: transactionScorer,
 });
 
-// Payments waits on the scorer; flags reject, clears submit.
-paymentsApp.consumes(transactionFlagged, {
-	pattern: "anti-corruption-layer",
-});
-paymentsApp.consumes(transactionCleared, {
-	pattern: "anti-corruption-layer",
-});
+// Payments waits on the scorer: it calls and holds the instruction until the
+// verdict comes back, and what it does then — reject on a flag, submit on a
+// clearance — is the process's own business (decisions 15 and 23).
 const scoreInstruction = paymentsApp.provides("ScoreInstruction", {
 	description:
 		"Send an initiated instruction to Fraud for a verdict, through the ACL",
@@ -1684,10 +1697,11 @@ paymentsApp.consumes(scoreTransaction, {
 	by: [scoreInstruction],
 });
 // The first half of the instruction lifecycle above: scoring, and what the
-// two verdicts do. It is written here because Fraud's events are declared in
-// this section.
+// verdict does. It is written here because Fraud's shapes are declared in this
+// section. The process waits on the answer to the call it made, which is what
+// "synchronous scoring" means and what it could not say before card 92.
 instructionLifecycle
-	.on(transactionCleared, transactionFlagged)
+	.on(transactionVerdictSchema)
 	.issues(scoreInstruction, submitPayment);
 // Accounts freezes when a case opens.
 accountServicing.consumes(fraudCaseOpened, {
@@ -1928,7 +1942,14 @@ cardsBC
 	})
 	.on(transactionFlagged)
 	.issues(blockCard);
-fraudApp.consumes(cardAuthorised, { pattern: "anti-corruption-layer" });
+// Post-authorisation monitoring: card authorisations are part of the history
+// the scorer reads, translated at Fraud's boundary into its own words. Nothing
+// reacts to one on its own, and `ScoreTransaction` is the part of Fraud they
+// feed (`subscription-backed`).
+fraudApp.consumes(cardAuthorised, {
+	pattern: "anti-corruption-layer",
+	by: [scoreTransaction],
+});
 // DISCOVERY: Accounts Team lead. "Our balance is ledger balance less pending
 // card authorisations": Accounts must hear every authorisation to hold it.
 accountServicing.consumes(cardAuthorised, { pattern: "anti-corruption-layer" });
@@ -2401,7 +2422,14 @@ decisioningApp.consumes(getCustomer, {
 // ApplicationSubmitted's schema is named "What decisioning receives" and the
 // event says "decisioning runs". Without this consumption the partnership had
 // traffic one way only, and a partnership is a two-way dependency.
-decisioningApp.consumes(applicationSubmitted, { pattern: "conformist" });
+// `Decide` is where a submitted application arrives: Lending's policy sends it
+// through RequestDecision, and that operation is the part of Decisioning the
+// fact is for. Nothing here reacts to the event on its own
+// (`subscription-backed`).
+decisioningApp.consumes(applicationSubmitted, {
+	pattern: "conformist",
+	by: [decide],
+});
 const requestDecision = lendingApp.provides("RequestDecision", {
 	description: "Send a submitted application to Credit Decisioning",
 	type: "operation",
@@ -2521,10 +2549,10 @@ const reportingApp = reportingBC.addService("ReportingApp", {
 reportingApp.consumes(entryPosted, { pattern: "conformist" });
 reportingApp.consumes(accountOpened, { pattern: "conformist" });
 reportingApp.consumes(loanDisbursed, { pattern: "conformist" });
-reportingBC
+const accumulateOnPosting = reportingBC
 	.addPolicy("Accumulate on posting", {
 		description:
-			"Ledger postings, account openings and disbursements each add to a line as they happen",
+			"Ledger postings, account openings and disbursements each add to a line as they happen, and Sovereign's nightly batch adds the savings movements",
 	})
 	.on(entryPosted, accountOpened, loanDisbursed)
 	.issues(accumulateLine);
@@ -2713,9 +2741,16 @@ ledgerBC
 	})
 	.on(nightlyBatchCompleted)
 	.issues(importBatch);
+// DISCOVERY: Finance Systems lead, "we accumulate lines from ledger postings,
+// account openings and loan disbursements as they happen, and from Sovereign's
+// batch for savings". The fourth event was consumed and never reacted to, so
+// the model said Reporting depended on the batch and never what it did with it
+// (`subscription-backed`, card 92). It is written here because the batch event
+// is declared in this section.
 reportingApp.consumes(nightlyBatchCompleted, {
 	pattern: "anti-corruption-layer",
 });
+accumulateOnPosting.on(nightlyBatchCompleted);
 
 /* =======================
    IDENTITY & ACCESS

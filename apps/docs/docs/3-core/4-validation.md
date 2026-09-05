@@ -16,8 +16,8 @@ severity, a rule id, a message and the ref of the element concerned.
 | `cross-context-relation` | error | a relation never crosses a bounded context; the source holds the other entity's identity instead |
 | `identifies-entity` | error | an attribute's `identifies` names an entity of this workspace, root or child, or a bounded context marked `external`; a child is reached through its own root, so the dependency is on the aggregate that root leads, and an external context is named when the id belongs to a system whose entities are not ours to state |
 | `root-identity` | error | an aggregate's root entity declares at least one identity attribute |
-| `entity-identity` | warning | every other entity in an aggregate declares at least one identity attribute; without one it is a value object |
-| `value-object-shape` | error | a value object declares no identity attribute and includes nothing |
+| `entity-identity` | warning | every other entity in an aggregate declares at least one identity attribute; without one it is a value object. A big ball of mud is exempt, as it is from `aggregate-root` and `root-identity` |
+| `value-object-shape` | error | a value object declares no identity attribute, and its relations `uses` other value objects: it includes nothing, references nothing and reaches no entity, because a value is a value of something and nothing is reached through it |
 | `identity-not-optional` | error | an identity attribute is not marked `optional`; an identity that may be missing cannot say which instance a reference means |
 | `specialisation-in-boundary` | error | an entity is a kind of an entity of its own aggregate; a value object is a kind of one its own context declares, or one it borrows through a shared kernel or as a conformist of the context that owns it |
 | `specialisation-cycle` | error | no chain of "is a kind of" returns to where it started |
@@ -28,11 +28,11 @@ severity, a rule id, a message and the ref of the element concerned.
 | `relation-for-resolves` | error | a relation's `for` names an attribute of the entity or value object that declares the relation; an attribute inherited from what it is a kind of counts as its own |
 | `attribute-one-shape` | error | an attribute is typed by a value object or by a schema, never by both, and only a schema's attribute names a schema: a payload shape belongs at the boundary, so an entity or value object names a value object |
 | `invariant-in-value-object` | error | every element a value object's invariant constrains is one of that value object's own attributes, or the value object itself: a value's rule holds by construction and reaches nothing outside the value |
-| `invariant-in-aggregate` | error | every element an invariant constrains is inside the invariant's own aggregate — an entity, an attribute or one of its consumables — or is a value object of its context, or one borrowed from another context that something in the aggregate holds |
+| `invariant-in-aggregate` | error | every element an invariant constrains is inside the invariant's own aggregate — an entity, an attribute or one of its consumables — or is a value object of its context, or one borrowed from another context that something in the aggregate holds, or is an operation of a service of its own context that guards it. Naming an operation says which of two things the rule is: a guard checked when that operation runs, rather than a rule true again after every save |
 | `invariant-in-context` | error | every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, one of its value objects or a borrowed one its aggregates hold, or one of its operations |
 | `context-invariant-guarded` | error | a context's invariant names at least one operation of that context as a guard |
 | `relationship-roles-backed` | warning | a directed relationship's declared roles are carried by real crossings, and a crossing consumption's role is declared on the relationship; a crossing consumable's `schema` backs a `published-language` role |
-| `relationship-declared` | warning | two contexts joined by a crossing — a consumption of the other's consumable, a policy or process reacting to the other's event, or an identity naming the other's entity — declare a relationship in that direction |
+| `relationship-declared` | warning | two contexts joined by a crossing — a consumption of the other's consumable, a policy or process reacting to the other's event or waiting on an answer of its operations, an identity naming the other's entity, or an attribute typed by one of its value objects — declare a relationship in that direction |
 | `relationship-duplicate` | error | a pair of contexts declares at most one relationship of each type and direction; a symmetric type has no direction, so either order counts as the same one |
 | `relationship-cycle` | warning | the directed relationships whose traffic is calls form no cycle; a step carried only by events is choreography, and a step whose downstream declares an anti-corruption layer translates at its edge, so neither counts (decision 20). The message lists the ring's contexts in order |
 | `partnership-backed` | warning | two contexts declaring a partnership exchange consumables, or events a policy reacts to, in at least one direction |
@@ -45,8 +45,10 @@ severity, a rule id, a message and the ref of the element concerned.
 | `internal-consumable` | error / warning | an internal consumable is not consumed, reacted to or issued from another context |
 | `consumption-once` | error | a consumer consumes a given consumable once, or several times with each of those consumptions naming callers in `by` that no other of them names; the ref of a repeated pair is the pair plus its first caller, so unnamed or shared callers leave two consumptions with one ref and only the first can be reached |
 | `consumption-by-resolves` | error | a consumption's `by` names the consumer's own operations, or policies of the consumer's context; a consumption belongs to the consumer, so what makes it is the consumer's own |
+| `consumption-by-operation` | error | a consumption of an operation names operations in its `by`; a policy or a process may be named only on a consumption of an event, because a reactor issues a local operation and that operation makes the call |
 | `consumption-by-required` | warning | a consumption of another context's operation names in `by` which of the consumer's own operations makes the call, unless the consumer provides fewer than two and there is nothing to choose between; `by` is the only causal link the model has across a boundary |
 | `subscription-consumed` | error | a policy or process whose `on`, `starts` or `ends` names another context's event has a consumption of that event somewhere in its own context; a subscription is an integration and belongs on both maps |
+| `subscription-backed` | warning | a consumed event is reacted to by a policy or a process of the consumer's context, or the consumption names in `by` which of the consumer's parts it is for |
 | `process-in-context` | error | a process issues operations of its own bounded context; what starts it, what it waits for and what ends it may be another context's events |
 | `process-has-ends` | warning | a process names at least one event that completes an instance |
 | `process-starts` | error | a process names at least one event that begins an instance |
@@ -54,10 +56,12 @@ severity, a rule id, a message and the ref of the element concerned.
 | `aggregate-not-public` | error | an aggregate's operations declare no upstream role and are consumed only inside their own context |
 | `aggregate-consumes-inside` | error | an aggregate consumes only consumables of its own bounded context; a foreign operation or event is consumed by an application service or a policy |
 | `domain-service-internal` | error | a domain service's operations declare no upstream role and are consumed only inside their own context |
+| `domain-service-consumes-inside` | error | a domain service consumes only consumables of its own bounded context; the application service makes the call and hands it what it needs |
+| `valueobject-context` | error | an attribute types itself by a value object of its own bounded context, of one it shares a kernel with, or of an upstream it has declared itself a `conformist` of |
 | `schema-context` | error | a schema named by a consumable's payload, by its `returns` or by a nested attribute belongs to the naming element's own context, to one it shares a kernel with, or to an upstream it has declared itself a `conformist` of |
 | `returns-on-operation` | error | only an operation declares `returns`; an event has no caller to answer |
 | `rejects-on-operation` | error | only an operation declares `rejects`; an event is a fact that already happened, so it has nothing left to refuse |
-| `consumable-kind` | error | policies react to events and issue operations; only operations raise, and only events |
+| `consumable-kind` | error | policies and processes react to events, and to the answers the operations their context calls come back with; they issue operations, and only operations raise, and only events |
 | `raises-in-context` | error | an operation raises only events its own bounded context provides; a context publishes its own facts |
 | `raises-restated` | warning | an operation does not restate under `raises` an event an operation it calls through a consumption's `by` already raises; the chain carries it, and a copy can drift |
 | `event-unraised` | warning | every event of a context we model is raised by one of that context's own operations |

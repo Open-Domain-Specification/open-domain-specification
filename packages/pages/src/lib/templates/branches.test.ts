@@ -1,5 +1,6 @@
 import {
 	aggregateRef,
+	policyRef,
 	serviceRef,
 	Workspace,
 } from "@open-domain-specification/core";
@@ -98,6 +99,42 @@ function tacticalEdges(): Model {
 			internal: true,
 		})
 		.raises(first, second);
+
+	// A policy that waits on an answer rather than an event: the shape an
+	// operation this context calls comes back with (decision 23). Two of them,
+	// because the provider column has two readings — the operation that answers,
+	// and nothing at all where the model names a shape nothing answers with,
+	// which is what a reader sees while a model is half-written.
+	const answering = workspace.addBoundedContext("Answering Context", {
+		description: "Answers the edge context's one call.",
+	});
+	const answeringApi = answering.addService("Answering API", {
+		description: "The boundary the edge context asks through.",
+		type: "application",
+	});
+	const verdict = answering.addSchema("Verdict", {
+		description: "What the call comes back with.",
+	});
+	const unanswered = answering.addSchema("Unanswered Shape", {
+		description: "A shape no operation the edge context calls answers with.",
+	});
+	const score = answeringApi.addConsumable("Score", {
+		type: "operation",
+		description: "Answers its caller with a verdict.",
+		pattern: "open-host-service",
+		returns: verdict,
+	});
+	const askForScore = service.addConsumable("Ask For Score", {
+		type: "operation",
+		description: "The edge context's own step: it makes the call.",
+		internal: true,
+	});
+	service.consumes(score, { pattern: "conformist", by: [askForScore] });
+	bc.addPolicy("Act on the verdict", {
+		description: "Waits for the answer to come back, and acts on it.",
+	})
+		.on(verdict, unanswered)
+		.issues(askForScore);
 
 	// Two words of the language name the same element, so the terms list needs
 	// its separator.
@@ -259,5 +296,31 @@ describe("the tactical templates on the shapes no shared fixture carries", () =>
 			.filter((t) => t.textContent === "Consumed by")
 			.map((t) => t.nextElementSibling?.textContent ?? "");
 		expect(consumed.some((t) => t.split(",").length > 1)).toBe(true);
+	});
+
+	it("PolicyPage: an answer is a row of its own, naming the operation it comes back from", () => {
+		const container = draw(
+			policyRef("edge_context", "act_on_the_verdict").$ref,
+		);
+		const rows = [...container.querySelectorAll("#when tbody tr")].map((r) =>
+			[...r.querySelectorAll("td")].map((c) => c.textContent?.trim()),
+		);
+		// The shape, marked as an answer, with the operation that answers with it
+		// in the provider column and the context that owns the shape beside it.
+		expect(rows[0]).toEqual([
+			"Verdict",
+			"answer",
+			"Score",
+			"Answering Context",
+			"What the call comes back with.",
+		]);
+		// And the half-written case: a shape nothing this context calls answers
+		// with has no operation to name, which the row says rather than leaving
+		// the cell blank.
+		expect(rows[1]?.slice(0, 3)).toEqual([
+			"Unanswered Shape",
+			"answer",
+			"nothing",
+		]);
 	});
 });

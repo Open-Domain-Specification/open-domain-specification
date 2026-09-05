@@ -5,7 +5,13 @@ import {
 	type StrategicIntent,
 } from "./evidence";
 import { attributeOwnersIn, identityCrossings } from "./identity-crossings";
-import { ReactionChain, type Reactor, reachedEvents } from "./reaction-walk";
+import {
+	answersOf,
+	operationsCalledBy,
+	ReactionChain,
+	type Reactor,
+	reachedEvents,
+} from "./reaction-walk";
 import type { UpstreamRole } from "./schema";
 import {
 	Aggregate,
@@ -25,6 +31,7 @@ import {
 	isDirectedRelationshipType,
 	Policy,
 	Process,
+	type ReactionTrigger,
 	type Service,
 	ValueObject,
 	type Workspace,
@@ -125,15 +132,47 @@ function* processesOf(workspace: Workspace): Iterable<Process> {
 }
 
 /**
- * The events a policy or a process subscribes to. A process listens at three
+ * Everything a policy or a process waits for. A process listens at three
  * points in a lifecycle rather than one, and every rule that reads a policy's
- * `on` — separate ways, internal consumables, the kind of each consumable —
- * means the same thing by all three (decision 23).
+ * `on` — separate ways, internal consumables, the kind of each one — means the
+ * same thing by all three (decision 23).
  */
-function subscribedEvents(reactor: Policy | Process): Consumable[] {
+function subscribedTriggers(reactor: Policy | Process): ReactionTrigger[] {
 	return reactor instanceof Process
 		? [...reactor.startEvents, ...reactor.events, ...reactor.endEvents]
 		: reactor.events;
+}
+
+/**
+ * The consumables a policy or a process waits for, which is what every rule
+ * about a subscription is about: an event is published by a provider in a
+ * context, and that is what makes it a crossing, an internal consumable or the
+ * wrong kind of thing to react to. An answer is none of those — it is a shape,
+ * and what carries it is the operation the reactor's own context already
+ * consumes — so it is left to `consumable-kind`, which is where the model says
+ * what an answer has to be (decision 23, second amendment).
+ */
+function subscribedEvents(reactor: Policy | Process): Consumable[] {
+	return subscribedTriggers(reactor).filter(
+		(it): it is Consumable => !(it instanceof DataSchema),
+	);
+}
+
+/**
+ * Every schema the operations one context consumes answer with: what it
+ * returns and what it rejects with, on every consumption that context declares
+ * (decisions 13 and 25).
+ *
+ * This is the whole of what a reaction in that context may wait on as an
+ * answer. A context hears an answer because it made the call, so the call has
+ * to be one it makes: an answer from an operation nobody here consumes is a
+ * shape this context never sees come back.
+ */
+function answersAwaitedIn(bc: BoundedContext): Set<DataSchema> {
+	const answers = new Set<DataSchema>();
+	for (const operation of operationsCalledBy(bc))
+		for (const answer of answersOf(operation)) answers.add(answer);
+	return answers;
 }
 
 /** Every policy and process of a context, in declaration order. */
@@ -187,7 +226,11 @@ function reachedAsRoot(member: Entity | ValueObject): boolean {
  * A relation into another aggregate may only reference that aggregate's root,
  * and may not include or use its members directly. A value object at either
  * end crosses no aggregate boundary: it belongs to the context, and every
- * aggregate of that context may hold one.
+ * aggregate of that context may hold one. That left a gap while a value object
+ * could relate to an entity at all — a value reaching into another aggregate's
+ * insides was in no aggregate, so this rule never saw it — and the gap is
+ * closed where it belongs, on the shape of a value object rather than on the
+ * aggregate boundary (`value-object-shape`, card 92).
  *
  * A kind of the root counts as the root at the target end: an instance of it
  * is an instance of the root, reached through the same identity, so a
@@ -339,10 +382,15 @@ const rootIdentity: Rule = (workspace) => {
  *
  * A kind is identified by whatever it is a kind of: an inherited identity is
  * the subtype's, and repeating it would be `specialisation-redeclares`.
+ *
+ * A big ball of mud is exempt, as it is from `aggregate-root`, `root-identity`
+ * and `event-unraised`: nobody can read a forty-year-old system well enough to
+ * say which column tells one of its rows from another, and asking only invites
+ * an invented key (see {@link knowableContexts}).
  */
 const entityIdentity: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
-	for (const aggregate of aggregatesOf(workspace)) {
+	for (const aggregate of knowableAggregatesOf(workspace)) {
 		for (const entity of aggregate.entities.values()) {
 			if (entity.root) continue;
 			const identified = entity.allAttributes.some((a) => a.identity);
@@ -360,7 +408,18 @@ const entityIdentity: Rule = (workspace) => {
 
 /**
  * A value object is compared by its values, so it carries no identity of its
- * own and owns no lifecycle: no identity attribute, and no `includes`.
+ * own, owns no lifecycle and reaches no entity: no identity attribute, and its
+ * relations `uses` other values.
+ *
+ * The entity end is what `cross-aggregate-reference` cannot judge. That rule
+ * reads the aggregate at each end of a relation and a value object is in none —
+ * it belongs to the whole context (decision 16) — so a value reaching into
+ * another aggregate's insides went unreported while the same relation from an
+ * entity was refused. It is refused here instead, and for a reason of its own
+ * rather than the aggregate boundary's: a value is a value of something, and
+ * nothing is reached through it. What a value holds of an entity is that
+ * entity's id, as an attribute with `identifies`, which is how anything crosses
+ * to an entity it does not own (decision 14).
  */
 const valueObjectShape: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -376,11 +435,23 @@ const valueObjectShape: Rule = (workspace) => {
 				});
 			}
 			for (const relation of vo.relations) {
-				if (relation.relation !== "includes") continue;
+				if (relation.target instanceof Entity) {
+					diagnostics.push({
+						severity: "error",
+						rule: "value-object-shape",
+						message: `Value object "${vo.name}" ${relation.relation} entity "${relation.target.name}"; a value is a value of something and nothing is reached through it, so a value object relates only to other values — hold "${relation.target.name}"'s id as an attribute with identifies instead`,
+						ref: vo.ref,
+					});
+					continue;
+				}
+				if (relation.relation === "uses") continue;
 				diagnostics.push({
 					severity: "error",
 					rule: "value-object-shape",
-					message: `Value object "${vo.name}" includes "${relation.target.name}"; only an entity owns the lifecycle of what it includes, so "${vo.name}" uses "${relation.target.name}" instead`,
+					message:
+						relation.relation === "includes"
+							? `Value object "${vo.name}" includes "${relation.target.name}"; only an entity owns the lifecycle of what it includes, so "${vo.name}" uses "${relation.target.name}" instead`
+							: `Value object "${vo.name}" references "${relation.target.name}"; a reference holds another aggregate's identity and a value has none, so "${vo.name}" uses "${relation.target.name}" instead`,
 					ref: vo.ref,
 				});
 			}
@@ -1027,13 +1098,21 @@ const invariantInValueObject: Rule = (workspace) => {
 };
 
 /**
- * An aggregate's invariant holds inside its boundary on every save, so
- * everything it constrains has to be inside that aggregate — or be a value
- * object of the aggregate's own context, which is saved as part of whichever
- * aggregate holds one (decision 16). An operation of the same aggregate is
- * inside it too: a transition rule is a rule about what that operation may do,
- * and naming it is how the model says which change the rule guards
- * (decision 19).
+ * An aggregate's invariant holds inside its boundary, so everything it
+ * constrains has to be inside that aggregate — or be a value object of the
+ * aggregate's own context, which is saved as part of whichever aggregate holds
+ * one (decision 16). An operation of the same aggregate is inside it too: a
+ * transition rule is a rule about what that operation may do, and naming it is
+ * how the model says which change the rule guards (decision 19).
+ *
+ * Naming one changes what the rule promises, which is why the rule's text and
+ * the invariant's page say so. An invariant that names no operation is true
+ * again every time the aggregate is saved. One that names an operation is a
+ * guard on it: a precondition checked when that operation runs, which nothing
+ * re-establishes afterwards, because what it was checked against — a balance, an
+ * entitlement, the status it was in — may have moved on by the next save
+ * (decision 27's third note). The boundary is the same for both; the promise is
+ * not.
  *
  * A value object borrowed from another context is inside the boundary as well,
  * as long as an entity or a value inside the aggregate holds one: what is
@@ -1224,6 +1303,38 @@ function mayBorrowFrom(
 	);
 }
 
+/** One attribute typing itself by a value object another context declares. */
+type ValueObjectBorrowing = {
+	/** The attribute that names the other context's value. */
+	attribute: Attribute;
+	/** What it names: the value object, and through it the context that owns it. */
+	valueobject: ValueObject;
+	/** The context the attribute is declared in, and so the borrower. */
+	from: BoundedContext;
+};
+
+/**
+ * Every attribute in the workspace typed by a value object of another context.
+ *
+ * A borrowed value is the same crossing a borrowed schema is: this context's
+ * model is written in a word another context owns, and it breaks when that
+ * context redefines it. Both ends are read the same way whatever holds the
+ * attribute — an entity, a value, a payload schema — because what is borrowed
+ * is the definition rather than an instance, and a payload naming a foreign
+ * value depends on it exactly as an entity does (decision 16).
+ */
+function* valueObjectBorrowings(
+	workspace: Workspace,
+): Iterable<ValueObjectBorrowing> {
+	for (const { owner, context } of attributeOwnersOf(workspace)) {
+		for (const attribute of owner.attributes.values()) {
+			const valueobject = attribute.valueobject;
+			if (!valueobject || valueobject.boundedcontext === context) continue;
+			yield { attribute, valueobject, from: context };
+		}
+	}
+}
+
 /** Whether the two contexts meet as equals, as partners or over a shared kernel. */
 function symmetricallyRelated(
 	workspace: Workspace,
@@ -1269,12 +1380,14 @@ function relationshipJoins(
  *
  * Decision 03 made relationships explicit and decision 08 promised this rule.
  * A crossing is a consumption of another context's consumable, a policy or a
- * process reacting to another context's event, or — since decision 14 — an
- * identity an entity or a value object holds that names another context's
- * entity: the three ways the model records that one context depends on another.
- * An identity echoed in a payload is not one of them: the schema carries it for
- * its reader and owes the other context nothing (decision 14, second
- * amendment).
+ * process reacting to another context's event or to the answer one of its
+ * operations comes back with, an identity an entity or a value object holds
+ * that names another context's entity (decision 14), or an attribute typed by
+ * another context's value object (decision 16): the ways the model records
+ * that one context depends on another. An identity echoed in a payload is not
+ * one of them: the schema carries it for its reader and owes the other context
+ * nothing (decision 14, second amendment). A borrowed value object is, because
+ * what is borrowed there is the definition and not an instance.
  *
  * A subscription counts for the same reason `separate-ways` and
  * `partnership-backed` count one; the coupling is real whether it is written as
@@ -1335,20 +1448,39 @@ const relationshipDeclared: Rule = (workspace) => {
 			crossing.attribute.ref,
 		);
 	}
-	// A policy or a process reacting to another context's event is the same
+	for (const { attribute, valueobject, from } of valueObjectBorrowings(
+		workspace,
+	)) {
+		const owner = valueobject.boundedcontext;
+		note(
+			owner,
+			from,
+			`"${from.name}" types "${attribute.owner.name}"'s "${attribute.name}" by "${valueobject.name}" from "${owner.name}", but no relationship says how "${owner.name}" and "${from.name}" stand to each other`,
+			attribute.ref,
+		);
+	}
+	// A policy or a process reacting to another context's event, or waiting on
+	// the answer another context's operation comes back with, is the same
 	// dependency as a consumption — `separate-ways` and `partnership-backed`
 	// both already count it — so it wants a relationship for the same reason.
 	// Last, because it is the crossing a reader is least likely to have in mind
 	// and a pair joined by something more concrete is better named by that.
 	for (const bc of workspace.boundedcontexts.values()) {
 		for (const reactor of reactorsOf(bc)) {
-			for (const event of subscribedEvents(reactor)) {
-				const upstream = event.provider.boundedcontext;
+			for (const trigger of subscribedTriggers(reactor)) {
+				const upstream =
+					trigger instanceof DataSchema
+						? trigger.boundedcontext
+						: trigger.provider.boundedcontext;
 				if (upstream === bc) continue;
+				const what =
+					trigger instanceof DataSchema
+						? `waits for "${trigger.name}" to come back from`
+						: `reacts to "${trigger.name}" from`;
 				note(
 					upstream,
 					bc,
-					`${reactorLabel(reactor)} "${reactor.name}" in "${bc.name}" reacts to "${event.name}" from "${upstream.name}", but no relationship says how "${upstream.name}" and "${bc.name}" stand to each other`,
+					`${reactorLabel(reactor)} "${reactor.name}" in "${bc.name}" ${what} "${upstream.name}", but no relationship says how "${upstream.name}" and "${bc.name}" stand to each other`,
 					reactor.ref,
 				);
 			}
@@ -2002,6 +2134,41 @@ const consumptionByResolves: Rule = (workspace) => {
 };
 
 /**
+ * What makes a call is an operation.
+ *
+ * A policy or a process is allowed in a `by` because reacting to a published
+ * fact is the commonest reason a consumption exists (decision 21): a
+ * subscription is taken in by the reactor itself, and there is nothing between
+ * the fact arriving and the reaction. A call is not like that. A reactor issues
+ * an operation of its own context and that operation makes the call, which is
+ * decision 17's whole shape and the step the reaction walk and the flow map
+ * read the boundary at. Naming the reactor instead skips the step: the model
+ * says a policy reached across a boundary, no local operation exists to be
+ * drawn, and the chain stops where the caller should have been. Petstore relied
+ * on it for a card and a half.
+ *
+ * An error, because the two are not two ways of saying one thing: the reader is
+ * told about a call by a thing that makes none.
+ */
+const consumptionByOperation: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const consumption of consumptionsOf(workspace)) {
+		const { consumer, consumable } = consumption;
+		if (consumable.type !== "operation") continue;
+		for (const caller of consumption.by) {
+			if (caller instanceof Consumable) continue;
+			diagnostics.push({
+				severity: "error",
+				rule: "consumption-by-operation",
+				message: `"${consumer.name}" says its consumption of "${consumable.name}" is made by ${reactorLabel(caller).toLowerCase()} "${caller.name}"; a ${reactorLabel(caller).toLowerCase()} issues an operation of its own context and that operation makes the call, so name that operation here`,
+				ref: consumption.ref,
+			});
+		}
+	}
+	return diagnostics;
+};
+
+/**
  * A cross-context consumption of an operation says which of the consumer's own
  * operations makes the call, unless the consumer has only one and there is
  * nothing to choose between.
@@ -2084,6 +2251,48 @@ const subscriptionConsumed: Rule = (workspace) => {
 				});
 			}
 		}
+	}
+	return diagnostics;
+};
+
+/**
+ * A consumed event has something under it: a policy or a process of the
+ * consumer's context that reacts to it, or a `by` saying which of the
+ * consumer's own parts the subscription is for.
+ *
+ * `subscription-consumed` asks the other half of the question — a reactor's
+ * foreign event needs a consumption — and between them the two say that a
+ * subscription and its reaction are one fact written from two sides. A
+ * consumption with neither is a claim with nothing under it: the model says
+ * this context takes that fact in, and nothing in it does anything when the
+ * fact arrives. Usually the reaction was never written down; sometimes the
+ * dependency is stale and the honest edit is to delete it. Either way the
+ * consumable map draws an edge a reader cannot follow anywhere.
+ *
+ * A warning rather than an error, because the subscription may be real and the
+ * reaction simply not modelled yet, and because `by` clears it: a consumer that
+ * says which of its operations reads the feed has said what is under it, even
+ * where no policy reacts (a projection updated by an operation, a report that
+ * accumulates).
+ */
+const subscriptionBacked: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const bc of modelledContexts(workspace)) {
+		const reacted = new Set<ReactionTrigger>();
+		for (const reactor of reactorsOf(bc))
+			for (const trigger of subscribedTriggers(reactor)) reacted.add(trigger);
+		for (const member of [...bc.aggregates.values(), ...bc.services.values()])
+			for (const consumption of member.consumptions) {
+				const { consumable } = consumption;
+				if (consumable.type !== "event") continue;
+				if (reacted.has(consumable) || consumption.by.length > 0) continue;
+				diagnostics.push({
+					severity: "warning",
+					rule: "subscription-backed",
+					message: `"${member.name}" consumes "${consumable.name}" from "${consumable.provider.boundedcontext.name}", but nothing in "${bc.name}" reacts to it and the consumption names no caller; a subscription nothing acts on is a dependency with nothing under it`,
+					ref: consumption.ref,
+				});
+			}
 	}
 	return diagnostics;
 };
@@ -2251,6 +2460,44 @@ const aggregateConsumesInside: Rule = (workspace) => {
 	return diagnostics;
 };
 
+/**
+ * A domain service consumes only its own context's consumables, for the same
+ * reason an aggregate does.
+ *
+ * A domain service is the inside of the model: it holds domain logic that
+ * belongs to no single aggregate, and decision 17 keeps it internal in the
+ * other direction already — its operations carry no upstream role and nobody
+ * outside may call them. The outbound half is the same principle. Reaching
+ * across a boundary is translation, failure and waiting on somebody else's
+ * availability, and a rule that has to do that is not the bank's own logic
+ * about its own model; the application service makes the call and hands the
+ * domain service what it needs, or a policy reacts to the foreign fact and
+ * issues an operation of this context (decision 17's second amendment).
+ */
+const domainServiceConsumesInside: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const bc of modelledContexts(workspace)) {
+		for (const service of bc.services.values()) {
+			if (service.type !== "domain") continue;
+			for (const { consumable } of service.consumptions) {
+				const owner = consumable.provider.boundedcontext;
+				if (owner === bc) continue;
+				const instead =
+					consumable.type === "event"
+						? `let an application service of "${bc.name}" take it in, with the policy or process that reacts to it named in \`by\``
+						: `let an application service of "${bc.name}" make the call`;
+				diagnostics.push({
+					severity: "error",
+					rule: "domain-service-consumes-inside",
+					message: `Domain service "${service.name}" consumes "${consumable.name}" from "${owner.name}"; a domain service is the inside of the model, not a client, so ${instead} and hand "${service.name}" what it needs`,
+					ref: service.ref,
+				});
+			}
+		}
+	}
+	return diagnostics;
+};
+
 /** A domain service is internal logic, so its operations stay inside too. */
 const domainServiceInternal: Rule = (workspace) =>
 	Array.from(workspace.boundedcontexts.values()).flatMap((bc) =>
@@ -2264,6 +2511,37 @@ const domainServiceInternal: Rule = (workspace) =>
 				),
 			),
 	);
+
+/**
+ * A value object is its own context's, and an attribute types itself by
+ * another context's value only where the model has said the two share it.
+ *
+ * This is the boundary decision 16 is about: a value object is part of a
+ * bounded context's ubiquitous language, so an insurer's Claims typing a
+ * reserve by Policy Admin's `Money` has written its own model in a word
+ * somebody else owns and may redefine. The two exceptions are the two
+ * `schema-context` makes, read with the same predicate: a shared kernel, where
+ * both contexts keep part of one model between them, and a conformist
+ * downstream, which takes the upstream's model as it stands (decisions 16 and
+ * 03). The record claimed the boundary was sealed for five days while nothing
+ * read `attribute.valueobject` at all; Prowl's third review found it.
+ */
+const valueObjectContext: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const { attribute, valueobject, from } of valueObjectBorrowings(
+		workspace,
+	)) {
+		const owner = valueobject.boundedcontext;
+		if (mayBorrowFrom(workspace, from, owner)) continue;
+		diagnostics.push({
+			severity: "error",
+			rule: "valueobject-context",
+			message: `"${attribute.owner.name}" in "${from.name}" types attribute "${attribute.name}" by value object "${valueobject.name}" from "${owner.name}"; a value object is part of one context's language, so borrowing it wants a shared kernel with "${owner.name}" or a conformist relationship toward it`,
+			ref: attribute.ref,
+		});
+	}
+	return diagnostics;
+};
 
 /**
  * A payload shape is its own context's, wherever it is named: on a consumable
@@ -2377,8 +2655,17 @@ const rejectsOnOperation: Rule = (workspace) => {
 };
 
 /**
- * Policies and processes react to events and issue operations; operations
+ * Policies and processes react to events, and to the answers the operations
+ * their context calls come back with; they issue operations, and operations
  * raise events.
+ *
+ * An answer is a schema an operation returns or rejects with, and the schema
+ * has to be one of those: waiting on a payload nobody answers with is waiting
+ * for something that never arrives. The operation also has to be one the
+ * reactor's own context consumes, because a context hears an answer by having
+ * made the call (see {@link answersAwaitedIn}). What the model does not check
+ * is which branch the reactor takes on it; that is the code's, as every other
+ * condition in a process is (decisions 15 and 23).
  */
 const consumableKinds: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -2386,7 +2673,19 @@ const consumableKinds: Rule = (workspace) => {
 		// An external context's policies and processes are refused outright by
 		// external-is-boundary; there is nothing here to say about them.
 		const reactors = bc.external ? [] : reactorsOf(bc);
+		const answers: Set<DataSchema> = reactors.length
+			? answersAwaitedIn(bc)
+			: new Set();
 		for (const reactor of reactors) {
+			for (const trigger of subscribedTriggers(reactor)) {
+				if (!(trigger instanceof DataSchema) || answers.has(trigger)) continue;
+				diagnostics.push({
+					severity: "error",
+					rule: "consumable-kind",
+					message: `${reactorLabel(reactor)} "${reactor.name}" waits for "${trigger.name}", which no operation "${bc.name}" consumes answers with; name the operation that returns or rejects with "${trigger.name}", and consume it, or react to an event instead`,
+					ref: reactor.ref,
+				});
+			}
 			for (const c of subscribedEvents(reactor).filter(
 				(c) => c.type !== "event",
 			)) {
@@ -2819,18 +3118,18 @@ const RULES: CataloguedRule[] = [
 		rule: "entity-identity",
 		severities: ["warning"],
 		summary:
-			"Every non-root entity in an aggregate declares at least one identity attribute.",
-		why: "An entity is precisely the thing you can still tell apart from another one holding exactly the same values. Without an identity attribute nothing does the telling apart, so the element is a value object that has been filed under the wrong heading, and readers will expect a lifecycle and a history it does not have. A kind counts as identified by what it is a kind of, since it has that entity's attributes as its own.",
-		fix: "Give the entity the attribute the business identifies it by — the line number, the reference — with identity: true, or make it a value object, which is usually what an entity with nothing to identify really was.",
+			"Every non-root entity of a context whose insides are knowable declares at least one identity attribute.",
+		why: "An entity is precisely the thing you can still tell apart from another one holding exactly the same values. Without an identity attribute nothing does the telling apart, so the element is a value object that has been filed under the wrong heading, and readers will expect a lifecycle and a history it does not have. A kind counts as identified by what it is a kind of, since it has that entity's attributes as its own. A big ball of mud is exempt, as it is from aggregate-root and root-identity: nobody can read a legacy system well enough to say which of its columns tells one row from another, and asking only invites an invented key (decision 28).",
+		fix: "Give the entity the attribute the business identifies it by — the line number, the reference — with identity: true, or make it a value object, which is usually what an entity with nothing to identify really was. If the truth is that nobody knows, and the context really is one nobody can read, say so with bigBallOfMud: true rather than guessing.",
 		check: entityIdentity,
 	},
 	{
 		rule: "value-object-shape",
 		severities: ["error"],
 		summary:
-			"A value object declares no identity attribute and includes nothing.",
-		why: "Two value objects with the same values are the same value: that is what makes them safe to copy, compare and replace. An identity attribute contradicts that, and includes claims a lifecycle a value object does not own.",
-		fix: "Drop identity: true from the attribute, or promote the element to an entity if it really has a life of its own; change an includes on a value object to uses.",
+			"A value object declares no identity attribute, and its relations use other value objects: it includes nothing, references nothing and reaches no entity.",
+		why: "Two value objects with the same values are the same value: that is what makes them safe to copy, compare and replace. An identity attribute contradicts that; includes claims a lifecycle a value object does not own; and a reference holds another aggregate's identity, which a value has none of. Reaching an entity is the one cross-aggregate-reference cannot see — that rule reads the aggregate at each end and a value object sits in none, since it belongs to the whole context — so a value pointing into another aggregate's insides went unreported while the same relation from an entity was refused. The reason here is the value's own: a value is a value of something, and nothing is reached through it.",
+		fix: "Drop identity: true from the attribute, or promote the element to an entity if it really has a life of its own; change an includes or a references on a value object to uses; and where the target is an entity, hold its id as an attribute with identifies instead of relating to it.",
 		check: valueObjectShape,
 	},
 	{
@@ -2925,7 +3224,7 @@ const RULES: CataloguedRule[] = [
 		severities: ["error"],
 		summary:
 			"An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object of its context, or one borrowed from elsewhere that something in the aggregate holds, or is an operation of a service of its own context, application or domain, that guards it.",
-		why: "This is the rule the aggregate itself upholds: it is checked as the aggregate is saved, and it is true again the moment the save returns. Something outside the boundary can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not. Operations are the other exception: a rule about a transition is a rule about the operation that makes it, and naming it says which change the rule guards. That operation is usually the aggregate's own, but a precondition — enough funds at initiation, an entitlement at playback start — is checked at the moment of the call, and decision 17 puts the public operation on the application service, so the guard may be named there instead of left in prose. A guard that has to read two aggregates before it can say yes belongs to a domain service, which is what a domain service is for, so an operation of either kind of service counts.",
+		why: "An aggregate's invariant is one of two things, and which one is said by whether it names an operation. Naming none, it is the rule the aggregate itself upholds: checked as the aggregate is saved, and true again the moment the save returns. Naming one, it is a guard on that operation — a precondition, checked when the operation runs, and not something the aggregate re-establishes on every save: enough funds at initiation, an entitlement at playback start, a status that may not go backwards. The invariant's page says which of the two it is reading, because the two promise different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts.",
 		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object from another context, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door.",
 		check: invariantInAggregate,
 	},
@@ -3074,6 +3373,15 @@ const RULES: CataloguedRule[] = [
 		check: consumptionByResolves,
 	},
 	{
+		rule: "consumption-by-operation",
+		severities: ["error"],
+		summary:
+			"A consumption of an operation names operations in its by; a policy or a process may only be named on a consumption of an event.",
+		why: "A subscription is taken in by the reactor itself, with nothing between the fact arriving and the reaction, which is why a policy or a process is allowed there. A call is not like that: a reactor issues an operation of its own context and that operation makes the call (decision 17), and that local operation is where both the flow map and the reaction walk read the boundary. A by naming the reactor skips it — no local operation exists to be drawn, and the chain stops where the caller should have been — while the model reads as though a policy had reached across a boundary itself.",
+		fix: "Add the consumer's own operation that makes the call, name it in the reactor's then, and put it in by in place of the reactor. If the reactor really does nothing but subscribe, then what it consumes is the event, not the operation.",
+		check: consumptionByOperation,
+	},
+	{
 		rule: "consumption-by-required",
 		severities: ["warning"],
 		summary:
@@ -3090,6 +3398,15 @@ const RULES: CataloguedRule[] = [
 		why: "Reacting to a neighbour's published fact is an integration, and decision 17 says a subscription is a consumption. Written only as a subscription it is nowhere else in the model: neither the context map nor the consumable map draws the dependency, no downstream role says whether the fact is translated or taken as it comes, and the rules that judge an exchange — the anti-corruption layer a big ball of mud needs, the roles a relationship claims — never see it at all.",
 		fix: "Declare the consumption on the service or aggregate that owns the reaction, which is the node providing the operations the reactor issues, and name the policy or process in its by. Give it the downstream role the reaction really has: conformist if the event is taken as published, anti-corruption-layer if something translates it. If the reactor should not depend on that context, react to an event of your own instead.",
 		check: subscriptionConsumed,
+	},
+	{
+		rule: "subscription-backed",
+		severities: ["warning"],
+		summary:
+			"A consumed event is reacted to by a policy or a process of the consumer's context, or the consumption names in by which of the consumer's parts it is for.",
+		why: "subscription-consumed asks the other half of this question, and between them the two say that a subscription and its reaction are one fact written from two sides. A consumption with neither is a claim with nothing under it: the model says this context takes that fact in, nothing in it does anything when the fact arrives, and the consumable map draws an edge a reader cannot follow anywhere. Usually the reaction was never written down; sometimes the dependency is stale.",
+		fix: "Add the policy or process that reacts to the event and the operation it issues, or name in by the consumer's own operation that reads the feed — a projection that updates, a report that accumulates. If nothing here acts on it, delete the consumption: the dependency is not real.",
+		check: subscriptionBacked,
 	},
 	{
 		rule: "process-in-context",
@@ -3144,6 +3461,15 @@ const RULES: CataloguedRule[] = [
 		check: aggregateConsumesInside,
 	},
 	{
+		rule: "domain-service-consumes-inside",
+		severities: ["error"],
+		summary:
+			"A domain service consumes only consumables of its own bounded context.",
+		why: "A domain service is the inside of the model: logic that belongs to no single aggregate, written in this context's own words. Decision 17 keeps it internal in the other direction already — nobody outside may call it — and the outbound half is the same principle. A call across a boundary is translation, failure and waiting on somebody else's availability, and logic that has to do that is not this context's own rule about its own model any more.",
+		fix: "Move the consumption to the application service that owns the use case, naming its own operation in by, and let that operation hand the domain service what it needs; for a foreign event, take it in at the application service with the policy or process that reacts to it named in by.",
+		check: domainServiceConsumesInside,
+	},
+	{
 		rule: "domain-service-internal",
 		severities: ["error"],
 		summary:
@@ -3151,6 +3477,15 @@ const RULES: CataloguedRule[] = [
 		why: "A domain service holds domain logic that belongs to no single aggregate — it is the inside of the model, the same as an aggregate. Offering it outward makes another context depend on how this one arranges its logic instead of on what it promises.",
 		fix: "Mark the domain service's operation internal: true and drop its pattern, then let the context's application service provide the public operation that consumes it.",
 		check: domainServiceInternal,
+	},
+	{
+		rule: "valueobject-context",
+		severities: ["error"],
+		summary:
+			"An attribute types itself by a value object of its own bounded context, of one it shares a kernel with, or of an upstream it has declared itself a conformist of.",
+		why: "A value object is part of a bounded context's ubiquitous language: what a Money, a PetStatus or an IBAN means is settled inside one boundary and may be resettled there. An attribute typed by another context's value writes this model in a word somebody else owns, and the day they redefine it this context changes without anybody editing it. A shared kernel is where two teams have said they keep part of one model between them and accepted the price; a conformist is a downstream that takes the upstream's model as it stands. Those are the two places the borrowing is declared, and the rule reads them exactly as schema-context does.",
+		fix: "Declare the value object in the context that uses it, in that context's own words; or declare the shared kernel if the two contexts really do keep that value between them; or, if this context takes the other's model as it stands, declare the directed relationship with conformist among its downstreamRoles.",
+		check: valueObjectContext,
 	},
 	{
 		rule: "schema-context",
