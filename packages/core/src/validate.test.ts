@@ -1457,6 +1457,77 @@ describe("policy-in-context", () => {
 	});
 });
 
+describe("raises-in-context", () => {
+	/** Two contexts, each with a service, an operation and an event of its own. */
+	function twoContexts() {
+		const ws = emptyWorkspace();
+		const mine = ws.addBoundedContext("Mine", { description: "" });
+		const theirs = ws.addBoundedContext("Theirs", { description: "" });
+		const myApp = mine.addService("My App", {
+			description: "",
+			type: "application",
+		});
+		const theirApp = theirs.addService("Their App", {
+			description: "",
+			type: "application",
+		});
+		return {
+			ws,
+			myApp,
+			theirApp,
+			act: myApp.provides("Act", { description: "", type: "operation" }),
+			myEvent: myApp.provides("It Happened", {
+				description: "",
+				type: "event",
+			}),
+			theirEvent: theirApp.provides("It Happened Over There", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			}),
+		};
+	}
+
+	const raises = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "raises-in-context")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("flags an operation that raises the context next door's event", () => {
+		const { ws, act, theirEvent } = twoContexts();
+		act.raises(theirEvent);
+		expect(raises(ws)).toEqual([
+			[
+				"error",
+				'"Act" raises "It Happened Over There", which belongs to "Theirs"; a context publishes its own facts, so "Mine" cannot raise another context\'s event',
+				act.ref,
+			],
+		]);
+	});
+
+	it("says nothing when the event is the operation's own context's", () => {
+		const { ws, act, myEvent } = twoContexts();
+		act.raises(myEvent);
+		expect(raises(ws)).toEqual([]);
+	});
+
+	it("leaves the honest way of acting over there alone", () => {
+		// Consume the other context's operation and let it raise its own event:
+		// the causal chain crosses through the consumption, not through raises.
+		const { ws, myApp, theirApp, act, theirEvent } = twoContexts();
+		const theirOp = theirApp
+			.provides("Do It Over There", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			})
+			.raises(theirEvent);
+		myApp.consumes(theirOp, { pattern: "conformist", by: [act] });
+		expect(raises(ws)).toEqual([]);
+	});
+});
+
 describe("aggregate-not-public and domain-service-internal", () => {
 	/**
 	 * One context with an aggregate and a domain service, and a second context
@@ -1946,24 +2017,22 @@ describe("partnership-backed", () => {
 	const backed = (ws: Workspace) =>
 		ws.validate().filter((d) => d.rule === "partnership-backed");
 
-	it("warns about a partnership with no traffic at all, naming both gaps", () => {
+	it("warns about a partnership with no traffic at all, and says the other direction is not demanded", () => {
 		const { ws, relationship } = partners();
 		expect(backed(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 			[
 				"warning",
-				'"A" and "B" are declared partners, but "B" consumes nothing from "A" and "A" consumes nothing from "B"; a partnership is a two-way dependency, so back it with consumables both ways or state the direction the dependency really runs',
+				'"A" and "B" are declared partners, but nothing crosses between them in either direction; a partnership does not need traffic both ways — one team may consume everything and the other nothing and still share a release train — but with no exchange at all there is nothing holding the two together',
 				relationship.ref,
 			],
 		]);
 	});
 
-	it("still warns when the traffic only runs one way, and names that way", () => {
+	it("is quiet when the traffic only runs one way, because a joint release train needs no answer back", () => {
 		const { ws, aApp, bApp } = partners();
 		const fromA = aApp.provides("Thing", { description: "", type: "event" });
 		bApp.consumes(fromA, {});
-		expect(backed(ws).map((d) => d.message)).toEqual([
-			'"A" and "B" are declared partners, but "A" consumes nothing from "B"; a partnership is a two-way dependency, so back it with consumables both ways or state the direction the dependency really runs',
-		]);
+		expect(backed(ws)).toEqual([]);
 	});
 
 	it("goes quiet once something crosses each way", () => {
@@ -1980,13 +2049,12 @@ describe("partnership-backed", () => {
 
 	it("counts a policy reacting to the partner's event as traffic, as separate-ways does", () => {
 		const { ws, a, aApp, bApp } = partners();
-		const fromA = aApp.provides("Thing", { description: "", type: "event" });
 		const fromB = bApp.provides("Other Thing", {
 			description: "",
 			type: "event",
 		});
-		bApp.consumes(fromA, {});
-		// A never consumes from B; it subscribes to B's event instead, which is
+		// The subscription is the only exchange there is: A consumes nothing from
+		// B, and B nothing from A. It still backs the partnership, because it is
 		// the same exchange told a different way.
 		const act = aApp.provides("Act", { description: "", type: "operation" });
 		a.addPolicy("On Other Thing", { description: "" }).on(fromB).then(act);
@@ -2071,6 +2139,98 @@ describe("reaction-cycle", () => {
 		bc.addPolicy("On Invoiced", { description: "" }).on(invoiced).then(place);
 		expect(reactions(ws)).toHaveLength(1);
 		expect(reactions(ws)[0].message).toContain('"On Invoiced"');
+	});
+
+	/**
+	 * Two contexts, each acting on the other the way decision 17 requires: a
+	 * policy issues a local operation, and that operation calls the far side's
+	 * public one through a consumption whose `by` names it. The ring closes
+	 * through both boundaries, and before card 69 the walk stopped at the first
+	 * of them and the model validated clean (the architect review's probe 5).
+	 */
+	function twoContexts({
+		bReacts = true,
+		callBack = true,
+	}: {
+		bReacts?: boolean;
+		callBack?: boolean;
+	} = {}) {
+		const ws = emptyWorkspace();
+		const a = ws.addBoundedContext("A", { description: "" });
+		const b = ws.addBoundedContext("B", { description: "" });
+		const aApp = a.addService("A App", {
+			description: "",
+			type: "application",
+		});
+		const bApp = b.addService("B App", {
+			description: "",
+			type: "application",
+		});
+		const aEvent = aApp.provides("A Happened", {
+			description: "",
+			type: "event",
+		});
+		const bEvent = bApp.provides("B Happened", {
+			description: "",
+			type: "event",
+		});
+		const aPublic = aApp
+			.provides("A Public", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			})
+			.raises(aEvent);
+		const bPublic = bApp
+			.provides("B Public", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			})
+			.raises(bEvent);
+		const aLocal = aApp.provides("A Local", {
+			description: "",
+			type: "operation",
+		});
+		const bLocal = bApp.provides("B Local", {
+			description: "",
+			type: "operation",
+		});
+		// A's local operation either calls B's public one or only subscribes to
+		// B's event; a subscription is not something the caller causes.
+		aApp.consumes(callBack ? bPublic : bEvent, {
+			pattern: "conformist",
+			by: [aLocal],
+		});
+		bApp.consumes(aPublic, { pattern: "conformist", by: [bLocal] });
+		a.addPolicy("A Policy", { description: "" }).on(aEvent).then(aLocal);
+		if (bReacts)
+			b.addPolicy("B Policy", { description: "" }).on(bEvent).then(bLocal);
+		return { ws, a, b, aLocal, bLocal, aPublic, bPublic };
+	}
+
+	it("follows a consumption's by across a boundary and reports the ring, naming both contexts", () => {
+		const { ws } = twoContexts();
+		expect(reactions(ws)).toHaveLength(1);
+		const [diagnostic] = reactions(ws);
+		expect(diagnostic.message).toContain('"A Local" -> "B Public"');
+		expect(diagnostic.message).toContain('"B Public" -> "B Happened"');
+		expect(diagnostic.message).toContain('"B Happened" -> "B Policy"');
+		expect(diagnostic.message).toContain('"B Policy" -> "B Local"');
+		expect(diagnostic.message).toContain('"B Local" -> "A Public"');
+		expect(diagnostic.message).toContain(
+			'it runs through "A" and "B", so no one context can see the whole ring',
+		);
+	});
+
+	it("is quiet when the chain ends at another context's event that no policy reacts to", () => {
+		// B still publishes its fact; nobody over there acts on it, so the chain
+		// stops at the foreign event instead of coming back.
+		expect(reactions(twoContexts({ bReacts: false }).ws)).toEqual([]);
+	});
+
+	it("does not follow a consumption of an event, which the consumer reacts to rather than causes", () => {
+		expect(reactions(twoContexts({ callBack: false }).ws)).toEqual([]);
 	});
 });
 

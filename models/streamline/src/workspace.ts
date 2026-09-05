@@ -30,9 +30,9 @@ const money = (boundedcontext: BoundedContext) => {
  * Stress-test features: thirteen contexts, a master-to-playable sequence that
  * crosses four of them, a shared kernel (player and edge), a partnership
  * (player and devices), a separate-ways pair (ads and recommendations), a
- * legacy big ball of mud (the disc business), and four deliberate findings
- * (marked DELIBERATE) that trigger policy-complete, schema-context,
- * internal-consumable and partnership-backed.
+ * legacy big ball of mud (the disc business), and three deliberate findings
+ * (marked DELIBERATE) that trigger policy-complete, schema-context and
+ * internal-consumable.
  *
  * Provenance: BRIEF.md and DISCOVERY.md. Comments "DISCOVERY: <who>" point at
  * the interview an element came from.
@@ -2185,17 +2185,13 @@ playbackBC.sharesKernelWith(edgeBC, {
 	],
 });
 // Partnership: SDK and player versioned, certified and released together.
-// DELIBERATE (partnership-backed), and not for much longer: one release train
-// and a joint lab run, but the only traffic is Playback consuming
-// DeviceCertified — Devices consumes nothing of Playback's. Evans's
-// partnership is two teams whose success is mutual and whose releases are
-// planned as one, which is exactly what the player and the SDK have; it does
-// not require traffic both ways, so this declaration is true and the rule
-// over-claims. Decision 20's amendment relaxes partnership-backed to traffic
-// in at least one direction, and when that core change lands this warning
-// stops firing and leaves the deliberate list. It stays there until then so
-// the model's tests state the diagnostics the current rules actually produce.
-// See DISCOVERY.md section 7.
+// One release train and a joint lab run; the only traffic is Playback
+// consuming DeviceCertified, and Devices consumes nothing of Playback's. That
+// is fine: Evans's partnership is two teams whose success is mutual and whose
+// releases are planned as one, which is exactly what the player and the SDK
+// have, and it does not require traffic both ways (decision 20's second
+// amendment). This used to raise partnership-backed; card 69 relaxed the rule
+// and it is no longer a finding. See DISCOVERY.md section 7.
 playbackBC.partnerOf(devicesBC, {
 	description:
 		"Player and device SDK ship as one release; certification is joint",

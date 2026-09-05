@@ -57,7 +57,7 @@ Open-host service for /store/order endpoints
 
 | Name | Description | On | Then |
 | --- | --- | --- | --- |
-| Approve when pet available | On OrderPlaced, or on PetStatusChanged to available, look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest | PetStatusChanged, OrderPlaced | ApproveOrder |
+| Approve when pet available | On OrderPlaced, or when the catalogue relists a pet (PetStatusChanged), look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest. It does not listen to PetReserved: that is the fact this very chain produces | PetStatusChanged, OrderPlaced | ApproveOrder |
 | Reserve pet on approval | When an order is approved, hold its pet (available → pending) so nobody else can be approved for the same animal | OrderApproved | ReservePet |
 | Mark pet sold on delivery | When an order is delivered, the pet is sold (pending → sold) | OrderDelivered | MarkPetSold |
 
@@ -112,8 +112,8 @@ Open-host service for /store/order endpoints
 | [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Order | OrderDelivered | published-language |
 | [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Order | OrderDeleted | published-language |
 | [OrderApp](services/order_app/index.md) | - | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
-| [PetApp](../catalog_bc/services/pet_app/index.md) | - | - | Pet | ReservePet | - |
-| [PetApp](../catalog_bc/services/pet_app/index.md) | - | - | Pet | MarkPetSold | - |
+| [PetApp](../catalog_bc/services/pet_app/index.md) | ReservePetForOrder | - | Pet | ReservePet | - |
+| [PetApp](../catalog_bc/services/pet_app/index.md) | MarkPetSoldForOrder | - | Pet | MarkPetSold | - |
 | [OrderApp](services/order_app/index.md) | - | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
 | [OrderApp](services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
 | [OrderApp](services/order_app/index.md) | - | - | Shipment | ShipmentDelivered | published-language |

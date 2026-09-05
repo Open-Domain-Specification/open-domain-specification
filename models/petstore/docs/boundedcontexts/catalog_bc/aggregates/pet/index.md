@@ -38,11 +38,13 @@ A pet listed in the store. One aggregate because a pet's photos, tags and status
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | PetRegistered | event | no | published-language | A new pet was registered | [PetRegistered](../../index.md#schemas) | - | - | - | - |
 | PetUpdated | event | no | published-language | Pet profile updated | [PetId](../../index.md#schemas) | - | - | - | - |
-| PetStatusChanged | event | no | published-language | Pet status changed (available|pending|sold) | [PetStatusChanged](../../index.md#schemas) | - | - | - | - |
+| PetStatusChanged | event | no | published-language | The catalogue moved a pet between statuses itself, e.g. relisting a returned pet as available | [PetStatusChanged](../../index.md#schemas) | - | - | - | - |
+| PetReserved | event | no | published-language | available → pending: the pet is held for an approved order | [PetId](../../index.md#schemas) | - | - | - | - |
+| PetSold | event | no | published-language | pending → sold: the pet has gone to its owner | [PetId](../../index.md#schemas) | - | - | - | - |
 | PetDeleted | event | no | published-language | Pet removed from catalog | [PetId](../../index.md#schemas) | - | - | - | - |
-| ChangePetStatus | operation | yes | - | Move a pet between available, pending and sold; the catalogue's own edits, e.g. relisting | [PetStatusChanged](../../index.md#schemas) | - | - | PetStatusChanged | SoldNotReopen |
-| ReservePet | operation | yes | - | available → pending: the pet is held for an approved order; run by PetApp on the request Sales makes | [PetId](../../index.md#schemas) | - | - | PetStatusChanged | - |
-| MarkPetSold | operation | yes | - | pending → sold: the pet has gone to its owner; run by PetApp on the request Sales makes | [PetId](../../index.md#schemas) | - | - | PetStatusChanged | - |
+| ChangePetStatus | operation | yes | - | Move a pet between available, pending and sold; the catalogue's own edits, e.g. relisting a returned pet | [PetStatusChanged](../../index.md#schemas) | - | - | PetStatusChanged | SoldNotReopen |
+| ReservePet | operation | yes | - | available → pending: the pet is held for an approved order; run by PetApp on the request Sales makes | [PetId](../../index.md#schemas) | - | - | PetReserved | - |
+| MarkPetSold | operation | yes | - | pending → sold: the pet has gone to its owner; run by PetApp on the request Sales makes | [PetId](../../index.md#schemas) | - | - | PetSold | - |
 
 
 ## Consumes

@@ -29,9 +29,9 @@ const money = (boundedcontext: BoundedContext) => {
  *
  * This workspace exists to stress the tooling: many contexts, cross-context
  * events and operations with schemas, a shared kernel, a partnership, a
- * separate-ways pair, a legacy big ball of mud, deep aggregates and three
+ * separate-ways pair, a legacy big ball of mud, deep aggregates and two
  * deliberate findings (marked DELIBERATE) that trigger the rules
- * aggregate-root, cross-aggregate-reference and partnership-backed.
+ * aggregate-root and cross-aggregate-reference.
  *
  * Provenance: BRIEF.md is the client onboarding pack and DISCOVERY.md the
  * record of the interviews and the event-storming session the model came
@@ -2562,17 +2562,14 @@ warehouseBC.sharesKernelWith(lastMileBC, {
 	],
 });
 
-// DELIBERATE (partnership-backed), and not for much longer: organic ranking
-// and sponsored slots are tuned and released together, but every dependency
-// runs one way — Search calls GetSponsoredResults and reports clicks through
-// RecordAdClick, and Advertising consumes nothing of Search's. Evans's
-// partnership is two teams whose success is mutual and whose releases are
-// planned as one; it does not require traffic both ways, so this declaration
-// is true and the rule over-claims. Decision 20's amendment relaxes
-// partnership-backed to traffic in at least one direction, and when that core
-// change lands this warning stops firing and leaves the deliberate list. It
-// stays there until then so the model's tests state the diagnostics the
-// current rules actually produce. See DISCOVERY.md section 7.
+// Partnership: organic ranking and sponsored slots are tuned and released
+// together. Every dependency runs one way — Search calls GetSponsoredResults
+// and reports clicks through RecordAdClick, and Advertising consumes nothing
+// of Search's — and that is fine: Evans's partnership is two teams whose
+// success is mutual and whose releases are planned as one, which does not
+// require traffic both ways (decision 20's second amendment). This used to
+// raise partnership-backed; card 69 relaxed the rule and it is no longer a
+// finding. See DISCOVERY.md section 7.
 searchBC.partnerOf(adsBC, {
 	description: "The results page is one product owned by two teams",
 	comments: [

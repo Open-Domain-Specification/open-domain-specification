@@ -6,6 +6,7 @@ export * from "./flow-map";
 export * from "./namespace";
 export * from "./narrative";
 export * from "./patterns";
+export * from "./reaction-walk";
 export * from "./relation-map";
 export * from "./relationship";
 export * from "./schema";

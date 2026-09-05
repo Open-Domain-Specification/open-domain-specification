@@ -26,6 +26,8 @@ Projection for /store/inventory (status→count)
 | [InventoryQuery](../../../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Pet | PetRegistered | published-language |
 | [InventoryQuery](../../../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Pet | PetDeleted | published-language |
 | [InventoryQuery](../../../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Pet | PetStatusChanged | published-language |
+| [InventoryQuery](../../../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Pet | PetReserved | published-language |
+| [InventoryQuery](../../../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Pet | PetSold | published-language |
 | [InventoryQuery](../../../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Order | OrderApproved | published-language |
 | [InventoryQuery](../../../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Order | OrderDelivered | published-language |
 | [InventoryQuery](../../../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Order | OrderDeleted | published-language |

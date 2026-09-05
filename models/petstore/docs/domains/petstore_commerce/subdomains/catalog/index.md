@@ -33,6 +33,8 @@ Projection for /store/inventory (status→count)
 | [PetApp](../../../../boundedcontexts/catalog_bc/services/pet_app/index.md) | - | Pet | ReservePet | - |
 | [InventoryQuery](../../../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Pet | PetRegistered | published-language |
 | [InventoryQuery](../../../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Pet | PetStatusChanged | published-language |
+| [InventoryQuery](../../../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Pet | PetReserved | published-language |
+| [InventoryQuery](../../../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Pet | PetSold | published-language |
 | [InventoryQuery](../../../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | conformist | Pet | PetDeleted | published-language |
 | [PetApp](../../../../boundedcontexts/catalog_bc/services/pet_app/index.md) | - | Pet | MarkPetSold | - |
 | [InventoryQuery](../../../../boundedcontexts/inventory_bc/services/inventory_query/index.md) | - | InventoryQuery | InventoryUpdated | published-language |

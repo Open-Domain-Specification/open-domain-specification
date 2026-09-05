@@ -53,7 +53,7 @@ describe("Validation", () => {
 			  "error internal-consumable: Policy "Reprice on order" issues "Reprice", which is internal to "Catalog"",
 			  "error policy-in-context: Policy "Reprice on order" in "Ordering" issues "Reprice", which belongs to "Catalog"",
 			  "error consumable-kind: Policy "Reprice on order" reacts to "Reprice", which is an operation, not an event",
-			  "warning reaction-cycle: Reactions run in a cycle: "Reprice" -> "Reprice on order" -> "Reprice"; the chain triggers itself and nothing in the model says what ends it",
+			  "warning reaction-cycle: Reactions run in a cycle: "Reprice" -> "Reprice on order" -> "Reprice"; the chain triggers itself and nothing in the model says what ends it; it runs through "Catalog" and "Ordering", so no one context can see the whole ring",
 			  "warning context-serves-subdomain: Bounded context "Ordering" serves no subdomain, so it is missing from the problem-space view",
 			  "warning context-serves-subdomain: Bounded context "Catalog" serves no subdomain, so it is missing from the problem-space view",
 			]

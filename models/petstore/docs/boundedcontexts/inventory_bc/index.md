@@ -45,7 +45,7 @@ Open-host service for /store/inventory: a projection is a service that provides 
 
 | Name | Description | On | Then |
 | --- | --- | --- | --- |
-| Recount on stock change | Keep the availability projection current | PetRegistered, PetDeleted, PetStatusChanged, OrderApproved, OrderDelivered, OrderDeleted | RecountInventory |
+| Recount on stock change | Keep the availability projection current | PetRegistered, PetDeleted, PetStatusChanged, PetReserved, PetSold, OrderApproved, OrderDelivered, OrderDeleted | RecountInventory |
 
 
 ## Context Relationships
@@ -78,6 +78,8 @@ Open-host service for /store/inventory: a projection is a service that provides 
 | [InventoryQuery](services/inventory_query/index.md) | - | conformist | Pet | PetRegistered | published-language |
 | [InventoryQuery](services/inventory_query/index.md) | - | conformist | Pet | PetDeleted | published-language |
 | [InventoryQuery](services/inventory_query/index.md) | - | conformist | Pet | PetStatusChanged | published-language |
+| [InventoryQuery](services/inventory_query/index.md) | - | conformist | Pet | PetReserved | published-language |
+| [InventoryQuery](services/inventory_query/index.md) | - | conformist | Pet | PetSold | published-language |
 | [InventoryQuery](services/inventory_query/index.md) | - | conformist | Order | OrderApproved | published-language |
 | [InventoryQuery](services/inventory_query/index.md) | - | conformist | Order | OrderDelivered | published-language |
 | [InventoryQuery](services/inventory_query/index.md) | - | conformist | Order | OrderDeleted | published-language |

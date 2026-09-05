@@ -25,7 +25,15 @@ Pet removed from catalog
 - **Provider**: [Pet](../../../catalog_bc/aggregates/pet/index.md)
 
 ### PetStatusChanged [conformist]
-Pet status changed (available|pending|sold)
+The catalogue moved a pet between statuses itself, e.g. relisting a returned pet as available
+- **Provider**: [Pet](../../../catalog_bc/aggregates/pet/index.md)
+
+### PetReserved [conformist]
+available → pending: the pet is held for an approved order
+- **Provider**: [Pet](../../../catalog_bc/aggregates/pet/index.md)
+
+### PetSold [conformist]
+pending → sold: the pet has gone to its owner
 - **Provider**: [Pet](../../../catalog_bc/aggregates/pet/index.md)
 
 ### OrderApproved [conformist]
