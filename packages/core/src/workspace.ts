@@ -117,6 +117,20 @@ export class Workspace
 		return this.relationships.find((r) => r.ref === ref);
 	}
 
+	/**
+	 * The consumption a {@link Consumption.ref} points at, if any. Like a
+	 * relationship, a consumption is a pairing rather than a named element, so
+	 * it is found here rather than through {@link Workspace.getByRef}, which
+	 * answers with things that have a name.
+	 */
+	findConsumption(ref: string): Consumption | undefined {
+		for (const consumer of [...this.aggregates(), ...this.services()]) {
+			for (const consumption of consumer.consumptions) {
+				if (consumption.ref === ref) return consumption;
+			}
+		}
+	}
+
 	getTeamByRef(ref: string): Team | undefined {
 		for (const team of this.teams.values()) {
 			if (team.ref === ref) return team;
@@ -1536,6 +1550,23 @@ export class Consumption
 	by: ConsumptionCaller[];
 	comments: ods.Comment[];
 	disposition?: ods.Disposition;
+
+	/**
+	 * A consumption has no id of its own, so its ref is derived from the pair
+	 * it joins: the consumer's path, `consumes`, and the consumable's path
+	 * with `/` replaced by `~`, the one ref-safe character no collection name
+	 * or id contains. Deriving it from the pair rather than the position in
+	 * `consumes[]` keeps it stable when the array is reordered, and flattening
+	 * the whole consumable path rather than its ids alone keeps two providers
+	 * of the same id — one aggregate, one service — apart.
+	 */
+	get path(): string {
+		return `${this.consumer.path}/consumes/${this.consumable.path.split("/").join("~")}`;
+	}
+
+	get ref(): string {
+		return `#/${this.path}`;
+	}
 
 	constructor(
 		consumer: Aggregate | Service,
