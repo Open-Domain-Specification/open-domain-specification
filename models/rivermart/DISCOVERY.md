@@ -282,8 +282,9 @@ which is now somewhere in the model, were:
 Pink stickies from the wall, each of which became a context boundary or a glossary entry:
 
 - **Order.** Customer order (Orders), purchase order (Vendor Purchasing), fulfilment order
-  (Warehouse). Three contexts, three aggregates; the warehouse's `FulfilmentOrder`
-  `references` the customer `Order` by identity only.
+  (Warehouse). Three contexts, three aggregates; the warehouse's `FulfilmentOrder` holds the
+  customer `Order`'s identity in an `orderId` attribute, since decision 14 a relation never
+  crosses a context.
 - **Shipment / Package / Parcel.** Orders says shipment and means the customer-visible
   group of lines; Warehouse says package and means a box with a label; Logistics says
   parcel and means the thing at a stop. Modelled as three entities in three aggregates, with
@@ -329,9 +330,10 @@ to integrate.
   on the documented APIs, conformist where the downstream "takes it as published",
   anti-corruption layer where it "keeps its own shape".
 - **Shared kernel** between Warehouse and Last Mile: the label library is one codebase both
-  teams change. Each context still has its own `TrackingLabel` value object in the model,
-  with the description saying it is the shared one, because a value object belongs to an
-  aggregate.
+  teams change. Each context still declares its own `TrackingLabel` value object in the
+  model, with the description saying it is the shared one; a value object belongs to its
+  bounded context (decision 16), and this pair mirrors the library rather than borrowing
+  through a kernel context of its own.
 - **Partnership** between Search and Advertising: one results page, one planning cycle, a
   joint release calendar.
 - **Separate ways** between Vendor Purchasing and Seller Onboarding: decided policy since
@@ -341,9 +343,10 @@ to integrate.
   than inventing a partnership that neither team recognised. Orders and Payments are the same
   shape: the order id goes to Payments on `OrderPlaced`, refunds come back through the
   payments API.
-- Every `references` across a context boundary has a relationship on the map: Orders to
-  Offers (the offer id on a line) and Advertising to Catalogue (the products an ad group
-  advertises), both conformist because only an id crosses.
+- Every cross-context identity has a relationship on the map: Orders to Offers (the offer
+  id on a line) and Advertising to Catalogue (the product id an ad group advertises), both
+  conformist because only an id crosses; since decision 14 the relation stays inside its
+  own context and the identity attribute is what carries the dependency.
 
 ## 7. Validation and what we left in
 
@@ -433,9 +436,11 @@ Partially accepted
 - First-party retail had no place in Offers. Accepted that it needed saying, not that it
   needs a context: RiverMart's retail arm is a seller id in Offers, now stated on the
   aggregate, the glossary and in the interview.
-- `OneActiveOfferPerSellerSku` cannot be enforced by one Offer instance. ODS invariants
-  belong to an aggregate, so it stays, now constraining the (sellerId, sku) pair and saying
-  `PublishOffer` enforces it over the seller's existing offers.
+- `OneActiveOfferPerSellerSku` cannot be enforced by one Offer instance. Since decision 27
+  a bounded context may hold an invariant across its instances, guarded by an operation
+  that checks it before acting; the rule moves to the Offers context, constraining the
+  (sellerId, sku) pair and naming `PublishOffer`, which checks the seller's existing offers,
+  as its guard.
 - The event storming table was a sterile happy path. Changed: the hotspots from the wall are
   listed under it, and the failure rows (decline, stock short, cancellation, click) added.
   The half-day session stands; the table was always described as condensed.

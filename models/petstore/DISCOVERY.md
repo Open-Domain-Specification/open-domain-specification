@@ -48,8 +48,9 @@ Each relationship type appears exactly once, and the reasoning is written on eac
 ## Inside the contexts
 
 Pet is the root of its aggregate, with Category, Tag, PhotoUrl and PetStatus as value
-objects and `uses` relations of every cardinality. Order references Pet by identity across
-the boundary. Shipment includes DeliveryAttempt, which cannot exist alone, and is the home
+objects and `uses` relations of every cardinality. Order holds Pet's identity in a `petId`
+attribute across the boundary; a relation never crosses a context (decision 14). Shipment
+includes DeliveryAttempt, which cannot exist alone, and is the home
 of the entity-level invariant and the domain service. Inventory's availability projection
 is InventoryQuery, an application service: a projection is a service that provides a query
 operation, not an aggregate with an invented root (decision 15). User keeps the legacy
@@ -61,9 +62,12 @@ PetApp, OrderApp, InventoryQuery and UserApp are the application services (the A
 DispatchPlanner is the domain service. Events are published language with schemas; the
 operations that only their own context uses are internal. Five policies: approve an order
 when its pet is available (reacting to events from two contexts), reserve the pet on
-approval and mark it sold on delivery (Sales issuing Catalog's open-host operations, so the
-order lifecycle walks the pet lifecycle), plan dispatch on approval, and deliver the order
-in Sales when Fulfilment reports delivery (a policy issuing another context's operation).
+approval and mark it sold on delivery (Sales issuing its own local operations, which call
+out to Catalog's open host through the ACL, so the order lifecycle walks the pet lifecycle
+without a policy naming another context's operation — decision 17), plan dispatch on
+approval, and deliver the order in Sales when Fulfilment reports delivery through Sales'
+own `ConfirmDelivery` open host, which Fulfilment's policy calls (a policy names only its
+own context's operations, decision 17).
 
 ## Validation
 
@@ -122,9 +126,11 @@ Rejected
 - Fulfilment is invented: the brief says "deliver it" and asks for every element once; a
   partnership needs two contexts owned by one team, and Fulfilment is where child entities
   and a domain service naturally live.
-- Fulfilment's policy issuing Sales' `DeliverOrder` is a violation: it is the pattern the
-  DSL exists to show (a policy issuing another context's open-host operation) inside a
-  declared partnership. Kept.
+- Fulfilment's policy issuing Sales' `DeliverOrder` is a violation: decision 17 forbids a
+  policy naming another context's operation, so `DeliverOrder` became internal and Sales'
+  `ConfirmDelivery` open host is what Fulfilment's own `ReportDelivery` calls; the policy
+  now names only its own context's operation, and the partnership still crosses through the
+  consumption.
 - Checklist architecture: that is the brief. The petstore is the demonstration reference,
   and the test suite asserts each relationship type exactly once.
 - Inventory as a micro-context, the shared kernel and the customer-supplier ACL are
