@@ -214,7 +214,7 @@ const crossAggregateReference: Rule = (workspace) => {
 			diagnostics.push({
 				severity: "error",
 				rule: "cross-aggregate-reference",
-				message: `"${relation.source.name}" references "${relation.target.name}", which is neither the root of aggregate "${target.name}" nor a kind of that root; reference other aggregates by their root's identity`,
+				message: `"${relation.source.name}" references "${relation.target.name}", which is neither the root of aggregate "${target.name}" nor a kind of that root; reference "${target.name}" by its root's identity, holding "${relation.target.name}"'s id beside it when the child is what you mean`,
 				ref: relation.source.ref,
 			});
 		}
@@ -245,12 +245,21 @@ const crossContextRelation: Rule = (workspace) => {
 
 /**
  * An attribute that holds an identity names an entity of this workspace, root
- * or child, or an external context. A child id is what real systems hold: a
- * playback session knows which profile inside a household it plays for, a
- * claim which coverage of a policy it is against, and each of those children
- * stays inside its aggregate precisely because its parent's invariants need it
- * there. Only the id still crosses — the holder reaches the child through its
- * root, so the dependency is on the aggregate that root leads (decision 14).
+ * or child, anywhere in it, or an external context. A child id is what real
+ * systems hold: a playback session knows which profile inside a household it
+ * plays for, a claim which coverage of a policy it is against, and each of
+ * those children stays inside its aggregate precisely because its parent's
+ * invariants need it there. Only the id crosses — the holder reaches the child
+ * through its root, so the dependency is on the aggregate that root leads
+ * (decision 14).
+ *
+ * That holds inside one context as well as across a boundary. A shipment
+ * carries an order's id and the order line's id beside it, and that pair is how
+ * DDD points at a child without reaching for it: what is refused is the
+ * relation into another aggregate's insides, which `cross-aggregate-reference`
+ * refuses and whose fix text recommends exactly this id. Card 90 read the id as
+ * a side door around reference-by-root and refused it within one context; that
+ * was wrong, and the refusal is gone (decision 14, third amendment).
  *
  * An external context has no entities of ours to name (decision 28), and a
  * card scheme's authorisation id or a payment provider's customer id is still
@@ -260,26 +269,13 @@ const crossContextRelation: Rule = (workspace) => {
  * naming the whole context instead would say less than the model already
  * holds.
  *
- * A child id is what crosses a boundary, and only that. Inside one context
- * nothing is out of reach: an entity or a value object that wants to point at
- * another aggregate's child has the whole model in front of it, and the way to
- * point is a relation to that aggregate's root, which `cross-aggregate-reference`
- * already governs and the relation map already draws. Storing the child's id
- * instead hides the dependency from that map and stores a reach past a root
- * that is nobody's to make. Across contexts it stays allowed, because there the
- * id is all there is.
- *
- * A payload schema is left out of that: an event or a request echoing a child
- * id — the episode number in a delivery, the package in a dispatch — carries it
- * for its reader and stores nothing (decision 14, second amendment).
- *
  * What the rule otherwise refuses is an identity naming an entity this
  * workspace does not have: one built against another workspace, or dropped
  * since, where the id reaches nothing.
  */
 const identifiesEntity: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
-	for (const { owner, context } of attributeOwnersOf(workspace)) {
+	for (const { owner } of attributeOwnersOf(workspace)) {
 		for (const attribute of owner.attributes.values()) {
 			const target = attribute.identifies;
 			if (!target) continue;
@@ -300,19 +296,7 @@ const identifiesEntity: Rule = (workspace) => {
 					message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of "${target.name}", which is not an entity of this workspace; an identity names an entity here, root or child, and a child is reached through its root, or an external context when the id belongs to a system whose entities are not ours to state`,
 					ref: attribute.ref,
 				});
-				continue;
 			}
-			if (owner instanceof DataSchema) continue;
-			if (target.aggregate.boundedcontext !== context) continue;
-			if (reachedAsRoot(target)) continue;
-			if (owner instanceof Entity && owner.aggregate === target.aggregate)
-				continue;
-			diagnostics.push({
-				severity: "error",
-				rule: "identifies-entity",
-				message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of "${target.name}", which is not the root of aggregate "${target.aggregate.name}" in this same context "${context.name}"; use a relation to its root, because inside one context nothing is reached by id alone`,
-				ref: attribute.ref,
-			});
 		}
 	}
 	return diagnostics;
@@ -941,27 +925,25 @@ function scopeOf(
 }
 
 /**
- * Whether a target is an operation an application service of `bc` provides.
+ * Whether a target is an operation a service of `bc` provides, of either kind.
  *
  * A precondition is checked at the moment of the call, and decision 17 puts
  * the public operation on the application service, so that is often where the
  * check runs: the funds check at initiation, the entitlement check at playback
- * start. The rule it guards is still the aggregate's — it is a rule about what
- * this aggregate may do — so the invariant has to be able to point at the
+ * start. A rule that has to read two aggregates before it can say yes lives in
+ * a domain service instead, which is what a domain service is for, so both
+ * kinds count. The rule guarded is still the aggregate's — it is a rule about
+ * what this aggregate may do — so the invariant has to be able to point at the
  * operation that does the guarding rather than leave it in prose (decision 19,
- * amended). The service has to be one of the aggregate's own context: reaching
- * into a neighbour's boundary would claim a rule nobody here can keep.
+ * second amendment). The service has to be one of the aggregate's own context:
+ * reaching into a neighbour's boundary would claim a rule nobody here can keep.
  */
-function guardedByApplicationService(
-	target: Constrainable,
-	bc: BoundedContext,
-): boolean {
+function guardedByService(target: Constrainable, bc: BoundedContext): boolean {
 	if (!(target instanceof Consumable)) return false;
 	const { provider } = target;
 	return (
 		target.type === "operation" &&
 		!(provider instanceof Aggregate) &&
-		provider.type === "application" &&
 		provider.boundedcontext === bc
 	);
 }
@@ -1006,11 +988,15 @@ function valueObjectsHeldIn(
 	return held;
 }
 
-/** Every invariant a value object owns, in declaration order. */
+/**
+ * Every invariant a value object owns, in declaration order, including an
+ * external context's: a standard's published rule is checked like any other
+ * (decision 28, third amendment).
+ */
 function* valueObjectInvariantsOf(
 	workspace: Workspace,
 ): Iterable<[ValueObject, Invariant]> {
-	for (const bc of modelledContexts(workspace))
+	for (const bc of workspace.boundedcontexts.values())
 		for (const vo of bc.valueobjects.values())
 			for (const invariant of vo.invariants.values()) yield [vo, invariant];
 }
@@ -1056,11 +1042,12 @@ const invariantInValueObject: Rule = (workspace) => {
  * conforms to — says nothing about which aggregate holds an instance. A value
  * nobody inside the aggregate holds is still refused (card 89).
  *
- * The last thing inside is an operation of an application service of the same
- * context, when that operation is the guard: a precondition is checked at the
- * moment of the call, and decision 17 put the public operation on the service,
- * so the model has to be able to name it (see
- * {@link guardedByApplicationService}).
+ * The last thing inside is an operation of a service of the same context,
+ * application or domain, when that operation is the guard: a precondition is
+ * checked at the moment of the call, and decision 17 put the public operation
+ * on the application service, while a rule that reads two aggregates before
+ * acting lives in a domain service, so the model has to be able to name either
+ * (see {@link guardedByService}).
  */
 const invariantInAggregate: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -1071,8 +1058,7 @@ const invariantInAggregate: Rule = (workspace) => {
 			for (const target of invariant.targets) {
 				const scope = scopeOf(target);
 				if (scope === aggregate || scope === aggregate.boundedcontext) continue;
-				if (guardedByApplicationService(target, aggregate.boundedcontext))
-					continue;
+				if (guardedByService(target, aggregate.boundedcontext)) continue;
 				const vo = valueObjectOf(target);
 				if (vo && held.has(vo)) continue;
 				const service =
@@ -1092,7 +1078,7 @@ const invariantInAggregate: Rule = (workspace) => {
 				diagnostics.push({
 					severity: "error",
 					rule: "invariant-in-aggregate",
-					message: `Invariant "${invariant.name}" of aggregate "${aggregate.name}" constrains "${constrainableLabel(target)}", which is ${where}; an aggregate's invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of an application service of its own context that guards it`,
+					message: `Invariant "${invariant.name}" of aggregate "${aggregate.name}" constrains "${constrainableLabel(target)}", which is ${where}; an aggregate's invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it`,
 					ref: invariant.ref,
 				});
 			}
@@ -2712,17 +2698,12 @@ const externalIsBoundary: Rule = (workspace) => {
 			refuse(`process "${process.name}"`, process.ref);
 		for (const invariant of bc.invariants.values())
 			refuse(`invariant "${invariant.name}"`, invariant.ref);
-		// A value object of an external context is its published vocabulary and
-		// stays; a rule kept on one is a rule of somebody else's, which we can
-		// no more state than we can state their aggregates (decision 28, second
-		// amendment). `invariant-in-value-object` walks modelled contexts only,
-		// so without this the rule would go unchecked as well as unknowable.
-		for (const vo of bc.valueobjects.values())
-			for (const invariant of vo.invariants.values())
-				refuse(
-					`invariant "${invariant.name}" on value object "${vo.name}"`,
-					invariant.ref,
-				);
+		// A value object of an external context is its published vocabulary, and
+		// the rules on it — an IBAN's mod-97 checksum, an ISO 20022 field rule, a
+		// scheme's record layout — are that standard's published contract, known
+		// and citable rather than invented. They stay, and
+		// `invariant-in-value-object` checks them like any other (decision 28,
+		// third amendment).
 	}
 	return diagnostics;
 };
@@ -2804,7 +2785,7 @@ const RULES: CataloguedRule[] = [
 		summary:
 			"A relation into another aggregate uses references and targets that aggregate's root, or a kind of that root; a relation to a value object crosses nothing.",
 		why: "Aggregates are consistency boundaries; reaching inside another one couples the two so they can no longer change or be stored independently. A value object belongs to the whole context rather than to one aggregate, so using one is not reaching into anybody. A kind of the root is the root said more precisely — an instance of it is an instance of the root, carrying the same identity — so naming the kind the business names reaches no further inside than naming the root would.",
-		fix: 'Change the relation to "references" and point it at the other aggregate\'s root entity, or at a kind of that root, holding only its identity.',
+		fix: "Change the relation to \"references\" and point it at the other aggregate's root entity, or at a kind of that root, holding only its identity. When the thing you mean is a child of that aggregate, hold its id as an attribute beside the root's: the pair says which child without reaching past the root that owns it.",
 		check: crossAggregateReference,
 	},
 	{
@@ -2820,9 +2801,9 @@ const RULES: CataloguedRule[] = [
 		rule: "identifies-entity",
 		severities: ["error"],
 		summary:
-			"An attribute's identifies names an entity of this workspace, root or child, or a bounded context marked external; an entity's or a value object's may name a child of another aggregate only across a context boundary.",
-		why: "An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about, and it is the one dependency allowed to cross a bounded context (decision 14). Across a boundary that thing may be a child, because systems cross by child identity constantly — a playback session names a profile inside a household, a claim a coverage inside a policy — and the child stays inside its aggregate exactly because its parent's invariants need it there; you hold the child's id and reach it through its root, so the dependency is really on the aggregate that root leads. Inside one context nothing is out of reach, so an entity or a value object storing another aggregate's child id is reaching past that aggregate's root where a relation would say the same thing, be drawn on the relation map and be governed by cross-aggregate-reference. A payload schema is different again: an event or a request echoing a child id carries it for its reader and stores nothing. It may also be an external context: a card scheme's authorisation id or a payment provider's customer id belongs to a system whose entities are not ours to state (decision 28), so the attribute names the system and the maps still draw the dependency. A context that is not external is refused, because there the entity exists and naming the whole context would say less. What the id may never name is something this workspace does not have, since then it reaches nothing.",
-		fix: "Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child and the child is in another context — or, for an id that belongs to a system you do not model inside, at that system's bounded context, marked external: true. Within one context, use a relation to the other aggregate's root instead of storing its child's id. Check the target has not been renamed or moved out from under the attribute.",
+			"An attribute's identifies names an entity of this workspace, root or child, in any aggregate of any context, or a bounded context marked external.",
+		why: "An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about, and it is the one dependency allowed to cross a bounded context (decision 14). That thing may be a child, because systems point at child identities constantly — a playback session names a profile inside a household, a claim a coverage inside a policy, a shipment an order's line — and the child stays inside its aggregate exactly because its parent's invariants need it there; you hold the child's id, with its root's id beside it, and reach it through that root, so the dependency is really on the aggregate the root leads. Holding the id is not reaching inside: what reaches inside is a relation into another aggregate's members, and cross-aggregate-reference refuses that and recommends this id in its place. It may also be an external context: a card scheme's authorisation id or a payment provider's customer id belongs to a system whose entities are not ours to state (decision 28), so the attribute names the system and the maps still draw the dependency. A context that is not external is refused, because there the entity exists and naming the whole context would say less. What the id may never name is something this workspace does not have, since then it reaches nothing.",
+		fix: "Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child, with the root's id beside it — or, for an id that belongs to a system you do not model inside, at that system's bounded context, marked external: true. Check the target has not been renamed or moved out from under the attribute.",
 		check: identifiesEntity,
 	},
 	{
@@ -2943,9 +2924,9 @@ const RULES: CataloguedRule[] = [
 		rule: "invariant-in-aggregate",
 		severities: ["error"],
 		summary:
-			"An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object of its context, or one borrowed from elsewhere that something in the aggregate holds, or is an operation of an application service of its own context that guards it.",
-		why: "This is the rule the aggregate itself upholds: it is checked as the aggregate is saved, and it is true again the moment the save returns. Something outside the boundary can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not. Operations are the other exception: a rule about a transition is a rule about the operation that makes it, and naming it says which change the rule guards. That operation is usually the aggregate's own, but a precondition — enough funds at initiation, an entitlement at playback start — is checked at the moment of the call, and decision 17 puts the public operation on the application service, so the guard may be named there instead of left in prose.",
-		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object from another context, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). An application service's operation is accepted when it belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door.",
+			"An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object of its context, or one borrowed from elsewhere that something in the aggregate holds, or is an operation of a service of its own context, application or domain, that guards it.",
+		why: "This is the rule the aggregate itself upholds: it is checked as the aggregate is saved, and it is true again the moment the save returns. Something outside the boundary can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not. Operations are the other exception: a rule about a transition is a rule about the operation that makes it, and naming it says which change the rule guards. That operation is usually the aggregate's own, but a precondition — enough funds at initiation, an entitlement at playback start — is checked at the moment of the call, and decision 17 puts the public operation on the application service, so the guard may be named there instead of left in prose. A guard that has to read two aggregates before it can say yes belongs to a domain service, which is what a domain service is for, so an operation of either kind of service counts.",
+		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object from another context, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door.",
 		check: invariantInAggregate,
 	},
 	{
@@ -3262,9 +3243,9 @@ const RULES: CataloguedRule[] = [
 		rule: "external-is-boundary",
 		severities: ["error"],
 		summary:
-			"An external context declares no aggregates, no policies, no processes and no invariants — neither its own nor any on its value objects.",
-		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, but a rule kept on one is still somebody else's rule.",
-		fix: "Move the aggregate, policy, process or invariant into the context of ours that actually holds it — a rule about a shape we take in is a rule of the aggregate that holds one — or drop external: true if this is a system the enterprise really does model inside.",
+			"An external context declares no aggregates, no policies, no processes and no invariants of its own; its value objects may carry invariants, because a standard's published rules are citable.",
+		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. A rule about the context's own instances is different, because that is exactly the invention we cannot make.",
+		fix: "Move the aggregate, policy, process or context invariant into the context of ours that actually holds it — a rule about several instances is a rule of the context that keeps them — or drop external: true if this is a system the enterprise really does model inside. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay.",
 		check: externalIsBoundary,
 	},
 	{

@@ -45,11 +45,10 @@ export interface AttributeSchema {
 	 * be in another bounded context — that is the point, since an identity is
 	 * the only thing that crosses a boundary (decision 14) — and there it may
 	 * be a child rather than a root, since a session holds the id of a profile
-	 * inside a household; the child is reached through its own root. Inside one
-	 * context an entity or a value object names only a root, because there the
-	 * whole model is in reach and a relation says it better; a payload schema
-	 * may still echo a child's id, since it stores nothing
-	 * (`identifies-entity`).
+	 * inside a household; the child is reached through its own root. The same
+	 * goes inside one context: a shipment holds an order's id and its line's id
+	 * beside it, which is how the model points at a child without the relation
+	 * `cross-aggregate-reference` refuses (`identifies-entity`).
 	 *
 	 * It may also be a bounded context flagged `external`: a card scheme's
 	 * authorisation id or a payment provider's customer id belongs to a system
@@ -165,8 +164,10 @@ export interface BoundedContextSchema {
 	 * external context provides and consumes consumables and takes part in
 	 * relationships, and it needs no subdomain, no team and no internals —
 	 * `external-is-boundary` refuses aggregates, policies, processes and
-	 * invariants on it, because what happens inside it is not ours to state
-	 * (decision 28).
+	 * context invariants on it, because what happens inside it is not ours to
+	 * state. Its value objects may carry invariants: an IBAN's checksum or an
+	 * ISO 20022 field rule is the standard's published contract rather than a
+	 * guess about the system's insides (decision 28).
 	 */
 	external?: boolean;
 	/** The team that owns this context. */
