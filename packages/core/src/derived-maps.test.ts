@@ -178,6 +178,13 @@ describe("ODSRelationMap", () => {
 		expect(map.nodes.get(f.money.ref)?.type).toBe("valueobject");
 	});
 
+	it("carries an attribute's optional flag onto its node", () => {
+		const map = ODSRelationMap.fromWorkspace(f.ws);
+		const attributes = map.nodes.get(f.order.ref)?.attributes ?? [];
+		expect(attributes.find((a) => a.name === "Note")?.optional).toBe(true);
+		expect(attributes.find((a) => a.name === "Order Id")?.optional).toBe(false);
+	});
+
 	it("draws an identity attribute as an edge to the entity it identifies", () => {
 		const map = ODSRelationMap.fromBoundedContext(f.invoicingBc);
 		const edge = Array.from(map.edges.values()).find(

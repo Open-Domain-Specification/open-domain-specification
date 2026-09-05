@@ -55,7 +55,8 @@ const columns: Column[] = [
 				<Keyword text="optional" title="Sometimes absent; everything unmarked is always present." />
 			{/if}
 			{#if a.identifies}
-				<span class="identifies">identifies <code><Ref ref={a.identifies.ref} label={a.identifies.name} /></code></span>
+				<Keyword text="identifies" />
+				<code><Ref ref={a.identifies.ref} label={a.identifies.name} /></code>
 			{/if}
 		{:else}
 			{a.description}
@@ -69,10 +70,6 @@ const columns: Column[] = [
 		font-size: 0.92em;
 		background: none;
 		padding: 0;
-	}
-	.identifies {
-		color: var(--vscode-descriptionForeground);
-		margin-left: 0.5em;
 	}
 	.codicon-key {
 		font-size: 1em;
