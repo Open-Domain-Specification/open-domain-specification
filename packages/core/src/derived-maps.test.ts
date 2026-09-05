@@ -157,6 +157,26 @@ describe("ODSContextMap", () => {
 		expect(edges[0].source.external).toBe(true);
 	});
 
+	it("draws nothing for an id echoed in a payload schema", () => {
+		// A correlation id in an event or a request is carried for its reader:
+		// the context publishing the payload depends on nobody for it, so there
+		// is no dependency to draw (decision 14, second amendment).
+		const ws = new Workspace("W", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0",
+		});
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const thing = up
+			.addAggregate("Thing", { description: "" })
+			.addRootEntity("Thing", { description: "" });
+		down
+			.addSchema("Holder Changed")
+			.addAttribute("Thing Id", { type: "uuid", identifies: thing });
+		expect(ODSContextMap.fromWorkspace(ws).edges.size).toBe(0);
+	});
+
 	it("leaves the consumption edge in place when an identity runs the same way", () => {
 		// The identity travels on the traffic the consumption edge stands for, so
 		// that edge — which also carries the roles — is the one to keep.

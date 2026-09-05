@@ -645,7 +645,10 @@ screeningVendorBC.upstreamOf(sanctionsBC, {
 	downstreamRoles: ["conformist"],
 });
 
-kycScreening.consumes(screenParty, { pattern: "anti-corruption-layer" });
+kycScreening.consumes(screenParty, {
+	pattern: "anti-corruption-layer",
+	by: [screenCustomer],
+});
 onboardingApp.consumes(partyMatched, { pattern: "anti-corruption-layer" });
 // Onboarding is a process, not two policies: it holds the prospective
 // customer from the moment their details arrive until KYC passes, and a
@@ -1207,13 +1210,10 @@ instructionAgg
 		description: "The amount is greater than zero",
 	})
 	.constrains(paymentAmount);
-// DISCOVERY: Payments Hub lead. "The account has to cover it."
-instructionAgg
-	.addInvariant("FundsAvailableAtInitiation", {
-		description:
-			"An instruction is created only if the payer's available balance, read through AccountServicing, covers the amount; the overdraft itself is Accounts' rule at posting",
-	})
-	.constrains(paymentAmount);
+// DISCOVERY: Payments Hub lead. "The account has to cover it." A precondition
+// is checked at the moment of the call, and the call is InitiatePayment on
+// PaymentsApp, so the invariant names it further down where that operation
+// exists (decision 19, amended).
 instructionAgg
 	.addInvariant("CutOffRespected", {
 		description:
@@ -1327,6 +1327,16 @@ paymentsBC
 	.addInvariant("DailyLimit", {
 		description:
 			"Instructions from one account never exceed the daily limit in total; InitiatePayment sums the day's instructions for the payer account, since no single instruction can know the others",
+	})
+	.constrains(paymentAmount, initiatePayment);
+// DISCOVERY: Payments Hub lead. "The account has to cover it." A rule about one
+// instruction, so it is the aggregate's; checked before the instruction exists,
+// so what upholds it is InitiatePayment, the application service operation the
+// channel calls (decision 19, amended). The guard was in prose until card 90.
+instructionAgg
+	.addInvariant("FundsAvailableAtInitiation", {
+		description:
+			"An instruction is created only if the payer's available balance, read through AccountServicing, covers the amount; the overdraft itself is Accounts' rule at posting",
 	})
 	.constrains(paymentAmount, initiatePayment);
 // The funds check is a read of Accounts' documented API, translated: the hub
@@ -1456,10 +1466,8 @@ const submitToScheme = schemeApp
 	})
 	.raises(schemeSettlementConfirmed, schemeRejected);
 
-paymentsApp.consumes(submitToScheme, { pattern: "conformist" });
 paymentsApp.consumes(schemeSettlementConfirmed, { pattern: "conformist" });
 paymentsApp.consumes(schemeRejected, { pattern: "conformist" });
-paymentsApp.consumes(postEntry, { pattern: "anti-corruption-layer" });
 // A policy names operations of its own context, so each step that reaches
 // another context is an operation of the hub's own app service (decision 17).
 const sendToScheme = paymentsApp.provides("SendToScheme", {
@@ -1473,6 +1481,18 @@ const postSettlement = paymentsApp.provides("PostSettlement", {
 		"Post the settled instruction to the ledger, through the ACL over PostEntry",
 	type: "operation",
 	internal: true,
+});
+// PaymentsApp offers four operations and only one of them makes each of these
+// calls, so the chain from an initiated instruction to the scheme's answer and
+// on to the ledger runs through `by` rather than stopping at the boundary
+// (decision 21, third amendment).
+paymentsApp.consumes(submitToScheme, {
+	pattern: "conformist",
+	by: [sendToScheme],
+});
+paymentsApp.consumes(postEntry, {
+	pattern: "anti-corruption-layer",
+	by: [postSettlement],
 });
 // The hub lead described one instruction going from initiated to settled, and
 // the model used to spell it as seven policies. It is one process: it holds
@@ -1647,7 +1667,6 @@ fraudBC.addTerm("APP scam", {
 });
 
 // Payments waits on the scorer; flags reject, clears submit.
-paymentsApp.consumes(scoreTransaction, { pattern: "anti-corruption-layer" });
 paymentsApp.consumes(transactionFlagged, {
 	pattern: "anti-corruption-layer",
 });
@@ -1659,6 +1678,10 @@ const scoreInstruction = paymentsApp.provides("ScoreInstruction", {
 		"Send an initiated instruction to Fraud for a verdict, through the ACL",
 	type: "operation",
 	internal: true,
+});
+paymentsApp.consumes(scoreTransaction, {
+	pattern: "anti-corruption-layer",
+	by: [scoreInstruction],
 });
 // The first half of the instruction lifecycle above: scoring, and what the
 // two verdicts do. It is written here because Fraud's events are declared in
@@ -1766,12 +1789,9 @@ cardAgg
 	.constrains(expiryVO, cardAuthorisation);
 // The balance lives in Accounts, so this is a check at authorisation time
 // through the ACL (GetAvailableBalance), not a rule Cards can hold on its own.
-cardAgg
-	.addInvariant("AuthWithinAvailableBalance", {
-		description:
-			"An authorisation is approved only if the available balance read from AccountServicing at that moment covers it; Accounts then holds the amount",
-	})
-	.constrains(cardAuthorisation);
+// The operation that makes the check is AuthoriseCard on CardsApp, so the
+// invariant is declared further down where that operation exists and names it
+// (decision 19, amended; card 90).
 
 const cardAuthRequestSchema = cardsBC.addSchema("CardAuthorisationRequest", {
 	description:
@@ -1887,6 +1907,16 @@ cardsApp.consumes(getAvailableBalance, {
 	pattern: "anti-corruption-layer",
 	by: [authoriseCard],
 });
+// The precondition on that read: a rule about one authorisation, so it is the
+// aggregate's, and checked at the moment of the call, so what upholds it is
+// AuthoriseCard rather than anything the aggregate saves (decision 19,
+// amended). The guard was in the comment above until card 90.
+cardAgg
+	.addInvariant("AuthWithinAvailableBalance", {
+		description:
+			"An authorisation is approved only if the available balance read from AccountServicing at that moment covers it; Accounts then holds the amount",
+	})
+	.constrains(cardAuthorisation, authoriseCard);
 cardsApp.consumes(scoreTransaction, {
 	pattern: "anti-corruption-layer",
 	by: [authoriseCard],
@@ -2196,13 +2226,16 @@ lendingBC
 	})
 	.on(agreementSigned)
 	.issues(disburse);
-lendingApp.consumes(postEntry, { pattern: "anti-corruption-layer" });
 // Lending's own step, which is what the policy names (decision 17).
 const postDisbursement = lendingApp.provides("PostDisbursement", {
 	description:
 		"Post the disbursement to the ledger, through the ACL over PostEntry",
 	type: "operation",
 	internal: true,
+});
+lendingApp.consumes(postEntry, {
+	pattern: "anti-corruption-layer",
+	by: [postDisbursement],
 });
 lendingBC
 	.addPolicy("Post disbursement", {
@@ -2359,10 +2392,11 @@ scorecard.provides("ScoreApplication", {
 	type: "operation",
 	internal: true,
 });
-decisioningApp.consumes(getCustomer, { pattern: "anti-corruption-layer" });
+decisioningApp.consumes(getCustomer, {
+	pattern: "anti-corruption-layer",
+	by: [decide],
+});
 
-// Partnership: one planning board, so Lending conforms rather than translates.
-lendingApp.consumes(decide, { pattern: "conformist" });
 // And the other way, which the model already described and never wired up:
 // ApplicationSubmitted's schema is named "What decisioning receives" and the
 // event says "decisioning runs". Without this consumption the partnership had
@@ -2372,6 +2406,12 @@ const requestDecision = lendingApp.provides("RequestDecision", {
 	description: "Send a submitted application to Credit Decisioning",
 	type: "operation",
 	internal: true,
+});
+// Partnership: one planning board, so Lending conforms rather than translates.
+// RequestDecision is the one operation of LendingApp that makes the call.
+lendingApp.consumes(decide, {
+	pattern: "conformist",
+	by: [requestDecision],
 });
 lendingApp.consumes(decisionMade, { pattern: "conformist" });
 lendingBC
@@ -2564,7 +2604,7 @@ const channelsApp = channelsBC.addService("ChannelsApp", {
 		"The branch and contact centre application service: the boundary agents raise requests through",
 	type: "application",
 });
-channelsApp
+const raiseRequest = channelsApp
 	.provides("RaiseRequest", {
 		description: "Open a request in a branch or on the phone",
 		type: "operation",
@@ -2577,14 +2617,26 @@ const suppressMarketing = requestAgg.provides("SuppressMarketing", {
 	internal: true,
 });
 
-channelsApp.consumes(getCustomer, { pattern: "conformist" });
-channelsApp.consumes(getAvailableBalance, { pattern: "conformist" });
-channelsApp.consumes(blockCard, { pattern: "conformist" });
+// RaiseRequest is the whole of ChannelsApp's outward surface: an agent opens a
+// request and the screen fills from the four systems behind it, so every one of
+// these calls is made by that operation and by nothing else.
+channelsApp.consumes(getCustomer, {
+	pattern: "conformist",
+	by: [raiseRequest],
+});
+channelsApp.consumes(getAvailableBalance, {
+	pattern: "conformist",
+	by: [raiseRequest],
+});
+channelsApp.consumes(blockCard, { pattern: "conformist", by: [raiseRequest] });
 channelsApp.consumes(consentWithdrawn, { pattern: "conformist" });
 // DELIBERATE (separate-ways): the quick-quote button. Front-line staff may
 // not influence a credit decision, and the relationship below says so; this
 // consumption contradicts it.
-channelsApp.consumes(decide, { pattern: "anti-corruption-layer" });
+channelsApp.consumes(decide, {
+	pattern: "anti-corruption-layer",
+	by: [raiseRequest],
+});
 channelsBC
 	.addPolicy("Suppress marketing on withdrawal", {
 		description:
@@ -2646,21 +2698,13 @@ const nightlyBatchCompleted = savingsRecordAgg.provides(
 	},
 );
 
-// DISCOVERY: Core Banking lead, "runs the nightly batch". Nothing raised the
-// batch event, so the model never said what makes it happen (event-unraised).
-// The job is Sovereign's own and stays modelled at its edge, like everything
-// else here: a name, and the fact it publishes.
-sovereignBC
-	.addService("NightlyBatch", {
-		description: "The mainframe's overnight job, seen from outside it",
-		type: "application",
-	})
-	.provides("RunNightlyBatch", {
-		description: "Cut the day's savings movements into the postings file",
-		type: "operation",
-		internal: true,
-	})
-	.raises(nightlyBatchCompleted);
+// DISCOVERY: Core Banking lead, "runs the nightly batch". Card 81 turned that
+// into a NightlyBatch service with a RunNightlyBatch operation so the event had
+// a raiser, and nobody at NorthBank could have told you that: what the lead
+// knows is that the file appears each night, not which of Sovereign's programs
+// cuts it. A big ball of mud says what it emits without saying how, and
+// `event-unraised` no longer asks it to (decision 28, second amendment; card
+// 90). The service and its operation are gone.
 
 ledgerApp.consumes(nightlyBatchCompleted, { pattern: "anti-corruption-layer" });
 ledgerBC
@@ -2711,7 +2755,10 @@ const authenticateCustomer = identityApp
 		pattern: "open-host-service",
 	})
 	.raises(customerAuthenticated);
-channelsApp.consumes(authenticateCustomer, { pattern: "conformist" });
+channelsApp.consumes(authenticateCustomer, {
+	pattern: "conformist",
+	by: [raiseRequest],
+});
 
 /* =======================
    CONTEXT RELATIONSHIPS
@@ -2831,17 +2878,20 @@ reportingBC.downstreamOf(sovereignBC, {
 });
 
 // Identity-only dependencies. Each of these pairs is joined by nothing but an
-// identity attribute naming the other context's entity, which since decision
-// 14 is how the model records a dependency on another context's model. Nothing
-// is exchanged, so neither end plays an upstream or downstream role and both
-// lists stay empty; what the relationship says is which way the dependency
-// runs and that somebody looked at it (`relationship-declared`, card 70).
-schemeBC.downstreamOf(paymentsBC, {
-	upstreamRoles: [],
-	downstreamRoles: [],
-	description:
-		"A scheme submission carries the instruction id it was raised for; the gateway never reads the instruction back",
-});
+// identity attribute an entity holds naming the other context's entity, which
+// since decision 14 is how the model records a dependency on another context's
+// model. Nothing is exchanged, so neither end plays an upstream or downstream
+// role and both lists stay empty; what the relationship says is which way the
+// dependency runs and that somebody looked at it (`relationship-declared`,
+// card 70).
+//
+// Scheme Gateway used to be listed here too, for the instruction id its
+// SchemeSubmission and SchemeSettlement payloads carry. An id echoed in a
+// payload is not a dependency: the gateway writes the instruction id into the
+// message so that Payments can recognise the answer, and it stores nothing and
+// asks Payments for nothing (decision 14, second amendment). The relationship
+// that matters between the two is the one above, Payments downstream of the
+// scheme; this one was the rule's invention and is gone (card 90).
 lendingBC.downstreamOf(accountsBC, {
 	upstreamRoles: [],
 	downstreamRoles: [],

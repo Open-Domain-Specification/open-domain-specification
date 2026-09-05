@@ -41,8 +41,10 @@ Each relationship type appears exactly once, and the reasoning is written on eac
 - Sales to Inventory is upstream-downstream: the projection conforms to whatever Sales
   publishes.
 - Catalog and Inventory share a kernel: one team, one PetStatus definition.
-- Sales and Fulfilment are partners: one team, released together, each issuing the other's
-  operations or reacting to its events.
+- Sales and Fulfilment are partners: one team, released together. The traffic runs one way —
+  Fulfilment reacts to `OrderApproved` and calls Sales' `ConfirmDelivery`, and Sales asks
+  Fulfilment for nothing — which decision 20's second amendment accepts: what binds the two
+  is the release train, not the direction of the arrows.
 - Identity and Sales go separate ways: orders are anonymous.
 
 ## Inside the contexts
@@ -173,3 +175,30 @@ every pet always has one. The relation was the wrong half: it is `0..1`, and a p
 status is simply not listed by `findByStatus` and not counted by Inventory. `Order.shipDate`
 was required beside a `ships-on` of `0..1`; there the attribute was the wrong half, since
 Fulfilment sets the date when it plans the dispatch, so it is now optional.
+
+## 11. Two consumptions that said nothing (card 90)
+
+Two of the model's consumptions recorded no dependency, and both came out.
+
+`OrderApp` consumed Fulfilment's `ShipmentDelivered`. Nothing in Sales ever read it: no
+policy or process reacts to it, and `OrderDetail` — the shape the order page is built from —
+carries neither a shipment nor a delivery time. It was added so the partnership had traffic
+in both directions, and decision 20's second amendment has since said a partnership needs
+none: the order moves to delivered because Fulfilment calls `ConfirmDelivery`, which is the
+whole of the exchange between the two.
+
+`InventoryQuery` consumed its own `InventoryUpdated`. A consumption is one node depending on
+another's consumable, and a node taking in what it itself provides depends on nobody; the
+`raises` on `RecountInventory` already says where the fact comes from. It stood as the
+example of a same-context consumption needing no downstream role, which `PetApp`'s
+`ReservePet` and `OrderApp`'s `DeliverOrder` both show for real.
+
+Two things went in. Sales' `Order fulfilment` process waits on Catalog's `PetStatusChanged`,
+and nothing in Sales consumed it, so neither map drew the dependency and the anti-corruption
+layer between the two contexts was invisible on that edge; `OrderApp` now takes the fact in
+through the same ACL, with the process named as the caller (decision 17;
+`subscription-consumed`). And the consumption of `GetPetSummary` names the process as its
+caller too: it is the process that looks up the placed orders for a petId and asks whether
+the pet is free before approving, and no operation of `OrderApp` does that.
+`ApproveOnlyWhenAvailable` now names `ApproveOrder`, the transition it guards, instead of
+describing it in prose. The model still validates clean.

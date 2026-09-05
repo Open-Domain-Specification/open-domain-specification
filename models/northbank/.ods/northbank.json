@@ -513,7 +513,12 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/sanctions_screening/services/screening_app/provides/screen_party"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/customer_&_kyc/services/kyc_screening/provides/screen_customer"
+                }
+              ]
             }
           ]
         }
@@ -1986,15 +1991,6 @@
                 }
               ]
             },
-            "funds_available_at_initiation": {
-              "name": "FundsAvailableAtInitiation",
-              "description": "An instruction is created only if the payer's available balance, read through AccountServicing, covers the amount; the overdraft itself is Accounts' rule at posting",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction/attributes/amount"
-                }
-              ]
-            },
             "cut_off_respected": {
               "name": "CutOffRespected",
               "description": "A same-day instruction is initiated before the scheme cut-off",
@@ -2010,6 +2006,18 @@
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/payments_hub/valueobjects/payment_status"
+                }
+              ]
+            },
+            "funds_available_at_initiation": {
+              "name": "FundsAvailableAtInitiation",
+              "description": "An instruction is created only if the payer's available balance, read through AccountServicing, covers the amount; the overdraft itself is Accounts' rule at posting",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction/attributes/amount"
+                },
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/initiate_payment"
                 }
               ]
             }
@@ -2088,12 +2096,6 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/scheme_gateway/services/scheme_gateway_app/provides/submit_to_scheme"
-              },
-              "pattern": "conformist"
-            },
-            {
-              "consumable": {
                 "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/scheme_settlement_confirmed"
               },
               "pattern": "conformist"
@@ -2106,15 +2108,25 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/ledger/services/ledger_app/provides/post_entry"
+                "$ref": "#/boundedcontexts/scheme_gateway/services/scheme_gateway_app/provides/submit_to_scheme"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/send_to_scheme"
+                }
+              ]
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/fraud/services/fraud_app/provides/score_transaction"
+                "$ref": "#/boundedcontexts/ledger/services/ledger_app/provides/post_entry"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/post_settlement"
+                }
+              ]
             },
             {
               "consumable": {
@@ -2127,6 +2139,17 @@
                 "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_cleared"
               },
               "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/fraud/services/fraud_app/provides/score_transaction"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/payments_hub/services/payments_app/provides/score_instruction"
+                }
+              ]
             }
           ]
         }
@@ -2705,6 +2728,9 @@
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/cards/aggregates/card/entities/authorisation"
+                },
+                {
+                  "$ref": "#/boundedcontexts/cards/services/cards_app/provides/authorise_card"
                 }
               ]
             }
@@ -3389,7 +3415,12 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/ledger/services/ledger_app/provides/post_entry"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/lending/services/lending_app/provides/post_disbursement"
+                }
+              ]
             },
             {
               "consumable": {
@@ -3406,7 +3437,12 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/credit_decisioning/services/decisioning_app/provides/decide"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/lending/services/lending_app/provides/request_decision"
+                }
+              ]
             },
             {
               "consumable": {
@@ -3787,7 +3823,12 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/get_customer"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/credit_decisioning/services/decisioning_app/provides/decide"
+                }
+              ]
             },
             {
               "consumable": {
@@ -4691,19 +4732,34 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/get_customer"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/branch_&_contact_centre/services/channels_app/provides/raise_request"
+                }
+              ]
             },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/get_available_balance"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/branch_&_contact_centre/services/channels_app/provides/raise_request"
+                }
+              ]
             },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/cards/services/cards_app/provides/block_card"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/branch_&_contact_centre/services/channels_app/provides/raise_request"
+                }
+              ]
             },
             {
               "consumable": {
@@ -4715,13 +4771,23 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/credit_decisioning/services/decisioning_app/provides/decide"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/branch_&_contact_centre/services/channels_app/provides/raise_request"
+                }
+              ]
             },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/identity_&_access/services/identity_app/provides/authenticate_customer"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/branch_&_contact_centre/services/channels_app/provides/raise_request"
+                }
+              ]
             }
           ]
         }
@@ -4855,27 +4921,7 @@
         }
       },
       "invariants": {},
-      "services": {
-        "nightly_batch": {
-          "name": "NightlyBatch",
-          "description": "The mainframe's overnight job, seen from outside it",
-          "type": "application",
-          "provides": {
-            "run_nightly_batch": {
-              "name": "RunNightlyBatch",
-              "description": "Cut the day's savings movements into the postings file",
-              "type": "operation",
-              "internal": true,
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/sovereign_core_(legacy)/aggregates/savings_account_record/provides/nightly_batch_completed"
-                }
-              ]
-            }
-          },
-          "consumes": []
-        }
-      },
+      "services": {},
       "policies": {},
       "processes": {},
       "glossary": {},
@@ -5541,18 +5587,6 @@
       "downstreamRoles": [
         "anti-corruption-layer"
       ]
-    },
-    {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/payments_hub"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/scheme_gateway"
-      },
-      "upstreamRoles": [],
-      "downstreamRoles": [],
-      "description": "A scheme submission carries the instruction id it was raised for; the gateway never reads the instruction back"
     },
     {
       "type": "upstream-downstream",

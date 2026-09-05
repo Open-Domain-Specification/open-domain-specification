@@ -35,8 +35,15 @@ petStatusVO.addAttribute("value", { type: "'available' | 'pending' | 'sold'" });
 
 ```ts
 petRoot.addAttribute("id", { type: "int64", identity: true });
-petRoot.addAttribute("status", { type: "PetStatus", valueobject: petStatusVO });
+// Optional, and the relation says "0..1" to match: the v3 contract does not
+// require a status, and the two halves of that statement have to agree.
+petRoot.addAttribute("status", {
+	type: "PetStatus",
+	valueobject: petStatusVO,
+	optional: true,
+});
 petRoot.uses(categoryVO, "categorized-as", "0..1");
+petRoot.uses(petStatusVO, "has-status", "0..1");
 petRoot.uses(photoUrlVO, "has-photo", "*");
 petAgg
 	.addInvariant("NameRequired", { description: "Pet.name must be non-empty" })

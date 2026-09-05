@@ -476,6 +476,12 @@
               "description": "Drop a retired product from the index",
               "type": "operation",
               "internal": true
+            },
+            "report_ad_click": {
+              "name": "ReportAdClick",
+              "description": "Tell Advertising that a sponsored slot on the results page was clicked; the click, not the impression, is what the seller pays for",
+              "type": "operation",
+              "internal": true
             }
           },
           "consumes": [
@@ -501,13 +507,23 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/advertising/services/ads_api/provides/get_sponsored_results"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/search/services/search_api/provides/search_products"
+                }
+              ]
             },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/advertising/services/ads_api/provides/record_ad_click"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/search/services/search_api/provides/report_ad_click"
+                }
+              ]
             }
           ]
         }
@@ -1482,31 +1498,78 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/offers/services/offer_api/provides/get_offer"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/cart_&_checkout/services/checkout_orchestrator/provides/add_to_cart"
+                }
+              ]
             },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/payments/services/payments_api/provides/authorise_payment"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/cart_&_checkout/services/checkout_orchestrator/provides/request_authorisation"
+                }
+              ]
             },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/order_management/services/order_api/provides/place_order"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/cart_&_checkout/services/checkout_orchestrator/provides/place_order_for_cart"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_authorised"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/cart_&_checkout/processes/checkout"
+                }
+              ]
             },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_declined"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/cart_&_checkout/processes/checkout"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/cart_&_checkout/processes/checkout"
+                }
+              ]
             },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/identity/services/identity_api/provides/get_customer"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/cart_&_checkout/services/checkout_orchestrator/provides/checkout"
+                }
+              ]
             }
           ]
         }
@@ -4215,7 +4278,12 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/catalogue/services/catalogue_api/provides/get_product"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/advertising/services/ads_api/provides/create_campaign"
+                }
+              ]
             },
             {
               "consumable": {
@@ -4502,7 +4570,12 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/order_management/services/order_api/provides/get_order"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/customer_service/services/case_api/provides/open_case"
+                }
+              ]
             },
             {
               "consumable": {
@@ -4520,7 +4593,12 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/identity/services/identity_api/provides/get_customer"
               },
-              "pattern": "conformist"
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/customer_service/services/case_api/provides/open_case"
+                }
+              ]
             }
           ]
         }
@@ -4622,27 +4700,7 @@
         }
       },
       "invariants": {},
-      "services": {
-        "nightly_export": {
-          "name": "NightlyExport",
-          "description": "The one job of the ninety that anyone can describe",
-          "type": "application",
-          "provides": {
-            "run_nightly_export": {
-              "name": "RunNightlyExport",
-              "description": "Write the day's received vendor stock to the export file",
-              "type": "operation",
-              "internal": true,
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)/aggregates/purchase_order/provides/purchase_order_received"
-                }
-              ]
-            }
-          },
-          "consumes": []
-        }
-      },
+      "services": {},
       "policies": {},
       "processes": {},
       "glossary": {
@@ -5066,18 +5124,6 @@
       "upstreamRoles": [],
       "downstreamRoles": [],
       "description": "An order names the customer account it was placed by, by id"
-    },
-    {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/cart_&_checkout"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/payments"
-      },
-      "upstreamRoles": [],
-      "downstreamRoles": [],
-      "description": "An authorisation carries the cart it was taken for, so checkout can match it back"
     },
     {
       "type": "upstream-downstream",

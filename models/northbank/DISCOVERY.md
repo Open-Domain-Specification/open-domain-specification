@@ -467,10 +467,42 @@ The other finding of card 71 was `event-unraised`, a new warning about an event 
 of its context raises. NorthBank had exactly one: Sovereign's `NightlyBatchCompleted`, which
 the Ledger and Reporting both react to and which nothing in the model caused. The Core
 Banking lead's own words say what causes it — Sovereign "runs the nightly batch" — so the
-model now names that job: a `NightlyBatch` service with one internal operation,
+model named that job: a `NightlyBatch` service with one internal operation,
 `RunNightlyBatch`, raising the event. Nothing else moved, and validation still returns
 exactly the four deliberate diagnostics of section 7 plus card 70's second reading of the
 quick-quote crossing.
+
+## 13. Revision (card 90): the batch job comes back out, and the guards are named
+
+The lead said Sovereign "runs the nightly batch". He did not say which program cuts the
+file, and nobody at NorthBank could: Sovereign is flagged a big ball of mud precisely
+because its insides cannot be read. `NightlyBatch` and `RunNightlyBatch` were the model
+answering a rule rather than an interview, so they are gone. A big ball of mud is exempt
+from `event-unraised`, `aggregate-root` and `root-identity` as an external context is
+(decision 28's second amendment): it may say what it emits without saying how, which is
+exactly what this record knows. `NightlyBatchCompleted` still carries the batch file's shape
+and the Ledger still imports from it.
+
+Two rules that were carried in prose are now in the model. `FundsAvailableAtInitiation` and
+`AuthWithinAvailableBalance` are preconditions — the balance is read at the moment of the
+call and the aggregate cannot hold either after the fact — and both now name the operation
+that checks them, `InitiatePayment` and `AuthoriseCard` on their contexts' application
+services (decision 19's 2026-09-08 amendment). Reading either invariant now tells you where
+it is enforced instead of pointing at a comment.
+
+Every cross-context call also names its caller. Twelve of NorthBank's seventeen said only
+that a service depended on a neighbour, so the instruction lifecycle dead-ended at the hub's
+boundary and never reached the scheme's answer or the ledger posting; `SendToScheme`,
+`PostSettlement`, `ScoreInstruction`, `PostDisbursement`, `RequestDecision`,
+`ScreenCustomer`, `Decide` and `RaiseRequest` are the operations that make those calls, and
+the flow map now follows them (decision 21's third amendment).
+
+Last, Scheme Gateway is no longer declared downstream of Payments Hub. That relationship
+existed for the instruction id the scheme's submission and settlement payloads carry, and
+its own description admitted the gateway "never reads the instruction back": an id echoed
+in a payload is written for its reader, not a dependency on another context's model
+(decision 14's second amendment). The relationship that matters between the two — Payments
+downstream of the scheme, "you don't negotiate with a scheme" — is untouched.
 
 ## 12. Revision (card 59): a ledger account is a customer's or a nominal
 

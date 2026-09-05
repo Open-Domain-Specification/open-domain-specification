@@ -193,6 +193,61 @@ describe("Workspace.validate", () => {
 		expect(messages).toEqual([]);
 	});
 
+	it("refuses an entity storing another aggregate's child id inside one context", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Sales", { description: "" });
+		const orderAgg = bc.addAggregate("Order", { description: "" });
+		const order = orderAgg.addRootEntity("Order", { description: "" });
+		order.addAttribute("id", { type: "int64", identity: true });
+		const line = orderAgg.addEntity("Order Line", { description: "" });
+		line.addAttribute("id", { type: "int64", identity: true });
+		order.includes(line, "has-line", "*");
+		const basket = bc.addAggregate("Basket", { description: "" });
+		const cart = basket.addRootEntity("Basket", { description: "" });
+		cart.addAttribute("id", { type: "int64", identity: true });
+		const lineId = cart.addAttribute("lineId", {
+			type: "int64",
+			identifies: line,
+		});
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "identifies-entity")
+				.map((d) => [d.message, d.ref]),
+		).toEqual([
+			[
+				'"Basket" holds attribute "lineId" as the identity of "Order Line", which is not the root of aggregate "Order" in this same context "Sales"; use a relation to its root, because inside one context nothing is reached by id alone',
+				lineId.ref,
+			],
+		]);
+	});
+
+	it("lets an entity hold the id of a child of its own aggregate, and of another context's", () => {
+		const ws = emptyWorkspace();
+		const sales = ws.addBoundedContext("Sales", { description: "" });
+		const catalog = ws.addBoundedContext("Catalog", { description: "" });
+		catalog.upstreamOf(sales, {});
+		const orderAgg = sales.addAggregate("Order", { description: "" });
+		const order = orderAgg.addRootEntity("Order", { description: "" });
+		order.addAttribute("id", { type: "int64", identity: true });
+		const line = orderAgg.addEntity("Order Line", { description: "" });
+		line.addAttribute("id", { type: "int64", identity: true });
+		order.includes(line, "has-line", "*");
+		// A sibling inside the same boundary, which no relation has to carry.
+		line.addAttribute("nextLineId", { type: "int64", identifies: line });
+		const petAgg = catalog.addAggregate("Pet", { description: "" });
+		const pet = petAgg.addRootEntity("Pet", { description: "" });
+		pet.addAttribute("id", { type: "int64", identity: true });
+		const tag = petAgg.addEntity("Tag", { description: "" });
+		tag.addAttribute("id", { type: "int64", identity: true });
+		pet.includes(tag, "has-tag", "*");
+		// Across a boundary a child id is all there is, which decision 14 allows.
+		order.addAttribute("tagId", { type: "int64", identifies: tag });
+		expect(ws.validate().filter((d) => d.rule === "identifies-entity")).toEqual(
+			[],
+		);
+	});
+
 	it("flags an identity naming an entity this workspace does not have", () => {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("Sales", { description: "" });
@@ -912,13 +967,18 @@ describe("invariant-in-aggregate", () => {
 				severity: "error",
 				rule: "invariant-in-aggregate",
 				message:
-					'Invariant "Stretched" of aggregate "Order" constrains "Customer", which is in aggregate "Customer"; an aggregate\'s invariant holds inside the boundary on every save',
+					'Invariant "Stretched" of aggregate "Order" constrains "Customer", which is in aggregate "Customer"; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of an application service of its own context that guards it',
 				ref: stretched.ref,
 			},
 		]);
 	});
 
-	it("lets an invariant name an operation of its own aggregate, but not a foreign one", () => {
+	/**
+	 * One aggregate with an internal operation, its context's application
+	 * service and domain service, and a second context's application service:
+	 * the four places an invariant might point an operation at.
+	 */
+	function guards() {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("BC", { description: "" });
 		const order = bc.addAggregate("Order", { description: "" });
@@ -933,22 +993,63 @@ describe("invariant-in-aggregate", () => {
 			description: "",
 			type: "operation",
 		});
+		const pricing = bc.addService("Pricing", {
+			description: "",
+			type: "domain",
+		});
+		const price = pricing.provides("Price", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const next = ws.addBoundedContext("Next", { description: "" });
+		const theirs = next
+			.addService("TheirApp", { description: "", type: "application" })
+			.provides("Check", { description: "", type: "operation" });
+		return { ws, order, approve, submit, price, theirs };
+	}
+
+	const inAggregate = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "invariant-in-aggregate")
+			.map((d) => [d.message, d.ref]);
+
+	it("lets an invariant name an operation of its own aggregate", () => {
+		const { ws, order, approve } = guards();
 		// The transition rule names the operation that makes the transition.
 		order
 			.addInvariant("Once Approved", { description: "" })
 			.constrains(approve);
-		const misplaced = order
-			.addInvariant("Reaches Out", { description: "" })
+		expect(inAggregate(ws)).toEqual([]);
+	});
+
+	it("lets a precondition name the application service operation that guards it", () => {
+		const { ws, order, submit } = guards();
+		// Decision 17 puts the public operation on the application service, so
+		// that is where a precondition is checked (decision 19, amended).
+		order
+			.addInvariant("Funds Available", { description: "" })
 			.constrains(submit);
-		expect(
-			ws
-				.validate()
-				.filter((d) => d.rule === "invariant-in-aggregate")
-				.map((d) => [d.message, d.ref]),
-		).toEqual([
+		expect(inAggregate(ws)).toEqual([]);
+	});
+
+	it("refuses a domain service's operation and a neighbouring context's", () => {
+		const { ws, order, price, theirs } = guards();
+		const internal = order
+			.addInvariant("Priced Right", { description: "" })
+			.constrains(price);
+		const abroad = order
+			.addInvariant("Reaches Out", { description: "" })
+			.constrains(theirs);
+		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Reaches Out" of aggregate "Order" constrains "Submit", which is in no aggregate at all; an aggregate\'s invariant holds inside the boundary on every save',
-				misplaced.ref,
+				'Invariant "Priced Right" of aggregate "Order" constrains "Price", which is a domain service\'s, on "Pricing" in bounded context "BC"; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of an application service of its own context that guards it',
+				internal.ref,
+			],
+			[
+				'Invariant "Reaches Out" of aggregate "Order" constrains "Check", which is an application service\'s, on "TheirApp" in bounded context "Next"; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of an application service of its own context that guards it',
+				abroad.ref,
 			],
 		]);
 	});
@@ -996,7 +1097,7 @@ describe("invariant-in-aggregate", () => {
 				.map((d) => [d.message, d.ref]),
 		).toEqual([
 			[
-				'Invariant "Reaches Out" of aggregate "Invoice" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save',
+				'Invariant "Reaches Out" of aggregate "Invoice" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of an application service of its own context that guards it',
 				reaching.ref,
 			],
 		]);
@@ -1784,6 +1885,67 @@ describe("relationship-roles-backed", () => {
 		const { ws, up, down } = crossing(undefined, undefined);
 		up.partnerOf(down);
 		expect(backedRules(ws)).toEqual([]);
+	});
+
+	/**
+	 * The standards-body shape: an external context publishing a message format
+	 * and a context that carries it. Nothing is consumed — the exchange happens
+	 * over a pipe the model does not draw — so the only evidence of conforming
+	 * is the borrowed schema, and it is evidence enough for both this rule and
+	 * `conformist-backed` (card 90).
+	 */
+	function conformsToStandard() {
+		const ws = emptyWorkspace();
+		const fhir = ws.addBoundedContext("FHIR", {
+			description: "",
+			external: true,
+		});
+		const care = ws
+			.addDomain("Care", { description: "" })
+			.addSubdomain("Records", { description: "", type: "core" });
+		const clinical = ws.addBoundedContext("Clinical", {
+			description: "",
+			subdomains: [care],
+		});
+		const patient = fhir.addSchema("Patient");
+		patient.addAttribute("identifier", { type: "string" });
+		const relationship = fhir.upstreamOf(clinical, {
+			downstreamRoles: ["conformist"],
+		});
+		return { ws, fhir, clinical, patient, relationship };
+	}
+
+	it("counts a conformist borrowing the upstream's schema, with nothing consumed", () => {
+		const { ws, clinical, patient } = conformsToStandard();
+		clinical
+			.addService("Records", { description: "", type: "application" })
+			.provides("Publish Encounter", {
+				description: "",
+				type: "operation",
+				schema: patient,
+			});
+		expect(ws.validate()).toEqual([]);
+	});
+
+	it("counts a value object of the upstream typed onto the downstream's model", () => {
+		const { ws, fhir, clinical } = conformsToStandard();
+		const coding = fhir.addValueObject("Coding", { description: "" });
+		coding.addAttribute("code", { type: "string" });
+		const chart = clinical.addAggregate("Chart", { description: "" });
+		const root = chart.addRootEntity("Chart", { description: "" });
+		root.addAttribute("Id", { type: "uuid", identity: true });
+		root.addAttribute("Diagnosis", { type: "Coding", valueobject: coding });
+		expect(ws.validate()).toEqual([]);
+	});
+
+	it("still warns when the conformist borrows nothing and consumes nothing", () => {
+		const { ws, relationship } = conformsToStandard();
+		expect(backedRules(ws).map((d) => [d.message, d.ref])).toEqual([
+			[
+				'"Clinical" is declared conformist to "FHIR", but no consumption of "Clinical" from "FHIR" declares that downstream role, and nothing in it carries one of "FHIR"\'s schemas or value objects',
+				relationship.ref,
+			],
+		]);
 	});
 });
 
@@ -3198,7 +3360,7 @@ describe("shared-kernel-backed", () => {
 		expect(backed(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 			[
 				"warning",
-				'"A" and "B" declare a shared kernel, but neither types an attribute by a value object the other declares or carries one of its schemas, so nothing is in the kernel',
+				'"A" and "B" declare a shared kernel, but neither types an attribute by a value object the other declares, carries one of its schemas or calls one of its operations, so nothing is in the kernel',
 				relationship.ref,
 			],
 		]);
@@ -3232,6 +3394,22 @@ describe("shared-kernel-backed", () => {
 			type: "OrderLine[]",
 			schema: line,
 		});
+		expect(backed(ws)).toEqual([]);
+	});
+
+	it("goes quiet when one context calls an operation of the other", () => {
+		const { ws, a, b } = kernel();
+		// The kernel holds something with identity and behaviour — a jointly
+		// maintained Product with its unit conversions — so it is an aggregate of
+		// the kernel context reached through its operations, and the sharing is
+		// the call rather than a copied shape (decision 16, second amendment).
+		const convert = a
+			.addAggregate("Product", { description: "" })
+			.provides("Convert Units", { description: "", type: "operation" });
+		b.addService("Pricing", { description: "", type: "application" }).consumes(
+			convert,
+			{},
+		);
 		expect(backed(ws)).toEqual([]);
 	});
 
@@ -3683,6 +3861,27 @@ describe("relationship-declared", () => {
 		]);
 	});
 
+	it("says nothing about an id echoed in a payload schema", () => {
+		const { ws, up, down } = identityOnly();
+		const thing = [...up.aggregates.values()][0].entities.get("thing");
+		const payload = down.addSchema("Holder Changed");
+		payload.addAttribute("Thing Id", { type: "uuid", identifies: thing });
+		// The entity's identity is still the crossing; the payload's is not one
+		// at all (decision 14, second amendment).
+		expect(declared(ws)).toHaveLength(1);
+		const echoOnly = emptyWorkspace();
+		const provider = echoOnly.addBoundedContext("Up", { description: "" });
+		const reader = echoOnly.addBoundedContext("Down", { description: "" });
+		const root = provider
+			.addAggregate("Thing", { description: "" })
+			.addRootEntity("Thing", { description: "" });
+		root.addAttribute("Id", { type: "uuid", identity: true });
+		reader
+			.addSchema("Note")
+			.addAttribute("Thing Id", { type: "uuid", identifies: root });
+		expect(declared(echoOnly)).toEqual([]);
+	});
+
 	it("goes quiet when the relationship points the way the crossing runs", () => {
 		const { ws, up, down } = crossing();
 		up.upstreamOf(down, {
@@ -4050,6 +4249,36 @@ describe("external-is-boundary", () => {
 		expect(boundary(ws)).toEqual([]);
 	});
 
+	it("refuses a rule kept on one of its value objects", () => {
+		const { ws, external } = scheme();
+		// The value object stays: it is the vocabulary our own model carries. The
+		// rule on it is somebody else's, and `invariant-in-value-object` walks
+		// modelled contexts only, so refusal here is what checks it at all
+		// (decision 28, second amendment).
+		const amount = external.addValueObject("Scheme Amount", {
+			description: "",
+		});
+		amount.addAttribute("minor units", { type: "int64" });
+		const invariant = amount.addInvariant("Never Negative", {
+			description: "",
+		});
+		expect(boundary(ws)).toEqual([
+			[
+				"error",
+				'External context "Card Scheme" declares invariant "Never Negative" on value object "Scheme Amount"; what happens inside a system we do not own is not ours to state, only what it provides and what it consumes',
+				invariant.ref,
+			],
+		]);
+	});
+
+	it("leaves the value object itself alone", () => {
+		const { ws, external } = scheme();
+		external
+			.addValueObject("Scheme Amount", { description: "" })
+			.addAttribute("minor units", { type: "int64" });
+		expect(boundary(ws)).toEqual([]);
+	});
+
 	it("asks an external context for no subdomain", () => {
 		const { ws, external } = scheme();
 		expect(
@@ -4138,5 +4367,285 @@ describe("event-unraised", () => {
 			type: "event",
 		});
 		expect(unraised(ws)).toEqual([]);
+	});
+});
+
+describe("a big ball of mud, whose insides nobody can read", () => {
+	/** A legacy context of ours, with a cluster and a fact and no insides. */
+	function mud(bigBallOfMud = true) {
+		const ws = emptyWorkspace();
+		const legacy = ws.addBoundedContext("Sovereign Core", {
+			description: "",
+			bigBallOfMud,
+		});
+		const feed = legacy
+			.addService("Feed", { description: "", type: "application" })
+			.provides("Nightly Batch Completed", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			});
+		const cluster = legacy.addAggregate("Account Master", { description: "" });
+		const record = cluster.addEntity("Account Record", { description: "" });
+		return { ws, legacy, feed, cluster, record };
+	}
+
+	const rules = (ws: Workspace, ...ids: string[]) =>
+		ws.validate().filter((d) => ids.includes(d.rule));
+
+	it("is asked for no raiser, no root and no root identity", () => {
+		const { ws } = mud();
+		expect(
+			rules(ws, "event-unraised", "aggregate-root", "root-identity"),
+		).toEqual([]);
+	});
+
+	it("asks a context nobody has called unreadable for all three", () => {
+		const { ws } = mud(false);
+		expect(
+			rules(ws, "event-unraised", "aggregate-root", "root-identity").map(
+				(d) => d.rule,
+			),
+		).toEqual(["aggregate-root", "event-unraised"]);
+	});
+
+	it("still holds it to the rules about what it does state", () => {
+		const { ws, record } = mud();
+		// entity-identity is about an entity the model does name, and naming one
+		// is a claim the author has made: a mud context is exempt from
+		// completeness, not from coherence.
+		record.addAttribute("Balance", { type: "decimal" });
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "entity-identity")
+				.map((d) => d.ref),
+		).toEqual([record.ref]);
+	});
+});
+
+describe("subscription-consumed", () => {
+	/**
+	 * A publisher and a subscriber, with the reaction written as a policy and
+	 * nothing else. `consume` hangs the consumption on the service that owns the
+	 * reaction, which is what the fix asks for.
+	 */
+	function subscription({ consume = false } = {}) {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Catalogue", { description: "" });
+		const down = ws.addBoundedContext("Search", { description: "" });
+		up.upstreamOf(down, { downstreamRoles: ["conformist"] });
+		const catalogueApi = up.addService("Catalogue API", {
+			description: "",
+			type: "application",
+		});
+		const listed = catalogueApi.provides("Product Listed", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+		});
+		const searchApi = down.addService("Search API", {
+			description: "",
+			type: "application",
+		});
+		const index = searchApi.provides("Index Product", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const policy = down
+			.addPolicy("Index on listing", { description: "" })
+			.on(listed)
+			.issues(index);
+		if (consume) searchApi.consumes(listed, { by: [policy] });
+		return { ws, up, down, catalogueApi, listed, searchApi, policy };
+	}
+
+	const consumed = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "subscription-consumed")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("refuses a policy reacting to a neighbour's event with nothing consuming it", () => {
+		const { ws, policy } = subscription();
+		expect(consumed(ws)).toEqual([
+			[
+				"error",
+				'Policy "Index on listing" reacts to "Product Listed" from "Catalogue", but nothing in "Search" consumes it; a context takes a foreign fact in at its own boundary, so the subscription is a consumption and reads as one on both maps',
+				policy.ref,
+			],
+		]);
+	});
+
+	it("goes quiet once the reacting context takes the event in", () => {
+		const { ws } = subscription({ consume: true });
+		expect(consumed(ws)).toEqual([]);
+	});
+
+	it("takes the consumption from anywhere in the context, not only the reactor's own node", () => {
+		const { ws, down, listed } = subscription();
+		const index = down.addAggregate("Index", { description: "" });
+		index
+			.addRootEntity("Index", { description: "" })
+			.addAttribute("Id", { type: "uuid", identity: true });
+		index.consumes(listed, { pattern: "conformist" });
+		expect(consumed(ws)).toEqual([]);
+	});
+
+	it("says nothing about a reaction to the context's own event", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Sales", { description: "" });
+		const app = bc.addService("Sales App", {
+			description: "",
+			type: "application",
+		});
+		const placed = app.provides("Order Placed", {
+			description: "",
+			type: "event",
+		});
+		const notify = app.provides("Notify", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		bc.addPolicy("Notify on order", { description: "" })
+			.on(placed)
+			.issues(notify);
+		expect(consumed(ws)).toEqual([]);
+	});
+
+	it("reads a process's starts, on and ends the same way", () => {
+		const { ws, down, catalogueApi, listed, searchApi } = subscription({
+			consume: true,
+		});
+		const retired = catalogueApi.provides("Product Retired", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+		});
+		const process = down
+			.addProcess("Reindex", { description: "" })
+			.starts(listed)
+			.ends(retired);
+		expect(consumed(ws)).toEqual([
+			[
+				"error",
+				'Process "Reindex" reacts to "Product Retired" from "Catalogue", but nothing in "Search" consumes it; a context takes a foreign fact in at its own boundary, so the subscription is a consumption and reads as one on both maps',
+				process.ref,
+			],
+		]);
+		searchApi.consumes(retired, { pattern: "conformist" });
+		expect(consumed(ws)).toEqual([]);
+	});
+});
+
+describe("consumption-by-required", () => {
+	/** A provider's operation and a consumer with `operations` of its own. */
+	function calls(operations: number, by = false) {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Ledger", { description: "" });
+		const down = ws.addBoundedContext("Payments", { description: "" });
+		up.upstreamOf(down, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["conformist"],
+		});
+		const post = up
+			.addService("Ledger API", { description: "", type: "application" })
+			.provides("Post Entry", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			});
+		const app = down.addService("Payments App", {
+			description: "",
+			type: "application",
+		});
+		const own = Array.from({ length: operations }, (_, i) =>
+			app.provides(`Step ${i + 1}`, {
+				description: "",
+				type: "operation",
+				internal: true,
+			}),
+		);
+		const consumption = app.consumes(post, {
+			pattern: "conformist",
+			by: by ? [own[0]] : undefined,
+		});
+		return { ws, consumption };
+	}
+
+	const required = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "consumption-by-required")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("asks a consumer with several operations which one calls out", () => {
+		const { ws, consumption } = calls(3);
+		expect(required(ws)).toEqual([
+			[
+				"warning",
+				'"Payments App" consumes "Post Entry" from "Ledger" without saying which of its own operations makes the call; it provides "Step 1", "Step 2", "Step 3"',
+				consumption.ref,
+			],
+		]);
+	});
+
+	it("goes quiet once by names one", () => {
+		const { ws } = calls(3, true);
+		expect(required(ws)).toEqual([]);
+	});
+
+	it("leaves a consumer with one operation alone; it is its own answer", () => {
+		expect(required(calls(1).ws)).toEqual([]);
+	});
+
+	it("leaves a consumer with none alone; it has nothing to name", () => {
+		expect(required(calls(0).ws)).toEqual([]);
+	});
+
+	it("says nothing about a consumed event, which the consumer does not call", () => {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Ledger", { description: "" });
+		const down = ws.addBoundedContext("Payments", { description: "" });
+		up.upstreamOf(down, { downstreamRoles: ["conformist"] });
+		const posted = up
+			.addService("Ledger API", { description: "", type: "application" })
+			.provides("Entry Posted", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			});
+		const app = down.addService("Payments App", {
+			description: "",
+			type: "application",
+		});
+		for (const name of ["One", "Two"])
+			app.provides(name, { description: "", type: "operation" });
+		app.consumes(posted, { pattern: "conformist" });
+		expect(required(ws)).toEqual([]);
+	});
+
+	it("says nothing about a call inside one context", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Sales", { description: "" });
+		const agg = bc.addAggregate("Order", { description: "" });
+		agg
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("Id", { type: "uuid", identity: true });
+		const approve = agg.provides("Approve", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const app = bc.addService("Sales App", {
+			description: "",
+			type: "application",
+		});
+		for (const name of ["One", "Two"])
+			app.provides(name, { description: "", type: "operation" });
+		app.consumes(approve, {});
+		expect(required(ws)).toEqual([]);
 	});
 });

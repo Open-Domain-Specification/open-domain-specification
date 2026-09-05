@@ -237,8 +237,11 @@ function everythingWrong(): Workspace {
 	// partnership-backed: partners with no traffic either way, and
 	// disposition-needs-comment: a disposition on it with nothing written down
 	b.partnerOf(c, { disposition: "refactor" });
-	// shared-kernel-backed: a kernel declared with nothing in it
+	// shared-kernel-backed: a kernel declared with nothing in it. E is a context
+	// of its own because B and D go on to call each other, and a call across a
+	// kernel is one of the things that backs it (decision 16, second amendment).
 	const d = ws.addBoundedContext("D", { description: "" });
+	ws.addBoundedContext("E", { description: "" }).sharesKernelWith(a);
 	d.sharesKernelWith(b);
 	// conformist-backed: D says it conforms to C and then names nothing of C's
 	// and calls nothing C offers
@@ -268,6 +271,9 @@ function everythingWrong(): Workspace {
 	other.consumes(dAsk, {});
 	b.upstreamOf(d, {});
 	d.upstreamOf(b, {});
+	// subscription-consumed: D hears C's legacy feed and nothing in D takes it
+	// in, so the dependency is on no map at all
+	d.addPolicy("Hears Legacy", { description: "" }).on(legacyFeed).issues(dAsk);
 	// relationship-duplicate: the same kernel again, participants the other way
 	// round. A symmetric type has no direction, so this is the second copy.
 	b.sharesKernelWith(d);

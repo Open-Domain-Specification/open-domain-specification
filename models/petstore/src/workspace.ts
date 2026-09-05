@@ -589,12 +589,10 @@ orderAgg
 // enforce a rule over the catalogue's PetStatus. What it can enforce is that
 // its own status only moves to approved after the availability check the
 // ACL made through GetPetSummary; the process below is where that check runs.
-orderAgg
-	.addInvariant("ApproveOnlyWhenAvailable", {
-		description:
-			"Move to approved only after the catalogue's summary reported the pet available; the catalogue's status itself is outside this aggregate, so the check is a read through the ACL, not a shared invariant",
-	})
-	.constrains(orderStatusVO);
+// The rule is a precondition of the transition, so it names the operation that
+// makes it — ApproveOrder, the aggregate's own — and the guard is in the model
+// rather than in this comment (decision 19). The invariant is declared after
+// ApproveOrder, further down.
 // An invariant that names two value objects, because the rule reads both.
 orderAgg
 	.addInvariant("DeliverOnlyWhenApproved", {
@@ -674,6 +672,13 @@ const approveOrder = orderAgg
 		schema: orderIdSchema,
 	})
 	.raises(orderApproved);
+// The precondition, declared here because it names the transition it guards.
+orderAgg
+	.addInvariant("ApproveOnlyWhenAvailable", {
+		description:
+			"Move to approved only after the catalogue's summary reported the pet available; the catalogue's status itself is outside this aggregate, so the check is a read through the ACL, not a shared invariant",
+	})
+	.constrains(orderStatusVO, approveOrder);
 // Delivery is confirmed by Fulfilment, but the transition itself is the
 // aggregate's own, so it is internal and OrderApp's ConfirmDelivery below is
 // what Fulfilment calls (decision 17).
@@ -730,21 +735,6 @@ const confirmDelivery = orderApp.provides("ConfirmDelivery", {
 // rather than stopping at the open host (decision 21).
 orderApp.consumes(deliverOrder, { by: [confirmDelivery] });
 
-// Anti-corruption layer: OrderApp translates the catalog's summary into its
-// own notion of availability rather than adopting the catalog's model.
-orderApp.consumes(getPetSummaryOp, {
-	pattern: "anti-corruption-layer",
-	comments: [
-		{
-			text: "PetSummaryClient is the translator; nothing else in Sales knows the catalog payload shape.",
-			link: {
-				kind: "code",
-				url: "https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts",
-				label: "sales/acl/PetSummaryClient.ts",
-			},
-		},
-	],
-});
 // A process, like a policy, names operations of its own context (decisions 17
 // and 23), so the two catalogue transitions Sales drives get a local operation
 // each: the one that calls out through the ACL above. What crosses the boundary is the
@@ -786,7 +776,7 @@ orderApp.consumes(markPetSoldForOrder, {
 // is the customer: each operation it issues is Sales' own, and that operation
 // is what reaches Catalog through the ACL — a context acts through its own
 // boundary (decisions 17 and 23).
-salesBC
+const orderFulfilment = salesBC
 	.addProcess("Order fulfilment", {
 		description:
 			"From an order being placed to the pet being sold. It starts on OrderPlaced and waits, because the pet may not be available yet: a relisting (PetStatusChanged) makes it look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest. On approval it holds the pet (available → pending), and once the order is delivered it tells the catalogue the pet has gone to its owner (pending → sold). It does not listen to PetReserved: that is the fact this very chain produces. Correlation is by petId and then orderId; an order nobody can fulfil is cancelled by hand, which is why there is no timeout here",
@@ -795,6 +785,50 @@ salesBC
 	.on(petStatusChanged)
 	.issues(approveOrder, reservePetForApproved, markPetSoldForDelivered)
 	.ends(orderDelivered);
+
+// The two consumptions the process itself makes, declared here because both
+// name it. Anti-corruption layer: OrderApp translates the catalog's summary
+// into its own notion of availability rather than adopting the catalog's model,
+// and it does the same with the relisting fact.
+//
+// The process is the caller of both. It is the thing that looks up the placed
+// orders for a petId and asks whether the pet is free before approving; no
+// operation of OrderApp does that, and inventing one so the caller could be an
+// operation would put a step in the model that nobody performs. A `by` may name
+// a policy or a process for exactly this reason (decision 21).
+orderApp.consumes(getPetSummaryOp, {
+	pattern: "anti-corruption-layer",
+	by: [orderFulfilment],
+	comments: [
+		{
+			text: "PetSummaryClient is the translator; nothing else in Sales knows the catalog payload shape.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts",
+				label: "sales/acl/PetSummaryClient.ts",
+			},
+		},
+	],
+});
+// Waiting on the catalogue's relisting is a dependency on Catalog like any
+// other, so Sales takes the fact in at its own boundary rather than only
+// subscribing to it (decision 17; `subscription-consumed`). The same ACL
+// translates it: what Sales stores is that the pet it is waiting for may be
+// free, not the catalogue's from/to statuses.
+orderApp.consumes(petStatusChanged, {
+	pattern: "anti-corruption-layer",
+	by: [orderFulfilment],
+	comments: [
+		{
+			text: "PetSummaryClient maps the catalogue's status change onto the process's one question, is this pet free.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts",
+				label: "sales/acl/PetSummaryClient.ts",
+			},
+		},
+	],
+});
 
 salesBC.addTerm("Order", {
 	definition:
@@ -973,13 +1007,14 @@ const reportDelivery = shipmentApp.provides("ReportDelivery", {
 // names itself in `by` and the chain carries from RecordDeliveryAttempt's
 // ShipmentDelivered through the policy into Sales (decision 21).
 shipmentApp.consumes(confirmDelivery, { by: [reportDelivery] });
-// The other half of the partnership, declared here because it needs
-// ShipmentDelivered above. ConfirmDelivery is the command that moves the order
-// to delivered; this is Sales reading the delivery facts — which shipment, and
-// when — that its order page shows. Without it nothing of Fulfilment's crossed
-// into Sales at all, and the partnership was a one-way dependency wearing a
-// partner's badge.
-orderApp.consumes(shipmentDelivered, {});
+// Sales consumes nothing of Fulfilment's. It was given ShipmentDelivered on
+// card 47 so that the partnership had traffic both ways, and nothing in Sales
+// ever read it: no policy or process of Sales reacts to it, and OrderDetail
+// carries no shipment and no delivery time to show. The order moves to
+// delivered because Fulfilment calls ConfirmDelivery, which is the whole of the
+// exchange. Decision 20's second amendment says a partnership needs no traffic
+// in the quiet direction, so the consumption was silencing a rule that no
+// longer asks, and it is gone (card 90).
 
 const planOnApproval = fulfilmentBC
 	.addPolicy("Plan dispatch on approval", {
@@ -1079,9 +1114,12 @@ inventoryQuery.consumes(petSold, { pattern: "conformist" });
 inventoryQuery.consumes(orderApproved, { pattern: "conformist" });
 inventoryQuery.consumes(orderDelivered, { pattern: "conformist" });
 inventoryQuery.consumes(orderDeleted, { pattern: "conformist" });
-// A consumption inside one context needs no pattern: there is no boundary to
-// protect between GetInventory reading the fact and RecountInventory raising it.
-inventoryQuery.consumes(inventoryUpdated, {});
+// InventoryQuery does not consume its own InventoryUpdated. A consumption is
+// one node depending on another's consumable; a node taking in what it itself
+// provides records no dependency, and the raise on RecountInventory already
+// says where the fact comes from. It was written as an example of a
+// pattern-less same-context consumption, which PetApp's ReservePet and
+// OrderApp's DeliverOrder both show for real (card 90).
 
 inventoryBC
 	.addPolicy("Recount on stock change", {
@@ -1278,9 +1316,11 @@ catalogBC.sharesKernelWith(inventoryBC, {
 	],
 });
 
-// partnership: the Orders Team owns both, releases them together, and each
-// really depends on the other — Fulfilment on OrderApproved and on Sales'
-// ConfirmDelivery boundary, Sales on Fulfilment's ShipmentDelivered.
+// partnership: the Orders Team owns both and releases them together. The
+// traffic runs one way — Fulfilment reacts to OrderApproved and calls Sales'
+// ConfirmDelivery, and Sales asks Fulfilment for nothing — which is a
+// partnership all the same: what binds the two is the release train, not the
+// direction of the arrows (decision 20's second amendment).
 salesBC.partnerOf(fulfilmentBC, {
 	description:
 		"Order lifecycle and shipment lifecycle are designed and released together",
@@ -1291,7 +1331,7 @@ salesBC.partnerOf(fulfilmentBC, {
 			text: "Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged.",
 		},
 		{
-			text: "OrderApproved and ShipmentDelivered cross the boundary one way each, and Fulfilment calls ConfirmDelivery on top of that, all with no translation layer; each side depending on the other is what makes this a partnership rather than customer-supplier.",
+			text: "OrderApproved crosses into Fulfilment and Fulfilment calls ConfirmDelivery back, both with no translation layer. Neither side treats the other as a supplier to be protected from, which is what makes this a partnership rather than customer-supplier; the traffic happening to run one way says nothing about that.",
 		},
 	],
 });

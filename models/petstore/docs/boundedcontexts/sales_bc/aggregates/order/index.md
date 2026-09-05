@@ -28,8 +28,8 @@ Order for a single pet
 | Name | Description | Constrains |
 | --- | --- | --- |
 | OneAnimalPerOrder | Quantity is exactly 1: a Pet is one animal with one status, so it cannot be sold five times. The API's quantity field is accepted but never exceeds one | Quantity |
-| ApproveOnlyWhenAvailable | Move to approved only after the catalogue's summary reported the pet available; the catalogue's status itself is outside this aggregate, so the check is a read through the ACL, not a shared invariant | OrderStatus |
 | DeliverOnlyWhenApproved | Deliver only from approved and only once a ship date is set, so nothing is marked delivered that was never checked or never dispatched | OrderStatus, ShipDate |
+| ApproveOnlyWhenAvailable | Move to approved only after the catalogue's summary reported the pet available; the catalogue's status itself is outside this aggregate, so the check is a read through the ACL, not a shared invariant | OrderStatus, ApproveOrder |
 
 
 ## Provides
@@ -39,7 +39,7 @@ Order for a single pet
 | OrderApproved | event | no | published-language | Order approved (status=approved); Inventory and Fulfilment both react | [OrderId](../../index.md#schemas) | - | - | - | - |
 | OrderDelivered | event | no | published-language | Order delivered (status=delivered) | [OrderId](../../index.md#schemas) | - | - | - | - |
 | OrderDeleted | event | no | published-language | Order deleted via DELETE /store/order/{orderId} | [OrderId](../../index.md#schemas) | - | - | - | - |
-| ApproveOrder | operation | yes | - | Approve a placed order once the pet is available | [OrderId](../../index.md#schemas) | - | - | OrderApproved | - |
+| ApproveOrder | operation | yes | - | Approve a placed order once the pet is available | [OrderId](../../index.md#schemas) | - | - | OrderApproved | ApproveOnlyWhenAvailable |
 | DeliverOrder | operation | yes | - | Mark an approved order as delivered; run by OrderApp when Fulfilment reports the shipment arrived | [OrderId](../../index.md#schemas) | - | - | OrderDelivered | - |
 
 

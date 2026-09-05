@@ -20,24 +20,24 @@
 <text xml:space="preserve" text-anchor="middle" x="514.5" y="-487" font-family="sans-serif" font-size="10.00">Petstore Commerce</text>
 </g>
 <g id="clust3" class="cluster namespace">
-<title>#/domains/petstore_commerce/subdomains/inventory</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="424,-268 424,-460 715,-460 715,-268 424,-268"/>
-<text xml:space="preserve" text-anchor="middle" x="569.5" y="-447" font-family="sans-serif" font-size="10.00">Inventory</text>
-</g>
-<g id="clust4" class="cluster namespace">
-<title>#/boundedcontexts/inventory_bc</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="444,-288 444,-420 695,-420 695,-288 444,-288"/>
-<text xml:space="preserve" text-anchor="middle" x="569.5" y="-407" font-family="sans-serif" font-size="10.00">Inventory BC</text>
-</g>
-<g id="clust5" class="cluster namespace">
 <title>#/domains/petstore_commerce/subdomains/catalog</title>
 <polygon fill="lightgrey" stroke="lightgrey" points="235,-48 235,-240 429,-240 429,-48 235,-48"/>
 <text xml:space="preserve" text-anchor="middle" x="332" y="-227" font-family="sans-serif" font-size="10.00">Catalog</text>
 </g>
-<g id="clust6" class="cluster namespace">
+<g id="clust4" class="cluster namespace">
 <title>#/boundedcontexts/catalog_bc</title>
 <polygon fill="lightgrey" stroke="lightgrey" points="255,-68 255,-200 409,-200 409,-68 255,-68"/>
 <text xml:space="preserve" text-anchor="middle" x="332" y="-187" font-family="sans-serif" font-size="10.00">Catalog BC</text>
+</g>
+<g id="clust5" class="cluster namespace">
+<title>#/domains/petstore_commerce/subdomains/inventory</title>
+<polygon fill="lightgrey" stroke="lightgrey" points="424,-268 424,-460 624,-460 624,-268 424,-268"/>
+<text xml:space="preserve" text-anchor="middle" x="524" y="-447" font-family="sans-serif" font-size="10.00">Inventory</text>
+</g>
+<g id="clust6" class="cluster namespace">
+<title>#/boundedcontexts/inventory_bc</title>
+<polygon fill="lightgrey" stroke="lightgrey" points="444,-288 444,-420 604,-420 604,-288 444,-288"/>
+<text xml:space="preserve" text-anchor="middle" x="524" y="-407" font-family="sans-serif" font-size="10.00">Inventory BC</text>
 </g>
 <g id="clust7" class="cluster namespace">
 <title>#/domains/petstore_commerce/subdomains/sales</title>
@@ -49,106 +49,95 @@
 <polygon fill="lightgrey" stroke="lightgrey" points="724,-68 724,-200 878,-200 878,-68 724,-68"/>
 <text xml:space="preserve" text-anchor="middle" x="801" y="-187" font-family="sans-serif" font-size="10.00">Sales BC</text>
 </g>
-<!-- #/boundedcontexts/inventory_bc/services/inventory_query -->
+<!-- #/boundedcontexts/catalog_bc/aggregates/pet -->
 <g id="node1" class="node">
+<title>#/boundedcontexts/catalog_bc/aggregates/pet</title>
+<g id="a_node1"><a xlink:title="A pet listed in the store. One aggregate because a pet&#39;s photos, tags and status change together">
+<polygon fill="white" stroke="black" points="337.32,-88.1 340.84,-88.3 344.33,-88.59 347.76,-88.98 351.13,-89.47 354.42,-90.05 357.63,-90.73 360.72,-91.5 363.71,-92.35 366.56,-93.29 369.28,-94.32 371.85,-95.43 374.27,-96.62 376.53,-97.88 378.62,-99.21 380.53,-100.61 382.26,-102.08 383.81,-103.6 385.17,-105.18 386.35,-106.82 387.34,-108.5 388.14,-110.22 388.75,-111.98 389.18,-113.77 389.42,-115.59 389.49,-117.44 389.38,-119.3 389.1,-121.17 388.66,-123.06 388.06,-124.94 387.31,-126.83 386.41,-128.7 385.38,-130.56 384.22,-132.41 382.94,-134.23 381.54,-136.02 380.03,-137.78 378.43,-139.5 376.74,-141.18 374.96,-142.82 373.11,-144.4 371.19,-145.92 369.21,-147.39 367.17,-148.79 365.09,-150.12 362.96,-151.38 360.79,-152.57 358.58,-153.68 356.35,-154.71 354.1,-155.65 351.82,-156.5 349.52,-157.27 347.21,-157.95 344.89,-158.53 342.56,-159.02 340.22,-159.41 337.88,-159.7 335.53,-159.9 333.18,-160 330.82,-160 328.47,-159.9 326.12,-159.7 323.78,-159.41 321.44,-159.02 319.11,-158.53 316.79,-157.95 314.48,-157.27 312.18,-156.5 309.9,-155.65 307.65,-154.71 305.42,-153.68 303.21,-152.57 301.04,-151.38 298.91,-150.12 296.83,-148.79 294.79,-147.39 292.81,-145.92 290.89,-144.4 289.04,-142.82 287.26,-141.18 285.57,-139.5 283.97,-137.78 282.46,-136.02 281.06,-134.23 279.78,-132.41 278.62,-130.56 277.59,-128.7 276.69,-126.83 275.94,-124.94 275.34,-123.06 274.9,-121.17 274.62,-119.3 274.51,-117.44 274.58,-115.59 274.82,-113.77 275.25,-111.98 275.86,-110.22 276.66,-108.5 277.65,-106.82 278.83,-105.18 280.19,-103.6 281.74,-102.08 283.47,-100.61 285.38,-99.21 287.47,-97.88 289.73,-96.62 292.15,-95.43 294.72,-94.32 297.44,-93.29 300.29,-92.35 303.28,-91.5 306.37,-90.73 309.58,-90.05 312.87,-89.47 316.24,-88.98 319.67,-88.59 323.16,-88.3 326.68,-88.1 330.22,-88 333.78,-88 337.32,-88.1"/>
+<text xml:space="preserve" text-anchor="middle" x="332" y="-119.8" font-family="sans-serif" font-size="14.00">Pet</text>
+</a>
+</g>
+</g>
+<!-- #/boundedcontexts/inventory_bc/services/inventory_query -->
+<g id="node2" class="node">
 <title>#/boundedcontexts/inventory_bc/services/inventory_query</title>
-<g id="a_node1"><a xlink:title="Open&#45;host service for /store/inventory: a projection is a service that provides a query (decision 15), not an aggregate with an invented root">
+<g id="a_node2"><a xlink:title="Open&#45;host service for /store/inventory: a projection is a service that provides a query (decision 15), not an aggregate with an invented root">
 <polygon fill="white" stroke="black" points="529.53,-308.1 533.2,-308.3 536.82,-308.59 540.39,-308.98 543.9,-309.47 547.32,-310.05 550.65,-310.73 553.87,-311.5 556.98,-312.35 559.95,-313.29 562.77,-314.32 565.45,-315.43 567.97,-316.62 570.31,-317.88 572.48,-319.21 574.47,-320.61 576.27,-322.08 577.89,-323.6 579.3,-325.18 580.53,-326.82 581.55,-328.5 582.38,-330.22 583.02,-331.98 583.47,-333.77 583.72,-335.59 583.79,-337.44 583.68,-339.3 583.39,-341.17 582.93,-343.06 582.3,-344.94 581.52,-346.83 580.59,-348.7 579.52,-350.56 578.31,-352.41 576.97,-354.23 575.52,-356.02 573.96,-357.78 572.29,-359.5 570.53,-361.18 568.68,-362.82 566.76,-364.4 564.76,-365.92 562.7,-367.39 560.58,-368.79 558.41,-370.12 556.19,-371.38 553.94,-372.57 551.65,-373.68 549.33,-374.71 546.98,-375.65 544.61,-376.5 542.22,-377.27 539.82,-377.95 537.41,-378.53 534.98,-379.02 532.55,-379.41 530.11,-379.7 527.67,-379.9 525.22,-380 522.78,-380 520.33,-379.9 517.89,-379.7 515.45,-379.41 513.02,-379.02 510.59,-378.53 508.18,-377.95 505.78,-377.27 503.39,-376.5 501.02,-375.65 498.67,-374.71 496.35,-373.68 494.06,-372.57 491.81,-371.38 489.59,-370.12 487.42,-368.79 485.3,-367.39 483.24,-365.92 481.24,-364.4 479.32,-362.82 477.47,-361.18 475.71,-359.5 474.04,-357.78 472.48,-356.02 471.03,-354.23 469.69,-352.41 468.48,-350.56 467.41,-348.7 466.48,-346.83 465.7,-344.94 465.07,-343.06 464.61,-341.17 464.32,-339.3 464.21,-337.44 464.28,-335.59 464.53,-333.77 464.98,-331.98 465.62,-330.22 466.45,-328.5 467.47,-326.82 468.7,-325.18 470.11,-323.6 471.73,-322.08 473.53,-320.61 475.52,-319.21 477.69,-317.88 480.03,-316.62 482.55,-315.43 485.23,-314.32 488.05,-313.29 491.02,-312.35 494.13,-311.5 497.35,-310.73 500.68,-310.05 504.1,-309.47 507.61,-308.98 511.18,-308.59 514.8,-308.3 518.47,-308.1 522.15,-308 525.85,-308 529.53,-308.1"/>
 <text xml:space="preserve" text-anchor="middle" x="524" y="-339.8" font-family="sans-serif" font-size="14.00">InventoryQuery</text>
 </a>
 </g>
 </g>
-<!-- #/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/inventory_bc/services/inventory_query -->
+<!-- #/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/catalog_bc/aggregates/pet -->
 <g id="edge1" class="edge">
-<title>#/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/inventory_bc/services/inventory_query</title>
-<path fill="none" stroke="black" d="M573.01,-359.14C607.57,-363.9 641.79,-358.85 641.79,-344 641.79,-332.03 619.55,-326.42 592.83,-327.19"/>
-<polygon fill="black" stroke="black" points="592.85,-323.69 583.08,-327.78 593.28,-330.67 592.85,-323.69"/>
-<text xml:space="preserve" text-anchor="middle" x="678.17" y="-341" font-family="sans-serif" font-size="10.00">InventoryUpdated</text>
+<title>#/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/catalog_bc/aggregates/pet</title>
+<path fill="none" stroke="black" d="M464.33,-340.42C358.16,-334.44 143.28,-315.6 97.46,-260 43.43,-194.44 182.74,-154.14 269.22,-136.13"/>
+<polygon fill="black" stroke="black" points="269.68,-139.61 278.79,-134.19 268.29,-132.75 269.68,-139.61"/>
+<text xml:space="preserve" text-anchor="middle" x="125.23" y="-251" font-family="sans-serif" font-size="10.00">PetRegistered</text>
 <g id="a_edge1&#45;headlabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="581.57" y="-324.88" font-family="sans-serif" font-size="10.00">PL</text>
+<text xml:space="preserve" text-anchor="middle" x="280.27" y="-130.89" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
-</g>
-<!-- #/boundedcontexts/catalog_bc/aggregates/pet -->
-<g id="node2" class="node">
-<title>#/boundedcontexts/catalog_bc/aggregates/pet</title>
-<g id="a_node2"><a xlink:title="A pet listed in the store. One aggregate because a pet&#39;s photos, tags and status change together">
-<polygon fill="white" stroke="black" points="337.32,-88.1 340.84,-88.3 344.33,-88.59 347.76,-88.98 351.13,-89.47 354.42,-90.05 357.63,-90.73 360.72,-91.5 363.71,-92.35 366.56,-93.29 369.28,-94.32 371.85,-95.43 374.27,-96.62 376.53,-97.88 378.62,-99.21 380.53,-100.61 382.26,-102.08 383.81,-103.6 385.17,-105.18 386.35,-106.82 387.34,-108.5 388.14,-110.22 388.75,-111.98 389.18,-113.77 389.42,-115.59 389.49,-117.44 389.38,-119.3 389.1,-121.17 388.66,-123.06 388.06,-124.94 387.31,-126.83 386.41,-128.7 385.38,-130.56 384.22,-132.41 382.94,-134.23 381.54,-136.02 380.03,-137.78 378.43,-139.5 376.74,-141.18 374.96,-142.82 373.11,-144.4 371.19,-145.92 369.21,-147.39 367.17,-148.79 365.09,-150.12 362.96,-151.38 360.79,-152.57 358.58,-153.68 356.35,-154.71 354.1,-155.65 351.82,-156.5 349.52,-157.27 347.21,-157.95 344.89,-158.53 342.56,-159.02 340.22,-159.41 337.88,-159.7 335.53,-159.9 333.18,-160 330.82,-160 328.47,-159.9 326.12,-159.7 323.78,-159.41 321.44,-159.02 319.11,-158.53 316.79,-157.95 314.48,-157.27 312.18,-156.5 309.9,-155.65 307.65,-154.71 305.42,-153.68 303.21,-152.57 301.04,-151.38 298.91,-150.12 296.83,-148.79 294.79,-147.39 292.81,-145.92 290.89,-144.4 289.04,-142.82 287.26,-141.18 285.57,-139.5 283.97,-137.78 282.46,-136.02 281.06,-134.23 279.78,-132.41 278.62,-130.56 277.59,-128.7 276.69,-126.83 275.94,-124.94 275.34,-123.06 274.9,-121.17 274.62,-119.3 274.51,-117.44 274.58,-115.59 274.82,-113.77 275.25,-111.98 275.86,-110.22 276.66,-108.5 277.65,-106.82 278.83,-105.18 280.19,-103.6 281.74,-102.08 283.47,-100.61 285.38,-99.21 287.47,-97.88 289.73,-96.62 292.15,-95.43 294.72,-94.32 297.44,-93.29 300.29,-92.35 303.28,-91.5 306.37,-90.73 309.58,-90.05 312.87,-89.47 316.24,-88.98 319.67,-88.59 323.16,-88.3 326.68,-88.1 330.22,-88 333.78,-88 337.32,-88.1"/>
-<text xml:space="preserve" text-anchor="middle" x="332" y="-119.8" font-family="sans-serif" font-size="14.00">Pet</text>
+<g id="a_edge1&#45;taillabel"><a xlink:title="conformist">
+<text xml:space="preserve" text-anchor="middle" x="464.33" y="-337.42" font-family="sans-serif" font-size="10.00">CF</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/catalog_bc/aggregates/pet -->
 <g id="edge2" class="edge">
 <title>#/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/catalog_bc/aggregates/pet</title>
-<path fill="none" stroke="black" d="M464.33,-340.42C358.16,-334.44 143.28,-315.6 97.46,-260 43.43,-194.44 182.74,-154.14 269.22,-136.13"/>
-<polygon fill="black" stroke="black" points="269.68,-139.61 278.79,-134.19 268.29,-132.75 269.68,-139.61"/>
-<text xml:space="preserve" text-anchor="middle" x="125.23" y="-251" font-family="sans-serif" font-size="10.00">PetRegistered</text>
+<path fill="none" stroke="black" d="M464.02,-335.47C383.23,-323.96 246.09,-299.11 216.13,-260 186.18,-220.91 238.48,-178.14 282.2,-151.44"/>
+<polygon fill="black" stroke="black" points="283.81,-154.56 290.63,-146.44 280.24,-148.54 283.81,-154.56"/>
+<text xml:space="preserve" text-anchor="middle" x="238.06" y="-251" font-family="sans-serif" font-size="10.00">PetDeleted</text>
 <g id="a_edge2&#45;headlabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="280.27" y="-130.89" font-family="sans-serif" font-size="10.00">PL</text>
+<text xml:space="preserve" text-anchor="middle" x="291.93" y="-142.67" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
 <g id="a_edge2&#45;taillabel"><a xlink:title="conformist">
-<text xml:space="preserve" text-anchor="middle" x="464.33" y="-337.42" font-family="sans-serif" font-size="10.00">CF</text>
+<text xml:space="preserve" text-anchor="middle" x="464.02" y="-332.47" font-family="sans-serif" font-size="10.00">CF</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/catalog_bc/aggregates/pet -->
 <g id="edge3" class="edge">
 <title>#/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/catalog_bc/aggregates/pet</title>
-<path fill="none" stroke="black" d="M464.02,-335.47C383.23,-323.96 246.09,-299.11 216.13,-260 186.18,-220.91 238.48,-178.14 282.2,-151.44"/>
-<polygon fill="black" stroke="black" points="283.81,-154.56 290.63,-146.44 280.24,-148.54 283.81,-154.56"/>
-<text xml:space="preserve" text-anchor="middle" x="238.06" y="-251" font-family="sans-serif" font-size="10.00">PetDeleted</text>
+<path fill="none" stroke="black" d="M463.99,-336.02C416.93,-327.03 354.36,-306.56 323.23,-260 305.65,-233.71 308.99,-197.74 316.1,-169.54"/>
+<polygon fill="black" stroke="black" points="319.39,-170.79 318.69,-160.21 312.64,-168.91 319.39,-170.79"/>
+<text xml:space="preserve" text-anchor="middle" x="359.61" y="-251" font-family="sans-serif" font-size="10.00">PetStatusChanged</text>
 <g id="a_edge3&#45;headlabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="291.93" y="-142.67" font-family="sans-serif" font-size="10.00">PL</text>
+<text xml:space="preserve" text-anchor="middle" x="319.09" y="-155.76" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
 <g id="a_edge3&#45;taillabel"><a xlink:title="conformist">
-<text xml:space="preserve" text-anchor="middle" x="464.02" y="-332.47" font-family="sans-serif" font-size="10.00">CF</text>
+<text xml:space="preserve" text-anchor="middle" x="463.99" y="-333.02" font-family="sans-serif" font-size="10.00">CF</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/catalog_bc/aggregates/pet -->
 <g id="edge4" class="edge">
 <title>#/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/catalog_bc/aggregates/pet</title>
-<path fill="none" stroke="black" d="M463.99,-336.02C416.93,-327.03 354.36,-306.56 323.23,-260 305.65,-233.71 308.99,-197.74 316.1,-169.54"/>
-<polygon fill="black" stroke="black" points="319.39,-170.79 318.69,-160.21 312.64,-168.91 319.39,-170.79"/>
-<text xml:space="preserve" text-anchor="middle" x="359.61" y="-251" font-family="sans-serif" font-size="10.00">PetStatusChanged</text>
+<path fill="none" stroke="black" d="M495.67,-310.83C461,-271.47 402.37,-204.9 365.5,-163.04"/>
+<polygon fill="black" stroke="black" points="368.22,-160.83 358.98,-155.64 362.96,-165.45 368.22,-160.83"/>
+<text xml:space="preserve" text-anchor="middle" x="475.84" y="-251" font-family="sans-serif" font-size="10.00">PetReserved</text>
 <g id="a_edge4&#45;headlabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="319.09" y="-155.76" font-family="sans-serif" font-size="10.00">PL</text>
+<text xml:space="preserve" text-anchor="middle" x="357.98" y="-151.5" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
 <g id="a_edge4&#45;taillabel"><a xlink:title="conformist">
-<text xml:space="preserve" text-anchor="middle" x="463.99" y="-333.02" font-family="sans-serif" font-size="10.00">CF</text>
+<text xml:space="preserve" text-anchor="middle" x="495.67" y="-307.83" font-family="sans-serif" font-size="10.00">CF</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/catalog_bc/aggregates/pet -->
 <g id="edge5" class="edge">
 <title>#/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/catalog_bc/aggregates/pet</title>
-<path fill="none" stroke="black" d="M495.67,-310.83C461,-271.47 402.37,-204.9 365.5,-163.04"/>
-<polygon fill="black" stroke="black" points="368.22,-160.83 358.98,-155.64 362.96,-165.45 368.22,-160.83"/>
-<text xml:space="preserve" text-anchor="middle" x="475.84" y="-251" font-family="sans-serif" font-size="10.00">PetReserved</text>
-<g id="a_edge5&#45;headlabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="357.98" y="-151.5" font-family="sans-serif" font-size="10.00">PL</text>
-</a>
-</g>
-<g id="a_edge5&#45;taillabel"><a xlink:title="conformist">
-<text xml:space="preserve" text-anchor="middle" x="495.67" y="-307.83" font-family="sans-serif" font-size="10.00">CF</text>
-</a>
-</g>
-</g>
-<!-- #/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/catalog_bc/aggregates/pet -->
-<g id="edge6" class="edge">
-<title>#/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/catalog_bc/aggregates/pet</title>
 <path fill="none" stroke="black" d="M527.66,-307.81C527.98,-288.86 525.59,-265.8 515,-248 486.13,-199.48 429.78,-166.04 387.19,-146.41"/>
 <polygon fill="black" stroke="black" points="388.63,-143.21 378.07,-142.33 385.77,-149.61 388.63,-143.21"/>
 <text xml:space="preserve" text-anchor="middle" x="536.08" y="-251" font-family="sans-serif" font-size="10.00">PetSold</text>
-<g id="a_edge6&#45;headlabel"><a xlink:title="published&#45;language">
+<g id="a_edge5&#45;headlabel"><a xlink:title="published&#45;language">
 <text xml:space="preserve" text-anchor="middle" x="376.69" y="-138.71" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
-<g id="a_edge6&#45;taillabel"><a xlink:title="conformist">
+<g id="a_edge5&#45;taillabel"><a xlink:title="conformist">
 <text xml:space="preserve" text-anchor="middle" x="527.66" y="-304.81" font-family="sans-serif" font-size="10.00">CF</text>
 </a>
 </g>
@@ -163,46 +152,46 @@
 </g>
 </g>
 <!-- #/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/sales_bc/aggregates/order -->
-<g id="edge7" class="edge">
+<g id="edge6" class="edge">
 <title>#/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/sales_bc/aggregates/order</title>
 <path fill="none" stroke="black" d="M561.36,-313.6C613.01,-272.95 705.93,-199.82 759.62,-157.56"/>
 <polygon fill="black" stroke="black" points="761.65,-160.42 767.34,-151.49 757.32,-154.92 761.65,-160.42"/>
 <text xml:space="preserve" text-anchor="middle" x="669.34" y="-251" font-family="sans-serif" font-size="10.00">OrderApproved</text>
-<g id="a_edge7&#45;headlabel"><a xlink:title="published&#45;language">
+<g id="a_edge6&#45;headlabel"><a xlink:title="published&#45;language">
 <text xml:space="preserve" text-anchor="middle" x="768.53" y="-147.55" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
-<g id="a_edge7&#45;taillabel"><a xlink:title="conformist">
+<g id="a_edge6&#45;taillabel"><a xlink:title="conformist">
 <text xml:space="preserve" text-anchor="middle" x="561.36" y="-310.6" font-family="sans-serif" font-size="10.00">CF</text>
+</a>
+</g>
+</g>
+<!-- #/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/sales_bc/aggregates/order -->
+<g id="edge7" class="edge">
+<title>#/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/sales_bc/aggregates/order</title>
+<path fill="none" stroke="black" d="M581.53,-327.84C622.23,-314.92 676.23,-293.1 715,-260 744.17,-235.09 766.89,-197.79 781.63,-168.7"/>
+<polygon fill="black" stroke="black" points="784.76,-170.27 786.03,-159.76 778.48,-167.19 784.76,-170.27"/>
+<text xml:space="preserve" text-anchor="middle" x="758.92" y="-251" font-family="sans-serif" font-size="10.00">OrderDelivered</text>
+<g id="a_edge7&#45;headlabel"><a xlink:title="published&#45;language">
+<text xml:space="preserve" text-anchor="middle" x="786.7" y="-155.4" font-family="sans-serif" font-size="10.00">PL</text>
+</a>
+</g>
+<g id="a_edge7&#45;taillabel"><a xlink:title="conformist">
+<text xml:space="preserve" text-anchor="middle" x="581.53" y="-324.84" font-family="sans-serif" font-size="10.00">CF</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/sales_bc/aggregates/order -->
 <g id="edge8" class="edge">
 <title>#/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/sales_bc/aggregates/order</title>
-<path fill="none" stroke="black" d="M581.53,-327.84C622.23,-314.92 676.23,-293.1 715,-260 744.17,-235.09 766.89,-197.79 781.63,-168.7"/>
-<polygon fill="black" stroke="black" points="784.76,-170.27 786.03,-159.76 778.48,-167.19 784.76,-170.27"/>
-<text xml:space="preserve" text-anchor="middle" x="758.92" y="-251" font-family="sans-serif" font-size="10.00">OrderDelivered</text>
-<g id="a_edge8&#45;headlabel"><a xlink:title="published&#45;language">
-<text xml:space="preserve" text-anchor="middle" x="786.7" y="-155.4" font-family="sans-serif" font-size="10.00">PL</text>
-</a>
-</g>
-<g id="a_edge8&#45;taillabel"><a xlink:title="conformist">
-<text xml:space="preserve" text-anchor="middle" x="581.53" y="-324.84" font-family="sans-serif" font-size="10.00">CF</text>
-</a>
-</g>
-</g>
-<!-- #/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/sales_bc/aggregates/order -->
-<g id="edge9" class="edge">
-<title>#/boundedcontexts/inventory_bc/services/inventory_query&#45;&gt;#/boundedcontexts/sales_bc/aggregates/order</title>
 <path fill="none" stroke="black" d="M583.66,-333.79C657.74,-320.99 777.61,-295.35 804,-260 822.88,-234.71 821.07,-198.68 815.12,-170.21"/>
 <polygon fill="black" stroke="black" points="818.6,-169.72 812.91,-160.78 811.78,-171.32 818.6,-169.72"/>
 <text xml:space="preserve" text-anchor="middle" x="836.89" y="-251" font-family="sans-serif" font-size="10.00">OrderDeleted</text>
-<g id="a_edge9&#45;headlabel"><a xlink:title="published&#45;language">
+<g id="a_edge8&#45;headlabel"><a xlink:title="published&#45;language">
 <text xml:space="preserve" text-anchor="middle" x="812.56" y="-156.31" font-family="sans-serif" font-size="10.00">PL</text>
 </a>
 </g>
-<g id="a_edge9&#45;taillabel"><a xlink:title="conformist">
+<g id="a_edge8&#45;taillabel"><a xlink:title="conformist">
 <text xml:space="preserve" text-anchor="middle" x="583.66" y="-330.79" font-family="sans-serif" font-size="10.00">CF</text>
 </a>
 </g>

@@ -993,7 +993,12 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/encoding/services/encoding_api/provides/submit_encode"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/catalogue/services/catalogue_api/provides/request_encode"
+                }
+              ]
             }
           ]
         }
@@ -1646,21 +1651,24 @@
             }
           },
           "invariants": {
-            "session_needs_entitlement": {
-              "name": "SessionNeedsEntitlement",
-              "description": "A session starts only with a current entitlement from billing",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/entities/playback_session"
-                }
-              ]
-            },
             "bookmark_within_runtime": {
               "name": "BookmarkWithinRuntime",
               "description": "The resume point never exceeds the title's runtime",
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/playback/valueobjects/bookmark"
+                }
+              ]
+            },
+            "session_needs_entitlement": {
+              "name": "SessionNeedsEntitlement",
+              "description": "A session starts only with a current entitlement from billing, read by StartPlayback through GetEntitlement before the session is created",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/playback/aggregates/playback_session/entities/playback_session"
+                },
+                {
+                  "$ref": "#/boundedcontexts/playback/services/playback_api/provides/start_playback"
                 }
               ]
             }
@@ -3765,10 +3773,13 @@
             },
             "ads_only_on_ad_supported_plan": {
               "name": "AdsOnlyOnAdSupportedPlan",
-              "description": "Breaks exist only for sessions whose planTier is ad-supported; the tier comes from billing's entitlement answer",
+              "description": "Breaks exist only for sessions whose planTier is ad-supported; the tier comes from billing's entitlement answer, which PrepareBreaks reads before it plans anything",
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/entities/ad_break/attributes/plan_tier"
+                },
+                {
+                  "$ref": "#/boundedcontexts/ads_tier/aggregates/ad_break/provides/prepare_breaks"
                 }
               ]
             }
@@ -3988,27 +3999,7 @@
         }
       },
       "invariants": {},
-      "services": {
-        "monthly_export": {
-          "name": "MonthlyExport",
-          "description": "The charge export, the one job anyone will describe",
-          "type": "application",
-          "provides": {
-            "run_monthly_export": {
-              "name": "RunMonthlyExport",
-              "description": "Write the month's disc charges out to billing",
-              "type": "operation",
-              "internal": true,
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/disc_rental_(legacy)/aggregates/rental_queue/provides/disc_rental_invoiced"
-                }
-              ]
-            }
-          },
-          "consumes": []
-        }
-      },
+      "services": {},
       "policies": {},
       "processes": {},
       "glossary": {},

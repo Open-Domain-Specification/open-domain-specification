@@ -16,11 +16,31 @@ export function* attributeOwnersIn(
 }
 
 /**
- * An identity attribute in one context naming an entity of another, or an
- * external context itself. Decision 14 made this the only way a model records
- * a dependency on another context's model, so it is a crossing in its own
- * right: it wants a declared relationship (`relationship-declared`) and it
- * draws on the context map even when nothing is consumed.
+ * The part of one context's model that holds instances: its value objects and
+ * the entities inside its aggregates, and not its payload schemas.
+ *
+ * An identity an entity or a value object holds is this context's dependency on
+ * another's identity scheme: something here is stored knowing what it points at,
+ * and it stays true until somebody edits the model. An identity in a schema is
+ * a correlation id echoed in a payload — an event carrying the order it is
+ * about, a request carrying the customer — which the payload carries for its
+ * reader, so the context publishing the schema owes the other nothing and has
+ * no dependency to declare (decision 14, second amendment; card 90).
+ */
+function* modelOwnersIn(context: BoundedContext): Iterable<AttributeOwner> {
+	yield* context.valueobjects.values();
+	for (const aggregate of context.aggregates.values())
+		yield* aggregate.entities.values();
+}
+
+/**
+ * An identity attribute of an entity or a value object in one context naming an
+ * entity of another, or an external context itself. Decision 14 made this the
+ * only way a model records a dependency on another context's model, so it is a
+ * crossing in its own right: it wants a declared relationship
+ * (`relationship-declared`) and it draws on the context map even when nothing
+ * is consumed. A payload schema's identity is left out; see
+ * {@link modelOwnersIn}.
  */
 export type IdentityCrossing = {
 	/** The identity attribute that names the other context. */
@@ -45,16 +65,16 @@ export function contextIdentified(
 }
 
 /**
- * Every identity that reaches out of its own context, among the contexts
- * given. Both ends must be in the list, as a consumption needs both ends in
- * scope before the context map draws it.
+ * Every identity an entity or a value object holds that reaches out of its own
+ * context, among the contexts given. Both ends must be in the list, as a
+ * consumption needs both ends in scope before the context map draws it.
  */
 export function* identityCrossings(
 	contexts: BoundedContext[],
 ): Iterable<IdentityCrossing> {
 	const inScope = new Set(contexts);
 	for (const from of contexts) {
-		for (const owner of attributeOwnersIn(from)) {
+		for (const owner of modelOwnersIn(from)) {
 			for (const attribute of owner.attributes.values()) {
 				const target = attribute.identifies;
 				if (!target) continue;

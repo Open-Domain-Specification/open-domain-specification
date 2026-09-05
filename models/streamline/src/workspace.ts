@@ -891,12 +891,19 @@ catalogueApi.consumes(windowOpened, { pattern: "anti-corruption-layer" });
 catalogueApi.consumes(windowExpired, { pattern: "anti-corruption-layer" });
 // The call out to Encoding is made by Catalogue's own application service,
 // and it is that operation the policy below names (decision 17).
-catalogueApi.consumes(submitEncode, { pattern: "anti-corruption-layer" });
 const requestEncode = catalogueApi.provides("RequestEncode", {
 	description:
 		"Queue the matched title for encoding, by calling Encoding's SubmitEncode behind the ACL",
 	type: "operation",
 	internal: true,
+});
+// CatalogueAPI answers GetTitle as well as queueing encodes, so which of the
+// two makes the call is a real question: RequestEncode does, and the chain from
+// a delivered master through the encode to the publication runs through it
+// (decision 21, third amendment).
+catalogueApi.consumes(submitEncode, {
+	pattern: "anti-corruption-layer",
+	by: [requestEncode],
 });
 // Getting a title on the service is a process, not two policies: it holds the
 // match from productionId to titleId while the encode runs, which is the one
@@ -977,12 +984,10 @@ session.uses(manifestVO, "streams-from", "1");
 // The Title root is in Catalogue, another bounded context: a relation never
 // crosses one, so the session holds `titleId` and nothing more.
 
-sessionAgg
-	.addInvariant("SessionNeedsEntitlement", {
-		description:
-			"A session starts only with a current entitlement from billing",
-	})
-	.constrains(session);
+// `SessionNeedsEntitlement` is declared further down, with PlaybackAPI: the
+// entitlement is checked at the moment of the call and StartPlayback is the
+// operation that checks it, so the invariant names it rather than leaving the
+// guard in prose (decision 19, amended).
 // `WithinStreamLimit` is declared with the Household root further down,
 // because it constrains `householdId`, and that attribute can only be
 // declared once the root it identifies exists.
@@ -1104,6 +1109,15 @@ playbackApi.consumes(getTitle, {
 	pattern: "anti-corruption-layer",
 	by: [startPlayback],
 });
+// A rule about one session, so it is the aggregate's; checked before the
+// session exists, so what upholds it is StartPlayback on the application
+// service, which is where the entitlement read happens (decision 19, amended).
+sessionAgg
+	.addInvariant("SessionNeedsEntitlement", {
+		description:
+			"A session starts only with a current entitlement from billing, read by StartPlayback through GetEntitlement before the session is created",
+	})
+	.constrains(session, startPlayback);
 
 playbackBC.addTerm("Session", {
 	definition: "One profile watching one title on one device",
@@ -2006,12 +2020,9 @@ breakAgg
 		description: "A creative appears at most once per break",
 	})
 	.constrains(adSlot);
-breakAgg
-	.addInvariant("AdsOnlyOnAdSupportedPlan", {
-		description:
-			"Breaks exist only for sessions whose planTier is ad-supported; the tier comes from billing's entitlement answer",
-	})
-	.constrains(breakPlanTier);
+// `AdsOnlyOnAdSupportedPlan` is declared further down, with PrepareBreaks: the
+// tier is checked before any break exists, and PrepareBreaks is the operation
+// that checks it, so the guard is named rather than described (decision 19).
 
 const resolveBreakSchema = adsBC.addSchema("ResolveAdBreak");
 resolveBreakSchema.addAttribute("sessionId", { type: "string" });
@@ -2062,6 +2073,14 @@ const prepareBreaks = breakAgg.provides("PrepareBreaks", {
 	type: "operation",
 	internal: true,
 });
+// The precondition on that plan: a rule about one break, checked at the moment
+// the breaks are planned, so it names the operation that plans them.
+breakAgg
+	.addInvariant("AdsOnlyOnAdSupportedPlan", {
+		description:
+			"Breaks exist only for sessions whose planTier is ad-supported; the tier comes from billing's entitlement answer, which PrepareBreaks reads before it plans anything",
+	})
+	.constrains(breakPlanTier, prepareBreaks);
 breakAgg
 	.provides("RecordImpression", {
 		description: "The player confirmed a creative played",
@@ -2126,19 +2145,13 @@ const discRentalInvoiced = queueAgg.provides("DiscRentalInvoiced", {
 });
 
 // DISCOVERY: Legacy Operations, "a monthly export of charges to billing".
-// Nothing raised the export's event, so the model never said what makes it
-// happen (event-unraised). The job is the monolith's own, named at its edge.
-discsBC
-	.addService("MonthlyExport", {
-		description: "The charge export, the one job anyone will describe",
-		type: "application",
-	})
-	.provides("RunMonthlyExport", {
-		description: "Write the month's disc charges out to billing",
-		type: "operation",
-		internal: true,
-	})
-	.raises(discRentalInvoiced);
+// Card 81 gave that a MonthlyExport service with a RunMonthlyExport operation
+// so the event had a raiser, and it was already labelled "the one job anyone
+// will describe": the rest of the monolith is unreadable, which is what
+// bigBallOfMud says. Such a context may say what it emits without saying how,
+// and `event-unraised` no longer asks it to (decision 28, second amendment;
+// card 90). The service and its operation are gone; the export still arrives
+// each month.
 
 const addDiscCharge = billingBC
 	.addPolicy("Add disc charge to bill", {

@@ -91,7 +91,7 @@ Reactions that hold state across events: each one remembers which of its events 
 
 - **Fulfilment BC** (partnership)
 	- Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged.
-	- OrderApproved and ShipmentDelivered cross the boundary one way each, and Fulfilment calls ConfirmDelivery on top of that, all with no translation layer; each side depending on the other is what makes this a partnership rather than customer-supplier.
+	- OrderApproved crosses into Fulfilment and Fulfilment calls ConfirmDelivery back, both with no translation layer. Neither side treats the other as a supplier to be protected from, which is what makes this a partnership rather than customer-supplier; the traffic happening to run one way says nothing about that.
 - **Identity BC** (separate-ways)
 	- The order payload carries no user field and the Sales service holds no credentials for the Identity API, so nothing links an order to an account. [sales/openapi.yaml](https://github.com/example/petstore/blob/main/sales/openapi.yaml)
 	- Keeping the two apart is deliberate: checkout must work for a visitor who never signs in. [ADR-007 Anonymous checkout](https://github.com/example/petstore/blob/main/docs/adr/007-anonymous-checkout.md)
@@ -114,11 +114,11 @@ Reactions that hold state across events: each one remembers which of its events 
 | [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Order | OrderApproved | published-language |
 | [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Order | OrderDelivered | published-language |
 | [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Order | OrderDeleted | published-language |
-| [OrderApp](services/order_app/index.md) | - | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [OrderApp](services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
 | [PetApp](../catalog_bc/services/pet_app/index.md) | ReservePetForOrder | - | Pet | ReservePet | - |
 | [PetApp](../catalog_bc/services/pet_app/index.md) | MarkPetSoldForOrder | - | Pet | MarkPetSold | - |
-| [OrderApp](services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
 | [OrderApp](services/order_app/index.md) | MarkPetSold | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
-| [OrderApp](services/order_app/index.md) | - | - | Shipment | ShipmentDelivered | published-language |
+| [OrderApp](services/order_app/index.md) | Order fulfilment | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [OrderApp](services/order_app/index.md) | Order fulfilment | anti-corruption-layer | Pet | PetStatusChanged | published-language |
 
 

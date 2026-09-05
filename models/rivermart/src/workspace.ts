@@ -453,7 +453,7 @@ const searchApi = searchBC.addService("SearchAPI", {
 		"The results page endpoint and the index it is read from: a projection modelled as a query service (decision 15)",
 	type: "application",
 });
-searchApi.provides("SearchProducts", {
+const searchProducts = searchApi.provides("SearchProducts", {
 	description: "Query → ranked page, with sponsored slots merged in",
 	type: "operation",
 	pattern: "open-host-service",
@@ -473,6 +473,18 @@ const indexProduct = searchApi
 	.raises(documentIndexed);
 const removeDocument = searchApi.provides("RemoveDocument", {
 	description: "Drop a retired product from the index",
+	type: "operation",
+	internal: true,
+});
+// DISCOVERY: Ads, "Search calls us for the slots ... and tells us when one of
+// them is clicked". Telling Advertising is an outbound call, and a context
+// makes those through its own boundary (decision 17), so it is an operation of
+// SearchAPI. It was left unnamed while the consumption of RecordAdClick named
+// no caller at all, which made the whole of Search look like the caller
+// (card 90).
+const reportAdClick = searchApi.provides("ReportAdClick", {
+	description:
+		"Tell Advertising that a sponsored slot on the results page was clicked; the click, not the impression, is what the seller pays for",
 	type: "operation",
 	internal: true,
 });
@@ -913,12 +925,12 @@ const checkoutOrchestrator = cartBC.addService("CheckoutOrchestrator", {
 });
 // What a context offers outward leaves an application service; an
 // aggregate's operations are its own context's (decision 17).
-checkoutOrchestrator.provides("AddToCart", {
+const addToCart = checkoutOrchestrator.provides("AddToCart", {
 	description: "Add or increase a line",
 	type: "operation",
 	pattern: "open-host-service",
 });
-checkoutOrchestrator
+const checkoutOperation = checkoutOrchestrator
 	.provides("Checkout", {
 		description: "Freeze the cart and start the purchase",
 		type: "operation",
@@ -926,7 +938,12 @@ checkoutOrchestrator
 		schema: cartCheckedOutSchema,
 	})
 	.raises(cartCheckedOut);
-checkoutOrchestrator.consumes(getOffer, { pattern: "anti-corruption-layer" });
+// DISCOVERY: Checkout tech lead, "we read offers through the Offers API but
+// keep our own line shape" — which happens as a line goes in, not at checkout.
+checkoutOrchestrator.consumes(getOffer, {
+	pattern: "anti-corruption-layer",
+	by: [addToCart],
+});
 
 cartBC.addTerm("Cart", {
 	definition: "The basket a customer fills before checkout",
@@ -1451,12 +1468,9 @@ paymentsBC.addTerm("Authorisation", {
 // Checkout is one process, not three policies: it holds the frozen cart from
 // the moment the customer confirms it until an order exists, and what it does
 // next depends on which answer comes back from Payments.
-checkoutOrchestrator.consumes(authorisePayment, {
-	pattern: "anti-corruption-layer",
-});
-checkoutOrchestrator.consumes(placeOrder, { pattern: "anti-corruption-layer" });
+//
 // A policy names operations of its own context, so the orchestrator holds the
-// two steps that reach out through the ACL above (decision 17).
+// two steps that reach out through the ACL (decision 17).
 const requestAuthorisation = checkoutOrchestrator.provides(
 	"RequestAuthorisation",
 	{
@@ -1472,10 +1486,7 @@ const placeOrderForCart = checkoutOrchestrator.provides("PlaceOrderForCart", {
 	type: "operation",
 	internal: true,
 });
-checkoutOrchestrator.consumes(paymentDeclined, {
-	pattern: "anti-corruption-layer",
-});
-cartBC
+const checkout = cartBC
 	.addProcess("Checkout", {
 		description:
 			"From the customer confirming the basket to an order existing. It asks Payments to hold the cart total and then waits: on a hold the order is placed, on a decline the cart is unfrozen so another instrument can be tried and the same instance waits for the next attempt. Correlation is by cartId, which the authorisation carries back; an instance that is never paid for stays open with the cart, because a cart nobody returns to is the customer's to abandon and not ours to time out",
@@ -1484,6 +1495,34 @@ cartBC
 	.on(paymentAuthorised, paymentDeclined)
 	.issues(requestAuthorisation, placeOrderForCart, reopenCart)
 	.ends(orderPlaced);
+// Everything the checkout reaches for, declared together now that both the
+// operations and the process exist to be named. The orchestrator offers four
+// operations, so which one calls out is a real question and `by` answers it
+// (decision 21, third amendment); the three facts the process waits on are
+// consumptions as well as subscriptions, because a context takes a foreign fact
+// in at its own boundary (decision 17; `subscription-consumed`).
+checkoutOrchestrator.consumes(authorisePayment, {
+	pattern: "anti-corruption-layer",
+	by: [requestAuthorisation],
+});
+checkoutOrchestrator.consumes(placeOrder, {
+	pattern: "anti-corruption-layer",
+	by: [placeOrderForCart],
+});
+checkoutOrchestrator.consumes(paymentAuthorised, {
+	pattern: "anti-corruption-layer",
+	by: [checkout],
+});
+checkoutOrchestrator.consumes(paymentDeclined, {
+	pattern: "anti-corruption-layer",
+	by: [checkout],
+});
+// The order the checkout ends on. Cart & Checkout hears that the order exists
+// and stops there; what happens to the order afterwards is Order Management's.
+checkoutOrchestrator.consumes(orderPlaced, {
+	pattern: "anti-corruption-layer",
+	by: [checkout],
+});
 
 // The intent is authorised against a cart; the order id only exists after
 // PlaceOrder, and captures at dispatch arrive by order id, so Payments
@@ -2214,7 +2253,7 @@ const adsApi = adsBC.addService("AdsAPI", {
 		"Campaign management for sellers and the sponsored-results read for Search",
 	type: "application",
 });
-adsApi
+const createCampaign = adsApi
 	.provides("CreateCampaign", {
 		description: "Start a campaign",
 		type: "operation",
@@ -2237,8 +2276,10 @@ const recordAdClick = adsApi
 		schema: adClickedSchema,
 	})
 	.raises(adClicked);
-// Ad groups advertise catalogue products; the ids are checked against the product API.
-adsApi.consumes(getProduct, { pattern: "conformist" });
+// Ad groups advertise catalogue products; the ids are checked against the
+// product API when the campaign is created, which is the only one of AdsAPI's
+// three operations that reaches Catalogue.
+adsApi.consumes(getProduct, { pattern: "conformist", by: [createCampaign] });
 
 adsApi.consumes(sellerSuspended, { pattern: "conformist" });
 adsBC
@@ -2251,8 +2292,16 @@ adsBC
 
 // Partnership: search and ads tune the results page together, so Search
 // takes the sponsored slots as-is and reports clicks on them the same way.
-searchApi.consumes(getSponsoredResults, { pattern: "conformist" });
-searchApi.consumes(recordAdClick, { pattern: "conformist" });
+// SearchAPI answers four operations and one of them makes each call: the
+// results page merges the slots, and the click report is its own step.
+searchApi.consumes(getSponsoredResults, {
+	pattern: "conformist",
+	by: [searchProducts],
+});
+searchApi.consumes(recordAdClick, {
+	pattern: "conformist",
+	by: [reportAdClick],
+});
 
 adsBC.addTerm("Sponsored slot", {
 	definition:
@@ -2338,7 +2387,14 @@ caseAgg.provides("ResolveCase", {
 	internal: true,
 });
 
-caseApi.consumes(getOrder, { pattern: "anti-corruption-layer" });
+caseApi.consumes(getOrder, {
+	pattern: "anti-corruption-layer",
+	by: [openCase],
+});
+// RequestReturn names no caller: an agent raises a return while working a case,
+// and the operation that does it is the aggregate's ResolveCase, which is not
+// CaseAPI's to name (decision 21). CaseAPI offers one operation, so nothing is
+// ambiguous either way (`consumption-by-required`).
 caseApi.consumes(requestReturn, { pattern: "anti-corruption-layer" });
 caseApi.consumes(attemptFailed, { pattern: "anti-corruption-layer" });
 csBC
@@ -2396,20 +2452,12 @@ const purchaseOrderReceived = purchaseOrderAgg.provides(
 );
 
 // DISCOVERY: Retail Systems engineer, "the nightly export of received vendor
-// stock". Nothing raised the export's event, so the model never said what
-// makes it happen (event-unraised). The job is VPS's own, named at the edge
-// like the rest of the legacy system.
-vendorBC
-	.addService("NightlyExport", {
-		description: "The one job of the ninety that anyone can describe",
-		type: "application",
-	})
-	.provides("RunNightlyExport", {
-		description: "Write the day's received vendor stock to the export file",
-		type: "operation",
-		internal: true,
-	})
-	.raises(purchaseOrderReceived);
+// stock". Card 81 gave that a NightlyExport service with a RunNightlyExport
+// operation so the event had a raiser, and its own description gave the game
+// away: "the one job of the ninety that anyone can describe". Ninety jobs
+// nobody can read is what a big ball of mud is, and such a context may say what
+// it emits without saying how (decision 28, second amendment; card 90). The
+// service and its operation are gone; the export file still arrives.
 
 vendorBC.addTerm("Purchase order", {
 	definition:
@@ -2489,8 +2537,14 @@ const getCustomer = identityApi.provides("GetCustomer", {
 	pattern: "open-host-service",
 	returns: customerProfileSchema,
 });
-checkoutOrchestrator.consumes(getCustomer, { pattern: "conformist" });
-caseApi.consumes(getCustomer, { pattern: "conformist" });
+// Who the cart belongs to is read as the cart is frozen: CartCheckedOut carries
+// the customer id, and none of the orchestrator's other three operations asks
+// Identity for anything. Opening a case does the same on the other side.
+checkoutOrchestrator.consumes(getCustomer, {
+	pattern: "conformist",
+	by: [checkoutOperation],
+});
+caseApi.consumes(getCustomer, { pattern: "conformist", by: [openCase] });
 
 // "Customer" is said in three contexts; only this one holds the record.
 identityBC.addTerm("Customer", {
@@ -2578,12 +2632,13 @@ orderBC.downstreamOf(identityBC, {
 	downstreamRoles: [],
 	description: "An order names the customer account it was placed by, by id",
 });
-paymentsBC.downstreamOf(cartBC, {
-	upstreamRoles: [],
-	downstreamRoles: [],
-	description:
-		"An authorisation carries the cart it was taken for, so checkout can match it back",
-});
+// Payments was listed here too, for the cart id its PaymentAuthorised and
+// AuthorisePayment payloads carry. The description said it plainly — "so
+// checkout can match it back" — which is a payload carrying an id for its
+// reader, not Payments depending on Cart & Checkout's model: Payments stores no
+// cart and asks Checkout for nothing (decision 14, second amendment). The
+// relationship that matters between the two runs the other way, and is
+// declared below; this one was the rule's invention and is gone (card 90).
 lastMileBC.downstreamOf(orderBC, {
 	upstreamRoles: [],
 	downstreamRoles: [],
