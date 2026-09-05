@@ -10,6 +10,7 @@ describe("diagramKind", () => {
 		expect(diagramKind(graph("context"))).toBe("context");
 		expect(diagramKind(graph("consumable"))).toBe("consumable");
 		expect(diagramKind(graph("relation"))).toBe("relation");
+		expect(diagramKind(graph("flow"))).toBe("flow");
 		expect(diagramKind(graph("cluster"))).toBe("context");
 		expect(diagramKind(graph())).toBe("context");
 	});
@@ -21,6 +22,7 @@ describe("sketchApplies", () => {
 		expect(sketchApplies("context", "cards")).toBe(false);
 		expect(sketchApplies("consumable", "sketch")).toBe(false);
 		expect(sketchApplies("relation", "sketch")).toBe(false);
+		expect(sketchApplies("flow", "sketch")).toBe(false);
 	});
 });
 
@@ -29,5 +31,6 @@ describe("hasSketchStyle", () => {
 		expect(hasSketchStyle("context")).toBe(true);
 		expect(hasSketchStyle("consumable")).toBe(false);
 		expect(hasSketchStyle("relation")).toBe(false);
+		expect(hasSketchStyle("flow")).toBe(false);
 	});
 });

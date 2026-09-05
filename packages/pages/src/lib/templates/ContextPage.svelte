@@ -18,10 +18,12 @@ import {
 	type BoundedContext,
 	ODSConsumableMap,
 	ODSContextMap,
+	ODSFlowMap,
 	type ValueObject,
 } from "@open-domain-specification/core";
 import { valueObjectsOf } from "../elements";
-import { consumableGraph, contextGraph } from "../flow/graph";
+import { consumableGraph, contextGraph, flowGraph } from "../flow/graph";
+import { FLOW_MAP_EMPTY, flowMapCaption } from "../flow/flow-graph";
 import {
 	consumableIcon,
 	ICONS,
@@ -82,7 +84,9 @@ const relationships = $derived(
 const contextMap = $derived(ODSContextMap.fromBoundedContext(bc));
 const consumableMap = $derived(ODSConsumableMap.fromBoundedContext(bc));
 const mapCaption = $derived(`${bc.name} context map`);
+const flowMap = $derived(ODSFlowMap.fromBoundedContext(bc));
 const consumableCaption = $derived(`${bc.name} consumable map`);
+const flowCaption = $derived(flowMapCaption(bc.name));
 
 const countOf = (kind: "operation" | "event", a: Aggregate) =>
 	[...a.consumables.values()].filter((c) => c.type === kind).length;
@@ -331,6 +335,13 @@ const termColumns: Column[] = [
 			{/if}
 		{/snippet}
 	</DataTable>
+	<!-- The map summarises both reaction sections, so it comes after the last
+	     of them: by here every policy and process it draws has been named. -->
+	<DiagramFigure
+		caption={flowCaption}
+		emptyText={FLOW_MAP_EMPTY}
+		graph={flowGraph(flowMap)}
+	/>
 </Section>
 
 <Section

@@ -10,8 +10,14 @@ export const sections = [
 </script>
 
 <script lang="ts">
-import type { Consumable, Process } from "@open-domain-specification/core";
+import {
+	type Consumable,
+	ODSFlowMap,
+	type Process,
+} from "@open-domain-specification/core";
 import { problemsUnder, useModel } from "../model";
+import { flowGraph } from "../flow/graph";
+import { FLOW_MAP_EMPTY, flowMapCaption } from "../flow/flow-graph";
 import Comments from "../atoms/Comments.svelte";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
@@ -23,6 +29,7 @@ import Lockup from "../atoms/Lockup.svelte";
 import ConsumableKeywords from "../molecules/ConsumableKeywords.svelte";
 import { contextCrumbs } from "../molecules/crumbs";
 import { kindOf } from "../molecules/element-kind";
+import DiagramFigure from "../organisms/DiagramFigure.svelte";
 import LanguageSection from "../organisms/LanguageSection.svelte";
 import PageHeader from "../organisms/PageHeader.svelte";
 import Section from "../organisms/Section.svelte";
@@ -37,6 +44,10 @@ const { process: p }: { process: Process } = $props();
 const model = useModel();
 const bc = $derived(p.boundedcontext);
 const crumbs = $derived(contextCrumbs(model.workspace, bc));
+// The lifecycle in one picture: what arrives from the left starts or feeds an
+// instance, what leaves solid to the right is what it issues, and the one
+// dashed edge is what completes it.
+const flowMap = $derived(ODSFlowMap.fromBoundedContext(bc));
 
 /** The event tables list one kind; only "Then" needs the kind column. */
 const columnsFor = (label: string, withKind: boolean): Column[] => [
@@ -114,6 +125,13 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 	count={p.endEvents.length}
 >
 	{@render consumables(p.endEvents, "Event", false, "Nothing completes an instance, so the model never says how it finishes.")}
+	<!-- The map comes after the last section it summarises, so the four
+	     headings above have already named everything it draws. -->
+	<DiagramFigure
+		caption={flowMapCaption(bc.name)}
+		emptyText={FLOW_MAP_EMPTY}
+		graph={flowGraph(flowMap, p.ref)}
+	/>
 </Section>
 
 <Section
