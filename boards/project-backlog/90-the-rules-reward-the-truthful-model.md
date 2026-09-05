@@ -21,6 +21,7 @@ Prowl's second review, each item probed. Two contradictions: a conformist to a s
 - [ ] `identifies-entity`: within one context, naming a non-root entity of another aggregate is refused with the fix text "use a relation to its root"; across contexts it stays allowed
 - [ ] External value objects' invariants are checked (`valueObjectInvariantsOf` walks external contexts too) or `external-is-boundary` refuses them; choose refusal, an external context states no rules
 - [ ] `schema.ts` documents `identity: true` on schema attributes; petstore's `inventoryQuery.consumes(inventoryUpdated)` (a service consuming its own event) and `orderApp.consumes(shipmentDelivered)` re-read and fixed or justified; RiverMart DISCOVERY section 6 says Last Mile borrows Warehouse's `TrackingLabel`
+- [ ] `packages/skill/skill/examples/petstore.md`'s Pet snippet marks `status` optional to match the model (card 89 leftover)
 - [ ] Decisions 14, 16, 17, 19, 21, 22, 28 amended by the lead; you confirm the mechanics match
 - [ ] `bash scripts/verify-all.sh` green; diagnostics per model unchanged or explained
 
