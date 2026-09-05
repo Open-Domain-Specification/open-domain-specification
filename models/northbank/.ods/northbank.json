@@ -811,7 +811,19 @@
               ]
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/screening_vendor/services/screening_engine_api/provides/match_against_lists"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/sanctions_screening/services/screening_app/provides/screen_party"
+                }
+              ]
+            }
+          ]
         }
       },
       "policies": {},
@@ -2771,7 +2783,19 @@
               ]
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/card_co/services/card_co_authorisation_feed/provides/authorisation_requested"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/cards/services/cards_app/provides/authorise_card"
+                }
+              ]
+            }
+          ]
         }
       },
       "policies": {
@@ -2859,7 +2883,7 @@
       "schemas": {
         "card_authorisation_request": {
           "name": "CardAuthorisationRequest",
-          "description": "CardCo's format, translated on the way in",
+          "description": "What CardCo's message becomes once Cards has translated it (card 71: CardCo's own format is CardCo's, and lives there)",
           "attributes": {
             "pan_token": {
               "name": "panToken",
@@ -4794,7 +4818,27 @@
         }
       },
       "invariants": {},
-      "services": {},
+      "services": {
+        "nightly_batch": {
+          "name": "NightlyBatch",
+          "description": "The mainframe's overnight job, seen from outside it",
+          "type": "application",
+          "provides": {
+            "run_nightly_batch": {
+              "name": "RunNightlyBatch",
+              "description": "Cut the day's savings movements into the postings file",
+              "type": "operation",
+              "internal": true,
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/sovereign_core_(legacy)/aggregates/savings_account_record/provides/nightly_batch_completed"
+                }
+              ]
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {},
       "glossary": {},
       "valueobjects": {},
@@ -4941,9 +4985,145 @@
         }
       },
       "schemas": {}
+    },
+    "screening_vendor": {
+      "name": "Screening Vendor",
+      "description": "The bought sanctions lists and the bought screening engine, behind a documented API. Not the bank's",
+      "subdomains": [],
+      "external": true,
+      "aggregates": {},
+      "invariants": {},
+      "services": {
+        "screening_engine_api": {
+          "name": "Screening Engine API",
+          "description": "The vendor's documented interface, and all the bank can see",
+          "type": "application",
+          "provides": {
+            "match_against_lists": {
+              "name": "MatchAgainstLists",
+              "description": "Score a name against the bought lists",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/screening_vendor/schemas/list_match_query"
+              }
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {},
+      "glossary": {},
+      "valueobjects": {},
+      "schemas": {
+        "list_match_query": {
+          "name": "ListMatchQuery",
+          "description": "The vendor's query format, which the bank does not negotiate",
+          "attributes": {
+            "name": {
+              "name": "name",
+              "type": "string"
+            },
+            "date_of_birth": {
+              "name": "dateOfBirth",
+              "type": "date"
+            },
+            "country": {
+              "name": "country",
+              "type": "ISO 3166 code"
+            }
+          }
+        }
+      }
+    },
+    "card_co": {
+      "name": "CardCo",
+      "description": "The outsourced card processor: it sends the authorisation requests and takes the answers, in its own format",
+      "subdomains": [],
+      "external": true,
+      "aggregates": {},
+      "invariants": {},
+      "services": {
+        "card_co_authorisation_feed": {
+          "name": "CardCo Authorisation Feed",
+          "description": "The processor's outbound feed, and all the bank can see",
+          "type": "application",
+          "provides": {
+            "authorisation_requested": {
+              "name": "AuthorisationRequested",
+              "description": "A merchant asked CardCo to take an amount on one of our cards",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/card_co/schemas/card_co_authorisation_message"
+              }
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {},
+      "glossary": {},
+      "valueobjects": {},
+      "schemas": {
+        "card_co_authorisation_message": {
+          "name": "CardCoAuthorisationMessage",
+          "description": "CardCo's wire format, as it arrives",
+          "attributes": {
+            "pan_token": {
+              "name": "panToken",
+              "type": "string"
+            },
+            "merchant": {
+              "name": "merchant",
+              "type": "string"
+            },
+            "amount_minor_units": {
+              "name": "amountMinorUnits",
+              "type": "int64"
+            },
+            "currency": {
+              "name": "currency",
+              "type": "ISO 4217 code"
+            }
+          }
+        }
+      }
     }
   },
   "relationships": [
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/screening_vendor"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/sanctions_screening"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "The engine's API is the vendor's; Screening calls it as documented and reshapes nothing"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/card_co"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/cards"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "CardCo's format is CardCo's; Cards translates every message on the way in and answers in the same terms"
+    },
     {
       "type": "upstream-downstream",
       "upstream": {

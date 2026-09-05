@@ -41,15 +41,32 @@ export type Diagnostic = {
 
 type Rule = (workspace: Workspace) => Diagnostic[];
 
-function* aggregatesOf(workspace: Workspace): Iterable<Aggregate> {
+/**
+ * The contexts whose insides the model states, which is every context we are
+ * not merely integrating with. An external context has no internals of ours
+ * to check: `external-is-boundary` says so once, and the rules about
+ * aggregates, entities, invariants and policies stay quiet rather than
+ * repeating it element by element (decision 28).
+ */
+function* modelledContexts(workspace: Workspace): Iterable<BoundedContext> {
 	for (const bc of workspace.boundedcontexts.values())
-		yield* bc.aggregates.values();
+		if (!bc.external) yield bc;
 }
 
-/** Everything that can hold attributes and relations, in declaration order. */
+function* aggregatesOf(workspace: Workspace): Iterable<Aggregate> {
+	for (const bc of modelledContexts(workspace)) yield* bc.aggregates.values();
+}
+
+/**
+ * Everything that can hold attributes and relations, in declaration order.
+ * An external context's value objects are still its published vocabulary, so
+ * they are checked; only the entities inside an aggregate we do not own are
+ * left alone.
+ */
 function* modelMembersOf(workspace: Workspace): Iterable<Entity | ValueObject> {
 	for (const bc of workspace.boundedcontexts.values()) {
 		yield* bc.valueobjects.values();
+		if (bc.external) continue;
 		for (const aggregate of bc.aggregates.values())
 			yield* aggregate.entities.values();
 	}
@@ -644,7 +661,7 @@ const invariantInAggregate: Rule = (workspace) => {
 function* contextInvariantsOf(
 	workspace: Workspace,
 ): Iterable<[BoundedContext, Invariant]> {
-	for (const bc of workspace.boundedcontexts.values())
+	for (const bc of modelledContexts(workspace))
 		for (const invariant of bc.invariants.values()) yield [bc, invariant];
 }
 
@@ -1314,7 +1331,7 @@ const consumptionByResolves: Rule = (workspace) => {
  */
 const policyInContext: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
-	for (const bc of workspace.boundedcontexts.values()) {
+	for (const bc of modelledContexts(workspace)) {
 		for (const policy of bc.policies.values()) {
 			for (const command of policy.commands) {
 				const owner = command.boundedcontext;
@@ -1369,7 +1386,7 @@ function operationsStayInside(
 
 /** An aggregate's operations are its context's own, not its public boundary. */
 const aggregateNotPublic: Rule = (workspace) =>
-	Array.from(workspace.boundedcontexts.values()).flatMap((bc) =>
+	Array.from(modelledContexts(workspace)).flatMap((bc) =>
 		Array.from(bc.aggregates.values()).flatMap((aggregate) =>
 			operationsStayInside("aggregate-not-public", "Aggregate", aggregate),
 		),
@@ -1499,7 +1516,10 @@ const rejectsOnOperation: Rule = (workspace) => {
 const consumableKinds: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const bc of workspace.boundedcontexts.values()) {
-		for (const policy of bc.policies.values()) {
+		// An external context's policies are refused outright by
+		// external-is-boundary; there is nothing here to say about them.
+		const policies = bc.external ? [] : Array.from(bc.policies.values());
+		for (const policy of policies) {
 			for (const c of policy.events.filter((c) => c.type !== "event")) {
 				diagnostics.push({
 					severity: "error",
@@ -1578,12 +1598,47 @@ const raisesInContext: Rule = (workspace) => {
 	return diagnostics;
 };
 
+/**
+ * Something in a context raises each of its events.
+ *
+ * An event is a fact that happened inside a boundary, and the model says what
+ * made it happen by naming the operation that raises it. An event no
+ * operation raises reads as dead model to everyone downstream: nobody can
+ * follow the chain back, and a policy hanging off it looks like it will never
+ * fire. Usually the answer is that an operation was never linked; sometimes
+ * the honest answer is that the fact comes from outside -- a card scheme's
+ * settlement file, a clock's day ending -- and then the thing that emits it
+ * is an external context, which is a different statement and the model has a
+ * word for it (decision 28).
+ */
+const eventUnraised: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const bc of modelledContexts(workspace)) {
+		const providers = [...bc.aggregates.values(), ...bc.services.values()];
+		const raised = new Set<Consumable>();
+		for (const provider of providers)
+			for (const consumable of provider.consumables.values())
+				for (const event of consumable.raisedEvents) raised.add(event);
+		for (const provider of providers)
+			for (const consumable of provider.consumables.values()) {
+				if (consumable.type !== "event" || raised.has(consumable)) continue;
+				diagnostics.push({
+					severity: "warning",
+					rule: "event-unraised",
+					message: `No operation of "${bc.name}" raises "${consumable.name}", so the model never says what makes it happen`,
+					ref: consumable.ref,
+				});
+			}
+	}
+	return diagnostics;
+};
+
 /** A policy reacts to something and does something. */
 const policyComplete: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
-	const policies: Policy[] = Array.from(
-		workspace.boundedcontexts.values(),
-	).flatMap((bc) => Array.from(bc.policies.values()));
+	const policies: Policy[] = Array.from(modelledContexts(workspace)).flatMap(
+		(bc) => Array.from(bc.policies.values()),
+	);
 	for (const policy of policies) {
 		if (policy.events.length === 0 || policy.commands.length === 0) {
 			diagnostics.push({
@@ -1634,10 +1689,15 @@ const reactionCycle: Rule = (workspace) => {
 	});
 };
 
-/** Every context serves at least one subdomain. */
+/**
+ * Every context serves at least one subdomain. An external context does not:
+ * a card scheme or a licensor is not part of anybody's problem space here, so
+ * it is not missing from the problem-space view -- it was never in it
+ * (decision 28).
+ */
 const contextServesSubdomain: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
-	for (const bc of workspace.boundedcontexts.values()) {
+	for (const bc of modelledContexts(workspace)) {
 		if (bc.subdomains.size === 0) {
 			diagnostics.push({
 				severity: "warning",
@@ -1646,6 +1706,38 @@ const contextServesSubdomain: Rule = (workspace) => {
 				ref: bc.ref,
 			});
 		}
+	}
+	return diagnostics;
+};
+
+/**
+ * An external context is a boundary and nothing more.
+ *
+ * A card scheme, a payment provider, a licensor or a clock is a system the
+ * enterprise integrates with and does not model inside. What it offers and
+ * what it takes are ours to write down, because we depend on them; its
+ * aggregates, its policies and the rules it keeps across its own instances
+ * are not, because we cannot know them and the model would be inventing.
+ * Marking the context external is the author saying "this is somebody else's
+ * machine", and this rule holds them to it (decision 28).
+ */
+const externalIsBoundary: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const bc of workspace.boundedcontexts.values()) {
+		if (!bc.external) continue;
+		const refuse = (kind: string, name: string, ref: string) =>
+			diagnostics.push({
+				severity: "error",
+				rule: "external-is-boundary",
+				message: `External context "${bc.name}" declares ${kind} "${name}"; what happens inside a system we do not own is not ours to state, only what it provides and what it consumes`,
+				ref,
+			});
+		for (const aggregate of bc.aggregates.values())
+			refuse("aggregate", aggregate.name, aggregate.ref);
+		for (const policy of bc.policies.values())
+			refuse("policy", policy.name, policy.ref);
+		for (const invariant of bc.invariants.values())
+			refuse("invariant", invariant.name, invariant.ref);
 	}
 	return diagnostics;
 };
@@ -2022,6 +2114,15 @@ const RULES: CataloguedRule[] = [
 		check: raisesInContext,
 	},
 	{
+		rule: "event-unraised",
+		severities: ["warning"],
+		summary:
+			"Every event of a context we model is raised by one of that context's own operations.",
+		why: "An event says a fact became true, and the model says what made it true by naming the operation that raises it. An event nothing raises reads as dead model: a reader cannot follow the chain back to the behaviour that causes it, and a policy waiting on it looks like it will never fire.",
+		fix: "Name the operation that raises the event with raises, or, if the fact really comes from outside the business, move the event to the system that emits it and mark that context external: true.",
+		check: eventUnraised,
+	},
+	{
 		rule: "policy-complete",
 		severities: ["warning"],
 		summary:
@@ -2046,6 +2147,15 @@ const RULES: CataloguedRule[] = [
 		why: "A context that serves no subdomain has no place in the problem-space view, so nobody can see which part of the business it exists for.",
 		fix: "Add the subdomain the context serves to its subdomains list.",
 		check: contextServesSubdomain,
+	},
+	{
+		rule: "external-is-boundary",
+		severities: ["error"],
+		summary:
+			"An external context declares no aggregates, no policies and no invariants.",
+		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact.",
+		fix: "Move the aggregate, policy or invariant into the context of ours that actually holds it, or drop external: true if this is a system the enterprise really does model inside.",
+		check: externalIsBoundary,
 	},
 	{
 		rule: "comments-required",

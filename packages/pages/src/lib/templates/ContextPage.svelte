@@ -40,7 +40,7 @@ import Keyword from "../atoms/Keyword.svelte";
 import Lockup from "../atoms/Lockup.svelte";
 import AttributeTable from "../molecules/AttributeTable.svelte";
 import ConsumesTable from "../molecules/ConsumesTable.svelte";
-import { MUD } from "../molecules/ContextLockup.svelte";
+import { EXTERNAL, MUD } from "../molecules/ContextLockup.svelte";
 import Joined from "../molecules/Joined.svelte";
 import ProvidesTable from "../molecules/ProvidesTable.svelte";
 import TeamLockup from "../molecules/TeamLockup.svelte";
@@ -128,6 +128,7 @@ const termColumns: Column[] = [
 	{#snippet title()}<Lockup kind="boundedcontext" name={bc.name} id={bc.id} detail="Bounded context" size="title" />{/snippet}
 	{#snippet meta()}
 		{#if bc.bigBallOfMud}<Keyword text={MUD.label} tone="warn" title={MUD.title} />{/if}
+		{#if bc.external}<Keyword text={EXTERNAL.label} title={EXTERNAL.title} />{/if}
 	{/snippet}
 	{#snippet facts()}
 		<DefinitionList>
@@ -138,7 +139,7 @@ const termColumns: Column[] = [
 								ref={s.ref}
 							/> <Keyword text={s.type} title={SUBDOMAIN_TYPE[s.type]} /></span>{:else}<Keyword text="no subdomain" />{/each}</Joined>
 			</Definition>
-			<Definition term="Owned by"><TeamLockup team={bc.team} /></Definition>
+			<Definition term="Owned by">{#if bc.external}Nobody here; the enterprise integrates with it and does not run it{:else}<TeamLockup team={bc.team} />{/if}</Definition>
 		</DefinitionList>
 	{/snippet}
 </PageHeader>

@@ -13,6 +13,7 @@ const base: ContextNodeData = {
 	label: "Sales",
 	icon: "boundedcontext",
 	bigBallOfMud: false,
+	external: false,
 };
 const context = (
 	data: ContextNodeData & { floating?: boolean; sketch?: boolean },
@@ -64,6 +65,15 @@ describe("ContextNode", () => {
 		expect(node.getAttribute("style")).toBeFalsy();
 		expect(node.querySelectorAll(".handle-hidden").length).toBe(2);
 		expect(node.classList.contains("sketch")).toBe(false);
+	});
+	it("marks a system the enterprise does not own with its stereotype", () => {
+		const { container } = context({ ...base, external: true });
+		const node = container.querySelector(".context-node") as HTMLElement;
+		expect(node.classList.contains("external")).toBe(true);
+		expect(node.querySelector(".stereotype")?.textContent).toBe(
+			"«external system»",
+		);
+		expect(node.classList.contains("mud")).toBe(false);
 	});
 	it("takes the sketch class for the ellipse style", () => {
 		const { container } = context({ ...base, sketch: true });

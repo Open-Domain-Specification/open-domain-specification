@@ -134,6 +134,10 @@
                 "description": {
                     "type": "string"
                 },
+                "external": {
+                    "description": "Marks a system the enterprise does not own and does not model inside: a\ncard scheme, a payment provider, a licensor, a regulator, a clock. An\nexternal context provides and consumes consumables and takes part in\nrelationships, and it needs no subdomain, no team and no internals —\n`external-is-boundary` refuses aggregates, policies and invariants on\nit, because what happens inside it is not ours to state (decision 28).",
+                    "type": "boolean"
+                },
                 "glossary": {
                     "additionalProperties": {
                         "$ref": "#/definitions/GlossaryTermSchema"

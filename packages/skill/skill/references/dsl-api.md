@@ -9,12 +9,13 @@ independently of the name.
 | — | `new Workspace(name, { odsVersion, description, version, homepage?, logoUrl?, primaryColor?, id? })` | the workspace |
 | `Workspace` | `addDomain(name, { description })` | a domain |
 | `Workspace` | `addTeam(name, { description?, homepage? })` | a team |
-| `Workspace` | `addBoundedContext(name, { description, subdomains?, bigBallOfMud?, team? })` | a context serving zero or more subdomains |
+| `Workspace` | `addBoundedContext(name, { description, subdomains?, bigBallOfMud?, external?, team? })` | a context serving zero or more subdomains; `external: true` for a system you integrate with and do not own |
 | `Workspace` | `addRelationship({...})` | a relationship; prefer the context helpers below |
 | `Workspace` | `validate()` | the diagnostics list |
 | `Workspace` | `toSchema()` / `Workspace.fromSchema(json)` | serialise / load |
 | `Domain` | `addSubdomain(name, { type, description })` | a subdomain; `type` is `"core" \| "supporting" \| "generic"` |
 | `Subdomain` | `addBoundedcontext(name, { description, bigBallOfMud?, team? })` | a context serving this subdomain |
+| `Workspace` | `addBoundedContext(name, { description, external: true })` | an external system: it provides and consumes consumables and takes part in relationships, and has no subdomain, no team, no aggregates, no policies and no invariants |
 | `BoundedContext` | `serves(subdomain)` | adds a served subdomain |
 | `BoundedContext` | `ownedBy(team)` | sets the owning team |
 | `BoundedContext` | `upstreamOf(other, { type?, upstreamRoles?, downstreamRoles?, description?, comments?, disposition? })` | directed relationship, this side upstream; `type` defaults to `"upstream-downstream"`, or `"customer-supplier"` |

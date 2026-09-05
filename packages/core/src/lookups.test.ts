@@ -228,6 +228,9 @@ describe("Workspace ref lookups", () => {
 		// the ordering consumption that reads reporting's sales figures
 		schema.relationships = [];
 		schema.boundedcontexts.ordering_bc.services.order_app.consumes = [];
+		// nor reporting's own raises link, whose ref carries the old key too
+		schema.boundedcontexts.renamed_key.services.reporting_app.provides.compile_sales_figures.raises =
+			[];
 		const rebuilt = Workspace.fromSchema(schema);
 		expect(
 			rebuilt.getBoundedContextByRef("#/boundedcontexts/renamed_key")?.name,

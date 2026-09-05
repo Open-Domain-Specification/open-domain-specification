@@ -107,6 +107,15 @@ export interface BoundedContextSchema {
 	 * neighbours know to protect themselves from it.
 	 */
 	bigBallOfMud?: boolean;
+	/**
+	 * Marks a system the enterprise does not own and does not model inside: a
+	 * card scheme, a payment provider, a licensor, a regulator, a clock. An
+	 * external context provides and consumes consumables and takes part in
+	 * relationships, and it needs no subdomain, no team and no internals —
+	 * `external-is-boundary` refuses aggregates, policies and invariants on
+	 * it, because what happens inside it is not ours to state (decision 28).
+	 */
+	external?: boolean;
 	/** The team that owns this context. */
 	team?: { $ref: string };
 	aggregates: { [aggregate: string]: AggregateSchema };

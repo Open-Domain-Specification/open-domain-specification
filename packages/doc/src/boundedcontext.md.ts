@@ -72,7 +72,7 @@ export const boundedcontextMd = (
 ) => `
 ${options?.breadcrumbs ? contextBreadcrumbsMd(boundedcontext) : ""}
 # ${boundedcontext.name}
-${boundedcontext.bigBallOfMud ? "> ⚠️ **Big ball of mud.** This context's model is not coherent; neighbours should protect themselves with an anti-corruption layer.\n\n" : ""}${boundedcontext.description}
+${boundedcontext.bigBallOfMud ? "> ⚠️ **Big ball of mud.** This context's model is not coherent; neighbours should protect themselves with an anti-corruption layer.\n\n" : ""}${boundedcontext.external ? "> **External system.** A system the enterprise does not own: only what it provides and consumes is modelled here, never its insides.\n\n" : ""}${boundedcontext.description}
 
 ${boundedcontext.team ? `**Owned by:** ${teamLinkMd(boundedcontext.team)}\n` : ""}
 ## Serves

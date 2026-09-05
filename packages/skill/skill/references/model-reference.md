@@ -68,6 +68,7 @@ Represents a bounded context in the Open Domain Specification (ODS).
 | `aggregates` | map of id to [Aggregate](#aggregate) | yes |  |
 | `bigBallOfMud` | boolean | no | Marks a context whose model is not coherent (typically legacy) so that neighbours know to protect themselves from it. |
 | `description` | string | yes |  |
+| `external` | boolean | no | Marks a system the enterprise does not own and does not model inside: a card scheme, a payment provider, a licensor, a regulator, a clock. An external context provides and consumes consumables and takes part in relationships, and it needs no subdomain, no team and no internals — `external-is-boundary` refuses aggregates, policies and invariants on it, because what happens inside it is not ours to state (decision 28). |
 | `glossary` | map of id to [GlossaryTerm](#glossaryterm) | yes |  |
 | `invariants` | map of id to [Invariant](#invariant) | yes | The rules that hold across the instances or the aggregates of this context: uniqueness, quotas, limits, conservation. Each one names at least one operation of the context that guards it, because a rule no single instance can see is kept true only by whoever checks it before acting (decision 27). |
 | `name` | string | yes |  |

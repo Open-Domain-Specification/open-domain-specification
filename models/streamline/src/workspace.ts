@@ -237,6 +237,16 @@ const discsBC = physicalSD.addBoundedcontext("Disc Rental (legacy)", {
 	team: legacyTeam,
 });
 
+// The companies StreamLine licenses from and takes delivery from. The portal
+// interview already said "external post houses use it too" and the deals are
+// "with a licensor"; neither was anywhere in the model. They are one context
+// StreamLine does not own: no subdomain, no team, no insides (decision 28).
+const licensorsBC = workspace.addBoundedContext("Licensors & Post Houses", {
+	description:
+		"The studios, distributors and post houses StreamLine licenses titles from and takes masters from. Somebody else's businesses; only what they do at our edge is modelled",
+	external: true,
+});
+
 /* =======================
    STUDIO PRODUCTION
    DISCOVERY: Head of Studio Technology. No shoot before the budget is
@@ -337,7 +347,7 @@ const studioPortal = studioBC.addService("StudioPortal", {
 		"The documented delivery portal; external post houses use it too",
 	type: "application",
 });
-studioPortal
+const submitDelivery = studioPortal
 	.provides("SubmitDelivery", {
 		description: "Upload a master against a production and episode",
 		type: "operation",
@@ -345,6 +355,22 @@ studioPortal
 		schema: masterDeliveredSchema,
 	})
 	.raises(masterDelivered);
+// DISCOVERY: Head of Studio Technology. "External post houses use it too", so
+// the portal has a caller outside the company, delivering to StreamLine's spec
+// without negotiating it, which is what a conformist is (card 71).
+licensorsBC
+	.addService("Licensor Delivery", {
+		description:
+			"However a licensor or post house gets a master to us; all StreamLine sees is the upload",
+		type: "application",
+	})
+	.consumes(submitDelivery, { pattern: "conformist" });
+studioBC.upstreamOf(licensorsBC, {
+	description:
+		"The delivery spec is StreamLine's and it is published; a licensor delivers to it or the master is not accepted",
+	upstreamRoles: ["open-host-service"],
+	downstreamRoles: ["conformist"],
+});
 
 studioBC.addTerm("Master", {
 	definition: "The finished file for one film or episode, to the delivery spec",
@@ -2055,6 +2081,21 @@ const discRentalInvoiced = queueAgg.provides("DiscRentalInvoiced", {
 	pattern: "published-language",
 	schema: discInvoicedSchema,
 });
+
+// DISCOVERY: Legacy Operations, "a monthly export of charges to billing".
+// Nothing raised the export's event, so the model never said what makes it
+// happen (event-unraised). The job is the monolith's own, named at its edge.
+discsBC
+	.addService("MonthlyExport", {
+		description: "The charge export, the one job anyone will describe",
+		type: "application",
+	})
+	.provides("RunMonthlyExport", {
+		description: "Write the month's disc charges out to billing",
+		type: "operation",
+		internal: true,
+	})
+	.raises(discRentalInvoiced);
 
 const addDiscCharge = billingBC
 	.addPolicy("Add disc charge to bill", {

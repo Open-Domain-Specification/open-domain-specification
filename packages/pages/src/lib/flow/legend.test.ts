@@ -157,6 +157,27 @@ describe("legendEntries for the context map", () => {
 		);
 	});
 
+	it("gives a context nobody here owns a row of its own", () => {
+		const entries = legendEntries(
+			{
+				nodes: [
+					{
+						id: "#/a",
+						type: "context",
+						label: "A",
+						icon: "x",
+						bigBallOfMud: false,
+						external: true,
+					},
+				] as ContextNodeData[],
+				edges: [],
+			},
+			"context",
+		);
+		expect(marks(entries)).toEqual(["\u00abexternal system\u00bb"]);
+		expect(entries[0].name).toBe("External system");
+	});
+
 	it("names an identity dependency in its own row, apart from a consumption's", () => {
 		const graph = {
 			nodes: [

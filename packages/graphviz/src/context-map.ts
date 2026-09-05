@@ -18,6 +18,7 @@ import {
 import { getDebug } from "./debug";
 import {
 	DOWNSTREAM_ROLE_LABELS,
+	EXTERNAL_STEREOTYPE,
 	IDENTITY_EDGE_LABEL,
 	RELATIONSHIP_LABELS,
 	UPSTREAM_ROLE_LABELS,
@@ -50,20 +51,30 @@ const SYMMETRIC_EDGE_COLORS: Partial<Record<ContextRelationshipType, string>> =
 		"separate-ways": "grey",
 	};
 
-/** A big ball of mud is drawn as an irregular, muddy blob. */
+/**
+ * A big ball of mud is drawn as an irregular, muddy blob; a system the
+ * enterprise does not own is a plain grey box under the «external system»
+ * stereotype, so the wall between our model and somebody else's is the first
+ * thing a reader sees.
+ */
 function nodeAttributes(node: ODSContextMapNode): NodeAttributesObject {
 	const lines = [
+		node.external && EXTERNAL_STEREOTYPE,
 		node.name,
 		node.bigBallOfMud && "(big ball of mud)",
 		node.team && `[${node.team.name}]`,
 	].filter(Boolean);
 	return {
 		label: lines.join("\n"),
-		shape: node.bigBallOfMud ? "doubleoctagon" : "egg",
+		shape: node.bigBallOfMud ? "doubleoctagon" : node.external ? "box" : "egg",
 		tooltip: node.description,
 		width: 1.5,
 		height: 1,
-		fillcolor: node.bigBallOfMud ? "#d7ccc8" : "white",
+		fillcolor: node.bigBallOfMud
+			? "#d7ccc8"
+			: node.external
+				? "#eceff1"
+				: "white",
 		style: node.bigBallOfMud ? "filled,dashed" : "filled,solid",
 		fontname: "sans-serif",
 	};

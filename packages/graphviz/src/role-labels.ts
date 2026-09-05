@@ -35,6 +35,14 @@ export const RELATIONSHIP_LABELS: Record<ContextRelationshipType, string> = {
  */
 export const IDENTITY_EDGE_LABEL = "«id»";
 
+/**
+ * The stereotype a context nobody here owns carries on the context map: a card
+ * scheme, a payment provider, a licensor. It reads as a UML stereotype for the
+ * same reason `«id»` and `«identifies»` do -- it says what
+ * kind of thing the box is, not what it is called (decision 28).
+ */
+export const EXTERNAL_STEREOTYPE = "«external system»";
+
 /** UML stereotype above a relation-map class name. */
 export const STEREOTYPES: Record<ODSRelationMapNode["type"], string> = {
 	entity_root: "root entity",

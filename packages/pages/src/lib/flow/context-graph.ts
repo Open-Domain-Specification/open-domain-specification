@@ -29,6 +29,8 @@ export type ContextNodeData = GraphNode & {
 	type: "context";
 	team?: string;
 	bigBallOfMud: boolean;
+	/** A system the enterprise does not own and does not model inside. */
+	external: boolean;
 	description?: string;
 	/** The outermost cluster below the workspace, e.g. the domain, for the colour band. */
 	cluster?: string;
@@ -53,10 +55,12 @@ function contextNode(n: ODSContextMapNode): ContextNodeData {
 		chips: [
 			...(n.team ? [n.team.name] : []),
 			...(n.bigBallOfMud ? ["big ball of mud"] : []),
+			...(n.external ? ["external system"] : []),
 		],
 		tone: n.bigBallOfMud ? "warn" : "",
 		team: n.team?.name,
 		bigBallOfMud: n.bigBallOfMud === true,
+		external: n.external === true,
 		description: n.description,
 	};
 }

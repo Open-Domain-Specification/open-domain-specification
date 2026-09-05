@@ -428,3 +428,39 @@ never declared for the borrowed value objects, because a relation may not cross 
 boundary (decision 14) and the attribute's `valueobject` reference is the only link. The
 three deliberate diagnostics in section 7 are untouched, and validation still returns
 exactly those three.
+
+## 11. Revision (card 71): the outside world becomes two external contexts
+
+Two systems the bank depends on were named all over this record and nowhere in the model.
+CardCo "sends us the authorisation request in their format and we translate it", and the
+model said so only in a schema's description ("CardCo's format, translated on the way in");
+the sanctions engine and its lists "are bought" and behind "a documented API", and the model
+had the bank's own Sanctions Screening context and nothing behind it. Decision 28 gives both
+a home: a bounded context with `external: true`, which provides and consumes and takes part
+in relationships, and which has no subdomain, no team and no aggregates, because what
+happens inside somebody else's machine is not ours to state.
+
+- **CardCo**: a service with one published event, `AuthorisationRequested`, carrying
+  CardCo's own wire format. Cards consumes it through an anti-corruption layer, made by
+  `AuthoriseCard`, and the relationship on the map is published-language upstream,
+  anti-corruption-layer downstream. `CardAuthorisationRequest` stays in Cards, where it
+  belongs: it is what CardCo's message *becomes* once Cards has translated it, and its
+  description now says that rather than claiming to be CardCo's format.
+- **Screening Vendor**: a service with one open-host operation, `MatchAgainstLists`, and its
+  own query schema. Sanctions Screening's `ScreenParty` consumes it as a conformist, which
+  is what "the API is documented" and "the engine is bought" mean.
+
+Neither is a subdomain of the bank and neither has a team here, which is the point: the
+capability map is the bank's, and these two are not on it. Scheme Gateway is untouched and
+stays internal — it is the bank's own adapter with its own team, as section 9 already
+argued — and so does Sovereign, which is the bank's own mainframe however little anyone can
+read of it.
+
+The other finding of card 71 was `event-unraised`, a new warning about an event no operation
+of its context raises. NorthBank had exactly one: Sovereign's `NightlyBatchCompleted`, which
+the Ledger and Reporting both react to and which nothing in the model caused. The Core
+Banking lead's own words say what causes it — Sovereign "runs the nightly batch" — so the
+model now names that job: a `NightlyBatch` service with one internal operation,
+`RunNightlyBatch`, raising the event. Nothing else moved, and validation still returns
+exactly the four deliberate diagnostics of section 7 plus card 70's second reading of the
+quick-quote crossing.
