@@ -5,6 +5,11 @@
 `packages/pages/src/lib/flow/panel-fit.ts`, its effects in `fit.svelte.ts` and
 each panel's open state in `panel-state.svelte.ts`. Card 64.
 
+This card settled the give-way order; the panels' frame is a separate,
+still-open touch tracked in `organism-interactive-diagram.md` rather than
+here — both panels still carry the rounded `editorWidget` frame that doc
+says should give way to a 1px `panel.border` rule.
+
 ## The guarantee
 
 The whole map is on the canvas and no node is under a panel. That is what the
