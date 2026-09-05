@@ -1,7 +1,7 @@
 <script module lang="ts">
 export const sections = [
 	{ id: "attributes", label: "Attributes" },
-	{ id: "usage", label: "Used by" },
+	{ id: "usage", label: "Used as a type by" },
 	{ id: "relations", label: "Relations" },
 	{ id: "invariants", label: "Constrained by" },
 	{ id: "language", label: "Language" },
@@ -70,7 +70,7 @@ const relationColumns: Column[] = [
 
 <Section
 	id="usage"
-	title="Used as a type by"
+	title={sections.find((s) => s.id === "usage")!.label}
 	lead="Attributes across the workspace whose type is this value object."
 	count={usages.length}
 	problems={problemsUnder(model, v.ref)}
