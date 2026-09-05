@@ -59,7 +59,11 @@ that Playback uses."
 Recorded as: Catalogue as supporting; Title with Film and Series as kinds of it (card 59,
 section 11), Season and Episode `includes` under Series, Artwork,
 MaturityRating and Availability; invariants `PublishedTitleHasPlayableAsset`,
-`RatingRequiredBeforePublish`, `AvailabilityMatchesLicence`; four policies; anti-corruption
+`RatingRequiredBeforePublish`, `AvailabilityMatchesLicence`; the "Master to publication"
+process, which starts on `MasterDelivered`, queues the encode, waits for
+`EncodingCompleted` and ends on `TitlePublished` — it is what holds the productionId to
+titleId match while the encode runs (card 60) — and the two licensing-window policies;
+anti-corruption
 consumptions of Studio, Licensing and Encoding; customer-supplier towards Encoding
 because Catalogue is the caller of `SubmitEncode`.
 
@@ -206,9 +210,9 @@ to connect them. The connected timeline, condensed:
 | Event | Raised by | Reacted to by |
 |---|---|---|
 | ProductionGreenlit (internal) | Greenlight | (studio scheduling, out of scope) |
-| MasterDelivered | SubmitDelivery | Catalogue requests encode; Encoding queues |
+| MasterDelivered | SubmitDelivery | Catalogue's "Master to publication" process starts; Encoding queues |
 | EncodeQueued (internal) | SubmitEncode | Plan ladder |
-| EncodingCompleted | CompleteJob | Catalogue publishes; Edge pre-positions |
+| EncodingCompleted | CompleteJob | Catalogue's process publishes; Edge pre-positions |
 | LicenseWindowOpened / Expired | OpenWindow / ExpireWindow | Catalogue updates availability / unpublishes |
 | TitlePublished / TitleAvailabilityChanged | PublishTitle / UpdateAvailability | Recommendations adds candidate ("Add candidate on publish") |
 | AccountCreated | CreateAccount | Create household |

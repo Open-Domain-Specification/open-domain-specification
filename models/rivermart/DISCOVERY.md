@@ -103,10 +103,12 @@ built last year; I honestly don't know how it's modelled."
 
 Recorded as: Cart & Checkout serving "Ordering"; Cart aggregate with CartLine `includes`,
 `LineQuantityAtLeastOne` and `MaxFiftyLines`; the CheckoutOrchestrator application service
-consuming `AuthorisePayment` and `PlaceOrder` through anti-corruption layers; the two
-policies that chain `CartCheckedOut` to `AuthorisePayment` and `PaymentAuthorised` to
-`PlaceOrder`, and a third, "Reopen cart on decline", for the failure path ("the cart stays
-open"). The wishlist was modelled as found (see section 7).
+consuming `AuthorisePayment` and `PlaceOrder` through anti-corruption layers; the
+"Checkout" process, which starts on `CartCheckedOut`, asks for the hold and waits, places
+the order on `PaymentAuthorised` and reopens the cart on `PaymentDeclined` ("the cart stays
+open"), ending on `OrderPlaced`. It was three chained policies until card 60, none of which
+could say that the checkout was waiting for an answer. The wishlist was modelled as found
+(see section 7).
 
 ### Orders Team lead
 
@@ -122,8 +124,12 @@ sit as placed forever; the customer sees that. We call Payments to refund once t
 warehouse has graded a return."
 
 Recorded as: the Order aggregate with OrderLine, Shipment, Return and ReturnLine as
-`includes`; four invariants; policies "Record dispatch", "Complete on delivery", "Refund on
-received return", "Cancel flagged orders" and "Hold on stock short"; anti-corruption
+`includes`; four invariants; the "Order to delivery" process, which starts on
+`OrderPlaced`, waits for the warehouse and the last mile, records dispatches, holds the
+order when stock is short, completes it when the last parcel is handed over and ends on
+`OrderCompleted` or `OrderCancelled` (card 60: it was three policies that between them
+could not say when the order was done); policies "Refund on received return" and
+"Cancel flagged orders"; anti-corruption
 consumptions of Warehouse, Last Mile, Fraud and Payments; the glossary entries for Order,
 Shipment and Return. Orders is downstream of Payments for the refund call and of Offers for
 the offer id each line carries; both are on the map. `CancelOrder` rejects with

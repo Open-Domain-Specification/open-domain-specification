@@ -10,6 +10,7 @@ import {
 	GlossaryTerm,
 	Invariant,
 	Policy,
+	Process,
 	Service,
 	Subdomain,
 	type Team,
@@ -44,6 +45,9 @@ import PageLayout from "./templates/PageLayout.svelte";
 import PolicyPage, {
 	sections as policySections,
 } from "./templates/PolicyPage.svelte";
+import ProcessPage, {
+	sections as processSections,
+} from "./templates/ProcessPage.svelte";
 import RelationshipPage, {
 	sections as relationshipSections,
 } from "./templates/RelationshipPage.svelte";
@@ -122,6 +126,8 @@ $effect(() => {
 		<PageLayout sections={schemaSections}><SchemaPage schema={target} /></PageLayout>
 	{:else if target instanceof Policy}
 		<PageLayout sections={policySections}><PolicyPage policy={target} /></PageLayout>
+	{:else if target instanceof Process}
+		<PageLayout sections={processSections}><ProcessPage process={target} /></PageLayout>
 	{:else if target instanceof GlossaryTerm}
 		<PageLayout sections={termSections}><TermPage term={target} /></PageLayout>
 	{:else if target instanceof Consumable}

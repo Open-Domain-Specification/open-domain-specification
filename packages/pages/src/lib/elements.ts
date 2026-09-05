@@ -5,6 +5,7 @@ import {
 	Entity,
 	type GlossaryTerm,
 	type Policy,
+	type Process,
 	type ValueObject,
 	type Workspace,
 } from "@open-domain-specification/core";
@@ -40,6 +41,10 @@ function* aggregatesOf(ws: Workspace): Iterable<Aggregate> {
 
 export function* policiesOf(ws: Workspace): Iterable<Policy> {
 	for (const bc of ws.boundedcontexts.values()) yield* bc.policies.values();
+}
+
+export function* processesOf(ws: Workspace): Iterable<Process> {
+	for (const bc of ws.boundedcontexts.values()) yield* bc.processes.values();
 }
 
 export function* consumablesOf(ws: Workspace): Iterable<Consumable> {

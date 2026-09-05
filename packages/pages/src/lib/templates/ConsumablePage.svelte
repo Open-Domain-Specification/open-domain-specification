@@ -15,6 +15,7 @@ export const sectionsFor = (c: Consumable) => {
 			: { id: "raises", label: "Raises" },
 		{ id: "invariants", label: "Invariants" },
 		{ id: "policies", label: isEvent ? "Reacted to by" : "Issued by" },
+		{ id: "processes", label: isEvent ? "Part of" : "Issued by processes" },
 		{ id: "consumers", label: "Consumed by" },
 		{ id: "comments", label: "Comments" },
 		{ id: "language", label: "Language" },
@@ -24,7 +25,7 @@ export const sectionsFor = (c: Consumable) => {
 
 <script lang="ts">
 import { problemsUnder, useModel } from "../model";
-import { consumablesOf, policiesOf } from "../elements";
+import { consumablesOf, policiesOf, processesOf } from "../elements";
 import Comments from "../atoms/Comments.svelte";
 import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
@@ -38,6 +39,7 @@ import Lockup from "../atoms/Lockup.svelte";
 import AttributeTable from "../molecules/AttributeTable.svelte";
 import ConsumableKeywords from "../molecules/ConsumableKeywords.svelte";
 import ConsumesTable from "../molecules/ConsumesTable.svelte";
+import Joined from "../molecules/Joined.svelte";
 import { contextCrumbs } from "../molecules/crumbs";
 import { kindOf } from "../molecules/element-kind";
 import RefList from "../molecules/RefList.svelte";
@@ -60,6 +62,26 @@ const policies = $derived(
 		isEvent ? p.events.includes(c) : p.commands.includes(c),
 	),
 );
+/**
+ * The processes this consumable takes part in, and where in a lifecycle it
+ * sits: an event may begin an instance, be waited for, or finish one, and the
+ * page says which rather than leaving a reader to open the process (decision
+ * 23).
+ */
+const processes = $derived(
+	[...processesOf(ws)].flatMap((p) => {
+		const roles = isEvent
+			? [
+					...(p.startEvents.includes(c) ? ["starts it"] : []),
+					...(p.events.includes(c) ? ["waits for it"] : []),
+					...(p.endEvents.includes(c) ? ["ends on it"] : []),
+				]
+			: p.commands.includes(c)
+				? ["issues it"]
+				: [];
+		return roles.length ? [{ process: p, roles }] : [];
+	}),
+);
 const schemaAttributes = $derived(
 	c.schema ? [...c.schema.attributes.values()] : [],
 );
@@ -76,6 +98,12 @@ const crumbs = $derived<[string, string][]>([
 ]);
 const policyColumns: Column[] = [
 	{ key: "name", label: "Policy" },
+	{ key: "context", label: "Context" },
+	{ key: "description", label: "Description" },
+];
+const processColumns: Column[] = [
+	{ key: "name", label: "Process" },
+	{ key: "role", label: "In its lifecycle" },
 	{ key: "context", label: "Context" },
 	{ key: "description", label: "Description" },
 ];
@@ -209,6 +237,36 @@ const policyColumns: Column[] = [
 				<Lockup kind="boundedcontext" name={p.boundedcontext.name} ref={p.boundedcontext.ref} />
 			{:else}
 				{p.description}
+			{/if}
+		{/snippet}
+	</DataTable>
+</Section>
+
+<Section
+	id="processes"
+	title={isEvent ? "Part of" : "Issued by processes"}
+	lead={isEvent
+		? "Processes this event takes part in, and where in each lifecycle it sits."
+		: "Processes that issue this operation while an instance of them is running."}
+	count={processes.length}
+>
+	<DataTable
+		columns={processColumns}
+		rows={processes}
+		empty={isEvent
+			? "No process starts, waits for or ends on this event."
+			: "No process issues this operation."}
+		rowId={(row) => row.process.ref}
+	>
+		{#snippet cell(row, col)}
+			{#if col.key === "name"}
+				<Lockup kind="process" name={row.process.name} ref={row.process.ref} />
+			{:else if col.key === "role"}
+				<Joined>{#each row.roles as role (role)}<Keyword text={role} />{/each}</Joined>
+			{:else if col.key === "context"}
+				<Lockup kind="boundedcontext" name={row.process.boundedcontext.name} ref={row.process.boundedcontext.ref} />
+			{:else}
+				{row.process.description}
 			{/if}
 		{/snippet}
 	</DataTable>

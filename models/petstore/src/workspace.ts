@@ -12,7 +12,8 @@ import { Workspace } from "@open-domain-specification/core";
  *
  * Reading order: domains and subdomains (problem space), teams, contexts
  * (solution space), then one section per context with its aggregates,
- * services, schemas, policies and glossary, and finally the context map.
+ * services, schemas, policies, processes and glossary, and finally the
+ * context map.
  */
 export const workspace = new Workspace("Swagger Petstore (v3)", {
 	odsVersion: "1.0.0",
@@ -510,8 +511,9 @@ catalogBC.addTerm("Available", {
    SALES: Order aggregate, OrderApp service
    Demonstrates: a cross-context identity attribute naming another context's
    root, an invariant that constrains two value objects, an anti-corruption
-   consumption, a policy that reacts to events from two contexts, and policies
-   that issue local operations which call out through the ACL (decision 17).
+   consumption, and a process that reacts to events from two contexts, holds
+   one order across its whole life and issues local operations which call out
+   through the ACL (decisions 17 and 23).
    ======================= */
 
 const orderAgg = salesBC.addAggregate("Order", {
@@ -576,7 +578,7 @@ orderAgg
 // An invariant only names things inside its own aggregate: Sales cannot
 // enforce a rule over the catalogue's PetStatus. What it can enforce is that
 // its own status only moves to approved after the availability check the
-// ACL made through GetPetSummary; the policy below is where that check runs.
+// ACL made through GetPetSummary; the process below is where that check runs.
 orderAgg
 	.addInvariant("ApproveOnlyWhenAvailable", {
 		description:
@@ -653,7 +655,7 @@ const orderDeleted = orderAgg.provides("OrderDeleted", {
 	schema: orderIdSchema,
 });
 
-// Approval is internal: only the sales policy below decides it.
+// Approval is internal: only the sales process below decides it.
 const approveOrder = orderAgg
 	.provides("ApproveOrder", {
 		description: "Approve a placed order once the pet is available",
@@ -733,9 +735,9 @@ orderApp.consumes(getPetSummaryOp, {
 // through the open host PetApp offers rather than the Pet aggregate itself.
 orderApp.consumes(markPetSoldForOrder, { pattern: "anti-corruption-layer" });
 
-// A policy names operations of its own context (decision 17), so the two
-// catalogue transitions Sales drives get a local operation each: the one that
-// calls out through the ACL above. What crosses the boundary is the
+// A process, like a policy, names operations of its own context (decisions 17
+// and 23), so the two catalogue transitions Sales drives get a local operation
+// each: the one that calls out through the ACL above. What crosses the boundary is the
 // consumption, which the consumable map already draws.
 const reservePetForApproved = orderApp.provides("ReservePet", {
 	description:
@@ -758,33 +760,24 @@ orderApp.consumes(reservePetForOrder, {
 	by: [reservePetForApproved],
 });
 
-// A policy is "when this happens, do that". It may react to events from
-// several contexts, but issues an operation of its own context here. Either
-// trigger carries a petId; the policy finds the placed orders for that pet
-// (GetOrderById's store, keyed by petId) and asks GetPetSummary before approving.
+// One order, from placed to delivered, is a process and not three policies: it
+// remembers which order is waiting for which pet, so that a relisting later in
+// the week approves the order placed on Monday, and it knows when it is done.
+// Both its triggers carry a petId; it finds the placed orders for that pet
+// (GetOrderById's store, keyed by petId) and asks GetPetSummary before
+// approving. The order lifecycle drives the pet lifecycle, which is why Sales
+// is the customer: each operation it issues is Sales' own, and that operation
+// is what reaches Catalog through the ACL — a context acts through its own
+// boundary (decisions 17 and 23).
 salesBC
-	.addPolicy("Approve when pet available", {
+	.addProcess("Order fulfilment", {
 		description:
-			"On OrderPlaced, or when the catalogue relists a pet (PetStatusChanged), look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest. It does not listen to PetReserved: that is the fact this very chain produces",
+			"From an order being placed to the pet being sold. It starts on OrderPlaced and waits, because the pet may not be available yet: a relisting (PetStatusChanged) makes it look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest. On approval it holds the pet (available → pending), and once the order is delivered it tells the catalogue the pet has gone to its owner (pending → sold). It does not listen to PetReserved: that is the fact this very chain produces. Correlation is by petId and then orderId; an order nobody can fulfil is cancelled by hand, which is why there is no timeout here",
 	})
-	.on(petStatusChanged, orderPlaced)
-	.then(approveOrder);
-// The order lifecycle drives the pet lifecycle, which is why Sales is the
-// customer. Each policy names a Sales operation, and that operation is what
-// reaches Catalog through the ACL: a context acts through its own boundary.
-salesBC
-	.addPolicy("Reserve pet on approval", {
-		description:
-			"When an order is approved, hold its pet (available → pending) so nobody else can be approved for the same animal",
-	})
-	.on(orderApproved)
-	.then(reservePetForApproved);
-salesBC
-	.addPolicy("Mark pet sold on delivery", {
-		description: "When an order is delivered, the pet is sold (pending → sold)",
-	})
-	.on(orderDelivered)
-	.then(markPetSoldForDelivered);
+	.starts(orderPlaced)
+	.on(petStatusChanged)
+	.then(approveOrder, reservePetForApproved, markPetSoldForDelivered)
+	.ends(orderDelivered);
 
 salesBC.addTerm("Order", {
 	definition:

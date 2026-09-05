@@ -55,9 +55,9 @@ export async function generate(
  * NorthBank's workspace tests: at least three relationship types are used and
  * there is one big ball of mud, every context the enterprise owns has a team,
  * there's a glossary,
- * policies and schemas on cross-context events, `validate()` reports exactly
- * the deliberate problems (by rule id and severity), and the workspace
- * round-trips through `Workspace.fromSchema`.
+ * policies, at least one process and schemas on cross-context events,
+ * `validate()` reports exactly the deliberate problems (by rule id and
+ * severity), and the workspace round-trips through `Workspace.fromSchema`.
  *
  * The relationship check is a floor, not a census. Requiring all five types of
  * every model would make a model invent a relationship it does not have -- a
@@ -93,6 +93,13 @@ export function assertStressTestWorkspace(
 	const contexts = [...workspace.boundedcontexts.values()];
 	assert.ok(contexts.some((bc) => bc.glossary.size > 0));
 	assert.ok(contexts.reduce((n, bc) => n + bc.policies.size, 0) > 5);
+	// Every organisation of this size runs something that waits for more than
+	// one event before it acts, so each stress model names at least one, and
+	// every surface that draws a process is exercised by all three.
+	assert.ok(
+		contexts.reduce((n, bc) => n + bc.processes.size, 0) > 0,
+		`${workspace.name} names no process`,
+	);
 	for (const bc of contexts) {
 		for (const provider of [
 			...bc.aggregates.values(),

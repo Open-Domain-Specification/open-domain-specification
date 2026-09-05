@@ -272,6 +272,7 @@
         }
       },
       "policies": {},
+      "processes": {},
       "glossary": {
         "master": {
           "name": "Master",
@@ -556,6 +557,7 @@
       "invariants": {},
       "services": {},
       "policies": {},
+      "processes": {},
       "glossary": {
         "window": {
           "name": "Window",
@@ -990,34 +992,6 @@
         }
       },
       "policies": {
-        "request_encode_on_master": {
-          "name": "Request encode on master",
-          "description": "A delivered master is matched to the title by productionId (and the episode by masterEpisodeNumber) and queued for encoding under that titleId",
-          "on": [
-            {
-              "$ref": "#/boundedcontexts/studio_production/aggregates/production/provides/master_delivered"
-            }
-          ],
-          "then": [
-            {
-              "$ref": "#/boundedcontexts/catalogue/services/catalogue_api/provides/request_encode"
-            }
-          ]
-        },
-        "publish_on_encode": {
-          "name": "Publish on encode",
-          "description": "A completed encode makes the title publishable",
-          "on": [
-            {
-              "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/encoding_completed"
-            }
-          ],
-          "then": [
-            {
-              "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/publish_title"
-            }
-          ]
-        },
         "update_availability_on_window": {
           "name": "Update availability on window",
           "description": "An opened window changes where the title is live",
@@ -1043,6 +1017,35 @@
           "then": [
             {
               "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/unpublish_title"
+            }
+          ]
+        }
+      },
+      "processes": {
+        "master_to_publication": {
+          "name": "Master to publication",
+          "description": "From a delivered master to a title members can play. The master is matched to the title by productionId (and the episode by masterEpisodeNumber) and queued for encoding under that titleId; the process then waits, sometimes for hours, and publishes the title when the encode comes back. Correlation is by that titleId, which it remembers for the encode's whole run; a ladder that never completes is chased by the operations team, so nothing here times out",
+          "starts": [
+            {
+              "$ref": "#/boundedcontexts/studio_production/aggregates/production/provides/master_delivered"
+            }
+          ],
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/encoding_completed"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/catalogue/services/catalogue_api/provides/request_encode"
+            },
+            {
+              "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/publish_title"
+            }
+          ],
+          "ends": [
+            {
+              "$ref": "#/boundedcontexts/catalogue/aggregates/title/provides/title_published"
             }
           ]
         }
@@ -1410,6 +1413,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "ladder": {
           "name": "Ladder",
@@ -1771,6 +1775,7 @@
         }
       },
       "policies": {},
+      "processes": {},
       "glossary": {
         "session": {
           "name": "Session",
@@ -2103,6 +2108,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "appliance": {
           "name": "Appliance",
@@ -2335,6 +2341,7 @@
           "then": []
         }
       },
+      "processes": {},
       "glossary": {
         "device": {
           "name": "Device",
@@ -2618,6 +2625,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "row": {
           "name": "Row",
@@ -2908,6 +2916,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "household": {
           "name": "Household",
@@ -3324,6 +3333,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "plan": {
           "name": "Plan",
@@ -3532,6 +3542,7 @@
         }
       },
       "policies": {},
+      "processes": {},
       "glossary": {
         "account": {
           "name": "Account",
@@ -3797,6 +3808,7 @@
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "pod": {
           "name": "Pod",
@@ -3972,6 +3984,7 @@
         }
       },
       "policies": {},
+      "processes": {},
       "glossary": {},
       "valueobjects": {},
       "schemas": {
@@ -4016,6 +4029,7 @@
         }
       },
       "policies": {},
+      "processes": {},
       "glossary": {},
       "valueobjects": {},
       "schemas": {}

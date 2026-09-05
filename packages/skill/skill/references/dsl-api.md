@@ -15,7 +15,7 @@ independently of the name.
 | `Workspace` | `toSchema()` / `Workspace.fromSchema(json)` | serialise / load |
 | `Domain` | `addSubdomain(name, { type, description })` | a subdomain; `type` is `"core" \| "supporting" \| "generic"` |
 | `Subdomain` | `addBoundedcontext(name, { description, bigBallOfMud?, team? })` | a context serving this subdomain |
-| `Workspace` | `addBoundedContext(name, { description, external: true })` | an external system: it provides and consumes consumables and takes part in relationships, and has no subdomain, no team, no aggregates, no policies and no invariants |
+| `Workspace` | `addBoundedContext(name, { description, external: true })` | an external system: it provides and consumes consumables and takes part in relationships, and has no subdomain, no team, no aggregates, no policies, no processes and no invariants |
 | `BoundedContext` | `serves(subdomain)` | adds a served subdomain |
 | `BoundedContext` | `ownedBy(team)` | sets the owning team |
 | `BoundedContext` | `upstreamOf(other, { type?, upstreamRoles?, downstreamRoles?, description?, comments?, disposition? })` | directed relationship, this side upstream; `type` defaults to `"upstream-downstream"`, or `"customer-supplier"` |
@@ -26,6 +26,7 @@ independently of the name.
 | `BoundedContext` | `addAggregate(name, { description })` | an aggregate |
 | `BoundedContext` | `addService(name, { type, description })` | a service; `type` is `"application" \| "domain"` |
 | `BoundedContext` | `addPolicy(name, { description })` | a policy; chain `.on(...events).then(...operations)` |
+| `BoundedContext` | `addProcess(name, { description, comments?, disposition? })` | a process: a reaction that holds state across events. Chain `.starts(...events).on(...events).then(...operations).ends(...events)`, or pass the four lists as attributes. `starts`, `on` and `ends` may name another context's events; `then` names operations of its own context, like a policy's |
 | `BoundedContext` | `addTerm(name, { definition, aliases?, embodiedBy? })` | a glossary term; or chain `.embody(element)` |
 | `BoundedContext` | `addSchema(name, { description? })` | a payload schema; add fields with `addAttribute` |
 | `BoundedContext` | `addValueObject(name, { description, specialises? })` | a value object of this context; every aggregate in it may hold one. `specialises` is the value object this one is a kind of — one of this context's, or one it borrows over a `shared-kernel` |
@@ -34,7 +35,7 @@ independently of the name.
 | `Aggregate` | `addEntity(name, { description, root?, specialises? })` | an entity; `specialises` is the entity of this aggregate it is a kind of, giving it that entity's attributes and relations as well as its own. A kind is never `root` |
 | `Aggregate` | `addInvariant(name, { description })` | a rule that holds inside the aggregate on every save; chain `.constrains(...entities, valueObjects, attributes or the aggregate's own consumables)` |
 | `Aggregate`, `Service` | `provides(name, { type, description, pattern?, internal?, schema?, returns?, rejects?, comments?, disposition? })` | a consumable; `type` is `"event" \| "operation"`, `pattern` is `"open-host-service" \| "published-language"`; `schema` is what the caller sends, `returns` what an operation answers with and `rejects` the schemas it answers with when it refuses, all schemas of the provider's own context |
-| `Aggregate`, `Service` | `consumes(consumable, { pattern?, by?, comments?, disposition? })` | a consumption; `pattern` is `"conformist" \| "anti-corruption-layer"`; `by` names the consumer's own operations, or policies of its context, that make this exchange, and is left off when the whole consumer depends on it |
+| `Aggregate`, `Service` | `consumes(consumable, { pattern?, by?, comments?, disposition? })` | a consumption; `pattern` is `"conformist" \| "anti-corruption-layer"`; `by` names the consumer's own operations, or the policies and processes of its context, that make this exchange, and is left off when the whole consumer depends on it |
 | `Consumable` | `raises(...events)` | the events an operation raises |
 | `Entity`, `ValueObject`, `DataSchema` | `addAttribute(name, { type, description?, identity?, optional?, valueobject?, schema?, identifies? })` | an attribute; `type` is free text, `valueobject` and `schema` are mutually exclusive, and only a `DataSchema`'s attribute may use `schema`; `identifies` is the entity whose identity the attribute holds — a root or a child, and may be in another context; `optional: true` marks an attribute that is sometimes absent, and is left off for everything always present, which an identity attribute always is |
 | `Entity`, `ValueObject` | `uses(target, label, cardinality?)` | a `uses` relation, at a value object of the same context |

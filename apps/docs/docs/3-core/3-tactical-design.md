@@ -6,7 +6,8 @@ title: Tactical Design
 # Tactical Design
 
 Inside a bounded context the model describes aggregates in the language of
-event storming: operations cause change, events record it, policies react.
+event storming: operations cause change, events record it, policies react,
+and a process is the reaction that remembers.
 Everything an aggregate or service offers is a **consumable**, typed `event`
 or `operation`; the words command and event stay in prose, not as separate
 objects.
@@ -119,6 +120,20 @@ these operations" (`policy.on(...events).then(...operations)`). The
 consumables may belong to other contexts as long as they are not internal.
 The flow map walks from the policies of a context through the events they
 react to, the operations they issue and the events those raise.
+
+## Processes
+
+A **process** is the reaction that outlives one event
+(`bc.addProcess(name, { description }).starts(...events).on(...events).then(...operations).ends(...events)`).
+A policy is stateless and any-of; a process remembers which of its events
+have arrived, so it can wait for two facts before it acts, and it says what
+finishes an instance. `starts`, `on` and `ends` may name another context's
+events, exactly as a policy's `on` may; `then` names operations of the
+process's own context. What it correlates on, how long it waits and what it
+compensates are prose in its description: the model says a process exists
+and what it listens to and does, and leaves how it decides to the code. An
+author who finds a policy waiting for a second event promotes it to a
+process.
 
 ## Glossary
 

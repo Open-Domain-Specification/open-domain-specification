@@ -238,11 +238,35 @@
 
 ## `consumption-by-resolves` (error)
 
-**Requires:** A consumption's by names the consumer's own operations, or policies of the consumer's context.
+**Requires:** A consumption's by names the consumer's own operations, or the policies and processes of the consumer's context.
 
 **Why it matters:** A consumption belongs to the consumer: it is that node saying what it depends on, and by is the detail of which of its own operations or reactions make the exchange. Naming another node's operation would have one part of the model declare behaviour it does not own, and the reader would have no way to check it against the node's own page.
 
-**Usual fix:** Point by at operations the consumer itself provides, or at policies of its bounded context, and let the node that really makes the call declare its own consumption. If nothing narrower than the whole consumer is true, drop by — absent means the whole consumer, which is the common case.
+**Usual fix:** Point by at operations the consumer itself provides, or at the policies and processes of its bounded context, and let the node that really makes the call declare its own consumption. If nothing narrower than the whole consumer is true, drop by — absent means the whole consumer, which is the common case.
+
+## `process-in-context` (error)
+
+**Requires:** A process issues operations of its own bounded context; what starts it, what it waits for and what ends it may be another context's events.
+
+**Why it matters:** A process is its context's own way of running something that takes several facts to finish, and like a policy it may only act through its own model: reaching into a neighbour to run an operation there is that context acting through someone else's model rather than through the boundary they published. Listening is different — subscribing to published facts is how contexts integrate — so the events a process starts on, waits for and ends on may cross where the operations it issues may not (decision 23).
+
+**Usual fix:** Give the process's own context an operation that consumes the foreign one — an application service operation is the usual place — and name that in then.
+
+## `process-has-ends` (warning)
+
+**Requires:** A process names at least one event that completes an instance.
+
+**Why it matters:** A process is worth its extra weight only because it remembers something between events, and what is remembered has to be forgotten. Without an ending fact a reader cannot tell whether this is a policy wearing a longer name — stateless, one reaction, nothing to wait for — or a real process whose author never said how it finishes, which is also the state nobody can operate or test.
+
+**Usual fix:** Name the event that means this instance is done in ends — usually one its own then operations raise — or, if nothing is really being waited for, make it a policy again.
+
+## `process-starts` (error)
+
+**Requires:** A process names at least one event that begins an instance.
+
+**Why it matters:** A process has instances, and an instance begins when some fact arrives: without one the model never says when a process exists, so there is nothing to correlate the later events against and nothing for a reader to follow the chain back to.
+
+**Usual fix:** Put the event that begins an instance in starts. If the process really reacts to anything at any time, it is a policy, not a process.
 
 ## `policy-in-context` (error)
 
@@ -302,7 +326,7 @@
 
 ## `consumable-kind` (error)
 
-**Requires:** Policies react to events and issue operations; only operations raise events, and they raise only events.
+**Requires:** Policies and processes react to events and issue operations; only operations raise events, and they raise only events.
 
 **Why it matters:** An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable.
 
@@ -334,9 +358,9 @@
 
 ## `reaction-cycle` (warning)
 
-**Requires:** The reactions form no cycle: no operation raises an event whose policy issues an operation that leads back to the first.
+**Requires:** The reactions form no cycle: no operation raises an event whose policy or process issues an operation that leads back to the first.
 
-**Why it matters:** A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down.
+**Why it matters:** A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with one difference that is the whole point of it: what ends an instance completes it rather than waking it again, so a process that ends on an event its own operations raise is the normal shape and no ring at all.
 
 **Usual fix:** Break the ring, usually one of the policies is reacting to too broad an event or issues an operation it should not. If the loop is a real feedback loop that converges, say what ends it in the description of the policy that closes the ring; the model has no conditions on purpose (decision 15), so the ending condition is prose a reader finds where the loop closes, and the warning stands to send them there.
 
@@ -350,11 +374,11 @@
 
 ## `external-is-boundary` (error)
 
-**Requires:** An external context declares no aggregates, no policies and no invariants.
+**Requires:** An external context declares no aggregates, no policies, no processes and no invariants.
 
 **Why it matters:** An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact.
 
-**Usual fix:** Move the aggregate, policy or invariant into the context of ours that actually holds it, or drop external: true if this is a system the enterprise really does model inside.
+**Usual fix:** Move the aggregate, policy, process or invariant into the context of ours that actually holds it, or drop external: true if this is a system the enterprise really does model inside.
 
 ## `comments-required` (warning)
 
@@ -370,4 +394,4 @@
 
 **Why it matters:** by-design says nothing is owed. Any other disposition is a claim that something is wrong, and a claim on its own is not actionable: the next reader cannot tell what makes it wrong, how much it costs, or what would let it be cleared. The comment is where that lives, and without it the disposition is a flag nobody can act on or retire.
 
-**Usual fix:** Add a comment to the relationship, consumable or consumption saying what the trouble is and what clearing it would take, or set the disposition back to by-design if the intent is how it should be after all.
+**Usual fix:** Add a comment to the relationship, consumable, consumption or process saying what the trouble is and what clearing it would take, or set the disposition back to by-design if the intent is how it should be after all.

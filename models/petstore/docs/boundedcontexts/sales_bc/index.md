@@ -53,13 +53,16 @@ Open-host service for /store/order endpoints
 
 
 ## Policies
+> No policies.
+
+## Processes
+Reactions that hold state across events: each one remembers which of its events have arrived and says what finishes it.
+
 ![flowmap](./flowmap.svg)
 
-| Name | Description | On | Then |
-| --- | --- | --- | --- |
-| Approve when pet available | On OrderPlaced, or when the catalogue relists a pet (PetStatusChanged), look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest. It does not listen to PetReserved: that is the fact this very chain produces | PetStatusChanged, OrderPlaced | ApproveOrder |
-| Reserve pet on approval | When an order is approved, hold its pet (available → pending) so nobody else can be approved for the same animal | OrderApproved | ReservePet |
-| Mark pet sold on delivery | When an order is delivered, the pet is sold (pending → sold) | OrderDelivered | MarkPetSold |
+| Name | Description | Starts | On | Then | Ends |
+| --- | --- | --- | --- | --- | --- |
+| Order fulfilment | From an order being placed to the pet being sold. It starts on OrderPlaced and waits, because the pet may not be available yet: a relisting (PetStatusChanged) makes it look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest. On approval it holds the pet (available → pending), and once the order is delivered it tells the catalogue the pet has gone to its owner (pending → sold). It does not listen to PetReserved: that is the fact this very chain produces. Correlation is by petId and then orderId; an order nobody can fulfil is cancelled by hand, which is why there is no timeout here | OrderPlaced | PetStatusChanged | ApproveOrder, ReservePet, MarkPetSold | OrderDelivered |
 
 
 ## Context Relationships

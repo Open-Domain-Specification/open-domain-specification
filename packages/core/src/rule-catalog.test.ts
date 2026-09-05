@@ -112,6 +112,9 @@ function everythingWrong(): Workspace {
 	twoRoots.consumes(decide, {});
 	// policy-in-context: a policy acting inside the context next door
 	a.addPolicy("Acts Elsewhere", { description: "" }).on(plain).then(reachIn);
+	// process-in-context, process-starts and process-has-ends at once: a
+	// process nothing begins, nothing ends, acting inside the context next door
+	a.addProcess("Runs Elsewhere", { description: "" }).then(reachIn);
 	// root-identity: no root in this fixture declares an identity attribute
 	// value-object-shape: a value object with an identity, and one that includes
 	const vo = a.addValueObject("Vo", { description: "" });

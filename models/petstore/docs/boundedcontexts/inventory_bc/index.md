@@ -48,6 +48,9 @@ Open-host service for /store/inventory: a projection is a service that provides 
 | Recount on stock change | Keep the availability projection current | PetRegistered, PetDeleted, PetStatusChanged, PetReserved, PetSold, OrderApproved, OrderDelivered, OrderDeleted | RecountInventory |
 
 
+## Processes
+> No processes.
+
 ## Context Relationships
 ### Depends on
 | With | Description | Type | Upstream Roles | Downstream Roles |

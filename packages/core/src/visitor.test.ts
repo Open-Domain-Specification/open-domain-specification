@@ -15,6 +15,8 @@ import type {
 	Entity,
 	EntityRelation,
 	Invariant,
+	Policy,
+	Process,
 	Service,
 	Subdomain,
 	Workspace,
@@ -34,6 +36,8 @@ class TestVisitor extends AbstractVisitor implements Visitor {
 	visitedConsumable = vi.fn();
 	visitedInvariant = vi.fn();
 	visitedDataSchema = vi.fn();
+	visitedPolicy = vi.fn();
+	visitedProcess = vi.fn();
 
 	constructor(props: AbstractVisitorOptions) {
 		super(props);
@@ -91,6 +95,14 @@ class TestVisitor extends AbstractVisitor implements Visitor {
 	visitInvariant(node: Invariant) {
 		this.visitedInvariant(node);
 		super.visitInvariant(node);
+	}
+	visitPolicy(node: Policy) {
+		this.visitedPolicy(node);
+		super.visitPolicy(node);
+	}
+	visitProcess(node: Process) {
+		this.visitedProcess(node);
+		super.visitProcess(node);
 	}
 }
 
@@ -325,6 +337,15 @@ describe("Visitor", () => {
 		expect(visitor.visitedAggregate).toHaveBeenCalledWith(d2Sd1Bc1S1Ag1);
 		expect(visitor.visitedEntity).toHaveBeenCalledWith(d2Sd1Bc1S1Ag1E1);
 		expect(visitor.visitedValueObject).toHaveBeenCalledWith(d2Sd1Bc1S1Ag1Vo1);
+	});
+
+	it("reaches the policies and the processes of a bounded context", () => {
+		const f = makeRichTestWs();
+		const visitor = new TestVisitor({});
+		visitor.visitWorkspace(f.ws);
+		expect(visitor.visitedPolicy).toHaveBeenCalledWith(f.invoiceOnOrderPlaced);
+		expect(visitor.visitedProcess).toHaveBeenCalledWith(f.invoiceToCustomer);
+		expect(visitor.visitedProcess).toHaveBeenCalledTimes(1);
 	});
 
 	it("reaches every schema of a bounded context", () => {

@@ -889,19 +889,18 @@ const requestEncode = catalogueApi.provides("RequestEncode", {
 	type: "operation",
 	internal: true,
 });
+// Getting a title on the service is a process, not two policies: it holds the
+// match from productionId to titleId while the encode runs, which is the one
+// thing a stateless policy could not carry from the master to the publication.
 catalogueBC
-	.addPolicy("Request encode on master", {
+	.addProcess("Master to publication", {
 		description:
-			"A delivered master is matched to the title by productionId (and the episode by masterEpisodeNumber) and queued for encoding under that titleId",
+			"From a delivered master to a title members can play. The master is matched to the title by productionId (and the episode by masterEpisodeNumber) and queued for encoding under that titleId; the process then waits, sometimes for hours, and publishes the title when the encode comes back. Correlation is by that titleId, which it remembers for the encode's whole run; a ladder that never completes is chased by the operations team, so nothing here times out",
 	})
-	.on(masterDelivered)
-	.then(requestEncode);
-catalogueBC
-	.addPolicy("Publish on encode", {
-		description: "A completed encode makes the title publishable",
-	})
+	.starts(masterDelivered)
 	.on(encodingCompleted)
-	.then(publishTitle);
+	.then(requestEncode, publishTitle)
+	.ends(titlePublished);
 catalogueBC
 	.addPolicy("Update availability on window", {
 		description: "An opened window changes where the title is live",

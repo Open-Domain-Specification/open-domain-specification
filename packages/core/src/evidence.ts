@@ -3,6 +3,7 @@ import type {
 	Consumable,
 	Consumption,
 	ContextRelationship,
+	Process,
 	Workspace,
 } from "./workspace";
 
@@ -26,9 +27,14 @@ export interface Evidenced {
 
 /**
  * The strategic intents evidence hangs off: the relationships between
- * contexts, and the consumables and consumptions that cross them.
+ * contexts, the consumables and consumptions that cross them, and the
+ * processes that run across them (decision 23).
  */
-export type StrategicIntent = ContextRelationship | Consumable | Consumption;
+export type StrategicIntent =
+	| ContextRelationship
+	| Consumable
+	| Consumption
+	| Process;
 
 /**
  * `by-design` is the meaning of an absent disposition, so it is never stored
@@ -77,6 +83,9 @@ export function intentsWithoutComments(
 			}
 			intents.push(...provider.consumptions);
 		}
+		// A process spans several exchanges and usually several contexts, so what
+		// is known about the real one behind it is evidence of the same kind.
+		intents.push(...boundedcontext.processes.values());
 	}
 
 	return intents.filter((intent) => intent.comments.length === 0);

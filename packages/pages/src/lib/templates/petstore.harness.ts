@@ -45,7 +45,11 @@ export const PETSTORE_REFS = {
 	returnedSchema: "#/boundedcontexts/catalog_bc/schemas/pet_summary",
 	// PetUnavailable is the one schema that exists only as a refusal.
 	rejectionSchema: "#/boundedcontexts/catalog_bc/schemas/pet_unavailable",
-	policy: "#/boundedcontexts/sales_bc/policies/approve_when_pet_available",
+	policy: "#/boundedcontexts/fulfilment_bc/policies/plan_dispatch_on_approval",
+	// Order fulfilment is the petstore's one process, and it fills every part
+	// of the template: it starts on one event, waits on another context's, and
+	// issues three operations before the delivery ends it.
+	process: "#/boundedcontexts/sales_bc/processes/order_fulfilment",
 	invariant:
 		"#/boundedcontexts/sales_bc/aggregates/order/invariants/deliver_only_when_approved",
 	// SoldNotReopen is the one transition rule: it names the entity the

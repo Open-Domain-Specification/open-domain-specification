@@ -38,6 +38,11 @@ Never repeat an explanation, and never explain a term the user already used corr
 - **Consumable** — an operation or event that a part offers, and **consumption** is another part
   using it.
 - **Schema** — the shape of the information that travels with an operation or event.
+- **Process** — the thing that remembers. A reaction that outlives one event: it knows which of
+  its events have arrived, so it can wait for two facts before acting, and it says what
+  finishes an instance. The DDD name is process manager (a saga in the messaging literature).
+  In ODS it is `starts`, `on`, `then` and `ends`; what it correlates on and how long it waits
+  are prose in its description. A policy that finds itself waiting is one of these.
 - **Policy** — a rule of the form "when this event happens, do that operation", possibly across
   contexts.
 - **Application service** — the part that fronts an API or a screen and turns requests into

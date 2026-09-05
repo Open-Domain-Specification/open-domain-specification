@@ -94,6 +94,32 @@ export interface PolicySchema {
 }
 
 /**
+ * @title Process
+ * @description A long-running reaction that holds state across events: it remembers which of its events have arrived and acts when enough of them have. What it correlates on, how long it waits and what it undoes are prose in its description rather than fields, because the model says that a process exists and what it listens to and does; how it decides is the code's (decisions 15 and 23).
+ */
+export interface ProcessSchema {
+	name: string;
+	description: string;
+	/** The event consumables that begin an instance of this process. */
+	starts: { $ref: string }[];
+	/**
+	 * Further event consumables the process waits for or reacts to while an
+	 * instance is alive. Like a policy's `on`, one of these may belong to
+	 * another context: subscribing to a published fact is how contexts
+	 * integrate (decision 23).
+	 */
+	on: { $ref: string }[];
+	/** The operation consumables of this process's own context that it issues. */
+	then: { $ref: string }[];
+	/** The event consumables that complete an instance. */
+	ends: { $ref: string }[];
+	/** Grounded statements about the real system behind this process. */
+	comments?: Comment[];
+	/** What the architecture thinks of this process. Absent means `by-design`. */
+	disposition?: Disposition;
+}
+
+/**
  * @title BoundedContext
  * @description Represents a bounded context in the Open Domain Specification (ODS).
  */
@@ -112,8 +138,9 @@ export interface BoundedContextSchema {
 	 * card scheme, a payment provider, a licensor, a regulator, a clock. An
 	 * external context provides and consumes consumables and takes part in
 	 * relationships, and it needs no subdomain, no team and no internals —
-	 * `external-is-boundary` refuses aggregates, policies and invariants on
-	 * it, because what happens inside it is not ours to state (decision 28).
+	 * `external-is-boundary` refuses aggregates, policies, processes and
+	 * invariants on it, because what happens inside it is not ours to state
+	 * (decision 28).
 	 */
 	external?: boolean;
 	/** The team that owns this context. */
@@ -129,6 +156,13 @@ export interface BoundedContextSchema {
 	invariants: { [invariant: string]: InvariantSchema };
 	services: { [service: string]: ServiceSchema };
 	policies: { [policy: string]: PolicySchema };
+	/**
+	 * The processes this context runs: the reactions that hold state across
+	 * events, waiting for several of them before they act and knowing how they
+	 * finish. A policy that finds itself waiting for a second event is one of
+	 * these (decision 23).
+	 */
+	processes: { [process: string]: ProcessSchema };
 	glossary: { [term: string]: GlossaryTermSchema };
 	/**
 	 * The values this context defines once: part of its ubiquitous language,
@@ -519,6 +553,14 @@ export function policyRef(boundedcontext: string, policy: string) {
 
 	return {
 		$ref: `${$ref}/policies/${policy}`,
+	};
+}
+
+export function processRef(boundedcontext: string, process: string) {
+	const { $ref } = boundedcontextRef(boundedcontext);
+
+	return {
+		$ref: `${$ref}/processes/${process}`,
 	};
 }
 

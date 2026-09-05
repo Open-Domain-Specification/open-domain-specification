@@ -60,14 +60,20 @@ shape as found.
 
 PetApp, OrderApp, InventoryQuery and UserApp are the application services (the API layer);
 DispatchPlanner is the domain service. Events are published language with schemas; the
-operations that only their own context uses are internal. Five policies: approve an order
-when its pet is available (reacting to events from two contexts), reserve the pet on
-approval and mark it sold on delivery (Sales issuing its own local operations, which call
-out to Catalog's open host through the ACL, so the order lifecycle walks the pet lifecycle
-without a policy naming another context's operation — decision 17), plan dispatch on
-approval, and deliver the order in Sales when Fulfilment reports delivery through Sales'
-own `ConfirmDelivery` open host, which Fulfilment's policy calls (a policy names only its
-own context's operations, decision 17).
+operations that only their own context uses are internal.
+
+Sales runs one process, "Order fulfilment": it starts on `OrderPlaced` and waits, because
+the pet may not be free yet, approves the order when a relisting says it is, reserves the
+pet on approval, marks it sold once the order is delivered, and ends on `OrderDelivered`.
+Until card 60 that was three policies, and none of them could say that the order placed on
+Monday was still waiting on Thursday; each operation it issues is Sales' own and calls out
+to Catalog's open host through the ACL, so the order lifecycle walks the pet lifecycle
+without naming another context's operation (decision 17).
+
+Three policies remain, each a single stateless reaction: plan dispatch on approval, deliver
+the order in Sales when Fulfilment reports delivery through Sales' own `ConfirmDelivery`
+open host (a policy names only its own context's operations, decision 17), and recount the
+inventory projection when anything it counts changes.
 `ReservePetForOrder` rejects with `PetUnavailable` when the pet is already pending or sold:
 nothing happened, so Sales is told the status rather than sent an event.
 
@@ -110,8 +116,11 @@ Accepted
 Partially accepted
 
 - Policy correlation: `Approve when pet available` could not say how a `PetStatusChanged`
-  led to an `orderId`. The DSL does not model correlation, so the description now says the
-  policy looks up placed orders for the petId and confirms availability before approving.
+  led to an `orderId`. The DSL does not model correlation, so the description said instead
+  that the policy looks up placed orders for the petId and confirms availability before
+  approving. Card 60 went further: the three Sales policies are one "Order fulfilment"
+  process, which is the element that may hold state between events, and what it correlates
+  on is stated in its description (decision 23).
 - Lifecycle invariants on value objects: `SoldNotReopen` now constrains the `Pet` root,
   because the transition belongs to the entity. `DeliverOnlyWhenApproved` stays on value
   objects, now `OrderStatus` and `ShipDate`, since it genuinely reads both; that keeps the

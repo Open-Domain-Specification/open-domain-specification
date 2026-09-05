@@ -8,6 +8,7 @@ import {
 	GlossaryTerm,
 	Invariant,
 	Policy,
+	Process,
 	Service,
 	Subdomain,
 	Team,
@@ -35,6 +36,7 @@ export const kindOf = (element: unknown): Kind => {
 	if (element instanceof Domain) return "domain";
 	if (element instanceof DataSchema) return "schema";
 	if (element instanceof Policy) return "policy";
+	if (element instanceof Process) return "process";
 	if (element instanceof Invariant) return "invariant";
 	if (element instanceof GlossaryTerm) return "term";
 	if (element instanceof Team) return "team";

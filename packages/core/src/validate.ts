@@ -23,6 +23,7 @@ import {
 	type Invariant,
 	isDirectedRelationshipType,
 	type Policy,
+	Process,
 	type Service,
 	ValueObject,
 	type Workspace,
@@ -45,8 +46,8 @@ type Rule = (workspace: Workspace) => Diagnostic[];
  * The contexts whose insides the model states, which is every context we are
  * not merely integrating with. An external context has no internals of ours
  * to check: `external-is-boundary` says so once, and the rules about
- * aggregates, entities, invariants and policies stay quiet rather than
- * repeating it element by element (decision 28).
+ * aggregates, entities, invariants, policies and processes stay quiet rather
+ * than repeating it element by element (decision 28).
  */
 function* modelledContexts(workspace: Workspace): Iterable<BoundedContext> {
 	for (const bc of workspace.boundedcontexts.values())
@@ -91,6 +92,33 @@ function* relationsOf(workspace: Workspace): Iterable<EntityRelation> {
  */
 function aggregateOfEnd(member: Entity | ValueObject): Aggregate | undefined {
 	return member instanceof Entity ? member.aggregate : undefined;
+}
+
+/** Every process of the contexts whose insides the model states. */
+function* processesOf(workspace: Workspace): Iterable<Process> {
+	for (const bc of modelledContexts(workspace)) yield* bc.processes.values();
+}
+
+/**
+ * The events a policy or a process subscribes to. A process listens at three
+ * points in a lifecycle rather than one, and every rule that reads a policy's
+ * `on` — separate ways, internal consumables, the kind of each consumable —
+ * means the same thing by all three (decision 23).
+ */
+function subscribedEvents(reactor: Policy | Process): Consumable[] {
+	return reactor instanceof Process
+		? [...reactor.startEvents, ...reactor.events, ...reactor.endEvents]
+		: reactor.events;
+}
+
+/** Every policy and process of a context, in declaration order. */
+function reactorsOf(bc: BoundedContext): Array<Policy | Process> {
+	return [...bc.policies.values(), ...bc.processes.values()];
+}
+
+/** How a diagnostic names one: "Policy" or "Process". */
+function reactorLabel(reactor: Policy | Process): string {
+	return reactor instanceof Process ? "Process" : "Policy";
 }
 
 function* consumptionsOf(workspace: Workspace): Iterable<Consumption> {
@@ -1246,10 +1274,10 @@ function trafficCrosses(
 	to: BoundedContext,
 ): boolean {
 	if (crossingsBetween(workspace, from, to).length > 0) return true;
-	// A policy subscribing to another context's event is the same exchange as
-	// a consumption, so it backs the partnership just as well.
-	for (const policy of to.policies.values()) {
-		for (const event of policy.events) {
+	// A policy or a process subscribing to another context's event is the same
+	// exchange as a consumption, so it backs the partnership just as well.
+	for (const reactor of reactorsOf(to)) {
+		for (const event of subscribedEvents(reactor)) {
 			if (event.provider.boundedcontext === from) return true;
 		}
 	}
@@ -1361,11 +1389,11 @@ const separateWays: Rule = (workspace) => {
 			});
 		}
 	}
-	// A policy subscribing to another context's event is the same exchange as
-	// a consumption, so separate ways rules it out too.
+	// A policy or a process subscribing to another context's event is the same
+	// exchange as a consumption, so separate ways rules it out too.
 	for (const bc of workspace.boundedcontexts.values()) {
-		for (const policy of bc.policies.values()) {
-			for (const event of policy.events) {
+		for (const reactor of reactorsOf(bc)) {
+			for (const event of subscribedEvents(reactor)) {
 				const providerContext = event.provider.boundedcontext;
 				if (providerContext === bc) continue;
 				const declaredApart = separateWaysRelationships.some(
@@ -1375,8 +1403,8 @@ const separateWays: Rule = (workspace) => {
 				diagnostics.push({
 					severity: "error",
 					rule: "separate-ways",
-					message: `Policy "${policy.name}" in "${bc.name}" reacts to "${event.name}" from "${providerContext.name}" although the contexts declare separate ways`,
-					ref: policy.ref,
+					message: `${reactorLabel(reactor)} "${reactor.name}" in "${bc.name}" reacts to "${event.name}" from "${providerContext.name}" although the contexts declare separate ways`,
+					ref: reactor.ref,
 				});
 			}
 		}
@@ -1402,24 +1430,24 @@ const internalConsumable: Rule = (workspace) => {
 		}
 	}
 	for (const bc of workspace.boundedcontexts.values()) {
-		for (const policy of bc.policies.values()) {
-			for (const event of policy.events) {
+		for (const reactor of reactorsOf(bc)) {
+			for (const event of subscribedEvents(reactor)) {
 				if (event.internal && event.provider.boundedcontext !== bc) {
 					diagnostics.push({
 						severity: "error",
 						rule: "internal-consumable",
-						message: `Policy "${policy.name}" reacts to "${event.name}", which is internal to "${event.provider.boundedcontext.name}"`,
-						ref: policy.ref,
+						message: `${reactorLabel(reactor)} "${reactor.name}" reacts to "${event.name}", which is internal to "${event.provider.boundedcontext.name}"`,
+						ref: reactor.ref,
 					});
 				}
 			}
-			for (const command of policy.commands) {
+			for (const command of reactor.commands) {
 				if (command.internal && command.provider.boundedcontext !== bc) {
 					diagnostics.push({
 						severity: "error",
 						rule: "internal-consumable",
-						message: `Policy "${policy.name}" issues "${command.name}", which is internal to "${command.provider.boundedcontext.name}"`,
-						ref: policy.ref,
+						message: `${reactorLabel(reactor)} "${reactor.name}" issues "${command.name}", which is internal to "${command.provider.boundedcontext.name}"`,
+						ref: reactor.ref,
 					});
 				}
 			}
@@ -1432,8 +1460,8 @@ const internalConsumable: Rule = (workspace) => {
  * A consumption belongs to the consumer, so the operations named behind it are
  * the consumer's own: what it does with a dependency is its business, and no
  * node gets to say that someone else's operation calls out on its behalf. A
- * policy may be named too, because a policy is how its context reacts, but it
- * has to be a policy of that same context (decision 21).
+ * policy or a process may be named too, because both are how its context
+ * reacts, but each has to belong to that same context (decisions 21 and 23).
  */
 const consumptionByResolves: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -1445,12 +1473,12 @@ const consumptionByResolves: Rule = (workspace) => {
 					? caller.provider !== consumer &&
 						`"${caller.name}" is provided by "${caller.provider.name}"`
 					: caller.boundedcontext !== consumer.boundedcontext &&
-						`policy "${caller.name}" belongs to "${caller.boundedcontext.name}"`;
+						`${reactorLabel(caller).toLowerCase()} "${caller.name}" belongs to "${caller.boundedcontext.name}"`;
 			if (wrong) {
 				diagnostics.push({
 					severity: "error",
 					rule: "consumption-by-resolves",
-					message: `"${consumer.name}" says its consumption of "${consumption.consumable.name}" is made by ${wrong}; a consumption names the consumer's own operations or its context's policies`,
+					message: `"${consumer.name}" says its consumption of "${consumption.consumable.name}" is made by ${wrong}; a consumption names the consumer's own operations, or the policies and processes of its context`,
 					ref: consumption.ref,
 				});
 				continue;
@@ -1488,6 +1516,69 @@ const policyInContext: Rule = (workspace) => {
 				});
 			}
 		}
+	}
+	return diagnostics;
+};
+
+/**
+ * A process names operations of its own context, for the same reason a policy
+ * does. What starts it, what it waits for and what ends it may be another
+ * context's events — subscribing to a published fact is how contexts
+ * integrate — but acting inside a neighbour is that neighbour's own to do
+ * (decisions 17 and 23).
+ */
+const processInContext: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const process of processesOf(workspace)) {
+		for (const command of process.commands) {
+			const owner = command.boundedcontext;
+			if (owner === process.boundedcontext) continue;
+			diagnostics.push({
+				severity: "error",
+				rule: "process-in-context",
+				message: `Process "${process.name}" in "${process.boundedcontext.name}" issues "${command.name}", which belongs to "${owner.name}"`,
+				ref: process.ref,
+			});
+		}
+	}
+	return diagnostics;
+};
+
+/**
+ * A process says how an instance finishes.
+ *
+ * A process exists because something has to be remembered between events, and
+ * what is remembered has to be forgotten: the instance ends, or it is state
+ * that accumulates forever. A process with no `ends` is either a policy
+ * wearing a longer name — stateless, one reaction, no waiting — or a real
+ * process whose author has not said how it finishes, and a reader cannot tell
+ * which from the model (decision 23).
+ */
+const processHasEnds: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const process of processesOf(workspace)) {
+		if (process.endEvents.length > 0) continue;
+		diagnostics.push({
+			severity: "warning",
+			rule: "process-has-ends",
+			message: `Process "${process.name}" names no event that completes an instance, so the model never says how it finishes`,
+			ref: process.ref,
+		});
+	}
+	return diagnostics;
+};
+
+/** A process says what begins an instance. */
+const processStarts: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const process of processesOf(workspace)) {
+		if (process.startEvents.length > 0) continue;
+		diagnostics.push({
+			severity: "error",
+			rule: "process-starts",
+			message: `Process "${process.name}" names no event that begins an instance, so nothing in the model says when one exists`,
+			ref: process.ref,
+		});
 	}
 	return diagnostics;
 };
@@ -1688,28 +1779,33 @@ const rejectsOnOperation: Rule = (workspace) => {
 	return diagnostics;
 };
 
-/** Policies react to events and issue operations; operations raise events. */
+/**
+ * Policies and processes react to events and issue operations; operations
+ * raise events.
+ */
 const consumableKinds: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const bc of workspace.boundedcontexts.values()) {
-		// An external context's policies are refused outright by
+		// An external context's policies and processes are refused outright by
 		// external-is-boundary; there is nothing here to say about them.
-		const policies = bc.external ? [] : Array.from(bc.policies.values());
-		for (const policy of policies) {
-			for (const c of policy.events.filter((c) => c.type !== "event")) {
+		const reactors = bc.external ? [] : reactorsOf(bc);
+		for (const reactor of reactors) {
+			for (const c of subscribedEvents(reactor).filter(
+				(c) => c.type !== "event",
+			)) {
 				diagnostics.push({
 					severity: "error",
 					rule: "consumable-kind",
-					message: `Policy "${policy.name}" reacts to "${c.name}", which is an operation, not an event`,
-					ref: policy.ref,
+					message: `${reactorLabel(reactor)} "${reactor.name}" reacts to "${c.name}", which is an operation, not an event`,
+					ref: reactor.ref,
 				});
 			}
-			for (const c of policy.commands.filter((c) => c.type !== "operation")) {
+			for (const c of reactor.commands.filter((c) => c.type !== "operation")) {
 				diagnostics.push({
 					severity: "error",
 					rule: "consumable-kind",
-					message: `Policy "${policy.name}" issues "${c.name}", which is an event, not an operation`,
-					ref: policy.ref,
+					message: `${reactorLabel(reactor)} "${reactor.name}" issues "${c.name}", which is an event, not an operation`,
+					ref: reactor.ref,
 				});
 			}
 		}
@@ -1829,8 +1925,9 @@ const policyComplete: Rule = (workspace) => {
 };
 
 /**
- * The reactions form no cycle: no operation raises an event whose policy
- * issues an operation that leads, however far around, back to the first.
+ * The reactions form no cycle: no operation raises an event whose policy or
+ * process issues an operation that leads, however far around, back to the
+ * first.
  *
  * A ring like that runs forever unless something outside the model stops it,
  * and nothing in the model says what — so it is the modeller who has to look
@@ -1892,8 +1989,8 @@ const contextServesSubdomain: Rule = (workspace) => {
  * A card scheme, a payment provider, a licensor or a clock is a system the
  * enterprise integrates with and does not model inside. What it offers and
  * what it takes are ours to write down, because we depend on them; its
- * aggregates, its policies and the rules it keeps across its own instances
- * are not, because we cannot know them and the model would be inventing.
+ * aggregates, its policies, its processes and the rules it keeps across its
+ * own instances are not, because we cannot know them and the model would be inventing.
  * Marking the context external is the author saying "this is somebody else's
  * machine", and this rule holds them to it (decision 28).
  */
@@ -1912,6 +2009,8 @@ const externalIsBoundary: Rule = (workspace) => {
 			refuse("aggregate", aggregate.name, aggregate.ref);
 		for (const policy of bc.policies.values())
 			refuse("policy", policy.name, policy.ref);
+		for (const process of bc.processes.values())
+			refuse("process", process.name, process.ref);
 		for (const invariant of bc.invariants.values())
 			refuse("invariant", invariant.name, invariant.ref);
 	}
@@ -1939,6 +2038,8 @@ function intentLabel(intent: StrategicIntent): string {
 		return `The ${intent.type} between "${intent.source.name}" and "${intent.target.name}"`;
 	if (intent instanceof Consumption)
 		return `"${intent.consumer.name}"'s consumption of "${intent.consumable.name}"`;
+	if (intent instanceof Process)
+		return `The process "${intent.name}" in "${intent.boundedcontext.name}"`;
 	return `"${intent.name}", provided by "${intent.provider.name}"`;
 }
 
@@ -2239,10 +2340,35 @@ const RULES: CataloguedRule[] = [
 		rule: "consumption-by-resolves",
 		severities: ["error"],
 		summary:
-			"A consumption's by names the consumer's own operations, or policies of the consumer's context.",
+			"A consumption's by names the consumer's own operations, or the policies and processes of the consumer's context.",
 		why: "A consumption belongs to the consumer: it is that node saying what it depends on, and by is the detail of which of its own operations or reactions make the exchange. Naming another node's operation would have one part of the model declare behaviour it does not own, and the reader would have no way to check it against the node's own page.",
-		fix: "Point by at operations the consumer itself provides, or at policies of its bounded context, and let the node that really makes the call declare its own consumption. If nothing narrower than the whole consumer is true, drop by — absent means the whole consumer, which is the common case.",
+		fix: "Point by at operations the consumer itself provides, or at the policies and processes of its bounded context, and let the node that really makes the call declare its own consumption. If nothing narrower than the whole consumer is true, drop by — absent means the whole consumer, which is the common case.",
 		check: consumptionByResolves,
+	},
+	{
+		rule: "process-in-context",
+		severities: ["error"],
+		summary:
+			"A process issues operations of its own bounded context; what starts it, what it waits for and what ends it may be another context's events.",
+		why: "A process is its context's own way of running something that takes several facts to finish, and like a policy it may only act through its own model: reaching into a neighbour to run an operation there is that context acting through someone else's model rather than through the boundary they published. Listening is different — subscribing to published facts is how contexts integrate — so the events a process starts on, waits for and ends on may cross where the operations it issues may not (decision 23).",
+		fix: "Give the process's own context an operation that consumes the foreign one — an application service operation is the usual place — and name that in then.",
+		check: processInContext,
+	},
+	{
+		rule: "process-has-ends",
+		severities: ["warning"],
+		summary: "A process names at least one event that completes an instance.",
+		why: "A process is worth its extra weight only because it remembers something between events, and what is remembered has to be forgotten. Without an ending fact a reader cannot tell whether this is a policy wearing a longer name — stateless, one reaction, nothing to wait for — or a real process whose author never said how it finishes, which is also the state nobody can operate or test.",
+		fix: "Name the event that means this instance is done in ends — usually one its own then operations raise — or, if nothing is really being waited for, make it a policy again.",
+		check: processHasEnds,
+	},
+	{
+		rule: "process-starts",
+		severities: ["error"],
+		summary: "A process names at least one event that begins an instance.",
+		why: "A process has instances, and an instance begins when some fact arrives: without one the model never says when a process exists, so there is nothing to correlate the later events against and nothing for a reader to follow the chain back to.",
+		fix: "Put the event that begins an instance in starts. If the process really reacts to anything at any time, it is a policy, not a process.",
+		check: processStarts,
 	},
 	{
 		rule: "policy-in-context",
@@ -2309,7 +2435,7 @@ const RULES: CataloguedRule[] = [
 		rule: "consumable-kind",
 		severities: ["error"],
 		summary:
-			"Policies react to events and issue operations; only operations raise events, and they raise only events.",
+			"Policies and processes react to events and issue operations; only operations raise events, and they raise only events.",
 		why: "An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable.",
 		fix: "Check the type of each consumable a policy or raises list points at and swap it for the right kind.",
 		check: consumableKinds,
@@ -2345,8 +2471,8 @@ const RULES: CataloguedRule[] = [
 		rule: "reaction-cycle",
 		severities: ["warning"],
 		summary:
-			"The reactions form no cycle: no operation raises an event whose policy issues an operation that leads back to the first.",
-		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down.",
+			"The reactions form no cycle: no operation raises an event whose policy or process issues an operation that leads back to the first.",
+		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with one difference that is the whole point of it: what ends an instance completes it rather than waking it again, so a process that ends on an event its own operations raise is the normal shape and no ring at all.",
 		fix: "Break the ring, usually one of the policies is reacting to too broad an event or issues an operation it should not. If the loop is a real feedback loop that converges, say what ends it in the description of the policy that closes the ring; the model has no conditions on purpose (decision 15), so the ending condition is prose a reader finds where the loop closes, and the warning stands to send them there.",
 		check: reactionCycle,
 	},
@@ -2362,9 +2488,9 @@ const RULES: CataloguedRule[] = [
 		rule: "external-is-boundary",
 		severities: ["error"],
 		summary:
-			"An external context declares no aggregates, no policies and no invariants.",
+			"An external context declares no aggregates, no policies, no processes and no invariants.",
 		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact.",
-		fix: "Move the aggregate, policy or invariant into the context of ours that actually holds it, or drop external: true if this is a system the enterprise really does model inside.",
+		fix: "Move the aggregate, policy, process or invariant into the context of ours that actually holds it, or drop external: true if this is a system the enterprise really does model inside.",
 		check: externalIsBoundary,
 	},
 	{
@@ -2382,7 +2508,7 @@ const RULES: CataloguedRule[] = [
 		summary:
 			"A strategic intent whose disposition is tolerated or refactor carries at least one comment.",
 		why: "by-design says nothing is owed. Any other disposition is a claim that something is wrong, and a claim on its own is not actionable: the next reader cannot tell what makes it wrong, how much it costs, or what would let it be cleared. The comment is where that lives, and without it the disposition is a flag nobody can act on or retire.",
-		fix: "Add a comment to the relationship, consumable or consumption saying what the trouble is and what clearing it would take, or set the disposition back to by-design if the intent is how it should be after all.",
+		fix: "Add a comment to the relationship, consumable, consumption or process saying what the trouble is and what clearing it would take, or set the disposition back to by-design if the intent is how it should be after all.",
 		check: dispositionNeedsComment,
 	},
 ];
