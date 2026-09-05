@@ -1416,7 +1416,8 @@
                 "reversal_of": {
                   "name": "reversalOf",
                   "type": "string",
-                  "description": "The entry this one reverses, if any"
+                  "description": "The entry this one reverses, if any",
+                  "optional": true
                 },
                 "value_date": {
                   "name": "valueDate",

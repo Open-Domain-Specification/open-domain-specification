@@ -1442,6 +1442,67 @@ describe("entity-identity", () => {
 	});
 });
 
+describe("identity-not-optional", () => {
+	/** A root, an entity beside it, a value object and a schema, all in one context. */
+	function model() {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const agg = bc.addAggregate("Order", { description: "" });
+		const root = agg.addRootEntity("Order", { description: "" });
+		root.addAttribute("Order Id", { type: "uuid", identity: true });
+		const money = bc.addValueObject("Money", { description: "" });
+		const payload = bc.addSchema("Order Placed");
+		return { ws, bc, agg, root, money, payload };
+	}
+
+	const optionalIdentity = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "identity-not-optional");
+
+	it("says nothing while an identity is always present", () => {
+		const { ws } = model();
+		expect(optionalIdentity(ws)).toEqual([]);
+	});
+
+	it("errors when an identity is also marked optional, and points at the attribute", () => {
+		const { ws, root } = model();
+		const maybe = root.addAttribute("Legacy Id", {
+			type: "uuid",
+			identity: true,
+			optional: true,
+		});
+		expect(
+			optionalIdentity(ws).map((d) => [d.severity, d.message, d.ref]),
+		).toEqual([
+			[
+				"error",
+				'"Order" marks attribute "Legacy Id" as both an identity and optional; an identity that may be missing cannot say which "Order" a reference means',
+				maybe.ref,
+			],
+		]);
+	});
+
+	it("leaves an optional attribute that is not an identity alone", () => {
+		const { ws, root } = model();
+		root.addAttribute("Note", { type: "string", optional: true });
+		expect(optionalIdentity(ws)).toEqual([]);
+	});
+
+	it("reads value objects and schemas too, not only entities", () => {
+		const { ws, money, payload } = model();
+		const vo = money.addAttribute("Currency", {
+			type: "string",
+			identity: true,
+			optional: true,
+		});
+		const field = payload.addAttribute("Order Id", {
+			type: "uuid",
+			identity: true,
+			optional: true,
+		});
+		expect(optionalIdentity(ws).map((d) => d.ref)).toEqual([field.ref, vo.ref]);
+	});
+});
+
 describe("relationship-cycle", () => {
 	/**
 	 * Three contexts, each with an application service, and a `step` that

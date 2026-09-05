@@ -75,6 +75,10 @@
                 "name": {
                     "type": "string"
                 },
+                "optional": {
+                    "description": "True when the attribute is sometimes absent. Left off means required,\nwhich is the common case and stays unwritten (decision 24). An identity\nattribute is never optional.",
+                    "type": "boolean"
+                },
                 "schema": {
                     "additionalProperties": false,
                     "description": "The schema that models this attribute's type, when the attribute is a\nshape of its own: the lines of an order, the address inside a customer.\nMutually exclusive with `valueobject`; a collection stays in the type\nstring (`OrderLine[]`).",

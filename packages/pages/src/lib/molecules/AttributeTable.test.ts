@@ -56,6 +56,20 @@ describe("AttributeTable", () => {
 		expect(link.closest(".identifies")).toBeInTheDocument();
 	});
 
+	it("marks an attribute that is sometimes absent with the optional keyword", () => {
+		const pet = petstoreModel().workspace.getEntityByRefOrThrow(
+			"#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet",
+		);
+		const attributes = [...pet.attributes.values()];
+		const { container } = render(AttributeTable, { attributes });
+		const marked = [...container.querySelectorAll("tbody tr")]
+			.filter((row) => row.querySelector(".keyword"))
+			.map((row) => row.querySelector("td:nth-child(2)")?.textContent?.trim());
+		expect(marked).toEqual(["category", "tags", "status"]);
+		// Only the exception is written: everything always present says nothing.
+		expect(screen.getAllByText("optional")).toHaveLength(3);
+	});
+
 	it("says what would fill it when nothing is declared", () => {
 		render(AttributeTable, {
 			attributes: [],

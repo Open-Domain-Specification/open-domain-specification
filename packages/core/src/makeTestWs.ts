@@ -173,6 +173,9 @@ export function makeRichTestWs() {
 	money.addAttribute("Currency", { type: "ISO 4217" });
 	order.addAttribute("Order Id", { type: "OrderId", identity: true });
 	order.addAttribute("Total", { type: "Money", valueobject: money });
+	// A note the customer may or may not leave: the one attribute here that is
+	// sometimes absent, so the round trip has an optional flag to carry.
+	order.addAttribute("Note", { type: "string", optional: true });
 	// A line is told apart from its neighbours by its position on the order, so
 	// it is an entity and not a value object; entity-identity wants that said.
 	orderLine.addAttribute("Line No", { type: "int", identity: true });

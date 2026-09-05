@@ -52,6 +52,7 @@ A named, typed property of an entity, value object or schema.
 | `identifies` | `{ "$ref": string }` | no | The root entity this attribute holds the identity of, when it is an identity of something else: `Order.petId` identifies Catalog's `Pet`. The target may be in another bounded context — that is the point, since an identity is the only thing that crosses a boundary (decision 14). |
 | `identity` | boolean | no | True when this attribute is (part of) the identity of an entity. |
 | `name` | string | yes |  |
+| `optional` | boolean | no | True when the attribute is sometimes absent. Left off means required, which is the common case and stays unwritten (decision 24). An identity attribute is never optional. |
 | `schema` | `{ "$ref": string }` | no | The schema that models this attribute's type, when the attribute is a shape of its own: the lines of an order, the address inside a customer. Mutually exclusive with `valueobject`; a collection stays in the type string (`OrderLine[]`). |
 | `type` | string | yes | Free-form type name, e.g. `string`, `Money`, `Date`. |
 | `valueobject` | `{ "$ref": string }` | no | The value object that models this attribute's type, when there is one. |

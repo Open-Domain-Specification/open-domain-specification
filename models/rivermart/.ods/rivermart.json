@@ -3588,6 +3588,7 @@
                   "name": "proofOfDelivery",
                   "type": "ProofOfDelivery",
                   "description": "Captured at the door; absent until the stop is completed",
+                  "optional": true,
                   "valueobject": {
                     "$ref": "#/boundedcontexts/last_mile/valueobjects/proof_of_delivery"
                   }
@@ -4134,6 +4135,7 @@
                 "order_id": {
                   "name": "orderId",
                   "type": "string",
+                  "optional": true,
                   "identifies": {
                     "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
                   }
@@ -4142,6 +4144,7 @@
                   "name": "resolution",
                   "type": "Resolution",
                   "description": "Absent while the case is open",
+                  "optional": true,
                   "valueobject": {
                     "$ref": "#/boundedcontexts/customer_service/valueobjects/resolution"
                   }

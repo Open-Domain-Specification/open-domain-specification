@@ -10,7 +10,7 @@ A pet listed in the store. One aggregate because a pet's photos, tags and status
 ## Entities and Value Objects
 | Type | Name | Description | Attributes |
 | --- | --- | --- | --- |
-| Entity (Root) | **Pet** | The listed animal; everything else in the aggregate hangs off it | **id**: `int64`, name: `string`, category: `Category`, photoUrls: `PhotoUrl[]`, tags: `Tag[]`, status: `PetStatus` |
+| Entity (Root) | **Pet** | The listed animal; everything else in the aggregate hangs off it | **id**: `int64`, name: `string`, category: `Category` (optional), photoUrls: `PhotoUrl[]`, tags: `Tag[]` (optional), status: `PetStatus` (optional) |
 | Value Object | [Category](../../index.md#value-objects) | The kind of animal, e.g. Dogs. A value because two pets in Dogs share one category | id: `int64`, name: `string` |
 | Value Object | [PetStatus](../../index.md#value-objects) | Where the pet is in its sales lifecycle. Shared with Inventory, which keys its counts by these values | value: `'available' | 'pending' | 'sold'` |
 | Value Object | [PhotoUrl](../../index.md#value-objects) | Where a photo of the pet can be fetched | url: `string (URL)` |

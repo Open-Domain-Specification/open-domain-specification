@@ -86,6 +86,11 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   `shared-kernel` relationship with that context.
 - "What identifies it: an order number, an email?" → an attribute with `identity: true`.
 - "What details does it carry?" → attributes, with `type` in the user's words.
+- "Which of these are always present?" → ask once per entity, value object and schema, after
+  the attributes are listed. Everything the user does not name is `optional: true`; the ones
+  they do name are left unmarked, because required is the common case and stays unwritten. An
+  identity attribute is never optional — if the user says the id is sometimes missing, the
+  thing they named is not what identifies it, so ask what always tells one apart.
 - "Which of these do you always change or check together? What must be true across all of
   them at once?" → the aggregate boundary. The thing they state the rule about is the root.
   Explain once: an aggregate is the cluster you change together and check rules across; the

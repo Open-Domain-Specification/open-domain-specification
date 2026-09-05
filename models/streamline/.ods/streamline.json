@@ -750,7 +750,8 @@
                 "production_id": {
                   "name": "productionId",
                   "type": "string",
-                  "description": "The studio production behind an original, or absent for a licensed title; how MasterDelivered is matched to a title"
+                  "description": "The studio production behind an original, or absent for a licensed title; how MasterDelivered is matched to a title",
+                  "optional": true
                 },
                 "playable_rendition_set": {
                   "name": "playableRenditionSet",
@@ -1096,7 +1097,8 @@
             },
             "episode_id": {
               "name": "episodeId",
-              "type": "string"
+              "type": "string",
+              "optional": true
             }
           }
         },
@@ -1550,7 +1552,8 @@
                 "episode_id": {
                   "name": "episodeId",
                   "type": "string",
-                  "description": "Absent for a film; for a series, the episode being played and bookmarked"
+                  "description": "Absent for a film; for a series, the episode being played and bookmarked",
+                  "optional": true
                 },
                 "device_id": {
                   "name": "deviceId",
@@ -1750,7 +1753,8 @@
             },
             "episode_id": {
               "name": "episodeId",
-              "type": "string"
+              "type": "string",
+              "optional": true
             },
             "device_id": {
               "name": "deviceId",
@@ -1781,7 +1785,8 @@
             },
             "episode_id": {
               "name": "episodeId",
-              "type": "string"
+              "type": "string",
+              "optional": true
             },
             "watched_seconds": {
               "name": "watchedSeconds",

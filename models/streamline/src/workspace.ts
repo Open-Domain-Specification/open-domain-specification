@@ -506,6 +506,7 @@ title.addAttribute("rating", { type: "MaturityRating", valueobject: ratingVO });
 // have no production; their masters arrive through the licensor.
 title.addAttribute("productionId", {
 	type: "string",
+	optional: true,
 	description:
 		"The studio production behind an original, or absent for a licensed title; how MasterDelivered is matched to a title",
 });
@@ -575,7 +576,8 @@ const titleRefSchema = catalogueBC.addSchema("TitleRef", {
 	description: "Identifies one title, optionally one episode",
 });
 titleRefSchema.addAttribute("titleId", { type: "string", identity: true });
-titleRefSchema.addAttribute("episodeId", { type: "string" });
+// The schema identifies one title and, for a series, one episode of it.
+titleRefSchema.addAttribute("episodeId", { type: "string", optional: true });
 // A returned shape: GetTitle is asked with a TitleRef and answers with this.
 const titleDetailSchema = catalogueBC.addSchema("TitleDetail", {
 	description: "A title with its seasons, episodes and availability",
@@ -878,6 +880,7 @@ const sessionHousehold = session.addAttribute("householdId", {
 session.addAttribute("titleId", { type: "string", identifies: title });
 session.addAttribute("episodeId", {
 	type: "string",
+	optional: true,
 	description:
 		"Absent for a film; for a series, the episode being played and bookmarked",
 });
@@ -925,7 +928,10 @@ const startPlaybackSchema = playbackBC.addSchema("StartPlayback");
 startPlaybackSchema.addAttribute("profileId", { type: "string" });
 startPlaybackSchema.addAttribute("householdId", { type: "string" });
 startPlaybackSchema.addAttribute("titleId", { type: "string" });
-startPlaybackSchema.addAttribute("episodeId", { type: "string" });
+startPlaybackSchema.addAttribute("episodeId", {
+	type: "string",
+	optional: true,
+});
 startPlaybackSchema.addAttribute("deviceId", { type: "string" });
 startPlaybackSchema.addAttribute("deviceModelId", { type: "string" });
 const playbackStoppedSchema = playbackBC.addSchema("PlaybackStopped", {
@@ -937,7 +943,10 @@ playbackStoppedSchema.addAttribute("sessionId", {
 });
 playbackStoppedSchema.addAttribute("profileId", { type: "string" });
 playbackStoppedSchema.addAttribute("titleId", { type: "string" });
-playbackStoppedSchema.addAttribute("episodeId", { type: "string" });
+playbackStoppedSchema.addAttribute("episodeId", {
+	type: "string",
+	optional: true,
+});
 playbackStoppedSchema.addAttribute("watchedSeconds", { type: "int" });
 playbackStoppedSchema.addAttribute("completed", { type: "boolean" });
 

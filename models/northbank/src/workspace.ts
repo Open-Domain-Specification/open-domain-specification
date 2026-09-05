@@ -895,6 +895,7 @@ entry.addAttribute("entryId", { type: "string", identity: true });
 entry.addAttribute("postedAt", { type: "date-time" });
 entry.addAttribute("reversalOf", {
 	type: "string",
+	optional: true,
 	description: "The entry this one reverses, if any",
 });
 posting.addAttribute("postingId", { type: "string", identity: true });

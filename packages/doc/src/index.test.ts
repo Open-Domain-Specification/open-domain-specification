@@ -272,6 +272,15 @@ describe("toDoc", () => {
 		);
 	});
 
+	it("marks an attribute the source contract does not require as optional", async () => {
+		const docs = await toDoc(petstore);
+		const catalog = docs["boundedcontexts/catalog_bc/aggregates/pet/index.md"];
+		expect(catalog).toContain("tags: `Tag[]` (optional)");
+		// Everything always present stays unwritten, identity attributes included.
+		expect(catalog).toContain("**id**: `int64`,");
+		expect(catalog).not.toContain("**id**: `int64` (optional)");
+	});
+
 	it("groups a context's relationships by what they mean from there, with a Description column", async () => {
 		const docs = await toDoc(petstore);
 
