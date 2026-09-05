@@ -38,3 +38,7 @@ An invariant's boundary holds instances, not type definitions. A value object bo
 ## Note (2026-09-08, third)
 
 An aggregate invariant that constrains an operation is a guard, a precondition checked when that operation runs; it is not true again after every save, and the rule's text and the invariant's page say which of the two an invariant is by whether it names a guard (card 92).
+
+## Amendment (2026-09-08)
+
+The third note inferred a precondition from an invariant naming an operation, and that conflated two facts: what kind of rule it is, and which operation keeps it. `PostEntry` must produce balanced postings and the rule stays true afterwards; the operation is named for responsibility, not to weaken the rule. A precondition is stated with `precondition: true` and must name the operation it guards; an invariant that names an operation without the flag is kept by it and holds after it (card 94).

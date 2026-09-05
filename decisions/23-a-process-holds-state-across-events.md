@@ -31,3 +31,7 @@ A process's own steps feed it: it issues an operation, the operation raises the 
 ## Amendment (2026-09-08, second)
 
 A process could wait only on events, so the commonest process-manager shape, call and branch on the answer, had no honest form: RiverMart published a declined payment as an event against decision 25's own example, and NorthBank described a synchronous verdict and modelled two events. A process's `on` and `ends`, and a policy's `on`, may name a schema an operation returns or rejects with, meaning when that answer comes back; the reaction walk and the flow map read the answer as a step from the operation (card 92). Delivery is still implied by the consumable's type: the answer is synchronous because the operation is.
+
+## Amendment (2026-09-08, third)
+
+The second amendment let a reactor name an answer by its schema, and Codex's review showed the defect at once: two operations rejecting with one shared shape both reached the same reactor. An answer is named by its origin, `<operation>/returns` or `<operation>/rejects/<schema>`, refs of their own in the grammar, and the walk steps from exactly that operation (card 94). Decision 09's sharing of schemas across consumables stands untouched.
