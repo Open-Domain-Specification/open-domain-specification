@@ -1237,7 +1237,10 @@
                 },
                 "customer_id": {
                   "name": "customerId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/identity/aggregates/customer_account/entities/customer_account"
+                  }
                 }
               },
               "relations": [
@@ -1671,10 +1674,6 @@
                   "type": "string",
                   "identity": true
                 },
-                "customer_id": {
-                  "name": "customerId",
-                  "type": "string"
-                },
                 "total": {
                   "name": "total",
                   "type": "Money",
@@ -1694,6 +1693,13 @@
                   "type": "OrderStatus",
                   "valueobject": {
                     "$ref": "#/boundedcontexts/order_management/valueobjects/order_status"
+                  }
+                },
+                "customer_id": {
+                  "name": "customerId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/identity/aggregates/customer_account/entities/customer_account"
                   }
                 }
               },
@@ -2341,7 +2347,10 @@
                 },
                 "order_id": {
                   "name": "orderId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
                 },
                 "amount": {
                   "name": "amount",
@@ -3047,7 +3056,10 @@
                 },
                 "order_id": {
                   "name": "orderId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
                 },
                 "quantity": {
                   "name": "quantity",
@@ -3619,7 +3631,10 @@
                 },
                 "order_id": {
                   "name": "orderId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
                 }
               },
               "relations": []

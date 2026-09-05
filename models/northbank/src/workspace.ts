@@ -2448,7 +2448,13 @@ const credentialAgg = identityBC.addAggregate("Credential", {
 const credential = credentialAgg.addRootEntity("Credential", {
 	description: "Username and step-up factors for one customer",
 });
-credential.addAttribute("customerId", { type: "string", identity: true });
+// The credential is identified by whose it is, and the Customer root is in
+// Customer & KYC: the same id is this entity's identity and a foreign one.
+credential.addAttribute("customerId", {
+	type: "string",
+	identity: true,
+	identifies: customer,
+});
 credential.addAttribute("username", { type: "string" });
 credential.addAttribute("stepUpEnrolled", { type: "boolean" });
 const customerAuthenticated = credentialAgg.provides("CustomerAuthenticated", {

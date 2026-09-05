@@ -4891,7 +4891,10 @@
                 "customer_id": {
                   "name": "customerId",
                   "type": "string",
-                  "identity": true
+                  "identity": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+                  }
                 },
                 "username": {
                   "name": "username",
