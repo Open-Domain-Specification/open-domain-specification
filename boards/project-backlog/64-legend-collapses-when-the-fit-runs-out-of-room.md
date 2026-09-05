@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [pages, design]
 priority: medium
 agent: arcee
