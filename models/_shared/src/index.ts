@@ -52,11 +52,17 @@ export async function generate(
 
 /**
  * The assertions shared, byte-for-byte, by RiverMart's, StreamLine's and
- * NorthBank's workspace tests: every relationship type is used and there is
- * one big ball of mud, every context has a team, there's a glossary,
+ * NorthBank's workspace tests: at least three relationship types are used and
+ * there is one big ball of mud, every context has a team, there's a glossary,
  * policies and schemas on cross-context events, `validate()` reports exactly
  * the deliberate problems (by rule id and severity), and the workspace
  * round-trips through `Workspace.fromSchema`.
+ *
+ * The relationship check is a floor, not a census. Requiring all five types of
+ * every model would make a model invent a relationship it does not have -- a
+ * partnership with traffic one way, say, which `partnership-backed` rightly
+ * warns about. Covering all five is the reference set's job together, and
+ * `relationship-types.test.ts` in this package asserts it.
  *
  * Each reference package keeps only its own id assertion, its `deliberate`
  * array, and a single `it` that calls this helper.
@@ -66,13 +72,10 @@ export function assertStressTestWorkspace(
 	deliberate: Array<{ rule: string; severity: "error" | "warning" }>,
 ): void {
 	const types = new Set(workspace.relationships.map((r) => r.type));
-	assert.deepStrictEqual([...types].sort(), [
-		"customer-supplier",
-		"partnership",
-		"separate-ways",
-		"shared-kernel",
-		"upstream-downstream",
-	]);
+	assert.ok(
+		types.size >= 3,
+		`${workspace.name} shows only ${types.size} relationship type(s): ${[...types].sort().join(", ")}`,
+	);
 	const legacy = [...workspace.boundedcontexts.values()].filter(
 		(bc) => bc.bigBallOfMud,
 	);

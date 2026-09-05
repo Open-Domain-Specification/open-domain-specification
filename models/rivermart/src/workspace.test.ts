@@ -11,10 +11,12 @@ import { workspace } from "./workspace";
  * one was retired on card 47: it sat on a consumption between Warehouse and
  * Last Mile, and those two share a kernel, so neither end has a role to
  * declare and the rule is right to stay quiet. The partnership-backed one
- * arrived with card 53: Search and Advertising release together but every
- * dependency runs one way, and the model keeps the claim rather than demoting
- * it. Rule coverage itself is the completeness fixture's job in
- * packages/core/src/rule-catalog.test.ts.
+ * arrived with card 53 and is on its way out: Search and Advertising release
+ * as one product, which is what a partnership is, and decision 20's amendment
+ * relaxes the rule to traffic in at least one direction. The entry stays until
+ * that core change lands, because this list states what `validate()` prints
+ * today rather than what it ought to. Rule coverage itself is the completeness
+ * fixture's job in packages/core/src/rule-catalog.test.ts.
  */
 const deliberate: Array<{ rule: string; severity: "error" | "warning" }> = [
 	{ rule: "aggregate-root", severity: "error" },

@@ -283,9 +283,12 @@ Four diagnostics, each a finding the client asked to keep visible:
   point update is internal to the player and the dependency was never agreed.
 - `partnership-backed` on Playback and Devices: they ship on one release train and certify
   in the same lab run, but the only traffic is Playback consuming `DeviceCertified`;
-  Devices consumes nothing of Playback's. On the traffic alone this is customer-supplier
-  with Devices supplying, and the joint certification is an organisational tie rather than
-  a modelled dependency. The Partner Devices lead wants the claim left as it stands.
+  Devices consumes nothing of Playback's. The declaration is true: a partnership in DDD is
+  two teams whose success is mutual and whose releases are planned as one, which is exactly
+  what the player and the SDK have, and it does not require consumption in both directions.
+  The rule over-claims, and decision 20's amendment relaxes it to traffic in at least one
+  direction. This entry is listed here because it is what `validate()` prints today; it
+  disappears when that change lands, and nothing about the model changes with it.
 
 ## 8. What the model leaves out
 
