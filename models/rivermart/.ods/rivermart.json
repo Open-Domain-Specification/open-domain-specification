@@ -1578,17 +1578,6 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/authorisation_expired"
-              },
-              "pattern": "anti-corruption-layer",
-              "by": [
-                {
-                  "$ref": "#/boundedcontexts/cart_&_checkout/processes/checkout"
-                }
-              ]
-            },
-            {
-              "consumable": {
                 "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
               },
               "pattern": "anti-corruption-layer",
@@ -1616,7 +1605,14 @@
       "processes": {
         "checkout": {
           "name": "Checkout",
-          "description": "From the customer confirming the basket to an order existing. It asks Payments to hold the cart total and then waits: on a hold the order is placed, on a decline — the answer AuthorisePayment refuses with — the cart is unfrozen so another instrument can be tried and the same instance waits for the next attempt. Correlation is by cartId, which the authorisation carries back. An instance nobody comes back to ends when the hold does: the authorisation expires, Payments says so, and the instance is over without anybody timing the cart out",
+          "description": "From the customer confirming the basket to an order existing. It asks Payments to hold the cart total and then waits: on a hold the order is placed, on a decline — the answer AuthorisePayment refuses with — the cart is unfrozen so another instrument can be tried and the same instance waits for the next attempt. Correlation is by cartId, which the authorisation carries back. An instance nobody comes back to ends when its own clock runs out: the hold Payments took lasts thirty minutes, and after that the checkout is over. The cart is not: a cart nobody returns to is the customer's to abandon",
+          "deadlines": {
+            "authorisation_expiry": {
+              "name": "Authorisation expiry",
+              "description": "The hold Payments took is released and the checkout is over; the cart stays open for the customer to come back to",
+              "after": "30 minutes"
+            }
+          },
           "starts": [
             {
               "$ref": "#/boundedcontexts/cart_&_checkout/aggregates/cart/provides/cart_checked_out"
@@ -1646,7 +1642,7 @@
               "$ref": "#/boundedcontexts/order_management/aggregates/order/provides/order_placed"
             },
             {
-              "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/authorisation_expired"
+              "$ref": "#/boundedcontexts/cart_&_checkout/processes/checkout/deadlines/authorisation_expiry"
             }
           ]
         }
@@ -2545,15 +2541,6 @@
                 "$ref": "#/boundedcontexts/payments/schemas/payment_authorised"
               }
             },
-            "authorisation_expired": {
-              "name": "AuthorisationExpired",
-              "description": "A hold reached its expiry without being captured and was released",
-              "pattern": "published-language",
-              "type": "event",
-              "schema": {
-                "$ref": "#/boundedcontexts/payments/schemas/payment_ref"
-              }
-            },
             "payment_captured": {
               "name": "PaymentCaptured",
               "description": "Money was taken for a dispatched shipment",
@@ -2779,17 +2766,6 @@
               "raises": [
                 {
                   "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_authorised"
-                }
-              ]
-            },
-            "expire_authorisations": {
-              "name": "ExpireAuthorisations",
-              "description": "Release every hold now past its Authorisation.expiresAt; a scheduler runs it",
-              "pattern": "open-host-service",
-              "type": "operation",
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/authorisation_expired"
                 }
               ]
             },
@@ -3050,10 +3026,23 @@
                   "type": "string",
                   "identity": true
                 },
-                "subject_id": {
-                  "name": "subjectId",
+                "order_id": {
+                  "name": "orderId",
                   "type": "string",
-                  "description": "An order id or a seller id"
+                  "description": "Set when the assessment is of an order",
+                  "optional": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
+                },
+                "seller_id": {
+                  "name": "sellerId",
+                  "type": "string",
+                  "description": "Set when the assessment is of a seller",
+                  "optional": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/entities/seller_account"
+                  }
                 },
                 "score": {
                   "name": "score",
@@ -3092,6 +3081,18 @@
             }
           },
           "invariants": {
+            "one_subject": {
+              "name": "OneSubject",
+              "description": "Exactly one of orderId and sellerId is set: an assessment is of an order or of a seller, never both and never neither",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/entities/risk_assessment/attributes/order_id"
+                },
+                {
+                  "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/entities/risk_assessment/attributes/seller_id"
+                }
+              ]
+            },
             "score_explained": {
               "name": "ScoreExplained",
               "description": "A flagged score always carries at least one signal, so an agent can defend it",

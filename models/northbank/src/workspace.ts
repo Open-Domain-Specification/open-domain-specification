@@ -123,11 +123,6 @@ platform.addSubdomain("Identity & Access", {
 	description:
 		"Login and step-up authentication. Vendor built; never placed on the capability map",
 });
-const sharedKernelSD = platform.addSubdomain("Shared Financial Primitives", {
-	type: "supporting",
-	description:
-		"Money and AccountNumber: the one library every context that carries an amount or a ledger account compiles against. A library, not a product; nobody builds a customer journey on it",
-});
 
 /* =======================
    TEAMS
@@ -249,18 +244,26 @@ const identityBC = workspace.addBoundedContext("Identity & Access", {
 // context of its own rather than fifteen pairwise agreements (decision 16's
 // amendment): each sharer declares one shared-kernel relationship with this
 // one and borrows what it needs.
-const sharedKernelBC = sharedKernelSD.addBoundedcontext("Shared Kernel", {
+//
+// It serves no subdomain of its own, and until card 95 it had one: a supporting
+// "Shared Financial Primitives" invented so that `context-serves-subdomain`
+// would stop asking, on a capability map that has no such capability and that
+// no customer journey runs through. What the kernel serves is whatever its
+// sharers serve. The rule now exempts a context whose relationships are all
+// shared kernel with two or more sharers, and the invented row is gone; the
+// team that owns Money and AccountNumber stays, because somebody does own them.
+const sharedKernelBC = workspace.addBoundedContext("Shared Kernel", {
 	description:
 		"The shared library the bank's contexts compile against: Money and AccountNumber, and nothing else. Not a product; nobody's customer journey runs through it",
 	team: sharedKernelTeam,
 });
 
-// The two systems the bank integrates with and does not run: the screening
+// The three systems the bank integrates with and does not run: the screening
 // vendor behind Sanctions Screening ("the lists are bought; the screening
-// engine is bought") and CardCo, which sends the authorisation requests Cards
-// answers. Neither has a subdomain or a team here, and neither has aggregates,
-// because what happens inside somebody else's machine is not ours to state
-// (decision 28).
+// engine is bought"), CardCo, which sends the authorisation requests Cards
+// answers, and the payment scheme the gateway submits to. None has a subdomain
+// or a team here, and none has aggregates, because what happens inside
+// somebody else's machine is not ours to state (decision 28).
 const screeningVendorBC = workspace.addBoundedContext("Screening Vendor", {
 	description:
 		"The bought sanctions lists and the bought screening engine, behind a documented API. Not the bank's",
@@ -269,6 +272,16 @@ const screeningVendorBC = workspace.addBoundedContext("Screening Vendor", {
 const cardCoBC = workspace.addBoundedContext("CardCo", {
 	description:
 		"The outsourced card processor: it sends the authorisation requests and takes the answers, in its own format",
+	external: true,
+});
+// DISCOVERY: Scheme Connectivity lead. "We turn a submission into a scheme
+// message and send it. The scheme confirms or rejects." The confirmation is
+// the scheme's fact, not the gateway's, and until card 95 the model credited
+// SubmitToScheme with raising both of them and never declared the scheme at
+// all -- the one system in the whole payment path nobody had written down.
+const paymentSchemeBC = workspace.addBoundedContext("Payment Scheme", {
+	description:
+		"The clearing scheme the bank submits to: it settles or refuses, in ISO 20022 and on its own timings. Not the bank's",
 	external: true,
 });
 
@@ -1445,28 +1458,61 @@ submissionSchema.addAttribute("messageType", {
 	type: "SchemeFormat",
 	valueobject: schemeFormatVO,
 });
-const settlementSchema = schemeBC.addSchema("SchemeSettlement");
+// What the gateway hands back to the hub once the scheme has answered: the
+// bank's reading of the scheme's response, in the bank's own terms.
+const settlementSchema = schemeBC.addSchema("SchemeSettlement", {
+	description:
+		"The scheme settled: which instruction, and the scheme's own reference",
+});
 settlementSchema.addAttribute("instructionId", {
 	type: "string",
 	identity: true,
 	identifies: instruction,
 });
 settlementSchema.addAttribute("schemeRef", { type: "string" });
+const schemeRefusalSchema = schemeBC.addSchema("SchemeRefusal", {
+	description:
+		"The scheme refused: which instruction, and the scheme's status reason passed through untranslated, because you do not negotiate with a scheme",
+});
+schemeRefusalSchema.addAttribute("instructionId", {
+	type: "string",
+	identity: true,
+	identifies: instruction,
+});
+schemeRefusalSchema.addAttribute("schemeRef", { type: "string" });
+schemeRefusalSchema.addAttribute("reason", { type: "string" });
 
-const schemeSettlementConfirmed = schemeMessageAgg.provides(
+// The scheme's own answers, published by the scheme. They carry the scheme's
+// shape, as CardCo's authorisation message carries CardCo's: what arrives is a
+// pacs.002 with the reference the gateway sent in it, and the gateway is what
+// takes it in (decision 28).
+const schemeResponseSchema = paymentSchemeBC.addSchema("SchemeResponse", {
+	description: "The scheme's status report, as it arrives on the wire",
+});
+schemeResponseSchema.addAttribute("originalInstructionId", { type: "string" });
+schemeResponseSchema.addAttribute("schemeRef", { type: "string" });
+schemeResponseSchema.addAttribute("statusReason", {
+	type: "string",
+	optional: true,
+});
+const schemeRail = paymentSchemeBC.addService("Scheme Rail", {
+	description: "The scheme's inbound leg, and all the bank can see of it",
+	type: "application",
+});
+const schemeSettlementConfirmed = schemeRail.provides(
 	"SchemeSettlementConfirmed",
 	{
 		description: "The scheme settled the payment",
 		type: "event",
 		pattern: "published-language",
-		schema: settlementSchema,
+		schema: schemeResponseSchema,
 	},
 );
-const schemeRejected = schemeMessageAgg.provides("SchemeRejected", {
+const schemeRejected = schemeRail.provides("SchemeRejected", {
 	description: "The scheme refused the message",
 	type: "event",
 	pattern: "published-language",
-	schema: settlementSchema,
+	schema: schemeResponseSchema,
 });
 // What a context offers outward leaves an application service; an
 // aggregate's operations are its own context's (decision 17).
@@ -1475,17 +1521,35 @@ const schemeApp = schemeBC.addService("SchemeGatewayApp", {
 		"The gateway's application service: the boundary the hub submits messages through",
 	type: "application",
 });
-const submitToScheme = schemeApp
-	.provides("SubmitToScheme", {
-		description: "Send a submission and await the response",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: submissionSchema,
-	})
-	.raises(schemeSettlementConfirmed, schemeRejected);
-
-paymentsApp.consumes(schemeSettlementConfirmed, { pattern: "conformist" });
-paymentsApp.consumes(schemeRejected, { pattern: "conformist" });
+// "Send a submission and await the response": the caller waits, and what it
+// gets back is the gateway's reading of whichever answer the scheme gave. The
+// operation used to claim to raise the scheme's two events itself, which said
+// the gateway made the settlement happen (card 95).
+const submitToScheme = schemeApp.provides("SubmitToScheme", {
+	description:
+		"Send a submission in the scheme's format and await the response; the caller is answered with the settlement or with the scheme's refusal",
+	type: "operation",
+	pattern: "open-host-service",
+	schema: submissionSchema,
+	returns: settlementSchema,
+	rejects: [schemeRefusalSchema],
+});
+// Waiting for the response is taking the scheme's fact in at the gateway's own
+// boundary, and SubmitToScheme is the operation that waits.
+schemeApp.consumes(schemeSettlementConfirmed, {
+	pattern: "conformist",
+	by: [submitToScheme],
+});
+schemeApp.consumes(schemeRejected, {
+	pattern: "conformist",
+	by: [submitToScheme],
+});
+paymentSchemeBC.upstreamOf(schemeBC, {
+	description:
+		"ISO 20022 as the scheme publishes it; the gateway takes the format as it is",
+	upstreamRoles: ["published-language"],
+	downstreamRoles: ["conformist"],
+});
 // A policy names operations of its own context, so each step that reaches
 // another context is an operation of the hub's own app service (decision 17).
 const sendToScheme = paymentsApp.provides("SendToScheme", {
@@ -1521,10 +1585,10 @@ paymentsApp.consumes(postEntry, {
 const instructionLifecycle = paymentsBC
 	.addProcess("Instruction lifecycle", {
 		description:
-			"From an instruction being initiated to the money having moved. It scores every instruction with Fraud and waits for the verdict to come back: above the threshold it rejects the instruction and never submits it, below it submits to the scheme in the scheme's own format, and the process then waits again for the scheme's answer. A confirmation settles the instruction and posts it to the ledger; a refusal rejects it. Correlation is by instructionId, which the scorer's verdict and the scheme's response both carry; an instruction the scheme never answers stays open for the operations team, because the scheme's own timings are not the bank's to model",
+			"From an instruction being initiated to the money having moved. It scores every instruction with Fraud and waits for the verdict to come back: above the threshold it rejects the instruction and never submits it, below it submits to the scheme through the gateway, in the scheme's own format, and the process then waits again for the answer that call comes back with. A settlement settles the instruction and posts it to the ledger; a refusal rejects it. Correlation is by instructionId, which the scorer's verdict and the gateway's answer both carry; an instruction the scheme never answers stays open for the operations team, because the scheme's own timings are not the bank's to model",
 	})
 	.starts(paymentInitiated)
-	.on(schemeSettlementConfirmed, schemeRejected)
+	.on(submitToScheme.returned(), submitToScheme.rejected(schemeRefusalSchema))
 	.issues(sendToScheme, confirmSettlement, rejectPayment, postSettlement)
 	.ends(paymentSettled, paymentRejected);
 
@@ -1871,12 +1935,42 @@ const cardsApp = cardsBC.addService("CardsApp", {
 		"Cards' application service: the boundary CardCo authorises against and channels block cards through",
 	type: "application",
 });
+// DISCOVERY: Cards Team lead. "CardCo sends us the authorisation request in
+// their format and we translate it", and Cards answers in the same terms:
+// CardCo waits on the call, and what comes back is an approval or a decline.
+// The model said the operation approved or declined and named neither answer,
+// so the decline -- the outcome three of Cards' own rules produce -- existed
+// nowhere (decisions 13 and 25; card 95).
+const cardApprovalSchema = cardsBC.addSchema("CardAuthorisationApproved", {
+	description:
+		"What CardCo is answered with when the request is approved: the authorisation and the amount now held",
+});
+cardApprovalSchema.addAttribute("authorisationId", {
+	type: "string",
+	identity: true,
+	identifies: cardAuthorisation,
+});
+cardApprovalSchema.addAttribute("amount", {
+	type: "Money",
+	valueobject: cardMoney,
+});
+const cardDeclineSchema = cardsBC.addSchema("CardAuthorisationDeclined", {
+	description:
+		"Why the request was declined: the card is blocked, the card has expired, or the available balance does not cover it. No authorisation exists, so there is no card event to raise",
+});
+cardDeclineSchema.addAttribute("cardId", { type: "string", identifies: card });
+cardDeclineSchema.addAttribute("reason", {
+	type: "'blocked' | 'expired' | 'insufficient-funds'",
+});
 const authoriseCard = cardsApp
 	.provides("AuthoriseCard", {
-		description: "Approve or decline a merchant's request from CardCo",
+		description:
+			"Approve or decline a merchant's request from CardCo; the caller waits, and is answered with the authorisation or with the rule that stopped it",
 		type: "operation",
 		pattern: "open-host-service",
 		schema: cardAuthRequestSchema,
+		returns: cardApprovalSchema,
+		rejects: [cardDeclineSchema],
 	})
 	.raises(cardAuthorised);
 // DISCOVERY: Cards Team lead. "CardCo sends us the authorisation request in

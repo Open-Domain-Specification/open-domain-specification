@@ -16,10 +16,11 @@ import {
 	type Aggregate,
 	Answer,
 	type BoundedContext,
+	Deadline,
 	ODSConsumableMap,
 	ODSContextMap,
 	ODSFlowMap,
-	type ReactionTrigger,
+	type ProcessTrigger,
 	type ValueObject,
 } from "@open-domain-specification/core";
 import { valueObjectsOf } from "../elements";
@@ -124,10 +125,15 @@ const serviceColumns: Column[] = [
  * came back from in the tooltip: two operations may answer with one shape, and
  * the row has to say which one this reaction waits on (decision 23).
  */
-const triggerLink = (trigger: ReactionTrigger) =>
-	trigger instanceof Answer
-		? { ref: trigger.schema.ref, title: trigger.origin }
-		: { ref: trigger.ref, title: undefined };
+const triggerLink = (trigger: ProcessTrigger) => {
+	if (trigger instanceof Answer)
+		return { ref: trigger.schema.ref, title: trigger.origin };
+	// A deadline has no page either: it is declared on the process, and how
+	// long the instance had is the whole of what it says.
+	if (trigger instanceof Deadline)
+		return { ref: trigger.process.ref, title: `after ${trigger.after}` };
+	return { ref: trigger.ref, title: undefined };
+};
 const policyColumns: Column[] = [
 	{ key: "name", label: "Policy" },
 	{ key: "when", label: "When" },

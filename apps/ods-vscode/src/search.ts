@@ -23,6 +23,7 @@ const kindLabel: Record<keyof typeof ICONS, string> = {
 	command: "Operation",
 	policy: "Policy",
 	process: "Process",
+	deadline: "Deadline",
 	term: "Glossary Term",
 	team: "Team",
 	consumable: "Consumable",

@@ -158,9 +158,12 @@ A score is 0 to 1000 with the signals that produced it; a flag without an explan
 is useless to an agent. We publish flags; Orders cancels, Seller Services suspends. We don't
 sit in the checkout path and we don't want to."
 
-Recorded as: Fraud as supporting; RiskAssessment with `ScoreExplained`; the RiskScorer domain
-service with `ScoreOrder` and `ScoreSeller`; two policies; published flags consumed
-downstream.
+Recorded as: Fraud as supporting; RiskAssessment with `ScoreExplained` and `OneSubject`;
+the RiskScorer domain service with `ScoreOrder` and `ScoreSeller`; two policies; published
+flags consumed downstream. "We score orders or sellers" is two subjects, and the assessment
+says which one it is with `orderId` and `sellerId`, each optional and each identifying its
+own target: card 95 replaced the single `subjectId` that was typed string, described as "an
+order id or a seller id", and identified nothing.
 
 ### Head of Fulfilment
 
@@ -254,7 +257,7 @@ marked every place two people disagreed about a word. The main timeline, condens
 | CartCheckedOut | Checkout | Authorise on checkout |
 | PaymentAuthorised | AuthorisePayment | Checkout places the order |
 | PaymentDeclined (an answer, not an event) | AuthorisePayment rejects with it | Checkout reopens the cart |
-| AuthorisationExpired | ExpireAuthorisations | Checkout ends: nobody came back |
+| Authorisation expiry (a deadline, not an event) | the Checkout process's own clock | Checkout ends: nobody came back |
 | OrderPlaced | PlaceOrder | Warehouse reserves; Fraud scores order; Payments attaches the order id |
 | OrderRiskFlagged | ScoreOrder | Cancel flagged orders |
 | OrderCancelled | CancelOrder | Warehouse releases the reservation and voids pick tasks |
@@ -556,5 +559,31 @@ operation, which is what an operation called from outside the software looks lik
 (decision 28); the released hold is a published fact, and the Checkout process ends on it.
 A cart nobody returns to is still the customer's to abandon: what ends is the checkout, not
 the cart.
+
+The deliberate diagnostics of section 7 are untouched.
+
+## Revision (card 95): the checkout's clock is its own, and an assessment says what it is of
+
+Two of card 92's answers were right and one of its mechanisms was not. What finishes a
+checkout nobody comes back to is still the hold running out — the Payments lead and the
+Authorisation glossary entry both say a hold "expires if not captured", thirty minutes after
+it is taken — but the model wrote that as an `ExpireAuthorisations` operation on Payments
+that "a scheduler runs every few minutes" and an `AuthorisationExpired` event that only the
+checkout ever heard. That is five declarations, and one of them is a claim about the world:
+that something outside the software sweeps holds on a timer. Nobody said so.
+
+A per-instance limit is the process's own. It starts when this instance asks for the hold,
+nobody outside knows the instance exists, and running out of time is how the instance
+finishes. So the Checkout process declares a deadline, "Authorisation expiry", after 30
+minutes, and ends on it; the scheduler operation and the event are gone with it. Decision
+23's fourth amendment is the general form, and decision 28's Clock stays for what it was
+meant for: calendar events every context shares.
+
+And `RiskAssessment.subjectId` now follows the answer decision 15 gave in its own name. One
+attribute typed string and described as "an order id or a seller id" identified nothing,
+because `identifies` names one kind of thing. It is two optional attributes, `orderId` and
+`sellerId`, each identifying its target, with `OneSubject` saying in prose that exactly one
+is set — which is the model's answer to a polymorphic reference, and the decision cited this
+very attribute as an example of it while the model did something else.
 
 The deliberate diagnostics of section 7 are untouched.

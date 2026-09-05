@@ -142,11 +142,11 @@
 
 ## `invariant-in-aggregate` (error)
 
-**Requires:** An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object of its context, or one borrowed from elsewhere that something in the aggregate holds, or is an operation of a service of its own context, application or domain, that guards it.
+**Requires:** An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object something in the aggregate holds, its context's own or one borrowed from elsewhere, or is an operation of a service of its own context, application or domain, that guards it.
 
-**Why it matters:** Naming an operation says which operation keeps the rule; it does not say what kind of rule it is. The invariant says that itself, with precondition: set, it is checked before that operation runs and nothing re-establishes it afterwards — enough funds at initiation, an entitlement at playback start, a pet still available at approval. Unset, the operation is named for responsibility and the rule is still true after it: PostEntry must produce balanced postings and the postings stay balanced. The invariant's page says which of the two it is reading, because the two promise different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts.
+**Why it matters:** Naming an operation says which operation keeps the rule; it does not say what kind of rule it is. The invariant says that itself, with precondition: set, it is checked before that operation runs and nothing re-establishes it afterwards — enough funds at initiation, an entitlement at playback start, a pet still available at approval. Unset, the operation is named for responsibility and the rule is still true after it: PostEntry must produce balanced postings and the postings stay balanced. The invariant's page says which of the two it is reading, because the two promise different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not, wherever it was declared. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts.
 
-**Usual fix:** Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object from another context, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door.
+**Usual fix:** Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one, and it is asked of the context's own values as much as of borrowed ones. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door.
 
 ## `invariant-in-context` (error)
 
@@ -174,11 +174,11 @@
 
 ## `relationship-roles-backed` (warning)
 
-**Requires:** A directed relationship's declared roles are carried by consumables and consumptions crossing between the two contexts — or, for conformist, by the downstream borrowing the upstream's shapes — and a crossing consumption's role is declared on the relationship.
+**Requires:** A directed relationship's declared roles are carried by consumables and consumptions crossing between the two contexts — or, for published language and for conformist, by the downstream borrowing the upstream's shapes — and a crossing consumption's role is declared on the relationship.
 
 **Why it matters:** The context map and the consumable map are the same integration told twice, strategically and concretely. A role on the map that nothing carries is a claim about a team's way of working with nothing behind it, and a consumption whose role the map never mentions is an integration decision made without the map noticing.
 
-**Usual fix:** Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a schema, since a published language is a data shape rather than a second flag. A conformist role is backed by borrowing too: a downstream naming one of the upstream's schemas or value objects has adopted its model, which is what the role says, so a conformist to a standards body needs no consumption to prove it.
+**Usual fix:** Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a schema, since a published language is a data shape rather than a second flag, and equally by the downstream naming one of the upstream's schemas or value objects: a standards body publishes a language and offers nothing to consume, so the shapes borrowed from it are the whole of what it provides. A conformist role is backed by borrowing too: a downstream naming one of the upstream's schemas or value objects has adopted its model, which is what the role says, so a conformist to a standards body needs no consumption to prove it.
 
 ## `relationship-declared` (warning)
 
@@ -222,11 +222,11 @@
 
 ## `conformist-backed` (warning)
 
-**Requires:** A downstream that declares the conformist role takes something of its upstream's: a schema or value object named here, something it publishes consumed here, or one of its operations called.
+**Requires:** A downstream that declares the conformist role takes something of its upstream's: a schema or value object named here, or anything the upstream provides consumed here.
 
-**Why it matters:** Conformist is the strongest thing a downstream can say about itself: it gives up its own language for the upstream's and accepts every change the upstream makes. It is also what lets this context name the upstream's schemas and value objects at all, so a reader takes it as the warrant for a borrowing. Declared between two contexts that exchange nothing at all, it is a claim on the map with nothing under it, exactly as an empty shared kernel or an unbacked partnership is. What the rule does not ask is that the conforming show in the shapes: whether a downstream subscribing to a published event translates it or takes it as it comes is not something the model records, so asking for a borrowed schema would report every event-driven conformist there is.
+**Why it matters:** Conformist is the strongest thing a downstream can say about itself: it gives up its own language for the upstream's and accepts every change the upstream makes. It is also what lets this context name the upstream's schemas and value objects at all, so a reader takes it as the warrant for a borrowing. Declared between two contexts that exchange nothing at all, it is a claim on the map with nothing under it, exactly as an empty shared kernel or an unbacked partnership is. What the rule does not ask is that the conforming show in the shapes: whether a downstream subscribing to a published event translates it or takes it as it comes is not something the model records, so asking for a borrowed schema would report every event-driven conformist there is. It does not ask for a payload either: a consumed event whose name is the whole of it is still the upstream's language, and demanding a schema on the event reported the conformists of contexts that publish bare notifications.
 
-**Usual fix:** Consume what the upstream publishes, call one of its operations, or name one of its schemas or value objects here; or drop the conformist role if the two contexts really exchange nothing.
+**Usual fix:** Consume something the upstream provides, of any kind and with or without a payload, or name one of its schemas or value objects here; or drop the conformist role if the two contexts really exchange nothing.
 
 ## `mud-needs-acl` (warning)
 
@@ -416,9 +416,9 @@
 
 **Requires:** Policies and processes react to events and issue operations; only operations raise events, and they raise only events.
 
-**Why it matters:** An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable.
+**Why it matters:** An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable. A reaction may also wait on an answer, and then two things have to hold: the operation declares that answer, and the reactor can hear it come back — because its context consumes the operation, or because the reactor issues the operation itself, which is the local call-and-branch.
 
-**Usual fix:** Check the type of each consumable a policy or raises list points at and swap it for the right kind.
+**Usual fix:** Check the type of each consumable a policy or raises list points at and swap it for the right kind. For an answer, either declare it on the operation it is named from, or issue or consume that operation.
 
 ## `raises-in-context` (error)
 
@@ -462,11 +462,11 @@
 
 ## `context-serves-subdomain` (warning)
 
-**Requires:** Every bounded context serves at least one subdomain.
+**Requires:** Every bounded context serves at least one subdomain, except an external one and a shared kernel context.
 
-**Why it matters:** A context that serves no subdomain has no place in the problem-space view, so nobody can see which part of the business it exists for.
+**Why it matters:** A context that serves no subdomain has no place in the problem-space view, so nobody can see which part of the business it exists for. An external context was never in that view: a card scheme or a licensor is not part of anybody's problem space here. A shared kernel context is under all of it rather than outside it — a library of Money and AccountNumber serves whatever its sharers serve — so asking it for a subdomain of its own only invents one.
 
-**Usual fix:** Add the subdomain the context serves to its subdomains list.
+**Usual fix:** Add the subdomain the context serves to its subdomains list. If the context is somebody else's system, mark it external. If it is a kernel two or more contexts share and nothing else, every relationship it has is a shared kernel and the rule leaves it alone.
 
 ## `external-is-boundary` (error)
 

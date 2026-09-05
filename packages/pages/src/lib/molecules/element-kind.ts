@@ -4,6 +4,7 @@ import {
 	BoundedContext,
 	Consumable,
 	DataSchema,
+	Deadline,
 	Domain,
 	Entity,
 	GlossaryTerm,
@@ -41,6 +42,7 @@ export const kindOf = (element: unknown): Kind => {
 		return "schema";
 	if (element instanceof Policy) return "policy";
 	if (element instanceof Process) return "process";
+	if (element instanceof Deadline) return "deadline";
 	if (element instanceof Invariant) return "invariant";
 	if (element instanceof GlossaryTerm) return "term";
 	if (element instanceof Team) return "team";

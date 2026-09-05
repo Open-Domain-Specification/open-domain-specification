@@ -4,11 +4,12 @@ import {
 	type BoundedContext,
 	constrainableLabel,
 	type DataSchema,
+	Deadline,
 	type Invariant,
 	ODSConsumptionGraph,
 	type Policy,
 	type Process,
-	type ReactionTrigger,
+	type ProcessTrigger,
 	type Service,
 	type ValueObject,
 } from "@open-domain-specification/core";
@@ -36,15 +37,17 @@ ${aggregate.description}
  * What a reaction waits for, named in one cell. An answer is named by the call
  * it comes back from, because in a column of event names a shape would
  * otherwise read as one more event, and two operations may answer with the
- * same one (decision 23).
+ * same one (decision 23). A deadline is named by how long the instance had,
+ * because a limit nobody outside can see is nothing but its length.
  */
-const triggerList = (triggers: ReactionTrigger[]) =>
+const triggerList = (triggers: ProcessTrigger[]) =>
 	triggers
-		.map((it) =>
-			it instanceof Answer
-				? `${it.name} (answer to ${it.operation.name})`
-				: it.name,
-		)
+		.map((it) => {
+			if (it instanceof Answer)
+				return `${it.name} (answer to ${it.operation.name})`;
+			if (it instanceof Deadline) return `${it.name} (after ${it.after})`;
+			return it.name;
+		})
 		.join(", ") || "-";
 
 const policySection = (policy: Policy) => [

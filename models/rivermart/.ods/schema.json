@@ -479,6 +479,29 @@
             "title": "DataSchema",
             "type": "object"
         },
+        "DeadlineSchema": {
+            "additionalProperties": false,
+            "description": "A time limit a process keeps on its own instances: cancel the reservation if nobody has paid after thirty minutes. It behaves as an event the process raises to itself, so the process may wait on it or end on it, and nothing else may name it. A per-instance timer is not a calendar event, so it needs no Clock context (decision 23, fourth amendment).",
+            "properties": {
+                "after": {
+                    "description": "How long the instance waits before the deadline falls, in the words the\nbusiness uses: \"30 minutes\", \"two working days\". Free text, like an\nattribute's type: the model says the limit exists and how long it is, and\nleaves the arithmetic to the code (decision 15).",
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "after",
+                "description",
+                "name"
+            ],
+            "title": "Deadline",
+            "type": "object"
+        },
         "DirectedContextRelationshipSchema": {
             "additionalProperties": false,
             "description": "An upstream/downstream relationship between two bounded contexts.",
@@ -827,6 +850,13 @@
                     },
                     "type": "array"
                 },
+                "deadlines": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/DeadlineSchema"
+                    },
+                    "description": "The time limits this process keeps on its own instances, by id. A\ndeadline is an element of the process, so `on` and `ends` name one by\n`<process ref>/deadlines/<id>` and nothing outside the process may name\nit at all (decision 23, fourth amendment).",
+                    "type": "object"
+                },
                 "description": {
                     "type": "string"
                 },
@@ -835,7 +865,7 @@
                     "description": "What the architecture thinks of this process. Absent means `by-design`."
                 },
                 "ends": {
-                    "description": "What completes an instance: an event consumable, or an answer named the\nsame way `on` names one.",
+                    "description": "What completes an instance: an event consumable, an answer, or a deadline\nnamed the same way `on` names one.",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
