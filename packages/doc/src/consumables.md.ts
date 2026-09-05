@@ -18,6 +18,11 @@ export const schemaLinkMd = (
 const returnsLinkMd = (consumable: Consumable, fromPath: string): string =>
 	consumable.returns ? schemaRowLinkMd(consumable.returns, fromPath) : "-";
 
+/** Every shape the operation refuses with, linked the same way its payload is. */
+const rejectsLinkMd = (consumable: Consumable, fromPath: string): string =>
+	consumable.rejects.map((it) => schemaRowLinkMd(it, fromPath)).join(", ") ||
+	"-";
+
 const consumableRow = (consumable: Consumable, fromPath: string) => [
 	consumable.name,
 	consumable.type,
@@ -26,6 +31,7 @@ const consumableRow = (consumable: Consumable, fromPath: string) => [
 	consumable.description,
 	schemaLinkMd(consumable, fromPath),
 	returnsLinkMd(consumable, fromPath),
+	rejectsLinkMd(consumable, fromPath),
 	consumable.type === "operation"
 		? consumable.raisedEvents.map((it) => it.name).join(", ") || "-"
 		: "-",
@@ -56,6 +62,7 @@ export const providesTableMd = (
 			"Description",
 			"Schema",
 			"Returns",
+			"Rejects with",
 			"Raises",
 			"Guarded by",
 		],

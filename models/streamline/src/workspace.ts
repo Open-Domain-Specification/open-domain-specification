@@ -954,6 +954,19 @@ startPlaybackSchema.addAttribute("episodeId", {
 	identifies: catalogueEpisode,
 });
 startPlaybackSchema.addAttribute("deviceId", { type: "string" });
+// A rejection shape: what StartPlayback answers with when it will not start.
+// No session exists, so there is no PlaybackStarted to raise; the player is
+// told whether to send the member to billing or to say the device is not
+// certified (decision 25).
+const playbackDeniedSchema = playbackBC.addSchema("PlaybackDenied", {
+	description:
+		"Why the session did not start: no entitlement, or a device that is not certified",
+});
+playbackDeniedSchema.addAttribute("reason", { type: "string" });
+playbackDeniedSchema.addAttribute("titleId", {
+	type: "string",
+	identifies: title,
+});
 const playbackStoppedSchema = playbackBC.addSchema("PlaybackStopped", {
 	description: "The fact personalisation learns from",
 });
@@ -1007,6 +1020,7 @@ const startPlayback = playbackApi
 		type: "operation",
 		pattern: "open-host-service",
 		schema: startPlaybackSchema,
+		rejects: [playbackDeniedSchema],
 	})
 	.raises(playbackStarted);
 playbackApi

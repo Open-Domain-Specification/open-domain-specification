@@ -1165,6 +1165,23 @@ initiatePaymentSchema.addAttribute("executionDate", {
 	type: "ExecutionDate",
 	valueobject: executionDateVO,
 });
+// A rejection shape: what InitiatePayment answers with when it will not create
+// the instruction. No payment exists, so there is no payment event to raise;
+// the channel is told which rule stopped it (decision 25).
+const instructionRefusedSchema = paymentsBC.addSchema("InstructionRefused", {
+	description:
+		"Why an instruction was not created: over the daily limit, not covered, or past the cut-off",
+});
+instructionRefusedSchema.addAttribute("reason", { type: "string" });
+instructionRefusedSchema.addAttribute("payerAccountId", {
+	type: "string",
+	identifies: account,
+});
+instructionRefusedSchema.addAttribute("remainingToday", {
+	type: "Money",
+	optional: true,
+	valueobject: paymentMoney,
+});
 const paymentEventSchema = paymentsBC.addSchema("PaymentEvent", {
 	description: "Instruction id, amount and payee; shared by the payment events",
 });
@@ -1222,6 +1239,7 @@ const initiatePayment = paymentsApp
 		type: "operation",
 		pattern: "open-host-service",
 		schema: initiatePaymentSchema,
+		rejects: [instructionRefusedSchema],
 	})
 	.raises(paymentInitiated);
 // A rule across instructions, not inside one: the context holds it and

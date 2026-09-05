@@ -156,6 +156,11 @@ Repeat for each context the user wants detailed. Ask which one to start with.
 - For an operation, follow up: "and what comes back?" → a second schema on the same context,
   attached with `returns`. A command that answers with nothing leaves `returns` off; a query
   that answers with nothing is not a query, so keep asking. Never put `returns` on an event.
+- Then, still on the operation: "and when it says no, what does it say?" → a schema per
+  refusal on the same context, listed in `rejects`. A rejection is a refusal, so nothing
+  happened: a declined payment, an over-limit transfer, a reservation the stock would not
+  cover. If the answer is a status code and nothing else, leave `rejects` off rather than
+  inventing a shape, and never put one on an event.
 - "When <event> happens, what do you then do automatically?" → a policy with `on` the event
   and `then` the operation. The event in `on` may belong to another context, because reacting
   to a published fact is a consumption; the operation in `then` is always the policy's own

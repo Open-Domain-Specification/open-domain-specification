@@ -33,14 +33,14 @@ Order for a single pet
 
 
 ## Provides
-| Name | Type | Internal | Pattern | Description | Schema | Returns | Raises | Guarded by |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| OrderPlaced | event | no | published-language | Order created (status=placed) | [OrderPlaced](../../index.md#schemas) | - | - | - |
-| OrderApproved | event | no | published-language | Order approved (status=approved); Inventory and Fulfilment both react | [OrderId](../../index.md#schemas) | - | - | - |
-| OrderDelivered | event | no | published-language | Order delivered (status=delivered) | [OrderId](../../index.md#schemas) | - | - | - |
-| OrderDeleted | event | no | published-language | Order deleted via DELETE /store/order/{orderId} | [OrderId](../../index.md#schemas) | - | - | - |
-| ApproveOrder | operation | yes | - | Approve a placed order once the pet is available | [OrderId](../../index.md#schemas) | - | OrderApproved | - |
-| DeliverOrder | operation | yes | - | Mark an approved order as delivered; run by OrderApp when Fulfilment reports the shipment arrived | [OrderId](../../index.md#schemas) | - | OrderDelivered | - |
+| Name | Type | Internal | Pattern | Description | Schema | Returns | Rejects with | Raises | Guarded by |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| OrderPlaced | event | no | published-language | Order created (status=placed) | [OrderPlaced](../../index.md#schemas) | - | - | - | - |
+| OrderApproved | event | no | published-language | Order approved (status=approved); Inventory and Fulfilment both react | [OrderId](../../index.md#schemas) | - | - | - | - |
+| OrderDelivered | event | no | published-language | Order delivered (status=delivered) | [OrderId](../../index.md#schemas) | - | - | - | - |
+| OrderDeleted | event | no | published-language | Order deleted via DELETE /store/order/{orderId} | [OrderId](../../index.md#schemas) | - | - | - | - |
+| ApproveOrder | operation | yes | - | Approve a placed order once the pet is available | [OrderId](../../index.md#schemas) | - | - | OrderApproved | - |
+| DeliverOrder | operation | yes | - | Mark an approved order as delivered; run by OrderApp when Fulfilment reports the shipment arrived | [OrderId](../../index.md#schemas) | - | - | OrderDelivered | - |
 
 
 ## Consumes

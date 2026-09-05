@@ -24,11 +24,11 @@ Petstore user record, as the legacy API shapes it
 > No invariants.
 
 ## Provides
-| Name | Type | Internal | Pattern | Description | Schema | Returns | Raises | Guarded by |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| UserRegistered | event | no | published-language | New user created | - | - | - | - |
-| UserLoggedIn | event | no | published-language | Login via /user/login | - | - | - | - |
-| UserLoggedOut | event | no | published-language | Logout via /user/logout | - | - | - | - |
+| Name | Type | Internal | Pattern | Description | Schema | Returns | Rejects with | Raises | Guarded by |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| UserRegistered | event | no | published-language | New user created | - | - | - | - | - |
+| UserLoggedIn | event | no | published-language | Login via /user/login | - | - | - | - | - |
+| UserLoggedOut | event | no | published-language | Logout via /user/logout | - | - | - | - | - |
 
 
 ## Consumes

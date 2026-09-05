@@ -3,7 +3,8 @@
  * shows the template full rather than empty: the Pet aggregate has a root,
  * invariants with targets, internal and published consumables; Order App both
  * provides and consumes; PetApp's ReservePetForOrder is the one operation
- * carrying a disposition and a comment; GetPetSummary is the one operation that declares
+ * carrying a disposition and a comment, and the one that names what it refuses
+ * with; GetPetSummary is the one operation that declares
  * what it returns; PetId is carried by eight consumables; and Pet is
  * the one glossary word two contexts both define.
  *
@@ -29,6 +30,8 @@ export const PETSTORE_REFS = {
 	entity: "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet",
 	valueobject: "#/boundedcontexts/catalog_bc/valueobjects/category",
 	service: "#/boundedcontexts/sales_bc/services/order_app",
+	// ReservePetForOrder is also the one operation that names what it refuses
+	// with, so it is the only route whose Rejects with section draws.
 	operation:
 		"#/boundedcontexts/catalog_bc/services/pet_app/provides/reserve_pet_for_order",
 	// GetPetSummary is the one operation asked with one schema and answered
@@ -40,6 +43,8 @@ export const PETSTORE_REFS = {
 	schema: "#/boundedcontexts/catalog_bc/schemas/pet_id",
 	// PetSummary is the one schema nothing sends: it exists only as an answer.
 	returnedSchema: "#/boundedcontexts/catalog_bc/schemas/pet_summary",
+	// PetUnavailable is the one schema that exists only as a refusal.
+	rejectionSchema: "#/boundedcontexts/catalog_bc/schemas/pet_unavailable",
 	policy: "#/boundedcontexts/sales_bc/policies/approve_when_pet_available",
 	invariant:
 		"#/boundedcontexts/sales_bc/aggregates/order/invariants/deliver_only_when_approved",

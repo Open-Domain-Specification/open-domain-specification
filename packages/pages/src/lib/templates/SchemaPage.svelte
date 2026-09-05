@@ -36,11 +36,15 @@ const columns: Column[] = [
 ];
 
 /**
- * Which end of the exchange this shape sits on. An operation may both take and
- * answer with one schema, so the two are not exclusive.
+ * Which end of the exchange this shape sits on. An operation may take, answer
+ * with and refuse with one schema, so the three are not exclusive.
  */
 const directionOf = (c: (typeof carriers)[number]) =>
-	[c.schema === s ? "payload" : "", c.returns === s ? "returns" : ""]
+	[
+		c.schema === s ? "payload" : "",
+		c.returns === s ? "returns" : "",
+		c.rejects.includes(s) ? "rejects with" : "",
+	]
 		.filter(Boolean)
 		.join(", ");
 </script>
@@ -62,7 +66,7 @@ const directionOf = (c: (typeof carriers)[number]) =>
 <Section
 	id="carriers"
 	title="Carried by"
-	lead="Consumables that depend on this shape, whether they send it or answer with it. A command and the event it raises often share one."
+	lead="Consumables that depend on this shape, whether they send it, answer with it or refuse with it. A command and the event it raises often share one."
 	count={carriers.length}
 	problems={problemsUnder(model, s.ref)}
 >

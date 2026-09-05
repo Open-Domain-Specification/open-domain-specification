@@ -134,6 +134,7 @@ describe("Tactical design", () => {
 			  "name": "Order Placed",
 			  "pattern": "published-language",
 			  "raises": undefined,
+			  "rejects": undefined,
 			  "returns": undefined,
 			  "schema": {
 			    "$ref": "#/boundedcontexts/ordering/schemas/order_summary",

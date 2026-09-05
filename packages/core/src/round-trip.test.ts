@@ -116,6 +116,22 @@ describe("schema round-trip", () => {
 		expect(raiseInvoice.toSchema().returns).toBeUndefined();
 	});
 
+	it("re-links an operation to every shape it refuses with", () => {
+		const placeOrder = rebuilt.getConsumableByRefOrThrow(
+			"#/boundedcontexts/ordering_bc/services/order_app/provides/place_order",
+		);
+		expect(placeOrder.rejects.map((it) => it.ref)).toEqual([
+			"#/boundedcontexts/ordering_bc/schemas/order_refused",
+		]);
+		// An operation that refuses with nothing worth naming keeps the field
+		// absent rather than carrying an empty array through the schema.
+		const raiseInvoice = rebuilt.getConsumableByRefOrThrow(
+			"#/boundedcontexts/invoicing_bc/aggregates/invoice/provides/raise_invoice",
+		);
+		expect(raiseInvoice.rejects).toEqual([]);
+		expect(raiseInvoice.toSchema().rejects).toBeUndefined();
+	});
+
 	it("keeps attributes on entities and value objects", () => {
 		const order = rebuilt.getEntityByRefOrThrow(
 			"#/boundedcontexts/ordering_bc/aggregates/order/entities/order",

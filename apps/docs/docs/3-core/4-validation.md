@@ -38,6 +38,7 @@ severity, a rule id, a message and the ref of the element concerned.
 | `domain-service-internal` | error | a domain service's operations declare no upstream role and are consumed only inside their own context |
 | `schema-context` | error | a schema named by a consumable's payload, by its `returns` or by a nested attribute belongs to the naming element's own context, or to one it shares a kernel with |
 | `returns-on-operation` | error | only an operation declares `returns`; an event has no caller to answer |
+| `rejects-on-operation` | error | only an operation declares `rejects`; an event is a fact that already happened, so it has nothing left to refuse |
 | `consumable-kind` | error | policies react to events and issue operations; only operations raise, and only events |
 | `policy-complete` | warning | a policy reacts to at least one event and issues at least one operation |
 | `reaction-cycle` | warning | the reactions form no cycle: no operation raises an event whose policy issues an operation that leads back to it |

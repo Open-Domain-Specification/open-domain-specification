@@ -198,6 +198,14 @@ export interface ConsumableSchema {
 	 * naming, which is honest for commands. Never valid on an event.
 	 */
 	returns?: { $ref: string };
+	/**
+	 * For operations: the shapes the operation answers with when it refuses,
+	 * each one of the context's schemas. A rejection is not an event, because
+	 * nothing happened, and not a transport error, which stays outside the
+	 * model. Absent means the operation either always succeeds or refuses
+	 * without a domain-meaningful shape. Never valid on an event.
+	 */
+	rejects?: { $ref: string }[];
 	/** For operations: the event consumables this operation may raise. */
 	raises?: { $ref: string }[];
 	/** Grounded statements about the real system behind this consumable. */

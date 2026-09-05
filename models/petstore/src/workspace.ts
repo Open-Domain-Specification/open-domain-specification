@@ -282,6 +282,18 @@ petSummarySchema.addAttribute("status", {
 	valueobject: petStatusVO,
 });
 
+// A rejection shape: what ReservePetForOrder answers with when it will not
+// hold the pet. Nothing happened, so it is not an event, and Sales needs the
+// status to know whether to wait or give up (decision 25).
+const petUnavailableSchema = catalogBC.addSchema("PetUnavailable", {
+	description: "Why the pet could not be held: it is already pending or sold",
+});
+petUnavailableSchema.addAttribute("petId", { type: "int64", identity: true });
+petUnavailableSchema.addAttribute("status", {
+	type: "PetStatus",
+	valueobject: petStatusVO,
+});
+
 // Events are past-tense facts. published-language says other contexts may
 // rely on their shape.
 const petRegistered = petAgg.provides("PetRegistered", {
@@ -428,6 +440,7 @@ const reservePetForOrder = petApp
 		type: "operation",
 		pattern: "open-host-service",
 		schema: petIdSchema,
+		rejects: [petUnavailableSchema],
 		disposition: "refactor",
 		comments: [
 			{

@@ -7,6 +7,9 @@ const ATTRIBUTE_REF = `${ORDER_REF}/entities/order/attributes/status`;
 /** The one petstore operation asked with one schema and answered with another. */
 const GET_PET_SUMMARY_REF =
 	"#/boundedcontexts/catalog_bc/services/pet_app/provides/get_pet_summary";
+/** The one petstore operation that names the shape it refuses with. */
+const RESERVE_PET_FOR_ORDER_REF =
+	"#/boundedcontexts/catalog_bc/services/pet_app/provides/reserve_pet_for_order";
 
 test.beforeEach(async ({ page }) => {
 	await servePetstore(page);
@@ -170,4 +173,44 @@ test("a query shows what it is asked with and what it answers with, and the retu
 	await expect(carriers).toHaveCount(1);
 	await expect(carriers).toContainText("GetPetSummary");
 	await expect(carriers).toContainText("returns");
+});
+
+test("an operation shows what it refuses with, and the rejection schema links back", async ({
+	page,
+}) => {
+	await page.evaluate((ref) => {
+		location.hash = ref;
+	}, RESERVE_PET_FOR_ORDER_REF);
+
+	await expect(page.locator("main h1")).toContainText("ReservePetForOrder");
+	await expect(page.locator("main h1 .detail")).toHaveText("Operation");
+
+	// A PetId goes in and nothing comes back on success, so the facts name the
+	// payload and the refusal and no Returns between them.
+	const facts = page.locator("main dl").first();
+	await expect(facts).toContainText("Payload");
+	await expect(facts).not.toContainText("Returns");
+	await expect(facts).toContainText("Rejects with");
+	await expect(page.locator("#payload tbody")).toContainText("petId");
+	const rejects = page.locator("#rejects");
+	await rejects.scrollIntoViewIfNeeded();
+	// One subsection per rejection, each headed by the schema and followed by
+	// its own attributes: the status is what says why the pet was not held.
+	await expect(rejects.locator("h3")).toHaveCount(1);
+	await expect(rejects.locator("h3")).toContainText("PetUnavailable");
+	await expect(rejects.locator("tbody")).toContainText("status");
+
+	// The Rejects with fact links to the schema, whose carriers table names this
+	// operation back and says the shape only ever travels as a refusal.
+	await page
+		.locator("main dd")
+		.filter({ hasText: "PetUnavailable" })
+		.getByRole("link")
+		.first()
+		.click();
+	await expect(page.locator("main h1")).toContainText("PetUnavailable");
+	const carriers = page.locator("#carriers tbody tr");
+	await expect(carriers).toHaveCount(1);
+	await expect(carriers).toContainText("ReservePetForOrder");
+	await expect(carriers).toContainText("rejects with");
 });

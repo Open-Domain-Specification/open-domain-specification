@@ -222,7 +222,7 @@
 
 ## `schema-context` (error)
 
-**Requires:** A schema named by a consumable's payload, by its returns or by a nested attribute belongs to the naming element's own context, or to one it shares a kernel with.
+**Requires:** A schema named by a consumable's payload, by its returns, by one of its rejections or by a nested attribute belongs to the naming element's own context, or to one it shares a kernel with.
 
 **Why it matters:** The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A nested schema is the same borrowing one level down. A shared kernel is where two teams have said that in the model and accepted the price, so it is the one place the borrowing is allowed.
 
@@ -235,6 +235,14 @@
 **Why it matters:** returns names what a caller gets back from a request. An event is a fact already published to whoever is listening; there is no caller to answer, so a returns on one describes an exchange that does not happen.
 
 **Usual fix:** Drop returns from the event, or change the consumable's type to operation if it really is a request.
+
+## `rejects-on-operation` (error)
+
+**Requires:** Only an operation declares rejections; an event never does.
+
+**Why it matters:** A rejection is the shape an operation answers with when it refuses: nothing happened and the caller is told why. An event is a fact that already happened and is announced to whoever is listening, so it has nobody to refuse and nothing left to refuse them.
+
+**Usual fix:** Drop rejects from the event, or change the consumable's type to operation if it really is a request that can be refused.
 
 ## `consumable-kind` (error)
 

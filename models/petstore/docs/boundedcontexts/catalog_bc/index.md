@@ -53,6 +53,7 @@ Open-host service for /pet endpoints
 | PetId | Identifies one pet; shared by every consumable that only needs the id | **petId**: `int64` | PetUpdated, PetDeleted, ReservePet, MarkPetSold, GetPetById, UploadImage, DeletePet, GetPetSummary, ReservePetForOrder, MarkPetSoldForOrder |
 | Pet | The full pet resource, as GET /pet/{petId} answers with it | **petId**: `int64`, name: `string`, category: `Category`, photoUrls: `PhotoUrl[]`, tags: `Tag[]`, status: `PetStatus` | FindPetsByStatus, GetPetById |
 | PetSummary | The slim read of a pet other contexts are allowed to hold | **petId**: `int64`, name: `string`, status: `PetStatus` | GetPetSummary |
+| PetUnavailable | Why the pet could not be held: it is already pending or sold | **petId**: `int64`, status: `PetStatus` | ReservePetForOrder |
 
 
 ## Policies

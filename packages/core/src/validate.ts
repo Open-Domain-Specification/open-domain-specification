@@ -1270,7 +1270,7 @@ const domainServiceInternal: Rule = (workspace) =>
 
 /**
  * A payload shape is its own context's, wherever it is named: on a consumable
- * that sends or answers with it, and on an attribute that nests it (decision
+ * that sends, answers or refuses with it, and on an attribute that nests it (decision
  * 18). The exception is a context this one shares a kernel with: that
  * relationship is the declaration that the two keep part of one model between
  * them, and it is the only place a payload may be borrowed (decision 16).
@@ -1312,6 +1312,15 @@ const schemaContext: Rule = (workspace) => {
 						ref: c.ref,
 					});
 				}
+				for (const rejection of c.rejects) {
+					if (!borrowed(rejection)) continue;
+					diagnostics.push({
+						severity: "error",
+						rule: "schema-context",
+						message: `"${c.name}" rejects with schema "${rejection.name}" from "${rejection.boundedcontext.name}"; a payload belongs to the context that publishes it`,
+						ref: c.ref,
+					});
+				}
 				if (c.internal && c.pattern) {
 					diagnostics.push({
 						severity: "warning",
@@ -1340,6 +1349,25 @@ const returnsOnOperation: Rule = (workspace) => {
 						ref: c.ref,
 					});
 				}
+			}
+		}
+	}
+	return diagnostics;
+};
+
+/** Only an operation is refused, so only an operation declares rejections. */
+const rejectsOnOperation: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const bc of workspace.boundedcontexts.values()) {
+		for (const p of [...bc.aggregates.values(), ...bc.services.values()]) {
+			for (const c of p.consumables.values()) {
+				if (c.type !== "event" || !c.rejects.length) continue;
+				diagnostics.push({
+					severity: "error",
+					rule: "rejects-on-operation",
+					message: `"${c.name}" is an event but rejects with ${c.rejects.map((it) => `"${it.name}"`).join(", ")}; an event is a fact that already happened, so there is nothing left to refuse`,
+					ref: c.ref,
+				});
 			}
 		}
 	}
@@ -1793,7 +1821,7 @@ const RULES: CataloguedRule[] = [
 		rule: "schema-context",
 		severities: ["error"],
 		summary:
-			"A schema named by a consumable's payload, by its returns or by a nested attribute belongs to the naming element's own context, or to one it shares a kernel with.",
+			"A schema named by a consumable's payload, by its returns, by one of its rejections or by a nested attribute belongs to the naming element's own context, or to one it shares a kernel with.",
 		why: "The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A nested schema is the same borrowing one level down. A shared kernel is where two teams have said that in the model and accepted the price, so it is the one place the borrowing is allowed.",
 		fix: "Move or copy the schema into the publishing context and point the consumable or attribute at that one, or declare the shared kernel if the two contexts really do keep that shape between them.",
 		check: schemaContext,
@@ -1805,6 +1833,14 @@ const RULES: CataloguedRule[] = [
 		why: "returns names what a caller gets back from a request. An event is a fact already published to whoever is listening; there is no caller to answer, so a returns on one describes an exchange that does not happen.",
 		fix: "Drop returns from the event, or change the consumable's type to operation if it really is a request.",
 		check: returnsOnOperation,
+	},
+	{
+		rule: "rejects-on-operation",
+		severities: ["error"],
+		summary: "Only an operation declares rejections; an event never does.",
+		why: "A rejection is the shape an operation answers with when it refuses: nothing happened and the caller is told why. An event is a fact that already happened and is announced to whoever is listening, so it has nobody to refuse and nothing left to refuse them.",
+		fix: "Drop rejects from the event, or change the consumable's type to operation if it really is a request that can be refused.",
+		check: rejectsOnOperation,
 	},
 	{
 		rule: "consumable-kind",

@@ -135,6 +135,14 @@ export function edgeCaseModel(): Model {
 		description: "Only ever returned, never sent.",
 	});
 	schemaAnswer.addAttribute("Result", { type: "string" });
+	const schemaRefused = bcMain.addSchema("Refusal Schema", {
+		description: "Only ever refused with, never sent or returned.",
+	});
+	schemaRefused.addAttribute("Reason", { type: "string" });
+	const schemaOverLimit = bcMain.addSchema("Over Limit Schema", {
+		description: "The second of two ways the same operation says no.",
+	});
+	schemaOverLimit.addAttribute("Limit", { type: "int" });
 
 	const opSilent = aggNoRoot.addConsumable("Silent Operation", {
 		type: "operation",
@@ -149,6 +157,15 @@ export function edgeCaseModel(): Model {
 		description: "Asked with one shape and answered with another.",
 		schema: schemaEmpty,
 		returns: schemaAnswer,
+	});
+	// Two rejections on one operation, again on an aggregate rather than a
+	// service: the subsection has to name both and the consumable page has to
+	// draw a table for each. No reference model refuses in two ways yet.
+	aggNoRoot.addConsumable("Refusing Operation", {
+		type: "operation",
+		description: "Says no in two different shapes.",
+		schema: schemaEmpty,
+		rejects: [schemaRefused, schemaOverLimit],
 	});
 	aggNoRoot.addConsumable("Orphan Event", {
 		type: "event",

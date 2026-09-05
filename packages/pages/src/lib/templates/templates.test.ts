@@ -215,6 +215,33 @@ describe("every template, through the shipped route", () => {
 		).not.toContain("Returns");
 	});
 
+	it("ConsumablePage: an operation that names a refusal draws Rejects with as a fact and a table per rejection", () => {
+		const container = draw(PETSTORE_REFS.operation);
+		expect(
+			[...container.querySelectorAll("dt")].map((t) => t.textContent),
+		).toContain("Rejects with");
+		const rejects = container.querySelector("#rejects");
+		expect(rejects).toBeInTheDocument();
+		// One subsection per rejection, each headed by the schema it names.
+		const headings = [...(rejects?.querySelectorAll("h3") ?? [])].map((h) =>
+			h.textContent?.trim(),
+		);
+		expect(headings).toHaveLength(1);
+		expect(headings[0]).toContain("PetUnavailable");
+		// The refusal's own attributes, not the payload's: the payload is a
+		// bare PetId, the refusal adds the status that says why.
+		expect(rejects?.textContent).toContain("status");
+		expect(rejects?.querySelectorAll("table")).toHaveLength(1);
+	});
+
+	it("ConsumablePage: a query that refuses with nothing draws no Rejects with anywhere", () => {
+		const container = draw(PETSTORE_REFS.query);
+		expect(container.querySelector("#rejects")).not.toBeInTheDocument();
+		expect(
+			[...container.querySelectorAll("dt")].map((t) => t.textContent),
+		).not.toContain("Rejects with");
+	});
+
 	it("ConsumablePage: an event lists what raises it and the policies that react", () => {
 		const container = draw(PETSTORE_REFS.event);
 		expect(container.querySelector("#raised")).toBeInTheDocument();
@@ -249,6 +276,16 @@ describe("every template, through the shipped route", () => {
 		expect(container.textContent).not.toContain(
 			"Nothing carries this schema yet",
 		);
+	});
+
+	it("SchemaPage: a schema that only ever comes back as a refusal names the operation that rejects with it", () => {
+		const container = draw(PETSTORE_REFS.rejectionSchema);
+		const rows = [...container.querySelectorAll("#carriers tbody tr")].map(
+			(r) => [...r.querySelectorAll("td")].map((c) => c.textContent?.trim()),
+		);
+		expect(rows).toHaveLength(1);
+		expect(rows[0][0]).toContain("ReservePetForOrder");
+		expect(rows[0][2]).toBe("rejects with");
 	});
 
 	it("PolicyPage: when and then are tables, and only then names the kind", () => {

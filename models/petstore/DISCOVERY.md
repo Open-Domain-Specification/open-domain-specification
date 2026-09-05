@@ -68,6 +68,8 @@ without a policy naming another context's operation — decision 17), plan dispa
 approval, and deliver the order in Sales when Fulfilment reports delivery through Sales'
 own `ConfirmDelivery` open host, which Fulfilment's policy calls (a policy names only its
 own context's operations, decision 17).
+`ReservePetForOrder` rejects with `PetUnavailable` when the pet is already pending or sold:
+nothing happened, so Sales is told the status rather than sent an event.
 
 ## Validation
 

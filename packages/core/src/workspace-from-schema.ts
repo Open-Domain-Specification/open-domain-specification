@@ -38,6 +38,7 @@ function addProvides(
 			raises: _raises,
 			schema: schemaRef,
 			returns: returnsRef,
+			rejects: rejectsRefs,
 			...rest
 		} = consumableSchema;
 		provider.addConsumable(consumableSchema.name, {
@@ -45,6 +46,9 @@ function addProvides(
 			id,
 			schema: schemaRef && workspace.getSchemaByRefOrThrow(schemaRef.$ref),
 			returns: returnsRef && workspace.getSchemaByRefOrThrow(returnsRef.$ref),
+			rejects: rejectsRefs?.map(({ $ref }) =>
+				workspace.getSchemaByRefOrThrow($ref),
+			),
 		});
 	}
 }

@@ -336,6 +336,8 @@ describe("Visitor", () => {
 		// The nested shape is a schema of the context in its own right, so the
 		// visitor reaches it there rather than through the attribute that names it.
 		expect(visitor.visitedDataSchema).toHaveBeenCalledWith(f.orderLineShape);
-		expect(visitor.visitedDataSchema).toHaveBeenCalledTimes(3);
+		// The shape Place Order refuses with is a schema of the context too.
+		expect(visitor.visitedDataSchema).toHaveBeenCalledWith(f.orderRefused);
+		expect(visitor.visitedDataSchema).toHaveBeenCalledTimes(4);
 	});
 });

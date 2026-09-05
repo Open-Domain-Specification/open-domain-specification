@@ -476,6 +476,54 @@ describe("Workspace.validate", () => {
 		);
 	});
 
+	it("keeps the shapes an operation refuses with inside the publishing context", () => {
+		const ws = emptyWorkspace();
+		const a = ws.addBoundedContext("A", { description: "" });
+		const b = ws.addBoundedContext("B", { description: "" });
+		const foreign = a.addSchema("Foreign");
+		const own = b.addSchema("Own");
+		const svc = b.addService("S", { description: "", type: "application" });
+		// One rejection is borrowed and one is not, so only the borrowed one trips.
+		svc.provides("Borrows", {
+			description: "",
+			type: "operation",
+			rejects: [own, foreign],
+		});
+		const rules = ws.validate().filter((d) => d.rule === "schema-context");
+		expect(rules.map((d) => d.message)).toEqual([
+			expect.stringContaining(
+				'"Borrows" rejects with schema "Foreign" from "A"',
+			),
+		]);
+	});
+
+	it("rejects a rejection on an event, and allows one on an operation", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const refusal = bc.addSchema("Refusal");
+		const overLimit = bc.addSchema("Over Limit");
+		const svc = bc.addService("S", { description: "", type: "application" });
+		svc.provides("Happened", {
+			description: "",
+			type: "event",
+			rejects: [refusal, overLimit],
+		});
+		svc.provides("Ask", {
+			description: "",
+			type: "operation",
+			rejects: [refusal],
+		});
+		const rules = ws
+			.validate()
+			.filter((d) => d.rule === "rejects-on-operation");
+		expect(rules).toHaveLength(1);
+		expect(rules[0].severity).toBe("error");
+		// Every rejection the event names is listed, so the fix is one edit.
+		expect(rules[0].message).toContain(
+			'"Happened" is an event but rejects with "Refusal", "Over Limit"',
+		);
+	});
+
 	it("checks consumable kinds on policies and raises", () => {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("BC", { description: "" });

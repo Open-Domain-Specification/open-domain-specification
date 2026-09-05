@@ -84,6 +84,16 @@ nothing worth naming, which is honest for most commands; an event never
 declares one, because a fact announced to whoever is listening has no caller
 to answer.
 
+An operation may also list the schemas it `rejects` with: the shapes it
+answers with when it refuses. A declined payment, a transfer over the daily
+limit, a reservation the stock will not cover — nothing happened, so none of
+these is an event, and a transport error stays outside the model. Each
+rejection is a schema of the provider's own context, checked by
+`schema-context` exactly as `schema` and `returns` are. Leave `rejects` off
+when the operation always succeeds or refuses without a shape worth naming,
+which is honest for most commands; an event never lists one, because a fact
+that already happened has nothing left to refuse.
+
 A consumable is published by default and carries the upstream `pattern` it
 is offered under. Mark it `internal: true` when it is raised or handled
 inside its own context and never offered to others: an internal operation is

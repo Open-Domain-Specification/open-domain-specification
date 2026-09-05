@@ -135,6 +135,33 @@ describe("the tactical templates on the alternate branches", () => {
 		).not.toContain("Returns");
 	});
 
+	it("AggregatePage: an operation an aggregate provides names every shape it refuses with, and one that refuses with nothing shows no Rejects with", () => {
+		const { container } = render(Harness, {
+			model,
+			ref: aggregateRef("main_context", "rootless_aggregate").$ref,
+		});
+		const subsectionFor = (name: string) =>
+			[...container.querySelectorAll(".subsection")].find((s) =>
+				s.querySelector("h3")?.textContent?.includes(name),
+			);
+
+		const refusing = subsectionFor("Refusing Operation");
+		expect(
+			[...(refusing?.querySelectorAll("dt") ?? [])].map((t) => t.textContent),
+		).toContain("Rejects with");
+		// Both refusals are named, comma-joined, the way Raises lists its events.
+		expect(refusing?.textContent).toContain("Refusal Schema");
+		expect(refusing?.textContent).toContain("Over Limit Schema");
+
+		// Answering Operation returns a shape but refuses with none, so the row
+		// is absent rather than empty.
+		expect(
+			[
+				...(subsectionFor("Answering Operation")?.querySelectorAll("dt") ?? []),
+			].map((t) => t.textContent),
+		).not.toContain("Rejects with");
+	});
+
 	it("AggregatePage: an aggregate with nothing in it says what would fill each section", () => {
 		const text = textOf(aggregateRef("main_context", "empty_aggregate").$ref);
 		expect(text).toContain("No entities. An aggregate needs a root entity.");
@@ -280,6 +307,24 @@ describe("the tactical templates on the alternate branches", () => {
 		// One row, both directions on it, rather than the consumable listed twice.
 		expect(text).toContain("payload, returns");
 		expect(text.split("Echoing Operation")).toHaveLength(2);
+	});
+
+	it("ConsumablePage: an operation that refuses in two shapes draws a table for each", () => {
+		const text = textOf(
+			`${aggregateRef("main_context", "rootless_aggregate").$ref}/provides/refusing_operation`,
+		);
+		expect(text).toContain("Refusal Schema");
+		expect(text).toContain("Over Limit Schema");
+		// The attributes of both, not just the names in the fact row.
+		expect(text).toContain("Reason");
+		expect(text).toContain("Limit");
+	});
+
+	it("SchemaPage: a shape that is only ever refused with says so, rather than reading as carried by nothing", () => {
+		const text = textOf(schemaRef("main_context", "refusal_schema").$ref);
+		expect(text).toContain("Refusing Operation");
+		expect(text).toContain("rejects with");
+		expect(text).not.toContain("Nothing carries this schema yet");
 	});
 
 	it("TermPage: not modelled, and a word only one context uses", () => {

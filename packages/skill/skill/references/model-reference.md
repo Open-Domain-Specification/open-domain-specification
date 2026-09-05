@@ -116,6 +116,7 @@ Represents a consumable in the Open Domain Specification (ODS).
 | `name` | string | yes |  |
 | `pattern` | "open-host-service" | "published-language" | no | The upstream role this consumable is offered under. Absent on internal consumables. |
 | `raises` | array of `{ "$ref": string }` | no | For operations: the event consumables this operation may raise. |
+| `rejects` | array of `{ "$ref": string }` | no | For operations: the shapes the operation answers with when it refuses, each one of the context's schemas. A rejection is not an event, because nothing happened, and not a transport error, which stays outside the model. Absent means the operation either always succeeds or refuses without a domain-meaningful shape. Never valid on an event. |
 | `returns` | `{ "$ref": string }` | no | For operations: the payload shape the caller gets back, one of the context's schemas. Absent means the operation returns nothing worth naming, which is honest for commands. Never valid on an event. |
 | `schema` | `{ "$ref": string }` | no | The payload the caller sends, one of the context's schemas. |
 | `type` | "event" | "operation" | yes |  |
