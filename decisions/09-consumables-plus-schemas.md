@@ -73,7 +73,7 @@ const place = orderApp.provides("Place Order", {
 	schema: orderRequest,
 }).raises(placed);
 const reserved = stock.provides("Stock Reserved", { type: "event", internal: true });
-inventory.addPolicy("Reserve on order", { description }).on(placed).then(reserve);
+inventory.addPolicy("Reserve on order", { description }).on(placed).issues(reserve);
 ```
 
 ## Consequences

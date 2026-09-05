@@ -308,7 +308,7 @@ export function makeRichTestWs() {
 			description: "When an order is placed, raise an invoice",
 		})
 		.on(orderPlaced)
-		.then(raiseInvoice);
+		.issues(raiseInvoice);
 	// The second half of the invoicing lifecycle, and the one thing a policy
 	// cannot express: the process waits from the moment an invoice is raised
 	// until the customer has been sent it, and knows which fact ends it
@@ -331,7 +331,7 @@ export function makeRichTestWs() {
 				"From the invoice being raised to the customer having it: it holds the invoice while the send is attempted, and retries are its own business",
 		})
 		.starts(invoiceRaised)
-		.then(sendInvoice)
+		.issues(sendInvoice)
 		.ends(invoiceSent);
 	const invoiceApp = invoicingBc.addService("Invoice App", {
 		description: "Invoice application service",

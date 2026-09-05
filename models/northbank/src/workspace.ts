@@ -647,7 +647,7 @@ customerBC
 	})
 	.starts(onboardingStarted)
 	.on(partyMatched)
-	.then(screenCustomer, holdOnboarding)
+	.issues(screenCustomer, holdOnboarding)
 	.ends(customerVerified);
 
 /* =======================
@@ -1125,7 +1125,7 @@ accountsBC
 		description: "Every posting to an account recomputes its available balance",
 	})
 	.on(entryPosted)
-	.then(updateBalance);
+	.issues(updateBalance);
 
 /* =======================
    PAYMENTS HUB
@@ -1472,7 +1472,7 @@ const instructionLifecycle = paymentsBC
 	})
 	.starts(paymentInitiated)
 	.on(schemeSettlementConfirmed, schemeRejected)
-	.then(sendToScheme, confirmSettlement, rejectPayment, postSettlement)
+	.issues(sendToScheme, confirmSettlement, rejectPayment, postSettlement)
 	.ends(paymentSettled, paymentRejected);
 
 /* =======================
@@ -1617,7 +1617,7 @@ fraudBC
 		description: "Every flag becomes a case with the alert attached",
 	})
 	.on(transactionFlagged)
-	.then(openCase);
+	.issues(openCase);
 
 fraudBC.addTerm("Alert", {
 	definition: "One flagged transaction and its score",
@@ -1648,7 +1648,7 @@ const scoreInstruction = paymentsApp.provides("ScoreInstruction", {
 // this section.
 instructionLifecycle
 	.on(transactionCleared, transactionFlagged)
-	.then(scoreInstruction, submitPayment);
+	.issues(scoreInstruction, submitPayment);
 // Accounts freezes when a case opens.
 accountServicing.consumes(fraudCaseOpened, {
 	pattern: "anti-corruption-layer",
@@ -1658,7 +1658,7 @@ accountsBC
 		description: "An opened case freezes the account the same second",
 	})
 	.on(fraudCaseOpened)
-	.then(freezeAccount);
+	.issues(freezeAccount);
 
 /* =======================
    CARDS
@@ -1870,7 +1870,7 @@ cardsBC
 		description: "A flag on a card-channel transaction blocks the card",
 	})
 	.on(transactionFlagged)
-	.then(blockCard);
+	.issues(blockCard);
 fraudApp.consumes(cardAuthorised, { pattern: "anti-corruption-layer" });
 // DISCOVERY: Accounts Team lead. "Our balance is ledger balance less pending
 // card authorisations": Accounts must hear every authorisation to hold it.
@@ -1881,7 +1881,7 @@ accountsBC
 			"Every approved authorisation places a hold on its account the same second, so the available balance is what the merchant has not yet captured",
 	})
 	.on(cardAuthorised)
-	.then(placeHold);
+	.issues(placeHold);
 
 cardsBC.addTerm("PAN", {
 	definition: "The card number; held as a token and the last four digits",
@@ -2160,14 +2160,14 @@ lendingBC
 		description: "A missed installment triggers the arrears notice",
 	})
 	.on(installmentMissed)
-	.then(arrearsNoticeIssued);
+	.issues(arrearsNoticeIssued);
 
 lendingBC
 	.addPolicy("Disburse on signature", {
 		description: "A signed agreement is disbursed",
 	})
 	.on(agreementSigned)
-	.then(disburse);
+	.issues(disburse);
 lendingApp.consumes(postEntry, { pattern: "anti-corruption-layer" });
 // Lending's own step, which is what the policy names (decision 17).
 const postDisbursement = lendingApp.provides("PostDisbursement", {
@@ -2182,7 +2182,7 @@ lendingBC
 			"Disbursement is a ledger entry: debit loan book, credit the account",
 	})
 	.on(loanDisbursed)
-	.then(postDisbursement);
+	.issues(postDisbursement);
 lendingApp.consumes(getCustomer, {
 	pattern: "anti-corruption-layer",
 	by: [submitApplication],
@@ -2351,13 +2351,13 @@ lendingBC
 		description: "Every submitted application is sent for a decision",
 	})
 	.on(applicationSubmitted)
-	.then(requestDecision);
+	.issues(requestDecision);
 lendingBC
 	.addPolicy("Record decision", {
 		description: "The outcome and reasons are stored on the application",
 	})
 	.on(decisionMade)
-	.then(recordDecision);
+	.issues(recordDecision);
 
 decisioningBC.addTerm("Scorecard", {
 	definition: "The bank's own credit model",
@@ -2459,7 +2459,7 @@ reportingBC
 			"Ledger postings, account openings and disbursements each add to a line as they happen",
 	})
 	.on(entryPosted, accountOpened, loanDisbursed)
-	.then(accumulateLine);
+	.issues(accumulateLine);
 
 reportingBC.addTerm("Return", {
 	definition:
@@ -2563,7 +2563,7 @@ channelsBC
 			"A withdrawn marketing consent stops outbound contact the same day; the fix for the fine",
 	})
 	.on(consentWithdrawn)
-	.then(suppressMarketing);
+	.issues(suppressMarketing);
 
 channelsBC.addTerm("Request", {
 	definition: "One customer ask tracked to an outcome",
@@ -2640,7 +2640,7 @@ ledgerBC
 		description: "Each line of the batch file becomes a ledger entry",
 	})
 	.on(nightlyBatchCompleted)
-	.then(importBatch);
+	.issues(importBatch);
 reportingApp.consumes(nightlyBatchCompleted, {
 	pattern: "anti-corruption-layer",
 });

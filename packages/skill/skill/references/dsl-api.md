@@ -25,8 +25,8 @@ independently of the name.
 | `BoundedContext` | `separateWaysFrom(other, options)` | separate ways |
 | `BoundedContext` | `addAggregate(name, { description })` | an aggregate |
 | `BoundedContext` | `addService(name, { type, description })` | a service; `type` is `"application" \| "domain"` |
-| `BoundedContext` | `addPolicy(name, { description })` | a policy; chain `.on(...events).then(...operations)` |
-| `BoundedContext` | `addProcess(name, { description, comments?, disposition? })` | a process: a reaction that holds state across events. Chain `.starts(...events).on(...events).then(...operations).ends(...events)`, or pass the four lists as attributes. `starts`, `on` and `ends` may name another context's events; `then` names operations of its own context, like a policy's |
+| `BoundedContext` | `addPolicy(name, { description, on?, issues? })` | a policy; chain `.on(...events).issues(...operations)`, or pass the two lists as attributes |
+| `BoundedContext` | `addProcess(name, { description, starts?, on?, issues?, ends?, comments?, disposition? })` | a process: a reaction that holds state across events. Chain `.starts(...events).on(...events).issues(...operations).ends(...events)`, or pass the four lists as attributes. `starts`, `on` and `ends` may name another context's events; `issues` names operations of its own context, like a policy's |
 | `BoundedContext` | `addTerm(name, { definition, aliases?, embodiedBy? })` | a glossary term; or chain `.embody(element)` |
 | `BoundedContext` | `addSchema(name, { description? })` | a payload schema; add fields with `addAttribute` |
 | `BoundedContext` | `addValueObject(name, { description, specialises? })` | a value object of this context; every aggregate in it may hold one. `specialises` is the value object this one is a kind of — one of this context's, or one it borrows over a `shared-kernel` |
@@ -52,5 +52,5 @@ RFC-002: `comments` is a list of `{ text, link? }`, where a link is
 written to JSON. Read one back with `dispositionOf(element)`, and list the intents
 nobody has documented with `intentsWithoutComments(workspace)`.
 
-`cardinality` is `"1" | "0..1" | "*" | "1..*"`. Chainable methods (`raises`, `on`, `then`,
+`cardinality` is `"1" | "0..1" | "*" | "1..*"`. Chainable methods (`raises`, `on`, `issues`,
 `constrains`, `embody`, `serves`, `ownedBy`) return their receiver.

@@ -443,15 +443,14 @@ describe("a process", () => {
 			description: "Waits for payment before it ships",
 			starts: [placed],
 			on: [paid],
-			// biome-ignore lint/suspicious/noThenProperty: "then" is the model's word for what a process issues, as it is on a policy
-			then: [ship],
+			issues: [ship],
 			ends: [shipped],
 		});
 		const chained = bc
 			.addProcess("The same, chained", { description: "" })
 			.starts(placed)
 			.on(paid)
-			.then(ship)
+			.issues(ship)
 			.ends(shipped);
 		for (const process of [declared, chained]) {
 			expect(process.startEvents).toEqual([placed]);
@@ -460,7 +459,7 @@ describe("a process", () => {
 			expect(process.endEvents).toEqual([shipped]);
 		}
 		// Naming the same consumable twice is the same statement, so it is kept once.
-		declared.starts(placed).on(paid).then(ship).ends(shipped);
+		declared.starts(placed).on(paid).issues(ship).ends(shipped);
 		expect(declared.startEvents).toEqual([placed]);
 		expect(declared.endEvents).toEqual([shipped]);
 		expect(declared.ref).toBe(
@@ -478,7 +477,7 @@ describe("a process", () => {
 			})
 			.starts(placed)
 			.on(paid)
-			.then(ship)
+			.issues(ship)
 			.ends(shipped);
 		const rebuilt = Workspace.fromSchema(
 			JSON.parse(JSON.stringify(ws.toSchema())),

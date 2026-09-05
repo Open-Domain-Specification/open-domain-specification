@@ -22,7 +22,7 @@ function makeWorkspace() {
 			description: "",
 		})
 		.raises(placed);
-	bc.addPolicy("Auto approve", { description: "" }).on(placed).then(approve);
+	bc.addPolicy("Auto approve", { description: "" }).on(placed).issues(approve);
 	return { ws, bc, order, placed };
 }
 
@@ -52,7 +52,7 @@ describe("flowMapToDigraph", () => {
 			.raises(shipped);
 		bc.addProcess("Order to shipment", { description: "" })
 			.starts(placed)
-			.then(ship)
+			.issues(ship)
 			.ends(shipped);
 		const dot = flowMapToDigraph(ODSFlowMap.fromBoundedContext(bc)).toDot();
 		expect(dot).toContain("Order to shipment");

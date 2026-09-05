@@ -452,7 +452,7 @@ describe("ODSFlowMap", () => {
 		ordering
 			.addPolicy("On paid", { description: "" })
 			.on(paid)
-			.then(askToDispatch);
+			.issues(askToDispatch);
 
 		const map = ODSFlowMap.fromWorkspace(ws);
 		expect(
