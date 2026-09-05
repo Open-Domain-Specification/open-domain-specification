@@ -44,14 +44,28 @@ export const IDENTITY_EDGE_LABEL = "«id»";
 export const EXTERNAL_STEREOTYPE = "«external system»";
 
 /**
+ * The stereotype a value object borrowed from another bounded context carries
+ * on the relation map. The holder reaches it over a shared kernel or as a
+ * conformist to an upstream, so the box is on this map as a dependency of ours
+ * and not as a class of ours (decision 16, third amendment).
+ */
+export const BORROWED_STEREOTYPE = "borrowed value object";
+
+/**
  * UML stereotype above a relation-map class name. A system nobody here owns
  * carries the same words on the relation map as on the context map: it is on
  * this map at all only because an identity attribute names it, and the box
  * has to say it is not one of ours (decision 28).
+ *
+ * A value object borrowed from another context says so for the same reason: it
+ * is drawn among this aggregate's classes but belongs to the kernel or the
+ * upstream whose cluster it sits in, and nobody here may change it (decision
+ * 16, third amendment).
  */
 export const STEREOTYPES: Record<ODSRelationMapNode["type"], string> = {
 	entity_root: "root entity",
 	entity: "entity",
 	valueobject: "value object",
+	foreign_valueobject: BORROWED_STEREOTYPE,
 	external_context: "external system",
 };

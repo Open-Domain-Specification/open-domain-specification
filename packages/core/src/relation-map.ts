@@ -5,7 +5,11 @@ import {
 	contextMemberNamespace,
 	type ODSNamespace,
 } from "./namespace";
-import type { EntityRelationType, RelationCardinality } from "./schema";
+import {
+	type EntityRelationType,
+	type RelationCardinality,
+	RelationType,
+} from "./schema";
 import { AbstractVisitor } from "./visitor";
 import {
 	type Aggregate,
@@ -22,9 +26,13 @@ import {
 /** Anything the map can draw a box for. */
 type RelationMapMember = Entity | ValueObject | BoundedContext;
 
-function relationNodeType(node: RelationMapMember): ODSRelationMapNode["type"] {
+function relationNodeType(
+	node: RelationMapMember,
+	borrowed: boolean,
+): ODSRelationMapNode["type"] {
 	if (node instanceof BoundedContext) return "external_context";
-	if (!(node instanceof Entity)) return "valueobject";
+	if (!(node instanceof Entity))
+		return borrowed ? "foreign_valueobject" : "valueobject";
 	return node.root ? "entity_root" : "entity";
 }
 
@@ -45,12 +53,21 @@ function relationNamespace(node: RelationMapMember): ODSNamespace[] {
 		: contextMemberNamespace(node);
 }
 
-function relationNode(node: RelationMapMember): ODSRelationMapNode {
+/**
+ * A box for one member. `borrowed` marks a value object the holder reaches over
+ * a shared kernel or a conformist relationship: it draws in its own context's
+ * cluster, so the box says which context the value belongs to (decision 16,
+ * third amendment).
+ */
+function relationNode(
+	node: RelationMapMember,
+	borrowed = false,
+): ODSRelationMapNode {
 	return {
 		id: node.ref,
 		name: node.name,
 		description: node.description,
-		type: relationNodeType(node),
+		type: relationNodeType(node, borrowed),
 		namespace: relationNamespace(node),
 		// An external context has no attributes of ours to list: what is inside
 		// it is not ours to state, so the box carries the name and the
@@ -72,6 +89,7 @@ export class ODSRelationGraph extends AbstractVisitor {
 	protected readonly _relations = new Set<EntityRelation>();
 	protected readonly _identities = new Set<Attribute>();
 	protected readonly _subtypes = new Set<Entity | ValueObject>();
+	protected readonly _borrowings = new Set<Attribute>();
 
 	get relations(): EntityRelation[] {
 		return Array.from(this._relations.values());
@@ -85,6 +103,18 @@ export class ODSRelationGraph extends AbstractVisitor {
 	 */
 	get subtypes(): (Entity | ValueObject)[] {
 		return Array.from(this._subtypes.values());
+	}
+
+	/**
+	 * The attributes in scope typed by a value object of another bounded
+	 * context, borrowed over a shared kernel or from an upstream this context
+	 * conforms to. No `uses` relation may say so, because a relation never
+	 * crosses a boundary, so the map derives the dependency from the attribute
+	 * itself and draws the value in the lending context's cluster (decision 16,
+	 * third amendment).
+	 */
+	get borrowings(): Attribute[] {
+		return Array.from(this._borrowings.values());
 	}
 
 	/**
@@ -108,12 +138,14 @@ export class ODSRelationGraph extends AbstractVisitor {
 	visitEntity(entity: Entity) {
 		this.collectIdentities(entity);
 		this.collectSpecialisation(entity);
+		this.collectBorrowings(entity);
 		super.visitEntity(entity);
 	}
 
 	visitValueObject(valueobject: ValueObject) {
 		this.collectIdentities(valueobject);
 		this.collectSpecialisation(valueobject);
+		this.collectBorrowings(valueobject);
 		super.visitValueObject(valueobject);
 	}
 
@@ -124,6 +156,14 @@ export class ODSRelationGraph extends AbstractVisitor {
 
 	private collectSpecialisation(node: Entity | ValueObject) {
 		if (node.specialises) this._subtypes.add(node);
+	}
+
+	private collectBorrowings(node: Entity | ValueObject) {
+		for (const attribute of node.attributes.values()) {
+			const vo = attribute.valueobject;
+			if (vo && vo.boundedcontext !== node.boundedcontext)
+				this._borrowings.add(attribute);
+		}
 	}
 
 	static fromWorkspace(workspace: Workspace) {
@@ -188,6 +228,7 @@ export class ODSRelationMap {
 		relations: EntityRelation[],
 		identities: Attribute[] = [],
 		subtypes: (Entity | ValueObject)[] = [],
+		borrowings: Attribute[] = [],
 	) {
 		for (const relation of relations) {
 			const sourceNode = this.addNode(relationNode(relation.source));
@@ -234,6 +275,23 @@ export class ODSRelationMap {
 				label: "",
 			});
 		}
+		// A value object borrowed from another context draws too, reached by the
+		// same dependency line as a value of this one and named by the attribute
+		// that holds it. That line is never declared, since a relation may not
+		// cross a boundary, so it is derived from the attribute; the box stands
+		// in the lending context's cluster, which is where the reader sees whose
+		// value it is (decision 16, third amendment).
+		for (const attribute of borrowings) {
+			const { owner, valueobject: vo } = attribute;
+			const drawable = owner instanceof Entity || owner instanceof ValueObject;
+			if (!vo || !drawable) continue;
+			this.addEdge({
+				source: this.addNode(relationNode(owner)),
+				target: this.addNode(relationNode(vo, true)),
+				relation: RelationType.Uses,
+				label: attribute.name,
+			});
+		}
 	}
 
 	static fromGraph(graph: ODSRelationGraph) {
@@ -241,6 +299,7 @@ export class ODSRelationMap {
 			graph.relations,
 			graph.identities,
 			graph.subtypes,
+			graph.borrowings,
 		);
 	}
 
@@ -283,7 +342,12 @@ export type ODSRelationMapNode = {
 	name: string;
 	description?: string;
 	namespace: ODSRelationMapNamespace[];
-	type: "entity_root" | "entity" | "valueobject" | "external_context";
+	type:
+		| "entity_root"
+		| "entity"
+		| "valueobject"
+		| "foreign_valueobject"
+		| "external_context";
 	/** Attributes drawn in the node's compartment; empty when none are declared. */
 	attributes: ODSRelationMapAttribute[];
 };

@@ -858,8 +858,11 @@ const attributeRelationCoherence: Rule = (workspace) => {
 		for (const attribute of member.attributes.values()) {
 			const vo = attribute.valueobject;
 			// A relation may not leave the context, so only ask for one that
-			// could exist: a value object reached over a shared kernel is typed
-			// by ref alone.
+			// could exist: a value object reached over a shared kernel or from
+			// an upstream this context conforms to is typed by ref alone, and
+			// the map derives its `uses` line from the attribute rather than
+			// from a declaration (decision 16, third amendment). There is then
+			// no declared relation for the attribute to disagree with.
 			if (!vo || vo.boundedcontext !== context) continue;
 			const candidates = usesOfValueObject(member.allRelations, vo);
 			if (candidates.length === 0) {

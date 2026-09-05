@@ -22,6 +22,7 @@ import {
 	relationGraph,
 } from "./graph";
 import { legendEntries } from "./legend";
+import type { RelationNodeData } from "./relation-graph";
 
 const { workspace } = petstoreModel();
 const sales = workspace.boundedcontexts.get("sales_bc")!;
@@ -287,6 +288,37 @@ describe("legendEntries for the relation map", () => {
 		);
 		expect(marks(entries).includes("dashed")).toBe(kinds.has("relation-uses"));
 		expect(marks(entries)).toContain("1, *, 0..1");
+	});
+	it("names the borrowed mark only when a value of another context is drawn", () => {
+		const nodes: RelationNodeData[] = [
+			{ id: "#/a", type: "relation", label: "A", icon: "x" },
+		];
+		const edges = [
+			{ id: "c", type: "relation-uses", source: "#/a", target: "#/k" },
+		];
+		expect(marks(legendEntries({ nodes, edges }, "relation"))).toEqual([
+			"dashed",
+		]);
+		expect(
+			marks(
+				legendEntries(
+					{
+						nodes: [
+							...nodes,
+							{
+								id: "#/k",
+								type: "relation",
+								label: "Money",
+								icon: "x",
+								borrowed: true,
+							},
+						],
+						edges,
+					},
+					"relation",
+				),
+			),
+		).toEqual(["dashed", "«borrowed value object»"]);
 	});
 	it("is empty for classes with no relations", () => {
 		expect(

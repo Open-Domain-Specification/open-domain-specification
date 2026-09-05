@@ -183,6 +183,39 @@ describe("relationMapToDigraph", () => {
 		expect(drawn.toDot()).toContain('label = "«identifies» schemeRef"');
 	});
 
+	it("draws a borrowed value object in the lending context's package, in the borrowed stereotype", () => {
+		const map = buildMap();
+		const order = map.nodes.get(
+			"#/boundedcontexts/ordering/aggregates/order/entities/order",
+		);
+		const kernelMoney = map.addNode({
+			id: "#/boundedcontexts/shared_kernel/valueobjects/money",
+			name: "Money",
+			type: "foreign_valueobject",
+			namespace: [
+				{ id: "ws", name: "Shop" },
+				{ id: "#/boundedcontexts/shared_kernel", name: "Shared Kernel" },
+			],
+			attributes: [{ name: "amountMinor", type: "int64", identity: false }],
+		});
+		if (!order) throw new Error("fixture missing the order node");
+		map.addEdge({
+			source: order,
+			target: kernelMoney,
+			label: "total",
+			relation: "uses",
+		});
+		const drawn = relationMapToDigraph(map);
+		// The stereotype is the foreign mark, and the cluster names the context
+		// the value belongs to.
+		expect(drawn.toDot()).toContain("«borrowed value object»<BR/><B>Money</B>");
+		expect(drawn.toDot()).toContain('label = "Shared Kernel"');
+		expect(drawn.toPlantUML()).toContain(
+			'class "Money" as boundedcontexts_shared_kernel_valueobjects_money <<borrowed value object>>',
+		);
+		expect(drawn.toPlantUML()).toContain('package "Shared Kernel" {');
+	});
+
 	it("draws a kind as a generalisation: a solid line with a hollow triangle at the parent", () => {
 		const map = buildMap();
 		const parent = map.nodes.get(
