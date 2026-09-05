@@ -1542,7 +1542,10 @@
                 },
                 "title_id": {
                   "name": "titleId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
+                  }
                 },
                 "episode_id": {
                   "name": "episodeId",
@@ -2333,7 +2336,10 @@
                 },
                 "title_id": {
                   "name": "titleId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/title/entities/title"
+                  }
                 },
                 "kind": {
                   "name": "kind",

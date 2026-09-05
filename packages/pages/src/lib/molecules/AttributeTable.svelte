@@ -12,7 +12,10 @@ import Ref from "../atoms/Ref.svelte";
  * it takes the width.
  *
  * The type links to whatever models it, the value object or the nested schema,
- * so a reader following a payload into its parts never leaves the table.
+ * so a reader following a payload into its parts never leaves the table. An
+ * attribute that holds another root's identity names that root beside the
+ * type, as a ref: the id is the whole of the dependency it carries, usually
+ * into another bounded context, and a reader has to be able to follow it.
  */
 const {
 	attributes,
@@ -42,6 +45,9 @@ const columns: Column[] = [
 			{:else}
 				<code>{a.type}</code>
 			{/if}
+			{#if a.identifies}
+				<span class="identifies">identifies <code><Ref ref={a.identifies.ref} label={a.identifies.name} /></code></span>
+			{/if}
 		{:else}
 			{a.description}
 		{/if}
@@ -54,6 +60,10 @@ const columns: Column[] = [
 		font-size: 0.92em;
 		background: none;
 		padding: 0;
+	}
+	.identifies {
+		color: var(--vscode-descriptionForeground);
+		margin-left: 0.5em;
 	}
 	.codicon-key {
 		font-size: 1em;

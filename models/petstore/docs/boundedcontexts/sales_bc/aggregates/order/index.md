@@ -10,7 +10,7 @@ Order for a single pet
 ## Entities and Value Objects
 | Type | Name | Description | Attributes |
 | --- | --- | --- | --- |
-| Entity (Root) | **Order** | The customer's request to buy one pet | **id**: `int64`, petId: `int64`, quantity: `Quantity`, shipDate: `ShipDate`, status: `OrderStatus` |
+| Entity (Root) | **Order** | The customer's request to buy one pet | **id**: `int64`, petId: `int64` (identifies [Pet](../../../catalog_bc/aggregates/pet/index.md)), quantity: `Quantity`, shipDate: `ShipDate`, status: `OrderStatus` |
 | Value Object | [OrderStatus](../../index.md#value-objects) | Where the order is in its lifecycle | value: `'placed' | 'approved' | 'delivered'` |
 | Value Object | [Quantity](../../index.md#value-objects) | The v3 API's quantity field, kept for the wire shape. A Pet is an individual animal, so the invariant below pins it to 1 | value: `int > 0` |
 | Value Object | [ShipDate](../../index.md#value-objects) | When the order ships; set by Fulfilment once dispatch is planned | value: `date-time` |

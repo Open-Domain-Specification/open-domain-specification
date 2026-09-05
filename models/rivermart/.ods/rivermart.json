@@ -1271,7 +1271,10 @@
                 },
                 "offer_id": {
                   "name": "offerId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer"
+                  }
                 },
                 "quantity": {
                   "name": "quantity",
@@ -1354,7 +1357,10 @@
                 "product_id": {
                   "name": "productId",
                   "type": "string",
-                  "identity": true
+                  "identity": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/product"
+                  }
                 }
               },
               "relations": []
@@ -1759,7 +1765,10 @@
                 "offer_id": {
                   "name": "offerId",
                   "type": "string",
-                  "description": "Identity of the Offer root in Offers; only the id crosses the boundary. `sku` is the catalogue code the line was bought under, which is not the same thing"
+                  "description": "Identity of the Offer root in Offers; only the id crosses the boundary. `sku` is the catalogue code the line was bought under, which is not the same thing",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/offers/aggregates/offer/entities/offer"
+                  }
                 },
                 "quantity": {
                   "name": "quantity",
@@ -3147,7 +3156,10 @@
                 },
                 "order_id": {
                   "name": "orderId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
                 }
               },
               "relations": [
@@ -3836,7 +3848,10 @@
                 "product_id": {
                   "name": "productId",
                   "type": "string",
-                  "description": "Identity of the Product root in Catalogue; only the id crosses the boundary"
+                  "description": "Identity of the Product root in Catalogue; only the id crosses the boundary",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalogue/aggregates/product/entities/product"
+                  }
                 }
               },
               "relations": [
@@ -4107,7 +4122,10 @@
                 },
                 "order_id": {
                   "name": "orderId",
-                  "type": "string"
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/order_management/aggregates/order/entities/order"
+                  }
                 },
                 "resolution": {
                   "name": "resolution",

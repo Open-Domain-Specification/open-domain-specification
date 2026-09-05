@@ -473,6 +473,7 @@ const orderPetId = orderRoot.addAttribute("petId", {
 	type: "int64",
 	description:
 		"Identity of the Pet root in Catalog; only the id crosses the boundary",
+	identifies: petRoot,
 });
 orderRoot.addAttribute("quantity", {
 	type: "Quantity",
@@ -760,6 +761,7 @@ shipmentRoot.addAttribute("orderId", {
 	type: "int64",
 	description:
 		"Identity of the Order root in Sales; only the id crosses the boundary",
+	identifies: orderRoot,
 });
 shipmentRoot.addAttribute("carrierId", { type: "int64" });
 shipmentRoot.addAttribute("status", {

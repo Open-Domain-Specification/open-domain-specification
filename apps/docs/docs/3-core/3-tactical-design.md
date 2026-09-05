@@ -30,6 +30,15 @@ entity or a value object holds value objects, because a payload shape
 belongs at the boundary rather than inside the model. A collection stays in
 the type string (`OrderLine[]`), since there is no separate list construct.
 
+An attribute that holds an id says whose, with `identifies`: the root entity
+it is the identity of. That root may be in another bounded context, and
+usually is — a relation never crosses a boundary, so an identity attribute is
+the whole of what one context knows about another's thing. `identifies` keeps
+that dependency structural rather than leaving it to a description: the
+relation map draws it as a dashed edge to the foreign root, and the
+`identifies-root` rule checks the target really is a root, since a root is
+what an aggregate is reached by.
+
 ## Relations and invariants
 
 Entity relations (`includes`, `uses`, `references`) may carry a UML

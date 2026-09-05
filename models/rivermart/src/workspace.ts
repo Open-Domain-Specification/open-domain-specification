@@ -776,7 +776,7 @@ const cartMoney = money(cartBC);
 cart.addAttribute("cartId", { type: "string", identity: true });
 cart.addAttribute("customerId", { type: "string" });
 cartLine.addAttribute("lineId", { type: "string", identity: true });
-cartLine.addAttribute("offerId", { type: "string" });
+cartLine.addAttribute("offerId", { type: "string", identifies: offer });
 cartLine.addAttribute("quantity", { type: "int" });
 cartLine.addAttribute("unitPrice", { type: "Money", valueobject: cartMoney });
 cart.includes(cartLine, "contains", "*");
@@ -833,7 +833,11 @@ const wishlistItem = wishlistAgg.addRootEntity("WishlistItem", {
 	description: "One saved product",
 });
 wishlist.addAttribute("wishlistId", { type: "string", identity: true });
-wishlistItem.addAttribute("productId", { type: "string", identity: true });
+wishlistItem.addAttribute("productId", {
+	type: "string",
+	identity: true,
+	identifies: product,
+});
 wishlist.includes(wishlistItem, "saves", "*");
 // DELIBERATE (cross-aggregate-reference): the cart "includes" wishlist items
 // from the Wishlist aggregate. The basket screen wanted the saved items beside
@@ -935,6 +939,7 @@ orderLine.addAttribute("offerId", {
 	type: "string",
 	description:
 		"Identity of the Offer root in Offers; only the id crosses the boundary. `sku` is the catalogue code the line was bought under, which is not the same thing",
+	identifies: offer,
 });
 orderLine.addAttribute("quantity", { type: "int" });
 orderLine.addAttribute("unitPrice", { type: "Money", valueobject: orderMoney });
@@ -1527,7 +1532,7 @@ fulfilmentOrder.addAttribute("fulfilmentOrderId", {
 	type: "string",
 	identity: true,
 });
-fulfilmentOrder.addAttribute("orderId", { type: "string" });
+fulfilmentOrder.addAttribute("orderId", { type: "string", identifies: order });
 pickTask.addAttribute("taskId", { type: "string", identity: true });
 pickTask.addAttribute("sku", { type: "string" });
 pickTask.addAttribute("quantity", { type: "int" });
@@ -1910,6 +1915,7 @@ adGroup.addAttribute("productId", {
 	type: "string",
 	description:
 		"Identity of the Product root in Catalogue; only the id crosses the boundary",
+	identifies: product,
 });
 campaign.includes(adGroup, "spends-through", "1..*");
 campaign.uses(campaignMoney, "budgeted", "1");
@@ -2047,7 +2053,7 @@ resolutionVO.addAttribute("kind", {
 });
 caseRoot.addAttribute("caseId", { type: "string", identity: true });
 caseRoot.addAttribute("customerId", { type: "string" });
-caseRoot.addAttribute("orderId", { type: "string" });
+caseRoot.addAttribute("orderId", { type: "string", identifies: order });
 interaction.addAttribute("interactionId", { type: "string", identity: true });
 interaction.addAttribute("channel", { type: "'call' | 'chat' | 'email'" });
 interaction.addAttribute("at", { type: "date-time" });

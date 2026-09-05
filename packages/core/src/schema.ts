@@ -18,6 +18,13 @@ export interface AttributeSchema {
 	 * string (`OrderLine[]`).
 	 */
 	schema?: { $ref: string };
+	/**
+	 * The root entity this attribute holds the identity of, when it is an
+	 * identity of something else: `Order.petId` identifies Catalog's `Pet`.
+	 * The target may be in another bounded context — that is the point, since
+	 * an identity is the only thing that crosses a boundary (decision 14).
+	 */
+	identifies?: { $ref: string };
 }
 
 /**

@@ -55,6 +55,19 @@
                 "description": {
                     "type": "string"
                 },
+                "identifies": {
+                    "additionalProperties": false,
+                    "description": "The root entity this attribute holds the identity of, when it is an\nidentity of something else: `Order.petId` identifies Catalog's `Pet`.\nThe target may be in another bounded context — that is the point, since\nan identity is the only thing that crosses a boundary (decision 14).",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
                 "identity": {
                     "description": "True when this attribute is (part of) the identity of an entity.",
                     "type": "boolean"

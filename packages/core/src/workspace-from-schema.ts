@@ -84,8 +84,9 @@ function addConsumes(
 }
 
 /**
- * Attributes may point at a value object or at another schema, so they are
- * added in the second pass, once every shape they can name exists.
+ * Attributes may point at a value object, at another schema, or at the root
+ * entity whose identity they hold, so they are added in the second pass, once
+ * everything they can name exists.
  */
 function addAttributes(
 	owner: AttributeOwner,
@@ -102,6 +103,9 @@ function addAttributes(
 			schema:
 				attributeSchema.schema &&
 				workspace.getSchemaByRefOrThrow(attributeSchema.schema.$ref),
+			identifies:
+				attributeSchema.identifies &&
+				workspace.getEntityByRefOrThrow(attributeSchema.identifies.$ref),
 		});
 	}
 }

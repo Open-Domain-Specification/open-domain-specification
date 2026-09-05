@@ -130,6 +130,82 @@ describe("Workspace.validate", () => {
 		]);
 	});
 
+	it("lets an identity attribute name a root in another context", () => {
+		const ws = emptyWorkspace();
+		const sales = ws.addBoundedContext("Sales", { description: "" });
+		const catalog = ws.addBoundedContext("Catalog", { description: "" });
+		const order = sales
+			.addAggregate("Order", { description: "" })
+			.addRootEntity("Order", { description: "" });
+		order.addAttribute("id", { type: "int64", identity: true });
+		const petAgg = catalog.addAggregate("Pet", { description: "" });
+		const pet = petAgg.addRootEntity("Pet", { description: "" });
+		pet.addAttribute("id", { type: "int64", identity: true });
+		order.addAttribute("petId", { type: "int64", identifies: pet });
+		const diagnostics = ws
+			.validate()
+			.filter((d) =>
+				[
+					"identifies-root",
+					"cross-context-relation",
+					"schema-context",
+				].includes(d.rule),
+			);
+		expect(diagnostics).toEqual([]);
+	});
+
+	it("flags an identity attribute that names something other than a root", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Sales", { description: "" });
+		const orderAgg = bc.addAggregate("Order", { description: "" });
+		const order = orderAgg.addRootEntity("Order", { description: "" });
+		order.addAttribute("id", { type: "int64", identity: true });
+		const line = orderAgg.addEntity("Order Line", { description: "" });
+		line.addAttribute("id", { type: "int64", identity: true });
+		order.includes(line, "has-line", "*");
+		const shipping = ws.addBoundedContext("Shipping", { description: "" });
+		const parcel = shipping
+			.addAggregate("Parcel", { description: "" })
+			.addRootEntity("Parcel", { description: "" });
+		parcel.addAttribute("id", { type: "int64", identity: true });
+		const lineId = parcel.addAttribute("lineId", {
+			type: "int64",
+			identifies: line,
+		});
+		const diagnostics = ws
+			.validate()
+			.filter((d) => d.rule === "identifies-root");
+		expect(diagnostics).toEqual([
+			{
+				severity: "error",
+				rule: "identifies-root",
+				message:
+					'"Parcel" holds attribute "lineId" as the identity of "Order Line", which is not the root of aggregate "Order"; an identity names the root the aggregate is reached by',
+				ref: lineId.ref,
+			},
+		]);
+	});
+
+	it("flags an identity a schema's attribute holds of a non-root too", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Sales", { description: "" });
+		const orderAgg = bc.addAggregate("Order", { description: "" });
+		const order = orderAgg.addRootEntity("Order", { description: "" });
+		order.addAttribute("id", { type: "int64", identity: true });
+		const line = orderAgg.addEntity("Order Line", { description: "" });
+		line.addAttribute("id", { type: "int64", identity: true });
+		order.includes(line, "has-line", "*");
+		const payload = bc.addSchema("Order Summary");
+		payload.addAttribute("lineId", { type: "int64", identifies: line });
+		const messages = ws
+			.validate()
+			.filter((d) => d.rule === "identifies-root")
+			.map((d) => d.message);
+		expect(messages).toEqual([
+			'"Order Summary" holds attribute "lineId" as the identity of "Order Line", which is not the root of aggregate "Order"; an identity names the root the aggregate is reached by',
+		]);
+	});
+
 	it("warns when cross-context consumptions lack roles", () => {
 		const ws = emptyWorkspace();
 		const up = ws.addBoundedContext("Up", { description: "" });

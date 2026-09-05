@@ -1,6 +1,6 @@
 import type {
-	EntityRelationType,
 	ODSRelationMap,
+	ODSRelationMapEdge,
 	ODSRelationMapNode,
 } from "@open-domain-specification/core";
 import { STEREOTYPES } from "@open-domain-specification/graphviz";
@@ -20,8 +20,12 @@ const TONES: Record<ODSRelationMapNode["type"], GraphNode["tone"]> = {
 	valueobject: "muted",
 };
 
-/** Edge component per relation kind; each draws its own UML connector. */
-export const relationEdgeType = (relation: EntityRelationType) =>
+/**
+ * Edge component per line the map draws; each renders its own UML connector.
+ * `identifies` is one of them: the identity an attribute holds of another
+ * root, which is the only line allowed to leave a bounded context.
+ */
+export const relationEdgeType = (relation: ODSRelationMapEdge["relation"]) =>
 	`relation-${relation}` as const;
 
 /**

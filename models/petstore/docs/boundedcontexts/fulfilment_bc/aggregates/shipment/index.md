@@ -10,7 +10,7 @@ The journey of one approved order to its owner. Attempts live inside it because 
 ## Entities and Value Objects
 | Type | Name | Description | Attributes |
 | --- | --- | --- | --- |
-| Entity (Root) | **Shipment** | One consignment for one order | **id**: `int64`, orderId: `int64`, carrierId: `int64`, status: `ShipmentStatus`, trackingNumber: `TrackingNumber` |
+| Entity (Root) | **Shipment** | One consignment for one order | **id**: `int64`, orderId: `int64` (identifies [Order](../../../sales_bc/aggregates/order/index.md)), carrierId: `int64`, status: `ShipmentStatus`, trackingNumber: `TrackingNumber` |
 | Entity | DeliveryAttempt | A dated try at handing over the pet; an entity because attempts are counted and ordered, a child because it never exists without its shipment | **attemptNumber**: `int32`, attemptedAt: `date-time`, succeeded: `boolean` |
 | Value Object | [ShipmentStatus](../../index.md#value-objects) | planned, in-transit or delivered | value: `'planned' | 'in-transit' | 'delivered'` |
 | Value Object | [TrackingNumber](../../index.md#value-objects) | Carrier reference; a value because two shipments never share one | value: `string` |

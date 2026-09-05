@@ -674,7 +674,10 @@
                 "pet_id": {
                   "name": "petId",
                   "type": "int64",
-                  "description": "Identity of the Pet root in Catalog; only the id crosses the boundary"
+                  "description": "Identity of the Pet root in Catalog; only the id crosses the boundary",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet"
+                  }
                 },
                 "quantity": {
                   "name": "quantity",
@@ -1289,7 +1292,10 @@
                 "order_id": {
                   "name": "orderId",
                   "type": "int64",
-                  "description": "Identity of the Order root in Sales; only the id crosses the boundary"
+                  "description": "Identity of the Order root in Sales; only the id crosses the boundary",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/entities/order"
+                  }
                 },
                 "carrier_id": {
                   "name": "carrierId",

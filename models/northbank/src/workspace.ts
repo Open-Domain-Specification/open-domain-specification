@@ -671,7 +671,11 @@ account.addAttribute("status", {
 	type: "AccountStatus",
 	valueobject: accountStatusVO,
 });
-mandate.addAttribute("customerId", { type: "string", identity: true });
+mandate.addAttribute("customerId", {
+	type: "string",
+	identity: true,
+	identifies: customer,
+});
 mandate.addAttribute("powers", { type: "'sole' | 'joint' | 'view-only'" });
 account.includes(mandate, "operated-under", "1..*");
 account.addAttribute("overdraft", {
@@ -1053,7 +1057,10 @@ paymentStatusVO.addAttribute("value", {
 	type: "'initiated' | 'cleared' | 'flagged' | 'submitted' | 'settled' | 'rejected'",
 });
 instruction.addAttribute("instructionId", { type: "string", identity: true });
-instruction.addAttribute("payerAccountId", { type: "string" });
+instruction.addAttribute("payerAccountId", {
+	type: "string",
+	identifies: account,
+});
 const paymentAmount = instruction.addAttribute("amount", {
 	type: "Money",
 	valueobject: paymentMoney,
@@ -1577,7 +1584,7 @@ cardStatusVO.addAttribute("value", {
 });
 const cardMoney = money(cardsBC);
 card.addAttribute("cardId", { type: "string", identity: true });
-card.addAttribute("accountId", { type: "string" });
+card.addAttribute("accountId", { type: "string", identifies: account });
 card.addAttribute("pan", { type: "PAN", valueobject: panVO });
 card.addAttribute("expiry", { type: "Expiry", valueobject: expiryVO });
 card.addAttribute("status", { type: "CardStatus", valueobject: cardStatusVO });
@@ -1755,7 +1762,10 @@ const decisionVO = lendingBC.addValueObject("Decision", {
 decisionVO.addAttribute("outcome", { type: "'approved' | 'declined'" });
 decisionVO.addAttribute("reasons", { type: "string[]" });
 application.addAttribute("applicationId", { type: "string", identity: true });
-application.addAttribute("customerId", { type: "string" });
+application.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
 application.addAttribute("requested", {
 	type: "Money",
 	valueobject: applicationMoney,
@@ -1815,6 +1825,7 @@ loan.addAttribute("accountId", {
 	type: "string",
 	description:
 		"Identity of the Account the loan is disbursed to, in Accounts; only the id crosses the boundary",
+	identifies: account,
 });
 loan.addAttribute("principal", { type: "Money", valueobject: loanMoney });
 loan.addAttribute("apr", { type: "InterestRate", valueobject: aprVO });
@@ -2293,7 +2304,7 @@ const requestStatusVO = channelsBC.addValueObject("RequestStatus", {
 });
 requestStatusVO.addAttribute("value", { type: "'open' | 'resolved'" });
 request.addAttribute("requestId", { type: "string", identity: true });
-request.addAttribute("customerId", { type: "string" });
+request.addAttribute("customerId", { type: "string", identifies: customer });
 request.addAttribute("authenticated", { type: "boolean" });
 note.addAttribute("noteId", { type: "string", identity: true });
 note.addAttribute("author", { type: "string" });

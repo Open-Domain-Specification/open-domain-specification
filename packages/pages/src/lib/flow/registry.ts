@@ -24,5 +24,6 @@ export const edgeTypes: Record<string, Component<any>> = {
 	"relation-includes": RelationEdge,
 	"relation-references": RelationEdge,
 	"relation-uses": RelationEdge,
+	"relation-identifies": RelationEdge,
 	consumable: ConsumableEdge,
 };

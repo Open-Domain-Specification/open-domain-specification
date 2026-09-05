@@ -152,6 +152,7 @@ describe("Tactical design", () => {
 		).toMatchInlineSnapshot(`
 			{
 			  "description": undefined,
+			  "identifies": undefined,
 			  "identity": undefined,
 			  "name": "total",
 			  "schema": undefined,
@@ -166,6 +167,7 @@ describe("Tactical design", () => {
 		).toMatchInlineSnapshot(`
 			{
 			  "description": undefined,
+			  "identifies": undefined,
 			  "identity": undefined,
 			  "name": "lines",
 			  "schema": {

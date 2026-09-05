@@ -22,6 +22,8 @@ function everythingWrong(): Workspace {
 	// cross-aggregate-reference: includes across aggregates, references non-root
 	r1.includes(inner, "owns");
 	r1.references(inner, "points-at");
+	// identifies-root: an identity attribute naming an entity that is not a root
+	r1.addAttribute("innerId", { type: "string", identifies: inner });
 	// role-coherence and internal-consumable and separate-ways
 	const other = b.addAggregate("Other", { description: "" });
 	const otherRoot = other.addRootEntity("Other", { description: "" });

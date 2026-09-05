@@ -120,6 +120,13 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   concept of this context's own model, a schema a payload it publishes. Only a schema's own
   attribute may name a schema — if the thing with parts is an entity's or a value object's
   field, it is a value object, so declare one and use `valueobject`.
+- When an attribute is an id of something the part does not own — "the order this
+  invoice bills", "the pet the order is for" — ask "which root does that id identify?" and
+  point `identifies` at that root entity. It may be in another bounded context: an identity is
+  the only thing allowed to cross one (a relation never does), and `identifies` is what keeps
+  that dependency structural instead of leaving it in the description. If the honest answer
+  names something inside another aggregate rather than its root, the id is the wrong one to
+  hold: ask for the root's.
 - For an operation, follow up: "and what comes back?" → a second schema on the same context,
   attached with `returns`. A command that answers with nothing leaves `returns` off; a query
   that answers with nothing is not a query, so keep asking. Never put `returns` on an event.

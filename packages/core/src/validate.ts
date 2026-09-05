@@ -161,6 +161,31 @@ const crossContextRelation: Rule = (workspace) => {
 };
 
 /**
+ * An attribute that holds an identity holds the identity of a root. The root
+ * is the one thing you reach an aggregate by, so it is the only identity that
+ * means anything on the outside: an id of something inside another boundary
+ * names a part whose life its own whole controls, and the holder has no way
+ * to ask for it. Naming the root instead keeps the dependency at the door,
+ * which is what lets an identity cross a bounded context at all.
+ */
+const identifiesRoot: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const { owner } of attributeOwnersOf(workspace)) {
+		for (const attribute of owner.attributes.values()) {
+			const target = attribute.identifies;
+			if (!target || target.root) continue;
+			diagnostics.push({
+				severity: "error",
+				rule: "identifies-root",
+				message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of "${target.name}", which is not the root of aggregate "${target.aggregate.name}"; an identity names the root the aggregate is reached by`,
+				ref: attribute.ref,
+			});
+		}
+	}
+	return diagnostics;
+};
+
+/**
  * An aggregate's root entity is identified by something. Without an identity
  * attribute nothing says which instance a reference points at.
  */
@@ -1407,6 +1432,14 @@ const RULES: CataloguedRule[] = [
 		why: "Each context is its own model with its own language and lifecycle (decision 03), so a relation across the boundary makes one context's entity part of the other's object graph and the two can no longer be loaded, changed or stored apart. Decision 08's crossing table already says an entity relation's target may not cross a file, and splitting the contexts into their own files is exactly what turns this relation into a load error.",
 		fix: "Delete the relation and give the source an attribute holding the other root's identity — an Order in Sales carries petId rather than a relation to Catalog's Pet. The dependency between the two contexts then reads where it belongs, on the consumable map: the consumable the source consumes and the context relationship between the two.",
 		check: crossContextRelation,
+	},
+	{
+		rule: "identifies-root",
+		severities: ["error"],
+		summary: "An attribute's identifies names the root entity of an aggregate.",
+		why: "An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about. Only a root can be that thing, because the root is what an aggregate is reached, loaded and saved by; an id of an entity inside someone else's boundary names a part whose whole controls its life, and nobody outside can ask for it on its own. This is also what makes an identity safe to cross a bounded context, which a relation may never do (decision 14): the dependency stops at the other model's front door.",
+		fix: "Point identifies at the root entity of the aggregate the thing belongs to, and hold that root's identity instead. If the part really is what matters to you, the model is saying it should be an aggregate of its own.",
+		check: identifiesRoot,
 	},
 	{
 		rule: "root-identity",

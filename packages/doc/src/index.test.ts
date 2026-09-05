@@ -263,6 +263,15 @@ describe("toDoc", () => {
 		expect(workspaceDoc).toContain("Test Workspace");
 	});
 
+	it("says which root an identity attribute identifies, and links to it", async () => {
+		const docs = await toDoc(petstore);
+		expect(
+			docs["boundedcontexts/sales_bc/aggregates/order/index.md"],
+		).toContain(
+			"petId: `int64` (identifies [Pet](../../../catalog_bc/aggregates/pet/index.md))",
+		);
+	});
+
 	it("groups a context's relationships by what they mean from there, with a Description column", async () => {
 		const docs = await toDoc(petstore);
 

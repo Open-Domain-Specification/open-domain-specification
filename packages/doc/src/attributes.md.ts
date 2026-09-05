@@ -6,13 +6,20 @@ import { pathToIndexMd } from "./lib/paths";
  * typed by another schema links to that schema's row, because the reader's next
  * question is what is inside it; a value object's type is left as the author
  * wrote it, since the value object has its own row on the context page.
+ *
+ * An attribute that holds another root's identity says whose, and links to it:
+ * that identity is the whole of the dependency, often across a bounded
+ * context, and a reader who cannot follow it is reading a bare id.
  */
 const attributeMd = (attribute: Attribute, fromPath: string) => {
 	const name = attribute.identity ? `**${attribute.name}**` : attribute.name;
 	const type = attribute.schema
 		? `[\`${attribute.type}\`](${pathToIndexMd(attribute.schema.boundedcontext.path, fromPath)}#schemas)`
 		: `\`${attribute.type}\``;
-	return `${name}: ${type}`;
+	const identifies = attribute.identifies
+		? ` (identifies [${attribute.identifies.name}](${pathToIndexMd(attribute.identifies.aggregate.path, fromPath)}))`
+		: "";
+	return `${name}: ${type}${identifies}`;
 };
 
 /** Attributes as an inline `name: \`type\`` list; identity attributes in bold. */
