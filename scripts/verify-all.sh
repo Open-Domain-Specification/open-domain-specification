@@ -66,6 +66,19 @@ run_vitest skill packages/skill
 for model in northbank petstore rivermart streamline; do
 	echo "==> building model $model"
 	(cd "$ROOT/models/$model" && npm run build)
+	if [ "$model" = petstore ]; then
+		# The gate: the build just copied core's schema beside the fixture, so
+		# they must be identical now. Compared here, not at the end, because an
+		# extension dev server open on models/petstore rewrites the file from
+		# its own bundled core whenever it rebuilds, and the window between
+		# this line and the end of the run is minutes.
+		if cmp -s "$ROOT/models/petstore/.ods/schema.json" "$ROOT/packages/core/dist/workspace.schema.json"; then
+			summary "schema comparison (petstore vs core dist): match"
+		else
+			summary "schema comparison (petstore vs core dist): MISMATCH"
+			exit 1
+		fi
+	fi
 	run_vitest "$model" "models/$model"
 done
 run_vitest "models/_shared" models/_shared
@@ -104,12 +117,13 @@ fi
 rm -f "$e2e_log"
 summary "pages e2e (diagram-panel-fit): passed"
 
-# --- schema comparison ---
-if cmp -s "$ROOT/models/petstore/.ods/schema.json" "$ROOT/packages/core/dist/workspace.schema.json"; then
-	summary "schema comparison (petstore vs core dist): match"
-else
-	summary "schema comparison (petstore vs core dist): MISMATCH"
-	exit 1
+# --- schema drift after the build ---
+# Not a failure: the build wrote the right file and the gate above checked it.
+# A difference here means another process rewrote it since (an extension dev
+# server or test host open on models/petstore). Restore it and say so.
+if ! cmp -s "$ROOT/models/petstore/.ods/schema.json" "$ROOT/packages/core/dist/workspace.schema.json"; then
+	cp "$ROOT/packages/core/dist/workspace.schema.json" "$ROOT/models/petstore/.ods/schema.json"
+	summary "schema drift: models/petstore/.ods/schema.json was rewritten during the run by another process and has been restored from core dist; check for an extension dev server (pgrep -f 'ods-vscode.*dev.mjs')"
 fi
 
 echo
