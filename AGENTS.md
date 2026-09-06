@@ -54,7 +54,10 @@ the viewer. A package was retired, not a site. Read its current position, not it
 - **Generated files are generated.** The JSON schema, the model reference, the validation rules
   reference and every model's `.ods` output and `docs/` folder come from a build. Rerun it;
   never hand-edit them.
-- **Releasing is deliberate.** A push to main builds and tests like any other branch and publishes nothing. A release is run by hand: the workflow's manual trigger from main with its release input set, which cuts the version lerna computes from the commits, publishes the packages, and cuts a GitHub release with the extension and the pages archive.
+- **Releasing is deliberate.** A push to main builds and tests like any other branch and
+  publishes nothing. A release is run by hand, from the workflow's manual trigger on main with
+  its release input set: lerna computes the version from the commits, publishes the packages,
+  and cuts a GitHub release carrying the extension and the pages archive.
 - **The hand-written surfaces must not lie.** `packages/skill/skill/SKILL.md`, its hand-written
   references, and the documentation site describe what the validator does. When you change a
   rule's reach, change every surface that states it; a drift test in `packages/skill` fails when
@@ -75,7 +78,12 @@ Domain-Driven Design's laws, and the record says so.
 
 ## Working
 
-Work is carried on RepoDoc cards under `boards/`. A card names its checklist, its gates and a
-journal; it lands when the gate is green and its column reads `done`. `STATUS.md` says what is
-live, what is next and what is blocked, and is written for whoever picks the work up next.
-Anything that is the owner's to decide is a GitHub issue, not a card.
+Work waiting for somebody lives in GitHub as a user story, defects included: what happens
+today, what is expected, written from the reader's side. It becomes a RepoDoc card under
+`boards/` when somebody picks it up, so a board holds nothing in a backlog column. A card names
+its checklist, its gates and a journal; it lands when the gate is green and its column reads
+`done`, and it goes back to `todo` against an issue when its claim turns out not to hold. Cards
+reference issues, never the other way round.
+
+`STATUS.md` says what is live, what is next and what is blocked, and is written for whoever
+picks the work up next.
