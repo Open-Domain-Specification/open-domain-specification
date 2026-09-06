@@ -46,6 +46,10 @@ Valid-from and valid-to, effective dates, and bi-temporal rules ("the rate that 
 
 An attribute typed `{ratio, uri}[]` is text (decision 15's own rule); the model does not parse it and the ubiquitous language does not gain a term from it. The honest form is a value object with a name, and the reference models are asked to prefer it; the shorthand stays legal because refusing it would mean parsing types.
 
+### Comments and dispositions sit on the strategic seam
+
+A bounded context or an aggregate carries no disposition and no comments; those live on relationships, consumables, consumptions and processes, where the atlas meets the territory (RFC-002). "This legacy system is to be hollowed out" is said on its relationships. Reopened if the health report needs to list a context rather than its edges.
+
 ### Read models are query services
 
 A projection is a service that provides a query operation; with decision 13 that operation says what it returns. No `ReadModel` construct is added. Petstore's inventory projection is a bounded context of its own because it serves two subdomains, not because the model forced it.

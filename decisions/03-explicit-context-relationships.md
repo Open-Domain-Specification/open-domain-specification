@@ -67,3 +67,7 @@ Card 98 fixed the two rules that carry language across the boundary and left the
 ## Note (2026-09-09, second)
 
 Where the declared upstream is the caller, neither end can hold the role its position implies, because a consumable carries an upstream role and a consumption a downstream one; `role-coherence` asks nothing of either end there and the relationship's own roles, checked by `relationship-roles-backed`, carry the meaning (card 99). Widening both fields to carry either role is a possible later change and is not made here.
+
+## Correction (2026-09-10)
+
+The second amendment said `relationship-declared` warns on an identity crossing; decision 14's 2026-09-09 amendment withdrew that, and the «id» edge is the record. A partnership clears a ring of calls between its two contexts, as the rule's own fix text has always said and the walk now reads (card 104).

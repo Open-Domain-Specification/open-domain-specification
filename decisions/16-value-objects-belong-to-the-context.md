@@ -50,3 +50,7 @@ A shared kernel context serves its sharers' subdomains, not one of its own; `con
 ## Amendment (2026-09-09, second)
 
 The note saying a kernel's aggregate is consumed through its operations contradicted `aggregate-not-public`, which refused exactly that. A kernel context's aggregate operations may be consumed by the contexts that share the kernel, because the kernel is shared code and its aggregates are the sharers' own (card 98); for any other context the aggregate stays internal.
+
+## Note (2026-09-10)
+
+A local value-object attribute no longer has to be restated as a `uses` relation: the line is derived from the attribute, as it is for a borrowed one, and a declared relation only adds a label or a cardinality (card 104). The reference models had written the pair hundreds of times and no decision had named that cost.

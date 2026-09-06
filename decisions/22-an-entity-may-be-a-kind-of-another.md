@@ -32,3 +32,7 @@ The context above guessed NorthBank's accounts as the reference case. Its discov
 ## Amendment (2026-09-08, second)
 
 The context claimed that splitting kinds into separate aggregates "says they are consistent separately, which is false". That was overclaimed: an insurer's motor, home and life policies, or a hospital's inpatient and outpatient encounters, share an identity scheme and attributes and are consistent separately, and for them three aggregates is the truth. Specialisation stays inside one aggregate and one context on purpose, because a parent in another aggregate would make one boundary's attribute set depend on another's; the cost is that a product line whose kinds are separate aggregates repeats the shared attributes, which the model accepts and names here.
+
+## Correction (2026-09-10)
+
+`aggregate-tree`'s reachability walk follows `includes` and `references` inside the aggregate, not `includes` only; the record's wording was narrower than the rule.

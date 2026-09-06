@@ -37,3 +37,7 @@ An operation with no `returns` has no answer to wait on, so a process that issue
 ## Amendment (2026-09-09, second)
 
 An operation without `returns` still completes, and a process may wait on that: `completed` is an answer with no shape, so a provisioning workflow that ends when an activation call succeeds names that completion rather than inventing a response (card 99). The note that a returns-less command costs two consumptions is superseded where the caller waits on the completion.
+
+## Note (2026-09-10)
+
+An asynchronous request whose reply arrives later, correlated, is modelled as the returns-less call plus the events the provider raises, which the caller's process waits on. NorthBank had declared a scheme submission as a synchronous call with an answer while describing the scheme answering on its own timings; card 105 makes it the exchange it is.

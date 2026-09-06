@@ -24,3 +24,7 @@ A consumption is a strategic intent: it carries a pattern, comments and a dispos
 ## Amendment (2026-09-08)
 
 One consumer may consume one consumable more than once when the exchanges differ, an archive that takes a provider's response as it is and a decision that translates it through an anti-corruption layer, each with its own pattern and disposition. The pair alone then no longer identifies a consumption: every such consumption names a non-empty, mutually disjoint `by`, `consumption-once` asks for exactly that, and the ref appends the first caller's id only when the pair is not unique, so the single-consumption ref stays as it was (card 89).
+
+## Correction (2026-09-10)
+
+Not every rule that judges a consumption reports at its ref: `separate-ways`, `internal-consumable`, `relationship-declared` and the two consumes-inside rules report at the consumer node, because their subject is the consumer's position rather than one exchange. And a consumption's ref changes when a second consumption of the same pair appears, since only then does it need the caller's name; that is a named cost of deriving the ref from the pair.
