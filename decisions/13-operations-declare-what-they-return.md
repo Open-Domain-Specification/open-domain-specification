@@ -45,3 +45,7 @@ An asynchronous request whose reply arrives later, correlated, is modelled as th
 ## Amendment (2026-09-10)
 
 The 2026-09-09 amendment argued that a named collection and an object holding one are different shapes and gave `returns` its `many`; the same argument applies to a request and an event payload, where the model still offered only the wrapper, and petstore left `createUsersWithList` out. `ConsumableSchema.schema` carries `many` the way `returns` does (card 114, architect's ninth round).
+
+## Note (2026-09-10)
+
+A flat object with a `kind` field and attributes that apply only sometimes states its wire faithfully when the wire is that object; the misstatement this record refuses is a wrapper around something the wire does not carry. StreamLine's `TitleDetail` is the former, and what is wrong with it is that `seasons` is not marked optional for a film (card 119). The debate on unions (decision 18, amended) rests on this distinction.

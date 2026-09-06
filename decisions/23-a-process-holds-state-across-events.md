@@ -75,3 +75,7 @@ The lifecycle-through-a-layer exemption was implemented on the shape of the ring
 ## Note (2026-09-10, third)
 
 A command addressed to a live process instance, add a document to an open claim, withdraw an application, is not a trigger a process may name in `on` or `ends`; the context's application service receives it and raises the fact, `DocumentAdded`, and the process hears that. One event per such command is the cost, named here; a process reacts to facts and owns no operations, and this record's third amendment reopened `starts` for commands because starting is where nothing was yet waiting (architect's tenth round).
+
+## Note (2026-09-10, fourth)
+
+The second amendment said an answer is synchronous because the operation is; that conflated kind with delivery (decision 15, corrected). An answer comes back to whoever called; when, the model does not say. The schema comment on `PolicySchema.on` that repeated the sentence goes with card 120.

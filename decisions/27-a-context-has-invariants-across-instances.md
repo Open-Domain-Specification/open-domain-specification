@@ -58,3 +58,7 @@ Card 103 merged `context-invariant-guarded` into `context-invariant-is-checked`:
 ## Amendment (2026-09-10)
 
 A value object's invariant may constrain only its own and inherited attributes, which kept it from reaching unrelated objects and also from reaching the values its own attributes hold: an itinerary whose legs are a `Leg` value object cannot say that each arrival precedes the next departure. The reach is through composition: an invariant on a value object may name attributes reachable through its own attributes' types, transitively through value objects, and nothing outside that path (card 113, Codex's ninth review).
+
+## Note (2026-09-10, second)
+
+Reviewers read "a context invariant is always a check, because a count across instances can race" as a claim about their database, which a unique index refutes. The record means something narrower: the model records who checks the rule, not how strongly the store holds it, and what a context invariant may not claim is that it is kept on every save, because the model's only unit of consistency is the aggregate. That is the model's rule, not a fact about systems; the rule text and the docs say so (card 120). A mark for "kept by the store", and a context invariant naming a process as its keeper for an obligation across contexts, are options deferred until a reference model needs them; wording first.

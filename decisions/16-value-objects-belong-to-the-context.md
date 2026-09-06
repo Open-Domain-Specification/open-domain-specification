@@ -54,3 +54,7 @@ The note saying a kernel's aggregate is consumed through its operations contradi
 ## Note (2026-09-10)
 
 A local value-object attribute no longer has to be restated as a `uses` relation: the line is derived from the attribute, as it is for a borrowed one, and a declared relation only adds a label or a cardinality (card 104). The reference models had written the pair hundreds of times and no decision had named that cost.
+
+## Note (2026-09-10)
+
+Reviewers heard "a shared kernel is a third context" and this record had folded a convenience into a rule. Two contexts sharing a kernel borrow each other's value objects and schemas directly; that pairwise kernel is Evans's shared subset, modelled as such. The kernel context is for many sharers, and for the one thing a pairwise kernel cannot hold: an entity both teams own, which is an aggregate of a kernel context both consume, because a relation or a kind never crosses a context and an entity has one home. That last clause is a preference, now listed in decision 15; the refusing rules point at the route (card 120).

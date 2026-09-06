@@ -10,7 +10,7 @@ The model is written from an interview with the people who own a domain, in thei
 
 ## Decision
 
-A word on what these are. Several of the rules below, and in decisions 17, 21 and 23, are this model's preferences about how a context is drawn, not consequences of Domain-Driven Design: that a context acts through an application service, that a domain service holds no outbound port, that a process names its steps and not their coordination. DDD as Evans and Vernon wrote it admits other shapes. The model chooses these because they make the maps and the reaction walk readable and checkable, and it says so here so a reader does not mistake a preference for a law.s
+A word on what these are. Several of the rules below, and in decisions 17, 21 and 23, are this model's preferences about how a context is drawn, not consequences of Domain-Driven Design: that a context acts through an application service, that a domain service holds no outbound port, that a process names its steps and not their coordination. DDD as Evans and Vernon wrote it admits other shapes. The model chooses these because they make the maps and the reaction walk readable and checkable, and it says so here so a reader does not mistake a preference for a law.
 
 ### A policy stays stateless, because the process now exists
 
@@ -130,3 +130,14 @@ An anti-corruption layer is defined by its translation and the model records onl
 ### The exemptions were shaped by four exemplars
 
 This record calls the model's structural rules preferences, not DDD's laws; it did not say that the exemptions carved into them, the lifecycle rings, the translating policy, the called sub-process, were each written for a shape one of the four reference models needed. They are principled where they can be argued from this record's own reasoning, and every one is, but nothing yet shows they generalise. The test is a fifth model in a domain unlike the four, written blind (card 117); reopen the rules it has to work around, and count what it cost. Named by the architect's tenth round.
+
+## Amendment (2026-09-10, second)
+
+The five-whys on every reviewer contradiction (owner's instruction, 2026-09-10) found this record saying less than it means in six places, and each is corrected here rather than rewritten, so the history stays readable.
+
+- The preamble's list of preferences named decisions 17, 21 and 23 and left out six the reviewers kept meeting: no modules, no actors, no read-model element, no operations on a value object, an entity has one home (decision 16), and a context invariant records the check, not the store (decision 27). All six are preferences, not DDD's laws, and card 120 puts the whole list on the docs site.
+- The section "Delivery is implied by the consumable's type" says the opposite of what the record means. Type is kind, not delivery: an event is a fact, an operation is an intent; the model records no delivery. Most operations are awaited and `relationship-cycle` assumes so; a command carried over a queue is still an operation, and where that assumption produces a finding the consumption's comment says so.
+- "A context has no modules" argued from size, which Evans refutes. The reason is structural: a module is a namespace and the model's namespace is the context; every ref is `#/boundedcontexts/<bc>/...` and no rule reads a grouping. A context with dozens of aggregates may be a sign a subdomain split is meant, and the interview asks; grouping for the reader is the renderer's job. Reopened when a reference model needs a rule to read a grouping.
+- A value object has no operations. Consumables are what a node offers across its boundary; a value's behaviour crosses nothing and is its invariants and description. Reopened when a reference model needs a value's operation as a step in a reaction walk.
+- People are not modelled, moved here from decision 28 where nobody would look for it. An operation people call through a screen is an operation nobody in the model consumes, and that is the normal case; who may call it is the security model's, and a maker-checker rule is an invariant in prose on the approving operation. The interview asks who calls it and the description records the answer (card 120 adds the question; decision 28 claimed it before the playbook had it).
+- Read models are query services, and the write side was unsaid: a policy of the context reacts to the events that feed the view and issues an internal operation that writes what the query later reads.

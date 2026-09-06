@@ -93,3 +93,7 @@ The single-operation inference has no opt-out on purpose. A consumer whose one o
 ## Note (2026-09-10)
 
 The third amendment's warning for a multi-operation consumer that names no `by` was written for the crossing between contexts, and the same silence inside a context went unreported: a front on an application service with two operations that consumes an aggregate's operation without `by` reaches no events, the flow map stops, and nothing says so. The rule reads consumptions inside a context too (card 107, architect's eighth round).
+
+## Note (2026-09-10, second)
+
+Pre-specified for decision 17's reopening condition, so the design is not discovered later: an answer routes back along the local `by` chain to the nearest reactor that issued an operation on it, `routesTo` and `hearsAnswerOf` following `callsOut` transitively inside the context, cycle-guarded like `reachedEvents`, drawing the step from the operation the reactor issued. That keeps card 104's rule, to the caller and nobody else, because every hop is the reactor's own context and its own chain. One hop stays the rule until decision 17 reopens; nothing today needs more.

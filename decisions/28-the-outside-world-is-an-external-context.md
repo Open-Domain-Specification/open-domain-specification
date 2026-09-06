@@ -61,3 +61,7 @@ An identity attribute into an external context named the context itself because 
 ## Amendment (2026-09-10, fourth)
 
 The third amendment let an external context state a precondition or postcondition on its own operation and the rule implemented half of it: a flagged external invariant could name no operation at all, and could constrain a modelled context's entity, because every reach rule iterates modelled contexts only. An external invariant must be flagged, must name one of the context's own operations, and may constrain only that operation's request and answer schemas and the context's own value objects; anything else is refused. And `domain-service-internal` read an external context's service type, so an external context that wrote `domain` was invalid twice; the type is not read on an external context, which offers what it offers (card 116, architect's tenth round).
+
+## Note (2026-09-10, second)
+
+The bullet "Human actors are not modelled ... the interview asks who calls it" claimed a practice the playbook did not have; the section moves to decision 15 and card 120 adds the question. And `external-is-boundary`'s message still sent an author away from the route the third amendment opened: a kind an external system publishes is a schema of that context, which `identifies` may name; the message and the definition of a schema say so (card 120).
