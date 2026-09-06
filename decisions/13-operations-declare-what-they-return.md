@@ -41,3 +41,7 @@ An operation without `returns` still completes, and a process may wait on that: 
 ## Note (2026-09-10)
 
 An asynchronous request whose reply arrives later, correlated, is modelled as the returns-less call plus the events the provider raises, which the caller's process waits on. NorthBank had declared a scheme submission as a synchronous call with an answer while describing the scheme answering on its own timings; card 105 makes it the exchange it is.
+
+## Amendment (2026-09-10)
+
+The 2026-09-09 amendment argued that a named collection and an object holding one are different shapes and gave `returns` its `many`; the same argument applies to a request and an event payload, where the model still offered only the wrapper, and petstore left `createUsersWithList` out. `ConsumableSchema.schema` carries `many` the way `returns` does (card 114, architect's ninth round).

@@ -28,3 +28,7 @@ A bad reference now survives a round trip on every element that can hold one (ca
 ## Correction (2026-09-10)
 
 The decision list above says `context-invariant-is-checked` refuses `precondition` and `postcondition`; decision 27's third amendment allows both on a context invariant and refuses only one that names no guard at all, and the rule does that (card 103). The sentence stands as written on the day and this correction is the record.
+
+## Note (2026-09-10)
+
+Decisions 01, 02, 03, 08 and 09 each promise that `odsVersion` bumps on a breaking change; it has read `1.0.0` since the first commit and nothing compared it, so a file written against an older metamodel failed as `unresolved-ref` or rule errors rather than as what it was. The version is a constant core writes, `2.0.0` for everything since, and a file whose major differs or that has none gets an `ods-version` diagnostic that names the mismatch and still loads what it can; the number is bumped by the decision that breaks it, from here on (card 114, architect's ninth round).

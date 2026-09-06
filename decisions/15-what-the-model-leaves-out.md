@@ -122,3 +122,7 @@ Card 103 named the agreements and left their exchanges pooled: a consumption cou
 ### Rules carry no comments
 
 Comments, the grounded statements about the real system, live on the seams: consumables, consumptions and relationships, where the running system diverges from the design. An invariant, a policy or an aggregate cannot cite the test that enforces it, so NorthBank's evidence pack for its rules is their descriptions. Named by the architect's eighth round; the cost is accepted until a model needs the citation, at which point `comments` extends to every named declaration in one change.
+
+### Translation across a boundary is prose
+
+An anti-corruption layer is defined by its translation and the model records only that it exists: a consumption carries its pattern, its comments and `by`, and the map from the upstream's shapes and terms to the downstream's lives in the description and in the discovery notes, as NorthBank's `SubmissionMessage` against `SchemeSubmission` does. A mapping table would be the expression language this record refuses. Named by the architect's ninth round; reopen when a reader of the pages, not of the notes, needs to see what a layer changes.

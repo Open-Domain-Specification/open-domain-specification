@@ -25,3 +25,7 @@ Decision 13 gave operations `returns` and said synchronous error shapes are not 
 ## Note (2026-09-08)
 
 A rejection is something a process can wait on (decision 23, second amendment), which is what makes it usable: the process that called `AuthorisePayment` reacts to `PaymentDeclined` as the answer it was, not as an event the world was told about.
+
+## Amendment (2026-09-10)
+
+A rejection is keyed by its shape, and a contract that refuses with one shape and a reason code, an acquirer's response code 05 against 51, gave a process one branch whatever the code said; the only faithful alternative, one schema per reason, misstates the contract the way decision 13's `many` amendment refused for lists. A rejection may name its `reasons`, the enumerated outcomes the contract states, and each is an answer a process may hear, alongside the shape-level answer that hears them all. A reason is a named outcome of the contract, not a condition on data, which decision 15 still refuses (card 114, architect's ninth round).

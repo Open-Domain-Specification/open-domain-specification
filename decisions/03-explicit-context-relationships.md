@@ -71,3 +71,7 @@ Where the declared upstream is the caller, neither end can hold the role its pos
 ## Correction (2026-09-10)
 
 The second amendment said `relationship-declared` warns on an identity crossing; decision 14's 2026-09-09 amendment withdrew that, and the «id» edge is the record. A partnership clears a ring of calls between its two contexts, as the rule's own fix text has always said and the walk now reads (card 104).
+
+## Note (2026-09-10)
+
+`role-coherence` asks every crossing for an upstream role on the consumable and a downstream role on the consumption, so the downstream of a customer-supplier pair that uses the negotiated API through a thin client is asked to call itself a conformist or an anti-corruption layer. It is a conformist: its model follows the API it was given, and negotiation is what the relationship type says, not a third way of integrating. The rule is a warning and the roles live on the relationship where the pair is reversed (architect's ninth round).
