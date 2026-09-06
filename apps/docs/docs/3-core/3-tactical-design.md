@@ -34,6 +34,38 @@ and the rest of the
 folder for the reasoning behind each of these, and where a review would find
 the argument rather than the absence.
 
+Each of these costs something, and the cost is named rather than hidden:
+
+- **The boundary is drawn twice.** Every outbound call is an internal
+  operation on the application service that consumes the foreign one, even for
+  a conformist with nothing to translate, so one crossing is two operations and
+  a domain service that wants an outbound port pays for it in one more
+  (decision 17).
+- **An answer routes one hop.** An operation's answer reaches the reactor that
+  issued it and nobody further, so a process whose front makes the call does
+  not hear the neighbour's reply through that front; the chain has to be
+  written where the reader can follow it (decisions 21 and 23).
+- **A kernel context loses the pairwise fact.** Many contexts sharing a kernel
+  is drawn as a third context they all consume, which gains an honest owner and
+  loses Evans's reading of a kernel as code inside each sharer; two contexts
+  sharing one borrow each other's value objects and schemas directly instead
+  (decision 16).
+- **Union answers and aggregate timers each wait on a named condition.** An
+  operation answers with one shape, so an either-or that is not a refusal has no
+  form yet; and a deadline belongs to a process, so an aggregate that expires on
+  its own clock is watched by a process or by a scheduled operation that raises
+  the expiry. Both reopen on a stated condition rather than on taste (decisions
+  18 and 23).
+- **Rules carry no comments.** Comments live on the seams — consumables,
+  consumptions and relationships — so an invariant, a policy or an aggregate
+  cannot cite the test that enforces it, and the evidence for a rule is its
+  description (decision 15).
+- **Translation across a boundary is prose.** A consumption records that an
+  anti-corruption layer exists, with its pattern, its comments and its `by`; the
+  map from the upstream's shapes and terms to the downstream's lives in the
+  description, because a mapping table would be the expression language the
+  model refuses (decision 15).
+
 ## Value objects
 
 A **value object** belongs to the bounded context
@@ -256,9 +288,14 @@ guards.
 An aggregate or service **consumes** a consumable
 (`node.consumes(consumable, { pattern })`), which is what draws the
 dependency on the consumable map. The consumption may also say what of the
-consumer makes it: `by` names the consumer's own operations, or policies of
-its context. A subscription service calls the payment gateway when it
-renews, not when it lists entitlements, and `by` is where that reads. Leaving
+consumer is behind it, and which kind of thing that may be follows the
+consumable: on a consumption of an operation, `by` names the consumer's own
+operations that make the call; on a consumption of an event, the policies and
+processes of the consumer's context that react to it, because a subscription
+is not made but woken (`consumption-by-operation` and
+`consumption-by-reactor`). A subscription service calls the payment gateway
+when it renews, not when it lists entitlements, and `by` is where that reads.
+Leaving
 `by` off means the whole consumer, which is fine where the consumer provides
 one operation or none, because there is nothing to choose between; where it
 provides two or more, `consumption-by-required` asks which of them makes the

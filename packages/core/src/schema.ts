@@ -424,9 +424,14 @@ export interface ConsumptionSchema {
 	/** The downstream role the consumer adopts for this consumable. */
 	pattern?: DownstreamRole;
 	/**
-	 * The consumer's own operations or policies that make this exchange, when
-	 * only some of them do: a subscription service consumes a payment gateway
-	 * when it renews, not when it lists entitlements.
+	 * What of the consumer is behind this exchange, when only some of it is.
+	 * Which kind of thing that may be follows the consumable: on a consumption
+	 * of an operation it is the consumer's own operations that make the call —
+	 * a subscription service calls a payment gateway when it renews, not when
+	 * it lists entitlements — and on a consumption of an event it is the
+	 * policies and processes of the consumer's context that react to it,
+	 * because a subscription is not made but woken. `consumption-by-operation`
+	 * and `consumption-by-reactor` say so, one each way round.
 	 *
 	 * Absent means the whole consumer, which is fine for a consumer that
 	 * provides one operation, or none, because there is nothing to choose
@@ -434,7 +439,7 @@ export interface ConsumptionSchema {
 	 * and `consumption-by-required` asks for it: `by` is the one causal link
 	 * the model has from one operation to the next, so without it the reaction
 	 * walk and the flow map stop at the boundary and an answer reaches nobody
-	 * (decision 21).
+	 * (decision 21, corrected 2026-09-10).
 	 */
 	by?: { $ref: string }[];
 	/**
