@@ -360,7 +360,7 @@ Represents a value object in the Open Domain Specification (ODS).
 | `invariants` | map of id to [Invariant](#invariant) | no | The rules that hold of every instance of this value: a Money's two amounts in one currency, an IBAN's mod-97 checksum. Such a rule holds by construction — a value that breaks it is never made — so it constrains this value's own attributes and needs no operation to guard it (decision 27). Optional, and an absent map is an empty one, like every map of elements in this schema. |
 | `name` | string | yes |  |
 | `relations` | array of [EntityRelation](#entityrelation) | no | What this value points at; empty when left out. |
-| `specialises` | `{ "$ref": string }` | no | The value object this one is a kind of: it has every attribute and relation of that value object, plus its own. The target belongs to this context, or to a context this one shares a kernel with (decision 22). |
+| `specialises` | `{ "$ref": string }` | no | The value object this one is a kind of: it has every attribute and relation of that value object, plus its own. The target belongs to this context, or to a context this one borrows from — over a shared kernel or as a conformist (decision 22). |
 
 No other fields are allowed.
 

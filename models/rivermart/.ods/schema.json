@@ -1204,7 +1204,7 @@
                 },
                 "specialises": {
                     "additionalProperties": false,
-                    "description": "The value object this one is a kind of: it has every attribute and\nrelation of that value object, plus its own. The target belongs to this\ncontext, or to a context this one shares a kernel with (decision 22).",
+                    "description": "The value object this one is a kind of: it has every attribute and\nrelation of that value object, plus its own. The target belongs to this\ncontext, or to a context this one borrows from — over a shared kernel or\nas a conformist (decision 22).",
                     "properties": {
                         "$ref": {
                             "type": "string"
