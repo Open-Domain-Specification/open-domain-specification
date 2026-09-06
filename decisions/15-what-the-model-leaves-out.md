@@ -141,3 +141,7 @@ The five-whys on every reviewer contradiction (owner's instruction, 2026-09-10) 
 - A value object has no operations. Consumables are what a node offers across its boundary; a value's behaviour crosses nothing and is its invariants and description. Reopened when a reference model needs a value's operation as a step in a reaction walk.
 - People are not modelled, moved here from decision 28 where nobody would look for it. An operation people call through a screen is an operation nobody in the model consumes, and that is the normal case; who may call it is the security model's, and a maker-checker rule is an invariant in prose on the approving operation. The interview asks who calls it and the description records the answer (card 120 adds the question; decision 28 claimed it before the playbook had it).
 - Read models are query services, and the write side was unsaid: a policy of the context reacts to the events that feed the view and issues an internal operation that writes what the query later reads.
+
+## Note (2026-09-10, after card 117)
+
+The fifth model ran: one modelling mistake, two rules worked around, none believed wrong, and both worked-around shapes were the ones the brief had named as things the author was free to do, which the interviews show being recited back. The exemptions held; the test was weaker than a blind one because the brief named the shapes. A second blind model, if one is ever needed, is briefed with the domain only.

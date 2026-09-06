@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [models]
 priority: medium
 agent: developer
