@@ -51,8 +51,12 @@ entity of this workspace.
 Some ids belong to a system nobody here models inside — a card scheme's
 authorisation reference, a payment provider's customer id. An external context
 has no entities of ours to name, so `identifies` points at that context itself
-and the maps draw the dependency on it. A context that is not external is
-refused: there the entity exists, and it is what the id is of.
+and the maps draw the dependency on it. Where that system publishes a schema
+for the kind the id names — a processor documents Customer, Payment, Refund and
+Dispute as distinct kinds with distinct ids — `identifies` may name that schema
+instead, and the model still reads it as an identity into that context. A
+context that is not external is refused, and so is a schema of one: there the
+entity exists, and it is what the id is of.
 
 ## Specialisation
 

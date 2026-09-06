@@ -2568,6 +2568,21 @@ export class Team implements SchemaConvertible<ods.TeamSchema> {
 	}
 }
 
+/**
+ * What an identity attribute may name.
+ *
+ * An entity, root or child, anywhere in the workspace: the id is of that
+ * thing, and naming it is how a model records a dependency across a boundary
+ * (decision 14). A bounded context, where the id belongs to a system whose
+ * entities are not ours to state or not anyone's to find (decision 28). Or a
+ * schema of such a system, where it publishes one for the kind the id names: a
+ * payment processor documents Customer, Payment, Refund and Dispute as
+ * distinct kinds with distinct ids, and those kinds are its published schemas,
+ * so an identity may say which of them it holds rather than only which system
+ * (decision 28, third amendment of 2026-09-10).
+ */
+export type IdentityTarget = Entity | BoundedContext | DataSchema;
+
 export type AttributeOptions = {
 	type: string;
 	description?: string;
@@ -2578,12 +2593,14 @@ export type AttributeOptions = {
 	/** The schema that models this attribute's type, when it is a shape of its own. */
 	schema?: DataSchema;
 	/**
-	 * What this attribute holds the identity of: an entity in any context, or
-	 * a context itself when it is external or a big ball of mud, and the id
+	 * What this attribute holds the identity of: an entity in any context; a
+	 * published schema of an external context, when that system documents the
+	 * kind the id names — a processor's Customer beside its Payment; or a
+	 * context itself when it is external or a big ball of mud and the id
 	 * belongs to a system whose entities are not ours to state or not anyone's
 	 * to find (decisions 14 and 28).
 	 */
-	identifies?: Entity | BoundedContext;
+	identifies?: IdentityTarget;
 	id?: string;
 };
 
@@ -2607,12 +2624,14 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 	/** The schema that models this attribute's type, when it is a shape of its own. */
 	schema?: DataSchema;
 	/**
-	 * What this attribute holds the identity of: an entity in any context, or
-	 * a context itself when it is external or a big ball of mud, and the id
+	 * What this attribute holds the identity of: an entity in any context; a
+	 * published schema of an external context, when that system documents the
+	 * kind the id names — a processor's Customer beside its Payment; or a
+	 * context itself when it is external or a big ball of mud and the id
 	 * belongs to a system whose entities are not ours to state or not anyone's
 	 * to find (decisions 14 and 28).
 	 */
-	identifies?: Entity | BoundedContext;
+	identifies?: IdentityTarget;
 	owner: AttributeOwner;
 
 	get path(): string {

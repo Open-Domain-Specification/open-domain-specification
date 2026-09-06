@@ -180,6 +180,36 @@ describe("ODSContextMap", () => {
 		expect(edges[0].source.external).toBe(true);
 	});
 
+	it("implies an edge from an identity that names an external context's schema", () => {
+		// A processor publishes Customer, Payment and Refund as distinct kinds
+		// with distinct ids, so the identity says which kind it holds; it is
+		// still an identity into that context, and draws as one (decision 28,
+		// third amendment; card 113).
+		const ws = new Workspace("W", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0",
+		});
+		const provider = ws.addBoundedContext("PayCo", {
+			description: "",
+			external: true,
+		});
+		const payment = provider.addSchema("Payment");
+		const payments = ws.addBoundedContext("Payments", { description: "" });
+		payments
+			.addAggregate("Settlement", { description: "" })
+			.addRootEntity("Settlement", { description: "" })
+			.addAttribute("provider Payment Id", {
+				type: "string",
+				identifies: payment,
+			});
+		const edges = Array.from(ODSContextMap.fromWorkspace(ws).edges.values());
+		expect(edges).toHaveLength(1);
+		expect(edges[0].source.id).toBe(provider.ref);
+		expect(edges[0].target.id).toBe(payments.ref);
+		expect(edges[0].implied).toBe("identity");
+	});
+
 	it("draws nothing for an id echoed in a payload schema", () => {
 		// A correlation id in an event or a request is carried for its reader:
 		// the context publishing the payload depends on nobody for it, so there
@@ -404,6 +434,41 @@ describe("ODSRelationMap", () => {
 		expect(node?.attributes).toEqual([]);
 		// And it stands in a cluster of its own, outside every aggregate.
 		expect(node?.namespace[node.namespace.length - 1]?.id).toBe(scheme.ref);
+	});
+
+	it("draws an identity of an external context's schema onto that context's box", () => {
+		// The box a reader can follow is the system's; which of its published
+		// kinds the id is of reads on the attribute's own page (card 113).
+		const ws = new Workspace("External schema identity", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "1.0.0",
+		});
+		const payments = ws.addBoundedContext("Payments", { description: "" });
+		const provider = ws.addBoundedContext("PayCo", {
+			description: "",
+			external: true,
+		});
+		const payment = provider.addSchema("Payment");
+		const settlement = payments
+			.addAggregate("Settlement", { description: "" })
+			.addRootEntity("Settlement", { description: "" });
+		settlement.addAttribute("id", { type: "string", identity: true });
+		settlement.addAttribute("providerPaymentId", {
+			type: "string",
+			identifies: payment,
+		});
+
+		const map = ODSRelationMap.fromWorkspace(ws);
+		const edge = Array.from(map.edges.values()).find(
+			(e) => e.relation === "identifies",
+		);
+		expect(edge?.source.name).toBe("Settlement");
+		expect(edge?.target.name).toBe("PayCo");
+		expect(edge?.label).toBe("providerPaymentId");
+		expect(map.nodes.get(provider.ref)?.type).toBe("external_context");
+		// The schema itself is not a box on the relation map.
+		expect(map.nodes.get(payment.ref)).toBeUndefined();
 	});
 
 	it("draws a kind as a generalisation pointing at what it is a kind of", () => {

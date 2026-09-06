@@ -344,6 +344,18 @@ const crossContextRelation: Rule = (workspace) => {
  * does exist and is what the id is of — naming the whole context instead would
  * say less than the model already holds.
  *
+ * An external context often publishes more than its name: a payment processor
+ * documents Customer, Payment, Refund and Dispute as distinct kinds with
+ * distinct ids, and those kinds are its published schemas. An identity may
+ * name one of them, and the model reads it as an identity into that context
+ * naming that kind; the context itself stays the target where nothing is
+ * published for the id. A schema of any other context is refused for the same
+ * reason the context is: where the model states the insides, the id is of an
+ * entity and the entity is what to name (decision 28, third amendment of
+ * 2026-09-10; card 113). A big ball of mud publishes nothing anyone can rely
+ * on — that is what makes it one — so its schemas are not identity targets and
+ * its ids name the context.
+ *
  * What the rule otherwise refuses is an identity naming an entity this
  * workspace does not have: one built against another workspace, or dropped
  * since, where the id reaches nothing.
@@ -360,6 +372,16 @@ const identifiesEntity: Rule = (workspace) => {
 					severity: "error",
 					rule: "identifies-entity",
 					message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of bounded context "${target.name}", which is neither external nor a big ball of mud; a context whose insides the model states has the entity the id is of, so name that entity instead`,
+					ref: attribute.ref,
+				});
+				continue;
+			}
+			if (target instanceof DataSchema) {
+				if (target.boundedcontext.external) continue;
+				diagnostics.push({
+					severity: "error",
+					rule: "identifies-entity",
+					message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of schema "${target.name}" of bounded context "${target.boundedcontext.name}", which is not external; a published schema is a kind a system outside the model documents, so name the entity the id is of, or that system's context where its entities are not ours to state`,
 					ref: attribute.ref,
 				});
 				continue;
@@ -1226,23 +1248,60 @@ function* valueObjectInvariantsOf(
 }
 
 /**
- * A value object's invariant is a rule about that value and nothing else: a
- * Money's two amounts in one currency, an IBAN's mod-97 checksum. It holds by
+ * Everything a value object's own invariant may constrain: the value, its
+ * attributes — its own and inherited — and, through any attribute typed by
+ * another value object, that value and its attributes in turn, as far as the
+ * composition runs.
+ *
+ * A value is made whole, and what it is made of is made with it: an itinerary
+ * is constructed from its legs, so a rule that each leg's arrival precedes the
+ * next leg's departure holds by construction of the itinerary exactly as a
+ * Money's same-currency rule holds by construction of the Money. Reading only
+ * the owner's own attributes forced such a model to flatten its legs into the
+ * itinerary to state a rule the business states plainly (decision 27, amended
+ * 2026-09-10; card 113). The walk follows composition and nothing else, so an
+ * entity, an operation or a value nobody on the path holds stays out of reach.
+ */
+function compositionReachOf(vo: ValueObject): Set<Constrainable> {
+	const reach = new Set<Constrainable>();
+	const held = [vo];
+	const seen = new Set<ValueObject>(held);
+	// `held` grows as attributes name further values, and a `for...of` over an
+	// array reads its length each step, so the walk follows composition to the
+	// end. A value that holds itself, directly or round a ring, is visited once.
+	for (const value of held) {
+		reach.add(value);
+		for (const attribute of value.allAttributes) {
+			reach.add(attribute);
+			const composed = attribute.valueobject;
+			if (!composed || seen.has(composed)) continue;
+			seen.add(composed);
+			held.push(composed);
+		}
+	}
+	return reach;
+}
+
+/**
+ * A value object's invariant is a rule about that value and what it is made
+ * of, and nothing else: a Money's two amounts in one currency, an IBAN's
+ * mod-97 checksum, an Itinerary's legs in time order. It holds by
  * construction, because a value that breaks it is never made, so it needs no
- * guard and it may not reach for an entity, another value or an operation —
- * anything it reached for would be a rule about something the value cannot
- * see, and that rule belongs to the aggregate or the context (decision 27).
+ * guard and it may not reach for an entity, an operation or a value nothing on
+ * its composition path holds — anything further would be a rule about
+ * something the value cannot see, and that rule belongs to the aggregate or
+ * the context (decision 27, amended 2026-09-10).
  */
 const invariantInValueObject: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const [vo, invariant] of valueObjectInvariantsOf(workspace)) {
-		const own = new Set<Constrainable>([vo, ...vo.allAttributes]);
+		const reach = compositionReachOf(vo);
 		for (const target of invariant.targets) {
-			if (own.has(target)) continue;
+			if (reach.has(target)) continue;
 			diagnostics.push({
 				severity: "error",
 				rule: "invariant-in-value-object",
-				message: `Invariant "${invariant.name}" of value object "${vo.name}" constrains "${constrainableLabel(target)}", which is not an attribute of "${vo.name}"; a value's rule holds by construction of that value and reaches nothing outside it`,
+				message: `Invariant "${invariant.name}" of value object "${vo.name}" constrains "${constrainableLabel(target)}", which is neither an attribute of "${vo.name}" nor one of a value "${vo.name}" is made of; a value's rule holds by construction of that value and reaches only along what it composes`,
 				ref: invariant.ref,
 			});
 		}
@@ -4035,10 +4094,21 @@ function reEntersWhileAlive(process: Process, before: Reactor): boolean {
 	);
 }
 
+/** The step of a ring that leads into a node: what happened just before it. */
+function beforeOnRing(cycle: Reactor[], node: Reactor): Reactor {
+	const at = cycle.indexOf(node);
+	return cycle[(at + cycle.length - 1) % cycle.length];
+}
+
+/** The step of a ring that follows a node: what it leads to. */
+function afterOnRing(cycle: Reactor[], node: Reactor): Reactor {
+	return cycle[(cycle.indexOf(node) + 1) % cycle.length];
+}
+
 /**
- * Whether a policy only translates: it hears one of its events through an
- * anti-corruption-layer consumption, and what it issues raises its own
- * context's events rather than doing nothing visible.
+ * Whether a policy is translating on this ring: the trigger it hears here is
+ * its anti-corruption-layer subscription, and the operation it issues here
+ * raises the very event that carries the ring on.
  *
  * That is the gateway policy NorthBank's honest wiring needed: the scheme
  * answers, the policy hears the answer as the event it publishes through its
@@ -4046,29 +4116,39 @@ function reEntersWhileAlive(process: Process, before: Reactor): boolean {
  * It starts nothing the process did not start and holds no state of its own,
  * so it is not a second reactor for {@link isProcessLifecycleThroughLayer}'s
  * purposes — it is the layer the process's lifecycle runs through.
+ *
+ * Read on the policy alone, as it was until card 113, this asked less than it
+ * claimed: a policy with an anti-corruption subscription anywhere and any
+ * operation raising any event counted as translating, whatever it was doing on
+ * this particular ring. The ring's own steps are what the exemption is about,
+ * so they are what is checked — the trigger this ring wakes the policy with,
+ * and the operation this ring leaves it by.
  */
-function isTranslatingPolicy(policy: Policy): boolean {
+function isTranslatingPolicy(policy: Policy, cycle: Reactor[]): boolean {
+	const trigger = beforeOnRing(cycle, policy);
 	const bc = policy.boundedcontext;
 	const members = [...bc.aggregates.values(), ...bc.services.values()];
-	const hearsThroughLayer = policy.events.some(
-		(trigger) =>
-			trigger instanceof Consumable &&
-			members.some((member) =>
-				member.consumptions.some(
-					(c) =>
-						c.consumable === trigger &&
-						c.pattern === "anti-corruption-layer" &&
-						c.by.includes(policy),
-				),
+	const hearsThroughLayer =
+		trigger instanceof Consumable &&
+		members.some((member) =>
+			member.consumptions.some(
+				(c) =>
+					c.consumable === trigger &&
+					c.pattern === "anti-corruption-layer" &&
+					c.by.includes(policy),
 			),
-	);
+		);
 	if (!hearsThroughLayer) return false;
-	return policy.commands.some((op) => op.raisedEvents.length > 0);
+	const issued = afterOnRing(cycle, policy);
+	if (!(issued instanceof Consumable) || !policy.commands.includes(issued))
+		return false;
+	const carried = afterOnRing(cycle, issued);
+	return carried instanceof Consumable && issued.raisedEvents.includes(carried);
 }
 
 /**
- * Whether a ring is one process's lifecycle running through a translating
- * layer, rather than a cycle.
+ * The one process of a ring whose every other reactor is a policy translating
+ * on it, or undefined where the ring is not that shape.
  *
  * {@link isProcessLifecycle} exempts a ring on which the process is the only
  * reactor. NorthBank's honest gateway wiring put a second reactor on the
@@ -4077,11 +4157,15 @@ function isTranslatingPolicy(policy: Policy): boolean {
  * event, which the process then hears. That policy translates; it starts
  * nothing the process did not start and holds no state between events of its
  * own, so a ring on which one process sits and every other reactor is such a
- * translating policy is still the process's lifecycle, carried through the
- * layer rather than reported twice — once for each direction of the same call
+ * translating policy is the process's lifecycle carried through the layer
+ * rather than two cycles, one for each direction of the same call
  * (decision 23, amended 2026-09-10, second; card 108).
+ *
+ * The shape alone is not the exemption, only its first half; whether the
+ * process is living or being born again on this ring is
+ * {@link isProcessLifecycleThroughLayer}'s question.
  */
-function isProcessLifecycleThroughLayer(cycle: Reactor[]): boolean {
+function processThroughTranslatingLayer(cycle: Reactor[]): Process | undefined {
 	const reactors = cycle.filter(
 		(node): node is Policy | Process =>
 			node instanceof Process || node instanceof Policy,
@@ -4092,8 +4176,52 @@ function isProcessLifecycleThroughLayer(cycle: Reactor[]): boolean {
 	const policies = reactors.filter(
 		(node): node is Policy => node instanceof Policy,
 	);
-	if (processes.length !== 1 || policies.length === 0) return false;
-	return policies.every(isTranslatingPolicy);
+	if (processes.length !== 1 || policies.length === 0) return undefined;
+	if (!policies.every((policy) => isTranslatingPolicy(policy, cycle)))
+		return undefined;
+	return processes[0];
+}
+
+/**
+ * Whether a ring is one process's lifecycle running through a translating
+ * layer, rather than a cycle.
+ *
+ * The shape — one process, every other reactor translating on the ring — is
+ * {@link processThroughTranslatingLayer}. The exemption's premise is the other
+ * half, and card 108 asserted it without checking it: that the event the
+ * process hears here continues an instance. A translated event named in the
+ * process's `starts` does not; it makes another instance every time round, so
+ * no instance's state holds the ring together and the lifecycle argument is
+ * gone. Codex's ninth review drew exactly that ring and it validated clean
+ * (decision 23, note of 2026-09-10, second; card 113).
+ *
+ * What continues an instance is {@link reEntersWhileAlive}: a trigger the
+ * process waits on while alive, an answer routed back through one of its
+ * calls, or its own deadline. An ending trigger closes no ring at all — the
+ * walk takes no step from one, because a fact that completes an instance does
+ * not wake it — so `ends` never reaches this question.
+ */
+function isProcessLifecycleThroughLayer(cycle: Reactor[]): boolean {
+	const process = processThroughTranslatingLayer(cycle);
+	if (!process) return false;
+	return reEntersWhileAlive(process, beforeOnRing(cycle, process));
+}
+
+/**
+ * The process a ring spawns a new instance of every time round: one whose ring
+ * is a translating layer's in every respect except that what comes back to it
+ * through the layer is a `starts` trigger.
+ *
+ * It is a cycle, and the reason it is one is worth saying in the message: a
+ * reader who has drawn a lifecycle through a gateway needs to be told that the
+ * event coming back begins the process rather than continuing it (card 113).
+ */
+function spawnsInstancesThroughLayer(cycle: Reactor[]): Process | undefined {
+	const process = processThroughTranslatingLayer(cycle);
+	if (!process) return undefined;
+	return reEntersWhileAlive(process, beforeOnRing(cycle, process))
+		? undefined
+		: process;
 }
 
 /**
@@ -4112,7 +4240,10 @@ function isProcessLifecycleThroughLayer(cycle: Reactor[]): boolean {
  * One shape is exempt: a process fed by its own steps, which is a lifecycle
  * and not a ring (see {@link isProcessLifecycle}); another is a ring with a
  * process and a translating policy on it, its lifecycle through an
- * anti-corruption layer (see {@link isProcessLifecycleThroughLayer}).
+ * anti-corruption layer (see {@link isProcessLifecycleThroughLayer}). Both ask
+ * that what comes back to the process continues an instance; where it starts
+ * one instead, the ring is reported for what it does — every turn spawns
+ * another instance (see {@link spawnsInstancesThroughLayer}; card 113).
  *
  * A ring with no policy or process on it at all is not a chain of reactions —
  * nothing on it wakes on anything, it is a call reaching the next operation
@@ -4149,9 +4280,16 @@ const reactionCycle: Rule = (workspace) => {
 			const named = [...cycle, cycle[0]]
 				.map((n) => `"${n.name}"`)
 				.join(" -> ");
-			const message = hasReactor
-				? `Reactions run in a cycle: ${named}; the chain triggers itself and nothing in the model says what ends it${across}`
-				: `Calls run in a cycle: ${named}; each of these calls the next and nothing on the ring reacts to anything, so it is a loop of calls rather than a chain of reactions${across}`;
+			// A ring that would be a lifecycle through a translating layer but
+			// for the event coming back into the process's `starts` is named
+			// for what it does: each turn begins another instance, so a reader
+			// who drew it as one instance's life sees why it is not.
+			const spawning = spawnsInstancesThroughLayer(cycle);
+			const message = spawning
+				? `Reactions run in a cycle that spawns instances: ${named}; the event that closes the ring starts "${spawning.name}" rather than continuing it, so every turn begins another instance and nothing in the model says what ends them${across}`
+				: hasReactor
+					? `Reactions run in a cycle: ${named}; the chain triggers itself and nothing in the model says what ends it${across}`
+					: `Calls run in a cycle: ${named}; each of these calls the next and nothing on the ring reacts to anything, so it is a loop of calls rather than a chain of reactions${across}`;
 			return [
 				{
 					severity: "warning" as const,
@@ -4476,9 +4614,9 @@ const RULES: CataloguedRule[] = [
 		rule: "identifies-entity",
 		severities: ["error"],
 		summary:
-			"An attribute's identifies names an entity of this workspace, root or child, in any aggregate of any context, or a bounded context marked external or bigBallOfMud.",
-		why: "An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about, and it is the one dependency allowed to cross a bounded context (decision 14). That thing may be a child, because systems point at child identities constantly — a playback session names a profile inside a household, a claim a coverage inside a policy, a shipment an order's line — and the child stays inside its aggregate exactly because its parent's invariants need it there; you hold the child's id, with its root's id beside it, and reach it through that root, so the dependency is really on the aggregate the root leads. Holding the id is not reaching inside: what reaches inside is a relation into another aggregate's members, and cross-aggregate-reference refuses that and recommends this id in its place. It may also be a context whose insides the model does not state: a card scheme's authorisation id belongs to a system whose entities are not ours to state, and a legacy account key to one nobody can read well enough to say which entity it is of (decision 28), so the attribute names the system and the maps still draw the dependency. Any other context is refused, because there the entity exists and naming the whole context would say less. What the id may never name is something this workspace does not have, since then it reaches nothing.",
-		fix: "Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child, with the root's id beside it — or, for an id that belongs to a system you do not model inside or cannot read, at that system's bounded context, marked external: true or bigBallOfMud: true. Check the target has not been renamed or moved out from under the attribute.",
+			"An attribute's identifies names an entity of this workspace, root or child, in any aggregate of any context, or a bounded context marked external or bigBallOfMud, or a schema an external context publishes.",
+		why: "An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about, and it is the one dependency allowed to cross a bounded context (decision 14). That thing may be a child, because systems point at child identities constantly — a playback session names a profile inside a household, a claim a coverage inside a policy, a shipment an order's line — and the child stays inside its aggregate exactly because its parent's invariants need it there; you hold the child's id, with its root's id beside it, and reach it through that root, so the dependency is really on the aggregate the root leads. Holding the id is not reaching inside: what reaches inside is a relation into another aggregate's members, and cross-aggregate-reference refuses that and recommends this id in its place. It may also be a context whose insides the model does not state: a card scheme's authorisation id belongs to a system whose entities are not ours to state, and a legacy account key to one nobody can read well enough to say which entity it is of (decision 28), so the attribute names the system and the maps still draw the dependency. Where that system publishes a schema for the kind the id names — a processor's Customer beside its Payment, its Refund and its Dispute — the identity may name that schema and say which kind of id it holds, and the model reads it as an identity into that context (decision 28, third amendment). Any other context is refused, and so is a schema of one, because there the entity exists and naming the whole context, or a payload shape of it, would say less. What the id may never name is something this workspace does not have, since then it reaches nothing.",
+		fix: "Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child, with the root's id beside it — or, for an id that belongs to a system you do not model inside or cannot read, at that system's bounded context, marked external: true or bigBallOfMud: true — or, where that external system publishes a schema for the kind the id is of, at that schema. Check the target has not been renamed or moved out from under the attribute.",
 		check: identifiesEntity,
 	},
 	{
@@ -4590,9 +4728,9 @@ const RULES: CataloguedRule[] = [
 		rule: "invariant-in-value-object",
 		severities: ["error"],
 		summary:
-			"Every element a value object's invariant constrains is an attribute of that value object, or the value object itself.",
-		why: "A value is defined by what it holds, and a rule about it is kept by refusing to make one that breaks it: an IBAN whose checksum fails is not a badly configured IBAN, it is not an IBAN. Such a rule needs no save and no guard, and it can only be about what the value carries — a value object knows nothing of the entity holding it, of another value, or of any operation, so a rule naming one of those is a rule the value cannot keep.",
-		fix: "Point the invariant at this value object's own attributes. If the rule is really about the thing that holds the value — a transition, a balance across two entities — move it to that aggregate; if it is about several instances at once, it is the context's (decision 27).",
+			"Every element a value object's invariant constrains is that value object, one of its attributes, or a value it composes and that value's attributes in turn.",
+		why: "A value is defined by what it holds, and a rule about it is kept by refusing to make one that breaks it: an IBAN whose checksum fails is not a badly configured IBAN, it is not an IBAN. What the value holds includes the values it is made of — an itinerary is constructed from its legs, so each leg's arrival preceding the next leg's departure is as much a rule of the itinerary's construction as the checksum is of the IBAN's, and reading only the owner's own attributes forced such a model to flatten its legs to say it. What stays out of reach is everything off that path: a value object knows nothing of the entity holding it, of a value nothing it composes holds, or of any operation, so a rule naming one of those is a rule the value cannot keep.",
+		fix: "Point the invariant at this value object's own attributes, or at those of a value it holds, followed as far as the composition runs: an Itinerary's invariant may name Leg.arrival because Itinerary.legs is typed by Leg. If the rule is really about the thing that holds the value — a transition, a balance across two entities — move it to that aggregate; if it is about several instances at once, it is the context's (decision 27).",
 		check: invariantInValueObject,
 	},
 	{
@@ -4975,7 +5113,7 @@ const RULES: CataloguedRule[] = [
 		severities: ["warning"],
 		summary:
 			"The reactions form no cycle: no operation raises an event whose policy or process issues an operation that leads back to the first.",
-		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with two exemptions that are the whole point of it. A process fed by its own steps — it issues an operation, the operation raises the event it waits for next, and so on to the end — is a lifecycle, not a ring, because the process holds state and declares what ends it (decision 23). And a ring on which one process sits and every other reactor is a policy that only translates — hearing its event through an anti-corruption-layer consumption and republishing it as its own context's fact — is that process's lifecycle carried through the layer, not a second reactor (decision 23, amended 2026-09-10, second). So a cycle is reported only when the walk comes back to a reactor other than that process or such a translating policy: a ring through two processes, or through a process and an ordinary policy, is a genuine loop and is reported. The exemption asks for one more thing, that the ring comes back to an instance already running: a process whose own operation raises the event it starts on makes a new instance every time round, so no instance's state holds the ring together and nothing says what stops the next one. A ring with no policy or process on it at all is not a chain of reactions — nothing on it wakes on anything — so it is worded as calls rather than reactions, and reported once: where every step of it crosses a context, `relationship-cycle` already reports the same ring as a ring of calls between contexts, and this rule stays quiet there (decision 20, note of 2026-09-10).",
+		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with two exemptions that are the whole point of it. A process fed by its own steps — it issues an operation, the operation raises the event it waits for next, and so on to the end — is a lifecycle, not a ring, because the process holds state and declares what ends it (decision 23). And a ring on which one process sits and every other reactor is a policy that only translates — hearing its event through an anti-corruption-layer consumption and republishing it as its own context's fact — is that process's lifecycle carried through the layer, not a second reactor (decision 23, amended 2026-09-10, second); the policy has to be translating on this ring — woken here by its anti-corruption subscription and leaving here by an operation that raises the event carrying the ring on — and not merely to have such a subscription somewhere. So a cycle is reported only when the walk comes back to a reactor other than that process or such a translating policy: a ring through two processes, or through a process and an ordinary policy, is a genuine loop and is reported. Both exemptions ask for one more thing, that the ring comes back to an instance already running: a process that hears the event coming back — round its own steps or through the layer — as one of its `starts` makes a new instance every time round, so no instance's state holds the ring together and nothing says what stops the next one; that ring is reported as a cycle that spawns instances, in those words (card 113). A ring with no policy or process on it at all is not a chain of reactions — nothing on it wakes on anything — so it is worded as calls rather than reactions, and reported once: where every step of it crosses a context, `relationship-cycle` already reports the same ring as a ring of calls between contexts, and this rule stays quiet there (decision 20, note of 2026-09-10).",
 		fix: "Break the ring, usually one of the policies is reacting to too broad an event or issues an operation it should not. Where the ring closes on a process's own starting event, the step that restarts it is the one to look at: wait on that fact with `on` if the instance is meant to carry on, or raise a different event if a fresh instance is really meant each time and say in the process's description what stops the next one. If the loop is a real feedback loop that converges, say what ends it in the description of the policy that closes the ring; the model has no conditions on purpose (decision 15), so the ending condition is prose a reader finds where the loop closes, and the warning stands to send them there. If the ring is nothing but calls with no reactor at all, the fix is `relationship-cycle`'s: an anti-corruption layer, a partnership, or turning a call into an event.",
 		check: reactionCycle,
 	},

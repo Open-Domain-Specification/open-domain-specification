@@ -191,7 +191,11 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   aggregate that root leads. If the id belongs to a system nobody here models inside — the card
   scheme's authorisation reference, the payment provider's customer id, the regulator's case
   number — there is no entity to name, so point `identifies` at that system's bounded context,
-  which is declared `external: true`. Apply it everywhere rather than case by case: any
+  which is declared `external: true`. Ask one more question there: "does their documentation
+  give that kind a name and an id of its own?" A processor publishes Customer, Payment, Refund
+  and Dispute as separate kinds; declare the one you hold as a schema of that external context
+  and point `identifies` at it, which says which kind of their id you keep and still reads as an
+  identity into that system. Apply it everywhere rather than case by case: any
   attribute whose name or description says it is another entity's or another system's id sets
   `identifies`. The one exception is a same-context id already drawn as a `references` relation
   to that entity, where `identifies` would say the same thing twice. Schema attributes follow

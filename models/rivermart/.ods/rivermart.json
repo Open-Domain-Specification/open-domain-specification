@@ -2678,6 +2678,14 @@
                   "valueobject": {
                     "$ref": "#/boundedcontexts/payments/valueobjects/money"
                   }
+                },
+                "provider_payment_id": {
+                  "name": "providerPaymentId",
+                  "type": "string",
+                  "description": "The acquirer's ProviderPayment for this capture, quoted in every enquiry",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/payment_provider/schemas/provider_payment"
+                  }
                 }
               },
               "relations": [
@@ -5107,6 +5115,23 @@
       "glossary": {},
       "valueobjects": {},
       "schemas": {
+        "provider_payment": {
+          "name": "ProviderPayment",
+          "description": "The acquirer's own record of one payment, as its documentation publishes it",
+          "attributes": {
+            "payment_id": {
+              "name": "paymentId",
+              "type": "string",
+              "description": "The acquirer's id for the payment, quoted in every enquiry",
+              "identity": true
+            },
+            "status": {
+              "name": "status",
+              "type": "string",
+              "description": "The acquirer's own state for it: held, taken, returned"
+            }
+          }
+        },
         "provider_request": {
           "name": "ProviderRequest",
           "description": "The acquirer's wire format, which RiverMart does not shape",

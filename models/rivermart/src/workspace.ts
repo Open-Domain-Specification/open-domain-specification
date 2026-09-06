@@ -262,6 +262,24 @@ const paymentProviderBC = workspace.addBoundedContext("Payment Provider", {
 		"The acquirer that actually holds, takes and returns the customer's money. RiverMart calls it and translates everything it says",
 	external: true,
 });
+// What the acquirer publishes about the money it holds, not a guess at its
+// insides: it documents a payment of its own, with an id of its own, beside
+// the customer and the refund it documents the same way. An identity may name
+// that kind rather than only the system, and RiverMart's Capture holds it
+// (decision 28, third amendment; card 113).
+const providerPaymentSchema = paymentProviderBC.addSchema("ProviderPayment", {
+	description:
+		"The acquirer's own record of one payment, as its documentation publishes it",
+});
+providerPaymentSchema.addAttribute("paymentId", {
+	type: "string",
+	identity: true,
+	description: "The acquirer's id for the payment, quoted in every enquiry",
+});
+providerPaymentSchema.addAttribute("status", {
+	type: "string",
+	description: "The acquirer's own state for it: held, taken, returned",
+});
 
 /* =======================
    CATALOGUE
@@ -1349,6 +1367,16 @@ authorisation.addAttribute("providerRef", {
 authorisation.addAttribute("expiresAt", { type: "date-time" });
 capture.addAttribute("captureId", { type: "string", identity: true });
 capture.addAttribute("amount", { type: "Money", valueobject: paymentMoney });
+// The acquirer's id for the money it took. Its own documentation calls that a
+// payment and gives it an id, so the identity names that published kind rather
+// than the system as a whole, which is all the model could say before
+// (decision 28, third amendment; card 113).
+capture.addAttribute("providerPaymentId", {
+	type: "string",
+	identifies: providerPaymentSchema,
+	description:
+		"The acquirer's ProviderPayment for this capture, quoted in every enquiry",
+});
 refund.addAttribute("refundId", { type: "string", identity: true });
 refund.addAttribute("amount", { type: "Money", valueobject: paymentMoney });
 paymentIntent.includes(authorisation, "held-by", "0..1");

@@ -25,7 +25,7 @@ import type {
 	Consumable,
 	ConsumptionCaller,
 	ContextRelationship,
-	DataSchema,
+	IdentityTarget,
 	Process,
 	ProcessTrigger,
 	ReactionTrigger,
@@ -38,6 +38,7 @@ import type {
 } from "./workspace";
 import {
 	BoundedContext,
+	DataSchema,
 	Deadline,
 	Entity,
 	keepsUnresolvedWrites,
@@ -174,8 +175,8 @@ const A_RELATION_TARGET: Kind<Entity | ValueObject> = {
 	what: "an entity or a value object of this workspace",
 	find: (workspace, ref) => workspace.getEntityOrValueobjectByRef(ref),
 };
-const AN_IDENTITY_TARGET: Kind<Entity | BoundedContext> = {
-	what: "an entity of this workspace, or a bounded context whose entities it does not state",
+const AN_IDENTITY_TARGET: Kind<IdentityTarget> = {
+	what: "an entity of this workspace, or a bounded context whose entities it does not state, or a schema such a context publishes",
 	find: identifiedBy,
 };
 const A_CALLER: Kind<ConsumptionCaller> = {
@@ -318,19 +319,23 @@ function addConsumes(
 }
 
 /**
- * What an identity attribute names: an entity anywhere in the workspace, or a
+ * What an identity attribute names: an entity anywhere in the workspace; a
  * bounded context, for an id that belongs to a system whose entities are not
- * modelled (decision 28). Whether that context is really external is
- * `identifies-entity`'s to say; the loader only resolves what the ref points
- * at, so a model that names the wrong kind of context loads and is reported
- * rather than throwing.
+ * modelled (decision 28); or a schema that system publishes for the kind the
+ * id names (decision 28, third amendment). Whether that context is really
+ * external is `identifies-entity`'s to say; the loader only resolves what the
+ * ref points at, so a model that names the wrong kind of context, or a schema
+ * of a context whose insides it does state, loads and is reported rather than
+ * throwing.
  */
 function identifiedBy(
 	workspace: Workspace,
 	ref: string,
-): Entity | BoundedContext | undefined {
+): IdentityTarget | undefined {
 	const target = workspace.getByRef(ref);
-	return target instanceof Entity || target instanceof BoundedContext
+	return target instanceof Entity ||
+		target instanceof BoundedContext ||
+		target instanceof DataSchema
 		? target
 		: undefined;
 }
