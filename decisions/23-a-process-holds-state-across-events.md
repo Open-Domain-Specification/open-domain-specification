@@ -59,3 +59,7 @@ The lifecycle test is whether the process is the ring's only reactor, not whethe
 ## Amendment (2026-09-10)
 
 An answer routes to the reactor that called: when two reactors in one context call one operation, each hears only the answer to the call it made, by the `by` that names it; the single-consumption inference applies only where no `by` is written. And a process that re-enters itself through a `starts` trigger is a loop spawning instances, not a lifecycle, and is reported (card 104).
+
+## Amendment (2026-09-10)
+
+The only-reactor lifecycle exemption was written for a process alone on its ring. NorthBank's honest wiring of its gateway put a second reactor on the ring, the gateway's policy that hears the scheme's answer through an anti-corruption layer and republishes it as the bank's own event, and `reaction-cycle` reported the instruction lifecycle twice (card 109). Such a policy translates; it starts nothing the process did not start. A ring on which one process sits and every other reactor is a policy that hears its event through an `anti-corruption-layer` consumption and whose operations raise its own context's events is that process's lifecycle through the layer, not a cycle (card 108). NorthBank's reference model wires the send once the rule says so (card 110).
