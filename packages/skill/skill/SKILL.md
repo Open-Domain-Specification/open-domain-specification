@@ -69,11 +69,11 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   creation (`snake_case`) and then frozen. To rename something, change its `name` and keep the
   id (in the DSL, pass `id` explicitly at the moment of renaming). Rewriting a key means
   updating every ref that uses it, and confirming with the user first.
-- Every required collection is present even when empty. A context always has `aggregates`,
-  `services`, `policies`, `processes`, `glossary`, `valueobjects`, `schemas`, `invariants`
-  and `subdomains`;
-  an aggregate always has `entities`, `invariants`, `provides`, `consumes`; an entity always
-  has `attributes` and `relations`, and a value object those and `invariants`. See `references/model-reference.md`.
+- Every collection is optional and leaving one out is the same as writing it empty: a context's
+  `aggregates`, `services`, `policies`, `processes`, `glossary`, `valueobjects`, `schemas`,
+  `invariants` and `subdomains`; an aggregate's `entities`, `invariants`, `provides`, `consumes`;
+  an entity's `attributes` and `relations`, and a value object's those and `invariants`. See
+  `references/model-reference.md`.
 - Every `$ref` should resolve to an element that exists. Loading never throws on a dangling
   one: the link is left unset, `unresolved-ref` (error) reports it at the referencing element,
   and every other rule still runs, so fix it as you would any other diagnostic.
@@ -84,8 +84,8 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
 - An entity or a value object may be a kind of another: `specialises` gives it every attribute
   and relation of that one, plus its own, and it never repeats one of them. An entity is a kind
   of an entity of its own aggregate and is never itself `root`; a value object is a kind of one
-  its own context declares, or one it borrows over a `shared-kernel` or as a conformist of the
-  context that owns it.
+  its own context declares, or one it borrows over a `shared-kernel`, as a conformist, or as a
+  customer-supplier downstream of the context that owns it.
 - An invariant belongs to a value object when it holds by construction of the value — an IBAN's
   checksum, a Money's single currency — and then it constrains that value's own attributes and
   nothing else, and needs no guard. It belongs to an aggregate when it holds inside that

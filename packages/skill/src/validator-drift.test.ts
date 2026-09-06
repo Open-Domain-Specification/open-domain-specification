@@ -94,6 +94,36 @@ const oldClaims: Array<{ claim: string; sentences: string[] }> = [
 			"Only an operation of the same aggregate; if the user names the API endpoint, the aggregate's own operation behind it is the one to name.",
 		],
 	},
+	{
+		claim:
+			"leaving `by` off is fine for a consumer that provides one operation or none (decision 21's second amendment of 2026-09-10: a zero-operation consumer is reported)",
+		sentences: [
+			"which is fine where the consumer provides one operation or none, because there is nothing to choose between",
+			"Absent means the whole consumer, which is fine for a consumer that provides one operation, or none, because there is nothing to choose between.",
+		],
+	},
+	{
+		claim: "a policy's consumables may belong to other contexts as long as they are not internal (policy-in-context refuses any foreign operation)",
+		sentences: ["The consumables may belong to other contexts as long as they are not internal."],
+	},
+	{
+		claim: "a specialisation's value object parent borrows only over a shared kernel or as a conformist (decision 16's second amendment of 2026-09-10: a customer-supplier downstream borrows too)",
+		sentences: [
+			"The target belongs to this context, or to a context this one borrows from — over a shared kernel or as a conformist (decision 22).",
+			"one it borrows through a shared kernel or as a conformist of the context that owns it.",
+			"its own context declares, or one it borrows over a `shared-kernel` or as a conformist of the context that owns it.",
+		],
+	},
+	{
+		claim: "the specialisation example cites NorthBank current, savings and loan accounts (the model carries customer and nominal ledger accounts)",
+		sentences: [
+			"NorthBank's current, savings and loan accounts, or StreamLine's films and series, are kinds of one account or one title",
+		],
+	},
+	{
+		claim: "every required collection is present even when empty (card 104: an absent collection is an empty one)",
+		sentences: ["Every required collection is present even when empty."],
+	},
 ];
 
 describe("validator drift", () => {

@@ -40,7 +40,9 @@ The costs are named rather than hidden. Where a user hits one, say which it is.
 - **The boundary is drawn twice.** Every outbound call is an internal operation on the
   application service that consumes the foreign one, even for a conformist with nothing to
   translate, so one crossing is two operations and a domain service that wants an outbound port
-  pays for it in one more.
+  pays for it in one more. The architect's fourteenth round measured it: more than half of every
+  stress model's operations are internal, most of them fronts, against two of sixteen in a
+  clinic model written blind.
 - **An answer stops at the boundary.** An operation's answer routes back along the calling
   context's own `by` chain, through as many local fronts as it takes, and no further: what the
   neighbour calls next is the neighbour's chain and nothing here has spoken for it, so a process
@@ -109,3 +111,13 @@ The costs are named rather than hidden. Where a user hits one, say which it is.
   leaves that repeat.
 - **A workspace is one file.** Refs never cross files until decision 08's `WorkspaceSet` lands;
   a project that wants several files today keeps each as its own workspace.
+- **A refusal enumerates its outcomes and a success does not.** A refusal's `reasons` names each
+  shape a process may wait on and branch across; a success has one edge, and which of several
+  things happened on the way is prose until a reference model needs to branch on it too.
+- **A value object may hold an identity into an entity, but no relation to one.** A value that
+  must point at an entity holds an `identifies` attribute instead of a relation, because a value
+  has no identity of its own and draws no line.
+- **Calendar-driven behaviour through a Clock costs a relationship and two roles.** A context
+  that reacts to the calendar by consuming a Clock context pays for the relationship and the
+  upstream and downstream roles on it; the cheaper route, a scheduled operation that raises the
+  event itself, is the usual one.

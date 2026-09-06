@@ -440,13 +440,16 @@ export interface ConsumptionSchema {
 	 * because a subscription is not made but woken. `consumption-by-operation`
 	 * and `consumption-by-reactor` say so, one each way round.
 	 *
-	 * Absent means the whole consumer, which is fine for a consumer that
-	 * provides one operation, or none, because there is nothing to choose
+	 * Absent means the whole consumer, which is fine only for a consumer that
+	 * provides exactly one operation, because there is nothing to choose
 	 * between. A consumer with two or more names which of them makes the call,
-	 * and `consumption-by-required` asks for it: `by` is the one causal link
-	 * the model has from one operation to the next, so without it the reaction
-	 * walk and the flow map stop at the boundary and an answer reaches nobody
-	 * (decision 21, corrected 2026-09-10).
+	 * and one with none at all has nothing that could — either way
+	 * `consumption-by-required` asks for it, except of an external or
+	 * big-ball-of-mud consumer: `by` is the one causal link the model has from
+	 * one operation to the next, so without it the reaction walk and the flow
+	 * map stop at the boundary and an answer reaches nobody (decision 21,
+	 * corrected 2026-09-10, widened to the zero-operation case in the second
+	 * amendment of 2026-09-10).
 	 */
 	by?: { $ref: string }[];
 	/**
@@ -752,8 +755,10 @@ export interface ValueObjectSchema {
 	/**
 	 * The value object this one is a kind of: it has every attribute and
 	 * relation of that value object, plus its own. The target belongs to this
-	 * context, or to a context this one borrows from — over a shared kernel or
-	 * as a conformist (decision 22).
+	 * context, or to a context this one borrows from — over a shared kernel,
+	 * as a conformist, or as a customer-supplier downstream of it (decision
+	 * 22; decision 16's second amendment of 2026-09-10 widened borrowing to
+	 * the customer-supplier case).
 	 */
 	specialises?: { $ref: string };
 	/** This value's own attributes, by id. An absent map is an empty one, like every map of elements in this schema. */

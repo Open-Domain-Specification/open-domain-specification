@@ -47,8 +47,10 @@ Each of these costs something, and the cost is named rather than hidden:
 - **The boundary is drawn twice.** Every outbound call is an internal
   operation on the application service that consumes the foreign one, even for
   a conformist with nothing to translate, so one crossing is two operations and
-  a domain service that wants an outbound port pays for it in one more
-  (decision 17).
+  a domain service that wants an outbound port pays for it in one more. The
+  architect's fourteenth round measured it: more than half of every stress
+  model's operations are internal, most of them fronts, against two of sixteen
+  in a clinic model written blind (decision 17).
 - **An answer stops at the boundary.** An operation's answer routes back along
   the calling context's own `by` chain, through as many local fronts as it
   takes, and no further: what the neighbour calls next is the neighbour's chain
@@ -124,14 +126,31 @@ Each of these costs something, and the cost is named rather than hidden:
 - **A workspace is one file.** Refs never cross files until decision 08's
   `WorkspaceSet` lands; a project that wants several files today keeps each
   as its own workspace (decision 08).
+- **A refusal enumerates its outcomes and a success does not.** A refusal's
+  `reasons` names each shape a process may wait on and branch across; a
+  success has one edge, and which of several things happened on the way is
+  prose until a reference model needs to branch on it too (decision 18).
+- **A value object may hold an identity into an entity, but no relation to
+  one.** `value-object-shape` refuses `includes`, `references` and any
+  relation from a value object to an entity; a value that must point at an
+  entity holds an `identifies` attribute instead, because a value has no
+  identity of its own and draws no line (decision 15).
+- **Calendar-driven behaviour through a Clock costs a relationship and two
+  roles.** A context that reacts to the calendar by consuming a Clock context
+  pays for the relationship and the upstream and downstream roles on it; the
+  cheaper route, a scheduled operation that raises the event itself, is the
+  usual one (decision 28).
 
 ## Value objects
 
 A **value object** belongs to the bounded context
 (`context.addValueObject(name)`), not to one aggregate: it is part of the
 context's ubiquitous language, and every aggregate of the context may hold
-one. Another context may borrow one across a `shared-kernel` relationship, or
-as a conformist downstream of the context that owns it.
+one. Another context may borrow one across a `shared-kernel` relationship, as
+a conformist downstream of the context that owns it, or as a downstream of a
+customer-supplier relationship, where the negotiated interface's types are
+the supplier's published language (decision 16's second amendment of
+2026-09-10).
 
 A value provides no operations. A consumable is what a node offers across
 its own boundary, and a value's behaviour crosses nothing: it is its
@@ -182,12 +201,13 @@ An entity or value object may be a **kind of** another
 (`entity.specialises(other)`): it has every attribute and relation of the
 one it specialises, plus its own. An entity is a kind of an entity of its
 own aggregate; a value object is a kind of one its own context declares, or
-one it borrows through a shared kernel or as a conformist of the context that
-owns it. A subtype is never itself `root: true` — a
+one it borrows through a shared kernel, as a conformist, or as a
+customer-supplier downstream of the context that owns it. A subtype is never
+itself `root: true` — a
 kind of the root is reached through it — and does not redeclare an
-attribute it already has from its parent. NorthBank's current, savings and
-loan accounts, or StreamLine's films and series, are kinds of one account
-or one title: one identity scheme and one set of invariants, with
+attribute it already has from its parent. NorthBank's customer and nominal
+ledger accounts, or StreamLine's films and series, are kinds of one ledger
+account or one title: one identity scheme and one set of invariants, with
 attributes each kind has and the others do not.
 
 ## Relations and invariants
@@ -363,19 +383,24 @@ is not made but woken (`consumption-by-operation` and
 `consumption-by-reactor`). A subscription service calls the payment gateway
 when it renews, not when it lists entitlements, and `by` is where that reads.
 Leaving
-`by` off means the whole consumer, which is fine where the consumer provides
-one operation or none, because there is nothing to choose between; where it
-provides two or more, `consumption-by-required` asks which of them makes the
-call. `by` is the one causal link the model has from one operation to the
-next, so without it the reaction walk and the flow map stop there and an
-answer to the call reaches nobody.
+`by` off means the whole consumer, which is fine only where the consumer
+provides exactly one operation, because there is nothing to choose between;
+where it provides two or more, or none at all, `consumption-by-required` asks
+which of its operations makes the call — except of an external or
+big-ball-of-mud consumer, which is not asked. `by` is the one causal link the
+model has from one operation to the next, so without it the reaction walk and
+the flow map stop there and an answer to the call reaches nobody.
 
 ## Policies
 
 A **policy** lives on a bounded context and says "on these events, then
 these operations" (`policy.on(...events).issues(...operations)`). The
-consumables may belong to other contexts as long as they are not internal.
-`on` may also name an answer of an operation this context consumes
+operations it issues are always this context's own; reaching into another
+context to run an operation there is that context acting through someone
+else's model instead of through the boundary it published, and
+`policy-in-context` refuses it (decision 17). Reacting is different: `on` may
+name another context's event freely, because subscribing to a published fact
+is how contexts integrate. `on` may also name an answer of an operation this context consumes
 (`operation.returned()`, `operation.rejected(schema)`,
 `operation.completed()`), which means "when that answer comes back": a call is
 answered and the reaction is to the answer, not to an event somebody invented
