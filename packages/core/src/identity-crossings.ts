@@ -2,7 +2,8 @@ import {
 	type Attribute,
 	type AttributeOwner,
 	BoundedContext,
-	type Entity,
+	DataSchema,
+	type IdentityTarget,
 } from "./workspace";
 
 /** Everything one context declares that carries attributes. */
@@ -52,12 +53,12 @@ export type IdentityCrossing = {
 	/** The identity attribute that names the other context. */
 	attribute: Attribute;
 	/**
-	 * What it identifies: the other context's entity, or that context itself
-	 * when it is external or a big ball of mud and the id belongs to a system
-	 * whose entities are not ours to state or not anyone's to find
-	 * (decision 28).
+	 * What it identifies: the other context's entity; a schema an external
+	 * context publishes for the kind the id names; or that context itself when
+	 * it is external or a big ball of mud and the id belongs to a system whose
+	 * entities are not ours to state or not anyone's to find (decision 28).
 	 */
-	target: Entity | BoundedContext;
+	target: IdentityTarget;
 	/** The context holding the identity, and so depending on the other. */
 	from: BoundedContext;
 	/** The context the identity reaches: the one that owns what it names. */
@@ -65,21 +66,22 @@ export type IdentityCrossing = {
 };
 
 /** The context an identity attribute's target belongs to. */
-export function contextIdentified(
-	target: Entity | BoundedContext,
-): BoundedContext {
+export function contextIdentified(target: IdentityTarget): BoundedContext {
 	return target instanceof BoundedContext ? target : target.boundedcontext;
 }
 
 /**
  * What a crossing identity names, in words a diagnostic can drop into a
- * sentence: the other context's entity, or — where that system's entities are
- * not ours to state — an id of the system itself (decision 28).
+ * sentence: the other context's entity; the kind an external context publishes
+ * a schema for; or — where that system's entities are not ours to state and it
+ * publishes nothing for this id — an id of the system itself (decision 28).
  */
 export function identityNamed(crossing: IdentityCrossing): string {
-	return crossing.target instanceof BoundedContext
-		? `an id belonging to "${crossing.to.name}"`
-		: `the identity of "${crossing.target.name}" in "${crossing.to.name}"`;
+	const { target, to } = crossing;
+	if (target instanceof BoundedContext) return `an id belonging to "${to.name}"`;
+	if (target instanceof DataSchema)
+		return `the identity of a "${target.name}" in "${to.name}"`;
+	return `the identity of "${target.name}" in "${to.name}"`;
 }
 
 /**

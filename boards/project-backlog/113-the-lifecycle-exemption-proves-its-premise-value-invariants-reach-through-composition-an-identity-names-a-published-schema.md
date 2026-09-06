@@ -1,10 +1,11 @@
 ---
-column: todo
+column: review
 labels: [backend, docs]
 priority: medium
 agent: senior-developer
-live: true
-updatedAt: 2026-09-10T11:40:00.000Z
+live: false
+clean-code-swept: true
+updatedAt: 2026-09-06T12:50:00.000Z
 ---
 # The lifecycle exemption proves its premise; value invariants reach through composition; an identity into an external context names a published schema
 
@@ -12,11 +13,21 @@ Codex's ninth review reproduced three gaps. Card 108's `isProcessLifecycleThroug
 
 ## Checklist
 
-- [ ] `reaction-cycle`: the lifecycle-through-a-layer exemption holds only when the event the process hears on the ring is one of its `on` or `ends` triggers and not one of its `starts`; a translating policy is one whose trigger on the ring is its `anti-corruption-layer` subscription and whose operation on the ring raises the event that continues the ring; a ring whose translated event starts the process is reported as a cycle that spawns instances, and the message says so
-- [ ] `invariant-in-value-object`: an invariant on a value object may constrain attributes reachable through its own attributes' types, transitively through value-object composition, and still nothing outside that reach; the fix text names the path it accepts
-- [ ] `identifies` may name a schema of an external context as well as the context itself; the loader, `identity-crossings`, the rules that read identities (`identity-*`, `mud-needs-acl` after card 108) and the context map treat it as an identity into that context; a schema of a non-external context is still refused with the existing message
-- [ ] Tests for each: the instance-spawning ring warns and the continuing ring does not; the itinerary invariant validates and one reaching outside composition still fails; an identity naming an external schema validates and draws
-- [ ] RiverMart's external payment provider publishes a payment schema and one identity in RiverMart names it; `apps/docs/docs/3-core/4-validation.md` rows and the skill's references for the rules touched
-- [ ] `bash scripts/verify-all.sh` green
+- [x] `reaction-cycle`: the lifecycle-through-a-layer exemption holds only when the event the process hears on the ring is one of its `on` or `ends` triggers and not one of its `starts`; a translating policy is one whose trigger on the ring is its `anti-corruption-layer` subscription and whose operation on the ring raises the event that continues the ring; a ring whose translated event starts the process is reported as a cycle that spawns instances, and the message says so
+- [x] `invariant-in-value-object`: an invariant on a value object may constrain attributes reachable through its own attributes' types, transitively through value-object composition, and still nothing outside that reach; the fix text names the path it accepts
+- [x] `identifies` may name a schema of an external context as well as the context itself; the loader, `identity-crossings`, the rules that read identities (`identity-*`, `mud-needs-acl` after card 108) and the context map treat it as an identity into that context; a schema of a non-external context is still refused with the existing message
+- [x] Tests for each: the instance-spawning ring warns and the continuing ring does not; the itinerary invariant validates and one reaching outside composition still fails; an identity naming an external schema validates and draws
+- [x] RiverMart's external payment provider publishes a payment schema and one identity in RiverMart names it; `apps/docs/docs/3-core/4-validation.md` rows and the skill's references for the rules touched
+- [x] `bash scripts/verify-all.sh` green
+
+## Gates
+
+- [x] clean-code-swept — read every hunk back: the ring arithmetic is named once in `beforeOnRing`/`afterOnRing` rather than inlined three times (`packages/core/src/validate.ts:4097-4105`), the composition walk carries its own doc (`packages/core/src/validate.ts:1250-1284`), and nothing is left commented out or unused (senior-developer, 2026-09-06T12:50:00.000Z)
+- [x] verify-all — `bash scripts/verify-all.sh` green end to end: core 688, graphviz 28, doc 31, skill 26, northbank 3, petstore 20, rivermart 3, streamline 3, models/_shared 9, pages 761, apps/docs 23, apps/ods-vscode 15, petstore schema comparison match, pages e2e 297 passed (senior-developer, 2026-09-06T12:50:00.000Z)
 
 ## Comments
+
+- **senior-developer** (2026-09-06T00:00:00.000Z): Picked up card 113. Reading decisions 23, 27, 28 and 14 before touching `packages/core/src/validate.ts`.
+
+- **senior-developer** (2026-09-06T12:50:00.000Z): All six ticked. `reaction-cycle`: the translating test is read on the ring, not on the policy alone — `packages/core/src/validate.ts:4127-4149` checks that the trigger waking the policy *here* is its `anti-corruption-layer` subscription and that the operation it leaves by *here* raises the event carrying the ring on; the exemption then proves its premise at `packages/core/src/validate.ts:4204-4207`, that what comes back to the process continues an instance, and a ring whose translated event is one of the process's `starts` is reported in those words at `packages/core/src/validate.ts:4287-4290`. `invariant-in-value-object` reaches through composition: `compositionReachOf` at `packages/core/src/validate.ts:1265-1281` walks the owner's attributes' value objects transitively, and the message and the catalogue's fix name the path (`packages/core/src/validate.ts:1304`, `packages/core/src/validate.ts:4733`). `identifies` may name a schema of an external context: `IdentityTarget` at `packages/core/src/workspace.ts:2584`, the loader at `packages/core/src/workspace-from-schema.ts:331`, the crossing at `packages/core/src/identity-crossings.ts:79-87`, the rule at `packages/core/src/validate.ts:379-389`, the relation map landing it on the system's own box at `packages/core/src/relation-map.ts:265-277`, the doc generator's link at `packages/doc/src/attributes.md.ts:31-48`; a schema of a non-external context is refused. Tests: `packages/core/src/validate.test.ts:5606`, `packages/core/src/validate.test.ts:5621` and `packages/core/src/validate.test.ts:5630` for the ring; `packages/core/src/validate.test.ts:1911`, `packages/core/src/validate.test.ts:1919` and `packages/core/src/validate.test.ts:1929` for the itinerary; `packages/core/src/validate.test.ts:321` for the published-schema identity, drawn at `packages/core/src/derived-maps.test.ts:183` and `packages/core/src/derived-maps.test.ts:439`, round-tripped through JSON at `packages/core/src/round-trip.test.ts:244`. RiverMart's acquirer publishes `ProviderPayment` and its Capture holds that id (`models/rivermart/src/workspace.ts:270`, `models/rivermart/src/workspace.ts:1374`). Every model's diagnostics are identical to the pre-change run, checked by diffing `validate()` output for all four models before and after. Docs rows for all three rules at `apps/docs/docs/3-core/4-validation.md:18`, `apps/docs/docs/3-core/4-validation.md:31` and `apps/docs/docs/3-core/4-validation.md:74`, the identity paragraph at `apps/docs/docs/3-core/3-tactical-design.md:52`, the two generated skill references regenerated and the two hand-written ones (`packages/skill/skill/references/dsl-api.md:38`, `packages/skill/skill/references/interview-playbook.md:193`) brought in line.
+- **senior-developer** (2026-09-06T12:50:00.000Z): One judgement call for the lead, not a blocker. Decision 28's third amendment names external contexts only, so a schema of a big ball of mud is not an identity target — its ids still name the context, because a mud publishes nothing anyone can rely on. The existing refusal sentence ("neither external nor a big ball of mud") would then have been untrue of a mud's schema, so the schema case has its own wording at `packages/core/src/validate.ts:383`: "which is not external; a published schema is a kind a system outside the model documents, so name the entity the id is of, or that system's context where its entities are not ours to state". The context case's message is untouched.

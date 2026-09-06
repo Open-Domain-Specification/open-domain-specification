@@ -54,8 +54,14 @@ export interface AttributeSchema {
 	 * card scheme's authorisation id belongs to a system whose entities are not
 	 * ours to state, and a legacy account key belongs to one nobody can read
 	 * well enough to say which entity it is of (decision 28), so the attribute
-	 * names the system instead of an entity inside it. Any other context is
-	 * refused, because there the entity exists and is what the id is of.
+	 * names the system instead of an entity inside it.
+	 *
+	 * Or a schema an `external` context publishes, where that system documents
+	 * the kind the id names: a processor's Customer, Payment, Refund and
+	 * Dispute are distinct kinds with distinct ids, and the identity says which
+	 * of them it holds while still reading as an identity into that context
+	 * (decision 28, third amendment). Any other context is refused, and so is a
+	 * schema of one, because there the entity exists and is what the id is of.
 	 */
 	identifies?: { $ref: string };
 }

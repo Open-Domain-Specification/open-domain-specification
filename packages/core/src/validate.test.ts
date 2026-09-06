@@ -314,6 +314,61 @@ describe("Workspace.validate", () => {
 		);
 	});
 
+	// A processor documents Customer, Payment, Refund and Dispute as distinct
+	// kinds with distinct ids, and those kinds are its published schemas, so
+	// the identity may say which of them it holds rather than only which
+	// system (decision 28, third amendment; card 113).
+	it("lets an identity name a schema an external context publishes", () => {
+		const ws = emptyWorkspace();
+		const payments = ws.addBoundedContext("Payments", { description: "" });
+		const provider = ws.addBoundedContext("Payment Provider", {
+			description: "",
+			external: true,
+		});
+		const payment = provider.addSchema("Payment");
+		const settlement = payments
+			.addAggregate("Settlement", { description: "" })
+			.addRootEntity("Settlement", { description: "" });
+		settlement.addAttribute("id", { type: "string", identity: true });
+		settlement.addAttribute("providerPaymentId", {
+			type: "string",
+			identifies: payment,
+		});
+		expect(ws.validate().filter((d) => d.rule === "identifies-entity")).toEqual(
+			[],
+		);
+	});
+
+	it("refuses an identity naming a schema of a context whose insides the model states", () => {
+		const ws = emptyWorkspace();
+		const sales = ws.addBoundedContext("Sales", { description: "" });
+		const catalog = ws.addBoundedContext("Catalog", { description: "" });
+		catalog
+			.addAggregate("Pet", { description: "" })
+			.addRootEntity("Pet", { description: "" })
+			.addAttribute("id", { type: "string", identity: true });
+		const petSummary = catalog.addSchema("Pet Summary");
+		const order = sales
+			.addAggregate("Order", { description: "" })
+			.addRootEntity("Order", { description: "" });
+		order.addAttribute("id", { type: "string", identity: true });
+		const petId = order.addAttribute("petId", {
+			type: "string",
+			identifies: petSummary,
+		});
+		expect(ws.validate().filter((d) => d.rule === "identifies-entity")).toEqual(
+			[
+				{
+					severity: "error",
+					rule: "identifies-entity",
+					message:
+						'"Order" holds attribute "petId" as the identity of schema "Pet Summary" of bounded context "Catalog", which is not external; a published schema is a kind a system outside the model documents, so name the entity the id is of, or that system\'s context where its entities are not ours to state',
+					ref: petId.ref,
+				},
+			],
+		);
+	});
+
 	it("refuses an identity naming a context whose insides the model states", () => {
 		const ws = emptyWorkspace();
 		const sales = ws.addBoundedContext("Sales", { description: "" });
@@ -1801,7 +1856,7 @@ describe("invariant-in-value-object", () => {
 		expect(rules(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 			[
 				"error",
-				'Invariant "Reaches Out" of value object "IBAN" constrains "Account", which is not an attribute of "IBAN"; a value\'s rule holds by construction of that value and reaches nothing outside it',
+				'Invariant "Reaches Out" of value object "IBAN" constrains "Account", which is neither an attribute of "IBAN" nor one of a value "IBAN" is made of; a value\'s rule holds by construction of that value and reaches only along what it composes',
 				rule.ref,
 			],
 		]);
@@ -1812,7 +1867,7 @@ describe("invariant-in-value-object", () => {
 		const open = agg.provides("Open", { description: "", type: "operation" });
 		iban.addInvariant("Guarded", { description: "" }).constrains(open);
 		expect(rules(ws).map((d) => d.message)).toEqual([
-			'Invariant "Guarded" of value object "IBAN" constrains "Open", which is not an attribute of "IBAN"; a value\'s rule holds by construction of that value and reaches nothing outside it',
+			'Invariant "Guarded" of value object "IBAN" constrains "Open", which is neither an attribute of "IBAN" nor one of a value "IBAN" is made of; a value\'s rule holds by construction of that value and reaches only along what it composes',
 		]);
 	});
 
@@ -1826,6 +1881,65 @@ describe("invariant-in-value-object", () => {
 			.addInvariant("Home Country", { description: "" })
 			.constrains(value);
 		expect(rules(ws)).toEqual([]);
+	});
+
+	/**
+	 * An itinerary is constructed from its legs, and each leg from a time and
+	 * a place, so a rule about the legs' order holds by construction of the
+	 * itinerary. Reading only the owner's own attributes made a model flatten
+	 * its legs to state it (decision 27, amended 2026-09-10; card 113).
+	 */
+	function travel() {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Travel", { description: "" });
+		const stamp = bc.addValueObject("Timestamp", { description: "" });
+		const instant = stamp.addAttribute("instant", { type: "datetime" });
+		const leg = bc.addValueObject("Leg", { description: "" });
+		const arrival = leg.addAttribute("arrival", {
+			type: "Timestamp",
+			valueobject: stamp,
+		});
+		const departure = leg.addAttribute("departure", {
+			type: "Timestamp",
+			valueobject: stamp,
+		});
+		const itinerary = bc.addValueObject("Itinerary", { description: "" });
+		itinerary.addAttribute("legs", { type: "Leg[]", valueobject: leg });
+		return { ws, bc, itinerary, leg, arrival, departure, instant };
+	}
+
+	it("lets a value's rule reach the attributes of a value it is made of", () => {
+		const { ws, itinerary, arrival, departure } = travel();
+		itinerary
+			.addInvariant("Legs In Time Order", { description: "" })
+			.constrains(arrival, departure);
+		expect(rules(ws)).toEqual([]);
+	});
+
+	it("follows composition as far as it runs", () => {
+		const { ws, itinerary, leg, instant } = travel();
+		// Itinerary holds Legs, a Leg holds Timestamps, so the instant inside
+		// one is on the path — as is the Leg itself.
+		itinerary
+			.addInvariant("Legs Are Instants Apart", { description: "" })
+			.constrains(leg, instant);
+		expect(rules(ws)).toEqual([]);
+	});
+
+	it("still refuses a value nothing on the composition path holds", () => {
+		const { ws, bc, itinerary } = travel();
+		const seat = bc.addValueObject("Seat", { description: "" });
+		const row = seat.addAttribute("row", { type: "int32" });
+		const rule = itinerary
+			.addInvariant("Seat In Order", { description: "" })
+			.constrains(row);
+		expect(rules(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"error",
+				'Invariant "Seat In Order" of value object "Itinerary" constrains "Seat.row", which is neither an attribute of "Itinerary" nor one of a value "Itinerary" is made of; a value\'s rule holds by construction of that value and reaches only along what it composes',
+				rule.ref,
+			],
+		]);
 	});
 });
 
@@ -5386,7 +5500,13 @@ describe("reaction-cycle", () => {
 	 * amended 2026-09-10, second; card 108).
 	 */
 	describe("a process's lifecycle through a translating policy", () => {
-		function gateway() {
+		/**
+		 * `hears` says where the process names the event the layer republishes:
+		 * `on` while an instance is alive, which is the lifecycle; `starts`,
+		 * which begins another instance every time round; or `ends`, which
+		 * completes one and wakes nothing.
+		 */
+		function gateway(hears: "on" | "starts" | "ends" = "on") {
 			const ws = emptyWorkspace();
 			const bank = ws.addBoundedContext("Bank", { description: "" });
 			const scheme = ws.addBoundedContext("Scheme", {
@@ -5438,12 +5558,24 @@ describe("reaction-cycle", () => {
 				description: "",
 				type: "event",
 			});
+			const settled = gatewayApp.provides("Instruction Settled", {
+				description: "",
+				type: "event",
+			});
+			const settle = gatewayApp
+				.provides("Settle Instruction", { description: "", type: "operation" })
+				.raises(settled);
 			const process = bank
 				.addProcess("Instruction", { description: "" })
 				.starts(requested)
-				.issues(sendAuthorisation)
-				.on(instructionAuthorised)
-				.ends(instructionAuthorised);
+				.issues(sendAuthorisation);
+			if (hears === "on")
+				process.on(instructionAuthorised).ends(instructionAuthorised);
+			if (hears === "ends") process.ends(instructionAuthorised);
+			// A process that begins on the translated event needs its own way
+			// to finish, or it would have none to state.
+			if (hears === "starts")
+				process.starts(instructionAuthorised).issues(settle).ends(settled);
 			return { ws, process, translator };
 		}
 
@@ -5465,6 +5597,61 @@ describe("reaction-cycle", () => {
 				);
 			if (untranslated) untranslated.pattern = "conformist";
 			expect(reactions(ws)).toHaveLength(1);
+		});
+
+		// The exemption's premise, which card 108 asserted without checking it:
+		// that the event coming back through the layer continues an instance.
+		// Named in `starts` it begins one, so each turn of the ring is a
+		// different instance and no state holds it together (card 113).
+		it("reports the ring as spawning instances where the translated event starts the process", () => {
+			const { ws, translator } = gateway("starts");
+			expect(reactions(ws).map((d) => [d.severity, d.message, d.ref])).toEqual(
+				[
+					[
+						"warning",
+						'Reactions run in a cycle that spawns instances: "Publish Scheme Answer" -> "Publish Authorised" -> "Instruction Authorised" -> "Instruction" -> "Send Authorisation" -> "Authorise" -> "Authorised" -> "Publish Scheme Answer"; the event that closes the ring starts "Instruction" rather than continuing it, so every turn begins another instance and nothing in the model says what ends them; it runs through "Bank" and "Scheme", so no one context can see the whole ring',
+						translator.ref,
+					],
+				],
+			);
+		});
+
+		// An ending fact completes an instance rather than waking it, so the
+		// walk takes no step from one and this ring never closes at all.
+		it("is quiet where the translated event ends the process", () => {
+			const { ws } = gateway("ends");
+			expect(reactions(ws)).toEqual([]);
+		});
+
+		// The exemption is about what the policy does on this ring. A layer it
+		// declares for some other subscription says nothing about the trigger
+		// that wakes it here, and reading the policy alone let a conformist
+		// second reactor pass as a translator (card 113).
+		it("reports a ring where the policy's trigger on it is conformist and its layer is elsewhere", () => {
+			const { ws } = gateway();
+			const gatewayApp = ws.getServiceByRefOrThrow(
+				"#/boundedcontexts/bank/services/gateway",
+			);
+			const onTheRing = gatewayApp.consumptions.find(
+				(c) => c.consumable.name === "Authorised" && c.by.length > 0,
+			);
+			if (onTheRing) onTheRing.pattern = "conformist";
+			// A second subscription the policy does translate, off the ring:
+			// the scheme's declined answer, which the policy also hears.
+			const declined = ws
+				.getServiceByRefOrThrow("#/boundedcontexts/scheme/services/scheme_api")
+				.provides("Declined", { description: "", type: "event" });
+			const translator = ws.getPolicyByRefOrThrow(
+				"#/boundedcontexts/bank/policies/publish_scheme_answer",
+			);
+			translator.on(declined);
+			gatewayApp.consumes(declined, {
+				pattern: "anti-corruption-layer",
+				by: [translator],
+			});
+			expect(reactions(ws).map((d) => d.message)).toEqual([
+				'Reactions run in a cycle: "Publish Scheme Answer" -> "Publish Authorised" -> "Instruction Authorised" -> "Instruction" -> "Send Authorisation" -> "Authorise" -> "Authorised" -> "Publish Scheme Answer"; the chain triggers itself and nothing in the model says what ends it; it runs through "Bank" and "Scheme", so no one context can see the whole ring',
+			]);
 		});
 	});
 });

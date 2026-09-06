@@ -15,6 +15,7 @@ import {
 	type Aggregate,
 	type Attribute,
 	BoundedContext,
+	DataSchema,
 	type Domain,
 	Entity,
 	type EntityRelation,
@@ -261,10 +262,17 @@ export class ODSRelationMap {
 			if (!target || !drawable) continue;
 			// An id of a system nobody here models lands on that system's own box:
 			// there is no entity to point at, and the dependency is the point
-			// (decision 28).
+			// (decision 28). An id named by one of that system's published
+			// schemas lands there too — the box a reader can follow is the
+			// system's, and which kind it is of is on the attribute's own page
+			// (decision 28, third amendment; card 113).
 			this.addEdge({
 				source: this.addNode(relationNode(owner)),
-				target: this.addNode(relationNode(target)),
+				target: this.addNode(
+					relationNode(
+						target instanceof DataSchema ? target.boundedcontext : target,
+					),
+				),
 				relation: "identifies",
 				label: attribute.name,
 			});

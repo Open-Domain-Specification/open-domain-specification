@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { makeRichTestWs } from "./makeTestWs";
 import type { WorkspaceSchema } from "./schema";
-import { Entity, Workspace } from "./workspace";
+import { DataSchema, Entity, Workspace } from "./workspace";
 
 describe("schema round-trip", () => {
 	const { ws } = makeRichTestWs();
@@ -238,6 +238,50 @@ describe("schema round-trip", () => {
 			"#/boundedcontexts/ordering_bc/aggregates/order/entities/order",
 		);
 		expect(order.relations[0].cardinality).toBe("1..*");
+	});
+});
+
+describe("an identity that names an external context's published schema", () => {
+	/** A settlement holding the processor's own id for the payment. */
+	function settlements() {
+		const ws = new Workspace("Round Trip", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0",
+		});
+		const payments = ws.addBoundedContext("Payments", { description: "" });
+		const provider = ws.addBoundedContext("PayCo", {
+			description: "",
+			external: true,
+		});
+		const payment = provider.addSchema("Payment");
+		const settlement = payments
+			.addAggregate("Settlement", { description: "" })
+			.addRootEntity("Settlement", { description: "" });
+		settlement.addAttribute("id", { type: "string", identity: true });
+		settlement.addAttribute("Provider Payment Id", {
+			type: "string",
+			identifies: payment,
+		});
+		return ws;
+	}
+
+	it("writes the schema's ref and re-links it through JSON", () => {
+		const schema = settlements().toSchema();
+		const written =
+			schema.boundedcontexts.payments.aggregates!.settlement.entities!
+				.settlement.attributes.provider_payment_id.identifies;
+		expect(written).toEqual({ $ref: "#/boundedcontexts/pay_co/schemas/payment" });
+		const rebuilt = Workspace.fromSchema(JSON.parse(JSON.stringify(schema)));
+		const identified = rebuilt
+			.getEntityByRefOrThrow(
+				"#/boundedcontexts/payments/aggregates/settlement/entities/settlement",
+			)
+			.attributes.get("provider_payment_id")?.identifies;
+		expect(identified instanceof DataSchema).toBe(true);
+		expect(identified?.ref).toBe("#/boundedcontexts/pay_co/schemas/payment");
+		expect(rebuilt.toSchema()).toEqual(schema);
+		expect(rebuilt.unresolved).toEqual([]);
 	});
 });
 

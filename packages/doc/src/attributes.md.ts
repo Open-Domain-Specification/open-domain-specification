@@ -31,15 +31,20 @@ const attributeMd = (
 	const identified = attribute.identifies;
 	// An entity links to its aggregate's page, where a child is written up
 	// beside the root it is reached through; an external context links to its
-	// own. They are told apart by what only an entity has, rather than by
-	// `instanceof`, because the generator and the workspace it renders need not
-	// have loaded core through the same entry point.
-	const identifiesPath =
-		identified && "aggregate" in identified
-			? identified.aggregate.path
-			: identified?.path;
+	// own; a schema that context publishes links to the schemas section of that
+	// page, since a schema has no page of its own. They are told apart by what
+	// only each has, rather than by `instanceof`, because the generator and the
+	// workspace it renders need not have loaded core through the same entry
+	// point.
+	const identifiesHref = !identified
+		? ""
+		: "aggregate" in identified
+			? pathToIndexMd(identified.aggregate.path, fromPath)
+			: "boundedcontext" in identified
+				? `${pathToIndexMd(identified.boundedcontext.path, fromPath)}#schemas`
+				: pathToIndexMd(identified.path, fromPath);
 	const identifies = identified
-		? ` (identifies [${identified.name}](${pathToIndexMd(identifiesPath ?? "", fromPath)}))`
+		? ` (identifies [${identified.name}](${identifiesHref}))`
 		: "";
 	const optional = attribute.optional ? " (optional)" : "";
 	// A kind has its parent's attributes as its own, so they are listed here
