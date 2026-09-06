@@ -22,7 +22,7 @@ Holds who our patients are, and what every outside system that refers to them ca
 ## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
-| [Triage Assessment](../../../../boundedcontexts/triage/services/triage_assessment/index.md) | conformist | Patient Directory | Get Patient Summary | open-host-service |
+| [Referral Intake](../../../../boundedcontexts/triage/services/referral_intake/index.md) | conformist | Patient Directory | Get Patient Summary | open-host-service |
 | [Patient Directory](../../../../boundedcontexts/patient_records/services/patient_directory/index.md) | conformist | Referral Case | Referral Registered | published-language |
 	
 	

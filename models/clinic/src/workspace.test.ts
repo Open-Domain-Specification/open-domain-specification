@@ -4,28 +4,17 @@ import { describe, expect, it } from "vitest";
 import { workspace } from "./workspace.ts";
 
 /**
- * Pins this workspace's diagnostics: the one rule this model met on purpose,
- * and the tally of everything else met and fixed on the way. Card 117 in
- * `boards/project-backlog/` is the full journal; this is the part of it a
- * test can hold still.
- *
- * `domain-service-consumes-inside` is left standing deliberately: the triage
- * nurse's own account is that the assessment logic itself calls out to
- * Records, not an application service fronting the call, and the card
- * (decision 17's reopening condition) asks that the model be honest about who
- * calls rather than invent a front to satisfy the rule. See
- * `models/clinic/DISCOVERY.md` and `models/clinic/src/workspace.ts`.
- *
- * `rejection-raised` is the new warning card 123 adds: `Offer Slot` rejects
- * with `Patient Waitlisted` and also raises it as an event, which is exactly
- * the shape decision 18's 2026-09-10 note (after card 117) flagged as a model
- * telling on itself. Card 122 is the one that resolves it on this model; this
- * fixture pins the diagnostic as it stands until then.
+ * Pins this workspace's diagnostics at zero. Card 117 in
+ * `boards/project-backlog/` is the full journal of what this model met and
+ * fixed on the way; card 122 removed the one deliberate diagnostic
+ * (`domain-service-consumes-inside`) once the debate on decision 17's
+ * reopening condition found it was the record's own shape chosen wrongly,
+ * not the honest one — the nurse's real check is a precondition on `Accept
+ * Referral` reading the summary its front (`Referral Intake`) fetched, not a
+ * domain service calling out on its own. See `models/clinic/DISCOVERY.md`
+ * and `models/clinic/src/workspace.ts`.
  */
-const DELIBERATE: Array<{ rule: string; severity: "error" | "warning" }> = [
-	{ rule: "domain-service-consumes-inside", severity: "error" },
-	{ rule: "rejection-raised", severity: "warning" },
-];
+const DELIBERATE: Array<{ rule: string; severity: "error" | "warning" }> = [];
 
 describe("the outpatient clinic workspace", () => {
 	it("is named and versioned", () => {

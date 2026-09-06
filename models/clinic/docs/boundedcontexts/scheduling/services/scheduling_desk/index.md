@@ -9,7 +9,7 @@ Offers the patient a slot once triage accepts their case.
 ## Provides
 | Name | Type | Internal | Pattern | Description | Schema | Returns | Rejects with | Raises | Guarded by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Offer Slot | operation | no | - | Offers the patient the next open slot for the case's specialty. The patient's answer is not a refusal either way -- see DISCOVERY.md for why the second outcome is carried under rejects. | [Slot Offer Request](../../index.md#schemas) | [Booking Confirmed](../../index.md#schemas) | [Patient Waitlisted](../../index.md#schemas) | Booking Confirmed, Patient Waitlisted | Slot Offered Once |
+| Offer Slot | operation | no | - | Offers the patient the next open slot for the case's specialty. The patient's answer is two facts, not a refusal either way: booked, or waitlisted. Neither caller waits synchronously on the answer, so the operation names no returns and no rejects -- it raises whichever of the two happened (see DISCOVERY.md). | [Slot Offer Request](../../index.md#schemas) | - | - | Booking Confirmed, Patient Waitlisted | Slot Offered Once |
 
 
 ## Consumes

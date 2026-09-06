@@ -578,11 +578,9 @@
             },
             "accept_referral": {
               "name": "Accept Referral",
-              "description": "Called by the triage nurse once she is satisfied the case should go ahead.",
+              "description": "The aggregate's own transition to accepted, run by Referral Intake's front once it has confirmed a patient record already exists for the referral (decision 17).",
               "type": "operation",
-              "returns": {
-                "$ref": "#/boundedcontexts/triage/schemas/referral_accepted_details"
-              },
+              "internal": true,
               "raises": [
                 {
                   "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/referral_accepted"
@@ -741,6 +739,25 @@
             }
           },
           "invariants": {
+            "accept_only_known_patient": {
+              "name": "Accept Only Known Patient",
+              "description": "Accept a referral only once Records already holds a record for its patient: PatientSummary.patientId, fetched through the ACL by Referral Intake's own Accept Referral front, must resolve before the referral moves to accepted; Records' own Patient is outside this aggregate, so what the rule reads is the answer the front was given, not Records' model.",
+              "precondition": true,
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/triage/aggregates/referral_case/entities/referral/attributes/status"
+                },
+                {
+                  "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/accept_referral"
+                },
+                {
+                  "$ref": "#/boundedcontexts/triage/services/referral_intake/provides/accept_referral"
+                },
+                {
+                  "$ref": "#/boundedcontexts/patient_records/schemas/patient_summary/attributes/patient_id"
+                }
+              ]
+            },
             "status_moves_forward_only": {
               "name": "Status Moves Forward Only",
               "description": "A referral's status only ever moves on -- once accepted or declined, triage's other decisions no longer apply to it.",
@@ -790,37 +807,20 @@
         }
       },
       "services": {
-        "triage_assessment": {
-          "name": "Triage Assessment",
-          "description": "The clinical decision logic a referral is judged against. The nurse's own account is that the assessment itself calls out to Records for what is already known about the patient -- not an application service fronting the call -- so that is what is modelled here, even though a domain service is not meant to call outside its own context.",
-          "type": "domain",
+        "referral_intake": {
+          "name": "Referral Intake",
+          "description": "Takes what the GP's practice system sends and turns it into a case of our own, and fronts the nurse's decision to accept a case.",
+          "type": "application",
           "provides": {
-            "check_patient_history": {
-              "name": "Check Patient History",
-              "description": "Checks what Records already holds for this referral's patient.",
+            "accept_referral": {
+              "name": "Accept Referral",
+              "description": "Called by the triage nurse once she is satisfied the case should go ahead; fetches the patient's summary from Records before the case moves to accepted.",
               "type": "operation",
-              "schema": {
-                "$ref": "#/boundedcontexts/triage/schemas/patient_history_check_request"
-              },
               "returns": {
-                "$ref": "#/boundedcontexts/patient_records/schemas/patient_summary"
+                "$ref": "#/boundedcontexts/triage/schemas/referral_accepted_details"
               }
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/patient_records/services/patient_directory/provides/get_patient_summary"
-              },
-              "pattern": "conformist"
-            }
-          ]
-        },
-        "referral_intake": {
-          "name": "Referral Intake",
-          "description": "Takes what the GP's practice system sends and turns it into a case of our own.",
-          "type": "application",
-          "provides": {},
           "consumes": [
             {
               "consumable": {
@@ -830,6 +830,27 @@
               "by": [
                 {
                   "$ref": "#/boundedcontexts/triage/policies/register_referral_on_submission"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/patient_records/services/patient_directory/provides/get_patient_summary"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/triage/services/referral_intake/provides/accept_referral"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/accept_referral"
+              },
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/triage/services/referral_intake/provides/accept_referral"
                 }
               ]
             }
@@ -911,13 +932,6 @@
           "embodiedBy": {
             "$ref": "#/boundedcontexts/triage/aggregates/referral_case/entities/referral"
           }
-        },
-        "assessment": {
-          "name": "Assessment",
-          "definition": "The clinical decision logic a referral is judged against.",
-          "embodiedBy": {
-            "$ref": "#/boundedcontexts/triage/services/triage_assessment"
-          }
         }
       },
       "valueobjects": {},
@@ -991,11 +1005,6 @@
               "type": "string"
             }
           }
-        },
-        "patient_history_check_request": {
-          "name": "Patient History Check Request",
-          "description": "Which patient the assessment needs to know about.",
-          "attributes": {}
         }
       }
     },
@@ -1184,19 +1193,11 @@
           "provides": {
             "offer_slot": {
               "name": "Offer Slot",
-              "description": "Offers the patient the next open slot for the case's specialty. The patient's answer is not a refusal either way -- see DISCOVERY.md for why the second outcome is carried under rejects.",
+              "description": "Offers the patient the next open slot for the case's specialty. The patient's answer is two facts, not a refusal either way: booked, or waitlisted. Neither caller waits synchronously on the answer, so the operation names no returns and no rejects -- it raises whichever of the two happened (see DISCOVERY.md).",
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/scheduling/schemas/slot_offer_request"
               },
-              "returns": {
-                "$ref": "#/boundedcontexts/scheduling/schemas/booking_confirmed"
-              },
-              "rejects": [
-                {
-                  "$ref": "#/boundedcontexts/scheduling/schemas/patient_waitlisted"
-                }
-              ],
               "raises": [
                 {
                   "$ref": "#/boundedcontexts/scheduling/aggregates/booking/provides/booking_confirmed"
@@ -1336,7 +1337,7 @@
         },
         "patient_waitlisted": {
           "name": "Patient Waitlisted",
-          "description": "The offered slot did not suit the patient, so they were put on the waiting list for a better one instead. Something happened here, just not a booking -- the model has no shape for a second thing that happened, so this is carried as a rejection for want of anywhere better (see DISCOVERY.md).",
+          "description": "The offered slot did not suit the patient, so they were put on the waiting list for a better one instead -- a second fact, not a refusal, carried under raises alongside the booking (see DISCOVERY.md).",
           "attributes": {
             "booking_id": {
               "name": "bookingId",
@@ -1439,7 +1440,7 @@
       "downstreamRoles": [
         "conformist"
       ],
-      "description": "Triage's assessment looks a patient up through Records' own directory and takes what it gets back as published."
+      "description": "Referral Intake's Accept Referral front looks a patient up through Records' own directory and takes what it gets back as published."
     },
     {
       "type": "upstream-downstream",

@@ -15,7 +15,6 @@
 | Term | Definition | Aliases | Embodied by |
 | --- | --- | --- | --- |
 | **Referral** | A GP referral, once triage holds it as a case of its own. | Case | Referral |
-| **Assessment** | The clinical decision logic a referral is judged against. | - | Triage Assessment |
 
 
 ## [Scheduling](../boundedcontexts/scheduling/index.md)

@@ -121,24 +121,39 @@ not something we allow to sit there.
 
 ## What the model could not say
 
-- **An outbound call from a domain service.** The nurse's own account is
-  that the assessment logic itself calls out to Records for the patient's
-  known history — not an application service fronting the call. The model
-  is honest about who calls: `Triage Assessment` (a domain service) consumes
-  Records' `Get Patient Summary` directly
-  (`models/clinic/src/workspace.ts:543-554`). `domain-service-consumes-inside`
-  is expected and left standing on purpose; see the journal on
-  `boards/project-backlog/117-a-fifth-model-written-blind-in-an-unfamiliar-domain.md`.
-- **An operation that answers with two things that happened.** `Offer Slot`
-  can genuinely come back two ways when the offered slot does not suit the
-  patient — booked, or waitlisted — and neither is a refusal: something did
-  happen either time. The model has one `returns` and no second "it
-  happened, but not that" shape, so `Patient Waitlisted` is recorded under
-  `rejects` for want of anywhere better to put it, even though nothing was
-  refused. This is a compromise, not a claim that waitlisting is a refusal
-  (`models/clinic/src/workspace.ts:751-759`).
 - **The lab's own reference number.** The lab is an external context and
   the model does not know its internal shape, so the only thing recorded
   about a lab test in our own case is the lab's own order reference, held as
   an `identifies` attribute pointing at the Laboratory context itself, and
   the result once it is translated in.
+
+## Revision (card 122)
+
+Card 117's debate judged the two entries this section used to carry above as
+the record's own shapes chosen wrongly, not the domain's honest awkwardness —
+both are corrected here, and each is named against the record shape it is a
+correction of:
+
+- **The outbound call from a domain service** (`Triage Assessment`) was a
+  worked-around shape for a precondition, decision 19's card-116 shape (an
+  invariant reading what a front fetched). `Triage Assessment` held nothing
+  but the call to Records, so it is removed rather than kept for logic it
+  never had. The nurse's real rule — a referral is accepted only once a
+  record already exists for its patient — is now the `Accept Only Known
+  Patient` precondition on `Referral Case`'s `Accept Referral`
+  (`models/clinic/src/workspace.ts:445-465`), naming `Referral Intake`'s
+  `Accept Referral` front as the operation that fetched the summary
+  (`models/clinic/src/workspace.ts:566-594`). `Accept Referral` on the
+  aggregate is now `internal: true`, run by that front exactly as
+  petstore's `OrderApp.ConfirmDelivery` fronts `Pet`'s internal
+  `DeliverOrder` (decision 17). `domain-service-consumes-inside` no longer
+  fires.
+- **`Offer Slot`'s answer** (`returns` plus a `rejects` standing in for a
+  second thing that happened) was a worked-around shape for an operation
+  with no synchronous answer at all: the operation already raises both
+  `Booking Confirmed` and `Patient Waitlisted`, so the `returns` and
+  `rejects` were restating, in the wrong vocabulary, a fact the `raises`
+  list already carried honestly. `Offer Slot` now names neither
+  (`models/clinic/src/workspace.ts:770-775`); the interview text stands
+  unchanged, since the compromise was in the model, not in what the
+  scheduler said.
