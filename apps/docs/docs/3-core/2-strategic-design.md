@@ -33,8 +33,14 @@ A context the enterprise does not own and does not model inside — a card
 scheme, a payment provider, a licensor, a regulator, a clock — can be
 flagged `external`. It may still provide and consume consumables and take
 part in relationships, but it needs no subdomain, no team and no internals:
-`external-is-boundary` refuses aggregates, policies, processes and
-invariants on it, because what happens inside it is not ours to state.
+`external-is-boundary` refuses aggregates, policies and processes on it,
+because what happens inside it is not ours to state. What it publishes is a
+different matter: its value objects may carry the standard's own rules, and it
+may state a context invariant marked `precondition` or `postcondition` on one
+of its own operations — a published contract is citable where a rule the
+machine keeps at rest is not. Such an invariant names one of that context's own
+operations and constrains only the attributes of the shapes that operation
+carries and the context's own value objects.
 
 ## Context relationships
 

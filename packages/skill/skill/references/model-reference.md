@@ -306,7 +306,7 @@ Represents a service in the Open Domain Specification (ODS).
 | `description` | string | yes |  |
 | `name` | string | yes |  |
 | `provides` | map of id to [Consumable](#consumable) | no |  |
-| `type` | "application" | "domain" | yes |  |
+| `type` | "application" | "domain" | yes | Which of the two kinds of service this is — and a field that is not read on an external context. The distinction is about the inside of a model we own: an application service orchestrates a use case and exposes it, a domain service holds logic no single aggregate holds, and `domain-service-internal` and `domain-service-consumes-inside` hold our own services to that. A system we do not own has no inside for the distinction to be about; what we know of it is the operations it offers us. So the type is still written, because the field is required and a reader may as well see the provider's own word for it, and no rule reads it there (decision 28, amendment of 2026-09-10, fourth). |
 
 No other fields are allowed.
 

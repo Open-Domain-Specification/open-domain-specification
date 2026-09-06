@@ -286,7 +286,10 @@ const petSummarySchema = catalogBC.addSchema("PetSummary", {
 });
 petSummarySchema.addAttribute("petId", { type: "int64", identity: true });
 petSummarySchema.addAttribute("name", { type: "string" });
-petSummarySchema.addAttribute("status", {
+// The one field Sales' approval rule reads. It is named there rather than
+// described in prose, which is what a precondition may do with what its guard
+// fetched (decision 19, amendment of 2026-09-10, second).
+const petSummaryStatus = petSummarySchema.addAttribute("status", {
 	type: "PetStatus",
 	valueobject: petStatusVO,
 });
@@ -681,10 +684,12 @@ const approveOrder = orderAgg
 	})
 	.raises(orderApproved);
 // The precondition, declared here because it names the transition it guards.
-orderAgg
+// What it reads is named further down, once CheckPetAvailable and the ACL
+// consumption that feeds it exist.
+const approveOnlyWhenAvailable = orderAgg
 	.addInvariant("ApproveOnlyWhenAvailable", {
 		description:
-			"Move to approved only after the catalogue's summary reported the pet available; the catalogue's status itself is outside this aggregate, so the check is a read through the ACL, not a shared invariant",
+			"Move to approved only while PetSummary.status, fetched through the ACL by CheckPetAvailable, says the pet is available; the catalogue's own Pet is outside this aggregate, so what the rule reads is the answer we were given, not the catalogue's model",
 		// The catalogue may sell the pet a second later and this order says
 		// nothing about it: the read holds at approval only (card 94).
 		precondition: true,
@@ -840,6 +845,14 @@ orderApp.consumes(getPetSummaryOp, {
 		},
 	],
 });
+// Now that the call exists, the approval rule names what it reads: the
+// availability check that makes the call is a guard of the rule beside
+// ApproveOrder, and the field it decides on is PetSummary.status, the answer
+// the ACL brought back. Before card 116 a precondition could reach only its
+// own request, so this was a sentence in the description pointing at a call
+// nothing in the model connected it to (decision 19, amendment of 2026-09-10,
+// second).
+approveOnlyWhenAvailable.constrains(checkPetAvailable, petSummaryStatus);
 // Waiting on the catalogue's relisting is a dependency on Catalog like any
 // other, so Sales takes the fact in at its own boundary rather than only
 // subscribing to it (decision 17; `subscription-consumed`). The same ACL

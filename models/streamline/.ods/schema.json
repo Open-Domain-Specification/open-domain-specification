@@ -1019,7 +1019,8 @@
                     "type": "object"
                 },
                 "type": {
-                    "$ref": "#/definitions/ServiceType"
+                    "$ref": "#/definitions/ServiceType",
+                    "description": "Which of the two kinds of service this is — and a field that is not read\non an external context.\n\nThe distinction is about the inside of a model we own: an application\nservice orchestrates a use case and exposes it, a domain service holds\nlogic no single aggregate holds, and `domain-service-internal` and\n`domain-service-consumes-inside` hold our own services to that. A system\nwe do not own has no inside for the distinction to be about; what we know\nof it is the operations it offers us. So the type is still written,\nbecause the field is required and a reader may as well see the provider's\nown word for it, and no rule reads it there (decision 28, amendment of\n2026-09-10, fourth)."
                 }
             },
             "required": [

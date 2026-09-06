@@ -15,7 +15,7 @@ Open-host service for /store/order endpoints
 | ConfirmDelivery | operation | no | open-host-service | POST /store/order/{orderId}/delivered; Fulfilment reports the shipment arrived and the order moves to delivered | [OrderId](../../index.md#schemas) | - | - | - | - |
 | ReservePet | operation | yes | - | Ask Catalog to hold the ordered pet, through the ACL; Sales' own step in the order lifecycle | [OrderId](../../index.md#schemas) | - | - | - | - |
 | MarkPetSold | operation | yes | - | Tell Catalog the ordered pet has gone to its owner, through the ACL | [OrderId](../../index.md#schemas) | - | - | - | - |
-| CheckPetAvailable | operation | yes | - | Read the ordered pet's summary from Catalog, through the ACL, and decide whether Sales may approve the order | [OrderId](../../index.md#schemas) | - | - | - | - |
+| CheckPetAvailable | operation | yes | - | Read the ordered pet's summary from Catalog, through the ACL, and decide whether Sales may approve the order | [OrderId](../../index.md#schemas) | - | - | - | ApproveOnlyWhenAvailable |
 
 - **ConfirmDelivery** also reaches OrderDelivered through the operations it calls, raised where they happen rather than restated here.
 - **ReservePet** also reaches PetReserved through the operations it calls, raised where they happen rather than restated here.
