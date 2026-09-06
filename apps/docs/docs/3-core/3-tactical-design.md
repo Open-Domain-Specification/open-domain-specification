@@ -41,10 +41,11 @@ Each of these costs something, and the cost is named rather than hidden:
   a conformist with nothing to translate, so one crossing is two operations and
   a domain service that wants an outbound port pays for it in one more
   (decision 17).
-- **An answer routes one hop.** An operation's answer reaches the reactor that
-  issued it and nobody further, so a process whose front makes the call does
-  not hear the neighbour's reply through that front; the chain has to be
-  written where the reader can follow it (decisions 21 and 23).
+- **An answer stops at the boundary.** An operation's answer routes back along
+  the calling context's own `by` chain, through as many local fronts as it
+  takes, and no further: what the neighbour calls next is the neighbour's chain
+  and nothing here has spoken for it, so a process hears the answer to the call
+  its context made and not the one behind it (decisions 21 and 23).
 - **A kernel context loses the pairwise fact.** Many contexts sharing a kernel
   is drawn as a third context they all consume, which gains an honest owner and
   loses Evans's reading of a kernel as code inside each sharer; two contexts
