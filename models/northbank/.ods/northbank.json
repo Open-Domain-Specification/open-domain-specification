@@ -134,12 +134,6 @@
           "name": "Customer",
           "description": "A verified person and the documents that verify them",
           "provides": {
-            "onboarding_started": {
-              "name": "OnboardingStarted",
-              "description": "A prospective customer gave their details",
-              "type": "event",
-              "internal": true
-            },
             "customer_verified": {
               "name": "CustomerVerified",
               "description": "KYC passed; accounts may be opened",
@@ -462,12 +456,7 @@
               "name": "StartOnboarding",
               "description": "Begin with name, date of birth, address and a document",
               "pattern": "open-host-service",
-              "type": "operation",
-              "raises": [
-                {
-                  "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/provides/onboarding_started"
-                }
-              ]
+              "type": "operation"
             },
             "get_customer": {
               "name": "GetCustomer",
@@ -516,7 +505,7 @@
           "description": "From a prospective customer's details to a verified one. Everyone is screened before anything else, and the process then waits for the engine's answer: a match holds the onboarding until Financial Crime clears it by hand, which is why there is no timeout. Correlation is by customerId, which the screening answer carries back; the instance ends when KYC passes and accounts may be opened",
           "starts": [
             {
-              "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/provides/onboarding_started"
+              "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/start_onboarding"
             }
           ],
           "on": [
@@ -2734,11 +2723,11 @@
             },
             "auth_within_available_balance": {
               "name": "AuthWithinAvailableBalance",
-              "description": "An authorisation is approved only if the available balance read from AccountServicing at that moment covers it; Accounts then holds the amount",
-              "precondition": true,
+              "description": "Every authorisation AuthoriseCard approves carries an amount within the available balance AccountServicing reported at that moment. The balance moves next door the second after, so the promise is about the moment the answer was given, not about the balance since (card 94)",
+              "postcondition": true,
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/cards/aggregates/card/entities/authorisation"
+                  "$ref": "#/boundedcontexts/cards/schemas/card_authorisation_approved/attributes/amount"
                 },
                 {
                   "$ref": "#/boundedcontexts/cards/services/cards_app/provides/authorise_card"

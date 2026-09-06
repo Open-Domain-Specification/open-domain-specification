@@ -615,3 +615,14 @@ events. So "Keep the seller list in step" reacts and issues `RecordActiveSeller`
 `PublishOffer` reads that list to refuse a seller onboarding has not activated.
 
 The deliberate diagnostics of section 7 are untouched.
+
+## Revision (card 101): re-read, nothing moved
+
+Every invariant and both processes were re-read against decision 19's amendments and
+decision 23's third. `Checkout` starts on `CartCheckedOut` and `Order to delivery` starts on
+`OrderPlaced`, both `published-language` and each read by other contexts across the map
+(Payments, Fraud, Warehouse) — real facts the model states, not devices invented for the
+process alone to hear. `Checkout` already waits on `AuthorisePayment`'s own answer
+(`.on(paymentAuthorised, authorisePayment.rejected(...))`), so there was no returns-less
+call's success left to name with a completion. No invariant in the model names an operation
+that returns anything, so none is a postcondition candidate. Nothing changed.

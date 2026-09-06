@@ -492,11 +492,6 @@ consentSchema.addAttribute("purpose", {
 	valueobject: purposeVO,
 });
 
-const onboardingStarted = customerAgg.provides("OnboardingStarted", {
-	description: "A prospective customer gave their details",
-	type: "event",
-	internal: true,
-});
 const customerVerified = customerAgg.provides("CustomerVerified", {
 	description: "KYC passed; accounts may be opened",
 	type: "event",
@@ -550,13 +545,15 @@ onboardingApp
 		schema: consentSchema,
 	})
 	.raises(consentWithdrawn);
-onboardingApp
-	.provides("StartOnboarding", {
-		description: "Begin with name, date of birth, address and a document",
-		type: "operation",
-		pattern: "open-host-service",
-	})
-	.raises(onboardingStarted);
+// The command that creates an onboarding, named directly in the process's
+// `starts` below rather than through an invented event raised for no other
+// reason than to be heard: nothing but that process ever waited on one
+// (decision 23, third amendment; card 99).
+const startOnboarding = onboardingApp.provides("StartOnboarding", {
+	description: "Begin with name, date of birth, address and a document",
+	type: "operation",
+	pattern: "open-host-service",
+});
 const getCustomer = onboardingApp.provides("GetCustomer", {
 	description:
 		"Asked with a CustomerRef, answers with the customer's verified details",
@@ -705,7 +702,7 @@ customerBC
 		description:
 			"From a prospective customer's details to a verified one. Everyone is screened before anything else, and the process then waits for the engine's answer: a match holds the onboarding until Financial Crime clears it by hand, which is why there is no timeout. Correlation is by customerId, which the screening answer carries back; the instance ends when KYC passes and accounts may be opened",
 	})
-	.starts(onboardingStarted)
+	.starts(startOnboarding)
 	.on(partyMatched)
 	.issues(screenCustomer, holdOnboarding)
 	.ends(customerVerified);
@@ -2095,19 +2092,20 @@ cardsApp.consumes(getAvailableBalance, {
 	pattern: "anti-corruption-layer",
 	by: [authoriseCard],
 });
-// The precondition on that read: a rule about one authorisation, so it is the
-// aggregate's, and checked at the moment of the call, so what upholds it is
-// AuthoriseCard rather than anything the aggregate saves (decision 19,
-// amended). The guard was in the comment above until card 90.
+// A guarantee about the answer, not a check on the way in: AuthoriseCard's
+// approval carries the amount now held, and what the rule promises is that
+// figure, not the request. FundsAvailableAtInitiation reads the same balance
+// but InitiatePayment returns nothing, so there is no answer to promise
+// anything about and the rule stays a precondition there; here the operation
+// answers with the amount it approved, so the rule is a postcondition on it
+// (decision 19, third amendment; card 101).
 cardAgg
 	.addInvariant("AuthWithinAvailableBalance", {
 		description:
-			"An authorisation is approved only if the available balance read from AccountServicing at that moment covers it; Accounts then holds the amount",
-		// "At that moment" is the whole of it: the balance moves next door and
-		// the check is not made again (card 94).
-		precondition: true,
+			"Every authorisation AuthoriseCard approves carries an amount within the available balance AccountServicing reported at that moment. The balance moves next door the second after, so the promise is about the moment the answer was given, not about the balance since (card 94)",
+		postcondition: true,
 	})
-	.constrains(cardAuthorisation, authoriseCard);
+	.constrains(cardApprovalSchema.attributes.get("amount")!, authoriseCard);
 cardsApp.consumes(scoreTransaction, {
 	pattern: "anti-corruption-layer",
 	by: [authoriseCard],

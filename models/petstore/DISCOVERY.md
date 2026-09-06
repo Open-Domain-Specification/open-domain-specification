@@ -223,3 +223,13 @@ the reaction to it.
 decision 13's note says how the model spells that: `returns` names one shape, and the shape
 says it is many. Catalog gains a `Pets` schema whose single attribute holds `PetSummary[]`,
 which is what a caller gets back and what RiverMart's `SearchResults` has always done.
+
+## Revision (card 101): re-read, nothing moved
+
+Every invariant and the one process were re-read against decision 19's amendments and
+decision 23's third. `Order fulfilment` starts on `OrderPlaced`, `published-language` and
+the customer's own POST, not a bridge invented for the process to hear — `PlaceOrder` says
+the same thing a moment earlier and naming it instead would name no more truthfully. No
+invariant in the model names an operation that returns anything, so none is a postcondition
+candidate; `ApproveOnlyWhenAvailable` guards `ApproveOrder`, which returns nothing, and stays
+a precondition. Nothing changed.
