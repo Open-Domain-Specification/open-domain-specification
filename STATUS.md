@@ -6,11 +6,11 @@ Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel
 
 ## Now
 
-No card is live. The ninth panel round is running on the card 115 head: Antigravity run 21 is in, yes with named costs with every issue decided ground; Codex run 10 and a fresh architect-deep round 10 are still running, all with the same prompt. Stopping point: each verdict is read and ruled; new defects become cards, restatements are answered by the decision they restate. Eighth round on the card 110 head: Antigravity run 20 yes with named costs, every issue decided ground; Codex run 9 no, three reproduced gaps landed as card 113 and nine restatements; architect round 9 yes with named costs, one defect and two unnamed costs in card 114, the rest named in decisions. Stopping point: each reviewer's verdict is read and ruled, new defects become cards, restatements are answered by the decision they restate. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 110 and 113 to 115 landed green; 107 gave RiverMart the first two named agreements in a reference model.
+No card is live. The ninth panel round is running on the card 115 head: Antigravity run 21 is in, yes with named costs with every issue decided ground; Codex run 10 was stopped part-way at the owner's instruction; a fresh architect-deep round 10 is still running, with the same prompt. Stopping point: each verdict is read and ruled; new defects become cards, restatements are answered by the decision they restate. Eighth round on the card 110 head: Antigravity run 20 yes with named costs, every issue decided ground; Codex run 9 no, three reproduced gaps landed as card 113 and nine restatements; architect round 9 yes with named costs, one defect and two unnamed costs in card 114, the rest named in decisions. Stopping point: each reviewer's verdict is read and ruled, new defects become cards, restatements are answered by the decision they restate. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 110 and 113 to 115 landed green; 107 gave RiverMart the first two named agreements in a reference model.
 
 ## Next
 
-Read the three verdicts. From here Codex is not run every round, at the owner's instruction (its usage is limited): Antigravity and a fresh architect review each head, and Codex runs once more only as the final confirmation on a head both hold at yes. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
+Read the three verdicts. From here Codex runs only when the lead is very confident it will answer yes, at the owner's instruction (its usage is limited); Antigravity and a fresh architect review each head. Expected result: Antigravity and the architect hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
 
 ## Later
 
@@ -24,7 +24,7 @@ Read the three verdicts. From here Codex is not run every round, at the owner's 
 - Shipped on develop: sprints 01 and 02 (cards 44 to 105), decisions 13 to 29 with dated amendments; [sprint 02](docs/bots/sprints/2026-09-07-sprint-02.md) records every landing, ruling, review round and incident, including the history squash.
 - On 2026-09-09 the owner had develop squashed to one commit over main with every themed agent name replaced by its role, and all harness customisation removed for a fresh start; the lore-free roster was then installed. Develop is now a short, clean history over main.
 - Pull request 25 (develop to main) is open and mergeable; merging is the owner's call and cuts 0.5.0.
-- Unresolved decisions: none. Known cost the owner may want to weigh: Codex says no on every run while Antigravity and the architect hold at yes; its reproduced defects are treated as real and its restatements of decided ground as decided.
+- Unresolved decision for the owner: Codex has said no on runs 6 to 9, and after every reproduced defect was fixed its remaining objections are decisions it disputes (17 application-service mediation, 16 the kernel as a context, 15 unions, modules and value-object behaviour, 23 commands against events, 08 one file). A Codex yes needs one or more of those reopened; the lead defends them as written and will not run Codex again until told which, if any, to reopen.
 
 ## Working state
 
