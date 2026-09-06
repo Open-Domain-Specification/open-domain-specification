@@ -637,7 +637,7 @@ describe("Workspace.validate", () => {
 				.map((d) => [d.message, d.ref]),
 		).toEqual([
 			[
-				'"Copy Request" types attribute "Lines" by schema "Order Line" from "A"; a payload belongs to the context that publishes it',
+				'"Copy Request" types attribute "Lines" by schema "Order Line" from "A"; a payload belongs to the context that publishes it, and holding it wants a shared kernel with "A", a conformist relationship toward it, or a customer-supplier relationship under which "C" is the customer',
 				borrowed.ref,
 			],
 		]);
@@ -679,8 +679,53 @@ describe("Workspace.validate", () => {
 				.filter((d) => d.rule === "schema-context")
 				.map((d) => d.message),
 		).toEqual([
-			'"Ask" carries schema "Ours" from "Cards"; a payload belongs to the context that publishes it',
+			'"Ask" carries schema "Ours" from "Cards"; a payload belongs to the context that publishes it, and holding it wants a shared kernel with "Cards", a conformist relationship toward it, or a customer-supplier relationship under which "Scheme" is the customer',
 		]);
+	});
+
+	/**
+	 * The architect's round-14 probe: a customer that answers with its
+	 * supplier's summary shape. The pair negotiated the interface, so the
+	 * supplier's published shapes are the language the customer had a say in
+	 * settling, and it writes no downstream role (decisions 03 and 16,
+	 * amendments of 2026-09-10; card 130).
+	 */
+	it("lets the customer of a customer-supplier pair carry the supplier's schema", () => {
+		const ws = emptyWorkspace();
+		const catalog = ws.addBoundedContext("Catalog", { description: "" });
+		const sales = ws.addBoundedContext("Sales", { description: "" });
+		catalog.upstreamOf(sales, {
+			type: "customer-supplier",
+			upstreamRoles: ["open-host-service", "published-language"],
+		});
+		const summary = catalog.addSchema("Pet Summary");
+		summary.addAttribute("Pet Id", { type: "PetId", identity: true });
+		const getPet = catalog
+			.addService("Pet App", { description: "", type: "application" })
+			.provides("Get Pet", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+				returns: summary,
+			});
+		const orderApp = sales.addService("Order App", {
+			description: "",
+			type: "application",
+		});
+		const show = orderApp.provides("Show Order Pet", {
+			description: "",
+			type: "operation",
+			returns: summary,
+		});
+		orderApp.consumes(getPet, { by: [show] });
+		expect(ws.validate().filter((d) => d.rule === "schema-context")).toEqual(
+			[],
+		);
+		// And no role is asked for either: a customer writes no downstream role,
+		// which is what role-coherence stopped asking for (card 128).
+		expect(ws.validate().filter((d) => d.rule === "role-coherence")).toEqual(
+			[],
+		);
 	});
 
 	// Upstream is who dictates the model. A processor that calls us in its own
@@ -741,7 +786,7 @@ describe("Workspace.validate", () => {
 				.filter((d) => d.rule === "schema-context")
 				.map((d) => d.message),
 		).toEqual([
-			'"Playback Started" carries schema "Title Ref" from "Catalogue"; a payload belongs to the context that publishes it',
+			'"Playback Started" carries schema "Title Ref" from "Catalogue"; a payload belongs to the context that publishes it, and holding it wants a shared kernel with "Catalogue", a conformist relationship toward it, or a customer-supplier relationship under which "Playback" is the customer',
 		]);
 	});
 
@@ -767,7 +812,7 @@ describe("Workspace.validate", () => {
 				.filter((d) => d.rule === "schema-context")
 				.map((d) => d.message),
 		).toEqual([
-			'"Authorisation" types attribute "original" by schema "Authorisation Message" from "Card Processor"; a payload belongs to the context that publishes it',
+			'"Authorisation" types attribute "original" by schema "Authorisation Message" from "Card Processor"; a payload belongs to the context that publishes it, and holding it wants a shared kernel with "Card Processor", a conformist relationship toward it, or a customer-supplier relationship under which "Cards" is the customer',
 		]);
 	});
 
@@ -3110,12 +3155,22 @@ describe("consumption-agreement", () => {
 			upstreamRoles: ["published-language"],
 			downstreamRoles: ["anti-corruption-layer"],
 		});
-		processor
-			.addService("Processor", { description: "", type: "application" })
-			.consumes(settle, {
-				pattern: "anti-corruption-layer",
-				relationship: dictated,
-			});
+		const processorApp = processor.addService("Processor", {
+			description: "",
+			type: "application",
+		});
+		// Something in the processor makes the call: a consumer that provides no
+		// operation has nothing that could, which `consumption-by-required`
+		// reports. One operation is its own `by`, so none is written here.
+		processorApp.provides("Present Settlement", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		processorApp.consumes(settle, {
+			pattern: "anti-corruption-layer",
+			relationship: dictated,
+		});
 		expect(agreement(ws)).toEqual([]);
 		expect(ws.validate()).toEqual([]);
 	});
@@ -4719,6 +4774,137 @@ describe("raises-in-context", () => {
 	});
 });
 
+describe("raises-in-aggregate", () => {
+	/**
+	 * One context with two aggregates and a service in front of them: the shape
+	 * the architect's round-14 probe C is about, where Order claims to make
+	 * Stock Item's fact true.
+	 */
+	function twoAggregates() {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Sales", { description: "" });
+		const orderAgg = bc.addAggregate("Order", { description: "" });
+		orderAgg
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("Id", { type: "OrderId", identity: true });
+		const stockAgg = bc.addAggregate("Stock Item", { description: "" });
+		stockAgg
+			.addRootEntity("Stock Item", { description: "" })
+			.addAttribute("Sku", { type: "Sku", identity: true });
+		const app = bc.addService("Sales App", {
+			description: "",
+			type: "application",
+		});
+		return {
+			ws,
+			bc,
+			orderAgg,
+			stockAgg,
+			app,
+			stockReserved: stockAgg.provides("Stock Reserved", {
+				description: "",
+				type: "event",
+				internal: true,
+			}),
+			orderPlaced: orderAgg.provides("Order Placed", {
+				description: "",
+				type: "event",
+				internal: true,
+			}),
+		};
+	}
+
+	const inAggregate = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "raises-in-aggregate")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("refuses an aggregate raising the aggregate next door's event", () => {
+		const { ws, orderAgg, orderPlaced, stockReserved } = twoAggregates();
+		const place = orderAgg
+			.provides("Place Order", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(orderPlaced, stockReserved);
+		expect(inAggregate(ws)).toEqual([
+			[
+				"error",
+				'Aggregate "Order" raises "Stock Reserved", which belongs to aggregate "Stock Item" in "Sales"; each aggregate is saved in its own transaction, so "Order" making another\'s fact true spans two of them with nothing on any map to say so. Let "Stock Item" raise its own event, and let a service of "Sales" front both',
+				place.ref,
+			],
+		]);
+	});
+
+	it("says nothing about an aggregate raising its own event", () => {
+		const { ws, orderAgg, orderPlaced } = twoAggregates();
+		orderAgg
+			.provides("Place Order", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(orderPlaced);
+		expect(inAggregate(ws)).toEqual([]);
+	});
+
+	/**
+	 * The half decision 17's second amendment leaves open: the context's use
+	 * case runs both transitions, so an application service's operation may
+	 * raise any aggregate's event of its own context.
+	 */
+	it("lets an application service's operation raise any aggregate's event of its context", () => {
+		const { ws, app, orderPlaced, stockReserved } = twoAggregates();
+		app
+			.provides("Place Order", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			})
+			.raises(orderPlaced, stockReserved);
+		expect(inAggregate(ws)).toEqual([]);
+	});
+
+	it("leaves the foreign context's event to raises-in-context, so one line is reported once", () => {
+		const { ws, bc, orderAgg } = twoAggregates();
+		const elsewhere = ws.addBoundedContext("Warehouse", { description: "" });
+		const theirs = elsewhere
+			.addService("Warehouse App", { description: "", type: "application" })
+			.provides("Stock Moved", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			});
+		orderAgg
+			.provides("Place Order", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(theirs);
+		expect(inAggregate(ws)).toEqual([]);
+		expect(
+			ws.validate().filter((d) => d.rule === "raises-in-context"),
+		).toHaveLength(1);
+		expect(bc.name).toBe("Sales");
+	});
+
+	it("says nothing inside an external context, whose insides are not ours to state", () => {
+		const { ws, bc, orderAgg, orderPlaced, stockReserved } = twoAggregates();
+		bc.external = true;
+		orderAgg
+			.provides("Place Order", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(orderPlaced, stockReserved);
+		expect(inAggregate(ws)).toEqual([]);
+	});
+});
+
 describe("raises-restated", () => {
 	/**
 	 * One context whose application service fronts an aggregate operation: the
@@ -4796,10 +4982,19 @@ describe("raises-restated", () => {
 		// `consumption-by-required` does not ask for one; the chain reads it the
 		// same way, so the front is restating a fact the chain already carries
 		// (decision 21's third amendment, card 95).
+		// The message has to name the raiser too. It read the consumptions with
+		// the inference left out, so the warning printed an empty name and told
+		// the author the fact was already raised by `""` (card 130).
 		const { ws, app, reserve, reserved, reserveForOrder } = front();
 		reserveForOrder.raises(reserved);
 		app.consumes(reserve, {});
-		expect(restated(ws).map(([, , ref]) => ref)).toEqual([reserveForOrder.ref]);
+		expect(restated(ws)).toEqual([
+			[
+				"warning",
+				'"Reserve Pet For Order" raises "Pet Reserved", which "Reserve Pet" already raises through the consumption it makes; drop it, the chain carries it',
+				reserveForOrder.ref,
+			],
+		]);
 	});
 
 	it("says nothing when the consumption does not name the front in by", () => {
@@ -7954,8 +8149,37 @@ describe("consumption-by-required", () => {
 		expect(required(calls(1).ws)).toEqual([]);
 	});
 
-	it("leaves a consumer with none alone; it has nothing to name", () => {
-		expect(required(calls(0).ws)).toEqual([]);
+	/**
+	 * The subscribe-only application service reaching outward: nothing in the
+	 * context can make the call, because there is no operation to name and the
+	 * single-operation inference has nothing to infer from. The repair is the
+	 * missing operation rather than a missing `by`, and the message says so
+	 * (decision 21, second amendment of 2026-09-10; card 130).
+	 */
+	it("reports a consumer that provides none; nothing there can make the call", () => {
+		const { ws, consumption } = calls(0);
+		expect(required(ws)).toEqual([
+			[
+				"warning",
+				'"Payments App" consumes "Post Entry" from "Ledger" but provides no operation, so nothing in "Payments" can make the call; add the operation of "Payments App" that makes it and name that operation in by',
+				consumption.ref,
+			],
+		]);
+	});
+
+	it("asks nothing of a zero-operation consumer inside an external context", () => {
+		const { ws } = calls(0);
+		ws.getBoundedContextByRefOrThrow("#/boundedcontexts/payments").external =
+			true;
+		expect(required(ws)).toEqual([]);
+	});
+
+	it("asks nothing of a zero-operation consumer inside a big ball of mud", () => {
+		const { ws } = calls(0);
+		ws.getBoundedContextByRefOrThrow(
+			"#/boundedcontexts/payments",
+		).bigBallOfMud = true;
+		expect(required(ws)).toEqual([]);
 	});
 
 	it("says nothing about a consumed event, which the consumer does not call", () => {
@@ -8106,7 +8330,7 @@ describe("valueobject-context", () => {
 		expect(borrowing(ws)).toEqual([
 			[
 				"error",
-				'"Claim" in "Claims" types attribute "Reserve" by value object "Money" from "Policy Admin"; a value object is part of one context\'s language, so borrowing it wants a shared kernel with "Policy Admin" or a conformist relationship toward it',
+				'"Claim" in "Claims" types attribute "Reserve" by value object "Money" from "Policy Admin"; a value object is part of one context\'s language, and holding it wants a shared kernel with "Policy Admin", a conformist relationship toward it, or a customer-supplier relationship under which "Claims" is the customer',
 				reserve.ref,
 			],
 		]);
@@ -8134,6 +8358,60 @@ describe("valueobject-context", () => {
 			downstreamRoles: ["conformist"],
 		});
 		expect(borrowing(ws)).toHaveLength(1);
+	});
+
+	/**
+	 * The customer of a customer-supplier pair, which declares no downstream
+	 * role at all: the pair negotiated the interface, so the supplier's types
+	 * are a language the customer had a say in settling. Telling it to call
+	 * itself a conformist would be telling it to claim it has no say, which is
+	 * the word decision 03's amendment of 2026-09-10 stopped asking for (card
+	 * 130).
+	 */
+	it("allows it to the customer of a customer-supplier pair, with no role written", () => {
+		const { ws, admin, claims } = borrowed();
+		admin.upstreamOf(claims, {
+			type: "customer-supplier",
+			upstreamRoles: ["published-language"],
+		});
+		expect(borrowing(ws)).toEqual([]);
+	});
+
+	it("refuses it to the supplier, since that borrowing runs downstream too", () => {
+		const { ws, admin, claims } = borrowed();
+		claims.upstreamOf(admin, {
+			type: "customer-supplier",
+			upstreamRoles: ["published-language"],
+		});
+		expect(borrowing(ws)).toHaveLength(1);
+	});
+
+	/**
+	 * Partners plan and release together, which is not the same as keeping one
+	 * model between them. The answer is a shared kernel beside the partnership,
+	 * and the message is what has to say so (decision 16, second amendment of
+	 * 2026-09-10).
+	 */
+	it("refuses it between partners, and names the shared kernel beside the partnership", () => {
+		const { ws, admin, claims, reserve } = borrowed();
+		claims.partnerOf(admin, { description: "one release train" });
+		expect(borrowing(ws)).toEqual([
+			[
+				"error",
+				'"Claim" in "Claims" types attribute "Reserve" by value object "Money" from "Policy Admin"; a value object is part of one context\'s language, and a partnership is not what shares one — "Claims" and "Policy Admin" plan and release together, which is not the same as keeping one model between them — so declare a shared kernel beside the partnership if they really do share this',
+				reserve.ref,
+			],
+		]);
+	});
+
+	it("goes quiet once the partners declare the kernel beside the partnership", () => {
+		const { ws, admin, claims } = borrowed();
+		claims.partnerOf(admin, { description: "one release train" });
+		claims.sharesKernelWith(admin, { description: "the money model" });
+		expect(borrowing(ws)).toEqual([]);
+		expect(
+			ws.validate().filter((d) => d.rule === "relationship-duplicate"),
+		).toEqual([]);
 	});
 
 	it("reads a payload schema's attribute the same way, since the definition is what is borrowed", () => {
@@ -8240,7 +8518,7 @@ describe("a relation to a value object of another context", () => {
 			],
 			[
 				"valueobject-context",
-				'"Invoice" in "Billing" types attribute "Lines" by value object "Money" from "Financial Primitives"; a value object is part of one context\'s language, so borrowing it wants a shared kernel with "Financial Primitives" or a conformist relationship toward it',
+				'"Invoice" in "Billing" types attribute "Lines" by value object "Money" from "Financial Primitives"; a value object is part of one context\'s language, and holding it wants a shared kernel with "Financial Primitives", a conformist relationship toward it, or a customer-supplier relationship under which "Billing" is the customer',
 			],
 		]);
 	});

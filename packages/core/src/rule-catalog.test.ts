@@ -222,6 +222,21 @@ function everythingWrong(): Workspace {
 		valueobject: colour,
 		schema: a.addSchema("Both Ways"),
 	});
+	// raises-in-aggregate: Tree states Coherence's fact as its own, which is the
+	// two-transaction act aggregate-consumes-inside refuses when it is written
+	// as a call (decision 17, second amendment of 2026-09-10)
+	const coherenceSettled = coherence.provides("Coherence Settled", {
+		type: "event",
+		description: "",
+		internal: true,
+	});
+	tree
+		.provides("Settle Tree", {
+			type: "operation",
+			description: "",
+			internal: true,
+		})
+		.raises(coherenceSettled);
 	// term-in-context: A's glossary points at B's aggregate
 	a.addTerm("Foreign Word", { definition: "", embodiedBy: other });
 	// relationship-roles-backed and mud-needs-acl: a legacy context whose

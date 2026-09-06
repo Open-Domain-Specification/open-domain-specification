@@ -342,6 +342,18 @@ export function makeRichTestWs() {
 		description: "Invoice application service",
 		type: "application",
 	});
+	// The one operation Invoicing has that reaches into Ordering. A consumption
+	// of an operation is made by an operation of the consumer (decision 17),
+	// and a consumer providing none has nothing that could make the call, which
+	// `consumption-by-required` reports; providing exactly one means `by` is
+	// inferred, so the consumption below stays silent and still reads as this
+	// operation's (decision 21, second amendment of 2026-09-10).
+	invoiceApp.provides("Place Replacement Order", {
+		description:
+			"Places a replacement order for an invoice raised against the wrong one",
+		type: "operation",
+		internal: true,
+	});
 	const invoiceAppConsumesPlaceOrder = invoiceApp.consumes(placeOrder, {
 		pattern: "anti-corruption-layer",
 	});
