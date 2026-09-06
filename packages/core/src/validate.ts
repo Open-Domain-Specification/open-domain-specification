@@ -2284,30 +2284,36 @@ function agreementOf(
 }
 
 /**
- * Which of two contexts the model says is upstream, where a directed
- * relationship says anything at all. Undefined means the pair has declared
- * none, and the implied edge the context map draws reads the provider as the
- * upstream, which is what the rules below fall back on.
+ * The directed relationship the model answers a question about one exchange
+ * with: the agreement the exchange names, where it names one joining the pair,
+ * and otherwise the pair's first directed relationship. Undefined means the
+ * pair has declared none, and the implied edge the context map draws reads the
+ * provider as the upstream, which is what the rules below fall back on.
  *
  * Where the question is asked about one exchange and that exchange names its
- * agreement, that agreement answers it. Read off the pair alone it was
- * whichever directed relationship came first in the workspace, which two
+ * agreement, that agreement answers it. Read off the pair alone the direction
+ * was whichever directed relationship came first in the workspace, which two
  * agreements between one pair made arbitrary (card 107).
+ *
+ * `role-coherence` reads its `source` for which end is upstream and its `type`
+ * for whether a downstream role is asked for at all, because both bear on
+ * which roles a crossing is asked for: a customer-supplier downstream is asked
+ * for none (decision 03, amendment of 2026-09-10).
  */
-function declaredUpstream(
+function declaredAgreement(
 	workspace: Workspace,
 	one: BoundedContext,
 	other: BoundedContext,
 	crossing?: Consumption,
-): BoundedContext | undefined {
+): ContextRelationship | undefined {
 	const named = crossing?.relationship;
-	if (named?.involves(one) && named.involves(other)) return named.source;
+	if (named?.involves(one) && named.involves(other)) return named;
 	return workspace.relationships.find(
 		(r) =>
 			isDirectedRelationshipType(r.type) &&
 			r.involves(one) &&
 			r.involves(other),
-	)?.source;
+	);
 }
 
 /**
@@ -2395,6 +2401,19 @@ function relationshipLabel(relationship: ContextRelationship): string {
  * consumable carries only an upstream role and a consumption only a downstream
  * one — so the roles live on the relationship, and `relationship-roles-backed`
  * is what reads them there.
+ *
+ * It reads the type as well as the direction, for the one type that answers
+ * the question itself. A customer-supplier downstream negotiates the interface
+ * it uses: it has a say in the upstream's planning, which is what the type
+ * says and what tells it apart from plain upstream-downstream. Asked for a
+ * downstream role it had two words to choose from and neither is true —
+ * a conformist is the downstream with no say, the opposite of a customer, and
+ * an anti-corruption layer is a translation it does not do. The vocabulary has
+ * no word for "negotiated interface, used as it is" and needs none, because
+ * the relationship type is the word. So no downstream role is asked for on
+ * such a crossing; one written there is still read wherever roles are read,
+ * by `relationship-roles-backed`, and the upstream role on the consumable is
+ * asked for as it always was (decision 03, note and amendment of 2026-09-10).
  */
 const roleCoherence: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -2406,12 +2425,15 @@ const roleCoherence: Rule = (workspace) => {
 		// Partners and shared-kernel contexts have no upstream or downstream
 		// side, so neither end of the exchange carries a role to declare.
 		if (symmetricallyRelated(workspace, provider, consumer)) continue;
+		const agreement = declaredAgreement(
+			workspace,
+			provider,
+			consumer,
+			consumption,
+		);
 		// The call runs against the declared direction: the caller is upstream
 		// and the provider translates for it. Nothing to ask of either end here.
-		if (
-			declaredUpstream(workspace, provider, consumer, consumption) === consumer
-		)
-			continue;
+		if (agreement?.source === consumer) continue;
 		if (!consumable.pattern && !consumable.internal) {
 			diagnostics.push({
 				severity: "warning",
@@ -2420,7 +2442,10 @@ const roleCoherence: Rule = (workspace) => {
 				ref: consumable.ref,
 			});
 		}
-		if (!consumption.pattern) {
+		// A customer-supplier downstream is asked for no role: the negotiated
+		// interface is the pattern, and the two words on offer both say
+		// something else about it.
+		if (!consumption.pattern && agreement?.type !== "customer-supplier") {
 			diagnostics.push({
 				severity: "warning",
 				rule: "role-coherence",
@@ -4179,11 +4204,19 @@ const raisersAmong = (operation: Consumable, event: Consumable): string[] =>
  * card 126).
  *
  * What is left of the warning is the half that was always right. An event
- * nobody outside this context consumes tells nobody anything, so a refusal
- * shape published as an event with no listener is a fact invented for the
- * caller who was already answered. Somebody hearing it is what makes it an
- * event, so that is what the rule asks, and it asks it of the contexts
- * outside: the provider's own reactors already have the answer in their hands.
+ * nobody hears tells nobody anything, so a refusal shape published as an event
+ * with no listener is a fact invented for the caller who was already answered.
+ * Somebody hearing it is what makes it an event, so that is what the rule
+ * asks.
+ *
+ * Somebody includes this context's own reactors. Card 126 asked the question
+ * of the contexts outside, reasoning that the provider's own reactors already
+ * have the answer in their hands — and they do not: the dunning policy that
+ * reacts to `PaymentDeclined` is not the caller, it heard a fact, and a context
+ * that both refuses a call and acts on the refusal elsewhere in its own model
+ * is the ordinary shape of the pair rather than a warning. What the model has
+ * to have is a reactor, not a foreign one (decision 25, second note of
+ * 2026-09-10; card 128).
  */
 const rejectionRaised: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -4195,11 +4228,11 @@ const rejectionRaised: Rule = (workspace) => {
 					const event = operation.raisedEvents.find(
 						(it) => it.schema === rejection.schema,
 					);
-					if (!event || heardElsewhere(event)) continue;
+					if (!event || hearersOf(workspace, event).length > 0) continue;
 					diagnostics.push({
 						severity: "warning",
 						rule: "rejection-raised",
-						message: `"${operation.name}" rejects with "${rejection.schema.name}", which it also raises as the event "${event.name}", and no other context consumes "${event.name}"; a rejection answers the caller and an event tells the world, and where both are true keep both \u2014 the fact somebody hears is what makes it an event, so say who consumes "${event.name}" or drop it and let the rejection answer`,
+						message: `"${operation.name}" rejects with "${rejection.schema.name}", which it also raises as the event "${event.name}", and no policy or process anywhere reacts to "${event.name}"; a rejection answers the caller and an event tells the world, and where both are true keep both \u2014 the fact somebody hears is what makes it an event, so name the policy or process that hears "${event.name}", one of "${bc.name}"'s own included, or drop the event and let the rejection answer`,
 						ref: operation.ref,
 					});
 				}
@@ -4210,17 +4243,25 @@ const rejectionRaised: Rule = (workspace) => {
 };
 
 /**
- * Whether a context other than the one that raises this event consumes it.
+ * The reactors that wake on an event: every policy and process, in any
+ * context, that names it among the facts it listens for.
  *
- * Telling the world is what an event does that an answer does not, and the
- * world here is the other contexts. A consumption inside the raising context
- * is not it: the caller who made the call is already holding the refusal it
- * was answered with, so a subscription beside it says nothing new about
- * whether the fact travels.
+ * Hearing is what an event does that an answer does not, and it is a reactor
+ * that hears. A consumption is only how the fact crosses a boundary — it is
+ * required for a foreign reactor (`policy-in-context`) and backed by one
+ * (`subscription-backed`) — so counting consumptions counted the route and not
+ * the listener, and counted nothing at all for a listener in the raising
+ * context, which needs no route (decision 25, second note of 2026-09-10).
  */
-function heardElsewhere(event: Consumable): boolean {
-	const owner = event.boundedcontext;
-	return event.consumptions.some((c) => c.consumer.boundedcontext !== owner);
+function hearersOf(
+	workspace: Workspace,
+	event: Consumable,
+): Array<Policy | Process> {
+	const heard: Array<Policy | Process> = [];
+	for (const bc of workspace.boundedcontexts.values())
+		for (const reactor of reactorsOf(bc))
+			if (subscribedTriggers(reactor).includes(event)) heard.push(reactor);
+	return heard;
 }
 
 /**
@@ -4685,12 +4726,13 @@ const contextServesSubdomain: Rule = (workspace) => {
  * every refusal of one says the same thing.
  */
 const externalContractMay =
-	"A published contract states what one of this system's own operations takes and answers with, in the attributes of its own request and answer schemas, and what its own value objects are; anything else about that system is ours to guess and not to state";
+	"A published contract states what one of this system's own operations takes and answers with, in the attributes of its own request and answer schemas, what one of its own events carries, in the attributes of that event's payload, and what its own value objects are; anything else about that system is ours to guess and not to state";
 
 /**
  * Everything a published contract of an external context may constrain: the
- * context's own operations, the attributes of the shapes those operations
- * carry, and the context's own value objects with their attributes.
+ * context's own operations and events, the attributes of the shapes those
+ * operations carry and of the payloads of the events it guards, and the
+ * context's own value objects with their attributes.
  *
  * The reach is the contract and nothing beside it. A payment provider
  * documents that capture takes a capturable payment reference and answers with
@@ -4708,6 +4750,18 @@ const externalContractMay =
  * is checked against, a postcondition the request and what comes back. A
  * standard's published rule about a value is left to the value objects, which
  * an external context has always been allowed to state (third amendment).
+ *
+ * An event of the context's own is the fourth thing in reach, and its payload
+ * is the fifth. A provider that only sends — a webhook, a settlement feed —
+ * has no operation to hang its contract on, and "every capture notification
+ * carries an amount no greater than the authorisation" is as published and as
+ * citable as what capture returns; the same argument, word for word (decision
+ * 28, fifth amendment). Only the payload of an event this invariant guards is
+ * reached, and only for a postcondition, because that is the whole of what an
+ * event carries: an event has no request to check beforehand, so there is
+ * nothing a precondition on one could be about. The payload is read through
+ * {@link composedSchemas}, so what it nests is part of it exactly as a
+ * request's nesting is.
  */
 function externalContractReach(
 	bc: BoundedContext,
@@ -4716,14 +4770,54 @@ function externalContractReach(
 	const reach = new Set<Constrainable>();
 	for (const provider of [...bc.aggregates.values(), ...bc.services.values()])
 		for (const consumable of provider.consumables.values())
-			if (consumable.type === "operation") reach.add(consumable);
+			reach.add(consumable);
 	for (const schema of guardedSchemas(invariant))
+		for (const attribute of schema.attributes.values()) reach.add(attribute);
+	for (const schema of publishedPayloads(bc, invariant))
 		for (const attribute of schema.attributes.values()) reach.add(attribute);
 	for (const vo of bc.valueobjects.values()) {
 		reach.add(vo);
 		for (const attribute of vo.allAttributes) reach.add(attribute);
 	}
 	return reach;
+}
+
+/**
+ * The payload shapes an external context's postcondition puts within its
+ * reach: those of the context's own events it guards, and what those payloads
+ * compose.
+ *
+ * `guardedSchemas` reads operations, because in a modelled context an
+ * invariant's guard is an operation — the moment at which somebody checks a
+ * rule (decisions 19 and 27). An external context has moments nobody here can
+ * check and facts everybody here can read, so the guard of a published
+ * contract may be one of its events; the reading is kept here rather than in
+ * `guardedSchemas` so that no modelled context's reach moves with it.
+ */
+function publishedPayloads(
+	bc: BoundedContext,
+	invariant: Invariant,
+): Set<DataSchema> {
+	return composedSchemas(
+		publishedFacts(bc, invariant)
+			.map((event) => event.schema)
+			.filter((schema): schema is DataSchema => !!schema),
+	);
+}
+
+/**
+ * The events of this external context the invariant names as its guard, which
+ * only a postcondition has: an event has no request, so there is no moment
+ * before it at which a precondition could be checked.
+ */
+function publishedFacts(
+	bc: BoundedContext,
+	invariant: Invariant,
+): Consumable[] {
+	if (!invariant.postcondition) return [];
+	return invariant.guarded.filter(
+		(it) => it.type === "event" && it.boundedcontext === bc,
+	);
 }
 
 /**
@@ -4751,6 +4845,15 @@ function externalContractReach(
  * how the machine keeps itself, and a flagged one guarding another context's
  * operation is still this model promising for a system it does not own
  * (decision 28, amendment of 2026-09-10).
+ *
+ * A published event is the third of those, for the same reason a third time.
+ * A provider that only sends — a webhook, a settlement feed — has no operation
+ * to hang a contract on, and what its notification carries is documented,
+ * citable and not the receiver's to promise. So a `postcondition` may name one
+ * of this context's own events and constrain the attributes of that event's
+ * payload; another context's event, and anything outside the payload, stays
+ * refused, and a precondition on an event is meaningless because an event has
+ * no request to check first (decision 28, fifth amendment; card 128).
  *
  * That allowance was implemented at half its width, and this is the only rule
  * that reads an external context's invariant at all: every reach rule —
@@ -4817,25 +4920,37 @@ const externalIsBoundary: Rule = (workspace) => {
 		// operation and could reach into one of our aggregates with nothing
 		// said (decision 28, amendment of 2026-09-10, fourth; card 116). Both
 		// are asked here, where the reader already is.
+		//
+		// A postcondition may name one of this context's own events instead of
+		// an operation, and constrain what that event's payload carries. A
+		// provider that only sends has no operation to hang its contract on,
+		// and a webhook's payload is published, citable and not ours to
+		// promise, which is this record's own argument applied to the shape it
+		// was not applied to (decision 28, fifth amendment; card 128). Only a
+		// postcondition: an event has no request, so there is no moment before
+		// it at which anything could be checked.
 		for (const invariant of bc.invariants.values()) {
 			if (!invariant.precondition && !invariant.postcondition) {
 				diagnostics.push({
 					severity: "error",
 					rule: "external-is-boundary",
-					message: `External context "${bc.name}" declares invariant "${invariant.name}", which is neither a precondition nor a postcondition; a rule a system we do not own keeps at rest is not ours to state. What is ours to write down is that system's published contract: mark the rule a precondition or a postcondition of one of this context's own operations, or move it to the context of ours that really keeps it`,
+					message: `External context "${bc.name}" declares invariant "${invariant.name}", which is neither a precondition nor a postcondition; a rule a system we do not own keeps at rest is not ours to state. What is ours to write down is that system's published contract: mark the rule a precondition or a postcondition of one of this context's own operations, or a postcondition of one of its own events, or move it to the context of ours that really keeps it`,
 					ref: invariant.ref,
 				});
 				continue;
 			}
 			const kind = invariant.precondition ? "precondition" : "postcondition";
-			const guards = invariant.guarded.filter(
-				(it) => it.type === "operation" && it.boundedcontext === bc,
-			);
+			const guards = [
+				...invariant.guarded.filter(
+					(it) => it.type === "operation" && it.boundedcontext === bc,
+				),
+				...publishedFacts(bc, invariant),
+			];
 			if (guards.length === 0)
 				diagnostics.push({
 					severity: "error",
 					rule: "external-is-boundary",
-					message: `External context "${bc.name}" states ${kind} "${invariant.name}" on none of its own operations; what a system we do not own publishes is the contract of an operation it offers, so name that operation. ${externalContractMay}`,
+					message: `External context "${bc.name}" states ${kind} "${invariant.name}" on none of its own operations${invariant.postcondition ? " or events" : ""}; what a system we do not own publishes is the contract of an operation it offers${invariant.postcondition ? ", or of a fact it sends us" : ""}, so name that ${invariant.postcondition ? "operation or event" : "operation"}. ${externalContractMay}`,
 					ref: invariant.ref,
 				});
 			const reach = externalContractReach(bc, invariant);
@@ -4843,7 +4958,7 @@ const externalIsBoundary: Rule = (workspace) => {
 				if (reach.has(target)) continue;
 				const elsewhere =
 					target instanceof Consumable && target.boundedcontext !== bc
-						? `"${target.name}", an operation of "${target.boundedcontext.name}"; a system we do not own publishes the contract of its own operations and promises nothing about anybody else's. Move the rule to the context that provides the operation`
+						? `"${target.name}", ${target.type === "event" ? "an event" : "an operation"} of "${target.boundedcontext.name}"; a system we do not own publishes the contract of what it offers and sends, and promises nothing about anybody else's. Move the rule to the context that ${target.type === "event" ? "raises the event" : "provides the operation"}`
 						: `"${constrainableLabel(target)}", which is not part of that contract. ${externalContractMay}`;
 				diagnostics.push({
 					severity: "error",
@@ -5350,9 +5465,9 @@ const RULES: CataloguedRule[] = [
 		rule: "role-coherence",
 		severities: ["warning"],
 		summary:
-			"Where the provider of a consumable is the upstream side, the consumable declares an upstream role and the consumption a downstream one — unless the two contexts are partners or share a kernel.",
-		why: "Crossing a context boundary is an integration decision: how the upstream offers what it offers (a documented API or a published format) and how the downstream takes it (as-is or translated) should be explicit. Which end is which is the relationship's to say, not the call's: upstream is whoever dictates the model, so where the caller sends its own format and the provider translates it, the provider is downstream of the context calling it. A consumable can carry only an upstream role and a consumption only a downstream one, so in that case neither field is the right place for either role — the roles are on the relationship, and relationship-roles-backed reads them there. Partnership and shared kernel are the other exception: neither side is upstream, so there is no role for either end to declare.",
-		fix: "Set pattern on the consumable to open-host-service or published-language, and pattern on the consumption to conformist or anti-corruption-layer; or declare the partnership or shared kernel that makes the two contexts equals. If the warning is on an integration where the caller dictates the format, the relationship is the wrong way round: declare the caller upstream, with the roles on the relationship, and this rule stops asking. Where the pair holds two agreements, which direction this exchange runs under is the exchange's to say: name it in the consumption's relationship.",
+			"Where the provider of a consumable is the upstream side, the consumable declares an upstream role and the consumption a downstream one — unless the two contexts are partners or share a kernel, and no downstream role is asked for where their relationship is customer-supplier.",
+		why: "Crossing a context boundary is an integration decision: how the upstream offers what it offers (a documented API or a published format) and how the downstream takes it (as-is or translated) should be explicit. Which end is which is the relationship's to say, not the call's: upstream is whoever dictates the model, so where the caller sends its own format and the provider translates it, the provider is downstream of the context calling it. A consumable can carry only an upstream role and a consumption only a downstream one, so in that case neither field is the right place for either role — the roles are on the relationship, and relationship-roles-backed reads them there. Partnership and shared kernel are the other exception: neither side is upstream, so there is no role for either end to declare. Customer-supplier is an exception on the downstream side only: a customer negotiates the interface it uses, so neither downstream word fits — a conformist is the downstream with no say, which is the opposite of a customer, and an anti-corruption layer is a translation the negotiated interface saves it from. The type is the answer, so the question is not asked.",
+		fix: "Set pattern on the consumable to open-host-service or published-language, and pattern on the consumption to conformist or anti-corruption-layer; or declare the partnership or shared kernel that makes the two contexts equals. If the downstream really has a say in what the upstream builds, the relationship is a customer-supplier one: declare it and no downstream role is asked for, though one is still read if you write it. If the warning is on an integration where the caller dictates the format, the relationship is the wrong way round: declare the caller upstream, with the roles on the relationship, and this rule stops asking. Where the pair holds two agreements, which direction this exchange runs under is the exchange's to say: name it in the consumption's relationship.",
 		check: roleCoherence,
 	},
 	{
@@ -5572,9 +5687,9 @@ const RULES: CataloguedRule[] = [
 		rule: "rejection-raised",
 		severities: ["warning"],
 		summary:
-			"An operation does not raise, as an event no other context consumes, a shape it also rejects with.",
-		why: "A rejection answers the caller and an event tells the world, and a declined authorisation is honestly both: the caller was refused, and the decision happened, which is why PaymentDeclined is a canonical event in every storming session. Where both are true the model keeps both. What is left to report is a refusal shape published as an event that nobody outside the context consumes: the caller who asked already holds the answer, so an event with no listener adds a fact nobody hears, and somebody hearing it is what makes it an event at all (decision 25, note of 2026-09-10).",
-		fix: "If the fact really does travel, say who hears it: declare the consumption in the context that reacts to the decline, and the rejection stays beside it as the caller's answer. If nobody hears it, it is not an event: drop it from raises and let the rejection answer.",
+			"An operation does not raise, as an event no policy or process reacts to, a shape it also rejects with.",
+		why: "A rejection answers the caller and an event tells the world, and a declined authorisation is honestly both: the caller was refused, and the decision happened, which is why PaymentDeclined is a canonical event in every storming session. Where both are true the model keeps both. What is left to report is a refusal shape published as an event nobody hears: the caller who asked already holds the answer, so an event with no listener adds a fact nobody acts on, and somebody hearing it is what makes it an event at all. A reactor of the raising context counts — the dunning policy that reacts to a decline is not the caller, it heard a fact — so what the rule asks for is a listener, not a foreign one (decision 25, notes of 2026-09-10).",
+		fix: "If the fact really does travel, say who hears it: name the policy or process that reacts to the decline, in this context or in the one that declares a consumption of the event, and the rejection stays beside it as the caller's answer. If nobody hears it, it is not an event: drop it from raises and let the rejection answer.",
 		check: rejectionRaised,
 	},
 	{
@@ -5617,9 +5732,9 @@ const RULES: CataloguedRule[] = [
 		rule: "external-is-boundary",
 		severities: ["error"],
 		summary:
-			"An external context declares no aggregates, no policies, no processes and no internal operations or events, and is not a big ball of mud as well; its value objects may carry invariants and it may state a precondition or a postcondition on one of its own operations, because a published contract is citable. Such an invariant names one of that context's own operations and constrains only the attributes of the shapes that operation carries and the context's own value objects.",
-		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. The contract of one of its own operations is the same kind of published fact: a payment provider documents that capturing needs a capturable payment and what the capture answers with, and the merchant integrating with it is in no position to promise that, so the rule is stated where it is published — as a precondition or a postcondition of that provider's own operation. A rule with neither flag is different, because a rule the machine keeps at rest is exactly the invention we cannot make, and so is a precondition guarding somebody else's operation. The reach is the contract and nothing beside it: a flagged rule that names no operation at all is a contract about nothing, and one that constrains an entity of ours is that system promising something about our model. Neither was reported until card 116, because every reach rule walks the contexts whose insides we state and an external context is not one of them. Internal is the same invention in one word: it says an operation, or an event, never leaves that system, and the ones of somebody else's system we can name at all are those that reach us or that we reach. A big ball of mud is the opposite kind of unknown — the enterprise's own system, unreadable but ours to carve up — so a context marked both leaves every rule that reads one of the two flags guessing which reading was meant.",
-		fix: "Drop internal from the operation or the event, which is a fact about that system's insides. Move the aggregate, policy or process into the context of ours that actually holds it, or drop external: true if this is a system the enterprise really does model inside. Where the aggregate was standing in for a kind that system publishes, the honest form is a schema of this context rather than an invented entity: declare the schema and let an identity attribute of ours name it directly. For an invariant, the question is which of two things it is. If it is the published contract of one of this context's own operations, mark it precondition (checked before that operation runs) or postcondition (guaranteed of what it answers with) and name that operation in constrains; both flags are allowed here and one of them is required, because an unflagged rule is a claim about the machine at rest. What it may then constrain is the attributes of that operation's request and answer shapes and this context's own value objects; anything else names something the provider does not publish. If it is a rule about several instances of a context of ours, or a precondition guarding another context's operation, move it to the context that keeps it. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay. Where both flags are set, keep the one that says who may change the system: external for somebody else's, bigBallOfMud for ours.",
+			"An external context declares no aggregates, no policies, no processes and no internal operations or events, and is not a big ball of mud as well; its value objects may carry invariants and it may state a precondition or a postcondition on one of its own operations, or a postcondition on one of its own events, because a published contract is citable. Such an invariant names one of that context's own operations, or for a postcondition one of its own events, and constrains only the attributes of the shapes that operation carries or that event's payload, and the context's own value objects.",
+		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. The contract of one of its own operations is the same kind of published fact: a payment provider documents that capturing needs a capturable payment and what the capture answers with, and the merchant integrating with it is in no position to promise that, so the rule is stated where it is published — as a precondition or a postcondition of that provider's own operation. What one of its own events carries is that same fact again: a provider that only sends — a webhook, a settlement feed — has no operation to hang a contract on, and the promise that every capture notification carries an amount no greater than the authorisation is published, citable and not the receiver's to promise, so a postcondition may name that event and constrain the attributes of its payload. Only a postcondition, because an event has no request and so no moment before it at which anything could be checked. A rule with neither flag is different, because a rule the machine keeps at rest is exactly the invention we cannot make, and so is a precondition guarding somebody else's operation. The reach is the contract and nothing beside it: a flagged rule that names no operation at all is a contract about nothing, and one that constrains an entity of ours is that system promising something about our model. Neither was reported until card 116, because every reach rule walks the contexts whose insides we state and an external context is not one of them. Internal is the same invention in one word: it says an operation, or an event, never leaves that system, and the ones of somebody else's system we can name at all are those that reach us or that we reach. A big ball of mud is the opposite kind of unknown — the enterprise's own system, unreadable but ours to carve up — so a context marked both leaves every rule that reads one of the two flags guessing which reading was meant.",
+		fix: "Drop internal from the operation or the event, which is a fact about that system's insides. Move the aggregate, policy or process into the context of ours that actually holds it, or drop external: true if this is a system the enterprise really does model inside. Where the aggregate was standing in for a kind that system publishes, the honest form is a schema of this context rather than an invented entity: declare the schema and let an identity attribute of ours name it directly. For an invariant, the question is which of two things it is. If it is the published contract of one of this context's own operations, mark it precondition (checked before that operation runs) or postcondition (guaranteed of what it answers with) and name that operation in constrains; both flags are allowed here and one of them is required, because an unflagged rule is a claim about the machine at rest. If it is what one of this context's own events always carries — a webhook payload, a settlement feed record — mark it postcondition and name that event, which is how a provider that only sends states its contract. What it may then constrain is the attributes of that operation's request and answer shapes, or of that event's payload, and this context's own value objects; anything else names something the provider does not publish. If it is a rule about several instances of a context of ours, or a precondition guarding another context's operation, move it to the context that keeps it. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay. Where both flags are set, keep the one that says who may change the system: external for somebody else's, bigBallOfMud for ours.",
 		check: externalIsBoundary,
 	},
 	{

@@ -1,10 +1,11 @@
 ---
-column: todo
+column: review
 labels: [backend, docs]
 priority: high
 agent: senior-developer
-live: true
-updatedAt: 2026-09-11T01:10:00.000Z
+live: false
+clean-code-swept: true
+updatedAt: 2026-09-06T12:10:00.000Z
 ---
 # An answer goes only to who called; a heard decline counts at home; a supplier's customer needs no label; an external event has a contract
 
@@ -12,10 +13,22 @@ The architect's thirteenth round found a defect card 126 introduced and three sm
 
 ## Checklist
 
-- [ ] `routesTo`'s single-operation inference routes only to a reactor that issues the sole operation; `hearsAnswerOf` and the flow map follow; tests: the bystander is refused by `consumable-kind` with `by` absent exactly as with `by` written, the phantom ring no longer warns, and the architect's earlier two-front chain still routes
-- [ ] `rejection-raised` is quiet when any policy or process hears the event, the raising context's own included; the message names who hears it; test for the dunning policy
-- [ ] `role-coherence` asks no downstream role on a consumption whose pair has a `customer-supplier` relationship, because the negotiated interface is the pattern; a role written there is still checked for coherence; docs row and the strategic page's sentence on roles; test
-- [ ] An external context's invariant may name one of its own events, flagged `postcondition`, and constrain attributes of that event's payload schema; `external-is-boundary` and `invariant-in-context` accept it and refuse an invariant naming another context's event or reaching outside the payload; the fix text says so; test with a webhook payload guarantee
-- [ ] `apps/docs/docs/3-core/4-validation.md` rows for the rules touched; skill references regenerated; every model's diagnostics unchanged; `bash scripts/verify-all.sh` green
+- [x] `routesTo`'s single-operation inference routes only to a reactor that issues the sole operation; `hearsAnswerOf` and the flow map follow; tests: the bystander is refused by `consumable-kind` with `by` absent exactly as with `by` written, the phantom ring no longer warns, and the architect's earlier two-front chain still routes
+- [x] `rejection-raised` is quiet when any policy or process hears the event, the raising context's own included; the message names who hears it; test for the dunning policy
+- [x] `role-coherence` asks no downstream role on a consumption whose pair has a `customer-supplier` relationship, because the negotiated interface is the pattern; a role written there is still checked for coherence; docs row and the strategic page's sentence on roles; test
+- [x] An external context's invariant may name one of its own events, flagged `postcondition`, and constrain attributes of that event's payload schema; `external-is-boundary` and `invariant-in-context` accept it and refuse an invariant naming another context's event or reaching outside the payload; the fix text says so; test with a webhook payload guarantee
+- [x] `apps/docs/docs/3-core/4-validation.md` rows for the rules touched; skill references regenerated; every model's diagnostics unchanged; `bash scripts/verify-all.sh` green
+
+## Gates
+
+- [x] clean-code-swept — reread every hunk: the fourth clause of `routesTo` is deleted rather than left dead beside the clause that subsumes it, `declaredUpstream` is replaced by `declaredAgreement` rather than kept as an unused wrapper, `heardElsewhere` is replaced by `hearersOf` with the reason for the change in its doc comment, and the new external reach helpers are named for what they hold; `npx @biomejs/biome check` clean on all three core files (senior-developer, 2026-09-06T12:05:00.000Z)
 
 ## Comments
+
+- **senior-developer** (2026-09-06T09:00:00.000Z): Claimed the card. Reset the worktree to origin/develop at 2eadb0a ("architect round 13 ruled") and installed. Reading decisions 21, 23, 25, 03, 28, 27 and the architect's round 13 probes before touching code.
+
+- **senior-developer** (2026-09-06T10:15:00.000Z): Reproduced all four faults against the architect's probes before touching anything (round13-answer-leak, round13-phantom-ring, round13-skill-drift part d, round13-external part b), then fixed them. (1) The fourth clause of `routesTo` is gone rather than repaired, packages/core/src/reaction-walk.ts:360-371: once the inference has to behave as `by: [thatOperation]` would — the reactor must issue the operation — the clause says nothing the call-chain clause above it does not, because `callsOut` already reads a silent single-operation consumer as its own `by` and `callChainReaches` follows it. `hearsAnswerOf` is one call to `routesTo` and the flow map calls it directly, so both follow. (2) `rejection-raised` now asks for a reactor rather than a foreign consumer, packages/core/src/validate.ts:4221-4272: the new `hearersOf` counts every policy and process, in any context, that subscribes to the event, and the message says no policy or process reacts and names what would count, the raising context's own included. (3) `role-coherence` asks no downstream role where the crossing's agreement is customer-supplier, packages/core/src/validate.ts:2418-2470; `declaredUpstream` became `declaredAgreement` (packages/core/src/validate.ts:2303) so the rule can read the type as well as the direction, and the upstream-role question and every rule that reads a written role are untouched. (4) An external context's postcondition may name one of its own events and constrain its payload, packages/core/src/validate.ts:4766-4826: `externalContractReach` gains the guarded events' payloads through the new `publishedPayloads`, which is kept out of `guardedSchemas` on purpose so that no modelled context's reach moves with it, and `publishedFacts` allows an event guard only for a postcondition, since an event has no request for a precondition to be checked against.
+
+- **senior-developer** (2026-09-06T11:00:00.000Z): Tests. Answer routing: the bystander/phantom-ring pair at packages/core/src/validate.test.ts:8925-8964 runs the architect's two shapes twice each, with `by` absent and with `by: [Front]` written, and asserts the same result both ways — the bystander is refused by `consumable-kind`, routes to nothing, and `reaction-cycle` reports no ring; I re-added the deleted clause to check both tests fail on the old behaviour, and they do. The earlier two-front chain tests are unchanged and still green. `rejection-raised`: the dunning shape at packages/core/src/validate.test.ts:4916, a process starting on the event beside it, and a consumption with no reactor behind it still warning. `role-coherence`: packages/core/src/validate.test.ts:3526-3580, four cases including a plain upstream-downstream pair that is still asked. `external-is-boundary`: the webhook payload guarantee at packages/core/src/validate.test.ts:7463 and four refusals beside it — a precondition on an event, another context's event, a reach into one of our entities, and a reach into a second payload of its own. Docs rows for `role-coherence`, `rejection-raised`, `external-is-boundary` and `consumable-kind` in apps/docs/docs/3-core/4-validation.md, the roles sentence in apps/docs/docs/3-core/2-strategic-design.md:62-70, and packages/skill/skill/references/validation-rules.md regenerated from the catalogue by the skill build. All five reference models' diagnostics are unchanged (each asserts its exact list). Running verify-all next.
+
+- **senior-developer** (2026-09-06T12:10:00.000Z): `bash scripts/verify-all.sh` green end to end on the first run, no retry needed: core 763, graphviz 28, doc 31, skill 26, northbank 3, petstore 23 (schema comparison match), rivermart 6, streamline 3, clinic 7, models/_shared 9, esm builds ok, pages 765, apps/docs 23, apps/ods-vscode 15, pages e2e 297 passed. Working tree holds only the six files this card names plus the regenerated packages/skill/skill/references/validation-rules.md; nothing card 129 owns is touched. One reading to flag for the lead, in the Comments rather than as a change: the checklist says `invariant-in-context` accepts the external event postcondition, and that rule walks the modelled contexts only (packages/core/src/validate.ts:1652), so it accepts it by construction and the new tests assert the whole workspace is error-free rather than the rule alone. I kept the payload reach in `externalContractReach` rather than in the shared `guardedSchemas` so that a modelled context's reach does not move with it, since decision 28's fifth amendment is about external contexts only. Card moved to review.
