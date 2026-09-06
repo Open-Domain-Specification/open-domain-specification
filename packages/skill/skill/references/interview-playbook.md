@@ -86,7 +86,8 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   them do several of these things carry?" → value objects, declared on the context
   (`context.addValueObject`), not on one aggregate: any aggregate here may hold one. If a
   value is genuinely the same in a neighbouring context, that is a `shared-kernel`
-  relationship, and it is the only way one context may name another's value object. If the
+  relationship, or a conformist one if this context only follows the other's language; either
+  is a way one context may name another's value object. If the
   same value is genuinely the same in several contexts, it is not declared in any of them:
   it belongs to a kernel context of its own, and each sharer borrows it over its own
   `shared-kernel` relationship with that context.

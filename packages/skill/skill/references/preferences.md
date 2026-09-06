@@ -38,9 +38,10 @@ The costs are named rather than hidden. Where a user hits one, say which it is.
   application service that consumes the foreign one, even for a conformist with nothing to
   translate, so one crossing is two operations and a domain service that wants an outbound port
   pays for it in one more.
-- **An answer routes one hop.** An operation's answer reaches the reactor that issued it and
-  nobody further, so a process whose front makes the call does not hear the neighbour's reply
-  through that front; the chain has to be written where the reader can follow it.
+- **An answer stops at the boundary.** An operation's answer routes back along the calling
+  context's own `by` chain, through as many local fronts as it takes, and no further: what the
+  neighbour calls next is the neighbour's chain and nothing here has spoken for it, so a process
+  hears the answer to the call its own context made and not the one behind it.
 - **A kernel context loses the pairwise fact.** Many contexts sharing a kernel is drawn as a
   third context they all consume, which gains an honest owner and loses Evans's reading of a
   kernel as code inside each sharer; two contexts sharing one borrow each other's value objects
@@ -89,3 +90,9 @@ The costs are named rather than hidden. Where a user hits one, say which it is.
 - **Inside a context, references and identities are two forms of one dependency.** A relation
   draws the line and its cardinality and an identity attribute names the key, and an author may
   write both for the one dependency without the model ever saying they are the same fact.
+- **The wire and the model are typed apart.** An entity never carries a schema and a schema
+  never names an entity, so a resource-style API restates its aggregate as one or more schemas —
+  a `Pet` beside a `PetSummary` and a `RegisterPet` — with a shared value object bridging the
+  leaves that repeat.
+- **A workspace is one file.** Refs never cross files until decision 08's `WorkspaceSet` lands;
+  a project that wants several files today keeps each as its own workspace.
