@@ -167,6 +167,29 @@ describe("contextGraph", () => {
 		).edges;
 		expect(e.intent).toBe(relationships?.[0]);
 	});
+	// One pair may hold two agreements in one direction, each with its own
+	// disposition, so the edge and the intent are matched on the name as well
+	// as the pair (decision 15, card 103).
+	it("matches each of a pair's two agreements to its own intent", () => {
+		const relationships = [
+			{
+				source: { ref: "#/a" },
+				target: { ref: "#/b" },
+				name: "Fulfilment API",
+			},
+			{ source: { ref: "#/a" }, target: { ref: "#/b" }, name: "Legacy Feed" },
+		] as unknown as Parameters<typeof contextGraph>[1];
+		const edges = contextGraph(
+			mapOf(
+				[node({ id: "#/a" }), node({ id: "#/b" })],
+				[edge({ name: "Fulfilment API" }), edge({ name: "Legacy Feed" })],
+			),
+			relationships,
+		).edges;
+		expect(edges.map((e) => e.name)).toEqual(["Fulfilment API", "Legacy Feed"]);
+		expect(edges[0].intent).toBe(relationships?.[0]);
+		expect(edges[1].intent).toBe(relationships?.[1]);
+	});
 	it("leaves an implied edge and an unknown pair without an intent to mark", () => {
 		const relationships = [
 			{ source: { ref: "#/a" }, target: { ref: "#/b" } },

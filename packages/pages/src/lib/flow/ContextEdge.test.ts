@@ -67,6 +67,23 @@ describe("ContextEdge", () => {
 			expect(pathD(container)).toBeTruthy();
 		}
 	});
+	// Two agreements between one pair in one direction are two lines, and the
+	// stereotype badge carries the name that tells them apart (card 103).
+	it("names the agreement on the stereotype badge when the pair holds two", async () => {
+		diagramOptions.set({ handles: "fixed", edges: "bezier" });
+		const { container } = edge({
+			label: "U/D",
+			data: { name: "Legacy Feed", summary: "Should become an event." },
+		});
+		await waitFor(() => expect(container.querySelector("path")).toBeTruthy());
+		const stereotype = container.querySelector(".stereotype");
+		expect(stereotype?.textContent).toBe("U/D · Legacy Feed");
+		expect(stereotype).toHaveAttribute(
+			"title",
+			"Legacy Feed\nShould become an event.",
+		);
+	});
+
 	it("colours symmetric stereotypes and omits ports and labels it has none for", async () => {
 		diagramOptions.set({ handles: "fixed", edges: "bezier" });
 		const { container } = edge({ label: "SK" });

@@ -5,13 +5,20 @@ import {
 } from "@open-domain-specification/core";
 
 /**
- * A context's rule is checked before acting and never true again after, so its
- * section says "Checked by" where an aggregate's and a value's say "Guarded
- * by" (decision 27, second amendment of 2026-09-09). The side nav shows the
- * same heading the page does, so both read it from here.
+ * A context's rule is a check rather than something a save keeps true, so its
+ * section says "Checked" where an aggregate's and a value's say "Guarded by".
+ * A check is made on one side of the call or the other, and the heading says
+ * which: "Checked before" for a precondition, "Checked after" for a
+ * postcondition, and plain "Checked by" where the rule sets neither flag
+ * (decision 27, third amendment). The side nav shows the same heading the page
+ * does, so both read it from here.
  */
-export const guardsLabel = (i: Rule) =>
-	i.owner instanceof InvariantContext ? "Checked by" : "Guarded by";
+export const guardsLabel = (i: Rule) => {
+	if (!(i.owner instanceof InvariantContext)) return "Guarded by";
+	if (i.precondition) return "Checked before";
+	if (i.postcondition) return "Checked after";
+	return "Checked by";
+};
 
 export const sectionsFor = (i: Rule) => [
 	{ id: "constrains", label: "Constrains" },
@@ -102,12 +109,37 @@ const KIND = {
 	context: {
 		label: "context invariant",
 		title:
-			"Checked across the instances and aggregates of the context, by an operation, before it acts. Never a promise about afterwards.",
+			"Checked across the instances and aggregates of the context, by an operation. Never a promise about afterwards.",
 		lead: "The elements this rule is about. They may sit in any aggregate of the context, because no one instance can see the others.",
 		guards:
-			"The operations that check this rule before they act. Nothing enforces a rule across instances as a side effect of being saved, and a check can race, so the model says where it is made rather than promising it holds afterwards.",
+			"The operations that check this rule. Nothing enforces a rule across instances as a side effect of being saved, and a check can race, so the model says where it is made rather than promising it holds afterwards.",
 		empty:
-			"No operation names this rule, so nothing checks it: a rule across instances is kept only by whoever counts before acting.",
+			"No operation names this rule, so nothing checks it: a rule across instances is kept only by whoever checks it.",
+	},
+	// A context's rule is a check either way; the flags say which side of the
+	// call the check is made on. A quotation service that stores nothing has no
+	// aggregate to hold the contract of its own operation, so the context holds
+	// it: the weight is checked before, the quote against the tariff after
+	// (decision 27, third amendment).
+	contextBefore: {
+		label: "context invariant",
+		title:
+			"Checked before the operations it names run, across the instances and aggregates of the context. Never a promise about afterwards.",
+		lead: "The elements this rule is about: anything in the context, and the fields of what the guarded call carries.",
+		guards:
+			"The operations this rule is checked before. What it was checked against may move on the moment the call returns, and a check across instances can race, so nothing re-establishes it afterwards.",
+		empty:
+			"No operation names this rule, so nothing checks it: a precondition is checked before something runs, and the model has to say what.",
+	},
+	contextAfter: {
+		label: "context invariant",
+		title:
+			"Checked of what the operations it names answer with, against the instances and aggregates of the context. Never a promise about afterwards.",
+		lead: "The elements this rule is about: anything in the context, and the fields of what the guarded call carries, request and answer alike.",
+		guards:
+			"The operations this rule is checked of. The answer does not exist before the call runs and is saved nowhere after it, so nothing but the operation itself makes this check.",
+		empty:
+			"No operation names this rule, so there is no answer for it to be about: a postcondition is checked of what a call comes back with, and the model has to say which call.",
 	},
 } as const;
 // The elements the rule holds true of, and the operations that have to uphold
@@ -120,13 +152,17 @@ const guarded = $derived(i.guarded);
 // say whether it is checked before one, guaranteed of what it answers with, or
 // still true after it. The two flags are exclusive
 // (`postcondition-names-operation`), so the order here decides nothing a valid
-// model can see. A context's rule reads neither flag: it is always a check,
-// which is what `context-invariant-is-checked` holds it to, and a file that
-// sets one anyway is shown the truth rather than its own claim (decision 27,
-// second amendment of 2026-09-09).
+// model can see. A context's rule is a check whatever it sets, and the flags
+// say which side of the call the check is made on: the page reads it as
+// checked before or checked after, and never as a promise about at rest
+// (decision 27, third amendment).
 const words = $derived(
 	inContext
-		? KIND.context
+		? i.precondition
+			? KIND.contextBefore
+			: i.postcondition
+				? KIND.contextAfter
+				: KIND.context
 		: KIND[
 				i.precondition
 					? "precondition"

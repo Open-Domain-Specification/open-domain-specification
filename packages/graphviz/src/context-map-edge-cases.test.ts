@@ -121,6 +121,34 @@ describe("contextMapToDigraph edge cases", () => {
 		expect(dot).not.toContain('label = "U/D"');
 	});
 
+	// Two agreements between one pair in one direction are two lines, each
+	// labelled with the name that tells them apart (decision 15, card 103).
+	it("draws a line per named agreement, labelled with its name", () => {
+		const workspace = new Workspace("Two Agreements", {
+			odsVersion: "1.0.0",
+			description: "One warehouse, two agreements with sales",
+			version: "0.1.0",
+		});
+		const warehouse = workspace.addBoundedContext("Warehouse", {
+			description: "",
+		});
+		const sales = workspace.addBoundedContext("Sales", { description: "" });
+		warehouse.upstreamOf(sales, {
+			name: "Fulfilment API",
+			upstreamRoles: ["open-host-service"],
+		});
+		warehouse.upstreamOf(sales, {
+			name: "Legacy Feed",
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+
+		const dot = contextMapToDigraph(
+			ODSContextMap.fromWorkspace(workspace),
+		).toDot();
+		expect(dot).toContain('label = "U/D\\nFulfilment API"');
+		expect(dot).toContain('label = "U/D\\nLegacy Feed"');
+	});
+
 	it("should handle error cases gracefully", async () => {
 		// Test with null/undefined input - this would be a development error
 		// but we want to ensure it doesn't crash the system

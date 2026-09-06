@@ -351,6 +351,26 @@ describe("relationship refs", () => {
 		);
 	});
 
+	// One pair may hold two agreements in one direction, and the name is the
+	// only thing that tells them apart (decision 15, card 103).
+	it("tells two agreements in one direction apart by their name", () => {
+		const api = ws.addRelationship({
+			type: "upstream-downstream",
+			name: "Fulfilment API",
+			upstream: orderingBc,
+			downstream: reportingBc,
+		});
+		const feed = ws.addRelationship({
+			type: "upstream-downstream",
+			name: "Legacy Feed",
+			upstream: orderingBc,
+			downstream: reportingBc,
+		});
+		expect(feed.ref.endsWith("~legacy_feed")).toBe(true);
+		expect(ws.findRelationship(api.ref)).toBe(api);
+		expect(ws.findRelationship(feed.ref)).toBe(feed);
+	});
+
 	it("tells two relationships between the same pair apart by their type", () => {
 		const supplier = ws.addRelationship({
 			type: "customer-supplier",

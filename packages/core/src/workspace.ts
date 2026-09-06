@@ -1011,6 +1011,7 @@ export class BoundedContext
 	): ContextRelationship {
 		return this.workspace.addRelationship({
 			type: options.type ?? "upstream-downstream",
+			name: options.name,
 			upstream: this,
 			downstream,
 			upstreamRoles: options.upstreamRoles ?? [],
@@ -1057,6 +1058,7 @@ export class BoundedContext
 	): ContextRelationship {
 		return this.workspace.addRelationship({
 			type,
+			name: options.name,
 			participants: [this, other],
 			description: options.description,
 			comments: options.comments,
@@ -2346,6 +2348,8 @@ export class Consumption
 
 export type DirectedRelationshipOptions = {
 	type?: ods.DirectedRelationshipType;
+	/** What this agreement is called, where the pair holds more than one in this direction. */
+	name?: string;
 	upstreamRoles?: UpstreamRole[];
 	downstreamRoles?: DownstreamRole[];
 	description?: string;
@@ -2353,12 +2357,15 @@ export type DirectedRelationshipOptions = {
 
 /** What `partnerOf`, `sharesKernelWith` and `separateWaysFrom` accept. */
 export type SymmetricRelationshipOptions = {
+	/** What this agreement is called, where the pair holds more than one of this type. */
+	name?: string;
 	description?: string;
 } & EvidenceOptions;
 
 export type ContextRelationshipAttributes =
 	| ({
 			type: ods.DirectedRelationshipType;
+			name?: string;
 			upstream: BoundedContext;
 			downstream: BoundedContext;
 			upstreamRoles?: UpstreamRole[];
@@ -2367,6 +2374,7 @@ export type ContextRelationshipAttributes =
 	  } & EvidenceOptions)
 	| ({
 			type: ods.SymmetricRelationshipType;
+			name?: string;
 			participants: [BoundedContext, BoundedContext];
 			description?: string;
 	  } & EvidenceOptions);
@@ -2396,6 +2404,12 @@ export class ContextRelationship
 {
 	workspace: Workspace;
 	type: ods.ContextRelationshipType;
+	/**
+	 * What this agreement is called, where the pair holds more than one in the
+	 * same direction; absent for the common case of one. See {@link path} for
+	 * what it does to the ref.
+	 */
+	name?: string;
 	source: BoundedContext;
 	target: BoundedContext;
 	upstreamRoles: UpstreamRole[];
@@ -2407,6 +2421,7 @@ export class ContextRelationship
 	constructor(workspace: Workspace, attributes: ContextRelationshipAttributes) {
 		this.workspace = workspace;
 		this.type = attributes.type;
+		this.name = attributes.name;
 		this.description = attributes.description;
 		this.comments = attributes.comments ?? [];
 		this.disposition = normaliseDisposition(attributes.disposition);
@@ -2426,11 +2441,30 @@ export class ContextRelationship
 	/**
 	 * A relationship is the one model element with no id of its own, so its ref
 	 * is derived from what does identify it: the two contexts it joins and the
-	 * pattern that joins them. `~` separates the three parts because it is the
-	 * one ref-safe character no id can contain.
+	 * pattern that joins them. `~` separates the parts because it is the one
+	 * ref-safe character no id can contain.
+	 *
+	 * One pair may hold two agreements in one direction — a negotiated
+	 * fulfilment API and a tolerated legacy feed from the same warehouse — and
+	 * then the pair and the type no longer tell them apart, so a named
+	 * relationship appends its name as a fourth part, in the same snake case an
+	 * id is written in. A relationship with no name keeps the ref it always had
+	 * (decision 15, card 103).
 	 */
 	get path(): string {
-		return `relationships/${this.source.id}~${this.type}~${this.target.id}`;
+		const pair = `relationships/${this.source.id}~${this.type}~${this.target.id}`;
+		return this.nameId ? `${pair}~${this.nameId}` : pair;
+	}
+
+	/**
+	 * The name as it appears in the ref, or the empty string where there is
+	 * none. Two agreements are told apart by this rather than by the name as
+	 * written, because that is what the ref carries: "Legacy Feed" and
+	 * "legacy feed" are one segment, so `relationship-duplicate` has to read
+	 * them as one name.
+	 */
+	get nameId(): string {
+		return this.name ? snakeCase(this.name) : "";
 	}
 
 	get ref(): string {
@@ -2453,6 +2487,7 @@ export class ContextRelationship
 		if (isDirectedRelationshipType(this.type)) {
 			return {
 				type: this.type,
+				name: this.name,
 				upstream: { $ref: this.source.ref },
 				downstream: { $ref: this.target.ref },
 				upstreamRoles: this.upstreamRoles,
@@ -2463,6 +2498,7 @@ export class ContextRelationship
 		}
 		return {
 			type: this.type,
+			name: this.name,
 			participants: [{ $ref: this.source.ref }, { $ref: this.target.ref }],
 			description: this.description,
 			...evidence,

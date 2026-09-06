@@ -181,6 +181,7 @@ An upstream/downstream relationship between two bounded contexts.
 | `disposition` | "by-design" | "refactor" | "tolerated" | no | What the architecture thinks of this relationship. Absent means `by-design`. |
 | `downstream` | `{ "$ref": string }` | yes |  |
 | `downstreamRoles` | array of "anti-corruption-layer" | "conformist" | yes |  |
+| `name` | string | no | What this agreement is called, where one pair holds more than one in the same direction: a negotiated fulfilment API beside a tolerated legacy feed from the same warehouse, each with its own roles, comments and disposition. Absent is the common case, one agreement between the pair, and the ref stays what it always was. Where it is present the name is appended to the ref, so the two are separately reachable and a diagnostic about one is not read as a diagnostic about the other; the map draws two lines and labels each with its name. Two agreements between one pair in one direction that are both unnamed, or share a name, are one declaration made twice and `relationship-duplicate` refuses them (decision 15). |
 | `type` | "customer-supplier" | "upstream-downstream" | yes |  |
 | `upstream` | `{ "$ref": string }` | yes |  |
 | `upstreamRoles` | array of "open-host-service" | "published-language" | yes |  |
@@ -329,6 +330,7 @@ A relationship between two bounded contexts with no upstream or downstream side.
 | `comments` | array of [Comment](#comment) | no | Grounded statements about the real system behind this relationship. |
 | `description` | string | no |  |
 | `disposition` | "by-design" | "refactor" | "tolerated" | no | What the architecture thinks of this relationship. Absent means `by-design`. |
+| `name` | string | no | What this agreement is called, where one pair holds more than one in the same direction: a negotiated fulfilment API beside a tolerated legacy feed from the same warehouse, each with its own roles, comments and disposition. Absent is the common case, one agreement between the pair, and the ref stays what it always was. Where it is present the name is appended to the ref, so the two are separately reachable and a diagnostic about one is not read as a diagnostic about the other; the map draws two lines and labels each with its name. Two agreements between one pair in one direction that are both unnamed, or share a name, are one declaration made twice and `relationship-duplicate` refuses them (decision 15). |
 | `participants` | array of unknown | yes |  |
 | `type` | "partnership" | "separate-ways" | "shared-kernel" | yes |  |
 
@@ -397,11 +399,11 @@ Every cross-link is an object `{ "$ref": "<path>" }`. Paths are JSON pointers in
 | Answer an operation returns | `<operation path>/returns` |
 | Answer an operation rejects with | `<operation path>/rejects/<schema>` |
 | Consumption | `<consumer path>/consumes/<consumable path, with ~ for />`, plus `/<id of the first caller in by>` where the consumer takes that consumable more than once |
-| Relationship | `#/relationships/<source>~<type>~<target>` |
+| Relationship | `#/relationships/<source>~<type>~<target>`, plus `~<name in snake case>` where the agreement carries a name |
 
 A consumption has no id of its own, so its path is derived from the pair it joins: `#/boundedcontexts/sales/services/order_app/consumes/boundedcontexts~catalog~services~pet_app~provides~get_pet` is Order App's consumption of Pet App's Get Pet. It is never the position in `consumes[]`, so reordering the array changes no ref, and it is computed rather than stored, so nothing writes it in a file: it is what a diagnostic about a consumption points at. One consumer may take one consumable more than once when the exchanges differ — an archive keeping the response as it stands, a decision translating it through an anti-corruption layer — and the pair alone then no longer identifies a consumption: each of them names the callers that make it, no two of them name the same caller (`consumption-once`), and the id of the first caller in `by` is appended as a further segment. A pair declared once keeps the plain ref.
 
-A relationship has no id of its own either: its path is the two contexts it joins and the type that joins them, so `#/relationships/catalog_bc~customer-supplier~sales_bc` is the customer-supplier relationship from Catalog to Sales. It too is computed rather than stored, and it is what a diagnostic about a relationship points at.
+A relationship has no id of its own either: its path is the two contexts it joins and the type that joins them, so `#/relationships/catalog_bc~customer-supplier~sales_bc` is the customer-supplier relationship from Catalog to Sales. It too is computed rather than stored, and it is what a diagnostic about a relationship points at. One pair may hold two agreements in one direction — a negotiated fulfilment API and a tolerated legacy feed from the same warehouse — and each of those carries a `name`, which is appended in snake case: `#/relationships/warehouse_bc~upstream-downstream~sales_bc~legacy_feed`. Two agreements between one pair in one direction that are both unnamed, or that share a name, are one declaration made twice, and `relationship-duplicate` refuses them.
 
 An answer has no id of its own either: it is one operation coming back, so its path is that operation's plus what it came back as. `#/boundedcontexts/payments/services/payments_api/provides/authorise_payment/rejects/payment_declined` is what AuthorisePayment refuses with, and the same path ending `/returns` is what it answers with when it succeeds. A reaction waiting on an answer names it this way and never by the schema alone: schemas are shared, so two operations may refuse with one shape, and the shape alone cannot say which call came back. The schema id in a `/rejects/` path is one the operation declares in `rejects`; anything else resolves to nothing.
 

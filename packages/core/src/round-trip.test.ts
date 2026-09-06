@@ -280,6 +280,46 @@ describe("a relation that names the attribute it draws", () => {
 	});
 });
 
+describe("one pair, two agreements", () => {
+	/**
+	 * A negotiated fulfilment API and a tolerated legacy feed from the same
+	 * warehouse: two agreements in one direction, told apart by their names,
+	 * each with its own roles and disposition (decision 15, card 103).
+	 */
+	function twoAgreements() {
+		const ws = new Workspace("Round Trip", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0",
+		});
+		const warehouse = ws.addBoundedContext("Warehouse", { description: "" });
+		const sales = ws.addBoundedContext("Sales", { description: "" });
+		warehouse.upstreamOf(sales, {
+			name: "Fulfilment API",
+			upstreamRoles: ["open-host-service"],
+		});
+		warehouse.upstreamOf(sales, {
+			name: "Legacy Feed",
+			downstreamRoles: ["anti-corruption-layer"],
+			disposition: "tolerated",
+		});
+		return ws;
+	}
+
+	it("keeps both agreements, their names and their refs", () => {
+		const schema = twoAgreements().toSchema();
+		const rebuilt = Workspace.fromSchema(schema);
+		expect(rebuilt.toSchema()).toEqual(schema);
+		expect(rebuilt.relationships.map((r) => r.ref)).toEqual([
+			"#/relationships/warehouse~upstream-downstream~sales~fulfilment_api",
+			"#/relationships/warehouse~upstream-downstream~sales~legacy_feed",
+		]);
+		expect(
+			rebuilt.validate().filter((d) => d.rule === "relationship-duplicate"),
+		).toEqual([]);
+	});
+});
+
 describe("one pair, two exchanges", () => {
 	/**
 	 * A reader that takes one event twice: an archive keeps the provider's

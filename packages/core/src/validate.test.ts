@@ -1452,18 +1452,33 @@ describe("invariant-in-aggregate", () => {
 		expect(inAggregate(ws)).toEqual([]);
 	});
 
-	it("refuses a postcondition the request the guard receives", () => {
-		const { ws, shipment, pickup, requestQuote } = quotation();
-		const wrongWay = shipment
-			.addInvariant("Pickup Before Delivery", {
+	// A guarantee about an answer is usually a guarantee about the answer to
+	// what was asked: every returned itinerary arrives by the requested time
+	// names one attribute of each, and reading the answer alone refused the
+	// example the flag was introduced for (card 103).
+	it("lets a postcondition relate the answer to the request that produced it", () => {
+		const { ws, shipment, pickup, arrival, requestQuote } = quotation();
+		shipment
+			.addInvariant("Arrives By The Requested Time", {
 				description: "",
 				postcondition: true,
 			})
-			.constrains(requestQuote, pickup);
+			.constrains(requestQuote, arrival, pickup);
+		expect(inAggregate(ws)).toEqual([]);
+	});
+
+	it("still refuses a postcondition a shape its guard never carries", () => {
+		const { ws, shipment, reference, requestQuote } = quotation();
+		const wrongShape = shipment
+			.addInvariant("Booked Under A Reference", {
+				description: "",
+				postcondition: true,
+			})
+			.constrains(requestQuote, reference);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Pickup Before Delivery" of aggregate "Shipment" constrains "Quote Request.pickupDate", which is an attribute of schema "Quote Request", which no operation this postcondition guards returns or rejects with, directly or through a shape one of those composes; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
-				wrongWay.ref,
+				'Invariant "Booked Under A Reference" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which no operation this postcondition guards takes, returns or rejects with, directly or through a shape one of those composes; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
+				wrongShape.ref,
 			],
 		]);
 	});
@@ -1676,7 +1691,7 @@ describe("invariant-in-value-object", () => {
 		iban.addInvariant("Checksum Valid", { description: "" }).constrains(value);
 		expect(rules(ws)).toEqual([]);
 		expect(
-			ws.validate().filter((d) => d.rule === "context-invariant-guarded"),
+			ws.validate().filter((d) => d.rule === "context-invariant-is-checked"),
 		).toEqual([]);
 	});
 
@@ -1716,8 +1731,8 @@ describe("invariant-in-value-object", () => {
 	});
 });
 
-describe("context-invariant-guarded", () => {
-	it("requires an operation of the context to guard the rule", () => {
+describe("context-invariant-is-checked", () => {
+	it("requires an operation of the context to check the rule", () => {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("BC", { description: "" });
 		const agg = bc.addAggregate("Order", { description: "" });
@@ -1739,17 +1754,17 @@ describe("context-invariant-guarded", () => {
 		expect(
 			ws
 				.validate()
-				.filter((d) => d.rule === "context-invariant-guarded")
+				.filter((d) => d.rule === "context-invariant-is-checked")
 				.map((d) => [d.severity, d.message, d.ref]),
 		).toEqual([
 			[
 				"error",
-				'Invariant "Guarded By An Event" of bounded context "BC" names no operation that checks it; a rule across instances is kept true only by whoever checks it before acting',
+				'Invariant "Guarded By An Event" of bounded context "BC" names no operation that checks it; a rule across the instances of a context is kept true only by an operation that checks it, before it acts or of what it answers with',
 				byEvent.ref,
 			],
 			[
 				"error",
-				'Invariant "Unguarded" of bounded context "BC" names no operation that checks it; a rule across instances is kept true only by whoever checks it before acting',
+				'Invariant "Unguarded" of bounded context "BC" names no operation that checks it; a rule across the instances of a context is kept true only by an operation that checks it, before it acts or of what it answers with',
 				unguarded.ref,
 			],
 		]);
@@ -1774,12 +1789,10 @@ describe("context-invariant-guarded", () => {
 			submit,
 		);
 		expect(
-			ws.validate().filter((d) => d.rule === "context-invariant-guarded"),
+			ws.validate().filter((d) => d.rule === "context-invariant-is-checked"),
 		).toEqual([]);
 	});
-});
 
-describe("context-invariant-is-checked", () => {
 	/** A context rule with a guard, so only the flag is ever in question. */
 	function counted(
 		flags: { precondition?: boolean; postcondition?: boolean } = {},
@@ -1809,33 +1822,40 @@ describe("context-invariant-is-checked", () => {
 			.filter((d) => d.rule === "context-invariant-is-checked")
 			.map((d) => [d.severity, d.message, d.ref]);
 
-	it("accepts a context rule that claims neither", () => {
+	it("accepts a context rule that claims neither flag", () => {
 		expect(fired(counted().ws)).toEqual([]);
 	});
 
-	it("refuses a precondition on one, because that is all it ever is", () => {
-		const { ws, limit } = counted({ precondition: true });
-		expect(fired(ws)).toEqual([
-			[
-				"error",
-				'Invariant "Daily Limit" of bounded context "BC" is marked a precondition; a rule across the instances of a context is always a check, made by the operation that guards it before it acts, so it neither needs saying nor holds after. Drop the flag, or move the rule to the aggregate that can keep it',
-				limit.ref,
-			],
-		]);
+	// Both flags say which side of the call the check falls on, and a context
+	// with no aggregate — a quotation service that stores nothing — has nowhere
+	// else to state the contract of its own operation (card 103).
+	it("accepts a precondition on one", () => {
+		expect(fired(counted({ precondition: true }).ws)).toEqual([]);
 	});
 
-	it("refuses a postcondition on one, which no cross-instance rule can promise", () => {
-		const { ws, limit } = counted({ postcondition: true });
-		expect(fired(ws)).toEqual([
-			[
-				"error",
-				'Invariant "Daily Limit" of bounded context "BC" is marked a postcondition; a rule across the instances of a context is always a check, made by the operation that guards it before it acts, so it neither needs saying nor holds after. Drop the flag, or move the rule to the aggregate that can keep it',
-				limit.ref,
-			],
-		]);
+	it("accepts a postcondition on one", () => {
+		expect(fired(counted({ postcondition: true }).ws)).toEqual([]);
 	});
 
-	it("leaves an aggregate's precondition alone, which is a real distinction", () => {
+	// The flagged rule with no guard is reported once, by the rule that asks
+	// for the flag's own operation, and not twice.
+	it("leaves a flagged rule with no guard to precondition-names-operation", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const agg = bc.addAggregate("Payment", { description: "" });
+		const root = agg.addRootEntity("Payment", { description: "" });
+		const amount = root.addAttribute("Amount", { type: "Money" });
+		bc.addInvariant("Daily Limit", {
+			description: "",
+			precondition: true,
+		}).constrains(amount);
+		expect(fired(ws)).toEqual([]);
+		expect(
+			ws.validate().filter((d) => d.rule === "precondition-names-operation"),
+		).toHaveLength(1);
+	});
+
+	it("says nothing about an aggregate's rule", () => {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("BC", { description: "" });
 		const agg = bc.addAggregate("Account", { description: "" });
@@ -1847,7 +1867,65 @@ describe("context-invariant-is-checked", () => {
 		agg
 			.addInvariant("Within Balance", { description: "", precondition: true })
 			.constrains(withdraw);
+		agg.addInvariant("Unguarded", { description: "" });
 		expect(fired(ws)).toEqual([]);
+	});
+});
+
+describe("a context with no aggregate states the contract of its operation", () => {
+	/**
+	 * The review's freight quotation service: it stores nothing, so it has no
+	 * aggregate to hold either half of its operation's contract, and the two
+	 * rules live on the context. "Weight must be positive" is checked before
+	 * Request Quote runs; "the quote respects the tariff" is checked of what it
+	 * comes back with (decisions 19 and 27, card 103).
+	 */
+	function quotationService() {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Freight Quotation", { description: "" });
+		const request = bc.addSchema("Quote Request", { description: "" });
+		const weight = request.addAttribute("weightKg", { type: "decimal" });
+		const quote = bc.addSchema("Quote", { description: "" });
+		const price = quote.addAttribute("price", { type: "decimal" });
+		const quoting = bc.addService("Quoting", {
+			description: "",
+			type: "application",
+		});
+		const requestQuote = quoting.provides("Request Quote", {
+			description: "",
+			type: "operation",
+			schema: request,
+			returns: quote,
+		});
+		return { ws, bc, weight, price, requestQuote };
+	}
+
+	/** Only the errors: the context serves no subdomain, which is a warning. */
+	const errorsOf = (ws: Workspace) =>
+		ws.validate().filter((d) => d.severity === "error");
+
+	it("takes a precondition and a postcondition on the context's own rules", () => {
+		const { ws, bc, weight, price, requestQuote } = quotationService();
+		bc.addInvariant("Weight Is Positive", {
+			description: "",
+			precondition: true,
+		}).constrains(requestQuote, weight);
+		bc.addInvariant("Quote Respects The Tariff", {
+			description: "",
+			postcondition: true,
+		}).constrains(requestQuote, price);
+		expect(errorsOf(ws)).toEqual([]);
+	});
+
+	// The postcondition relates the answer to the request, which is the
+	// example decision 19's own amendment gives.
+	it("lets the postcondition name the request beside the answer", () => {
+		const { ws, bc, weight, price, requestQuote } = quotationService();
+		bc.addInvariant("Priced By Weight", {
+			description: "",
+			postcondition: true,
+		}).constrains(requestQuote, price, weight);
+		expect(errorsOf(ws)).toEqual([]);
 	});
 });
 
@@ -5430,7 +5508,7 @@ describe("relationship-duplicate", () => {
 		expect(duplicates(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 			[
 				"error",
-				'"A" and "B" declare a upstream-downstream relationship more than once; the two share a ref, so only the first can be reached and everything said on this one is lost',
+				'"A" and "B" declare a upstream-downstream relationship more than once; the two share a ref, so only the first can be reached and everything said on this one is lost; name them both — a negotiated API and a tolerated feed are two agreements — or say the two things on one',
 				second.ref,
 			],
 		]);
@@ -5464,10 +5542,53 @@ describe("relationship-duplicate", () => {
 		expect(duplicates(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 			[
 				"error",
-				'"A" and "B" declare both a upstream-downstream and a customer-supplier relationship with "A" upstream; customer-supplier is a flavour of upstream/downstream, so one direction between one pair carries one directed relationship, and two of them disagree about how the pair stands',
+				'"A" and "B" declare both a upstream-downstream and a customer-supplier relationship with "A" upstream; customer-supplier is a flavour of upstream/downstream, so one direction between one pair carries one directed relationship under one name, and two of them disagree about how the pair stands; name them both — a negotiated API and a tolerated feed are two agreements — or say the two things on one',
 				second.ref,
 			],
 		]);
+	});
+
+	// A negotiated fulfilment API and a tolerated legacy feed from the same
+	// warehouse are two agreements between one pair in one direction, each with
+	// its own roles and disposition, and the name is what tells them apart
+	// (decision 15, card 103).
+	it("allows two named agreements in one direction, at refs of their own", () => {
+		const { ws, a, b } = pair();
+		const api = a.upstreamOf(b, {
+			name: "Fulfilment API",
+			upstreamRoles: ["open-host-service"],
+		});
+		const feed = a.upstreamOf(b, {
+			name: "Legacy Feed",
+			downstreamRoles: ["anti-corruption-layer"],
+			disposition: "tolerated",
+		});
+		expect(duplicates(ws)).toEqual([]);
+		expect([api.ref, feed.ref]).toEqual([
+			"#/relationships/a~upstream-downstream~b~fulfilment_api",
+			"#/relationships/a~upstream-downstream~b~legacy_feed",
+		]);
+		expect(ws.findRelationship(feed.ref)).toBe(feed);
+	});
+
+	it("errors on two agreements that share a name, which is one ref twice", () => {
+		const { ws, a, b } = pair();
+		a.upstreamOf(b, { name: "Legacy Feed" });
+		const second = a.upstreamOf(b, { name: "legacy feed" });
+		expect(duplicates(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"error",
+				'"A" and "B" declare a upstream-downstream relationship called "legacy feed" more than once; the two share a ref, so only the first can be reached and everything said on this one is lost; give the second a name of its own, or say the two things on one of them',
+				second.ref,
+			],
+		]);
+	});
+
+	it("errors on a named agreement beside an unnamed one only when both are unnamed", () => {
+		const { ws, a, b } = pair();
+		a.upstreamOf(b, {});
+		a.upstreamOf(b, { name: "Legacy Feed" });
+		expect(duplicates(ws)).toEqual([]);
 	});
 
 	it("still allows a partnership beside a shared kernel, which say different things", () => {

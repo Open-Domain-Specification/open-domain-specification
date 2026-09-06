@@ -54,6 +54,17 @@ const path = $derived(
 
 // The adapter always sets the stereotype label; unknown ones simply have no colour.
 const stroke = $derived(COLORS[String(label)]);
+// One pair may hold two agreements in one direction — a negotiated API and a
+// tolerated feed — and each is its own line, so the stereotype badge carries
+// the agreement's name beside the code that tells them apart. The colour still
+// keys off the stereotype alone (decision 15, card 103).
+const stereotype = $derived(
+	data?.name ? `${String(label)} · ${data.name}` : String(label),
+);
+/** The stereotype badge hovers to the agreement's name, then to what is known. */
+const stereotypeTitle = $derived(
+	[data?.name, data?.summary].filter(Boolean).join("\n") || undefined,
+);
 const edgeStyle = $derived(
 	[style, stroke && `stroke: ${stroke}`].filter(Boolean).join("; ") ||
 		undefined,
@@ -70,7 +81,7 @@ const titleFor = (text: string) =>
 {#if params && path}
 	<BaseEdge {id} path={path[0]} {markerEnd} style={edgeStyle} class="context-edge" />
 	{#if label}
-		<PortBadge class="stereotype" x={path[1]} y={path[2]} label={String(label)} title={data?.summary} {mark} onclick={data?.onBadgeClick} />
+		<PortBadge class="stereotype" x={path[1]} y={path[2]} label={stereotype} title={stereotypeTitle} {mark} onclick={data?.onBadgeClick} />
 	{/if}
 	{#if data?.sourceLabel}
 		{@const at = portCentre(params.sourceX, params.sourceY, params.sourcePosition)}

@@ -91,6 +91,24 @@ describe("ODSContextMap", () => {
 		);
 	});
 
+	// Two agreements between one pair in one direction are two lines, each
+	// carrying its own name and its own roles (decision 15, card 103).
+	it("draws one line per named agreement between a pair", () => {
+		const { ws, orderingBc, invoicingBc } = withoutOrderingRelationship();
+		orderingBc.upstreamOf(invoicingBc, {
+			name: "Fulfilment API",
+			upstreamRoles: ["open-host-service"],
+		});
+		orderingBc.upstreamOf(invoicingBc, {
+			name: "Legacy Feed",
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		const drawn = Array.from(ODSContextMap.fromWorkspace(ws).edges.values())
+			.filter((e) => !e.implied && e.source.id === orderingBc.ref)
+			.map((e) => e.name);
+		expect(drawn).toEqual(["Fulfilment API", "Legacy Feed"]);
+	});
+
 	it("suppresses the implied edge when the pair has a declared relationship", () => {
 		const { ws, orderingBc, invoicingBc } = withoutOrderingRelationship();
 		invoicingBc.downstreamOf(orderingBc, {

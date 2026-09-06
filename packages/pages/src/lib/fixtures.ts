@@ -232,12 +232,27 @@ export function edgeCaseModel(): Model {
 	bcMain.addInvariant("Unguarded Context Invariant", {
 		description: "Names nothing, so nothing keeps it.",
 	});
+	// A context's rule is a check, and the two flags say which side of the call
+	// it is made on: the page reads them back as "checked before" and "checked
+	// after". A context with no aggregate — a quotation service that stores
+	// nothing — states the contract of its operation this way, and no reference
+	// model does yet (decision 27, third amendment).
+	bcMain
+		.addInvariant("Checked Before Invariant", {
+			description: "Checked of the request before the silent operation runs.",
+			precondition: true,
+		})
+		.constrains(ePlain, opSilent);
+	bcMain
+		.addInvariant("Checked After Invariant", {
+			description: "Checked of what the silent operation comes back with.",
+			postcondition: true,
+		})
+		.constrains(ePlain, opSilent);
 	// The third kind of rule an invariant page has to name: a guarantee about
 	// what a call answers with, which is neither kept on every save nor checked
 	// on the way in (decision 19, third amendment). No reference model states
-	// one yet. It belongs to the aggregate that answers, because a context's
-	// rule is always a check and never a promise about afterwards
-	// (`context-invariant-is-checked`, decision 27).
+	// one yet.
 	aggNoRoot
 		.addInvariant("Answer Guarantee", {
 			description: "Holds of every answer the answering operation gives.",

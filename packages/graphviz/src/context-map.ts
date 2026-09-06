@@ -85,14 +85,22 @@ function nodeAttributes(node: ODSContextMapNode): NodeAttributesObject {
  * identity is drawn like any other implied one — dashed, no roles — under the
  * `«id»` stereotype, so the map says both that the dependency exists and what
  * put it there.
+ *
+ * Where a pair holds two agreements in one direction — a negotiated fulfilment
+ * API and a tolerated legacy feed from the same warehouse — each is its own
+ * line, and the name goes on the label under the stereotype so a reader can
+ * tell which line is which (decision 15, card 103).
  */
 function edgeAttributes(edge: ODSContextMapEdge): EdgeAttributesObject {
 	const isDirected = isDirectedRelationshipType(edge.type);
 	const byIdentity = edge.implied === "identity";
 	const roles = (labels: Record<string, string>, values: string[]) =>
 		values.map((it) => labels[it]).join("+");
+	const stereotype = byIdentity
+		? IDENTITY_EDGE_LABEL
+		: RELATIONSHIP_LABELS[edge.type];
 	return {
-		label: byIdentity ? IDENTITY_EDGE_LABEL : RELATIONSHIP_LABELS[edge.type],
+		label: edge.name ? `${stereotype}\n${edge.name}` : stereotype,
 		tooltip:
 			edge.description ??
 			(byIdentity
