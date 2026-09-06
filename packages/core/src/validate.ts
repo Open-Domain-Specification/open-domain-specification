@@ -16,7 +16,7 @@ import {
 	reachedEvents,
 	routesTo,
 } from "./reaction-walk";
-import type { DownstreamRole, UpstreamRole } from "./schema";
+import { type DownstreamRole, ODS_VERSION, type UpstreamRole } from "./schema";
 import {
 	Aggregate,
 	Answer,
@@ -3773,11 +3773,13 @@ const rejectsOnOperation: Rule = (workspace) => {
  * at the level of the context, as it was until card 100, it let a reactor wait
  * on an answer to somebody else's call: two teams calling one shared scorer
  * each heard the other's verdict, and the reaction walk drew the step. And the
- * operation has to answer that way — a refusal it never
- * declared is a reply that never arrives, however many other operations refuse
- * with the same shape (decision 23, third amendment). What the model does not
- * check is which branch the reactor takes on it; that is the code's, as every
- * other condition in a process is (decisions 15 and 23).
+ * operation has to answer that way — a refusal it never declared is a reply
+ * that never arrives, however many other operations refuse with the same shape
+ * (decision 23, third amendment), and so is an outcome the refusal does not
+ * enumerate, which is the same mistake one segment further down (decision 25,
+ * amended). What the model does not check is which branch the reactor takes on
+ * it; that is the code's, as every other condition in a process is
+ * (decisions 15 and 23).
  *
  * An operation that returns nothing answers with its bare completion, and a
  * reactor may wait on that: a workflow that ends when the activation call
@@ -4277,9 +4279,7 @@ const reactionCycle: Rule = (workspace) => {
 				(node) => node instanceof Policy || node instanceof Process,
 			);
 			if (!hasReactor && contexts.length > 1) return [];
-			const named = [...cycle, cycle[0]]
-				.map((n) => `"${n.name}"`)
-				.join(" -> ");
+			const named = [...cycle, cycle[0]].map((n) => `"${n.name}"`).join(" -> ");
 			// A ring that would be a lifecycle through a translating layer but
 			// for the event coming back into the process's `starts` is named
 			// for what it does: each turn begins another instance, so a reader
@@ -4513,6 +4513,40 @@ const unresolvedRef: Rule = (workspace) =>
 	}));
 
 /**
+ * The file was written against a metamodel this core reads.
+ *
+ * Five decisions promised that `odsVersion` would be bumped on a breaking
+ * change, and it read `1.0.0` from the first commit because nothing ever
+ * compared it: a file written against an older metamodel failed as
+ * `unresolved-ref` or as rule errors that named the symptom rather than the
+ * cause, and an author had no way to tell "this file is out of date" from
+ * "this file is wrong". The major is what is compared, because that is what
+ * the breaking decision bumps; a file that states no version at all predates
+ * the version being written and gets the same diagnostic.
+ *
+ * An error, not a warning: what a reader is looking at is not the model the
+ * file was written to describe. It still loads, and every other rule still
+ * runs, because most of a file written against a neighbouring major is still
+ * readable and the author is better off seeing the rest of it (decision 29,
+ * noted 2026-09-10). Nothing here fires for a workspace built through the
+ * DSL, which is written against this core by construction.
+ */
+const odsVersion: Rule = (workspace) => {
+	const mismatch = workspace.odsVersionMismatch;
+	if (!mismatch) return [];
+	return [
+		{
+			severity: "error" as const,
+			rule: "ods-version",
+			message: mismatch.found
+				? `This file was written against ODS ${mismatch.found}, and this is ODS ${ODS_VERSION}; the majors differ, so parts of it mean something else here or nothing at all`
+				: `This file states no odsVersion, so it was written before ODS said which metamodel a file is written against; this is ODS ${ODS_VERSION}`,
+			ref: "#/odsVersion",
+		},
+	];
+};
+
+/**
  * Every context relationship carries at least one comment. Opt-in: a workspace
  * asks for it with `options.rules.commentsRequired`, because a model that has
  * not started on its evidence layer yet should not be buried in warnings.
@@ -4574,6 +4608,15 @@ export type RuleDescription = {
 type CataloguedRule = RuleDescription & { check: Rule };
 
 const RULES: CataloguedRule[] = [
+	{
+		rule: "ods-version",
+		severities: ["error"],
+		summary:
+			"The file states the ODS version it was written against, and its major is this core's.",
+		why: "The metamodel's major is bumped by the decision that breaks it, so a file whose major differs was written against a model this reader does not read the same way: a field that has moved, a ref shape that has changed, a rule that now asks for something else. Until this rule existed nothing compared the version, and such a file failed as unresolved refs and rule errors that named the symptom rather than the cause. The file still loads and every other rule still runs, because most of it is usually still readable.",
+		fix: "Regenerate the file from the DSL with this version of core, which writes the current odsVersion. A file written by hand should be brought up to the current metamodel and given the current odsVersion; never just edit the number, since the point of it is to say which model the rest of the file follows.",
+		check: odsVersion,
+	},
 	{
 		rule: "unresolved-ref",
 		severities: ["error"],
@@ -5068,8 +5111,8 @@ const RULES: CataloguedRule[] = [
 		severities: ["error"],
 		summary:
 			"Policies and processes react to events and issue operations; only operations raise events, and they raise only events.",
-		why: "An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable. A reaction may also wait on an answer, and then two things have to hold: the operation declares that answer, and the reactor can hear it come back — because its context consumes the operation, or because the reactor issues the operation itself, which is the local call-and-branch. An operation that returns nothing answers with its bare completion, and that is an answer like any other; an operation that does answer with a shape has no separate completion, because naming one would be a second name for the same call coming back.",
-		fix: "Check the type of each consumable a policy or raises list points at and swap it for the right kind. For an answer, either declare it on the operation it is named from, or issue or consume that operation; where the operation returns a shape, wait for that shape rather than for the operation completing. A process starting on an operation is not a reaction at all and is left to process-in-context.",
+		why: "An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable. A reaction may also wait on an answer — a shape the call comes back with, or one of the outcomes a refusal enumerates — and then two things have to hold: the operation declares that answer, and the reactor can hear it come back — because its context consumes the operation, or because the reactor issues the operation itself, which is the local call-and-branch. An operation that returns nothing answers with its bare completion, and that is an answer like any other; an operation that does answer with a shape has no separate completion, because naming one would be a second name for the same call coming back.",
+		fix: "Check the type of each consumable a policy or raises list points at and swap it for the right kind. For an answer, either declare it on the operation it is named from — a shape in returns or rejects, an outcome in that refusal's reasons — or issue or consume that operation; where the operation returns a shape, wait for that shape rather than for the operation completing. A process starting on an operation is not a reaction at all and is left to process-in-context.",
 		check: consumableKinds,
 	},
 	{

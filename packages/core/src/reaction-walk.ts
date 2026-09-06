@@ -52,9 +52,11 @@ export type ReactionStep = {
  * and that operation calls out through a consumption.
  *
  * An operation also answers its caller, and that is the fifth step. When a
- * policy or a process waits on a schema an operation returns or rejects with,
- * or on the bare completion of one that returns nothing, the chain runs to the
- * reactor from the call it made: the call went out, the answer came back, and
+ * policy or a process waits on a schema an operation returns or rejects with —
+ * or on one enumerated outcome of that refusal, which is a refusal of the same
+ * call said more precisely (decision 25, amended) — or on the bare completion
+ * of one that returns nothing, the chain runs to the reactor from the call it
+ * made: the call went out, the answer came back, and
  * what was waiting wakes. It is the same causal link `by` carries, read on the
  * way home rather than on the way out, and it is what lets a process say "I
  * called and branched on what came back" without inventing an event for a

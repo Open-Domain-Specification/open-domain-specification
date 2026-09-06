@@ -127,12 +127,13 @@ export interface PolicySchema {
 	 * What triggers this policy: an event consumable, or an answer of an
 	 * operation this context consumes, which means "when that answer comes
 	 * back". An answer is named by its origin — `<operation ref>/returns`,
-	 * `<operation ref>/rejects/<schema id>`, or `<operation ref>/completed` for
-	 * an operation that returns nothing and whose completion is all there is to
-	 * wait on — and never by the shape alone, so two operations refusing with
-	 * one schema wake only whoever named the call that was made. The answer is
-	 * synchronous because the operation is, so nothing else says so
-	 * (decision 23).
+	 * `<operation ref>/rejects/<schema id>`, `<operation
+	 * ref>/rejects/<schema id>/<reason>` for one enumerated outcome of that
+	 * refusal, or `<operation ref>/completed` for an operation that returns
+	 * nothing and whose completion is all there is to wait on — and never by
+	 * the shape alone, so two operations refusing with one schema wake only
+	 * whoever named the call that was made. The answer is synchronous because
+	 * the operation is, so nothing else says so (decision 23).
 	 */
 	on?: { $ref: string }[];
 	/** The operation consumables this policy issues. Optional, like every list in this schema: an absent list is an empty one. */
@@ -367,8 +368,17 @@ export interface ConsumableSchema {
 	 * consumables may not be consumed from another context.
 	 */
 	internal?: boolean;
-	/** The payload the caller sends, one of the context's schemas. */
-	schema?: { $ref: string };
+	/**
+	 * The payload the caller sends, one of the context's schemas.
+	 *
+	 * `many` says the request is a list of that shape rather than one of it:
+	 * Swagger's `createUsersWithList` takes a root array of users. A named
+	 * collection and an object holding one are different shapes, and the
+	 * argument that gave `returns` its `many` is the same one here (decision
+	 * 13, amended). A wrapper stays where the request really is an object with
+	 * a list among its attributes.
+	 */
+	schema?: { $ref: string; many?: boolean };
 	/**
 	 * For operations: the payload shape the caller gets back, one of the
 	 * context's schemas. Absent means the operation returns nothing worth
@@ -389,8 +399,15 @@ export interface ConsumableSchema {
 	 * nothing happened, and not a transport error, which stays outside the
 	 * model. Absent means the operation either always succeeds or refuses
 	 * without a domain-meaningful shape. Never valid on an event.
+	 *
+	 * `reasons` are the enumerated outcomes of that shape as the contract
+	 * states them — an acquirer's decline codes, ISO 8583 response codes —
+	 * each one an answer a reactor may wait on, `<operation ref>/rejects/<schema
+	 * id>/<reason>`, alongside the shape-level answer that hears them all. A
+	 * reason is a named outcome the contract states and not a condition on
+	 * data, which stays out of the model (decisions 25, amended, and 15).
 	 */
-	rejects?: { $ref: string }[];
+	rejects?: { $ref: string; reasons?: string[] }[];
 	/** For operations: the event consumables this operation may raise. */
 	raises?: { $ref: string }[];
 	/** Grounded statements about the real system behind this consumable. */
@@ -410,9 +427,15 @@ export interface ConsumptionSchema {
 	/**
 	 * The consumer's own operations or policies that make this exchange, when
 	 * only some of them do: a subscription service consumes a payment gateway
-	 * when it renews, not when it lists entitlements. Absent means the whole
-	 * consumer depends on the consumable, which is the common case. Optional
-	 * detail, not a call graph.
+	 * when it renews, not when it lists entitlements.
+	 *
+	 * Absent means the whole consumer, which is fine for a consumer that
+	 * provides one operation, or none, because there is nothing to choose
+	 * between. A consumer with two or more names which of them makes the call,
+	 * and `consumption-by-required` asks for it: `by` is the one causal link
+	 * the model has from one operation to the next, so without it the reaction
+	 * walk and the flow map stop at the boundary and an answer reaches nobody
+	 * (decision 21).
 	 */
 	by?: { $ref: string }[];
 	/**
@@ -740,6 +763,19 @@ export interface WorkspaceOptionsSchema {
 }
 
 /**
+ * The version of the ODS metamodel this core reads and writes.
+ *
+ * It is a constant of the library rather than something an author sets: every
+ * file core writes carries it, and a file that carries a different major was
+ * written against a metamodel this core does not read the same way. The major
+ * is bumped by the decision that breaks the metamodel — this is `2.0.0` for
+ * everything since the version started being compared at all, because the
+ * five decisions that promised the bump never got one (decision 29, noted
+ * 2026-09-10). The `ods-version` rule is where a mismatch is reported.
+ */
+export const ODS_VERSION = "2.0.0" as const;
+
+/**
  * @title Workspace
  * @description Represents a workspace in the Open Domain Specification (ODS).
  */
@@ -747,7 +783,16 @@ export interface WorkspaceSchema {
 	/** Location of the JSON schema this document conforms to, usually the schema.json beside it. Ignored by the loader. */
 	$schema?: string;
 	id: string;
-	odsVersion: `${number}.${number}.${number}`;
+	/**
+	 * The version of the ODS metamodel this file was written against, which
+	 * core writes and nobody edits by hand. Its major is bumped by the decision
+	 * that breaks the metamodel, so a file whose major differs from the reading
+	 * core's was written against a different model; `ods-version` says so and
+	 * the file still loads what it can. A file that states none is older than
+	 * the version being written at all, and gets the same diagnostic
+	 * (decision 29, noted 2026-09-10).
+	 */
+	odsVersion?: `${number}.${number}.${number}`;
 	name: string;
 	homepage?: string;
 	logoUrl?: string;
