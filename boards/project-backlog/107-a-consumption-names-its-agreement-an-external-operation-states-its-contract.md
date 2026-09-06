@@ -1,12 +1,11 @@
 ---
-column: doing
+column: review
 labels: [backend, docs]
 priority: medium
 agent: senior-developer
-live: true
-status: Reading the code before the schema change
-progress: 5
-updatedAt: 2026-09-11T09:00:00.000Z
+live: false
+clean-code-swept: true
+updatedAt: 2026-09-11T12:40:00.000Z
 ---
 # A consumption names its agreement; an external operation states its contract
 
@@ -14,13 +13,24 @@ Codex's eighth review reproduced two gaps. Two named relationships between one p
 
 ## Checklist
 
-- [ ] `ConsumptionSchema.relationship?: { $ref: string }` naming the agreement the exchange belongs to; workspace model, `consumes(..., { relationship })` in the DSL, the loader (a dangling ref is an `unresolved-ref` diagnostic), `toSchema`, JSON schema regenerated
-- [ ] `consumption-agreement` (warning): a consumption between a pair that has more than one directed relationship in that direction and names none, or names a relationship that does not join its two contexts in that direction; reported once, and such a crossing is not counted against any agreement by the two rules below
-- [ ] `relationship-roles-backed` and `role-coherence` (through `declaredUpstream`) read crossings per agreement: a crossing that names one counts for that one only; an unnamed crossing between a pair with one agreement counts for it as now
-- [ ] `external-is-boundary` allows a context invariant flagged `precondition` or `postcondition` on an external context when the operation it names is that context's own; still refuses one with neither flag and one naming another context's operation, and the fix text says which
-- [ ] `consumption-by-required` skips a consumer that is an external context or a big ball of mud, whose insides are not ours to state; and it reads consumptions inside a context as well as across, so a front on a multi-operation application service that names no `by` gets the same warning it would get from another context
+- [x] `ConsumptionSchema.relationship?: { $ref: string }` naming the agreement the exchange belongs to; workspace model, `consumes(..., { relationship })` in the DSL, the loader (a dangling ref is an `unresolved-ref` diagnostic), `toSchema`, JSON schema regenerated
+- [x] `consumption-agreement` (warning): a consumption between a pair that has more than one directed relationship in that direction and names none, or names a relationship that does not join its two contexts in that direction; reported once, and such a crossing is not counted against any agreement by the two rules below
+- [x] `relationship-roles-backed` and `role-coherence` (through `declaredUpstream`) read crossings per agreement: a crossing that names one counts for that one only; an unnamed crossing between a pair with one agreement counts for it as now
+- [x] `external-is-boundary` allows a context invariant flagged `precondition` or `postcondition` on an external context when the operation it names is that context's own; still refuses one with neither flag and one naming another context's operation, and the fix text says which
+- [x] `consumption-by-required` skips a consumer that is an external context or a big ball of mud, whose insides are not ours to state; and it reads consumptions inside a context as well as across, so a front on a multi-operation application service that names no `by` gets the same warning it would get from another context
 - [ ] Reference models: the two named agreements from card 103 have their consumptions assigned; RiverMart's external payment provider states the contract of one public operation; `npm run validate` clean or on purpose. NorthBank is card 109's and stays untouched here
-- [ ] `apps/docs/docs/3-core/4-validation.md` rows, including `invariant-in-aggregate` and `invariant-in-context` whose summaries moved after their last doc pass, and the skill's references say what the rules do now
-- [ ] `bash scripts/verify-all.sh` green
+- [x] `apps/docs/docs/3-core/4-validation.md` rows, including `invariant-in-aggregate` and `invariant-in-context` whose summaries moved after their last doc pass, and the skill's references say what the rules do now
+- [x] `bash scripts/verify-all.sh` green
+
+## Gates
+
+- [x] clean-code-swept — reread the whole diff for dead code and stale comments; the four rule doc comments and the catalogue text say what the rules now do (senior-developer, 2026-09-11T12:45:00.000Z)
 
 ## Comments
+
+- **senior-developer** (2026-09-11T12:40:00.000Z): Schema, model, DSL and loader for the agreement ref: `ConsumptionSchema.relationship` in `packages/core/src/schema.ts:401-412`, the field and its `toSchema` in `packages/core/src/workspace.ts:2273,2285,2352-2354`, and the loader's `AN_AGREEMENT` kind with the resolve at `packages/core/src/workspace-from-schema.ts:213-216,305-315`. Relationships are now loaded before the references (`packages/core/src/workspace-from-schema.ts:1012-1015`), because an agreement has to exist before an exchange can name it; a dangling ref is an `unresolved-ref` at the consumer, covered in `packages/core/src/round-trip.test.ts:395-478`. JSON schema regenerated by core's build.
+- **senior-developer** (2026-09-11T12:41:00.000Z): `consumption-agreement` and the per-agreement reading in `packages/core/src/validate.ts:1990-2115` — `agreementsFrom`, `agreementOf`, `declaredUpstream` taking the crossing, and the rule itself — with `crossingsFor` at `packages/core/src/validate.ts:2189-2206` feeding `relationship-roles-backed`. A crossing the new rule reports belongs to no agreement, so the roles rule neither counts it for one nor criticises one for it; tests at `packages/core/src/validate.test.ts:2468-2635` cover the clean two-agreement workspace, the unnamed crossing warned once, a ref pointing the wrong way, and the one-agreement pair asked nothing. Catalogue entry with summary, why and fix at `packages/core/src/validate.ts:4544-4553`.
+- **senior-developer** (2026-09-11T12:42:00.000Z): `external-is-boundary` now allows a context invariant flagged `precondition` or `postcondition` on the external context's own operation and refuses the other two shapes with their own messages (`packages/core/src/validate.ts:4185-4222`); `consumption-by-required` skips a consumer inside an external or mud context and reads consumptions inside a context (`packages/core/src/validate.ts:3118-3145`). Tests at `packages/core/src/validate.test.ts:6083-6190` and `packages/core/src/validate.test.ts:6584-6673`. RiverMart's acquirer states the `TakeFunds` contract at `models/rivermart/src/workspace.ts:1514-1528`; `npm run validate` there prints only the two deliberate findings.
+- **senior-developer** (2026-09-11T12:43:00.000Z): QUESTION FOR THE LEAD, and why the sixth checklist item is unticked. The card says "the two named agreements from card 103" are in RiverMart; they are not. Card 103's own commit message says so outright — "The four reference models are unchanged: none narrates two agreements between one pair" (907caf2) — and no model source sets `name` on a relationship. So there is nothing in a reference model for a consumption to be assigned to. Making one means either splitting an existing relationship or writing a new integration into RiverMart, and both are modelling decisions rather than mine: decision 15 says outright that a negotiated API and a published event stream between one pair are *one* relationship, so the obvious candidates (Payments → Cart & Checkout, Order Management → Cart & Checkout) would contradict it. What card 103 reopened the rule for is two agreements with two *dispositions* — a tolerated legacy feed beside a negotiated API — and RiverMart's one tolerated legacy feed (Vendor Purchasing → Warehouse) carries a single exchange. Ruling wanted: should RiverMart gain a second, named agreement on that pair (which needs a discovery story), or does the feature stay exercised by core's tests and the models wait for a model that really has two? The external half of the item is done.
+- **senior-developer** (2026-09-11T12:44:00.000Z): Docs rows in `apps/docs/docs/3-core/4-validation.md:32-33,37-38,47,54,76` — the new `consumption-agreement` row, the four changed rules, and `invariant-in-aggregate` and `invariant-in-context` brought back in line with the catalogue, whose precondition/postcondition reach the rows had backwards. Skill references regenerated from core, plus the hand-written `consumes` row in `packages/skill/skill/references/dsl-api.md:40`, the agreement question in `packages/skill/skill/references/interview-playbook.md:237-240` and the external-contract line in `packages/skill/skill/SKILL.md:95-98`. `bash scripts/verify-all.sh` green end to end.
+
