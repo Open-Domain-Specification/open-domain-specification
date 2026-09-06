@@ -6,11 +6,11 @@ Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel
 
 ## Now
 
-Nothing is live. The previous lead stopped here for a handoff. The lore-free roster (lead, senior-developer, developer, tester, architect, designer, with -deep and -lite variants) is installed on both harnesses at project scope and committed; the harness loaded the agent types after the last dispatch attempt, so nothing has been dispatched with it yet.
+Card 99 ([boards/project-backlog/99](boards/project-backlog/99-direction-is-declared-processes-start-on-commands-postconditions.md)) is with senior-developer-deep in a worktree; stopping point: the developer reports, the lead lands with `npm run verify`. The lore-free roster is installed on both harnesses at project scope and committed.
 
 ## Next
 
-Dispatch card 99 ([boards/project-backlog/99](boards/project-backlog/99-direction-is-declared-processes-start-on-commands-postconditions.md)) to senior-developer-deep in a worktree, with the brief shape used throughout sprint 02 (see any card's comments and the sprint file); land it with `npm run verify`; then card 100 ([boards/project-backlog/100](boards/project-backlog/100-a-mistake-is-a-diagnostic-not-a-crash.md)) the same way. Expected result: both land green, the panel (Antigravity via `agy`, Codex via `codex exec -m gpt-6-astra`, a fresh architect-deep) runs a sixth time on that head, and all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
+Land card 99; then card 100 ([boards/project-backlog/100](boards/project-backlog/100-a-mistake-is-a-diagnostic-not-a-crash.md)) the same way. Expected result: both land green, the panel (Antigravity via `agy`, Codex via `codex exec -m gpt-6-astra`, a fresh architect-deep) runs a sixth time on that head, and all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
 
 ## Later
 
@@ -27,4 +27,4 @@ Dispatch card 99 ([boards/project-backlog/99](boards/project-backlog/99-directio
 
 ## Working state
 
-Updated: 2026-09-09, at the handoff. Branch: develop. Checked commit: the one immediately before this STATUS.md on develop. Partial changes in the checkout: only the untracked and unstaged files listed under Later, none of them the lead's. Landing gate: `npm run verify` at the root; before running it, `pgrep -f 'ods-vscode.*dev.mjs'` and `pgrep -f extensionDevelopmentPath` must find nothing, because a running extension host rewrites the petstore schema.
+Updated: 2026-09-09, unattended run continuing after the handoff note. Branch: develop. Checked commit: the one immediately before this STATUS.md on develop. Partial changes in the checkout: only the untracked and unstaged files listed under Later, none of them the lead's. Landing gate: `npm run verify` at the root; before running it, `pgrep -f 'ods-vscode.*dev.mjs'` and `pgrep -f extensionDevelopmentPath` must find nothing, because a running extension host rewrites the petstore schema.
