@@ -62,7 +62,11 @@ Relationships between contexts are declared on the workspace:
 Directed relationships carry the **roles** each side plays: upstream roles
 are `open-host-service` and `published-language`, downstream roles are
 `conformist` and `anti-corruption-layer`. The same roles appear on
-individual consumables and consumptions.
+individual consumables and consumptions. A `customer-supplier` downstream is
+asked for no role: it negotiated the interface it uses, which is what the
+type says, and neither downstream word describes that — a conformist is the
+downstream with no say. Write one if it is true, and `role-coherence` does
+not ask for it.
 
 A downstream that declares the `conformist` role says it takes the upstream's
 model as it stands, so it may name that upstream's schemas and value objects

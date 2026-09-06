@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { makeRichTestWs } from "./makeTestWs";
-import { hearsAnswerOf, routesTo } from "./reaction-walk";
-import { type BoundedContext, Workspace } from "./workspace";
+import { hearsAnswerOf, ReactionChain, routesTo } from "./reaction-walk";
+import {
+	type BoundedContext,
+	type DirectedRelationshipOptions,
+	Workspace,
+} from "./workspace";
 
 const rulesOf = (ws: Workspace) =>
 	ws.validate().map((d) => `${d.severity}:${d.rule}`);
@@ -3501,6 +3505,88 @@ describe("role-coherence and symmetric relationships", () => {
 			[],
 		);
 	});
+
+	/** The customer-supplier pair, with the supplier providing the operation. */
+	function negotiated(options: DirectedRelationshipOptions = {}) {
+		const { ws, one, two } = bareExchange();
+		const relationship = one.upstreamOf(two, {
+			type: "customer-supplier",
+			...options,
+		});
+		const consumption = two.services.get("t")?.consumptions[0];
+		if (!consumption) throw new Error("no consumption");
+		return { ws, one, two, relationship, consumption };
+	}
+
+	// A customer negotiates the interface it uses, so neither downstream word
+	// is true of it: a conformist is the downstream with no say, which is the
+	// opposite, and an anti-corruption layer is a translation the negotiation
+	// saves it from. The type is the answer (decision 03, amendment of
+	// 2026-09-10; card 128).
+	it("asks a customer-supplier downstream for no role", () => {
+		const { ws } = negotiated();
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "role-coherence")
+				.map((d) => d.message),
+		).toEqual([
+			'"Op" is consumed from another context but declares no upstream role (open-host-service or published-language)',
+		]);
+	});
+
+	// The upstream end is untouched: the supplier still says how it offers
+	// what it offers, and only that warning is left once the consumption
+	// carries a role of its own.
+	it("still asks the supplier for its upstream role", () => {
+		const { ws, consumption } = negotiated();
+		consumption.pattern = "anti-corruption-layer";
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "role-coherence")
+				.map((d) => d.message),
+		).toEqual([
+			'"Op" is consumed from another context but declares no upstream role (open-host-service or published-language)',
+		]);
+	});
+
+	// A role written on such a consumption is not ignored: the rule asks for
+	// none, and every rule that reads a downstream role reads this one. The
+	// pair declares an anti-corruption layer, and it is the consumption that
+	// backs it or leaves it unbacked.
+	it("still reads a downstream role written there", () => {
+		const backed = negotiated({ downstreamRoles: ["anti-corruption-layer"] });
+		backed.consumption.pattern = "anti-corruption-layer";
+		expect(
+			backed.ws
+				.validate()
+				.filter((d) => d.rule === "relationship-roles-backed"),
+		).toEqual([]);
+		const unbacked = negotiated({ downstreamRoles: ["anti-corruption-layer"] });
+		expect(
+			unbacked.ws
+				.validate()
+				.filter((d) => d.rule === "relationship-roles-backed")
+				.map((d) => d.message),
+		).toEqual([expect.stringContaining("anti-corruption-layer")]);
+	});
+
+	// An ordinary upstream-downstream pair is still asked, which is what tells
+	// the two types apart here.
+	it("still asks a plain upstream-downstream downstream", () => {
+		const { ws, one, two } = bareExchange();
+		one.upstreamOf(two, {});
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "role-coherence")
+				.map((d) => d.message),
+		).toEqual([
+			'"Op" is consumed from another context but declares no upstream role (open-host-service or published-language)',
+			'"T" consumes "Op" from another context without a downstream role (conformist or anti-corruption-layer)',
+		]);
+	});
 });
 
 describe("postcondition-names-operation", () => {
@@ -4788,7 +4874,7 @@ describe("rejection-raised", () => {
 		expect(rejectionRaised(ws)).toEqual([
 			[
 				"warning",
-				'"Offer Slot" rejects with "Patient Waitlisted", which it also raises as the event "Patient Waitlisted", and no other context consumes "Patient Waitlisted"; a rejection answers the caller and an event tells the world, and where both are true keep both — the fact somebody hears is what makes it an event, so say who consumes "Patient Waitlisted" or drop it and let the rejection answer',
+				'"Offer Slot" rejects with "Patient Waitlisted", which it also raises as the event "Patient Waitlisted", and no policy or process anywhere reacts to "Patient Waitlisted"; a rejection answers the caller and an event tells the world, and where both are true keep both — the fact somebody hears is what makes it an event, so name the policy or process that hears "Patient Waitlisted", one of "Clinic"\'s own included, or drop the event and let the rejection answer',
 				offerSlot.ref,
 			],
 		]);
@@ -4798,7 +4884,7 @@ describe("rejection-raised", () => {
 	// hears, and card 123 told the author one of the two was false. Where
 	// somebody hears the event both are true and the rule is quiet
 	// (decision 25, note of 2026-09-10; card 126).
-	it("says nothing when another context consumes the published refusal", () => {
+	it("says nothing when another context reacts to the published refusal", () => {
 		const { ws, bc, event } = bothShapes();
 		const outside = ws.addBoundedContext("Reporting", { description: "" });
 		outside.downstreamOf(bc, {
@@ -4810,18 +4896,78 @@ describe("rejection-raised", () => {
 			type: "application",
 		});
 		reports.consumes(event, { pattern: "conformist" });
+		const record = reports.provides("Record Waitlisting", {
+			description: "",
+			type: "operation",
+		});
+		outside.addPolicy("Record The Waitlisting", {
+			description: "",
+			on: [event],
+			issues: [record],
+		});
 		expect(rejectionRaised(ws)).toEqual([]);
 	});
 
-	// The provider's own subscriber says nothing about whether the fact
-	// travels: the caller here was already answered.
-	it("still warns when only the raising context consumes it", () => {
-		const { ws, bc, event, offerSlot } = bothShapes();
+	// The dunning policy of the context that declined the payment is somebody
+	// hearing the fact: it is not the caller — the caller was answered — and a
+	// context that refuses a call and acts on the refusal elsewhere in its own
+	// model is the ordinary shape of the pair, not a warning (decision 25,
+	// second note of 2026-09-10; card 128).
+	it("says nothing when the raising context's own policy hears it", () => {
+		const { ws, bc, event } = bothShapes();
 		const inside = bc.addService("Waitlist", {
 			description: "",
 			type: "application",
 		});
-		inside.consumes(event);
+		const chase = inside.provides("Chase The Waitlist", {
+			description: "",
+			type: "operation",
+		});
+		bc.addPolicy("Work The Waitlist", {
+			description: "",
+			on: [event],
+			issues: [chase],
+		});
+		expect(rejectionRaised(ws)).toEqual([]);
+	});
+
+	// A process hears facts as a policy does, and one that only starts on the
+	// event is still somebody hearing it.
+	it("says nothing when the raising context's own process starts on it", () => {
+		const { ws, bc, event } = bothShapes();
+		const svc = bc.addService("Waitlist", {
+			description: "",
+			type: "application",
+		});
+		const chase = svc.provides("Chase The Waitlist", {
+			description: "",
+			type: "operation",
+		});
+		const cleared = svc.provides("Waitlist Cleared", {
+			description: "",
+			type: "event",
+		});
+		chase.raises(cleared);
+		bc.addProcess("Waitlist Run", { description: "" })
+			.starts(event)
+			.issues(chase)
+			.ends(cleared);
+		expect(rejectionRaised(ws)).toEqual([]);
+	});
+
+	// A subscription with nothing behind it is not somebody hearing the fact:
+	// the consumption is only the route it travels, and subscription-backed is
+	// what asks for the reactor at the end of it.
+	it("still warns when a consumption carries it but no reactor acts on it", () => {
+		const { ws, bc, event, offerSlot } = bothShapes();
+		const outside = ws.addBoundedContext("Reporting", { description: "" });
+		outside.downstreamOf(bc, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		outside
+			.addService("Reports", { description: "", type: "application" })
+			.consumes(event, { pattern: "conformist" });
 		expect(
 			rejectionRaised(ws).map(([severity, , ref]) => [severity, ref]),
 		).toEqual([["warning", offerSlot.ref]]);
@@ -7137,7 +7283,7 @@ describe("external-is-boundary", () => {
 		expect(boundary(ws)).toEqual([
 			[
 				"error",
-				'External context "Card Scheme" declares invariant "One Settlement A Day", which is neither a precondition nor a postcondition; a rule a system we do not own keeps at rest is not ours to state. What is ours to write down is that system\'s published contract: mark the rule a precondition or a postcondition of one of this context\'s own operations, or move it to the context of ours that really keeps it',
+				'External context "Card Scheme" declares invariant "One Settlement A Day", which is neither a precondition nor a postcondition; a rule a system we do not own keeps at rest is not ours to state. What is ours to write down is that system\'s published contract: mark the rule a precondition or a postcondition of one of this context\'s own operations, or a postcondition of one of its own events, or move it to the context of ours that really keeps it',
 				atRest.ref,
 			],
 		]);
@@ -7159,7 +7305,7 @@ describe("external-is-boundary", () => {
 		expect(boundary(ws)).toEqual([
 			[
 				"error",
-				'External context "Card Scheme" states a precondition on "Capture Payment", an operation of "Payments"; a system we do not own publishes the contract of its own operations and promises nothing about anybody else\'s. Move the rule to the context that provides the operation',
+				'External context "Card Scheme" states a precondition on "Capture Payment", an operation of "Payments"; a system we do not own publishes the contract of what it offers and sends, and promises nothing about anybody else\'s. Move the rule to the context that provides the operation',
 				reaching.ref,
 			],
 		]);
@@ -7178,7 +7324,7 @@ describe("external-is-boundary", () => {
 		expect(boundary(ws)).toEqual([
 			[
 				"error",
-				'External context "Card Scheme" states precondition "Never Overdrawn" on none of its own operations; what a system we do not own publishes is the contract of an operation it offers, so name that operation. A published contract states what one of this system\'s own operations takes and answers with, in the attributes of its own request and answer schemas, and what its own value objects are; anything else about that system is ours to guess and not to state',
+				'External context "Card Scheme" states precondition "Never Overdrawn" on none of its own operations; what a system we do not own publishes is the contract of an operation it offers, so name that operation. A published contract states what one of this system\'s own operations takes and answers with, in the attributes of its own request and answer schemas, what one of its own events carries, in the attributes of that event\'s payload, and what its own value objects are; anything else about that system is ours to guess and not to state',
 				unguarded.ref,
 			],
 		]);
@@ -7207,7 +7353,7 @@ describe("external-is-boundary", () => {
 			["error", reaching.ref],
 		]);
 		expect(boundary(ws)[1][1]).toBe(
-			'External context "Card Scheme" states a postcondition on "Order.total", which is not part of that contract. A published contract states what one of this system\'s own operations takes and answers with, in the attributes of its own request and answer schemas, and what its own value objects are; anything else about that system is ours to guess and not to state',
+			'External context "Card Scheme" states a postcondition on "Order.total", which is not part of that contract. A published contract states what one of this system\'s own operations takes and answers with, in the attributes of its own request and answer schemas, what one of its own events carries, in the attributes of that event\'s payload, and what its own value objects are; anything else about that system is ours to guess and not to state',
 		);
 	});
 
@@ -7267,6 +7413,153 @@ describe("external-is-boundary", () => {
 			downstreamRoles: ["anti-corruption-layer"],
 		});
 		expect(ws.validate().filter((d) => d.severity === "error")).toEqual([]);
+	});
+
+	/**
+	 * A provider that only sends: the webhook it posts, its payload, and one
+	 * of our contexts listening. There is no operation to hang the contract on,
+	 * which is the case decision 28's fifth amendment is about (card 128).
+	 */
+	function webhook() {
+		const { ws, external, ours } = scheme();
+		const api = external.addService("Scheme API", {
+			description: "",
+			type: "application",
+		});
+		const payload = external.addSchema("Capture Notification", {
+			description: "",
+		});
+		const amount = payload.addAttribute("amount", { type: "int64" });
+		const authorised = payload.addAttribute("authorised", { type: "int64" });
+		const notified = api.provides("Payment Captured", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+			schema: payload,
+		});
+		const ourApp = ours.addService("Payments App", {
+			description: "",
+			type: "application",
+		});
+		ourApp.consumes(notified, { pattern: "anti-corruption-layer" });
+		external.upstreamOf(ours, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		const record = ourApp.provides("Record Capture", {
+			description: "",
+			type: "operation",
+		});
+		ours
+			.addPolicy("Record The Capture", { description: "" })
+			.on(notified)
+			.issues(record);
+		return { ws, external, ours, notified, amount, authorised };
+	}
+
+	// A webhook payload is published, citable and not the receiver's to
+	// promise, which is this record's own argument for an operation contract
+	// applied word for word (decision 28, fifth amendment).
+	it("lets a system we do not own guarantee what its own event carries", () => {
+		const { ws, external, notified, amount, authorised } = webhook();
+		external
+			.addInvariant("Captured Within The Authorisation", {
+				description: "",
+				postcondition: true,
+			})
+			.constrains(notified, amount, authorised);
+		expect(boundary(ws)).toEqual([]);
+		expect(ws.validate().filter((d) => d.severity === "error")).toEqual([]);
+	});
+
+	it("refuses a precondition on one of its events, which has no request", () => {
+		const { ws, external, notified, amount } = webhook();
+		const before = external
+			.addInvariant("Captured Within The Authorisation", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(notified, amount);
+		// It guards no operation, and the payload is out of a precondition's
+		// reach because there is no moment before an event to read it at.
+		expect(boundary(ws).map((d) => [d[0], d[2]])).toEqual([
+			["error", before.ref],
+			["error", before.ref],
+		]);
+		expect(boundary(ws)[0][1]).toContain(
+			'states precondition "Captured Within The Authorisation" on none of its own operations',
+		);
+		expect(boundary(ws)[1][1]).toContain(
+			'states a precondition on "Capture Notification.amount", which is not part of that contract',
+		);
+	});
+
+	it("refuses a postcondition on another context's event", () => {
+		const { ws, external, ours, notified, amount } = webhook();
+		const oursEvent = ours.services
+			.get("payments_app")
+			?.provides("Capture Recorded", { description: "", type: "event" });
+		if (!oursEvent) throw new Error("no event");
+		const reaching = external
+			.addInvariant("Recorded Within The Authorisation", {
+				description: "",
+				postcondition: true,
+			})
+			.constrains(notified, oursEvent, amount);
+		expect(boundary(ws)).toEqual([
+			[
+				"error",
+				'External context "Card Scheme" states a postcondition on "Capture Recorded", an event of "Payments"; a system we do not own publishes the contract of what it offers and sends, and promises nothing about anybody else\'s. Move the rule to the context that raises the event',
+				reaching.ref,
+			],
+		]);
+	});
+
+	it("refuses a postcondition reaching outside the payload it guards", () => {
+		const { ws, external, ours, notified, amount } = webhook();
+		const { total } = ourOrder(ours);
+		const reaching = external
+			.addInvariant("Captured Within The Order Total", {
+				description: "",
+				postcondition: true,
+			})
+			.constrains(notified, amount, total);
+		expect(boundary(ws).map((d) => [d[0], d[2]])).toEqual([
+			["error", reaching.ref],
+		]);
+		expect(boundary(ws)[0][1]).toContain(
+			'states a postcondition on "Order.total", which is not part of that contract',
+		);
+	});
+
+	// The payload of another of its own events is outside this contract too:
+	// what is in reach is what the guarded event carries.
+	it("refuses a postcondition reaching into another of its own payloads", () => {
+		const { ws, external, notified, amount } = webhook();
+		const other = external.addSchema("Refund Notification", {
+			description: "",
+		});
+		const refunded = other.addAttribute("amount", { type: "int64" });
+		external
+			.addService("Refund API", { description: "", type: "application" })
+			.provides("Payment Refunded", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+				schema: other,
+			});
+		const reaching = external
+			.addInvariant("Captured Within The Refund", {
+				description: "",
+				postcondition: true,
+			})
+			.constrains(notified, amount, refunded);
+		expect(boundary(ws).map((d) => [d[0], d[2]])).toEqual([
+			["error", reaching.ref],
+		]);
+		expect(boundary(ws)[0][1]).toContain(
+			'states a postcondition on "Refund Notification.amount", which is not part of that contract',
+		);
 	});
 
 	it("asks an external context for no subdomain", () => {
@@ -8554,6 +8847,118 @@ describe("waiting on an answer", () => {
 		process.on(authorise.returned());
 		expect(hearsAnswerOf(process, authorise)).toBe(true);
 		expect(routesTo(process, authorise)).toEqual([front]);
+	});
+
+	/**
+	 * The architect's thirteenth round. One context with a single-operation
+	 * front that calls out, a caller that issues the front, and a bystander
+	 * that issues something else entirely and waits on the answer. `explicitBy`
+	 * writes down the caller the inference stands in for, so the two runs are
+	 * the same model said two ways and have to be read the same way
+	 * (decisions 21 and 23; card 128).
+	 */
+	function bystanders({ explicitBy = false } = {}) {
+		const ws = emptyWorkspace();
+		const provider = ws.addBoundedContext("Provider", { description: "" });
+		const caller = ws.addBoundedContext("Caller", { description: "" });
+		provider.upstreamOf(caller, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["conformist"],
+		});
+		const verdict = provider.addSchema("Verdict");
+		verdict.addAttribute("ok", { type: "boolean" });
+		const score = provider
+			.addService("Provider API", { description: "", type: "application" })
+			.provides("Score", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+				returns: verdict,
+			});
+		const aggregate = caller.addAggregate("Thing", { description: "" });
+		aggregate
+			.addRootEntity("Thing", { description: "" })
+			.addAttribute("id", { type: "uuid", identity: true });
+		const started = aggregate.provides("Started", {
+			description: "",
+			type: "event",
+			internal: true,
+		});
+		aggregate
+			.provides("Start", { description: "", type: "operation", internal: true })
+			.raises(started);
+		const other = aggregate.provides("Do Something Else", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		// One operation, so the walk reads the service as its own `by` where
+		// the consumption stays silent.
+		const app = caller.addService("Caller App", {
+			description: "",
+			type: "application",
+		});
+		const front = app.provides("Front", {
+			description: "",
+			type: "operation",
+		});
+		app.consumes(score, {
+			pattern: "conformist",
+			...(explicitBy && { by: [front] }),
+		});
+		const asked = caller
+			.addPolicy("Score On Start", { description: "" })
+			.on(started)
+			.issues(front);
+		const bystander = caller
+			.addPolicy("Bystander", { description: "" })
+			.on(score.returned())
+			.issues(other);
+		return { ws, caller, score, front, other, started, asked, bystander };
+	}
+
+	// Card 126's fourth clause returned the sole operation of a silent
+	// consumer as the route for any reactor of the context, without asking
+	// whether that reactor issues it. So the bystander heard an answer to
+	// somebody else's call — and only with `by` left off, which is the one
+	// thing the inference is not allowed to change.
+	it("refuses a bystander the answer with by absent exactly as with by written", () => {
+		for (const explicitBy of [false, true]) {
+			const { ws, score, front, asked, bystander } = bystanders({ explicitBy });
+			expect(hearsAnswerOf(asked, score)).toBe(true);
+			expect(routesTo(asked, score)).toEqual([front]);
+			expect(hearsAnswerOf(bystander, score)).toBe(false);
+			expect(routesTo(bystander, score)).toEqual([]);
+			expect(kinds(ws).map(([severity, , ref]) => [severity, ref])).toEqual([
+				["error", bystander.ref],
+			]);
+		}
+	});
+
+	// And the step the walk drew from that answer closed a ring: the front
+	// woke the bystander, the bystander issued an operation raising the fact
+	// the first policy reacts to, and `reaction-cycle` reported a chain the
+	// model never says happens.
+	it("draws no phantom ring through a reactor that made no call", () => {
+		for (const explicitBy of [false, true]) {
+			const { ws, caller, other, started, bystander } = bystanders({
+				explicitBy,
+			});
+			// The bystander's operation raises what the first policy hears, so
+			// an answer routed to it would close the ring.
+			other.raises(started);
+			expect(ws.validate().filter((d) => d.rule === "reaction-cycle")).toEqual(
+				[],
+			);
+			expect(
+				new ReactionChain(caller.workspace.boundedcontexts.values())
+					.stepsFrom(other)
+					.map((step) => step.to.name),
+			).toEqual(["Started"]);
+			expect(kinds(ws).map(([severity, , ref]) => [severity, ref])).toEqual([
+				["error", bystander.ref],
+			]);
+		}
 	});
 });
 

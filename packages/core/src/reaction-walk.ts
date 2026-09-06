@@ -236,7 +236,7 @@ function callsTo(bc: BoundedContext, operation: Consumable): Consumption[] {
  * woke each other, and `reaction-cycle` reported a ring between contexts that
  * never trigger one another at all.
  *
- * Four ways a reactor is the caller, in the order they are asked:
+ * Three ways a reactor is the caller, in the order they are asked:
  *
  * - It issues the operation itself. A process that calls a local validator and
  *   branches on the verdict made the call and declares no consumption of its
@@ -252,24 +252,32 @@ function callsTo(bc: BoundedContext, operation: Consumable): Consumption[] {
  *   that issues the use-case operation, which calls the payments adapter,
  *   which calls the provider, made that call as surely as if it had made it
  *   in one hop, and the events coming back up the same chain were always read
- *   that way (decision 21, amendment of 2026-09-10; card 126).
- * - Nothing says who calls, and there is one call in this context to hear,
- *   made by a consumer that provides exactly one operation. Such a consumer is
- *   not made to write `by` down (`consumption-by-required`), and the walk
- *   reads the same inference here as it does in `callsOut` and
- *   {@link routesTo}: only where there is nothing to choose between. The
- *   consumption has to be silent for the silence to be stood in for: a lone
- *   call that does name its caller has said who made it, and reading that one
- *   as "anybody here" let a second reactor beside the caller hear an answer
- *   the model had already given away (card 104).
+ *   that way (decision 21, amendment of 2026-09-10; card 126). A silent
+ *   consumption whose consumer provides exactly one operation is a hop of that
+ *   chain like any other: `callsOut` reads such a consumer as its own `by`,
+ *   which is the inference `consumption-by-required` declines to make the
+ *   author write down, so the reactor that issues that one operation reaches
+ *   the call through it and a reactor that issues something else does not.
  *
  * Where `by` is written and names somebody else, the answer is somebody
  * else's. That is the whole narrowing, and the repair for a model it catches
  * is to say which of the context's operations makes this call.
  *
+ * The inference is worth its own sentence, because a fourth clause used to
+ * make it here and made it too widely. Card 126 read a lone silent call as
+ * "the sole operation of its consumer answers whoever is asking", without
+ * asking whether the reactor issues that operation, so a bystander policy that
+ * named the answer heard it, the flow map drew the step, and a policy issuing
+ * the front on the bystander's event closed a ring `reaction-cycle` reported —
+ * while the same model with `by: [thatOperation]` written was refused. The
+ * inference behaves as writing it would, which is what decisions 21 and 23 say
+ * it is, and once the reactor has to issue the operation the call chain
+ * already reaches it: the clause said nothing the one above it does not
+ * (card 128, architect's thirteenth round).
+ *
  * This is {@link routesTo} asked as a yes-or-no question, and it is written as
- * one call to it rather than as the same four clauses again. Until card 116
- * the third clause here asked only whether the lone call was silent, while
+ * one call to it rather than as the same clauses again. Until card 116 the
+ * inference was asked here only as "is the lone call silent", while
  * `routesTo` also asked whether the consumer had a single operation to infer,
  * so a by-less consumer providing three operations passed `consumable-kind` —
  * the reactor was allowed to wait on the answer — and the walk then drew no
@@ -333,13 +341,21 @@ function callersFor(reactor: Policy | Process, call: Consumption): Reactor[] {
  * operation the reactor issued: that is the node the reactor knows about, and
  * the fronts between are the context's own plumbing, drawn on the chain as
  * their own steps out (see {@link callChainReaches}). Where nothing says who
- * calls and the consumer provides a single operation,
- * that operation is the route, which is the inference `callsOut` already makes
- * on the way out; where it provides several, the model has not said, and the
- * chain stops rather than guessing — the same silence `consumption-by-required`
- * warns about. That inference is `hearsAnswerOf`'s third clause and is read
- * with it: a lone call that names its caller is not silent, so it is routed by
- * what it names or not at all.
+ * calls and the consumer provides a single operation, that operation is the
+ * `by` the model did not make the author write, and the route runs through it
+ * like any other hop of the chain, because `callsOut` makes that inference on
+ * the way out and the chain is followed with it; where the consumer provides
+ * several, the model has not said, and the chain stops rather than guessing —
+ * the same silence `consumption-by-required` warns about.
+ *
+ * The inference routes to the reactor that issues that operation and to no
+ * other. Card 126 added a clause that returned the sole operation for any
+ * reactor of the context, so a bystander that issued something else was drawn
+ * the answer and could close a ring, while the same model with `by` written
+ * was refused — the two readings of one fact disagreed. It behaves as
+ * `by: [thatOperation]` would (decisions 21 and 23), and read that way it says
+ * nothing the call chain above does not, so the clause is gone rather than
+ * repaired (card 128).
  */
 export function routesTo(
 	reactor: Policy | Process,
@@ -349,15 +365,9 @@ export function routesTo(
 	const calls = callsTo(reactor.boundedcontext, operation);
 	const named = calls.flatMap((call) => callersFor(reactor, call));
 	if (named.length > 0) return named;
-	const relayed = reactor.commands.filter((issued) =>
+	return reactor.commands.filter((issued) =>
 		callChainReaches(issued, operation, reactor.boundedcontext),
 	);
-	if (relayed.length > 0) return relayed;
-	if (calls.length !== 1 || calls[0].by.length > 0) return [];
-	const sole = [...calls[0].consumer.consumables.values()].filter(
-		(it) => it.type === "operation",
-	);
-	return sole.length === 1 ? sole : [];
 }
 
 /**
