@@ -175,3 +175,7 @@ An unknown key is an `unknown-field` diagnostic and is dropped on save (card 121
 ### A value object relates to no entity
 
 `value-object-shape` refuses `includes`, `references` and any relation from a value object to an entity; a value that must point at an entity holds an `identifies` attribute, which the rule's fix text names. Evans allows a value object to hold a reference to an entity; refusing the relation is this model's preference, a value has no identity and draws no line, and the identity attribute carries the fact. Named by the architect's fifteenth round.
+
+### The problem space is two levels deep
+
+A domain holds subdomains and a subdomain holds nothing below it; a bank's map "Payments, International, SWIFT" flattens to compound subdomain names. No record discussed depth and no rule reads it; named by the architect's sixteenth round, and reopened when a reference model cannot name its problem space in two levels.

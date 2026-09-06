@@ -91,3 +91,7 @@ The second amendment said an answer is synchronous because the operation is; tha
 ## Note (2026-09-10, fifth)
 
 A deadline is an interval after its trigger, and a date held in an attribute, a policy's expiry, has no home in it; the clinic wrote "until the day of the appointment" into `after` and nothing said so. A data-fixed date is a scheduled operation or a Clock event (decision 28), and `after` is an interval. Named by the architect's twelfth round.
+
+## Amendment (2026-09-10, third)
+
+The third amendment let a command start a process and the fourth routed an answer only to a reactor that issued the call; together they left a process that starts on a command whose handler makes the first outbound call unable to wait on that call's answer, and the clean form cost one more internal operation and event for nothing. The operation that starts a process is that process's own first step: a process hears the answers of the calls that operation made, through the local `by` chain from it, and across a boundary still one hop. The shortest workaround, a process that starts on and issues the same operation, spawns an instance every turn and is reported as such; `reEntersWhileAlive` no longer accepts a ring closed by the start step (card 135, architect's sixteenth round). Two smaller notes from the same round: a saga cannot raise its own completion fact and issues one internal operation that does, which is this record's shape and is now said; and a process's first call made by its start is what RiverMart's `Hold attempt` always meant.

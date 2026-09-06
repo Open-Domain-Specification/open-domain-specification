@@ -51,3 +51,7 @@ skill text.
 ## Note (2026-09-10)
 
 The generated references stay true because they regenerate; the hand-written ones, `SKILL.md`, the interview playbook, the preferences reference, lagged the validator in six places by the architect's thirteenth round, and the skill is the surface an author is told to trust. Card 129 corrects them and adds a test that fails when one of those sentences returns; every card that changes a rule's behaviour lists the hand-written references among its files from here on.
+
+## Note (2026-09-10, second)
+
+The drift test banned old sentences, and five sentences drifted again after the latest amendments because each was true before the amendment and nobody re-read it after: the pattern is a sentence that states a rule's reach or a list of routes. Card 135 pins the current wording positively for the facts that drifted twice, so an amendment that changes the fact fails the test until the sentence follows; and from here every card that changes a rule's reach lists, in its brief, the docs page, the skill file and the schema comment that state that reach.
