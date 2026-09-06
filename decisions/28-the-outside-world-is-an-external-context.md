@@ -85,3 +85,7 @@ The fourth amendment said an external invariant may constrain "that operation's 
 ## Note (2026-09-10, fourth)
 
 `subscription-backed` asked a big ball of mud which of its policies reacts to our event, which the second amendment says is not ours to state and `consumption-by-required` already honours; the rule skips a mud consumer (card 124, architect's eleventh round).
+
+## Amendment (2026-09-10, fifth)
+
+The fourth amendment let an external context state a contract on its own operation and not on the payload of an event it publishes, though the same argument, a published contract is citable, applies word for word to a webhook payload or a settlement feed, and a provider that only sends has no operation to hang it on. An external context's invariant may name one of its own events, flagged `postcondition`, and constrain attributes of that event's payload; another context's event, or anything outside the payload, stays refused (card 128, architect's thirteenth round).

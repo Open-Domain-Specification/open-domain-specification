@@ -113,3 +113,7 @@ inventory.addPolicy("Reserve on order", { description }).on(placed).issues(reser
   command remain in prose and labels; they stop being separate objects.
 - Rejected: a workspace-level schemas block. It would invite sharing a
   payload across contexts, which is a shared kernel by the back door.
+
+## Note (2026-09-10)
+
+The wire and the model are typed apart: an entity never carries a schema and a schema never names an entity (`attribute-one-shape`), so a resource-style API restates its aggregate as one or more schemas, petstore's `Pet` beside `PetSummary` and `RegisterPet`, with the value-object bridge sharing the leaves. That is the published-language discipline and a real duplication; named by the architect's thirteenth round and carried by the docs (card 129).

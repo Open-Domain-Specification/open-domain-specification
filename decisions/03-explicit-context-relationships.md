@@ -87,3 +87,7 @@ The second amendment said `relationship-declared` warns on an identity crossing;
 ## Note (2026-09-10)
 
 `role-coherence` asks every crossing for an upstream role on the consumable and a downstream role on the consumption, so the downstream of a customer-supplier pair that uses the negotiated API through a thin client is asked to call itself a conformist or an anti-corruption layer. It is a conformist: its model follows the API it was given, and negotiation is what the relationship type says, not a third way of integrating. The rule is a warning and the roles live on the relationship where the pair is reversed (architect's ninth round).
+
+## Amendment (2026-09-10)
+
+The 2026-09-10 note told a customer-supplier downstream using the negotiated interface to call itself a conformist, and the architect's thirteenth round is right that in Evans a conformist is the downstream with no say, the opposite of a customer. The vocabulary has no downstream role meaning "negotiated interface, no translation", and it needs none: the relationship type says it. `role-coherence` asks no downstream role on a consumption whose pair has a `customer-supplier` relationship; one written there is still checked (card 128).

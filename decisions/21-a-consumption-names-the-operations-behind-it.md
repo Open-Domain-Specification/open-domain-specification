@@ -115,3 +115,7 @@ The decision bullet says `by` may name "policies of the consumer's bounded conte
 ## Amendment (2026-09-10)
 
 The second note pre-specified transitive answer routing and tied it to decision 17's reopening; the architect's twelfth round showed the tie was wrong. Events already reach through any number of local fronts and an answer stopped after one, and `consumable-kind` made the difference an error that dictates which front a process must issue. An answer routes back along the local `by` chain to the nearest reactor that issued an operation on it, exactly as the note specified; across a boundary it still travels one hop, to the caller and nobody else (card 126).
+
+## Correction (2026-09-10, second)
+
+Card 126's transitive routing added a fourth clause to `routesTo` that returned a single-operation consumer's sole operation as the route for any reactor in the context, without checking that the reactor issues it; with `by` absent a bystander heard the answer and could close a phantom ring, and with `by` written the same shape was refused. The inference behaves as `by: [thatOperation]` would, and the reactor must issue it (card 128, architect's thirteenth round).

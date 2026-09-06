@@ -47,3 +47,7 @@ skill text.
 - Any change to the schema or to a validation rule regenerates two markdown files; the skill
   test fails until they are committed.
 - Users without VS Code copy the `skill/` folder from the npm package by hand.
+
+## Note (2026-09-10)
+
+The generated references stay true because they regenerate; the hand-written ones, `SKILL.md`, the interview playbook, the preferences reference, lagged the validator in six places by the architect's thirteenth round, and the skill is the surface an author is told to trust. Card 129 corrects them and adds a test that fails when one of those sentences returns; every card that changes a rule's behaviour lists the hand-written references among its files from here on.

@@ -37,3 +37,7 @@ A rejection is keyed by its shape, and a contract that refuses with one shape an
 ## Note (2026-09-10)
 
 `rejection-raised` (card 123) told an author that one of two shapes was false when a declined authorisation is both the caller's answer and a fact another context hears; in event storming `PaymentDeclined` is a canonical event because the decision happened even though the payment did not. A rejection answers the caller; an event tells the world; where somebody hears the event, both are true and the rule is quiet (card 126).
+
+## Note (2026-09-10, second)
+
+The 2026-09-10 note said the rule is quiet where somebody hears the event; card 126 counted only other contexts' consumers, so a decline the raising context's own dunning policy reacts to still warned. Somebody includes the context's own reactors (card 128).
