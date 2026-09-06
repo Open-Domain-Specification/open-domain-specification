@@ -3,6 +3,7 @@ column: todo
 labels: [backend, docs]
 priority: low
 agent: developer
+live: true
 updatedAt: 2026-09-10T08:05:00.000Z
 ---
 # The same mistake gets the same answer in JSON and the DSL; the last required keys and three rule texts

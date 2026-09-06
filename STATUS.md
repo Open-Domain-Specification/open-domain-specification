@@ -6,11 +6,11 @@ Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel
 
 ## Now
 
-Card 107 ([a consumption names its agreement; an external operation states its contract; `by` on external and in-context consumers](boards/project-backlog/107-a-consumption-names-its-agreement-an-external-operation-states-its-contract.md), senior-developer) is live in its worktree, finishing RiverMart's second named agreement after two rulings. Card 108 ([JSON and DSL parity, the last required keys, four rule texts](boards/project-backlog/108-the-same-mistake-gets-the-same-answer-in-json-and-the-dsl.md), developer) waits for 107; card 110 ([`SubmitToScheme` sends to the scheme](boards/project-backlog/110-submittoscheme-sends-to-the-scheme.md), developer) waits for 108. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 106 and 109 landed green.
+Card 108 ([JSON and DSL parity, the last required keys, four rule texts](boards/project-backlog/108-the-same-mistake-gets-the-same-answer-in-json-and-the-dsl.md), developer) is live in its worktree; card 110 ([`SubmitToScheme` sends to the scheme](boards/project-backlog/110-submittoscheme-sends-to-the-scheme.md), developer) waits for 108. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 107 and 109 landed green; 107 gave RiverMart the first two named agreements in a reference model.
 
 ## Next
 
-Land 107, dispatch 108, land it, dispatch 110, land it; then the panel (Antigravity via `agy`, Codex via `codex exec -m gpt-6-astra`, a fresh architect-deep) runs an eighth time on that head. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
+Land 108, dispatch 110, land it; then the panel (Antigravity via `agy`, Codex via `codex exec -m gpt-6-astra`, a fresh architect-deep) runs an eighth time on that head. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
 
 ## Later
 
