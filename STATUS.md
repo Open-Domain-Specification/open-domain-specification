@@ -2,15 +2,15 @@
 
 ## Goal / health
 
-Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel is a good, clean, detailed specification for modelling systems the DDD way, answers yes without a caveat, and every independent reviewer agrees. Health: green. Develop CI passes on every commit since the history squash; the landing gate (`npm run verify`) was green at the last landing (card 104). Review panel on the card 104 head: Antigravity yes with named costs (seven consecutive runs, every issue decided ground); Codex no on run 8 with two accepted gaps (card 107) and nine decided; the fresh-context architect's eighth round is running.
+Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel is a good, clean, detailed specification for modelling systems the DDD way, answers yes without a caveat, and every independent reviewer agrees. Health: green. Develop CI passes on every commit since the history squash; the landing gate (`npm run verify`) was green at the last landing (card 104). Review panel on the card 104 head: Antigravity yes with named costs (seven consecutive runs, every issue decided ground); Codex no on run 8 with two accepted gaps (card 107) and nine decided; the fresh-context architect yes with named costs on round 8, with three rule gaps (cards 107 and 108) and one bent exemplar (card 109).
 
 ## Now
 
-Card 106 (required keys optional, rules table, JSON-mode note, duplicate `consumable-kind`; developer) is live in its worktree. Card 107 ([a consumption names its agreement; an external operation states its contract](boards/project-backlog/107-a-consumption-names-its-agreement-an-external-operation-states-its-contract.md), senior-developer) is written and waits for 106, because both touch the schema and the validator. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 105 landed green.
+Card 107 ([a consumption names its agreement; an external operation states its contract; `by` on external and in-context consumers](boards/project-backlog/107-a-consumption-names-its-agreement-an-external-operation-states-its-contract.md), senior-developer) and card 109 ([NorthBank's gateway integrates with the scheme honestly](boards/project-backlog/109-northbank-scheme-gateway-integrates-with-the-payment-scheme.md), developer) are live in their own worktrees; card 108 ([JSON and DSL parity, the last required keys, three rule texts](boards/project-backlog/108-the-same-mistake-gets-the-same-answer-in-json-and-the-dsl.md), developer) waits for 107. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 106 landed green.
 
 ## Next
 
-Land 106, dispatch 107, land it, fold in whatever the architect's eighth round accepts; then the panel (Antigravity via `agy`, Codex via `codex exec -m gpt-6-astra`, a fresh architect-deep) runs an eighth time on that head. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
+Land 107 and 109, dispatch 108, land it; then the panel (Antigravity via `agy`, Codex via `codex exec -m gpt-6-astra`, a fresh architect-deep) runs an eighth time on that head. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
 
 ## Later
 

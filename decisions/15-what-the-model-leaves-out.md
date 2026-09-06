@@ -118,3 +118,7 @@ Earlier entries in this record said a timeout is an event nobody raises and that
 ## Amendment (2026-09-10)
 
 Card 103 named the agreements and left their exchanges pooled: a consumption could not say which named relationship it belongs to, so `relationship-roles-backed` read every crossing between the pair against every agreement and criticised each for the other's role, and the declared direction was whichever relationship came first. A consumption may name its `relationship`; between a pair with one agreement it need not, between a pair with two it must, and `consumption-agreement` says so once (card 107, Codex's eighth review).
+
+### Rules carry no comments
+
+Comments, the grounded statements about the real system, live on the seams: consumables, consumptions and relationships, where the running system diverges from the design. An invariant, a policy or an aggregate cannot cite the test that enforces it, so NorthBank's evidence pack for its rules is their descriptions. Named by the architect's eighth round; the cost is accepted until a model needs the citation, at which point `comments` extends to every named declaration in one change.

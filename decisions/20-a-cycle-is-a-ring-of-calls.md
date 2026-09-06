@@ -41,3 +41,7 @@ The premise that a call binds the caller at the moment of the call fails for a q
 ## Note (2026-09-10)
 
 A declared partnership clears a ring that is nothing but the partnered pair, because the two move as one; it does not clear a longer ring the pair is only part of, since the pair together still depends on the third context (card 104). The fix text says exactly that now.
+
+## Note (2026-09-10)
+
+`reaction-cycle` words a ring of single-operation services calling each other as reactions that trigger themselves, and `relationship-cycle` reports the same ring across contexts. The ring is real and the claim is recursion, so the message says calls, and the ring is reported once (card 108, architect's eighth round).

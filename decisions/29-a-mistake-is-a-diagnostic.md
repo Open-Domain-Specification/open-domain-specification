@@ -24,3 +24,7 @@ A workspace written by hand, in the extension or in JSON, will contain typos. Un
 ## Note (2026-09-09)
 
 A bad reference now survives a round trip on every element that can hold one (card 102). Four cannot, and that is a named cost: a consumption's `consumable`, a relationship's two ends and a relation's `target` are the pair they join, so nothing exists to hold a reference that resolved to nothing, and a consumption's `by` is recorded at the consumer where the diagnostic belongs. An author fixing one of those four fixes it in the file before the model has a place for it, which is where the problems panel points anyway.
+
+## Correction (2026-09-10)
+
+The decision list above says `context-invariant-is-checked` refuses `precondition` and `postcondition`; decision 27's third amendment allows both on a context invariant and refuses only one that names no guard at all, and the rule does that (card 103). The sentence stands as written on the day and this correction is the record.
