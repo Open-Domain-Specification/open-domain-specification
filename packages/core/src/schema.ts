@@ -128,9 +128,9 @@ export interface PolicySchema {
 	 * synchronous because the operation is, so nothing else says so
 	 * (decision 23).
 	 */
-	on: { $ref: string }[];
-	/** The operation consumables this policy issues. */
-	then: { $ref: string }[];
+	on?: { $ref: string }[];
+	/** The operation consumables this policy issues. Optional, like every list in this schema: an absent list is an empty one. */
+	then?: { $ref: string }[];
 }
 
 /**
@@ -186,8 +186,13 @@ export interface ProcessSchema {
 	 * instances would be acting through somebody else's model. An answer and a
 	 * deadline still start nothing, because in both cases the instance had to
 	 * exist before to have been waiting.
+	 *
+	 * Optional, like every list in this schema: an absent list is an empty
+	 * one. `process-starts` still asks for at least one, and reports it as a
+	 * validation error rather than a schema one, so a file that omits `starts`
+	 * loads and is then told what it is missing.
 	 */
-	starts: { $ref: string }[];
+	starts?: { $ref: string }[];
 	/**
 	 * Further event consumables the process waits for or reacts to while an
 	 * instance is alive, and the answers it waits to come back: an answer of an
@@ -199,14 +204,15 @@ export interface ProcessSchema {
 	 * published fact, or calling out and waiting, is how contexts integrate
 	 * (decision 23).
 	 */
-	on: { $ref: string }[];
-	/** The operation consumables of this process's own context that it issues. */
-	then: { $ref: string }[];
+	on?: { $ref: string }[];
+	/** The operation consumables of this process's own context that it issues. Optional, like every list in this schema: an absent list is an empty one. */
+	then?: { $ref: string }[];
 	/**
 	 * What completes an instance: an event consumable, an answer, or a deadline
-	 * named the same way `on` names one.
+	 * named the same way `on` names one. Optional, like every list in this
+	 * schema: an absent list is an empty one.
 	 */
-	ends: { $ref: string }[];
+	ends?: { $ref: string }[];
 	/**
 	 * The time limits this process keeps on its own instances, by id. A
 	 * deadline is an element of the process, so `on` and `ends` name one by
@@ -227,8 +233,13 @@ export interface ProcessSchema {
 export interface BoundedContextSchema {
 	name: string;
 	description: string;
-	/** The subdomains this context serves; a context may serve several. */
-	subdomains: { $ref: string }[];
+	/**
+	 * The subdomains this context serves; a context may serve several.
+	 * Optional, like every list in this schema: an absent list is an empty
+	 * one, and `context-serves-subdomain` says so as a warning rather than the
+	 * loader refusing the file.
+	 */
+	subdomains?: { $ref: string }[];
 	/**
 	 * Marks a context whose model is not coherent (typically legacy) so that
 	 * neighbours know to protect themselves from it. It is still the

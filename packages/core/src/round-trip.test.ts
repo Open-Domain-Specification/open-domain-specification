@@ -517,7 +517,7 @@ describe("a bad ref survives a round trip", () => {
 		[
 			"on",
 			(s) => {
-				s.boundedcontexts.invoicing_bc.policies!.invoice_on_order_placed.on.push(
+				s.boundedcontexts.invoicing_bc.policies!.invoice_on_order_placed.on!.push(
 					{ $ref: GONE },
 				);
 			},

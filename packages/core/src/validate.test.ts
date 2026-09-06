@@ -934,6 +934,69 @@ describe("Workspace.validate", () => {
 	});
 });
 
+/**
+ * A process that waits on the completion of an operation that returns a
+ * shape gets the same `consumable-kind` diagnostic whether it was built with
+ * the DSL or loaded back from the JSON the DSL wrote (card 108).
+ *
+ * The loader used to resolve `.../completed` to `undefined` for a returning
+ * operation, so the JSON path reported `unresolved-ref` and said the
+ * operation did not exist, when it does; the DSL path always built the
+ * `Answer` object and let `consumable-kind` say what was wrong with it.
+ */
+describe("consumable-kind on the completion of a returning operation", () => {
+	function withProcessWaitingOnCompletion() {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const schema = bc.addSchema("Receipt");
+		const svc = bc.addService("S", { description: "", type: "application" });
+		const op = svc.provides("Charge", {
+			description: "",
+			type: "operation",
+			returns: schema,
+		});
+		const started = svc.provides("Start", { description: "", type: "event" });
+		bc.addProcess("Billing", { description: "" })
+			.starts(started)
+			.issues(op)
+			.on(op.completed())
+			.ends(op.completed());
+		return ws;
+	}
+
+	it("reports consumable-kind from the DSL", () => {
+		const ws = withProcessWaitingOnCompletion();
+		const rules = ws.validate().filter((d) => d.rule === "consumable-kind");
+		expect(rules).not.toEqual([]);
+		expect(rules.map((d) => d.message)).toEqual([
+			expect.stringContaining('returns "Receipt"'),
+		]);
+		expect(ws.validate().filter((d) => d.rule === "unresolved-ref")).toEqual(
+			[],
+		);
+	});
+
+	it("reports the same diagnostic after a JSON round trip", () => {
+		const ws = withProcessWaitingOnCompletion();
+		const dsl = ws
+			.validate()
+			.filter((d) => d.rule === "consumable-kind")
+			.map((d) => d.message);
+		const schema = ws.toSchema();
+		const rebuilt = Workspace.fromSchema(
+			JSON.parse(JSON.stringify(schema)),
+		);
+		const viaJson = rebuilt
+			.validate()
+			.filter((d) => d.rule === "consumable-kind")
+			.map((d) => d.message);
+		expect(viaJson).toEqual(dsl);
+		expect(
+			rebuilt.validate().filter((d) => d.rule === "unresolved-ref"),
+		).toEqual([]);
+	});
+});
+
 describe("root-identity", () => {
 	it("wants an identity attribute on the root, and only on the root", () => {
 		const ws = emptyWorkspace();
@@ -1669,6 +1732,34 @@ describe("invariant-in-context", () => {
 		expect(inContext(ws)).toEqual([
 			[
 				'Invariant "Reaches Sideways" of bounded context "Billing" constrains "Discount", which is a value object of bounded context "Billing" that nothing in "Billing" holds; a context\'s invariant holds across its own aggregates and no further',
+				reaching.ref,
+			],
+		]);
+	});
+
+	/**
+	 * A context with no aggregate at all — a quotation service that stores
+	 * nothing (decision 27, third amendment) — whose invariant reaches for a
+	 * value object nothing there holds. The rule catalogue's fix text used to
+	 * tell any reader here to "give an entity ... an attribute typed by it",
+	 * which this context cannot do: it has no entity to give one to. The
+	 * honest fix is a precondition or a postcondition naming the operation's
+	 * own schema instead (card 108).
+	 */
+	it("still refuses a value object nothing holds in a context with no entities", () => {
+		const ws = emptyWorkspace();
+		const quoting = ws.addBoundedContext("Quoting", { description: "" });
+		const rate = quoting.addValueObject("Rate", { description: "" });
+		rate.addAttribute("amount", { type: "decimal" });
+		const requestQuote = quoting
+			.addService("Quoting App", { description: "", type: "application" })
+			.provides("Request Quote", { description: "", type: "operation" });
+		const reaching = quoting
+			.addInvariant("Rate Under The Cap", { description: "" })
+			.constrains(rate, requestQuote);
+		expect(inContext(ws)).toEqual([
+			[
+				'Invariant "Rate Under The Cap" of bounded context "Quoting" constrains "Rate", which is a value object of bounded context "Quoting" that nothing in "Quoting" holds; a context\'s invariant holds across its own aggregates and no further',
 				reaching.ref,
 			],
 		]);
@@ -2911,7 +3002,8 @@ describe("mud-needs-acl", () => {
 
 	/**
 	 * A legacy context, a modern one, and an entity here holding the legacy
-	 * system's key. An identity is a way of taking the mud in too (card 100).
+	 * system's key, with no consumption of the mud at all. A held key is not
+	 * traffic (decision 28, amended; card 108).
 	 */
 	function holdsLegacyKey(bigBallOfMud = true) {
 		const ws = emptyWorkspace();
@@ -2935,22 +3027,16 @@ describe("mud-needs-acl", () => {
 		return { ws, legacy, modern, key };
 	}
 
-	it("warns about an identity into the mud", () => {
-		const { ws, key } = holdsLegacyKey();
-		expect(mudRules(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
-			[
-				"warning",
-				'"Modern" holds "Legacy Customer Key", the identity of "Customer" in "Legacy", and "Legacy" is a big ball of mud; a key from a system nobody can read is its model in yours, so take it in behind an anti-corruption layer and hold an identity of "Modern"\'s own beside it',
-				key.ref,
-			],
-		]);
+	it("says nothing about a held identity into a mud context with no traffic", () => {
+		const { ws } = holdsLegacyKey();
+		expect(mudRules(ws)).toEqual([]);
 	});
 
 	it("says nothing about the same identity into a context that is not mud", () => {
 		expect(mudRules(holdsLegacyKey(false).ws)).toEqual([]);
 	});
 
-	it("goes quiet once the holder translates something out of the mud", () => {
+	it("still warns about an untranslated consumption even where a third context merely holds the mud's key", () => {
 		const { ws, legacy, modern } = holdsLegacyKey();
 		const op = legacy
 			.addService("S", { description: "", type: "application" })
@@ -2959,10 +3045,12 @@ describe("mud-needs-acl", () => {
 				type: "operation",
 				pattern: "open-host-service",
 			});
-		modern
+		const consumption = modern
 			.addService("T", { description: "", type: "application" })
-			.consumes(op, { pattern: "anti-corruption-layer" });
-		expect(mudRules(ws)).toEqual([]);
+			.consumes(op, { pattern: "conformist" });
+		expect(mudRules(ws).map((d) => [d.severity, d.rule, d.ref])).toEqual([
+			["warning", "mud-needs-acl", consumption.ref],
+		]);
 	});
 });
 
@@ -5225,6 +5313,159 @@ describe("reaction-cycle", () => {
 		// Waiting on it says the running instance is the one that wakes, which
 		// is the lifecycle the exemption is for.
 		expect(reactions(restarts({ waits: true }).ws)).toEqual([]);
+	});
+
+	/**
+	 * A ring with no policy or process on it at all: two single-operation
+	 * services calling each other, with nothing that reacts to anything
+	 * (decision 20, note of 2026-09-10; card 108).
+	 */
+	describe("a ring of pure calls, with no reactor on it", () => {
+		it("reports the ring once, as calls, when it stays inside one context", () => {
+			const { ws, bc } = context();
+			const other = bc.addService("Other", {
+				description: "",
+				type: "application",
+			});
+			const app = bc.addService("App2", {
+				description: "",
+				type: "application",
+			});
+			const fromApp = app.provides("From App", {
+				description: "",
+				type: "operation",
+			});
+			const fromOther = other.provides("From Other", {
+				description: "",
+				type: "operation",
+			});
+			app.consumes(fromOther, { by: [fromApp] });
+			other.consumes(fromApp, { by: [fromOther] });
+			expect(reactions(ws)).toHaveLength(1);
+			const [diagnostic] = reactions(ws);
+			expect(diagnostic.severity).toBe("warning");
+			expect(diagnostic.message).toContain("Calls run in a cycle");
+			expect(diagnostic.message).not.toContain("Reactions run in a cycle");
+			expect(diagnostic.message).not.toContain("triggers itself");
+		});
+
+		it("leaves a cross-context ring of pure calls to relationship-cycle", () => {
+			const ws = emptyWorkspace();
+			const a = ws.addBoundedContext("A", { description: "" });
+			const b = ws.addBoundedContext("B", { description: "" });
+			const aApp = a.addService("A App", {
+				description: "",
+				type: "application",
+			});
+			const bApp = b.addService("B App", {
+				description: "",
+				type: "application",
+			});
+			const aOp = aApp.provides("A Op", { description: "", type: "operation" });
+			const bOp = bApp.provides("B Op", { description: "", type: "operation" });
+			aApp.consumes(bOp, { by: [aOp] });
+			bApp.consumes(aOp, { by: [bOp] });
+			a.upstreamOf(b, {});
+			b.upstreamOf(a, {});
+			// relationship-cycle already reports this ring as a ring of calls
+			// between contexts; reaction-cycle has nothing to add to it.
+			expect(
+				ws.validate().filter((d) => d.rule === "relationship-cycle").length,
+			).toBeGreaterThan(0);
+			expect(reactions(ws)).toEqual([]);
+		});
+	});
+
+	/**
+	 * NorthBank's honest gateway shape: a process starts a gateway operation
+	 * that calls an external scheme's operation, which raises the scheme's own
+	 * event; a policy hears that event through an anti-corruption-layer
+	 * consumption and republishes it as the bank's own event, which the
+	 * process then hears. Card 110 wires this into NorthBank's own reference
+	 * model; this is the same shape as a core test workspace (decision 23,
+	 * amended 2026-09-10, second; card 108).
+	 */
+	describe("a process's lifecycle through a translating policy", () => {
+		function gateway() {
+			const ws = emptyWorkspace();
+			const bank = ws.addBoundedContext("Bank", { description: "" });
+			const scheme = ws.addBoundedContext("Scheme", {
+				description: "",
+				external: true,
+			});
+			const schemeApi = scheme.addService("Scheme API", {
+				description: "",
+				type: "application",
+			});
+			const authorised = schemeApi.provides("Authorised", {
+				description: "",
+				type: "event",
+			});
+			const authorise = schemeApi
+				.provides("Authorise", { description: "", type: "operation" })
+				.raises(authorised);
+			const gatewayApp = bank.addService("Gateway", {
+				description: "",
+				type: "application",
+			});
+			const instructionAuthorised = gatewayApp.provides(
+				"Instruction Authorised",
+				{ description: "", type: "event" },
+			);
+			const publishAuthorised = gatewayApp
+				.provides("Publish Authorised", {
+					description: "",
+					type: "operation",
+				})
+				.raises(instructionAuthorised);
+			const sendAuthorisation = gatewayApp.provides("Send Authorisation", {
+				description: "",
+				type: "operation",
+			});
+			gatewayApp.consumes(authorise, {
+				pattern: "conformist",
+				by: [sendAuthorisation],
+			});
+			const translator = bank
+				.addPolicy("Publish Scheme Answer", { description: "" })
+				.on(authorised)
+				.issues(publishAuthorised);
+			gatewayApp.consumes(authorised, {
+				pattern: "anti-corruption-layer",
+				by: [translator],
+			});
+			const requested = gatewayApp.provides("Instruction Requested", {
+				description: "",
+				type: "event",
+			});
+			const process = bank
+				.addProcess("Instruction", { description: "" })
+				.starts(requested)
+				.issues(sendAuthorisation)
+				.on(instructionAuthorised)
+				.ends(instructionAuthorised);
+			return { ws, process, translator };
+		}
+
+		it("is quiet: the ring is the process's lifecycle through the layer", () => {
+			const { ws } = gateway();
+			expect(reactions(ws)).toEqual([]);
+		});
+
+		it("still reports a ring where the policy does not translate through an ACL", () => {
+			// Same shape, but the policy hears the scheme's event as an ordinary
+			// conformist rather than through an anti-corruption-layer consumption:
+			// it is a second reactor with no layer to carry the process's
+			// lifecycle through, so the ring is a genuine loop.
+			const { ws } = gateway();
+			const untranslated = ws
+				.getServiceByRefOrThrow("#/boundedcontexts/bank/services/gateway")
+				.consumptions.find(
+					(c) => c.consumable.name === "Authorised" && c.by.length > 0,
+				);
+			if (untranslated) untranslated.pattern = "conformist";
+			expect(reactions(ws)).toHaveLength(1);
+		});
 	});
 });
 

@@ -83,6 +83,46 @@ describe("a file that leaves its empty collections out", () => {
 			).relations,
 		).toEqual([]);
 	});
+
+	/**
+	 * `subdomains` on a bounded context, `on`/`then` on a policy and
+	 * `starts`/`on`/`then`/`ends` on a process were still required keys, so a
+	 * JSON author who left one out to say "there is none" got a schema error
+	 * instead of the warning or error the validator already gives for an empty
+	 * one; writing `"ends": []` was the only way to say what should have loaded
+	 * from nothing at all (card 108).
+	 */
+	it("loads a context, a policy and a process that leave every one of those keys out", () => {
+		const schema = structuredClone(bare);
+		delete (schema.boundedcontexts.only as { subdomains?: unknown })
+			.subdomains;
+		schema.boundedcontexts.only.policies = {
+			idle: { name: "Idle", description: "" },
+		};
+		schema.boundedcontexts.only.processes = {
+			stuck: { name: "Stuck", description: "" },
+		};
+		const loaded = getWorkspaceFromSchema(schema);
+		const bc = loaded.getBoundedContextByRefOrThrow("#/boundedcontexts/only");
+		const policy = loaded.getPolicyByRefOrThrow(
+			"#/boundedcontexts/only/policies/idle",
+		);
+		const process = loaded.getProcessByRefOrThrow(
+			"#/boundedcontexts/only/processes/stuck",
+		);
+		expect(bc.subdomains.size).toBe(0);
+		expect(policy.events).toEqual([]);
+		expect(policy.commands).toEqual([]);
+		expect(process.startEvents).toEqual([]);
+		expect(process.events).toEqual([]);
+		expect(process.commands).toEqual([]);
+		expect(process.endEvents).toEqual([]);
+		const rules = loaded.validate().map((d) => d.rule);
+		expect(rules).toContain("context-serves-subdomain");
+		expect(rules).toContain("policy-complete");
+		expect(rules).toContain("process-starts");
+		expect(rules).toContain("process-has-ends");
+	});
 });
 
 /**

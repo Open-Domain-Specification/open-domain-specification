@@ -2729,23 +2729,18 @@ const partnershipBacked: Rule = (workspace) => {
  * Nothing conforms to a big ball of mud. A consumption out of one is
  * translated behind an anti-corruption layer or the mess spreads.
  *
- * An identity is a way of taking the mud in too. An entity here holding the
- * legacy system's key is written against that system's identity scheme, the
- * one thing about a forty-year-old core nobody can read and nobody may change;
- * unwrapped, it spreads into every page and payload that shows the key, and
- * the day the legacy system is carved up there is no seam to cut at. The
- * repair is the same one: take the id in through an operation this context
- * translates, and hold an identity of its own beside it. So the layer that
- * clears it is a translated consumption from the mud, which is what a context
- * doing the honest thing already has (card 100).
+ * The rule used to treat an identity attribute naming a mud context as
+ * traffic of its own, and cleared the warning on any anti-corruption
+ * consumption from that mud anywhere in the model. That let a context that
+ * received a legacy key at second hand — through a third context, holding no
+ * consumption of the mud at all — silence the warning only by inventing one
+ * it had no reason to make. A held key is not a crossing; the rule reads
+ * consumptions, which is where the mess actually enters a context, and says
+ * nothing about an identity attribute that merely names the mud (decision 28,
+ * amended; card 108).
  */
 const mudNeedsAcl: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
-	/** Whether this context already translates something out of that one. */
-	const translates = (consumer: BoundedContext, mud: BoundedContext) =>
-		crossingsBetween(workspace, mud, consumer).some(
-			(it) => it.pattern === "anti-corruption-layer",
-		);
 	for (const consumption of consumptionsOf(workspace)) {
 		const provider = consumption.consumable.provider.boundedcontext;
 		const consumer = consumption.consumer.boundedcontext;
@@ -2759,18 +2754,6 @@ const mudNeedsAcl: Rule = (workspace) => {
 			rule: "mud-needs-acl",
 			message: `"${consumer.name}" consumes "${consumption.consumable.name}" from "${provider.name}" ${how}, and "${provider.name}" is a big ball of mud; translate it behind an anti-corruption layer so its model stays out of "${consumer.name}"`,
 			ref: consumption.ref,
-		});
-	}
-	for (const crossing of identityCrossings([
-		...workspace.boundedcontexts.values(),
-	])) {
-		if (!crossing.to.bigBallOfMud) continue;
-		if (translates(crossing.from, crossing.to)) continue;
-		diagnostics.push({
-			severity: "warning",
-			rule: "mud-needs-acl",
-			message: `"${crossing.from.name}" holds "${crossing.attribute.name}", ${identityNamed(crossing)}, and "${crossing.to.name}" is a big ball of mud; a key from a system nobody can read is its model in yours, so take it in behind an anti-corruption layer and hold an identity of "${crossing.from.name}"'s own beside it`,
-			ref: crossing.attribute.ref,
 		});
 	}
 	return diagnostics;
@@ -4053,6 +4036,67 @@ function reEntersWhileAlive(process: Process, before: Reactor): boolean {
 }
 
 /**
+ * Whether a policy only translates: it hears one of its events through an
+ * anti-corruption-layer consumption, and what it issues raises its own
+ * context's events rather than doing nothing visible.
+ *
+ * That is the gateway policy NorthBank's honest wiring needed: the scheme
+ * answers, the policy hears the answer as the event it publishes through its
+ * own translated consumption, and it republishes it as the bank's own fact.
+ * It starts nothing the process did not start and holds no state of its own,
+ * so it is not a second reactor for {@link isProcessLifecycleThroughLayer}'s
+ * purposes — it is the layer the process's lifecycle runs through.
+ */
+function isTranslatingPolicy(policy: Policy): boolean {
+	const bc = policy.boundedcontext;
+	const members = [...bc.aggregates.values(), ...bc.services.values()];
+	const hearsThroughLayer = policy.events.some(
+		(trigger) =>
+			trigger instanceof Consumable &&
+			members.some((member) =>
+				member.consumptions.some(
+					(c) =>
+						c.consumable === trigger &&
+						c.pattern === "anti-corruption-layer" &&
+						c.by.includes(policy),
+				),
+			),
+	);
+	if (!hearsThroughLayer) return false;
+	return policy.commands.some((op) => op.raisedEvents.length > 0);
+}
+
+/**
+ * Whether a ring is one process's lifecycle running through a translating
+ * layer, rather than a cycle.
+ *
+ * {@link isProcessLifecycle} exempts a ring on which the process is the only
+ * reactor. NorthBank's honest gateway wiring put a second reactor on the
+ * ring: the policy that hears the scheme's answer through an
+ * anti-corruption-layer consumption and republishes it as the bank's own
+ * event, which the process then hears. That policy translates; it starts
+ * nothing the process did not start and holds no state between events of its
+ * own, so a ring on which one process sits and every other reactor is such a
+ * translating policy is still the process's lifecycle, carried through the
+ * layer rather than reported twice — once for each direction of the same call
+ * (decision 23, amended 2026-09-10, second; card 108).
+ */
+function isProcessLifecycleThroughLayer(cycle: Reactor[]): boolean {
+	const reactors = cycle.filter(
+		(node): node is Policy | Process =>
+			node instanceof Process || node instanceof Policy,
+	);
+	const processes = reactors.filter(
+		(node): node is Process => node instanceof Process,
+	);
+	const policies = reactors.filter(
+		(node): node is Policy => node instanceof Policy,
+	);
+	if (processes.length !== 1 || policies.length === 0) return false;
+	return policies.every(isTranslatingPolicy);
+}
+
+/**
  * The reactions form no cycle: no operation raises an event whose policy or
  * process issues an operation that leads, however far around, back to the
  * first.
@@ -4066,7 +4110,22 @@ function reEntersWhileAlive(process: Process, before: Reactor): boolean {
  * loop nobody owns end to end is the one worth spelling out.
  *
  * One shape is exempt: a process fed by its own steps, which is a lifecycle
- * and not a ring (see {@link isProcessLifecycle}).
+ * and not a ring (see {@link isProcessLifecycle}); another is a ring with a
+ * process and a translating policy on it, its lifecycle through an
+ * anti-corruption layer (see {@link isProcessLifecycleThroughLayer}).
+ *
+ * A ring with no policy or process on it at all is not a chain of reactions —
+ * nothing on it wakes on anything, it is a call reaching the next operation
+ * and on round to itself — so the claim that "the chain triggers itself" is
+ * false of it and the word "reactions" is the wrong word. Where every step of
+ * such a ring crosses a context, `relationship-cycle` already walks the same
+ * ring as a ring of calls between contexts, and reporting it again here would
+ * say the same thing twice in two different words; this rule stays quiet and
+ * leaves it there. Where the ring stays inside one context — services calling
+ * each other with no reactor between any of them — `relationship-cycle`
+ * cannot see it at all, since that rule walks relationships between
+ * contexts, so this rule reports it once, honestly, as calls (decision 20,
+ * note of 2026-09-10; card 108).
  */
 const reactionCycle: Rule = (workspace) => {
 	const chain = new ReactionChain(workspace.boundedcontexts.values());
@@ -4076,22 +4135,31 @@ const reactionCycle: Rule = (workspace) => {
 		(node) => node.ref,
 	)
 		.filter((cycle) => !isProcessLifecycle(cycle))
-		.map((cycle) => {
+		.filter((cycle) => !isProcessLifecycleThroughLayer(cycle))
+		.flatMap((cycle) => {
 			const contexts = [...new Set(cycle.map((n) => n.boundedcontext))];
 			const across =
 				contexts.length > 1
 					? `; it runs through ${contexts.map((c) => `"${c.name}"`).join(" and ")}, so no one context can see the whole ring`
 					: "";
-			return {
-				severity: "warning" as const,
-				rule: "reaction-cycle",
-				message: `Reactions run in a cycle: ${[...cycle, cycle[0]]
-					.map((n) => `"${n.name}"`)
-					.join(
-						" -> ",
-					)}; the chain triggers itself and nothing in the model says what ends it${across}`,
-				ref: cycle[0].ref,
-			};
+			const hasReactor = cycle.some(
+				(node) => node instanceof Policy || node instanceof Process,
+			);
+			if (!hasReactor && contexts.length > 1) return [];
+			const named = [...cycle, cycle[0]]
+				.map((n) => `"${n.name}"`)
+				.join(" -> ");
+			const message = hasReactor
+				? `Reactions run in a cycle: ${named}; the chain triggers itself and nothing in the model says what ends it${across}`
+				: `Calls run in a cycle: ${named}; each of these calls the next and nothing on the ring reacts to anything, so it is a loop of calls rather than a chain of reactions${across}`;
+			return [
+				{
+					severity: "warning" as const,
+					rule: "reaction-cycle",
+					message,
+					ref: cycle[0].ref,
+				},
+			];
 		});
 };
 
@@ -4542,7 +4610,7 @@ const RULES: CataloguedRule[] = [
 		summary:
 			"Every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, a value object something in the context holds, its own or a borrowed one, or one of its operations. A precondition may also constrain attributes of the schema the operation it guards takes, and a postcondition those of the request, the answer and the refusals; both follow composition into the shapes those compose.",
 		why: "A context's invariant is the rule that holds across its own instances — one open application per customer, one active offer per seller and SKU — and the context can hold it because everything it counts is its own to read in one place. A value borrowed over a shared kernel is its own to read too, once one of its aggregates holds one: the instance is here even though the definition is not, and the holding is the whole question, asked of the context's own values as much as of borrowed ones. A rule reaching into another context's entities, or into a value nothing here holds, counts what a neighbour owns or what nobody keeps, which is a consistency no boundary offers. That rule is a policy or a process reacting to the other context's events instead. A precondition is the one rule that may look at a request: it runs before the call, and what it checks — pickup before delivery, a positive weight — is often in the call rather than in anything saved, so it may name attributes of the schema its guarded operation takes. That is as far as it reaches, because the answer does not exist when it is checked. A postcondition is its mirror and may name what that operation answers or refuses with, and the request it relates them to. Either follows composition into the shapes those compose, because the fields of a nested shape are fields the call carries.",
-		fix: "Point the invariant at this context's own model, or at a value object its aggregates hold — give an entity or a value here an attribute typed by it, which is what says the context holds one — or move the rule to the context that owns what it counts. Where the two contexts really must agree, model the reaction: the other context raises an event and a policy here issues the operation that responds. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them; if it is a guarantee about what that call answers with, mark it a postcondition instead.",
+		fix: "Point the invariant at this context's own model, or at a value object its aggregates hold — give an entity or a value here an attribute typed by it, which is what says the context holds one — or move the rule to the context that owns what it counts. A context with no entity at all cannot be given one just to hold a value object; a quotation service that stores nothing has no aggregate to reach for, so a rule of its own is a precondition or a postcondition on its operation instead, naming the schema's attributes rather than the value object (decision 27, third amendment) — or, where the value really is state this context should keep, add the aggregate that holds it. Where the two contexts really must agree, model the reaction: the other context raises an event and a policy here issues the operation that responds. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them; if it is a guarantee about what that call answers with, mark it a postcondition instead.",
 		check: invariantInContext,
 	},
 	{
@@ -4648,9 +4716,9 @@ const RULES: CataloguedRule[] = [
 		rule: "mud-needs-acl",
 		severities: ["warning"],
 		summary:
-			"A consumption from a big ball of mud declares the anti-corruption-layer downstream role, and an identity naming one is taken in behind a layer too.",
-		why: "A big ball of mud has no coherent model to conform to. Taking its shapes as they come drags its confusion across the boundary, and the consumer's own language starts to look like the legacy one. An identity is one of those shapes: an entity holding the legacy key is written against the one part of a system nobody can read and nobody may change, the key spreads into every page and payload that shows it, and the day the legacy system is carved up there is no seam to cut at.",
-		fix: "Set pattern: anti-corruption-layer on the consumption and translate at the edge. For an identity, what clears it is a consumption of that context's consumables, anywhere in this one, declaring the anti-corruption-layer role: take the key in through something this context translates, and hold an identity of its own beside it. Or drop bigBallOfMud if the context is no longer one.",
+			"A consumption from a big ball of mud declares the anti-corruption-layer downstream role.",
+		why: "A big ball of mud has no coherent model to conform to. Taking its shapes as they come drags its confusion across the boundary, and the consumer's own language starts to look like the legacy one. The rule reads consumptions, because that is where the mess actually enters a context; an identity attribute that merely names a mud context is not itself a crossing, and treating it as one used to let a context that received a legacy key at second hand, through a third context, clear the warning only by inventing a consumption it had no other reason to make (decision 28, amended; card 108).",
+		fix: "Set pattern: anti-corruption-layer on the consumption and translate at the edge. Or drop bigBallOfMud if the context is no longer one.",
 		check: mudNeedsAcl,
 	},
 	{
@@ -4907,8 +4975,8 @@ const RULES: CataloguedRule[] = [
 		severities: ["warning"],
 		summary:
 			"The reactions form no cycle: no operation raises an event whose policy or process issues an operation that leads back to the first.",
-		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with one exemption that is the whole point of it: a process fed by its own steps — it issues an operation, the operation raises the event it waits for next, and so on to the end — is a lifecycle, not a ring, because the process holds state and declares what ends it (decision 23). So a cycle is reported only when the walk comes back to a reactor other than the one process it started from: a ring through two processes, or through a process and a policy, is a genuine loop and is reported. The exemption asks for one more thing, that the ring comes back to an instance already running: a process whose own operation raises the event it starts on makes a new instance every time round, so no instance's state holds the ring together and nothing says what stops the next one.",
-		fix: "Break the ring, usually one of the policies is reacting to too broad an event or issues an operation it should not. Where the ring closes on a process's own starting event, the step that restarts it is the one to look at: wait on that fact with `on` if the instance is meant to carry on, or raise a different event if a fresh instance is really meant each time and say in the process's description what stops the next one. If the loop is a real feedback loop that converges, say what ends it in the description of the policy that closes the ring; the model has no conditions on purpose (decision 15), so the ending condition is prose a reader finds where the loop closes, and the warning stands to send them there.",
+		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with two exemptions that are the whole point of it. A process fed by its own steps — it issues an operation, the operation raises the event it waits for next, and so on to the end — is a lifecycle, not a ring, because the process holds state and declares what ends it (decision 23). And a ring on which one process sits and every other reactor is a policy that only translates — hearing its event through an anti-corruption-layer consumption and republishing it as its own context's fact — is that process's lifecycle carried through the layer, not a second reactor (decision 23, amended 2026-09-10, second). So a cycle is reported only when the walk comes back to a reactor other than that process or such a translating policy: a ring through two processes, or through a process and an ordinary policy, is a genuine loop and is reported. The exemption asks for one more thing, that the ring comes back to an instance already running: a process whose own operation raises the event it starts on makes a new instance every time round, so no instance's state holds the ring together and nothing says what stops the next one. A ring with no policy or process on it at all is not a chain of reactions — nothing on it wakes on anything — so it is worded as calls rather than reactions, and reported once: where every step of it crosses a context, `relationship-cycle` already reports the same ring as a ring of calls between contexts, and this rule stays quiet there (decision 20, note of 2026-09-10).",
+		fix: "Break the ring, usually one of the policies is reacting to too broad an event or issues an operation it should not. Where the ring closes on a process's own starting event, the step that restarts it is the one to look at: wait on that fact with `on` if the instance is meant to carry on, or raise a different event if a fresh instance is really meant each time and say in the process's description what stops the next one. If the loop is a real feedback loop that converges, say what ends it in the description of the policy that closes the ring; the model has no conditions on purpose (decision 15), so the ending condition is prose a reader finds where the loop closes, and the warning stands to send them there. If the ring is nothing but calls with no reactor at all, the fix is `relationship-cycle`'s: an anti-corruption layer, a partnership, or turning a call into an event.",
 		check: reactionCycle,
 	},
 	{

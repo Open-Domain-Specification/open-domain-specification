@@ -1,9 +1,11 @@
 ---
-column: todo
+column: review
 labels: [backend, docs]
 priority: low
 agent: developer
-updatedAt: 2026-09-10T08:05:00.000Z
+clean-code-swept: true
+live: false
+updatedAt: 2026-09-06T11:45:00.000Z
 ---
 # The same mistake gets the same answer in JSON and the DSL; the last required keys and three rule texts
 
@@ -11,12 +13,22 @@ The architect's eighth round found five hygiene gaps. A process waiting on the c
 
 ## Checklist
 
-- [ ] The loader resolves a reference to the completion of an operation that returns a shape, and `consumable-kind` says what is wrong; the DSL and the JSON path give the same diagnostic for the same file
-- [ ] `subdomains` on `BoundedContextSchema`, `on`, `then`, `ends` and `starts` on `ProcessSchema`, `on` and `then` on `PolicySchema` optional and empty by default on load; JSON schema regenerated; the schema comment about optional maps is true
-- [ ] `mud-needs-acl` reads consumptions from the mud context, not identity attributes naming it; a held key is not traffic; the fix text no longer asks for a consumption
-- [ ] `reaction-cycle` reports a ring with no policy or process on it once, as calls, or leaves it to `relationship-cycle` where that rule already reports the same ring; the message names what it found
-- [ ] `invariant-in-context` fix text for a value-object target in a context with no entities says the honest fix
-- [ ] `reaction-cycle` treats a ring on which one process sits and every other reactor is a translating policy, one that hears an event through an `anti-corruption-layer` consumption and whose operations raise the context's own events, as that process's lifecycle through the layer, not a cycle (decision 23, amended 2026-09-10); test with the NorthBank shape card 110 describes
-- [ ] `apps/docs/docs/3-core/4-validation.md` rows for the rules touched; `bash scripts/verify-all.sh` green
+- [x] The loader resolves a reference to the completion of an operation that returns a shape, and `consumable-kind` says what is wrong; the DSL and the JSON path give the same diagnostic for the same file
+- [x] `subdomains` on `BoundedContextSchema`, `on`, `then`, `ends` and `starts` on `ProcessSchema`, `on` and `then` on `PolicySchema` optional and empty by default on load; JSON schema regenerated; the schema comment about optional maps is true
+- [x] `mud-needs-acl` reads consumptions from the mud context, not identity attributes naming it; a held key is not traffic; the fix text no longer asks for a consumption
+- [x] `reaction-cycle` reports a ring with no policy or process on it once, as calls, or leaves it to `relationship-cycle` where that rule already reports the same ring; the message names what it found
+- [x] `invariant-in-context` fix text for a value-object target in a context with no entities says the honest fix
+- [x] `reaction-cycle` treats a ring on which one process sits and every other reactor is a translating policy, one that hears an event through an `anti-corruption-layer` consumption and whose operations raise the context's own events, as that process's lifecycle through the layer, not a cycle (decision 23, amended 2026-09-10); test with the NorthBank shape card 110 describes
+- [x] `apps/docs/docs/3-core/4-validation.md` rows for the rules touched; `bash scripts/verify-all.sh` green
+
+## Gates
+
+- [x] clean-code-swept — reviewed the diff for drive-by changes; only the six hygiene gaps in scope were touched, tests added per checklist item, `bash scripts/verify-all.sh` green end to end (developer, 2026-09-06T11:45:00.000Z)
 
 ## Comments
+
+- **developer** (2026-09-06T11:45:00.000Z): Fixed all six hygiene gaps from the architect's eighth round. `Workspace.getAnswerByRef` in packages/core/src/workspace.ts:496-513 used to return `undefined` for `.../completed` on an operation that returns a shape, so the JSON path reported `unresolved-ref` instead of letting `consumable-kind` say what was wrong; it now always resolves the completion and lets `Answer.declared` (packages/core/src/workspace.ts:1656) do the job the DSL path already did. Added a DSL-vs-JSON-round-trip test in packages/core/src/validate.test.ts:937-991. Made `subdomains` (packages/core/src/schema.ts:230-236), policy `on`/`then` (packages/core/src/schema.ts:120-133) and process `starts`/`on`/`then`/`ends` (packages/core/src/schema.ts:172-217) optional, matching the "every list is optional" comment already on the schema; `workspace-from-schema.ts`'s `refs.many` already tolerated `undefined`, so no loader change was needed there. Regenerated the JSON schema via `npm run build -w packages/core` and confirmed it against `models/petstore/.ods/schema.json`. Added a loader test in packages/core/src/workspace-from-schema.test.ts:53-92 covering all three schemas with the keys left out entirely.
+- **developer** (2026-09-06T11:45:00.000Z): Rewrote `mudNeedsAcl` in packages/core/src/validate.ts:2728-2760 to drop the `identityCrossings` loop entirely — a held identity attribute naming a mud context is no longer treated as traffic, only an actual consumption is. Updated the rule-catalog `why`/`fix` text at packages/core/src/validate.ts:4715-4723 to match. Updated tests in packages/core/src/validate.test.ts:2912-2947 (identity-only is now silent; a real consumption still warns even where a third context merely holds the mud's key).
+- **developer** (2026-09-06T11:45:00.000Z): Reworked `reactionCycle` in packages/core/src/validate.ts:4130-4180: a ring with no policy or process on it is worded "Calls run in a cycle" rather than "Reactions run in a cycle... triggers itself", and is skipped where it crosses more than one context (left to `relationship-cycle`), reported once where it stays inside one context. Added `isTranslatingPolicy` (packages/core/src/validate.ts:4050-4067) and `isProcessLifecycleThroughLayer` (packages/core/src/validate.ts:4084-4097) implementing decision 23's second 2026-09-10 amendment: a ring with one process and every other reactor a policy that hears its event through an `anti-corruption-layer` consumption and republishes it as its own context's event is that process's lifecycle, not a cycle. Wrote a NorthBank-shaped core test workspace (not NorthBank itself, per the brief) in packages/core/src/validate.test.ts:5318-5398 covering the quiet case, an untranslated-policy control that still reports, the no-reactor same-context case, and the no-reactor cross-context case left to `relationship-cycle`.
+- **developer** (2026-09-06T11:45:00.000Z): Rewrote `invariant-in-context`'s fix text (packages/core/src/validate.ts:4608-4614) so a context with no entity at all — a quotation service that stores nothing — is told the honest fix (a precondition/postcondition naming the operation's schema, or adding the aggregate that holds the value) instead of "give an entity ... an attribute" it cannot act on. Added a test for that shape in packages/core/src/validate.test.ts:1722-1747.
+- **developer** (2026-09-06T11:45:00.000Z): Updated docs rows for `mud-needs-acl` and `reaction-cycle` in apps/docs/docs/3-core/4-validation.md:45,74 to describe the new behaviour; `apps/docs/tests/validation-rules.doc.test.ts` still passes (no rule ids added or removed). Regenerated `packages/skill/skill/references/*.md` via `npm run generate` in packages/skill so the skill's copies of the rule catalogue and model reference match. Ran `bash scripts/verify-all.sh` twice (once before, once after the catalogue-text follow-up) — green end to end both times, 677 core tests, all reference models, pages e2e suite included.
