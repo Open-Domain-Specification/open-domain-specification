@@ -6,6 +6,7 @@ import {
 	type BoundedContextSchema,
 	boundedcontextRef,
 	contextInvariantRef,
+	domainRef,
 	entityRef,
 	invariantRef,
 	ODS_VERSION,
@@ -14,6 +15,8 @@ import {
 	type ServiceSchema,
 	schemaRef,
 	serviceRef,
+	subdomainRef,
+	teamRef,
 	termRef,
 	valueObjectInvariantRef,
 	valueObjectRef,
@@ -83,6 +86,141 @@ function site(kind: string, name: string, ref: string): Site {
 }
 
 /**
+ * The field names this metamodel knows for each kind of raw JSON object the
+ * loader reads, mirroring the interfaces in `schema.ts`.
+ *
+ * A field outside this set is a mistake in the file rather than a mistake in
+ * the model, so it is reported by {@link checkUnknownFields} rather than by a
+ * rule that reads the workspace: there is nowhere on the built element to
+ * keep a field this metamodel does not know (card 121).
+ */
+const KNOWN_FIELDS = {
+	workspace: [
+		"$schema",
+		"id",
+		"odsVersion",
+		"name",
+		"homepage",
+		"logoUrl",
+		"primaryColor",
+		"description",
+		"version",
+		"options",
+		"domains",
+		"boundedcontexts",
+		"relationships",
+		"teams",
+	],
+	domain: ["name", "description", "subdomains"],
+	subdomain: ["name", "type", "description"],
+	team: ["name", "description", "homepage"],
+	boundedcontext: [
+		"name",
+		"description",
+		"subdomains",
+		"bigBallOfMud",
+		"external",
+		"team",
+		"aggregates",
+		"invariants",
+		"services",
+		"policies",
+		"processes",
+		"glossary",
+		"valueobjects",
+		"schemas",
+	],
+	aggregate: ["name", "description", "entities", "invariants", "provides", "consumes"],
+	service: ["type", "name", "description", "provides", "consumes"],
+	entity: ["root", "name", "description", "specialises", "attributes", "relations"],
+	valueobject: ["name", "description", "specialises", "attributes", "relations", "invariants"],
+	process: [
+		"name",
+		"description",
+		"starts",
+		"on",
+		"then",
+		"ends",
+		"deadlines",
+		"comments",
+		"disposition",
+	],
+	policy: ["name", "description", "on", "then"],
+	deadline: ["name", "description", "after", "from"],
+	consumable: [
+		"name",
+		"description",
+		"type",
+		"pattern",
+		"internal",
+		"schema",
+		"returns",
+		"rejects",
+		"raises",
+		"comments",
+		"disposition",
+	],
+	consumption: ["consumable", "pattern", "by", "relationship", "comments", "disposition"],
+	attribute: [
+		"name",
+		"type",
+		"description",
+		"identity",
+		"optional",
+		"valueobject",
+		"schema",
+		"identifies",
+	],
+	invariant: ["name", "description", "constrains", "precondition", "postcondition"],
+	glossaryTerm: ["name", "definition", "aliases", "embodiedBy"],
+	dataSchema: ["name", "description", "attributes"],
+	entityRelation: ["target", "relation", "label", "cardinality", "for"],
+	directedRelationship: [
+		"type",
+		"name",
+		"upstream",
+		"downstream",
+		"upstreamRoles",
+		"downstreamRoles",
+		"description",
+		"comments",
+		"disposition",
+	],
+	symmetricRelationship: [
+		"type",
+		"name",
+		"participants",
+		"description",
+		"comments",
+		"disposition",
+	],
+} as const satisfies Record<string, readonly string[]>;
+
+/**
+ * Records `owner`'s unknown fields on `workspace`, one {@link UnknownField}
+ * per field of `raw` that `kind` does not know.
+ *
+ * Runs after the field is dropped rather than in place of it: the rest of the
+ * element still loads, and the round trip still drops the field, the way it
+ * always has. `ref` is the JSON path of the raw object itself, so the
+ * reported field path is `${ref}/${field}`.
+ */
+function checkUnknownFields(
+	workspace: Workspace,
+	owner: string,
+	ref: string,
+	kind: keyof typeof KNOWN_FIELDS,
+	raw: object | undefined,
+): void {
+	if (!raw) return;
+	const known: readonly string[] = KNOWN_FIELDS[kind];
+	for (const field of Object.keys(raw)) {
+		if (known.includes(field)) continue;
+		workspace.unknownFields.push({ ref: `${ref}/${field}`, owner, field });
+	}
+}
+
+/**
  * Resolves the `$ref`s a file writes, and records the ones that do not
  * resolve instead of throwing on them.
  *
@@ -99,7 +237,7 @@ function site(kind: string, name: string, ref: string): Site {
  * the model, and it should stop the run.
  */
 class Refs {
-	constructor(private readonly workspace: Workspace) {}
+	constructor(readonly workspace: Workspace) {}
 
 	/**
 	 * One optional ref: what it names, or `undefined` with the miss recorded.
@@ -239,6 +377,7 @@ function addProvides(
 		);
 		const returns = refs.one(at, "returns", A_SCHEMA, returnsRef);
 		const request = refs.one(at, "schema", A_SCHEMA, schemaRef);
+		checkUnknownFields(refs.workspace, at.owner, at.ref, "consumable", consumableSchema);
 		provider.addConsumable(consumableSchema.name, {
 			...rest,
 			id,
@@ -303,6 +442,13 @@ function addConsumes(
 			consumption.consumable,
 		);
 		if (!consumable) continue;
+		checkUnknownFields(
+			refs.workspace,
+			at.owner,
+			`${at.ref}/consumes`,
+			"consumption",
+			consumption,
+		);
 		consumer.addConsumption(consumable, {
 			...consumption,
 			by: refs.many(
@@ -364,6 +510,7 @@ function addAttributes(
 			`${owner.name}.${attributeSchema.name}`,
 			`#/${owner.path}/attributes/${id}`,
 		);
+		checkUnknownFields(refs.workspace, at.owner, at.ref, "attribute", attributeSchema);
 		owner.addAttribute(attributeSchema.name, {
 			...attributeSchema,
 			id,
@@ -391,6 +538,13 @@ function addDomains(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 			...domainSchema,
 			id,
 		});
+		checkUnknownFields(
+			workspace,
+			`Domain "${domainSchema.name}"`,
+			domainRef(id).$ref,
+			"domain",
+			domainSchema,
+		);
 
 		for (const [subdomainId, subdomainSchema] of Object.entries(
 			domainSchema.subdomains,
@@ -402,6 +556,13 @@ function addDomains(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 				...subdomainSchema,
 				id: subdomainId,
 			});
+			checkUnknownFields(
+				workspace,
+				`Subdomain "${subdomainSchema.name}"`,
+				subdomainRef(id, subdomainId).$ref,
+				"subdomain",
+				subdomainSchema,
+			);
 		}
 	}
 }
@@ -410,6 +571,13 @@ function addTeams(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 	for (const [id, teamSchema] of Object.entries(workspaceSchema.teams)) {
 		debug(`Adding team: ${teamSchema.name}`);
 		workspace.addTeam(teamSchema.name, { ...teamSchema, id });
+		checkUnknownFields(
+			workspace,
+			`Team "${teamSchema.name}"`,
+			teamRef(id).$ref,
+			"team",
+			teamSchema,
+		);
 	}
 }
 
@@ -439,6 +607,13 @@ function addBoundedContext(
 			),
 		},
 	);
+	checkUnknownFields(
+		workspace,
+		at.owner,
+		at.ref,
+		"boundedcontext",
+		boundedcontextSchema,
+	);
 
 	for (const [serviceId, serviceSchema] of entriesOf(
 		boundedcontextSchema.services,
@@ -448,6 +623,13 @@ function addBoundedContext(
 			...serviceSchema,
 			id: serviceId,
 		});
+		checkUnknownFields(
+			workspace,
+			`Service "${serviceSchema.name}"`,
+			serviceRef(id, serviceId).$ref,
+			"service",
+			serviceSchema,
+		);
 	}
 
 	for (const [termId, termSchema] of entriesOf(boundedcontextSchema.glossary)) {
@@ -456,6 +638,13 @@ function addBoundedContext(
 			id: termId,
 			embodiedBy: undefined,
 		});
+		checkUnknownFields(
+			workspace,
+			`Glossary term "${termSchema.name}"`,
+			termRef(id, termId).$ref,
+			"glossaryTerm",
+			termSchema,
+		);
 	}
 
 	for (const [invariantId, invariantSchema] of entriesOf(
@@ -465,6 +654,13 @@ function addBoundedContext(
 			...invariantSchema,
 			id: invariantId,
 		});
+		checkUnknownFields(
+			workspace,
+			`Invariant "${invariantSchema.name}"`,
+			contextInvariantRef(id, invariantId).$ref,
+			"invariant",
+			invariantSchema,
+		);
 	}
 
 	// The consumables a policy joins may live in any context, so its two lists
@@ -474,6 +670,13 @@ function addBoundedContext(
 	)) {
 		const { on: _on, then: _then, ...rest } = policySchema;
 		boundedcontext.addPolicy(policySchema.name, { ...rest, id: policyId });
+		checkUnknownFields(
+			workspace,
+			`Policy "${policySchema.name}"`,
+			policyRef(id, policyId).$ref,
+			"policy",
+			policySchema,
+		);
 	}
 
 	// The consumables a process joins may live in any context, so its four
@@ -495,6 +698,13 @@ function addBoundedContext(
 			...rest,
 			id: processId,
 		});
+		checkUnknownFields(
+			workspace,
+			`Process "${processSchema.name}"`,
+			processRef(id, processId).$ref,
+			"process",
+			processSchema,
+		);
 		for (const [deadlineId, deadlineSchema] of Object.entries(
 			deadlines ?? {},
 		)) {
@@ -505,6 +715,13 @@ function addBoundedContext(
 				...deadlineRest,
 				id: deadlineId,
 			});
+			checkUnknownFields(
+				workspace,
+				`Deadline "${deadlineSchema.name}"`,
+				`${process.ref}/deadlines/${deadlineId}`,
+				"deadline",
+				deadlineSchema,
+			);
 		}
 	}
 
@@ -515,6 +732,13 @@ function addBoundedContext(
 			...schemaSchema,
 			id: schemaId,
 		});
+		checkUnknownFields(
+			workspace,
+			`Schema "${schemaSchema.name}"`,
+			schemaRef(id, schemaId).$ref,
+			"dataSchema",
+			schemaSchema,
+		);
 	}
 
 	for (const [valueobjectId, valueobjectSchema] of entriesOf(
@@ -527,6 +751,13 @@ function addBoundedContext(
 			id: valueobjectId,
 			specialises: undefined,
 		});
+		checkUnknownFields(
+			workspace,
+			`Value object "${valueobjectSchema.name}"`,
+			valueObjectRef(id, valueobjectId).$ref,
+			"valueobject",
+			valueobjectSchema,
+		);
 
 		for (const [invariantId, invariantSchema] of entriesOf(
 			valueobjectSchema.invariants,
@@ -535,6 +766,13 @@ function addBoundedContext(
 				...invariantSchema,
 				id: invariantId,
 			});
+			checkUnknownFields(
+				workspace,
+				`Invariant "${invariantSchema.name}"`,
+				valueObjectInvariantRef(id, valueobjectId, invariantId).$ref,
+				"invariant",
+				invariantSchema,
+			);
 		}
 	}
 
@@ -548,6 +786,13 @@ function addBoundedContext(
 			...aggregateSchema,
 			id: aggregateId,
 		});
+		checkUnknownFields(
+			workspace,
+			`Aggregate "${aggregateSchema.name}"`,
+			aggregateRef(id, aggregateId).$ref,
+			"aggregate",
+			aggregateSchema,
+		);
 
 		for (const [invariantId, invariantSchema] of entriesOf(
 			aggregateSchema.invariants,
@@ -556,6 +801,13 @@ function addBoundedContext(
 				...invariantSchema,
 				id: invariantId,
 			});
+			checkUnknownFields(
+				workspace,
+				`Invariant "${invariantSchema.name}"`,
+				invariantRef(id, aggregateId, invariantId).$ref,
+				"invariant",
+				invariantSchema,
+			);
 		}
 		for (const [entityId, entitySchema] of entriesOf(
 			aggregateSchema.entities,
@@ -565,6 +817,13 @@ function addBoundedContext(
 				id: entityId,
 				specialises: undefined,
 			});
+			checkUnknownFields(
+				workspace,
+				`Entity "${entitySchema.name}"`,
+				entityRef(id, aggregateId, entityId).$ref,
+				"entity",
+				entitySchema,
+			);
 		}
 	}
 
@@ -1031,6 +1290,13 @@ export function getWorkspaceFromSchema(
 		options: workspaceSchema.options,
 	});
 	recordOdsVersion(workspace, workspaceSchema.odsVersion);
+	checkUnknownFields(
+		workspace,
+		`Workspace "${workspaceSchema.name}"`,
+		"#",
+		"workspace",
+		workspaceSchema,
+	);
 	const refs = new Refs(workspace);
 
 	addDomains(workspace, workspaceSchema);

@@ -90,6 +90,27 @@ export type UnresolvedReference = {
 export type WrittenRef = { $ref: string };
 
 /**
+ * A field a loaded file wrote that this metamodel does not know, at the
+ * element that wrote it.
+ *
+ * The JSON schema already refuses this with `additionalProperties: false`,
+ * but an author working outside that check — or a file from a newer major —
+ * can still write one, and it used to load silently and vanish on the next
+ * save. A mistake is a diagnostic (decision 29), so the loader keeps what it
+ * saw instead of dropping it unremarked; `unknown-field` turns each of these
+ * into a warning, and the round trip still drops the field itself, the way it
+ * always has (card 121).
+ */
+export type UnknownField = {
+	/** The path of the field itself, e.g. `#/boundedcontexts/orders/modules`. */
+	ref: string;
+	/** How the element that wrote it is named in the message: `Bounded context "Orders"`. */
+	owner: string;
+	/** The field's own name, as written. */
+	field: string;
+};
+
+/**
  * The refs one element wrote that named nothing, kept as written so that
  * `toSchema` writes them back.
  *
@@ -171,6 +192,12 @@ export class Workspace
 	 * See {@link UnresolvedReference}.
 	 */
 	readonly unresolved: UnresolvedReference[] = [];
+	/**
+	 * The fields a loaded file wrote that this metamodel does not know. Empty
+	 * for a workspace built through the DSL, which can only construct fields
+	 * the compiler knows. See {@link UnknownField}.
+	 */
+	readonly unknownFields: UnknownField[] = [];
 	/**
 	 * What a loaded file said its `odsVersion` was, when that was not a version
 	 * this core reads: a different major, or none at all, in which case `found`

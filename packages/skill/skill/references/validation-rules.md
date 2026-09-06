@@ -20,6 +20,14 @@
 
 **Usual fix:** Correct the ref, or declare the element it was meant to name. A ref that resolves to the wrong kind of thing — an answer where an event belongs, another process's deadline — is the same mistake: name one of the kind the field holds, or move the statement to the field that holds what you meant.
 
+## `unknown-field` (warning)
+
+**Requires:** Every field a file writes is one this metamodel knows.
+
+**Why it matters:** The model has no such element; see what it has instead. A field the metamodel does not recognise is either a typo of a real one, or a field from a metamodel this core does not read the same way, and it used to load and vanish unremarked — the loader kept only the fields it knew, so the field disappeared on the next save with nothing said about it. It is a warning rather than an error because the rest of the element still loaded and the model is otherwise sound.
+
+**Usual fix:** Correct the field's name, remove it if it names nothing this metamodel has, or check the odsVersion this core reads if the field belongs to a newer one.
+
 ## `aggregate-root` (warning, error)
 
 **Requires:** Every aggregate of a context whose insides are knowable has exactly one root entity.

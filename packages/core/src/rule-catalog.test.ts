@@ -392,6 +392,9 @@ function loadedWithABadRef(): Workspace {
 			valueobject: { $ref: "#/boundedcontexts/only/valueobjects/gone" },
 		},
 	};
+	// unknown-field: a field this metamodel does not know, on the workspace
+	// itself.
+	(schema as unknown as Record<string, unknown>).actors = [];
 	return Workspace.fromSchema(schema);
 }
 
