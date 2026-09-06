@@ -236,7 +236,7 @@ function callsTo(bc: BoundedContext, operation: Consumable): Consumption[] {
  * woke each other, and `reaction-cycle` reported a ring between contexts that
  * never trigger one another at all.
  *
- * Three ways a reactor is the caller, in the order they are asked:
+ * Four ways a reactor is the caller, in the order they are asked:
  *
  * - It issues the operation itself. A process that calls a local validator and
  *   branches on the verdict made the call and declares no consumption of its
@@ -247,6 +247,12 @@ function callsTo(bc: BoundedContext, operation: Consumable): Consumption[] {
  *   back to it (decisions 17 and 21). `by` may also name the reactor itself
  *   where the consumption is of an event, which is not a call and has no
  *   answer, so the case costs nothing to allow.
+ * - An operation it issues reaches the call along this context's `by` chain,
+ *   through any number of local fronts (see {@link callChainReaches}). A saga
+ *   that issues the use-case operation, which calls the payments adapter,
+ *   which calls the provider, made that call as surely as if it had made it
+ *   in one hop, and the events coming back up the same chain were always read
+ *   that way (decision 21, amendment of 2026-09-10; card 126).
  * - Nothing says who calls, and there is one call in this context to hear,
  *   made by a consumer that provides exactly one operation. Such a consumer is
  *   not made to write `by` down (`consumption-by-required`), and the walk
@@ -262,7 +268,7 @@ function callsTo(bc: BoundedContext, operation: Consumable): Consumption[] {
  * is to say which of the context's operations makes this call.
  *
  * This is {@link routesTo} asked as a yes-or-no question, and it is written as
- * one call to it rather than as the same three clauses again. Until card 116
+ * one call to it rather than as the same four clauses again. Until card 116
  * the third clause here asked only whether the lone call was silent, while
  * `routesTo` also asked whether the consumer had a single operation to infer,
  * so a by-less consumer providing three operations passed `consumable-kind` —
@@ -323,7 +329,11 @@ function callersFor(reactor: Policy | Process, call: Consumption): Reactor[] {
  *
  * Where the reactor issues the answering operation itself the two are the same
  * node, because there is no boundary and no local proxy for one (card 95).
- * Where nothing says who calls and the consumer provides a single operation,
+ * Where the call is two or more fronts away, the step still runs from the
+ * operation the reactor issued: that is the node the reactor knows about, and
+ * the fronts between are the context's own plumbing, drawn on the chain as
+ * their own steps out (see {@link callChainReaches}). Where nothing says who
+ * calls and the consumer provides a single operation,
  * that operation is the route, which is the inference `callsOut` already makes
  * on the way out; where it provides several, the model has not said, and the
  * chain stops rather than guessing — the same silence `consumption-by-required`
@@ -339,11 +349,55 @@ export function routesTo(
 	const calls = callsTo(reactor.boundedcontext, operation);
 	const named = calls.flatMap((call) => callersFor(reactor, call));
 	if (named.length > 0) return named;
+	const relayed = reactor.commands.filter((issued) =>
+		callChainReaches(issued, operation, reactor.boundedcontext),
+	);
+	if (relayed.length > 0) return relayed;
 	if (calls.length !== 1 || calls[0].by.length > 0) return [];
 	const sole = [...calls[0].consumer.consumables.values()].filter(
 		(it) => it.type === "operation",
 	);
 	return sole.length === 1 ? sole : [];
+}
+
+/**
+ * Whether the local `by` chain that starts at `issued` reaches `operation`.
+ *
+ * A reactor calls through a front, and a front is entitled to call through
+ * another one: a saga issues the use-case operation, which calls the payments
+ * adapter, which calls the provider. `reachedEvents` has always followed that
+ * chain to its end, so the events the provider raises come back up it, and an
+ * answer stopping after one hop made the two halves of the same chain
+ * disagree — `consumable-kind` then told the saga it never made a call it
+ * plainly made, and dictated which front it had to issue (decision 21, note of
+ * 2026-09-10 second, and the amendment that ships it).
+ *
+ * The chain is followed only while it stays in `local`, the reactor's own
+ * context. Each hop is then the reactor's own `by`, said by its own team about
+ * its own operations, which is what keeps card 104's rule intact: the answer
+ * goes to the caller and to nobody else. Crossing a boundary is still one hop
+ * — what the far context does with the call is its own chain, and a reactor
+ * here has said nothing about it.
+ *
+ * Cycle-guarded exactly as `reachedEvents` is: a ring of calls terminates
+ * rather than looping.
+ */
+function callChainReaches(
+	issued: Consumable,
+	operation: Consumable,
+	local: BoundedContext,
+): boolean {
+	if (issued.type !== "operation") return false;
+	const seen = new Set<Consumable>([issued]);
+	const queue = callsOut(issued);
+	while (queue.length) {
+		const called = queue.shift();
+		if (!called || seen.has(called)) continue;
+		seen.add(called);
+		if (called === operation) return true;
+		if (called.boundedcontext === local) queue.push(...callsOut(called));
+	}
+	return false;
 }
 
 /**

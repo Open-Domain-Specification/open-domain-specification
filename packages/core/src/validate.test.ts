@@ -106,7 +106,7 @@ describe("Workspace.validate", () => {
 				severity: "error",
 				rule: "cross-context-relation",
 				message:
-					'"Order" in "Sales" references "Pet" in "Catalog"; a relation never crosses a bounded context, so hold "Pet"\'s identity as an attribute on "Order" instead',
+					'"Order" in "Sales" references "Pet" in "Catalog"; a relation never crosses a bounded context, so hold "Pet"\'s identity in an attribute of "Order" with `identifies`; where what you need is a value rather than an entity, borrow it through a shared kernel or as a conformist',
 				ref: order.ref,
 			},
 		]);
@@ -125,8 +125,10 @@ describe("Workspace.validate", () => {
 			.validate()
 			.filter((d) => d.rule === "cross-context-relation")
 			.map((d) => d.message);
+		// Nothing says the two contexts share anything, so the borrowing the
+		// relation assumes has not been declared and the fix names the routes.
 		expect(messages).toEqual([
-			'"Vo" in "One" uses "Their Vo" in "Two"; a relation never crosses a bounded context, so hold "Their Vo"\'s identity as an attribute on "Vo" instead',
+			'"Vo" in "One" uses "Their Vo" in "Two"; a relation reaches another context\'s value object only where the borrowing does, so declare a shared kernel with "Two" or a conformist relationship toward it and type an attribute by "Their Vo"',
 		]);
 	});
 
@@ -4756,16 +4758,19 @@ describe("rejection-raised", () => {
 			.filter((d) => d.rule === "rejection-raised")
 			.map((d) => [d.severity, d.message, d.ref]);
 
-	it("warns when an operation rejects with a shape it also raises as an event", () => {
-		// Card 117's original Offer Slot: rejects with PatientWaitlisted and
-		// also raises an event carrying that same shape.
+	/**
+	 * A refusal shape an operation also publishes as an event, with nobody yet
+	 * listening: card 117's original Offer Slot.
+	 */
+	function bothShapes() {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("Clinic", { description: "" });
 		const patientWaitlisted = bc.addSchema("Patient Waitlisted");
 		const svc = bc.addService("S", { description: "", type: "application" });
-		const patientWaitlistedEvent = svc.provides("Patient Waitlisted", {
+		const event = svc.provides("Patient Waitlisted", {
 			description: "",
 			type: "event",
+			pattern: "published-language",
 			schema: patientWaitlisted,
 		});
 		const offerSlot = svc
@@ -4774,14 +4779,52 @@ describe("rejection-raised", () => {
 				type: "operation",
 				rejects: [patientWaitlisted],
 			})
-			.raises(patientWaitlistedEvent);
+			.raises(event);
+		return { ws, bc, event, offerSlot };
+	}
+
+	it("warns when the refusal it publishes as an event reaches nobody", () => {
+		const { ws, offerSlot } = bothShapes();
 		expect(rejectionRaised(ws)).toEqual([
 			[
 				"warning",
-				'"Offer Slot" rejects with "Patient Waitlisted", which it also raises as the event "Patient Waitlisted"; a rejection says nothing happened and a raised event says something did — if something happened, drop the rejection and keep the event, otherwise it is not an event',
+				'"Offer Slot" rejects with "Patient Waitlisted", which it also raises as the event "Patient Waitlisted", and no other context consumes "Patient Waitlisted"; a rejection answers the caller and an event tells the world, and where both are true keep both — the fact somebody hears is what makes it an event, so say who consumes "Patient Waitlisted" or drop it and let the rejection answer',
 				offerSlot.ref,
 			],
 		]);
+	});
+
+	// A declined authorisation is the caller's answer and a fact the world
+	// hears, and card 123 told the author one of the two was false. Where
+	// somebody hears the event both are true and the rule is quiet
+	// (decision 25, note of 2026-09-10; card 126).
+	it("says nothing when another context consumes the published refusal", () => {
+		const { ws, bc, event } = bothShapes();
+		const outside = ws.addBoundedContext("Reporting", { description: "" });
+		outside.downstreamOf(bc, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		const reports = outside.addService("Reports", {
+			description: "",
+			type: "application",
+		});
+		reports.consumes(event, { pattern: "conformist" });
+		expect(rejectionRaised(ws)).toEqual([]);
+	});
+
+	// The provider's own subscriber says nothing about whether the fact
+	// travels: the caller here was already answered.
+	it("still warns when only the raising context consumes it", () => {
+		const { ws, bc, event, offerSlot } = bothShapes();
+		const inside = bc.addService("Waitlist", {
+			description: "",
+			type: "application",
+		});
+		inside.consumes(event);
+		expect(
+			rejectionRaised(ws).map(([severity, , ref]) => [severity, ref]),
+		).toEqual([["warning", offerSlot.ref]]);
 	});
 
 	it("says nothing when an operation rejects with one shape and raises an event of another", () => {
@@ -7843,6 +7886,97 @@ describe("valueobject-context", () => {
 	});
 });
 
+describe("a relation to a value object of another context", () => {
+	/**
+	 * An invoice holding a `Money` the model has lent it, with the relation the
+	 * map needs for its label and cardinality declared beside the attribute.
+	 * The relationship that carries the borrowing is the caller's to declare.
+	 */
+	function lent() {
+		const ws = emptyWorkspace();
+		const kernel = ws.addBoundedContext("Financial Primitives", {
+			description: "",
+		});
+		const billing = ws.addBoundedContext("Billing", { description: "" });
+		const money = kernel.addValueObject("Money", { description: "" });
+		money.addAttribute("Amount Minor", { type: "int64" });
+		const invoiceAgg = billing.addAggregate("Invoice", { description: "" });
+		const invoice = invoiceAgg.addRootEntity("Invoice", { description: "" });
+		invoice.addAttribute("Id", { type: "uuid", identity: true });
+		invoice.addAttribute("Lines", { type: "Money[]", valueobject: money });
+		invoice.uses(money, "charges", "1..*");
+		return { ws, kernel, billing, money, invoice, invoiceAgg };
+	}
+
+	const crossings = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) =>
+				["cross-context-relation", "valueobject-context"].includes(d.rule),
+			)
+			.map((d) => [d.rule, d.message]);
+
+	// The rule told the author to hold the value's identity instead, and a
+	// value object has none: the only way out was to write nothing, and the
+	// label and the cardinality the map cannot otherwise show went with it
+	// (decision 14, note of 2026-09-10; card 126).
+	it("allows the relation over a shared kernel", () => {
+		const { ws, kernel, billing } = lent();
+		billing.sharesKernelWith(kernel);
+		expect(crossings(ws)).toEqual([]);
+	});
+
+	it("allows it where the holder conforms to the value's context", () => {
+		const { ws, kernel, billing } = lent();
+		kernel.upstreamOf(billing, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		expect(crossings(ws)).toEqual([]);
+	});
+
+	// The relation goes exactly where the borrowing goes, so the two rules
+	// never disagree about one crossing: an unbacked pair is refused twice,
+	// once for the attribute and once for the relation.
+	it("still refuses it where no relationship carries the borrowing", () => {
+		const { ws } = lent();
+		expect(crossings(ws)).toEqual([
+			[
+				"cross-context-relation",
+				'"Invoice" in "Billing" uses "Money" in "Financial Primitives"; a relation reaches another context\'s value object only where the borrowing does, so declare a shared kernel with "Financial Primitives" or a conformist relationship toward it and type an attribute by "Money"',
+			],
+			[
+				"valueobject-context",
+				'"Invoice" in "Billing" types attribute "Lines" by value object "Money" from "Financial Primitives"; a value object is part of one context\'s language, so borrowing it wants a shared kernel with "Financial Primitives" or a conformist relationship toward it',
+			],
+		]);
+	});
+
+	// Only `uses` reaches a value: the borrowing lends the word, not a place
+	// in this context's aggregate structure.
+	it("refuses a references relation to it even over a kernel", () => {
+		const { ws, kernel, billing, money, invoice } = lent();
+		billing.sharesKernelWith(kernel);
+		invoice.relations.length = 0;
+		invoice.references(money, "for");
+		expect(crossings(ws).map(([rule]) => rule)).toEqual([
+			"cross-context-relation",
+		]);
+	});
+
+	// The cardinality the relation adds is still checked against the attribute
+	// it draws, which until now no borrowed value's relation could be.
+	it("checks the cardinality it adds against the attribute", () => {
+		const { ws, kernel, billing, invoice } = lent();
+		billing.sharesKernelWith(kernel);
+		invoice.relations[0].cardinality = "1";
+		const coherence = ws
+			.validate()
+			.filter((d) => d.rule === "attribute-relation-coherence");
+		expect(coherence.map((d) => d.severity)).toEqual(["warning"]);
+	});
+});
+
 describe("waiting on an answer", () => {
 	/**
 	 * Payments answers a caller, and Checkout calls it: the shape decision 23's
@@ -7951,7 +8085,7 @@ describe("waiting on an answer", () => {
 		expect(kinds(ws)).toEqual([
 			[
 				"error",
-				`Policy "Watch declines" waits for "Authorise Payment rejects with Payment Declined", but nothing says policy "Watch declines" made that call: it does not issue "Authorise Payment", and no consumption of "Authorise Payment" in "Checkout" names an operation it issues in "by". An answer comes back to whoever called, so issue that operation, or say in "by" which of this context's operations makes the call, or react to an event instead`,
+				`Policy "Watch declines" waits for "Authorise Payment rejects with Payment Declined", but nothing says policy "Watch declines" made that call: it does not issue "Authorise Payment", and no chain of "by" inside "Checkout" runs from an operation it issues to the consumption of "Authorise Payment". An answer comes back to whoever called, routing along the local "by" chain through as many of this context's fronts as it takes, so issue that operation, or say in "by" which of this context's operations makes the call, or react to an event instead`,
 				eavesdropper.ref,
 			],
 		]);
@@ -7983,7 +8117,7 @@ describe("waiting on an answer", () => {
 		expect(kinds(ws)).toEqual([
 			[
 				"error",
-				'Process "Checkout" waits for "Authorise Payment rejects with Payment Declined", but nothing says process "Checkout" made that call: it does not issue "Authorise Payment", and no consumption of "Authorise Payment" in "Checkout" names an operation it issues in "by". An answer comes back to whoever called, so issue that operation, or say in "by" which of this context\'s operations makes the call, or react to an event instead',
+				'Process "Checkout" waits for "Authorise Payment rejects with Payment Declined", but nothing says process "Checkout" made that call: it does not issue "Authorise Payment", and no chain of "by" inside "Checkout" runs from an operation it issues to the consumption of "Authorise Payment". An answer comes back to whoever called, routing along the local "by" chain through as many of this context\'s fronts as it takes, so issue that operation, or say in "by" which of this context\'s operations makes the call, or react to an event instead',
 				process.ref,
 			],
 		]);
@@ -8274,6 +8408,152 @@ describe("waiting on an answer", () => {
 		// Nothing new to report: the process waits on Authorise's refusal, and
 		// Refund's is a different answer nobody named.
 		expect(kinds(ws)).toEqual([]);
+	});
+
+	/**
+	 * The chain the architect's twelfth round drew. A saga issues the use-case
+	 * front, the front calls the payments adapter, and the adapter calls the
+	 * provider: two hops of the caller's own `by` before the boundary, which is
+	 * the shape decision 17 asks for once a context has more than one front.
+	 * `deeper` puts a third context past the provider, so the same chain runs on
+	 * beyond a boundary the saga said nothing about.
+	 */
+	function twoFronts({ deeper = false } = {}) {
+		const ws = emptyWorkspace();
+		const provider = ws.addBoundedContext("Provider", { description: "" });
+		const caller = ws.addBoundedContext("Caller", { description: "" });
+		provider.upstreamOf(caller, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		const providerApi = provider.addService("Provider API", {
+			description: "",
+			type: "application",
+		});
+		const verdict = provider.addSchema("Verdict");
+		const authorise = providerApi.provides("Authorise", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+			returns: verdict,
+		});
+		const useCase = caller.addService("Checkout Use Case", {
+			description: "",
+			type: "application",
+		});
+		const adapter = caller.addService("Payments Adapter", {
+			description: "",
+			type: "application",
+		});
+		const started = useCase.provides("Checkout Started", {
+			description: "",
+			type: "event",
+		});
+		useCase
+			.provides("Start Checkout", { description: "", type: "operation" })
+			.raises(started);
+		const front = useCase.provides("Take Payment", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const settle = useCase.provides("Settle", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const call = adapter.provides("Call Provider", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const retry = adapter.provides("Retry Call", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		// Hop one: the use case calls the adapter. Hop two: the adapter calls
+		// the provider. Each names the operation that makes it, so neither is
+		// an inference.
+		useCase.consumes(call, { by: [front] });
+		adapter.consumes(authorise, {
+			pattern: "anti-corruption-layer",
+			by: [call],
+		});
+		const scheme = deeper
+			? (() => {
+					const bc = ws.addBoundedContext("Scheme", { description: "" });
+					bc.upstreamOf(provider, {
+						upstreamRoles: ["open-host-service"],
+						downstreamRoles: ["anti-corruption-layer"],
+					});
+					const api = bc.addService("Scheme API", {
+						description: "",
+						type: "application",
+					});
+					const decision = bc.addSchema("Scheme Decision");
+					const ask = api.provides("Ask Scheme", {
+						description: "",
+						type: "operation",
+						pattern: "open-host-service",
+						returns: decision,
+					});
+					providerApi.consumes(ask, {
+						pattern: "anti-corruption-layer",
+						by: [authorise],
+					});
+					return { ask, decision };
+				})()
+			: undefined;
+		const process = caller
+			.addProcess("Checkout", { description: "" })
+			.starts(started)
+			.issues(front, settle)
+			.ends(started);
+		return { ws, caller, authorise, process, front, call, retry, scheme };
+	}
+
+	// `reachedEvents` has always followed `by` through any number of local
+	// fronts, and an answer stopped after one: `consumable-kind` then told a
+	// saga it had not made a call it plainly made, and dictated which front it
+	// had to issue (decision 21, amendment of 2026-09-10; card 126).
+	it("routes an answer back along a two-front chain inside the context", () => {
+		const { ws, authorise, process, front } = twoFronts();
+		process.on(authorise.returned());
+		expect(kinds(ws)).toEqual([]);
+		expect(hearsAnswerOf(process, authorise)).toBe(true);
+		// Drawn from the operation the process issued: the fronts between are
+		// the context's own plumbing and take their own steps out.
+		expect(routesTo(process, authorise)).toEqual([front]);
+	});
+
+	// Every hop of the chain is the caller's own `by`, about its own
+	// operations, which is what keeps card 104's rule: past the boundary the
+	// provider's chain is the provider's, and nothing here has spoken for it.
+	it("stops at the boundary, however far the chain runs on past it", () => {
+		const { ws, process, scheme } = twoFronts({ deeper: true });
+		if (!scheme) throw new Error("no scheme");
+		process.on(scheme.ask.returned());
+		expect(kinds(ws).map(([severity, , ref]) => [severity, ref])).toEqual([
+			["error", process.ref],
+		]);
+		expect(hearsAnswerOf(process, scheme.ask)).toBe(false);
+		expect(routesTo(process, scheme.ask)).toEqual([]);
+	});
+
+	// A ring of calls terminates rather than looping, exactly as
+	// `reachedEvents` does.
+	it("terminates on a ring of local calls", () => {
+		const { ws, authorise, process, front, call, retry } = twoFronts();
+		const adapter = ws
+			.getBoundedContextByRefOrThrow("#/boundedcontexts/caller")
+			.services.get("payments_adapter");
+		if (!adapter) throw new Error("no adapter");
+		adapter.consumes(call, { by: [retry] });
+		adapter.consumes(retry, { by: [call] });
+		process.on(authorise.returned());
+		expect(hearsAnswerOf(process, authorise)).toBe(true);
+		expect(routesTo(process, authorise)).toEqual([front]);
 	});
 });
 

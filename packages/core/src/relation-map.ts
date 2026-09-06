@@ -111,15 +111,14 @@ export class ODSRelationGraph extends AbstractVisitor {
 	 * the attribute rather than from a declaration.
 	 *
 	 * An attribute typed by a value object is a dependency on that value, so
-	 * the map draws it either way. Where the value belongs to another context,
+	 * the map draws it either way. The model may declare a `uses` relation,
+	 * which adds a label and a cardinality to the same line and is drawn as
+	 * itself; the line is derived only where no relation draws this attribute
+	 * (decision 16, note of 2026-09-10; see {@link Attribute.drawnBy}). A value
 	 * borrowed over a shared kernel or from an upstream this context conforms
-	 * to, there is nothing else it could be drawn from: a relation never
-	 * crosses a boundary, and the value is drawn in the lending context's
-	 * cluster (decision 16, third amendment). Where it belongs to this context
-	 * the model may declare a `uses` relation, which adds a label and a
-	 * cardinality to the same line and is drawn as itself; the line is derived
-	 * only where no relation draws this attribute (decision 16, note of
-	 * 2026-09-10; see {@link Attribute.drawnBy}).
+	 * to is read the same way and drawn in the lending context's cluster
+	 * (decision 16, third amendment); until card 126 no relation could reach
+	 * one, so a borrowed value's line was always the derived one.
 	 */
 	get derivedUses(): Attribute[] {
 		return Array.from(this._derivedUses.values());
@@ -170,8 +169,11 @@ export class ODSRelationGraph extends AbstractVisitor {
 		for (const attribute of node.attributes.values()) {
 			const vo = attribute.valueobject;
 			if (!vo) continue;
-			if (vo.boundedcontext !== node.boundedcontext || !attribute.drawnBy)
-				this._derivedUses.add(attribute);
+			// A declared relation draws the line with its label and cardinality,
+			// wherever the value lives: a value borrowed over a shared kernel or
+			// from a conformed-to upstream may carry one now, so a derived line
+			// beside it would be the same dependency drawn twice (card 126).
+			if (!attribute.drawnBy) this._derivedUses.add(attribute);
 		}
 	}
 
@@ -241,7 +243,16 @@ export class ODSRelationMap {
 	) {
 		for (const relation of relations) {
 			const sourceNode = this.addNode(relationNode(relation.source));
-			const targetNode = this.addNode(relationNode(relation.target));
+			// A `uses` relation may reach a value object of another context where
+			// the borrowing is allowed (`cross-context-relation`, card 126). Its
+			// box stands in the lending context's cluster and says whose value it
+			// is, exactly as the derived line's does.
+			const targetNode = this.addNode(
+				relationNode(
+					relation.target,
+					relation.target.boundedcontext !== relation.source.boundedcontext,
+				),
+			);
 
 			this.addEdge({
 				source: sourceNode,

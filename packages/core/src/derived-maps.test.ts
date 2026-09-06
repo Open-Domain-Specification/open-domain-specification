@@ -535,6 +535,46 @@ describe("ODSRelationMap", () => {
 		expect(node?.attributes.map((a) => a.name)).toEqual(["amountMinor"]);
 	});
 
+	// A `uses` relation may reach a borrowed value where the borrowing is
+	// allowed (`cross-context-relation`, card 126). It draws the same line the
+	// attribute would, with the label and the cardinality the derived line
+	// cannot carry, and nothing doubles it.
+	it("draws a declared relation to a borrowed value with its label and cardinality", () => {
+		const ws = new Workspace("Declared borrowing", {
+			description: "",
+			version: "1.0.0",
+		});
+		const kernel = ws.addBoundedContext("Shared Kernel", { description: "" });
+		const money = kernel.addValueObject("Money", { description: "" });
+		money.addAttribute("amountMinor", { type: "int64" });
+		const billing = ws.addBoundedContext("Billing", { description: "" });
+		billing.sharesKernelWith(kernel);
+		const invoiceAgg = billing.addAggregate("Invoice", { description: "" });
+		const invoice = invoiceAgg.addRootEntity("Invoice", { description: "" });
+		invoice.addAttribute("id", { type: "string", identity: true });
+		invoice.addAttribute("lines", { type: "Money[]", valueobject: money });
+		invoice.uses(money, "charges", "1..*");
+
+		const graph = ODSRelationGraph.fromAggregate(invoiceAgg);
+		expect(graph.derivedUses).toEqual([]);
+		const map = ODSRelationMap.fromGraph(graph);
+		const edge = Array.from(map.edges.values()).find(
+			(e) => e.relation === "uses",
+		);
+		expect([edge?.source.name, edge?.target.name, edge?.label]).toEqual([
+			"Invoice",
+			"Money",
+			"charges",
+		]);
+		expect(edge?.cardinality).toBe("1..*");
+		// The box still stands in the lending context's cluster and is marked
+		// foreign, exactly as the derived line's is.
+		const node = map.nodes.get(money.ref);
+		expect(node?.type).toBe("foreign_valueobject");
+		expect(node?.namespace[node.namespace.length - 1]?.id).toBe(kernel.ref);
+		expect(ws.validate().filter((d) => d.severity === "error")).toEqual([]);
+	});
+
 	it("leaves a value object of this context unborrowed", () => {
 		// f.money is Ordering's own, held by Ordering's entities: the map draws
 		// it from the declared `uses` relation and marks nothing foreign.
