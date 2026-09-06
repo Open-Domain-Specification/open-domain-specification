@@ -2472,6 +2472,17 @@
           "consumes": [
             {
               "consumable": {
+                "$ref": "#/boundedcontexts/payment_scheme/services/scheme_rail/provides/submit"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/scheme_gateway/services/scheme_gateway_app/provides/submit_to_scheme"
+                }
+              ]
+            },
+            {
+              "consumable": {
                 "$ref": "#/boundedcontexts/payment_scheme/services/scheme_rail/provides/scheme_settlement_confirmed"
               },
               "pattern": "anti-corruption-layer",
@@ -5281,6 +5292,23 @@
               "schema": {
                 "$ref": "#/boundedcontexts/payment_scheme/schemas/scheme_response"
               }
+            },
+            "submit": {
+              "name": "Submit",
+              "description": "Accept a submission in the scheme's format; the scheme confirms or rejects later, on its own timings, as SchemeSettlementConfirmed or SchemeRejected",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/payment_scheme/schemas/submission_message"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/payment_scheme/services/scheme_rail/provides/scheme_settlement_confirmed"
+                },
+                {
+                  "$ref": "#/boundedcontexts/payment_scheme/services/scheme_rail/provides/scheme_rejected"
+                }
+              ]
             }
           },
           "consumes": []
@@ -5307,6 +5335,20 @@
               "name": "statusReason",
               "type": "string",
               "optional": true
+            }
+          }
+        },
+        "submission_message": {
+          "name": "SubmissionMessage",
+          "description": "The scheme's own wire format for an inbound submission, as it receives it",
+          "attributes": {
+            "instruction_id": {
+              "name": "instructionId",
+              "type": "string"
+            },
+            "message_type": {
+              "name": "messageType",
+              "type": "string"
             }
           }
         }

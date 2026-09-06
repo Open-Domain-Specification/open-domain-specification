@@ -837,3 +837,36 @@ relationship per pair and direction"). `Payment Scheme` stays upstream of the ga
 never of the hub.
 
 The deliberate diagnostics of section 7 are untouched: the same three, for the same reasons.
+
+## Revision (card 110): `SubmitToScheme` finally sends to something
+
+Card 109's own comments recorded the honest wiring and the reason it was reverted: giving
+Payment Scheme its own submit operation, raising `SchemeSettlementConfirmed` and
+`SchemeRejected`, and having the gateway call it through the anti-corruption layer made
+`reaction-cycle` report the instruction lifecycle twice, once for the call out and once for
+the answer back. Card 108 closed that rule gap -- a ring on which one process sits and every
+other reactor is a translating policy hearing an `anti-corruption-layer` consumption is that
+process's lifecycle through the layer, not a cycle -- so this revision reapplies the wiring
+card 109 tried first.
+
+`Payment Scheme`'s `Scheme Rail` now provides `Submit`, the scheme's own documented contract
+(RiverMart's acquirer publishes `HoldFunds`, `TakeFunds` and `ReturnFunds` the same way, an
+external context stating what it offers and not how): it raises `SchemeSettlementConfirmed`
+and `SchemeRejected`, the same two events the gateway's translating policy already heard.
+`SchemeGatewayApp` consumes `Submit` through an anti-corruption layer, `by: [submitToScheme]`,
+so the causal walk now runs through the call -- `PaymentInitiated` into the "Instruction
+lifecycle" process, through `SendToScheme` and `SubmitToScheme` to `Submit`, on to the
+scheme's two answers, through "Translate the scheme's answer" and its two operations, to
+`SchemeAccepted`/`SchemeDeclined` and back into the process, which ends on `PaymentSettled` or
+`PaymentRejected` -- rather than joining only where the process itself sits on both ends.
+
+One thing card 109's literal attempt did not need and this revision does: `Submit`'s own
+schema cannot be the gateway's `SchemeSubmission` (owned by `Scheme Gateway`) without tripping
+`schema-context` -- a payload belongs to the context that publishes it, and nothing here
+lets `Payment Scheme` borrow a shape from its own downstream. `Payment Scheme` gets its own
+`SubmissionMessage` schema instead, the scheme's inbound wire format as distinct from the
+gateway's outbound one, exactly as RiverMart's `ProviderRequest` is the acquirer's own shape
+and not `Payments`' `AuthorisePayment` schema. Two contexts, two shapes, translated at the
+boundary, which is what the layer is for.
+
+The deliberate diagnostics of section 7 are untouched: the same three, for the same reasons.
