@@ -72,8 +72,8 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
 - Every collection is optional and leaving one out is the same as writing it empty: a context's
   `aggregates`, `services`, `policies`, `processes`, `glossary`, `valueobjects`, `schemas`,
   `invariants` and `subdomains`; an aggregate's `entities`, `invariants`, `provides`, `consumes`;
-  an entity's `attributes` and `relations`, and a value object's those and `invariants`. See
-  `references/model-reference.md`.
+  an entity's `attributes` and `relations`; a value object's those and `invariants`; and a
+  payload schema's `attributes`. See `references/model-reference.md`.
 - Every `$ref` should resolve to an element that exists. Loading never throws on a dangling
   one: the link is left unset, `unresolved-ref` (error) reports it at the referencing element,
   and every other rule still runs, so fix it as you would any other diagnostic.
@@ -97,13 +97,17 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
 - An external context is somebody else's machine: it states no aggregates, policies or
   processes, and no rule it keeps at rest. What it publishes it may state — the rules on its
   value objects, and a `precondition` or `postcondition` on one of its own operations, which is
-  that operation's published contract. Such a rule names one of that context's own operations
-  and constrains only the attributes of the shapes that operation carries and the context's own
+  that operation's published contract, or a `postcondition` on one of its own events, which is
+  the contract of the payload it sends us. Such a rule names one of that context's own
+  operations or, flagged `postcondition`, one of its own events, and constrains only the
+  attributes of the shapes that operation carries or that event's payload, and the context's own
   value objects; it says nothing about a context of ours. Its services still carry a `type`, but
   nothing reads it.
 - A payload schema belongs to the context that publishes the consumable. A value object or a
-  schema may be named across a boundary only where the two contexts declare a `shared-kernel`
-  relationship, or where the naming context is a conformist downstream of the one that owns it.
+  schema may be named across a boundary on exactly three routes: where the two contexts declare a
+  `shared-kernel` relationship, where the naming context is a conformist downstream of the one
+  that owns it, or where it is the customer of a `customer-supplier` relationship with it. All
+  three run downstream only, and the same three routes let a `specialises` reach across.
 - Reference another aggregate only through its root entity, or a kind of that root, with
   `references`.
 - No delivery flag, no modules, no actors, no read-model element, no operations on a value
@@ -168,7 +172,8 @@ correctly. Say "command" in conversation if it helps, but the model's word is `o
 | Consuming from a legacy or `bigBallOfMud` context | `pattern: "anti-corruption-layer"` |
 | A system outside the business the model has to name | a context of its own with `external: true` |
 | An event nothing in its context raises | ask which operation raises it; if it comes from outside, it belongs to an external context |
-| Consuming from any other context | `pattern: "conformist"` |
+| Consuming from a `customer-supplier` upstream | no downstream role at all: the customer negotiated the interface, and the relationship type is the word for that |
+| Consuming from any other context | `pattern: "conformist"` — the downstream with no say in the upstream's model, taking it as it stands |
 | Two contexts exchange consumables, nothing else known | relationship `upstream-downstream` |
 | Cardinality unknown | omit it |
 | Service type unknown | `application` if it fronts an API or UI, else `domain` |
@@ -182,5 +187,8 @@ correctly. Say "command" in conversation if it helps, but the model's word is `o
 - Force programming types into `type` when the user said "money", "email" or "a date".
 - Emit `type: "command"`; the consumable types are `event` and `operation`.
 - Let an operation raise an event of another context without pointing it out as unusual.
-- Leave `upstreamRoles` or `downstreamRoles` empty on a directed relationship.
+- Leave `upstreamRoles` empty on a directed relationship, or `downstreamRoles` on one that is not
+  `customer-supplier`. A customer-supplier downstream writes no role: `conformist` is the
+  downstream with no say, which is the opposite of a customer, and `anti-corruption-layer` is a
+  translation it does not do.
 - Skip validation because the change was small.

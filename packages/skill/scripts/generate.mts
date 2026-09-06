@@ -37,7 +37,7 @@ type JsonSchema = {
 	enum?: string[];
 	properties?: Record<string, JsonSchema>;
 	required?: string[];
-	items?: JsonSchema;
+	items?: JsonSchema | JsonSchema[];
 	additionalProperties?: boolean | JsonSchema;
 	anyOf?: JsonSchema[];
 	$ref?: string;
@@ -68,8 +68,15 @@ function typeOf(schema: JsonSchema, defs: Record<string, JsonSchema>): string {
 	if (schema.enum) return schema.enum.map((v) => `"${v}"`).join(" | ");
 	if (schema.anyOf) return schema.anyOf.map((s) => typeOf(s, defs)).join(" | ");
 	if (isRefObject(schema)) return '`{ "$ref": string }`';
+	// A tuple — `[{ $ref }, { $ref }]`, which is what a symmetric
+	// relationship's `participants` is — comes out of the JSON schema with
+	// `items` as an array, one entry per position. Read as a single item
+	// schema it had no `type` and rendered "array of unknown", so the one
+	// field that says a partnership has exactly two ends said nothing at all.
+	if (schema.type === "array" && Array.isArray(schema.items))
+		return `[${schema.items.map((s) => typeOf(s, defs)).join(", ")}]`;
 	if (schema.type === "array")
-		return `array of ${typeOf(schema.items ?? {}, defs)}`;
+		return `array of ${typeOf((schema.items as JsonSchema) ?? {}, defs)}`;
 	if (
 		schema.type === "object" &&
 		schema.additionalProperties &&
