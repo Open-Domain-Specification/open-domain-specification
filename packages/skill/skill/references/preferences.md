@@ -57,3 +57,35 @@ The costs are named rather than hidden. Where a user hits one, say which it is.
   layer exists, with its pattern, its comments and its `by`; the map from the upstream's shapes
   and terms to the downstream's lives in the description, because a mapping table would be the
   expression language the model refuses.
+- **`identifies` is opt-in, and a denormalised copy is invisible.** Nothing forces an author to
+  hold the identity attribute that would record a dependency, and a fact one context copies from
+  another — a seller rating held on an offer — shows nowhere unless the event that carried it is
+  modelled too.
+- **A product line's kinds repeat their shared attributes.** Specialisation stays inside one
+  aggregate and one context on purpose, so a product line whose kinds sit in separate aggregates
+  cannot inherit, and each aggregate restates the attributes the kinds share.
+- **A version is a second name, and three at once is where that stops working.** A changed
+  contract old consumers still need is a second consumable with a name that says so, not a
+  version number, and that only gets revisited once a reference model has to carry more than two
+  versions of one thing at a time.
+- **A relation states one multiplicity, and only the source's.** How many of the other side one
+  instance holds is not modelled; where that matters, it is a sentence in the description, not a
+  second cardinality.
+- **Order and timing inside a reaction are prose.** Whether a process's waited-for events must
+  all arrive before it acts, or any one is enough, and what starts or clears a deadline's clock,
+  are sentences in its description, not fields a tool can read.
+- **`raises` says may, not which combination.** An operation that raises two events may raise
+  either or both, and the flow map draws every edge the same way; which combination happens on a
+  given call is the operation's description, not the model.
+- **A consumption's ref moves.** The ref is computed from the pair it joins and only carries a
+  caller's name once a second consumption of the same pair exists, so adding that second
+  consumption changes the first one's ref.
+- **A kernel's co-owners are not listed, and a context keeps one team.** The kernel's team field
+  names whoever keeps it, not the sharers who jointly own it, because the model gives every
+  context exactly one team.
+- **A lifecycle has no transition table, and a deadline is never a fixed date.** A status's
+  values, and the operations that move them, are the author's prose on an invariant, and a
+  deadline is always an interval counted from a named trigger, never a date held in an attribute.
+- **Inside a context, references and identities are two forms of one dependency.** A relation
+  draws the line and its cardinality and an identity attribute names the key, and an author may
+  write both for the one dependency without the model ever saying they are the same fact.

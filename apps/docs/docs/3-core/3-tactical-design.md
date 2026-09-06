@@ -66,6 +66,48 @@ Each of these costs something, and the cost is named rather than hidden:
   map from the upstream's shapes and terms to the downstream's lives in the
   description, because a mapping table would be the expression language the
   model refuses (decision 15).
+- **`identifies` is opt-in, and a denormalised copy is invisible.** Nothing
+  forces an author to hold the identity attribute that would record a
+  dependency, and a fact one context copies from another — a seller rating
+  held on an offer — shows nowhere unless the event that carried it is
+  modelled too (decision 14).
+- **A product line's kinds repeat their shared attributes.** Specialisation
+  stays inside one aggregate and one context on purpose, so a product line
+  whose kinds sit in separate aggregates cannot inherit, and each aggregate
+  restates the attributes the kinds share (decision 22).
+- **A version is a second name, and three at once is where that stops
+  working.** A changed contract old consumers still need is a second
+  consumable with a name that says so, not a version number, and the model
+  only revisits that once a reference model has to carry more than two
+  versions of one thing at a time (decision 15).
+- **A relation states one multiplicity, and only the source's.** How many of
+  the other side one instance holds is not modelled; where that matters, it
+  is a sentence in the description, not a second cardinality (decision 15).
+- **Order and timing inside a reaction are prose.** Whether a process's
+  waited-for events must all arrive before it acts, or any one is enough,
+  and what starts or clears a deadline's clock, are sentences in its
+  description, not fields the validator reads (decision 23).
+- **`raises` says may, not which combination.** An operation that raises two
+  events may raise either or both, and the flow map draws every edge the
+  same way; which combination happens on a given call is the operation's
+  description, not the model (decision 15).
+- **A consumption's ref moves.** The ref is computed from the pair it joins
+  and only carries a caller's name once a second consumption of the same
+  pair exists, so adding that second consumption changes the first one's ref
+  (decision 26).
+- **A kernel's co-owners are not listed, and a context keeps one team.** The
+  kernel's `team` names whoever keeps it, not the sharers who jointly own it,
+  because the model gives every context exactly one team (decision 16).
+- **A lifecycle has no transition table, and a deadline is never a fixed
+  date.** A status's values, and the operations that move them, are the
+  author's prose on an invariant, and a deadline is always an interval
+  counted from a named trigger, never a date held in an attribute (decisions
+  15 and 23).
+- **Inside a context, `references` and `identifies` are two forms of one
+  dependency.** A relation draws the line and its cardinality and an
+  identity attribute names the key, and an author may write both for the one
+  dependency without the model ever saying they are the same fact (decision
+  14).
 
 ## Value objects
 
@@ -150,6 +192,13 @@ transition — "once sold, a pet does not go back to available" — names the
 operation that makes the transition, because that is where it is enforced;
 the operation then reads as the rule it has to uphold. Invariants stay
 prose; there is no expression language.
+
+An aggregate's lifecycle lives the same way: a `status` attribute whose
+values are the author's own words, with an invariant naming the operations
+that move it and what must hold when they do. There is no state machine
+element and no transition table — the model states what a status may be and
+which operations change it, and the rest of the diagram a reader might
+expect is prose on those invariants.
 
 Naming an operation says which operation keeps the rule, and nothing more. A
 rule checked before that operation runs and not kept true afterwards — enough
@@ -351,7 +400,10 @@ any other event, and nothing outside the process may name it. What undoes
 the deadline, pausing or clearing the clock, is prose in its description
 rather than a field, for the same reason the process's other decisions are:
 the model states when a clock starts and how long it runs, not the
-conditions that stop it. An author who finds a policy waiting for a second
+conditions that stop it. A deadline is always relative to its trigger, never
+a date held in an attribute — an appointment or a policy's fixed expiry is a
+scheduled operation that raises it, or a Clock event, not an `after` written
+against a calendar date. An author who finds a policy waiting for a second
 event promotes it to a process.
 
 ## Read models
