@@ -5194,66 +5194,6 @@
     {
       "type": "upstream-downstream",
       "upstream": {
-        "$ref": "#/boundedcontexts/offers"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/order_management"
-      },
-      "upstreamRoles": [],
-      "downstreamRoles": [],
-      "description": "Order lines carry the offer id they were bought from; Orders never reads Offers back, so the coupling is identity only and neither side plays a role in an exchange that does not happen"
-    },
-    {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/catalogue"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/cart_&_checkout"
-      },
-      "upstreamRoles": [],
-      "downstreamRoles": [],
-      "description": "A wishlist item names the product it saves; the shopper's list holds ids, and prices and titles come from Offers"
-    },
-    {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/catalogue"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/order_management"
-      },
-      "upstreamRoles": [],
-      "downstreamRoles": [],
-      "description": "An order line names the variant it was bought as, by SKU; the order never reads the catalogue back"
-    },
-    {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/identity"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/order_management"
-      },
-      "upstreamRoles": [],
-      "downstreamRoles": [],
-      "description": "An order names the customer account it was placed by, by id"
-    },
-    {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/order_management"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/last_mile"
-      },
-      "upstreamRoles": [],
-      "downstreamRoles": [],
-      "description": "A delivery event names the order it belongs to; Last Mile keeps the id, not the order"
-    },
-    {
-      "type": "upstream-downstream",
-      "upstream": {
         "$ref": "#/boundedcontexts/payments"
       },
       "downstream": {

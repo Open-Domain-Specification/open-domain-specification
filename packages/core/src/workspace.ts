@@ -55,6 +55,37 @@ export type WorkspaceAttributes = {
 	options?: ods.WorkspaceOptionsSchema;
 };
 
+/**
+ * A `$ref` a loaded file wrote that names nothing, or names the wrong kind of
+ * thing for where it was written.
+ *
+ * It is a fact about the file rather than about the model, which is why the
+ * workspace carries it instead of the element that wrote it: the link is left
+ * unset, so there is nothing on the element to read it back from. The
+ * `unresolved-ref` rule turns each of these into an error, and every other
+ * rule goes on running over what did load — one typo costs an author that one
+ * diagnostic and not the whole file's worth (card 100).
+ */
+export type UnresolvedReference = {
+	/** The element that wrote the ref, which is where the diagnostic lands. */
+	ref: string;
+	/** How that element is named in the message: `Process "Fulfilment"`. */
+	owner: string;
+	/** The field it was written in, in the author's words: `on`, `returns`. */
+	field: string;
+	/**
+	 * Where inside the element, when the field alone does not say which of
+	 * several: `its consumption of "Decide"`. Absent when it does.
+	 */
+	where?: string;
+	/** The ref as written. */
+	target: string;
+	/** What that field may name, as a phrase: "an event, or an answer". */
+	expected: string;
+	/** Whether anything at all in the workspace answers to the ref. */
+	present: boolean;
+};
+
 export class Workspace
 	implements Visitable, SchemaConvertible<ods.WorkspaceSchema>
 {
@@ -73,6 +104,13 @@ export class Workspace
 	boundedcontexts = new Map<string, BoundedContext>();
 	relationships: ContextRelationship[] = [];
 	teams = new Map<string, Team>();
+	/**
+	 * The `$ref`s a loaded file wrote that resolved to nothing, or to the wrong
+	 * kind of thing. Empty for a workspace built through the DSL, where a
+	 * reference is an object and the compiler is what refuses a wrong one.
+	 * See {@link UnresolvedReference}.
+	 */
+	readonly unresolved: UnresolvedReference[] = [];
 
 	get path(): string {
 		return `${this.id}`;

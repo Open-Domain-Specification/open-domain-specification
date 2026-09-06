@@ -2365,41 +2365,17 @@ billingBC.downstreamOf(discsBC, {
 		"The monthly export is translated; nothing else of Discs is touched",
 });
 
-// Identity-only dependencies. Each pair below is joined by nothing but an
-// identity attribute naming the other context's entity, which since decision
-// 14 is how the model records a dependency on another context's model. Nothing
-// is exchanged, so neither end plays an upstream or downstream role and both
-// lists stay empty; the relationship says which way the dependency runs and
-// that somebody looked at it (`relationship-declared`, card 70).
-licensingBC.downstreamOf(catalogueBC, {
-	upstreamRoles: [],
-	downstreamRoles: [],
-	description:
-		"A licence window names the title it covers; the rights are Licensing's own model and the title stays Catalogue's",
-});
-encodingBC.downstreamOf(catalogueBC, {
-	upstreamRoles: [],
-	downstreamRoles: [],
-	description:
-		"An encode request carries the title id it is for; Encoding never reads the catalogue entry",
-});
-playbackBC.downstreamOf(householdsBC, {
-	upstreamRoles: [],
-	downstreamRoles: [],
-	description:
-		"A session names the profile watching, by id; who that profile is stays with Households",
-});
-playbackBC.downstreamOf(encodingBC, {
-	upstreamRoles: [],
-	downstreamRoles: [],
-	description:
-		"A manifest lists the renditions it can offer, by id; the renditions themselves are Encoding's",
-});
-adsBC.downstreamOf(householdsBC, {
-	upstreamRoles: [],
-	downstreamRoles: [],
-	description: "An ad break names the household it was served to, by id",
-});
+// Five identity-only relationships used to sit here: Licensing on Catalogue,
+// Encoding on Catalogue, Playback on Households & Profiles, Playback on
+// Encoding, and Ads Tier on Households & Profiles. Each pair was joined by
+// nothing but an identity attribute naming the other context's entity, so
+// neither end played a role, both lists were empty, and the description said
+// in words that nothing is exchanged. That is a shape DDD does not have, and
+// the model already had the record it needed: the context map draws an
+// identity crossing as an implied «id» edge. `relationship-declared` no longer
+// asks for a relationship on top of one (decision 14's amendment of
+// 2026-09-09; card 100). The dependencies stay and read on the map, from the
+// attributes that hold them.
 
 // Shared kernel: one manifest and segment format library, changed by both.
 playbackBC.sharesKernelWith(edgeBC, {

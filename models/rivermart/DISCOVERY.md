@@ -359,10 +359,13 @@ to integrate.
   than inventing a partnership that neither team recognised. Orders and Payments are the same
   shape: the order id goes to Payments on `OrderPlaced`, refunds come back through the
   payments API.
-- Every cross-context identity has a relationship on the map: Orders to Offers (the offer
-  id on a line) and Advertising to Catalogue (the product id an ad group advertises), both
-  conformist because only an id crosses; since decision 14 the relation stays inside its
-  own context and the identity attribute is what carries the dependency.
+- A cross-context identity is its own record and is drawn as one: since decision 14 the
+  relation stays inside its own context and the identity attribute carries the dependency,
+  which the context map draws as an implied «id» edge. The five relationships that used to
+  sit beside those identities — Orders to Offers, Cart & Checkout to Catalogue, Orders to
+  Catalogue, Orders to Identity, Last Mile to Orders — carried no roles at all, because
+  nothing is exchanged, and are gone (decision 14's amendment of 2026-09-09; card 100). A
+  relationship is declared where something is exchanged or a language is borrowed.
 
 ## 7. Validation and what we left in
 

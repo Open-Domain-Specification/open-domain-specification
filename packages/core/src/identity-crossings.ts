@@ -37,10 +37,15 @@ function* modelOwnersIn(context: BoundedContext): Iterable<AttributeOwner> {
  * An identity attribute of an entity or a value object in one context naming an
  * entity of another, or a context the model does not state the insides of.
  * Decision 14 made this the only way a model records a dependency on another
- * context's model, so it is a
- * crossing in its own right: it wants a declared relationship
- * (`relationship-declared`) and it draws on the context map even when nothing
- * is consumed. A payload schema's identity is left out; see
+ * context's model, so it is a crossing in its own right: it draws on the
+ * context map under «id» even when nothing is consumed, and that edge is its
+ * record. No relationship is asked for on top of it — one relationship per
+ * identity, with no roles either side because nothing is exchanged, is a shape
+ * DDD does not have (decision 14's amendment of 2026-09-09) — but the rules
+ * that have something to say about it still read it: `separate-ways`, because
+ * two contexts that declared they do not integrate have no identities of each
+ * other's to hold, and `mud-needs-acl`, because a key from a system nobody can
+ * read is its model in yours. A payload schema's identity is left out; see
  * {@link modelOwnersIn}.
  */
 export type IdentityCrossing = {
@@ -64,6 +69,17 @@ export function contextIdentified(
 	target: Entity | BoundedContext,
 ): BoundedContext {
 	return target instanceof BoundedContext ? target : target.boundedcontext;
+}
+
+/**
+ * What a crossing identity names, in words a diagnostic can drop into a
+ * sentence: the other context's entity, or — where that system's entities are
+ * not ours to state — an id of the system itself (decision 28).
+ */
+export function identityNamed(crossing: IdentityCrossing): string {
+	return crossing.target instanceof BoundedContext
+		? `an id belonging to "${crossing.to.name}"`
+		: `the identity of "${crossing.target.name}" in "${crossing.to.name}"`;
 }
 
 /**

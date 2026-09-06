@@ -49,20 +49,23 @@ describe("the tactical templates on the alternate branches", () => {
 		const rows = [...section.querySelectorAll("tbody tr")].map(
 			(r) => r.textContent ?? "",
 		);
-		expect(rows).toHaveLength(3);
+		expect(rows).toHaveLength(2);
 		expect(rows[0]).toContain("Cross-Instance Invariant");
 		expect(rows[0]).toContain("Plain Entity");
 		expect(rows[0]).toContain("Silent Operation");
 		// A rule naming nothing binds the whole boundary, and here that is the
 		// context rather than an aggregate.
 		expect(rows[1]).toContain("whole context");
-		expect(rows[2]).toContain("Answer Guarantee");
 	});
 
 	it("InvariantPage: a postcondition says it is a guarantee about the answer", () => {
 		const { container } = render(Harness, {
 			model,
-			ref: contextInvariantRef("main_context", "answer_guarantee").$ref,
+			ref: invariantRef(
+				"main_context",
+				"rootless_aggregate",
+				"answer_guarantee",
+			).$ref,
 		});
 		expect(container.querySelector(".page-header .keyword")).toHaveTextContent(
 			"postcondition",
@@ -121,7 +124,11 @@ describe("the tactical templates on the alternate branches", () => {
 			"Applies to the context as a whole.",
 		);
 		expect(container.textContent).toContain(
-			"a rule across instances needs a guard",
+			"a rule across instances is kept only by whoever counts before acting",
+		);
+		// A context's rule is checked, never guaranteed, so its section says so.
+		expect(container.querySelector("#guards h2")).toHaveTextContent(
+			"Checked by",
 		);
 	});
 

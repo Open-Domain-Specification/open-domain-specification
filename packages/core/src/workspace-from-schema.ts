@@ -4,6 +4,7 @@ import {
 	type AttributeSchema,
 	aggregateRef,
 	type BoundedContextSchema,
+	boundedcontextRef,
 	contextInvariantRef,
 	entityRef,
 	invariantRef,
@@ -20,22 +21,181 @@ import {
 import type {
 	Aggregate,
 	AttributeOwner,
+	Constrainable,
+	Consumable,
+	ConsumptionCaller,
+	DataSchema,
+	Process,
+	ProcessTrigger,
+	ReactionTrigger,
+	Referenceable,
 	Service,
+	Subdomain,
+	Team,
+	ValueObject,
 	Workspace,
 } from "./workspace";
 import {
 	BoundedContext,
+	Deadline,
 	Entity,
 	Workspace as WorkspaceModel,
 } from "./workspace";
 
 const debug = getDebug("get-workspace-from-schema");
 
+/**
+ * Where a `$ref` was written, for the diagnostic that reports it unresolved:
+ * the element that wrote it, and how a message names that element.
+ *
+ * The ref is spelled out rather than read off the element because several of
+ * these are needed before the element exists — a bounded context's `team` is
+ * resolved on the way to constructing the context — and a path built from the
+ * ids in hand is the same string the element will answer to.
+ */
+type Site = { ref: string; owner: string };
+
+/** How a diagnostic names an element: `Process "Order fulfilment"`. */
+function site(kind: string, name: string, ref: string): Site {
+	return { ref, owner: `${kind} "${name}"` };
+}
+
+/**
+ * Resolves the `$ref`s a file writes, and records the ones that do not
+ * resolve instead of throwing on them.
+ *
+ * A model with a typo in it is a model with a mistake, and a mistake is a
+ * diagnostic. Throwing at load cost the author every other diagnostic in the
+ * file — the one thing an editing surface exists to give them — and it did so
+ * only for JSON, because the DSL hands objects around and the compiler
+ * refuses the wrong one before anything runs. So the loader leaves the link
+ * unset, remembers what was written and where, and `unresolved-ref` reports it
+ * beside everything else the file gets wrong (card 100).
+ *
+ * The loader's own lookups for the elements it has just created stay on the
+ * `...OrThrow` methods: a miss there is a bug in this file, not a mistake in
+ * the model, and it should stop the run.
+ */
+class Refs {
+	constructor(private readonly workspace: Workspace) {}
+
+	/**
+	 * One optional ref: what it names, or `undefined` with the miss recorded.
+	 *
+	 * @param where a phrase for the place inside the element, when the field
+	 *   alone does not say which of several: `its consumption of "Decide"`.
+	 */
+	one<T>(
+		at: Site,
+		field: string,
+		kind: Kind<T>,
+		written: { $ref: string } | undefined,
+		where?: string,
+	): T | undefined {
+		if (!written) return undefined;
+		const found = kind.find(this.workspace, written.$ref);
+		if (found !== undefined) return found;
+		this.workspace.unresolved.push({
+			ref: at.ref,
+			owner: at.owner,
+			field,
+			where,
+			target: written.$ref,
+			expected: kind.what,
+			present: this.workspace.getByRef(written.$ref) !== undefined,
+		});
+		return undefined;
+	}
+
+	/** Every ref of a list that resolves; the rest are recorded and dropped. */
+	many<T>(
+		at: Site,
+		field: string,
+		kind: Kind<T>,
+		written: { $ref: string }[] | undefined,
+		where?: string,
+	): T[] {
+		const found: T[] = [];
+		for (const one of written ?? []) {
+			const it = this.one(at, field, kind, one, where);
+			if (it !== undefined) found.push(it);
+		}
+		return found;
+	}
+}
+
+/**
+ * What one field may name: how to resolve a ref written in it, and the phrase
+ * that says what it should have named. The two travel together so that a
+ * message can never describe a different kind from the one that was looked up.
+ */
+type Kind<T> = {
+	readonly what: string;
+	find(workspace: Workspace, ref: string): T | undefined;
+};
+
+const A_SCHEMA: Kind<DataSchema> = {
+	what: "a schema of this workspace",
+	find: (workspace, ref) => workspace.getSchemaByRef(ref),
+};
+const A_CONSUMABLE: Kind<Consumable> = {
+	what: "an operation or an event of this workspace",
+	find: (workspace, ref) => workspace.getConsumableByRef(ref),
+};
+const A_VALUE_OBJECT: Kind<ValueObject> = {
+	what: "a value object of this workspace",
+	find: (workspace, ref) => workspace.getValueObjectByRef(ref),
+};
+const AN_ENTITY: Kind<Entity> = {
+	what: "an entity of this workspace",
+	find: (workspace, ref) => workspace.getEntityByRef(ref),
+};
+const A_RELATION_TARGET: Kind<Entity | ValueObject> = {
+	what: "an entity or a value object of this workspace",
+	find: (workspace, ref) => workspace.getEntityOrValueobjectByRef(ref),
+};
+const AN_IDENTITY_TARGET: Kind<Entity | BoundedContext> = {
+	what: "an entity of this workspace, or a bounded context whose entities it does not state",
+	find: identifiedBy,
+};
+const A_CALLER: Kind<ConsumptionCaller> = {
+	what: "an operation, a policy or a process of this workspace",
+	find: (workspace, ref) => workspace.getConsumptionCallerByRef(ref),
+};
+const A_TEAM: Kind<Team> = {
+	what: "a team of this workspace",
+	find: (workspace, ref) => workspace.getTeamByRef(ref),
+};
+const A_SUBDOMAIN: Kind<Subdomain> = {
+	what: "a subdomain of one of this workspace's domains",
+	find: (workspace, ref) => workspace.getSubdomainByRef(ref),
+};
+const A_CONSTRAINABLE: Kind<Constrainable> = {
+	what: "an entity, a value object, an attribute or a consumable of this workspace",
+	find: (workspace, ref) => workspace.getConstrainableByRef(ref),
+};
+const A_REACTION_TRIGGER: Kind<ReactionTrigger> = {
+	what: "an event, or an answer an operation comes back with",
+	find: (workspace, ref) => workspace.getReactionTriggerByRef(ref),
+};
+const A_STARTING_TRIGGER: Kind<Consumable> = {
+	what: "an event, or an operation of this process's own context",
+	find: (workspace, ref) => workspace.getConsumableByRef(ref),
+};
+const AN_ELEMENT: Kind<Referenceable> = {
+	what: "an element of this workspace",
+	find: (workspace, ref) => workspace.getByRef(ref),
+};
+const A_CONTEXT: Kind<BoundedContext> = {
+	what: "a bounded context of this workspace",
+	find: (workspace, ref) => workspace.getBoundedContextByRef(ref),
+};
+
 /** Consumables are added in the second pass because their schema must already exist. */
 function addProvides(
 	provider: Aggregate | Service,
 	schema: AggregateSchema | ServiceSchema,
-	workspace: Workspace,
+	refs: Refs,
 ) {
 	for (const [id, consumableSchema] of Object.entries(schema.provides)) {
 		debug(`Adding consumable: ${consumableSchema.name} to ${provider.name}`);
@@ -46,17 +206,18 @@ function addProvides(
 			rejects: rejectsRefs,
 			...rest
 		} = consumableSchema;
+		const at = site(
+			consumableSchema.type === "event" ? "Event" : "Operation",
+			consumableSchema.name,
+			`${provider.ref}/provides/${id}`,
+		);
+		const returns = refs.one(at, "returns", A_SCHEMA, returnsRef);
 		provider.addConsumable(consumableSchema.name, {
 			...rest,
 			id,
-			schema: schemaRef && workspace.getSchemaByRefOrThrow(schemaRef.$ref),
-			returns: returnsRef && {
-				schema: workspace.getSchemaByRefOrThrow(returnsRef.$ref),
-				many: returnsRef.many,
-			},
-			rejects: rejectsRefs?.map(({ $ref }) =>
-				workspace.getSchemaByRefOrThrow($ref),
-			),
+			schema: refs.one(at, "schema", A_SCHEMA, schemaRef),
+			returns: returns && { schema: returns, many: returnsRef?.many },
+			rejects: refs.many(at, "rejects", A_SCHEMA, rejectsRefs),
 		});
 	}
 }
@@ -66,6 +227,7 @@ function linkRaises(
 	provider: Aggregate | Service,
 	schema: AggregateSchema | ServiceSchema,
 	workspace: Workspace,
+	refs: Refs,
 ) {
 	for (const [id, consumableSchema] of Object.entries(schema.provides)) {
 		if (!consumableSchema.raises?.length) continue;
@@ -73,8 +235,11 @@ function linkRaises(
 			`${provider.ref}/provides/${id}`,
 		);
 		consumable.raises(
-			...consumableSchema.raises.map(({ $ref }) =>
-				workspace.getConsumableByRefOrThrow($ref),
+			...refs.many(
+				site("Operation", consumable.name, consumable.ref),
+				"raises",
+				A_CONSUMABLE,
+				consumableSchema.raises,
 			),
 		);
 	}
@@ -83,19 +248,36 @@ function linkRaises(
 function addConsumes(
 	consumer: Aggregate | Service,
 	schema: AggregateSchema | ServiceSchema,
-	workspace: Workspace,
+	refs: Refs,
 ) {
+	const at = site(
+		"entities" in schema ? "Aggregate" : "Service",
+		consumer.name,
+		consumer.ref,
+	);
 	for (const consumption of schema.consumes) {
 		debug(
 			`Adding consumption: ${consumption.consumable.$ref} to ${consumer.name}`,
 		);
-		const consumable = workspace.getConsumableByRefOrThrow(
-			consumption.consumable.$ref,
+		// A consumption is the pair it joins, so a consumable that resolves to
+		// nothing leaves no consumption to hang the rest of it on: the whole
+		// entry is dropped and reported at the consumer, which is where it was
+		// written.
+		const consumable = refs.one(
+			at,
+			"consumable",
+			A_CONSUMABLE,
+			consumption.consumable,
 		);
+		if (!consumable) continue;
 		consumer.addConsumption(consumable, {
 			...consumption,
-			by: consumption.by?.map(({ $ref }) =>
-				workspace.getConsumptionCallerByRefOrThrow($ref),
+			by: refs.many(
+				at,
+				"by",
+				A_CALLER,
+				consumption.by,
+				`its consumption of "${consumable.name}"`,
 			),
 		});
 	}
@@ -112,11 +294,11 @@ function addConsumes(
 function identifiedBy(
 	workspace: Workspace,
 	ref: string,
-): Entity | BoundedContext {
+): Entity | BoundedContext | undefined {
 	const target = workspace.getByRef(ref);
-	if (target instanceof Entity || target instanceof BoundedContext)
-		return target;
-	throw new Error(`Entity or Bounded Context with ref ${ref} not found`);
+	return target instanceof Entity || target instanceof BoundedContext
+		? target
+		: undefined;
 }
 
 /**
@@ -127,21 +309,30 @@ function identifiedBy(
 function addAttributes(
 	owner: AttributeOwner,
 	attributes: Record<string, AttributeSchema>,
-	workspace: Workspace,
+	refs: Refs,
 ) {
 	for (const [id, attributeSchema] of Object.entries(attributes)) {
+		const at = site(
+			"Attribute",
+			`${owner.name}.${attributeSchema.name}`,
+			`#/${owner.path}/attributes/${id}`,
+		);
 		owner.addAttribute(attributeSchema.name, {
 			...attributeSchema,
 			id,
-			valueobject:
-				attributeSchema.valueobject &&
-				workspace.getValueObjectByRefOrThrow(attributeSchema.valueobject.$ref),
-			schema:
-				attributeSchema.schema &&
-				workspace.getSchemaByRefOrThrow(attributeSchema.schema.$ref),
-			identifies:
-				attributeSchema.identifies &&
-				identifiedBy(workspace, attributeSchema.identifies.$ref),
+			valueobject: refs.one(
+				at,
+				"valueobject",
+				A_VALUE_OBJECT,
+				attributeSchema.valueobject,
+			),
+			schema: refs.one(at, "schema", A_SCHEMA, attributeSchema.schema),
+			identifies: refs.one(
+				at,
+				"identifies",
+				AN_IDENTITY_TARGET,
+				attributeSchema.identifies,
+			),
 		});
 	}
 }
@@ -179,18 +370,25 @@ function addBoundedContext(
 	workspace: Workspace,
 	id: string,
 	boundedcontextSchema: BoundedContextSchema,
+	refs: Refs,
 ): BoundedContext {
 	debug(`Adding bounded context: ${boundedcontextSchema.name}`);
+	const at = site(
+		"Bounded context",
+		boundedcontextSchema.name,
+		boundedcontextRef(id).$ref,
+	);
 	const boundedcontext = workspace.addBoundedContext(
 		boundedcontextSchema.name,
 		{
 			...boundedcontextSchema,
 			id,
-			team:
-				boundedcontextSchema.team &&
-				workspace.getTeamByRefOrThrow(boundedcontextSchema.team.$ref),
-			subdomains: boundedcontextSchema.subdomains.map(({ $ref }) =>
-				workspace.getSubdomainByRefOrThrow($ref),
+			team: refs.one(at, "team", A_TEAM, boundedcontextSchema.team),
+			subdomains: refs.many(
+				at,
+				"subdomains",
+				A_SUBDOMAIN,
+				boundedcontextSchema.subdomains,
 			),
 		},
 	);
@@ -360,13 +558,14 @@ function* providersOf(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 function linkReferences(
 	workspace: Workspace,
 	workspaceSchema: WorkspaceSchema,
+	refs: Refs,
 ) {
 	for (const { provider, schema } of providersOf(workspace, workspaceSchema)) {
-		addProvides(provider, schema, workspace);
+		addProvides(provider, schema, refs);
 	}
 	for (const { provider, schema } of providersOf(workspace, workspaceSchema)) {
-		linkRaises(provider, schema, workspace);
-		addConsumes(provider, schema, workspace);
+		linkRaises(provider, schema, workspace, refs);
+		addConsumes(provider, schema, refs);
 	}
 
 	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
@@ -380,7 +579,7 @@ function linkReferences(
 					schemaRef(boundedcontextId, schemaId).$ref,
 				),
 				schemaSchema.attributes,
-				workspace,
+				refs,
 			);
 		}
 
@@ -390,12 +589,17 @@ function linkReferences(
 			const valueobject = workspace.getValueObjectByRefOrThrow(
 				valueObjectRef(boundedcontextId, valueobjectId).$ref,
 			);
-			addAttributes(valueobject, valueobjectSchema.attributes, workspace);
+			addAttributes(valueobject, valueobjectSchema.attributes, refs);
+			const valueAt = site("Value object", valueobject.name, valueobject.ref);
 			for (const relation of valueobjectSchema.relations) {
-				valueobject.addRelation(
-					workspace.getEntityOrValueobjectByRefOrThrow(relation.target.$ref),
-					relation,
+				const target = refs.one(
+					valueAt,
+					"target",
+					A_RELATION_TARGET,
+					relation.target,
+					`its "${relation.relation}" relation`,
 				);
+				if (target) valueobject.addRelation(target, relation);
 			}
 
 			// A value's rule is about its own attributes, so it is wired once
@@ -407,9 +611,13 @@ function linkReferences(
 					valueObjectInvariantRef(boundedcontextId, valueobjectId, invariantId)
 						.$ref,
 				);
-				for (const { $ref } of invariantSchema.constrains) {
-					invariant.constrains(workspace.getConstrainableByRefOrThrow($ref));
-				}
+				for (const target of refs.many(
+					site("Invariant", invariant.name, invariant.ref),
+					"constrains",
+					A_CONSTRAINABLE,
+					invariantSchema.constrains,
+				))
+					invariant.constrains(target);
 			}
 		}
 
@@ -422,12 +630,17 @@ function linkReferences(
 				const entity = workspace.getEntityByRefOrThrow(
 					entityRef(boundedcontextId, aggregateId, entityId).$ref,
 				);
-				addAttributes(entity, entitySchema.attributes, workspace);
+				addAttributes(entity, entitySchema.attributes, refs);
+				const entityAt = site("Entity", entity.name, entity.ref);
 				for (const relation of entitySchema.relations) {
-					entity.addRelation(
-						workspace.getEntityOrValueobjectByRefOrThrow(relation.target.$ref),
-						relation,
+					const target = refs.one(
+						entityAt,
+						"target",
+						A_RELATION_TARGET,
+						relation.target,
+						`its "${relation.relation}" relation`,
 					);
+					if (target) entity.addRelation(target, relation);
 				}
 			}
 
@@ -438,9 +651,13 @@ function linkReferences(
 				const invariant = workspace.getInvariantByRefOrThrow(
 					invariantRef(boundedcontextId, aggregateId, invariantId).$ref,
 				);
-				for (const { $ref } of invariantSchema.constrains) {
-					invariant.constrains(workspace.getConstrainableByRefOrThrow($ref));
-				}
+				for (const target of refs.many(
+					site("Invariant", invariant.name, invariant.ref),
+					"constrains",
+					A_CONSTRAINABLE,
+					invariantSchema.constrains,
+				))
+					invariant.constrains(target);
 			}
 		}
 
@@ -452,9 +669,13 @@ function linkReferences(
 			const invariant = workspace.getInvariantByRefOrThrow(
 				contextInvariantRef(boundedcontextId, invariantId).$ref,
 			);
-			for (const { $ref } of invariantSchema.constrains) {
-				invariant.constrains(workspace.getConstrainableByRefOrThrow($ref));
-			}
+			for (const target of refs.many(
+				site("Invariant", invariant.name, invariant.ref),
+				"constrains",
+				A_CONSTRAINABLE,
+				invariantSchema.constrains,
+			))
+				invariant.constrains(target);
 		}
 	}
 }
@@ -468,6 +689,7 @@ function linkReferences(
 function linkSpecialisations(
 	workspace: Workspace,
 	workspaceSchema: WorkspaceSchema,
+	refs: Refs,
 ) {
 	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
@@ -476,10 +698,14 @@ function linkSpecialisations(
 			boundedcontextSchema.valueobjects,
 		)) {
 			if (!valueobjectSchema.specialises) continue;
-			workspace.getValueObjectByRefOrThrow(
+			const valueobject = workspace.getValueObjectByRefOrThrow(
 				valueObjectRef(boundedcontextId, valueobjectId).$ref,
-			).specialises = workspace.getValueObjectByRefOrThrow(
-				valueobjectSchema.specialises.$ref,
+			);
+			valueobject.specialises = refs.one(
+				site("Value object", valueobject.name, valueobject.ref),
+				"specialises",
+				A_VALUE_OBJECT,
+				valueobjectSchema.specialises,
 			);
 		}
 		for (const [aggregateId, aggregateSchema] of Object.entries(
@@ -489,10 +715,14 @@ function linkSpecialisations(
 				aggregateSchema.entities,
 			)) {
 				if (!entitySchema.specialises) continue;
-				workspace.getEntityByRefOrThrow(
+				const entity = workspace.getEntityByRefOrThrow(
 					entityRef(boundedcontextId, aggregateId, entityId).$ref,
-				).specialises = workspace.getEntityByRefOrThrow(
-					entitySchema.specialises.$ref,
+				);
+				entity.specialises = refs.one(
+					site("Entity", entity.name, entity.ref),
+					"specialises",
+					AN_ENTITY,
+					entitySchema.specialises,
 				);
 			}
 		}
@@ -500,7 +730,11 @@ function linkSpecialisations(
 }
 
 /** A term may be embodied by any element, so it is linked once all exist. */
-function linkGlossary(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
+function linkGlossary(
+	workspace: Workspace,
+	workspaceSchema: WorkspaceSchema,
+	refs: Refs,
+) {
 	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
@@ -508,15 +742,26 @@ function linkGlossary(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 			boundedcontextSchema.glossary,
 		)) {
 			if (!termSchema.embodiedBy) continue;
-			workspace
-				.getTermByRefOrThrow(termRef(boundedcontextId, termId).$ref)
-				.embody(workspace.getByRefOrThrow(termSchema.embodiedBy.$ref));
+			const term = workspace.getTermByRefOrThrow(
+				termRef(boundedcontextId, termId).$ref,
+			);
+			const embodiment = refs.one(
+				site("Glossary term", term.name, term.ref),
+				"embodiedBy",
+				AN_ELEMENT,
+				termSchema.embodiedBy,
+			);
+			if (embodiment) term.embody(embodiment);
 		}
 	}
 }
 
 /** Policies join consumables that may live in any context. */
-function linkPolicies(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
+function linkPolicies(
+	workspace: Workspace,
+	workspaceSchema: WorkspaceSchema,
+	refs: Refs,
+) {
 	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
@@ -526,22 +771,61 @@ function linkPolicies(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 			const policy = workspace.getPolicyByRefOrThrow(
 				policyRef(boundedcontextId, policyId).$ref,
 			);
-			policy.on(
-				...policySchema.on.map(({ $ref }) =>
-					workspace.getReactionTriggerByRefOrThrow($ref),
-				),
-			);
-			policy.issues(
-				...policySchema.then.map(({ $ref }) =>
-					workspace.getConsumableByRefOrThrow($ref),
-				),
-			);
+			const at = site("Policy", policy.name, policy.ref);
+			policy.on(...refs.many(at, "on", A_REACTION_TRIGGER, policySchema.on));
+			policy.issues(...refs.many(at, "then", A_CONSUMABLE, policySchema.then));
 		}
 	}
 }
 
+/**
+ * What a process may wait for or end on: an event, an answer, or one of *its
+ * own* deadlines.
+ *
+ * A deadline of another process is refused here rather than reported by a
+ * rule, for the reason the DSL refuses it: a per-instance clock starts when
+ * one instance began waiting, so no other reactor knows the instance exists,
+ * and a ref to somebody else's is not a thing this field can name at all.
+ */
+function processTrigger(process: Process): Kind<ProcessTrigger> {
+	return {
+		what: "an event, an answer an operation comes back with, or one of this process's own deadlines",
+		find: (workspace, ref) => {
+			const found = workspace.getProcessTriggerByRef(ref);
+			if (found instanceof Deadline && found.process !== process)
+				return undefined;
+			return found;
+		},
+	};
+}
+
+/**
+ * What a deadline's `from` may name: one of the triggers the process already
+ * waits for.
+ *
+ * A clock starts on a moment the instance can tell has arrived, and the only
+ * moments it knows are the ones it listens for, so anything else is not a
+ * thing this field can name — reported the same way a ref that names nothing
+ * at all is, rather than throwing out of `countsFrom` at load.
+ */
+function deadlineAnchor(process: Process): Kind<ProcessTrigger> {
+	const waitsFor = [...process.startEvents, ...process.events];
+	const trigger = processTrigger(process);
+	return {
+		what: "one of the triggers this process starts or waits on",
+		find: (workspace, ref) => {
+			const found = trigger.find(workspace, ref);
+			return found && waitsFor.includes(found) ? found : undefined;
+		},
+	};
+}
+
 /** Processes join consumables that may live in any context. */
-function linkProcesses(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
+function linkProcesses(
+	workspace: Workspace,
+	workspaceSchema: WorkspaceSchema,
+	refs: Refs,
+) {
 	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
@@ -551,17 +835,19 @@ function linkProcesses(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 			const process = workspace.getProcessByRefOrThrow(
 				processRef(boundedcontextId, processId).$ref,
 			);
-			const consumables = (refs: { $ref: string }[]) =>
-				refs.map(({ $ref }) => workspace.getConsumableByRefOrThrow($ref));
+			const at = site("Process", process.name, process.ref);
 			// What a process waits for, and what completes it, may be an answer
 			// or one of its own deadlines rather than an event, so both resolve
 			// to any of the three (decision 23).
-			const triggers = (refs: { $ref: string }[]) =>
-				refs.map(({ $ref }) => workspace.getProcessTriggerByRefOrThrow($ref));
-			process.starts(...consumables(processSchema.starts));
-			process.on(...triggers(processSchema.on));
-			process.issues(...consumables(processSchema.then));
-			process.ends(...triggers(processSchema.ends));
+			const trigger = processTrigger(process);
+			process.starts(
+				...refs.many(at, "starts", A_STARTING_TRIGGER, processSchema.starts),
+			);
+			process.on(...refs.many(at, "on", trigger, processSchema.on));
+			process.issues(
+				...refs.many(at, "then", A_CONSUMABLE, processSchema.then),
+			);
+			process.ends(...refs.many(at, "ends", trigger, processSchema.ends));
 			// A deadline's anchor is one of the triggers linked just above, so
 			// it is set here rather than where the deadline was made: in the
 			// first pass the process waited for nothing yet, and `countsFrom`
@@ -572,9 +858,13 @@ function linkProcesses(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 				if (!deadlineSchema.from) continue;
 				const deadline = process.deadlines.get(deadlineId);
 				if (!deadline) continue;
-				deadline.countsFrom(
-					workspace.getProcessTriggerByRefOrThrow(deadlineSchema.from.$ref),
+				const anchor = refs.one(
+					site("Deadline", deadline.name, deadline.ref),
+					"from",
+					deadlineAnchor(process),
+					deadlineSchema.from,
 				);
+				if (anchor) deadline.countsFrom(anchor);
 			}
 		}
 	}
@@ -583,19 +873,44 @@ function linkProcesses(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 function addRelationships(
 	workspace: Workspace,
 	workspaceSchema: WorkspaceSchema,
+	refs: Refs,
 ) {
 	for (const relationship of workspaceSchema.relationships) {
+		const written =
+			"participants" in relationship
+				? relationship.participants
+				: [relationship.upstream, relationship.downstream];
+		// A relationship is the pair it joins, so an end that resolves to
+		// nothing leaves no relationship at all. It has no ref of its own until
+		// both ends are known, so the miss is reported at the end that did
+		// resolve, and at the ref as written when neither did.
+		const ends = written.map((end) =>
+			workspace.getBoundedContextByRef(end.$ref),
+		);
+		const landsOn = ends.find((it) => it !== undefined);
+		const at = site(
+			"Relationship",
+			`${relationship.type} between "${written[0].$ref}" and "${written[1].$ref}"`,
+			landsOn?.ref ?? written.find((_, i) => !ends[i])?.$ref ?? "",
+		);
+		const both = written.map((end, i) =>
+			refs.one(
+				at,
+				"participants" in relationship
+					? "participants"
+					: i === 0
+						? "upstream"
+						: "downstream",
+				A_CONTEXT,
+				end,
+			),
+		);
+		const [source, target] = both;
+		if (!source || !target) continue;
 		if ("participants" in relationship) {
 			workspace.addRelationship({
 				type: relationship.type,
-				participants: [
-					workspace.getBoundedContextByRefOrThrow(
-						relationship.participants[0].$ref,
-					),
-					workspace.getBoundedContextByRefOrThrow(
-						relationship.participants[1].$ref,
-					),
-				],
+				participants: [source, target],
 				description: relationship.description,
 				comments: relationship.comments,
 				disposition: relationship.disposition,
@@ -603,12 +918,8 @@ function addRelationships(
 		} else {
 			workspace.addRelationship({
 				type: relationship.type,
-				upstream: workspace.getBoundedContextByRefOrThrow(
-					relationship.upstream.$ref,
-				),
-				downstream: workspace.getBoundedContextByRefOrThrow(
-					relationship.downstream.$ref,
-				),
+				upstream: source,
+				downstream: target,
 				upstreamRoles: relationship.upstreamRoles,
 				downstreamRoles: relationship.downstreamRoles,
 				description: relationship.description,
@@ -633,20 +944,21 @@ export function getWorkspaceFromSchema(
 		version: workspaceSchema.version,
 		options: workspaceSchema.options,
 	});
+	const refs = new Refs(workspace);
 
 	addDomains(workspace, workspaceSchema);
 	addTeams(workspace, workspaceSchema);
 	for (const [id, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
-		addBoundedContext(workspace, id, boundedcontextSchema);
+		addBoundedContext(workspace, id, boundedcontextSchema, refs);
 	}
-	linkSpecialisations(workspace, workspaceSchema);
-	linkReferences(workspace, workspaceSchema);
-	linkPolicies(workspace, workspaceSchema);
-	linkProcesses(workspace, workspaceSchema);
-	linkGlossary(workspace, workspaceSchema);
-	addRelationships(workspace, workspaceSchema);
+	linkSpecialisations(workspace, workspaceSchema, refs);
+	linkReferences(workspace, workspaceSchema, refs);
+	linkPolicies(workspace, workspaceSchema, refs);
+	linkProcesses(workspace, workspaceSchema, refs);
+	linkGlossary(workspace, workspaceSchema, refs);
+	addRelationships(workspace, workspaceSchema, refs);
 
 	return workspace;
 }
