@@ -91,7 +91,7 @@ those never breaks a ref.
 
 ## Reference models
 
-The `models/` workspace folder in the repository holds four packages, each a
+The `models/` workspace folder in the repository holds five packages, each a
 workspace written with the DSL and generated into a `.ods/*.json` file used by
 the viewer, the export and the test fixtures:
 
@@ -104,6 +104,10 @@ the viewer, the export and the test fixtures:
   with a legacy big ball of mud, shared kernels and partnerships, deep
   aggregates, and a few deliberate structural problems so diagnostics have
   something to show. Between them the three trigger every rule in the catalog.
+- **Clinic**, an outpatient clinic, is modelled blind from the skill and the
+  docs alone, with no other reference model read first: it is the check that
+  the guidance in this repository is enough on its own to produce a sound
+  workspace.
 
 Each fictional organisation comes with a `BRIEF.md` describing the business
 and a `DISCOVERY.md` recording the interviews and event-storming session the
