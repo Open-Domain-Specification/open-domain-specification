@@ -47,17 +47,7 @@
 										"$ref": "#/boundedcontexts/orders/valueobjects/address"
 									}
 								}
-							},
-							"relations": [
-								{
-									"target": {
-										"$ref": "#/boundedcontexts/orders/valueobjects/address"
-									},
-									"relation": "uses",
-									"label": "ships-to",
-									"cardinality": "1"
-								}
-							]
+							}
 						}
 					},
 					"invariants": {
@@ -85,7 +75,6 @@
 					"consumes": []
 				}
 			},
-			"invariants": {},
 			"services": {
 				"order_api": {
 					"name": "Order API",
@@ -107,8 +96,6 @@
 					"consumes": []
 				}
 			},
-			"policies": {},
-			"processes": {},
 			"glossary": {
 				"order": {
 					"name": "Order",
@@ -125,7 +112,6 @@
 						"lines": { "name": "lines", "type": "text" },
 						"postcode": { "name": "postcode", "type": "postcode" }
 					},
-					"relations": [],
 					"invariants": {}
 				}
 			},

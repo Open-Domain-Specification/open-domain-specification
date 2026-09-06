@@ -12,12 +12,11 @@ import { workspace } from "./workspace";
  * DISCOVERY.md.
  */
 const deliberate: Array<{ rule: string; severity: "error" | "warning" }> = [
+	// Channels calls Credit Decisioning across a declared separate ways. One
+	// mistake, one diagnostic: separate ways says how the two stand, so
+	// `relationship-declared` has nothing left to ask and this rule says what
+	// is actually wrong (card 104).
 	{ rule: "separate-ways", severity: "error" },
-	// The same violated separate ways, seen from the other side: Channels calls
-	// Credit Decisioning and separate ways is the declaration that they do not
-	// integrate, so it accounts for nothing and `relationship-declared` still
-	// asks how the two contexts stand to each other (card 70).
-	{ rule: "relationship-declared", severity: "warning" },
 	{ rule: "consumable-kind", severity: "error" },
 	{ rule: "context-serves-subdomain", severity: "warning" },
 ];

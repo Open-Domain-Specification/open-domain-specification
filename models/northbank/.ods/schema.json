@@ -19,6 +19,7 @@
                     "additionalProperties": {
                         "$ref": "#/definitions/EntitySchema"
                     },
+                    "description": "The entities inside this aggregate, by id. Optional, like every map of\nelements in this schema: an absent map is an empty one.",
                     "type": "object"
                 },
                 "invariants": {
@@ -40,10 +41,7 @@
             "required": [
                 "consumes",
                 "description",
-                "entities",
-                "invariants",
-                "name",
-                "provides"
+                "name"
             ],
             "title": "Aggregate",
             "type": "object"
@@ -125,6 +123,7 @@
                     "additionalProperties": {
                         "$ref": "#/definitions/AggregateSchema"
                     },
+                    "description": "The aggregates of this context, by id. Optional, and an absent map is an\nempty one — as every map of elements in this schema is, so that a file\nstates what a context has and writes nothing at all for what it has not\n(card 104).",
                     "type": "object"
                 },
                 "bigBallOfMud": {
@@ -218,17 +217,9 @@
                 }
             },
             "required": [
-                "aggregates",
                 "description",
-                "glossary",
-                "invariants",
                 "name",
-                "policies",
-                "processes",
-                "schemas",
-                "services",
-                "subdomains",
-                "valueobjects"
+                "subdomains"
             ],
             "title": "BoundedContext",
             "type": "object"
@@ -700,6 +691,7 @@
                     "type": "string"
                 },
                 "relations": {
+                    "description": "What this entity points at; empty when left out.",
                     "items": {
                         "$ref": "#/definitions/EntityRelationSchema"
                     },
@@ -725,8 +717,7 @@
             "required": [
                 "attributes",
                 "description",
-                "name",
-                "relations"
+                "name"
             ],
             "title": "Entity",
             "type": "object"
@@ -1019,7 +1010,6 @@
                 "consumes",
                 "description",
                 "name",
-                "provides",
                 "type"
             ],
             "title": "Service",
@@ -1189,6 +1179,7 @@
                     "type": "string"
                 },
                 "relations": {
+                    "description": "What this value points at; empty when left out.",
                     "items": {
                         "$ref": "#/definitions/EntityRelationSchema"
                     },
@@ -1212,8 +1203,7 @@
                 "attributes",
                 "description",
                 "invariants",
-                "name",
-                "relations"
+                "name"
             ],
             "title": "ValueObject",
             "type": "object"

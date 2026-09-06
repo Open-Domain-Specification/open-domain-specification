@@ -243,6 +243,11 @@ describe("examples", () => {
 		const { $schema: _s, ...json } = JSON.parse(
 			file("examples/minimal.ods.json"),
 		);
-		expect(workspace.toSchema()).toEqual(json);
+		// The file leaves its empty collections out, which is what the schema
+		// now allows and what an author copying it should see; loading fills
+		// them in, so the two are compared as the loader reads them (card 104).
+		expect(workspace.toSchema()).toEqual(
+			Workspace.fromSchema(structuredClone(json)).toSchema(),
+		);
 	});
 });

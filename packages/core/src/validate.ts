@@ -14,6 +14,7 @@ import {
 	ReactionChain,
 	type Reactor,
 	reachedEvents,
+	routesTo,
 } from "./reaction-walk";
 import type { DownstreamRole, UpstreamRole } from "./schema";
 import {
@@ -857,9 +858,17 @@ function cardinalityDiagnostics(
 }
 
 /**
- * An attribute typed by a value object and a `uses` relation to it are two
- * halves of the same statement, and each half has to say the same about how
- * many there are and whether there is one at all.
+ * A `uses` relation declared for an attribute says the same as the attribute
+ * about how many there are and whether there is one at all.
+ *
+ * The line itself is not asked for. An attribute typed by a value object is a
+ * dependency on that value, and the relation map draws it from the attribute
+ * whether or not a relation is written — as it always has for a value borrowed
+ * from another context, where no relation may be declared at all (decision 16,
+ * note of 2026-09-10). A declared relation adds a label or a cardinality to
+ * that line, and what this rule checks is that what it adds is true. Demanding
+ * the declaration made the reference models write the pair out hundreds of
+ * times and told an author to restate a fact the model already had.
  *
  * The attribute's `type` is free text by decision 15, so the validator does
  * not parse it and never asks it to spell the value object's name. The one
@@ -872,7 +881,8 @@ function cardinalityDiagnostics(
  * label stays the phrase the relation map reads. With a single relation to the
  * value object nothing is named, which is the common case; where several point
  * at it and none names the attribute, the pairing is ambiguous and reported
- * rather than guessed.
+ * rather than guessed, because the map cannot draw a line it cannot pair
+ * either (see {@link Attribute.drawnBy}).
  *
  * Inherited attributes and relations are the subtype's (decision 22): a kind
  * that adds an attribute typed by a value object its parent already uses is
@@ -886,26 +896,15 @@ const attributeRelationCoherence: Rule = (workspace) => {
 		const context = member.boundedcontext;
 		for (const attribute of member.attributes.values()) {
 			const vo = attribute.valueobject;
-			// A relation may not leave the context, so only ask for one that
-			// could exist: a value object reached over a shared kernel or from
-			// an upstream this context conforms to is typed by ref alone, and
-			// the map derives its `uses` line from the attribute rather than
-			// from a declaration (decision 16, third amendment). There is then
-			// no declared relation for the attribute to disagree with.
+			// A relation may not leave the context, so only a value object of
+			// this one can have a declared relation to disagree with; a borrowed
+			// value is drawn from the attribute alone (decision 16, third
+			// amendment).
 			if (!vo || vo.boundedcontext !== context) continue;
 			const candidates = usesOfValueObject(member.allRelations, vo);
-			if (candidates.length === 0) {
-				diagnostics.push({
-					severity: "warning",
-					rule: "attribute-relation-coherence",
-					message: `"${member.name}" types attribute "${attribute.name}" by value object "${vo.name}" but declares no "uses" relation to "${vo.name}", so the relation map never draws it`,
-					ref: member.ref,
-				});
-				continue;
-			}
-			const relation =
-				candidates.find((r) => r.for === attribute.name) ??
-				(candidates.length === 1 ? candidates[0] : undefined);
+			// Nothing declared is the ordinary case now: the line is derived.
+			if (candidates.length === 0) continue;
+			const relation = attribute.drawnBy;
 			if (!relation) {
 				diagnostics.push({
 					severity: "warning",
@@ -1084,20 +1083,26 @@ function composedSchemas(roots: Iterable<DataSchema>): Set<DataSchema> {
  * The payload shapes this invariant's guarded operations put within its reach,
  * composition included.
  *
- * A precondition reads the call, so everything the call carries is its: the
- * request it is checked against, and — since decision 19's first 2026-09-09
- * amendment — the answer and the refusals too. A postcondition reaches the
- * same three, because what it guarantees is a relation between the answer and
- * the request that produced it: every returned itinerary arrives by the
- * requested time names one attribute of each, and reading the answer alone
- * refused the very example the flag was introduced for (decision 19, third
- * amendment).
+ * A precondition is checked before the call runs, so what it can read is what
+ * has arrived: the request, and the shapes the request composes. The answer
+ * has not been computed and the refusals have not been chosen, so a rule that
+ * names one is not a check anybody could make — it is a guarantee about what
+ * comes back, which is what `postcondition` is for. Reading all three for both
+ * flags let a precondition constrain an attribute of a shape that does not
+ * exist when it runs (card 104).
+ *
+ * A postcondition reaches all three, because what it guarantees is a relation
+ * between the answer and the request that produced it: every returned
+ * itinerary arrives by the requested time names one attribute of each, and
+ * reading the answer alone refused the very example the flag was introduced
+ * for (decision 19, third amendment).
  */
 function guardedSchemas(invariant: Invariant): Set<DataSchema> {
 	const roots: DataSchema[] = [];
 	for (const operation of invariant.guarded) {
 		if (operation.type !== "operation") continue;
 		if (operation.schema) roots.push(operation.schema);
+		if (!invariant.postcondition) continue;
 		if (operation.returns) roots.push(operation.returns);
 		roots.push(...operation.rejects);
 	}
@@ -1111,14 +1116,14 @@ function guardedSchemas(invariant: Invariant): Set<DataSchema> {
  * A precondition is checked before the call runs, and often what it checks is
  * in the call: pickup before delivery, a positive weight, on a quotation no
  * aggregate holds yet. The rule is about the request, so the request is what
- * it names, and refusing it sent those rules back to prose (decision 19,
- * amended). A postcondition is a guarantee about the answer, which does not
- * exist until the call returns — and a guarantee that relates the answer to
- * what was asked for, so it names the request as well: every returned
- * itinerary arrives by the requested time (decision 19, third amendment).
- * Nothing else may name a schema's attribute at all: an invariant kept true on
- * every save is a rule about the model, and a transport shape is not the
- * model.
+ * it names — and only the request, because nothing else has happened yet
+ * (decision 19, amended). A postcondition is a guarantee about the answer,
+ * which does not exist until the call returns — and a guarantee that relates
+ * the answer to what was asked for, so it names the request as well: every
+ * returned itinerary arrives by the requested time (decision 19, third
+ * amendment). Nothing else may name a schema's attribute at all: an invariant
+ * kept true on every save is a rule about the model, and a transport shape is
+ * not the model.
  */
 function inGuardedShapes(target: Constrainable, invariant: Invariant): boolean {
 	if (!invariant.precondition && !invariant.postcondition) return false;
@@ -1137,18 +1142,21 @@ function schemaOf(target: Constrainable): DataSchema | undefined {
 /**
  * Why a schema's attribute is out of reach, which is not one sentence twice: a
  * rule that is neither a precondition nor a postcondition may not name a
- * transport shape at all, and either of those two may name only the shapes its
- * own guard carries.
+ * transport shape at all, a postcondition may name only the shapes its own
+ * guard carries, and a precondition only the request among them. The
+ * postcondition is asked first so that the sentence matches the reach where a
+ * model has claimed both flags, which `postcondition-names-operation` reports
+ * separately.
  */
 function schemaAttributeRefusal(
 	schema: DataSchema,
 	invariant: Invariant,
 ): string {
 	const where = `an attribute of schema "${schema.name}"`;
-	if (invariant.precondition)
-		return `${where}, which no operation this precondition guards takes, returns or rejects with, directly or through a shape one of those composes`;
 	if (invariant.postcondition)
 		return `${where}, which no operation this postcondition guards takes, returns or rejects with, directly or through a shape one of those composes`;
+	if (invariant.precondition)
+		return `${where}, which no operation this precondition guards takes, directly or through a shape its request composes; a precondition is checked before the call runs, so it reads the request and not what comes back`;
 	return `${where}, and only a precondition or a postcondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape`;
 }
 
@@ -1297,11 +1305,12 @@ function outsideAggregate(
  *
  * A precondition and a postcondition reach one place further, into the shapes
  * the call carries: what a precondition checks before the call runs is often
- * in the request, and what a postcondition guarantees of the answer is often
- * stated against the request that asked for it, so either may constrain
- * attributes of a schema its guarded operation takes, returns or rejects with
- * (see {@link inGuardedShapes}). Any other invariant naming a schema's
- * attribute is refused, and told which of the two reasons it is.
+ * in the request, so it may constrain attributes of the schema its guarded
+ * operation takes; and what a postcondition guarantees of the answer is often
+ * stated against the request that asked for it, so it may constrain the
+ * request, the answer and the refusals (see {@link inGuardedShapes}). Any
+ * other invariant naming a schema's attribute is refused, and told which of
+ * the reasons it is.
  */
 const invariantInAggregate: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -1743,9 +1752,13 @@ function symmetricallyRelated(
  * answers the question the crossing raises — on what terms do these two
  * stand? — whichever way it points.
  *
- * Separate ways counts for nothing, and only it: it is the declaration that
- * the two do *not* integrate, so it contradicts the crossing rather than
- * explaining it.
+ * Separate ways counts too, though it explains nothing: the question this rule
+ * asks is whether the pair has been described at all, and a pair that has
+ * declared separate ways has been. What is wrong there is that the crossing
+ * contradicts the declaration, which is `separate-ways`'s sentence and an
+ * error; saying beside it that no relationship describes the pair is simply
+ * untrue, and NorthBank's deliberate quick-quote case carried both for four
+ * cards (card 104).
  */
 function relationshipJoins(
 	workspace: Workspace,
@@ -1753,7 +1766,7 @@ function relationshipJoins(
 	other: BoundedContext,
 ): boolean {
 	return workspace.relationships.some(
-		(r) => r.type !== "separate-ways" && r.involves(one) && r.involves(other),
+		(r) => r.involves(one) && r.involves(other),
 	);
 }
 
@@ -1768,6 +1781,12 @@ function relationshipJoins(
  * object (decision 16): the ways one context takes something from another and
  * has terms to state about it. What is borrowed in the last case is the
  * definition and not an instance, which is why it counts.
+ *
+ * A pair that has declared separate ways is not asked. The question here is
+ * whether the two have said how they stand, and they have: they have said they
+ * do not integrate. What is wrong with a crossing across that declaration is
+ * that it contradicts it, which `separate-ways` reports as an error at the
+ * same element (see {@link relationshipJoins}).
  *
  * An identity crossing is not one of them any more. An id an entity holds is a
  * real dependency and the context map draws it, under «id», which is its
@@ -2223,28 +2242,66 @@ function untranslatedCallCrosses(
 }
 
 /**
+ * The contexts each one moves as one with for this walk: itself, its partners,
+ * and its partners' partners.
+ *
+ * A partnership says two teams succeed or fail together and plan their
+ * releases as one, which is the answer to a ring of calls rather than another
+ * step in it: the mutual dependency is deliberate and coordinated, and the two
+ * have stopped being two things that can be released against each other's
+ * contracts. So they are one node here, and a call between them is no step at
+ * all. Partnerships chain, because moving as one is transitive: three contexts
+ * pairwise partnered are one release train, not three.
+ *
+ * Every group is a plain array shared by its members, so merging two is
+ * writing the joined array back over both.
+ */
+function movingAsOne(
+	workspace: Workspace,
+): Map<BoundedContext, BoundedContext[]> {
+	const groups = new Map<BoundedContext, BoundedContext[]>();
+	for (const bc of workspace.boundedcontexts.values()) groups.set(bc, [bc]);
+	for (const relationship of workspace.relationships) {
+		if (relationship.type !== "partnership") continue;
+		const one = groups.get(relationship.source);
+		const other = groups.get(relationship.target);
+		if (!one || !other || one === other) continue;
+		const joined = [...one, ...other];
+		for (const bc of joined) groups.set(bc, joined);
+	}
+	return groups;
+}
+
+/**
  * The directed relationships whose traffic is calls form no cycle.
  *
  * Upstream and downstream is a statement about models: the downstream context
  * shapes its own model around what the upstream offers, and a ring of those
- * means the contexts on it depend on each other's contracts. Two things do not
- * count as a step (decision 20). A step carried only by events, or by a policy
- * subscribing to the other side's event, is choreography, and rings of those
- * are `reaction-cycle`'s business. And a call the downstream translates behind
- * an anti-corruption layer is not a step either: the ACL is exactly what lets
- * the two models evolve independently, so a pair that calls each other through
- * one is not stuck. That is read on the consumption that declares it and never
- * on the relationship's roles (see {@link untranslatedCallCrosses}). What is
- * left is the honest case: contexts calling each other with nothing between
- * them.
+ * means the contexts on it depend on each other's contracts. Three things do
+ * not count as a step (decision 20). A step carried only by events, or by a
+ * policy subscribing to the other side's event, is choreography, and rings of
+ * those are `reaction-cycle`'s business. A call the downstream translates
+ * behind an anti-corruption layer is not a step either: the ACL is exactly
+ * what lets the two models evolve independently, so a pair that calls each
+ * other through one is not stuck. That is read on the consumption that
+ * declares it and never on the relationship's roles (see
+ * {@link untranslatedCallCrosses}). And a call between partners is not a step,
+ * because partners are one node here (see {@link movingAsOne}) — which is what
+ * the fix text has always promised and the walk did not do, so the remedy it
+ * named cleared nothing (card 104). What is left is the honest case: contexts
+ * calling each other with nothing between them.
  */
 const relationshipCycle: Rule = (workspace) => {
-	// The contexts are the nodes, so every ring found is a ring of distinct
-	// contexts. Walking the relationships instead would also report the longer
-	// closed walks that thread the same context twice, which say nothing new.
+	// The nodes are the contexts, partners counted as one, so every ring found
+	// is a ring of distinct nodes. Walking the relationships instead would also
+	// report the longer closed walks that thread the same context twice, which
+	// say nothing new.
+	const groups = movingAsOne(workspace);
+	const asOne = (bc: BoundedContext) => (groups.get(bc) ?? [bc])[0];
 	const startingAt = new Map<BoundedContext, ContextRelationship[]>();
 	for (const relationship of workspace.relationships) {
 		if (!isDirectedRelationshipType(relationship.type)) continue;
+		if (asOne(relationship.source) === asOne(relationship.target)) continue;
 		if (
 			!untranslatedCallCrosses(
 				workspace,
@@ -2253,29 +2310,44 @@ const relationshipCycle: Rule = (workspace) => {
 			)
 		)
 			continue;
-		append(startingAt, relationship.source, relationship);
+		append(startingAt, asOne(relationship.source), relationship);
 	}
 
+	/** A node's name: the context's, or every partner's where it is a group. */
+	const named = (bc: BoundedContext) =>
+		(groups.get(bc) ?? [bc]).map((it) => `"${it.name}"`).join(" and ");
+
 	return cyclesOf(
-		workspace.boundedcontexts.values(),
-		(context) => (startingAt.get(context) ?? []).map((r) => r.target),
+		new Set([...workspace.boundedcontexts.values()].map(asOne)),
+		(context) => (startingAt.get(context) ?? []).map((r) => asOne(r.target)),
 		(context) => context.id,
 	).flatMap((ring) => {
 		// The ring reports at a relationship on it rather than at a context, so a
 		// reader lands on something they can edit. There is one by construction —
 		// the ring was walked along it — and the guard just keeps that honest.
 		const next = ring.length === 1 ? ring[0] : ring[1];
-		const link = (startingAt.get(ring[0]) ?? []).find((r) => r.target === next);
+		const link = (startingAt.get(ring[0]) ?? []).find(
+			(r) => asOne(r.target) === next,
+		);
 		if (!link) return [];
+		// Where a node is a partnership, the ring survived it and the reader is
+		// owed the reason: the pair is one context here, so the ring runs
+		// through the pair rather than between them.
+		const partners = ring.filter((it) => (groups.get(it) ?? []).length > 1);
+		const asOneNote = partners.length
+			? `. ${partners
+					.map((it) => named(it))
+					.join("; ")} are partners, so each of those moves as one context here`
+			: "";
 		return [
 			{
 				severity: "warning" as const,
 				rule: "relationship-cycle",
 				message: `Calls run in a cycle: ${[...ring, ring[0]]
-					.map((c) => `"${c.name}"`)
+					.map(named)
 					.join(
 						" -> ",
-					)}; each of these contexts calls the next, so all of them depend on each other's contracts. Put an anti-corruption layer on one of the steps, so that side translates and is free to change; or declare a partnership where two of them really do move as one; or reverse a dependency by turning that call into an event the other side reacts to`,
+					)}; each of these calls the next, so all of them depend on each other's contracts${asOneNote}. Put an anti-corruption layer on one of the steps, so that side translates and is free to change; or declare a partnership between two neighbours on the ring that really do move as one, which makes them one context here; or reverse a dependency by turning that call into an event the other side reacts to`,
 				ref: link.ref,
 			},
 		];
@@ -3717,12 +3789,13 @@ const policyComplete: Rule = (workspace) => {
  * waits for next, and so on to the end: that is the ordinary multi-step
  * process, and the chain walks it as a ring back into the same process. It is
  * not one. The process holds state — it remembers which of its events have
- * arrived — so the second pass round is a different instance's, or a later
- * step of the same one, and what ends it is the `ends` the process declares
- * (decision 23). What makes it safe to say is that the walk came back to the
- * process itself and to no other reactor: a ring through two processes, or
- * through a process and a policy, is a genuine loop nobody on it can see the
- * whole of, and is reported.
+ * arrived — so the second pass round is a later step of the same instance, and
+ * what ends it is the `ends` the process declares (decision 23). Two things
+ * make that safe to say. The walk came back to the process itself and to no
+ * other reactor: a ring through two processes, or through a process and a
+ * policy, is a genuine loop nobody on it can see the whole of, and is
+ * reported. And it came back to an instance that is already running, which is
+ * {@link reEntersWhileAlive}.
  *
  * The contexts the ring crosses do not come into it. A process that issues
  * its own operation, whose call reaches the next context through a
@@ -3740,7 +3813,42 @@ function isProcessLifecycle(cycle: Reactor[]): boolean {
 		(node): node is Policy | Process =>
 			node instanceof Process || node instanceof Policy,
 	);
-	return reactors.length === 1 && reactors[0] instanceof Process;
+	const [process] = reactors;
+	if (reactors.length !== 1 || !(process instanceof Process)) return false;
+	const at = cycle.indexOf(process);
+	return reEntersWhileAlive(
+		process,
+		cycle[(at + cycle.length - 1) % cycle.length],
+	);
+}
+
+/**
+ * Whether the step that closes a ring wakes an instance that is already
+ * running, rather than beginning another one.
+ *
+ * The lifecycle argument is that the ring is one instance moving through its
+ * steps and stopping at its `ends`. A step into a `starts` trigger is not
+ * that: it makes an instance, so a process whose own operation raises the
+ * event it starts on begins a new instance every time round, and nothing in
+ * the model says what stops the next one from doing it again. Each pass is a
+ * different instance, so no instance's state is holding the ring together and
+ * the exemption's whole reason is gone (card 104).
+ *
+ * Three ways the ring closes into something the instance was waiting for: the
+ * process's own deadline, which runs from the process back to itself; an event
+ * or an answer named in `on`; and an answer routed through one of the process's
+ * calls, which is the same wait seen from the call that carries it (see
+ * {@link routesTo}). A trigger that is both a `starts` and an `on` is a wait
+ * as well as a start, and is left exempt.
+ */
+function reEntersWhileAlive(process: Process, before: Reactor): boolean {
+	if (before === process) return true;
+	return process.events.some(
+		(trigger) =>
+			trigger === before ||
+			(trigger instanceof Answer &&
+				routesTo(process, trigger.operation).includes(before)),
+	);
 }
 
 /**
@@ -4143,9 +4251,9 @@ const RULES: CataloguedRule[] = [
 		rule: "attribute-relation-coherence",
 		severities: ["warning"],
 		summary:
-			"An attribute typed by a value object has a matching uses relation, matched by the relation's for where one value object is used twice, and the two agree about how many there are.",
-		why: "The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened; and when they disagree about number the model says two things at once. Presence is not size: optional says whether the attribute is there and the cardinality says how many the value holds, so a required list may still hold none — Swagger's photoUrls is required with no minimum — and only three pairings are coherent. One value object may be used twice, a current address beside an address history, so with several relations to it each says with for which attribute it draws; the label stays the phrase the map reads. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.",
-		fix: 'Add the missing uses relation or the missing attribute, and give the relation the cardinality the attribute already implies: * or 1..* for a list whether or not it is optional, 1 for a required attribute that is not a list, 0..1 for an optional one that is not a list. Where two relations point at the same value object, set for on each to the name of the attribute it draws. The type itself is free text and is never checked against the value object\'s name; only a trailing [] is read, as "many".',
+			"A uses relation declared for an attribute typed by a value object agrees with it about how many there are, and where one value object is used twice each relation names with for the attribute it draws.",
+		why: "The attribute list and the relation map are two views of the same statement, so the map draws the line from the attribute itself: an attribute typed by a value object is a dependency on that value, declared or not, exactly as it is for a value borrowed from another context where no relation may be written at all. A declaration adds a label or a cardinality to that line, and when it disagrees with the attribute about number the model says two things at once. Presence is not size: optional says whether the attribute is there and the cardinality says how many the value holds, so a required list may still hold none — Swagger's photoUrls is required with no minimum — and only three pairings are coherent. One value object may be used twice, a current address beside an address history, so with several relations to it each says with for which attribute it draws; the label stays the phrase the map reads. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.",
+		fix: 'Give the relation the cardinality the attribute already implies, or add the missing attribute where a relation draws nothing: * or 1..* for a list whether or not it is optional, 1 for a required attribute that is not a list, 0..1 for an optional one that is not a list. Where two relations point at the same value object, set for on each to the name of the attribute it draws. The type itself is free text and is never checked against the value object\'s name; only a trailing [] is read, as "many".',
 		check: attributeRelationCoherence,
 	},
 	{
@@ -4179,17 +4287,17 @@ const RULES: CataloguedRule[] = [
 		rule: "invariant-in-aggregate",
 		severities: ["error"],
 		summary:
-			"An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object something in the aggregate holds, its context's own or one borrowed from elsewhere, or is an operation of a service of its own context, application or domain, that guards it. A precondition may also constrain attributes of a schema the operation it guards takes, returns or rejects with, and a postcondition those of what it returns or rejects with; both follow composition into the shapes those compose.",
-		why: "Naming an operation says which operation keeps the rule; it does not say what kind of rule it is. The invariant says that itself, with precondition: set, it is checked before that operation runs and nothing re-establishes it afterwards — enough funds at initiation, an entitlement at playback start, a pet still available at approval. Unset, the operation is named for responsibility and the rule is still true after it: PostEntry must produce balanced postings and the postings stay balanced. The invariant's page says which of the two it is reading, because the two promise different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not, wherever it was declared. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts. A precondition reaches one place further still: what it checks is often in the request rather than in the model — pickup before delivery, a positive weight, on a quotation no aggregate holds yet — so it may name attributes of a schema its guarded operation takes, returns or rejects with, and a postcondition may name those of what that operation answers or refuses with. Either follows composition, because the fields of a shape nested in a payload are fields the call carries: a rule about the amount of an order line is a rule about the request that holds the lines. No other invariant may name a schema's attribute at all: a rule kept true on every save is a rule about the model, and a transport shape is not the model.",
-		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one, and it is asked of the context's own values as much as of borrowed ones. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them; if it is a guarantee about what comes back, mark it a postcondition instead. Either way the attributes it may then constrain are those of that operation's own schema, returns or rejections, and of the shapes those compose.",
+			"An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object something in the aggregate holds, its context's own or one borrowed from elsewhere, or is an operation of a service of its own context, application or domain, that guards it. A precondition may also constrain attributes of the schema the operation it guards takes, and a postcondition those of the request, the answer and the refusals; both follow composition into the shapes those compose.",
+		why: "Naming an operation says which operation keeps the rule; it does not say what kind of rule it is. The invariant says that itself, with precondition: set, it is checked before that operation runs and nothing re-establishes it afterwards — enough funds at initiation, an entitlement at playback start, a pet still available at approval. Unset, the operation is named for responsibility and the rule is still true after it: PostEntry must produce balanced postings and the postings stay balanced. The invariant's page says which of the two it is reading, because the two promise different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not, wherever it was declared. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts. A precondition reaches one place further still: what it checks is often in the request rather than in the model — pickup before delivery, a positive weight, on a quotation no aggregate holds yet — so it may name attributes of the schema its guarded operation takes, and only that one, because before the call runs there is no answer to read. A postcondition is the one that may name what that operation answers or refuses with, and the request beside it, since what it guarantees relates the two. Either follows composition, because the fields of a shape nested in a payload are fields the call carries: a rule about the amount of an order line is a rule about the request that holds the lines. No other invariant may name a schema's attribute at all: a rule kept true on every save is a rule about the model, and a transport shape is not the model.",
+		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one, and it is asked of the context's own values as much as of borrowed ones. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them, and the attributes it may then constrain are those of that operation's own schema and of the shapes that composes; if it is a guarantee about what comes back, mark it a postcondition instead, which reaches the answer and the rejections as well as the request.",
 		check: invariantInAggregate,
 	},
 	{
 		rule: "invariant-in-context",
 		severities: ["error"],
 		summary:
-			"Every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, a value object something in the context holds, its own or a borrowed one, or one of its operations. A precondition may also constrain attributes of a schema the operation it guards takes, returns or rejects with, and a postcondition those of what it returns or rejects with; both follow composition into the shapes those compose.",
-		why: "A context's invariant is the rule that holds across its own instances — one open application per customer, one active offer per seller and SKU — and the context can hold it because everything it counts is its own to read in one place. A value borrowed over a shared kernel is its own to read too, once one of its aggregates holds one: the instance is here even though the definition is not, and the holding is the whole question, asked of the context's own values as much as of borrowed ones. A rule reaching into another context's entities, or into a value nothing here holds, counts what a neighbour owns or what nobody keeps, which is a consistency no boundary offers. That rule is a policy or a process reacting to the other context's events instead. A precondition is the one rule that may look at a request: it runs before the call, and what it checks — pickup before delivery, a positive weight — is often in the call rather than in anything saved, so it may name attributes of a schema its guarded operation takes, returns or rejects with. A postcondition is its mirror and may name what that operation answers or refuses with. Either follows composition into the shapes those compose, because the fields of a nested shape are fields the call carries.",
+			"Every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, a value object something in the context holds, its own or a borrowed one, or one of its operations. A precondition may also constrain attributes of the schema the operation it guards takes, and a postcondition those of the request, the answer and the refusals; both follow composition into the shapes those compose.",
+		why: "A context's invariant is the rule that holds across its own instances — one open application per customer, one active offer per seller and SKU — and the context can hold it because everything it counts is its own to read in one place. A value borrowed over a shared kernel is its own to read too, once one of its aggregates holds one: the instance is here even though the definition is not, and the holding is the whole question, asked of the context's own values as much as of borrowed ones. A rule reaching into another context's entities, or into a value nothing here holds, counts what a neighbour owns or what nobody keeps, which is a consistency no boundary offers. That rule is a policy or a process reacting to the other context's events instead. A precondition is the one rule that may look at a request: it runs before the call, and what it checks — pickup before delivery, a positive weight — is often in the call rather than in anything saved, so it may name attributes of the schema its guarded operation takes. That is as far as it reaches, because the answer does not exist when it is checked. A postcondition is its mirror and may name what that operation answers or refuses with, and the request it relates them to. Either follows composition into the shapes those compose, because the fields of a nested shape are fields the call carries.",
 		fix: "Point the invariant at this context's own model, or at a value object its aggregates hold — give an entity or a value here an attribute typed by it, which is what says the context holds one — or move the rule to the context that owns what it counts. Where the two contexts really must agree, model the reaction: the other context raises an event and a policy here issues the operation that responds. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them; if it is a guarantee about what that call answers with, mark it a postcondition instead.",
 		check: invariantInContext,
 	},
@@ -4217,7 +4325,7 @@ const RULES: CataloguedRule[] = [
 		summary:
 			"An invariant marked a postcondition names at least one operation it guards, and is not also marked a precondition.",
 		why: "A postcondition is a guarantee about what a call answers with: every returned itinerary meets the requested deadline, every quoted premium is inside the band the schedule allows. The answer does not exist until the operation runs, so a postcondition that names no operation is a promise about the answer to a question nobody asked. And a rule marked a precondition as well says two things about when it holds — checked beforehand against something that may since have moved, and guaranteed of what came back — so every reader of the flag, the page that names the kind and the reach the rule gets over a payload among them, has to pick one and would pick differently.",
-		fix: "Name the operation whose answer this is a guarantee about in constrains, alongside the attributes of what it returns or rejects with. If the rule is really checked on the way in, it is a precondition instead: drop postcondition and set precondition, which reaches the request as well. If it is neither — a rule kept true on every save — drop both flags and let the operations it names keep it.",
+		fix: "Name the operation whose answer this is a guarantee about in constrains, alongside the attributes of what it returns or rejects with. If the rule is really checked on the way in, it is a precondition instead: drop postcondition and set precondition, which reaches the request. If it is neither — a rule kept true on every save — drop both flags and let the operations it names keep it.",
 		check: postconditionNamesOperation,
 	},
 	{
@@ -4235,7 +4343,7 @@ const RULES: CataloguedRule[] = [
 		summary:
 			"Two contexts joined by a crossing — a consumption of the other's consumable, a policy or process reacting to the other's event, or an attribute typed by the other's value object — declare a relationship, in either direction.",
 		why: "Decision 03 made the relationship the place where the terms of an integration are written: who is upstream, what the provider commits to, whether the consumer translates. A consumption or an identity with no relationship still draws on the context map, as a dashed implied edge, but that edge only says a dependency exists; the relationship is what says on what terms, and it is the thing a team can argue about, comment on and change. A subscription counts because reacting to a neighbour's event is an integration by another route, the same one separate ways forbids and a partnership is backed by; the map draws it through the consumption subscription-consumed requires. An identity an entity holds is a real dependency and the context map draws it, under an id stereotype, but it is not asked for a relationship: asking produced fourteen upstream-downstream relationships across the reference models with no roles at all, each commented to say that nothing is exchanged, which is a shape DDD does not have. A relationship is declared where something is exchanged or a language is borrowed.",
-		fix: "Declare the relationship the two contexts really have, naming both of them: upstream-downstream or customer-supplier pointing from whichever context dictates the model to the one that takes it, or a partnership or shared kernel if they meet as equals. Any of them counts whichever way round the crossing runs, because the arrow is a claim about who sets the language and not about who calls whom — a card processor that sends its own format is upstream of the bank that provides the operation. Separate ways does not count: it says the two do not integrate, so it contradicts the crossing instead of explaining it. If neither context should depend on the other, remove the crossing rather than declaring a relationship for it.",
+		fix: "Declare the relationship the two contexts really have, naming both of them: upstream-downstream or customer-supplier pointing from whichever context dictates the model to the one that takes it, or a partnership or shared kernel if they meet as equals. Any of them counts whichever way round the crossing runs, because the arrow is a claim about who sets the language and not about who calls whom — a card processor that sends its own format is upstream of the bank that provides the operation. A pair that has declared separate ways has answered this question and is left alone here; what is wrong with a crossing across one is that it contradicts the declaration, which separate-ways reports as an error. If neither context should depend on the other, remove the crossing rather than declaring a relationship for it.",
 		check: relationshipDeclared,
 	},
 	{
@@ -4251,9 +4359,9 @@ const RULES: CataloguedRule[] = [
 		rule: "relationship-cycle",
 		severities: ["warning"],
 		summary:
-			"The directed relationships whose traffic is calls form no cycle; calls carried only by events, and calls the consumption declares an anti-corruption layer on, do not count.",
-		why: "Downstream means a context shapes its model around what the upstream offers. In a ring of calls the contexts depend on each other's contracts: each one is written against a neighbour's model that is written against its own. Two kinds of call are exempt because neither creates that dependency. Events are one: reacting to a fact commits nobody to another model's shape, and rings of reactions are reaction-cycle's business instead. An anti-corruption layer is the other: the downstream translates at its edge, so the upstream's contract stops there and each side stays free to change, which is the whole point of the pattern. The layer is read on the consumption that declares it, because that is where the model says which call is translated; read off the relationship's roles, one translated call excused every untranslated one beside it.",
-		fix: "Put an anti-corruption layer on the consumptions that carry a step, so that context translates what it calls and can change behind it; or declare a partnership where two of the contexts really do move as one, which says the mutual dependency is deliberate; or reverse a dependency by turning that call into an event the other side reacts to.",
+			"The directed relationships whose traffic is calls form no cycle; calls carried only by events, calls the consumption declares an anti-corruption layer on, and calls between partners do not count.",
+		why: "Downstream means a context shapes its model around what the upstream offers. In a ring of calls the contexts depend on each other's contracts: each one is written against a neighbour's model that is written against its own. Two kinds of call are exempt because neither creates that dependency. Events are one: reacting to a fact commits nobody to another model's shape, and rings of reactions are reaction-cycle's business instead. An anti-corruption layer is the other: the downstream translates at its edge, so the upstream's contract stops there and each side stays free to change, which is the whole point of the pattern. The layer is read on the consumption that declares it, because that is where the model says which call is translated; read off the relationship's roles, one translated call excused every untranslated one beside it. A partnership is the third: two contexts that plan their releases as one are one node for this walk, so what runs between them is not a step, and a ring that is nothing but the pair is cleared by declaring it. A longer ring is not, and the message says so: the pair still calls, and is still called by, the rest of the ring.",
+		fix: "Put an anti-corruption layer on the consumptions that carry a step, so that context translates what it calls and can change behind it; or declare a partnership between two neighbours on the ring that really do move as one, which says the mutual dependency is deliberate and makes the two one context for this walk; or reverse a dependency by turning that call into an event the other side reacts to.",
 		check: relationshipCycle,
 	},
 	{
@@ -4289,7 +4397,7 @@ const RULES: CataloguedRule[] = [
 		summary:
 			"A consumption from a big ball of mud declares the anti-corruption-layer downstream role, and an identity naming one is taken in behind a layer too.",
 		why: "A big ball of mud has no coherent model to conform to. Taking its shapes as they come drags its confusion across the boundary, and the consumer's own language starts to look like the legacy one. An identity is one of those shapes: an entity holding the legacy key is written against the one part of a system nobody can read and nobody may change, the key spreads into every page and payload that shows it, and the day the legacy system is carved up there is no seam to cut at.",
-		fix: "Set pattern: anti-corruption-layer on the consumption and translate at the edge. For an identity, take the key in through an operation this context translates and hold an identity of its own beside it; the translated consumption is what clears the warning. Or drop bigBallOfMud if the context is no longer one.",
+		fix: "Set pattern: anti-corruption-layer on the consumption and translate at the edge. For an identity, what clears it is a consumption of that context's consumables, anywhere in this one, declaring the anti-corruption-layer role: take the key in through something this context translates, and hold an identity of its own beside it. Or drop bigBallOfMud if the context is no longer one.",
 		check: mudNeedsAcl,
 	},
 	{
@@ -4315,7 +4423,7 @@ const RULES: CataloguedRule[] = [
 		severities: ["error"],
 		summary:
 			"Contexts that declare separate ways exchange no consumables, react to none of each other's events, hold none of each other's identities and borrow none of each other's value objects.",
-		why: "Separate ways is a deliberate decision not to integrate, so it rules out every crossing the model can record and not only the consumption. A policy subscribing to the other's events is the same integration by another route. An identity naming the other context's entity is a dependency on that context's identity scheme, stored here and true until somebody edits it. An attribute typed by the other's value object is that context's language in this one. The last two used to be reported as a missing relationship, which said something false: there is a relationship, and it says these two do not integrate.",
+		why: "Separate ways is a deliberate decision not to integrate, so it rules out every crossing the model can record and not only the consumption. A policy subscribing to the other's events is the same integration by another route. An identity naming the other context's entity is a dependency on that context's identity scheme, stored here and true until somebody edits it. An attribute typed by the other's value object is that context's language in this one. This is the only rule that speaks about a crossing across a declared separate ways: relationship-declared asks whether the pair has been described at all, and a pair declaring separate ways has described itself, so saying beside this error that no relationship says how the two stand was untrue and made one mistake report twice.",
 		fix: "Remove the crossing — the consumption, the subscription, the identity attribute or the borrowed type — or remove the separate-ways relationship and declare the real one the two contexts have.",
 		check: separateWays,
 	},
@@ -4546,8 +4654,8 @@ const RULES: CataloguedRule[] = [
 		severities: ["warning"],
 		summary:
 			"The reactions form no cycle: no operation raises an event whose policy or process issues an operation that leads back to the first.",
-		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with one exemption that is the whole point of it: a process fed by its own steps — it issues an operation, the operation raises the event it waits for next, and so on to the end — is a lifecycle, not a ring, because the process holds state and declares what ends it (decision 23). So a cycle is reported only when the walk comes back to a reactor other than the one process it started from: a ring through two processes, or through a process and a policy, is a genuine loop and is reported.",
-		fix: "Break the ring, usually one of the policies is reacting to too broad an event or issues an operation it should not. If the loop is a real feedback loop that converges, say what ends it in the description of the policy that closes the ring; the model has no conditions on purpose (decision 15), so the ending condition is prose a reader finds where the loop closes, and the warning stands to send them there.",
+		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with one exemption that is the whole point of it: a process fed by its own steps — it issues an operation, the operation raises the event it waits for next, and so on to the end — is a lifecycle, not a ring, because the process holds state and declares what ends it (decision 23). So a cycle is reported only when the walk comes back to a reactor other than the one process it started from: a ring through two processes, or through a process and a policy, is a genuine loop and is reported. The exemption asks for one more thing, that the ring comes back to an instance already running: a process whose own operation raises the event it starts on makes a new instance every time round, so no instance's state holds the ring together and nothing says what stops the next one.",
+		fix: "Break the ring, usually one of the policies is reacting to too broad an event or issues an operation it should not. Where the ring closes on a process's own starting event, the step that restarts it is the one to look at: wait on that fact with `on` if the instance is meant to carry on, or raise a different event if a fresh instance is really meant each time and say in the process's description what stops the next one. If the loop is a real feedback loop that converges, say what ends it in the description of the policy that closes the ring; the model has no conditions on purpose (decision 15), so the ending condition is prose a reader finds where the loop closes, and the warning stands to send them there.",
 		check: reactionCycle,
 	},
 	{

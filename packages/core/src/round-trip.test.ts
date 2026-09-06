@@ -265,8 +265,8 @@ describe("a relation that names the attribute it draws", () => {
 	it("carries for through toSchema and back", () => {
 		const schema = addresses().toSchema();
 		const relation =
-			schema.boundedcontexts.crm.aggregates.customer.entities.customer
-				.relations[0];
+			schema.boundedcontexts.crm.aggregates!.customer.entities!.customer
+				.relations![0];
 		expect(relation.for).toBe("Current Address");
 		const rebuilt = Workspace.fromSchema(
 			JSON.parse(JSON.stringify(schema)),
@@ -275,7 +275,7 @@ describe("a relation that names the attribute it draws", () => {
 		);
 		expect(rebuilt.relations[0].for).toBe("Current Address");
 		expect(rebuilt.toSchema()).toEqual(
-			schema.boundedcontexts.crm.aggregates.customer.entities.customer,
+			schema.boundedcontexts.crm.aggregates!.customer.entities!.customer,
 		);
 	});
 });
@@ -418,23 +418,23 @@ describe("a bad ref survives a round trip", () => {
 		[
 			"returns",
 			(s) => {
-				s.boundedcontexts.ordering_bc.services.order_app.provides.place_order.returns =
-					{ $ref: GONE };
+				s.boundedcontexts.ordering_bc.services!.order_app
+					.provides!.place_order.returns = { $ref: GONE };
 			},
 			rich.placeOrder.ref,
 		],
 		[
 			"valueobject",
 			(s) => {
-				s.boundedcontexts.ordering_bc.aggregates.order.entities.order.attributes.total.valueobject =
-					{ $ref: GONE };
+				s.boundedcontexts.ordering_bc.aggregates!.order
+					.entities!.order.attributes.total.valueobject = { $ref: GONE };
 			},
 			`${rich.order.ref}/attributes/total`,
 		],
 		[
 			"on",
 			(s) => {
-				s.boundedcontexts.invoicing_bc.policies.invoice_on_order_placed.on.push(
+				s.boundedcontexts.invoicing_bc.policies!.invoice_on_order_placed.on.push(
 					{ $ref: GONE },
 				);
 			},

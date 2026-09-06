@@ -19,8 +19,12 @@ grow it.
 
 ## Editing rules
 
-- The schema is strict: every required field is present even when empty, and unknown fields
-  are rejected. `references/model-reference.md` lists them.
+- The schema is strict about what it does not know: unknown fields are rejected.
+  `references/model-reference.md` lists what each element requires. A map of elements — a
+  context's aggregates, services, policies, processes, invariants, glossary, value objects and
+  schemas, an aggregate's entities, either one's `provides`, an entity's or a value object's
+  `relations` — is left out when it is empty; writing it empty says the same thing and is
+  longer.
 - Ids are the object keys. Create them as `snake_case` of the name, then never change them.
   Renaming is changing `name`.
 - Every `$ref` follows the grammar at the end of `model-reference.md` and points at something

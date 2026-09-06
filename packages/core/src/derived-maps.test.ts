@@ -5,7 +5,12 @@ import { ODSContextMap } from "./context-map";
 import { flowEdgeLabel, ODSFlowMap } from "./flow-map";
 import { makeRichTestWs } from "./makeTestWs";
 import { ODSRelationGraph, ODSRelationMap } from "./relation-map";
-import { Deadline, type ReactionTrigger, Workspace } from "./workspace";
+import {
+	type Attribute,
+	Deadline,
+	type ReactionTrigger,
+	Workspace,
+} from "./workspace";
 
 describe("ODSConsumptionGraph", () => {
 	const f = makeRichTestWs();
@@ -453,7 +458,9 @@ describe("ODSRelationMap", () => {
 		});
 
 		const graph = ODSRelationGraph.fromAggregate(accountAgg);
-		expect(graph.borrowings.map((a) => a.name)).toEqual(["postedBalance"]);
+		expect(graph.derivedUses.map((a: Attribute) => a.name)).toEqual([
+			"postedBalance",
+		]);
 		const map = ODSRelationMap.fromGraph(graph);
 		const edge = Array.from(map.edges.values()).find(
 			(e) => e.relation === "uses",
@@ -475,8 +482,67 @@ describe("ODSRelationMap", () => {
 		// f.money is Ordering's own, held by Ordering's entities: the map draws
 		// it from the declared `uses` relation and marks nothing foreign.
 		const map = ODSRelationMap.fromAggregate(f.orderAgg);
-		expect(ODSRelationGraph.fromAggregate(f.orderAgg).borrowings).toEqual([]);
+		expect(ODSRelationGraph.fromAggregate(f.orderAgg).derivedUses).toEqual([]);
 		expect(map.nodes.get(f.money.ref)?.type).toBe("valueobject");
+	});
+
+	it("derives the line for a local value object no relation draws", () => {
+		const ws = new Workspace("Derived uses", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "1.0.0",
+		});
+		const sales = ws.addBoundedContext("Sales", { description: "" });
+		const money = sales.addValueObject("Money", { description: "" });
+		money.addAttribute("amountMinor", { type: "int64" });
+		const orderAgg = sales.addAggregate("Order", { description: "" });
+		const order = orderAgg.addRootEntity("Order", { description: "" });
+		order.addAttribute("id", { type: "string", identity: true });
+		order.addAttribute("total", { type: "Money", valueobject: money });
+
+		const graph = ODSRelationGraph.fromAggregate(orderAgg);
+		expect(graph.derivedUses.map((a: Attribute) => a.name)).toEqual(["total"]);
+		const map = ODSRelationMap.fromGraph(graph);
+		const edge = Array.from(map.edges.values()).find(
+			(e) => e.relation === "uses",
+		);
+		// Nothing was declared, so the line is derived from the attribute and
+		// named by it — and the value is this context's own, so its box is not
+		// marked foreign.
+		expect([edge?.source.name, edge?.target.name, edge?.label]).toEqual([
+			"Order",
+			"Money",
+			"total",
+		]);
+		expect(map.nodes.get(money.ref)?.type).toBe("valueobject");
+	});
+
+	it("draws a declared uses relation once, and derives nothing beside it", () => {
+		const ws = new Workspace("Declared uses", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "1.0.0",
+		});
+		const sales = ws.addBoundedContext("Sales", { description: "" });
+		const money = sales.addValueObject("Money", { description: "" });
+		money.addAttribute("amountMinor", { type: "int64" });
+		const orderAgg = sales.addAggregate("Order", { description: "" });
+		const order = orderAgg.addRootEntity("Order", { description: "" });
+		order.addAttribute("id", { type: "string", identity: true });
+		order.addAttribute("total", { type: "Money", valueobject: money });
+		order.uses(money, "totalled in", "1");
+
+		const graph = ODSRelationGraph.fromAggregate(orderAgg);
+		expect(graph.derivedUses).toEqual([]);
+		const map = ODSRelationMap.fromGraph(graph);
+		const edges = Array.from(map.edges.values()).filter(
+			(e) => e.relation === "uses",
+		);
+		// One line, the declared one, carrying the label and the cardinality the
+		// declaration adds to it.
+		expect(edges.map((e) => [e.label, e.cardinality])).toEqual([
+			["totalled in", "1"],
+		]);
 	});
 
 	it("collects the identity attributes in scope and no others", () => {
@@ -840,18 +906,64 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 			pattern: "anti-corruption-layer",
 			by: [askFraud],
 		});
+		const opened = fraudApp.provides("Case Opened", {
+			description: "",
+			type: "event",
+		});
+		// The reactor that hears the answer is the one whose call asked for it,
+		// so this one issues "Ask Fraud" — the operation its own consumption
+		// names in `by` — and waits for what comes back (card 104).
 		fraud
-			.addPolicy("Note on decline", { description: "" })
+			.addProcess("Fraud watch", { description: "" })
+			.starts(opened)
 			.on(authorise.rejected(declined))
-			.issues(noteFraud);
+			.issues(askFraud, noteFraud)
+			.ends(opened);
 		const answers = drawn(ODSFlowMap.fromWorkspace(ws)).filter((it) =>
 			it.includes("[Payment Declined]"),
 		);
 		expect(answers.sort()).toEqual([
-			"Ask Fraud -> Note on decline [Payment Declined]",
+			"Ask Fraud -> Fraud watch [Payment Declined]",
 			"Request Authorisation -> Checkout [Payment Declined]",
 		]);
 		expect(ws.validate().filter((d) => d.rule === "reaction-cycle")).toEqual(
+			[],
+		);
+	});
+
+	// The seventh review's probe: two processes of one context, each calling one
+	// operation through an operation of its own. Each hears its own answer and
+	// neither hears the other's (card 104).
+	it("sends the answer back to the caller and to no other reactor beside it", () => {
+		const { ws, authorise, declined, ask } = callAndBranch();
+		const orchestrator = ask.provider;
+		const askAgain = orchestrator.provides("Request Reauthorisation", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const renewed = orchestrator.provides("Cart Renewed", {
+			description: "",
+			type: "event",
+		});
+		orchestrator.consumes(authorise, {
+			pattern: "anti-corruption-layer",
+			by: [askAgain],
+		});
+		orchestrator.boundedcontext
+			.addProcess("Renewal", { description: "" })
+			.starts(renewed)
+			.on(authorise.rejected(declined))
+			.issues(askAgain)
+			.ends(renewed);
+		const answers = drawn(ODSFlowMap.fromWorkspace(ws))
+			.filter((it) => it.includes("[Payment Declined]"))
+			.sort();
+		expect(answers).toEqual([
+			"Request Authorisation -> Checkout [Payment Declined]",
+			"Request Reauthorisation -> Renewal [Payment Declined]",
+		]);
+		expect(ws.validate().filter((d) => d.rule === "consumable-kind")).toEqual(
 			[],
 		);
 	});
