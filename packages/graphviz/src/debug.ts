@@ -1,4 +1,4 @@
-import { debug as _debug, type Debugger } from "debug";
+import _debug, { type Debugger } from "debug";
 
 export const debug = _debug("open-domain-specification:graphviz");
 

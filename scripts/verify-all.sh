@@ -85,6 +85,15 @@ run_vitest "models/_shared" models/_shared
 
 echo "==> building pages"
 (cd "$ROOT/packages/pages" && npm run build)
+
+echo "==> verifying published ESM builds import under Node"
+if node "$ROOT/scripts/verify-esm-builds.mjs"; then
+	summary "esm builds (core, graphviz, doc, skill, pages): import ok"
+else
+	summary "esm builds (core, graphviz, doc, skill, pages): FAILED"
+	exit 1
+fi
+
 run_vitest pages packages/pages --coverage
 echo "==> checking pages (svelte-check)"
 (cd "$ROOT/packages/pages" && npm run check)
