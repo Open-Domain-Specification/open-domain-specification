@@ -14,6 +14,7 @@ The architect's twelfth round read the docs site and the installed skill alone a
 
 - [ ] `apps/docs/docs/3-core/3-tactical-design.md` "What the model leaves out on purpose" carries every cost above in one sentence each, with the decision number; `packages/skill/skill/references/preferences.md` mirrors it
 - [ ] The aggregate page of the docs says where a lifecycle lives (a status attribute whose values are the author's text, invariants naming the operations that move it, no transition table) and the process page says a deadline is relative to its trigger
+- [ ] The clinic's appointment deadline no longer holds a data-fixed date in `after` ("until the day of the appointment"); the honest shape is a scheduled operation or a Clock event (decisions 23 and 28), and `DISCOVERY.md` says which; the clinic stays at zero diagnostics
 - [ ] `bash scripts/verify-all.sh` green
 
 ## Comments
