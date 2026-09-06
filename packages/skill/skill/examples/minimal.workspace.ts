@@ -4,7 +4,6 @@ import fs from "node:fs";
 import { Workspace } from "@open-domain-specification/core";
 
 export const workspace = new Workspace("Bookshop", {
-	odsVersion: "1.0.0",
 	version: "0.1.0",
 	description:
 		"A small online bookshop: a catalogue of titles and the orders customers place for them.",

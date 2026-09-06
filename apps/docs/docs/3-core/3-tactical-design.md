@@ -155,7 +155,10 @@ An aggregate or service **provides** consumables and nothing else crosses a
 node boundary. An `event` consumable records that something happened; an
 `operation` consumable is the intention to change something (a command or an
 API call) and lists the events it may **raise** (`operation.raises(event)`).
-Either may carry a `schema`: the payload the caller sends.
+Either may carry a `schema`: the payload the caller sends. Write
+`schema: { of: shape, many: true }` where the request is a list of that shape
+rather than one of it, as a bulk create is: a root array and an object holding
+an array are different shapes, and only the mark tells them apart.
 
 An operation may also declare a `returns` schema, the shape the caller gets
 back. It is what makes a query modellable — `GetPetSummary` is asked with a
@@ -175,6 +178,16 @@ when the operation always succeeds or refuses without a shape worth naming,
 which is honest for most commands; an event never lists one, because a fact
 that already happened has nothing left to refuse.
 
+A refusal may name the outcomes the contract enumerates for it, in the
+contract's own words: `rejects: [{ schema, reasons: ["insufficient_funds",
+"issuer_unavailable"] }]`. One shape with a code in it gave a caller one branch
+whatever the code said, and a schema per code would say the contract has
+several shapes when it has one. Each reason is an answer a policy or a process
+may wait on by itself — `operation.rejected(schema, reason)` — beside the
+shape-level `operation.rejected(schema)`, which hears them all. A reason is a
+named outcome, never a condition on data: how the caller decides what to do
+about it stays in the code.
+
 A consumable is published by default and carries the upstream `pattern` it
 is offered under. Mark it `internal: true` when it is raised or handled
 inside its own context and never offered to others: an internal operation is
@@ -189,9 +202,13 @@ An aggregate or service **consumes** a consumable
 dependency on the consumable map. The consumption may also say what of the
 consumer makes it: `by` names the consumer's own operations, or policies of
 its context. A subscription service calls the payment gateway when it
-renews, not when it lists entitlements, and `by` is where that reads. Leave
-`by` off when the whole consumer depends on the consumable, which is the
-common case; it is optional detail, not a call graph.
+renews, not when it lists entitlements, and `by` is where that reads. Leaving
+`by` off means the whole consumer, which is fine where the consumer provides
+one operation or none, because there is nothing to choose between; where it
+provides two or more, `consumption-by-required` asks which of them makes the
+call. `by` is the one causal link the model has from one operation to the
+next, so without it the reaction walk and the flow map stop there and an
+answer to the call reaches nobody.
 
 ## Policies
 

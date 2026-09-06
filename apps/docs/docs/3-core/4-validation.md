@@ -11,6 +11,7 @@ severity, a rule id, a message and the ref of the element concerned.
 
 | Rule | Severity | Checks |
 | --- | --- | --- |
+| `ods-version` | error | the file states the ODS version it was written against and its major is this core's; the major is bumped by the decision that breaks the metamodel, so a file whose major differs — or that states none — was written against a model this reader does not read the same way, and used to fail as unresolved refs and rule errors that named the symptom. The file still loads and every other rule still runs |
 | `unresolved-ref` | error | every `$ref` a loaded file writes names something, and something the field it sits in can hold. The link is left unset and reported here rather than throwing, so one typo costs the author that diagnostic and not the whole file's |
 | `aggregate-root` | error / warning | exactly one root entity per aggregate |
 | `cross-aggregate-reference` | error | relations into another aggregate are `references` to its root, or a kind of that root; a relation to a value object crosses no aggregate, since the context declares it |
@@ -66,7 +67,7 @@ severity, a rule id, a message and the ref of the element concerned.
 | `schema-context` | error | a schema named by a consumable's payload, by its `returns`, by one of its rejections or by a nested attribute belongs to the naming element's own context, to one it shares a kernel with, or to an upstream it has declared itself a `conformist` of; a consumable an upstream caller consumes may carry that caller's shape, which is what an `anti-corruption-layer` translates |
 | `returns-on-operation` | error | only an operation declares `returns`; an event has no caller to answer |
 | `rejects-on-operation` | error | only an operation declares `rejects`; an event is a fact that already happened, so it has nothing left to refuse |
-| `consumable-kind` | error | policies and processes react to events, and to the answers of calls they made — an operation the reactor issues, one an operation it issues names in `by`, or the context's single consumption of one where nothing says who calls; they issue operations, and only operations raise, and only events |
+| `consumable-kind` | error | policies and processes react to events, and to the answers of calls they made — an operation the reactor issues, one an operation it issues names in `by`, or the context's single consumption of one where nothing says who calls; they issue operations, and only operations raise, and only events. An answer is the shape the call comes back with, the shape it refuses with, one of the outcomes that refusal enumerates, or the bare completion of a call that answers with nothing, and the operation has to declare the one that is named |
 | `raises-in-context` | error | an operation raises only events its own bounded context provides; a context publishes its own facts |
 | `raises-restated` | warning | an operation does not restate under `raises` an event an operation it calls through a consumption's `by` already raises; the chain carries it, and a copy can drift |
 | `event-unraised` | warning | every event of a context we model is raised by one of that context's own operations |

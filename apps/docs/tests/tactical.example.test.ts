@@ -2,7 +2,6 @@ import { ODSFlowMap, Workspace } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 
 const ws = new Workspace("eCommerce", {
-	odsVersion: "1.0.0",
 	description: "Tactical design example",
 	version: "0.1.0",
 });
@@ -138,6 +137,7 @@ describe("Tactical design", () => {
 			  "returns": undefined,
 			  "schema": {
 			    "$ref": "#/boundedcontexts/ordering/schemas/order_summary",
+			    "many": undefined,
 			  },
 			  "type": "event",
 			}

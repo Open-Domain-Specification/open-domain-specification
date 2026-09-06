@@ -4,7 +4,7 @@
 	"name": "Bookshop",
 	"description": "A small online bookshop: a catalogue of titles and the orders customers place for them.",
 	"version": "0.1.0",
-	"odsVersion": "1.0.0",
+	"odsVersion": "2.0.0",
 	"domains": {
 		"bookselling": {
 			"name": "Bookselling",

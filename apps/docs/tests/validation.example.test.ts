@@ -2,7 +2,6 @@ import { Workspace } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 
 const ws = new Workspace("Shop", {
-	odsVersion: "1.0.0",
 	description: "Validation example",
 	version: "0.1.0",
 });

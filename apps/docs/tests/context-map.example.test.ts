@@ -4,7 +4,6 @@ import { contextMapToDigraph } from "@open-domain-specification/graphviz";
 import { describe, expect, it } from "vitest";
 
 const ws = new Workspace("eCommerce", {
-	odsVersion: "1.0.0",
 	description: "DDD workspace for an eCommerce platform example",
 	version: "0.1.0",
 	homepage: "https://example.com",

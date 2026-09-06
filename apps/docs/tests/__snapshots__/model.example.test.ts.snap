@@ -229,7 +229,7 @@ exports[`Visitor Example > should compile  1`] = `
   "id": "e_commerce",
   "logoUrl": "https://example.com/logo.svg",
   "name": "eCommerce",
-  "odsVersion": "1.0.0",
+  "odsVersion": "2.0.0",
   "options": undefined,
   "primaryColor": "#0ea5e9",
   "relationships": [],
