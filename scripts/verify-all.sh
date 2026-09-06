@@ -17,6 +17,10 @@ if pgrep -f extensionDevelopmentPath >/dev/null 2>&1; then
 	echo "refusing to start: a VS Code extension development host is running (pgrep -f extensionDevelopmentPath found one)" >&2
 	exit 1
 fi
+if lsof -i :4173 >/dev/null 2>&1; then
+	echo "refusing to start: port 4173 is in use (another gate's pages e2e stage, or a preview server); wait for it or stop it" >&2
+	exit 1
+fi
 
 summary() {
 	echo "$1" | tee -a "$SUMMARY_FILE"
