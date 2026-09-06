@@ -6,11 +6,11 @@ Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel
 
 ## Now
 
-Card 108 ([JSON and DSL parity, the last required keys, four rule texts](boards/project-backlog/108-the-same-mistake-gets-the-same-answer-in-json-and-the-dsl.md), developer) is live in its worktree; card 110 ([`SubmitToScheme` sends to the scheme](boards/project-backlog/110-submittoscheme-sends-to-the-scheme.md), developer) waits for 108. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 107 and 109 landed green; 107 gave RiverMart the first two named agreements in a reference model.
+Card 110 ([`SubmitToScheme` sends to the scheme](boards/project-backlog/110-submittoscheme-sends-to-the-scheme.md), developer) is live in its worktree; it is the last card before the eighth panel round. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 109 landed green; 107 gave RiverMart the first two named agreements in a reference model.
 
 ## Next
 
-Land 108, dispatch 110, land it; then the panel (Antigravity via `agy`, Codex via `codex exec -m gpt-6-astra`, a fresh architect-deep) runs an eighth time on that head. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
+Land 110; then the panel (Antigravity via `agy`, Codex via `codex exec -m gpt-6-astra`, a fresh architect-deep) runs an eighth time on that head. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
 
 ## Later
 
@@ -28,4 +28,4 @@ Land 108, dispatch 110, land it; then the panel (Antigravity via `agy`, Codex vi
 
 ## Working state
 
-Updated: 2026-09-10, unattended run continuing after the handoff note. Branch: develop. Checked commit: the one immediately before this STATUS.md on develop. Partial changes in the checkout: only the untracked and unstaged files listed under Later, none of them the lead's. Landing gate: `npm run verify` at the root; before running it, `pgrep -f 'ods-vscode.*dev.mjs'` and `pgrep -f extensionDevelopmentPath` must find nothing, because a running extension host rewrites the petstore schema.
+Updated: 2026-09-10, unattended run continuing after the handoff note. Branch: develop. Checked commit: the one immediately before this STATUS.md on develop. Partial changes in the checkout: only the untracked and unstaged files listed under Later, none of them the lead's. Landing gate: `npm run verify` at the root, run detached with `nohup` because it can outlast a ten-minute command cap; before running it, `pgrep -f 'ods-vscode.*dev.mjs'` and `pgrep -f extensionDevelopmentPath` must find nothing, because a running extension host rewrites the petstore schema.
