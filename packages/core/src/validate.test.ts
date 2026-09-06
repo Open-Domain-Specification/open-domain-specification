@@ -6566,7 +6566,7 @@ describe("external-is-boundary", () => {
 			type: "operation",
 			pattern: "open-host-service",
 			schema: request,
-			returns: { schema: captured },
+			returns: { of: captured },
 		});
 		return { ws, external, ours, capture, reference, amount };
 	}

@@ -1386,12 +1386,12 @@ export type ConsumableAttributes = {
 	 * For operations: the payload shape the caller gets back. Absent means the
 	 * operation returns nothing worth naming. Never valid on an event.
 	 *
-	 * A shape on its own is one of it; `{ schema, many: true }` is a list of
-	 * it, which is what a search answers with (decision 13, amended). The two
-	 * are written as one field so that a list can never be declared without
-	 * the shape it is a list of.
+	 * A shape on its own is one of it; `{ of: schema, many: true }` is a list
+	 * of it, which is what a search answers with (decision 13, amended). The
+	 * two are written as one field so that a list can never be declared
+	 * without the shape it is a list of.
 	 */
-	returns?: DataSchema | { schema: DataSchema; many?: boolean };
+	returns?: DataSchema | { of: DataSchema; many?: boolean };
 	/**
 	 * For operations: the shapes the operation answers with when it refuses.
 	 * Absent means it always succeeds, or refuses without a shape worth
@@ -1464,9 +1464,8 @@ export class Consumable
 		this.schema = request?.of;
 		this.schemaMany = request?.many ?? false;
 		const returns = attributes.returns;
-		const answer =
-			returns instanceof DataSchema ? { schema: returns } : returns;
-		this.returns = answer?.schema;
+		const answer = returns instanceof DataSchema ? { of: returns } : returns;
+		this.returns = answer?.of;
 		this.returnsMany = answer?.many ?? false;
 		this.rejections = (attributes.rejects ?? []).map((it) =>
 			it instanceof DataSchema

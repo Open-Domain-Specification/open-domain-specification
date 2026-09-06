@@ -180,7 +180,7 @@ describe("toDoc", () => {
 		order.provides("List Orders", {
 			type: "operation",
 			description: "Lists the orders",
-			returns: { schema: digest, many: true },
+			returns: { of: digest, many: true },
 		});
 		// A request that is a list of a shape, printed the way an answer is,
 		// and a refusal that enumerates its outcomes (decisions 13 and 25,
