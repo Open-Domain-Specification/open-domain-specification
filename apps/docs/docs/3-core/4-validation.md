@@ -13,6 +13,7 @@ severity, a rule id, a message and the ref of the element concerned.
 | --- | --- | --- |
 | `ods-version` | error | the file states the ODS version it was written against and its major is this core's; the major is bumped by the decision that breaks the metamodel, so a file whose major differs — or that states none — was written against a model this reader does not read the same way, and used to fail as unresolved refs and rule errors that named the symptom. The file still loads and every other rule still runs |
 | `unresolved-ref` | error | every `$ref` a loaded file writes names something, and something the field it sits in can hold. The link is left unset and reported here rather than throwing, so one typo costs the author that diagnostic and not the whole file's |
+| `unknown-field` | warning | every field a loaded file writes is one this metamodel knows; the model has no such element, see what it has instead. The field is dropped and reported rather than kept silently, and it stays dropped on the round trip |
 | `aggregate-root` | error / warning | exactly one root entity per aggregate |
 | `cross-aggregate-reference` | error | relations into another aggregate are `references` to its root, or a kind of that root; a relation to a value object crosses no aggregate, since the context declares it |
 | `cross-context-relation` | error | a relation never crosses a bounded context; the source holds the other entity's identity instead |

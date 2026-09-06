@@ -518,3 +518,97 @@ describe("a reaction that waits on one outcome of a refusal", () => {
 		).toEqual(["out_of_stock"]);
 	});
 });
+
+/**
+ * A field this metamodel does not know is a mistake in the file, and a
+ * mistake is a diagnostic (decision 29): the loader reports it and still
+ * loads the rest, and the round trip drops it the way an unknown field always
+ * has (card 121).
+ */
+describe("a file that writes a field this metamodel does not know", () => {
+	const bare: WorkspaceSchema = {
+		id: "bare",
+		name: "Bare",
+		odsVersion: "2.0.0",
+		description: "",
+		version: "0",
+		domains: {},
+		teams: {},
+		relationships: [],
+		boundedcontexts: {
+			only: {
+				name: "Only",
+				description: "",
+				subdomains: [],
+			},
+		},
+	};
+
+	function unknownFieldsOf(schema: WorkspaceSchema) {
+		return getWorkspaceFromSchema(structuredClone(schema))
+			.validate()
+			.filter((d) => d.rule === "unknown-field");
+	}
+
+	it("reports one on a value object, names it, and still loads the rest", () => {
+		const schema = structuredClone(bare);
+		schema.boundedcontexts.only.valueobjects = {
+			money: {
+				name: "Money",
+				description: "",
+				// @ts-expect-error deliberately writing a field this schema has none
+				// of, the way a hand-edited file might.
+				provides: { pay: { name: "Pay", description: "", type: "event" } },
+			},
+		};
+		const found = unknownFieldsOf(schema);
+		expect(found).toHaveLength(1);
+		expect(found[0].severity).toBe("warning");
+		expect(found[0].message).toContain('Value object "Money"');
+		expect(found[0].message).toContain("provides");
+		expect(found[0].ref).toBe(
+			"#/boundedcontexts/only/valueobjects/money/provides",
+		);
+		const loaded = getWorkspaceFromSchema(structuredClone(schema));
+		const money = loaded.getValueObjectByRefOrThrow(
+			"#/boundedcontexts/only/valueobjects/money",
+		);
+		expect(money.name).toBe("Money");
+	});
+
+	it("reports one on a bounded context, and still loads the rest", () => {
+		const schema = structuredClone(bare);
+		// @ts-expect-error deliberately writing a field this schema has none of.
+		schema.boundedcontexts.only.modules = ["billing"];
+		const found = unknownFieldsOf(schema);
+		expect(found).toHaveLength(1);
+		expect(found[0].message).toContain('Bounded context "Only"');
+		expect(found[0].message).toContain("modules");
+		expect(found[0].ref).toBe("#/boundedcontexts/only/modules");
+		const loaded = getWorkspaceFromSchema(structuredClone(schema));
+		expect(loaded.getBoundedContextByRefOrThrow("#/boundedcontexts/only").name).toBe(
+			"Only",
+		);
+	});
+
+	it("reports one on the workspace, and still loads the rest", () => {
+		const schema = structuredClone(bare) as WorkspaceSchema &
+			Record<string, unknown>;
+		schema.actors = [{ name: "Customer" }];
+		const found = unknownFieldsOf(schema);
+		expect(found).toHaveLength(1);
+		expect(found[0].message).toContain('Workspace "Bare"');
+		expect(found[0].message).toContain("actors");
+		expect(found[0].ref).toBe("#/actors");
+		const loaded = getWorkspaceFromSchema(structuredClone(schema));
+		expect(loaded.name).toBe("Bare");
+	});
+
+	it("drops the field on the round trip, as it always has", () => {
+		const schema = structuredClone(bare) as WorkspaceSchema &
+			Record<string, unknown>;
+		schema.actors = [{ name: "Customer" }];
+		const loaded = getWorkspaceFromSchema(structuredClone(schema));
+		expect(loaded.toSchema()).not.toHaveProperty("actors");
+	});
+});

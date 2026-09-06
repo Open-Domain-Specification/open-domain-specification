@@ -4513,6 +4513,32 @@ const unresolvedRef: Rule = (workspace) =>
 	}));
 
 /**
+ * A field a loaded file wrote that this metamodel does not know.
+ *
+ * The JSON schema already refuses this with `additionalProperties: false`,
+ * but a file written outside that check, by hand or against a newer major,
+ * can still carry one, and it used to load and vanish unremarked: the loader
+ * kept only the fields it recognised, so the field disappeared on the next
+ * save with nothing said about it. A mistake is a diagnostic (decision 29),
+ * so the loader now keeps what it saw and this reports it.
+ *
+ * A warning, not an error: the rest of the element still loaded and the model
+ * is otherwise sound, unlike an unresolved ref which leaves a link unset. The
+ * round trip still drops the field, exactly as it did before this existed —
+ * there is nowhere on the built element to keep a field this metamodel does
+ * not know, so keeping it for the write-back would need the loader to carry
+ * raw JSON alongside every element, which is a bigger change than reporting
+ * the loss (card 121).
+ */
+const unknownField: Rule = (workspace) =>
+	workspace.unknownFields.map((it) => ({
+		severity: "warning" as const,
+		rule: "unknown-field",
+		message: `${it.owner} writes "${it.field}", which this metamodel has no such field for; it is dropped rather than kept. See what this element has instead, or, if this is a newer field, check the odsVersion this core reads`,
+		ref: it.ref,
+	}));
+
+/**
  * The file was written against a metamodel this core reads.
  *
  * Five decisions promised that `odsVersion` would be bumped on a breaking
@@ -4625,6 +4651,14 @@ const RULES: CataloguedRule[] = [
 		why: "A ref that resolves to nothing is a mistake in the model, and a mistake is a diagnostic rather than a crash. Loading used to throw on the first one, so a single typo in a large file cost the author every other diagnostic in it — and only the author writing JSON, since the DSL passes objects and the compiler refuses the wrong kind where it is written. The link is now left unset and reported here, and every other rule still runs over what did load.",
 		fix: "Correct the ref, or declare the element it was meant to name. A ref that resolves to the wrong kind of thing — an answer where an event belongs, another process's deadline — is the same mistake: name one of the kind the field holds, or move the statement to the field that holds what you meant.",
 		check: unresolvedRef,
+	},
+	{
+		rule: "unknown-field",
+		severities: ["warning"],
+		summary: "Every field a file writes is one this metamodel knows.",
+		why: "The model has no such element; see what it has instead. A field the metamodel does not recognise is either a typo of a real one, or a field from a metamodel this core does not read the same way, and it used to load and vanish unremarked — the loader kept only the fields it knew, so the field disappeared on the next save with nothing said about it. It is a warning rather than an error because the rest of the element still loaded and the model is otherwise sound.",
+		fix: "Correct the field's name, remove it if it names nothing this metamodel has, or check the odsVersion this core reads if the field belongs to a newer one.",
+		check: unknownField,
 	},
 	{
 		rule: "aggregate-root",
