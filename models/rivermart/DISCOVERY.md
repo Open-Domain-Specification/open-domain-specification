@@ -691,3 +691,19 @@ another through its own application service (decision 17): the policy that used 
 aggregate's `ReceiveStock` directly now issues the front, the front looks the PO up through the
 layer and then receives the stock against it, and `by` on both calls is what carries the chain
 from the export through to `StockReceived`.
+
+## Revision (card 132): three domain services keep their own facts
+
+`raises-in-aggregate` now asks a domain service the same question it asks an aggregate: a
+domain service is the inside of the model, so it raises no aggregate's event (decision 17,
+third note of 2026-09-10). Four events moved, and in each case to the node whose own
+description already said whose fact it was.
+
+`BuyBoxAwarded` sat on the `Offer` aggregate and is the outcome of comparing every offer on a
+SKU, which is what `BuyBoxService` exists to do; one Offer cannot say it won. `OrderRiskFlagged`
+and `SellerRiskFlagged` sat on `RiskAssessment` and are what `RiskScorer` produces by running
+the model over a subject's whole history; the assessment is the explanation kept beside the
+flag, which is what the Trust & Safety lead asked for, not the flag itself. `SlotsAwarded` sat
+on `Campaign` and is about a results page and the winners on it, not about any one campaign,
+so it belongs to `AuctionService`. Nothing else changed: the same operations raise the same
+events, from the node the events were always about.

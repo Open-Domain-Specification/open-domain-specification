@@ -45,7 +45,11 @@ import Keyword from "../atoms/Keyword.svelte";
 import Lockup from "../atoms/Lockup.svelte";
 import AttributeTable from "../molecules/AttributeTable.svelte";
 import ConsumesTable from "../molecules/ConsumesTable.svelte";
-import { EXTERNAL, MUD } from "../molecules/ContextLockup.svelte";
+import {
+	BOUNDARY_ONLY,
+	EXTERNAL,
+	MUD,
+} from "../molecules/ContextLockup.svelte";
 import { answerRef, kindOf } from "../molecules/element-kind";
 import Joined from "../molecules/Joined.svelte";
 import ProvidesTable from "../molecules/ProvidesTable.svelte";
@@ -165,6 +169,7 @@ const termColumns: Column[] = [
 	{#snippet meta()}
 		{#if bc.bigBallOfMud}<Keyword text={MUD.label} tone="warn" title={MUD.title} />{/if}
 		{#if bc.external}<Keyword text={EXTERNAL.label} title={EXTERNAL.title} />{/if}
+		{#if bc.boundaryOnly}<Keyword text={BOUNDARY_ONLY.label} title={BOUNDARY_ONLY.title} />{/if}
 	{/snippet}
 	{#snippet facts()}
 		<DefinitionList>

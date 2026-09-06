@@ -608,9 +608,6 @@ describe("toDoc", () => {
 			  "boundedcontexts/fulfilment_bc/services/dispatch_planner/index.md",
 			  "boundedcontexts/fulfilment_bc/services/shipment_app/consumablemap.svg",
 			  "boundedcontexts/fulfilment_bc/services/shipment_app/index.md",
-			  "boundedcontexts/identity_bc/aggregates/user/consumablemap.svg",
-			  "boundedcontexts/identity_bc/aggregates/user/index.md",
-			  "boundedcontexts/identity_bc/aggregates/user/relationmap.svg",
 			  "boundedcontexts/identity_bc/contextmap.svg",
 			  "boundedcontexts/identity_bc/index.md",
 			  "boundedcontexts/identity_bc/services/user_app/consumablemap.svg",
@@ -694,6 +691,29 @@ describe("toDoc", () => {
 		expect(health).toContain("**A → B** (upstream-downstream)");
 		expect(health).not.toContain(
 			"> Every relationship carries at least one comment.",
+		);
+	});
+
+	// Each of the three context flags says something different about what a
+	// reader may expect to find behind the boundary, so the page says which
+	// (decision 28, sixth amendment; card 132).
+	it("calls out a context modelled at its boundary only, and nothing else", async () => {
+		const workspace = new Workspace("Adopting", {
+			description: "One interviewed and one not.",
+			version: "0.1.0",
+		});
+		workspace.addBoundedContext("CRM", {
+			description: "Ours, at its boundary only.",
+			boundaryOnly: true,
+		});
+		workspace.addBoundedContext("Payments", { description: "Interviewed." });
+
+		const docs = await toDoc(workspace);
+		expect(docs["boundedcontexts/crm/index.md"]).toContain(
+			"> **Boundary only.** A context of ours nobody has interviewed yet",
+		);
+		expect(docs["boundedcontexts/payments/index.md"]).not.toContain(
+			"Boundary only",
 		);
 	});
 });

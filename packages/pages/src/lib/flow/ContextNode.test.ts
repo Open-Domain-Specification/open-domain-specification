@@ -14,6 +14,7 @@ const base: ContextNodeData = {
 	icon: "boundedcontext",
 	bigBallOfMud: false,
 	external: false,
+	boundaryOnly: false,
 };
 const context = (
 	data: ContextNodeData & { floating?: boolean; sketch?: boolean },
@@ -74,6 +75,18 @@ describe("ContextNode", () => {
 			"«external system»",
 		);
 		expect(node.classList.contains("mud")).toBe(false);
+	});
+	// The third context flag: ours and coherent, and nobody has interviewed it
+	// yet (decision 28, sixth amendment; card 132).
+	it("marks a context nobody has interviewed with its own stereotype", () => {
+		const { container } = context({ ...base, boundaryOnly: true });
+		const node = container.querySelector(".context-node") as HTMLElement;
+		expect(node.classList.contains("boundary-only")).toBe(true);
+		expect(node.querySelector(".stereotype")?.textContent).toBe(
+			"«boundary only»",
+		);
+		expect(node.classList.contains("mud")).toBe(false);
+		expect(node.classList.contains("external")).toBe(false);
 	});
 	it("takes the sketch class for the ellipse style", () => {
 		const { container } = context({ ...base, sketch: true });

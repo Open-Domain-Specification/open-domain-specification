@@ -988,6 +988,8 @@ export type BoundedContextAttributes = {
 	bigBallOfMud?: boolean;
 	/** See {@link ods.BoundedContextSchema.external}. */
 	external?: boolean;
+	/** See {@link ods.BoundedContextSchema.boundaryOnly}. */
+	boundaryOnly?: boolean;
 	/** The team that owns this context. */
 	team?: Team;
 	id?: string;
@@ -1014,6 +1016,12 @@ export class BoundedContext
 	bigBallOfMud: boolean;
 	/** A system we integrate with and do not model inside (decision 28). */
 	external: boolean;
+	/**
+	 * A context of ours nobody has interviewed yet, modelled at its boundary
+	 * only: what it offers, what it takes, its schemas and its value objects,
+	 * and no insides (decision 28, sixth amendment).
+	 */
+	boundaryOnly: boolean;
 	team?: Team;
 
 	get path(): string {
@@ -1048,6 +1056,7 @@ export class BoundedContext
 		this.workspace = workspace;
 		this.bigBallOfMud = attributes.bigBallOfMud ?? false;
 		this.external = attributes.external ?? false;
+		this.boundaryOnly = attributes.boundaryOnly ?? false;
 		this.team = attributes.team;
 		this.workspace.boundedcontexts.set(this.id, this);
 		for (const subdomain of attributes.subdomains ?? []) {
@@ -1192,6 +1201,7 @@ export class BoundedContext
 			),
 			bigBallOfMud: this.bigBallOfMud || undefined,
 			external: this.external || undefined,
+			boundaryOnly: this.boundaryOnly || undefined,
 			team: this.team
 				? { $ref: this.team.ref }
 				: this.unresolvedWrites.one("team"),
@@ -2789,11 +2799,12 @@ export type AttributeOptions = {
 	schema?: DataSchema;
 	/**
 	 * What this attribute holds the identity of: an entity in any context; a
-	 * published schema of an external context, when that system documents the
-	 * kind the id names — a processor's Customer beside its Payment; or a
-	 * context itself when it is external or a big ball of mud and the id
-	 * belongs to a system whose entities are not ours to state or not anyone's
-	 * to find (decisions 14 and 28).
+	 * published schema of an external or boundary-only context, when that
+	 * system documents the kind the id names — a processor's Customer beside
+	 * its Payment; or a context itself when it is external, a big ball of mud
+	 * or modelled at its boundary only, and the id belongs to a system whose
+	 * entities are not ours to state, not anyone's to find, or not yet written
+	 * down (decisions 14 and 28).
 	 */
 	identifies?: IdentityTarget;
 	id?: string;
@@ -2820,11 +2831,12 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 	schema?: DataSchema;
 	/**
 	 * What this attribute holds the identity of: an entity in any context; a
-	 * published schema of an external context, when that system documents the
-	 * kind the id names — a processor's Customer beside its Payment; or a
-	 * context itself when it is external or a big ball of mud and the id
-	 * belongs to a system whose entities are not ours to state or not anyone's
-	 * to find (decisions 14 and 28).
+	 * published schema of an external or boundary-only context, when that
+	 * system documents the kind the id names — a processor's Customer beside
+	 * its Payment; or a context itself when it is external, a big ball of mud
+	 * or modelled at its boundary only, and the id belongs to a system whose
+	 * entities are not ours to state, not anyone's to find, or not yet written
+	 * down (decisions 14 and 28).
 	 */
 	identifies?: IdentityTarget;
 	owner: AttributeOwner;

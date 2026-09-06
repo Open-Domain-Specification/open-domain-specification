@@ -78,8 +78,8 @@ function* aggregatesOf(workspace: Workspace): Iterable<Aggregate> {
 }
 
 /**
- * The contexts whose insides are knowable, which is every context except a big
- * ball of mud.
+ * The contexts whose insides are knowable, which is every context of ours that
+ * somebody can read and has read.
  *
  * A big ball of mud is the enterprise's own, so unlike an external context it
  * may state aggregates, rules and reactions and every rule about what it does
@@ -91,9 +91,18 @@ function* aggregatesOf(workspace: Workspace): Iterable<Aggregate> {
  * service so an event had a raiser. So a mud context may say what it emits
  * without saying how, and may name a cluster without naming its root
  * (decision 28, second amendment; card 90).
+ *
+ * A context modelled at its boundary only is the same silence for the opposite
+ * reason: it is ours and coherent and nobody has interviewed it yet. It
+ * publishes facts it cannot yet say the raiser of, and it takes facts in
+ * without yet naming what wakes on them, and asking either question on the
+ * first day of an incremental adoption sends the author to invent the answer —
+ * which is what petstore's Identity context did by calling itself a mess to
+ * escape these rules (decision 28, sixth amendment; card 132).
  */
 function* knowableContexts(workspace: Workspace): Iterable<BoundedContext> {
-	for (const bc of modelledContexts(workspace)) if (!bc.bigBallOfMud) yield bc;
+	for (const bc of modelledContexts(workspace))
+		if (!bc.bigBallOfMud && !bc.boundaryOnly) yield bc;
 }
 
 /** The aggregates of the contexts whose insides are knowable. */
@@ -391,6 +400,15 @@ const crossContextRelation: Rule = (workspace) => {
  * on — that is what makes it one — so its schemas are not identity targets and
  * its ids name the context.
  *
+ * A context modelled at its boundary only is named the same two ways. It is
+ * ours and coherent and nobody has interviewed it yet, so it has no entities
+ * for an id to reach — the entities exist in the system and not in the model —
+ * and the honest target is the context, or the schema it publishes for the
+ * kind the id is of. That is the whole point of the flag: a bank adopting the
+ * model for Payments first can hold a customer id into its own CRM without
+ * inventing the CRM's entities or calling a healthy context a mess
+ * (decision 28, sixth amendment; card 132).
+ *
  * What the rule otherwise refuses is an identity naming an entity this
  * workspace does not have: one built against another workspace, or dropped
  * since, where the id reaches nothing.
@@ -402,21 +420,26 @@ const identifiesEntity: Rule = (workspace) => {
 			const target = attribute.identifies;
 			if (!target) continue;
 			if (target instanceof BoundedContext) {
-				if (target.external || target.bigBallOfMud) continue;
+				if (target.external || target.bigBallOfMud || target.boundaryOnly)
+					continue;
 				diagnostics.push({
 					severity: "error",
 					rule: "identifies-entity",
-					message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of bounded context "${target.name}", which is neither external nor a big ball of mud; a context whose insides the model states has the entity the id is of, so name that entity instead`,
+					message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of bounded context "${target.name}", which is neither external, nor a big ball of mud, nor modelled at its boundary only; a context whose insides the model states has the entity the id is of, so name that entity instead`,
 					ref: attribute.ref,
 				});
 				continue;
 			}
 			if (target instanceof DataSchema) {
-				if (target.boundedcontext.external) continue;
+				if (
+					target.boundedcontext.external ||
+					target.boundedcontext.boundaryOnly
+				)
+					continue;
 				diagnostics.push({
 					severity: "error",
 					rule: "identifies-entity",
-					message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of schema "${target.name}" of bounded context "${target.boundedcontext.name}", which is not external; a published schema is a kind a system outside the model documents, so name the entity the id is of, or that system's context where its entities are not ours to state`,
+					message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of schema "${target.name}" of bounded context "${target.boundedcontext.name}", which is neither external nor modelled at its boundary only; a published schema is a kind the model names where it does not state the entity behind it, so name the entity the id is of instead`,
 					ref: attribute.ref,
 				});
 				continue;
@@ -3467,7 +3490,10 @@ const consumptionByReactor: Rule = (workspace) => {
  * An external context is a system the enterprise does not own and a big ball of
  * mud is one nobody can read; naming a caller inside either is the invention
  * decision 28 refuses, and asking for it is how NorthBank came to have one
- * (decision 28, second amendment of 2026-09-10).
+ * (decision 28, second amendment of 2026-09-10). A context modelled at its
+ * boundary only is not asked for the same answer: it says what it takes and
+ * nobody has yet interviewed it for which of its operations does the taking
+ * (decision 28, sixth amendment; card 132).
  *
  * A warning rather than an error: the exchange is real and drawn either way,
  * and an author part-way through an interview should not be blocked for not yet
@@ -3480,7 +3506,7 @@ const consumptionByRequired: Rule = (workspace) => {
 		const provider = consumable.provider.boundedcontext;
 		const here = consumer.boundedcontext;
 		if (consumable.type !== "operation") continue;
-		if (here.external || here.bigBallOfMud) continue;
+		if (here.external || here.bigBallOfMud || here.boundaryOnly) continue;
 		if (consumption.by.length > 0) continue;
 		const operations = [...consumer.consumables.values()].filter(
 			(it) => it.type === "operation",
@@ -4247,11 +4273,19 @@ const raisesInContext: Rule = (workspace) => {
  * write the shape it exists to warn about (decision 17, second amendment of
  * 2026-09-10; card 130).
  *
- * Asked of aggregates only. An application service's operation may raise any
+ * Asked of the inside of the model, which is an aggregate and a domain service
+ * alike. The rule walked aggregates only, so a domain service's operation could
+ * raise two aggregates' events — the act the rule's own reason refuses, written
+ * one node further out. A domain service holds domain logic no single aggregate
+ * holds; it is as much the inside of the model as an aggregate is, and
+ * `domain-service-internal` says so about its operations, so it raises no
+ * aggregate's event either (decision 17, third note of 2026-09-10; card 132).
+ *
+ * The application service stays the one exemption. Its operation may raise any
  * aggregate's event of its own context, which decision 17's second amendment
  * allows and names as a cost: the front is the context's use case, it runs the
  * transitions, and where the event is not on the aggregate the service is
- * where it honestly sits. What an aggregate may not do is speak for the
+ * where it honestly sits. What the inside may not do is speak for the
  * aggregate next door.
  *
  * A foreign context's event is left to `raises-in-context`, which says the
@@ -4261,19 +4295,31 @@ const raisesInContext: Rule = (workspace) => {
 const raisesInAggregate: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const bc of modelledContexts(workspace)) {
-		for (const aggregate of bc.aggregates.values()) {
-			for (const operation of aggregate.consumables.values()) {
+		const inside = [
+			...bc.aggregates.values(),
+			...[...bc.services.values()].filter((it) => it.type === "domain"),
+		];
+		for (const provider of inside) {
+			for (const operation of provider.consumables.values()) {
 				for (const event of operation.raisedEvents) {
 					const raiser = event.provider;
-					if (raiser === aggregate || raiser.boundedcontext !== bc) continue;
+					if (raiser === provider || raiser.boundedcontext !== bc) continue;
 					const where =
 						raiser instanceof Aggregate
 							? `aggregate "${raiser.name}"`
 							: `service "${raiser.name}"`;
+					const isAggregate = provider instanceof Aggregate;
+					const who = isAggregate
+						? `Aggregate "${provider.name}"`
+						: `Domain service "${provider.name}"`;
+					const because = isAggregate
+						? ""
+						: "a domain service is the inside of the model as an aggregate is, and ";
+					const front = isAggregate ? "a service" : "an application service";
 					diagnostics.push({
 						severity: "error",
 						rule: "raises-in-aggregate",
-						message: `Aggregate "${aggregate.name}" raises "${event.name}", which belongs to ${where} in "${bc.name}"; each aggregate is saved in its own transaction, so "${aggregate.name}" making another's fact true spans two of them with nothing on any map to say so. Let "${raiser.name}" raise its own event, and let a service of "${bc.name}" front both`,
+						message: `${who} raises "${event.name}", which belongs to ${where} in "${bc.name}"; ${because}each aggregate is saved in its own transaction, so "${provider.name}" making another's fact true spans two of them with nothing on any map to say so. Let "${raiser.name}" raise its own event, and let ${front} of "${bc.name}" front both`,
 						ref: operation.ref,
 					});
 				}
@@ -5147,6 +5193,86 @@ const externalIsBoundary: Rule = (workspace) => {
 };
 
 /**
+ * A context modelled at its boundary only is a boundary and nothing more.
+ *
+ * This is the third kind of unknown, and the one the model meets on the first
+ * day of an incremental adoption: a context that is ours, coherent as far as
+ * anyone knows, and that nobody has interviewed yet. Until card 132 there was
+ * no honest way to say it. Every insides-are-knowable rule read the absence of
+ * `external` and `bigBallOfMud` as knowability, so a bank adopting the model
+ * for Payments first could not hold a customer id into its own CRM without
+ * inventing the CRM's entities — and petstore took the other way out, calling
+ * a healthy Identity context a big ball of mud with a discovery note saying it
+ * meant "modelled at its boundary only" (decision 28, sixth amendment).
+ *
+ * So what it may state is what anyone can see from outside: the consumables it
+ * offers and takes, the schemas those carry, the value objects its language
+ * needs, its glossary. What it may not state is the inside — aggregates,
+ * policies, processes, rules across its instances — for the reason
+ * `external-is-boundary` refuses the same list on somebody else's machine, one
+ * step milder: not that we could never know, but that nobody here has looked,
+ * and a model that fills the gap in is inventing.
+ *
+ * Everything else about it is ordinary. It serves subdomains and it has a
+ * team, because it is ours; nothing consuming it is asked for an
+ * anti-corruption layer, because it is not a mess; and the day somebody
+ * interviews it the flag comes off and every rule applies again.
+ *
+ * It is one of the three and not two of them. External is somebody else's
+ * system, a big ball of mud is ours and unreadable, this is ours and unread —
+ * three different answers to "who may change it and what can we know", and a
+ * context marked twice leaves every rule that reads one of the flags guessing
+ * which reading was meant. The pair is reported and the rest of the check
+ * stops there: with the author's own statement ambiguous, listing what a
+ * boundary-only context may not declare would be answering a question they
+ * have not yet asked.
+ */
+const boundaryOnlyIsBoundary: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const bc of workspace.boundedcontexts.values()) {
+		if (!bc.boundaryOnly) continue;
+		const clash = bc.external
+			? "external; a system the enterprise does not own is nobody here's to interview, and a context modelled at its boundary only is ours and waiting to be"
+			: bc.bigBallOfMud
+				? "a big ball of mud; a mud context is ours and cannot be read, and a context modelled at its boundary only is ours and coherent and has not been read yet"
+				: undefined;
+		if (clash) {
+			diagnostics.push({
+				severity: "error",
+				rule: "boundary-only-is-boundary",
+				message: `Bounded context "${bc.name}" is marked both boundary-only and ${clash}, so a context is one or the other`,
+				ref: bc.ref,
+			});
+			continue;
+		}
+		const refuse = (what: string, ref: string, alternative?: string) =>
+			diagnostics.push({
+				severity: "error",
+				rule: "boundary-only-is-boundary",
+				message: `Boundary-only context "${bc.name}" declares ${what}; a context modelled at its boundary only states what it offers and what it takes, and nothing about its insides until somebody interviews it${alternative ? `. ${alternative}` : ""}`,
+				ref,
+			});
+		for (const aggregate of bc.aggregates.values())
+			refuse(
+				`aggregate "${aggregate.name}"`,
+				aggregate.ref,
+				`A kind this context publishes is a schema of it, and an identity attribute of ours may name that schema instead of the entity nobody has written down yet`,
+			);
+		for (const policy of bc.policies.values())
+			refuse(`policy "${policy.name}"`, policy.ref);
+		for (const process of bc.processes.values())
+			refuse(`process "${process.name}"`, process.ref);
+		for (const invariant of bc.invariants.values())
+			refuse(
+				`invariant "${invariant.name}"`,
+				invariant.ref,
+				`A rule across the instances of a context is something the interview finds; drop boundaryOnly when this one has been had`,
+			);
+	}
+	return diagnostics;
+};
+
+/**
  * Every `$ref` a loaded file writes names something, and something of the kind
  * the field it was written in can hold.
  *
@@ -5356,9 +5482,9 @@ const RULES: CataloguedRule[] = [
 		rule: "identifies-entity",
 		severities: ["error"],
 		summary:
-			"An attribute's identifies names an entity of this workspace, root or child, in any aggregate of any context, or a bounded context marked external or bigBallOfMud, or a schema an external context publishes.",
+			"An attribute's identifies names an entity of this workspace, root or child, in any aggregate of any context, or a bounded context marked external, bigBallOfMud or boundaryOnly, or a schema an external or boundary-only context publishes.",
 		why: "An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about, and it is the one dependency allowed to cross a bounded context (decision 14). That thing may be a child, because systems point at child identities constantly — a playback session names a profile inside a household, a claim a coverage inside a policy, a shipment an order's line — and the child stays inside its aggregate exactly because its parent's invariants need it there; you hold the child's id, with its root's id beside it, and reach it through that root, so the dependency is really on the aggregate the root leads. Holding the id is not reaching inside: what reaches inside is a relation into another aggregate's members, and cross-aggregate-reference refuses that and recommends this id in its place. It may also be a context whose insides the model does not state: a card scheme's authorisation id belongs to a system whose entities are not ours to state, and a legacy account key to one nobody can read well enough to say which entity it is of (decision 28), so the attribute names the system and the maps still draw the dependency. Where that system publishes a schema for the kind the id names — a processor's Customer beside its Payment, its Refund and its Dispute — the identity may name that schema and say which kind of id it holds, and the model reads it as an identity into that context (decision 28, third amendment). Any other context is refused, and so is a schema of one, because there the entity exists and naming the whole context, or a payload shape of it, would say less. What the id may never name is something this workspace does not have, since then it reaches nothing.",
-		fix: "Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child, with the root's id beside it — or, for an id that belongs to a system you do not model inside or cannot read, at that system's bounded context, marked external: true or bigBallOfMud: true — or, where that external system publishes a schema for the kind the id is of, at that schema. Check the target has not been renamed or moved out from under the attribute.",
+		fix: "Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child, with the root's id beside it — or, for an id that belongs to a system you do not model inside, cannot read, or have not interviewed yet, at that system's bounded context, marked external: true, bigBallOfMud: true or boundaryOnly: true — or, where that context publishes a schema for the kind the id is of, at that schema. Check the target has not been renamed or moved out from under the attribute.",
 		check: identifiesEntity,
 	},
 	{
@@ -5677,8 +5803,8 @@ const RULES: CataloguedRule[] = [
 		rule: "consumption-by-required",
 		severities: ["warning"],
 		summary:
-			"A consumption of an operation names, in by, which of the consumer's own operations makes the call — unless the consumer provides exactly one operation, which is then its own answer, or the consumer's context is external or a big ball of mud. A consumer that provides no operation at all is reported too: nothing in it can make the call.",
-		why: "by is the only causal link the model has from one operation to the next: the flow map and the reaction walk follow it from a local operation through the consumption to the operation it calls and on to what that raises. Without it a lifecycle running through three contexts reads as three unrelated stubs, each stopping at the edge, and the reader is told only that some part of a six-operation service depends on a neighbour — which is barely more than the context map already said. A call next door costs the same silence: a front on a two-operation application service that calls an aggregate without saying which of its operations does reaches no events at all, and the flow map stops there with nothing said about why. A consumer providing no operation is the same silence with no way to break it — there is no operation to name, the one-operation inference has nothing to infer from, and a policy may not be a by on an operation consumption — so a subscribe-only application service that calls out dead-ends the walk at exactly the boundary this rule exists to keep lit. Which of the consumer's operations calls out is not askable of every consumer, though: inside an external context or a big ball of mud it is a system nobody here owns or can read, and naming a caller in one is invention.",
+			"A consumption of an operation names, in by, which of the consumer's own operations makes the call — unless the consumer provides exactly one operation, which is then its own answer, or the consumer's context is external, a big ball of mud, or modelled at its boundary only. A consumer that provides no operation at all is reported too: nothing in it can make the call.",
+		why: "by is the only causal link the model has from one operation to the next: the flow map and the reaction walk follow it from a local operation through the consumption to the operation it calls and on to what that raises. Without it a lifecycle running through three contexts reads as three unrelated stubs, each stopping at the edge, and the reader is told only that some part of a six-operation service depends on a neighbour — which is barely more than the context map already said. A call next door costs the same silence: a front on a two-operation application service that calls an aggregate without saying which of its operations does reaches no events at all, and the flow map stops there with nothing said about why. A consumer providing no operation is the same silence with no way to break it — there is no operation to name, the one-operation inference has nothing to infer from, and a policy may not be a by on an operation consumption — so a subscribe-only application service that calls out dead-ends the walk at exactly the boundary this rule exists to keep lit. Which of the consumer's operations calls out is not askable of every consumer, though: inside an external context, a big ball of mud or a context modelled at its boundary only it is a system nobody here owns, can read, or has yet interviewed, and naming a caller in one is invention.",
 		fix: "Name the consumer's own operations that make this call in by. Pick from the operations the message lists; if several of them call out, name them all. Where the consumer provides none, the missing thing is the operation rather than the by: add the operation of this consumer that makes the call — the use case whose act this is — and name it in by. A consumer with exactly one operation needs nothing, because that operation is the answer, and neither does a consumer inside somebody else's system.",
 		check: consumptionByRequired,
 	},
@@ -5695,9 +5821,9 @@ const RULES: CataloguedRule[] = [
 		rule: "subscription-backed",
 		severities: ["warning"],
 		summary:
-			"A consumed event is reacted to by a policy or a process of the consumer's context, unless that context is external or a big ball of mud.",
-		why: "subscription-consumed asks the other half of this question, and between them the two say that a subscription and its reaction are one fact written from two sides. A consumption with no reaction is a claim with nothing under it: the model says this context takes that fact in, nothing in it does anything when the fact arrives, and the consumable map draws an edge a reader cannot follow anywhere. Usually the reaction was never written down; sometimes the dependency is stale. Naming an operation in by used to clear it, on the reading that a projection or a report was what the subscription was for; an operation is issued rather than woken, so that named something which does not run when the fact arrives, and consumption-by-reactor now refuses it. A consumer inside an external context or a big ball of mud is not asked, for the reason consumption-by-required does not ask it either: how somebody else's machine reacts is not ours to state.",
-		fix: "Add the policy or process that reacts to the event and name the local operation it issues in its then — for a projection, the operation that writes what the query reads. If nothing here acts on the fact, delete the consumption: the dependency is not real. Where the consumer is a system nobody here owns or can read, mark its context external: true or bigBallOfMud: true rather than inventing a reaction for it.",
+			"A consumed event is reacted to by a policy or a process of the consumer's context, unless that context is external, a big ball of mud, or modelled at its boundary only.",
+		why: "subscription-consumed asks the other half of this question, and between them the two say that a subscription and its reaction are one fact written from two sides. A consumption with no reaction is a claim with nothing under it: the model says this context takes that fact in, nothing in it does anything when the fact arrives, and the consumable map draws an edge a reader cannot follow anywhere. Usually the reaction was never written down; sometimes the dependency is stale. Naming an operation in by used to clear it, on the reading that a projection or a report was what the subscription was for; an operation is issued rather than woken, so that named something which does not run when the fact arrives, and consumption-by-reactor now refuses it. A consumer inside an external context, a big ball of mud or a context modelled at its boundary only is not asked, for the reason consumption-by-required does not ask it either: how a machine nobody here owns, can read, or has yet interviewed reacts is not ours to state.",
+		fix: "Add the policy or process that reacts to the event and name the local operation it issues in its then — for a projection, the operation that writes what the query reads. If nothing here acts on the fact, delete the consumption: the dependency is not real. Where the consumer is a system nobody here owns, can read, or has yet interviewed, mark its context external: true, bigBallOfMud: true or boundaryOnly: true rather than inventing a reaction for it.",
 		check: subscriptionBacked,
 	},
 	{
@@ -5827,9 +5953,9 @@ const RULES: CataloguedRule[] = [
 		rule: "raises-in-aggregate",
 		severities: ["error"],
 		summary:
-			"An aggregate's operation raises only its own aggregate's events. An application service's operation may raise any aggregate's event of its context.",
-		why: "Each aggregate is saved in its own transaction, so one aggregate making another's fact true spans two of them — the same act aggregate-consumes-inside refuses when it is written as a call, and written under raises it spans them invisibly: there is no consumption, no edge on the consumable map and nothing for a reader to follow. Allowing the fact while refusing the call would leave the model with a preferred way of writing the shape it exists to warn about. The service in front is a different matter: the context's use case runs both transitions and may raise the context's events itself, which decision 17 allows and names as a cost.",
-		fix: "Let the aggregate that owns the event raise it, in its own operation, and let a service of this context front both transitions — consuming each aggregate's operation and ordering them. If the fact really is this aggregate's, it is a different event with its own name, declared on this aggregate.",
+			"An aggregate's operation, and a domain service's, raises only its own provider's events. An application service's operation may raise any aggregate's event of its context.",
+		why: "Each aggregate is saved in its own transaction, so one aggregate making another's fact true spans two of them — the same act aggregate-consumes-inside refuses when it is written as a call, and written under raises it spans them invisibly: there is no consumption, no edge on the consumable map and nothing for a reader to follow. Allowing the fact while refusing the call would leave the model with a preferred way of writing the shape it exists to warn about. A domain service is asked the same question: it holds domain logic no single aggregate holds, which makes it the inside of the model as much as an aggregate is — domain-service-internal says exactly that about its operations — so a transfer service raising the debited and credited events of two accounts spans those two transactions from one node further out. The application service in front is the one exemption: the context's use case runs both transitions and may raise the context's events itself, which decision 17 allows and names as a cost.",
+		fix: "Let the aggregate that owns the event raise it, in its own operation, and let an application service of this context front both transitions — consuming each aggregate's operation and ordering them. A domain service that has its own fact to publish declares that event on itself and raises it, which is a different event with its own name; what it may not do is state the aggregates' facts as its own.",
 		check: raisesInAggregate,
 	},
 	{
@@ -5855,8 +5981,8 @@ const RULES: CataloguedRule[] = [
 		severities: ["warning"],
 		summary:
 			"Every event of a context whose insides are knowable is raised by one of that context's own operations.",
-		why: "An event says a fact became true, and the model says what made it true by naming the operation that raises it. An event nothing raises reads as dead model: a reader cannot follow the chain back to the behaviour that causes it, and a policy waiting on it looks like it will never fire. Two contexts are exempt, for the same reason: an external system's insides are not ours to state, and a big ball of mud's cannot be read at all, so a mud context may say what it emits without saying how (decision 28).",
-		fix: "Name the operation that raises the event with raises; or, if the fact really comes from outside the business, move the event to the system that emits it and mark that context external: true; or, if it comes out of a legacy system nobody can read, mark that context bigBallOfMud: true rather than inventing the job that emits it.",
+		why: "An event says a fact became true, and the model says what made it true by naming the operation that raises it. An event nothing raises reads as dead model: a reader cannot follow the chain back to the behaviour that causes it, and a policy waiting on it looks like it will never fire. Three kinds of context are exempt, for one reason worded three ways: an external system's insides are not ours to state, a big ball of mud's cannot be read at all, and a context modelled at its boundary only has not been read yet, so each of them may say what it emits without saying how (decision 28).",
+		fix: "Name the operation that raises the event with raises; or, if the fact really comes from outside the business, move the event to the system that emits it and mark that context external: true; or, if it comes out of a legacy system nobody can read, mark that context bigBallOfMud: true, or boundaryOnly: true where the system is ours and coherent and nobody has interviewed it yet, rather than inventing the job that emits it.",
 		check: eventUnraised,
 	},
 	{
@@ -5894,6 +6020,15 @@ const RULES: CataloguedRule[] = [
 		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. The contract of one of its own operations is the same kind of published fact: a payment provider documents that capturing needs a capturable payment and what the capture answers with, and the merchant integrating with it is in no position to promise that, so the rule is stated where it is published — as a precondition or a postcondition of that provider's own operation. What one of its own events carries is that same fact again: a provider that only sends — a webhook, a settlement feed — has no operation to hang a contract on, and the promise that every capture notification carries an amount no greater than the authorisation is published, citable and not the receiver's to promise, so a postcondition may name that event and constrain the attributes of its payload. Only a postcondition, because an event has no request and so no moment before it at which anything could be checked. A rule with neither flag is different, because a rule the machine keeps at rest is exactly the invention we cannot make, and so is a precondition guarding somebody else's operation. The reach is the contract and nothing beside it: a flagged rule that names no operation at all is a contract about nothing, and one that constrains an entity of ours is that system promising something about our model. Neither was reported until card 116, because every reach rule walks the contexts whose insides we state and an external context is not one of them. Internal is the same invention in one word: it says an operation, or an event, never leaves that system, and the ones of somebody else's system we can name at all are those that reach us or that we reach. A big ball of mud is the opposite kind of unknown — the enterprise's own system, unreadable but ours to carve up — so a context marked both leaves every rule that reads one of the two flags guessing which reading was meant.",
 		fix: "Drop internal from the operation or the event, which is a fact about that system's insides. Move the aggregate, policy or process into the context of ours that actually holds it, or drop external: true if this is a system the enterprise really does model inside. Where the aggregate was standing in for a kind that system publishes, the honest form is a schema of this context rather than an invented entity: declare the schema and let an identity attribute of ours name it directly. For an invariant, the question is which of two things it is. If it is the published contract of one of this context's own operations, mark it precondition (checked before that operation runs) or postcondition (guaranteed of what it answers with) and name that operation in constrains; both flags are allowed here and one of them is required, because an unflagged rule is a claim about the machine at rest. If it is what one of this context's own events always carries — a webhook payload, a settlement feed record — mark it postcondition and name that event, which is how a provider that only sends states its contract. What it may then constrain is the attributes of that operation's request and answer shapes, or of that event's payload, and this context's own value objects; anything else names something the provider does not publish. If it is a rule about several instances of a context of ours, or a precondition guarding another context's operation, move it to the context that keeps it. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay. Where both flags are set, keep the one that says who may change the system: external for somebody else's, bigBallOfMud for ours.",
 		check: externalIsBoundary,
+	},
+	{
+		rule: "boundary-only-is-boundary",
+		severities: ["error"],
+		summary:
+			"A context marked boundaryOnly declares no aggregates, no policies, no processes and no context invariants, and is not external or a big ball of mud as well; it states the consumables it offers and takes, the schemas they carry, its value objects and its glossary.",
+		why: "This is the third kind of unknown, and the one incremental adoption meets on its first day: a context that is ours, coherent as far as anyone knows, and that nobody has interviewed yet. Before it existed a bank modelling Payments first had two ways to hold a customer id into its own CRM and both were false — invent the CRM's entities, or call a healthy context a big ball of mud, which is what petstore's Identity context did with a discovery note saying it meant modelled at its boundary only. What such a context may state is what anyone can see from outside; what it may not state is the inside, for the reason external-is-boundary refuses the same list one step more strongly: not that we could never know, but that nobody here has looked, and a model that fills the gap in is inventing. Everything else about it is ordinary — it serves subdomains, it has a team, and nothing consuming it is asked for an anti-corruption layer, because it is not a mess. The three flags are three different answers to who may change the system and what can be known of it, so a context marked twice leaves every rule that reads one of them guessing which reading was meant.",
+		fix: "Move the aggregate, policy, process or invariant into the context of ours that really holds it, or drop boundaryOnly: true because this context has now been interviewed and the model can state its insides. Where the aggregate was standing in for a kind this context publishes, the honest form is a schema of it rather than an invented entity: declare the schema and let an identity attribute of ours name it directly. Where both flags are set, keep the one that is true: external for somebody else's system, bigBallOfMud for one of ours nobody can read, boundaryOnly for one of ours nobody has read yet.",
+		check: boundaryOnlyIsBoundary,
 	},
 	{
 		rule: "comments-required",

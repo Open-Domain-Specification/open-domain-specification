@@ -3,7 +3,7 @@
 Excerpts from the ODS example workspace (`models/petstore/src/workspace.ts`
 in the ODS repository). Each shows one pattern worth copying.
 
-## A context serving two subdomains, and a legacy one
+## A context serving two subdomains, and one modelled at its boundary only
 
 ```ts
 const inventoryBC = workspace.addBoundedContext("Inventory BC", {
@@ -11,9 +11,14 @@ const inventoryBC = workspace.addBoundedContext("Inventory BC", {
 	subdomains: [inventorySD, catalogSD],
 	team: petShopTeam,
 });
+// Ours, coherent as far as anyone knows, and nobody has interviewed it: the
+// model states the endpoints it offers, the facts they publish and the record
+// they answer with, and no aggregate behind them. Not `bigBallOfMud`, which
+// says the model in there is a mess and neighbours should translate at the
+// edge (decision 28).
 const identityBC = usersSD.addBoundedcontext("Identity BC", {
-	description: "Owns User aggregate & user endpoints. Legacy: user status is an untyped int",
-	bigBallOfMud: true,
+	description: "The user endpoints and the record they answer with. Legacy at that boundary: user status is an untyped int",
+	boundaryOnly: true,
 	team: platformTeam,
 });
 ```

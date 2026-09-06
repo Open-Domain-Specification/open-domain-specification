@@ -40,7 +40,8 @@ Workspace
 ├── Domain                                  (problem space)
 │   └── Subdomain (core/supporting/generic)
 ├── Bounded Context                         (solution space; serves the subdomains it lists)
-│   ├── external / bigBallOfMud             (a system we do not own / one of ours we cannot read; mutually exclusive)
+│   ├── external / bigBallOfMud /           (three kinds of unknown, mutually exclusive: a system we do not own,
+│   │   boundaryOnly                         one of ours we cannot read, one of ours nobody has interviewed yet)
 │   ├── Service (application/domain)
 │   │   ├── Consumables (event or operation; may be internal; an operation may declare returns, rejects and reasons)
 │   │   └── Consumptions

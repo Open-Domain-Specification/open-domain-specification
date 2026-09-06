@@ -31,7 +31,7 @@ job is to get the model out of their head without making them learn the vocabula
 - Explain once: a subdomain is one slice of the problem; calling it core only marks where your
   competitive effort goes.
 
-## Phase C: ownership (produces Teams, Bounded Contexts, `subdomains`, `bigBallOfMud`, `external`)
+## Phase C: ownership (produces Teams, Bounded Contexts, `subdomains`, `bigBallOfMud`, `external`, `boundaryOnly`)
 
 - "Which teams or people work on this, and which parts does each look after?" → teams, and a
   candidate context per part.
@@ -44,6 +44,17 @@ job is to get the model out of their head without making them learn the vocabula
 - "Is any of these an old system that nobody fully understands, where the data model is a
   mess?" → `bigBallOfMud: true`. Explain: we flag it so anything talking to it knows to
   translate rather than trust.
+- For any part you are not interviewing today: "is that a mess nobody can read, or is it fine
+  and we simply have not looked at it yet?" → `bigBallOfMud: true` for the first,
+  `boundaryOnly: true` for the second. Ask it of every context you are not covering in this
+  round, because the model has to say which kind of unknown each one is, and answering neither
+  makes the model claim you know its insides. Explain: a boundary-only context still gets its
+  team and its subdomains, and we write down what it offers you and what it takes from you —
+  its endpoints, the facts it publishes, the shapes those carry — and nothing behind that;
+  ids of yours may point at it or at one of the kinds it publishes; nothing talking to it is
+  told to translate, because it is not a mess. Follow up with "what does it offer the rest of
+  you, and what does it take?" and stop there. The flag comes off the day somebody interviews
+  it, and everything else about the context stays as it is.
 - "Which systems outside the business does this talk to?" → one bounded context per system,
   with `external: true`: a card scheme, a payment provider, a licensor, a regulator, a
   clock. Explain: we draw it because you depend on it, and we write down only what it sends

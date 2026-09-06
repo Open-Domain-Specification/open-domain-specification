@@ -24,12 +24,15 @@ test("the interactive context map draws context nodes with stereotypes and roles
 	await expect(first.locator(".group")).toBeVisible();
 	await expect(first).toHaveAttribute("style", /--band/);
 	// Relationships show the stereotype in the middle and role ports at the ends.
-	await expect(flow.locator(".stereotype").first()).toBeVisible();
+	// `.port.stereotype` is the edge badge: a node draws its own stereotype line
+	// under the same word — «external system», «boundary only» — and that is a
+	// different thing (card 132).
+	await expect(flow.locator(".port.stereotype").first()).toBeVisible();
 	const texts = (sel: string) =>
 		flow
 			.locator(sel)
 			.evaluateAll((els) => els.map((el) => el.textContent ?? ""));
-	const stereotypes = await texts(".stereotype");
+	const stereotypes = await texts(".port.stereotype");
 	for (const s of stereotypes)
 		expect(["U/D", "C/S", "P", "SK", "SW"]).toContain(s);
 	// Namespaces are nested shaded cluster regions, workspace outermost, each labelled at its top left.

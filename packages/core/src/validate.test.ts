@@ -368,7 +368,7 @@ describe("Workspace.validate", () => {
 					severity: "error",
 					rule: "identifies-entity",
 					message:
-						'"Order" holds attribute "petId" as the identity of schema "Pet Summary" of bounded context "Catalog", which is not external; a published schema is a kind a system outside the model documents, so name the entity the id is of, or that system\'s context where its entities are not ours to state',
+						'"Order" holds attribute "petId" as the identity of schema "Pet Summary" of bounded context "Catalog", which is neither external nor modelled at its boundary only; a published schema is a kind the model names where it does not state the entity behind it, so name the entity the id is of instead',
 					ref: petId.ref,
 				},
 			],
@@ -397,7 +397,7 @@ describe("Workspace.validate", () => {
 					severity: "error",
 					rule: "identifies-entity",
 					message:
-						'"Order" holds attribute "petId" as the identity of bounded context "Catalog", which is neither external nor a big ball of mud; a context whose insides the model states has the entity the id is of, so name that entity instead',
+						'"Order" holds attribute "petId" as the identity of bounded context "Catalog", which is neither external, nor a big ball of mud, nor modelled at its boundary only; a context whose insides the model states has the entity the id is of, so name that entity instead',
 					ref: petId.ref,
 				},
 			],
@@ -4890,6 +4890,67 @@ describe("raises-in-aggregate", () => {
 		).toHaveLength(1);
 		expect(bc.name).toBe("Sales");
 	});
+	/**
+	 * Evans's canonical domain service, from the architect's round-15 probe P6:
+	 * a transfer between two accounts, each of which is its own aggregate with
+	 * its own fact. The service publishes its own event, and what it may not do
+	 * is state the two accounts' facts as its own (decision 17, third note of
+	 * 2026-09-10; card 132).
+	 */
+	function transferService() {
+		const { ws, bc, orderAgg, stockAgg, orderPlaced, stockReserved, app } =
+			twoAggregates();
+		const domain = bc.addService("Transfer Service", {
+			description: "",
+			type: "domain",
+		});
+		const transferred = domain.provides("Transferred", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+		});
+		return {
+			ws,
+			bc,
+			orderAgg,
+			stockAgg,
+			orderPlaced,
+			stockReserved,
+			app,
+			domain,
+			transferred,
+		};
+	}
+
+	it("refuses a domain service's operation raising an aggregate's event", () => {
+		const { ws, domain, orderPlaced } = transferService();
+		const transfer = domain
+			.provides("Transfer", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(orderPlaced);
+		expect(inAggregate(ws)).toEqual([
+			[
+				"error",
+				'Domain service "Transfer Service" raises "Order Placed", which belongs to aggregate "Order" in "Sales"; a domain service is the inside of the model as an aggregate is, and each aggregate is saved in its own transaction, so "Transfer Service" making another\'s fact true spans two of them with nothing on any map to say so. Let "Order" raise its own event, and let an application service of "Sales" front both',
+				transfer.ref,
+			],
+		]);
+	});
+
+	it("says nothing about a domain service raising its own event", () => {
+		const { ws, domain, transferred } = transferService();
+		domain
+			.provides("Transfer", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(transferred);
+		expect(inAggregate(ws)).toEqual([]);
+	});
 
 	it("says nothing inside an external context, whose insides are not ours to state", () => {
 		const { ws, bc, orderAgg, orderPlaced, stockReserved } = twoAggregates();
@@ -7765,6 +7826,206 @@ describe("external-is-boundary", () => {
 				.filter((d) => d.rule === "context-serves-subdomain")
 				.map((d) => d.ref),
 		).not.toContain(external.ref);
+	});
+});
+/**
+ * The third kind of unknown: a context of ours that nobody has interviewed
+ * yet. The architect's fifteenth round found the model had no honest state for
+ * it — probe P35, a bank adopting the model for Payments first and holding a
+ * customer id into its own uninterviewed CRM (decision 28, sixth amendment;
+ * card 132).
+ */
+describe("boundary-only-is-boundary", () => {
+	/**
+	 * P35's shape: a context of ours modelled at its boundary only, publishing
+	 * a fact, and a context of ours that holds an id into it.
+	 */
+	function uninterviewedCrm() {
+		const ws = emptyWorkspace();
+		const subdomain = ws
+			.addDomain("Bank", { description: "" })
+			.addSubdomain("Customers", { type: "supporting", description: "" });
+		const crm = ws.addBoundedContext("CRM", {
+			description: "ours; modelled at its boundary only for now",
+			boundaryOnly: true,
+			subdomains: [subdomain],
+		});
+		const crmApp = crm.addService("CRM App", {
+			description: "",
+			type: "application",
+		});
+		const registered = crmApp.provides("Customer Registered", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+		});
+		const payments = ws.addBoundedContext("Payments", {
+			description: "",
+			subdomains: [subdomain],
+		});
+		const paymentAgg = payments.addAggregate("Payment", { description: "" });
+		const payment = paymentAgg.addRootEntity("Payment", { description: "" });
+		payment.addAttribute("Id", { type: "PaymentId", identity: true });
+		return { ws, crm, crmApp, registered, payments, paymentAgg, payment };
+	}
+
+	const boundaryOnly = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "boundary-only-is-boundary")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("lets a context of ours nobody has interviewed hold an identity into it, with nothing else said", () => {
+		const { ws, crm, payment } = uninterviewedCrm();
+		payment.addAttribute("customerId", {
+			type: "string",
+			identifies: crm,
+			description: "the customer this payment is for",
+		});
+		expect(ws.validate()).toEqual([]);
+	});
+
+	// The other half of decision 28's third amendment, read for a context of
+	// ours: where the CRM publishes a kind, the id says which kind it is of.
+	it("lets an identity name a schema such a context publishes", () => {
+		const { ws, crm, payment } = uninterviewedCrm();
+		const customer = crm.addSchema("Customer", { description: "" });
+		customer.addAttribute("id", { type: "string", identity: true });
+		payment.addAttribute("customerId", {
+			type: "string",
+			identifies: customer,
+		});
+		expect(ws.validate()).toEqual([]);
+	});
+
+	it("refuses an aggregate on a context modelled at its boundary only", () => {
+		const { ws, crm } = uninterviewedCrm();
+		const customer = crm.addAggregate("Customer", { description: "" });
+		expect(boundaryOnly(ws)).toEqual([
+			[
+				"error",
+				'Boundary-only context "CRM" declares aggregate "Customer"; a context modelled at its boundary only states what it offers and what it takes, and nothing about its insides until somebody interviews it. A kind this context publishes is a schema of it, and an identity attribute of ours may name that schema instead of the entity nobody has written down yet',
+				customer.ref,
+			],
+		]);
+	});
+
+	it("refuses a policy, a process and a rule across its instances", () => {
+		const { ws, crm, registered } = uninterviewedCrm();
+		crm.addPolicy("On Registration", { description: "" }).on(registered);
+		crm.addProcess("Onboarding", { description: "" });
+		crm.addInvariant("One Login Per Email", { description: "" });
+		expect(boundaryOnly(ws).map((d) => d[1])).toEqual([
+			'Boundary-only context "CRM" declares policy "On Registration"; a context modelled at its boundary only states what it offers and what it takes, and nothing about its insides until somebody interviews it',
+			'Boundary-only context "CRM" declares process "Onboarding"; a context modelled at its boundary only states what it offers and what it takes, and nothing about its insides until somebody interviews it',
+			'Boundary-only context "CRM" declares invariant "One Login Per Email"; a context modelled at its boundary only states what it offers and what it takes, and nothing about its insides until somebody interviews it. A rule across the instances of a context is something the interview finds; drop boundaryOnly when this one has been had',
+		]);
+	});
+
+	it("refuses a context marked both boundary-only and external", () => {
+		const { ws, crm } = uninterviewedCrm();
+		crm.external = true;
+		expect(boundaryOnly(ws)).toEqual([
+			[
+				"error",
+				'Bounded context "CRM" is marked both boundary-only and external; a system the enterprise does not own is nobody here\'s to interview, and a context modelled at its boundary only is ours and waiting to be, so a context is one or the other',
+				crm.ref,
+			],
+		]);
+	});
+
+	it("refuses a context marked both boundary-only and a big ball of mud", () => {
+		const { ws, crm } = uninterviewedCrm();
+		crm.bigBallOfMud = true;
+		expect(boundaryOnly(ws)).toEqual([
+			[
+				"error",
+				'Bounded context "CRM" is marked both boundary-only and a big ball of mud; a mud context is ours and cannot be read, and a context modelled at its boundary only is ours and coherent and has not been read yet, so a context is one or the other',
+				crm.ref,
+			],
+		]);
+	});
+
+	// With the author's own statement ambiguous, listing what the flag refuses
+	// would answer a question they have not asked yet.
+	it("says only that the flags clash, and not what the second one refuses", () => {
+		const { ws, crm } = uninterviewedCrm();
+		crm.bigBallOfMud = true;
+		crm.addAggregate("Customer", { description: "" });
+		expect(boundaryOnly(ws)).toHaveLength(1);
+	});
+
+	it("asks such a context for a subdomain as usual, because it is ours", () => {
+		const { ws } = uninterviewedCrm();
+		const bare = ws.addBoundedContext("Billing", {
+			description: "",
+			boundaryOnly: true,
+		});
+		expect(
+			ws
+				.validate()
+				.filter((d) => d.rule === "context-serves-subdomain")
+				.map((d) => d.ref),
+		).toEqual([bare.ref]);
+	});
+
+	it("does not ask what raises a fact it publishes", () => {
+		const { ws } = uninterviewedCrm();
+		expect(ws.validate().filter((d) => d.rule === "event-unraised")).toEqual(
+			[],
+		);
+	});
+
+	it("does not ask which of its operations calls out, or what reacts to what it takes in", () => {
+		const { ws, crm, crmApp, payments } = uninterviewedCrm();
+		const paymentsApp = payments.addService("Payments App", {
+			description: "",
+			type: "application",
+		});
+		const captured = paymentsApp.provides("Payment Captured", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+		});
+		const charge = paymentsApp.provides("Charge", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		crmApp.provides("Update Customer", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		crmApp.consumes(captured, {});
+		crmApp.consumes(charge, {});
+		payments.downstreamOf(crm, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		crm.downstreamOf(payments, {
+			upstreamRoles: ["open-host-service", "published-language"],
+			downstreamRoles: ["conformist"],
+		});
+		expect(
+			ws
+				.validate()
+				.filter(
+					(d) =>
+						d.rule === "consumption-by-required" ||
+						d.rule === "subscription-backed",
+				),
+		).toEqual([]);
+	});
+
+	// It is not a mess: nothing consuming it is told to translate at the edge,
+	// which is the one claim the flag exists so an author need not make.
+	it("asks no consumer of it for an anti-corruption layer", () => {
+		const { ws, registered, payments } = uninterviewedCrm();
+		payments
+			.addService("Payments App", { description: "", type: "application" })
+			.consumes(registered, {});
+		expect(ws.validate().filter((d) => d.rule === "mud-needs-acl")).toEqual([]);
 	});
 });
 

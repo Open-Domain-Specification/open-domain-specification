@@ -253,9 +253,31 @@ export interface BoundedContextSchema {
 	 * and every rule about what it does state applies; what it cannot be held
 	 * to is completeness. Never `external` as well: that one is somebody else's
 	 * machine, and the two say opposite things about who may change it
-	 * (`external-is-boundary`).
+	 * (`external-is-boundary`). Never `boundaryOnly` either: that one is ours
+	 * and coherent, and a reader told both learns nothing about whether the
+	 * model inside can be trusted (`boundary-only-is-boundary`).
 	 */
 	bigBallOfMud?: boolean;
+	/**
+	 * Marks a context of ours, coherent as far as anyone knows, that nobody has
+	 * interviewed yet: it is modelled at its boundary only.
+	 *
+	 * This is the third kind of unknown, and the one incremental adoption meets
+	 * on its first day. A bank modelling Payments first still holds a customer
+	 * id into its own CRM, and until this flag existed it had two ways to say
+	 * so and both were false: invent the CRM's entities, or call a healthy
+	 * context a big ball of mud. So a boundary-only context is ours in every
+	 * ordinary way — it serves subdomains and has a team — and it states what it
+	 * offers and what it takes, its schemas and its value objects, and nothing
+	 * about its insides. `boundary-only-is-boundary` refuses aggregates,
+	 * policies, processes and context invariants on it; no rule asks how it
+	 * reacts or which of its operations calls out; an identity of ours may name
+	 * it, or one of its schemas; and no consumer of it is asked for an
+	 * anti-corruption layer, because it is not a mess. It becomes an ordinary
+	 * context the day somebody interviews it, and the flag comes off (decision
+	 * 28, sixth amendment).
+	 */
+	boundaryOnly?: boolean;
 	/**
 	 * Marks a system the enterprise does not own and does not model inside: a
 	 * card scheme, a payment provider, a licensor, a regulator, a clock. An
@@ -268,7 +290,9 @@ export interface BoundedContextSchema {
 	 * marked `precondition` or `postcondition` on one of its own operations,
 	 * which is that operation's published contract. An invariant with neither
 	 * flag, or one guarding another context's operation, is still refused
-	 * (decision 28).
+	 * (decision 28). Never `bigBallOfMud` or `boundaryOnly` as well: both of
+	 * those are the enterprise's own system, and the three flags name three
+	 * different unknowns.
 	 */
 	external?: boolean;
 	/** The team that owns this context. */

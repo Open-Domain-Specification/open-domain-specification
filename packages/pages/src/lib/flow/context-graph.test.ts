@@ -87,9 +87,24 @@ describe("contextGraph", () => {
 			tone: "warn",
 		});
 	});
+	// The third context flag, chipped like the other two (card 132).
+	it("chips a context modelled at its boundary only", () => {
+		const [n] = contextGraph(mapOf([node({ boundaryOnly: true })])).nodes;
+		expect(n).toMatchObject({
+			boundaryOnly: true,
+			bigBallOfMud: false,
+			tone: "",
+			chips: ["boundary only"],
+		});
+	});
 	it("leaves cluster, team and description unset when the context has none", () => {
 		const [n] = contextGraph(mapOf([node()])).nodes as ContextNodeData[];
-		expect(n).toMatchObject({ bigBallOfMud: false, tone: "", chips: [] });
+		expect(n).toMatchObject({
+			bigBallOfMud: false,
+			boundaryOnly: false,
+			tone: "",
+			chips: [],
+		});
 		expect(n.cluster).toBeUndefined();
 		expect(n.team).toBeUndefined();
 		expect(n.description).toBeUndefined();

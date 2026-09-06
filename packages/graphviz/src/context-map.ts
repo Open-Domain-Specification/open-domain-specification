@@ -17,6 +17,7 @@ import {
 } from "ts-graphviz";
 import { getDebug } from "./debug";
 import {
+	BOUNDARY_ONLY_STEREOTYPE,
 	DOWNSTREAM_ROLE_LABELS,
 	EXTERNAL_STEREOTYPE,
 	IDENTITY_EDGE_LABEL,
@@ -56,10 +57,17 @@ const SYMMETRIC_EDGE_COLORS: Partial<Record<ContextRelationshipType, string>> =
  * enterprise does not own is a plain grey box under the «external system»
  * stereotype, so the wall between our model and somebody else's is the first
  * thing a reader sees.
+ *
+ * A context modelled at its boundary only keeps the ordinary egg, because it
+ * is ours and coherent, and draws it dashed under the «boundary only»
+ * stereotype: the outline says there is a boundary here and nothing written
+ * behind it yet, which is the whole claim the flag makes (decision 28, sixth
+ * amendment).
  */
 function nodeAttributes(node: ODSContextMapNode): NodeAttributesObject {
 	const lines = [
 		node.external && EXTERNAL_STEREOTYPE,
+		node.boundaryOnly && BOUNDARY_ONLY_STEREOTYPE,
 		node.name,
 		node.bigBallOfMud && "(big ball of mud)",
 		node.team && `[${node.team.name}]`,
@@ -74,8 +82,11 @@ function nodeAttributes(node: ODSContextMapNode): NodeAttributesObject {
 			? "#d7ccc8"
 			: node.external
 				? "#eceff1"
-				: "white",
-		style: node.bigBallOfMud ? "filled,dashed" : "filled,solid",
+				: node.boundaryOnly
+					? "#f5f5f5"
+					: "white",
+		style:
+			node.bigBallOfMud || node.boundaryOnly ? "filled,dashed" : "filled,solid",
 		fontname: "sans-serif",
 	};
 }
