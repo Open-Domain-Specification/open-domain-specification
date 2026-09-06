@@ -1,0 +1,1488 @@
+{
+  "$schema": "./schema.json",
+  "id": "outpatient_clinic",
+  "name": "Outpatient Clinic",
+  "description": "Referral, triage, scheduling and diagnostics for patients referred to an outpatient clinic by their GP.",
+  "version": "0.1.0",
+  "odsVersion": "2.0.0",
+  "domains": {
+    "outpatient_care": {
+      "name": "Outpatient Care",
+      "description": "Everything involved in getting a GP-referred patient seen.",
+      "subdomains": {
+        "referral_triage": {
+          "name": "Referral Triage",
+          "type": "core",
+          "description": "Deciding what happens to a referral once it arrives: accept it, ask for more information, or decline it."
+        },
+        "appointment_scheduling": {
+          "name": "Appointment Scheduling",
+          "type": "supporting",
+          "description": "Turning an accepted case into a booked clinic slot, and keeping the record of clinics, slots, bookings and cancellations."
+        },
+        "patient_identity": {
+          "name": "Patient Identity",
+          "type": "supporting",
+          "description": "Knowing who a patient is, and what every other system that refers to them calls them."
+        }
+      }
+    }
+  },
+  "boundedcontexts": {
+    "gp_practice_system": {
+      "name": "GP Practice System",
+      "description": "The GP's own practice management system. Not ours to model inside: it sends referrals in its own message format, and every practice may run a different one.",
+      "subdomains": [],
+      "external": true,
+      "aggregates": {},
+      "invariants": {},
+      "services": {
+        "practice_system_interface": {
+          "name": "Practice System Interface",
+          "description": "What the practice system publishes to us.",
+          "type": "application",
+          "provides": {
+            "referral_submitted": {
+              "name": "Referral Submitted",
+              "description": "A referral has been sent by the GP's practice system, in its own message format.",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/gp_practice_system/schemas/gp_referral_message"
+              }
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {},
+      "processes": {},
+      "glossary": {},
+      "valueobjects": {},
+      "schemas": {
+        "gp_referral_message": {
+          "name": "GP Referral Message",
+          "description": "The referral exactly as the practice system sends it.",
+          "attributes": {
+            "referral_reference": {
+              "name": "referralReference",
+              "type": "string",
+              "description": "The practice system's own reference for this referral.",
+              "identity": true
+            },
+            "gp_patient_number": {
+              "name": "gpPatientNumber",
+              "type": "string",
+              "description": "The patient, by the GP's own patient number."
+            },
+            "requested_specialty": {
+              "name": "requestedSpecialty",
+              "type": "string"
+            },
+            "urgency": {
+              "name": "urgency",
+              "type": "string"
+            },
+            "clinical_summary": {
+              "name": "clinicalSummary",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "laboratory": {
+      "name": "Laboratory",
+      "description": "The clinic's contracted laboratory service. Takes a test order and answers with a result later, in its own report format. Not ours to model inside.",
+      "subdomains": [],
+      "external": true,
+      "aggregates": {},
+      "invariants": {},
+      "services": {
+        "lab_interface": {
+          "name": "Lab Interface",
+          "description": "What the lab offers us, and what it publishes back.",
+          "type": "application",
+          "provides": {
+            "order_test": {
+              "name": "Order Test",
+              "description": "Takes a test order, in the lab's own request shape.",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/laboratory/schemas/test_order_request"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/laboratory/schemas/test_order_accepted"
+              }
+            },
+            "test_result_reported": {
+              "name": "Test Result Reported",
+              "description": "A result is ready, reported in the lab's own format.",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/laboratory/schemas/lab_result_message"
+              }
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {},
+      "processes": {},
+      "glossary": {},
+      "valueobjects": {},
+      "schemas": {
+        "test_order_request": {
+          "name": "Test Order Request",
+          "description": "The order, in the lab's own terms.",
+          "attributes": {
+            "order_reference": {
+              "name": "orderReference",
+              "type": "string",
+              "identity": true
+            },
+            "test_code": {
+              "name": "testCode",
+              "type": "string"
+            },
+            "clinical_notes": {
+              "name": "clinicalNotes",
+              "type": "string",
+              "optional": true
+            }
+          }
+        },
+        "test_order_accepted": {
+          "name": "Test Order Accepted",
+          "description": "The lab's acknowledgement that it has taken the order.",
+          "attributes": {
+            "order_reference": {
+              "name": "orderReference",
+              "type": "string",
+              "identity": true
+            }
+          }
+        },
+        "lab_result_message": {
+          "name": "Lab Result Message",
+          "description": "The result, in the lab's own report format.",
+          "attributes": {
+            "order_reference": {
+              "name": "orderReference",
+              "type": "string",
+              "identity": true
+            },
+            "result_code": {
+              "name": "resultCode",
+              "type": "string"
+            },
+            "report_text": {
+              "name": "reportText",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "clinical_coding_regulator": {
+      "name": "Clinical Coding Regulator",
+      "description": "Publishes the national clinical coding standard every clinical record must follow. Offers nothing to call: only the standard itself, as data.",
+      "subdomains": [],
+      "external": true,
+      "aggregates": {},
+      "invariants": {},
+      "services": {},
+      "policies": {},
+      "processes": {},
+      "glossary": {},
+      "valueobjects": {
+        "clinical_code": {
+          "name": "Clinical Code",
+          "description": "A single code from the current published coding standard, and the version of the standard it was taken from.",
+          "attributes": {
+            "code": {
+              "name": "code",
+              "type": "string"
+            },
+            "code_set_version": {
+              "name": "codeSetVersion",
+              "type": "string"
+            }
+          },
+          "relations": [],
+          "invariants": {
+            "code_belongs_to_the_published_standard": {
+              "name": "Code Belongs To The Published Standard",
+              "description": "A clinical code is only ever one the regulator's current coding standard actually lists.",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/clinical_coding_regulator/valueobjects/clinical_code/attributes/code"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "schemas": {}
+    },
+    "patient_records": {
+      "name": "Patient Records",
+      "description": "Holds who our patients are, and what every outside system that refers to them calls them.",
+      "subdomains": [
+        {
+          "$ref": "#/domains/outpatient_care/subdomains/patient_identity"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/records_team"
+      },
+      "aggregates": {
+        "patient_record": {
+          "name": "Patient Record",
+          "description": "One patient, and every outside reference we hold for them.",
+          "provides": {
+            "register_patient": {
+              "name": "Register Patient",
+              "description": "Creates the record for a patient the clinic has not seen before. Called by the records officer, or on the records officer's behalf when a referral names a patient not yet known.",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/patient_records/schemas/patient_details"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/patient_records/schemas/patient_summary"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/patient_records/aggregates/patient_record/provides/patient_registered"
+                }
+              ]
+            },
+            "patient_registered": {
+              "name": "Patient Registered",
+              "description": "A new patient has been added to Records.",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/patient_records/schemas/patient_details"
+              }
+            },
+            "link_gp_practice_reference": {
+              "name": "Link GP Practice Reference",
+              "description": "Records that a GP practice system knows this patient by a given number. Called by the records officer while matching a referral to a patient.",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/patient_records/schemas/gp_reference_details"
+              }
+            },
+            "link_lab_reference": {
+              "name": "Link Lab Reference",
+              "description": "Records that the laboratory knows this patient by a given reference. Called by the records officer.",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/patient_records/schemas/lab_reference_details"
+              }
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "patient": {
+              "name": "Patient",
+              "description": "Somebody the clinic has, or will, care for.",
+              "root": true,
+              "attributes": {
+                "patient_id": {
+                  "name": "patientId",
+                  "type": "string",
+                  "identity": true
+                },
+                "full_name": {
+                  "name": "fullName",
+                  "type": "string"
+                },
+                "date_of_birth": {
+                  "name": "dateOfBirth",
+                  "type": "string"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/patient_records/aggregates/patient_record/entities/external_identifier"
+                  },
+                  "relation": "includes",
+                  "label": "is known elsewhere as",
+                  "cardinality": "*"
+                }
+              ]
+            },
+            "external_identifier": {
+              "name": "External Identifier",
+              "description": "One outside system's own reference for this patient. Kinds say which system and hold that system's reference.",
+              "root": false,
+              "attributes": {
+                "external_identifier_id": {
+                  "name": "externalIdentifierId",
+                  "type": "string",
+                  "identity": true
+                }
+              },
+              "relations": []
+            },
+            "gp_practice_reference": {
+              "name": "GP Practice Reference",
+              "description": "This patient's number in a GP's own practice system.",
+              "root": false,
+              "specialises": {
+                "$ref": "#/boundedcontexts/patient_records/aggregates/patient_record/entities/external_identifier"
+              },
+              "attributes": {
+                "reference": {
+                  "name": "reference",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/gp_practice_system"
+                  }
+                }
+              },
+              "relations": []
+            },
+            "lab_reference": {
+              "name": "Lab Reference",
+              "description": "This patient's reference at the laboratory.",
+              "root": false,
+              "specialises": {
+                "$ref": "#/boundedcontexts/patient_records/aggregates/patient_record/entities/external_identifier"
+              },
+              "attributes": {
+                "reference": {
+                  "name": "reference",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/laboratory"
+                  }
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {}
+        }
+      },
+      "invariants": {
+        "one_external_reference_per_system": {
+          "name": "One External Reference Per System",
+          "description": "A patient never holds two references from the same outside system -- if a second one turns up, it is a mistake to catch, not a second identity to keep.",
+          "precondition": true,
+          "constrains": [
+            {
+              "$ref": "#/boundedcontexts/patient_records/aggregates/patient_record/entities/gp_practice_reference"
+            },
+            {
+              "$ref": "#/boundedcontexts/patient_records/aggregates/patient_record/entities/lab_reference"
+            },
+            {
+              "$ref": "#/boundedcontexts/patient_records/aggregates/patient_record/provides/link_gp_practice_reference"
+            },
+            {
+              "$ref": "#/boundedcontexts/patient_records/aggregates/patient_record/provides/link_lab_reference"
+            }
+          ]
+        }
+      },
+      "services": {
+        "patient_directory": {
+          "name": "Patient Directory",
+          "description": "Fronts Records for the rest of the clinic.",
+          "type": "application",
+          "provides": {
+            "get_patient_summary": {
+              "name": "Get Patient Summary",
+              "description": "Looks a patient up by their internal id.",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/patient_records/schemas/patient_lookup_request"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/patient_records/schemas/patient_summary"
+              }
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/referral_registered"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/patient_records/policies/register_patient_on_referral"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "policies": {
+        "register_patient_on_referral": {
+          "name": "Register Patient On Referral",
+          "description": "Every registered referral names a patient Records should know about, new or existing.",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/referral_registered"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/patient_records/aggregates/patient_record/provides/register_patient"
+            }
+          ]
+        }
+      },
+      "processes": {},
+      "glossary": {
+        "patient": {
+          "name": "Patient",
+          "definition": "Somebody the clinic has, or will, care for.",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/patient_records/aggregates/patient_record/entities/patient"
+          }
+        },
+        "external_identifier": {
+          "name": "External Identifier",
+          "definition": "The reference an outside system -- a GP practice, the lab -- uses for one of our patients.",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/patient_records/aggregates/patient_record/entities/external_identifier"
+          }
+        }
+      },
+      "valueobjects": {},
+      "schemas": {
+        "patient_summary": {
+          "name": "Patient Summary",
+          "description": "What Records answers with when another part of the clinic looks a patient up.",
+          "attributes": {
+            "patient_id": {
+              "name": "patientId",
+              "type": "string",
+              "identity": true
+            },
+            "full_name": {
+              "name": "fullName",
+              "type": "string"
+            },
+            "date_of_birth": {
+              "name": "dateOfBirth",
+              "type": "string"
+            }
+          }
+        },
+        "patient_lookup_request": {
+          "name": "Patient Lookup Request",
+          "description": "Which patient is being asked for.",
+          "attributes": {
+            "patient_id": {
+              "name": "patientId",
+              "type": "string"
+            }
+          }
+        },
+        "patient_details": {
+          "name": "Patient Details",
+          "description": "What is known about a new patient when they are first registered.",
+          "attributes": {
+            "full_name": {
+              "name": "fullName",
+              "type": "string"
+            },
+            "date_of_birth": {
+              "name": "dateOfBirth",
+              "type": "string"
+            }
+          }
+        },
+        "gp_reference_details": {
+          "name": "GP Reference Details",
+          "description": "A patient's GP practice number, to be linked to our own record.",
+          "attributes": {
+            "patient_id": {
+              "name": "patientId",
+              "type": "string"
+            },
+            "gp_patient_number": {
+              "name": "gpPatientNumber",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/gp_practice_system"
+              }
+            }
+          }
+        },
+        "lab_reference_details": {
+          "name": "Lab Reference Details",
+          "description": "A patient's lab reference, to be linked to our own record.",
+          "attributes": {
+            "patient_id": {
+              "name": "patientId",
+              "type": "string"
+            },
+            "lab_patient_reference": {
+              "name": "labPatientReference",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/laboratory"
+              }
+            }
+          }
+        }
+      }
+    },
+    "triage": {
+      "name": "Triage",
+      "description": "Turns a GP referral into a case of our own, decides whether to accept, ask for more information, or decline it, and may hand an accepted case to a consultant.",
+      "subdomains": [
+        {
+          "$ref": "#/domains/outpatient_care/subdomains/referral_triage"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/triage_team"
+      },
+      "aggregates": {
+        "referral_case": {
+          "name": "Referral Case",
+          "description": "One referral, from the moment it becomes a case of ours.",
+          "provides": {
+            "register_referral": {
+              "name": "Register Referral",
+              "description": "Creates a case of our own from a referral the GP practice system sent.",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/triage/schemas/referral_details"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/referral_registered"
+                }
+              ]
+            },
+            "referral_registered": {
+              "name": "Referral Registered",
+              "description": "A referral has become a case of ours.",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/triage/schemas/referral_details"
+              }
+            },
+            "accept_referral": {
+              "name": "Accept Referral",
+              "description": "Called by the triage nurse once she is satisfied the case should go ahead.",
+              "type": "operation",
+              "returns": {
+                "$ref": "#/boundedcontexts/triage/schemas/referral_accepted_details"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/referral_accepted"
+                }
+              ]
+            },
+            "referral_accepted": {
+              "name": "Referral Accepted",
+              "description": "A case has been accepted and is ready to be scheduled.",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/triage/schemas/referral_accepted_details"
+              }
+            },
+            "request_more_information": {
+              "name": "Request More Information",
+              "description": "Called by the triage nurse when the referral does not yet say enough to decide.",
+              "type": "operation",
+              "internal": true,
+              "schema": {
+                "$ref": "#/boundedcontexts/triage/schemas/information_request_details"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/more_information_requested"
+                }
+              ]
+            },
+            "more_information_requested": {
+              "name": "More Information Requested",
+              "description": "Triage has asked the GP for more information before it can decide. Only triage itself tracks this.",
+              "type": "event",
+              "internal": true,
+              "schema": {
+                "$ref": "#/boundedcontexts/triage/schemas/information_request_details"
+              }
+            },
+            "decline_referral": {
+              "name": "Decline Referral",
+              "description": "Called by the triage nurse when the referral is not taken up.",
+              "type": "operation",
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/referral_declined"
+                }
+              ]
+            },
+            "referral_declined": {
+              "name": "Referral Declined",
+              "description": "A referral has been declined.",
+              "type": "event"
+            },
+            "assign_consultant": {
+              "name": "Assign Consultant",
+              "description": "Called by the triage nurse to hand a complicated accepted case to a consultant.",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/triage/schemas/consultant_assignment_details"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/case_assigned_to_consultant"
+                }
+              ]
+            },
+            "case_assigned_to_consultant": {
+              "name": "Case Assigned To Consultant",
+              "description": "An accepted case has been handed to a named consultant.",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/triage/schemas/consultant_assignment_details"
+              }
+            },
+            "record_lab_result": {
+              "name": "Record Lab Result",
+              "description": "Folds a lab result, already translated into our own terms, into the case.",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/triage/schemas/lab_result_details"
+              }
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "referral": {
+              "name": "Referral",
+              "description": "A GP referral, once it is a case of ours rather than the GP's message.",
+              "root": true,
+              "attributes": {
+                "referral_id": {
+                  "name": "referralId",
+                  "type": "string",
+                  "identity": true
+                },
+                "patient_id": {
+                  "name": "patientId",
+                  "type": "string",
+                  "description": "Set once Records has matched this referral to one of our patients.",
+                  "optional": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/patient_records/aggregates/patient_record/entities/patient"
+                  }
+                },
+                "gp_referral_reference": {
+                  "name": "gpReferralReference",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/gp_practice_system"
+                  }
+                },
+                "requested_specialty": {
+                  "name": "requestedSpecialty",
+                  "type": "string"
+                },
+                "urgency": {
+                  "name": "urgency",
+                  "type": "string"
+                },
+                "clinical_summary": {
+                  "name": "clinicalSummary",
+                  "type": "string"
+                },
+                "status": {
+                  "name": "status",
+                  "type": "string"
+                },
+                "diagnosis_code": {
+                  "name": "diagnosisCode",
+                  "type": "ClinicalCode",
+                  "optional": true,
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/clinical_coding_regulator/valueobjects/clinical_code"
+                  }
+                },
+                "assigned_consultant_id": {
+                  "name": "assignedConsultantId",
+                  "type": "string",
+                  "optional": true
+                },
+                "lab_order_reference": {
+                  "name": "labOrderReference",
+                  "type": "string",
+                  "optional": true,
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/laboratory"
+                  }
+                },
+                "lab_result_code": {
+                  "name": "labResultCode",
+                  "type": "string",
+                  "optional": true
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {
+            "status_moves_forward_only": {
+              "name": "Status Moves Forward Only",
+              "description": "A referral's status only ever moves on -- once accepted or declined, triage's other decisions no longer apply to it.",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/triage/aggregates/referral_case/entities/referral/attributes/status"
+                },
+                {
+                  "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/accept_referral"
+                },
+                {
+                  "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/decline_referral"
+                },
+                {
+                  "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/request_more_information"
+                }
+              ]
+            },
+            "accepted_referral_carries_a_code": {
+              "name": "Accepted Referral Carries A Code",
+              "description": "Once a referral is accepted it always carries a diagnosis code from the current coding standard.",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/triage/aggregates/referral_case/entities/referral/attributes/diagnosis_code"
+                },
+                {
+                  "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/accept_referral"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "invariants": {
+        "one_active_referral_per_patient": {
+          "name": "One Active Referral Per Patient",
+          "description": "A patient never has more than one active referral open with us at a time.",
+          "precondition": true,
+          "constrains": [
+            {
+              "$ref": "#/boundedcontexts/triage/aggregates/referral_case/entities/referral/attributes/patient_id"
+            },
+            {
+              "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/register_referral"
+            }
+          ]
+        }
+      },
+      "services": {
+        "triage_assessment": {
+          "name": "Triage Assessment",
+          "description": "The clinical decision logic a referral is judged against. The nurse's own account is that the assessment itself calls out to Records for what is already known about the patient -- not an application service fronting the call -- so that is what is modelled here, even though a domain service is not meant to call outside its own context.",
+          "type": "domain",
+          "provides": {
+            "check_patient_history": {
+              "name": "Check Patient History",
+              "description": "Checks what Records already holds for this referral's patient.",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/triage/schemas/patient_history_check_request"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/patient_records/schemas/patient_summary"
+              }
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/patient_records/services/patient_directory/provides/get_patient_summary"
+              },
+              "pattern": "conformist"
+            }
+          ]
+        },
+        "referral_intake": {
+          "name": "Referral Intake",
+          "description": "Takes what the GP's practice system sends and turns it into a case of our own.",
+          "type": "application",
+          "provides": {},
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/gp_practice_system/services/practice_system_interface/provides/referral_submitted"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/triage/policies/register_referral_on_submission"
+                }
+              ]
+            }
+          ]
+        },
+        "lab_ordering": {
+          "name": "Lab Ordering",
+          "description": "Sends a patient for testing at the lab, and folds the result back into our own case once it is translated.",
+          "type": "application",
+          "provides": {
+            "send_referral_for_testing": {
+              "name": "Send Referral For Testing",
+              "description": "Called once the assessment decides a test is needed.",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/triage/schemas/lab_test_request_details"
+              }
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/laboratory/services/lab_interface/provides/order_test"
+              },
+              "pattern": "anti-corruption-layer"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/laboratory/services/lab_interface/provides/test_result_reported"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/triage/policies/record_lab_result_on_receipt"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "policies": {
+        "register_referral_on_submission": {
+          "name": "Register Referral On Submission",
+          "description": "Every submitted referral becomes a case of ours.",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/gp_practice_system/services/practice_system_interface/provides/referral_submitted"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/register_referral"
+            }
+          ]
+        },
+        "record_lab_result_on_receipt": {
+          "name": "Record Lab Result On Receipt",
+          "description": "Every reported result is folded into the case it belongs to.",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/laboratory/services/lab_interface/provides/test_result_reported"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/record_lab_result"
+            }
+          ]
+        }
+      },
+      "processes": {},
+      "glossary": {
+        "referral": {
+          "name": "Referral",
+          "definition": "A GP referral, once triage holds it as a case of its own.",
+          "aliases": [
+            "Case"
+          ],
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/triage/aggregates/referral_case/entities/referral"
+          }
+        },
+        "assessment": {
+          "name": "Assessment",
+          "definition": "The clinical decision logic a referral is judged against.",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/triage/services/triage_assessment"
+          }
+        }
+      },
+      "valueobjects": {},
+      "schemas": {
+        "referral_details": {
+          "name": "Referral Details",
+          "description": "A referral, translated out of the GP practice system's own shape into ours.",
+          "attributes": {
+            "gp_referral_reference": {
+              "name": "gpReferralReference",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/gp_practice_system"
+              }
+            },
+            "requested_specialty": {
+              "name": "requestedSpecialty",
+              "type": "string"
+            },
+            "urgency": {
+              "name": "urgency",
+              "type": "string"
+            },
+            "clinical_summary": {
+              "name": "clinicalSummary",
+              "type": "string"
+            }
+          }
+        },
+        "referral_accepted_details": {
+          "name": "Referral Accepted Details",
+          "description": "Which case was accepted, and for which patient.",
+          "attributes": {}
+        },
+        "information_request_details": {
+          "name": "Information Request Details",
+          "description": "What further information triage is asking the GP for.",
+          "attributes": {
+            "details": {
+              "name": "details",
+              "type": "string"
+            }
+          }
+        },
+        "consultant_assignment_details": {
+          "name": "Consultant Assignment Details",
+          "description": "Which consultant an accepted case has been handed to.",
+          "attributes": {
+            "consultant_id": {
+              "name": "consultantId",
+              "type": "string"
+            }
+          }
+        },
+        "lab_test_request_details": {
+          "name": "Lab Test Request Details",
+          "description": "The test triage wants run, in our own terms.",
+          "attributes": {
+            "test_code": {
+              "name": "testCode",
+              "type": "string"
+            }
+          }
+        },
+        "lab_result_details": {
+          "name": "Lab Result Details",
+          "description": "A lab result, translated out of the lab's own report shape into ours.",
+          "attributes": {
+            "result_code": {
+              "name": "resultCode",
+              "type": "string"
+            }
+          }
+        },
+        "patient_history_check_request": {
+          "name": "Patient History Check Request",
+          "description": "Which patient the assessment needs to know about.",
+          "attributes": {}
+        }
+      }
+    },
+    "scheduling": {
+      "name": "Scheduling",
+      "description": "Turns an accepted case into a booked clinic slot, and keeps the record of clinics, slots, bookings and cancellations.",
+      "subdomains": [
+        {
+          "$ref": "#/domains/outpatient_care/subdomains/appointment_scheduling"
+        }
+      ],
+      "team": {
+        "$ref": "#/teams/scheduling_team"
+      },
+      "aggregates": {
+        "clinic_schedule": {
+          "name": "Clinic Schedule",
+          "description": "One clinic session and its bookable slots.",
+          "provides": {},
+          "consumes": [],
+          "entities": {
+            "clinic_session": {
+              "name": "Clinic Session",
+              "description": "A run of appointments on a given day with a given clinician.",
+              "root": true,
+              "attributes": {
+                "session_id": {
+                  "name": "sessionId",
+                  "type": "string",
+                  "identity": true
+                },
+                "clinician_name": {
+                  "name": "clinicianName",
+                  "type": "string"
+                },
+                "date": {
+                  "name": "date",
+                  "type": "string"
+                },
+                "specialty": {
+                  "name": "specialty",
+                  "type": "string"
+                }
+              },
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/scheduling/aggregates/clinic_schedule/entities/slot"
+                  },
+                  "relation": "includes",
+                  "label": "offers",
+                  "cardinality": "1..*"
+                }
+              ]
+            },
+            "slot": {
+              "name": "Slot",
+              "description": "One bookable appointment time within a clinic session.",
+              "root": false,
+              "attributes": {
+                "slot_id": {
+                  "name": "slotId",
+                  "type": "string",
+                  "identity": true
+                },
+                "start_time": {
+                  "name": "startTime",
+                  "type": "string"
+                },
+                "status": {
+                  "name": "status",
+                  "type": "string"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {}
+        },
+        "booking": {
+          "name": "Booking",
+          "description": "One patient booked, or waitlisted, against a slot.",
+          "provides": {
+            "booking_confirmed": {
+              "name": "Booking Confirmed",
+              "description": "A patient confirmed the slot they were offered.",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/scheduling/schemas/booking_confirmed"
+              }
+            },
+            "patient_waitlisted": {
+              "name": "Patient Waitlisted",
+              "description": "A patient was put on the waiting list instead of taking the offered slot.",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/scheduling/schemas/patient_waitlisted"
+              }
+            },
+            "cancel_booking": {
+              "name": "Cancel Booking",
+              "description": "Called by the patient or the scheduler to give up a confirmed booking.",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/scheduling/schemas/cancellation_request"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/scheduling/aggregates/booking/provides/booking_cancelled"
+                }
+              ]
+            },
+            "booking_cancelled": {
+              "name": "Booking Cancelled",
+              "description": "A confirmed booking was cancelled.",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/scheduling/schemas/booking_cancelled_details"
+              }
+            }
+          },
+          "consumes": [],
+          "entities": {
+            "booking": {
+              "name": "Booking",
+              "description": "A patient's claim on a slot, from an offer through to its outcome.",
+              "root": true,
+              "attributes": {
+                "booking_id": {
+                  "name": "bookingId",
+                  "type": "string",
+                  "identity": true
+                },
+                "clinic_session_id": {
+                  "name": "clinicSessionId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/scheduling/aggregates/clinic_schedule/entities/clinic_session"
+                  }
+                },
+                "slot_id": {
+                  "name": "slotId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/scheduling/aggregates/clinic_schedule/entities/slot"
+                  }
+                },
+                "patient_id": {
+                  "name": "patientId",
+                  "type": "string",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/patient_records/aggregates/patient_record/entities/patient"
+                  }
+                },
+                "status": {
+                  "name": "status",
+                  "type": "string"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {}
+        }
+      },
+      "invariants": {
+        "slot_offered_once": {
+          "name": "Slot Offered Once",
+          "description": "A slot is never offered to a second patient while it is already held.",
+          "precondition": true,
+          "constrains": [
+            {
+              "$ref": "#/boundedcontexts/scheduling/aggregates/clinic_schedule/entities/slot/attributes/status"
+            },
+            {
+              "$ref": "#/boundedcontexts/scheduling/services/scheduling_desk/provides/offer_slot"
+            }
+          ]
+        }
+      },
+      "services": {
+        "scheduling_desk": {
+          "name": "Scheduling Desk",
+          "description": "Offers the patient a slot once triage accepts their case.",
+          "type": "application",
+          "provides": {
+            "offer_slot": {
+              "name": "Offer Slot",
+              "description": "Offers the patient the next open slot for the case's specialty. The patient's answer is not a refusal either way -- see DISCOVERY.md for why the second outcome is carried under rejects.",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/scheduling/schemas/slot_offer_request"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/scheduling/schemas/booking_confirmed"
+              },
+              "rejects": [
+                {
+                  "$ref": "#/boundedcontexts/scheduling/schemas/patient_waitlisted"
+                }
+              ],
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/scheduling/aggregates/booking/provides/booking_confirmed"
+                },
+                {
+                  "$ref": "#/boundedcontexts/scheduling/aggregates/booking/provides/patient_waitlisted"
+                }
+              ]
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/referral_accepted"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/scheduling/policies/offer_slot_on_acceptance"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "policies": {
+        "offer_slot_on_acceptance": {
+          "name": "Offer Slot On Acceptance",
+          "description": "Every accepted case is immediately offered a slot.",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/triage/aggregates/referral_case/provides/referral_accepted"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/scheduling/services/scheduling_desk/provides/offer_slot"
+            }
+          ]
+        }
+      },
+      "processes": {
+        "appointment_lifecycle": {
+          "name": "Appointment Lifecycle",
+          "description": "Remembers a confirmed booking until either it is cancelled or the day of the appointment arrives; that is the whole of what a booking waits for.",
+          "deadlines": {
+            "appointment_day_reached": {
+              "name": "Appointment Day Reached",
+              "description": "The clinic session's own date arrives with no cancellation received.",
+              "after": "until the day of the appointment"
+            }
+          },
+          "starts": [
+            {
+              "$ref": "#/boundedcontexts/scheduling/aggregates/booking/provides/booking_confirmed"
+            }
+          ],
+          "on": [],
+          "then": [],
+          "ends": [
+            {
+              "$ref": "#/boundedcontexts/scheduling/aggregates/booking/provides/booking_cancelled"
+            },
+            {
+              "$ref": "#/boundedcontexts/scheduling/processes/appointment_lifecycle/deadlines/appointment_day_reached"
+            }
+          ]
+        }
+      },
+      "glossary": {
+        "clinic_session": {
+          "name": "Clinic Session",
+          "definition": "A run of appointments on a given day with a given clinician.",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/scheduling/aggregates/clinic_schedule/entities/clinic_session"
+          }
+        },
+        "slot": {
+          "name": "Slot",
+          "definition": "One bookable appointment time within a clinic session.",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/scheduling/aggregates/clinic_schedule/entities/slot"
+          }
+        },
+        "booking": {
+          "name": "Booking",
+          "definition": "A patient's claim on a slot.",
+          "embodiedBy": {
+            "$ref": "#/boundedcontexts/scheduling/aggregates/booking/entities/booking"
+          }
+        },
+        "waitlist": {
+          "name": "Waitlist",
+          "definition": "Where a patient goes when an offered slot does not suit them, to wait for a better one."
+        }
+      },
+      "valueobjects": {},
+      "schemas": {
+        "slot_offer_request": {
+          "name": "Slot Offer Request",
+          "description": "Which accepted case, and which patient, is being offered a slot.",
+          "attributes": {
+            "referral_id": {
+              "name": "referralId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/triage/aggregates/referral_case/entities/referral"
+              }
+            },
+            "patient_id": {
+              "name": "patientId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/patient_records/aggregates/patient_record/entities/patient"
+              }
+            }
+          }
+        },
+        "booking_confirmed": {
+          "name": "Booking Confirmed",
+          "description": "The patient took the offered slot.",
+          "attributes": {
+            "booking_id": {
+              "name": "bookingId",
+              "type": "string",
+              "identity": true
+            },
+            "slot_id": {
+              "name": "slotId",
+              "type": "string"
+            },
+            "start_time": {
+              "name": "startTime",
+              "type": "string"
+            }
+          }
+        },
+        "patient_waitlisted": {
+          "name": "Patient Waitlisted",
+          "description": "The offered slot did not suit the patient, so they were put on the waiting list for a better one instead. Something happened here, just not a booking -- the model has no shape for a second thing that happened, so this is carried as a rejection for want of anywhere better (see DISCOVERY.md).",
+          "attributes": {
+            "booking_id": {
+              "name": "bookingId",
+              "type": "string",
+              "identity": true
+            },
+            "note": {
+              "name": "note",
+              "type": "string",
+              "optional": true
+            }
+          }
+        },
+        "booking_cancelled_details": {
+          "name": "Booking Cancelled Details",
+          "description": "Which booking was cancelled, and why.",
+          "attributes": {
+            "reason": {
+              "name": "reason",
+              "type": "string",
+              "optional": true
+            }
+          }
+        },
+        "cancellation_request": {
+          "name": "Cancellation Request",
+          "description": "Which booking is being cancelled.",
+          "attributes": {
+            "reason": {
+              "name": "reason",
+              "type": "string",
+              "optional": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "relationships": [
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/gp_practice_system"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/triage"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "The practice system's referral message is theirs to change; triage translates it into a case of our own on the way in."
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/laboratory"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/triage"
+      },
+      "upstreamRoles": [
+        "open-host-service",
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "Triage orders tests through the lab's documented interface and translates its own report format into a case's own terms."
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/clinical_coding_regulator"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/triage"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "Every accepted referral's diagnosis must carry a code from the regulator's published coding standard, taken as it is published."
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/patient_records"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/triage"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "Triage's assessment looks a patient up through Records' own directory and takes what it gets back as published."
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/triage"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/scheduling"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "Scheduling reacts to triage's own accepted-case fact, taking it as published."
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/triage"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/patient_records"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "Records takes triage's own registered-case fact as published."
+    }
+  ],
+  "teams": {
+    "triage_team": {
+      "name": "Triage Team"
+    },
+    "scheduling_team": {
+      "name": "Scheduling Team"
+    },
+    "records_team": {
+      "name": "Records Team"
+    }
+  }
+}

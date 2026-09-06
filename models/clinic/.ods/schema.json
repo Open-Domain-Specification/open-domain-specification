@@ -1,0 +1,1312 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "definitions": {
+        "AggregateSchema": {
+            "additionalProperties": false,
+            "description": "Represents an aggregate in the Open Domain Specification (ODS).",
+            "properties": {
+                "consumes": {
+                    "description": "What this aggregate consumes. Optional, like every list in this schema: an absent list is an empty one.",
+                    "items": {
+                        "$ref": "#/definitions/ConsumptionSchema"
+                    },
+                    "type": "array"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "entities": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/EntitySchema"
+                    },
+                    "description": "The entities inside this aggregate, by id. Optional, like every map of\nelements in this schema: an absent map is an empty one.",
+                    "type": "object"
+                },
+                "invariants": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/InvariantSchema"
+                    },
+                    "type": "object"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "provides": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/ConsumableSchema"
+                    },
+                    "type": "object"
+                }
+            },
+            "required": [
+                "description",
+                "name"
+            ],
+            "title": "Aggregate",
+            "type": "object"
+        },
+        "AttributeSchema": {
+            "additionalProperties": false,
+            "description": "A named, typed property of an entity, value object or schema.",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "identifies": {
+                    "additionalProperties": false,
+                    "description": "What this attribute holds the identity of, when it is an identity of\nsomething else: `Order.petId` identifies Catalog's `Pet`. The target may\nbe in another bounded context — that is the point, since an identity is\nthe only thing that crosses a boundary (decision 14) — and there it may\nbe a child rather than a root, since a session holds the id of a profile\ninside a household; the child is reached through its own root. The same\ngoes inside one context: a shipment holds an order's id and its line's id\nbeside it, which is how the model points at a child without the relation\n`cross-aggregate-reference` refuses (`identifies-entity`).\n\nIt may also be a bounded context flagged `external` or `bigBallOfMud`: a\ncard scheme's authorisation id belongs to a system whose entities are not\nours to state, and a legacy account key belongs to one nobody can read\nwell enough to say which entity it is of (decision 28), so the attribute\nnames the system instead of an entity inside it.\n\nOr a schema an `external` context publishes, where that system documents\nthe kind the id names: a processor's Customer, Payment, Refund and\nDispute are distinct kinds with distinct ids, and the identity says which\nof them it holds while still reading as an identity into that context\n(decision 28, third amendment). Any other context is refused, and so is a\nschema of one, because there the entity exists and is what the id is of.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
+                "identity": {
+                    "description": "True when this attribute is (part of) the identity of an entity: the\nthing that tells one instance from another that holds the same values,\nand what `root-identity` and `entity-identity` look for.\n\nOn a value object it is refused (`value-object-shape`): a value is what\nit holds and has nothing to be identified by. On a schema it says which\nfield of the payload is the key a reader correlates on — the order number\nin an `OrderPlaced`, the instruction id in a settlement message — which is\na fact about the payload and not a claim that the publishing context holds\nanything. That is why an identity on a schema attribute draws no edge on\nthe context map and asks for no relationship: the payload carries the id\nfor its reader, and the context owes the other nothing for it (decision\n14, second amendment). Where the id belongs to another context, say so\nwith `identifies` beside it.",
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "optional": {
+                    "description": "True when the attribute is sometimes absent. Left off means required,\nwhich is the common case and stays unwritten (decision 24). An identity\nattribute is never optional.",
+                    "type": "boolean"
+                },
+                "schema": {
+                    "additionalProperties": false,
+                    "description": "The schema that models this attribute's type, when the attribute is a\nshape of its own: the lines of an order, the address inside a customer.\nMutually exclusive with `valueobject`; a collection stays in the type\nstring (`OrderLine[]`).",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
+                "type": {
+                    "description": "Free-form type name, e.g. `string`, `Money`, `Date`.",
+                    "type": "string"
+                },
+                "valueobject": {
+                    "additionalProperties": false,
+                    "description": "The value object that models this attribute's type, when there is one.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                }
+            },
+            "required": [
+                "name",
+                "type"
+            ],
+            "title": "Attribute",
+            "type": "object"
+        },
+        "BoundedContextSchema": {
+            "additionalProperties": false,
+            "description": "Represents a bounded context in the Open Domain Specification (ODS).",
+            "properties": {
+                "aggregates": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/AggregateSchema"
+                    },
+                    "description": "The aggregates of this context, by id. Optional, and an absent map is an\nempty one — as every map of elements in this schema is, so that a file\nstates what a context has and writes nothing at all for what it has not\n(card 104).",
+                    "type": "object"
+                },
+                "bigBallOfMud": {
+                    "description": "Marks a context whose model is not coherent (typically legacy) so that\nneighbours know to protect themselves from it. It is still the\nenterprise's own system, so it may state aggregates, rules and reactions\nand every rule about what it does state applies; what it cannot be held\nto is completeness. Never `external` as well: that one is somebody else's\nmachine, and the two say opposite things about who may change it\n(`external-is-boundary`).",
+                    "type": "boolean"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "external": {
+                    "description": "Marks a system the enterprise does not own and does not model inside: a\ncard scheme, a payment provider, a licensor, a regulator, a clock. An\nexternal context provides and consumes consumables and takes part in\nrelationships, and it needs no subdomain, no team and no internals —\n`external-is-boundary` refuses aggregates, policies and processes on it,\nbecause what happens inside it is not ours to state. What it publishes is\na different matter: its value objects may carry invariants — an IBAN's\nchecksum, an ISO 20022 field rule — and it may state a context invariant\nmarked `precondition` or `postcondition` on one of its own operations,\nwhich is that operation's published contract. An invariant with neither\nflag, or one guarding another context's operation, is still refused\n(decision 28).",
+                    "type": "boolean"
+                },
+                "glossary": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/GlossaryTermSchema"
+                    },
+                    "type": "object"
+                },
+                "invariants": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/InvariantSchema"
+                    },
+                    "description": "The rules that hold across the instances or the aggregates of this\ncontext: uniqueness, quotas, limits, conservation. Each one names at\nleast one operation of the context that guards it, because a rule no\nsingle instance can see is kept true only by whoever checks it before\nacting (decision 27).",
+                    "type": "object"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "policies": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/PolicySchema"
+                    },
+                    "type": "object"
+                },
+                "processes": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/ProcessSchema"
+                    },
+                    "description": "The processes this context runs: the reactions that hold state across\nevents, waiting for several of them before they act and knowing how they\nfinish. A policy that finds itself waiting for a second event is one of\nthese (decision 23).",
+                    "type": "object"
+                },
+                "schemas": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/DataSchemaSchema"
+                    },
+                    "description": "Payload shapes this context publishes or accepts, referenced by its consumables.",
+                    "type": "object"
+                },
+                "services": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/ServiceSchema"
+                    },
+                    "type": "object"
+                },
+                "subdomains": {
+                    "description": "The subdomains this context serves; a context may serve several.\nOptional, like every list in this schema: an absent list is an empty\none, and `context-serves-subdomain` says so as a warning rather than the\nloader refusing the file.",
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "team": {
+                    "additionalProperties": false,
+                    "description": "The team that owns this context.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
+                "valueobjects": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/ValueObjectSchema"
+                    },
+                    "description": "The values this context defines once: part of its ubiquitous language,\nreferenced by the attributes and relations of any of its aggregates.",
+                    "type": "object"
+                }
+            },
+            "required": [
+                "description",
+                "name"
+            ],
+            "title": "BoundedContext",
+            "type": "object"
+        },
+        "Comment": {
+            "additionalProperties": false,
+            "description": "A short grounded statement about the real system behind a strategic intent, optionally backed by one link.",
+            "properties": {
+                "link": {
+                    "$ref": "#/definitions/CommentLink"
+                },
+                "text": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "text"
+            ],
+            "title": "Comment",
+            "type": "object"
+        },
+        "CommentLink": {
+            "additionalProperties": false,
+            "description": "Where the evidence for a comment lives: the code, the contract, the decision record, the runbook or the dashboard.",
+            "properties": {
+                "kind": {
+                    "$ref": "#/definitions/CommentLinkKind"
+                },
+                "label": {
+                    "description": "What to show instead of the raw URL.",
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "kind",
+                "url"
+            ],
+            "title": "CommentLink",
+            "type": "object"
+        },
+        "CommentLinkKind": {
+            "description": "What a comment's link points at.",
+            "enum": [
+                "adr",
+                "code",
+                "contract",
+                "dashboard",
+                "runbook"
+            ],
+            "type": "string"
+        },
+        "ConsumableSchema": {
+            "additionalProperties": false,
+            "description": "Represents a consumable in the Open Domain Specification (ODS).",
+            "properties": {
+                "comments": {
+                    "description": "Grounded statements about the real system behind this consumable.",
+                    "items": {
+                        "$ref": "#/definitions/Comment"
+                    },
+                    "type": "array"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "disposition": {
+                    "$ref": "#/definitions/Disposition",
+                    "description": "What the architecture thinks of this consumable. Absent means `by-design`."
+                },
+                "internal": {
+                    "description": "True when the consumable stays inside its context: an event only local\npolicies react to, or an operation only local callers issue. Internal\nconsumables may not be consumed from another context.",
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "pattern": {
+                    "$ref": "#/definitions/UpstreamRole",
+                    "description": "The upstream role this consumable is offered under. Absent on internal consumables."
+                },
+                "raises": {
+                    "description": "For operations: the event consumables this operation may raise.",
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "rejects": {
+                    "description": "For operations: the shapes the operation answers with when it refuses,\neach one of the context's schemas. A rejection is not an event, because\nnothing happened, and not a transport error, which stays outside the\nmodel. Absent means the operation either always succeeds or refuses\nwithout a domain-meaningful shape. Never valid on an event.\n\n`reasons` are the enumerated outcomes of that shape as the contract\nstates them — an acquirer's decline codes, ISO 8583 response codes —\neach one an answer a reactor may wait on, `<operation ref>/rejects/<schema\nid>/<reason>`, alongside the shape-level answer that hears them all. A\nreason is a named outcome the contract states and not a condition on\ndata, which stays out of the model (decisions 25, amended, and 15).",
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            },
+                            "reasons": {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "returns": {
+                    "additionalProperties": false,
+                    "description": "For operations: the payload shape the caller gets back, one of the\ncontext's schemas. Absent means the operation returns nothing worth\nnaming, which is honest for commands. Never valid on an event.\n\n`many` says the answer is a list of that shape rather than one of it: a\nsearch answers with the matches it found. A named collection and an\nobject holding one are different shapes, and a wrapper schema said the\nwrong one — a consumer of `Pets { pets: PetSummary[] }` could not tell\nthat the call really answers with a root array (decision 13, amended).\nA wrapper stays where the answer really is an object with a list among\nits attributes, as search results with a total and hits are.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        },
+                        "many": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
+                "schema": {
+                    "additionalProperties": false,
+                    "description": "The payload the caller sends, one of the context's schemas.\n\n`many` says the request is a list of that shape rather than one of it:\nSwagger's `createUsersWithList` takes a root array of users. A named\ncollection and an object holding one are different shapes, and the\nargument that gave `returns` its `many` is the same one here (decision\n13, amended). A wrapper stays where the request really is an object with\na list among its attributes.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        },
+                        "many": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
+                "type": {
+                    "$ref": "#/definitions/ConsumableType"
+                }
+            },
+            "required": [
+                "description",
+                "name",
+                "type"
+            ],
+            "title": "Consumable",
+            "type": "object"
+        },
+        "ConsumableType": {
+            "enum": [
+                "event",
+                "operation"
+            ],
+            "type": "string"
+        },
+        "ConsumptionSchema": {
+            "additionalProperties": false,
+            "description": "Represents a consumption in the Open Domain Specification (ODS).",
+            "properties": {
+                "by": {
+                    "description": "The consumer's own operations or policies that make this exchange, when\nonly some of them do: a subscription service consumes a payment gateway\nwhen it renews, not when it lists entitlements.\n\nAbsent means the whole consumer, which is fine for a consumer that\nprovides one operation, or none, because there is nothing to choose\nbetween. A consumer with two or more names which of them makes the call,\nand `consumption-by-required` asks for it: `by` is the one causal link\nthe model has from one operation to the next, so without it the reaction\nwalk and the flow map stop at the boundary and an answer reaches nobody\n(decision 21).",
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "comments": {
+                    "description": "Grounded statements about the real system behind this consumption.",
+                    "items": {
+                        "$ref": "#/definitions/Comment"
+                    },
+                    "type": "array"
+                },
+                "consumable": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
+                "disposition": {
+                    "$ref": "#/definitions/Disposition",
+                    "description": "What the architecture thinks of this consumption. Absent means `by-design`."
+                },
+                "pattern": {
+                    "$ref": "#/definitions/DownstreamRole",
+                    "description": "The downstream role the consumer adopts for this consumable."
+                },
+                "relationship": {
+                    "additionalProperties": false,
+                    "description": "The directed relationship this exchange belongs to, where the pair holds\nmore than one agreement in that direction: a call made under the\nnegotiated fulfilment API rather than under the tolerated legacy feed\nbeside it.\n\nAbsent is the common case, one agreement between the pair, and the\nexchange belongs to it. Where the pair holds two, an exchange that names\nneither belongs to nothing a rule can read, and `consumption-agreement`\nsays so (decision 15's amendment of 2026-09-10).",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                }
+            },
+            "required": [
+                "consumable"
+            ],
+            "title": "Consumption",
+            "type": "object"
+        },
+        "ContextRelationshipSchema": {
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/DirectedContextRelationshipSchema"
+                },
+                {
+                    "$ref": "#/definitions/SymmetricContextRelationshipSchema"
+                }
+            ],
+            "description": "A strategic relationship between two bounded contexts.",
+            "title": "ContextRelationship"
+        },
+        "DataSchemaSchema": {
+            "additionalProperties": false,
+            "description": "A named payload shape owned by a bounded context, shared by the consumables that carry it. On an `external` context, a schema is also the kind that system publishes — a processor's Customer beside its Payment, its Refund and its Dispute — and an `identifies` attribute of ours may name it directly instead of the context as a whole (decision 28, third amendment).",
+            "properties": {
+                "attributes": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/AttributeSchema"
+                    },
+                    "type": "object"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "attributes",
+                "name"
+            ],
+            "title": "DataSchema",
+            "type": "object"
+        },
+        "DeadlineSchema": {
+            "additionalProperties": false,
+            "description": "A time limit a process keeps on its own instances: cancel the reservation if nobody has paid after thirty minutes. It behaves as an event the process raises to itself, so the process may wait on it or end on it, and nothing else may name it. A per-instance timer is not a calendar event, so it needs no Clock context (decision 23, fourth amendment).",
+            "properties": {
+                "after": {
+                    "description": "How long the instance waits before the deadline falls, in the words the\nbusiness uses: \"30 minutes\", \"two working days\". Free text, like an\nattribute's type: the model says the limit exists and how long it is, and\nleaves the arithmetic to the code (decision 15).",
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "from": {
+                    "additionalProperties": false,
+                    "description": "The trigger the interval counts from: one of the process's own `starts`\nor `on` entries, named the same way those name one. Absent means from the\nmoment the instance began.\n\nA clock has an anchor as well as a length, and which fact starts it is\nthe business's own rule: a statutory decision window runs from the\napplication's receipt, a delivery window from the dispatch, a chaser from\nthe last time anybody wrote. Pausing a clock stays prose in the\ndescription — the model says when a clock starts and how long it runs,\nnot the conditions that stop it (decision 23, fifth amendment).",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "after",
+                "description",
+                "name"
+            ],
+            "title": "Deadline",
+            "type": "object"
+        },
+        "DirectedContextRelationshipSchema": {
+            "additionalProperties": false,
+            "description": "An upstream/downstream relationship between two bounded contexts.",
+            "properties": {
+                "comments": {
+                    "description": "Grounded statements about the real system behind this relationship.",
+                    "items": {
+                        "$ref": "#/definitions/Comment"
+                    },
+                    "type": "array"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "disposition": {
+                    "$ref": "#/definitions/Disposition",
+                    "description": "What the architecture thinks of this relationship. Absent means `by-design`."
+                },
+                "downstream": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
+                "downstreamRoles": {
+                    "items": {
+                        "$ref": "#/definitions/DownstreamRole"
+                    },
+                    "type": "array"
+                },
+                "name": {
+                    "description": "What this agreement is called, where one pair holds more than one in the\nsame direction: a negotiated fulfilment API beside a tolerated legacy\nfeed from the same warehouse, each with its own roles, comments and\ndisposition.\n\nAbsent is the common case, one agreement between the pair, and the ref\nstays what it always was. Where it is present the name is appended to the\nref, so the two are separately reachable and a diagnostic about one is\nnot read as a diagnostic about the other; the map draws two lines and\nlabels each with its name. Two agreements between one pair in one\ndirection that are both unnamed, or share a name, are one declaration\nmade twice and `relationship-duplicate` refuses them (decision 15).",
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/DirectedRelationshipType"
+                },
+                "upstream": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
+                "upstreamRoles": {
+                    "items": {
+                        "$ref": "#/definitions/UpstreamRole"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "downstream",
+                "downstreamRoles",
+                "type",
+                "upstream",
+                "upstreamRoles"
+            ],
+            "title": "DirectedContextRelationship",
+            "type": "object"
+        },
+        "DirectedRelationshipType": {
+            "description": "Relationships with a clear upstream and downstream side. `customer-supplier`\nis an upstream/downstream relationship where the downstream team has a say\nin the upstream's planning.",
+            "enum": [
+                "customer-supplier",
+                "upstream-downstream"
+            ],
+            "type": "string"
+        },
+        "Disposition": {
+            "description": "What the architecture thinks of a strategic intent: `by-design` is how it\nshould be, `tolerated` a known compromise nobody plans to change, and\n`refactor` something that should be removed or replaced. An absent\ndisposition means `by-design`.",
+            "enum": [
+                "by-design",
+                "refactor",
+                "tolerated"
+            ],
+            "type": "string"
+        },
+        "DomainSchema": {
+            "additionalProperties": false,
+            "description": "Represents a domain in the Open Domain Specification (ODS).",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "subdomains": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/SubdomainSchema"
+                    },
+                    "type": "object"
+                }
+            },
+            "required": [
+                "description",
+                "name",
+                "subdomains"
+            ],
+            "title": "Domain",
+            "type": "object"
+        },
+        "DownstreamRole": {
+            "description": "How a downstream context protects itself from what it consumes.",
+            "enum": [
+                "anti-corruption-layer",
+                "conformist"
+            ],
+            "type": "string"
+        },
+        "EntityRelationSchema": {
+            "additionalProperties": false,
+            "properties": {
+                "cardinality": {
+                    "$ref": "#/definitions/RelationCardinality"
+                },
+                "for": {
+                    "description": "The attribute of the source this relation draws, named where the source\nuses one value object for more than one attribute: a customer's current\naddress beside its address history. The label stays the phrase the\nrelation map reads (\"lives at\", \"in arrears of\"); this is the field it\nbelongs to. Absent where the source uses the target once, which is the\ncommon case.",
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "relation": {
+                    "$ref": "#/definitions/EntityRelationType"
+                },
+                "target": {
+                    "additionalProperties": false,
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                }
+            },
+            "required": [
+                "relation",
+                "target"
+            ],
+            "type": "object"
+        },
+        "EntityRelationType": {
+            "enum": [
+                "includes",
+                "references",
+                "uses"
+            ],
+            "type": "string"
+        },
+        "EntitySchema": {
+            "additionalProperties": false,
+            "description": "Represents an entity in the Open Domain Specification (ODS).",
+            "properties": {
+                "attributes": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/AttributeSchema"
+                    },
+                    "type": "object"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "relations": {
+                    "description": "What this entity points at; empty when left out.",
+                    "items": {
+                        "$ref": "#/definitions/EntityRelationSchema"
+                    },
+                    "type": "array"
+                },
+                "root": {
+                    "type": "boolean"
+                },
+                "specialises": {
+                    "additionalProperties": false,
+                    "description": "The entity this one is a kind of: it has every attribute and relation of\nthat entity, plus its own. The target is an entity of the same\naggregate, and a subtype is never itself the root, because the aggregate\nhas one root and a kind of it is reached through it (decision 22).",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                }
+            },
+            "required": [
+                "attributes",
+                "description",
+                "name"
+            ],
+            "title": "Entity",
+            "type": "object"
+        },
+        "GlossaryTermSchema": {
+            "additionalProperties": false,
+            "description": "A term of the ubiquitous language of a bounded context.",
+            "properties": {
+                "aliases": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "definition": {
+                    "type": "string"
+                },
+                "embodiedBy": {
+                    "additionalProperties": false,
+                    "description": "The model element that embodies this term, when there is one.",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "definition",
+                "name"
+            ],
+            "title": "GlossaryTerm",
+            "type": "object"
+        },
+        "InvariantSchema": {
+            "additionalProperties": false,
+            "description": "A rule that holds by construction of a value object, inside an aggregate on every save, or across the instances and aggregates of a bounded context.",
+            "properties": {
+                "constrains": {
+                    "description": "What this invariant is a rule about: the entities, value objects and\nattributes it holds over, and the operations it constrains, for a rule\nabout what an operation may do. A value object's invariant reaches its\nown attributes and nothing else; an aggregate's reaches inside its own\naggregate and the value objects of its context; a context's reaches\nanywhere in the context and names at least one operation that guards it.\n\nAn aggregate's invariant naming a value object means that aggregate's\ninstances of it — the amounts this payment holds, not every Money in the\ncontext — because what is saved with an aggregate is the value, not the\ndefinition. A rule about every instance of a value wherever it is held is\nthe value's own invariant, and a rule across the instances of several\naggregates is the context's (decisions 16 and 27).\n\nNaming an operation says which operation keeps the rule, not what kind of\nrule it is: `precondition` says that.\n\nA precondition may also name attributes of a schema its guarded operation\ntakes, returns or rejects with: pickup before delivery, a positive\nweight, on a quotation no aggregate yet holds. The check reads the\nrequest, so the request is what the rule is about. A postcondition\nreaches the answer only — the shapes its guarded operation returns or\nrejects with — because that is what it is a guarantee about. Either may\nfollow composition: an attribute of any schema reachable from those\nthrough `attribute.schema` is one of the fields the call carries, so a\nrule about the amount of an order line is a rule about the request that\nholds the lines. An invariant that is neither may name no schema\nattribute at all, because a rule kept true on every save is a rule about\nthe model and not about a transport shape (decision 19, amended).",
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "postcondition": {
+                    "description": "Whether this rule is a postcondition: a guarantee about what an operation\nanswers with — every returned itinerary meets the requested deadline,\nevery quoted premium is within the band the schedule allows.\n\nIt is neither a persistent invariant nor a precondition. The answer does\nnot exist before the call runs, so nothing can be checked beforehand, and\nit is not saved anywhere afterwards, so no aggregate keeps it true. What\nholds it is the operation, every time it answers, which is why a\npostcondition names the operation it is about\n(`postcondition-names-operation`) and may constrain the attributes of\nwhat that operation returns or rejects with (decision 19, third\namendment).\n\nExclusive with `precondition`: a rule is checked before a call or\nguaranteed of what comes back, and one marked both says two different\nthings about when it holds.",
+                    "type": "boolean"
+                },
+                "precondition": {
+                    "description": "Whether this rule is a precondition: checked before the operation it\nnames runs, and not kept true afterwards — enough funds at initiation, an\nentitlement at playback start, a pet still available at approval. What it\nwas checked against may move on the moment the call returns, so nothing\nre-establishes it.\n\nAbsent or false means the operations it names keep it and it is still\ntrue after them: `PostEntry` must produce balanced postings and the\npostings stay balanced. A precondition names the operation it guards\n(`precondition-names-operation`), because a check before nothing in\nparticular is a check nowhere (decision 27, second amendment).",
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "constrains",
+                "description",
+                "name"
+            ],
+            "title": "Invariant",
+            "type": "object"
+        },
+        "PolicySchema": {
+            "additionalProperties": false,
+            "description": "A reaction: when these events happen, issue these commands.",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "on": {
+                    "description": "What triggers this policy: an event consumable, or an answer of an\noperation this context consumes, which means \"when that answer comes\nback\". An answer is named by its origin — `<operation ref>/returns`,\n`<operation ref>/rejects/<schema id>`, `<operation\nref>/rejects/<schema id>/<reason>` for one enumerated outcome of that\nrefusal, or `<operation ref>/completed` for an operation that returns\nnothing and whose completion is all there is to wait on — and never by\nthe shape alone, so two operations refusing with one schema wake only\nwhoever named the call that was made (decision 23).",
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "then": {
+                    "description": "The operation consumables this policy issues. Optional, like every list in this schema: an absent list is an empty one.",
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "description",
+                "name"
+            ],
+            "title": "Policy",
+            "type": "object"
+        },
+        "ProcessSchema": {
+            "additionalProperties": false,
+            "description": "A long-running reaction that holds state across events: it remembers which of its events have arrived and acts when enough of them have. What it correlates on and what it undoes are prose in its description rather than fields, because the model says that a process exists and what it listens to and does; how it decides is the code's. How long it waits before giving up on itself is not prose but a `deadline`, one it raises to itself after a stated interval (decisions 15 and 23).",
+            "properties": {
+                "comments": {
+                    "description": "Grounded statements about the real system behind this process.",
+                    "items": {
+                        "$ref": "#/definitions/Comment"
+                    },
+                    "type": "array"
+                },
+                "deadlines": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/DeadlineSchema"
+                    },
+                    "description": "The time limits this process keeps on its own instances, by id. A\ndeadline is an element of the process, so `on` and `ends` name one by\n`<process ref>/deadlines/<id>` and nothing outside the process may name\nit at all (decision 23, fourth amendment).",
+                    "type": "object"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "disposition": {
+                    "$ref": "#/definitions/Disposition",
+                    "description": "What the architecture thinks of this process. Absent means `by-design`."
+                },
+                "ends": {
+                    "description": "What completes an instance: an event consumable, an answer, or a deadline\nnamed the same way `on` names one. Optional, like every list in this\nschema: an absent list is an empty one.",
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "on": {
+                    "description": "Further event consumables the process waits for or reacts to while an\ninstance is alive, and the answers it waits to come back: an answer of an\noperation this context consumes, named by its origin the way a policy's\n`on` names one — including the bare completion of an operation that\nreturns nothing — means \"when that answer comes back\", which is the\ncall-and-branch a process manager is usually made of. Like a policy's\n`on`, one of these may belong to another context: subscribing to a\npublished fact, or calling out and waiting, is how contexts integrate\n(decision 23).",
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "starts": {
+                    "description": "What begins an instance of this process: an event consumable, or an\noperation of the process's own context — the command that creates one.\n\nA command starts a saga as often as an event does: \"open a claim\", \"start\nan onboarding\", \"submit an application for a decision\". The earlier\nreading allowed only an event, on the argument that something was already\nwaiting for whatever starts an instance; that argument is about answers,\nwhere a caller has to have made the call, and it was overapplied to\ncommands, which nobody has to be waiting for (decision 23, third\namendment).\n\nA starting command belongs to this process's own context, for the reason\n`then` does: a process that claimed a neighbour's operation created its\ninstances would be acting through somebody else's model. An answer and a\ndeadline still start nothing, because in both cases the instance had to\nexist before to have been waiting.\n\nOptional, like every list in this schema: an absent list is an empty\none. `process-starts` still asks for at least one, and reports it as a\nvalidation error rather than a schema one, so a file that omits `starts`\nloads and is then told what it is missing.",
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
+                "then": {
+                    "description": "The operation consumables of this process's own context that it issues. Optional, like every list in this schema: an absent list is an empty one.",
+                    "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "$ref": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "$ref"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "description",
+                "name"
+            ],
+            "title": "Process",
+            "type": "object"
+        },
+        "RelationCardinality": {
+            "description": "How many targets one source relates to, in UML multiplicity notation.",
+            "enum": [
+                "*",
+                "0..1",
+                "1",
+                "1..*"
+            ],
+            "type": "string"
+        },
+        "RuleOptionsSchema": {
+            "additionalProperties": false,
+            "description": "Opt-in validation rules. A rule listed here is off unless the workspace turns it on.",
+            "properties": {
+                "commentsRequired": {
+                    "description": "Warn on every context relationship that carries no comments. Off by default.",
+                    "type": "boolean"
+                }
+            },
+            "title": "RuleOptions",
+            "type": "object"
+        },
+        "ServiceSchema": {
+            "additionalProperties": false,
+            "description": "Represents a service in the Open Domain Specification (ODS).",
+            "properties": {
+                "consumes": {
+                    "description": "What this service consumes. Optional, like every list in this schema: an absent list is an empty one.",
+                    "items": {
+                        "$ref": "#/definitions/ConsumptionSchema"
+                    },
+                    "type": "array"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "provides": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/ConsumableSchema"
+                    },
+                    "type": "object"
+                },
+                "type": {
+                    "$ref": "#/definitions/ServiceType",
+                    "description": "Which of the two kinds of service this is — and a field that is not read\non an external context.\n\nThe distinction is about the inside of a model we own: an application\nservice orchestrates a use case and exposes it, a domain service holds\nlogic no single aggregate holds, and `domain-service-internal` and\n`domain-service-consumes-inside` hold our own services to that. A system\nwe do not own has no inside for the distinction to be about; what we know\nof it is the operations it offers us. So the type is still written,\nbecause the field is required and a reader may as well see the provider's\nown word for it, and no rule reads it there (decision 28, amendment of\n2026-09-10, fourth)."
+                }
+            },
+            "required": [
+                "description",
+                "name",
+                "type"
+            ],
+            "title": "Service",
+            "type": "object"
+        },
+        "ServiceType": {
+            "description": "Application services orchestrate use cases and expose them to the outside;\ndomain services hold domain logic that belongs to no single aggregate.\nInfrastructure is an implementation concern and is not modelled.",
+            "enum": [
+                "application",
+                "domain"
+            ],
+            "type": "string"
+        },
+        "SubdomainSchema": {
+            "additionalProperties": false,
+            "description": "Represents a subdomain in the Open Domain Specification (ODS).",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/SubdomainType"
+                }
+            },
+            "required": [
+                "description",
+                "name",
+                "type"
+            ],
+            "title": "Subdomain",
+            "type": "object"
+        },
+        "SubdomainType": {
+            "description": "Strategic classification of a subdomain: the part of the problem space\nthe business competes on (core), needs but does not differentiate on\n(supporting), or can buy off the shelf (generic).",
+            "enum": [
+                "core",
+                "generic",
+                "supporting"
+            ],
+            "type": "string"
+        },
+        "SymmetricContextRelationshipSchema": {
+            "additionalProperties": false,
+            "description": "A relationship between two bounded contexts with no upstream or downstream side.",
+            "properties": {
+                "comments": {
+                    "description": "Grounded statements about the real system behind this relationship.",
+                    "items": {
+                        "$ref": "#/definitions/Comment"
+                    },
+                    "type": "array"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "disposition": {
+                    "$ref": "#/definitions/Disposition",
+                    "description": "What the architecture thinks of this relationship. Absent means `by-design`."
+                },
+                "name": {
+                    "description": "What this agreement is called, where one pair holds more than one in the\nsame direction: a negotiated fulfilment API beside a tolerated legacy\nfeed from the same warehouse, each with its own roles, comments and\ndisposition.\n\nAbsent is the common case, one agreement between the pair, and the ref\nstays what it always was. Where it is present the name is appended to the\nref, so the two are separately reachable and a diagnostic about one is\nnot read as a diagnostic about the other; the map draws two lines and\nlabels each with its name. Two agreements between one pair in one\ndirection that are both unnamed, or share a name, are one declaration\nmade twice and `relationship-duplicate` refuses them (decision 15).",
+                    "type": "string"
+                },
+                "participants": {
+                    "items": [
+                        {
+                            "additionalProperties": false,
+                            "properties": {
+                                "$ref": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "$ref"
+                            ],
+                            "type": "object"
+                        },
+                        {
+                            "additionalProperties": false,
+                            "properties": {
+                                "$ref": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "$ref"
+                            ],
+                            "type": "object"
+                        }
+                    ],
+                    "maxItems": 2,
+                    "minItems": 2,
+                    "type": "array"
+                },
+                "type": {
+                    "$ref": "#/definitions/SymmetricRelationshipType"
+                }
+            },
+            "required": [
+                "participants",
+                "type"
+            ],
+            "title": "SymmetricContextRelationship",
+            "type": "object"
+        },
+        "SymmetricRelationshipType": {
+            "description": "Relationships without a direction: teams share a kernel, work as partners,\nor deliberately do not integrate at all.",
+            "enum": [
+                "partnership",
+                "separate-ways",
+                "shared-kernel"
+            ],
+            "type": "string"
+        },
+        "TeamSchema": {
+            "additionalProperties": false,
+            "description": "A team that owns one or more bounded contexts.",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "homepage": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "Team",
+            "type": "object"
+        },
+        "UpstreamRole": {
+            "description": "How an upstream context exposes what it provides.",
+            "enum": [
+                "open-host-service",
+                "published-language"
+            ],
+            "type": "string"
+        },
+        "ValueObjectSchema": {
+            "additionalProperties": false,
+            "description": "Represents a value object in the Open Domain Specification (ODS).",
+            "properties": {
+                "attributes": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/AttributeSchema"
+                    },
+                    "description": "This value's own attributes, by id. An absent map is an empty one, like every map of elements in this schema.",
+                    "type": "object"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "invariants": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/InvariantSchema"
+                    },
+                    "description": "The rules that hold of every instance of this value: a Money's two\namounts in one currency, an IBAN's mod-97 checksum. Such a rule holds by\nconstruction — a value that breaks it is never made — so it constrains\nthis value's own attributes and needs no operation to guard it\n(decision 27). Optional, and an absent map is an empty one, like every\nmap of elements in this schema.",
+                    "type": "object"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "relations": {
+                    "description": "What this value points at; empty when left out.",
+                    "items": {
+                        "$ref": "#/definitions/EntityRelationSchema"
+                    },
+                    "type": "array"
+                },
+                "specialises": {
+                    "additionalProperties": false,
+                    "description": "The value object this one is a kind of: it has every attribute and\nrelation of that value object, plus its own. The target belongs to this\ncontext, or to a context this one shares a kernel with (decision 22).",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
+                }
+            },
+            "required": [
+                "description",
+                "name"
+            ],
+            "title": "ValueObject",
+            "type": "object"
+        },
+        "WorkspaceOptionsSchema": {
+            "additionalProperties": false,
+            "description": "Per-workspace switches for behaviour that is not part of the model itself.",
+            "properties": {
+                "rules": {
+                    "$ref": "#/definitions/RuleOptionsSchema"
+                }
+            },
+            "title": "WorkspaceOptions",
+            "type": "object"
+        }
+    },
+    "description": "Represents a workspace in the Open Domain Specification (ODS).",
+    "properties": {
+        "$schema": {
+            "description": "Location of the JSON schema this document conforms to, usually the schema.json beside it. Ignored by the loader.",
+            "type": "string"
+        },
+        "boundedcontexts": {
+            "additionalProperties": {
+                "$ref": "#/definitions/BoundedContextSchema"
+            },
+            "type": "object"
+        },
+        "description": {
+            "type": "string"
+        },
+        "domains": {
+            "additionalProperties": {
+                "$ref": "#/definitions/DomainSchema"
+            },
+            "type": "object"
+        },
+        "homepage": {
+            "type": "string"
+        },
+        "id": {
+            "type": "string"
+        },
+        "logoUrl": {
+            "type": "string"
+        },
+        "name": {
+            "type": "string"
+        },
+        "odsVersion": {
+            "description": "The version of the ODS metamodel this file was written against, which\ncore writes and nobody edits by hand. Its major is bumped by the decision\nthat breaks the metamodel, so a file whose major differs from the reading\ncore's was written against a different model; `ods-version` says so and\nthe file still loads what it can. A file that states none is older than\nthe version being written at all, and gets the same diagnostic\n(decision 29, noted 2026-09-10).",
+            "pattern": "^[0-9]*\\.[0-9]*\\.[0-9]*$",
+            "type": "string"
+        },
+        "options": {
+            "$ref": "#/definitions/WorkspaceOptionsSchema",
+            "description": "Switches for behaviour that is not part of the model, such as opt-in rules."
+        },
+        "primaryColor": {
+            "type": "string"
+        },
+        "relationships": {
+            "items": {
+                "$ref": "#/definitions/ContextRelationshipSchema"
+            },
+            "type": "array"
+        },
+        "teams": {
+            "additionalProperties": {
+                "$ref": "#/definitions/TeamSchema"
+            },
+            "type": "object"
+        },
+        "version": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "boundedcontexts",
+        "description",
+        "domains",
+        "id",
+        "name",
+        "relationships",
+        "teams",
+        "version"
+    ],
+    "title": "Workspace",
+    "type": "object"
+}
+

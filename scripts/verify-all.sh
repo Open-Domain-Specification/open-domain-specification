@@ -67,7 +67,7 @@ echo "==> generating skill bundle"
 (cd "$ROOT/packages/skill" && npm run generate && npm run build)
 run_vitest skill packages/skill
 
-for model in northbank petstore rivermart streamline; do
+for model in northbank petstore rivermart streamline clinic; do
 	echo "==> building model $model"
 	(cd "$ROOT/models/$model" && npm run build)
 	if [ "$model" = petstore ]; then
