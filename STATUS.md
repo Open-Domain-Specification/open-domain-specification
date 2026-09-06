@@ -10,7 +10,7 @@ Card 135 ([a process hears the answer of the call its start made; an external co
 
 ## Next
 
-Land 135; then the sixteenth round, Antigravity plus an architect confirmation; if both hold at yes with named costs and name no new defect, the lead answers the question. From here Codex runs only when the lead is very confident it will answer yes, at the owner's instruction (its usage is limited); Antigravity and a fresh architect review each head. Expected result: Antigravity and the architect hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
+Land 135; then the sixteenth round, Antigravity plus an architect confirmation at low effort. The goal is unchanged; the session is spending lean, not lowering the bar: a defect found still becomes a card and a disputed point still gets its five-whys. When both reviewers hold at yes with named costs and name no new defect, the lead answers the question. From here Codex runs only when the lead is very confident it will answer yes, at the owner's instruction (its usage is limited); Antigravity and a fresh architect review each head. Expected result: Antigravity and the architect hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
 
 ## Later
 
