@@ -3708,48 +3708,28 @@ const policyComplete: Rule = (workspace) => {
  * not one. The process holds state — it remembers which of its events have
  * arrived — so the second pass round is a different instance's, or a later
  * step of the same one, and what ends it is the `ends` the process declares
- * (decision 23). What makes it safe to say is that every step of the ring is
- * the process's own: the process, an operation it issues, or an event one of
- * those operations raises in the process's own context. A ring through two
- * processes, or through a process and a policy, is a genuine loop nobody on
- * it can see the whole of.
+ * (decision 23). What makes it safe to say is that the walk came back to the
+ * process itself and to no other reactor: a ring through two processes, or
+ * through a process and a policy, is a genuine loop nobody on it can see the
+ * whole of, and is reported.
  *
- * So is a ring that leaves the context and comes back. Counting reactors
- * alone exempted any ring whose only reactor was a process, including one
- * that ran out through a neighbour's operation — the process issues its own
- * operation, a consumption's `by` carries the call across the boundary, and
- * the answer or an event of the neighbour's comes home. Nobody on that ring
- * owns the whole of it, which is the thing `reaction-cycle` exists to say,
- * and the exemption hid one shape of the two-caller defect card 100
- * reproduced (card 102).
+ * The contexts the ring crosses do not come into it. A process that issues
+ * its own operation, whose call reaches the next context through a
+ * consumption's `by`, and that waits for the fact that context raises is
+ * exactly the shape decision 23 describes; it is one process's lifecycle
+ * however far the call travels, and NorthBank's onboarding and RiverMart's
+ * checkout are both written that way. Card 102 tried narrowing this to steps
+ * of the process's own context and made both of them warn. The two-caller
+ * defect card 100 found was closed by routing an answer to the call that
+ * asked for it (decision 23, fourth amendment), not here, so this exemption
+ * was carrying no weight in it (card 102, the lead's ruling).
  */
 function isProcessLifecycle(cycle: Reactor[]): boolean {
 	const reactors = cycle.filter(
 		(node): node is Policy | Process =>
 			node instanceof Process || node instanceof Policy,
 	);
-	const [process] = reactors;
-	if (reactors.length !== 1 || !(process instanceof Process)) return false;
-	return cycle.every((node) => node === process || isOwnStep(process, node));
-}
-
-/**
- * Whether one step of a ring is the process's own doing: an operation it
- * issues, or an event one of those operations raises in the process's context.
- *
- * An answer needs no case of its own, because an answer is not a step of the
- * chain but the name of the step an operation takes back to its caller
- * (decision 23, second amendment); the node the ring holds is the operation.
- * The context is checked on the event because an event of a neighbour's,
- * however it got here, is a fact this process does not raise and cannot end.
- */
-function isOwnStep(process: Process, node: Reactor): boolean {
-	if (!(node instanceof Consumable)) return false;
-	if (process.commands.includes(node)) return true;
-	return (
-		node.boundedcontext === process.boundedcontext &&
-		process.commands.some((operation) => operation.raisedEvents.includes(node))
-	);
+	return reactors.length === 1 && reactors[0] instanceof Process;
 }
 
 /**

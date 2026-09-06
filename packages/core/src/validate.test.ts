@@ -4763,12 +4763,13 @@ describe("reaction-cycle", () => {
 	 * Card 100's two-caller shape with a process at the top of it: A's process
 	 * issues A's own operation, that operation calls B's public one through a
 	 * consumption's `by`, and the fact B raises comes back to the process.
+	 * NorthBank's onboarding and RiverMart's checkout are both written this
+	 * way.
 	 *
-	 * One reactor stands on that ring, so counting reactors read it as a
-	 * lifecycle and said nothing. It is not one: two of its steps are B's, and
-	 * neither context can see the whole of it (card 102).
+	 * With `bReacts`, B has a policy on that event which calls back into A,
+	 * so a second reactor stands on the ring and nobody on it sees the whole.
 	 */
-	function outAndBack() {
+	function outAndBack({ bReacts = false }: { bReacts?: boolean } = {}) {
 		const ws = emptyWorkspace();
 		const a = ws.addBoundedContext("A", { description: "" });
 		const b = ws.addBoundedContext("B", { description: "" });
@@ -4784,10 +4785,21 @@ describe("reaction-cycle", () => {
 			description: "",
 			type: "event",
 		});
+		const aHappened = aApp.provides("A Happened", {
+			description: "",
+			type: "event",
+		});
 		const bHappened = bApp.provides("B Happened", {
 			description: "",
 			type: "event",
 		});
+		const aPublic = aApp
+			.provides("A Public", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			})
+			.raises(aHappened);
 		const bPublic = bApp
 			.provides("B Public", {
 				description: "",
@@ -4805,18 +4817,35 @@ describe("reaction-cycle", () => {
 			.starts(started)
 			.on(bHappened)
 			.issues(aLocal);
+		if (bReacts) {
+			const bLocal = bApp.provides("B Local", {
+				description: "",
+				type: "operation",
+			});
+			bApp.consumes(aPublic, { pattern: "conformist", by: [bLocal] });
+			b.addPolicy("B Policy", { description: "" }).on(bHappened).issues(bLocal);
+			run.on(aHappened);
+		}
 		return { ws, run };
 	}
 
-	it("reports a ring that leaves the context and comes back through a neighbour", () => {
-		const { ws, run } = outAndBack();
-		expect(reactions(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
-			[
-				"warning",
-				'Reactions run in a cycle: "Run" -> "A Local" -> "B Public" -> "B Happened" -> "Run"; the chain triggers itself and nothing in the model says what ends it; it runs through "A" and "B", so no one context can see the whole ring',
-				run.ref,
-			],
-		]);
+	// A process's lifecycle is a lifecycle however far its own call travels:
+	// the contexts the ring crosses do not make it a loop, and narrowing this
+	// to the process's own context made two reference models warn about the
+	// shape decision 23 describes (card 102, the lead's ruling).
+	it("is quiet when a process calls the next context and waits for its fact", () => {
+		expect(reactions(outAndBack().ws)).toEqual([]);
+	});
+
+	it("still reports that ring once a second reactor stands on it", () => {
+		const { ws } = outAndBack({ bReacts: true });
+		expect(reactions(ws)).toHaveLength(1);
+		const [diagnostic] = reactions(ws);
+		expect(diagnostic.message).toContain('"B Happened" -> "B Policy"');
+		expect(diagnostic.message).toContain('"B Local" -> "A Public"');
+		expect(diagnostic.message).toContain(
+			'it runs through "A" and "B", so no one context can see the whole ring',
+		);
 	});
 });
 
