@@ -55,3 +55,7 @@ An answer returns to its caller: a reactor waits on an operation's answer only w
 ## Note (2026-09-09)
 
 The lifecycle test is whether the process is the ring's only reactor, not whether the ring stays inside one context: a process that issues its operation, whose call reaches the next context, and waits for that context's fact is stepping through its own life across a boundary, and NorthBank's onboarding and RiverMart's checkout are that shape. Card 102 briefly narrowed the exemption to own-context steps and the two reference models warned; the narrowing was carrying no weight, because the two-caller defect it aimed at was closed by routing an answer to the call that asked (card 100).
+
+## Amendment (2026-09-10)
+
+An answer routes to the reactor that called: when two reactors in one context call one operation, each hears only the answer to the call it made, by the `by` that names it; the single-consumption inference applies only where no `by` is written. And a process that re-enters itself through a `starts` trigger is a loop spawning instances, not a lifecycle, and is reported (card 104).

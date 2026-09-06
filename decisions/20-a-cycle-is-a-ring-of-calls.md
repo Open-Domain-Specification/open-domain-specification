@@ -37,3 +37,7 @@ Codex's review made the remaining overreach plain: two contexts that call each o
 ## Note (2026-09-09)
 
 The premise that a call binds the caller at the moment of the call fails for a queued command, which decision 15 keeps as an operation with a comment. Two fire-and-forget commands each way therefore read as a ring of calls. The cost is named: an author with a queued command on a ring either declares the anti-corruption layer that translates it, marks the ring's disposition with a comment, or models the command as the event it really is. And the anti-corruption exemption is read per consumption, not per relationship, so one translated call does not excuse the untranslated ones (card 100).
+
+## Note (2026-09-10)
+
+A declared partnership clears a ring that is nothing but the partnered pair, because the two move as one; it does not clear a longer ring the pair is only part of, since the pair together still depends on the third context (card 104). The fix text says exactly that now.

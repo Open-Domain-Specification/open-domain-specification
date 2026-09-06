@@ -36,3 +36,7 @@ A guarantee about an answer is a postcondition: every returned itinerary meets t
 ## Amendment (2026-09-09, third)
 
 A postcondition relates the answer to the request: every returned itinerary arrives by the requested time. Its admissible targets therefore include the request schema and what it composes, as a precondition's do (card 103); the second amendment's own example needed this and its implementation left it out.
+
+## Amendment (2026-09-10)
+
+A precondition reaches the request and what it composes, and nothing else, because it is checked before the answer exists; a postcondition reaches the request, the answer and the rejections (card 104). The earlier wording that let a precondition name what an operation returns was incoherent and is withdrawn.
