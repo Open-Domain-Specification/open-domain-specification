@@ -6,7 +6,7 @@ Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel
 
 ## Now
 
-No card is live. The eighth panel round is running on the card 110 head: Antigravity run 20, Codex run 9 and a fresh architect-deep round 9, all with the same prompt. Stopping point: each reviewer's verdict is read and ruled, new defects become cards, restatements are answered by the decision they restate. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 110 landed green; 107 gave RiverMart the first two named agreements in a reference model.
+No card is live. The eighth panel round is running on the card 110 head: Antigravity run 20 is in, yes with named costs with every issue decided ground; Codex run 9 and a fresh architect-deep round 9 are still running, all with the same prompt. Stopping point: each reviewer's verdict is read and ruled, new defects become cards, restatements are answered by the decision they restate. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 110 landed green; 107 gave RiverMart the first two named agreements in a reference model.
 
 ## Next
 
