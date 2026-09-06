@@ -399,6 +399,13 @@ export interface ConsumableSchema {
 	 * model. Absent means the operation either always succeeds or refuses
 	 * without a domain-meaningful shape. Never valid on an event.
 	 *
+	 * `many` says the refusal is a list of that shape rather than one of it: a
+	 * validation failure answered as a root array of field errors is the
+	 * commonest shape on the wire, and a wrapper around it would say the call
+	 * comes back as an object it does not come back as. The argument that gave
+	 * `returns` and `schema` their `many` is the same one here (decision 13,
+	 * second amendment of 2026-09-10).
+	 *
 	 * `reasons` are the enumerated outcomes of that shape as the contract
 	 * states them — an acquirer's decline codes, ISO 8583 response codes —
 	 * each one an answer a reactor may wait on, `<operation ref>/rejects/<schema
@@ -406,7 +413,7 @@ export interface ConsumableSchema {
 	 * reason is a named outcome the contract states and not a condition on
 	 * data, which stays out of the model (decisions 25, amended, and 15).
 	 */
-	rejects?: { $ref: string; reasons?: string[] }[];
+	rejects?: { $ref: string; many?: boolean; reasons?: string[] }[];
 	/** For operations: the event consumables this operation may raise. */
 	raises?: { $ref: string }[];
 	/** Grounded statements about the real system behind this consumable. */

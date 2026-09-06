@@ -130,10 +130,31 @@ const KNOWN_FIELDS = {
 		"valueobjects",
 		"schemas",
 	],
-	aggregate: ["name", "description", "entities", "invariants", "provides", "consumes"],
+	aggregate: [
+		"name",
+		"description",
+		"entities",
+		"invariants",
+		"provides",
+		"consumes",
+	],
 	service: ["type", "name", "description", "provides", "consumes"],
-	entity: ["root", "name", "description", "specialises", "attributes", "relations"],
-	valueobject: ["name", "description", "specialises", "attributes", "relations", "invariants"],
+	entity: [
+		"root",
+		"name",
+		"description",
+		"specialises",
+		"attributes",
+		"relations",
+	],
+	valueobject: [
+		"name",
+		"description",
+		"specialises",
+		"attributes",
+		"relations",
+		"invariants",
+	],
 	process: [
 		"name",
 		"description",
@@ -160,7 +181,14 @@ const KNOWN_FIELDS = {
 		"comments",
 		"disposition",
 	],
-	consumption: ["consumable", "pattern", "by", "relationship", "comments", "disposition"],
+	consumption: [
+		"consumable",
+		"pattern",
+		"by",
+		"relationship",
+		"comments",
+		"disposition",
+	],
 	attribute: [
 		"name",
 		"type",
@@ -171,7 +199,13 @@ const KNOWN_FIELDS = {
 		"schema",
 		"identifies",
 	],
-	invariant: ["name", "description", "constrains", "precondition", "postcondition"],
+	invariant: [
+		"name",
+		"description",
+		"constrains",
+		"precondition",
+		"postcondition",
+	],
 	glossaryTerm: ["name", "definition", "aliases", "embodiedBy"],
 	dataSchema: ["name", "description", "attributes"],
 	entityRelation: ["target", "relation", "label", "cardinality", "for"],
@@ -377,18 +411,26 @@ function addProvides(
 		);
 		const returns = refs.one(at, "returns", A_SCHEMA, returnsRef);
 		const request = refs.one(at, "schema", A_SCHEMA, schemaRef);
-		checkUnknownFields(refs.workspace, at.owner, at.ref, "consumable", consumableSchema);
+		checkUnknownFields(
+			refs.workspace,
+			at.owner,
+			at.ref,
+			"consumable",
+			consumableSchema,
+		);
 		provider.addConsumable(consumableSchema.name, {
 			...rest,
 			id,
 			schema: request && { of: request, many: schemaRef?.many },
 			returns: returns && { of: returns, many: returnsRef?.many },
-			// A refusal's reasons travel with the shape they enumerate, so a
-			// shape that resolves to nothing takes its reasons with it: they
-			// are outcomes of that shape and mean nothing without it.
+			// A refusal's reasons and its `many` travel with the shape they are
+			// about, so a shape that resolves to nothing takes both with it:
+			// they say something about that shape and mean nothing without it.
 			rejects: listOf(rejectsRefs).flatMap((written) => {
 				const schema = refs.one(at, "rejects", A_SCHEMA, written);
-				return schema ? [{ schema, reasons: written.reasons }] : [];
+				return schema
+					? [{ schema, many: written.many, reasons: written.reasons }]
+					: [];
 			}),
 		});
 	}
@@ -510,7 +552,13 @@ function addAttributes(
 			`${owner.name}.${attributeSchema.name}`,
 			`#/${owner.path}/attributes/${id}`,
 		);
-		checkUnknownFields(refs.workspace, at.owner, at.ref, "attribute", attributeSchema);
+		checkUnknownFields(
+			refs.workspace,
+			at.owner,
+			at.ref,
+			"attribute",
+			attributeSchema,
+		);
 		owner.addAttribute(attributeSchema.name, {
 			...attributeSchema,
 			id,

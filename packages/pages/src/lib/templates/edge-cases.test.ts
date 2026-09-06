@@ -217,9 +217,13 @@ describe("the tactical templates on the alternate branches", () => {
 		expect(
 			[...(refusing?.querySelectorAll("dt") ?? [])].map((t) => t.textContent),
 		).toContain("Rejects with");
-		// Both refusals are named, comma-joined, the way Raises lists its events.
-		expect(refusing?.textContent).toContain("Refusal Schema");
+		// Both refusals are named, comma-joined, the way Raises lists its events,
+		// and the one answered as a root array says "many" beside its shape and
+		// not on the fact's term, because only one of the two is a list
+		// (decision 13, second amendment).
+		expect(refusing?.textContent).toContain("many Refusal Schema");
 		expect(refusing?.textContent).toContain("Over Limit Schema");
+		expect(refusing?.textContent).not.toContain("many Over Limit Schema");
 
 		// Answering Operation returns a shape but refuses with none, so the row
 		// is absent rather than empty.
@@ -493,13 +497,26 @@ describe("the tactical templates on the alternate branches", () => {
 		// The attributes of both, not just the names in the fact row.
 		expect(text).toContain("Reason");
 		expect(text).toContain("Limit");
+		// The refusal answered as a root array of its shape says so, both where
+		// the shapes are named and on the section that draws its attributes.
+		expect(text).toContain("many Refusal Schema");
+		expect(text).toContain("many");
 	});
 
 	it("SchemaPage: a shape that is only ever refused with says so, rather than reading as carried by nothing", () => {
 		const text = textOf(schemaRef("main_context", "refusal_schema").$ref);
 		expect(text).toContain("Refusing Operation");
-		expect(text).toContain("rejects with");
+		// A list of the shape, said in the direction cell the way "returns many"
+		// is (decision 13, second amendment).
+		expect(text).toContain("rejects with many");
 		expect(text).not.toContain("Nothing carries this schema yet");
+	});
+
+	it("SchemaPage: a shape refused with one of, not a list of, still reads plainly", () => {
+		const text = textOf(schemaRef("main_context", "over_limit_schema").$ref);
+		expect(text).toContain("Refusing Operation");
+		expect(text).toContain("rejects with");
+		expect(text).not.toContain("rejects with many");
 	});
 
 	it("TermPage: not modelled, and a word only one context uses", () => {

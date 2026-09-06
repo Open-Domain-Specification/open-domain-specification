@@ -43,7 +43,11 @@ const directionOf = (c: (typeof carriers)[number]) =>
 	[
 		c.schema === s ? (c.schemaMany ? "payload, many" : "payload") : "",
 		c.returns === s ? (c.returnsMany ? "returns many" : "returns") : "",
-		c.rejects.includes(s) ? "rejects with" : "",
+		c.rejects.includes(s)
+			? c.rejectsWith(s)?.many
+				? "rejects with many"
+				: "rejects with"
+			: "",
 	]
 		.filter(Boolean)
 		.join(", ");

@@ -209,15 +209,17 @@ export function edgeCaseModel(): Model {
 	// Two rejections on one operation, again on an aggregate rather than a
 	// service: the subsection has to name both and the consumable page has to
 	// draw a table for each. No reference model refuses in two ways yet.
-	// One of the two refusals enumerates the outcomes it carries, so the page
-	// has both to draw: a shape that says only what it is, and one that names
-	// the outcomes a caller may branch on.
+	// One of the two refusals enumerates the outcomes it carries and the other
+	// is a list of its shape, so the page has all three things to draw: a shape
+	// that says only what it is, a refusal answered as a root array of that
+	// shape, and one that names the outcomes a caller may branch on
+	// (decisions 25 and 13, second amendment).
 	aggNoRoot.addConsumable("Refusing Operation", {
 		type: "operation",
 		description: "Says no in two different shapes.",
 		schema: schemaEmpty,
 		rejects: [
-			schemaRefused,
+			{ schema: schemaRefused, many: true },
 			{ schema: schemaOverLimit, reasons: ["daily_limit", "per_txn_limit"] },
 		],
 	});

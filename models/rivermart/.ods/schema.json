@@ -319,12 +319,15 @@
                     "type": "array"
                 },
                 "rejects": {
-                    "description": "For operations: the shapes the operation answers with when it refuses,\neach one of the context's schemas. A rejection is not an event, because\nnothing happened, and not a transport error, which stays outside the\nmodel. Absent means the operation either always succeeds or refuses\nwithout a domain-meaningful shape. Never valid on an event.\n\n`reasons` are the enumerated outcomes of that shape as the contract\nstates them — an acquirer's decline codes, ISO 8583 response codes —\neach one an answer a reactor may wait on, `<operation ref>/rejects/<schema\nid>/<reason>`, alongside the shape-level answer that hears them all. A\nreason is a named outcome the contract states and not a condition on\ndata, which stays out of the model (decisions 25, amended, and 15).",
+                    "description": "For operations: the shapes the operation answers with when it refuses,\neach one of the context's schemas. A rejection is not an event, because\nnothing happened, and not a transport error, which stays outside the\nmodel. Absent means the operation either always succeeds or refuses\nwithout a domain-meaningful shape. Never valid on an event.\n\n`many` says the refusal is a list of that shape rather than one of it: a\nvalidation failure answered as a root array of field errors is the\ncommonest shape on the wire, and a wrapper around it would say the call\ncomes back as an object it does not come back as. The argument that gave\n`returns` and `schema` their `many` is the same one here (decision 13,\nsecond amendment of 2026-09-10).\n\n`reasons` are the enumerated outcomes of that shape as the contract\nstates them — an acquirer's decline codes, ISO 8583 response codes —\neach one an answer a reactor may wait on, `<operation ref>/rejects/<schema\nid>/<reason>`, alongside the shape-level answer that hears them all. A\nreason is a named outcome the contract states and not a condition on\ndata, which stays out of the model (decisions 25, amended, and 15).",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
                             "$ref": {
                                 "type": "string"
+                            },
+                            "many": {
+                                "type": "boolean"
                             },
                             "reasons": {
                                 "items": {

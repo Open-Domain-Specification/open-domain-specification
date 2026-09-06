@@ -37,14 +37,18 @@ const returnsLinkMd = (consumable: Consumable, fromPath: string): string => {
 };
 
 /**
- * Every shape the operation refuses with, linked the same way its payload is,
- * each with the outcomes the contract enumerates for it, which are what a
- * reactor branches on (decision 25, amended).
+ * Every shape the operation refuses with, linked the same way its payload is
+ * and said as "many X" where the refusal is a list of that shape rather than
+ * one of it (decision 13, second amendment), each with the outcomes the
+ * contract enumerates for it, which are what a reactor branches on
+ * (decision 25, amended).
  */
 const rejectsLinkMd = (consumable: Consumable, fromPath: string): string =>
 	consumable.rejections
-		.map(({ schema, reasons }) => {
-			const link = schemaRowLinkMd(schema, fromPath);
+		.map(({ schema, many, reasons }) => {
+			const link = many
+				? `many ${schemaRowLinkMd(schema, fromPath)}`
+				: schemaRowLinkMd(schema, fromPath);
 			return reasons.length ? `${link} (${reasons.join(", ")})` : link;
 		})
 		.join(", ") || "-";

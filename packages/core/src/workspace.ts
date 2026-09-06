@@ -1390,6 +1390,15 @@ export class Aggregate
 export type Rejection = {
 	/** The shape the operation answers with when it refuses this way. */
 	schema: DataSchema;
+	/**
+	 * Whether the refusal is a list of {@link schema} rather than one of it: a
+	 * validation failure answered as a root array of field errors, which is
+	 * the commonest refusal on the wire. A wrapper around it would say the
+	 * call comes back as an object it does not come back as, which is the
+	 * misstatement decision 13's argument refuses (decision 13, second
+	 * amendment of 2026-09-10).
+	 */
+	many: boolean;
 	/** The outcomes the contract enumerates for that shape; may be empty. */
 	reasons: string[];
 };
@@ -1426,9 +1435,15 @@ export type ConsumableAttributes = {
 	 *
 	 * A shape on its own refuses without saying more; `{ schema, reasons }`
 	 * enumerates the outcomes the contract states for that shape, each of
-	 * which a reactor may wait on by itself (decision 25, amended).
+	 * which a reactor may wait on by itself (decision 25, amended), and
+	 * `{ schema, many: true }` says the refusal is a list of that shape rather
+	 * than one of it, the way `returns` does (decision 13, second amendment of
+	 * 2026-09-10).
 	 */
-	rejects?: (DataSchema | { schema: DataSchema; reasons?: string[] })[];
+	rejects?: (
+		| DataSchema
+		| { schema: DataSchema; many?: boolean; reasons?: string[] }
+	)[];
 	id?: string;
 } & EvidenceOptions;
 
@@ -1496,8 +1511,12 @@ export class Consumable
 		this.returnsMany = answer?.many ?? false;
 		this.rejections = (attributes.rejects ?? []).map((it) =>
 			it instanceof DataSchema
-				? { schema: it, reasons: [] }
-				: { schema: it.schema, reasons: it.reasons ?? [] },
+				? { schema: it, many: false, reasons: [] }
+				: {
+						schema: it.schema,
+						many: it.many ?? false,
+						reasons: it.reasons ?? [],
+					},
 		);
 		this.comments = attributes.comments ?? [];
 		this.disposition = normaliseDisposition(attributes.disposition);
@@ -1655,6 +1674,7 @@ export class Consumable
 			"rejects",
 			this.rejections.map((it) => ({
 				$ref: it.schema.ref,
+				many: it.many || undefined,
 				reasons: it.reasons.length ? it.reasons : undefined,
 			})),
 		);
@@ -1776,20 +1796,26 @@ export class Answer implements Referenceable {
 	}
 
 	/**
-	 * Whether the answer is a list of the shape rather than one of it. Only a
-	 * successful answer with a shape may be: a refusal says why the call was
-	 * told no, which happens once, and a completion has nothing to be many of
-	 * (decision 13, amended).
+	 * Whether the answer is a list of the shape rather than one of it. A
+	 * completion has nothing to be many of; a successful answer reads
+	 * `returnsMany`, and a refusal reads the `many` of the rejection it came
+	 * from, because a validation failure answered as a root array of field
+	 * errors is a list exactly as a search's matches are (decision 13,
+	 * amended, and its second amendment of 2026-09-10).
 	 */
 	get many(): boolean {
-		return !this.rejection && !!this.schema && this.operation.returnsMany;
+		if (!this.schema) return false;
+		if (!this.rejection) return this.operation.returnsMany;
+		return this.operation.rejectsWith(this.schema)?.many ?? false;
 	}
 
 	/** Where the answer comes from, in words: "X returns many Y". */
 	get origin(): string {
 		if (!this.schema) return `${this.operation.name} completes`;
 		const verb = this.rejection
-			? "rejects with"
+			? this.many
+				? "rejects with many"
+				: "rejects with"
 			: this.many
 				? "returns many"
 				: "returns";
