@@ -44,3 +44,7 @@ A precondition reaches the request and what it composes, and nothing else, becau
 ## Amendment (2026-09-10, second)
 
 The 2026-09-10 amendment fixed a precondition's reach to the request and what it composes, reasoning that before the call runs there is no answer to read. That is true of the guarded operation's own answer and false of the answer its front fetched before deciding: "approve only if the customer is in good standing" reads a standing the front already holds, and the guard could name neither the other context's attribute nor that answer. A precondition may also constrain attributes of the `returns` schemas of consumables consumed by the guarded operation or by the front that calls it in the same context; still never another context's entities (card 116, architect's tenth round).
+
+## Amendment (2026-09-10, third)
+
+The second amendment let a precondition reach what the guard or its front fetched, "a fact we hold, in the shape it came in", and the same words apply to the payload of an event the reactor heard before issuing the guarded operation: "ship only when the captured amount covers the order total" reads `PaymentCaptured.amount`, which the context holds through its subscription, and the model asked for the amount to be copied into the request so a rule could point at it. A precondition may constrain attributes of the payload schema of an event consumed by the policy or process that issues the guarded operation, in the same context; still never another context's entities (card 124, architect's eleventh round).

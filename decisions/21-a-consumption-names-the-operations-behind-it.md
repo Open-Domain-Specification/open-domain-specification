@@ -97,3 +97,7 @@ The third amendment's warning for a multi-operation consumer that names no `by` 
 ## Note (2026-09-10, second)
 
 Pre-specified for decision 17's reopening condition, so the design is not discovered later: an answer routes back along the local `by` chain to the nearest reactor that issued an operation on it, `routesTo` and `hearsAnswerOf` following `callsOut` transitively inside the context, cycle-guarded like `reachedEvents`, drawing the step from the operation the reactor issued. That keeps card 104's rule, to the caller and nobody else, because every hop is the reactor's own context and its own chain. One hop stays the rule until decision 17 reopens; nothing today needs more.
+
+## Correction (2026-09-10)
+
+The decision bullet says `by` may name "policies of the consumer's bounded context" on any consumption. Decision 17's second amendment narrowed that: a policy or process is named on an event consumption, and an operation consumption names the operation that makes the call, which `consumption-by-operation` enforces. The bullet stands as written on the day; the schema comment and the docs page that repeated it are corrected by card 124, and card 125 gives every decision a current-position section so a stale bullet is never the last word.

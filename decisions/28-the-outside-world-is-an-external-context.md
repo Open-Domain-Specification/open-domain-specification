@@ -69,3 +69,7 @@ The bullet "Human actors are not modelled ... the interview asks who calls it" c
 ## Note (2026-09-10, third)
 
 The fourth amendment said an external invariant may constrain "that operation's request and answer schemas" without splitting by flag; card 116 read it through `guardedSchemas` like every other invariant, a precondition reaching the request and what it composes, a postcondition the request and the answer, because decision 19 says a precondition is checked before the answer exists. That reading stands.
+
+## Note (2026-09-10, fourth)
+
+`subscription-backed` asked a big ball of mud which of its policies reacts to our event, which the second amendment says is not ours to state and `consumption-by-required` already honours; the rule skips a mud consumer (card 124, architect's eleventh round).
