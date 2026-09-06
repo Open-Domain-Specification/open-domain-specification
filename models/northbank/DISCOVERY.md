@@ -807,4 +807,33 @@ is Ledger's own postings, read at filing time, not a fact Regulatory Reporting k
 carries `precondition: true` and names `FileReturn`, the operation it guards, which is what
 decision 19's amendment lets a filing check point at.
 
-The deliberate diagnostics of section 7 are untouched: the same four, for the same reasons.
+The deliberate diagnostics of section 7 are untouched: the same three, for the same reasons.
+
+## Revision (card 109): the gateway hears the scheme again, honestly this time
+
+Card 105 was right that `SubmitToScheme` had no answer to wait on, and wrong about what to do
+next: it let Payments Hub subscribe to `SchemeSettlementConfirmed` and `SchemeRejected`
+straight from Payment Scheme, which reads as though the hub takes the scheme's own wire
+format as its own. The Scheme Connectivity lead's words are still "we turn a submission into
+a scheme message and send it. The scheme confirms or rejects", and decision 15 is explicit
+that reacting to an outside event by publishing an inside one is not boilerplate to skip: the
+translation is behaviour, it has a name, and an anti-corruption layer is exactly where a
+reader wants to find it.
+
+The gateway's `SchemeGatewayApp` consumes `SchemeSettlementConfirmed` and `SchemeRejected`
+through an anti-corruption layer again, this time without pretending the send is waiting for
+either of them. A policy on Scheme Gateway, "Translate the scheme's answer", hears both and
+issues one of two operations on `SchemeMessage` -- `RecordSchemeAcceptance` or
+`RecordSchemeRejection` -- each of which matches the scheme's answer to the message it
+quotes and republishes it as the gateway's own fact: `SchemeAccepted` or `SchemeDeclined`.
+Nothing here waits; the send and the republish are still two acts on two timings, which is
+what card 105 got right and what this revision keeps. Payments Hub now consumes
+`SchemeAccepted` and `SchemeDeclined` instead of the scheme's own events, and the
+"Instruction lifecycle" process waits on those. The relationship between the gateway and the
+hub is unchanged -- `paymentsBC.downstreamOf(schemeBC, ...)` already carried
+`published-language` beside the `open-host-service` role `SubmitToScheme` needed, so the same
+one relationship now backs both the send and the republished facts (decision 15's "one
+relationship per pair and direction"). `Payment Scheme` stays upstream of the gateway only,
+never of the hub.
+
+The deliberate diagnostics of section 7 are untouched: the same three, for the same reasons.

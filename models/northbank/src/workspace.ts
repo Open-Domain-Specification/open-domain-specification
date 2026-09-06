@@ -1539,16 +1539,109 @@ const schemeApp = schemeBC.addService("SchemeGatewayApp", {
 // on its own timings. Card 95 gave the send an answer to wait on --
 // SubmitToScheme `returns`/`rejects` -- which drew the exchange as a single
 // synchronous call while the surrounding text said the scheme answers later;
-// the two disconnected chains that made are what card 105 closes.
+// the two disconnected chains that made are what card 105 closed.
 // SubmitToScheme is returns-less, the honest shape for a send with no
 // answer of its own (decision 13, note of 2026-09-10); the answer is the
-// scheme's own event, awaited where it is declared.
+// scheme's own event, consumed through the gateway's anti-corruption layer
+// below, not awaited by the send itself.
 const submitToScheme = schemeApp.provides("SubmitToScheme", {
 	description:
 		"Send a submission in the scheme's format; the scheme confirms or rejects later, on its own timings, as SchemeSettlementConfirmed or SchemeRejected",
 	type: "operation",
 	pattern: "open-host-service",
 	schema: submissionSchema,
+});
+// The bank's own translated facts, in the bank's own words, once the scheme
+// has answered. Card 105 took these out when it made SubmitToScheme
+// returns-less and let Payments Hub hear the scheme's own events directly;
+// that closed one gap (a call that isn't waiting has no answer to wait for)
+// and opened another (decision 15: reacting to an outside event by
+// publishing an inside one is not boilerplate to skip, and an
+// anti-corruption layer is exactly where a reader wants that translation
+// named). Card 109 puts it back, this time honestly asynchronous: nothing
+// here waits, the gateway just republishes what the scheme told it.
+const schemeAcceptedSchema = schemeBC.addSchema("SchemeAccepted", {
+	description:
+		"The scheme settled: which instruction, and the scheme's own reference, in the gateway's own words",
+});
+schemeAcceptedSchema.addAttribute("instructionId", {
+	type: "string",
+	identity: true,
+	identifies: instruction,
+});
+schemeAcceptedSchema.addAttribute("schemeRef", { type: "string" });
+const schemeDeclinedSchema = schemeBC.addSchema("SchemeDeclined", {
+	description:
+		"The scheme refused: which instruction, and the scheme's status reason passed through untranslated, because you do not negotiate with a scheme",
+});
+schemeDeclinedSchema.addAttribute("instructionId", {
+	type: "string",
+	identity: true,
+	identifies: instruction,
+});
+schemeDeclinedSchema.addAttribute("schemeRef", { type: "string" });
+schemeDeclinedSchema.addAttribute("reason", { type: "string" });
+const schemeAccepted = schemeMessageAgg.provides("SchemeAccepted", {
+	description:
+		"The gateway's own settlement fact, translated from the scheme's SchemeSettlementConfirmed",
+	type: "event",
+	pattern: "published-language",
+	schema: schemeAcceptedSchema,
+});
+const schemeDeclined = schemeMessageAgg.provides("SchemeDeclined", {
+	description:
+		"The gateway's own refusal fact, translated from the scheme's SchemeRejected",
+	type: "event",
+	pattern: "published-language",
+	schema: schemeDeclinedSchema,
+});
+// The translation itself is behaviour with a name, which is the whole point
+// of an anti-corruption layer (decision 15): matching the scheme's answer to
+// the message it quotes and republishing it is not the same operation for
+// the confirming and the refusing case, because a settlement and a refusal
+// carry different bank-side facts.
+const recordSchemeAcceptance = schemeMessageAgg
+	.provides("RecordSchemeAcceptance", {
+		description:
+			"Match the scheme's confirmation to the message it answers and republish it as the gateway's own settlement fact",
+		type: "operation",
+		internal: true,
+	})
+	.raises(schemeAccepted);
+const recordSchemeRejection = schemeMessageAgg
+	.provides("RecordSchemeRejection", {
+		description:
+			"Match the scheme's rejection to the message it answers and republish it as the gateway's own refusal fact",
+		type: "operation",
+		internal: true,
+	})
+	.raises(schemeDeclined);
+// The gateway's own anti-corruption layer: it hears the scheme's two answers
+// and republishes the bank's own events, which is what lets Payments Hub
+// depend on the gateway's language instead of the scheme's (decision 28).
+const translateSchemeAnswer = schemeBC
+	.addPolicy("Translate the scheme's answer", {
+		description:
+			"Either answer the scheme gives -- a settlement or a rejection -- is republished as the gateway's own fact, so the hub depends on the gateway's language and not the scheme's",
+	})
+	.on(schemeSettlementConfirmed, schemeRejected)
+	.issues(recordSchemeAcceptance, recordSchemeRejection);
+// A single-operation consumer's one operation is not the caller here -- the
+// policy above is -- so the caller is named rather than inferred (decision
+// 21, note of 2026-09-09).
+schemeApp.consumes(schemeSettlementConfirmed, {
+	pattern: "anti-corruption-layer",
+	by: [translateSchemeAnswer],
+});
+schemeApp.consumes(schemeRejected, {
+	pattern: "anti-corruption-layer",
+	by: [translateSchemeAnswer],
+});
+paymentSchemeBC.upstreamOf(schemeBC, {
+	description:
+		"ISO 20022 as the scheme publishes it; the gateway takes the format as it is and translates at the edge",
+	upstreamRoles: ["published-language"],
+	downstreamRoles: ["anti-corruption-layer"],
 });
 // A policy names operations of its own context, so each step that reaches
 // another context is an operation of the hub's own app service (decision 17).
@@ -1576,22 +1669,6 @@ paymentsApp.consumes(postEntry, {
 	pattern: "anti-corruption-layer",
 	by: [postSettlement],
 });
-// The scheme answers "on its own timings", so the process that made the call
-// waits on the scheme's own fact, not on an answer SubmitToScheme does not
-// have (decision 13, note of 2026-09-10; decision 23's fourth amendment: the
-// process issued the call, through SendToScheme, so it is the one entitled
-// to wait on what comes back). Payments hears the scheme directly, the same
-// shape the hub lead described -- "we submit to the scheme through the
-// gateway" -- without a bridge inside the gateway pretending the call
-// answered itself.
-paymentsApp.consumes(schemeSettlementConfirmed, { pattern: "conformist" });
-paymentsApp.consumes(schemeRejected, { pattern: "conformist" });
-paymentSchemeBC.upstreamOf(paymentsBC, {
-	description:
-		"ISO 20022 as the scheme publishes it; the hub takes the format as it is, the same terms it takes the gateway's",
-	upstreamRoles: ["published-language"],
-	downstreamRoles: ["conformist"],
-});
 // The hub lead described one instruction going from initiated to settled, and
 // the model used to spell it as seven policies. It is one process: it holds
 // the instruction while the scorer and then the scheme answer, and each step
@@ -1601,12 +1678,34 @@ paymentSchemeBC.upstreamOf(paymentsBC, {
 const instructionLifecycle = paymentsBC
 	.addProcess("Instruction lifecycle", {
 		description:
-			"From an instruction being initiated to the money having moved. It scores every instruction with Fraud and waits for the verdict to come back: above the threshold it rejects the instruction and never submits it, below it submits to the scheme through the gateway, in the scheme's own format, and the process then waits again, this time for the scheme itself to confirm or reject the submission, on its own timings. A settlement settles the instruction and posts it to the ledger; a refusal rejects it. Correlation is by instructionId, which the scorer's verdict and the scheme's response both carry; an instruction the scheme never answers stays open for the operations team, because the scheme's own timings are not the bank's to model",
+			"From an instruction being initiated to the money having moved. It scores every instruction with Fraud and waits for the verdict to come back: above the threshold it rejects the instruction and never submits it, below it submits to the scheme through the gateway, in the scheme's own format, and the process then waits again, this time for the gateway to republish the scheme's own confirmation or rejection as its own settlement or refusal fact, once the scheme has answered on its own timings. A settlement settles the instruction and posts it to the ledger; a refusal rejects it. Correlation is by instructionId, which the scorer's verdict and the gateway's republished fact both carry; an instruction the scheme never answers stays open for the operations team, because the scheme's own timings are not the bank's to model",
 	})
 	.starts(paymentInitiated)
-	.on(schemeSettlementConfirmed, schemeRejected)
+	.on(schemeAccepted, schemeDeclined)
 	.issues(sendToScheme, confirmSettlement, rejectPayment, postSettlement)
 	.ends(paymentSettled, paymentRejected);
+// The scheme answers "on its own timings", so the process that made the call
+// waits on a fact, not on an answer SubmitToScheme does not have (decision
+// 13, note of 2026-09-10; decision 23's fourth amendment: the process issued
+// the call, through SendToScheme, so it is the one entitled to wait on what
+// comes back). That fact is the gateway's own, republished by its
+// anti-corruption layer above -- "we submit to the scheme through the
+// gateway" is what the hub lead said, and the hub now hears the gateway
+// rather than reaching past it to the scheme's own wire format.
+paymentsApp.consumes(schemeAccepted, {
+	pattern: "conformist",
+	by: [instructionLifecycle],
+});
+paymentsApp.consumes(schemeDeclined, {
+	pattern: "conformist",
+	by: [instructionLifecycle],
+});
+// The pair already has its one relationship, declared below where the
+// context map is drawn (`paymentsBC.downstreamOf(schemeBC, ...)`): its
+// upstream roles already carry `published-language` beside `open-host-
+// service`, which is what SchemeAccepted and SchemeDeclined need and what
+// SubmitToScheme already had (decision 15's "one relationship per pair and
+// direction").
 
 /* =======================
    FRAUD

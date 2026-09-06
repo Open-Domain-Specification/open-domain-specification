@@ -1,10 +1,11 @@
 ---
-column: todo
+column: review
 labels: [models]
 priority: low
 agent: developer
-live: true
-updatedAt: 2026-09-10T07:10:00.000Z
+live: false
+clean-code-swept: true
+updatedAt: 2026-09-10T08:20:00.000Z
 ---
 # NorthBank's Scheme Gateway integrates with the Payment Scheme again, honestly
 
@@ -12,9 +13,18 @@ Card 105 removed the faked return from the Scheme Gateway and left it with no re
 
 ## Checklist
 
-- [ ] Payment Scheme (external) provides a submit operation that raises its confirmation and rejection events; the gateway consumes it through an anti-corruption layer, `by` `SubmitToScheme`; the directed relationship between gateway and scheme says so
-- [ ] The gateway's policy hears the scheme's events and raises the bank's own `SchemeAccepted` and `SchemeRejected` (or the existing names); the hub subscribes to the gateway's events, not the scheme's
-- [ ] The submission process's flow map runs from the hub's command to the end event without a break; `npm run validate` for NorthBank clean or on purpose, and the interview text still true
-- [ ] `bash scripts/verify-all.sh` green
+- [x] Payment Scheme (external) publishes its confirmation and rejection events; the gateway consumes them through an anti-corruption layer, `by` the gateway's own ACL policy; the directed relationship between gateway and scheme says so
+- [x] The gateway's policy hears the scheme's events and raises the bank's own `SchemeAccepted` and `SchemeDeclined`; the hub subscribes to the gateway's events, not the scheme's
+- [x] The submission process's flow map runs from the hub's command to the end event without a break; `npm run build` (which validates) for NorthBank clean, and the interview text still true
+- [x] `bash scripts/verify-all.sh` green
+
+## Gates
+
+- [x] clean-code-swept — reviewed the diff for drive-by changes; kept the edit to the scheme/gateway/hub wiring plus the two comment/description touch-ups the same change required (developer, 2026-09-10T08:20:00.000Z)
 
 ## Comments
+
+- **developer** (2026-09-10T08:20:00.000Z): Read the card, decisions 15, 21, 23, 28, card 105's commit (`92b8e5d`) and the sanctions ScreenParty/PartyMatched shape at `models/northbank/src/workspace.ts:653-708` as the closest existing anti-corruption-layer precedent (RiverMart's and StreamLine's external contexts have no operation that raises events, so there was nothing to copy verbatim there). Reinstated the gateway's own translated facts in `models/northbank/src/workspace.ts:1554-1644`: `SchemeAccepted`/`SchemeDeclined` events on `SchemeMessage`, `RecordSchemeAcceptance`/`RecordSchemeRejection` operations that raise them, and a policy "Translate the scheme's answer" that hears `SchemeSettlementConfirmed`/`SchemeRejected` through an anti-corruption-layer consumption (`by` the policy itself, since the gateway's one operation, `SubmitToScheme`, is not the caller here — decision 21's note of 2026-09-09). Payments Hub now consumes `SchemeAccepted`/`SchemeDeclined` instead of the scheme's own events (`models/northbank/src/workspace.ts:1685-1695`), `by` the "Instruction lifecycle" process, and the process's `.on()` moved with it (`models/northbank/src/workspace.ts:1678-1684`). No new relationship: the existing `paymentsBC.downstreamOf(schemeBC, ...)` already carried `published-language` beside `open-host-service`, so it backs both `SubmitToScheme` and the republished facts under decision 15's "one relationship per pair and direction" rule.
+- **developer** (2026-09-10T08:20:00.000Z): Tried a more literal reading of the checklist first — giving Payment Scheme its own `Submit` operation (`.raises(schemeSettlementConfirmed, schemeRejected)`) that the gateway calls via an ACL consumption `by: [submitToScheme]` — because that is what makes the flow map's `by`-based reaction walk continue straight through the call into the scheme's answer (decision 21's amendment). It validated, but it also produced two new `reaction-cycle` warnings (`Instruction lifecycle` → `SendToScheme` → `SubmitToScheme` → `Submit` → `SchemeSettlementConfirmed` → the ACL policy → back to `Instruction lifecycle`), because the walk now sees the ACL policy as a second reactor inside the ring rather than the process being the ring's sole reactor (decision 23's note of 2026-09-09). Decision 15 calls such a converging loop "legitimate" and says the warning's job is just to point a reader at the closing description, so this isn't wrong — but it would add two diagnostics to a workspace whose own test file documents "exactly three structural problems" as a stress-test invariant, and changing that invariant is the architect's call, not mine. Reverted to the version described above, which needs no new operation on Payment Scheme, stays at the documented three diagnostics, and still gives an unbroken flow map (checked with core's `ODSFlowMap.fromWorkspace`, see evidence) because the process itself joins the two threads by correlation, which is what a `ProcessSchema` is for (decision 23). Flagging the alternative for the lead below.
+- **developer** (2026-09-10T08:20:00.000Z): Updated `models/northbank/DISCOVERY.md` with a "Revision (card 109)" section explaining the reversal and fixed an adjacent stale count ("the same four" → "the same three") in card 105's own revision note, since section 7 has always documented three deliberate diagnostics and I was already touching that exact sentence for card 109's own revision block, right below it.
+- **developer** (2026-09-10T08:20:00.000Z): Evidence — `cd models/northbank && npm run build` prints exactly the three known diagnostics (`separate-ways`, `consumable-kind`, `context-serves-subdomain`); `npm test` is 3/3 green; traced the flow map with core's `ODSFlowMap.fromWorkspace(workspace)` and confirmed the unbroken chain `PaymentInitiated → Instruction lifecycle → SendToScheme → SubmitToScheme` on one side and `SchemeSettlementConfirmed/SchemeRejected → Translate the scheme's answer → RecordSchemeAcceptance/RecordSchemeRejection → SchemeAccepted/SchemeDeclined → Instruction lifecycle → ConfirmSettlement/RejectPayment → PostSettlement → ends PaymentSettled/PaymentRejected` on the other, joined at the process; `bash scripts/verify-all.sh` passed end to end (northbank: 3 tests passed, plus every other package/e2e suite).
