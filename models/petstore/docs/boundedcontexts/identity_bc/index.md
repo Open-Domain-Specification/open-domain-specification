@@ -1,9 +1,9 @@
 
 
 # Identity BC
-> ⚠️ **Big ball of mud.** This context's model is not coherent; neighbours should protect themselves with an anti-corruption layer.
+> **Boundary only.** A context of ours nobody has interviewed yet: what it offers and what it takes is modelled here, and nothing behind that.
 
-Owns User aggregate & user endpoints. Legacy: user status is an untyped int and login is a GET
+The user endpoints and the record they answer with, modelled at the boundary only. Legacy at that boundary: user status is an untyped int and login is a GET
 
 **Owned by:** [Platform Team](https://petstore.swagger.io/#/user)
 
@@ -19,11 +19,7 @@ Owns User aggregate & user endpoints. Legacy: user status is an untyped int and 
 
 
 ## Aggregates
-
-### [User](aggregates/user/index.md)
-Petstore user record, as the legacy API shapes it
-
-
+> No aggregates.
 	
 ## Services
 
@@ -38,7 +34,7 @@ Open-host service for /user endpoints
 ## Value Objects
 | Name | Description | Attributes | Invariants | Used by |
 | --- | --- | --- | --- | --- |
-| UserStatus | Untyped int per the Petstore v3 model; nobody remembers the meaning of each value | value: `int` | - | User |
+| UserStatus | Untyped int per the Petstore v3 model; nobody remembers the meaning of each value | value: `int` | - | - |
 
 
 ## Schemas

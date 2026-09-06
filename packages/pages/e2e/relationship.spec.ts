@@ -288,11 +288,13 @@ test("beside the site tree the Strategic position keeps its prose readable, its 
 	const lockup = await first.locator(".lockup").first().boundingBox();
 	expect(Math.abs((lockup?.y ?? 0) - (description?.y ?? 0))).toBeLessThan(4);
 
-	// The warning word drops under its name rather than holding the column
-	// open for every row, and the name itself stays on one line.
-	const mud = table.locator(".context", { hasText: "big ball of mud" });
-	const name = await mud.locator(".lockup").boundingBox();
-	const word = await mud.locator(".keyword").boundingBox();
+	// The flag word drops under its name rather than holding the column
+	// open for every row, and the name itself stays on one line. Identity is
+	// the petstore's flagged context: boundary-only since card 132, a big ball
+	// of mud before that, and the layout rule is the same either way.
+	const flagged = table.locator(".context", { hasText: "boundary only" });
+	const name = await flagged.locator(".lockup").boundingBox();
+	const word = await flagged.locator(".keyword").boundingBox();
 	expect(name?.height ?? 0).toBeLessThan(30);
 	expect(word?.y ?? 0).toBeGreaterThan((name?.y ?? 0) + 10);
 

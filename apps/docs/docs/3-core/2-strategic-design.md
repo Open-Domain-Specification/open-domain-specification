@@ -25,9 +25,33 @@ what each team owns.
 
 ## Context flags
 
+A context is one of three kinds of unknown, or none of them, and the three
+answer different questions: who may change the system, and what can be known
+of what is inside it. A context may carry at most one of the flags, and a
+context carrying two is refused, because every rule that reads one of them
+would be left guessing which reading was meant.
+
 A context whose model is not coherent, typically a legacy system, can be
-flagged `bigBallOfMud`. It is drawn as a muddy blob so that neighbours know
+flagged `bigBallOfMud`. It is the enterprise's own, so it may state
+aggregates, rules and reactions, and what it cannot be held to is
+completeness: it may say what it emits without saying how, and name a cluster
+without naming its root. It is drawn as a muddy blob so that neighbours know
 to protect themselves with an anti-corruption layer (`mud-needs-acl`).
+
+A context of ours that nobody has interviewed yet — coherent as far as anyone
+knows, and simply not written down — can be flagged `boundaryOnly`. This is
+the kind incremental adoption meets on its first day: a bank modelling
+Payments first still holds a customer id into its own CRM, and with only the
+two flags above it had to invent the CRM's entities or call a healthy context
+a mess. A boundary-only context is ours in every ordinary way — it serves
+subdomains and it has a team — and it states the consumables it offers and
+takes, the schemas those carry, its value objects and its glossary.
+`boundary-only-is-boundary` refuses aggregates, policies, processes and
+context invariants on it; an `identifies` of ours may name the context or one
+of its schemas; no rule asks how it reacts or which of its operations calls
+out; and nothing consuming it is asked for an anti-corruption layer, because
+it is not a mess. It becomes an ordinary context the day somebody interviews
+it, and the flag comes off.
 
 A context the enterprise does not own and does not model inside — a card
 scheme, a payment provider, a licensor, a regulator, a clock — can be

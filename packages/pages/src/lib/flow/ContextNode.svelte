@@ -1,5 +1,8 @@
 <script lang="ts">
-import { EXTERNAL_STEREOTYPE } from "@open-domain-specification/graphviz";
+import {
+	BOUNDARY_ONLY_STEREOTYPE,
+	EXTERNAL_STEREOTYPE,
+} from "@open-domain-specification/graphviz";
 import type { NodeProps } from "@xyflow/svelte";
 import { type ContextNodeData, clusterHue } from "./context-graph";
 import NodeHandles from "./NodeHandles.svelte";
@@ -12,8 +15,10 @@ import { sketchClass } from "./node-class";
  * for the Graphviz namespace cluster. A big ball of mud is an octagon with a
  * dashed, muddy border; a system the enterprise does not own is a square grey
  * card under the «external system» stereotype, and carries no cluster band
- * because it is in nobody's domain. `floating` hides the fixed handles;
- * `sketch` draws the card as an ellipse.
+ * because it is in nobody's domain. A context of ours nobody has interviewed
+ * yet keeps the ordinary card and draws it dashed under the «boundary only»
+ * stereotype: there is a boundary here and nothing written behind it yet.
+ * `floating` hides the fixed handles; `sketch` draws the card as an ellipse.
  */
 let {
 	data,
@@ -25,9 +30,10 @@ const band = $derived(
 );
 </script>
 
-<div class={`flow-card context-node ${data.bigBallOfMud ? "mud" : ""} ${data.external ? "external" : ""} ${sketchClass(data)}`} style={band} title={data.description ?? data.id} data-cluster={data.cluster}>
+<div class={`flow-card context-node ${data.bigBallOfMud ? "mud" : ""} ${data.external ? "external" : ""} ${data.boundaryOnly ? "boundary-only" : ""} ${sketchClass(data)}`} style={band} title={data.description ?? data.id} data-cluster={data.cluster}>
 	<NodeHandles floating={data.floating} />
 	{#if data.external}<div class="stereotype">{EXTERNAL_STEREOTYPE}</div>{/if}
+	{#if data.boundaryOnly}<div class="stereotype">{BOUNDARY_ONLY_STEREOTYPE}</div>{/if}
 	<NodeHead icon={data.icon} name={data.label} subtitle={data.groupPath} />
 	{#if data.bigBallOfMud}<div class="mud-label">(big ball of mud)</div>{/if}
 	{#if data.team}<div class="team">{`[${data.team}]`}</div>{/if}
@@ -56,6 +62,10 @@ const band = $derived(
 		border-radius: 2px;
 		border-top-color: var(--border);
 		background: color-mix(in srgb, var(--muted) 12%, var(--card));
+	}
+	.context-node.boundary-only {
+		border-style: dashed;
+		background: color-mix(in srgb, var(--muted) 6%, var(--card));
 	}
 	.team, .mud-label, .stereotype { color: var(--muted); font-size: 11px; white-space: nowrap; }
 </style>

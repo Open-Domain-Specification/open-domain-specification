@@ -160,7 +160,13 @@ Rejected
   statuses, which is catalogue lifecycle information; it is the deliberate example of a
   context serving two subdomains.
 - Identity is not a big ball of mud: the brief says nobody wants to touch it and it is
-  modelled at its boundary only, which is exactly what the flag means in ODS. Kept.
+  modelled at its boundary only, which was not what `bigBallOfMud` means in ODS — that flag
+  says the model in there is not coherent and neighbours should translate at the edge, and
+  nothing in the brief says so. `boundaryOnly` is the flag for what the note actually
+  described, and the context now carries it: the endpoints, the facts they publish, the
+  record the read answers with and the value it carries, and no User aggregate, because
+  nobody has interviewed the system behind the endpoints (decision 28, sixth amendment;
+  card 132).
 - Category has an id so it is an entity: it is reference data compared by value (id and
   name together), which is the Swagger shape; no pet owns or edits a category.
 - The discovery record is synthetic: it says so in its first paragraph. The source is a
@@ -233,3 +239,27 @@ the same thing a moment earlier and naming it instead would name no more truthfu
 invariant in the model names an operation that returns anything, so none is a postcondition
 candidate; `ApproveOnlyWhenAvailable` guards `ApproveOrder`, which returns nothing, and stays
 a precondition. Nothing changed.
+
+## Revision (card 132): Identity is boundary-only, and the planner keeps its own fact
+
+Two things the model said that the metamodel now has a truer word for.
+
+Identity carried `bigBallOfMud: true` with a note saying it meant "modelled at its boundary
+only". Those are two different claims: a big ball of mud says the model in there is not
+coherent and that neighbours should translate at the edge, and the brief never says that —
+it says nobody wants to touch it. `boundaryOnly` is the flag for what the note described
+(decision 28, sixth amendment). With it, the `User` aggregate goes: its entity was the
+legacy record read off the Swagger schema rather than anything an interview found, and what
+the context really states is its four endpoints, the three facts they publish, the `User`
+schema `GET /user/{username}` answers with and the `UserStatus` value that schema carries.
+The glossary term `User` is embodied by that schema, because it is the only User this
+context states. Nothing that consumed Identity changes, and no consumer of it is asked for
+an anti-corruption layer any more, which was the one thing the mud flag was saying that the
+brief did not.
+
+`DispatchPlanner.PlanDispatch` raised `ShipmentPlanned`, an event declared on the `Shipment`
+aggregate. `raises-in-aggregate` now asks a domain service the same question it asks an
+aggregate: a domain service is the inside of the model, so it raises no aggregate's event
+(decision 17, third note of 2026-09-10). The fact is the planner's own — choosing a ship
+date is what it does across shipments, not a transition one Shipment makes — so the event
+moved to `DispatchPlanner` and nothing else changed.

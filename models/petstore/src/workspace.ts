@@ -114,12 +114,15 @@ const fulfilmentBC = fulfilmentSD.addBoundedcontext("Fulfilment BC", {
 		"Plans and tracks the shipment of an approved order until it is delivered",
 	team: ordersTeam,
 });
-// Big ball of mud: the legacy user store is modelled only at its boundary.
-// Its untyped status int and GET-based login are recorded as facts, not fixed.
+// Boundary only: the user store is ours and coherent, and nobody has
+// interviewed it — the brief says nobody wants to touch it. So the model states
+// the endpoints it offers and the shape they answer with, and nothing behind
+// that. Its untyped status int and GET-based login are recorded as facts of the
+// published contract, not fixed (decision 28, sixth amendment).
 const identityBC = usersSD.addBoundedcontext("Identity BC", {
 	description:
-		"Owns User aggregate & user endpoints. Legacy: user status is an untyped int and login is a GET",
-	bigBallOfMud: true,
+		"The user endpoints and the record they answer with, modelled at the boundary only. Legacy at that boundary: user status is an untyped int and login is a GET",
+	boundaryOnly: true,
 	team: platformTeam,
 });
 
@@ -995,12 +998,6 @@ shipmentDeliveredSchema.addAttribute("orderId", {
 });
 shipmentDeliveredSchema.addAttribute("deliveredAt", { type: "date-time" });
 
-// An internal event: nothing outside Fulfilment needs to know a plan exists.
-const shipmentPlanned = shipmentAgg.provides("ShipmentPlanned", {
-	description: "A ship date was chosen for an approved order",
-	type: "event",
-	internal: true,
-});
 const shipmentDelivered = shipmentAgg.provides("ShipmentDelivered", {
 	description: "The pet reached its owner",
 	type: "event",
@@ -1022,6 +1019,14 @@ const dispatchPlanner = fulfilmentBC.addService("DispatchPlanner", {
 	description:
 		"Chooses ship dates across planned shipments so orders approved on the same day leave together; it only needs orderIds and dates, which is all OrderApproved gives it",
 	type: "domain",
+});
+// An internal event, and the planner's own: choosing a ship date is what this
+// service does across shipments, not a transition one Shipment makes, and a
+// domain service raises no aggregate's event (`raises-in-aggregate`, card 132).
+const shipmentPlanned = dispatchPlanner.provides("ShipmentPlanned", {
+	description: "A ship date was chosen for an approved order",
+	type: "event",
+	internal: true,
 });
 const planDispatch = dispatchPlanner
 	.provides("PlanDispatch", {
@@ -1188,19 +1193,12 @@ inventoryBC.addTerm("Availability", {
 });
 
 /* =======================
-   IDENTITY: legacy user store
-   Demonstrates: a big ball of mud modelled only at its boundary. The
-   aggregate records the legacy shape as found (an untyped status int) and
-   the service lists the endpoints other contexts might call.
+   IDENTITY: the user store at its boundary
+   Demonstrates: a context modelled at its boundary only. Nobody has
+   interviewed it, so it states the endpoints other contexts call, the facts
+   they publish, the shape the read answers with and the value that shape
+   carries — and no aggregate, because its entities are not written down.
    ======================= */
-
-const userAgg = identityBC.addAggregate("User", {
-	description: "Petstore user record, as the legacy API shapes it",
-});
-
-const userRoot = userAgg.addRootEntity("User", {
-	description: "A registered user of the store",
-});
 
 const userStatusVO = identityBC.addValueObject("UserStatus", {
 	description:
@@ -1208,33 +1206,25 @@ const userStatusVO = identityBC.addValueObject("UserStatus", {
 });
 userStatusVO.addAttribute("value", { type: "int" });
 
-userRoot.addAttribute("username", { type: "string", identity: true });
-userRoot.addAttribute("email", { type: "string" });
-userRoot.addAttribute("userStatus", {
-	type: "UserStatus",
-	valueobject: userStatusVO,
+const userApp = identityBC.addService("UserApp", {
+	description: "Open-host service for /user endpoints",
+	type: "application",
 });
-userRoot.uses(userStatusVO, "has-status", "1");
 
-const userRegistered = userAgg.provides("UserRegistered", {
+const userRegistered = userApp.provides("UserRegistered", {
 	description: "New user created",
 	type: "event",
 	pattern: "published-language",
 });
-const userLoggedIn = userAgg.provides("UserLoggedIn", {
+const userLoggedIn = userApp.provides("UserLoggedIn", {
 	description: "Login via /user/login",
 	type: "event",
 	pattern: "published-language",
 });
-const userLoggedOut = userAgg.provides("UserLoggedOut", {
+const userLoggedOut = userApp.provides("UserLoggedOut", {
 	description: "Logout via /user/logout",
 	type: "event",
 	pattern: "published-language",
-});
-
-const userApp = identityBC.addService("UserApp", {
-	description: "Open-host service for /user endpoints",
-	type: "application",
 });
 userApp
 	.provides("CreateUser", {
@@ -1292,7 +1282,9 @@ userApp
 identityBC.addTerm("User", {
 	definition: "Someone with a login; orders never refer to one",
 	aliases: ["Account"],
-	embodiedBy: userAgg,
+	// The schema, because that is the only User this context states: the
+	// entity behind it is inside a system nobody has interviewed.
+	embodiedBy: userSchema,
 });
 
 /* =======================

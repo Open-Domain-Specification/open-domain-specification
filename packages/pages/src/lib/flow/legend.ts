@@ -6,6 +6,7 @@ import {
 } from "@open-domain-specification/core";
 import {
 	BORROWED_STEREOTYPE,
+	BOUNDARY_ONLY_STEREOTYPE,
 	EXTERNAL_STEREOTYPE,
 	IDENTITY_EDGE_LABEL,
 } from "@open-domain-specification/graphviz";
@@ -120,6 +121,16 @@ function contextLegend(graph: Graph): LegendEntry[] {
 						name: "External system",
 						title:
 							"A system the enterprise does not own: only what it provides and consumes is modelled, never its insides.",
+					},
+				]
+			: []),
+		...(nodes.some((n) => n.boundaryOnly)
+			? [
+					{
+						mark: BOUNDARY_ONLY_STEREOTYPE,
+						name: "Boundary only",
+						title:
+							"A context of ours nobody has interviewed yet: what it offers and takes is modelled, and nothing behind that.",
 					},
 				]
 			: []),

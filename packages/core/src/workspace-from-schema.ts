@@ -120,6 +120,7 @@ const KNOWN_FIELDS = {
 		"subdomains",
 		"bigBallOfMud",
 		"external",
+		"boundaryOnly",
 		"team",
 		"aggregates",
 		"invariants",
@@ -231,13 +232,131 @@ const KNOWN_FIELDS = {
 } as const satisfies Record<string, readonly string[]>;
 
 /**
+ * A nested object one field of an element holds: the keys it may carry, and
+ * what it holds nested in turn.
+ *
+ * An element's own keys were the only ones checked until card 132, so
+ * `returns: { $ref, reasons, bogus }` loaded with no diagnostic and lost both
+ * extra keys on the round trip — the silent loss decision 29 says a mistake is
+ * never. Every object the loader reaches inside an element is described here,
+ * so the check follows the file down to the leaf and the path it reports is
+ * the path the key was written at.
+ */
+type Nested = {
+	/** The keys this object may carry. Empty means it may carry none. */
+	readonly keys: readonly string[];
+	/** True when the field holds a list of them, so the path carries an index. */
+	readonly list?: boolean;
+	/** What this object holds nested in turn. */
+	readonly under?: NestedFields;
+};
+
+type NestedFields = { readonly [field: string]: Nested };
+
+/** A plain `$ref` object, which carries the ref and nothing else. */
+const A_REF_OBJECT: Nested = { keys: ["$ref"] };
+/** A list of them: `subdomains`, `raises`, `constrains`, a policy's `on`. */
+const REF_OBJECTS: Nested = { ...A_REF_OBJECT, list: true };
+/**
+ * A shape a call carries, which says how many of it as well: a consumable's
+ * `schema` and its `returns` (decision 13, amended).
+ */
+const A_SHAPE_REF: Nested = { keys: ["$ref", "many"] };
+/**
+ * Several fields of one kind that each hold a list of plain `$ref` objects: a
+ * policy's `on` and `then`, a process's four. Built rather than written out so
+ * that no key of this map is called `then`, which reads as a thenable to a
+ * linter and to anyone skimming (`noThenProperty`).
+ */
+const refObjectFields = (...fields: string[]): NestedFields =>
+	Object.fromEntries(fields.map((field) => [field, REF_OBJECTS]));
+
+/** The grounded statements an intent carries, each with at most one link. */
+const COMMENTS: Nested = {
+	keys: ["text", "link"],
+	list: true,
+	under: { link: { keys: ["kind", "url", "label"] } },
+};
+
+/**
+ * The nested objects each kind of element holds, mirroring the interfaces in
+ * `schema.ts` the way {@link KNOWN_FIELDS} mirrors their own keys.
+ *
+ * A field absent from a kind's entry is one that holds no object the loader
+ * reads into — a string, a flag, a list of strings, or a map of elements
+ * checked in its own right, as a process's `deadlines` and a context's
+ * `aggregates` are.
+ */
+const NESTED_FIELDS: { [K in keyof typeof KNOWN_FIELDS]?: NestedFields } = {
+	boundedcontext: { subdomains: REF_OBJECTS, team: A_REF_OBJECT },
+	entity: {
+		specialises: A_REF_OBJECT,
+		relations: {
+			keys: KNOWN_FIELDS.entityRelation,
+			list: true,
+			under: { target: A_REF_OBJECT },
+		},
+	},
+	valueobject: {
+		specialises: A_REF_OBJECT,
+		relations: {
+			keys: KNOWN_FIELDS.entityRelation,
+			list: true,
+			under: { target: A_REF_OBJECT },
+		},
+	},
+	policy: refObjectFields("on", "then"),
+	process: {
+		...refObjectFields("starts", "on", "then", "ends"),
+		comments: COMMENTS,
+	},
+	deadline: { from: A_REF_OBJECT },
+	consumable: {
+		schema: A_SHAPE_REF,
+		returns: A_SHAPE_REF,
+		// A refusal names a shape, how many of it, and the outcomes the
+		// contract enumerates. The reasons are words rather than objects
+		// (decision 25), so a reason written as an object carries nothing this
+		// metamodel knows and every key of it is reported.
+		rejects: {
+			keys: ["$ref", "many", "reasons"],
+			list: true,
+			under: { reasons: { keys: [], list: true } },
+		},
+		raises: REF_OBJECTS,
+		comments: COMMENTS,
+	},
+	consumption: {
+		consumable: A_REF_OBJECT,
+		by: REF_OBJECTS,
+		relationship: A_REF_OBJECT,
+		comments: COMMENTS,
+	},
+	attribute: {
+		valueobject: A_REF_OBJECT,
+		schema: A_REF_OBJECT,
+		identifies: A_REF_OBJECT,
+	},
+	invariant: { constrains: REF_OBJECTS },
+	glossaryTerm: { embodiedBy: A_REF_OBJECT },
+	directedRelationship: {
+		upstream: A_REF_OBJECT,
+		downstream: A_REF_OBJECT,
+		comments: COMMENTS,
+	},
+	symmetricRelationship: { participants: REF_OBJECTS, comments: COMMENTS },
+};
+
+/**
  * Records `owner`'s unknown fields on `workspace`, one {@link UnknownField}
- * per field of `raw` that `kind` does not know.
+ * per field of `raw`, at any depth, that this metamodel does not know.
  *
  * Runs after the field is dropped rather than in place of it: the rest of the
  * element still loads, and the round trip still drops the field, the way it
  * always has. `ref` is the JSON path of the raw object itself, so the
- * reported field path is `${ref}/${field}`.
+ * reported field path is `${ref}/${field}` — and a key inside one of the
+ * objects that element holds is reported at its own path, index and all:
+ * `.../provides/ask/rejects/0/reasons`.
  */
 function checkUnknownFields(
 	workspace: Workspace,
@@ -246,12 +365,69 @@ function checkUnknownFields(
 	kind: keyof typeof KNOWN_FIELDS,
 	raw: object | undefined,
 ): void {
+	checkKeys(
+		workspace,
+		owner,
+		ref,
+		KNOWN_FIELDS[kind],
+		NESTED_FIELDS[kind],
+		raw,
+	);
+}
+
+/** One object's own keys, and then the objects those keys hold. */
+function checkKeys(
+	workspace: Workspace,
+	owner: string,
+	ref: string,
+	known: readonly string[],
+	nested: NestedFields | undefined,
+	raw: object | undefined,
+): void {
 	if (!raw) return;
-	const known: readonly string[] = KNOWN_FIELDS[kind];
-	for (const field of Object.keys(raw)) {
-		if (known.includes(field)) continue;
-		workspace.unknownFields.push({ ref: `${ref}/${field}`, owner, field });
+	for (const [field, value] of Object.entries(raw)) {
+		if (!known.includes(field)) {
+			workspace.unknownFields.push({ ref: `${ref}/${field}`, owner, field });
+			continue;
+		}
+		const shape = nested?.[field];
+		if (shape) checkNested(workspace, owner, `${ref}/${field}`, shape, value);
 	}
+}
+
+/** One nested field: the object it holds, or each object of the list it holds. */
+function checkNested(
+	workspace: Workspace,
+	owner: string,
+	ref: string,
+	shape: Nested,
+	value: unknown,
+): void {
+	if (!shape.list) {
+		if (isPlainObject(value))
+			checkKeys(workspace, owner, ref, shape.keys, shape.under, value);
+		return;
+	}
+	if (!Array.isArray(value)) return;
+	for (const [index, item] of value.entries())
+		if (isPlainObject(item))
+			checkKeys(
+				workspace,
+				owner,
+				`${ref}/${index}`,
+				shape.keys,
+				shape.under,
+				item,
+			);
+}
+
+/**
+ * Whether a value is an object with keys of its own. A string has indices
+ * rather than keys, and a list is walked by {@link checkNested} instead, so
+ * neither is read as one.
+ */
+function isPlainObject(value: unknown): value is object {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**
@@ -469,7 +645,7 @@ function addConsumes(
 		consumer.name,
 		consumer.ref,
 	);
-	for (const consumption of listOf(schema.consumes)) {
+	for (const [index, consumption] of listOf(schema.consumes).entries()) {
 		debug(
 			`Adding consumption: ${consumption.consumable.$ref} to ${consumer.name}`,
 		);
@@ -487,7 +663,7 @@ function addConsumes(
 		checkUnknownFields(
 			refs.workspace,
 			at.owner,
-			`${at.ref}/consumes`,
+			`${at.ref}/consumes/${index}`,
 			"consumption",
 			consumption,
 		);
@@ -1227,7 +1403,7 @@ function addRelationships(
 	workspaceSchema: WorkspaceSchema,
 	refs: Refs,
 ) {
-	for (const relationship of workspaceSchema.relationships) {
+	for (const [index, relationship] of workspaceSchema.relationships.entries()) {
 		const written =
 			"participants" in relationship
 				? relationship.participants
@@ -1244,6 +1420,18 @@ function addRelationships(
 			"Relationship",
 			`${relationship.type} between "${written[0].$ref}" and "${written[1].$ref}"`,
 			landsOn?.ref ?? written.find((_, i) => !ends[i])?.$ref ?? "",
+		);
+		// A relationship is the one thing a file writes that has no ref of its
+		// own, so an unknown field on it is reported at the place it sits in
+		// the file: `#/relationships/2/terms`.
+		checkUnknownFields(
+			workspace,
+			at.owner,
+			`#/relationships/${index}`,
+			"participants" in relationship
+				? "symmetricRelationship"
+				: "directedRelationship",
+			relationship,
 		);
 		const both = written.map((end, i) =>
 			refs.one(

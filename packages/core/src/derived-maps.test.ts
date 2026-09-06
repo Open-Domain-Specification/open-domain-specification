@@ -271,6 +271,18 @@ describe("ODSContextMap", () => {
 		expect(map.nodes.get(f.orderingBc.ref)?.bigBallOfMud).toBe(false);
 	});
 
+	// The third context flag, so the map can draw it under its own stereotype
+	// (decision 28, sixth amendment; card 132).
+	it("flags a context modelled at its boundary only on its node", () => {
+		const crm = f.ws.addBoundedContext("CRM", {
+			description: "",
+			boundaryOnly: true,
+		});
+		const map = ODSContextMap.fromWorkspace(f.ws);
+		expect(map.nodes.get(crm.ref)?.boundaryOnly).toBe(true);
+		expect(map.nodes.get(f.orderingBc.ref)?.boundaryOnly).toBe(false);
+	});
+
 	it("scoped to one context, shows that context and its neighbours", () => {
 		const map = ODSContextMap.fromBoundedContext(f.orderingBc);
 		expect(Array.from(map.nodes.keys()).sort()).toEqual(

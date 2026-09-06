@@ -8,7 +8,7 @@ User records and login/logout. Generic: an off-the-shelf identity provider would
 ## Bounded Contexts
 
 ### [Identity BC](../../../../boundedcontexts/identity_bc/index.md)
-Owns User aggregate & user endpoints. Legacy: user status is an untyped int and login is a GET
+The user endpoints and the record they answer with, modelled at the boundary only. Legacy at that boundary: user status is an untyped int and login is a GET
 
 
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { makeRichTestWs, makeTestWs } from "./makeTestWs";
 import { ODS_VERSION, type WorkspaceSchema } from "./schema";
+import { Workspace } from "./workspace";
 import { getWorkspaceFromSchema } from "./workspace-from-schema";
 
 describe("workspaceFromSchema", () => {
@@ -586,9 +587,9 @@ describe("a file that writes a field this metamodel does not know", () => {
 		expect(found[0].message).toContain("modules");
 		expect(found[0].ref).toBe("#/boundedcontexts/only/modules");
 		const loaded = getWorkspaceFromSchema(structuredClone(schema));
-		expect(loaded.getBoundedContextByRefOrThrow("#/boundedcontexts/only").name).toBe(
-			"Only",
-		);
+		expect(
+			loaded.getBoundedContextByRefOrThrow("#/boundedcontexts/only").name,
+		).toBe("Only");
 	});
 
 	it("reports one on the workspace, and still loads the rest", () => {
@@ -610,5 +611,171 @@ describe("a file that writes a field this metamodel does not know", () => {
 		schema.actors = [{ name: "Customer" }];
 		const loaded = getWorkspaceFromSchema(structuredClone(schema));
 		expect(loaded.toSchema()).not.toHaveProperty("actors");
+	});
+});
+
+/**
+ * The check used to see an element's own keys and nothing below them, so
+ * `returns: { $ref, reasons, bogus }` loaded with no diagnostic and lost both
+ * extra keys on the next save — the silent loss decision 29 says a mistake is
+ * never. The architect's round-15 probe P41 is the shape below (card 132).
+ */
+describe("a file that writes an unknown key inside an object the loader reads", () => {
+	/** P41: one context, one schema, one operation that answers with it. */
+	function asking() {
+		const ws = new Workspace("P41", { description: "", version: "0" });
+		const a = ws.addBoundedContext("A", { description: "" });
+		const answer = a.addSchema("Answer", { description: "" });
+		answer.addAttribute("x", { type: "string" });
+		const app = a.addService("App", { description: "", type: "application" });
+		app.provides("Ask", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+			returns: answer,
+		});
+		return structuredClone(ws.toSchema()) as WorkspaceSchema &
+			Record<string, unknown>;
+	}
+
+	const askRef = "#/boundedcontexts/a/services/app/provides/ask";
+
+	function reportedBy(schema: WorkspaceSchema) {
+		return getWorkspaceFromSchema(structuredClone(schema))
+			.validate()
+			.filter((d) => d.rule === "unknown-field")
+			.map((d) => [d.ref, d.message]);
+	}
+
+	function ask(schema: WorkspaceSchema) {
+		const found = schema.boundedcontexts.a.services?.app.provides?.ask;
+		if (!found) throw new Error("fixture lost its operation");
+		return found as unknown as Record<string, unknown> & {
+			returns?: Record<string, unknown>;
+		};
+	}
+
+	it("reports the keys inside a $ref object beside the one on the element", () => {
+		const schema = asking();
+		const operation = ask(schema);
+		// `reasons` belongs to a rejection, not to an answer; `bogus` belongs
+		// nowhere; `idempotent` is the element's own key this check always saw.
+		if (operation.returns) {
+			operation.returns.reasons = ["approved", "referred"];
+			operation.returns.bogus = true;
+		}
+		operation.idempotent = true;
+		// In the order the file wrote them: what is nested under `returns` sits
+		// where `returns` does, and the element's own key comes after it.
+		expect(reportedBy(schema)).toEqual([
+			[`${askRef}/returns/reasons`, expect.stringContaining("reasons")],
+			[`${askRef}/returns/bogus`, expect.stringContaining("bogus")],
+			[`${askRef}/idempotent`, expect.stringContaining('Operation "Ask"')],
+		]);
+	});
+
+	it("keeps the two keys a shape ref really has", () => {
+		const schema = asking();
+		const operation = ask(schema);
+		if (operation.returns) operation.returns.many = true;
+		expect(reportedBy(schema)).toEqual([]);
+	});
+
+	it("names the index of the list entry an unknown key sits in", () => {
+		const schema = asking();
+		const operation = ask(schema);
+		operation.rejects = [
+			{ $ref: "#/boundedcontexts/a/schemas/answer", reasons: ["declined"] },
+			{ $ref: "#/boundedcontexts/a/schemas/answer", code: 42 },
+		];
+		expect(reportedBy(schema)).toEqual([
+			[`${askRef}/rejects/1/code`, expect.stringContaining("code")],
+		]);
+	});
+
+	// A reason is one of the outcomes the contract enumerates, in words
+	// (decision 25); written as an object it carries nothing this metamodel
+	// knows, and every key of it is reported at its own path.
+	it("reports the keys of a reason written as an object", () => {
+		const schema = asking();
+		const operation = ask(schema);
+		operation.rejects = [
+			{
+				$ref: "#/boundedcontexts/a/schemas/answer",
+				reasons: ["declined", { code: "51", text: "insufficient funds" }],
+			},
+		];
+		expect(reportedBy(schema).map(([ref]) => ref)).toEqual([
+			`${askRef}/rejects/0/reasons/1/code`,
+			`${askRef}/rejects/0/reasons/1/text`,
+		]);
+	});
+
+	it("reports one inside a comment and inside its link", () => {
+		const schema = asking();
+		const operation = ask(schema);
+		operation.comments = [
+			{ text: "the gateway answers in under 200ms", author: "nobody" },
+			{ text: "measured", link: { kind: "dashboard", url: "u", when: "May" } },
+		];
+		expect(reportedBy(schema).map(([ref]) => ref)).toEqual([
+			`${askRef}/comments/0/author`,
+			`${askRef}/comments/1/link/when`,
+		]);
+	});
+
+	it("reports one inside a relation, and one inside the relation's target", () => {
+		const ws = new Workspace("Relating", { description: "", version: "0" });
+		const bc = ws.addBoundedContext("A", { description: "" });
+		const agg = bc.addAggregate("Order", { description: "" });
+		const root = agg.addRootEntity("Order", { description: "" });
+		root.addAttribute("id", { type: "string", identity: true });
+		const line = agg.addEntity("Line", { description: "" });
+		line.addAttribute("id", { type: "string", identity: true });
+		root.includes(line, "has");
+		const schema = structuredClone(ws.toSchema());
+		const entity = schema.boundedcontexts.a.aggregates?.order.entities?.order;
+		if (!entity?.relations) throw new Error("fixture lost its relation");
+		const relation = entity.relations[0] as unknown as Record<
+			string,
+			unknown
+		> & {
+			target: Record<string, unknown>;
+		};
+		relation.ordered = true;
+		relation.target.via = "line_id";
+		const orderRef = "#/boundedcontexts/a/aggregates/order/entities/order";
+		expect(reportedBy(schema).map(([ref]) => ref)).toEqual([
+			`${orderRef}/relations/0/target/via`,
+			`${orderRef}/relations/0/ordered`,
+		]);
+	});
+
+	// A relationship is the one thing a file writes that has no ref of its own,
+	// so it is reported where it sits in the file.
+	it("reports one on a relationship, at its place in the list", () => {
+		const ws = new Workspace("Related", { description: "", version: "0" });
+		const a = ws.addBoundedContext("A", { description: "" });
+		const b = ws.addBoundedContext("B", { description: "" });
+		a.upstreamOf(b, { upstreamRoles: ["open-host-service"] });
+		const schema = structuredClone(ws.toSchema());
+		const relationship = schema.relationships[0] as unknown as Record<
+			string,
+			unknown
+		>;
+		relationship.sla = "99.9%";
+		expect(reportedBy(schema)).toEqual([
+			["#/relationships/0/sla", expect.stringContaining("Relationship")],
+		]);
+	});
+
+	it("drops the nested key on the round trip, as the element's own has always been", () => {
+		const schema = asking();
+		const operation = ask(schema);
+		if (operation.returns) operation.returns.bogus = true;
+		const loaded = getWorkspaceFromSchema(structuredClone(schema));
+		expect(
+			loaded.toSchema().boundedcontexts.a.services?.app.provides?.ask.returns,
+		).toEqual({ $ref: "#/boundedcontexts/a/schemas/answer" });
 	});
 });

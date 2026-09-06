@@ -1439,12 +1439,6 @@
           "name": "Shipment",
           "description": "The journey of one approved order to its owner. Attempts live inside it because they mean nothing without the shipment",
           "provides": {
-            "shipment_planned": {
-              "name": "ShipmentPlanned",
-              "description": "A ship date was chosen for an approved order",
-              "type": "event",
-              "internal": true
-            },
             "shipment_delivered": {
               "name": "ShipmentDelivered",
               "description": "The pet reached its owner",
@@ -1608,6 +1602,12 @@
           "description": "Chooses ship dates across planned shipments so orders approved on the same day leave together; it only needs orderIds and dates, which is all OrderApproved gives it",
           "type": "domain",
           "provides": {
+            "shipment_planned": {
+              "name": "ShipmentPlanned",
+              "description": "A ship date was chosen for an approved order",
+              "type": "event",
+              "internal": true
+            },
             "plan_dispatch": {
               "name": "PlanDispatch",
               "description": "Create a shipment and pick its ship date for an approved order",
@@ -1615,7 +1615,7 @@
               "internal": true,
               "raises": [
                 {
-                  "$ref": "#/boundedcontexts/fulfilment_bc/aggregates/shipment/provides/shipment_planned"
+                  "$ref": "#/boundedcontexts/fulfilment_bc/services/dispatch_planner/provides/shipment_planned"
                 }
               ]
             }
@@ -1757,20 +1757,23 @@
     },
     "identity_bc": {
       "name": "Identity BC",
-      "description": "Owns User aggregate & user endpoints. Legacy: user status is an untyped int and login is a GET",
+      "description": "The user endpoints and the record they answer with, modelled at the boundary only. Legacy at that boundary: user status is an untyped int and login is a GET",
       "subdomains": [
         {
           "$ref": "#/domains/identity_&_accounts/subdomains/users"
         }
       ],
-      "bigBallOfMud": true,
+      "boundaryOnly": true,
       "team": {
         "$ref": "#/teams/platform_team"
       },
-      "aggregates": {
-        "user": {
-          "name": "User",
-          "description": "Petstore user record, as the legacy API shapes it",
+      "aggregates": {},
+      "invariants": {},
+      "services": {
+        "user_app": {
+          "name": "UserApp",
+          "description": "Open-host service for /user endpoints",
+          "type": "application",
           "provides": {
             "user_registered": {
               "name": "UserRegistered",
@@ -1789,54 +1792,7 @@
               "description": "Logout via /user/logout",
               "pattern": "published-language",
               "type": "event"
-            }
-          },
-          "consumes": [],
-          "entities": {
-            "user": {
-              "name": "User",
-              "description": "A registered user of the store",
-              "root": true,
-              "attributes": {
-                "username": {
-                  "name": "username",
-                  "type": "string",
-                  "identity": true
-                },
-                "email": {
-                  "name": "email",
-                  "type": "string"
-                },
-                "user_status": {
-                  "name": "userStatus",
-                  "type": "UserStatus",
-                  "valueobject": {
-                    "$ref": "#/boundedcontexts/identity_bc/valueobjects/user_status"
-                  }
-                }
-              },
-              "relations": [
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/identity_bc/valueobjects/user_status"
-                  },
-                  "relation": "uses",
-                  "label": "has-status",
-                  "cardinality": "1"
-                }
-              ]
-            }
-          },
-          "invariants": {}
-        }
-      },
-      "invariants": {},
-      "services": {
-        "user_app": {
-          "name": "UserApp",
-          "description": "Open-host service for /user endpoints",
-          "type": "application",
-          "provides": {
+            },
             "create_user": {
               "name": "CreateUser",
               "description": "POST /user",
@@ -1844,7 +1800,7 @@
               "type": "operation",
               "raises": [
                 {
-                  "$ref": "#/boundedcontexts/identity_bc/aggregates/user/provides/user_registered"
+                  "$ref": "#/boundedcontexts/identity_bc/services/user_app/provides/user_registered"
                 }
               ]
             },
@@ -1855,7 +1811,7 @@
               "type": "operation",
               "raises": [
                 {
-                  "$ref": "#/boundedcontexts/identity_bc/aggregates/user/provides/user_logged_in"
+                  "$ref": "#/boundedcontexts/identity_bc/services/user_app/provides/user_logged_in"
                 }
               ]
             },
@@ -1866,7 +1822,7 @@
               "type": "operation",
               "raises": [
                 {
-                  "$ref": "#/boundedcontexts/identity_bc/aggregates/user/provides/user_logged_out"
+                  "$ref": "#/boundedcontexts/identity_bc/services/user_app/provides/user_logged_out"
                 }
               ]
             },
@@ -1890,7 +1846,7 @@
               },
               "raises": [
                 {
-                  "$ref": "#/boundedcontexts/identity_bc/aggregates/user/provides/user_registered"
+                  "$ref": "#/boundedcontexts/identity_bc/services/user_app/provides/user_registered"
                 }
               ]
             }
@@ -1908,7 +1864,7 @@
             "Account"
           ],
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/identity_bc/aggregates/user"
+            "$ref": "#/boundedcontexts/identity_bc/schemas/user"
           }
         }
       },

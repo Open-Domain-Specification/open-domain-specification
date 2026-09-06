@@ -44,6 +44,15 @@ export const IDENTITY_EDGE_LABEL = "«id»";
 export const EXTERNAL_STEREOTYPE = "«external system»";
 
 /**
+ * The stereotype a context of ours that nobody has interviewed yet carries on
+ * the context map. It is not somebody else's system and not a mess: it is ours,
+ * coherent as far as anyone knows, and modelled at its boundary only until the
+ * interview happens, so the box says what the reader may expect to find behind
+ * it — nothing yet (decision 28, sixth amendment).
+ */
+export const BOUNDARY_ONLY_STEREOTYPE = "«boundary only»";
+
+/**
  * The stereotype a value object borrowed from another bounded context carries
  * on the relation map. The holder reaches it over a shared kernel or as a
  * conformist to an upstream, so the box is on this map as a dependency of ours

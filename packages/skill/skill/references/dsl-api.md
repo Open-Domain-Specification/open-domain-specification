@@ -9,13 +9,14 @@ independently of the name.
 | — | `new Workspace(name, { description, version, homepage?, logoUrl?, primaryColor?, id? })` | the workspace; the ODS metamodel version is core's own constant and is written into the file for you |
 | `Workspace` | `addDomain(name, { description })` | a domain |
 | `Workspace` | `addTeam(name, { description?, homepage? })` | a team |
-| `Workspace` | `addBoundedContext(name, { description, subdomains?, bigBallOfMud?, external?, team? })` | a context serving zero or more subdomains; `external: true` for a system you integrate with and do not own |
+| `Workspace` | `addBoundedContext(name, { description, subdomains?, bigBallOfMud?, external?, boundaryOnly?, team? })` | a context serving zero or more subdomains; `external: true` for a system you integrate with and do not own, `boundaryOnly: true` for one of yours nobody has interviewed yet |
 | `Workspace` | `addRelationship({...})` | a relationship; prefer the context helpers below |
 | `Workspace` | `validate()` | the diagnostics list |
 | `Workspace` | `toSchema()` / `Workspace.fromSchema(json)` | serialise / load |
 | `Domain` | `addSubdomain(name, { type, description })` | a subdomain; `type` is `"core" \| "supporting" \| "generic"` |
-| `Subdomain` | `addBoundedcontext(name, { description, bigBallOfMud?, team? })` | a context serving this subdomain |
+| `Subdomain` | `addBoundedcontext(name, { description, bigBallOfMud?, boundaryOnly?, team? })` | a context serving this subdomain |
 | `Workspace` | `addBoundedContext(name, { description, external: true })` | an external system: it provides and consumes consumables and takes part in relationships, and has no subdomain, no team, no aggregates, no policies and no processes. Its value objects may carry the standard's own rules, and it may state a context invariant marked `precondition` or `postcondition` on one of its own operations — the published contract of that operation, constraining only the attributes of the shapes it carries and this context's own value objects. Its services still take a `type`, which no rule reads |
+| `Workspace` | `addBoundedContext(name, { description, boundaryOnly: true })` | a context of yours modelled at its boundary only: it serves subdomains and has a team as usual, states the consumables it offers and takes, the schemas they carry, its value objects and its glossary, and no aggregates, policies, processes or context invariants. An `identifies` of yours may name it or one of its schemas; no rule asks how it reacts or which of its operations calls out; nothing consuming it is asked for an anti-corruption layer. Drop the flag the day somebody interviews it |
 | `BoundedContext` | `serves(subdomain)` | adds a served subdomain |
 | `BoundedContext` | `ownedBy(team)` | sets the owning team |
 | `BoundedContext` | `upstreamOf(other, { type?, name?, upstreamRoles?, downstreamRoles?, description?, comments?, disposition? })` | directed relationship, this side upstream; `type` defaults to `"upstream-downstream"`, or `"customer-supplier"`. `name` is what this agreement is called, needed only where the pair holds more than one in this direction — a negotiated fulfilment API beside a tolerated legacy feed — and it is appended to the ref |

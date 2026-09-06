@@ -34,7 +34,6 @@ The journey of one approved order to its owner. Attempts live inside it because 
 ## Provides
 | Name | Type | Internal | Pattern | Description | Schema | Returns | Rejects with | Raises | Guarded by |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| ShipmentPlanned | event | yes | - | A ship date was chosen for an approved order | - | - | - | - | - |
 | ShipmentDelivered | event | no | published-language | The pet reached its owner | [ShipmentDelivered](../../index.md#schemas) | - | - | - | - |
 | RecordDeliveryAttempt | operation | yes | - | Log a delivery attempt; a successful one delivers the shipment | - | - | - | ShipmentDelivered | - |
 

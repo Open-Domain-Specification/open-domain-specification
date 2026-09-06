@@ -2,7 +2,12 @@ import type { BoundedContext } from "@open-domain-specification/core";
 import { render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import Harness from "../evidence/WithModel.harness.svelte";
-import { edgeCaseModel, petstoreModel, petstoreSales } from "../fixtures";
+import {
+	edgeCaseModel,
+	petstoreModel,
+	petstoreSales,
+	rivermartModel,
+} from "../fixtures";
 import { installXyflowTestEnv } from "../xyflow-test-env";
 import ContextPage, { sections } from "./ContextPage.svelte";
 
@@ -220,11 +225,26 @@ describe("ContextPage", () => {
 	});
 
 	it("marks a big ball of mud after the title", () => {
-		const model = petstoreModel();
+		// RiverMart's, since petstore's one unread context is boundary-only
+		// rather than a mess (card 132).
+		const model = rivermartModel();
 		const mud = [...model.workspace.boundedcontexts.values()].find(
 			(bc) => bc.bigBallOfMud,
 		) as BoundedContext;
 		const { container } = page(model, mud);
 		expect(container.querySelector(".meta .keyword")).toHaveClass("warn");
+	});
+
+	// The third context flag reads as a plain keyword, not a warning: it says
+	// nobody has interviewed the context, not that its model is a mess.
+	it("marks a context modelled at its boundary only after the title", () => {
+		const model = petstoreModel();
+		const unread = [...model.workspace.boundedcontexts.values()].find(
+			(bc) => bc.boundaryOnly,
+		) as BoundedContext;
+		const { container } = page(model, unread);
+		const keyword = container.querySelector(".meta .keyword") as HTMLElement;
+		expect(keyword).toHaveTextContent("boundary only");
+		expect(keyword).not.toHaveClass("warn");
 	});
 });

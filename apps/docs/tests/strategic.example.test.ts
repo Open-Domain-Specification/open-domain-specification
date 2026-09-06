@@ -38,6 +38,12 @@ const accounts = identity.addBoundedcontext("Accounts", {
 	description: "Legacy user store",
 	bigBallOfMud: true,
 });
+// Ours and coherent, and nobody has interviewed it yet: it states what it
+// offers and what it takes, and nothing behind that.
+const crm = identity.addBoundedcontext("CRM", {
+	description: "Customer records, modelled at their boundary only",
+	boundaryOnly: true,
+});
 
 // Relationships are declared explicitly ...
 shipping.downstreamOf(ordering, {
@@ -73,6 +79,17 @@ describe("Strategic design", () => {
 				  "Ordering -[upstream-downstream, implied]-> Accounts",
 				]
 			`);
+	});
+
+	it("says which kind of unknown each unmodelled context is", () => {
+		expect([accounts.bigBallOfMud, accounts.boundaryOnly]).toEqual([
+			true,
+			false,
+		]);
+		expect([crm.bigBallOfMud, crm.boundaryOnly]).toEqual([false, true]);
+		expect(
+			ws.validate().filter((d) => d.rule.endsWith("-is-boundary")),
+		).toEqual([]);
 	});
 
 	it("derives what a subdomain is served by and what a team owns", () => {

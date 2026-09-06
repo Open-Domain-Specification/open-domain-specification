@@ -630,12 +630,6 @@ const offerWithdrawn = offerAgg.provides("OfferWithdrawn", {
 	pattern: "published-language",
 	schema: offerRefSchema,
 });
-const buyBoxAwarded = offerAgg.provides("BuyBoxAwarded", {
-	description: "The offer shown by default for a SKU changed",
-	type: "event",
-	pattern: "published-language",
-	schema: buyBoxAwardedSchema,
-});
 const withdrawSellerOffers = offerAgg
 	.provides("WithdrawSellerOffers", {
 		description: "Take down every offer of a seller",
@@ -648,6 +642,15 @@ const buyBoxService = offersBC.addService("BuyBoxService", {
 	description:
 		"Compares all offers on a SKU by landed price, delivery speed and seller rating; a domain service because it reads across offers",
 	type: "domain",
+});
+// The service's own fact, not one Offer's: which offer wins the buy box is
+// the outcome of comparing all of them, and a domain service raises no
+// aggregate's event (`raises-in-aggregate`, card 132).
+const buyBoxAwarded = buyBoxService.provides("BuyBoxAwarded", {
+	description: "The offer shown by default for a SKU changed",
+	type: "event",
+	pattern: "published-language",
+	schema: buyBoxAwardedSchema,
 });
 const awardBuyBox = buyBoxService
 	.provides("AwardBuyBox", {
@@ -1820,23 +1823,26 @@ sellerRiskSchema.addAttribute("score", {
 	valueobject: riskScoreVO,
 });
 
-const orderRiskFlagged = assessmentAgg.provides("OrderRiskFlagged", {
+const riskScorer = fraudBC.addService("RiskScorer", {
+	description:
+		"Runs the model over an order or seller and its history; a domain service because it reads across assessments",
+	type: "domain",
+});
+// The scorer's own facts, not the RiskAssessment's: the flag is the outcome of
+// running the model over a subject's whole history, and the assessment is the
+// explanation it keeps beside it. A domain service raises no aggregate's event
+// (`raises-in-aggregate`, card 132).
+const orderRiskFlagged = riskScorer.provides("OrderRiskFlagged", {
 	description: "An order scored above the threshold",
 	type: "event",
 	pattern: "published-language",
 	schema: orderRiskSchema,
 });
-const sellerRiskFlagged = assessmentAgg.provides("SellerRiskFlagged", {
+const sellerRiskFlagged = riskScorer.provides("SellerRiskFlagged", {
 	description: "A seller looks like a bad actor",
 	type: "event",
 	pattern: "published-language",
 	schema: sellerRiskSchema,
-});
-
-const riskScorer = fraudBC.addService("RiskScorer", {
-	description:
-		"Runs the model over an order or seller and its history; a domain service because it reads across assessments",
-	type: "domain",
 });
 const scoreOrder = riskScorer
 	.provides("ScoreOrder", {
@@ -2408,12 +2414,6 @@ const adClicked = campaignAgg.provides("AdClicked", {
 	pattern: "published-language",
 	schema: adClickedSchema,
 });
-const slotsAwarded = campaignAgg.provides("SlotsAwarded", {
-	description:
-		"An auction chose the winners for one results page; nothing is charged until a click",
-	type: "event",
-	internal: true,
-});
 const campaignLaunched = campaignAgg.provides("CampaignLaunched", {
 	description: "A campaign began spending",
 	type: "event",
@@ -2447,6 +2447,15 @@ const auction = adsBC.addService("AuctionService", {
 	description:
 		"Runs the second-price auction for the sponsored slots on a results page",
 	type: "domain",
+});
+// The auction's own fact, not one Campaign's: it is about a results page and
+// the winners on it, and a domain service raises no aggregate's event
+// (`raises-in-aggregate`, card 132).
+const slotsAwarded = auction.provides("SlotsAwarded", {
+	description:
+		"An auction chose the winners for one results page; nothing is charged until a click",
+	type: "event",
+	internal: true,
 });
 // Pay per click: the auction awards slots, and only a click, reported by the
 // results page, charges the second price.

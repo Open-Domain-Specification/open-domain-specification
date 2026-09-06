@@ -12,6 +12,13 @@ export const EXTERNAL = {
 	title:
 		"A system the enterprise does not own: only what it provides and consumes is modelled, never its insides.",
 };
+
+/** The one word the model says about a context of ours nobody has interviewed yet. */
+export const BOUNDARY_ONLY = {
+	label: "boundary only",
+	title:
+		"A context of ours modelled at its boundary only: what it offers and what it takes, and nothing behind that until somebody interviews it.",
+};
 </script>
 
 <script lang="ts">
@@ -22,7 +29,8 @@ import Lockup from "../atoms/Lockup.svelte";
 /**
  * A bounded context wherever it is named in a row: the class symbol in its
  * Outline colour, the name as a link, and — for a context the model calls a
- * big ball of mud, or a system nobody here owns — the one word after it. v1 drew a pill around the pair
+ * big ball of mud, a system nobody here owns, or one of ours nobody has
+ * interviewed yet — the one word after it. v1 drew a pill around the pair
  * and a second pill for the warning; here the lockup is the link and the
  * warning is the one word a reader has to see.
  */
@@ -41,7 +49,7 @@ const {
      decision (a narrow table lets its cells wrap between tokens, so the
      warning word drops under the name instead of holding the column open),
      never this component's. -->
-<span class="context" {title}><span class="name"><Lockup kind="boundedcontext" name={context.name} ref={context.ref} /></span>{#if context.bigBallOfMud}<Keyword text={MUD.label} tone="warn" title={MUD.title} />{/if}{#if context.external}<Keyword text={EXTERNAL.label} title={EXTERNAL.title} />{/if}</span>
+<span class="context" {title}><span class="name"><Lockup kind="boundedcontext" name={context.name} ref={context.ref} /></span>{#if context.bigBallOfMud}<Keyword text={MUD.label} tone="warn" title={MUD.title} />{/if}{#if context.external}<Keyword text={EXTERNAL.label} title={EXTERNAL.title} />{/if}{#if context.boundaryOnly}<Keyword text={BOUNDARY_ONLY.label} title={BOUNDARY_ONLY.title} />{/if}</span>
 
 <style>
 	/* The gap sits after the name, so a warning word that wraps under it

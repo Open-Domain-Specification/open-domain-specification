@@ -499,7 +499,7 @@
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/offers/aggregates/offer/provides/buy_box_awarded"
+                "$ref": "#/boundedcontexts/offers/services/buy_box_service/provides/buy_box_awarded"
               },
               "pattern": "conformist"
             },
@@ -562,7 +562,7 @@
           "description": "Results show the buy box price, so it must be refreshed",
           "on": [
             {
-              "$ref": "#/boundedcontexts/offers/aggregates/offer/provides/buy_box_awarded"
+              "$ref": "#/boundedcontexts/offers/services/buy_box_service/provides/buy_box_awarded"
             }
           ],
           "then": [
@@ -654,15 +654,6 @@
               "type": "event",
               "schema": {
                 "$ref": "#/boundedcontexts/offers/schemas/offer_ref"
-              }
-            },
-            "buy_box_awarded": {
-              "name": "BuyBoxAwarded",
-              "description": "The offer shown by default for a SKU changed",
-              "pattern": "published-language",
-              "type": "event",
-              "schema": {
-                "$ref": "#/boundedcontexts/offers/schemas/buy_box_awarded"
               }
             },
             "withdraw_seller_offers": {
@@ -788,6 +779,15 @@
           "description": "Compares all offers on a SKU by landed price, delivery speed and seller rating; a domain service because it reads across offers",
           "type": "domain",
           "provides": {
+            "buy_box_awarded": {
+              "name": "BuyBoxAwarded",
+              "description": "The offer shown by default for a SKU changed",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/offers/schemas/buy_box_awarded"
+              }
+            },
             "award_buy_box": {
               "name": "AwardBuyBox",
               "description": "Recompute the buy box for a SKU",
@@ -795,7 +795,7 @@
               "internal": true,
               "raises": [
                 {
-                  "$ref": "#/boundedcontexts/offers/aggregates/offer/provides/buy_box_awarded"
+                  "$ref": "#/boundedcontexts/offers/services/buy_box_service/provides/buy_box_awarded"
                 }
               ]
             }
@@ -1248,7 +1248,7 @@
           "consumes": [
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/provides/seller_risk_flagged"
+                "$ref": "#/boundedcontexts/fraud/services/risk_scorer/provides/seller_risk_flagged"
               },
               "pattern": "anti-corruption-layer"
             }
@@ -1275,7 +1275,7 @@
           "description": "Trust & Safety's verdict suspends the seller pending review",
           "on": [
             {
-              "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/provides/seller_risk_flagged"
+              "$ref": "#/boundedcontexts/fraud/services/risk_scorer/provides/seller_risk_flagged"
             }
           ],
           "then": [
@@ -2167,7 +2167,7 @@
           "consumes": [
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/provides/order_risk_flagged"
+                "$ref": "#/boundedcontexts/fraud/services/risk_scorer/provides/order_risk_flagged"
               },
               "pattern": "anti-corruption-layer"
             },
@@ -2215,7 +2215,7 @@
           "description": "A flagged order is cancelled before the warehouse picks it",
           "on": [
             {
-              "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/provides/order_risk_flagged"
+              "$ref": "#/boundedcontexts/fraud/services/risk_scorer/provides/order_risk_flagged"
             }
           ],
           "then": [
@@ -3056,26 +3056,7 @@
         "risk_assessment": {
           "name": "RiskAssessment",
           "description": "The score and signals for one order or seller, kept so decisions can be explained",
-          "provides": {
-            "order_risk_flagged": {
-              "name": "OrderRiskFlagged",
-              "description": "An order scored above the threshold",
-              "pattern": "published-language",
-              "type": "event",
-              "schema": {
-                "$ref": "#/boundedcontexts/fraud/schemas/order_risk_flagged"
-              }
-            },
-            "seller_risk_flagged": {
-              "name": "SellerRiskFlagged",
-              "description": "A seller looks like a bad actor",
-              "pattern": "published-language",
-              "type": "event",
-              "schema": {
-                "$ref": "#/boundedcontexts/fraud/schemas/seller_risk_flagged"
-              }
-            }
-          },
+          "provides": {},
           "consumes": [],
           "entities": {
             "risk_assessment": {
@@ -3174,6 +3155,24 @@
           "description": "Runs the model over an order or seller and its history; a domain service because it reads across assessments",
           "type": "domain",
           "provides": {
+            "order_risk_flagged": {
+              "name": "OrderRiskFlagged",
+              "description": "An order scored above the threshold",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/fraud/schemas/order_risk_flagged"
+              }
+            },
+            "seller_risk_flagged": {
+              "name": "SellerRiskFlagged",
+              "description": "A seller looks like a bad actor",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/fraud/schemas/seller_risk_flagged"
+              }
+            },
             "score_order": {
               "name": "ScoreOrder",
               "description": "Assess a newly placed order",
@@ -3181,7 +3180,7 @@
               "internal": true,
               "raises": [
                 {
-                  "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/provides/order_risk_flagged"
+                  "$ref": "#/boundedcontexts/fraud/services/risk_scorer/provides/order_risk_flagged"
                 }
               ]
             },
@@ -3192,7 +3191,7 @@
               "internal": true,
               "raises": [
                 {
-                  "$ref": "#/boundedcontexts/fraud/aggregates/risk_assessment/provides/seller_risk_flagged"
+                  "$ref": "#/boundedcontexts/fraud/services/risk_scorer/provides/seller_risk_flagged"
                 }
               ]
             }
@@ -4245,12 +4244,6 @@
                 "$ref": "#/boundedcontexts/advertising/schemas/ad_clicked"
               }
             },
-            "slots_awarded": {
-              "name": "SlotsAwarded",
-              "description": "An auction chose the winners for one results page; nothing is charged until a click",
-              "type": "event",
-              "internal": true
-            },
             "campaign_launched": {
               "name": "CampaignLaunched",
               "description": "A campaign began spending",
@@ -4384,6 +4377,12 @@
           "description": "Runs the second-price auction for the sponsored slots on a results page",
           "type": "domain",
           "provides": {
+            "slots_awarded": {
+              "name": "SlotsAwarded",
+              "description": "An auction chose the winners for one results page; nothing is charged until a click",
+              "type": "event",
+              "internal": true
+            },
             "run_auction": {
               "name": "RunAuction",
               "description": "Pick winners for a query's sponsored slots",
@@ -4394,7 +4393,7 @@
               },
               "raises": [
                 {
-                  "$ref": "#/boundedcontexts/advertising/aggregates/campaign/provides/slots_awarded"
+                  "$ref": "#/boundedcontexts/advertising/services/auction_service/provides/slots_awarded"
                 }
               ]
             }

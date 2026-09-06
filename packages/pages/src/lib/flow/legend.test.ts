@@ -186,6 +186,30 @@ describe("legendEntries for the context map", () => {
 		expect(entries[0].name).toBe("External system");
 	});
 
+	// The third context flag gets its own row for the same reason: it says
+	// something different about what is behind the boundary (card 132).
+	it("gives a context nobody has interviewed a row of its own", () => {
+		const entries = legendEntries(
+			{
+				nodes: [
+					{
+						id: "#/a",
+						type: "context",
+						label: "A",
+						icon: "x",
+						bigBallOfMud: false,
+						external: false,
+						boundaryOnly: true,
+					},
+				] as ContextNodeData[],
+				edges: [],
+			},
+			"context",
+		);
+		expect(marks(entries)).toEqual(["\u00abboundary only\u00bb"]);
+		expect(entries[0].name).toBe("Boundary only");
+	});
+
 	it("names an identity dependency in its own row, apart from a consumption's", () => {
 		const graph = {
 			nodes: [

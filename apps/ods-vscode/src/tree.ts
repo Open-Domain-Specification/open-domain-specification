@@ -319,6 +319,7 @@ export class ModelTree
 					bc.id,
 					bc.bigBallOfMud ? "big ball of mud" : undefined,
 					bc.external ? "external system" : undefined,
+					bc.boundaryOnly ? "boundary only" : undefined,
 				]
 					.filter(Boolean)
 					.join(" · "),

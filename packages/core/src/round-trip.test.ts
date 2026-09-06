@@ -577,3 +577,38 @@ describe("a bad ref survives a round trip", () => {
 		});
 	}
 });
+
+/**
+ * The third context flag, through JSON and back (decision 28, sixth
+ * amendment; card 132).
+ */
+describe("a context modelled at its boundary only", () => {
+	it("keeps the flag and the identity into it across the round trip", () => {
+		const ws = new Workspace("Round Trip", { description: "", version: "0" });
+		const crm = ws.addBoundedContext("CRM", {
+			description: "",
+			boundaryOnly: true,
+		});
+		const customer = crm.addSchema("Customer");
+		const payment = ws
+			.addBoundedContext("Payments", { description: "" })
+			.addAggregate("Payment", { description: "" })
+			.addRootEntity("Payment", { description: "" });
+		payment.addAttribute("id", { type: "string", identity: true });
+		payment.addAttribute("Customer Id", {
+			type: "string",
+			identifies: customer,
+		});
+		const schema = ws.toSchema();
+		expect(schema.boundedcontexts.crm.boundaryOnly).toBe(true);
+		expect(schema.boundedcontexts.payments.boundaryOnly).toBeUndefined();
+
+		const rebuilt = Workspace.fromSchema(JSON.parse(JSON.stringify(schema)));
+		expect(
+			rebuilt.getBoundedContextByRefOrThrow("#/boundedcontexts/crm")
+				.boundaryOnly,
+		).toBe(true);
+		expect(rebuilt.toSchema()).toEqual(schema);
+		expect(rebuilt.unresolved).toEqual([]);
+	});
+});

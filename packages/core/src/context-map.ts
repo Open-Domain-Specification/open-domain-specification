@@ -24,6 +24,7 @@ function contextNode(bc: BoundedContext): ODSContextMapNode {
 		namespace: boundedContextNamespace(bc),
 		bigBallOfMud: bc.bigBallOfMud,
 		external: bc.external,
+		boundaryOnly: bc.boundaryOnly,
 		team: bc.team && { id: bc.team.ref, name: bc.team.name },
 	};
 }
@@ -225,6 +226,11 @@ export type ODSContextMapNode = {
 	bigBallOfMud?: boolean;
 	/** A system the enterprise does not own, drawn as somebody else's. */
 	external?: boolean;
+	/**
+	 * A context of ours nobody has interviewed yet, drawn as a boundary with
+	 * nothing behind it (decision 28, sixth amendment).
+	 */
+	boundaryOnly?: boolean;
 	team?: { id: string; name: string };
 };
 

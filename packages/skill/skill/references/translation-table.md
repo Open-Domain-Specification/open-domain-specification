@@ -15,6 +15,7 @@ element lives in a workspace file; `DSL` is the core call that creates it.
 | "in billing a customer means ..., in support it means ..." | two Bounded Contexts | `boundedcontexts.<id>` twice | `subdomain.addBoundedcontext(name, {...})` twice |
 | "that part covers both Y and Z" | context serving two subdomains | `subdomains: [{$ref Y}, {$ref Z}]` | `ws.addBoundedContext(name, {subdomains: [y, z]})` or `bc.serves(z)` |
 | "the old system", "legacy", "nobody understands its schema" | big ball of mud | `"bigBallOfMud": true` | `bigBallOfMud: true` |
+| "nobody wants to touch it", "it works, we just haven't looked", "we're only modelling Payments this quarter" | modelled at its boundary only | `"boundaryOnly": true` | `boundaryOnly: true` |
 | "the card scheme", "our payment provider", "the licensor", "their API" | external system (a context of its own) | `"external": true` | `ws.addBoundedContext(name, {external: true})` |
 | "A depends on B", "A calls B", "A reads B's data" | upstream-downstream (B upstream) | `relationships[]` `type: "upstream-downstream"` | `a.downstreamOf(b, {...})` |
 | "they ask us before changing", "we're their customer" | customer-supplier | `type: "customer-supplier"` | `a.downstreamOf(b, {type: "customer-supplier", ...})` |

@@ -1,7 +1,7 @@
 import { ODSContextMap, Workspace } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { contextMapToDigraph } from "./context-map";
-import { EXTERNAL_STEREOTYPE } from "./role-labels";
+import { BOUNDARY_ONLY_STEREOTYPE, EXTERNAL_STEREOTYPE } from "./role-labels";
 
 describe("contextMapToDigraph edge cases", () => {
 	it("should handle empty context map", async () => {
@@ -175,5 +175,27 @@ describe("contextMapToDigraph edge cases", () => {
 		expect(dot).toContain(`${EXTERNAL_STEREOTYPE}\\nCard Scheme`);
 		expect(dot).not.toContain(`${EXTERNAL_STEREOTYPE}\\nPayments`);
 		expect(await digraph.toSVG()).toContain("external system");
+	});
+
+	// The third context flag: ours and coherent, and nobody has interviewed it
+	// yet, so the box says there is a boundary here and nothing behind it
+	// (decision 28, sixth amendment; card 132).
+	it("draws a context nobody has interviewed under the boundary-only stereotype", async () => {
+		const workspace = new Workspace("Adopting", {
+			description: "One interviewed and one not",
+			version: "0.1.0",
+		});
+		workspace.addBoundedContext("Payments", { description: "Interviewed" });
+		workspace.addBoundedContext("CRM", {
+			description: "Ours, at its boundary only",
+			boundaryOnly: true,
+		});
+
+		const digraph = contextMapToDigraph(ODSContextMap.fromWorkspace(workspace));
+		const dot = digraph.toDot();
+		expect(dot).toContain(`${BOUNDARY_ONLY_STEREOTYPE}\\nCRM`);
+		expect(dot).not.toContain(`${BOUNDARY_ONLY_STEREOTYPE}\\nPayments`);
+		expect(dot).not.toContain(`${EXTERNAL_STEREOTYPE}\\nCRM`);
+		expect(await digraph.toSVG()).toContain("boundary only");
 	});
 });

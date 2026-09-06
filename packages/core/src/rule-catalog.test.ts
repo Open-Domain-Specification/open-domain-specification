@@ -390,8 +390,15 @@ function everythingWrong(): Workspace {
 		fPost,
 		{ pattern: "conformist" },
 	);
-	// context-serves-subdomain: A, B, C, D, F and G serve nothing; Scheme is
-	// external and serves none by design
+	// boundary-only-is-boundary: a context of ours nobody has interviewed yet,
+	// with an aggregate stated behind the boundary anyway
+	const unread = ws.addBoundedContext("CRM", {
+		description: "",
+		boundaryOnly: true,
+	});
+	unread.addAggregate("Customer", { description: "" });
+	// context-serves-subdomain: A, B, C, D, F, G and CRM serve nothing; Scheme
+	// is external and serves none by design
 	return ws;
 }
 
