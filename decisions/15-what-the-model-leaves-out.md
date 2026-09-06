@@ -34,6 +34,10 @@ A command to an aggregate and an operation on an application service turned out 
 
 A schema or a consumable has no version field. A changed contract that old consumers still need is a second consumable or schema with a name that says so, `OrderPlacedV2`, consumed by whoever moved, with a comment on the old one saying why it stays; the consumable map then shows who is on which. A version number on one element would either mean nothing (nobody consumes a number) or need a compatibility model the validator cannot check. Reopened if a reference model has to carry more than two versions of one thing at once.
 
+### Time inside an attribute is the author's text
+
+Valid-from and valid-to, effective dates, and bi-temporal rules ("the rate that was known on the day the claim was made") are not fields: a temporal attribute is typed in the author's words (`DateRange`, `EffectivePeriod`), often as a value object with its own invariant, and a bi-temporal rule is an invariant in prose on the aggregate that keeps it. A first-class validity dimension would put a calendar into every attribute and a temporal algebra into the validator, which verifies nothing the code's own tests do not. Reopened if a reference model needs the validator to reason about two time axes at once.
+
 ### Read models are query services
 
 A projection is a service that provides a query operation; with decision 13 that operation says what it returns. No `ReadModel` construct is added. Petstore's inventory projection is a bounded context of its own because it serves two subdomains, not because the model forced it.
