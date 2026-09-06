@@ -50,3 +50,7 @@ The first amendment said a context invariant is checked before acting and can ra
 ## Amendment (2026-09-09, third)
 
 The second amendment refused `precondition` and `postcondition` on a context invariant to stop one claiming to hold at rest, and in doing so left a context with no aggregate, a quotation service that stores nothing, without a home for the contract of its own operation. A context invariant is a check, and a check happens before or after the operation it names: both flags are allowed, the page says "checked before" or "checked after", and what stays refused is a context invariant that names no guard at all (card 103).
+
+## Note (2026-09-10)
+
+Card 103 merged `context-invariant-guarded` into `context-invariant-is-checked`: one rule says a context invariant without a flag must name its guard, and the flagged ones are checked by the two names-operation rules. Where this record names `context-invariant-guarded`, read the surviving id.
