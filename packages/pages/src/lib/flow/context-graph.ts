@@ -67,10 +67,15 @@ function contextNode(n: ODSContextMapNode): ContextNodeData {
 
 /**
  * The declared relationship an edge stands for, matched on its unordered pair
- * of contexts. A core map edge is a drawing instruction and carries no
- * evidence of its own, so the intent behind it is found by looking the pair up
- * in the workspace; an implied edge, which no relationship declares, finds
- * nothing and stays unmarked.
+ * of contexts and on the name the agreement carries. A core map edge is a
+ * drawing instruction and carries no evidence of its own, so the intent behind
+ * it is found by looking the pair up in the workspace; an implied edge, which
+ * no relationship declares, finds nothing and stays unmarked.
+ *
+ * The name is part of the match because one pair may hold two agreements in
+ * one direction, each with its own comments and disposition, and matching on
+ * the pair alone would badge both lines with whichever was declared first
+ * (decision 15, card 103).
  */
 const intentOf = (
 	e: ODSContextMapEdge,
@@ -80,8 +85,9 @@ const intentOf = (
 		? undefined
 		: relationships.find(
 				(r) =>
-					(r.source.ref === e.source.id && r.target.ref === e.target.id) ||
-					(r.source.ref === e.target.id && r.target.ref === e.source.id),
+					r.name === e.name &&
+					((r.source.ref === e.source.id && r.target.ref === e.target.id) ||
+						(r.source.ref === e.target.id && r.target.ref === e.source.id)),
 			);
 
 /**
@@ -110,6 +116,9 @@ export function contextGraph(
 			source: e.source.id,
 			target: e.target.id,
 			label: byIdentity ? IDENTITY_EDGE_LABEL : RELATIONSHIP_LABELS[e.type],
+			// A pair with two agreements in one direction draws two lines, and
+			// the name is what tells a reader which is which (card 103).
+			name: e.name,
 			dashed: e.implied !== false,
 			impliedBy: e.implied || undefined,
 			directed,

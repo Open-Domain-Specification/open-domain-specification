@@ -61,7 +61,10 @@ export class ODSContextMap {
 	}
 
 	addEdge(edge: ODSContextMapEdge) {
-		const id = `${edge.source.id}|${edge.target.id}|${edge.type}`;
+		// The name is part of the id because one pair may hold two agreements
+		// in one direction — a negotiated API and a tolerated feed — and the
+		// map draws one line for each (decision 15, card 103).
+		const id = `${edge.source.id}|${edge.target.id}|${edge.type}|${edge.name ?? ""}`;
 		const existingEdge = this.edges.get(id);
 		if (existingEdge) {
 			return existingEdge;
@@ -84,6 +87,7 @@ export class ODSContextMap {
 				source: this.addNode(contextNode(relationship.source)),
 				target: this.addNode(contextNode(relationship.target)),
 				type: relationship.type,
+				name: relationship.name,
 				upstreamRoles: relationship.upstreamRoles,
 				downstreamRoles: relationship.downstreamRoles,
 				description: relationship.description,
@@ -232,6 +236,12 @@ export type ODSContextMapEdge = {
 	source: ODSContextMapNode;
 	target: ODSContextMapNode;
 	type: ContextRelationshipType;
+	/**
+	 * What the declared agreement this edge draws is called, where the pair
+	 * holds more than one. Absent on an implied edge, which no relationship
+	 * declares, and on the single agreement that needs no name.
+	 */
+	name?: string;
 	upstreamRoles: UpstreamRole[];
 	downstreamRoles: DownstreamRole[];
 	description?: string;

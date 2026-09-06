@@ -88,8 +88,10 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   checksum, a Money's single currency — and then it constrains that value's own attributes and
   nothing else, and needs no guard. It belongs to an aggregate when it holds inside that
   boundary on every save, and to the context when it holds across instances or aggregates —
-  uniqueness, a quota, a limit. A context's invariant names at least one operation of the
-  context that checks it before acting, and reaches no further than that context.
+  uniqueness, a quota, a limit — or where the context has no aggregate at all and the rule is
+  the contract of its operation. A context's invariant names at least one operation of the
+  context that checks it, says with `precondition` or `postcondition` which side of that call
+  the check is made on, and reaches no further than that context.
 - A payload schema belongs to the context that publishes the consumable. A value object or a
   schema may be named across a boundary only where the two contexts declare a `shared-kernel`
   relationship.

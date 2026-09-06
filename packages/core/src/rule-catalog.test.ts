@@ -173,10 +173,12 @@ function everythingWrong(): Workspace {
 	// value cannot see
 	vo.addInvariant("Reaches Out", { description: "" }).constrains(r1);
 	// invariant-in-context: a context's rule counting another context's entity,
-	// and context-invariant-guarded: no operation of A checks either of them
+	// and context-invariant-is-checked: no operation of A checks it and it sets
+	// no flag to say which side of a call the check falls on
 	a.addInvariant("Counts Elsewhere", { description: "" }).constrains(otherRoot);
-	// context-invariant-is-checked: a rule across instances claiming to be a
-	// check it already is, and another claiming to hold after the call
+	// A context's rule may be a check before the call or of what comes back;
+	// these two set the flag and name no operation, which the two
+	// names-operation rules below report.
 	a.addInvariant("Says It Checks", { description: "", precondition: true });
 	a.addInvariant("Promises Afterwards", {
 		description: "",

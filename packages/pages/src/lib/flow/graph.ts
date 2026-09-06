@@ -31,6 +31,12 @@ export type GraphEdge = {
 	source: string;
 	target: string;
 	label?: string;
+	/**
+	 * What a declared agreement is called, where one pair holds more than one
+	 * in the same direction: the stereotype badge carries it so the two lines
+	 * can be told apart (decision 15).
+	 */
+	name?: string;
 	dashed?: boolean;
 	/** Arrow head at the target; symmetric relationships have none. */
 	directed?: boolean;

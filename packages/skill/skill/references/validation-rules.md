@@ -164,21 +164,13 @@
 
 **Usual fix:** Point the invariant at this context's own model, or at a value object its aggregates hold — give an entity or a value here an attribute typed by it, which is what says the context holds one — or move the rule to the context that owns what it counts. Where the two contexts really must agree, model the reaction: the other context raises an event and a policy here issues the operation that responds. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them; if it is a guarantee about what that call answers with, mark it a postcondition instead.
 
-## `context-invariant-guarded` (error)
-
-**Requires:** A context's invariant names at least one operation of that context as the operation that checks it.
-
-**Why it matters:** No instance can see its siblings, so nothing enforces a cross-instance rule as a side effect of being saved. It holds only because something checks it before acting: the operation that refuses the second open application, the one that counts the household's open sessions before starting another. Naming that operation is the difference between a rule the model can be read for and a sentence with nowhere to look. It is always a check and never a guarantee about afterwards, which is what context-invariant-is-checked holds it to.
-
-**Usual fix:** Name the operation that does the checking in constrains, alongside what the rule is about. If no operation checks it, the rule is not being kept: either the check belongs somewhere and has not been modelled, or the rule holds inside one aggregate and belongs there instead.
-
 ## `context-invariant-is-checked` (error)
 
-**Requires:** A context's invariant is neither a precondition nor a postcondition: it is always a check made before acting.
+**Requires:** A context's invariant is a check, so it names at least one operation of that context that makes it — before that operation acts, or of what it answers with.
 
-**Why it matters:** A rule across the instances of a context — one open application per customer, a daily limit, one active offer per seller — is kept true only by whoever counts before acting, and a count can race: two payments in the same second both pass and the day's total is over. Marking it a precondition says again what it already is. Marking it a postcondition says something the boundary cannot deliver, a guarantee that holds after every change, and the page then reads that promise back to the next architect. A rule that really must hold afterwards belongs to the aggregate that can hold it in one transaction.
+**Why it matters:** No instance can see its siblings, so nothing enforces a cross-instance rule as a side effect of being saved. It holds only because something checks it: the operation that refuses the second open application, the one that counts the household's open sessions before starting another. Naming that operation is the difference between a rule the model can be read for and a sentence with nowhere to look. Which side of the call the check falls on is the invariant's own to state, with precondition or postcondition, and neither of those claims the rule holds at rest — a context with no aggregate at all, a quotation service that stores nothing, states the contract of its own operation exactly that way. A flagged invariant is asked for its guard by precondition-names-operation and postcondition-names-operation, so this rule asks the unflagged one and the model is told once rather than twice.
 
-**Usual fix:** Drop the flag. The invariant's page already says a context's rule is checked by the operations it names. If the rule genuinely has to be true after every change, move it to the aggregate whose save can keep it, or model the thing being counted as an aggregate of its own.
+**Usual fix:** Name the operation that does the checking in constrains, alongside what the rule is about. If the check is made on the way in, mark the rule a precondition; if what is checked is the answer, mark it a postcondition. If no operation checks it, the rule is not being kept: either the check belongs somewhere and has not been modelled, or the rule holds inside one aggregate and belongs there instead.
 
 ## `precondition-names-operation` (error)
 
@@ -214,11 +206,11 @@
 
 ## `relationship-duplicate` (error)
 
-**Requires:** A pair of contexts declares at most one directed relationship per direction and at most one of each symmetric type; a symmetric type has no direction, so either order counts as the same one.
+**Requires:** A pair of contexts declares at most one unnamed directed relationship per direction and at most one unnamed relationship of each symmetric type; two agreements in one direction each carry a name of their own, and a symmetric type has no direction, so either order counts as the same one.
 
-**Why it matters:** A relationship is the one model element with no id of its own — its ref is the two contexts and the type. Declare the same one twice and both carry the same ref, so only the first can ever be reached: the second's description, comments and disposition are written somewhere no reader, link or tool will land, and the model has quietly lost them. Declare an upstream-downstream and a customer-supplier the same way round and the two are both reachable and both drawn, contradicting each other on the one thing the type says — whether the downstream has a say in the upstream's planning — and splitting the roles across two rows that no rule reads together.
+**Why it matters:** A relationship is the one model element with no id of its own — its ref is the two contexts, the type, and the name where it has one. Declare the same one twice and both carry the same ref, so only the first can ever be reached: the second's description, comments and disposition are written somewhere no reader, link or tool will land, and the model has quietly lost them. Declare an upstream-downstream and a customer-supplier the same way round, both unnamed, and the two are both reachable and both drawn, contradicting each other on the one thing the type says — whether the downstream has a say in the upstream's planning — and splitting the roles across two rows that no rule reads together. A name is what turns the second row into a second agreement: a negotiated fulfilment API and a tolerated legacy feed from the same warehouse are two things the pair has agreed, each with its own roles, comments and disposition, each at its own ref, and the map draws them as two lines with their names on.
 
-**Usual fix:** Roles go on one relationship: keep a single declaration between the pair and give it every upstream and downstream role the crossings carry, then delete the other. Between one pair in one direction, choose customer-supplier when the downstream has a say in the upstream's planning and upstream-downstream when it does not. Two contexts that each depend on the other are a different case: that is one directed relationship each way, and both are kept.
+**Usual fix:** If the two rows are one agreement said twice, keep a single declaration between the pair and give it every upstream and downstream role the crossings carry, then delete the other; between one pair in one direction, choose customer-supplier when the downstream has a say in the upstream's planning and upstream-downstream when it does not. If they really are two agreements, give each a name that says which is which. Two contexts that each depend on the other are a different case again: that is one directed relationship each way, and both are kept.
 
 ## `relationship-cycle` (warning)
 

@@ -28,7 +28,8 @@ Never repeat an explanation, and never explain a term the user already used corr
   value that breaks it is never made, so nothing guards it. An aggregate's invariant holds
   inside that one cluster every time it is saved, such as "quantity is never zero". A context's
   invariant holds across all of them at once — "one open application per customer" — and names
-  the operation that checks it before acting, because no one instance can see the others.
+  the operation that checks it, before that operation acts or of what it answers with, because
+  no one instance can see the others.
 - **Relation** — how one thing points at another: *includes* for parts that cannot exist alone,
   *uses* for values it carries, *references* for another aggregate's root by identity.
 - **Cardinality** — how many of the other thing: exactly one, at most one, any number, at least

@@ -418,6 +418,21 @@ export type ContextRelationshipType =
  */
 export interface DirectedContextRelationshipSchema {
 	type: DirectedRelationshipType;
+	/**
+	 * What this agreement is called, where one pair holds more than one in the
+	 * same direction: a negotiated fulfilment API beside a tolerated legacy
+	 * feed from the same warehouse, each with its own roles, comments and
+	 * disposition.
+	 *
+	 * Absent is the common case, one agreement between the pair, and the ref
+	 * stays what it always was. Where it is present the name is appended to the
+	 * ref, so the two are separately reachable and a diagnostic about one is
+	 * not read as a diagnostic about the other; the map draws two lines and
+	 * labels each with its name. Two agreements between one pair in one
+	 * direction that are both unnamed, or share a name, are one declaration
+	 * made twice and `relationship-duplicate` refuses them (decision 15).
+	 */
+	name?: string;
 	upstream: { $ref: string };
 	downstream: { $ref: string };
 	upstreamRoles: UpstreamRole[];
@@ -435,6 +450,21 @@ export interface DirectedContextRelationshipSchema {
  */
 export interface SymmetricContextRelationshipSchema {
 	type: SymmetricRelationshipType;
+	/**
+	 * What this agreement is called, where one pair holds more than one in the
+	 * same direction: a negotiated fulfilment API beside a tolerated legacy
+	 * feed from the same warehouse, each with its own roles, comments and
+	 * disposition.
+	 *
+	 * Absent is the common case, one agreement between the pair, and the ref
+	 * stays what it always was. Where it is present the name is appended to the
+	 * ref, so the two are separately reachable and a diagnostic about one is
+	 * not read as a diagnostic about the other; the map draws two lines and
+	 * labels each with its name. Two agreements between one pair in one
+	 * direction that are both unnamed, or share a name, are one declaration
+	 * made twice and `relationship-duplicate` refuses them (decision 15).
+	 */
+	name?: string;
 	participants: [{ $ref: string }, { $ref: string }];
 	description?: string;
 	/** Grounded statements about the real system behind this relationship. */

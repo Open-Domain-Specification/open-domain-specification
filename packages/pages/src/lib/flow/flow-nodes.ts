@@ -16,6 +16,8 @@ import type { Positioned } from "./layout";
 export type ContextEdgeData = {
 	sourceLabel?: string;
 	targetLabel?: string;
+	/** What the agreement is called, where the pair holds more than one. */
+	name?: string;
 	/** Absent, or `by-design`, leaves every badge exactly as it was. */
 	disposition?: Disposition;
 	/** One-line hover text, appended to the role names on the end badges. */
@@ -136,6 +138,7 @@ export function flowEdges(positioned: Positioned): Edge[] {
 		data: {
 			sourceLabel: e.sourceLabel,
 			targetLabel: e.targetLabel,
+			name: e.name,
 			by: e.by,
 			...(e.intent && {
 				disposition: dispositionOf(e.intent),

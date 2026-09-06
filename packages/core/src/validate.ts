@@ -1014,7 +1014,7 @@ const attributeOneShape: Rule = (workspace) => {
  * Where an invariant may reach: the aggregate an element sits in, or the
  * context, for a value object the whole context shares. A schema's attribute
  * sits in neither, so it is out of reach here and asked about separately (see
- * {@link inGuardedRequest}); so is a service's operation, since a service is
+ * {@link inGuardedShapes}); so is a service's operation, since a service is
  * not a boundary anything is saved inside.
  */
 function scopeOf(
@@ -1086,16 +1086,18 @@ function composedSchemas(roots: Iterable<DataSchema>): Set<DataSchema> {
  *
  * A precondition reads the call, so everything the call carries is its: the
  * request it is checked against, and — since decision 19's first 2026-09-09
- * amendment — the answer and the refusals too. A postcondition is a guarantee
- * about what came back, so it reaches the answer and the refusals and not the
- * request: what the caller sent is not what the operation promises.
+ * amendment — the answer and the refusals too. A postcondition reaches the
+ * same three, because what it guarantees is a relation between the answer and
+ * the request that produced it: every returned itinerary arrives by the
+ * requested time names one attribute of each, and reading the answer alone
+ * refused the very example the flag was introduced for (decision 19, third
+ * amendment).
  */
 function guardedSchemas(invariant: Invariant): Set<DataSchema> {
 	const roots: DataSchema[] = [];
 	for (const operation of invariant.guarded) {
 		if (operation.type !== "operation") continue;
-		if (invariant.precondition && operation.schema)
-			roots.push(operation.schema);
+		if (operation.schema) roots.push(operation.schema);
 		if (operation.returns) roots.push(operation.returns);
 		roots.push(...operation.rejects);
 	}
@@ -1110,16 +1112,15 @@ function guardedSchemas(invariant: Invariant): Set<DataSchema> {
  * in the call: pickup before delivery, a positive weight, on a quotation no
  * aggregate holds yet. The rule is about the request, so the request is what
  * it names, and refusing it sent those rules back to prose (decision 19,
- * amended). A postcondition is the mirror: a guarantee about the answer, which
- * does not exist until the call returns, so what it names is what the
- * operation answers or refuses with (decision 19, third amendment). Nothing
- * else may name a schema's attribute at all: an invariant kept true on every
- * save is a rule about the model, and a transport shape is not the model.
+ * amended). A postcondition is a guarantee about the answer, which does not
+ * exist until the call returns — and a guarantee that relates the answer to
+ * what was asked for, so it names the request as well: every returned
+ * itinerary arrives by the requested time (decision 19, third amendment).
+ * Nothing else may name a schema's attribute at all: an invariant kept true on
+ * every save is a rule about the model, and a transport shape is not the
+ * model.
  */
-function inGuardedRequest(
-	target: Constrainable,
-	invariant: Invariant,
-): boolean {
+function inGuardedShapes(target: Constrainable, invariant: Invariant): boolean {
 	if (!invariant.precondition && !invariant.postcondition) return false;
 	const schema = schemaOf(target);
 	if (!schema) return false;
@@ -1134,10 +1135,10 @@ function schemaOf(target: Constrainable): DataSchema | undefined {
 }
 
 /**
- * Why a schema's attribute is out of reach, which is not one sentence three
- * times: a rule that is neither a precondition nor a postcondition may not
- * name a transport shape at all, a precondition may name the call its own
- * guard handles, and a postcondition only what that guard answers with.
+ * Why a schema's attribute is out of reach, which is not one sentence twice: a
+ * rule that is neither a precondition nor a postcondition may not name a
+ * transport shape at all, and either of those two may name only the shapes its
+ * own guard carries.
  */
 function schemaAttributeRefusal(
 	schema: DataSchema,
@@ -1147,7 +1148,7 @@ function schemaAttributeRefusal(
 	if (invariant.precondition)
 		return `${where}, which no operation this precondition guards takes, returns or rejects with, directly or through a shape one of those composes`;
 	if (invariant.postcondition)
-		return `${where}, which no operation this postcondition guards returns or rejects with, directly or through a shape one of those composes`;
+		return `${where}, which no operation this postcondition guards takes, returns or rejects with, directly or through a shape one of those composes`;
 	return `${where}, and only a precondition or a postcondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape`;
 }
 
@@ -1294,10 +1295,12 @@ function outsideAggregate(
  * acting lives in a domain service, so the model has to be able to name either
  * (see {@link guardedByService}).
  *
- * A precondition reaches one place further, into the request: what it checks
- * before the call runs is often carried by the call, so it may constrain
+ * A precondition and a postcondition reach one place further, into the shapes
+ * the call carries: what a precondition checks before the call runs is often
+ * in the request, and what a postcondition guarantees of the answer is often
+ * stated against the request that asked for it, so either may constrain
  * attributes of a schema its guarded operation takes, returns or rejects with
- * (see {@link inGuardedRequest}). Any other invariant naming a schema's
+ * (see {@link inGuardedShapes}). Any other invariant naming a schema's
  * attribute is refused, and told which of the two reasons it is.
  */
 const invariantInAggregate: Rule = (workspace) => {
@@ -1320,7 +1323,7 @@ const invariantInAggregate: Rule = (workspace) => {
 					if (scope === aggregate || scope === aggregate.boundedcontext)
 						continue;
 					if (guardedByService(target, aggregate.boundedcontext)) continue;
-					if (inGuardedRequest(target, invariant)) continue;
+					if (inGuardedShapes(target, invariant)) continue;
 				}
 				diagnostics.push({
 					severity: "error",
@@ -1345,8 +1348,8 @@ function* contextInvariantsOf(
 /**
  * The context an element belongs to, for a rule the context keeps rather than
  * one aggregate (decision 27). A schema's attribute belongs to no context here
- * — the rules ask {@link inGuardedRequest} about it instead, since only a
- * precondition may reach one.
+ * — the rules ask {@link inGuardedShapes} about it instead, since only a
+ * precondition or a postcondition may reach one.
  */
 function contextOf(target: Constrainable): BoundedContext | undefined {
 	if (target instanceof Consumable) return target.boundedcontext;
@@ -1372,8 +1375,11 @@ function contextOf(target: Constrainable): BoundedContext | undefined {
  * so the rule refused a borrowed `Money` nothing held and accepted a local
  * one, having said in this comment that it refused both (card 89, card 95).
  *
- * A precondition of the context may constrain the request its guard receives,
- * on the same terms an aggregate's may (see {@link inGuardedRequest}).
+ * A precondition or a postcondition of the context may constrain the shapes
+ * its guard carries, on the same terms an aggregate's may (see
+ * {@link inGuardedShapes}). A context with no aggregate at all — a quotation
+ * service that stores nothing — states the contract of its own operation that
+ * way, which is the only home it has for one (decision 27, third amendment).
  */
 const invariantInContext: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -1393,8 +1399,7 @@ const invariantInContext: Rule = (workspace) => {
 			// boundary" for every value this context owns, held or not.
 			if (vo) {
 				if (held.has(vo)) continue;
-			} else if (context === bc || inGuardedRequest(target, invariant))
-				continue;
+			} else if (context === bc || inGuardedShapes(target, invariant)) continue;
 			const schema = schemaOf(target);
 			const where = vo
 				? `a value object of bounded context "${vo.boundedcontext.name}" that nothing in "${bc.name}" holds`
@@ -1413,62 +1418,48 @@ const invariantInContext: Rule = (workspace) => {
 };
 
 /**
- * A rule no single instance can see is kept true only by whoever checks it
- * before acting, so a context's invariant names the operation that does the
- * checking. Without one the model states a rule and says nothing about where
- * it is upheld (decision 27).
+ * A context's invariant is a check, and a check happens at a moment: it names
+ * the operation that makes it.
+ *
+ * One open application per customer, a daily transfer limit, one active offer
+ * per seller and SKU: no instance can see its siblings, so nothing enforces
+ * such a rule as a side effect of being saved, and a count can race. It holds
+ * only because something checks it — the operation that refuses the second
+ * open application, the one that counts the household's open sessions before
+ * starting another. Naming that operation is the difference between a rule the
+ * model can be read for and a sentence with nowhere to look.
+ *
+ * Which side of the operation the check falls on is the invariant's to say.
+ * `precondition` says it is made on the way in — enough funds at initiation, a
+ * positive weight on a quotation no aggregate holds yet. `postcondition` says
+ * it is made of what comes back — every quoted premium inside the band the
+ * schedule allows. Both were refused here until card 103, on the reasoning
+ * that a context's rule is always a check and therefore needs no flag; that
+ * left a context with no aggregate, a quotation service that stores nothing,
+ * with no way to state the contract of its own operation. Neither flag claims
+ * the rule holds at rest, so neither is refused (decision 27, third
+ * amendment).
+ *
+ * What stays refused is a context invariant that names no guard at all, and
+ * this rule reports it for the invariant that sets no flag. A flagged one is
+ * held to the same thing by `precondition-names-operation` and
+ * `postcondition-names-operation`, so reporting it here as well would say one
+ * fact twice.
+ *
+ * An error, because the model states a rule nothing keeps.
  */
-const contextInvariantGuarded: Rule = (workspace) => {
+const contextInvariantIsChecked: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const [bc, invariant] of contextInvariantsOf(workspace)) {
+		if (invariant.precondition || invariant.postcondition) continue;
 		const guards = invariant.guarded.filter(
 			(it) => it.type === "operation" && it.boundedcontext === bc,
 		);
 		if (guards.length > 0) continue;
 		diagnostics.push({
 			severity: "error",
-			rule: "context-invariant-guarded",
-			message: `Invariant "${invariant.name}" of bounded context "${bc.name}" names no operation that checks it; a rule across instances is kept true only by whoever checks it before acting`,
-			ref: invariant.ref,
-		});
-	}
-	return diagnostics;
-};
-
-/**
- * A context's invariant is a check, and says so by not claiming to be
- * anything else.
- *
- * One open application per customer, a daily transfer limit, one active offer
- * per seller and SKU: no instance can see its siblings, so the rule is kept
- * only by whoever counts before acting, and a count can race. That is the one
- * thing a context invariant is, which is why `precondition` and
- * `postcondition` are both refused on one. The flags exist to say which of
- * three things an aggregate's rule is; on a context's rule `precondition` is a
- * second name for what it already is, and `postcondition` is a promise the
- * boundary cannot keep — a guarantee that holds after every change is an
- * aggregate's rule or nobody's (decision 27, second amendment of 2026-09-09).
- *
- * NorthBank's daily limit was written the other way and read "still true after
- * InitiatePayment", which is exactly what a check cannot promise: two payments
- * in the same second both pass the check and the day's total is over.
- *
- * An error, because the model states a guarantee it has no mechanism for, and
- * the page reads it back to the next architect as one.
- */
-const contextInvariantIsChecked: Rule = (workspace) => {
-	const diagnostics: Diagnostic[] = [];
-	for (const [bc, invariant] of contextInvariantsOf(workspace)) {
-		const claim = invariant.precondition
-			? "a precondition"
-			: invariant.postcondition
-				? "a postcondition"
-				: undefined;
-		if (!claim) continue;
-		diagnostics.push({
-			severity: "error",
 			rule: "context-invariant-is-checked",
-			message: `Invariant "${invariant.name}" of bounded context "${bc.name}" is marked ${claim}; a rule across the instances of a context is always a check, made by the operation that guards it before it acts, so it neither needs saying nor holds after. Drop the flag, or move the rule to the aggregate that can keep it`,
+			message: `Invariant "${invariant.name}" of bounded context "${bc.name}" names no operation that checks it; a rule across the instances of a context is kept true only by an operation that checks it, before it acts or of what it answers with`,
 			ref: invariant.ref,
 		});
 	}
@@ -1880,44 +1871,60 @@ const relationshipDeclared: Rule = (workspace) => {
 };
 
 /**
- * What two relationships collide on: the pair, and how they are joined. A
- * symmetric type has no direction, so participants either way round are the
- * same relationship declared twice.
+ * What two relationships collide on: the pair, how they are joined, and what
+ * the agreement is called. A symmetric type has no direction, so participants
+ * either way round are the same relationship declared twice.
  *
  * Every directed type shares one key. `customer-supplier` is not a second kind
  * of joint but a flavour of upstream/downstream — decision 03's own words for
- * it — so a pair that declares both in one direction has said one thing twice
- * and disagreed with itself about whether the downstream has a say in the
- * upstream's planning. The direction is still part of the key: two contexts
- * that each depend on the other are two relationships, one each way, and the
- * map draws them as two arrows (card 98).
+ * it — so a pair that declares both in one direction under one name has said
+ * one thing twice and disagreed with itself about whether the downstream has a
+ * say in the upstream's planning. The direction is still part of the key: two
+ * contexts that each depend on the other are two relationships, one each way,
+ * and the map draws them as two arrows (card 98).
+ *
+ * The name is part of it too, because one pair may hold two agreements in one
+ * direction — a negotiated fulfilment API and a tolerated legacy feed from the
+ * same warehouse — and each carries its own roles, comments and disposition.
+ * Named, they have different refs and different keys and both stand; unnamed,
+ * or named the same twice, they are one declaration made twice (decision 15,
+ * card 103).
  */
 function relationshipKey(relationship: ContextRelationship): string {
-	const { source, target, type } = relationship;
+	const { source, target, type, nameId } = relationship;
+	const called = nameId ? `~${nameId}` : "";
 	if (isDirectedRelationshipType(type))
-		return `${source.id}~directed~${target.id}`;
+		return `${source.id}~directed~${target.id}${called}`;
 	const ends = [source.id, target.id].sort();
-	return `${ends[0]}~${type}~${ends[1]}`;
+	return `${ends[0]}~${type}~${ends[1]}${called}`;
 }
 
 /**
- * One relationship per direction between a pair of contexts, and one per
- * symmetric type.
+ * One unnamed relationship per direction between a pair of contexts, and one
+ * per symmetric type.
  *
  * A relationship is the one model element with no id of its own: its ref is
- * the two contexts and the type. Declare the same one twice and the two share
- * a ref, so the second is unreachable — nothing can link to it, and a comment
- * or a disposition on it is written where no reader will ever land.
+ * the two contexts, the type, and the name where it has one. Declare the same
+ * one twice and the two share a ref, so the second is unreachable — nothing
+ * can link to it, and a comment or a disposition on it is written where no
+ * reader will ever land.
  *
- * Two directed relationships of different types in one direction keep their
- * separate refs and are worse for it: both are reachable, both are drawn, and
- * they contradict each other on the one question the type answers. The roles
- * are split across two rows, so neither says what the pair has agreed, and a
- * rule reading the roles — `schema-context`, `relationship-roles-backed`,
- * `relationship-cycle` — gets a different answer depending on which row it
- * lands on.
+ * Two directed relationships of different types in one direction, both
+ * unnamed, keep their separate refs and are worse for it: both are reachable,
+ * both are drawn, and they contradict each other on the one question the type
+ * answers. The roles are split across two rows, so neither says what the pair
+ * has agreed, and a rule reading the roles — `schema-context`,
+ * `relationship-roles-backed`, `relationship-cycle` — gets a different answer
+ * depending on which row it lands on.
  *
- * An error either way, because the model has lost information the moment it is
+ * Naming them is what makes the second row a second agreement rather than a
+ * contradiction: a negotiated fulfilment API and a tolerated legacy feed from
+ * the same warehouse are two things the pair has agreed, each with its own
+ * roles, comments and disposition, and each reachable at its own ref. So a
+ * distinct name clears this rule, and the rules reading the roles read each
+ * agreement's own (decision 15, card 103).
+ *
+ * An error otherwise, because the model has lost information the moment it is
  * written.
  */
 const relationshipDuplicate: Rule = (workspace) => {
@@ -1930,11 +1937,15 @@ const relationshipDuplicate: Rule = (workspace) => {
 			seen.set(key, relationship);
 			continue;
 		}
-		const { source, target, type } = relationship;
+		const { source, target, type, name } = relationship;
+		const called = name ? ` called "${name}"` : "";
+		const apart = name
+			? "; give the second a name of its own, or say the two things on one of them"
+			: "; name them both — a negotiated API and a tolerated feed are two agreements — or say the two things on one";
 		const message =
 			first.type === type
-				? `"${source.name}" and "${target.name}" declare a ${type} relationship more than once; the two share a ref, so only the first can be reached and everything said on this one is lost`
-				: `"${source.name}" and "${target.name}" declare both a ${first.type} and a ${type} relationship with "${source.name}" upstream; customer-supplier is a flavour of upstream/downstream, so one direction between one pair carries one directed relationship, and two of them disagree about how the pair stands`;
+				? `"${source.name}" and "${target.name}" declare a ${type} relationship${called} more than once; the two share a ref, so only the first can be reached and everything said on this one is lost${apart}`
+				: `"${source.name}" and "${target.name}" declare both a ${first.type} and a ${type} relationship${called} with "${source.name}" upstream; customer-supplier is a flavour of upstream/downstream, so one direction between one pair carries one directed relationship under one name, and two of them disagree about how the pair stands${apart}`;
 		diagnostics.push({
 			severity: "error",
 			rule: "relationship-duplicate",
@@ -4183,21 +4194,12 @@ const RULES: CataloguedRule[] = [
 		check: invariantInContext,
 	},
 	{
-		rule: "context-invariant-guarded",
-		severities: ["error"],
-		summary:
-			"A context's invariant names at least one operation of that context as the operation that checks it.",
-		why: "No instance can see its siblings, so nothing enforces a cross-instance rule as a side effect of being saved. It holds only because something checks it before acting: the operation that refuses the second open application, the one that counts the household's open sessions before starting another. Naming that operation is the difference between a rule the model can be read for and a sentence with nowhere to look. It is always a check and never a guarantee about afterwards, which is what context-invariant-is-checked holds it to.",
-		fix: "Name the operation that does the checking in constrains, alongside what the rule is about. If no operation checks it, the rule is not being kept: either the check belongs somewhere and has not been modelled, or the rule holds inside one aggregate and belongs there instead.",
-		check: contextInvariantGuarded,
-	},
-	{
 		rule: "context-invariant-is-checked",
 		severities: ["error"],
 		summary:
-			"A context's invariant is neither a precondition nor a postcondition: it is always a check made before acting.",
-		why: "A rule across the instances of a context — one open application per customer, a daily limit, one active offer per seller — is kept true only by whoever counts before acting, and a count can race: two payments in the same second both pass and the day's total is over. Marking it a precondition says again what it already is. Marking it a postcondition says something the boundary cannot deliver, a guarantee that holds after every change, and the page then reads that promise back to the next architect. A rule that really must hold afterwards belongs to the aggregate that can hold it in one transaction.",
-		fix: "Drop the flag. The invariant's page already says a context's rule is checked by the operations it names. If the rule genuinely has to be true after every change, move it to the aggregate whose save can keep it, or model the thing being counted as an aggregate of its own.",
+			"A context's invariant is a check, so it names at least one operation of that context that makes it — before that operation acts, or of what it answers with.",
+		why: "No instance can see its siblings, so nothing enforces a cross-instance rule as a side effect of being saved. It holds only because something checks it: the operation that refuses the second open application, the one that counts the household's open sessions before starting another. Naming that operation is the difference between a rule the model can be read for and a sentence with nowhere to look. Which side of the call the check falls on is the invariant's own to state, with precondition or postcondition, and neither of those claims the rule holds at rest — a context with no aggregate at all, a quotation service that stores nothing, states the contract of its own operation exactly that way. A flagged invariant is asked for its guard by precondition-names-operation and postcondition-names-operation, so this rule asks the unflagged one and the model is told once rather than twice.",
+		fix: "Name the operation that does the checking in constrains, alongside what the rule is about. If the check is made on the way in, mark the rule a precondition; if what is checked is the answer, mark it a postcondition. If no operation checks it, the rule is not being kept: either the check belongs somewhere and has not been modelled, or the rule holds inside one aggregate and belongs there instead.",
 		check: contextInvariantIsChecked,
 	},
 	{
@@ -4240,9 +4242,9 @@ const RULES: CataloguedRule[] = [
 		rule: "relationship-duplicate",
 		severities: ["error"],
 		summary:
-			"A pair of contexts declares at most one directed relationship per direction and at most one of each symmetric type; a symmetric type has no direction, so either order counts as the same one.",
-		why: "A relationship is the one model element with no id of its own — its ref is the two contexts and the type. Declare the same one twice and both carry the same ref, so only the first can ever be reached: the second's description, comments and disposition are written somewhere no reader, link or tool will land, and the model has quietly lost them. Declare an upstream-downstream and a customer-supplier the same way round and the two are both reachable and both drawn, contradicting each other on the one thing the type says — whether the downstream has a say in the upstream's planning — and splitting the roles across two rows that no rule reads together.",
-		fix: "Roles go on one relationship: keep a single declaration between the pair and give it every upstream and downstream role the crossings carry, then delete the other. Between one pair in one direction, choose customer-supplier when the downstream has a say in the upstream's planning and upstream-downstream when it does not. Two contexts that each depend on the other are a different case: that is one directed relationship each way, and both are kept.",
+			"A pair of contexts declares at most one unnamed directed relationship per direction and at most one unnamed relationship of each symmetric type; two agreements in one direction each carry a name of their own, and a symmetric type has no direction, so either order counts as the same one.",
+		why: "A relationship is the one model element with no id of its own — its ref is the two contexts, the type, and the name where it has one. Declare the same one twice and both carry the same ref, so only the first can ever be reached: the second's description, comments and disposition are written somewhere no reader, link or tool will land, and the model has quietly lost them. Declare an upstream-downstream and a customer-supplier the same way round, both unnamed, and the two are both reachable and both drawn, contradicting each other on the one thing the type says — whether the downstream has a say in the upstream's planning — and splitting the roles across two rows that no rule reads together. A name is what turns the second row into a second agreement: a negotiated fulfilment API and a tolerated legacy feed from the same warehouse are two things the pair has agreed, each with its own roles, comments and disposition, each at its own ref, and the map draws them as two lines with their names on.",
+		fix: "If the two rows are one agreement said twice, keep a single declaration between the pair and give it every upstream and downstream role the crossings carry, then delete the other; between one pair in one direction, choose customer-supplier when the downstream has a say in the upstream's planning and upstream-downstream when it does not. If they really are two agreements, give each a name that says which is which. Two contexts that each depend on the other are a different case again: that is one directed relationship each way, and both are kept.",
 		check: relationshipDuplicate,
 	},
 	{

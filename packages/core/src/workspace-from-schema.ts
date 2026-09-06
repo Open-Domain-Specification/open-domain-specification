@@ -911,6 +911,7 @@ function addRelationships(
 		if ("participants" in relationship) {
 			workspace.addRelationship({
 				type: relationship.type,
+				name: relationship.name,
 				participants: [source, target],
 				description: relationship.description,
 				comments: relationship.comments,
@@ -919,6 +920,7 @@ function addRelationships(
 		} else {
 			workspace.addRelationship({
 				type: relationship.type,
+				name: relationship.name,
 				upstream: source,
 				downstream: target,
 				upstreamRoles: relationship.upstreamRoles,

@@ -49,7 +49,7 @@ describe("the tactical templates on the alternate branches", () => {
 		const rows = [...section.querySelectorAll("tbody tr")].map(
 			(r) => r.textContent ?? "",
 		);
-		expect(rows).toHaveLength(2);
+		expect(rows).toHaveLength(4);
 		expect(rows[0]).toContain("Cross-Instance Invariant");
 		expect(rows[0]).toContain("Plain Entity");
 		expect(rows[0]).toContain("Silent Operation");
@@ -124,11 +124,39 @@ describe("the tactical templates on the alternate branches", () => {
 			"Applies to the context as a whole.",
 		);
 		expect(container.textContent).toContain(
-			"a rule across instances is kept only by whoever counts before acting",
+			"a rule across instances is kept only by whoever checks it",
 		);
 		// A context's rule is checked, never guaranteed, so its section says so.
 		expect(container.querySelector("#guards h2")).toHaveTextContent(
 			"Checked by",
+		);
+	});
+
+	// A context's rule is a check either way, and the heading says which side of
+	// the call it is made on (decision 27, third amendment).
+	it("InvariantPage: a context precondition says it is checked before", () => {
+		const { container } = render(Harness, {
+			model,
+			ref: contextInvariantRef("main_context", "checked_before_invariant").$ref,
+		});
+		expect(container.querySelector("#guards h2")).toHaveTextContent(
+			"Checked before",
+		);
+		expect(container.textContent).toContain(
+			"The operations this rule is checked before.",
+		);
+	});
+
+	it("InvariantPage: a context postcondition says it is checked after", () => {
+		const { container } = render(Harness, {
+			model,
+			ref: contextInvariantRef("main_context", "checked_after_invariant").$ref,
+		});
+		expect(container.querySelector("#guards h2")).toHaveTextContent(
+			"Checked after",
+		);
+		expect(container.textContent).toContain(
+			"The operations this rule is checked of.",
 		);
 	});
 

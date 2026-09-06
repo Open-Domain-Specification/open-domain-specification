@@ -554,6 +554,10 @@
                     },
                     "type": "array"
                 },
+                "name": {
+                    "description": "What this agreement is called, where one pair holds more than one in the\nsame direction: a negotiated fulfilment API beside a tolerated legacy\nfeed from the same warehouse, each with its own roles, comments and\ndisposition.\n\nAbsent is the common case, one agreement between the pair, and the ref\nstays what it always was. Where it is present the name is appended to the\nref, so the two are separately reachable and a diagnostic about one is\nnot read as a diagnostic about the other; the map draws two lines and\nlabels each with its name. Two agreements between one pair in one\ndirection that are both unnamed, or share a name, are one declaration\nmade twice and `relationship-duplicate` refuses them (decision 15).",
+                    "type": "string"
+                },
                 "type": {
                     "$ref": "#/definitions/DirectedRelationshipType"
                 },
@@ -1077,6 +1081,10 @@
                 "disposition": {
                     "$ref": "#/definitions/Disposition",
                     "description": "What the architecture thinks of this relationship. Absent means `by-design`."
+                },
+                "name": {
+                    "description": "What this agreement is called, where one pair holds more than one in the\nsame direction: a negotiated fulfilment API beside a tolerated legacy\nfeed from the same warehouse, each with its own roles, comments and\ndisposition.\n\nAbsent is the common case, one agreement between the pair, and the ref\nstays what it always was. Where it is present the name is appended to the\nref, so the two are separately reachable and a diagnostic about one is\nnot read as a diagnostic about the other; the map draws two lines and\nlabels each with its name. Two agreements between one pair in one\ndirection that are both unnamed, or share a name, are one declaration\nmade twice and `relationship-duplicate` refuses them (decision 15).",
+                    "type": "string"
                 },
                 "participants": {
                     "items": [
