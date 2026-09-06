@@ -5,6 +5,10 @@
  * wording by asserting the six old, contradicted sentences never come back,
  * in any hand-written file that could restate them.
  *
+ * The architect's fourteenth round (card 131) found two more: one written
+ * into `generate.mts`'s own template, which regenerates the model reference,
+ * and one in the interview playbook. Both files are checked directly.
+ *
  * Whitespace is collapsed before matching so a sentence rewrapped across
  * lines by an editor still matches the exact words it once read.
  */
@@ -25,6 +29,13 @@ const handWrittenFiles = [
 	"apps/docs/docs/3-core/2-strategic-design.md",
 	"apps/docs/docs/3-core/3-tactical-design.md",
 	"packages/core/src/schema.ts",
+	// Not hand-authored prose, but a template that writes prose: the string
+	// literal in generate.mts is the source the generated model reference is
+	// rebuilt from, so a stale sentence there regenerates itself right back.
+	"packages/skill/scripts/generate.mts",
+	// The generated file itself, committed at the repo root, so a drift
+	// between the template and what is actually checked in is also caught.
+	"packages/skill/skill/references/model-reference.md",
 ].map((path) => ({ path, text: normalise(readFileSync(join(repoRoot, path), "utf8")) }));
 
 const corpus = handWrittenFiles.map((f) => f.text).join("\n");
@@ -72,6 +83,16 @@ const oldClaims: Array<{ claim: string; sentences: string[] }> = [
 	{
 		claim: "a reference targets the root only (cross-aggregate-reference also accepts a kind of the root)",
 		sentences: ["Reference another aggregate only through its root entity, with `references`."],
+	},
+	{
+		claim: "a dangling ref makes the whole file fail to load (decision 29: it loads and reports unresolved-ref)",
+		sentences: ["A ref that points at nothing makes the whole file fail to load."],
+	},
+	{
+		claim: "an invariant's guard is only an operation of the same aggregate (decision 19: any service of the context may guard)",
+		sentences: [
+			"Only an operation of the same aggregate; if the user names the API endpoint, the aggregate's own operation behind it is the one to name.",
+		],
 	},
 ];
 

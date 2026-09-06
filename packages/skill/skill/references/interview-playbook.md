@@ -116,9 +116,10 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   entity, value object or attribute it is about. If the answer is about a change rather than
   a value — "once it's sold it can't go back to available" — follow up with "which operation
   makes that change?" and name that operation in `constrains` too: the rule is enforced where
-  the transition is made, and the operation then shows the rule it has to uphold. Only an
-  operation of the same aggregate; if the user names the API endpoint, the aggregate's own
-  operation behind it is the one to name.
+  the transition is made, and the operation then shows the rule it has to uphold. Any service
+  of the context may guard it — the invariant's own aggregate, or an application, domain or
+  other service of the same context; if the user names the API endpoint, the operation behind
+  it is the one to name.
 - Per rule that names an operation: "is it still true after that runs, or only checked as it
   runs?" → only checked as it runs is a precondition: `precondition: true`, and it must name
   the operation it guards. Enough funds at initiation, an entitlement at playback start, the
