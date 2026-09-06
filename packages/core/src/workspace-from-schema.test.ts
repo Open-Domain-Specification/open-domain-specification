@@ -238,16 +238,16 @@ describe("a ref that resolves to nothing", () => {
 		[
 			"valueobject",
 			(s) => {
-				s.boundedcontexts.ordering_bc.aggregates!.order
-					.entities!.order.attributes.total.valueobject = { $ref: GONE };
+				s.boundedcontexts.ordering_bc.aggregates!.order.entities!.order
+					.attributes!.total.valueobject = { $ref: GONE };
 			},
 			`${rich.order.ref}/attributes/total`,
 		],
 		[
 			"identifies",
 			(s) => {
-				s.boundedcontexts.invoicing_bc.aggregates!.invoice
-					.entities!.invoice.attributes.order_id.identifies = { $ref: GONE };
+				s.boundedcontexts.invoicing_bc.aggregates!.invoice.entities!.invoice
+					.attributes!.order_id.identifies = { $ref: GONE };
 			},
 			`${rich.invoice.ref}/attributes/order_id`,
 		],

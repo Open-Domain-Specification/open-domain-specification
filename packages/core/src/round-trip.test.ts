@@ -269,7 +269,7 @@ describe("an identity that names an external context's published schema", () => 
 		const schema = settlements().toSchema();
 		const written =
 			schema.boundedcontexts.payments.aggregates!.settlement.entities!
-				.settlement.attributes.provider_payment_id.identifies;
+				.settlement.attributes!.provider_payment_id.identifies;
 		expect(written).toEqual({
 			$ref: "#/boundedcontexts/pay_co/schemas/payment",
 		});
@@ -550,8 +550,8 @@ describe("a bad ref survives a round trip", () => {
 		[
 			"valueobject",
 			(s) => {
-				s.boundedcontexts.ordering_bc.aggregates!.order
-					.entities!.order.attributes.total.valueobject = { $ref: GONE };
+				s.boundedcontexts.ordering_bc.aggregates!.order.entities!.order
+					.attributes!.total.valueobject = { $ref: GONE };
 			},
 			`${rich.order.ref}/attributes/total`,
 		],
