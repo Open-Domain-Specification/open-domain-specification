@@ -1526,6 +1526,32 @@ const schemeRejected = schemeRail.provides("SchemeRejected", {
 	pattern: "published-language",
 	schema: schemeResponseSchema,
 });
+// The scheme's own inbound wire format, distinct from the gateway's own
+// SchemeSubmission above: two contexts, two shapes, translated at the
+// boundary, which is what the anti-corruption layer is for. RiverMart's
+// ProviderRequest is the acquirer's own shape the same way (decision 28;
+// card 107).
+const schemeSubmissionSchema = paymentSchemeBC.addSchema("SubmissionMessage", {
+	description:
+		"The scheme's own wire format for an inbound submission, as it receives it",
+});
+schemeSubmissionSchema.addAttribute("instructionId", { type: "string" });
+schemeSubmissionSchema.addAttribute("messageType", { type: "string" });
+// The scheme's own documented contract, published beside the answers it
+// raises: RiverMart's acquirer publishes HoldFunds, TakeFunds and
+// ReturnFunds the same way, an external context stating what it offers and
+// not how (decision 28; card 107). The gateway calls this, not the other
+// way round, so the causal walk runs through the call instead of joining
+// only at the process (card 110).
+const schemeSubmit = schemeRail
+	.provides("Submit", {
+		description:
+			"Accept a submission in the scheme's format; the scheme confirms or rejects later, on its own timings, as SchemeSettlementConfirmed or SchemeRejected",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: schemeSubmissionSchema,
+	})
+	.raises(schemeSettlementConfirmed, schemeRejected);
 // What a context offers outward leaves an application service; an
 // aggregate's operations are its own context's (decision 17).
 const schemeApp = schemeBC.addService("SchemeGatewayApp", {
@@ -1543,13 +1569,23 @@ const schemeApp = schemeBC.addService("SchemeGatewayApp", {
 // SubmitToScheme is returns-less, the honest shape for a send with no
 // answer of its own (decision 13, note of 2026-09-10); the answer is the
 // scheme's own event, consumed through the gateway's anti-corruption layer
-// below, not awaited by the send itself.
+// below, not awaited by the send itself. Card 110 gives it something to call:
+// the scheme's own Submit, through the same layer that carries the answer
+// back, so the reaction walk runs through the call rather than joining only
+// at the process. Card 109's reversion tried this and got two `reaction-cycle`
+// warnings for it; card 108 taught the rule that a ring with one process and
+// one translating policy is the process's lifecycle through the layer, not a
+// cycle, which is why this is now safe to wire honestly.
 const submitToScheme = schemeApp.provides("SubmitToScheme", {
 	description:
 		"Send a submission in the scheme's format; the scheme confirms or rejects later, on its own timings, as SchemeSettlementConfirmed or SchemeRejected",
 	type: "operation",
 	pattern: "open-host-service",
 	schema: submissionSchema,
+});
+schemeApp.consumes(schemeSubmit, {
+	pattern: "anti-corruption-layer",
+	by: [submitToScheme],
 });
 // The bank's own translated facts, in the bank's own words, once the scheme
 // has answered. Card 105 took these out when it made SubmitToScheme
