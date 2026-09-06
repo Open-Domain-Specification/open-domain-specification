@@ -1067,11 +1067,24 @@ describe("aggregate-tree", () => {
 		expect(treeRules(ws).map((d) => [d.severity, d.message])).toEqual([
 			[
 				"error",
-				'"Order" includes "Money", which is a value object; "includes" points at an entity, and a value object is used',
+				'"Order" includes "Money", which is a value object; "includes" points at an entity the aggregate owns. A value object is used',
 			],
 			[
 				"error",
 				'"Order" uses "Line", which is an entity; "uses" points at a value object, and an entity the aggregate owns is included',
+			],
+		]);
+	});
+
+	// The mirror of uses onto an entity: a value has no identity to point at,
+	// so a reference to one can only mean that the holder uses it (card 100).
+	it("refuses references onto a value object too", () => {
+		const { ws, root, money } = tidyAggregate();
+		root.references(money, "points at a value");
+		expect(treeRules(ws).map((d) => [d.severity, d.message])).toEqual([
+			[
+				"error",
+				'"Order" references "Money", which is a value object; "references" points at an entity in another aggregate, and a value has no identity to point at. A value object is used',
 			],
 		]);
 	});
@@ -1142,7 +1155,7 @@ describe("invariant-in-aggregate", () => {
 				severity: "error",
 				rule: "invariant-in-aggregate",
 				message:
-					'Invariant "Stretched" of aggregate "Order" constrains "Customer", which is in aggregate "Customer"; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
+					'Invariant "Stretched" of aggregate "Order" constrains "Customer", which is in aggregate "Customer"; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
 				ref: stretched.ref,
 			},
 		]);
@@ -1224,7 +1237,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(theirs);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Reaches Out" of aggregate "Order" constrains "Check", which is an application service\'s, on "TheirApp" in bounded context "Next"; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
+				'Invariant "Reaches Out" of aggregate "Order" constrains "Check", which is an application service\'s, on "TheirApp" in bounded context "Next"; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
 				abroad.ref,
 			],
 		]);
@@ -1273,7 +1286,7 @@ describe("invariant-in-aggregate", () => {
 				.map((d) => [d.message, d.ref]),
 		).toEqual([
 			[
-				'Invariant "Reaches Out" of aggregate "Invoice" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
+				'Invariant "Reaches Out" of aggregate "Invoice" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
 				reaching.ref,
 			],
 		]);
@@ -1296,7 +1309,7 @@ describe("invariant-in-aggregate", () => {
 				.map((d) => [d.message, d.ref]),
 		).toEqual([
 			[
-				'Invariant "Reaches Sideways" of aggregate "Invoice" constrains "Discount", which is a value object of bounded context "Billing" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
+				'Invariant "Reaches Sideways" of aggregate "Invoice" constrains "Discount", which is a value object of bounded context "Billing" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
 				reaching.ref,
 			],
 		]);
@@ -1400,7 +1413,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, reference);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Reads Someone Else\'s Request" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which no operation this precondition guards takes, returns or rejects with, directly or through a shape one of those composes; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
+				'Invariant "Reads Someone Else\'s Request" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which no operation this precondition guards takes, returns or rejects with, directly or through a shape one of those composes; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
 				stray.ref,
 			],
 		]);
@@ -1449,7 +1462,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, pickup);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Pickup Before Delivery" of aggregate "Shipment" constrains "Quote Request.pickupDate", which is an attribute of schema "Quote Request", which no operation this postcondition guards returns or rejects with, directly or through a shape one of those composes; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
+				'Invariant "Pickup Before Delivery" of aggregate "Shipment" constrains "Quote Request.pickupDate", which is an attribute of schema "Quote Request", which no operation this postcondition guards returns or rejects with, directly or through a shape one of those composes; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
 				wrongWay.ref,
 			],
 		]);
@@ -1464,7 +1477,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, pickup);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Pickup Before Delivery" of aggregate "Shipment" constrains "Quote Request.pickupDate", which is an attribute of schema "Quote Request", and only a precondition or a postcondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
+				'Invariant "Pickup Before Delivery" of aggregate "Shipment" constrains "Quote Request.pickupDate", which is an attribute of schema "Quote Request", and only a precondition or a postcondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
 				persistent.ref,
 			],
 		]);
@@ -1731,12 +1744,12 @@ describe("context-invariant-guarded", () => {
 		).toEqual([
 			[
 				"error",
-				'Invariant "Guarded By An Event" of bounded context "BC" names no operation that guards it; a rule across instances is kept true by whoever checks it before acting',
+				'Invariant "Guarded By An Event" of bounded context "BC" names no operation that checks it; a rule across instances is kept true only by whoever checks it before acting',
 				byEvent.ref,
 			],
 			[
 				"error",
-				'Invariant "Unguarded" of bounded context "BC" names no operation that guards it; a rule across instances is kept true by whoever checks it before acting',
+				'Invariant "Unguarded" of bounded context "BC" names no operation that checks it; a rule across instances is kept true only by whoever checks it before acting',
 				unguarded.ref,
 			],
 		]);
@@ -1763,6 +1776,78 @@ describe("context-invariant-guarded", () => {
 		expect(
 			ws.validate().filter((d) => d.rule === "context-invariant-guarded"),
 		).toEqual([]);
+	});
+});
+
+describe("context-invariant-is-checked", () => {
+	/** A context rule with a guard, so only the flag is ever in question. */
+	function counted(
+		flags: { precondition?: boolean; postcondition?: boolean } = {},
+	) {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const agg = bc.addAggregate("Payment", { description: "" });
+		const root = agg.addRootEntity("Payment", { description: "" });
+		const amount = root.addAttribute("Amount", { type: "Money" });
+		const app = bc.addService("Payments", {
+			description: "",
+			type: "application",
+		});
+		const initiate = app.provides("Initiate Payment", {
+			description: "",
+			type: "operation",
+		});
+		const limit = bc
+			.addInvariant("Daily Limit", { description: "", ...flags })
+			.constrains(amount, initiate);
+		return { ws, limit };
+	}
+
+	const fired = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "context-invariant-is-checked")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("accepts a context rule that claims neither", () => {
+		expect(fired(counted().ws)).toEqual([]);
+	});
+
+	it("refuses a precondition on one, because that is all it ever is", () => {
+		const { ws, limit } = counted({ precondition: true });
+		expect(fired(ws)).toEqual([
+			[
+				"error",
+				'Invariant "Daily Limit" of bounded context "BC" is marked a precondition; a rule across the instances of a context is always a check, made by the operation that guards it before it acts, so it neither needs saying nor holds after. Drop the flag, or move the rule to the aggregate that can keep it',
+				limit.ref,
+			],
+		]);
+	});
+
+	it("refuses a postcondition on one, which no cross-instance rule can promise", () => {
+		const { ws, limit } = counted({ postcondition: true });
+		expect(fired(ws)).toEqual([
+			[
+				"error",
+				'Invariant "Daily Limit" of bounded context "BC" is marked a postcondition; a rule across the instances of a context is always a check, made by the operation that guards it before it acts, so it neither needs saying nor holds after. Drop the flag, or move the rule to the aggregate that can keep it',
+				limit.ref,
+			],
+		]);
+	});
+
+	it("leaves an aggregate's precondition alone, which is a real distinction", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("BC", { description: "" });
+		const agg = bc.addAggregate("Account", { description: "" });
+		agg.addRootEntity("Account", { description: "" });
+		const withdraw = agg.provides("Withdraw", {
+			description: "",
+			type: "operation",
+		});
+		agg
+			.addInvariant("Within Balance", { description: "", precondition: true })
+			.constrains(withdraw);
+		expect(fired(ws)).toEqual([]);
 	});
 });
 
@@ -2514,6 +2599,62 @@ describe("mud-needs-acl", () => {
 			'"Modern" consumes "Get Customer" from "Legacy" without declaring a downstream role, and "Legacy" is a big ball of mud; translate it behind an anti-corruption layer so its model stays out of "Modern"',
 		]);
 	});
+
+	/**
+	 * A legacy context, a modern one, and an entity here holding the legacy
+	 * system's key. An identity is a way of taking the mud in too (card 100).
+	 */
+	function holdsLegacyKey(bigBallOfMud = true) {
+		const ws = emptyWorkspace();
+		const legacy = ws.addBoundedContext("Legacy", {
+			description: "",
+			bigBallOfMud,
+		});
+		const modern = ws.addBoundedContext("Modern", { description: "" });
+		const customer = legacy
+			.addAggregate("Customer", { description: "" })
+			.addRootEntity("Customer", { description: "" });
+		customer.addAttribute("Id", { type: "string", identity: true });
+		const account = modern
+			.addAggregate("Account", { description: "" })
+			.addRootEntity("Account", { description: "" });
+		account.addAttribute("Id", { type: "uuid", identity: true });
+		const key = account.addAttribute("Legacy Customer Key", {
+			type: "string",
+			identifies: customer,
+		});
+		return { ws, legacy, modern, key };
+	}
+
+	it("warns about an identity into the mud", () => {
+		const { ws, key } = holdsLegacyKey();
+		expect(mudRules(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"warning",
+				'"Modern" holds "Legacy Customer Key", the identity of "Customer" in "Legacy", and "Legacy" is a big ball of mud; a key from a system nobody can read is its model in yours, so take it in behind an anti-corruption layer and hold an identity of "Modern"\'s own beside it',
+				key.ref,
+			],
+		]);
+	});
+
+	it("says nothing about the same identity into a context that is not mud", () => {
+		expect(mudRules(holdsLegacyKey(false).ws)).toEqual([]);
+	});
+
+	it("goes quiet once the holder translates something out of the mud", () => {
+		const { ws, legacy, modern } = holdsLegacyKey();
+		const op = legacy
+			.addService("S", { description: "", type: "application" })
+			.provides("Get Customer", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			});
+		modern
+			.addService("T", { description: "", type: "application" })
+			.consumes(op, { pattern: "anti-corruption-layer" });
+		expect(mudRules(ws)).toEqual([]);
+	});
 });
 
 describe("role-coherence and symmetric relationships", () => {
@@ -2722,6 +2863,74 @@ describe("separate-ways and policies", () => {
 				"error",
 				'Policy "On Happened" in "Down" reacts to "Happened" from "Up" although the contexts declare separate ways',
 				policy.ref,
+			],
+		]);
+	});
+});
+
+// Separate ways rules out every crossing the model records, not only the
+// consumption: an identity is a dependency on the other context's identity
+// scheme, and a borrowed value object is its language in this context. Both
+// used to be reported as a missing relationship, which was false — there is
+// one, and it says these two do not integrate (card 100).
+describe("separate-ways and what a context holds of another's", () => {
+	const apart = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "separate-ways")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	/** Two contexts, each with one aggregate, and nothing between them yet. */
+	function pair() {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		const thing = up
+			.addAggregate("Thing", { description: "" })
+			.addRootEntity("Thing", { description: "" });
+		thing.addAttribute("Id", { type: "uuid", identity: true });
+		const holder = down
+			.addAggregate("Holder", { description: "" })
+			.addRootEntity("Holder", { description: "" });
+		holder.addAttribute("Id", { type: "uuid", identity: true });
+		return { ws, up, down, thing, holder };
+	}
+
+	it("flags an identity naming a context it went separate ways from", () => {
+		const { ws, up, down, thing, holder } = pair();
+		const thingId = holder.addAttribute("Thing Id", {
+			type: "uuid",
+			identifies: thing,
+		});
+		up.separateWaysFrom(down);
+		expect(apart(ws)).toEqual([
+			[
+				"error",
+				'"Down" holds "Thing Id", the identity of "Thing" in "Up", although the contexts declare separate ways',
+				thingId.ref,
+			],
+		]);
+	});
+
+	it("says nothing about the same identity where they have not", () => {
+		const { ws, thing, holder } = pair();
+		holder.addAttribute("Thing Id", { type: "uuid", identifies: thing });
+		expect(apart(ws)).toEqual([]);
+	});
+
+	it("flags a value object borrowed from a context it went separate ways from", () => {
+		const { ws, up, down, holder } = pair();
+		const money = up.addValueObject("Money", { description: "" });
+		const total = holder.addAttribute("Total", {
+			type: "Money",
+			valueobject: money,
+		});
+		up.separateWaysFrom(down);
+		expect(apart(ws)).toEqual([
+			[
+				"error",
+				'"Down" types "Holder"\'s "Total" by "Money" from "Up" although the contexts declare separate ways',
+				total.ref,
 			],
 		]);
 	});
@@ -3852,6 +4061,44 @@ describe("aggregate-consumes-inside", () => {
 		);
 		expect(inside(ws)).toEqual([]);
 	});
+
+	// Calling the aggregate next door is the same act with a shorter wire: two
+	// transactions, and nothing on any map to say so (card 100).
+	it("flags an aggregate calling another aggregate of its own context", () => {
+		const { ws, own, agg } = neighbours();
+		const other = own.addAggregate("Stock", { description: "" });
+		other.addRootEntity("Stock", { description: "" });
+		agg.consumes(
+			other.provides("Reserve", {
+				description: "",
+				type: "operation",
+				internal: true,
+			}),
+			{},
+		);
+		expect(inside(ws)).toEqual([
+			[
+				"error",
+				'Aggregate "Thing" consumes "Reserve" from aggregate "Stock" in "Own"; each is saved in its own transaction, so one calling the other spans two of them with nothing on any map to say so. Let a service of "Own" front the call and hand "Thing" what it needs',
+				agg.ref,
+			],
+		]);
+	});
+
+	it("leaves an aggregate consuming another aggregate's event alone", () => {
+		const { ws, own, agg } = neighbours();
+		const other = own.addAggregate("Stock", { description: "" });
+		other.addRootEntity("Stock", { description: "" });
+		agg.consumes(
+			other.provides("Reserved", {
+				description: "",
+				type: "event",
+				internal: true,
+			}),
+			{},
+		);
+		expect(inside(ws)).toEqual([]);
+	});
 });
 
 describe("entity-identity", () => {
@@ -4093,6 +4340,29 @@ describe("relationship-cycle", () => {
 			downstreamRoles: ["anti-corruption-layer"],
 		});
 		expect(cycles(ws)).toEqual([]);
+	});
+
+	// Decision 20's note of 2026-09-09: the exemption is read on the
+	// consumption that declares the layer, so one translated call does not
+	// excuse the untranslated one beside it (card 100).
+	it("still counts a step whose second call is untranslated", () => {
+		const { ws, a, b, step } = three();
+		step(a, b, "operation");
+		const back = b.app.provides("B to A operation", {
+			description: "",
+			type: "operation",
+		});
+		const raw = b.app.provides("B to A raw", {
+			description: "",
+			type: "operation",
+		});
+		a.app.consumes(back, { pattern: "anti-corruption-layer" });
+		a.app.consumes(raw, {});
+		b.bc.upstreamOf(a.bc, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		expect(cycles(ws)).toHaveLength(1);
 	});
 
 	it("still reports the ring when the layer is on a step that is not part of it", () => {
@@ -4772,35 +5042,13 @@ describe("relationship-declared", () => {
 		]);
 	});
 
-	it("warns about an identity into another context with nothing consumed", () => {
-		const { ws, thingId } = identityOnly();
-		expect(declared(ws).map((d) => [d.message, d.ref])).toEqual([
-			[
-				'"Down" holds "Thing Id", the identity of "Thing" in "Up", but no relationship says how "Up" and "Down" stand to each other',
-				thingId.ref,
-			],
-		]);
-	});
-
-	it("says nothing about an id echoed in a payload schema", () => {
-		const { ws, up, down } = identityOnly();
-		const thing = [...up.aggregates.values()][0].entities.get("thing");
-		const payload = down.addSchema("Holder Changed");
-		payload.addAttribute("Thing Id", { type: "uuid", identifies: thing });
-		// The entity's identity is still the crossing; the payload's is not one
-		// at all (decision 14, second amendment).
-		expect(declared(ws)).toHaveLength(1);
-		const echoOnly = emptyWorkspace();
-		const provider = echoOnly.addBoundedContext("Up", { description: "" });
-		const reader = echoOnly.addBoundedContext("Down", { description: "" });
-		const root = provider
-			.addAggregate("Thing", { description: "" })
-			.addRootEntity("Thing", { description: "" });
-		root.addAttribute("Id", { type: "uuid", identity: true });
-		reader
-			.addSchema("Note")
-			.addAttribute("Thing Id", { type: "uuid", identifies: root });
-		expect(declared(echoOnly)).toEqual([]);
+	// An identity crossing is its own record: the context map draws it under
+	// «id», and asking for a typed relationship on top of it produced fourteen
+	// upstream-downstream relationships with no roles across the reference
+	// models (decision 14, amendment of 2026-09-09; card 100).
+	it("says nothing about an identity into another context with nothing consumed", () => {
+		const { ws } = identityOnly();
+		expect(declared(ws)).toEqual([]);
 	});
 
 	it("goes quiet when the relationship points the way the crossing runs", () => {
@@ -5184,6 +5432,47 @@ describe("external-is-boundary", () => {
 				ledger.ref,
 			],
 		]);
+	});
+
+	// `internal` says an operation never leaves that system, which is a fact
+	// about the insides of a machine we do not run (card 100).
+	it("refuses an internal operation on a system we do not own", () => {
+		const { ws, external } = scheme();
+		const api = external.addService("Scheme API", {
+			description: "",
+			type: "application",
+		});
+		const hidden = api.provides("Settle Internally", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		expect(boundary(ws)).toEqual([
+			[
+				"error",
+				'External context "Card Scheme" marks operation "Settle Internally" internal; whether an operation of a system we do not own stays inside it is not ours to state, only that it exists and who it reaches. Drop internal, or drop the operation if nothing here depends on it',
+				hidden.ref,
+			],
+		]);
+	});
+
+	it("leaves what it offers and what it publishes alone", () => {
+		const { ws, external } = scheme();
+		const api = external.addService("Scheme API", {
+			description: "",
+			type: "application",
+		});
+		api.provides("Submit", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		api.provides("Settled", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+		});
+		expect(boundary(ws)).toEqual([]);
 	});
 
 	it("refuses a policy and an invariant on it too", () => {
@@ -5948,9 +6237,51 @@ describe("waiting on an answer", () => {
 		expect(kinds(ws)).toEqual([
 			[
 				"error",
-				'Process "Checkout" waits for "Authorise Payment rejects with Payment Declined", but nothing in "Checkout" consumes "Authorise Payment" and process "Checkout" does not issue it; a reactor hears an answer by having made the call, so issue that operation or consume it, or react to an event instead',
+				'Process "Checkout" waits for "Authorise Payment rejects with Payment Declined", but nothing says process "Checkout" made that call: it does not issue "Authorise Payment", and no consumption of "Authorise Payment" in "Checkout" names an operation it issues in "by". An answer comes back to whoever called, so issue that operation, or say in "by" which of this context\'s operations makes the call, or react to an event instead',
 				process.ref,
 			],
+		]);
+	});
+
+	// An answer comes back to whoever called. A second caller of the same
+	// operation, in a context of its own, hears its own call and not this one
+	// (decision 23, 2026-09-09 fourth amendment; card 100).
+	it("refuses an answer to a call another context made, where by names its caller", () => {
+		const { ws, authorise, declined } = answered();
+		const fraud = ws.addBoundedContext("Fraud", { description: "" });
+		const fraudApp = fraud.addService("Fraud App", {
+			description: "",
+			type: "application",
+		});
+		const askFraud = fraudApp.provides("Ask Fraud", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const noteFraud = fraudApp.provides("Note Fraud", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		// Fraud consumes the same operation twice, so nothing is inferred: the
+		// two consumptions say which of Fraud's operations makes which call, and
+		// the policy issues neither.
+		fraudApp.consumes(authorise, {
+			pattern: "anti-corruption-layer",
+			by: [askFraud],
+		});
+		fraudApp.consumes(authorise, { pattern: "conformist", by: [noteFraud] });
+		const policy = fraud
+			.addPolicy("Note on decline", { description: "" })
+			.on(authorise.rejected(declined))
+			.issues(noteFraud);
+		expect(kinds(ws)).toEqual([]);
+		// Take the caller it issues out of `by` and nothing says Fraud made the
+		// call the policy branches on.
+		fraudApp.consumptions[1].by.length = 0;
+		fraudApp.consumptions[1].by.push(askFraud);
+		expect(kinds(ws).map(([severity, , ref]) => [severity, ref])).toEqual([
+			["error", policy.ref],
 		]);
 	});
 

@@ -1,7 +1,21 @@
 <script module lang="ts">
-export const sections = [
+import {
+	BoundedContext as InvariantContext,
+	type Invariant as Rule,
+} from "@open-domain-specification/core";
+
+/**
+ * A context's rule is checked before acting and never true again after, so its
+ * section says "Checked by" where an aggregate's and a value's say "Guarded
+ * by" (decision 27, second amendment of 2026-09-09). The side nav shows the
+ * same heading the page does, so both read it from here.
+ */
+export const guardsLabel = (i: Rule) =>
+	i.owner instanceof InvariantContext ? "Checked by" : "Guarded by";
+
+export const sectionsFor = (i: Rule) => [
 	{ id: "constrains", label: "Constrains" },
-	{ id: "guards", label: "Guarded by" },
+	{ id: "guards", label: guardsLabel(i) },
 	{ id: "language", label: "Language" },
 ];
 </script>
@@ -88,12 +102,12 @@ const KIND = {
 	context: {
 		label: "context invariant",
 		title:
-			"Holds across the instances and aggregates of the context; an operation checks it before acting.",
+			"Checked across the instances and aggregates of the context, by an operation, before it acts. Never a promise about afterwards.",
 		lead: "The elements this rule is about. They may sit in any aggregate of the context, because no one instance can see the others.",
 		guards:
-			"The operations this rule is about. Nothing enforces a rule across instances as a side effect, so it holds only because these check it before acting.",
+			"The operations that check this rule before they act. Nothing enforces a rule across instances as a side effect of being saved, and a check can race, so the model says where it is made rather than promising it holds afterwards.",
 		empty:
-			"No operation names this rule, so nothing keeps it: a rule across instances needs a guard.",
+			"No operation names this rule, so nothing checks it: a rule across instances is kept only by whoever counts before acting.",
 	},
 } as const;
 // The elements the rule holds true of, and the operations that have to uphold
@@ -106,15 +120,20 @@ const guarded = $derived(i.guarded);
 // say whether it is checked before one, guaranteed of what it answers with, or
 // still true after it. The two flags are exclusive
 // (`postcondition-names-operation`), so the order here decides nothing a valid
-// model can see.
+// model can see. A context's rule reads neither flag: it is always a check,
+// which is what `context-invariant-is-checked` holds it to, and a file that
+// sets one anyway is shown the truth rather than its own claim (decision 27,
+// second amendment of 2026-09-09).
 const words = $derived(
-	KIND[
-		i.precondition
-			? "precondition"
-			: i.postcondition
-				? "postcondition"
-				: i.kind
-	],
+	inContext
+		? KIND.context
+		: KIND[
+				i.precondition
+					? "precondition"
+					: i.postcondition
+						? "postcondition"
+						: i.kind
+			],
 );
 const targets = $derived(i.targets.filter((t) => !(t instanceof Consumable)));
 const columns: Column[] = [
@@ -177,7 +196,7 @@ const columns: Column[] = [
 
 <Section
 	id="guards"
-	title="Guarded by"
+	title={guardsLabel(i)}
 	lead={words.guards}
 	count={guarded.length}
 >

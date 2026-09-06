@@ -1,5 +1,5 @@
 import { contextMemberNamespace, type ODSNamespace } from "./namespace";
-import { ReactionChain, type Reactor } from "./reaction-walk";
+import { ReactionChain, type Reactor, routesTo } from "./reaction-walk";
 import { ScopeManager } from "./scope-manager";
 import {
 	Answer,
@@ -21,16 +21,23 @@ import {
  * even when they live in another context; operations no policy issues, and
  * nothing a policy issues reaches, are not.
  *
- * An answer is drawn as one more edge from the operation it names, carrying
- * the name of the shape it came back as — or, where the operation returns
- * nothing and what was waited on is its bare completion, the word "completes",
- * which is the whole of what that call tells its caller. It gets no node of
- * its own: a returned or rejected shape is the operation coming back, not
- * something that happens on the way somewhere, and a reader following the
- * arrow wants the two things the call joined rather than a third box between
- * them. The edge starts at exactly the operation the reactor named, so two
- * operations refusing with one shared shape draw two edges and neither claims
- * the other's caller (decision 23).
+ * An answer is drawn as one more edge into the reactor that was waiting,
+ * carrying the name of the shape it came back as — or, where the operation
+ * returns nothing and what was waited on is its bare completion, the word
+ * "completes", which is the whole of what that call tells its caller. It gets
+ * no node of its own: a returned or rejected shape is the operation coming
+ * back, not something that happens on the way somewhere, and a reader
+ * following the arrow wants the two things the call joined rather than a third
+ * box between them.
+ *
+ * The edge starts at the call that asked for it: the local operation `by`
+ * names, or the operation the reactor issues itself where there is no boundary
+ * to cross (see `routesTo`). A reader sees the call leave on one arrow and the
+ * answer arrive on the next, and two contexts calling one shared service each
+ * see their own call come back rather than each other's (decision 23,
+ * 2026-09-09 fourth amendment). Where the model does not say which local
+ * operation calls, there is nothing to draw the answer from and the chain
+ * stops there, which is the silence `consumption-by-required` warns about.
  *
  * A process's deadline is drawn the same way, as a loop from the process back
  * to the process labelled with how long the instance had and, where the
@@ -79,14 +86,15 @@ export class ODSFlowMap {
 			// Every policy in scope is drawn whether anything reaches it or not, and
 			// the walk starts at what wakes it, so the flow reads from its cause.
 			this.addNode(nodeFor(policy));
-			for (const trigger of policy.events) this.enter(trigger, chain, walked);
+			for (const trigger of policy.events)
+				this.enter(policy, trigger, chain, walked);
 			// A policy nothing wakes still issues what it issues.
 			this.walk(policy, chain, walked);
 		}
 		for (const process of chain.processes) {
 			const node = this.addNode(nodeFor(process));
 			for (const trigger of [...process.startEvents, ...process.events])
-				this.enter(trigger, chain, walked);
+				this.enter(process, trigger, chain, walked);
 			this.walk(process, chain, walked);
 			// The lifecycle reads left to right: what starts an instance comes in
 			// through the walk above, and what ends one goes out here. An ending
@@ -110,14 +118,17 @@ export class ODSFlowMap {
 				if (ending instanceof Answer) {
 					// An ending answer runs the other way: the call comes back into
 					// the process and that is what completes the instance, so the
-					// edge starts at the operation the answer names.
-					this.addEdge({
-						source: this.addNode(nodeFor(ending.operation)),
-						target: node,
-						kind: "ends",
-						answer: ending.name,
-					});
-					this.walk(ending.operation, chain, walked);
+					// edge starts where a waited-on answer's does, at the call that
+					// asked for it.
+					for (const from of routesTo(process, ending.operation)) {
+						this.addEdge({
+							source: this.addNode(nodeFor(from)),
+							target: node,
+							kind: "ends",
+							answer: ending.name,
+						});
+						this.walk(from, chain, walked);
+					}
 					continue;
 				}
 				this.addEdge({
@@ -132,10 +143,11 @@ export class ODSFlowMap {
 
 	/**
 	 * Draws the chain from where a reaction is woken. An event is walked from
-	 * itself; an answer has no node, so the walk starts at the operation the
-	 * answer names and the answer is drawn as that operation's own step.
+	 * itself; an answer has no node, so the walk starts at the calls that asked
+	 * for it and the answer is drawn as one of their steps.
 	 */
 	private enter(
+		reactor: Policy | Process,
 		trigger: ProcessTrigger,
 		chain: ReactionChain,
 		walked: Set<Reactor>,
@@ -143,11 +155,12 @@ export class ODSFlowMap {
 		// A deadline has no node and nothing before it: the process is what
 		// raises it, and the walk from the process draws the loop.
 		if (trigger instanceof Deadline) return;
-		this.walk(
-			trigger instanceof Answer ? trigger.operation : trigger,
-			chain,
-			walked,
-		);
+		if (!(trigger instanceof Answer)) {
+			this.walk(trigger, chain, walked);
+			return;
+		}
+		for (const from of routesTo(reactor, trigger.operation))
+			this.walk(from, chain, walked);
 	}
 
 	/** Draws one step of the chain and everything it reaches, each edge once. */

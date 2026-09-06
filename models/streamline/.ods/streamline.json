@@ -4430,66 +4430,6 @@
       "description": "The monthly export is translated; nothing else of Discs is touched"
     },
     {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/catalogue"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/licensing"
-      },
-      "upstreamRoles": [],
-      "downstreamRoles": [],
-      "description": "A licence window names the title it covers; the rights are Licensing's own model and the title stays Catalogue's"
-    },
-    {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/catalogue"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/encoding"
-      },
-      "upstreamRoles": [],
-      "downstreamRoles": [],
-      "description": "An encode request carries the title id it is for; Encoding never reads the catalogue entry"
-    },
-    {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/households_&_profiles"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/playback"
-      },
-      "upstreamRoles": [],
-      "downstreamRoles": [],
-      "description": "A session names the profile watching, by id; who that profile is stays with Households"
-    },
-    {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/encoding"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/playback"
-      },
-      "upstreamRoles": [],
-      "downstreamRoles": [],
-      "description": "A manifest lists the renditions it can offer, by id; the renditions themselves are Encoding's"
-    },
-    {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/households_&_profiles"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/ads_tier"
-      },
-      "upstreamRoles": [],
-      "downstreamRoles": [],
-      "description": "An ad break names the household it was served to, by id"
-    },
-    {
       "type": "shared-kernel",
       "participants": [
         {

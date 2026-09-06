@@ -175,6 +175,13 @@ function everythingWrong(): Workspace {
 	// invariant-in-context: a context's rule counting another context's entity,
 	// and context-invariant-guarded: no operation of A checks either of them
 	a.addInvariant("Counts Elsewhere", { description: "" }).constrains(otherRoot);
+	// context-invariant-is-checked: a rule across instances claiming to be a
+	// check it already is, and another claiming to hold after the call
+	a.addInvariant("Says It Checks", { description: "", precondition: true });
+	a.addInvariant("Promises Afterwards", {
+		description: "",
+		postcondition: true,
+	});
 	// precondition-names-operation: a rule that says it stops holding after
 	// something, and never says after what
 	tree.addInvariant("Checked Before Nothing", {
@@ -313,8 +320,42 @@ function everythingWrong(): Workspace {
 	return ws;
 }
 
+/**
+ * The one thing only a file can get wrong: a `$ref` naming nothing.
+ *
+ * The DSL passes objects, so `unresolved-ref` cannot fire on a workspace built
+ * the way `everythingWrong` builds one — the compiler refuses a wrong
+ * reference where it is written. It is written here as JSON, loaded, and its
+ * diagnostics joined to the fixture's so the catalogue still covers every rule
+ * (card 100).
+ */
+function loadedWithABadRef(): Workspace {
+	const ws = new Workspace("Mistyped", {
+		odsVersion: "1.0.0",
+		description: "",
+		version: "0",
+	});
+	const bc = ws.addBoundedContext("Only", { description: "" });
+	bc.addAggregate("Thing", { description: "" }).addRootEntity("Thing", {
+		description: "",
+	});
+	const schema = ws.toSchema();
+	const entity = schema.boundedcontexts.only.aggregates.thing.entities.thing;
+	entity.attributes = {
+		id: {
+			name: "id",
+			type: "string",
+			valueobject: { $ref: "#/boundedcontexts/only/valueobjects/gone" },
+		},
+	};
+	return Workspace.fromSchema(schema);
+}
+
 describe("RULE_CATALOG", () => {
-	const diagnostics = everythingWrong().validate();
+	const diagnostics = [
+		...everythingWrong().validate(),
+		...loadedWithABadRef().validate(),
+	];
 
 	it("has one entry per rule id, and no rule fires that is not catalogued", () => {
 		const ids = RULE_CATALOG.map((r) => r.rule);

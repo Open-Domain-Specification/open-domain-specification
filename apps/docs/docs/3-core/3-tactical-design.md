@@ -121,10 +121,15 @@ and SKU, a daily transfer limit are true across instances, or across
 aggregates, of a context — no single instance can see the others, so the
 rule holds only because something checks it before acting. A context
 invariant constrains entities and attributes of any aggregate in the
-context and must name at least one operation of the context that guards it
+context and must name at least one operation of the context that checks it
 (`context-invariant-guarded`); nothing it constrains may reach outside the
-context (`invariant-in-context`). A rule across contexts is a policy or a
-process reacting to the other context's events instead.
+context (`invariant-in-context`). It is always a check and never anything
+else: `precondition` and `postcondition` are refused on one
+(`context-invariant-is-checked`), because a count across instances can race —
+two payments in the same second both pass a daily limit — so a rule that must
+hold after every change belongs to the aggregate whose save can keep it. A
+rule across contexts is a policy or a process reacting to the other context's
+events instead.
 
 ## Schemas
 

@@ -695,3 +695,47 @@ who provides is not who is upstream — and Cards translates behind its own boun
 relationship count drops by one; nothing else about Cards or CardCo changes.
 
 The deliberate diagnostics of section 7 are untouched: the same four, for the same reasons.
+
+## Revision (card 100): the IBAN belongs to the standard, and four relationships come out
+
+The Accounts Team lead said "an account number and an IBAN", and the model made the IBAN a
+value object of Accounts with its mod-97 checksum on it. The Payments Hub lead said "a name
+and an IBAN" for a payee, and the model typed that one `string (ISO 13616)` — the same
+international account number, written twice, in two contexts, either of which could have
+drifted from the other and from the standard.
+
+Neither context owns it. ISO 13616 is a published standard nobody here runs, which is what
+decision 28 calls an external context, and its third amendment says a value object of one may
+carry the invariants the standard publishes: the mod-97 checksum is a citable rule, not a
+guess about somebody's insides. So `IBAN` and `IbanChecksumValid` move to an `ISO 13616`
+context, Accounts' copy comes out, `Payee.iban` is typed by the same value object, and both
+contexts declare themselves conformists of the standard with a published language upstream.
+The body provides nothing to consume — what it publishes is the shape — which is exactly the
+relationship `relationship-roles-backed` learned to accept in card 95. Accounts loses its
+`uses` relation to IBAN, because a relation never crosses a context boundary; the attribute
+carries the reference, as it already does for Money and AccountNumber.
+
+`DailyLimit` stops claiming to be true afterwards. Card 94 wrote it as a rule still held
+after `InitiatePayment`, on the argument that everything it counts is the hub's own to read.
+That is the one thing a count across instances cannot promise: two instructions arriving
+together both pass the sum, and the day's total is over. A context invariant is a check and
+only a check (decision 27's second amendment of 2026-09-09), the description now says where
+the check is made rather than what it guarantees, and `context-invariant-is-checked` refuses
+the flags that would say otherwise.
+
+`RequestAuthorisation` on CardCo stops being internal. `internal` says an operation never
+leaves its context, which is a statement about the insides of a machine the bank does not
+run; what the model can say is that CardCo offers the step to its merchants and that it is
+the caller of `AuthoriseCard`, which the consumption's `by` already says
+(`external-is-boundary`).
+
+Four relationships come out: Lending on Accounts, Fraud on Customer & KYC, Fraud on Accounts,
+and Identity & Access on Customer & KYC. Each was joined by nothing but an identity attribute
+and carried no roles at all, with a description saying in words that nothing is exchanged —
+a shape DDD does not have, written to quieten `relationship-declared`. An identity crossing is
+its own record: the context map draws it under «id», and the rule no longer asks for a typed
+relationship on top of it (decision 14's amendment of 2026-09-09). The dependencies are not
+lost; they read on the map, from the attributes that hold them. The relationship count drops
+by four and rises by two, for the standard.
+
+The deliberate diagnostics of section 7 are untouched: the same four, for the same reasons.

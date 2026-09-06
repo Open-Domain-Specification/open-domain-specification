@@ -235,8 +235,10 @@ export function edgeCaseModel(): Model {
 	// The third kind of rule an invariant page has to name: a guarantee about
 	// what a call answers with, which is neither kept on every save nor checked
 	// on the way in (decision 19, third amendment). No reference model states
-	// one yet.
-	bcMain
+	// one yet. It belongs to the aggregate that answers, because a context's
+	// rule is always a check and never a promise about afterwards
+	// (`context-invariant-is-checked`, decision 27).
+	aggNoRoot
 		.addInvariant("Answer Guarantee", {
 			description: "Holds of every answer the answering operation gives.",
 			postcondition: true,

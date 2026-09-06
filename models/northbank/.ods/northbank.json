@@ -954,7 +954,7 @@
                   "name": "iban",
                   "type": "IBAN",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/accounts/valueobjects/iban"
+                    "$ref": "#/boundedcontexts/iso_13616/valueobjects/iban"
                   }
                 },
                 "account_number": {
@@ -1011,14 +1011,6 @@
                   "relation": "includes",
                   "label": "operated-under",
                   "cardinality": "1..*"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/accounts/valueobjects/iban"
-                  },
-                  "relation": "uses",
-                  "label": "identified-by",
-                  "cardinality": "1"
                 },
                 {
                   "target": {
@@ -1290,28 +1282,6 @@
         }
       },
       "valueobjects": {
-        "iban": {
-          "name": "IBAN",
-          "description": "Country, check digits, bank and account identifiers; valid only if the mod-97 checksum holds",
-          "attributes": {
-            "value": {
-              "name": "value",
-              "type": "string (ISO 13616)"
-            }
-          },
-          "relations": [],
-          "invariants": {
-            "iban_checksum_valid": {
-              "name": "IbanChecksumValid",
-              "description": "The IBAN's mod-97 checksum holds, or the value is not an IBAN at all",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/accounts/valueobjects/iban/attributes/value"
-                }
-              ]
-            }
-          }
-        },
         "overdraft_limit": {
           "name": "OverdraftLimit",
           "description": "How far below zero the available balance may go",
@@ -1377,7 +1347,7 @@
               "name": "iban",
               "type": "IBAN",
               "valueobject": {
-                "$ref": "#/boundedcontexts/accounts/valueobjects/iban"
+                "$ref": "#/boundedcontexts/iso_13616/valueobjects/iban"
               }
             },
             "customer_id": {
@@ -2039,7 +2009,7 @@
       "invariants": {
         "daily_limit": {
           "name": "DailyLimit",
-          "description": "Instructions from one account never exceed the daily limit in total; InitiatePayment sums the day's instructions for the payer account, since no single instruction can know the others",
+          "description": "InitiatePayment refuses an instruction that would take the payer account over its daily limit, summing the day's instructions for that account before it acts. Checked, not held: no single instruction can see the others, so two arriving together can both pass the sum",
           "constrains": [
             {
               "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction/attributes/amount"
@@ -2241,7 +2211,10 @@
             },
             "iban": {
               "name": "iban",
-              "type": "string (ISO 13616)"
+              "type": "IBAN",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/iso_13616/valueobjects/iban"
+              }
             }
           },
           "relations": [],
@@ -5201,9 +5174,8 @@
           "provides": {
             "request_authorisation": {
               "name": "RequestAuthorisation",
-              "description": "A merchant asked CardCo to take an amount on one of our cards, so CardCo asks the issuer to approve it",
-              "type": "operation",
-              "internal": true
+              "description": "A merchant asked CardCo to take an amount on one of our cards, so CardCo asks the issuer to approve it. CardCo's own step, offered to its merchants; the bank sees it only as the caller of AuthoriseCard",
+              "type": "operation"
             }
           },
           "consumes": [
@@ -5309,6 +5281,43 @@
           }
         }
       }
+    },
+    "iso_13616": {
+      "name": "ISO 13616",
+      "description": "The international bank account number standard. Published, not run by anyone here; the bank conforms to it wherever it names an account outside its own walls",
+      "subdomains": [],
+      "external": true,
+      "aggregates": {},
+      "invariants": {},
+      "services": {},
+      "policies": {},
+      "processes": {},
+      "glossary": {},
+      "valueobjects": {
+        "iban": {
+          "name": "IBAN",
+          "description": "Country, check digits, bank and account identifiers; valid only if the mod-97 checksum holds",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "string (ISO 13616)"
+            }
+          },
+          "relations": [],
+          "invariants": {
+            "iban_checksum_valid": {
+              "name": "IbanChecksumValid",
+              "description": "The IBAN's mod-97 checksum holds, or the value is not an IBAN at all",
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/iso_13616/valueobjects/iban/attributes/value"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "schemas": {}
     }
   },
   "relationships": [
@@ -5735,54 +5744,6 @@
       ]
     },
     {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/accounts"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/lending"
-      },
-      "upstreamRoles": [],
-      "downstreamRoles": [],
-      "description": "A loan event names the account it settles against; Lending holds the number, not the balance"
-    },
-    {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/customer_&_kyc"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/fraud"
-      },
-      "upstreamRoles": [],
-      "downstreamRoles": [],
-      "description": "A fraud case names the customer it is about; the case file carries the id and nothing of the customer model"
-    },
-    {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/accounts"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/fraud"
-      },
-      "upstreamRoles": [],
-      "downstreamRoles": [],
-      "description": "A fraud case names the account it is about, by id"
-    },
-    {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/customer_&_kyc"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/identity_&_access"
-      },
-      "upstreamRoles": [],
-      "downstreamRoles": [],
-      "description": "A credential names the customer it belongs to; who they are stays in Customer & KYC"
-    },
-    {
       "type": "shared-kernel",
       "participants": [
         {
@@ -5871,6 +5832,38 @@
         }
       ],
       "description": "Money, from @northbank/money"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/iso_13616"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/accounts"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "Accounts holds the IBAN of every current account and takes ISO 13616's definition of it, checksum and all"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/iso_13616"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/payments_hub"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "A payee is named by an IBAN, in the standard's form; the hub validates it before an instruction exists"
     },
     {
       "type": "partnership",

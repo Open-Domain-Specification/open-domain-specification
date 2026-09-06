@@ -284,6 +284,37 @@ const paymentSchemeBC = workspace.addBoundedContext("Payment Scheme", {
 		"The clearing scheme the bank submits to: it settles or refuses, in ISO 20022 and on its own timings. Not the bank's",
 	external: true,
 });
+// A standards body is an external context too, and the honest place for a
+// value nobody here owns. The IBAN was Accounts', and Payments wrote its own
+// `string (ISO 13616)` beside it: one definition of the account number every
+// bank in Europe uses, held twice, in two contexts, either of which could have
+// drifted. It is not the bank's to change and not Accounts' to lend — it is
+// the standard's, and both contexts conform to it (decision 28, third
+// amendment; card 100). The body provides nothing to consume: what it
+// publishes is the shape, which is what a conformist borrows.
+const isoBC = workspace.addBoundedContext("ISO 13616", {
+	description:
+		"The international bank account number standard. Published, not run by anyone here; the bank conforms to it wherever it names an account outside its own walls",
+	external: true,
+});
+const ibanVO = isoBC.addValueObject("IBAN", {
+	description:
+		"Country, check digits, bank and account identifiers; valid only if the mod-97 checksum holds",
+});
+const ibanValue = ibanVO.addAttribute("value", {
+	type: "string (ISO 13616)",
+});
+// A value's own rule, and one this model may state about a system it does not
+// own, because the standard publishes it: an IBAN whose mod-97 checksum fails
+// is not a badly configured IBAN, it is not an IBAN, so the rule holds by
+// construction and needs no aggregate to save it (decision 27's 2026-09-08
+// amendment; decision 28's third).
+ibanVO
+	.addInvariant("IbanChecksumValid", {
+		description:
+			"The IBAN's mod-97 checksum holds, or the value is not an IBAN at all",
+	})
+	.constrains(ibanValue);
 
 /* =======================
    CUSTOMER & KYC
@@ -720,24 +751,9 @@ const mandate = accountAgg.addEntity("Mandate", {
 	description:
 		"A customer's authority to operate the account; an entity because it is granted and revoked over time",
 });
-const ibanVO = accountsBC.addValueObject("IBAN", {
-	description:
-		"Country, check digits, bank and account identifiers; valid only if the mod-97 checksum holds",
-});
-const ibanValue = ibanVO.addAttribute("value", {
-	type: "string (ISO 13616)",
-});
-// A value's own rule: an IBAN whose mod-97 checksum fails is not a badly
-// configured IBAN, it is not an IBAN, so the rule holds by construction and
-// needs no aggregate to save it (decision 27's 2026-09-08 amendment).
-ibanVO
-	.addInvariant("IbanChecksumValid", {
-		description:
-			"The IBAN's mod-97 checksum holds, or the value is not an IBAN at all",
-	})
-	.constrains(ibanValue);
-// AccountNumber and Money are the Shared Kernel's; borrowed by reference,
-// not declared here (decision 16's amendment).
+// IBAN is ISO 13616's, and AccountNumber and Money are the Shared Kernel's;
+// all three are borrowed by reference, not declared here (decision 16's
+// amendment, decision 28's third).
 const accountNumberVO = kernelAccountNumberVO;
 const accountMoney = kernelMoneyVO;
 const overdraftVO = accountsBC.addValueObject("OverdraftLimit", {
@@ -790,13 +806,13 @@ account.addAttribute("overdraft", {
 	type: "OverdraftLimit",
 	valueobject: overdraftVO,
 });
-account.uses(ibanVO, "identified-by", "1");
 account.uses(overdraftVO, "overdraft", "1");
 account.uses(accountStatusVO, "has-status", "1");
 // Customer lives in Customer & KYC: a relation never crosses a bounded
 // context, so the mandate holds `customerId` and nothing more. AccountNumber
-// and Money are the Shared Kernel's, so they are typed by `valueobject`
-// reference only; a relation never crosses a context boundary either.
+// and Money are the Shared Kernel's and IBAN is ISO 13616's, so all three are
+// typed by `valueobject` reference only; a relation never crosses a context
+// boundary either.
 
 accountAgg
 	.addInvariant("BalanceWithinOverdraft", {
@@ -1203,7 +1219,10 @@ const payeeVO = paymentsBC.addValueObject("Payee", {
 		"Name and IBAN of who gets paid; a value because the same details are the same payee",
 });
 payeeVO.addAttribute("name", { type: "string" });
-payeeVO.addAttribute("iban", { type: "string (ISO 13616)" });
+// The same IBAN Accounts holds, and the same one every other bank holds: the
+// standard's, borrowed by reference rather than spelled out again in this
+// context's own words (decision 28, third amendment).
+payeeVO.addAttribute("iban", { type: "IBAN", valueobject: ibanVO });
 // Money is the Shared Kernel's, borrowed by reference (decision 16's amendment).
 const paymentMoney = kernelMoneyVO;
 const executionDateVO = paymentsBC.addValueObject("ExecutionDate", {
@@ -1362,16 +1381,19 @@ const initiatePayment = paymentsApp
 	})
 	.raises(paymentInitiated);
 // A rule across instructions, not inside one: the context holds it and
-// InitiatePayment keeps it, summing the day's instructions for the payer
+// InitiatePayment checks it, summing the day's instructions for the payer
 // account, since no single instruction can know the others (decision 27).
-// Not a precondition, on its own words: the total never exceeding the limit is
-// as true after InitiatePayment as before it, and everything it counts is this
-// context's own to read. InitiatePayment is named because it is the operation
-// that keeps it, which is what naming a guard says (card 94).
+// A check and nothing else. Card 94 wrote it as still true after
+// InitiatePayment, on the argument that everything it counts is this context's
+// own to read, and that is exactly what a count across instances cannot
+// promise: two instructions in the same second both pass the sum and the day's
+// total is over. What the model says is where the check is made
+// (`context-invariant-is-checked`, decision 27's second amendment of
+// 2026-09-09).
 paymentsBC
 	.addInvariant("DailyLimit", {
 		description:
-			"Instructions from one account never exceed the daily limit in total; InitiatePayment sums the day's instructions for the payer account, since no single instruction can know the others",
+			"InitiatePayment refuses an instruction that would take the payer account over its daily limit, summing the day's instructions for that account before it acts. Checked, not held: no single instruction can see the others, so two arriving together can both pass the sum",
 	})
 	.constrains(paymentAmount, initiatePayment);
 // DISCOVERY: Payments Hub lead. "The account has to cover it." A rule about one
@@ -2023,14 +2045,16 @@ const cardCoFeed = cardCoBC.addService("CardCo Authorisation Feed", {
 	type: "application",
 });
 // What the bank sees of CardCo is the call arriving, so the step that makes it
-// is named and nothing else about the processor is. It is internal because
-// CardCo offers it to its merchants, not to us: naming it is how the
-// consumption below says who calls (decisions 21 and 28).
+// is named and nothing else about the processor is. Not internal: `internal`
+// says an operation never leaves its context, and whether a step inside
+// somebody else's machine stays there is not ours to state
+// (`external-is-boundary`, card 100). CardCo offers this to its merchants, who
+// the model does not draw, and naming it is how the consumption below says who
+// calls the bank (decisions 21 and 28).
 const requestAuthorisation = cardCoFeed.provides("RequestAuthorisation", {
 	description:
-		"A merchant asked CardCo to take an amount on one of our cards, so CardCo asks the issuer to approve it",
+		"A merchant asked CardCo to take an amount on one of our cards, so CardCo asks the issuer to approve it. CardCo's own step, offered to its merchants; the bank sees it only as the caller of AuthoriseCard",
 	type: "operation",
-	internal: true,
 });
 // No downstream role on the consumption: CardCo is the upstream here, and a
 // consumption carries only a downstream one. Card 98 wrote "conformist" to
@@ -3076,44 +3100,23 @@ reportingBC.downstreamOf(sovereignBC, {
 	downstreamRoles: ["anti-corruption-layer"],
 });
 
-// Identity-only dependencies. Each of these pairs is joined by nothing but an
-// identity attribute an entity holds naming the other context's entity, which
-// since decision 14 is how the model records a dependency on another context's
-// model. Nothing is exchanged, so neither end plays an upstream or downstream
-// role and both lists stay empty; what the relationship says is which way the
-// dependency runs and that somebody looked at it (`relationship-declared`,
-// card 70).
+// Four identity-only relationships used to sit here: Lending on Accounts,
+// Fraud on Customer & KYC, Fraud on Accounts, Identity & Access on Customer &
+// KYC. Each was joined by nothing but an identity attribute naming the other
+// context's entity, so neither end played a role, both lists were empty, and
+// the description said in words that nothing is exchanged. That is a shape DDD
+// does not have, and the model already had the record it needed: the context
+// map draws an identity crossing as an implied «id» edge. `relationship-
+// declared` no longer asks for a relationship on top of one (decision 14's
+// amendment of 2026-09-09; card 100), and the four are gone. The dependencies
+// are not: they read on the map, from the attributes that hold them.
 //
-// Scheme Gateway used to be listed here too, for the instruction id its
-// SchemeSubmission and SchemeSettlement payloads carry. An id echoed in a
-// payload is not a dependency: the gateway writes the instruction id into the
-// message so that Payments can recognise the answer, and it stores nothing and
-// asks Payments for nothing (decision 14, second amendment). The relationship
-// that matters between the two is the one above, Payments downstream of the
-// scheme; this one was the rule's invention and is gone (card 90).
-lendingBC.downstreamOf(accountsBC, {
-	upstreamRoles: [],
-	downstreamRoles: [],
-	description:
-		"A loan event names the account it settles against; Lending holds the number, not the balance",
-});
-fraudBC.downstreamOf(customerBC, {
-	upstreamRoles: [],
-	downstreamRoles: [],
-	description:
-		"A fraud case names the customer it is about; the case file carries the id and nothing of the customer model",
-});
-fraudBC.downstreamOf(accountsBC, {
-	upstreamRoles: [],
-	downstreamRoles: [],
-	description: "A fraud case names the account it is about, by id",
-});
-identityBC.downstreamOf(customerBC, {
-	upstreamRoles: [],
-	downstreamRoles: [],
-	description:
-		"A credential names the customer it belongs to; who they are stays in Customer & KYC",
-});
+// Scheme Gateway had been dropped from that list earlier, for the instruction
+// id its SchemeSubmission and SchemeSettlement payloads carry. An id echoed in
+// a payload is not a dependency at all: the gateway writes the instruction id
+// into the message so that Payments can recognise the answer, and it stores
+// nothing and asks Payments for nothing (decision 14, second amendment;
+// card 90).
 
 // Shared kernel: six contexts compile against one Money/AccountNumber
 // library, so each declares one relationship with the kernel context rather
@@ -3155,6 +3158,22 @@ lendingBC.sharesKernelWith(sharedKernelBC, {
 });
 reportingBC.sharesKernelWith(sharedKernelBC, {
 	description: "Money, from @northbank/money",
+});
+// Both contexts that name an account outside the bank's own walls take the
+// standard's IBAN as it stands: nobody here negotiates with ISO, and there is
+// nothing to consume — what the body publishes is the shape (decision 28's
+// amendment of 2026-09-09).
+isoBC.upstreamOf(accountsBC, {
+	description:
+		"Accounts holds the IBAN of every current account and takes ISO 13616's definition of it, checksum and all",
+	upstreamRoles: ["published-language"],
+	downstreamRoles: ["conformist"],
+});
+isoBC.upstreamOf(paymentsBC, {
+	description:
+		"A payee is named by an IBAN, in the standard's form; the hub validates it before an instruction exists",
+	upstreamRoles: ["published-language"],
+	downstreamRoles: ["conformist"],
 });
 // Partnership: one planning board, joint releases, no translation.
 lendingBC.partnerOf(decisioningBC, {

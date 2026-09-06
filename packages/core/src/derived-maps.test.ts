@@ -668,11 +668,13 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 				`${e.source.name} -> ${e.target.name}${flowEdgeLabel(e) ? ` [${flowEdgeLabel(e)}]` : ""}`,
 		);
 
-	it("draws the answer as an edge from the operation, labelled with the shape", () => {
+	it("draws the answer as an edge from the call that asked, labelled with the shape", () => {
+		// The edge runs from the local operation `by` names, because that is the
+		// call the answer comes back down (card 100).
 		const { ws, declined } = callAndBranch();
 		const map = ODSFlowMap.fromWorkspace(ws);
 		expect(drawn(map)).toContain(
-			"Authorise Payment -> Checkout [Payment Declined]",
+			"Request Authorisation -> Checkout [Payment Declined]",
 		);
 		// The shape is what the step is called, not a step of its own.
 		expect(map.nodes.has(declined.ref)).toBe(false);
@@ -685,22 +687,22 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 			"Checkout -> Request Authorisation",
 			"Request Authorisation -> Authorise Payment",
 			"Authorise Payment -> Payment Held",
-			"Authorise Payment -> Checkout [Payment Declined]",
+			"Request Authorisation -> Checkout [Payment Declined]",
 			"Checkout -> Reopen Cart",
 			"Checkout -> Payment Held [ends]",
 		]);
 	});
 
-	it("draws the answer on the waiting context's own map, from the neighbour's operation", () => {
-		// A map scoped to one context still shows where the answer came from: the
-		// operation is the neighbour's, and this context is the one that called
-		// it, so the chain knows the shape it answers with.
+	it("draws the answer on the waiting context's map, from its own call", () => {
+		// A map scoped to one context still shows the branch, and now without
+		// the neighbour on the page: the call is this context's own operation,
+		// and the answer comes back down it.
 		const { ws } = callAndBranch();
 		const checkout = ws.getBoundedContextByRefOrThrow(
 			"#/boundedcontexts/checkout",
 		);
 		expect(drawn(ODSFlowMap.fromBoundedContext(checkout))).toContain(
-			"Authorise Payment -> Checkout [Payment Declined]",
+			"Request Authorisation -> Checkout [Payment Declined]",
 		);
 	});
 
@@ -719,7 +721,7 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 		process.events.length = 0;
 		process.on(authorise.completed());
 		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
-			"Authorise Payment -> Checkout [completes]",
+			"Request Authorisation -> Checkout [completes]",
 		);
 		// The completion has no shape, so there is nothing else to draw.
 		expect(ODSFlowMap.fromWorkspace(ws).nodes.has(declined.ref)).toBe(false);
@@ -732,7 +734,7 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 		process.endEvents.length = 0;
 		process.ends(authorise.completed());
 		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
-			"Authorise Payment -> Checkout [completes (ends)]",
+			"Request Authorisation -> Checkout [completes (ends)]",
 		);
 	});
 
@@ -754,7 +756,7 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 		process.endEvents.length = 0;
 		process.ends(authorise.rejected(declined), held);
 		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
-			"Authorise Payment -> Checkout [Payment Declined (ends)]",
+			"Request Authorisation -> Checkout [Payment Declined (ends)]",
 		);
 	});
 
@@ -774,12 +776,11 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 		});
 		expect(refund).toBeDefined();
 		const drawnEdges = drawn(ODSFlowMap.fromWorkspace(ws));
-		expect(drawnEdges).toContain(
-			"Authorise Payment -> Checkout [Payment Declined]",
-		);
-		expect(drawnEdges).not.toContain(
-			"Refund Payment -> Checkout [Payment Declined]",
-		);
+		// Nothing calls Refund Payment, so its refusal reaches nobody: the one
+		// edge the shared shape draws is the call the process actually made.
+		expect(
+			drawnEdges.filter((it) => it.includes("[Payment Declined]")),
+		).toEqual(["Request Authorisation -> Checkout [Payment Declined]"]);
 	});
 
 	it("carries the chain through a consumer that provides one operation", () => {
@@ -794,6 +795,46 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 		orchestrator.consumes(authorise, { pattern: "anti-corruption-layer" });
 		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
 			"Request Authorisation -> Authorise Payment",
+		);
+	});
+
+	// Two contexts calling one service each hear their own call come back, and
+	// neither wakes the other: the answer runs from the call that asked for it
+	// (decision 23, 2026-09-09 fourth amendment; card 100).
+	it("sends the answer back to the caller and to no other context", () => {
+		const { ws, authorise, declined } = callAndBranch();
+		const fraud = ws.addBoundedContext("Fraud", { description: "" });
+		const fraudApp = fraud.addService("Fraud App", {
+			description: "",
+			type: "application",
+		});
+		const askFraud = fraudApp.provides("Ask Fraud", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const noteFraud = fraudApp.provides("Note Fraud", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		fraudApp.consumes(authorise, {
+			pattern: "anti-corruption-layer",
+			by: [askFraud],
+		});
+		fraud
+			.addPolicy("Note on decline", { description: "" })
+			.on(authorise.rejected(declined))
+			.issues(noteFraud);
+		const answers = drawn(ODSFlowMap.fromWorkspace(ws)).filter((it) =>
+			it.includes("[Payment Declined]"),
+		);
+		expect(answers.sort()).toEqual([
+			"Ask Fraud -> Note on decline [Payment Declined]",
+			"Request Authorisation -> Checkout [Payment Declined]",
+		]);
+		expect(ws.validate().filter((d) => d.rule === "reaction-cycle")).toEqual(
+			[],
 		);
 	});
 
@@ -878,7 +919,7 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 		);
 		policy.on(...triggers).issues(...(process?.commands ?? []));
 		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
-			"Authorise Payment -> Reopen on decline [Payment Declined]",
+			"Request Authorisation -> Reopen on decline [Payment Declined]",
 		);
 	});
 });

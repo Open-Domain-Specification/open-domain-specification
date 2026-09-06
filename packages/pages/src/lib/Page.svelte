@@ -39,7 +39,7 @@ import HealthPage, {
 	sections as healthSections,
 } from "./templates/HealthPage.svelte";
 import InvariantPage, {
-	sections as invariantSections,
+	sectionsFor as invariantSections,
 } from "./templates/InvariantPage.svelte";
 import PageLayout from "./templates/PageLayout.svelte";
 import PolicyPage, {
@@ -121,7 +121,7 @@ $effect(() => {
 	{:else if target instanceof ValueObject}
 		<PageLayout sections={valueObjectSections}><ValueObjectPage valueobject={target} /></PageLayout>
 	{:else if target instanceof Invariant}
-		<PageLayout sections={invariantSections}><InvariantPage invariant={target} /></PageLayout>
+		<PageLayout sections={invariantSections(target)}><InvariantPage invariant={target} /></PageLayout>
 	{:else if target instanceof DataSchema}
 		<PageLayout sections={schemaSections}><SchemaPage schema={target} /></PageLayout>
 	{:else if target instanceof Policy}
