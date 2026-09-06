@@ -180,7 +180,7 @@
                     "type": "object"
                 },
                 "subdomains": {
-                    "description": "The subdomains this context serves; a context may serve several.",
+                    "description": "The subdomains this context serves; a context may serve several.\nOptional, like every list in this schema: an absent list is an empty\none, and `context-serves-subdomain` says so as a warning rather than the\nloader refusing the file.",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -218,8 +218,7 @@
             },
             "required": [
                 "description",
-                "name",
-                "subdomains"
+                "name"
             ],
             "title": "BoundedContext",
             "type": "object"
@@ -842,7 +841,7 @@
                     "type": "array"
                 },
                 "then": {
-                    "description": "The operation consumables this policy issues.",
+                    "description": "The operation consumables this policy issues. Optional, like every list in this schema: an absent list is an empty one.",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -860,9 +859,7 @@
             },
             "required": [
                 "description",
-                "name",
-                "on",
-                "then"
+                "name"
             ],
             "title": "Policy",
             "type": "object"
@@ -893,7 +890,7 @@
                     "description": "What the architecture thinks of this process. Absent means `by-design`."
                 },
                 "ends": {
-                    "description": "What completes an instance: an event consumable, an answer, or a deadline\nnamed the same way `on` names one.",
+                    "description": "What completes an instance: an event consumable, an answer, or a deadline\nnamed the same way `on` names one. Optional, like every list in this\nschema: an absent list is an empty one.",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -928,7 +925,7 @@
                     "type": "array"
                 },
                 "starts": {
-                    "description": "What begins an instance of this process: an event consumable, or an\noperation of the process's own context — the command that creates one.\n\nA command starts a saga as often as an event does: \"open a claim\", \"start\nan onboarding\", \"submit an application for a decision\". The earlier\nreading allowed only an event, on the argument that something was already\nwaiting for whatever starts an instance; that argument is about answers,\nwhere a caller has to have made the call, and it was overapplied to\ncommands, which nobody has to be waiting for (decision 23, third\namendment).\n\nA starting command belongs to this process's own context, for the reason\n`then` does: a process that claimed a neighbour's operation created its\ninstances would be acting through somebody else's model. An answer and a\ndeadline still start nothing, because in both cases the instance had to\nexist before to have been waiting.",
+                    "description": "What begins an instance of this process: an event consumable, or an\noperation of the process's own context — the command that creates one.\n\nA command starts a saga as often as an event does: \"open a claim\", \"start\nan onboarding\", \"submit an application for a decision\". The earlier\nreading allowed only an event, on the argument that something was already\nwaiting for whatever starts an instance; that argument is about answers,\nwhere a caller has to have made the call, and it was overapplied to\ncommands, which nobody has to be waiting for (decision 23, third\namendment).\n\nA starting command belongs to this process's own context, for the reason\n`then` does: a process that claimed a neighbour's operation created its\ninstances would be acting through somebody else's model. An answer and a\ndeadline still start nothing, because in both cases the instance had to\nexist before to have been waiting.\n\nOptional, like every list in this schema: an absent list is an empty\none. `process-starts` still asks for at least one, and reports it as a\nvalidation error rather than a schema one, so a file that omits `starts`\nloads and is then told what it is missing.",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -944,7 +941,7 @@
                     "type": "array"
                 },
                 "then": {
-                    "description": "The operation consumables of this process's own context that it issues.",
+                    "description": "The operation consumables of this process's own context that it issues. Optional, like every list in this schema: an absent list is an empty one.",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -962,11 +959,7 @@
             },
             "required": [
                 "description",
-                "ends",
-                "name",
-                "on",
-                "starts",
-                "then"
+                "name"
             ],
             "title": "Process",
             "type": "object"

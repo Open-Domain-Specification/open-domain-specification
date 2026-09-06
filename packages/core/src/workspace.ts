@@ -494,15 +494,19 @@ export class Workspace
 	 * (decision 23, third amendment).
 	 */
 	getAnswerByRef(ref: string): Answer | undefined {
-		// A completion is the answer of an operation that returns nothing, so it
-		// resolves only when there is nothing to return; an operation with an
-		// answer of its own is named by that (decision 13, second amendment).
+		// A completion is named by any operation, resolved the same way whether
+		// or not it returns a shape: refusing to resolve it here for an
+		// operation that does return one used to surface as an unresolved ref
+		// that said the operation did not exist, when it does; the mismatch
+		// between naming a completion and the operation answering with a shape
+		// is `consumable-kind`'s to report, the same diagnostic the DSL gives
+		// for the same mistake, once the Answer exists to carry it
+		// (decision 13, second amendment; card 108).
 		if (ref.endsWith("/completed")) {
 			const operation = this.getConsumableByRef(
 				ref.slice(0, -"/completed".length),
 			);
-			if (!operation || operation.returns) return undefined;
-			return operation.completed();
+			return operation?.completed();
 		}
 		const [operationRef, rejectionId] = ref.endsWith("/returns")
 			? [ref.slice(0, -"/returns".length)]
