@@ -43,3 +43,7 @@ Two things the architect's fourth review showed. A process that branches on the 
 ## Amendment (2026-09-09, second)
 
 A deadline has an interval and now an anchor: `from` names the process's own trigger the interval counts from, absent meaning from the start; a statutory clock counts from the application's receipt, a delivery window from the dispatch (card 98). Pausing a clock stays prose in the deadline's description; the model states when a clock starts and how long it runs, not the conditions that stop it.
+
+## Amendment (2026-09-09, third)
+
+A command starts a saga as often as an event does: `starts` may name an operation of the process's own context, the one that creates an instance, and the reaction walk steps from it to the process (card 99). The earlier reasoning, that nothing waiting on an answer can be created by it, was about answers and was overapplied to commands.

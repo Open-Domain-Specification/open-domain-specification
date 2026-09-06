@@ -33,3 +33,7 @@ The note above answered a list with a wrapper schema, and Codex's review is righ
 ## Note (2026-09-09, second)
 
 An operation with no `returns` has no answer to wait on, so a process that issues it waits on the event the operation raises instead, one dependency for the call and one for the fact. That is DDD's own shape, the event is the fact, and the model keeps it; the cost is that a caller of a returns-less command names two consumptions, and it is named here.
+
+## Amendment (2026-09-09, second)
+
+An operation without `returns` still completes, and a process may wait on that: `completed` is an answer with no shape, so a provisioning workflow that ends when an activation call succeeds names that completion rather than inventing a response (card 99). The note that a returns-less command costs two consumptions is superseded where the caller waits on the completion.

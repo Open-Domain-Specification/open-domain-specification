@@ -59,3 +59,7 @@ Upstream is who dictates the model, not who provides the consumable. A card proc
 ## Amendment (2026-09-09, second)
 
 Card 98 settled two mechanics the previous amendment left open. An anti-corruption layer lets a downstream carry the upstream's shape only on the consumable the upstream itself calls, the operation where the caller's language arrives and is translated; a wider reading, any consumable of the downstream, would let a context launder a foreign shape into its own events, which `schema-context` exists to refuse. And the downstream's anti-corruption-layer role is backed by that caller-facing shape, since nothing else crosses from an upstream that is the caller.
+
+## Note (2026-09-09)
+
+Card 98 fixed the two rules that carry language across the boundary and left the two that check a relationship's existence and roles still reading direction from the call. `relationship-declared` is satisfied by a relationship in either direction, because the direction is the author's claim about who dictates the model, and `role-coherence` asks each side for the role its declared position implies (card 99).

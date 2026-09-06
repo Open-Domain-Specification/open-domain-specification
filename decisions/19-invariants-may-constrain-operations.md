@@ -28,3 +28,7 @@ The guard may be an operation of any service of the invariant's own context, dom
 ## Amendment (2026-09-09)
 
 A precondition checks the request before the operation runs, and often what it checks is in the request: pickup before delivery, a positive weight, on a quotation no aggregate yet holds. A precondition may constrain attributes of the schema its guarded operation takes, returns or rejects with (card 97); an invariant that is not a precondition still may not, because a persistent rule about the model is not a rule about a transport shape.
+
+## Amendment (2026-09-09, second)
+
+A guarantee about an answer is a postcondition: every returned itinerary meets the requested deadline. It is neither a persistent invariant nor a precondition, since the answer does not exist before the operation runs. `postcondition: true` names it and lets it constrain the attributes of what the guarded operation returns or rejects with; and both preconditions and postconditions follow schema composition, reaching a field of any schema the request or answer composes (card 99).
