@@ -10,7 +10,7 @@ No card is live. The ninth panel round is running on the card 115 head: Antigrav
 
 ## Next
 
-Read the three verdicts. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
+Read the three verdicts. From here Codex is not run every round, at the owner's instruction (its usage is limited): Antigravity and a fresh architect review each head, and Codex runs once more only as the final confirmation on a head both hold at yes. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
 
 ## Later
 
