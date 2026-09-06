@@ -2,15 +2,15 @@
 
 ## Goal / health
 
-Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel is a good, clean, detailed specification for modelling systems the DDD way, answers yes without a caveat, and every independent reviewer agrees. Health: green. Develop CI passes on every commit since the history squash; the landing gate (`npm run verify`) was green at the last landing (card 104). Review panel on the card 104 head: Antigravity yes with named costs (seven consecutive runs, every issue decided ground); Codex no on run 8 with two accepted gaps (card 107) and nine decided; the fresh-context architect yes with named costs on round 8, with three rule gaps (cards 107 and 108) and one bent exemplar (card 109).
+Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel is a good, clean, detailed specification for modelling systems the DDD way, answers yes without a caveat, and every independent reviewer agrees. Health: green. Develop CI passes on every commit since the history squash; the landing gate (`npm run verify`) was green at the last landing (card 110). Review panel on the card 104 head: Antigravity yes with named costs (seven consecutive runs, every issue decided ground); Codex no on run 8 with two accepted gaps and nine decided; the fresh-context architect yes with named costs on round 8 with three rule gaps and one bent exemplar. Every accepted item landed as cards 107 to 110; the eighth round on the card 110 head is running.
 
 ## Now
 
-Card 110 ([`SubmitToScheme` sends to the scheme](boards/project-backlog/110-submittoscheme-sends-to-the-scheme.md), developer) is live in its worktree; it is the last card before the eighth panel round. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 109 landed green; 107 gave RiverMart the first two named agreements in a reference model.
+No card is live. The eighth panel round is running on the card 110 head: Antigravity run 20, Codex run 9 and a fresh architect-deep round 9, all with the same prompt. Stopping point: each reviewer's verdict is read and ruled, new defects become cards, restatements are answered by the decision they restate. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 110 landed green; 107 gave RiverMart the first two named agreements in a reference model.
 
 ## Next
 
-Land 110; then the panel (Antigravity via `agy`, Codex via `codex exec -m gpt-6-astra`, a fresh architect-deep) runs an eighth time on that head. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
+Read the three verdicts. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
 
 ## Later
 
