@@ -70,3 +70,7 @@ The blind clinic model produced the shape the condition names, a domain service 
 ## Note (2026-09-10, second)
 
 One exemption this record did not name: a kernel context's aggregate operations may be consumed by the contexts that share the kernel, and for any other context the aggregate stays internal (decision 16, card 98).
+
+## Amendment (2026-09-10, condition reworded)
+
+The architect's twelfth round read card 117's outcome as a condition met in form and dismissed by reading the interview, which is not the testable condition this record claims. Reworded so the next blind model can meet or fail it: condition (b) holds when a model written from a brief that names no shape carries a domain service that both consumes across a boundary and holds a rule of its own in the model, an invariant it keeps, a precondition or postcondition on one of its operations, or an operation whose description is a decision and not a fetch. Condition (a), the answer routing, is no longer a precondition: it ships on its own (decision 21, card 126).

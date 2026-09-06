@@ -111,3 +111,7 @@ Pre-specified for decision 17's reopening condition, so the design is not discov
 ## Correction (2026-09-10)
 
 The decision bullet says `by` may name "policies of the consumer's bounded context" on any consumption. Decision 17's second amendment narrowed that: a policy or process is named on an event consumption, and an operation consumption names the operation that makes the call, which `consumption-by-operation` enforces. The bullet stands as written on the day; the schema comment and the docs page that repeated it are corrected by card 124, and card 125 gives every decision a current-position section so a stale bullet is never the last word.
+
+## Amendment (2026-09-10)
+
+The second note pre-specified transitive answer routing and tied it to decision 17's reopening; the architect's twelfth round showed the tie was wrong. Events already reach through any number of local fronts and an answer stopped after one, and `consumable-kind` made the difference an error that dictates which front a process must issue. An answer routes back along the local `by` chain to the nearest reactor that issued an operation on it, exactly as the note specified; across a boundary it still travels one hop, to the caller and nobody else (card 126).

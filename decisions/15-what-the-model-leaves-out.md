@@ -163,3 +163,7 @@ The fifth model ran: one modelling mistake, two rules worked around, none believ
 ## Note (2026-09-10, second)
 
 The section "Rules carry no comments" listed the seams as consumables, consumptions and relationships and left out processes, which decision 23 gave `comments` and `disposition`; the list is all four.
+
+### Lifecycle states and transitions are prose
+
+An aggregate's state machine has no form: a `status` attribute's values are the author's text, an invariant may name the operations that move it and what must hold, and there is no transition table. The reference models write "sold does not reopen" as an invariant and the clinic writes "status moves forward only". Named by the architect's twelfth round; reopen when a reference model cannot state its lifecycle without one. The same round listed the costs the docs did not yet carry; card 127 puts the full price on the docs site and in the installed skill.

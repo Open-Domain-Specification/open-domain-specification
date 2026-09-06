@@ -33,3 +33,7 @@ A rejection is something a process can wait on (decision 23, second amendment), 
 ## Amendment (2026-09-10)
 
 A rejection is keyed by its shape, and a contract that refuses with one shape and a reason code, an acquirer's response code 05 against 51, gave a process one branch whatever the code said; the only faithful alternative, one schema per reason, misstates the contract the way decision 13's `many` amendment refused for lists. A rejection may name its `reasons`, the enumerated outcomes the contract states, and each is an answer a process may hear, alongside the shape-level answer that hears them all. A reason is a named outcome of the contract, not a condition on data, which decision 15 still refuses (card 114, architect's ninth round).
+
+## Note (2026-09-10)
+
+`rejection-raised` (card 123) told an author that one of two shapes was false when a declined authorisation is both the caller's answer and a fact another context hears; in event storming `PaymentDeclined` is a canonical event because the decision happened even though the payment did not. A rejection answers the caller; an event tells the world; where somebody hears the event, both are true and the rule is quiet (card 126).

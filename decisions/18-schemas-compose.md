@@ -31,3 +31,7 @@ A `DataSchema` is a flat dictionary of attributes, and an attribute's only struc
 ## Note (2026-09-10, after card 117)
 
 The blind clinic model produced a second outcome that is not a refusal, a patient waitlisted instead of booked, and carried it under `rejects` for want of a shape. Both debate parties judged it from the model: it is a second successful outcome, so `rejects` misstates it, and nothing waits on the answer; the operation is issued by a policy and already raises both events, and the record's form for one-of-two-things-happened with no caller waiting is the `raises` list with no `returns`. The author picked the wrong of two shapes the record has. The condition stands unchanged: it is met the day a process waits on such an answer. A rejection shape that the same operation also raises as an event is a model telling on itself, and a warning says so (card 123).
+
+## Note (2026-09-10, second)
+
+The architect's twelfth round found the reopening condition hard to meet as judged: the clinic's referral and a scorecard's approve-refer-decline are both the shape, and each was answerable inside the record because nothing waited. The condition stands and is judged on one fact only: a reactor waits on the answer and branches on which non-refusal shape came back. The first model that writes that reopens the first tier.

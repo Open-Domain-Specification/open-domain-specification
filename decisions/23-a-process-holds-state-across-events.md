@@ -87,3 +87,7 @@ A command addressed to a live process instance, add a document to an open claim,
 ## Note (2026-09-10, fourth)
 
 The second amendment said an answer is synchronous because the operation is; that conflated kind with delivery (decision 15, corrected). An answer comes back to whoever called; when, the model does not say. The schema comment on `PolicySchema.on` that repeated the sentence goes with card 120.
+
+## Note (2026-09-10, fifth)
+
+A deadline is an interval after its trigger, and a date held in an attribute, a policy's expiry, has no home in it; the clinic wrote "until the day of the appointment" into `after` and nothing said so. A data-fixed date is a scheduled operation or a Clock event (decision 28), and `after` is an interval. Named by the architect's twelfth round.
