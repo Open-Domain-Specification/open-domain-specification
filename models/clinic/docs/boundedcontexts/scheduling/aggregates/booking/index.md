@@ -29,6 +29,8 @@ One patient booked, or waitlisted, against a slot.
 | Patient Waitlisted | event | no | - | A patient was put on the waiting list instead of taking the offered slot. | [Patient Waitlisted](../../index.md#schemas) | - | - | - | - |
 | Cancel Booking | operation | no | - | Called by the patient or the scheduler to give up a confirmed booking. | [Cancellation Request](../../index.md#schemas) | - | - | Booking Cancelled | - |
 | Booking Cancelled | event | no | - | A confirmed booking was cancelled. | [Booking Cancelled Details](../../index.md#schemas) | - | - | - | - |
+| Mark Appointment Day Reached | operation | no | - | Called by the clinic's own scheduler once a confirmed booking's clinic session date arrives with no cancellation received; the date is the session's own, already held, not an interval the process counts (see DISCOVERY.md). | [Appointment Day Reached Details](../../index.md#schemas) | - | - | Appointment Day Reached | - |
+| Appointment Day Reached | event | no | - | A confirmed booking's clinic session date arrived with no cancellation received. | [Appointment Day Reached Details](../../index.md#schemas) | - | - | - | - |
 
 
 ## Consumes
