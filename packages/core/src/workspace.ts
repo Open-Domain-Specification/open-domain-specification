@@ -86,6 +86,60 @@ export type UnresolvedReference = {
 	present: boolean;
 };
 
+/** A `$ref` as a file wrote it. */
+export type WrittenRef = { $ref: string };
+
+/**
+ * The refs one element wrote that named nothing, kept as written so that
+ * `toSchema` writes them back.
+ *
+ * Without this, opening a file with a typo in it and saving it dropped the
+ * typo: the loader left the link unset and `toSchema` wrote only the links
+ * that were set, so a mistake the author had not fixed yet disappeared, and
+ * with it the `unresolved-ref` diagnostic that was pointing at it. A ref is
+ * kept beside the field it was written in, and every `toSchema` that writes a
+ * link asks for it, so the file that comes back out says what the file that
+ * went in said (card 102).
+ *
+ * Two things are not kept, because the element that would hold them does not
+ * survive the load: a consumption whose `consumable` names nothing, and a
+ * relationship or a relation whose end does. Each of those is the pair it
+ * joins, so an end that resolves to nothing leaves no object at all.
+ *
+ * A ref of a list comes back at the end of that list rather than where it was
+ * written, because a list keeps only what it holds and the position of a link
+ * that was never made is not part of the model.
+ */
+export class UnresolvedWrites {
+	private readonly byField = new Map<string, WrittenRef[]>();
+
+	/** Keeps a ref as written, under the field it was written in. */
+	add(field: string, written: WrittenRef): void {
+		const kept = this.byField.get(field);
+		if (kept) kept.push(written);
+		else this.byField.set(field, [written]);
+	}
+
+	/** The ref written in a single-valued field, when it did not resolve. */
+	one(field: string): WrittenRef | undefined {
+		return this.byField.get(field)?.[0];
+	}
+
+	/** The links a list field made, with the refs that made none after them. */
+	list<T extends WrittenRef>(field: string, resolved: T[]): (T | WrittenRef)[] {
+		const kept = this.byField.get(field);
+		return kept ? [...resolved, ...kept] : resolved;
+	}
+}
+
+/** An element that can write a `$ref` at all, and so can have kept one. */
+export type RefWriter = { readonly unresolvedWrites: UnresolvedWrites };
+
+/** Whether an element keeps the refs it wrote that did not resolve. */
+export function keepsUnresolvedWrites(it: object): it is RefWriter {
+	return "unresolvedWrites" in it;
+}
+
 export class Workspace
 	implements Visitable, SchemaConvertible<ods.WorkspaceSchema>
 {
@@ -918,6 +972,9 @@ export class BoundedContext
 		return this.subdomains.values().next().value;
 	}
 
+	/** The refs written here that named nothing; see {@link UnresolvedWrites}. */
+	readonly unresolvedWrites = new UnresolvedWrites();
+
 	constructor(
 		workspace: Workspace,
 		name: string,
@@ -1065,10 +1122,15 @@ export class BoundedContext
 		return {
 			name: this.name,
 			description: this.description,
-			subdomains: Array.from(this.subdomains, (it) => ({ $ref: it.ref })),
+			subdomains: this.unresolvedWrites.list(
+				"subdomains",
+				Array.from(this.subdomains, (it) => ({ $ref: it.ref })),
+			),
 			bigBallOfMud: this.bigBallOfMud || undefined,
 			external: this.external || undefined,
-			team: this.team && { $ref: this.team.ref },
+			team: this.team
+				? { $ref: this.team.ref }
+				: this.unresolvedWrites.one("team"),
 			aggregates: asRecords(this.aggregates),
 			invariants: asRecords(this.invariants),
 			services: asRecords(this.services),
@@ -1303,6 +1365,9 @@ export class Consumable
 		return `#/${this.path}`;
 	}
 
+	/** The refs written here that named nothing; see {@link UnresolvedWrites}. */
+	readonly unresolvedWrites = new UnresolvedWrites();
+
 	constructor(
 		provider: Aggregate | Service,
 		name: string,
@@ -1440,23 +1505,31 @@ export class Consumable
 	}
 
 	toSchema(): ods.ConsumableSchema {
+		const rejects = this.unresolvedWrites.list(
+			"rejects",
+			this.rejects.map((it) => ({ $ref: it.ref })),
+		);
+		const raises = this.unresolvedWrites.list(
+			"raises",
+			this.raisedEvents.map((it) => ({ $ref: it.ref })),
+		);
 		return {
 			name: this.name,
 			description: this.description,
 			pattern: this.pattern,
 			type: this.type,
 			internal: this.internal || undefined,
-			schema: this.schema && { $ref: this.schema.ref },
-			returns: this.returns && {
-				$ref: this.returns.ref,
-				many: this.returnsMany || undefined,
-			},
-			rejects: this.rejects.length
-				? this.rejects.map((it) => ({ $ref: it.ref }))
-				: undefined,
-			raises: this.raisedEvents.length
-				? this.raisedEvents.map((it) => ({ $ref: it.ref }))
-				: undefined,
+			schema: this.schema
+				? { $ref: this.schema.ref }
+				: this.unresolvedWrites.one("schema"),
+			returns: this.returns
+				? {
+						$ref: this.returns.ref,
+						many: this.returnsMany || undefined,
+					}
+				: this.unresolvedWrites.one("returns"),
+			rejects: rejects.length ? rejects : undefined,
+			raises: raises.length ? raises : undefined,
 			comments: this.comments.length ? this.comments : undefined,
 			disposition: this.disposition,
 		};
@@ -1679,6 +1752,9 @@ export class Entity
 		return `#/${this.path}`;
 	}
 
+	/** The refs written here that named nothing; see {@link UnresolvedWrites}. */
+	readonly unresolvedWrites = new UnresolvedWrites();
+
 	constructor(
 		aggregate: Aggregate,
 		name: string,
@@ -1768,7 +1844,9 @@ export class Entity
 			name: this.name,
 			description: this.description,
 			root: this.root,
-			specialises: this.specialises && { $ref: this.specialises.ref },
+			specialises: this.specialises
+				? { $ref: this.specialises.ref }
+				: this.unresolvedWrites.one("specialises"),
 			attributes: asRecords(this.attributes),
 			relations: asArray(this.relations),
 		};
@@ -1846,6 +1924,9 @@ export class ValueObject
 	get ref(): string {
 		return `#/${this.path}`;
 	}
+
+	/** The refs written here that named nothing; see {@link UnresolvedWrites}. */
+	readonly unresolvedWrites = new UnresolvedWrites();
 
 	constructor(
 		boundedcontext: BoundedContext,
@@ -1943,7 +2024,9 @@ export class ValueObject
 		return {
 			name: this.name,
 			description: this.description,
-			specialises: this.specialises && { $ref: this.specialises.ref },
+			specialises: this.specialises
+				? { $ref: this.specialises.ref }
+				: this.unresolvedWrites.one("specialises"),
 			attributes: asRecords(this.attributes),
 			relations: asArray(this.relations),
 			invariants: asRecords(this.invariants),
@@ -2039,6 +2122,9 @@ export class Invariant
 			: this.owner.boundedcontext;
 	}
 
+	/** The refs written here that named nothing; see {@link UnresolvedWrites}. */
+	readonly unresolvedWrites = new UnresolvedWrites();
+
 	constructor(
 		owner: Aggregate | BoundedContext | ValueObject,
 		name: string,
@@ -2081,7 +2167,10 @@ export class Invariant
 			description: this.description,
 			precondition: this.precondition || undefined,
 			postcondition: this.postcondition || undefined,
-			constrains: this.targets.map((it) => ({ $ref: it.ref })),
+			constrains: this.unresolvedWrites.list(
+				"constrains",
+				this.targets.map((it) => ({ $ref: it.ref })),
+			),
 		};
 	}
 }
@@ -2482,6 +2571,9 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 		return `#/${this.path}`;
 	}
 
+	/** The refs written here that named nothing; see {@link UnresolvedWrites}. */
+	readonly unresolvedWrites = new UnresolvedWrites();
+
 	constructor(
 		owner: AttributeOwner,
 		name: string,
@@ -2507,9 +2599,15 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 			description: this.description,
 			identity: this.identity || undefined,
 			optional: this.optional || undefined,
-			valueobject: this.valueobject && { $ref: this.valueobject.ref },
-			schema: this.schema && { $ref: this.schema.ref },
-			identifies: this.identifies && { $ref: this.identifies.ref },
+			valueobject: this.valueobject
+				? { $ref: this.valueobject.ref }
+				: this.unresolvedWrites.one("valueobject"),
+			schema: this.schema
+				? { $ref: this.schema.ref }
+				: this.unresolvedWrites.one("schema"),
+			identifies: this.identifies
+				? { $ref: this.identifies.ref }
+				: this.unresolvedWrites.one("identifies"),
 		};
 	}
 }
@@ -2660,6 +2758,9 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 		return `#/${this.path}`;
 	}
 
+	/** The refs written here that named nothing; see {@link UnresolvedWrites}. */
+	readonly unresolvedWrites = new UnresolvedWrites();
+
 	constructor(
 		boundedcontext: BoundedContext,
 		name: string,
@@ -2698,8 +2799,14 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 		return {
 			name: this.name,
 			description: this.description,
-			on: this.events.map((it) => ({ $ref: it.ref })),
-			[issuesSchemaKey]: this.commands.map((it) => ({ $ref: it.ref })),
+			on: this.unresolvedWrites.list(
+				"on",
+				this.events.map((it) => ({ $ref: it.ref })),
+			),
+			[issuesSchemaKey]: this.unresolvedWrites.list(
+				"then",
+				this.commands.map((it) => ({ $ref: it.ref })),
+			),
 		};
 	}
 }
@@ -2802,6 +2909,9 @@ export class Deadline
 		return this.process.boundedcontext;
 	}
 
+	/** The refs written here that named nothing; see {@link UnresolvedWrites}. */
+	readonly unresolvedWrites = new UnresolvedWrites();
+
 	constructor(process: Process, name: string, attributes: DeadlineAttributes) {
 		this.id = attributes.id || snakeCase(name);
 		this.name = name;
@@ -2846,7 +2956,9 @@ export class Deadline
 			name: this.name,
 			description: this.description,
 			after: this.after,
-			from: this.from && { $ref: this.from.ref },
+			from: this.from
+				? { $ref: this.from.ref }
+				: this.unresolvedWrites.one("from"),
 		};
 	}
 }
@@ -2902,6 +3014,9 @@ export class Process
 	get ref(): string {
 		return `#/${this.path}`;
 	}
+
+	/** The refs written here that named nothing; see {@link UnresolvedWrites}. */
+	readonly unresolvedWrites = new UnresolvedWrites();
 
 	constructor(
 		boundedcontext: BoundedContext,
@@ -2987,8 +3102,11 @@ export class Process
 	}
 
 	toSchema(): ods.ProcessSchema {
-		const refs = (triggers: ProcessTrigger[]) =>
-			triggers.map((it) => ({ $ref: it.ref }));
+		const kept = (field: string, triggers: ProcessTrigger[]) =>
+			this.unresolvedWrites.list(
+				field,
+				triggers.map((it) => ({ $ref: it.ref })),
+			);
 		return {
 			name: this.name,
 			description: this.description,
@@ -2999,10 +3117,10 @@ export class Process
 						[...this.deadlines].map(([id, it]) => [id, it.toSchema()]),
 					)
 				: undefined,
-			starts: refs(this.startEvents),
-			on: refs(this.events),
-			[issuesSchemaKey]: refs(this.commands),
-			ends: refs(this.endEvents),
+			starts: kept("starts", this.startEvents),
+			on: kept("on", this.events),
+			[issuesSchemaKey]: kept("then", this.commands),
+			ends: kept("ends", this.endEvents),
 			comments: this.comments.length ? this.comments : undefined,
 			disposition: this.disposition,
 		};
@@ -3042,6 +3160,9 @@ export class GlossaryTerm
 		return `#/${this.path}`;
 	}
 
+	/** The refs written here that named nothing; see {@link UnresolvedWrites}. */
+	readonly unresolvedWrites = new UnresolvedWrites();
+
 	constructor(
 		boundedcontext: BoundedContext,
 		name: string,
@@ -3071,7 +3192,9 @@ export class GlossaryTerm
 			name: this.name,
 			definition: this.definition,
 			aliases: this.aliases.length ? this.aliases : undefined,
-			embodiedBy: this.embodiedBy && { $ref: this.embodiedBy.ref },
+			embodiedBy: this.embodiedBy
+				? { $ref: this.embodiedBy.ref }
+				: this.unresolvedWrites.one("embodiedBy"),
 		};
 	}
 }

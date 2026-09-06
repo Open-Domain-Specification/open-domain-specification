@@ -4758,6 +4758,66 @@ describe("reaction-cycle", () => {
 	it("does not follow a consumption of an event, which the consumer reacts to rather than causes", () => {
 		expect(reactions(twoContexts({ callBack: false }).ws)).toEqual([]);
 	});
+
+	/**
+	 * Card 100's two-caller shape with a process at the top of it: A's process
+	 * issues A's own operation, that operation calls B's public one through a
+	 * consumption's `by`, and the fact B raises comes back to the process.
+	 *
+	 * One reactor stands on that ring, so counting reactors read it as a
+	 * lifecycle and said nothing. It is not one: two of its steps are B's, and
+	 * neither context can see the whole of it (card 102).
+	 */
+	function outAndBack() {
+		const ws = emptyWorkspace();
+		const a = ws.addBoundedContext("A", { description: "" });
+		const b = ws.addBoundedContext("B", { description: "" });
+		const aApp = a.addService("A App", {
+			description: "",
+			type: "application",
+		});
+		const bApp = b.addService("B App", {
+			description: "",
+			type: "application",
+		});
+		const started = aApp.provides("Started", {
+			description: "",
+			type: "event",
+		});
+		const bHappened = bApp.provides("B Happened", {
+			description: "",
+			type: "event",
+		});
+		const bPublic = bApp
+			.provides("B Public", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			})
+			.raises(bHappened);
+		const aLocal = aApp.provides("A Local", {
+			description: "",
+			type: "operation",
+		});
+		aApp.consumes(bPublic, { pattern: "conformist", by: [aLocal] });
+		const run = a
+			.addProcess("Run", { description: "" })
+			.starts(started)
+			.on(bHappened)
+			.issues(aLocal);
+		return { ws, run };
+	}
+
+	it("reports a ring that leaves the context and comes back through a neighbour", () => {
+		const { ws, run } = outAndBack();
+		expect(reactions(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
+			[
+				"warning",
+				'Reactions run in a cycle: "Run" -> "A Local" -> "B Public" -> "B Happened" -> "Run"; the chain triggers itself and nothing in the model says what ends it; it runs through "A" and "B", so no one context can see the whole ring',
+				run.ref,
+			],
+		]);
+	});
 });
 
 describe("disposition-needs-comment", () => {
@@ -5451,6 +5511,29 @@ describe("external-is-boundary", () => {
 			[
 				"error",
 				'External context "Card Scheme" marks operation "Settle Internally" internal; whether an operation of a system we do not own stays inside it is not ours to state, only that it exists and who it reaches. Drop internal, or drop the operation if nothing here depends on it',
+				hidden.ref,
+			],
+		]);
+	});
+
+	// An event of theirs nobody outside hears is a fact nobody outside can
+	// know they raise, which is the same invention as an internal operation
+	// and was left unreported until card 102.
+	it("refuses an internal event on a system we do not own", () => {
+		const { ws, external } = scheme();
+		const api = external.addService("Scheme API", {
+			description: "",
+			type: "application",
+		});
+		const hidden = api.provides("Ledger Rolled", {
+			description: "",
+			type: "event",
+			internal: true,
+		});
+		expect(boundary(ws)).toEqual([
+			[
+				"error",
+				'External context "Card Scheme" marks event "Ledger Rolled" internal; whether an event of a system we do not own stays inside it is not ours to state, only that it exists and who it reaches. Drop internal, or drop the event if nothing here depends on it',
 				hidden.ref,
 			],
 		]);

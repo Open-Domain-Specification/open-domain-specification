@@ -39,6 +39,7 @@ import {
 	BoundedContext,
 	Deadline,
 	Entity,
+	keepsUnresolvedWrites,
 	Workspace as WorkspaceModel,
 } from "./workspace";
 
@@ -930,6 +931,28 @@ function addRelationships(
 	}
 }
 
+/**
+ * Gives every ref that resolved to nothing back to the element that wrote it,
+ * so `toSchema` writes it out again and the typo survives a round trip.
+ *
+ * It runs at the end rather than as each miss is recorded because several of
+ * the refs are resolved before the element that wrote them exists — a
+ * consumable's `returns` is needed to make the consumable — and by now every
+ * element does. What a miss cannot be given back to is an element the load
+ * did not leave behind: a consumption or a relationship whose own end named
+ * nothing is not there to hold it, and neither is a relation, so those refs
+ * are reported and dropped (see {@link UnresolvedWrites}). A `returns` keeps
+ * its ref but not its `many`, which says how many of a shape a call comes
+ * back with and means nothing until the shape resolves.
+ */
+function keepUnresolvedRefs(workspace: Workspace) {
+	for (const written of workspace.unresolved) {
+		const owner = workspace.getByRef(written.ref);
+		if (owner && keepsUnresolvedWrites(owner))
+			owner.unresolvedWrites.add(written.field, { $ref: written.target });
+	}
+}
+
 export function getWorkspaceFromSchema(
 	workspaceSchema: WorkspaceSchema,
 ): Workspace {
@@ -959,6 +982,7 @@ export function getWorkspaceFromSchema(
 	linkProcesses(workspace, workspaceSchema, refs);
 	linkGlossary(workspace, workspaceSchema, refs);
 	addRelationships(workspace, workspaceSchema, refs);
+	keepUnresolvedRefs(workspace);
 
 	return workspace;
 }
