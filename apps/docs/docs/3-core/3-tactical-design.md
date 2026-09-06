@@ -27,7 +27,15 @@ like any other. A value object declares no operations — a value's behaviour
 is its invariants and description, not a consumable. An entity has one home
 — it belongs to exactly one aggregate of exactly one context, even where two
 contexts jointly own it. And a context invariant records who checks it, not
-how strongly the store holds it. See
+how strongly the store holds it. There is no extension field — an unknown
+key is an `unknown-field` diagnostic and is dropped on save, and comments
+live on four seams only: consumables, consumptions, relationships and
+processes. Roles are stated on every crossing exchange and again on the
+relationship, rather than inferred once, so a pair carries about as many
+role declarations on its exchanges as on the relationship itself. And a
+partnership shares no shape of its own: two partners that carry each
+other's value object or schema declare a shared kernel beside the
+partnership. See
 [decision 15](https://github.com/Open-Domain-Specification/open-domain-specification/blob/main/decisions/15-what-the-model-leaves-out.md)
 and the rest of the
 [`decisions/`](https://github.com/Open-Domain-Specification/open-domain-specification/tree/main/decisions) (each decision opens with a dated current position that states what holds today; read that first, and the amendments below it only for the history)

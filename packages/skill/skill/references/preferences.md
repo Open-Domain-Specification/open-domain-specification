@@ -29,6 +29,9 @@ never present a preference as a law.
 - **A context invariant records the check, not the store** — it names the operation that makes
   the check; whether a unique index or a serialisable transaction also holds the rule is outside
   what the model claims.
+- **No extension field** — an unknown key is an `unknown-field` diagnostic and is dropped on
+  save; comments with links live on four seams only — consumables, consumptions, relationships
+  and processes.
 
 ## What each preference costs
 
@@ -51,9 +54,19 @@ The costs are named rather than hidden. Where a user hits one, say which it is.
   to a process, so an aggregate that expires on its own clock is watched by a process or by a
   scheduled operation that raises the expiry. Both reopen on a stated condition rather than on
   taste.
-- **Rules carry no comments.** Comments live on the seams — consumables, consumptions and
-  relationships — so an invariant, a policy or an aggregate cannot cite the test that enforces
-  it, and the evidence for a rule is its description.
+- **Rules carry no comments.** Comments live on four seams — consumables, consumptions,
+  relationships and processes — so an invariant, a policy or an aggregate cannot cite the test
+  that enforces it, and the evidence for a rule is its description. An unknown field fares
+  worse: it is reported once, as `unknown-field`, and dropped on save, so nothing survives a
+  round trip to hold what the model has no field for.
+- **Roles are stated twice.** A downstream pattern on the consumption and an upstream one on the
+  consumable are written per crossing exchange, and again on the relationship, so a pair carries
+  about as many role declarations on exchanges as on the relationship itself; the gain is a pair
+  that conforms on one feed and translates another, and the repetition is the price.
+- **A partnership shares no shape of its own.** Two partners exchange consumables or events as
+  equals, but a value object or a schema still crosses only over a declared borrowing: a partner
+  pair that carries the other's value object or schema declares a shared kernel beside the
+  partnership, which `relationship-duplicate` allows.
 - **Translation across a boundary is prose.** A consumption records that an anti-corruption
   layer exists, with its pattern, its comments and its `by`; the map from the upstream's shapes
   and terms to the downstream's lives in the description, because a mapping table would be the
