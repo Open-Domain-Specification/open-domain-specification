@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [backend, docs, models]
 priority: high
 agent: senior-developer
