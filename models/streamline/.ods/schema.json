@@ -399,7 +399,7 @@
             "description": "Represents a consumption in the Open Domain Specification (ODS).",
             "properties": {
                 "by": {
-                    "description": "What of the consumer is behind this exchange, when only some of it is.\nWhich kind of thing that may be follows the consumable: on a consumption\nof an operation it is the consumer's own operations that make the call —\na subscription service calls a payment gateway when it renews, not when\nit lists entitlements — and on a consumption of an event it is the\npolicies and processes of the consumer's context that react to it,\nbecause a subscription is not made but woken. `consumption-by-operation`\nand `consumption-by-reactor` say so, one each way round.\n\nAbsent means the whole consumer, which is fine for a consumer that\nprovides one operation, or none, because there is nothing to choose\nbetween. A consumer with two or more names which of them makes the call,\nand `consumption-by-required` asks for it: `by` is the one causal link\nthe model has from one operation to the next, so without it the reaction\nwalk and the flow map stop at the boundary and an answer reaches nobody\n(decision 21, corrected 2026-09-10).",
+                    "description": "What of the consumer is behind this exchange, when only some of it is.\nWhich kind of thing that may be follows the consumable: on a consumption\nof an operation it is the consumer's own operations that make the call —\na subscription service calls a payment gateway when it renews, not when\nit lists entitlements — and on a consumption of an event it is the\npolicies and processes of the consumer's context that react to it,\nbecause a subscription is not made but woken. `consumption-by-operation`\nand `consumption-by-reactor` say so, one each way round.\n\nAbsent means the whole consumer, which is fine only for a consumer that\nprovides exactly one operation, because there is nothing to choose\nbetween. A consumer with two or more names which of them makes the call,\nand one with none at all has nothing that could — either way\n`consumption-by-required` asks for it, except of an external or\nbig-ball-of-mud consumer: `by` is the one causal link the model has from\none operation to the next, so without it the reaction walk and the flow\nmap stop at the boundary and an answer reaches nobody (decision 21,\ncorrected 2026-09-10, widened to the zero-operation case in the second\namendment of 2026-09-10).",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -1207,7 +1207,7 @@
                 },
                 "specialises": {
                     "additionalProperties": false,
-                    "description": "The value object this one is a kind of: it has every attribute and\nrelation of that value object, plus its own. The target belongs to this\ncontext, or to a context this one borrows from — over a shared kernel or\nas a conformist (decision 22).",
+                    "description": "The value object this one is a kind of: it has every attribute and\nrelation of that value object, plus its own. The target belongs to this\ncontext, or to a context this one borrows from — over a shared kernel,\nas a conformist, or as a customer-supplier downstream of it (decision\n22; decision 16's second amendment of 2026-09-10 widened borrowing to\nthe customer-supplier case).",
                     "properties": {
                         "$ref": {
                             "type": "string"

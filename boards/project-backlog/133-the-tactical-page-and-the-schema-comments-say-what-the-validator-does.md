@@ -1,10 +1,11 @@
 ---
-column: todo
+column: review
 labels: [docs]
 priority: high
 agent: developer
-live: true
-updatedAt: 2026-09-11T05:20:00.000Z
+live: false
+clean-code-swept: true
+updatedAt: 2026-09-06T18:20:00.000Z
 ---
 # The tactical page and the schema comments say what the validator does; four more costs
 
@@ -12,9 +13,20 @@ The architect's fifteenth round found four hand-written sentences the validator 
 
 ## Checklist
 
-- [ ] The four sentences corrected in `packages/core/src/schema.ts` (the `by` comment and the `specialises` comment; comments only), `apps/docs/docs/3-core/3-tactical-design.md` (the `by` sentence, the Policies sentence, the specialisation paragraphs and their example), `packages/skill/skill/SKILL.md` (required collections; specialisation bullet), and `specialisation-in-boundary`'s catalogue `summary`, `why` and `fix` text in `validate.ts` (text only; card 132 does not touch that rule); the model reference regenerates
-- [ ] The four costs added to the docs' leaves-out list and to `preferences.md`, with their decisions; the boundary-drawn-twice cost carries the measurement
-- [ ] The drift test in `packages/skill` also reads `apps/docs/docs/3-core/3-tactical-design.md`, `2-strategic-design.md` and the two schema comments, pinning these sentences
-- [ ] `bash scripts/verify-all.sh` green
+- [x] The four sentences corrected in `packages/core/src/schema.ts` (the `by` comment and the `specialises` comment; comments only), `apps/docs/docs/3-core/3-tactical-design.md` (the `by` sentence, the Policies sentence, the specialisation paragraphs and their example), `packages/skill/skill/SKILL.md` (required collections; specialisation bullet), and `specialisation-in-boundary`'s catalogue `summary`, `why` and `fix` text in `validate.ts` (text only; card 132 does not touch that rule); the model reference regenerates
+- [x] The four costs added to the docs' leaves-out list and to `preferences.md`, with their decisions; the boundary-drawn-twice cost carries the measurement
+- [x] The drift test in `packages/skill` also reads `apps/docs/docs/3-core/3-tactical-design.md`, `2-strategic-design.md` and the two schema comments, pinning these sentences
+- [x] `bash scripts/verify-all.sh` green
+
+## Gates
+
+- [x] verify-all — `bash scripts/verify-all.sh` exit 0: core 779, graphviz 28, doc 31, skill 46, northbank 3, schema comparison (petstore vs core dist) match, petstore 23, rivermart 6, streamline 3, clinic 7, models/_shared 9, esm builds import ok, pages 766, apps/docs 23, apps/ods-vscode 15, pages e2e (full suite) passed — 297 e2e specs, no retries needed (developer, 2026-09-06T18:20:00.000Z)
 
 ## Comments
+
+- **developer** (2026-09-06T17:55:00.000Z): Claimed the card. Reset worktree to origin/develop at 4f5d7d3 ("architect round 15 ruled; cards 132 and 133; decisions 15, 17, 18, 22, 28, 29"), `npm install`. Read the card, decisions 15, 16, 17, 18, 21, 22 and 28's 2026-09-10 notes/amendments, `consumptionByRequired` (`packages/core/src/validate.ts:3476-3502`), `mayBorrowFrom` (`packages/core/src/validate.ts:1922-1932`), `policyInContext` (`packages/core/src/validate.ts:3613-3630`), and `specialisationInBoundary`'s catalogue entry (`packages/core/src/validate.ts:5399-5406`). Confirmed against `models/northbank/src/workspace.ts:1031-1046` that the model's kinds are `CustomerLedgerAccount`/`NominalLedgerAccount` of `LedgerAccount`, not current/savings/loan accounts as the docs claimed.
+- **developer** (2026-09-06T18:05:00.000Z): Corrected the `by` comment (`packages/core/src/schema.ts:443-452`) and the `specialises` comment (`packages/core/src/schema.ts:756-761`) to say a zero-operation consumer is asked too (except external/mud) and that a value object may also borrow as a customer-supplier downstream. Corrected `specialisation-in-boundary`'s catalogue `summary`/`why`/`fix` (`packages/core/src/validate.ts:5400-5406`) the same way. Rebuilt core (`npm run build` in `packages/core`) and regenerated the skill bundle (`npm run generate` in `packages/skill`), which carried the fixes into `packages/skill/skill/references/model-reference.md:134,363` and `packages/skill/skill/references/validation-rules.md` (the `specialisation-in-boundary` entry).
+- **developer** (2026-09-06T18:08:00.000Z): Fixed the tactical page's `by` sentence (`apps/docs/docs/3-core/3-tactical-design.md:385-391`) and Policies sentence (`apps/docs/docs/3-core/3-tactical-design.md:396-402`), the value-object and specialisation paragraphs and the NorthBank example (`apps/docs/docs/3-core/3-tactical-design.md:146-151,200-211`), added the measurement to the "boundary drawn twice" cost and three new leaves-out bullets for decisions 18, 15 and 28 (`apps/docs/docs/3-core/3-tactical-design.md:47-52,129-141`). Fixed `SKILL.md`'s required-collections and specialisation bullets (`packages/skill/skill/SKILL.md:72-76,84-88`). Added the same four costs to `packages/skill/skill/references/preferences.md:40-46,114-121`.
+- **developer** (2026-09-06T18:11:00.000Z): Extended `packages/skill/src/validator-drift.test.ts:99-121` with six new pinned old sentences (the `by`/Policies/specialises/collections/NorthBank claims this card corrects) — `apps/docs/docs/3-core/3-tactical-design.md`, `2-strategic-design.md` and `packages/core/src/schema.ts` were already in the corpus from cards 129/131, so this card adds the claims rather than the files. `npx vitest run` in `packages/skill`: 46 passed (was failing on the stale `model-reference.md` until the regenerate step above). `npx vitest run` in `packages/core`: 779 passed.
+- **developer** (2026-09-06T18:20:00.000Z): `bash scripts/verify-all.sh` green end to end, exit 0 (log tail in Gates). No retries needed on `e2e/diagrams-sketch.spec.ts` or anywhere else — full suite passed first run, 297 e2e specs. Moving to review.
+
