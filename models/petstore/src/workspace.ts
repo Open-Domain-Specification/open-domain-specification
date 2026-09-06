@@ -421,7 +421,7 @@ petApp.provides("FindPetsByStatus", {
 	description: "GET /pet/findByStatus?status=available|pending|sold",
 	type: "operation",
 	pattern: "open-host-service",
-	returns: { schema: petSummarySchema, many: true },
+	returns: { of: petSummarySchema, many: true },
 });
 petApp.provides("GetPetById", {
 	description: "GET /pet/{petId}",

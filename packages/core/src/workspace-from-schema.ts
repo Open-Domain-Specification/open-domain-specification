@@ -243,7 +243,7 @@ function addProvides(
 			...rest,
 			id,
 			schema: request && { of: request, many: schemaRef?.many },
-			returns: returns && { schema: returns, many: returnsRef?.many },
+			returns: returns && { of: returns, many: returnsRef?.many },
 			// A refusal's reasons travel with the shape they enumerate, so a
 			// shape that resolves to nothing takes its reasons with it: they
 			// are outcomes of that shape and mean nothing without it.

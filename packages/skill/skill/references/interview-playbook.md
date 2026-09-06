@@ -206,7 +206,7 @@ Repeat for each context the user wants detailed. Ask which one to start with.
 - For an operation, follow up: "and what comes back?" → a second schema on the same context,
   attached with `returns`. A command that answers with nothing leaves `returns` off; a query
   that answers with nothing is not a query, so keep asking. Never put `returns` on an event.
-- Then: "one of those, or a list of them?" → `returns: {schema, many: true}` for a list, which
+- Then: "one of those, or a list of them?" → `returns: {of: schema, many: true}` for a list, which
   is what a search or a "find all" answers with. Do not wrap the list in a schema of its own:
   a root array and an object holding an array are different shapes, and only the mark tells
   them apart. A wrapper is right only when the answer really is an object — matches beside a

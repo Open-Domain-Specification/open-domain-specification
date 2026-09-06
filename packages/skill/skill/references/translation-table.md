@@ -52,7 +52,7 @@ element lives in a workspace file; `DSL` is the core call that creates it.
 | "only we use that", "nobody outside needs it" | internal consumable | `"internal": true`, no `pattern` | `internal: true` |
 | "what's in the message / the request body" | Schema | `schemas.<id>` on the context; consumable `schema: {$ref}` | `bc.addSchema(name).addAttribute(...)`; `schema: s` |
 | "what you get back", "the response body", "it returns ..." | Schema on the operation | operation `returns: {$ref}` on the provider's own context | `provides(name, {type: "operation", returns: s})` |
-| "it returns a list of ...", "an array of matches", "all the ones that ..." | The same schema, marked many | operation `returns: {$ref, many: true}` | `provides(name, {type: "operation", returns: {schema: s, many: true}})` |
+| "it returns a list of ...", "an array of matches", "all the ones that ..." | The same schema, marked many | operation `returns: {$ref, many: true}` | `provides(name, {type: "operation", returns: {of: s, many: true}})` |
 | "we decline it", "we refuse it", "they get an error saying why", "it's rejected" | Schema on the operation | operation `rejects: [{$ref}]` on the provider's own context | `provides(name, {type: "operation", rejects: [refusal]})` |
 | "when X happens we then Y", "automatically after X" | Policy | `policies.<id>` with `on: [event refs]`, `then: [operation refs]` | `bc.addPolicy(name, {description}).on(e).issues(op)` |
 | "we listen for their X" | consumption | `consumes: [{consumable: {$ref}, pattern}]` | `agg.consumes(theirEvent, {pattern})` |

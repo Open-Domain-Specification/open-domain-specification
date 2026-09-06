@@ -196,7 +196,7 @@ export function edgeCaseModel(): Model {
 		type: "operation",
 		description: "Answered with a list of a shape rather than one of it.",
 		schema: schemaEmpty,
-		returns: { schema: schemaAnswer, many: true },
+		returns: { of: schemaAnswer, many: true },
 	});
 	// A request that is a list of a shape rather than one of it, on an
 	// aggregate: the subsection is where "Payload, many" has to read, and the

@@ -601,7 +601,7 @@ describe("an operation that answers with many of a shape", () => {
 			.provides("Find Pets By Status", {
 				description: "",
 				type: "operation",
-				returns: { schema: summary, many: true },
+				returns: { of: summary, many: true },
 			});
 		const byId = bc.services.get("pet_app")?.provides("Get Pet By Id", {
 			description: "",
