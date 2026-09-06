@@ -319,12 +319,18 @@
                     "type": "array"
                 },
                 "rejects": {
-                    "description": "For operations: the shapes the operation answers with when it refuses,\neach one of the context's schemas. A rejection is not an event, because\nnothing happened, and not a transport error, which stays outside the\nmodel. Absent means the operation either always succeeds or refuses\nwithout a domain-meaningful shape. Never valid on an event.",
+                    "description": "For operations: the shapes the operation answers with when it refuses,\neach one of the context's schemas. A rejection is not an event, because\nnothing happened, and not a transport error, which stays outside the\nmodel. Absent means the operation either always succeeds or refuses\nwithout a domain-meaningful shape. Never valid on an event.\n\n`reasons` are the enumerated outcomes of that shape as the contract\nstates them — an acquirer's decline codes, ISO 8583 response codes —\neach one an answer a reactor may wait on, `<operation ref>/rejects/<schema\nid>/<reason>`, alongside the shape-level answer that hears them all. A\nreason is a named outcome the contract states and not a condition on\ndata, which stays out of the model (decisions 25, amended, and 15).",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
                             "$ref": {
                                 "type": "string"
+                            },
+                            "reasons": {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
                             }
                         },
                         "required": [
@@ -352,10 +358,13 @@
                 },
                 "schema": {
                     "additionalProperties": false,
-                    "description": "The payload the caller sends, one of the context's schemas.",
+                    "description": "The payload the caller sends, one of the context's schemas.\n\n`many` says the request is a list of that shape rather than one of it:\nSwagger's `createUsersWithList` takes a root array of users. A named\ncollection and an object holding one are different shapes, and the\nargument that gave `returns` its `many` is the same one here (decision\n13, amended). A wrapper stays where the request really is an object with\na list among its attributes.",
                     "properties": {
                         "$ref": {
                             "type": "string"
+                        },
+                        "many": {
+                            "type": "boolean"
                         }
                     },
                     "required": [
@@ -387,7 +396,7 @@
             "description": "Represents a consumption in the Open Domain Specification (ODS).",
             "properties": {
                 "by": {
-                    "description": "The consumer's own operations or policies that make this exchange, when\nonly some of them do: a subscription service consumes a payment gateway\nwhen it renews, not when it lists entitlements. Absent means the whole\nconsumer depends on the consumable, which is the common case. Optional\ndetail, not a call graph.",
+                    "description": "The consumer's own operations or policies that make this exchange, when\nonly some of them do: a subscription service consumes a payment gateway\nwhen it renews, not when it lists entitlements.\n\nAbsent means the whole consumer, which is fine for a consumer that\nprovides one operation, or none, because there is nothing to choose\nbetween. A consumer with two or more names which of them makes the call,\nand `consumption-by-required` asks for it: `by` is the one causal link\nthe model has from one operation to the next, so without it the reaction\nwalk and the flow map stop at the boundary and an answer reaches nobody\n(decision 21).",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -825,7 +834,7 @@
                     "type": "string"
                 },
                 "on": {
-                    "description": "What triggers this policy: an event consumable, or an answer of an\noperation this context consumes, which means \"when that answer comes\nback\". An answer is named by its origin — `<operation ref>/returns`,\n`<operation ref>/rejects/<schema id>`, or `<operation ref>/completed` for\nan operation that returns nothing and whose completion is all there is to\nwait on — and never by the shape alone, so two operations refusing with\none schema wake only whoever named the call that was made. The answer is\nsynchronous because the operation is, so nothing else says so\n(decision 23).",
+                    "description": "What triggers this policy: an event consumable, or an answer of an\noperation this context consumes, which means \"when that answer comes\nback\". An answer is named by its origin — `<operation ref>/returns`,\n`<operation ref>/rejects/<schema id>`, `<operation\nref>/rejects/<schema id>/<reason>` for one enumerated outcome of that\nrefusal, or `<operation ref>/completed` for an operation that returns\nnothing and whose completion is all there is to wait on — and never by\nthe shape alone, so two operations refusing with one schema wake only\nwhoever named the call that was made. The answer is synchronous because\nthe operation is, so nothing else says so (decision 23).",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -1259,6 +1268,7 @@
             "type": "string"
         },
         "odsVersion": {
+            "description": "The version of the ODS metamodel this file was written against, which\ncore writes and nobody edits by hand. Its major is bumped by the decision\nthat breaks the metamodel, so a file whose major differs from the reading\ncore's was written against a different model; `ods-version` says so and\nthe file still loads what it can. A file that states none is older than\nthe version being written at all, and gets the same diagnostic\n(decision 29, noted 2026-09-10).",
             "pattern": "^[0-9]*\\.[0-9]*\\.[0-9]*$",
             "type": "string"
         },
@@ -1291,7 +1301,6 @@
         "domains",
         "id",
         "name",
-        "odsVersion",
         "relationships",
         "teams",
         "version"

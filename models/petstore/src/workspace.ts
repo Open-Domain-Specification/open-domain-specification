@@ -16,7 +16,6 @@ import { Workspace } from "@open-domain-specification/core";
  * context map.
  */
 export const workspace = new Workspace("Swagger Petstore (v3)", {
-	odsVersion: "1.0.0",
 	description:
 		"DDD/ODS model for Swagger Petstore v3. Inventory is a projection returning a status→count map; Orders use placed|approved|delivered.",
 	version: "0.2.0",
@@ -1263,6 +1262,19 @@ userApp.provides("GetUserByUsername", {
 	pattern: "open-host-service",
 	returns: userSchema,
 });
+// A request that is a list of a shape rather than one of it: POST
+// /user/createWithList takes a root array of User. The model left it out
+// while only an answer could be `many`, because a wrapper schema would have
+// said the endpoint takes an object holding users, which it does not
+// (decision 13, amended; card 114).
+userApp
+	.provides("CreateUsersWithList", {
+		description: "POST /user/createWithList, taking a root array of User",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: { of: userSchema, many: true },
+	})
+	.raises(userRegistered);
 
 identityBC.addTerm("User", {
 	definition: "Someone with a login; orders never refer to one",

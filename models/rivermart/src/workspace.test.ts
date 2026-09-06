@@ -1,3 +1,4 @@
+import { Answer, routesTo } from "@open-domain-specification/core";
 import {
 	assertDocSite,
 	assertStressTestWorkspace,
@@ -38,4 +39,48 @@ describe("RiverMart reference workspace", () => {
 	it("generates a complete docsify site with no broken links", async () => {
 		await assertDocSite(workspace);
 	}, 60_000);
+});
+
+/**
+ * The acquirer refuses a hold with one shape and its own response code, and
+ * Payments branches on one of those codes rather than on the shape: 91 is
+ * worth asking again about and 51 is not (decision 25, amended; card 114).
+ */
+describe("RiverMart's acquirer and the outcomes it enumerates", () => {
+	const holdFunds = workspace.getConsumableByRefOrThrow(
+		"#/boundedcontexts/payment_provider/services/acquirer_api/provides/hold_funds",
+	);
+	const decline = workspace.getSchemaByRefOrThrow(
+		"#/boundedcontexts/payment_provider/schemas/provider_decline",
+	);
+	const attempt = workspace.getProcessByRefOrThrow(
+		"#/boundedcontexts/payments/processes/hold_attempt",
+	);
+
+	it("states the decline codes the acquirer publishes for a hold", () => {
+		expect(holdFunds.rejectsWith(decline)?.reasons).toEqual([
+			"insufficient_funds",
+			"do_not_honour",
+			"issuer_unavailable",
+		]);
+	});
+
+	it("branches on one of them, and on that one alone", () => {
+		const waited = attempt.events.filter(
+			(it): it is Answer => it instanceof Answer,
+		);
+		expect(waited.map((it) => it.ref)).toEqual([
+			`${holdFunds.ref}/rejects/provider_decline/issuer_unavailable`,
+		]);
+		expect(waited[0].declared).toBe(true);
+		expect(waited[0].operation).toBe(holdFunds);
+	});
+
+	it("hears it through the call it makes itself", () => {
+		// The answer comes back down the call that asked for it, which is the
+		// retry the process issues (decision 21).
+		expect(routesTo(attempt, holdFunds).map((it) => it.name)).toEqual([
+			"RetryHold",
+		]);
+	});
 });

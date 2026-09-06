@@ -4,7 +4,7 @@
   "name": "RiverMart",
   "description": "A fictional online marketplace: catalogue, search, sellers and the buy box, cart and checkout, payments, warehousing, last mile, advertising, customer service and fraud.",
   "version": "1.0.0",
-  "odsVersion": "1.0.0",
+  "odsVersion": "2.0.0",
   "primaryColor": "#f59e0b",
   "domains": {
     "shopping": {
@@ -2824,6 +2824,12 @@
                   "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/refund_issued"
                 }
               ]
+            },
+            "retry_hold": {
+              "name": "RetryHold",
+              "description": "Ask the acquirer for the same hold again after a decline it publishes as temporary; internal, because a caller of AuthorisePayment never asks for this",
+              "type": "operation",
+              "internal": true
             }
           },
           "consumes": [
@@ -2835,6 +2841,9 @@
               "by": [
                 {
                   "$ref": "#/boundedcontexts/payments/services/payments_api/provides/authorise_payment"
+                },
+                {
+                  "$ref": "#/boundedcontexts/payments/services/payments_api/provides/retry_hold"
                 }
               ]
             },
@@ -2905,7 +2914,32 @@
           ]
         }
       },
-      "processes": {},
+      "processes": {
+        "hold_attempt": {
+          "name": "Hold attempt",
+          "description": "From Payments being asked to hold the cart total to the funds being held. Most attempts end at the acquirer's first answer. When it declines with issuer_unavailable — the code it publishes for an issuer it could not reach — the attempt asks again, unchanged, and the caller is told nothing until it stops trying; on insufficient_funds or do_not_honour there is nothing to retry and AuthorisePayment refuses. Correlation is by the merchant reference, which the acquirer answers with",
+          "starts": [
+            {
+              "$ref": "#/boundedcontexts/payments/services/payments_api/provides/authorise_payment"
+            }
+          ],
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/payment_provider/services/acquirer_api/provides/hold_funds/rejects/provider_decline/issuer_unavailable"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/payments/services/payments_api/provides/retry_hold"
+            }
+          ],
+          "ends": [
+            {
+              "$ref": "#/boundedcontexts/payments/aggregates/payment/provides/payment_authorised"
+            }
+          ]
+        }
+      },
       "glossary": {
         "authorisation": {
           "name": "Authorisation",
@@ -5086,7 +5120,17 @@
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/payment_provider/schemas/provider_request"
-              }
+              },
+              "rejects": [
+                {
+                  "$ref": "#/boundedcontexts/payment_provider/schemas/provider_decline",
+                  "reasons": [
+                    "insufficient_funds",
+                    "do_not_honour",
+                    "issuer_unavailable"
+                  ]
+                }
+              ]
             },
             "take_funds": {
               "name": "TakeFunds",
@@ -5152,6 +5196,22 @@
             "instrument_token": {
               "name": "instrumentToken",
               "type": "string"
+            }
+          }
+        },
+        "provider_decline": {
+          "name": "ProviderDecline",
+          "description": "The acquirer's refusal of a hold, carrying the response code from its own published list",
+          "attributes": {
+            "merchant_reference": {
+              "name": "merchantReference",
+              "type": "string",
+              "identity": true
+            },
+            "response_code": {
+              "name": "responseCode",
+              "type": "ISO 8583 response code",
+              "description": "The acquirer's own code for the refusal: 51, 05 or 91 on a hold"
             }
           }
         }

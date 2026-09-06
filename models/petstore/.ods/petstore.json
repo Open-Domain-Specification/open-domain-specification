@@ -4,7 +4,7 @@
   "name": "Swagger Petstore (v3)",
   "description": "DDD/ODS model for Swagger Petstore v3. Inventory is a projection returning a status→count map; Orders use placed|approved|delivered.",
   "version": "0.2.0",
-  "odsVersion": "1.0.0",
+  "odsVersion": "2.0.0",
   "options": {
     "rules": {
       "commentsRequired": true
@@ -1872,6 +1872,21 @@
               "returns": {
                 "$ref": "#/boundedcontexts/identity_bc/schemas/user"
               }
+            },
+            "create_users_with_list": {
+              "name": "CreateUsersWithList",
+              "description": "POST /user/createWithList, taking a root array of User",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/identity_bc/schemas/user",
+                "many": true
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/identity_bc/aggregates/user/provides/user_registered"
+                }
+              ]
             }
           },
           "consumes": []
