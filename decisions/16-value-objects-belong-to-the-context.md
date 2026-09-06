@@ -66,3 +66,7 @@ A local value-object attribute no longer has to be restated as a `uses` relation
 ## Note (2026-09-10)
 
 Reviewers heard "a shared kernel is a third context" and this record had folded a convenience into a rule. Two contexts sharing a kernel borrow each other's value objects and schemas directly; that pairwise kernel is Evans's shared subset, modelled as such. The kernel context is for many sharers, and for the one thing a pairwise kernel cannot hold: an entity both teams own, which is an aggregate of a kernel context both consume, because a relation or a kind never crosses a context and an entity has one home. That last clause is a preference, now listed in decision 15; the refusing rules point at the route (card 120).
+
+## Amendment (2026-09-10, second)
+
+Decision 03's amendment of 2026-09-10 stopped asking a customer-supplier downstream for a role, and the borrowing predicate still read only a shared kernel or a conformist role, so a customer that used the supplier's types was refused and told to call itself the thing decision 03 says it is not. A downstream of a customer-supplier relationship borrows the supplier's value objects and schemas the way a conformist does: the negotiated interface's types are the supplier's published language and the customer uses them. Partners share no shape through the partnership itself; a partner pair that carries the other's value object or schema declares a shared kernel beside the partnership, which `relationship-duplicate` allows, and the fix text says so (card 130, architect's fourteenth round).

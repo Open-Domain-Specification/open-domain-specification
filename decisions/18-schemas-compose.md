@@ -1,12 +1,12 @@
 ---
-status: Proposed
+status: Accepted
 date: 2026-09-06
 ---
 # Decision 18 — Schemas compose
 
 ## Current position (2026-09-10)
 
-Status is Proposed. `AttributeSchema.schema` composes schemas, `attribute-one-shape` keeps `valueobject` and `schema` exclusive, and collections stay in the type string; stable. Composition is read by other rules: a precondition or postcondition reaches a field of any schema the request or answer composes (decision 19, card 99), and `schema-context` covers a nested schema as it covers a consumable's. The decision's "same context (or a shared-kernel partner's)" is narrower than what holds: a conformist downstream may also nest a conformed-to upstream's schema, per decision 16's amendment of 2026-09-08 (card 81) and verified in `packages/core/src/validate.ts` (`schemaContext`), which admits a shared kernel or a conformist and, for attributes, never an anti-corruption layer.
+Status is Accepted (2026-09-10, after thirteen review rounds; it had read Proposed while its rules were errors the models were pinned to). `AttributeSchema.schema` composes schemas, `attribute-one-shape` keeps `valueobject` and `schema` exclusive, and collections stay in the type string; stable. Composition is read by other rules: a precondition or postcondition reaches a field of any schema the request or answer composes (decision 19, card 99), and `schema-context` covers a nested schema as it covers a consumable's. The decision's "same context (or a shared-kernel partner's)" is narrower than what holds: a conformist downstream may also nest a conformed-to upstream's schema, per decision 16's amendment of 2026-09-08 (card 81) and verified in `packages/core/src/validate.ts` (`schemaContext`), which admits a shared kernel or a conformist and, for attributes, never an anti-corruption layer.
 
 No inheritance and no unions still holds, now with reasons and a condition (amendment of 2026-09-10): kinds of a value are `specialises` (decision 22), a structured either-or on an answer is `returns` plus `rejects` plus `reasons` (decisions 13 and 25), and `returns` becomes a list the day a reference model's operation answers with two or more shapes none of which is a refusal and a process waits on that answer. Card 117's waitlisted-not-booked case was a second successful outcome with no caller waiting, so it is the `raises` list with no `returns`; the condition is unmet (note after card 117), and a rejection shape the operation also raises as an event draws a warning (card 123). Attribute-level unions stay on decision 15's condition. A flat discriminated object is a faithful wire shape (decision 13, card 119).
 

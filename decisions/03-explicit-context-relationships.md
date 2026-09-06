@@ -91,3 +91,7 @@ The second amendment said `relationship-declared` warns on an identity crossing;
 ## Amendment (2026-09-10)
 
 The 2026-09-10 note told a customer-supplier downstream using the negotiated interface to call itself a conformist, and the architect's thirteenth round is right that in Evans a conformist is the downstream with no say, the opposite of a customer. The vocabulary has no downstream role meaning "negotiated interface, no translation", and it needs none: the relationship type says it. `role-coherence` asks no downstream role on a consumption whose pair has a `customer-supplier` relationship; one written there is still checked (card 128).
+
+## Note (2026-09-10, second)
+
+Roles are written on every crossing exchange, a downstream pattern on the consumption and an upstream one on the consumable, and again on the relationship; the reference models carry about as many role declarations on exchanges as on relationships. Per-exchange roles are the gain, a pair may conform on one feed and translate another, and the repetition is the price; named by the architect's fourteenth round and carried by the docs (card 131).

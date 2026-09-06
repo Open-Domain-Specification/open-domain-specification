@@ -119,3 +119,7 @@ The second note pre-specified transitive answer routing and tied it to decision 
 ## Correction (2026-09-10, second)
 
 Card 126's transitive routing added a fourth clause to `routesTo` that returned a single-operation consumer's sole operation as the route for any reactor in the context, without checking that the reactor issues it; with `by` absent a bystander heard the answer and could close a phantom ring, and with `by` written the same shape was refused. The inference behaves as `by: [thatOperation]` would, and the reactor must issue it (card 128, architect's thirteenth round).
+
+## Amendment (2026-09-10, second)
+
+A consumer that provides no operation could consume a foreign operation and nothing asked who calls it: `consumption-by-required` skipped consumers with fewer than two operations and the single-operation inference had nothing to infer from, so the reaction walk dead-ended silently, the case this record's third amendment exists to report. An operation consumption on a consumer that provides no operation is reported; an external or mud consumer is not asked (card 130, architect's fourteenth round).

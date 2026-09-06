@@ -1,12 +1,12 @@
 ---
-status: Proposed
+status: Accepted
 date: 2026-09-06
 ---
 # Decision 14 — A relation never crosses a bounded context; only an identity does
 
 ## Current position (2026-09-10)
 
-Status is Proposed. `cross-context-relation` refuses a relation into another context and the identity attribute is the crossing; stable. Since the amendment of 2026-09-06 (card 54) the attribute says which boundary through `identifies`, which may name any entity anywhere, child or root, in its own context or another (amendments of 2026-09-07, card 67, and 2026-09-08 third, card 91, which reversed card 90's refusal of a same-context child), an external context (2026-09-08, card 81), or a schema an external context publishes (decision 28's third amendment of 2026-09-10, card 113). `identifies-entity` checks only that the target is of this workspace.
+Status is Accepted (2026-09-10, after thirteen review rounds; it had read Proposed while its rules were errors the models were pinned to). `cross-context-relation` refuses a relation into another context and the identity attribute is the crossing; stable. Since the amendment of 2026-09-06 (card 54) the attribute says which boundary through `identifies`, which may name any entity anywhere, child or root, in its own context or another (amendments of 2026-09-07, card 67, and 2026-09-08 third, card 91, which reversed card 90's refusal of a same-context child), an external context (2026-09-08, card 81), or a schema an external context publishes (decision 28's third amendment of 2026-09-10, card 113). `identifies-entity` checks only that the target is of this workspace.
 
 The decision's sentence that the consumable map is where the dependency reads no longer holds; see the amendment of 2026-09-07 (card 70): the context map draws it as an implied «id» edge.
 

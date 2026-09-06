@@ -1,12 +1,12 @@
 ---
-status: Proposed
+status: Accepted
 date: 2026-09-06
 ---
 # Decision 17 — A context acts through its own boundary
 
 ## Current position (2026-09-10)
 
-Status is Proposed. The three decision rules stand: `policy-in-context` (`then` names own-context operations; `on` crosses only through a consumption), `aggregate-not-public` (operations only; events are published as raised), and `domain-service-internal`. The domain-service half was argued both ways and stands (amendment of 2026-09-10); it reopens only when both conditions hold: decision 21's answer routing follows the local `by` chain and has shipped, and a blind or interview-rewritten model carries a domain service with a rule of its own that must consume across a boundary. Card 117's clinic model produced the shape without the rule and did not meet the condition (note after card 117; card 122). One exemption this record does not name: a kernel context's aggregate operations may be consumed by its sharers (decision 16, card 98).
+Status is Accepted (2026-09-10, after thirteen review rounds; it had read Proposed while its rules were errors the models were pinned to). The three decision rules stand: `policy-in-context` (`then` names own-context operations; `on` crosses only through a consumption), `aggregate-not-public` (operations only; events are published as raised), and `domain-service-internal`. The domain-service half was argued both ways and stands (amendment of 2026-09-10); it reopens only when both conditions hold: decision 21's answer routing follows the local `by` chain and has shipped, and a blind or interview-rewritten model carries a domain service with a rule of its own that must consume across a boundary. Card 117's clinic model produced the shape without the rule and did not meet the condition (note after card 117; card 122). One exemption this record does not name: a kernel context's aggregate operations may be consumed by its sharers (decision 16, card 98).
 
 The outbound half was added: an aggregate consumes only its own context's consumables (`aggregate-consumes-inside`, card 73), and not another aggregate's operation in its own context (decision 29, card 100); a domain service likewise consumes only its own context's (second amendment of 2026-09-08, card 92). A policy holds no consumption; where a policy reacts, the consumption sits on the application service with `by` naming the policy (2026-09-07; decision 21). `subscription-consumed` requires that consumption (2026-09-08, card 90), and a consumed event nothing reacts to is refused (card 92; `subscription-backed` skips a big-ball-of-mud consumer, decision 28, card 124). `by` on an operation consumption names operations only (card 92; decision 21's correction of 2026-09-10).
 
@@ -74,3 +74,7 @@ One exemption this record did not name: a kernel context's aggregate operations 
 ## Amendment (2026-09-10, condition reworded)
 
 The architect's twelfth round read card 117's outcome as a condition met in form and dismissed by reading the interview, which is not the testable condition this record claims. Reworded so the next blind model can meet or fail it: condition (b) holds when a model written from a brief that names no shape carries a domain service that both consumes across a boundary and holds a rule of its own in the model, an invariant it keeps, a precondition or postcondition on one of its operations, or an operation whose description is a decision and not a fetch. Condition (a), the answer routing, is no longer a precondition: it ships on its own (decision 21, card 126).
+
+## Amendment (2026-09-10, second)
+
+`aggregate-consumes-inside` refuses an aggregate calling the aggregate next door because the call spans two transactions with nothing on any map to say so, and `raises-in-context` let an aggregate's operation raise the neighbour's event, the same act stated as a fact. An aggregate's operation raises only its own aggregate's events; an application service's operation may raise any aggregate's event of its context, as the second amendment allows (card 130). The architect's fourteenth round measured the boundary drawn twice: more than half of every stress model's operations are internal, most of them fronts, against two of sixteen in the clinic written blind; the cost stands as named.

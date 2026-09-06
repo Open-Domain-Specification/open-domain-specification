@@ -1,12 +1,12 @@
 ---
-status: Proposed
+status: Accepted
 date: 2026-09-06
 ---
 # Decision 13 — Operations declare what they return
 
 ## Current position (2026-09-10)
 
-Status is Proposed. `returns` exists on operations only, points at a schema of the provider's context under `schema-context`, and `schema` stays the payload the caller sends; these hold. Both `returns` and `schema` carry `many` for a list answer or payload, since the amendment of 2026-09-09 (card 97) and the amendment of 2026-09-10 (card 114). The note of 2026-09-08 that a list is returned in a wrapper schema no longer holds; see the amendment of 2026-09-09. A flat object with a `kind` field is a faithful wire shape; the misstatement refused is a wrapper around what the wire does not carry (note of 2026-09-10, card 119).
+Status is Accepted (2026-09-10, after thirteen review rounds; it had read Proposed while its rules were errors the models were pinned to). `returns` exists on operations only, points at a schema of the provider's context under `schema-context`, and `schema` stays the payload the caller sends; these hold. Both `returns` and `schema` carry `many` for a list answer or payload, since the amendment of 2026-09-09 (card 97) and the amendment of 2026-09-10 (card 114). The note of 2026-09-08 that a list is returned in a wrapper schema no longer holds; see the amendment of 2026-09-09. A flat object with a `kind` field is a faithful wire shape; the misstatement refused is a wrapper around what the wire does not carry (note of 2026-09-10, card 119).
 
 The decision bullet that synchronous error shapes are not modelled no longer holds; see decision 25, `rejects` and its `reasons`.
 
@@ -63,3 +63,7 @@ A flat object with a `kind` field and attributes that apply only sometimes state
 ## Note (2026-09-10)
 
 The ref a process writes for a completion is `<operation>/completed`, beside `<operation>/returns` and `<operation>/rejects/<schema>` (decision 23; card 99 made it waitable, card 108 made the JSON path resolve it like the DSL).
+
+## Amendment (2026-09-10, second)
+
+`returns` and `schema` carry `many` and `rejects` did not, though a refusal answered as a root array of field errors is the shape this record's own argument names. A rejection entry may carry `many` (card 130).

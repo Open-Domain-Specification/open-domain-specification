@@ -167,3 +167,7 @@ The section "Rules carry no comments" listed the seams as consumables, consumpti
 ### Lifecycle states and transitions are prose
 
 An aggregate's state machine has no form: a `status` attribute's values are the author's text, an invariant may name the operations that move it and what must hold, and there is no transition table. The reference models write "sold does not reopen" as an invariant and the clinic writes "status moves forward only". Named by the architect's twelfth round; reopen when a reference model cannot state its lifecycle without one. The same round listed the costs the docs did not yet carry; card 127 puts the full price on the docs site and in the installed skill.
+
+### There is no extension field
+
+An unknown key is an `unknown-field` diagnostic and is dropped on save (card 121); `comments` with links live on consumables, consumptions, relationships and processes. A tool that wants to attach a code location or a ticket to an aggregate or an invariant has nowhere to put it. Named by the architect's fourteenth round; reopen with "Rules carry no comments": when a model needs the citation, `comments` extends to every named declaration in one change.
