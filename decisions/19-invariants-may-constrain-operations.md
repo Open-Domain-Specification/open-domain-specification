@@ -40,3 +40,7 @@ A postcondition relates the answer to the request: every returned itinerary arri
 ## Amendment (2026-09-10)
 
 A precondition reaches the request and what it composes, and nothing else, because it is checked before the answer exists; a postcondition reaches the request, the answer and the rejections (card 104). The earlier wording that let a precondition name what an operation returns was incoherent and is withdrawn.
+
+## Amendment (2026-09-10, second)
+
+The 2026-09-10 amendment fixed a precondition's reach to the request and what it composes, reasoning that before the call runs there is no answer to read. That is true of the guarded operation's own answer and false of the answer its front fetched before deciding: "approve only if the customer is in good standing" reads a standing the front already holds, and the guard could name neither the other context's attribute nor that answer. A precondition may also constrain attributes of the `returns` schemas of consumables consumed by the guarded operation or by the front that calls it in the same context; still never another context's entities (card 116, architect's tenth round).

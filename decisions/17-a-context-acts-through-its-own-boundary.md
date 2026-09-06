@@ -44,3 +44,7 @@ Two more named costs of the boundary drawn twice. An aggregate that initiates an
 ## Note (2026-09-09, second)
 
 An aggregate-initiated outbound call is drawn as the record says: the application service fronts the aggregate's operation and makes the call, `by` names the front, and the chain reaches the aggregate's operation through it. RiverMart's case resolution takes that form (card 98). There is no marker for "made by something I cannot name"; the caller is named.
+
+## Note (2026-09-10)
+
+An application-service query that reads an aggregate consumes no operation of it, so the read is invisible to the reaction walk and to the aggregate's page; the walk follows calls and a read is not one. Named by the architect's tenth round; the cost is accepted, a query's description says what it reads.

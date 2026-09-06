@@ -126,3 +126,7 @@ Comments, the grounded statements about the real system, live on the seams: cons
 ### Translation across a boundary is prose
 
 An anti-corruption layer is defined by its translation and the model records only that it exists: a consumption carries its pattern, its comments and `by`, and the map from the upstream's shapes and terms to the downstream's lives in the description and in the discovery notes, as NorthBank's `SubmissionMessage` against `SchemeSubmission` does. A mapping table would be the expression language this record refuses. Named by the architect's ninth round; reopen when a reader of the pages, not of the notes, needs to see what a layer changes.
+
+### The exemptions were shaped by four exemplars
+
+This record calls the model's structural rules preferences, not DDD's laws; it did not say that the exemptions carved into them, the lifecycle rings, the translating policy, the called sub-process, were each written for a shape one of the four reference models needed. They are principled where they can be argued from this record's own reasoning, and every one is, but nothing yet shows they generalise. The test is a fifth model in a domain unlike the four, written blind (card 117); reopen the rules it has to work around, and count what it cost. Named by the architect's tenth round.

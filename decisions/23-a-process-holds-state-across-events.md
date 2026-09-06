@@ -67,3 +67,11 @@ The only-reactor lifecycle exemption was written for a process alone on its ring
 ## Note (2026-09-10, second)
 
 The lifecycle-through-a-layer exemption was implemented on the shape of the ring alone, one process and translating policies, without proving its premise: that the event the process hears on the ring continues an instance. A translated event that starts the process spawns a new instance every time round, and Codex's ninth review drew one that validated clean. The exemption holds only where the process hears the ring's event through `on` or `ends`; a ring whose translated event is in `starts` is a cycle that spawns instances and is reported as one (card 113).
+
+## Amendment (2026-09-10, second)
+
+`reaction-cycle` reports a ring holding two processes as a genuine loop, and that is wrong for the commonest shape a second process takes on a ring: started by the ring's operation and ending on the event the first process waits for. That process is a call at process granularity, a triage process booking with a scheduling process and hearing the slot, and this record already says a process started by a command answers with its end. A process whose entry on a ring is its `starts` and whose exit is its `ends` counts as a call for the lifecycle test; a ring with two live processes, each re-entering while alive, is still reported (card 116, architect's tenth round).
+
+## Note (2026-09-10, third)
+
+A command addressed to a live process instance, add a document to an open claim, withdraw an application, is not a trigger a process may name in `on` or `ends`; the context's application service receives it and raises the fact, `DocumentAdded`, and the process hears that. One event per such command is the cost, named here; a process reacts to facts and owns no operations, and this record's third amendment reopened `starts` for commands because starting is where nothing was yet waiting (architect's tenth round).
