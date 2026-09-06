@@ -21,7 +21,6 @@ import Harness from "../Page.harness.svelte";
 function tacticalEdges(): Model {
 	const workspace = new Workspace("Tactical Edges", {
 		id: "tactical",
-		odsVersion: "1.0.0",
 		description:
 			"Shapes the tactical templates draw that no other fixture has.",
 		version: "0.0.1",

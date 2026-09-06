@@ -76,7 +76,6 @@ export function streamlineModel(): Model {
 export function edgeCaseModel(): Model {
 	const workspace = new Workspace("Edge Cases", {
 		id: "edge",
-		odsVersion: "1.0.0",
 		description:
 			"Hand-built workspace covering branches the petstore example never hits.",
 		version: "0.0.1",
@@ -199,14 +198,28 @@ export function edgeCaseModel(): Model {
 		schema: schemaEmpty,
 		returns: { schema: schemaAnswer, many: true },
 	});
+	// A request that is a list of a shape rather than one of it, on an
+	// aggregate: the subsection is where "Payload, many" has to read, and the
+	// one reference model that takes a list does it from a service.
+	aggNoRoot.addConsumable("Importing Operation", {
+		type: "operation",
+		description: "Asked with a list of a shape rather than one of it.",
+		schema: { of: schemaEmpty, many: true },
+	});
 	// Two rejections on one operation, again on an aggregate rather than a
 	// service: the subsection has to name both and the consumable page has to
 	// draw a table for each. No reference model refuses in two ways yet.
+	// One of the two refusals enumerates the outcomes it carries, so the page
+	// has both to draw: a shape that says only what it is, and one that names
+	// the outcomes a caller may branch on.
 	aggNoRoot.addConsumable("Refusing Operation", {
 		type: "operation",
 		description: "Says no in two different shapes.",
 		schema: schemaEmpty,
-		rejects: [schemaRefused, schemaOverLimit],
+		rejects: [
+			schemaRefused,
+			{ schema: schemaOverLimit, reasons: ["daily_limit", "per_txn_limit"] },
+		],
 	});
 	const orphanEvent = aggNoRoot.addConsumable("Orphan Event", {
 		type: "event",
@@ -366,7 +379,6 @@ export function edgeCaseModel(): Model {
 export function emptyWorkspaceModel(): Model {
 	const workspace = new Workspace("Empty Workspace", {
 		id: "empty",
-		odsVersion: "1.0.0",
 		description: "Nothing has been modelled yet.",
 		// biome-ignore lint/suspicious/noExplicitAny: exercises the missing-version fallback branch
 		version: undefined as any,

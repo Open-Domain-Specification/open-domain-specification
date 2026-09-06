@@ -135,7 +135,7 @@ const processColumns: Column[] = [
 	{#snippet facts()}
 		<DefinitionList>
 			<Definition term="Provided by"><Lockup kind={kindOf(provider)} name={provider.name} ref={provider.ref} /></Definition>
-			<Definition term="Payload">
+			<Definition term={c.schemaMany ? "Payload, many" : "Payload"}>
 				{#if c.schema}<Lockup kind="schema" name={c.schema.name} ref={c.schema.ref} />{:else}<Keyword text="no schema" />{/if}
 			</Definition>
 			{#if c.returns}
@@ -153,10 +153,12 @@ const processColumns: Column[] = [
 
 <Section
 	id="payload"
-	title="Payload"
+	title={c.schemaMany ? "Payload, many" : "Payload"}
 	lead={isEvent
 		? "An event is a fact in the past tense. Carry what a consumer needs to react without asking back."
-		: "An operation is an intent. The provider may refuse it; carry what it needs to decide."}
+		: c.schemaMany
+			? "An operation is an intent. This one takes a list of this shape; the provider may refuse it, so carry what it needs to decide."
+			: "An operation is an intent. The provider may refuse it; carry what it needs to decide."}
 	count={schemaAttributes.length}
 	problems={problemsUnder(model, c.ref)}
 >
@@ -187,13 +189,18 @@ const processColumns: Column[] = [
 		lead="What the operation answers with when it refuses. Nothing happened, so none of these is an event; a caller reads them to know why it was told no."
 		count={c.rejects.length}
 	>
-		{#each c.rejects as rejection (rejection.ref)}
+		{#each c.rejections as { schema, reasons } (schema.ref)}
 			<div class="subsection">
-				<Heading level={3} id={rejection.ref}>
-					<Lockup kind="schema" name={rejection.name} ref={rejection.ref} />
+				<Heading level={3} id={schema.ref}>
+					<Lockup kind="schema" name={schema.name} ref={schema.ref} />
 				</Heading>
-				{#if rejection.description}<p class="description">{rejection.description}</p>{/if}
-				<AttributeTable attributes={rejection.attributes.values()} empty="The rejection schema has no attributes." />
+				{#if schema.description}<p class="description">{schema.description}</p>{/if}
+				{#if reasons.length}
+					<!-- The outcomes the contract enumerates for this shape: what a
+					     reactor may wait on one of, rather than on any refusal. -->
+					<p class="reasons">Refuses for {#each reasons as reason (reason)}<Keyword text={reason} mono />{" "}{/each}</p>
+				{/if}
+				<AttributeTable attributes={schema.attributes.values()} empty="The rejection schema has no attributes." />
 			</div>
 		{/each}
 	</Section>

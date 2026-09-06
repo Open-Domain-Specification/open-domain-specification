@@ -17,7 +17,6 @@ const { variant = "one" }: { variant?: "one" | "two" | "none" } = $props();
 function sharedWord(): { model: Model; ref: string } {
 	const workspace = new Workspace("Two Glossaries", {
 		id: "two_glossaries",
-		odsVersion: "1.0.0",
 		description: "One aggregate that two contexts each have a word for.",
 		version: "0.0.1",
 	});

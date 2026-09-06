@@ -230,6 +230,26 @@ describe("the tactical templates on the alternate branches", () => {
 		).not.toContain("Rejects with");
 	});
 
+	it("AggregatePage: an operation whose request is a list of a shape says so where the payload reads", () => {
+		const { container } = render(Harness, {
+			model,
+			ref: aggregateRef("main_context", "rootless_aggregate").$ref,
+		});
+		const subsectionFor = (name: string) =>
+			[...container.querySelectorAll(".subsection")].find((s) =>
+				s.querySelector("h3")?.textContent?.includes(name),
+			);
+		const terms = (name: string) =>
+			[...(subsectionFor(name)?.querySelectorAll("dt") ?? [])].map(
+				(t) => t.textContent,
+			);
+		// The same treatment an answer that is a list gets, in the same place.
+		expect(terms("Importing Operation")).toContain("Payload, many");
+		expect(terms("Listing Operation")).toContain("Returns many");
+		// One of the shape says nothing about how many, as it always has.
+		expect(terms("Answering Operation")).toContain("Payload");
+	});
+
 	it("AggregatePage: an aggregate with nothing in it says what would fill each section", () => {
 		const text = textOf(aggregateRef("main_context", "empty_aggregate").$ref);
 		expect(text).toContain("No entities. An aggregate needs a root entity.");
@@ -320,6 +340,23 @@ describe("the tactical templates on the alternate branches", () => {
 		);
 		expect(text).toContain("No comments recorded for this consumable yet.");
 		expect(text).toContain("Nobody consumes this yet.");
+	});
+
+	it("ConsumablePage: a refusal that enumerates its outcomes names them under the shape", () => {
+		const text = textOf(
+			consumableRef(
+				"main_context",
+				"rootless_aggregate",
+				"refusing_operation",
+				"aggregate",
+			).$ref,
+		);
+		// The outcomes the contract states, under the shape that carries them;
+		// a refusal that enumerates none says nothing extra.
+		expect(text).toContain("Refuses for");
+		expect(text).toContain("daily_limit");
+		expect(text).toContain("per_txn_limit");
+		expect(text).toContain("Refusal Schema");
 	});
 
 	it("ConsumablePage: an event with no schema and no raiser", () => {
