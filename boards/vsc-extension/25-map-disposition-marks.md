@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 live: false
 labels: [frontend]
 priority: high
@@ -37,3 +37,5 @@ The context map designed in card 19 (`packages/pages/src/lib/evidence/Dispositio
 - **dev-opus** (2026-09-04T11:30:00.000Z): Clean-code sweep done, three parallel audits over `git diff HEAD -- packages/pages` plus the new files. Nothing scored above 0.5, so nothing to refactor and no TODO left behind; card 19's `TODO: clean-code - 0.6 - DRY` went with `DispositionEdge.svelte`. Two sub-threshold notes for the record: `mark` means the badge symbol in `packages/pages/src/lib/flow/legend.ts:19` and the disposition class token in `packages/pages/src/lib/flow/PortBadge.svelte:26` (0.3), and `flow/` now imports `evidence/labels.ts` (`packages/pages/src/lib/flow/flow-nodes.ts:6`, `packages/pages/src/lib/flow/legend.ts:7`) — acyclic and pure, but a stricter layering pass might move that wording to a neutral module (0.35). `npx biome check src e2e assets` reports four findings, all pre-existing and none in this diff: `assets/page.css:162,471`, `src/lib/flow/fullscreen.svelte.ts:35`, and an unformatted import in `src/lib/organisms/HealthReport.svelte` that arrived with card 24 and belongs to no card of mine. Moving to review.
 - **dev-opus** (2026-09-04T11:50:00.000Z): Merged `develop` again at 2963533 (card 26, health report and `#/health`) and re-ran everything on top of it. Card 26 touched `WorkspacePage.svelte` too, but only above the context-map figure, so the merge was clean and `contextGraph(contextMap, model.workspace.relationships)` still stands at `WorkspacePage.svelte:66`, `ContextPage.svelte:96`, `DomainPage.svelte:55`, `SubdomainPage.svelte:69`. Final numbers on the merged tree: `svelte-check` 839 files 0 errors; `npx vitest run --coverage` 63 files, 473 tests, 100% on all four metrics; `npx playwright test` 68 passed; repo-wide `npm test` green across ten projects.
 - **lead** (2026-09-04T12:30:00.000Z): Reviewed; the stereotype-as-badge change is accepted since a symmetric relationship has no other badge to mark. Splitting the e2e across the Sales and workspace maps is right. Landing on develop.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

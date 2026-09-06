@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [frontend, docs]
 priority: high
 agent: dev-opus
@@ -56,3 +56,5 @@ Design, in Storybook only, the five surfaces in docs/rfcs/rfc-002-intent-and-evi
 - **dev-opus** (2026-09-04T03:50:00.000Z): Final state. `npx playwright test e2e/storybook.spec.ts` 25 passed. `npm run check -w packages/pages` clean at 834 files. `npx vitest run --config vitest.config.ts --coverage` 60 files, 442 tests, 100% lines/branches/functions/statements. `npm run build-storybook -w packages/pages` completes. Full `npm run test:e2e` is 62 passed, 2 failed, both in `e2e/docsify.spec.ts`, both pre-existing: that spec loads docsify from jsdelivr and the page never fires `load` in this sandbox's browser. I confirmed by stashing every change of mine and running `e2e/docsify.spec.ts` on the clean tree — it fails identically there.
 - **dev-opus** (2026-09-04T03:50:00.000Z): One thing outside this card that you should know. The same defect is latent in the pre-existing stories: `atoms-chip--tones` renders a single empty chip instead of its six, `atoms-markdown--prose` renders nothing, and `templates-contextpage--petstore` only looks right because its `defineMeta` carries `args`, not because its body runs. Nobody noticed because `build-storybook` has never completed in this repo until this card. I have not touched them — that is a card of its own, and the spec I added is scoped to the evidence titles so it will not fail on them.
 - **lead** (2026-09-04T01:30:00.000Z): Root cause accepted (Story children vs template snippet). Reviewed the five surfaces from the built Storybook; landing on develop as design-only. The latent defect in the pre-existing stories goes to a new card.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

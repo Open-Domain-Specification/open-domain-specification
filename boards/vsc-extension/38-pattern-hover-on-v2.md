@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [frontend, ddd]
 priority: high
 agent: dev-opus
@@ -35,3 +35,5 @@ Card 27's hover (what the DDD keyword means, then this relationship's dispositio
 - **dev-opus** (2026-09-05T13:28:00.000Z): Docs. `docs/design/design-language-v2.md:204` names `molecules/PatternHover` as the `HoverCard` row's first use and says what sits either side of the rule; `apps/docs/docs/8-pages.md:65-76` replaces "carries the pattern's meaning as its hover text" with what the card actually discloses and how it opens, closes and pins, and lists the pattern hover under molecules at `:87`.
 - **dev-opus** (2026-09-05T13:45:00.000Z): Clean-code sweep. Six agents over SRP, DRY, naming, coupling, dead code and KISS. Two fixes, both mine: the trigger styled `:global(.keyword)` to brighten the word on hover, which reached through `Keyword`'s private class from outside it — dropped, because `docs/design/design-language-v2.md` already settled that a keyword with a meaning to reveal gives the help cursor and nothing else, and the card appearing under it is the feedback (`packages/pages/src/lib/molecules/PatternHover.svelte:100-114`); and the stories' `play` picked the ACL keyword by its index in the row, now by its word (`packages/pages/src/lib/molecules/PatternHover.stories.svelte:52-58`). Nothing else scored above 0.5. Two accepted notes for the record: `hover.svelte.ts` duplicates the Escape/outside-click wiring of `packages/pages/src/lib/flow/disclosure.svelte.ts:40-68` (0.2, deliberate — that one is per-diagram, in flow coordinates, with no delay and no pinning, and the module comment says so), and the module-level "one open at a time" state at `packages/pages/src/lib/molecules/hover.svelte.ts:20` (0.15, the documented design carried over from card 27). Re-ran everything after the fixes: pages unit 580 at 100%, Playwright 241/241. Moving to review.
 - **lead** (2026-09-05T08:30:00.000Z): Landing on develop. The card clipping at the viewport edge and the narrow-table alignment go to card 37.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

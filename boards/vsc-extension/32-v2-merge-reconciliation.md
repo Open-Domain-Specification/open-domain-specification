@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 live: false
 labels: [frontend]
 priority: high
@@ -43,3 +43,5 @@ Cards 29, 30 and 31 built v2 in parallel and each carried stand-ins for pieces a
 - **lead** (2026-09-04T23:10:00.000Z): Landing on develop. The V2Page naming nit goes to the morning review.
 
 - 2026-09-11, lead: Issue 41: four backdrop stories paint nothing, so this card's no-blank-stories claim does not hold for them. Every other story paints a real page, verified by `packages/pages/e2e/card-evidence.spec.ts`.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

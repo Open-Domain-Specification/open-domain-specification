@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 live: false
 labels: [frontend]
 priority: high
@@ -48,3 +48,5 @@ Provide an "Open Fullscreen" option that lets users expand any diagram into a fu
 - **lead** (2026-09-03T21:40:00.000Z): Reviewed fullscreen.svelte.ts, the panel toggle and the overlay class. Landing on develop.
 
 - **lead** (2026-09-05T17:02:24.857910+00:00): Designer baseline retest found an acceptance regression in the existing native Petstore host: entering fullscreen leaves the Order relation graph small/off-centre; Escape returns an oversized graph clipped at right/bottom. the design lead report and reproduction: docs/team/design/2026-09-05-design-lead-baseline.md:1. Native loaded-bundle provenance is unverified; treat as exploratory runtime evidence and reproduce against the final bundle before closure. Current source moved from6ec06ed to f7a43c3 during background work. Acceptance remains automatic fit on entry/exit across all three diagram kinds and both hosts; manual Fit View is a workaround, not a pass. Existing review status preserved; no duplicate feature ticket or human approval recorded.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

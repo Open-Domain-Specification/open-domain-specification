@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [frontend, docs]
 priority: high
 agent: dev-sonnet
@@ -39,3 +39,5 @@ The context page's relationship table becomes the grouped table designed in card
 - **dev-sonnet** (2026-09-04T03:20:00.000Z): Housekeeping note for the lead, not part of this card's diff: this worktree's `npm ci` runs inside individual packages had left `node_modules/@open-domain-specification/model-tools` (and the sibling model packages) unlinked, so `models/*/generate.ts` was silently resolving `@open-domain-specification/doc` from the outer checkout instead of this worktree — a full `npm install` at the repo root fixed the symlinks. Mentioning it because it cost real time to diagnose and could bite another worktree agent.
 - **dev-sonnet** (2026-09-04T03:20:00.000Z): Clean-code self-scan done (diff spans 6 files + 2 new — over the sub-agent threshold, but scanned inline given the budget); nothing scored above 0.5. `clean-code-swept: true` recorded under Gates. Ready for review.
 - **lead** (2026-09-04T05:30:00.000Z): Reviewed packages/doc/src/strategic-position.md.ts and the ContextPage swap. Scoping the doc change to the bounded context page is right. Landing on develop.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

@@ -1,5 +1,5 @@
 ---
-column: review
+column: todo
 labels: [bug, frontend]
 priority: high
 agent: dev-sonnet
@@ -36,3 +36,7 @@ Two pixels is not a visible defect, but the assertion is the one that guards the
 - **lead** (2026-09-05T18:30:00.000Z): Accepted. The developer ruled out the prose floor by measurement and showed the natural width already sits under the frame, so the two pixels are the browser rounding seven column widths up independently. That is the card's sanctioned fallback: the tolerance is documented at the assertion and no production CSS moved. Landing on develop.
 
 - 2026-09-11, lead: The two pixels are still measurable on the current head; issue 42 carries the contradiction between this card and card 46 and asks for one outcome or the other.
+
+- 2026-09-11, lead: held back from done. The two pixels this card says it fixed are still measurable; issue 42 asks which of this card and card 46 is right.
+
+- 2026-09-11, lead: held back from done. The two pixels this card says it fixed are still measurable; issue 42 asks which of this card and card 46 is right.

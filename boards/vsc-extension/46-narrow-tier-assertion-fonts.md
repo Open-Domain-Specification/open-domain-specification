@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [bug, frontend, infra]
 priority: high
 agent: dev-opus
@@ -40,3 +40,5 @@ Decide what this spec should guarantee and say it in terms no font can move. The
 - **lead** (2026-09-06T01:00:00.000Z): Reviewed and accepted, including keeping the 900px threshold: moving it would put the same font-dependent cliff at another viewport. The mutation check is the part that matters, and the note that only the runner saw the 119x111 collapse is the reason both clauses stay. Landing on develop.
 
 - 2026-09-11, lead: Issue 42: this card's ruling that the frame may scroll left card 42's fix claim standing and unasserted. One of the two has to be struck.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

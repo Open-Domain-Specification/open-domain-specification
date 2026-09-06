@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 live: false
 labels: [frontend]
 priority: high
@@ -48,3 +48,5 @@ The first swap of v2 into the shipped routes, `Page.svelte` and `resolve.ts` ren
 - **dev-opus** (2026-09-05T11:38:00.000Z): Second clean-code sweep over the four changed files. Nothing above 0.5. I took two of the smaller ones anyway: the old `th:last-child` had also been giving `white-space: normal` to the group label row, so `packages/pages/src/lib/v2/DataTable.svelte:224-231` restores it explicitly rather than leaving a silent regression, and the `grow` doc no longer names one of its callers. Left as noted: `grow` being optional keeps the order-dependent default for the other eighteen call sites (0.25), and the e2e's 200px and 120px thresholds are font-derived numbers (0.2).
 - **dev-opus** (2026-09-05T11:40:00.000Z): Final state. Units 106 files / 650 tests at the package's 100% threshold; e2e 278 passed including the Storybook spec; `npm run check` 1008 files 0 errors; `npx depcheck` clean; `npm run test:vscode` 9 passing and `npm run screenshots` 13 passing with all four PNGs regenerated. Nothing committed and nothing untracked left behind — the throwaway import-graph script and the width probe spec are both deleted. Moving to review.
 - **lead** (2026-09-05T06:00:00.000Z): Landing on develop. Narrow-window table goes to card 37 (designer); the site.css `.site > .tree` hook goes into card 36.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

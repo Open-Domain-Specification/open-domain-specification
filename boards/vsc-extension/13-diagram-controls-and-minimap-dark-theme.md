@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [bug, frontend]
 priority: high
 agent: dev-opus
@@ -49,3 +49,5 @@ Even when dark mode is forced, Svelte Flow defaults use hardcoded colors rather 
 - **lead** (2026-09-03T19:20:00.000Z): The real-VS-Code suite (`npm run test:vscode`) would not start: VS Code is open on this machine and vscode-test refuses to run beside another instance. The headed three-theme check stays open until it can run; unit and e2e evidence recorded above.
 - **lead** (2026-09-03T19:55:00.000Z): Browser-side visual check with `vscode-dark` on the body: controls and minimap render dark with a 1px token border and the attribution is muted. The in-VS-Code three-theme check still waits on the extension suite being able to launch.
 - **lead** (2026-09-03T22:40:00.000Z): VS Code closed, the real-extension suite ran (9 passing). Reviewed the aggregate page in light, the Sales BC context map in dark (media/screenshots/context-map-dark.png) and a one-off high-contrast capture: controls, minimap and the options panel follow the host theme in all three. Checklist complete.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [frontend]
 priority: high
 agent: dev-opus
@@ -48,3 +48,5 @@ The health report's expanded row stays as it is: its detail is a comment list, n
 
 - **dev-opus** (2026-09-05T19:00:00.000Z): Clean-code sweep run over `atoms/BottomSheet.svelte`, `atoms/BottomSheet.harness.svelte`, `atoms/BottomSheet.test.ts` and `organisms/StrategicPositionTable.svelte`. SRP and KISS: nothing. DRY, naming, coupling, dead code: one finding at 0.5, the 1200px page cap written in both `packages/pages/src/lib/atoms/BottomSheet.svelte:139` and `packages/pages/src/lib/templates/PageLayout.svelte:29`. I left it: the design language has each component declare its own dimensions so it draws the same wherever it is mounted, and hoisting the cap into a shared variable would make the sheet depend on a stylesheet it may not be rendered with. The comment at `BottomSheet.svelte:130-132` names the coupling. Nothing else crossed the bar, so nothing was refactored. Moving to review.
 - **lead** (2026-09-05T17:00:00.000Z): Reviewed; the panel treatment and the visual calls are accepted, and the nesting is gone from the table. The one Playwright failure is pre-existing: reproduced at develop head 40e0b49, now card 42. Landing on develop.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

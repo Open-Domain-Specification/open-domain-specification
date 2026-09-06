@@ -1,5 +1,5 @@
 ---
-column: review
+column: todo
 labels: [frontend, ddd]
 priority: high
 agent: dev-opus
@@ -42,3 +42,7 @@ Two things on the Strategic position table and the relationship page.
 - **lead** (2026-09-04T13:30:00.000Z): ANSWERS. (1) Keep the `implied` input field; the map's implied edges will feed it. (2) Confirmed: the description is its own cell, the narrative is the fallback and the hover. (3) The counterpart and grouping helpers move to core on a later card; the TODO stands. Landing on develop.
 
 - 2026-09-11, lead: The narrative and the hover ship; the fallback's muted styling and generated title do not, so a machine-written description reads as an authored one. Issue 43.
+
+- 2026-09-11, lead: held back from done. The narrative and the hover are confirmed; the fallback's muted styling and generated title were never built; issue 43.
+
+- 2026-09-11, lead: held back from done. The narrative and the hover are confirmed; the fallback's muted styling and generated title were never built; issue 43.

@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [frontend, bug]
 priority: low
 agent: dev-sonnet
@@ -29,3 +29,5 @@ In `V2/Compare/Context page` the v1 column shrinks to a sliver because the v1 in
 - **dev-sonnet** (2026-09-04T11:28:00.000Z): Added a test in `packages/pages/src/lib/v2/templates/Compare.harness.test.ts:47-52`. `vitest.config.ts:8` runs with the default `css: false`, so Svelte's scoped `<style>` never reaches jsdom in this suite — confirmed by a throwaway render that showed no `<style>` in `document.head` and `getComputedStyle` reporting `overflow-x: auto` (the UA default) instead of the declared value. Asserting from the component source instead, matching the `.compare > section { min-width: 600px }` and `.compare { overflow-x: auto }` rules by regex.
 - **dev-sonnet** (2026-09-04T11:30:00.000Z): Full verification: `npm ci`; built `core`, `graphviz`, `pages`; `packages/pages` unit suite green at 663/663 with coverage still 100/100/100/100 (harness files are excluded from coverage per `vitest.config.ts:29-36`); `node scripts/codicons.mjs && npx storybook build`; `npx playwright test e2e/storybook.spec.ts` — all 184 tests green, including all 10 `V2/Compare/*` and `V2/Compare — ContextPage` stories. Clean-code self-scan (diff is 2 files / 26 lines, under the sub-agent-audit threshold): no SRP/DRY/naming/coupling/dead-code/KISS issues. Ready for review.
 - **lead** (2026-09-05T02:00:00.000Z): Landing on develop.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [bug, frontend]
 priority: high
 agent: dev-opus
@@ -59,3 +59,5 @@ The outer boundary geometry is produced by `sketchBackdrop` in packages/pages/sr
 - **lead** (2026-09-03T19:55:00.000Z): Visual check: Playwright screenshot of the petstore commerce context map in sketch style; the outer blob rounds Identity BC at the bottom-left with no pinch or kink.
 
 - 2026-09-11, lead: The story this card asks a reviewer to look at paints nothing; that defect is issue 41. The curve itself is verified on all four shipped maps by `packages/pages/e2e/card-evidence.spec.ts`, sharpest turn 2.4 to 4.9 degrees per two pixels of arc against a twenty degree bar.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

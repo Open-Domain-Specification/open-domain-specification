@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [docs, frontend]
 priority: high
 agent: dev-sonnet
@@ -43,3 +43,5 @@ The extension's README (apps/ods-vscode/README.md) is the Marketplace listing, a
 - **lead** (2026-09-03T21:50:00.000Z): Copy accepted. One capture fix: context-map-dark.png carries the 'All installed extensions are temporarily disabled' toast. In apps/ods-vscode/src/test/screenshots.ts run `vscode.commands.executeCommand('notifications.clear')` (and a short settle) immediately before every `screencapture`. Also `git merge develop` again (card 14 landed: a fullscreen button now sits in the diagram options panel) and regenerate all four. Then review.
 - **dev-sonnet** (2026-09-03T22:20:00.000Z): `git merge develop` again — local `develop` was behind origin, so `git fetch origin develop:develop` then `git merge develop` (fast-forward 6e67091 -> 652120d) pulled in card 14 (packages/pages/src/lib/flow/fullscreen.svelte.ts and the DiagramOptionsPanel changes). `vscode.commands.executeCommand('notifications.clear')` does not exist in VS Code 1.96.4 (checked the bundled workbench.desktop.main.js for registered `notifications.*` commands) — the correct id is `notifications.clearAll`, confirmed it exists in that list. Added the clear plus a 300ms settle immediately before the window-bounds read/shutter in the single `capture()` call site used by all four shots, apps/ods-vscode/src/test/screenshots.ts:150-156. Rebuilt `@open-domain-specification/pages` and `ods-vscode`, both green, then `npm run screenshots -w ods-vscode`: 9 passing, all four PNGs rewritten. Viewed context-map-dark.png directly — no toast, dark theme, floating handles, and the fullscreen button now visible in the diagram options panel top-right (card 14). `npm run test:vscode -w ods-vscode` without the flag: 5 passing, 4 pending, unaffected. Back to review.
 - **lead** (2026-09-03T22:10:00.000Z): Reviewed the README, the Antigravity journal, screenshots.ts and all four PNGs (toast gone, floating handles, dark controls, fullscreen button present). Landing on develop.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

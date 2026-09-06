@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [bug, frontend]
 priority: high
 agent: dev-sonnet
@@ -40,3 +40,5 @@ There are two paths to close, not one:
 - **dev-sonnet** (2026-09-04T00:35:00.000Z): e2e in `packages/pages/e2e/relationship.spec.ts:126-157` — opens the modal on the petstore Sales page, records `window.scrollY`, wheels 5000px twice over `.body` and once over the scrim, asserts `scrollY` is unchanged, then closes and asserts it is still unchanged. First draft scrolled the page to a fixed offset before opening the modal, but `scrollIntoViewIfNeeded` on the toggle moved the page again before the click, so I capture "before" after the modal is already open instead. `npx playwright test` — 253 tests, all green, including the full `storybook.spec.ts` render sweep.
 - **dev-sonnet** (2026-09-04T00:40:00.000Z): Clean-code self-scan (diff is 4 files / 99 lines, under the sub-agent threshold): the two `$effect`s in Modal.svelte are separate concerns (focus vs. scroll lock), no duplication, no dead code. No findings. Ready for review.
 - **lead** (2026-09-05T22:00:00.000Z): Reviewed. Locking `<html>` keys off `showing`, so all three close paths are covered by construction rather than by three handlers, and the site shell's nav column is reached through the same class. Landing on develop.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

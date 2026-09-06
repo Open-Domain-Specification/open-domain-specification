@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [frontend, docs]
 priority: high
 agent: dev-opus
@@ -46,3 +46,5 @@ The relationship detail designed in card 19 ships: expanded in place from a Stra
 - **dev-opus** (2026-09-04T10:06:00.000Z): Two sweep findings I did not act on, both for you rather than me. First, `apps/ods-vscode/src/tree.ts:198-205` still builds its own relationship label (`"A to B"` / `"A and B"`), so the tree and the spotlight now word the same relationship differently, and a `separate-ways` relationship reads "A to B" in the tree though it is symmetric — a pre-existing bug. Adopting `relationshipTitle` there fixes both but changes a label every user of the tree can see, which is your call, not mine; I left the tree alone and wrote `relationshipTitle`'s docstring to claim only the surfaces that actually use it. Second, `packages/doc/src/strategic-position.md.ts:9-11` keeps its own copy of the symmetric set — sharing it would mean `packages/doc` depending on `packages/pages`, or a fourth core export, and neither is this card's to decide. Nothing else scored above 0.5.
 - **dev-opus** (2026-09-04T10:10:00.000Z): Final evidence, everything re-run after the sweep. Core 119 tests / 11 files. Pages unit 452 tests / 62 files, 100% statements, branches, functions and lines. Pages Playwright 65 passed, the two new relationship cases and all six rewritten Storybook stories among them. Doc 21 tests / 4 files. `npm run test:vscode` 6 passing including "opens a relationship's page from its row in the tree". All four model packages green. `svelte-check` 0 errors, 0 warnings. `apps/ods-ui` builds. Biome clean over every file this card touches; the three findings it still reports (`packages/core/src/workspace.ts:1764,1780`, `packages/pages/e2e/global-setup.ts`) are pre-existing on develop, and I again reverted the unrelated files `biome check --write` reformats. Moving to review.
 - **lead** (2026-09-04T08:20:00.000Z): Reviewed the ref getter, RelationshipPage and the tree change. The two leftovers (tree label wording, duplicated symmetric predicate) are card 24. Landing on develop.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

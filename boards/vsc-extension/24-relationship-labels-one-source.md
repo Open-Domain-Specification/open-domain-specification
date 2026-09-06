@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [frontend, bug]
 priority: med
 agent: dev-sonnet
@@ -36,3 +36,5 @@ Card 23 left two duplicates. The extension tree builds its own relationship labe
 - **lead** (2026-09-04T09:30:00.000Z): The arrow labels from relationshipTitle are the wording; the checklist's 'and' was loose phrasing. Landing on develop.
 
 - 2026-09-11, lead: One predicate, two renderings: the health report builds its own arrow rather than composing the shared label. Issue 44.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

@@ -1,5 +1,5 @@
 ---
-column: review
+column: todo
 labels: [bug, frontend]
 priority: low
 agent: dev-sonnet
@@ -38,3 +38,7 @@ updatedAt: 2026-09-05T02:30:00.000Z
 - **lead** (2026-09-05T02:30:00.000Z): Landing on develop.
 
 - 2026-09-11, lead: Four `Flow/SketchBackdrop` stories still render an empty canvas, and the Storybook check cannot see it; issue 41. This card's claim that every story renders its own component does not hold for those four.
+
+- 2026-09-11, lead: held back from done. Four `Flow/SketchBackdrop` stories still paint an empty canvas, so this card's claim is not met; issue 41.
+
+- 2026-09-11, lead: held back from done. Four `Flow/SketchBackdrop` stories still paint an empty canvas, so this card's claim is not met; issue 41.

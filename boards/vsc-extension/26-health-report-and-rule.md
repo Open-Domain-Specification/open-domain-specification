@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [frontend, backend]
 priority: high
 agent: dev-opus
@@ -38,3 +38,5 @@ updatedAt: 2026-09-04T11:30:00.000Z
 - **dev-opus** (2026-09-04T10:05:00.000Z): Evidence. Core 133 passing (`packages/core/src/validate.test.ts:290-386` is 7 new cases for the rule, `packages/core/src/evidence.test.ts:133-158` 3 for the helper, and the everything-wrong fixture at `packages/core/src/rule-catalog.test.ts:7-13` opts in so the catalogue's "every rule fires" check covers it). Pages 465 passing at 100% lines/branches/functions/statements, including `packages/pages/src/lib/templates/HealthPage.test.ts:1-68` and the two new workspace-page cases at `packages/pages/src/lib/templates/WorkspacePage.test.ts:23-45`. Doc 23 passing with two new health cases at `packages/doc/src/index.test.ts:400-448`. Extension unit 9 passing (`apps/ods-vscode/src/locate.test.ts:56-101` is 5 new relationship cases). `npm run test:vscode` 9 passing in a real window, including "carries the health report's three counts on the workspace node" and "opens the health report from its row in search" at `apps/ods-vscode/src/test/extension.test.ts:203-236`. Playwright 66 passing, with `packages/pages/e2e/browse.spec.ts:54-80` walking the strip to `#/health` and asserting "1 to refactor". Full `npm test` green across all 10 projects.
 - **dev-opus** (2026-09-04T10:15:00.000Z): Clean-code sweep clean, card to review. One sub-threshold note for the lead rather than a change I would make unasked: `packages/pages/src/lib/templates/WorkspacePage.svelte:6-7` now shows two adjacent table-of-contents entries, "Model health" (the structural-rules section, id `health`) and "Health" (the evidence section, id `evidence-health`). The card named the new one "Health", and renaming the old one is a user-visible label change, so I left both as they are — say the word if you want "Structural rules" and "Health" instead. Also worth a look in review: `npm test` at the repo root reports the ods-vscode suite from the Nx cache of the main checkout (4 tests) rather than this worktree's 9; the worktree run itself is green, but the cached line is misleading.
 - **lead** (2026-09-04T11:30:00.000Z): Reviewed the opt-in rule, the workspace options schema and the locate fix for relationship refs. The 'Model health' vs 'Health' naming goes to the v2 design pass (card 28). Landing on develop.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

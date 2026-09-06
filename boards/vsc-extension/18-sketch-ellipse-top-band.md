@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [bug, frontend]
 priority: med
 agent: lead
@@ -25,3 +25,5 @@ In the sketch style the context node kept the card style's 4px cluster-colour to
 
 - **jonathan** (2026-09-03T23:00:00.000Z): On the circular cards in the Svelte Flow canvas there is a top border or similar; remove it, it looks strange.
 - **lead** (2026-09-03T23:05:00.000Z): Cause was the cluster band at packages/pages/assets/page.css:463-465 widened to 5px for sketch. Now an even 2px `--fg` stroke, with the mud variant keeping its brown top. Fixed in place by the lead as a two-line CSS change.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

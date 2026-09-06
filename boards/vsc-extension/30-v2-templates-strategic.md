@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [frontend]
 priority: high
 agent: dev-opus
@@ -39,3 +39,5 @@ WorkspacePage, DomainPage, SubdomainPage, ContextPage, RelationshipPage, TeamPag
 - **dev-opus** (2026-09-04T20:00:00.000Z): Clean-code sweep over the new files. Four findings, all under 0.5, three fixed: the big-ball-of-mud wording is now one exported constant, `molecules/ContextLockup.svelte:2-8`, read by both the lockup and the context page's header; `organisms/StrategicPositionTable.svelte:79` passes the position groups straight to `DataTable` instead of renaming and re-mapping them into an identically-shaped array; and the seven-branch page switch the two story harnesses each carried is now one file, `templates/V2Page.harness.svelte:57-71`, so the compare story's two columns cannot drift apart. Left alone: a one-line `<Keyword text={type} title={PATTERNS[type].summary} />` that appears in three organisms (0.2) — a component for one word would cost more than it saves. Also added `V2/Organisms/{StrategicPositionTable,RelationshipDetail,HealthReport}` stories in the three themes, since those three came to me from card 29 and would otherwise have shipped without any. Final: 100 test files, 603 tests, 100% coverage; `npm run check` 0 errors 0 warnings over 956 files; `npx playwright test storybook.spec.ts` 109 passed over 79 `V2/` stories.
 - **dev-opus** (2026-09-04T18:41:00.000Z): QUESTION for lead (second, smaller): the specs restyle four v1 *molecules* that the strategic pages need — `Problems`, `ProvidesTable`, `ConsumesTable`, `AttributeTable` — plus the three row units above. The card sanctions `v2/organisms/` and `v2/templates/` and nothing else, so I have put them under `v2/organisms/`. Confirm that, or say `v2/molecules/` and I will move them (a rename, nothing else).
 - **lead** (2026-09-04T18:10:00.000Z): ANSWERS. (1) Option (a): an optional `detail` snippet on v2/DataTable rendered as a colspan row after each row. Card 30 owns that edit and, to unblock its pages, also owns the v2 StrategicPositionTable, RelationshipDetail and HealthReport organisms; card 29 has been told to drop them. (2) Molecules go under `v2/molecules/`; move the ones you have. Card 29 keeps Sidebar, AttributesSection, InvariantsSection, LanguageSection and the layout shell story; on merge the lead takes card 30's versions of anything both wrote.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.

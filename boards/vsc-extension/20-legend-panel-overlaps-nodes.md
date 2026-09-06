@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [bug, frontend]
 priority: med
 agent: dev-opus
@@ -37,3 +37,5 @@ In the petstore commerce context map the legend panel (top-left) sits on top of 
 
 - **dev-opus** (2026-09-04T11:15:00.000Z): One existing e2e case needed adjusting: `packages/pages/e2e/diagrams-sketch.spec.ts:134-141` dragged a node a fixed 500x300px to prove the cluster boxes follow it, and asserted the box grew by 200px. The default fit is now zoomed out further to leave the panels their room (petstore 0.41 where it was ~0.6), so 500 screen pixels no longer carries the node past the cluster's edge — the drag now aims at a point 250x150 beyond the cluster's own corner, which is what the test meant and is zoom-independent. Behaviour it covers is unchanged. Final runs after the clean-code sweep: `npx vitest run --coverage` 674 passed / 111 files, all files 100%; `npx playwright test` 233 passed; `svelte-check` 0 errors over 1027 files; biome clean on every file I touched. Left in `review` for the lead — nothing committed.
 - **lead** (2026-09-05T04:10:00.000Z): The band-per-panel padding is accepted as the reading of the rule. Landing on develop.
+
+- 2026-09-11, lead: driven in a browser against the built app and confirmed against this card's own claim; moved to done.
