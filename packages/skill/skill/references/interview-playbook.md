@@ -100,8 +100,8 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   relations already and declares only what it adds. The parent keeps what every kind has, and
   its description says so when no instance is ever just the parent — there is no abstract
   flag. An entity is a kind of an entity of its own aggregate and is never itself `root`; a
-  value object is a kind of one its own context declares, or one it borrows over a
-  `shared-kernel`. If the kinds differ only in a label, not in what they hold, it is one
+  value object is a kind of one its own context declares, or one it borrows through a
+  shared kernel or as a conformist (decision 16). If the kinds differ only in a label, not in what they hold, it is one
   element with a value object of closed values, not a hierarchy.
 - "Which of these are always present?" → ask once per entity, value object and schema, after
   the attributes are listed. Everything the user does not name is `optional: true`; the ones
