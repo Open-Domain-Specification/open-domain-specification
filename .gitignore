@@ -10,8 +10,6 @@ coverage/
 *.vsix
 artifacts/
 
-# session handover notes, local only
-.handovers/
 
 # Design audit screenshots are generated, not committed
 docs/design/audit/*.png
