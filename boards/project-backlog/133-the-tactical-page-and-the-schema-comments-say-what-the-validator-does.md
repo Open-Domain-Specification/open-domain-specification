@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [docs]
 priority: high
 agent: developer
