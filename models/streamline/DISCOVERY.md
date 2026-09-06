@@ -514,3 +514,23 @@ context, so an event is the only honest way to cross that boundary here, exactly
 No invariant in the model names an operation that returns anything (`SessionNeedsEntitlement`
 guards `StartPlayback`, which only rejects), so none is a postcondition candidate. Nothing
 changed.
+
+## Revision (card 105): three Moneys, none of them the Shared Kernel's
+
+The architect's seventh review asked why Studio Production's `budget`, Licensing's `fee` and
+Billing & Plans' `price`/invoice each declare their own `Money` through the `money()` helper
+rather than sharing one, the way the player and edge contexts share a kernel elsewhere in
+this model. They are three different ledgers, kept by three different teams, for three
+different reasons. A production's budget is the studio arm's own commitment, approved before
+a shoot starts and never touched by a customer. A licensing deal's fee is negotiated per
+window, and a window is a territory, start and end (Head of Content Acquisition): a deal with
+a licensor in one territory is a separate commercial negotiation from a deal in another, with
+its own currency and its own rounding as that market sets it, and nothing ties it to what a
+household is billed. A household's invoice is StreamLine's own consumer-facing ledger, in the
+household's own country (`householdId`, `planTier`, `country` on `RecordHousehold`), and it
+is the one place the disc business's monthly charge lands too, added as an invoice line by
+"Add disc charge to bill" rather than carried in the disc business's own currency. Three
+ledgers that never reconcile against each other are what decision 16's default describes, a
+value object belonging to its own context; the player/edge kernel exists because those two
+genuinely compile against one shared model, and nothing in these interviews says the same of
+budgets, deal fees and household bills. Nothing changed.

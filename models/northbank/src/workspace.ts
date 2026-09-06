@@ -510,7 +510,7 @@ const consentWithdrawn = consentAgg.provides("ConsentWithdrawn", {
 	pattern: "published-language",
 	schema: consentSchema,
 });
-customerAgg
+const verifyCustomer = customerAgg
 	.provides("VerifyCustomer", {
 		description: "Mark KYC as passed once documents and screening are clear",
 		type: "operation",
@@ -700,11 +700,11 @@ onboardingApp.consumes(partyMatched, { pattern: "anti-corruption-layer" });
 customerBC
 	.addProcess("Customer onboarding", {
 		description:
-			"From a prospective customer's details to a verified one. Everyone is screened before anything else, and the process then waits for the engine's answer: a match holds the onboarding until Financial Crime clears it by hand, which is why there is no timeout. Correlation is by customerId, which the screening answer carries back; the instance ends when KYC passes and accounts may be opened",
+			"From a prospective customer's details to a verified one. Everyone is screened before anything else, and the process then waits on the engine's verdict: a match holds the onboarding until Financial Crime clears it by hand, which is why there is no timeout; a clean screening lets KYC verify the customer. Correlation is by customerId, which the screening event carries back; the instance ends when KYC passes and accounts may be opened",
 	})
 	.starts(startOnboarding)
 	.on(partyMatched)
-	.issues(screenCustomer, holdOnboarding)
+	.issues(screenCustomer, holdOnboarding, verifyCustomer)
 	.ends(customerVerified);
 
 /* =======================
@@ -1494,30 +1494,6 @@ submissionSchema.addAttribute("messageType", {
 	type: "SchemeFormat",
 	valueobject: schemeFormatVO,
 });
-// What the gateway hands back to the hub once the scheme has answered: the
-// bank's reading of the scheme's response, in the bank's own terms.
-const settlementSchema = schemeBC.addSchema("SchemeSettlement", {
-	description:
-		"The scheme settled: which instruction, and the scheme's own reference",
-});
-settlementSchema.addAttribute("instructionId", {
-	type: "string",
-	identity: true,
-	identifies: instruction,
-});
-settlementSchema.addAttribute("schemeRef", { type: "string" });
-const schemeRefusalSchema = schemeBC.addSchema("SchemeRefusal", {
-	description:
-		"The scheme refused: which instruction, and the scheme's status reason passed through untranslated, because you do not negotiate with a scheme",
-});
-schemeRefusalSchema.addAttribute("instructionId", {
-	type: "string",
-	identity: true,
-	identifies: instruction,
-});
-schemeRefusalSchema.addAttribute("schemeRef", { type: "string" });
-schemeRefusalSchema.addAttribute("reason", { type: "string" });
-
 // The scheme's own answers, published by the scheme. They carry the scheme's
 // shape, as CardCo's authorisation message carries CardCo's: what arrives is a
 // pacs.002 with the reference the gateway sent in it, and the gateway is what
@@ -1557,51 +1533,22 @@ const schemeApp = schemeBC.addService("SchemeGatewayApp", {
 		"The gateway's application service: the boundary the hub submits messages through",
 	type: "application",
 });
-// "Send a submission and await the response": the caller waits, and what it
-// gets back is the gateway's reading of whichever answer the scheme gave. The
-// operation used to claim to raise the scheme's two events itself, which said
-// the gateway made the settlement happen (card 95).
+// "We turn a submission into a scheme message and send it. The scheme
+// confirms or rejects" (Scheme Connectivity lead) is two acts, not one: the
+// send is the gateway's, and the confirming or rejecting is the scheme's,
+// on its own timings. Card 95 gave the send an answer to wait on --
+// SubmitToScheme `returns`/`rejects` -- which drew the exchange as a single
+// synchronous call while the surrounding text said the scheme answers later;
+// the two disconnected chains that made are what card 105 closes.
+// SubmitToScheme is returns-less, the honest shape for a send with no
+// answer of its own (decision 13, note of 2026-09-10); the answer is the
+// scheme's own event, awaited where it is declared.
 const submitToScheme = schemeApp.provides("SubmitToScheme", {
 	description:
-		"Send a submission in the scheme's format and await the response; the caller is answered with the settlement or with the scheme's refusal",
+		"Send a submission in the scheme's format; the scheme confirms or rejects later, on its own timings, as SchemeSettlementConfirmed or SchemeRejected",
 	type: "operation",
 	pattern: "open-host-service",
 	schema: submissionSchema,
-	returns: settlementSchema,
-	rejects: [schemeRefusalSchema],
-});
-// The scheme answers "on its own timings", so the gateway hears the response
-// as a fact and matches it to the message it sent; SubmitToScheme, which is
-// waiting, is answered from what that match recorded. Card 95 named the
-// waiting operation as the subscriber, which said a thing that is issued was
-// somehow listening and left the reaction unwritten (`consumption-by-reactor`,
-// card 98).
-const recordSchemeResponse = schemeMessageAgg.provides("RecordSchemeResponse", {
-	description:
-		"Match the scheme's status report to the message it answers, so the caller waiting on that submission is told",
-	type: "operation",
-	internal: true,
-});
-const matchSchemeResponse = schemeBC
-	.addPolicy("Match the scheme's response", {
-		description:
-			"Either answer the scheme gives -- a settlement or a refusal -- is recorded against the message it quotes, which is what the submission was waiting for",
-	})
-	.on(schemeSettlementConfirmed, schemeRejected)
-	.issues(recordSchemeResponse);
-schemeApp.consumes(schemeSettlementConfirmed, {
-	pattern: "conformist",
-	by: [matchSchemeResponse],
-});
-schemeApp.consumes(schemeRejected, {
-	pattern: "conformist",
-	by: [matchSchemeResponse],
-});
-paymentSchemeBC.upstreamOf(schemeBC, {
-	description:
-		"ISO 20022 as the scheme publishes it; the gateway takes the format as it is",
-	upstreamRoles: ["published-language"],
-	downstreamRoles: ["conformist"],
 });
 // A policy names operations of its own context, so each step that reaches
 // another context is an operation of the hub's own app service (decision 17).
@@ -1629,6 +1576,22 @@ paymentsApp.consumes(postEntry, {
 	pattern: "anti-corruption-layer",
 	by: [postSettlement],
 });
+// The scheme answers "on its own timings", so the process that made the call
+// waits on the scheme's own fact, not on an answer SubmitToScheme does not
+// have (decision 13, note of 2026-09-10; decision 23's fourth amendment: the
+// process issued the call, through SendToScheme, so it is the one entitled
+// to wait on what comes back). Payments hears the scheme directly, the same
+// shape the hub lead described -- "we submit to the scheme through the
+// gateway" -- without a bridge inside the gateway pretending the call
+// answered itself.
+paymentsApp.consumes(schemeSettlementConfirmed, { pattern: "conformist" });
+paymentsApp.consumes(schemeRejected, { pattern: "conformist" });
+paymentSchemeBC.upstreamOf(paymentsBC, {
+	description:
+		"ISO 20022 as the scheme publishes it; the hub takes the format as it is, the same terms it takes the gateway's",
+	upstreamRoles: ["published-language"],
+	downstreamRoles: ["conformist"],
+});
 // The hub lead described one instruction going from initiated to settled, and
 // the model used to spell it as seven policies. It is one process: it holds
 // the instruction while the scorer and then the scheme answer, and each step
@@ -1638,10 +1601,10 @@ paymentsApp.consumes(postEntry, {
 const instructionLifecycle = paymentsBC
 	.addProcess("Instruction lifecycle", {
 		description:
-			"From an instruction being initiated to the money having moved. It scores every instruction with Fraud and waits for the verdict to come back: above the threshold it rejects the instruction and never submits it, below it submits to the scheme through the gateway, in the scheme's own format, and the process then waits again for the answer that call comes back with. A settlement settles the instruction and posts it to the ledger; a refusal rejects it. Correlation is by instructionId, which the scorer's verdict and the gateway's answer both carry; an instruction the scheme never answers stays open for the operations team, because the scheme's own timings are not the bank's to model",
+			"From an instruction being initiated to the money having moved. It scores every instruction with Fraud and waits for the verdict to come back: above the threshold it rejects the instruction and never submits it, below it submits to the scheme through the gateway, in the scheme's own format, and the process then waits again, this time for the scheme itself to confirm or reject the submission, on its own timings. A settlement settles the instruction and posts it to the ledger; a refusal rejects it. Correlation is by instructionId, which the scorer's verdict and the scheme's response both carry; an instruction the scheme never answers stays open for the operations team, because the scheme's own timings are not the bank's to model",
 	})
 	.starts(paymentInitiated)
-	.on(submitToScheme.returned(), submitToScheme.rejected(schemeRefusalSchema))
+	.on(schemeSettlementConfirmed, schemeRejected)
 	.issues(sendToScheme, confirmSettlement, rejectPayment, postSettlement)
 	.ends(paymentSettled, paymentRejected);
 
@@ -2041,18 +2004,15 @@ const cardCoFeed = cardCoBC.addService("CardCo Authorisation Feed", {
 		"The processor's authorisation side, and all the bank can see of it: it takes the merchant's request and calls the issuer",
 	type: "application",
 });
-// What the bank sees of CardCo is the call arriving, so the step that makes it
-// is named and nothing else about the processor is. Not internal: `internal`
-// says an operation never leaves its context, and whether a step inside
-// somebody else's machine stays there is not ours to state
-// (`external-is-boundary`, card 100). CardCo offers this to its merchants, who
-// the model does not draw, and naming it is how the consumption below says who
-// calls the bank (decisions 21 and 28).
-const requestAuthorisation = cardCoFeed.provides("RequestAuthorisation", {
-	description:
-		"A merchant asked CardCo to take an amount on one of our cards, so CardCo asks the issuer to approve it. CardCo's own step, offered to its merchants; the bank sees it only as the caller of AuthoriseCard",
-	type: "operation",
-});
+// What the bank sees of CardCo is the call arriving, and nothing else about
+// the processor is ours to state (decision 28): a merchant asking CardCo to
+// take an amount, and CardCo in turn asking the issuer, are steps inside
+// somebody else's machine. `RequestAuthorisation` named that inside step so
+// the consumption below had an operation to put in `by`, which is the model
+// inventing CardCo's own vocabulary for it. The feed provides nothing, so
+// nothing names the caller: a consumption with no `by` is what a consumer
+// with no operations of its own looks like (card 105).
+cardCoFeed.consumes(authoriseCard, {});
 // No downstream role on the consumption: CardCo is the upstream here, and a
 // consumption carries only a downstream one. Card 98 wrote "conformist" to
 // quieten `role-coherence`, which read the roles from the call rather than
@@ -2060,7 +2020,6 @@ const requestAuthorisation = cardCoFeed.provides("RequestAuthorisation", {
 // takes the other side's model as it stands, and CardCo is the side whose
 // model is taken. The rule now reads the declared direction and asks nothing
 // of either end here (decision 03, note of 2026-09-09; card 99).
-cardCoFeed.consumes(authoriseCard, { by: [requestAuthorisation] });
 // One relationship, not two. Card 98 declared a second, `cardsBC.upstreamOf(
 // cardCoBC)`, because `relationship-declared` was satisfied only by an arrow
 // pointing the way the call ran, so the truthful relationship did not answer
@@ -2687,14 +2646,6 @@ regReturn.uses(periodVO, "for-period", "1");
 // Money is the Shared Kernel's, so it is typed by `valueobject` reference
 // only, with no `uses` relation to cross with it.
 
-// The ledger is another context, so this is a precondition of filing: a
-// reconciliation run before FileReturn, not a rule one line can hold alone.
-returnAgg
-	.addInvariant("LinesReconcileToLedger", {
-		description:
-			"A return is filed only when every line has been reconciled to the ledger postings for its period; FileReturn refuses an unreconciled line",
-	})
-	.constrains(reportLine, regReturn);
 returnAgg
 	.addInvariant("PeriodClosedBeforeFiling", {
 		description: "A return is filed only for a closed period",
@@ -2716,13 +2667,24 @@ const accumulateLine = returnAgg.provides("AccumulateLine", {
 	type: "operation",
 	internal: true,
 });
-returnAgg
+const fileReturn = returnAgg
 	.provides("FileReturn", {
 		description: "File a closed period's return",
 		type: "operation",
 		internal: true,
 	})
 	.raises(returnFiled);
+// The ledger is another context, so this is checked before the call
+// proceeds, not a rule the return can hold on its own: a precondition of
+// filing, named on the operation it guards (decision 19, amendment of
+// 2026-09-09; card 105).
+returnAgg
+	.addInvariant("LinesReconcileToLedger", {
+		description:
+			"A return is filed only when every line has been reconciled to the ledger postings for its period; FileReturn refuses an unreconciled line",
+		precondition: true,
+	})
+	.constrains(fileReturn);
 
 // Reporting takes its facts in at its own boundary: an aggregate is a
 // consistency boundary, not a client, so ReportingApp is what subscribes and
