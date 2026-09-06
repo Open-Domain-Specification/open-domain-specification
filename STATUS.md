@@ -6,11 +6,11 @@ Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel
 
 ## Now
 
-Cards 101 (a model pass, developer) and 102 (three loader and rule leftovers, senior-developer) are live in their own worktrees; stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 and 100 landed green; decision 29 written. The lore-free roster is installed on both harnesses at project scope and committed.
+Card 102 (three loader and rule leftovers, senior-developer) is live in its worktree, resumed with a corrected ruling on the process lifecycle exemption; stopping point: the developer reports, the lead lands with `npm run verify`. Cards 99, 100 and 101 landed green; decision 29 written. The lore-free roster is installed on both harnesses at project scope and committed.
 
 ## Next
 
-Land cards 101 and 102; then ([boards/project-backlog/100](boards/project-backlog/100-a-mistake-is-a-diagnostic-not-a-crash.md)) the same way. Expected result: both land green, the panel (Antigravity via `agy`, Codex via `codex exec -m gpt-6-astra`, a fresh architect-deep) runs a sixth time on that head, and all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
+Land card 102; then ([boards/project-backlog/100](boards/project-backlog/100-a-mistake-is-a-diagnostic-not-a-crash.md)) the same way. Expected result: both land green, the panel (Antigravity via `agy`, Codex via `codex exec -m gpt-6-astra`, a fresh architect-deep) runs a sixth time on that head, and all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
 
 ## Later
 
