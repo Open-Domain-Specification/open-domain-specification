@@ -10,7 +10,6 @@ import { relationMapToDigraph } from "./relation-map";
 describe("relationMapToDigraph edge cases", () => {
 	it("should handle empty relation map", async () => {
 		const workspace = new Workspace("Test", {
-			odsVersion: "1.0.0",
 			description: "Test",
 			version: "0.1.0",
 		});
@@ -43,7 +42,6 @@ describe("relationMapToDigraph edge cases", () => {
 
 	it("should handle relation map with entities and value objects", async () => {
 		const workspace = new Workspace("Test", {
-			odsVersion: "1.0.0",
 			description: "Test",
 			version: "0.1.0",
 		});
@@ -90,7 +88,6 @@ describe("relationMapToDigraph edge cases", () => {
 describe("consumableMapToDigraph edge cases", () => {
 	it("should handle empty consumable map", async () => {
 		const workspace = new Workspace("Test", {
-			odsVersion: "1.0.0",
 			description: "Test",
 			version: "0.1.0",
 		});
@@ -124,7 +121,6 @@ describe("consumableMapToDigraph edge cases", () => {
 
 	it("should handle consumable map with provides and consumes", async () => {
 		const workspace = new Workspace("Test", {
-			odsVersion: "1.0.0",
 			description: "Test",
 			version: "0.1.0",
 		});
@@ -183,7 +179,6 @@ describe("consumableMapToDigraph edge cases", () => {
 
 	it("should handle aggregate with consumables", async () => {
 		const workspace = new Workspace("Test", {
-			odsVersion: "1.0.0",
 			description: "Test",
 			version: "0.1.0",
 		});
@@ -224,7 +219,6 @@ describe("consumableMapToDigraph edge cases", () => {
 describe("Graphviz error handling", () => {
 	it("should handle SVG generation failures gracefully", async () => {
 		const workspace = new Workspace("Error Test", {
-			odsVersion: "1.0.0",
 			description: "Error test",
 			version: "0.1.0",
 		});

@@ -6,7 +6,6 @@ import { EXTERNAL_STEREOTYPE } from "./role-labels";
 describe("contextMapToDigraph edge cases", () => {
 	it("should handle empty context map", async () => {
 		const workspace = new Workspace("Empty Workspace", {
-			odsVersion: "1.0.0",
 			description: "Empty workspace",
 			version: "0.1.0",
 		});
@@ -22,7 +21,6 @@ describe("contextMapToDigraph edge cases", () => {
 
 	it("should handle context map with single domain", async () => {
 		const workspace = new Workspace("Single Domain", {
-			odsVersion: "1.0.0",
 			description: "Single domain workspace",
 			version: "0.1.0",
 		});
@@ -42,7 +40,6 @@ describe("contextMapToDigraph edge cases", () => {
 
 	it("should handle context map with multiple bounded contexts", async () => {
 		const workspace = new Workspace("Multi BC", {
-			odsVersion: "1.0.0",
 			description: "Multiple bounded contexts",
 			version: "0.1.0",
 		});
@@ -99,7 +96,6 @@ describe("contextMapToDigraph edge cases", () => {
 
 	it("draws an identity-only dependency dashed, under the «id» stereotype", () => {
 		const workspace = new Workspace("Identity Only", {
-			odsVersion: "1.0.0",
 			description: "One identity across a boundary and nothing else",
 			version: "0.1.0",
 		});
@@ -125,7 +121,6 @@ describe("contextMapToDigraph edge cases", () => {
 	// labelled with the name that tells them apart (decision 15, card 103).
 	it("draws a line per named agreement, labelled with its name", () => {
 		const workspace = new Workspace("Two Agreements", {
-			odsVersion: "1.0.0",
 			description: "One warehouse, two agreements with sales",
 			version: "0.1.0",
 		});
@@ -153,7 +148,6 @@ describe("contextMapToDigraph edge cases", () => {
 		// Test with null/undefined input - this would be a development error
 		// but we want to ensure it doesn't crash the system
 		const workspace = new Workspace("Error Test", {
-			odsVersion: "1.0.0",
 			description: "Error test workspace",
 			version: "0.1.0",
 		});
@@ -167,7 +161,6 @@ describe("contextMapToDigraph edge cases", () => {
 
 	it("draws a context nobody owns under the external-system stereotype", async () => {
 		const workspace = new Workspace("Outside", {
-			odsVersion: "1.0.0",
 			description: "One of ours and one of theirs",
 			version: "0.1.0",
 		});

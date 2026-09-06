@@ -4,7 +4,6 @@ import { Workspace } from "./workspace";
 
 function makeWs() {
 	const ws = new Workspace("WS", {
-		odsVersion: "1.0.0",
 		description: "",
 		version: "test",
 	});

@@ -30,7 +30,6 @@ function makeEvidenceWs(): {
 	summary: Consumable;
 } {
 	const ws = new Workspace("Petstore", {
-		odsVersion: "1.0.0",
 		description: "",
 		version: "test",
 	});

@@ -245,7 +245,6 @@ describe("an identity that names an external context's published schema", () => 
 	/** A settlement holding the processor's own id for the payment. */
 	function settlements() {
 		const ws = new Workspace("Round Trip", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0",
 		});
@@ -271,7 +270,9 @@ describe("an identity that names an external context's published schema", () => 
 		const written =
 			schema.boundedcontexts.payments.aggregates!.settlement.entities!
 				.settlement.attributes.provider_payment_id.identifies;
-		expect(written).toEqual({ $ref: "#/boundedcontexts/pay_co/schemas/payment" });
+		expect(written).toEqual({
+			$ref: "#/boundedcontexts/pay_co/schemas/payment",
+		});
 		const rebuilt = Workspace.fromSchema(JSON.parse(JSON.stringify(schema)));
 		const identified = rebuilt
 			.getEntityByRefOrThrow(
@@ -289,7 +290,6 @@ describe("a relation that names the attribute it draws", () => {
 	/** A customer whose current address and address history are both Addresses. */
 	function addresses() {
 		const ws = new Workspace("Round Trip", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0",
 		});
@@ -332,7 +332,6 @@ describe("one pair, two agreements", () => {
 	 */
 	function twoAgreements() {
 		const ws = new Workspace("Round Trip", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0",
 		});
@@ -374,7 +373,6 @@ describe("one pair, two exchanges", () => {
 	 */
 	function twice() {
 		const ws = new Workspace("Round Trip", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0",
 		});
@@ -439,7 +437,6 @@ describe("one pair, two exchanges", () => {
 describe("a consumption that names its agreement", () => {
 	function twoAgreements() {
 		const ws = new Workspace("Agreements", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0",
 		});

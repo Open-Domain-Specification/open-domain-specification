@@ -4,6 +4,7 @@ import { ODSConsumptionGraph } from "./consumption-graph";
 import { ODSContextMap } from "./context-map";
 import { flowEdgeLabel, ODSFlowMap } from "./flow-map";
 import { makeRichTestWs } from "./makeTestWs";
+import { ReactionChain } from "./reaction-walk";
 import { ODSRelationGraph, ODSRelationMap } from "./relation-map";
 import {
 	type Attribute,
@@ -131,7 +132,6 @@ describe("ODSContextMap", () => {
 	it("implies an edge from an identity into another context, with no roles", () => {
 		// Two contexts joined by nothing but Holder's Thing Id (decision 14).
 		const ws = new Workspace("W", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0",
 		});
@@ -159,7 +159,6 @@ describe("ODSContextMap", () => {
 		// An external context has no entities of ours to name, so the attribute
 		// names the system and the dependency reads all the same (decision 28).
 		const ws = new Workspace("W", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0",
 		});
@@ -186,7 +185,6 @@ describe("ODSContextMap", () => {
 		// still an identity into that context, and draws as one (decision 28,
 		// third amendment; card 113).
 		const ws = new Workspace("W", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0",
 		});
@@ -215,7 +213,6 @@ describe("ODSContextMap", () => {
 		// the context publishing the payload depends on nobody for it, so there
 		// is no dependency to draw (decision 14, second amendment).
 		const ws = new Workspace("W", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0",
 		});
@@ -366,7 +363,6 @@ describe("ODSRelationMap", () => {
 
 	it("draws an identity of a child entity onto the child, in its own cluster", () => {
 		const ws = new Workspace("Child identity", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "1.0.0",
 		});
@@ -406,7 +402,6 @@ describe("ODSRelationMap", () => {
 
 	it("draws an identity of an external context onto that context's own box", () => {
 		const ws = new Workspace("External identity", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "1.0.0",
 		});
@@ -440,7 +435,6 @@ describe("ODSRelationMap", () => {
 		// The box a reader can follow is the system's; which of its published
 		// kinds the id is of reads on the attribute's own page (card 113).
 		const ws = new Workspace("External schema identity", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "1.0.0",
 		});
@@ -473,7 +467,6 @@ describe("ODSRelationMap", () => {
 
 	it("draws a kind as a generalisation pointing at what it is a kind of", () => {
 		const ws = new Workspace("Kinds", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "1.0.0",
 		});
@@ -506,7 +499,6 @@ describe("ODSRelationMap", () => {
 
 	it("draws a value object borrowed from another context, in that context's cluster", () => {
 		const ws = new Workspace("Borrowed values", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "1.0.0",
 		});
@@ -553,7 +545,6 @@ describe("ODSRelationMap", () => {
 
 	it("derives the line for a local value object no relation draws", () => {
 		const ws = new Workspace("Derived uses", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "1.0.0",
 		});
@@ -584,7 +575,6 @@ describe("ODSRelationMap", () => {
 
 	it("draws a declared uses relation once, and derives nothing beside it", () => {
 		const ws = new Workspace("Declared uses", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "1.0.0",
 		});
@@ -688,7 +678,6 @@ describe("ODSFlowMap", () => {
 		// that operation is what calls out. `by` says so, so the flow map carries
 		// on through it instead of stopping at the boundary.
 		const ws = new Workspace("Across", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "1.0.0",
 		});
@@ -753,7 +742,6 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 	 */
 	function callAndBranch() {
 		const ws = new Workspace("Answers", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "1.0.0",
 		});
@@ -866,7 +854,7 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 	// caller of a command waits on (decision 13, second amendment; card 99).
 	it('labels the completion of a returns-less call "completes"', () => {
 		const { ws, process, authorise, declined } = callAndBranch();
-		authorise.rejects.length = 0;
+		authorise.rejections.length = 0;
 		process.events.length = 0;
 		process.on(authorise.completed());
 		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
@@ -878,7 +866,7 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 
 	it("draws an ending completion from the operation into the process", () => {
 		const { ws, process, authorise } = callAndBranch();
-		authorise.rejects.length = 0;
+		authorise.rejections.length = 0;
 		process.events.length = 0;
 		process.endEvents.length = 0;
 		process.ends(authorise.completed());
@@ -1115,6 +1103,168 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 		policy.on(...triggers).issues(...(process?.commands ?? []));
 		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
 			"Request Authorisation -> Reopen on decline [Payment Declined]",
+		);
+	});
+});
+
+describe("ODSFlowMap and a refusal that enumerates its outcomes", () => {
+	/**
+	 * An acquirer that refuses a hold with one shape and its own response
+	 * code. One reactor waits on a single outcome — the code it can do
+	 * something about — and another on the shape, which hears every refusal.
+	 * Both made a call of their own, so both are answered (decision 25,
+	 * amended; card 114).
+	 */
+	function twoReactorsOneRefusal() {
+		const ws = new Workspace("Reasons", { description: "", version: "1.0.0" });
+		const provider = ws.addBoundedContext("Acquirer", {
+			description: "",
+			external: true,
+		});
+		const acquirerApi = provider.addService("Acquirer API", {
+			description: "",
+			type: "application",
+		});
+		const declined = provider.addSchema("Provider Decline");
+		const hold = acquirerApi.provides("Hold Funds", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+			rejects: [
+				{ schema: declined, reasons: ["insufficient_funds", "issuer_down"] },
+			],
+		});
+
+		// The context that retries: it hears one outcome, the one it can do
+		// something about, and asks again.
+		const payments = ws.addBoundedContext("Payments", { description: "" });
+		const paymentsApi = payments.addService("Payments API", {
+			description: "",
+			type: "application",
+		});
+		const authorise = paymentsApi.provides("Authorise Payment", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		const retry = paymentsApi.provides("Retry Hold", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const held = paymentsApi.provides("Payment Held", {
+			description: "",
+			type: "event",
+		});
+		paymentsApi.consumes(hold, {
+			pattern: "anti-corruption-layer",
+			by: [retry],
+		});
+		provider.upstreamOf(payments, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		const attempt = payments
+			.addProcess("Hold attempt", { description: "" })
+			.starts(authorise)
+			.on(hold.rejected(declined, "issuer_down"))
+			.issues(retry)
+			.ends(held);
+
+		// The context that only records: it hears the shape, so every refusal
+		// wakes it, whatever the acquirer's code said.
+		const reconciliation = ws.addBoundedContext("Reconciliation", {
+			description: "",
+		});
+		const ledgerApp = reconciliation.addService("Ledger App", {
+			description: "",
+			type: "application",
+		});
+		const enquire = ledgerApp.provides("Enquire Hold", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const noted = ledgerApp.provides("Decline Noted", {
+			description: "",
+			type: "event",
+		});
+		const note = ledgerApp.provides("Note Decline", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const opened = ledgerApp.provides("Day Opened", {
+			description: "",
+			type: "event",
+		});
+		ledgerApp.consumes(hold, {
+			pattern: "anti-corruption-layer",
+			by: [enquire],
+		});
+		provider.upstreamOf(reconciliation, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		const recording = reconciliation
+			.addProcess("Decline log", { description: "" })
+			.starts(opened)
+			.on(hold.rejected(declined))
+			.issues(enquire, note)
+			.ends(noted);
+		return { ws, declined, hold, attempt, recording };
+	}
+
+	const drawn = (map: ODSFlowMap) =>
+		Array.from(map.edges.values()).map(
+			(e) =>
+				`${e.source.name} -> ${e.target.name}${flowEdgeLabel(e) ? ` [${flowEdgeLabel(e)}]` : ""}`,
+		);
+
+	it("draws each answer from the call that asked, and says which outcome it was", () => {
+		const { ws } = twoReactorsOneRefusal();
+		const answers = drawn(ODSFlowMap.fromWorkspace(ws)).filter((it) =>
+			it.includes("Provider Decline"),
+		);
+		expect(answers.sort()).toEqual([
+			"Enquire Hold -> Decline log [Provider Decline]",
+			"Retry Hold -> Hold attempt [Provider Decline (issuer_down)]",
+		]);
+	});
+
+	it("wakes both reactors: one on the outcome, one on the shape that hears them all", () => {
+		const { ws, hold, declined, attempt, recording } = twoReactorsOneRefusal();
+		const chain = new ReactionChain(ws.boundedcontexts.values());
+		const woken = (reason?: string) =>
+			chain
+				.stepsFrom(reason ? attempt.commands[0] : recording.commands[0])
+				.filter((step) => step.answer === hold.rejected(declined, reason))
+				.map((step) => step.to.name);
+		expect(woken("issuer_down")).toEqual(["Hold attempt"]);
+		expect(woken()).toEqual(["Decline log"]);
+	});
+
+	it("is a rejection of that operation, and validates like one", () => {
+		const { ws } = twoReactorsOneRefusal();
+		expect(
+			ws
+				.validate()
+				.filter((d) =>
+					["consumable-kind", "reaction-cycle", "unresolved-ref"].includes(
+						d.rule,
+					),
+				),
+		).toEqual([]);
+	});
+
+	it("reports a reactor waiting on an outcome the contract never states", () => {
+		const { ws, hold, declined, attempt } = twoReactorsOneRefusal();
+		attempt.events.length = 0;
+		attempt.on(hold.rejected(declined, "never_heard_of_it"));
+		const kinds = ws.validate().filter((d) => d.rule === "consumable-kind");
+		expect(kinds).toHaveLength(1);
+		expect(kinds[0].message).toContain(
+			'Provider Decline (never_heard_of_it)", which "Hold Funds" never declares',
 		);
 	});
 });
