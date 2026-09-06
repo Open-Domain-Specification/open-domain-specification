@@ -2960,9 +2960,10 @@ export class DataSchema
  * back, and a model that could wait only on events made its authors publish a
  * reply as a fact the world was told about: RiverMart published a declined
  * payment against decision 25's own example and NorthBank modelled one
- * synchronous verdict as two events. The answer is synchronous because the
- * operation is, so delivery is still implied by the consumable's type and
- * nothing new says it (decision 23, second amendment).
+ * synchronous verdict as two events. An answer comes back to whoever called;
+ * when, the model does not say, because a consumable's type is its kind and
+ * not its delivery (decision 23, second amendment; decision 15, corrected
+ * 2026-09-10).
  *
  * An answer is named by its origin — `op.returned()`, `op.rejected(schema)`,
  * `op.completed()` — and never by the shape alone, so waiting on a refusal

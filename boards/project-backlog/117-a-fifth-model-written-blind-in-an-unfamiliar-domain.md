@@ -3,6 +3,7 @@ column: todo
 labels: [models]
 priority: medium
 agent: developer
+live: true
 updatedAt: 2026-09-10T15:40:00.000Z
 ---
 # A fifth model written blind in an unfamiliar domain
