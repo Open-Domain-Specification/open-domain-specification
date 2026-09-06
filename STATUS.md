@@ -17,7 +17,7 @@ Merge pull request 25 (the owner's), then decide the six issues 26 to 31 at leis
 - New panel findings become cards; the lead rules, developers implement, the lead lands. Restatements of decided ground are answered by the decision, not by a card.
 - Backlog, not on the release path: card 111 (the pages show which agreement an exchange belongs to), card 112 (a formatting pass at the root) and card 134 (the relation map names the kind of context an identity points at).
 - Decision 08 (multi-file workspaces) stays Proposed until implemented; roadmap milestone 4.
-- Files created by a Codex session in this checkout are untracked and not the lead's: extension cards 83 to 92, `docs/bots/design`, `docs/bots/qa`, and `docs/bots/sprints/2026-09-05-design-baseline.md`; two files it modified (`apps/ods-vscode/README.md`, `boards/vsc-extension/14-*.md`) are unstaged. Leave them unless the owner says otherwise.
+- Untracked in the checkout, none of it the lead's: extension cards 83 to 92, `docs/bots/design` and `docs/bots/qa`, left by a Codex desktop session (issue 27); and `.agents/hooks.json` with `.agents/scripts/auto_approve.py`, an auto-approve hook the Antigravity CLI wrote while reviewing. Nothing else is uncommitted; the two files the Codex session had modified were committed on the way through (`apps/ods-vscode/README.md` in 9625811, the extension card in 990f65c), and `docs/bots/sprints/2026-09-05-design-baseline.md` is tracked.
 
 ## Outcomes / blockers
 
@@ -29,4 +29,4 @@ Merge pull request 25 (the owner's), then decide the six issues 26 to 31 at leis
 
 ## Working state
 
-Updated: 2026-09-10, unattended run continuing after the handoff note. Branch: develop. Checked commit: the one immediately before this STATUS.md on develop. Partial changes in the checkout: only the untracked and unstaged files listed under Later, none of them the lead's. Landing gate: `npm run verify` at the root, run detached with `nohup` because it can outlast a ten-minute command cap; before running it, `pgrep -f 'ods-vscode.*dev.mjs'` and `pgrep -f extensionDevelopmentPath` must find nothing, because a running extension host rewrites the petstore schema.
+Updated: 2026-09-10, at the end of the run, with the question answered. Branch: develop. Checked commit: the one immediately before this STATUS.md on develop; the working tree has no modified tracked file and develop is level with origin. Partial changes in the checkout: only the untracked files listed under Later, none of them the lead's. Landing gate: `npm run verify` at the root, run detached with `nohup` because it can outlast a ten-minute command cap; before running it, `pgrep -f 'ods-vscode.*dev.mjs'` and `pgrep -f extensionDevelopmentPath` must find nothing, because a running extension host rewrites the petstore schema.
