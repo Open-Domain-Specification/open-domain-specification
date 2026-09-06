@@ -3,6 +3,7 @@ column: todo
 labels: [backend, docs]
 priority: medium
 agent: senior-developer
+live: true
 updatedAt: 2026-09-10T07:10:00.000Z
 ---
 # A consumption names its agreement; an external operation states its contract

@@ -3,6 +3,7 @@ column: todo
 labels: [models]
 priority: low
 agent: developer
+live: true
 updatedAt: 2026-09-10T07:10:00.000Z
 ---
 # NorthBank's Scheme Gateway integrates with the Payment Scheme again, honestly
