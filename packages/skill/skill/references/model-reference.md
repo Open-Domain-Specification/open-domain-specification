@@ -148,7 +148,7 @@ One of: [DirectedContextRelationship](#directedcontextrelationship), [SymmetricC
 
 ## DataSchema
 
-A named payload shape owned by a bounded context, shared by the consumables that carry it. On an `external` context, a schema is also the kind that system publishes — a processor's Customer beside its Payment, its Refund and its Dispute — and an `identifies` attribute of ours may name it directly instead of the context as a whole (decision 28, third amendment).
+A named payload shape owned by a bounded context, shared by the consumables that carry it.
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
@@ -263,14 +263,14 @@ A reaction: when these events happen, issue these commands.
 |---|---|---|---|
 | `description` | string | yes |  |
 | `name` | string | yes |  |
-| `on` | array of `{ "$ref": string }` | no | What triggers this policy: an event consumable, or an answer of an operation this context consumes, which means "when that answer comes back". An answer is named by its origin — `<operation ref>/returns`, `<operation ref>/rejects/<schema id>`, `<operation ref>/rejects/<schema id>/<reason>` for one enumerated outcome of that refusal, or `<operation ref>/completed` for an operation that returns nothing and whose completion is all there is to wait on — and never by the shape alone, so two operations refusing with one schema wake only whoever named the call that was made (decision 23). |
+| `on` | array of `{ "$ref": string }` | no | What triggers this policy: an event consumable, or an answer of an operation this context consumes, which means "when that answer comes back". An answer is named by its origin — `<operation ref>/returns`, `<operation ref>/rejects/<schema id>`, `<operation ref>/rejects/<schema id>/<reason>` for one enumerated outcome of that refusal, or `<operation ref>/completed` for an operation that returns nothing and whose completion is all there is to wait on — and never by the shape alone, so two operations refusing with one schema wake only whoever named the call that was made. The answer is synchronous because the operation is, so nothing else says so (decision 23). |
 | `then` | array of `{ "$ref": string }` | no | The operation consumables this policy issues. Optional, like every list in this schema: an absent list is an empty one. |
 
 No other fields are allowed.
 
 ## Process
 
-A long-running reaction that holds state across events: it remembers which of its events have arrived and acts when enough of them have. What it correlates on and what it undoes are prose in its description rather than fields, because the model says that a process exists and what it listens to and does; how it decides is the code's. How long it waits before giving up on itself is not prose but a `deadline`, one it raises to itself after a stated interval (decisions 15 and 23).
+A long-running reaction that holds state across events: it remembers which of its events have arrived and acts when enough of them have. What it correlates on, how long it waits and what it undoes are prose in its description rather than fields, because the model says that a process exists and what it listens to and does; how it decides is the code's (decisions 15 and 23).
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
