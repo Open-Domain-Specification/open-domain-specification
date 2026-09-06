@@ -4596,6 +4596,63 @@ describe("raises-restated", () => {
 	});
 });
 
+describe("rejection-raised", () => {
+	const rejectionRaised = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "rejection-raised")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	it("warns when an operation rejects with a shape it also raises as an event", () => {
+		// Card 117's original Offer Slot: rejects with PatientWaitlisted and
+		// also raises an event carrying that same shape.
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Clinic", { description: "" });
+		const patientWaitlisted = bc.addSchema("Patient Waitlisted");
+		const svc = bc.addService("S", { description: "", type: "application" });
+		const patientWaitlistedEvent = svc.provides("Patient Waitlisted", {
+			description: "",
+			type: "event",
+			schema: patientWaitlisted,
+		});
+		const offerSlot = svc
+			.provides("Offer Slot", {
+				description: "",
+				type: "operation",
+				rejects: [patientWaitlisted],
+			})
+			.raises(patientWaitlistedEvent);
+		expect(rejectionRaised(ws)).toEqual([
+			[
+				"warning",
+				'"Offer Slot" rejects with "Patient Waitlisted", which it also raises as the event "Patient Waitlisted"; a rejection says nothing happened and a raised event says something did — if something happened, drop the rejection and keep the event, otherwise it is not an event',
+				offerSlot.ref,
+			],
+		]);
+	});
+
+	it("says nothing when an operation rejects with one shape and raises an event of another", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Clinic", { description: "" });
+		const declined = bc.addSchema("Declined");
+		const booked = bc.addSchema("Booked");
+		const svc = bc.addService("S", { description: "", type: "application" });
+		const slotBooked = svc.provides("Slot Booked", {
+			description: "",
+			type: "event",
+			schema: booked,
+		});
+		svc
+			.provides("Offer Slot", {
+				description: "",
+				type: "operation",
+				rejects: [declined],
+			})
+			.raises(slotBooked);
+		expect(rejectionRaised(ws)).toEqual([]);
+	});
+});
+
 describe("aggregate-not-public and domain-service-internal", () => {
 	/**
 	 * One context with an aggregate and a domain service, and a second context

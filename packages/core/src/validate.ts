@@ -4050,6 +4050,42 @@ const raisersAmong = (operation: Consumable, event: Consumable): string[] =>
 		.map((called) => called.name);
 
 /**
+ * A rejection an operation also raises as an event is a warning.
+ *
+ * A rejection says nothing happened (decision 25): the caller is refused, and
+ * the shape it is refused with is not a fact about the world. A raised event
+ * says the opposite, that something did happen. An operation that both
+ * rejects with a shape and raises an event carrying that same shape is a
+ * model telling on itself: whichever is true, the other statement is false.
+ * If something happened, it is the event and not a refusal, and the
+ * rejection should be dropped; if nothing happened, it is not an event, and
+ * the raises entry is the one to drop.
+ */
+const rejectionRaised: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const bc of workspace.boundedcontexts.values()) {
+		for (const p of [...bc.aggregates.values(), ...bc.services.values()]) {
+			for (const operation of p.consumables.values()) {
+				if (operation.type !== "operation") continue;
+				for (const rejection of operation.rejections) {
+					const event = operation.raisedEvents.find(
+						(it) => it.schema === rejection.schema,
+					);
+					if (!event) continue;
+					diagnostics.push({
+						severity: "warning",
+						rule: "rejection-raised",
+						message: `"${operation.name}" rejects with "${rejection.schema.name}", which it also raises as the event "${event.name}"; a rejection says nothing happened and a raised event says something did \u2014 if something happened, drop the rejection and keep the event, otherwise it is not an event`,
+						ref: operation.ref,
+					});
+				}
+			}
+		}
+	}
+	return diagnostics;
+};
+
+/**
  * Something in a context raises each of its events.
  *
  * An event is a fact that happened inside a boundary, and the model says what
@@ -5393,6 +5429,15 @@ const RULES: CataloguedRule[] = [
 		why: "An event is raised where it happens, once. When an open-host operation fronts an aggregate's transition and names itself in the consumption's by, the chain already carries that transition's events across to whoever is reading: by is the causal link the flow map draws and reaction-cycle walks. Repeating the event on the front says two things happen instead of one, and the copy is free to drift from what the aggregate actually raises, so the front ends up describing behaviour the aggregate no longer has.",
 		fix: "Drop the event from the front's raises and leave it on the operation that really raises it; the chain carries it. If the front genuinely produces its own fact as well, that fact is a different event with its own name.",
 		check: raisesRestated,
+	},
+	{
+		rule: "rejection-raised",
+		severities: ["warning"],
+		summary:
+			"An operation does not reject with a shape it also raises as an event.",
+		why: "A rejection says nothing happened (decision 25): the caller is refused, and the shape it is refused with names why, not a fact about the world. A raised event says the opposite, that something did happen. An operation whose rejects and raises name the same shape is a model telling on itself, stating both that nothing happened and that something did.",
+		fix: "If something happened, it is the event and not a refusal: drop the rejection and keep the raised event. If nothing happened, it is not an event: drop it from raises and keep the rejection.",
+		check: rejectionRaised,
 	},
 	{
 		rule: "event-unraised",

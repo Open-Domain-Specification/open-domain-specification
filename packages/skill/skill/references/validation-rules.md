@@ -484,6 +484,14 @@
 
 **Usual fix:** Drop the event from the front's raises and leave it on the operation that really raises it; the chain carries it. If the front genuinely produces its own fact as well, that fact is a different event with its own name.
 
+## `rejection-raised` (warning)
+
+**Requires:** An operation does not reject with a shape it also raises as an event.
+
+**Why it matters:** A rejection says nothing happened (decision 25): the caller is refused, and the shape it is refused with names why, not a fact about the world. A raised event says the opposite, that something did happen. An operation whose rejects and raises name the same shape is a model telling on itself, stating both that nothing happened and that something did.
+
+**Usual fix:** If something happened, it is the event and not a refusal: drop the rejection and keep the raised event. If nothing happened, it is not an event: drop it from raises and keep the rejection.
+
 ## `event-unraised` (warning)
 
 **Requires:** Every event of a context whose insides are knowable is raised by one of that context's own operations.

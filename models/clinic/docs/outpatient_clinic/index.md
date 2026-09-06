@@ -19,6 +19,7 @@ Everything involved in getting a GP-referred patient seen.
 | Severity | Rule | Message | Element |
 | --- | --- | --- | --- |
 | error | domain-service-consumes-inside | Domain service "Triage Assessment" consumes "Get Patient Summary" from "Patient Records"; a domain service is the inside of the model, not a client, so let an application service of "Triage" make the call and hand "Triage Assessment" what it needs | `boundedcontexts/triage/services/triage_assessment` |
+| warning | rejection-raised | "Offer Slot" rejects with "Patient Waitlisted", which it also raises as the event "Patient Waitlisted"; a rejection says nothing happened and a raised event says something did — if something happened, drop the rejection and keep the event, otherwise it is not an event | `boundedcontexts/scheduling/services/scheduling_desk/provides/offer_slot` |
 
 
 ## Health

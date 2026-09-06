@@ -15,9 +15,16 @@ import { workspace } from "./workspace.ts";
  * (decision 17's reopening condition) asks that the model be honest about who
  * calls rather than invent a front to satisfy the rule. See
  * `models/clinic/DISCOVERY.md` and `models/clinic/src/workspace.ts`.
+ *
+ * `rejection-raised` is the new warning card 123 adds: `Offer Slot` rejects
+ * with `Patient Waitlisted` and also raises it as an event, which is exactly
+ * the shape decision 18's 2026-09-10 note (after card 117) flagged as a model
+ * telling on itself. Card 122 is the one that resolves it on this model; this
+ * fixture pins the diagnostic as it stands until then.
  */
 const DELIBERATE: Array<{ rule: string; severity: "error" | "warning" }> = [
 	{ rule: "domain-service-consumes-inside", severity: "error" },
+	{ rule: "rejection-raised", severity: "warning" },
 ];
 
 describe("the outpatient clinic workspace", () => {

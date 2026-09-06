@@ -298,6 +298,21 @@ function everythingWrong(): Workspace {
 		.provides("D Front", { type: "operation", description: "" })
 		.raises(dDone);
 	dService.consumes(dRun, { by: [dFront] });
+	// rejection-raised: an operation rejects with a shape it also raises as an
+	// event carrying that shape, telling on itself
+	const dRefusalSchema = d.addSchema("D Refused");
+	const dRefusedEvent = dService.provides("D Refused", {
+		type: "event",
+		description: "",
+		schema: dRefusalSchema,
+	});
+	dService
+		.provides("D Try", {
+			type: "operation",
+			description: "",
+			rejects: [dRefusalSchema],
+		})
+		.raises(dRefusedEvent);
 	const bAsk = other.provides("B Ask", { type: "operation", description: "" });
 	dService.consumes(bAsk, {});
 	other.consumes(dAsk, {});
