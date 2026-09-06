@@ -6,11 +6,11 @@ Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel
 
 ## Now
 
-No card is live. Cards 99 to 102 landed green; decision 29 written. The panel's sixth round (Antigravity, Codex, architect-deep) is running on the card 102 head. The lore-free roster is installed on both harnesses at project scope and committed.
+Card 103 ([boards/project-backlog/103](boards/project-backlog/103-a-stateless-operation-has-a-contract-and-a-pair-may-hold-two-agreements.md)) is with senior-developer in a worktree; stopping point: the developer reports, the lead lands with `npm run verify`. Cards 99 to 102 landed green. Sixth panel round on the card 102 head: Antigravity yes with named costs (sixth consecutive); Codex no with three accepted items, which are card 103; the architect's seventh round pending. The lore-free roster is installed on both harnesses at project scope and committed.
 
 ## Next
 
-Read the three verdicts; then ([boards/project-backlog/100](boards/project-backlog/100-a-mistake-is-a-diagnostic-not-a-crash.md)) the same way. Expected result: both land green, the panel (Antigravity via `agy`, Codex via `codex exec -m gpt-6-astra`, a fresh architect-deep) runs a sixth time on that head, and all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
+Land card 103; read the architect's verdict; then ([boards/project-backlog/100](boards/project-backlog/100-a-mistake-is-a-diagnostic-not-a-crash.md)) the same way. Expected result: both land green, the panel (Antigravity via `agy`, Codex via `codex exec -m gpt-6-astra`, a fresh architect-deep) runs a sixth time on that head, and all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
 
 ## Later
 
