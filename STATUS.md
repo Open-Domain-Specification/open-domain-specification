@@ -10,7 +10,7 @@ Card 135 ([a process hears the answer of the call its start made; an external co
 
 ## Next
 
-Land 135; then a budgeted sixteenth round, Antigravity plus one low-effort architect confirmation (the owner has asked for Claude usage to be budgeted, it is near its limit); if both hold at yes with named costs and name no new defect, the lead answers the question. No further cards are opened for taste findings. From here Codex runs only when the lead is very confident it will answer yes, at the owner's instruction (its usage is limited); Antigravity and a fresh architect review each head. Expected result: Antigravity and the architect hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
+Land 135; then the sixteenth round, Antigravity plus an architect confirmation; if both hold at yes with named costs and name no new defect, the lead answers the question. From here Codex runs only when the lead is very confident it will answer yes, at the owner's instruction (its usage is limited); Antigravity and a fresh architect review each head. Expected result: Antigravity and the architect hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
 
 ## Later
 
