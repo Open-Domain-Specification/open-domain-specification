@@ -108,13 +108,22 @@ Each of these costs something, and the cost is named rather than hidden:
   identity attribute names the key, and an author may write both for the one
   dependency without the model ever saying they are the same fact (decision
   14).
+- **The wire and the model are typed apart.** An entity never carries a
+  schema and a schema never names an entity, so a resource-style API
+  restates its aggregate as one or more schemas — a `Pet` beside a
+  `PetSummary` and a `RegisterPet` — with a shared value object bridging the
+  leaves that repeat (decision 09).
+- **A workspace is one file.** Refs never cross files until decision 08's
+  `WorkspaceSet` lands; a project that wants several files today keeps each
+  as its own workspace (decision 08).
 
 ## Value objects
 
 A **value object** belongs to the bounded context
 (`context.addValueObject(name)`), not to one aggregate: it is part of the
 context's ubiquitous language, and every aggregate of the context may hold
-one. Two contexts may share one only across a `shared-kernel` relationship.
+one. Another context may borrow one across a `shared-kernel` relationship, or
+as a conformist downstream of the context that owns it.
 
 A value provides no operations. A consumable is what a node offers across
 its own boundary, and a value's behaviour crosses nothing: it is its

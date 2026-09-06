@@ -745,7 +745,8 @@ export interface ValueObjectSchema {
 	/**
 	 * The value object this one is a kind of: it has every attribute and
 	 * relation of that value object, plus its own. The target belongs to this
-	 * context, or to a context this one shares a kernel with (decision 22).
+	 * context, or to a context this one borrows from — over a shared kernel or
+	 * as a conformist (decision 22).
 	 */
 	specialises?: { $ref: string };
 	/** This value's own attributes, by id. An absent map is an empty one, like every map of elements in this schema. */

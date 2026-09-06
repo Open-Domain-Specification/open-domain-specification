@@ -74,8 +74,9 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   and `subdomains`;
   an aggregate always has `entities`, `invariants`, `provides`, `consumes`; an entity always
   has `attributes` and `relations`, and a value object those and `invariants`. See `references/model-reference.md`.
-- Every `$ref` resolves to an element that exists. A dangling ref is a load failure, not a
-  warning: the whole file stops loading.
+- Every `$ref` should resolve to an element that exists. Loading never throws on a dangling
+  one: the link is left unset, `unresolved-ref` (error) reports it at the referencing element,
+  and every other rule still runs, so fix it as you would any other diagnostic.
 - Consumables (events and operations) live only under `provides` of an aggregate or a
   service. Policies, processes and consumptions point at them by ref.
 - A value object belongs to the context, not to an aggregate: declare it once there and any
@@ -83,7 +84,8 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
 - An entity or a value object may be a kind of another: `specialises` gives it every attribute
   and relation of that one, plus its own, and it never repeats one of them. An entity is a kind
   of an entity of its own aggregate and is never itself `root`; a value object is a kind of one
-  its own context declares or borrows over a `shared-kernel`.
+  its own context declares, or one it borrows over a `shared-kernel` or as a conformist of the
+  context that owns it.
 - An invariant belongs to a value object when it holds by construction of the value — an IBAN's
   checksum, a Money's single currency — and then it constrains that value's own attributes and
   nothing else, and needs no guard. It belongs to an aggregate when it holds inside that
@@ -101,8 +103,9 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   nothing reads it.
 - A payload schema belongs to the context that publishes the consumable. A value object or a
   schema may be named across a boundary only where the two contexts declare a `shared-kernel`
-  relationship.
-- Reference another aggregate only through its root entity, with `references`.
+  relationship, or where the naming context is a conformist downstream of the one that owns it.
+- Reference another aggregate only through its root entity, or a kind of that root, with
+  `references`.
 - No delivery flag, no modules, no actors, no read-model element, no operations on a value
   object, an entity has one home, a context invariant records the check rather than the store —
   these and the rest of what the model leaves out are this model's own preferences, not DDD's
@@ -122,8 +125,9 @@ Validate after every edit.
 
 For each diagnostic, tell the user in one plain sentence what it means and what you propose,
 using `references/validation-rules.md`. Errors block finishing. Warnings mark a missing
-decision: discuss them and let the user decide, rather than fixing them silently. If loading
-throws "... with ref ... not found", a ref is dangling: fix it first.
+decision: discuss them and let the user decide, rather than fixing them silently. An
+`unresolved-ref` error names a dangling ref at the element that holds it: fix it first, since
+every other diagnostic still runs beneath it.
 
 ## Step 6: reconcile the model with the code
 
