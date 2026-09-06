@@ -10,6 +10,8 @@ The amendment of 2026-09-02 is the current design: the renderer is a client-only
 
 The consequence that cross-file refs resolve within one workspace file still describes the limit, since decision 08's set loader is unimplemented (decision 08, amendment of 2026-09-07). Search exists only in the extension per the consequences; no later note in this record moves it.
 
+Four ways of reading a model are supported and all four are permanent: the VS Code extension's webview, the static site export, the `apps/ods-ui` browsing site, and the markdown `@open-domain-specification/doc` generates (correction of 2026-09-10). `apps/ods-ui` is already the viewer on the shared renderer, depending on `@open-domain-specification/pages` and nothing else; the React and Mantine application the decision bullet retired is gone.
+
 ## Context
 
 The project carried two UIs for the same model. `apps/ods-ui` is a React and Mantine single
@@ -84,3 +86,9 @@ replace the string assertions.
 ## Note (2026-09-10)
 
 `apps/ods-ui` is still in the tree. The owner has said the extension is the user interface and the web application is likely to go; it goes when the extension covers import and browsing, and this record will say so when it does.
+
+## Correction (2026-09-10)
+
+The title and the decision bullet read as though the browsing site goes away. They never meant that, and the owner has said so: the project supports four ways of reading a model and all four are permanent. The VS Code extension renders pages in its webview. The static site export writes a folder anyone can host. `apps/ods-ui` is the browsing site, where a reader imports a workspace by URL, form or file and browses it. And `@open-domain-specification/doc` generates markdown, which is how a model reaches a repository, a wiki or a pull request.
+
+What "ods-ui is deleted" meant was the React and Mantine application: it was replaced by the viewer built on the shared Svelte renderer, and that replacement has happened. `apps/ods-ui` depends on `@open-domain-specification/pages` and nothing else; it is the viewer. The pattern stands and there is nothing outstanding.
