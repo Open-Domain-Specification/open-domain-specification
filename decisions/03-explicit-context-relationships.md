@@ -63,3 +63,7 @@ Card 98 settled two mechanics the previous amendment left open. An anti-corrupti
 ## Note (2026-09-09)
 
 Card 98 fixed the two rules that carry language across the boundary and left the two that check a relationship's existence and roles still reading direction from the call. `relationship-declared` is satisfied by a relationship in either direction, because the direction is the author's claim about who dictates the model, and `role-coherence` asks each side for the role its declared position implies (card 99).
+
+## Note (2026-09-09, second)
+
+Where the declared upstream is the caller, neither end can hold the role its position implies, because a consumable carries an upstream role and a consumption a downstream one; `role-coherence` asks nothing of either end there and the relationship's own roles, checked by `relationship-roles-backed`, carry the meaning (card 99). Widening both fields to carry either role is a possible later change and is not made here.
