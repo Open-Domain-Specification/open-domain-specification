@@ -1262,7 +1262,7 @@ export class Service
 
 	consumes(
 		consumable: Consumable,
-		attributes: ConsumptionAttributes,
+		attributes: ConsumptionAttributes = {},
 	): Consumption {
 		return this.addConsumption(consumable, attributes);
 	}
@@ -1336,7 +1336,7 @@ export class Aggregate
 
 	consumes(
 		consumable: Consumable,
-		attributes: ConsumptionAttributes,
+		attributes: ConsumptionAttributes = {},
 	): Consumption {
 		return this.addConsumption(consumable, attributes);
 	}
@@ -2427,9 +2427,11 @@ function callerSegment(caller: ConsumptionCaller): string {
 export type ConsumptionAttributes = {
 	pattern?: DownstreamRole;
 	/**
-	 * The consumer's own operations, or the policies and processes of its
-	 * context, behind this exchange. Absent means the whole consumer
-	 * (decision 21).
+	 * What of the consumer is behind this exchange: on a consumption of an
+	 * operation, the consumer's own operations that make the call; on a
+	 * consumption of an event, the policies and processes of its context that
+	 * react to it. Absent means the whole consumer (decision 21, corrected
+	 * 2026-09-10; `consumption-by-operation` and `consumption-by-reactor`).
 	 */
 	by?: ConsumptionCaller[];
 	/**
@@ -2446,7 +2448,11 @@ export class Consumption
 	consumer: Aggregate | Service;
 	consumable: Consumable;
 	pattern?: DownstreamRole;
-	/** The consumer's own operations, policies or processes that make this exchange. */
+	/**
+	 * What of the consumer is behind this exchange: its own operations on an
+	 * operation consumption, its context's policies and processes on an event
+	 * consumption.
+	 */
 	by: ConsumptionCaller[];
 	/** The agreement this exchange belongs to, where the model has named one. */
 	relationship?: ContextRelationship;

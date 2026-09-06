@@ -823,3 +823,59 @@ describe("a refusal that enumerates the outcomes it carries", () => {
 		expect(plain.rejected(declined, "issuer_down").declared).toBe(false);
 	});
 });
+
+describe("a consumption with nothing to say about itself", () => {
+	/** A plain crossing: one context takes a neighbour's event as published. */
+	function crossing() {
+		const ws = new Workspace("W", { description: "", version: "0" });
+		const up = ws.addBoundedContext("Catalogue", { description: "" });
+		const down = ws.addBoundedContext("Offers", { description: "" });
+		const listed = up
+			.addService("Catalogue API", { description: "", type: "application" })
+			.provides("Product Listed", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			});
+		const offers = down.addService("Offer API", {
+			description: "",
+			type: "application",
+		});
+		return { ws, offers, listed };
+	}
+
+	// Every other add method takes an empty options object as its default, and
+	// this one threw on the shape the model calls the common case: no
+	// downstream role, no `by`, no agreement (card 124).
+	it("takes no options at all", () => {
+		const { offers, listed } = crossing();
+		const consumption = offers.consumes(listed);
+		expect(consumption.pattern).toBeUndefined();
+		expect(consumption.by).toEqual([]);
+		expect(consumption.relationship).toBeUndefined();
+		expect(consumption.comments).toEqual([]);
+		expect(consumption.toSchema()).toEqual({
+			consumable: { $ref: listed.ref },
+			pattern: undefined,
+			by: undefined,
+			relationship: undefined,
+			comments: undefined,
+			disposition: undefined,
+		});
+	});
+
+	it("is the same consumption an empty options object makes", () => {
+		const { offers, listed } = crossing();
+		expect(offers.consumes(listed).toSchema()).toEqual(
+			offers.consumes(listed, {}).toSchema(),
+		);
+	});
+
+	it("takes no options on an aggregate either", () => {
+		const { ws, listed } = crossing();
+		const aggregate = ws
+			.getBoundedContextByRefOrThrow("#/boundedcontexts/offers")
+			.addAggregate("Offer", { description: "" });
+		expect(aggregate.consumes(listed).consumable).toBe(listed);
+	});
+});
