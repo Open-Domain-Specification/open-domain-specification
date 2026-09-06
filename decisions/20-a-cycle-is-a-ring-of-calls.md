@@ -33,3 +33,7 @@ The architect review read Evans back to the rule: a partnership is two teams who
 ## Amendment (2026-09-08)
 
 Codex's review made the remaining overreach plain: two contexts that call each other through anti-corruption layers evolve independently, and telling them they cannot change first is false. A step whose downstream declares an anti-corruption layer toward that upstream does not count toward a ring (card 82), and the message says only what the model can: the contexts depend on each other's contracts, and the repairs are an ACL, a partnership, or an event.
+
+## Note (2026-09-09)
+
+The premise that a call binds the caller at the moment of the call fails for a queued command, which decision 15 keeps as an operation with a comment. Two fire-and-forget commands each way therefore read as a ring of calls. The cost is named: an author with a queued command on a ring either declares the anti-corruption layer that translates it, marks the ring's disposition with a comment, or models the command as the event it really is. And the anti-corruption exemption is read per consumption, not per relationship, so one translated call does not excuse the untranslated ones (card 100).

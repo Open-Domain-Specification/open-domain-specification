@@ -42,3 +42,7 @@ An aggregate invariant that constrains an operation is a guard, a precondition c
 ## Amendment (2026-09-08)
 
 The third note inferred a precondition from an invariant naming an operation, and that conflated two facts: what kind of rule it is, and which operation keeps it. `PostEntry` must produce balanced postings and the rule stays true afterwards; the operation is named for responsibility, not to weaken the rule. A precondition is stated with `precondition: true` and must name the operation it guards; an invariant that names an operation without the flag is kept by it and holds after it (card 94).
+
+## Amendment (2026-09-09, second)
+
+The first amendment said a context invariant is checked before acting and can race; the card 94 amendment then let one be written as kept true after its operation, and NorthBank's daily limit claimed exactly that. A context invariant is always a check: `precondition` is refused on it, its page says "checked by", and a rule that must hold after every change is an aggregate's or nobody's (card 100).

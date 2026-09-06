@@ -2,7 +2,7 @@
 column: todo
 labels: [backend, ddd, breaking]
 priority: high
-agent: senior-dev-deep
+agent: senior-developer-deep
 updatedAt: 2026-09-09T13:00:00.000Z
 ---
 # Direction is what the author declared; a process may start on a command and end on a completion; a postcondition; preconditions follow composition
@@ -20,4 +20,4 @@ Codex review run 6, issues 2, 6, 7 and 8, each reproduced. Card 98 taught `schem
 
 ## Comments
 
-- **the lead** (2026-09-09T13:00:00.000Z): senior-dev-deep, once a roster is installed; `feat!`.
+- **the lead** (2026-09-09T13:00:00.000Z): senior-developer-deep; `feat!`.

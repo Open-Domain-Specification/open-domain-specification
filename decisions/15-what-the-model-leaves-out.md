@@ -38,6 +38,14 @@ A schema or a consumable has no version field. A changed contract that old consu
 
 Valid-from and valid-to, effective dates, and bi-temporal rules ("the rate that was known on the day the claim was made") are not fields: a temporal attribute is typed in the author's words (`DateRange`, `EffectivePeriod`), often as a value object with its own invariant, and a bi-temporal rule is an invariant in prose on the aggregate that keeps it. A first-class validity dimension would put a calendar into every attribute and a temporal algebra into the validator, which verifies nothing the code's own tests do not. Reopened if a reference model needs the validator to reason about two time axes at once.
 
+### Two integrations between one pair in one direction are one relationship
+
+`relationship-duplicate` refuses a second directed relationship in the same direction between one pair. A negotiated API and a take-it-as-published event stream between the same two contexts are therefore one relationship carrying both roles, and the map shows one line. Evans draws a map per relationship; the model draws it per pair and direction because a second line between the same two boxes says nothing the roles do not, and the comments on the one relationship say which consumable follows which pattern. Reopened if a reference model needs two dispositions on one pair in one direction.
+
+### Anonymous structures in a type string are the author's shorthand
+
+An attribute typed `{ratio, uri}[]` is text (decision 15's own rule); the model does not parse it and the ubiquitous language does not gain a term from it. The honest form is a value object with a name, and the reference models are asked to prefer it; the shorthand stays legal because refusing it would mean parsing types.
+
 ### Read models are query services
 
 A projection is a service that provides a query operation; with decision 13 that operation says what it returns. No `ReadModel` construct is added. Petstore's inventory projection is a bounded context of its own because it serves two subdomains, not because the model forced it.

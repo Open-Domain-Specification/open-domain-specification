@@ -1,0 +1,76 @@
+{
+  "version": "0.1.0",
+  "updatedAt": "2026-09-06T00:35:16.025Z",
+  "variant": "vanilla",
+  "items": {
+    "bot:architect": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/agents/bots/architect.md"
+    ],
+    "bot:architect-deep": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/agents/bots/architect-deep.md"
+    ],
+    "bot:designer": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/agents/bots/designer.md"
+    ],
+    "bot:designer-deep": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/agents/bots/designer-deep.md"
+    ],
+    "bot:developer": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/agents/bots/developer.md"
+    ],
+    "bot:developer-lite": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/agents/bots/developer-lite.md"
+    ],
+    "bot:lead": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/agents/bots/lead.md"
+    ],
+    "bot:senior-developer": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/agents/bots/senior-developer.md"
+    ],
+    "bot:senior-developer-deep": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/agents/bots/senior-developer-deep.md"
+    ],
+    "bot:tester": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/agents/bots/tester.md"
+    ],
+    "bot:tester-deep": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/agents/bots/tester-deep.md"
+    ],
+    "skill:antigravity-harness": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/skills/antigravity-harness"
+    ],
+    "skill:claude-harness": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/skills/claude-harness"
+    ],
+    "skill:clean-code-review": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/skills/clean-code-review"
+    ],
+    "skill:codex-harness": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/skills/codex-harness"
+    ],
+    "skill:coding-styleguide": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/skills/coding-styleguide"
+    ],
+    "skill:pre-commit": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/skills/pre-commit"
+    ],
+    "skill:project-status": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/skills/project-status"
+    ],
+    "skill:refactor": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/skills/refactor"
+    ],
+    "skill:repodoc-workflow": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/skills/repodoc-workflow"
+    ],
+    "skill:requirements-review": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/skills/requirements-review"
+    ],
+    "skill:sprint-plan": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/skills/sprint-plan"
+    ],
+    "skill:sprint-start": [
+      "/Users/jonathanturnock/Projects/open-domain-specification/.claude/skills/sprint-start"
+    ]
+  }
+}

@@ -47,3 +47,7 @@ A deadline has an interval and now an anchor: `from` names the process's own tri
 ## Amendment (2026-09-09, third)
 
 A command starts a saga as often as an event does: `starts` may name an operation of the process's own context, the one that creates an instance, and the reaction walk steps from it to the process (card 99). The earlier reasoning, that nothing waiting on an answer can be created by it, was about answers and was overapplied to commands.
+
+## Amendment (2026-09-09, fourth)
+
+An answer returns to its caller: a reactor waits on an operation's answer only when it, or an operation it issued, made the call, so two contexts that each call one service never wake each other through it (card 100). A named cost: a deadline belongs to a process, and an aggregate that expires on its own clock, an authorisation, a quote, a session, is modelled by the process that watches it or by a scheduled operation that raises the expiry; the aggregate itself holds no timer.

@@ -56,3 +56,7 @@ An identity held by an entity is the context's dependency on another context's i
 ## Amendment (2026-09-08, third)
 
 Card 90 refused an identity naming a child of another aggregate in the same context, calling it a side door around reference-by-root. Codex's review put it right: a shipment holds an order's id and the line's id beside it, and that pair is exactly how DDD points at a child without a relation; the relation is what `cross-aggregate-reference` refuses, the id is what it recommends. `identifies` accepts any entity anywhere (card 91).
+
+## Amendment (2026-09-09)
+
+An identity crossing is its own record. The context map draws it as the «id» edge, and asking for a typed relationship on top produced fourteen upstream-downstream relationships with no roles, a shape DDD does not have, each with a comment saying nothing is exchanged. `relationship-declared` no longer asks (card 100); a relationship is declared where something is exchanged or a language is borrowed. Two named costs stay: `identifies` is opt-in, so the record is as complete as the author's diligence, which the skill's playbook rule and the reference models' sweeps address but no rule can; and a denormalised copy of another context's fact, a seller rating held on an offer, is invisible unless the author models the event that carries it.
