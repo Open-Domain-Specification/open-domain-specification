@@ -20,6 +20,7 @@ element lives in a workspace file; `DSL` is the core call that creates it.
 | "they ask us before changing", "we're their customer" | customer-supplier | `type: "customer-supplier"` | `a.downstreamOf(b, {type: "customer-supplier", ...})` |
 | "both teams change it together", "we release together" | partnership | `type: "partnership"`, `participants` | `a.partnerOf(b, {description})` |
 | "we share the same tables / library / code" | shared kernel | `type: "shared-kernel"` | `a.sharesKernelWith(b, {description})` |
+| "we share Product with them", "both teams change the same entity" (an entity, not a value or a schema, jointly owned) | Aggregate of a kernel context both consume — a relation and a kind never cross a context, and an entity has one home (decision 16) | a third bounded context holding the aggregate, each sharer's `shared-kernel` relationship with it, and each consuming its operations | `kernel.addAggregate("Product", {...})`; `sales.sharesKernelWith(kernel, {...})`; `sales...consumes(kernel's operation, {...})` |
 | "we deliberately don't integrate" | separate ways | `type: "separate-ways"` | `a.separateWaysFrom(b, {description: why})` |
 | "we use their API as-is", "we take whatever they send" | conformist | consumption `pattern: "conformist"`; relationship `downstreamRoles` | `agg.consumes(c, {pattern: "conformist"})` |
 | "we copy and reshape their data", "we wrap their API" | anti-corruption layer | `pattern: "anti-corruption-layer"` | `agg.consumes(c, {pattern: "anti-corruption-layer"})` |
@@ -48,6 +49,7 @@ element lives in a workspace file; `DSL` is the core call that creates it.
 | "it has an address / a status" | uses relation | `relation: "uses"` | `entity.uses(vo, label, cardinality)`; where the same value object is used for two attributes, `entity.uses(vo, label, cardinality, { for: "attribute" })` |
 | "exactly one / at most one / any number / at least one" | cardinality | `"1"` / `"0..1"` / `"*"` / `"1..*"` | third argument |
 | "you can ask it to ...", "POST /x", "the button does ..." | operation | `provides.<id>` `type: "operation"` | `provides(name, {type: "operation", ...})` |
+| "the clerk does X", "someone types it in at the counter", "a person clicks the button" | operation with no consumer — no actor construct, so who calls it is a sentence, not a field (decision 15) | `provides.<id>` `type: "operation"`, `description` names who calls it | `provides(name, {type: "operation", description: "called by the clerk at the front desk"})` |
 | "then we tell everyone that ...", a past-tense fact | event | `provides.<id>` `type: "event"` | `provides(name, {type: "event", ...})` |
 | "doing that announces ..." | operation raises event | operation `raises: [{$ref event}]` | `op.raises(event)` |
 | "only we use that", "nobody outside needs it" | internal consumable | `"internal": true`, no `pattern` | `internal: true` |

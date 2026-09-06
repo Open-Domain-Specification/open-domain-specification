@@ -472,7 +472,7 @@
         },
         "DataSchemaSchema": {
             "additionalProperties": false,
-            "description": "A named payload shape owned by a bounded context, shared by the consumables that carry it.",
+            "description": "A named payload shape owned by a bounded context, shared by the consumables that carry it. On an `external` context, a schema is also the kind that system publishes — a processor's Customer beside its Payment, its Refund and its Dispute — and an `identifies` attribute of ours may name it directly instead of the context as a whole (decision 28, third amendment).",
             "properties": {
                 "attributes": {
                     "additionalProperties": {
@@ -834,7 +834,7 @@
                     "type": "string"
                 },
                 "on": {
-                    "description": "What triggers this policy: an event consumable, or an answer of an\noperation this context consumes, which means \"when that answer comes\nback\". An answer is named by its origin — `<operation ref>/returns`,\n`<operation ref>/rejects/<schema id>`, `<operation\nref>/rejects/<schema id>/<reason>` for one enumerated outcome of that\nrefusal, or `<operation ref>/completed` for an operation that returns\nnothing and whose completion is all there is to wait on — and never by\nthe shape alone, so two operations refusing with one schema wake only\nwhoever named the call that was made. The answer is synchronous because\nthe operation is, so nothing else says so (decision 23).",
+                    "description": "What triggers this policy: an event consumable, or an answer of an\noperation this context consumes, which means \"when that answer comes\nback\". An answer is named by its origin — `<operation ref>/returns`,\n`<operation ref>/rejects/<schema id>`, `<operation\nref>/rejects/<schema id>/<reason>` for one enumerated outcome of that\nrefusal, or `<operation ref>/completed` for an operation that returns\nnothing and whose completion is all there is to wait on — and never by\nthe shape alone, so two operations refusing with one schema wake only\nwhoever named the call that was made (decision 23).",
                     "items": {
                         "additionalProperties": false,
                         "properties": {
@@ -875,7 +875,7 @@
         },
         "ProcessSchema": {
             "additionalProperties": false,
-            "description": "A long-running reaction that holds state across events: it remembers which of its events have arrived and acts when enough of them have. What it correlates on, how long it waits and what it undoes are prose in its description rather than fields, because the model says that a process exists and what it listens to and does; how it decides is the code's (decisions 15 and 23).",
+            "description": "A long-running reaction that holds state across events: it remembers which of its events have arrived and acts when enough of them have. What it correlates on and what it undoes are prose in its description rather than fields, because the model says that a process exists and what it listens to and does; how it decides is the code's. How long it waits before giving up on itself is not prose but a `deadline`, one it raises to itself after a stated interval (decisions 15 and 23).",
             "properties": {
                 "comments": {
                     "description": "Grounded statements about the real system behind this process.",

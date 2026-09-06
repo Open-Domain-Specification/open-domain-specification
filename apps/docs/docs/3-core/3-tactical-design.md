@@ -12,12 +12,38 @@ Everything an aggregate or service offers is a **consumable**, typed `event`
 or `operation`; the words command and event stay in prose, not as separate
 objects.
 
+## What the model leaves out on purpose
+
+Several things a reader expects from Domain-Driven Design are not fields
+here, on purpose: this model's own preferences about how a context is drawn,
+not consequences of DDD itself, chosen because they keep the maps and the
+reaction walk readable and checkable. There is no `delivery` flag on a
+consumable — type is kind, not delivery. There are no coordination fields on
+a process — what it correlates on and what it undoes are prose. There are no
+modules — a context is the namespace, flat inside it. There are no actors —
+who calls an operation is a sentence in its description, not a model
+element. There is no read-model element — a projection is a query service
+like any other. A value object declares no operations — a value's behaviour
+is its invariants and description, not a consumable. An entity has one home
+— it belongs to exactly one aggregate of exactly one context, even where two
+contexts jointly own it. And a context invariant records who checks it, not
+how strongly the store holds it. See
+[decision 15](https://github.com/Open-Domain-Specification/open-domain-specification/blob/main/decisions/15-what-the-model-leaves-out.md)
+and the rest of the
+[`decisions/`](https://github.com/Open-Domain-Specification/open-domain-specification/tree/main/decisions)
+folder for the reasoning behind each of these, and where a review would find
+the argument rather than the absence.
+
 ## Value objects
 
 A **value object** belongs to the bounded context
 (`context.addValueObject(name)`), not to one aggregate: it is part of the
 context's ubiquitous language, and every aggregate of the context may hold
 one. Two contexts may share one only across a `shared-kernel` relationship.
+
+A value provides no operations. A consumable is what a node offers across
+its own boundary, and a value's behaviour crosses nothing: it is its
+invariants and its description, not a callable surface of its own.
 
 ## Attributes
 
@@ -133,15 +159,21 @@ rule holds only because something checks it before acting. A context
 invariant constrains entities and attributes of any aggregate in the
 context and must name at least one operation of the context that checks it
 (`context-invariant-is-checked`); nothing it constrains may reach outside the
-context (`invariant-in-context`). It is always a check and never a promise
-about at rest, because a count across instances can race — two payments in the
-same second both pass a daily limit — so a rule that must hold after every
-change belongs to the aggregate whose save can keep it. A check is made on one
-side of the call or the other, and the rule says which with `precondition` or
-`postcondition`: a quotation service that stores nothing has no aggregate to
-hold the contract of its own operation, so the context holds it — the weight
-is checked before, the quote against the tariff after. A rule across contexts
-is a policy or a process reacting to the other context's events instead.
+context (`invariant-in-context`). It is always a check, and the model records
+who checks it, not how strongly the store holds it: whether a unique index or
+a serialisable transaction also keeps the same rule true at the database
+layer is not what this says, because the aggregate is the model's only unit
+of consistency and a context invariant may not claim to be kept on every save
+the way an aggregate's is. A check is made on one side of the call or the
+other, and the rule says which with `precondition` or `postcondition`: a
+quotation service that stores nothing has no aggregate to hold the contract
+of its own operation, so the context holds it — the weight is checked
+before, the quote against the tariff after. A rule across contexts is a
+policy or a process reacting to the other context's events instead: a
+wallet's balance and an escrow account's balance in a different context can
+never be compared inside one save, so keeping them equal is a policy of one
+context that reacts to the other's postings and issues its own reconciling
+operation, not an invariant reaching across the boundary.
 
 ## Schemas
 
@@ -154,6 +186,12 @@ an address inside a customer — is modelled. Schemas belong to the context,
 not the workspace, because a payload is part of a context's published
 language. Any number of consumables may share one schema; the operation that
 raises an event and the event itself commonly do.
+
+On an `external` context, a schema is also one of the kinds that system
+publishes — a processor documents Customer, Payment, Refund and Dispute as
+distinct kinds with distinct ids — and `identifies` may name that schema
+directly, which still reads as an identity into that context rather than an
+invented entity inside a system we do not own.
 
 ## Events and operations
 
@@ -201,6 +239,18 @@ a command only the context's own policies or application services issue, an
 internal event is one the outside never sees. Consuming an internal
 consumable from another context is a validation error.
 
+`type` is kind, not delivery: there is no `delivery` flag, because an event
+is a fact and an operation is an intent, whatever carries either one. A
+command carried over a queue is still an operation — the caller does not
+wait synchronously, but the model records what it is, not how it travels; a
+comment on the consumption says so where it matters.
+
+An operation people call through a screen is consumed by nobody in the
+model, and that is the normal case: most of a system's public surface is
+exactly that. Who may call it is a sentence in its description, not a field,
+and a maker-checker rule is an invariant in prose on the operation it
+guards.
+
 ## Consumptions
 
 An aggregate or service **consumes** a consumable
@@ -246,11 +296,35 @@ context's own, though a starting event may be a neighbour's. `starts`, `on`
 and `ends` may name another context's events, exactly as a policy's `on` may,
 and `on` and `ends` may name an answer of an operation this context calls,
 which is what the commonest process is made of: it calls, waits, and branches
-on what came back. `then` names operations of the process's own context. What it correlates on, how long it waits and what it
-compensates are prose in its description: the model says a process exists
-and what it listens to and does, and leaves how it decides to the code. An
-author who finds a policy waiting for a second event promotes it to a
-process.
+on what came back. `then` names operations of the process's own context.
+Whether the events named in `on` must all arrive before the process acts, or
+any one of them is enough, is not a flag: like what a process correlates on
+and what it compensates, that is prose in its description, on purpose — the
+model says a process exists and what it listens to and does, and leaves how
+it decides to the code.
+
+A process may also keep its own **`deadlines`**, by id: a time limit on one
+of its instances, stated the business's own words with `after` ("30
+minutes", "two working days") and, optionally, `from`, the process's own
+`starts` or `on` entry the interval counts from — absent means from the
+moment the instance began. A deadline behaves as an event the process raises
+to itself, so `on` and `ends` may wait on or end on it exactly as they do on
+any other event, and nothing outside the process may name it. What undoes
+the deadline, pausing or clearing the clock, is prose in its description
+rather than a field, for the same reason the process's other decisions are:
+the model states when a clock starts and how long it runs, not the
+conditions that stop it. An author who finds a policy waiting for a second
+event promotes it to a process.
+
+## Read models
+
+There is no `ReadModel` element. A projection is a **query service** like
+any other: a policy of the context reacts to the events that feed the view
+and issues an internal operation that writes what the query later reads, and
+the query operation itself declares `returns` the view's own shape.
+Petstore's inventory projection is a bounded context of its own because it
+serves two subdomains, not because the model forced a construct it does not
+have.
 
 ## Glossary
 

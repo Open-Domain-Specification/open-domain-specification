@@ -1554,7 +1554,7 @@ const invariantInContext: Rule = (workspace) => {
 			diagnostics.push({
 				severity: "error",
 				rule: "invariant-in-context",
-				message: `Invariant "${invariant.name}" of bounded context "${bc.name}" constrains "${constrainableLabel(target)}", which is ${where}; a context's invariant holds across its own aggregates and no further`,
+				message: `Invariant "${invariant.name}" of bounded context "${bc.name}" constrains "${constrainableLabel(target)}", which is ${where}; a context's invariant holds across its own aggregates and no further — where the two contexts really must agree, the rule is a policy or a process of "${bc.name}" that reacts to the other context's event instead`,
 				ref: invariant.ref,
 			});
 		}
@@ -3216,7 +3216,7 @@ const consumptionByReactor: Rule = (workspace) => {
 			diagnostics.push({
 				severity: "error",
 				rule: "consumption-by-reactor",
-				message: `"${consumer.name}" says its subscription to "${consumable.name}" is made by the operation "${caller.name}"; an operation is issued rather than woken, so name the policy or the process of "${consumer.boundedcontext.name}" that reacts to the fact`,
+				message: `"${consumer.name}" says its subscription to "${consumable.name}" is made by the operation "${caller.name}"; an operation is issued rather than woken, so name the policy or the process of "${consumer.boundedcontext.name}" that reacts to the fact — for a projection or a report, that is the policy whose own operation writes what "${caller.name}" later reads`,
 				ref: consumption.ref,
 			});
 		}
@@ -4600,11 +4600,11 @@ const externalIsBoundary: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const bc of workspace.boundedcontexts.values()) {
 		if (!bc.external) continue;
-		const refuse = (what: string, ref: string) =>
+		const refuse = (what: string, ref: string, alternative?: string) =>
 			diagnostics.push({
 				severity: "error",
 				rule: "external-is-boundary",
-				message: `External context "${bc.name}" declares ${what}; what happens inside a system we do not own is not ours to state, only what it provides and what it consumes`,
+				message: `External context "${bc.name}" declares ${what}; what happens inside a system we do not own is not ours to state, only what it provides and what it consumes${alternative ? `. ${alternative}` : ""}`,
 				ref,
 			});
 		if (bc.bigBallOfMud)
@@ -4615,7 +4615,11 @@ const externalIsBoundary: Rule = (workspace) => {
 				ref: bc.ref,
 			});
 		for (const aggregate of bc.aggregates.values())
-			refuse(`aggregate "${aggregate.name}"`, aggregate.ref);
+			refuse(
+				`aggregate "${aggregate.name}"`,
+				aggregate.ref,
+				`A kind this system publishes is a schema of this context, and an identity attribute of ours may name that schema instead of inventing the entity behind it`,
+			);
 		for (const policy of bc.policies.values())
 			refuse(`policy "${policy.name}"`, policy.ref);
 		for (const process of bc.processes.values())
@@ -4907,7 +4911,7 @@ const RULES: CataloguedRule[] = [
 		summary:
 			"A relation never crosses a bounded context; only an identity does.",
 		why: "Each context is its own model with its own language and lifecycle (decision 03), so a relation across the boundary makes one context's entity part of the other's object graph and the two can no longer be loaded, changed or stored apart. Decision 08's crossing table already says an entity relation's target may not cross a file, and splitting the contexts into their own files is exactly what turns this relation into a load error.",
-		fix: "Delete the relation and give the source an attribute holding the other entity's identity — an Order in Sales carries petId rather than a relation to Catalog's Pet. That identity may name a child of the other model as readily as its root, since the child is reached through that root. The dependency between the two contexts then reads where it belongs, on the context map: an identity across a boundary consumes nothing, so it draws there as an implied edge under the id stereotype rather than on the consumable map, which has nothing to draw when nothing is consumed.",
+		fix: "Delete the relation and give the source an attribute holding the other entity's identity — an Order in Sales carries petId rather than a relation to Catalog's Pet. That identity may name a child of the other model as readily as its root, since the child is reached through that root. The dependency between the two contexts then reads where it belongs, on the context map: an identity across a boundary consumes nothing, so it draws there as an implied edge under the id stereotype rather than on the consumable map, which has nothing to draw when nothing is consumed. Where the entity really is one both contexts hold and change together, an entity has one home: give it to a kernel context the two share and consume its operations from each side instead of relating into each other's aggregate (decision 16).",
 		check: crossContextRelation,
 	},
 	{
@@ -4960,7 +4964,7 @@ const RULES: CataloguedRule[] = [
 		summary:
 			"An entity is a kind of an entity of its own aggregate; a value object is a kind of one its own context declares, or one it borrows through a shared kernel or as a conformist of the context that owns it.",
 		why: "A kind is the same thing said more precisely, so it lives where the thing lives. An entity and the entity it is a kind of are loaded, saved and kept consistent through one root, and a parent in another aggregate would make one boundary's rules depend on another's. A value object is part of a context's ubiquitous language, and that language is legitimately shared in two places: a shared kernel, the declaration that two contexts keep part of one model between them, and a conformist's relationship with its upstream, where the downstream has said it takes that model as it stands.",
-		fix: "Move the parent into the same aggregate as the kind, or the kind into the parent's; for a value object, declare the parent in this context, declare the shared kernel with the context that owns it if the two really do keep it in step, or declare this context a conformist of that one if it takes that model as it stands.",
+		fix: "Move the parent into the same aggregate as the kind, or the kind into the parent's; for a value object, declare the parent in this context, declare the shared kernel with the context that owns it if the two really do keep it in step, or declare this context a conformist of that one if it takes that model as it stands. Where the parent is an entity two contexts jointly own, the route is not a shared kernel between them: give the entity to a kernel context both consume, and hold the kind there too, since an entity has one home (decision 16).",
 		check: specialisationInBoundary,
 	},
 	{
@@ -5056,7 +5060,7 @@ const RULES: CataloguedRule[] = [
 		severities: ["error"],
 		summary:
 			"A context's invariant is a check, so it names at least one operation of that context that makes it — before that operation acts, or of what it answers with.",
-		why: "No instance can see its siblings, so nothing enforces a cross-instance rule as a side effect of being saved. It holds only because something checks it: the operation that refuses the second open application, the one that counts the household's open sessions before starting another. Naming that operation is the difference between a rule the model can be read for and a sentence with nowhere to look. Which side of the call the check falls on is the invariant's own to state, with precondition or postcondition, and neither of those claims the rule holds at rest — a context with no aggregate at all, a quotation service that stores nothing, states the contract of its own operation exactly that way. A flagged invariant is asked for its guard by precondition-names-operation and postcondition-names-operation, so this rule asks the unflagged one and the model is told once rather than twice.",
+		why: "No instance can see its siblings, so nothing enforces a cross-instance rule as a side effect of being saved. It holds only because something checks it: the operation that refuses the second open application, the one that counts the household's open sessions before starting another. Naming that operation is the difference between a rule the model can be read for and a sentence with nowhere to look. The model records who checks the rule, not how strongly the store holds it: a unique index or a serialisable transaction may keep the same rule true at the database layer as well, and this rule neither claims nor denies that, because its only unit of consistency is the aggregate. What a context invariant may not claim is that it is kept on every save, the way an aggregate's is; that is the model's own rule about what a context boundary can promise, not a fact about any particular system. Which side of the call the check falls on is the invariant's own to state, with precondition or postcondition, and neither of those claims the rule holds at rest — a context with no aggregate at all, a quotation service that stores nothing, states the contract of its own operation exactly that way. A flagged invariant is asked for its guard by precondition-names-operation and postcondition-names-operation, so this rule asks the unflagged one and the model is told once rather than twice.",
 		fix: "Name the operation that does the checking in constrains, alongside what the rule is about. If the check is made on the way in, mark the rule a precondition; if what is checked is the answer, mark it a postcondition. If no operation checks it, the rule is not being kept: either the check belongs somewhere and has not been modelled, or the rule holds inside one aggregate and belongs there instead.",
 		check: contextInvariantIsChecked,
 	},
@@ -5120,7 +5124,7 @@ const RULES: CataloguedRule[] = [
 		summary:
 			"The directed relationships whose traffic is calls form no cycle; calls carried only by events, calls the consumption declares an anti-corruption layer on, and calls between partners do not count.",
 		why: "Downstream means a context shapes its model around what the upstream offers. In a ring of calls the contexts depend on each other's contracts: each one is written against a neighbour's model that is written against its own. Two kinds of call are exempt because neither creates that dependency. Events are one: reacting to a fact commits nobody to another model's shape, and rings of reactions are reaction-cycle's business instead. An anti-corruption layer is the other: the downstream translates at its edge, so the upstream's contract stops there and each side stays free to change, which is the whole point of the pattern. The layer is read on the consumption that declares it, because that is where the model says which call is translated; read off the relationship's roles, one translated call excused every untranslated one beside it. A partnership is the third: two contexts that plan their releases as one are one node for this walk, so what runs between them is not a step, and a ring that is nothing but the pair is cleared by declaring it. A longer ring is not, and the message says so: the pair still calls, and is still called by, the rest of the ring.",
-		fix: "Put an anti-corruption layer on the consumptions that carry a step, so that context translates what it calls and can change behind it; or declare a partnership between two neighbours on the ring that really do move as one, which says the mutual dependency is deliberate and makes the two one context for this walk; or reverse a dependency by turning that call into an event the other side reacts to.",
+		fix: "Put an anti-corruption layer on the consumptions that carry a step, so that context translates what it calls and can change behind it; or declare a partnership between two neighbours on the ring that really do move as one, which says the mutual dependency is deliberate and makes the two one context for this walk; or reverse a dependency by turning that call into an event the other side reacts to. A command carried over a queue is still an operation and still counts as a step on the ring, since this rule reads kind rather than delivery; where that assumption is the wrong read of a real system, say so in a comment on the consumption rather than looking for a fourth kind of exemption.",
 		check: relationshipCycle,
 	},
 	{
@@ -5432,7 +5436,7 @@ const RULES: CataloguedRule[] = [
 		summary:
 			"An external context declares no aggregates, no policies, no processes and no internal operations or events, and is not a big ball of mud as well; its value objects may carry invariants and it may state a precondition or a postcondition on one of its own operations, because a published contract is citable. Such an invariant names one of that context's own operations and constrains only the attributes of the shapes that operation carries and the context's own value objects.",
 		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. The contract of one of its own operations is the same kind of published fact: a payment provider documents that capturing needs a capturable payment and what the capture answers with, and the merchant integrating with it is in no position to promise that, so the rule is stated where it is published — as a precondition or a postcondition of that provider's own operation. A rule with neither flag is different, because a rule the machine keeps at rest is exactly the invention we cannot make, and so is a precondition guarding somebody else's operation. The reach is the contract and nothing beside it: a flagged rule that names no operation at all is a contract about nothing, and one that constrains an entity of ours is that system promising something about our model. Neither was reported until card 116, because every reach rule walks the contexts whose insides we state and an external context is not one of them. Internal is the same invention in one word: it says an operation, or an event, never leaves that system, and the ones of somebody else's system we can name at all are those that reach us or that we reach. A big ball of mud is the opposite kind of unknown — the enterprise's own system, unreadable but ours to carve up — so a context marked both leaves every rule that reads one of the two flags guessing which reading was meant.",
-		fix: "Drop internal from the operation or the event, which is a fact about that system's insides. Move the aggregate, policy or process into the context of ours that actually holds it, or drop external: true if this is a system the enterprise really does model inside. For an invariant, the question is which of two things it is. If it is the published contract of one of this context's own operations, mark it precondition (checked before that operation runs) or postcondition (guaranteed of what it answers with) and name that operation in constrains; both flags are allowed here and one of them is required, because an unflagged rule is a claim about the machine at rest. What it may then constrain is the attributes of that operation's request and answer shapes and this context's own value objects; anything else names something the provider does not publish. If it is a rule about several instances of a context of ours, or a precondition guarding another context's operation, move it to the context that keeps it. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay. Where both flags are set, keep the one that says who may change the system: external for somebody else's, bigBallOfMud for ours.",
+		fix: "Drop internal from the operation or the event, which is a fact about that system's insides. Move the aggregate, policy or process into the context of ours that actually holds it, or drop external: true if this is a system the enterprise really does model inside. Where the aggregate was standing in for a kind that system publishes, the honest form is a schema of this context rather than an invented entity: declare the schema and let an identity attribute of ours name it directly. For an invariant, the question is which of two things it is. If it is the published contract of one of this context's own operations, mark it precondition (checked before that operation runs) or postcondition (guaranteed of what it answers with) and name that operation in constrains; both flags are allowed here and one of them is required, because an unflagged rule is a claim about the machine at rest. What it may then constrain is the attributes of that operation's request and answer shapes and this context's own value objects; anything else names something the provider does not publish. If it is a rule about several instances of a context of ours, or a precondition guarding another context's operation, move it to the context that keeps it. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay. Where both flags are set, keep the one that says who may change the system: external for somebody else's, bigBallOfMud for ours.",
 		check: externalIsBoundary,
 	},
 	{

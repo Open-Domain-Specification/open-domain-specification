@@ -40,14 +40,18 @@ Workspace
 ├── Domain                                  (problem space)
 │   └── Subdomain (core/supporting/generic)
 ├── Bounded Context                         (solution space; serves the subdomains it lists)
+│   ├── external / bigBallOfMud             (a system we do not own / one of ours we cannot read; mutually exclusive)
 │   ├── Service (application/domain)
-│   │   ├── Consumables
+│   │   ├── Consumables (event or operation; may be internal; an operation may declare returns, rejects and reasons)
 │   │   └── Consumptions
 │   ├── Glossary Term                       (ubiquitous language, optionally embodied by an element)
 │   ├── Value Object (with attributes)      (a value of the context's language; any aggregate may hold one)
 │   │   └── Invariants                      (rules the value keeps by construction)
-│   ├── Schema                              (payload shape with attributes, shared by consumables)
+│   ├── Schema                              (payload shape with attributes, shared by consumables; a published kind on an external context)
 │   ├── Policy                              (on event consumables → then operation consumables)
+│   ├── Process                             (starts/on/then/ends; holds state across events, unlike a policy)
+│   │   └── Deadlines (after, from)         (a time limit the process raises to itself)
+│   ├── Context Invariant                   (a rule across instances or aggregates of this context; names its guard)
 │   └── Aggregate
 │       ├── Entities (with attributes)
 │       ├── Invariants
@@ -61,6 +65,17 @@ Domains and subdomains describe the *problem space*. Bounded contexts describe
 the *solution space* and are owned by the workspace, each linked to the
 subdomains it serves, so one context can span several subdomains and one
 subdomain can be served by several contexts.
+
+A good number of things this tree does *not* show — no delivery flag, no
+modules, no actors, no read-model element, no operations on a value object,
+an entity has one home, a context invariant records the check rather than
+the store — are left out on purpose, not because DDD forbids them. See
+[Tactical Design](3-tactical-design.md#what-the-model-leaves-out-on-purpose)
+and the repository's
+[`decisions/`](https://github.com/Open-Domain-Specification/open-domain-specification/tree/main/decisions)
+folder, starting with
+[decision 15](https://github.com/Open-Domain-Specification/open-domain-specification/blob/main/decisions/15-what-the-model-leaves-out.md),
+for the reasoning behind each one.
 
 ## Identity and refs
 

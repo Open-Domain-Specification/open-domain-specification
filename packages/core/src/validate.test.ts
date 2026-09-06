@@ -1768,7 +1768,7 @@ describe("invariant-in-context", () => {
 		).toEqual([
 			[
 				"error",
-				'Invariant "Reaches Out" of bounded context "BC" constrains "Entry", which is in bounded context "Elsewhere"; a context\'s invariant holds across its own aggregates and no further',
+				'Invariant "Reaches Out" of bounded context "BC" constrains "Entry", which is in bounded context "Elsewhere"; a context\'s invariant holds across its own aggregates and no further — where the two contexts really must agree, the rule is a policy or a process of "BC" that reacts to the other context\'s event instead',
 				foreignRule.ref,
 			],
 		]);
@@ -1792,7 +1792,7 @@ describe("invariant-in-context", () => {
 				.map((d) => [d.message, d.ref]),
 		).toEqual([
 			[
-				'Invariant "Counts A Payload" of bounded context "BC" constrains "Place Order.Customer Id", which is an attribute of schema "Place Order", and only a precondition or a postcondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape; a context\'s invariant holds across its own aggregates and no further',
+				'Invariant "Counts A Payload" of bounded context "BC" constrains "Place Order.Customer Id", which is an attribute of schema "Place Order", and only a precondition or a postcondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape; a context\'s invariant holds across its own aggregates and no further — where the two contexts really must agree, the rule is a policy or a process of "BC" that reacts to the other context\'s event instead',
 				rule.ref,
 			],
 		]);
@@ -1867,7 +1867,7 @@ describe("invariant-in-context", () => {
 			.constrains(rate, issue);
 		expect(inContext(ws)).toEqual([
 			[
-				'Invariant "Reaches Out" of bounded context "Billing" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Billing" holds; a context\'s invariant holds across its own aggregates and no further',
+				'Invariant "Reaches Out" of bounded context "Billing" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Billing" holds; a context\'s invariant holds across its own aggregates and no further — where the two contexts really must agree, the rule is a policy or a process of "Billing" that reacts to the other context\'s event instead',
 				reaching.ref,
 			],
 		]);
@@ -1896,7 +1896,7 @@ describe("invariant-in-context", () => {
 			.constrains(discount, issue);
 		expect(inContext(ws)).toEqual([
 			[
-				'Invariant "Reaches Sideways" of bounded context "Billing" constrains "Discount", which is a value object of bounded context "Billing" that nothing in "Billing" holds; a context\'s invariant holds across its own aggregates and no further',
+				'Invariant "Reaches Sideways" of bounded context "Billing" constrains "Discount", which is a value object of bounded context "Billing" that nothing in "Billing" holds; a context\'s invariant holds across its own aggregates and no further — where the two contexts really must agree, the rule is a policy or a process of "Billing" that reacts to the other context\'s event instead',
 				reaching.ref,
 			],
 		]);
@@ -1924,7 +1924,7 @@ describe("invariant-in-context", () => {
 			.constrains(rate, requestQuote);
 		expect(inContext(ws)).toEqual([
 			[
-				'Invariant "Rate Under The Cap" of bounded context "Quoting" constrains "Rate", which is a value object of bounded context "Quoting" that nothing in "Quoting" holds; a context\'s invariant holds across its own aggregates and no further',
+				'Invariant "Rate Under The Cap" of bounded context "Quoting" constrains "Rate", which is a value object of bounded context "Quoting" that nothing in "Quoting" holds; a context\'s invariant holds across its own aggregates and no further — where the two contexts really must agree, the rule is a policy or a process of "Quoting" that reacts to the other context\'s event instead',
 				reaching.ref,
 			],
 		]);
@@ -6652,7 +6652,7 @@ describe("external-is-boundary", () => {
 		expect(boundary(ws)).toEqual([
 			[
 				"error",
-				'External context "Card Scheme" declares aggregate "Scheme Ledger"; what happens inside a system we do not own is not ours to state, only what it provides and what it consumes',
+				'External context "Card Scheme" declares aggregate "Scheme Ledger"; what happens inside a system we do not own is not ours to state, only what it provides and what it consumes. A kind this system publishes is a schema of this context, and an identity attribute of ours may name that schema instead of inventing the entity behind it',
 				ledger.ref,
 			],
 		]);
@@ -8219,7 +8219,7 @@ describe("consumption-by-reactor", () => {
 		expect(woken(ws)).toEqual([
 			[
 				"error",
-				'"Offer API" says its subscription to "Product Listed" is made by the operation "Record Sku"; an operation is issued rather than woken, so name the policy or the process of "Offers" that reacts to the fact',
+				'"Offer API" says its subscription to "Product Listed" is made by the operation "Record Sku"; an operation is issued rather than woken, so name the policy or the process of "Offers" that reacts to the fact — for a projection or a report, that is the policy whose own operation writes what "Record Sku" later reads',
 				consumption.ref,
 			],
 		]);
