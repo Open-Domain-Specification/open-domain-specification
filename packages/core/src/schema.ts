@@ -244,11 +244,14 @@ export interface BoundedContextSchema {
 	 * card scheme, a payment provider, a licensor, a regulator, a clock. An
 	 * external context provides and consumes consumables and takes part in
 	 * relationships, and it needs no subdomain, no team and no internals —
-	 * `external-is-boundary` refuses aggregates, policies, processes and
-	 * context invariants on it, because what happens inside it is not ours to
-	 * state. Its value objects may carry invariants: an IBAN's checksum or an
-	 * ISO 20022 field rule is the standard's published contract rather than a
-	 * guess about the system's insides (decision 28).
+	 * `external-is-boundary` refuses aggregates, policies and processes on it,
+	 * because what happens inside it is not ours to state. What it publishes is
+	 * a different matter: its value objects may carry invariants — an IBAN's
+	 * checksum, an ISO 20022 field rule — and it may state a context invariant
+	 * marked `precondition` or `postcondition` on one of its own operations,
+	 * which is that operation's published contract. An invariant with neither
+	 * flag, or one guarding another context's operation, is still refused
+	 * (decision 28).
 	 */
 	external?: boolean;
 	/** The team that owns this context. */
@@ -395,6 +398,18 @@ export interface ConsumptionSchema {
 	 * detail, not a call graph.
 	 */
 	by?: { $ref: string }[];
+	/**
+	 * The directed relationship this exchange belongs to, where the pair holds
+	 * more than one agreement in that direction: a call made under the
+	 * negotiated fulfilment API rather than under the tolerated legacy feed
+	 * beside it.
+	 *
+	 * Absent is the common case, one agreement between the pair, and the
+	 * exchange belongs to it. Where the pair holds two, an exchange that names
+	 * neither belongs to nothing a rule can read, and `consumption-agreement`
+	 * says so (decision 15's amendment of 2026-09-10).
+	 */
+	relationship?: { $ref: string };
 	/** Grounded statements about the real system behind this consumption. */
 	comments?: Comment[];
 	/** What the architecture thinks of this consumption. Absent means `by-design`. */

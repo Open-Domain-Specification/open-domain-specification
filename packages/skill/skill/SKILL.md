@@ -92,6 +92,10 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   the contract of its operation. A context's invariant names at least one operation of the
   context that checks it, says with `precondition` or `postcondition` which side of that call
   the check is made on, and reaches no further than that context.
+- An external context is somebody else's machine: it states no aggregates, policies or
+  processes, and no rule it keeps at rest. What it publishes it may state — the rules on its
+  value objects, and a `precondition` or `postcondition` on one of its own operations, which is
+  that operation's published contract.
 - A payload schema belongs to the context that publishes the consumable. A value object or a
   schema may be named across a boundary only where the two contexts declare a `shared-kernel`
   relationship.

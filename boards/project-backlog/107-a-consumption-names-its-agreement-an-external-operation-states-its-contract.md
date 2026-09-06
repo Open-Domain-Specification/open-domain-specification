@@ -1,9 +1,12 @@
 ---
-column: todo
+column: doing
 labels: [backend, docs]
 priority: medium
 agent: senior-developer
-updatedAt: 2026-09-10T07:10:00.000Z
+live: true
+status: Reading the code before the schema change
+progress: 5
+updatedAt: 2026-09-11T09:00:00.000Z
 ---
 # A consumption names its agreement; an external operation states its contract
 

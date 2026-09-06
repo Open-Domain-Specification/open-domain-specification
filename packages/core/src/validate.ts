@@ -1988,22 +1988,131 @@ const relationshipDuplicate: Rule = (workspace) => {
 };
 
 /**
+ * The agreements one context has with another in one direction: the directed
+ * relationships running from `from` to `to`.
+ *
+ * One pair holds at most one unnamed agreement per direction
+ * (`relationship-duplicate`), and since card 103 it may hold two named ones —
+ * a negotiated fulfilment API beside a tolerated legacy feed. Where it holds
+ * two, which of them an exchange belongs to is the exchange's to say.
+ */
+function agreementsFrom(
+	workspace: Workspace,
+	from: BoundedContext,
+	to: BoundedContext,
+): ContextRelationship[] {
+	return workspace.relationships.filter(
+		(r) =>
+			isDirectedRelationshipType(r.type) &&
+			r.source === from &&
+			r.target === to,
+	);
+}
+
+/**
+ * The agreement a crossing belongs to: the one it names, or the pair's only
+ * one in the crossing's direction.
+ *
+ * Undefined where the model has not said which — an unnamed crossing between
+ * a pair holding two agreements — or where what it named is not an agreement
+ * running from the provider's context to the consumer's. Both are what
+ * `consumption-agreement` reports, and a crossing it reports belongs to no
+ * agreement here, so no rule counts it for one or criticises an agreement for
+ * it (decision 15, amended 2026-09-10).
+ */
+function agreementOf(
+	workspace: Workspace,
+	consumption: Consumption,
+): ContextRelationship | undefined {
+	const agreements = agreementsFrom(
+		workspace,
+		consumption.consumable.provider.boundedcontext,
+		consumption.consumer.boundedcontext,
+	);
+	const named = consumption.relationship;
+	if (named) return agreements.includes(named) ? named : undefined;
+	return agreements.length === 1 ? agreements[0] : undefined;
+}
+
+/**
  * Which of two contexts the model says is upstream, where a directed
  * relationship says anything at all. Undefined means the pair has declared
  * none, and the implied edge the context map draws reads the provider as the
  * upstream, which is what the rules below fall back on.
+ *
+ * Where the question is asked about one exchange and that exchange names its
+ * agreement, that agreement answers it. Read off the pair alone it was
+ * whichever directed relationship came first in the workspace, which two
+ * agreements between one pair made arbitrary (card 107).
  */
 function declaredUpstream(
 	workspace: Workspace,
 	one: BoundedContext,
 	other: BoundedContext,
+	crossing?: Consumption,
 ): BoundedContext | undefined {
+	const named = crossing?.relationship;
+	if (named?.involves(one) && named.involves(other)) return named.source;
 	return workspace.relationships.find(
 		(r) =>
 			isDirectedRelationshipType(r.type) &&
 			r.involves(one) &&
 			r.involves(other),
 	)?.source;
+}
+
+/**
+ * A crossing between a pair that holds two agreements in its direction says
+ * which of them it belongs to, and what it says is one of them.
+ *
+ * Card 103 let one pair hold two agreements in one direction — a negotiated
+ * fulfilment API beside a tolerated legacy feed from the same warehouse — and
+ * left their traffic pooled. Every crossing between the pair then counted for
+ * both, so `relationship-roles-backed` read each agreement against the other's
+ * exchanges and criticised each for a role the other carries, and the declared
+ * direction was whichever agreement came first. Naming the agreement is the
+ * one fact that tells the two apart, and where the pair holds one there is
+ * nothing to tell apart, so nothing is asked (decision 15's amendment).
+ *
+ * A warning, and it is the whole diagnostic for such a crossing: an exchange
+ * this rule reports belongs to no agreement, so `relationship-roles-backed`
+ * neither counts it for one nor criticises it against one, and the author is
+ * told once what to write rather than twice what it broke.
+ */
+const consumptionAgreement: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const consumption of consumptionsOf(workspace)) {
+		const provider = consumption.consumable.provider.boundedcontext;
+		const consumer = consumption.consumer.boundedcontext;
+		if (provider === consumer) continue;
+		const agreements = agreementsFrom(workspace, provider, consumer);
+		const named = consumption.relationship;
+		if (named) {
+			if (agreements.includes(named)) continue;
+			diagnostics.push({
+				severity: "warning",
+				rule: "consumption-agreement",
+				message: `"${consumption.consumer.name}" says its consumption of "${consumption.consumable.name}" belongs to ${relationshipLabel(named)}, which is not an agreement from "${provider.name}" to "${consumer.name}"; an exchange belongs to an agreement between the two contexts it crosses, in the direction it crosses them`,
+				ref: consumption.ref,
+			});
+			continue;
+		}
+		if (agreements.length < 2) continue;
+		diagnostics.push({
+			severity: "warning",
+			rule: "consumption-agreement",
+			message: `"${consumption.consumer.name}" consumes "${consumption.consumable.name}" from "${provider.name}" without saying which agreement it belongs to; the pair has ${agreements.length} in that direction — ${agreements.map((it) => `"${it.name ?? it.type}"`).join(", ")} — and their roles, comments and dispositions are different things`,
+			ref: consumption.ref,
+		});
+	}
+	return diagnostics;
+};
+
+/** How a relationship reads in a message: its name where it has one, else its type. */
+function relationshipLabel(relationship: ContextRelationship): string {
+	return relationship.name
+		? `the agreement "${relationship.name}" between "${relationship.source.name}" and "${relationship.target.name}"`
+		: `the ${relationship.type} relationship between "${relationship.source.name}" and "${relationship.target.name}"`;
 }
 
 /**
@@ -2040,7 +2149,10 @@ const roleCoherence: Rule = (workspace) => {
 		if (symmetricallyRelated(workspace, provider, consumer)) continue;
 		// The call runs against the declared direction: the caller is upstream
 		// and the provider translates for it. Nothing to ask of either end here.
-		if (declaredUpstream(workspace, provider, consumer) === consumer) continue;
+		if (
+			declaredUpstream(workspace, provider, consumer, consumption) === consumer
+		)
+			continue;
 		if (!consumable.pattern && !consumable.internal) {
 			diagnostics.push({
 				severity: "warning",
@@ -2072,6 +2184,24 @@ function crossingsBetween(
 			c.consumable.provider.boundedcontext === from &&
 			c.consumer.boundedcontext === to,
 	);
+}
+
+/**
+ * The crossings that count for one agreement: those between its two contexts
+ * that belong to it (see {@link agreementOf}). Where the pair holds one
+ * agreement in that direction, that is every crossing between them, as it was
+ * before card 107; where it holds two, each reads its own traffic and neither
+ * is criticised for the other's.
+ */
+function crossingsFor(
+	workspace: Workspace,
+	relationship: ContextRelationship,
+): Consumption[] {
+	return crossingsBetween(
+		workspace,
+		relationship.source,
+		relationship.target,
+	).filter((c) => agreementOf(workspace, c) === relationship);
 }
 
 /**
@@ -2136,6 +2266,15 @@ function carriesAnySchema(consumable: Consumable): boolean {
  * reaches. That shape is exactly what `schema-context` takes the layer as the
  * warrant for, so it is what backs it here; asking for a consumption instead
  * would warn on every inbound integration there is (card 98).
+ *
+ * The traffic is read per agreement, not per pair. Where one pair holds two
+ * agreements in one direction (card 103), pooling their crossings meant each
+ * agreement was judged by the other's exchanges: the negotiated API was told
+ * nothing carries its open-host role because the crossing that does belongs to
+ * the legacy feed, and both were told about the other's conformist. A crossing
+ * counts for the agreement it names, or for the pair's only one where it names
+ * none; a crossing that belongs to neither is `consumption-agreement`'s to
+ * report and is left out of this rule entirely (card 107).
  */
 const relationshipRolesBacked: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -2143,7 +2282,7 @@ const relationshipRolesBacked: Rule = (workspace) => {
 		if (!isDirectedRelationshipType(relationship.type)) continue;
 		const upstream = relationship.source;
 		const downstream = relationship.target;
-		const crossings = crossingsBetween(workspace, upstream, downstream);
+		const crossings = crossingsFor(workspace, relationship);
 		for (const role of relationship.upstreamRoles) {
 			if (crossings.some((c) => carriesUpstreamRole(c.consumable, role)))
 				continue;
@@ -2945,9 +3084,9 @@ const consumptionByReactor: Rule = (workspace) => {
 };
 
 /**
- * A cross-context consumption of an operation says which of the consumer's own
- * operations makes the call, unless the consumer has only one and there is
- * nothing to choose between.
+ * A consumption of an operation says which of the consumer's own operations
+ * makes the call, unless the consumer has only one and there is nothing to
+ * choose between.
  *
  * `by` is the one causal link the model has across a boundary: the flow map and
  * `reaction-cycle` follow it from a local operation through the consumption to
@@ -2960,6 +3099,20 @@ const consumptionByReactor: Rule = (workspace) => {
  * so twice; a consumer providing none, an external context's edge for instance,
  * has nothing to name and is left alone.
  *
+ * Inside a context the silence costs the same, and until card 107 nothing said
+ * so: a front on an application service with two operations that consumes an
+ * aggregate's operation without `by` reaches no events, the flow map stops at
+ * it, and `raises-restated` still tells the front not to restate what it
+ * reaches. The boundary was never what made the caller ambiguous — the number
+ * of operations is — so the rule asks the same question of a crossing and of a
+ * call next door (decision 21, note of 2026-09-10).
+ *
+ * What is not asked is which operation of somebody else's machine calls out.
+ * An external context is a system the enterprise does not own and a big ball of
+ * mud is one nobody can read; naming a caller inside either is the invention
+ * decision 28 refuses, and asking for it is how NorthBank came to have one
+ * (decision 28, second amendment of 2026-09-10).
+ *
  * A warning rather than an error: the exchange is real and drawn either way,
  * and an author part-way through an interview should not be blocked for not yet
  * knowing which operation calls out (decision 21, third amendment).
@@ -2968,18 +3121,20 @@ const consumptionByRequired: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const consumption of consumptionsOf(workspace)) {
 		const { consumer, consumable } = consumption;
-		const upstream = consumable.provider.boundedcontext;
+		const provider = consumable.provider.boundedcontext;
+		const here = consumer.boundedcontext;
 		if (consumable.type !== "operation") continue;
-		if (upstream === consumer.boundedcontext) continue;
+		if (here.external || here.bigBallOfMud) continue;
 		if (consumption.by.length > 0) continue;
 		const operations = [...consumer.consumables.values()].filter(
 			(it) => it.type === "operation",
 		);
 		if (operations.length < 2) continue;
+		const from = provider === here ? consumable.provider.name : provider.name;
 		diagnostics.push({
 			severity: "warning",
 			rule: "consumption-by-required",
-			message: `"${consumer.name}" consumes "${consumable.name}" from "${upstream.name}" without saying which of its own operations makes the call; it provides ${operations.map((it) => `"${it.name}"`).join(", ")}`,
+			message: `"${consumer.name}" consumes "${consumable.name}" from "${from}" without saying which of its own operations makes the call; it provides ${operations.map((it) => `"${it.name}"`).join(", ")}`,
 			ref: consumption.ref,
 		});
 	}
@@ -3979,6 +4134,18 @@ const contextServesSubdomain: Rule = (workspace) => {
  * amendment). Marking the context external is the author saying "this is
  * somebody else's machine", and this rule holds them to it.
  *
+ * Two of those refusals turned out to be too wide, for the same reason and one
+ * after the other. A value object's invariant is a standard's published rule
+ * and stays (third amendment), and so is the contract of a published
+ * operation: a payment provider documents that capturing needs a capturable
+ * payment and what the capture answers with, and the merchant integrating with
+ * it cannot be the one to promise that. So a context invariant flagged
+ * `precondition` or `postcondition` on an operation of this same external
+ * context is allowed. An invariant with neither flag is still a claim about
+ * how the machine keeps itself, and a flagged one guarding another context's
+ * operation is still this model promising for a system it does not own
+ * (decision 28, amendment of 2026-09-10).
+ *
  * It is also not a big ball of mud. The two marks look alike — neither can be
  * held to completeness — and they say opposite things about ownership. A mud
  * context is the enterprise's own: somebody can be sent into it, its clusters
@@ -4012,8 +4179,39 @@ const externalIsBoundary: Rule = (workspace) => {
 			refuse(`policy "${policy.name}"`, policy.ref);
 		for (const process of bc.processes.values())
 			refuse(`process "${process.name}"`, process.ref);
-		for (const invariant of bc.invariants.values())
-			refuse(`invariant "${invariant.name}"`, invariant.ref);
+		// A context invariant of an external context is refused for what it
+		// usually is — a claim about how somebody else's system keeps its own
+		// model — and allowed for what it sometimes is: the published contract
+		// of one of that system's own operations. "Capture requires a
+		// capturable payment" and "capture answers with the captured one" are
+		// as citable as an IBAN's checksum, and the merchant cannot be the one
+		// to promise them, so the provider states them where they belong. What
+		// stays refused is an invariant with neither flag, which is a rule at
+		// rest inside the machine, and a flagged one guarding another context's
+		// operation, which is this model promising something about a system it
+		// does not own (decision 28, amendment of 2026-09-10).
+		for (const invariant of bc.invariants.values()) {
+			if (!invariant.precondition && !invariant.postcondition) {
+				diagnostics.push({
+					severity: "error",
+					rule: "external-is-boundary",
+					message: `External context "${bc.name}" declares invariant "${invariant.name}", which is neither a precondition nor a postcondition; a rule a system we do not own keeps at rest is not ours to state. What is ours to write down is that system's published contract: mark the rule a precondition or a postcondition of one of this context's own operations, or move it to the context of ours that really keeps it`,
+					ref: invariant.ref,
+				});
+				continue;
+			}
+			const kind = invariant.precondition ? "precondition" : "postcondition";
+			for (const target of invariant.targets) {
+				if (!(target instanceof Consumable)) continue;
+				if (target.boundedcontext === bc) continue;
+				diagnostics.push({
+					severity: "error",
+					rule: "external-is-boundary",
+					message: `External context "${bc.name}" states a ${kind} on "${target.name}", an operation of "${target.boundedcontext.name}"; a system we do not own publishes the contract of its own operations and promises nothing about anybody else's. Move the rule to the context that provides the operation`,
+					ref: invariant.ref,
+				});
+			}
+		}
 		// `internal` says a consumable never leaves its context, which is a
 		// claim about what happens inside a system we do not run. What we can
 		// say about somebody else's machine is what it offers and what it
@@ -4344,10 +4542,19 @@ const RULES: CataloguedRule[] = [
 		rule: "relationship-roles-backed",
 		severities: ["warning"],
 		summary:
-			"A directed relationship's declared roles are carried by consumables and consumptions crossing between the two contexts — or, for published language and for either downstream role, by the downstream borrowing the upstream's shapes — and a crossing consumption's role is declared on the relationship.",
+			"A directed relationship's declared roles are carried by the crossings that belong to it — or, for published language and for either downstream role, by the downstream borrowing the upstream's shapes — and a crossing consumption's role is declared on the agreement it belongs to.",
 		why: "The context map and the consumable map are the same integration told twice, strategically and concretely. A role on the map that nothing carries is a claim about a team's way of working with nothing behind it, and a consumption whose role the map never mentions is an integration decision made without the map noticing.",
-		fix: "Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a shape — sent, answered or refused — since a published language is a data shape rather than a second flag, and equally by the downstream naming one of the upstream's schemas or value objects: a standards body publishes a language and offers nothing to consume, so the shapes borrowed from it are the whole of what it provides. The two downstream roles are backed by different things, because they are different acts. A conformist is backed by that same borrowing: a context naming one of the upstream's schemas or value objects has taken its language. An anti-corruption layer is not a borrowing at all — the model behind it stays the downstream's own — so it is backed either by a consumption that declares the role or, where the upstream is the caller and nothing crosses the other way, by the one consumable that caller reaches carrying the caller's own shape, which is the boundary the layer translates at.",
+		fix: "Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a shape — sent, answered or refused — since a published language is a data shape rather than a second flag, and equally by the downstream naming one of the upstream's schemas or value objects: a standards body publishes a language and offers nothing to consume, so the shapes borrowed from it are the whole of what it provides. The two downstream roles are backed by different things, because they are different acts. A conformist is backed by that same borrowing: a context naming one of the upstream's schemas or value objects has taken its language. An anti-corruption layer is not a borrowing at all — the model behind it stays the downstream's own — so it is backed either by a consumption that declares the role or, where the upstream is the caller and nothing crosses the other way, by the one consumable that caller reaches carrying the caller's own shape, which is the boundary the layer translates at. Where one pair holds two agreements in the same direction, each is read against its own traffic: a crossing counts for the agreement its relationship names, or for the pair's only one where it names none. A crossing that names neither is consumption-agreement's to report and says nothing about either agreement until it does.",
 		check: relationshipRolesBacked,
+	},
+	{
+		rule: "consumption-agreement",
+		severities: ["warning"],
+		summary:
+			"A consumption crossing a pair that has more than one directed relationship in that direction names, in relationship, which agreement the exchange belongs to — and what it names is an agreement between those two contexts, in that direction.",
+		why: "One pair may hold two agreements in one direction: a negotiated fulfilment API beside a tolerated legacy feed from the same warehouse, each with its own roles, comments and disposition. The exchanges are what those roles are claims about, so an exchange that belongs to neither leaves both agreements judged by traffic that is not theirs — each is told nothing carries its upstream role while the crossing that does belongs to the other, and each is told about the other's downstream role as though it were an undeclared one. The direction is read off it too: which context dictates the model is the agreement's to say, and with two of them the answer was whichever came first in the file. Where the pair holds one agreement nothing is asked, because there is nothing to tell apart.",
+		fix: "Set relationship on the consumption to the agreement this exchange really runs under, using the ref that carries its name. If the exchange belongs to neither of them, it belongs to a third agreement nobody has declared yet — declare it. If the two agreements are really one, merge them and the question stops being asked. A consumption reported here belongs to no agreement, so relationship-roles-backed says nothing about it until it names one.",
+		check: consumptionAgreement,
 	},
 	{
 		rule: "relationship-declared",
@@ -4427,7 +4634,7 @@ const RULES: CataloguedRule[] = [
 		summary:
 			"Where the provider of a consumable is the upstream side, the consumable declares an upstream role and the consumption a downstream one — unless the two contexts are partners or share a kernel.",
 		why: "Crossing a context boundary is an integration decision: how the upstream offers what it offers (a documented API or a published format) and how the downstream takes it (as-is or translated) should be explicit. Which end is which is the relationship's to say, not the call's: upstream is whoever dictates the model, so where the caller sends its own format and the provider translates it, the provider is downstream of the context calling it. A consumable can carry only an upstream role and a consumption only a downstream one, so in that case neither field is the right place for either role — the roles are on the relationship, and relationship-roles-backed reads them there. Partnership and shared kernel are the other exception: neither side is upstream, so there is no role for either end to declare.",
-		fix: "Set pattern on the consumable to open-host-service or published-language, and pattern on the consumption to conformist or anti-corruption-layer; or declare the partnership or shared kernel that makes the two contexts equals. If the warning is on an integration where the caller dictates the format, the relationship is the wrong way round: declare the caller upstream, with the roles on the relationship, and this rule stops asking.",
+		fix: "Set pattern on the consumable to open-host-service or published-language, and pattern on the consumption to conformist or anti-corruption-layer; or declare the partnership or shared kernel that makes the two contexts equals. If the warning is on an integration where the caller dictates the format, the relationship is the wrong way round: declare the caller upstream, with the roles on the relationship, and this rule stops asking. Where the pair holds two agreements, which direction this exchange runs under is the exchange's to say: name it in the consumption's relationship.",
 		check: roleCoherence,
 	},
 	{
@@ -4488,9 +4695,9 @@ const RULES: CataloguedRule[] = [
 		rule: "consumption-by-required",
 		severities: ["warning"],
 		summary:
-			"A consumption of another context's operation names, in by, which of the consumer's own operations makes the call — unless the consumer provides fewer than two operations, and so has nothing to choose between.",
-		why: "by is the only causal link the model has across a boundary: the flow map and the reaction walk follow it from a local operation through the consumption to the operation it calls and on to what that raises. Without it a lifecycle running through three contexts reads as three unrelated stubs, each stopping at the edge, and the reader is told only that some part of a six-operation service depends on a neighbour — which is barely more than the context map already said.",
-		fix: "Name the consumer's own operations that make this call in by. Pick from the operations the message lists; if several of them call out, name them all. A consumer with one operation needs nothing, because that operation is the answer.",
+			"A consumption of an operation names, in by, which of the consumer's own operations makes the call — unless the consumer provides fewer than two operations, or the consumer's context is external or a big ball of mud.",
+		why: "by is the only causal link the model has from one operation to the next: the flow map and the reaction walk follow it from a local operation through the consumption to the operation it calls and on to what that raises. Without it a lifecycle running through three contexts reads as three unrelated stubs, each stopping at the edge, and the reader is told only that some part of a six-operation service depends on a neighbour — which is barely more than the context map already said. A call next door costs the same silence: a front on a two-operation application service that calls an aggregate without saying which of its operations does reaches no events at all, and the flow map stops there with nothing said about why. Which of the consumer's operations calls out is not askable of every consumer, though: inside an external context or a big ball of mud it is a system nobody here owns or can read, and naming a caller in one is invention.",
+		fix: "Name the consumer's own operations that make this call in by. Pick from the operations the message lists; if several of them call out, name them all. A consumer with one operation needs nothing, because that operation is the answer, and neither does a consumer inside somebody else's system.",
 		check: consumptionByRequired,
 	},
 	{
@@ -4683,9 +4890,9 @@ const RULES: CataloguedRule[] = [
 		rule: "external-is-boundary",
 		severities: ["error"],
 		summary:
-			"An external context declares no aggregates, no policies, no processes, no invariants of its own and no internal operations or events, and is not a big ball of mud as well; its value objects may carry invariants, because a standard's published rules are citable.",
-		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. A rule about the context's own instances is different, because that is exactly the invention we cannot make. Internal is the same invention in one word: it says an operation, or an event, never leaves that system, and the ones of somebody else's system we can name at all are those that reach us or that we reach. A big ball of mud is the opposite kind of unknown — the enterprise's own system, unreadable but ours to carve up — so a context marked both leaves every rule that reads one of the two flags guessing which reading was meant.",
-		fix: "Drop internal from the operation or the event, which is a fact about that system's insides. Move the aggregate, policy, process or context invariant into the context of ours that actually holds it — a rule about several instances is a rule of the context that keeps them — or drop external: true if this is a system the enterprise really does model inside. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay. Where both flags are set, keep the one that says who may change the system: external for somebody else's, bigBallOfMud for ours.",
+			"An external context declares no aggregates, no policies, no processes and no internal operations or events, and is not a big ball of mud as well; its value objects may carry invariants and it may state a precondition or a postcondition on one of its own operations, because a published contract is citable.",
+		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. The contract of one of its own operations is the same kind of published fact: a payment provider documents that capturing needs a capturable payment and what the capture answers with, and the merchant integrating with it is in no position to promise that, so the rule is stated where it is published — as a precondition or a postcondition of that provider's own operation. A rule with neither flag is different, because a rule the machine keeps at rest is exactly the invention we cannot make, and so is a precondition guarding somebody else's operation. Internal is the same invention in one word: it says an operation, or an event, never leaves that system, and the ones of somebody else's system we can name at all are those that reach us or that we reach. A big ball of mud is the opposite kind of unknown — the enterprise's own system, unreadable but ours to carve up — so a context marked both leaves every rule that reads one of the two flags guessing which reading was meant.",
+		fix: "Drop internal from the operation or the event, which is a fact about that system's insides. Move the aggregate, policy or process into the context of ours that actually holds it, or drop external: true if this is a system the enterprise really does model inside. For an invariant, the question is which of two things it is. If it is the published contract of one of this context's own operations, mark it precondition (checked before that operation runs) or postcondition (guaranteed of what it answers with) and name that operation in constrains; both flags are allowed here and one of them is required, because an unflagged rule is a claim about the machine at rest. If it is a rule about several instances of a context of ours, or a precondition guarding another context's operation, move it to the context that keeps it. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay. Where both flags are set, keep the one that says who may change the system: external for somebody else's, bigBallOfMud for ours.",
 		check: externalIsBoundary,
 	},
 	{

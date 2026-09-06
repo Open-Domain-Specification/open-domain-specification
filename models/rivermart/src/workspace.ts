@@ -1476,11 +1476,17 @@ const refundPayment = paymentsApi
 const providerRequestSchema = paymentProviderBC.addSchema("ProviderRequest", {
 	description: "The acquirer's wire format, which RiverMart does not shape",
 });
-providerRequestSchema.addAttribute("merchantReference", {
-	type: "string",
-	identity: true,
-});
-providerRequestSchema.addAttribute("amountMinorUnits", { type: "int64" });
+const merchantReference = providerRequestSchema.addAttribute(
+	"merchantReference",
+	{
+		type: "string",
+		identity: true,
+	},
+);
+const amountMinorUnits = providerRequestSchema.addAttribute(
+	"amountMinorUnits",
+	{ type: "int64" },
+);
 providerRequestSchema.addAttribute("currency", { type: "ISO 4217 code" });
 providerRequestSchema.addAttribute("instrumentToken", { type: "string" });
 const acquirerApi = paymentProviderBC.addService("Acquirer API", {
@@ -1505,6 +1511,21 @@ const returnFunds = acquirerApi.provides("ReturnFunds", {
 	pattern: "open-host-service",
 	schema: providerRequestSchema,
 });
+// The acquirer's own documentation, not RiverMart's guess at its insides. The
+// take is defined against a hold that already exists and has not expired, and
+// for no more than that hold, which is the acquirer's published contract and
+// the reason a capture at dispatch can fail. RiverMart cannot promise it — the
+// merchant is not the one who keeps it — so it is stated where it is
+// published, as a precondition of the provider's own operation (decision 28,
+// amendment of 2026-09-10; card 107).
+paymentProviderBC
+	.addInvariant("TakeIsAgainstALiveHold", {
+		description:
+			"TakeFunds is accepted only for a merchant reference the acquirer still holds funds against, and for no more than the amount held. The acquirer publishes this; RiverMart's capture at dispatch is written against it and fails when the hold has gone",
+		precondition: true,
+	})
+	.constrains(takeFunds, merchantReference, amountMinorUnits);
+
 paymentsApi.consumes(holdFunds, {
 	pattern: "anti-corruption-layer",
 	by: [authorisePayment],

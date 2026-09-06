@@ -4982,7 +4982,24 @@
       "subdomains": [],
       "external": true,
       "aggregates": {},
-      "invariants": {},
+      "invariants": {
+        "take_is_against_alive_hold": {
+          "name": "TakeIsAgainstALiveHold",
+          "description": "TakeFunds is accepted only for a merchant reference the acquirer still holds funds against, and for no more than the amount held. The acquirer publishes this; RiverMart's capture at dispatch is written against it and fails when the hold has gone",
+          "precondition": true,
+          "constrains": [
+            {
+              "$ref": "#/boundedcontexts/payment_provider/services/acquirer_api/provides/take_funds"
+            },
+            {
+              "$ref": "#/boundedcontexts/payment_provider/schemas/provider_request/attributes/merchant_reference"
+            },
+            {
+              "$ref": "#/boundedcontexts/payment_provider/schemas/provider_request/attributes/amount_minor_units"
+            }
+          ]
+        }
+      },
       "services": {
         "acquirer_api": {
           "name": "Acquirer API",

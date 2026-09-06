@@ -2265,6 +2265,12 @@ export type ConsumptionAttributes = {
 	 * (decision 21).
 	 */
 	by?: ConsumptionCaller[];
+	/**
+	 * The agreement this exchange belongs to, where the pair holds more than
+	 * one directed relationship in that direction. Absent means the pair's
+	 * only one (decision 15, amended 2026-09-10).
+	 */
+	relationship?: ContextRelationship;
 } & EvidenceOptions;
 
 export class Consumption
@@ -2275,6 +2281,8 @@ export class Consumption
 	pattern?: DownstreamRole;
 	/** The consumer's own operations, policies or processes that make this exchange. */
 	by: ConsumptionCaller[];
+	/** The agreement this exchange belongs to, where the model has named one. */
+	relationship?: ContextRelationship;
 	comments: ods.Comment[];
 	disposition?: ods.Disposition;
 
@@ -2326,6 +2334,7 @@ export class Consumption
 		this.consumable = consumable;
 		this.pattern = attributes.pattern;
 		this.by = attributes.by ?? [];
+		this.relationship = attributes.relationship;
 		this.comments = attributes.comments ?? [];
 		this.disposition = normaliseDisposition(attributes.disposition);
 		this.consumable.consumptions.push(this);
@@ -2340,6 +2349,9 @@ export class Consumption
 			consumable: { $ref: this.consumable.ref },
 			pattern: this.pattern,
 			by: this.by.length ? this.by.map((it) => ({ $ref: it.ref })) : undefined,
+			relationship: this.relationship
+				? { $ref: this.relationship.ref }
+				: undefined,
 			comments: this.comments.length ? this.comments : undefined,
 			disposition: this.disposition,
 		};

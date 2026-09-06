@@ -388,6 +388,89 @@ describe("one pair, two exchanges", () => {
 });
 
 /**
+ * A pair with two agreements in one direction, each exchange naming the one it
+ * runs under: the ref has to survive the file, and the relationships have to
+ * be there before the consumptions that point at them (card 107).
+ */
+describe("a consumption that names its agreement", () => {
+	function twoAgreements() {
+		const ws = new Workspace("Agreements", {
+			odsVersion: "1.0.0",
+			description: "",
+			version: "0",
+		});
+		const up = ws.addBoundedContext("Up", { description: "" });
+		const down = ws.addBoundedContext("Down", { description: "" });
+		up.upstreamOf(down, {
+			name: "Negotiated API",
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["conformist"],
+		});
+		const feed = up.upstreamOf(down, {
+			name: "Legacy Feed",
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		const posted = up
+			.addService("Feed", { description: "", type: "application" })
+			.provides("Posted", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			});
+		down
+			.addService("Reader", { description: "", type: "application" })
+			.consumes(posted, {
+				pattern: "anti-corruption-layer",
+				relationship: feed,
+			});
+		return ws;
+	}
+
+	it("keeps the ref through toSchema and re-links it on the way back", () => {
+		const schema = twoAgreements().toSchema();
+		expect(
+			schema.boundedcontexts.down.services!.reader.consumes![0].relationship,
+		).toEqual({
+			$ref: "#/relationships/up~upstream-downstream~down~legacy_feed",
+		});
+		const rebuilt = Workspace.fromSchema(JSON.parse(JSON.stringify(schema)));
+		expect(rebuilt.toSchema()).toEqual(schema);
+		const consumption = rebuilt.getServiceByRefOrThrow(
+			"#/boundedcontexts/down/services/reader",
+		).consumptions[0];
+		expect(consumption.relationship).toBe(
+			rebuilt.findRelationship(
+				"#/relationships/up~upstream-downstream~down~legacy_feed",
+			),
+		);
+		expect(
+			rebuilt.validate().filter((d) => d.rule === "consumption-agreement"),
+		).toEqual([]);
+	});
+
+	it("reports a relationship ref that names nothing, and loads the rest", () => {
+		const schema = twoAgreements().toSchema();
+		schema.boundedcontexts.down.services!.reader.consumes![0].relationship = {
+			$ref: "#/relationships/up~upstream-downstream~down~gone",
+		};
+		const loaded = Workspace.fromSchema(schema);
+		const unresolved = loaded
+			.validate()
+			.filter((d) => d.rule === "unresolved-ref");
+		expect(unresolved).toHaveLength(1);
+		expect(unresolved[0].severity).toBe("error");
+		expect(unresolved[0].ref).toBe("#/boundedcontexts/down/services/reader");
+		expect(unresolved[0].message).toContain('in "relationship"');
+		expect(unresolved[0].message).toContain('its consumption of "Posted"');
+		expect(
+			loaded.getServiceByRefOrThrow("#/boundedcontexts/down/services/reader")
+				.consumptions,
+		).toHaveLength(1);
+	});
+});
+
+/**
  * A `$ref` that names nothing is left unset and reported rather than thrown on
  * (card 100, decision 29), and the file still says what its author wrote:
  * opening it and saving it keeps the typo, so the `unresolved-ref` diagnostic

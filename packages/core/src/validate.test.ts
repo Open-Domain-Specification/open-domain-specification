@@ -2465,6 +2465,180 @@ describe("specialisation", () => {
 	});
 });
 
+describe("consumption-agreement", () => {
+	/**
+	 * One warehouse upstream of one shop under two agreements — a negotiated
+	 * API and a tolerated legacy feed — with one exchange under each. The
+	 * shop's two fronts are the callers, so nothing else is warned about.
+	 */
+	function twoAgreements() {
+		const ws = emptyWorkspace();
+		const selling = ws
+			.addDomain("Retail", { description: "" })
+			.addSubdomain("Selling", { description: "", type: "core" });
+		const up = ws.addBoundedContext("Warehouse", {
+			description: "",
+			subdomains: [selling],
+		});
+		const down = ws.addBoundedContext("Shop", {
+			description: "",
+			subdomains: [selling],
+		});
+		const negotiated = up.upstreamOf(down, {
+			name: "Fulfilment API",
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["conformist"],
+		});
+		const tolerated = up.upstreamOf(down, {
+			name: "Legacy Feed",
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		const warehouse = up.addService("Warehouse API", {
+			description: "",
+			type: "application",
+		});
+		const reserve = warehouse.provides("Reserve Stock", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		const feed = warehouse.provides("Stock Level Posted", {
+			description: "",
+			type: "operation",
+			pattern: "published-language",
+			schema: up.addSchema("Stock Level"),
+		});
+		const shop = down.addService("Shop App", {
+			description: "",
+			type: "application",
+		});
+		const order = shop.provides("Place Order", {
+			description: "",
+			type: "operation",
+		});
+		const refresh = shop.provides("Refresh Stock", {
+			description: "",
+			type: "operation",
+		});
+		return { ws, negotiated, tolerated, shop, reserve, feed, order, refresh };
+	}
+
+	const agreement = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "consumption-agreement")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	const backed = (ws: Workspace) =>
+		ws.validate().filter((d) => d.rule === "relationship-roles-backed");
+
+	it("validates clean when each exchange names the agreement it runs under", () => {
+		const { ws, negotiated, tolerated, shop, reserve, feed, order, refresh } =
+			twoAgreements();
+		shop.consumes(reserve, {
+			pattern: "conformist",
+			by: [order],
+			relationship: negotiated,
+		});
+		shop.consumes(feed, {
+			pattern: "anti-corruption-layer",
+			by: [refresh],
+			relationship: tolerated,
+		});
+		expect(ws.validate()).toEqual([]);
+	});
+
+	it("warns once about an exchange that names neither, and nothing else does", () => {
+		const { ws, tolerated, shop, reserve, feed, order, refresh } =
+			twoAgreements();
+		const unnamed = shop.consumes(reserve, {
+			pattern: "conformist",
+			by: [order],
+		});
+		shop.consumes(feed, {
+			pattern: "anti-corruption-layer",
+			by: [refresh],
+			relationship: tolerated,
+		});
+		expect(agreement(ws)).toEqual([
+			[
+				"warning",
+				'"Shop App" consumes "Reserve Stock" from "Warehouse" without saying which agreement it belongs to; the pair has 2 in that direction — "Fulfilment API", "Legacy Feed" — and their roles, comments and dispositions are different things',
+				unnamed.ref,
+			],
+		]);
+		// The crossing belongs to no agreement, so neither agreement is
+		// criticised for it: the legacy feed is not told about a conformist
+		// that is not its traffic, and the conformist is not reported as a
+		// role no relationship declares. What the negotiated API is told is
+		// that its own two roles now have nothing behind them, which is true
+		// until the crossing says it belongs to them.
+		expect(backed(ws).map((d) => d.message)).toEqual([
+			'"Warehouse" is declared open-host-service to "Shop", but nothing "Shop" consumes from "Warehouse" carries that upstream role',
+			'"Shop" is declared conformist to "Warehouse", but no consumption of "Shop" from "Warehouse" declares that downstream role, and nothing in it carries one of "Warehouse"\'s schemas or value objects',
+		]);
+	});
+
+	it("warns about an exchange naming an agreement that does not run that way", () => {
+		const { ws, shop, reserve, order } = twoAgreements();
+		const other = ws.addBoundedContext("Payments", { description: "" });
+		const wrong = other.upstreamOf(
+			ws.getBoundedContextByRefOrThrow("#/boundedcontexts/shop"),
+			{ name: "Settlement" },
+		);
+		const named = shop.consumes(reserve, {
+			pattern: "conformist",
+			by: [order],
+			relationship: wrong,
+		});
+		expect(agreement(ws)).toEqual([
+			[
+				"warning",
+				'"Shop App" says its consumption of "Reserve Stock" belongs to the agreement "Settlement" between "Payments" and "Shop", which is not an agreement from "Warehouse" to "Shop"; an exchange belongs to an agreement between the two contexts it crosses, in the direction it crosses them',
+				named.ref,
+			],
+		]);
+	});
+
+	it("asks nothing of a pair with one agreement, named or not", () => {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Warehouse", { description: "" });
+		const down = ws.addBoundedContext("Shop", { description: "" });
+		up.upstreamOf(down, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["conformist"],
+		});
+		const reserve = up
+			.addService("Warehouse API", { description: "", type: "application" })
+			.provides("Reserve Stock", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			});
+		down
+			.addService("Shop App", { description: "", type: "application" })
+			.consumes(reserve, { pattern: "conformist" });
+		expect(agreement(ws)).toEqual([]);
+	});
+
+	it("says nothing about a consumption inside one context", () => {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Shop", { description: "" });
+		const app = bc.addService("Shop App", {
+			description: "",
+			type: "application",
+		});
+		const inner = app.provides("Inner", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		app.consumes(inner, {});
+		expect(agreement(ws)).toEqual([]);
+	});
+});
+
 describe("relationship-roles-backed", () => {
 	/** Upstream and downstream contexts, one consumable, one consumption. */
 	function crossing(
@@ -5901,6 +6075,89 @@ describe("external-is-boundary", () => {
 		]);
 	});
 
+	/**
+	 * The published contract of a provider's own operation: capture takes a
+	 * payment reference and answers with the captured payment (decision 28,
+	 * amendment of 2026-09-10).
+	 */
+	function publishedCapture() {
+		const { ws, external, ours } = scheme();
+		const api = external.addService("Scheme API", {
+			description: "",
+			type: "application",
+		});
+		const request = external.addSchema("Capture Request", { description: "" });
+		const reference = request.addAttribute("paymentReference", {
+			type: "string",
+		});
+		const captured = external.addSchema("Captured Payment", {
+			description: "",
+		});
+		const amount = captured.addAttribute("amount", { type: "int64" });
+		const capture = api.provides("Capture", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+			schema: request,
+			returns: { schema: captured },
+		});
+		return { ws, external, ours, capture, reference, amount };
+	}
+
+	it("lets a system we do not own publish the contract of its own operation", () => {
+		const { ws, external, capture, reference, amount } = publishedCapture();
+		external
+			.addInvariant("Capture Needs A Capturable Payment", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(capture, reference);
+		external
+			.addInvariant("Capture Answers With The Captured Payment", {
+				description: "",
+				postcondition: true,
+			})
+			.constrains(capture, amount);
+		expect(boundary(ws)).toEqual([]);
+		// And the rules that read a context invariant are content with it too:
+		// the guard is named, and both flags are allowed on one (card 103).
+		expect(ws.validate().filter((d) => d.severity === "error")).toEqual([]);
+	});
+
+	it("still refuses one with neither flag, and says which is allowed", () => {
+		const { ws, external, capture } = publishedCapture();
+		const atRest = external
+			.addInvariant("One Settlement A Day", { description: "" })
+			.constrains(capture);
+		expect(boundary(ws)).toEqual([
+			[
+				"error",
+				'External context "Card Scheme" declares invariant "One Settlement A Day", which is neither a precondition nor a postcondition; a rule a system we do not own keeps at rest is not ours to state. What is ours to write down is that system\'s published contract: mark the rule a precondition or a postcondition of one of this context\'s own operations, or move it to the context of ours that really keeps it',
+				atRest.ref,
+			],
+		]);
+	});
+
+	it("still refuses a precondition guarding another context's operation", () => {
+		const { ws, external, ours } = publishedCapture();
+		const ourCapture = ours
+			.addService("Payments App", { description: "", type: "application" })
+			.provides("Capture Payment", { description: "", type: "operation" });
+		const reaching = external
+			.addInvariant("Capture Needs An Authorisation", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(ourCapture);
+		expect(boundary(ws)).toEqual([
+			[
+				"error",
+				'External context "Card Scheme" states a precondition on "Capture Payment", an operation of "Payments"; a system we do not own publishes the contract of its own operations and promises nothing about anybody else\'s. Move the rule to the context that provides the operation',
+				reaching.ref,
+			],
+		]);
+	});
+
 	it("asks an external context for no subdomain", () => {
 		const { ws, external } = scheme();
 		expect(
@@ -6319,7 +6576,12 @@ describe("consumption-by-required", () => {
 		expect(required(ws)).toEqual([]);
 	});
 
-	it("says nothing about a call inside one context", () => {
+	/**
+	 * A front on an application service that calls an aggregate of its own
+	 * context. `operations` is how many operations the front provides, which is
+	 * the whole of what the rule reads.
+	 */
+	function callsInside(operations: number, by = false) {
 		const ws = emptyWorkspace();
 		const bc = ws.addBoundedContext("Sales", { description: "" });
 		const agg = bc.addAggregate("Order", { description: "" });
@@ -6335,10 +6597,74 @@ describe("consumption-by-required", () => {
 			description: "",
 			type: "application",
 		});
-		for (const name of ["One", "Two"])
-			app.provides(name, { description: "", type: "operation" });
-		app.consumes(approve, {});
+		const own = Array.from({ length: operations }, (_, i) =>
+			app.provides(`Step ${i + 1}`, { description: "", type: "operation" }),
+		);
+		const consumption = app.consumes(approve, {
+			by: by ? [own[0]] : undefined,
+		});
+		return { ws, consumption };
+	}
+
+	it("asks a two-operation front inside one context which of them calls", () => {
+		const { ws, consumption } = callsInside(2);
+		expect(required(ws)).toEqual([
+			[
+				"warning",
+				'"Sales App" consumes "Approve" from "Order" without saying which of its own operations makes the call; it provides "Step 1", "Step 2"',
+				consumption.ref,
+			],
+		]);
+	});
+
+	it("goes quiet once the front inside one context names its caller", () => {
+		const { ws } = callsInside(2, true);
 		expect(required(ws)).toEqual([]);
+	});
+
+	it("says nothing about a single-operation front inside one context", () => {
+		const { ws } = callsInside(1);
+		expect(required(ws)).toEqual([]);
+	});
+
+	/**
+	 * A consumer whose own context is somebody else's system: `external` for a
+	 * payment provider, `bigBallOfMud` for a legacy estate nobody can read.
+	 */
+	function foreignConsumer(mark: "external" | "bigBallOfMud") {
+		const ws = emptyWorkspace();
+		const up = ws.addBoundedContext("Ledger", { description: "" });
+		const down = ws.addBoundedContext("Scheme", {
+			description: "",
+			[mark]: true,
+		});
+		up.upstreamOf(down, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["conformist"],
+		});
+		const post = up
+			.addService("Ledger API", { description: "", type: "application" })
+			.provides("Post Entry", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			});
+		const app = down.addService("Scheme API", {
+			description: "",
+			type: "application",
+		});
+		for (const name of ["Notify", "Settle"])
+			app.provides(name, { description: "", type: "operation" });
+		app.consumes(post, { pattern: "conformist" });
+		return ws;
+	}
+
+	it("does not ask an external consumer which of its operations calls out", () => {
+		expect(required(foreignConsumer("external"))).toEqual([]);
+	});
+
+	it("does not ask a big ball of mud either", () => {
+		expect(required(foreignConsumer("bigBallOfMud"))).toEqual([]);
 	});
 });
 
