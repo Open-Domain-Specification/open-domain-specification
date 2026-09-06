@@ -626,3 +626,24 @@ process alone to hear. `Checkout` already waits on `AuthorisePayment`'s own answ
 (`.on(paymentAuthorised, authorisePayment.rejected(...))`), so there was no returns-less
 call's success left to name with a completion. No invariant in the model names an operation
 that returns anything, so none is a postcondition candidate. Nothing changed.
+
+## Revision (card 105): five Moneys, and why none of them is the Shared Kernel's
+
+The architect's seventh review asked why Offers, Cart, Order, Payments and Ads each declare
+their own `Money` through the `money()` helper rather than sharing one, the way NorthBank's
+six contexts share a single `@northbank/money` implementation over one Shared Kernel context.
+The two cases are not the same shape. NorthBank's sharers compile against one literal
+library; nothing in these interviews describes RiverMart owning an equivalent, and each of
+the five prices a genuinely different thing in its own aggregate's own language: an `Offer`'s
+`price` is a seller's own listing, set independently per seller and changed on their own
+schedule; a `CartLine`'s `unitPrice` is a snapshot taken at add-to-cart, which must survive a
+seller repricing the live offer without the cart changing under the shopper; an `Order`'s
+`total` and `refund` are what was actually charged and later reversed, values a settled
+record must never drift from once written; a `PaymentIntent`'s `amount` is what the
+processor is asked to move, in the processor's own units and subject to its own capture and
+refund rules; and a `Bid`'s `maxCpc` is an auction ceiling, priced in fractions of a cent that
+a listing or a checkout would never carry. A shared kernel is for one model two or more teams
+hold in lockstep (decision 16's amendment); five contexts independently pricing five
+different things is what decision 16's default, a value object belonging to its own context,
+describes, and forcing them onto one library would couple a seller's listing price to an
+auction's bid ceiling for no reason the interviews give. Nothing changed.

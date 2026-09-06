@@ -502,7 +502,7 @@
       "processes": {
         "customer_onboarding": {
           "name": "Customer onboarding",
-          "description": "From a prospective customer's details to a verified one. Everyone is screened before anything else, and the process then waits for the engine's answer: a match holds the onboarding until Financial Crime clears it by hand, which is why there is no timeout. Correlation is by customerId, which the screening answer carries back; the instance ends when KYC passes and accounts may be opened",
+          "description": "From a prospective customer's details to a verified one. Everyone is screened before anything else, and the process then waits on the engine's verdict: a match holds the onboarding until Financial Crime clears it by hand, which is why there is no timeout; a clean screening lets KYC verify the customer. Correlation is by customerId, which the screening event carries back; the instance ends when KYC passes and accounts may be opened",
           "starts": [
             {
               "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/start_onboarding"
@@ -519,6 +519,9 @@
             },
             {
               "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/provides/hold_onboarding"
+            },
+            {
+              "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/provides/verify_customer"
             }
           ],
           "ends": [
@@ -2089,6 +2092,18 @@
             },
             {
               "consumable": {
+                "$ref": "#/boundedcontexts/payment_scheme/services/scheme_rail/provides/scheme_settlement_confirmed"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/payment_scheme/services/scheme_rail/provides/scheme_rejected"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
                 "$ref": "#/boundedcontexts/fraud/services/fraud_app/provides/score_transaction"
               },
               "pattern": "anti-corruption-layer",
@@ -2105,7 +2120,7 @@
       "processes": {
         "instruction_lifecycle": {
           "name": "Instruction lifecycle",
-          "description": "From an instruction being initiated to the money having moved. It scores every instruction with Fraud and waits for the verdict to come back: above the threshold it rejects the instruction and never submits it, below it submits to the scheme through the gateway, in the scheme's own format, and the process then waits again for the answer that call comes back with. A settlement settles the instruction and posts it to the ledger; a refusal rejects it. Correlation is by instructionId, which the scorer's verdict and the gateway's answer both carry; an instruction the scheme never answers stays open for the operations team, because the scheme's own timings are not the bank's to model",
+          "description": "From an instruction being initiated to the money having moved. It scores every instruction with Fraud and waits for the verdict to come back: above the threshold it rejects the instruction and never submits it, below it submits to the scheme through the gateway, in the scheme's own format, and the process then waits again, this time for the scheme itself to confirm or reject the submission, on its own timings. A settlement settles the instruction and posts it to the ledger; a refusal rejects it. Correlation is by instructionId, which the scorer's verdict and the scheme's response both carry; an instruction the scheme never answers stays open for the operations team, because the scheme's own timings are not the bank's to model",
           "starts": [
             {
               "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/provides/payment_initiated"
@@ -2113,10 +2128,10 @@
           ],
           "on": [
             {
-              "$ref": "#/boundedcontexts/scheme_gateway/services/scheme_gateway_app/provides/submit_to_scheme/returns"
+              "$ref": "#/boundedcontexts/payment_scheme/services/scheme_rail/provides/scheme_settlement_confirmed"
             },
             {
-              "$ref": "#/boundedcontexts/scheme_gateway/services/scheme_gateway_app/provides/submit_to_scheme/rejects/scheme_refusal"
+              "$ref": "#/boundedcontexts/payment_scheme/services/scheme_rail/provides/scheme_rejected"
             },
             {
               "$ref": "#/boundedcontexts/fraud/services/fraud_app/provides/score_transaction/returns"
@@ -2342,14 +2357,7 @@
         "scheme_message": {
           "name": "SchemeMessage",
           "description": "One message to or from a scheme",
-          "provides": {
-            "record_scheme_response": {
-              "name": "RecordSchemeResponse",
-              "description": "Match the scheme's status report to the message it answers, so the caller waiting on that submission is told",
-              "type": "operation",
-              "internal": true
-            }
-          },
+          "provides": {},
           "consumes": [],
           "entities": {
             "scheme_message": {
@@ -2402,67 +2410,18 @@
           "provides": {
             "submit_to_scheme": {
               "name": "SubmitToScheme",
-              "description": "Send a submission in the scheme's format and await the response; the caller is answered with the settlement or with the scheme's refusal",
+              "description": "Send a submission in the scheme's format; the scheme confirms or rejects later, on its own timings, as SchemeSettlementConfirmed or SchemeRejected",
               "pattern": "open-host-service",
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/scheme_gateway/schemas/scheme_submission"
-              },
-              "returns": {
-                "$ref": "#/boundedcontexts/scheme_gateway/schemas/scheme_settlement"
-              },
-              "rejects": [
-                {
-                  "$ref": "#/boundedcontexts/scheme_gateway/schemas/scheme_refusal"
-                }
-              ]
+              }
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/payment_scheme/services/scheme_rail/provides/scheme_settlement_confirmed"
-              },
-              "pattern": "conformist",
-              "by": [
-                {
-                  "$ref": "#/boundedcontexts/scheme_gateway/policies/match_the_scheme's_response"
-                }
-              ]
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/payment_scheme/services/scheme_rail/provides/scheme_rejected"
-              },
-              "pattern": "conformist",
-              "by": [
-                {
-                  "$ref": "#/boundedcontexts/scheme_gateway/policies/match_the_scheme's_response"
-                }
-              ]
-            }
-          ]
+          "consumes": []
         }
       },
-      "policies": {
-        "match_the_scheme's_response": {
-          "name": "Match the scheme's response",
-          "description": "Either answer the scheme gives -- a settlement or a refusal -- is recorded against the message it quotes, which is what the submission was waiting for",
-          "on": [
-            {
-              "$ref": "#/boundedcontexts/payment_scheme/services/scheme_rail/provides/scheme_settlement_confirmed"
-            },
-            {
-              "$ref": "#/boundedcontexts/payment_scheme/services/scheme_rail/provides/scheme_rejected"
-            }
-          ],
-          "then": [
-            {
-              "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/record_scheme_response"
-            }
-          ]
-        }
-      },
+      "policies": {},
       "processes": {},
       "glossary": {},
       "valueobjects": {
@@ -2498,46 +2457,6 @@
               "valueobject": {
                 "$ref": "#/boundedcontexts/scheme_gateway/valueobjects/scheme_format"
               }
-            }
-          }
-        },
-        "scheme_settlement": {
-          "name": "SchemeSettlement",
-          "description": "The scheme settled: which instruction, and the scheme's own reference",
-          "attributes": {
-            "instruction_id": {
-              "name": "instructionId",
-              "type": "string",
-              "identity": true,
-              "identifies": {
-                "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction"
-              }
-            },
-            "scheme_ref": {
-              "name": "schemeRef",
-              "type": "string"
-            }
-          }
-        },
-        "scheme_refusal": {
-          "name": "SchemeRefusal",
-          "description": "The scheme refused: which instruction, and the scheme's status reason passed through untranslated, because you do not negotiate with a scheme",
-          "attributes": {
-            "instruction_id": {
-              "name": "instructionId",
-              "type": "string",
-              "identity": true,
-              "identifies": {
-                "$ref": "#/boundedcontexts/payments_hub/aggregates/payment_instruction/entities/payment_instruction"
-              }
-            },
-            "scheme_ref": {
-              "name": "schemeRef",
-              "type": "string"
-            },
-            "reason": {
-              "name": "reason",
-              "type": "string"
             }
           }
         }
@@ -4459,18 +4378,6 @@
             }
           },
           "invariants": {
-            "lines_reconcile_to_ledger": {
-              "name": "LinesReconcileToLedger",
-              "description": "A return is filed only when every line has been reconciled to the ledger postings for its period; FileReturn refuses an unreconciled line",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/entities/report_line"
-                },
-                {
-                  "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/entities/regulatory_return"
-                }
-              ]
-            },
             "period_closed_before_filing": {
               "name": "PeriodClosedBeforeFiling",
               "description": "A return is filed only for a closed period",
@@ -4486,6 +4393,16 @@
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/entities/regulatory_return"
+                }
+              ]
+            },
+            "lines_reconcile_to_ledger": {
+              "name": "LinesReconcileToLedger",
+              "description": "A return is filed only when every line has been reconciled to the ledger postings for its period; FileReturn refuses an unreconciled line",
+              "precondition": true,
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/regulatory_reporting/aggregates/regulatory_return/provides/file_return"
                 }
               ]
             }
@@ -5160,23 +5077,12 @@
           "name": "CardCo Authorisation Feed",
           "description": "The processor's authorisation side, and all the bank can see of it: it takes the merchant's request and calls the issuer",
           "type": "application",
-          "provides": {
-            "request_authorisation": {
-              "name": "RequestAuthorisation",
-              "description": "A merchant asked CardCo to take an amount on one of our cards, so CardCo asks the issuer to approve it. CardCo's own step, offered to its merchants; the bank sees it only as the caller of AuthoriseCard",
-              "type": "operation"
-            }
-          },
+          "provides": {},
           "consumes": [
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/cards/services/cards_app/provides/authorise_card"
-              },
-              "by": [
-                {
-                  "$ref": "#/boundedcontexts/card_co/services/card_co_authorisation_feed/provides/request_authorisation"
-                }
-              ]
+              }
             }
           ]
         }
@@ -5332,7 +5238,7 @@
         "$ref": "#/boundedcontexts/payment_scheme"
       },
       "downstream": {
-        "$ref": "#/boundedcontexts/scheme_gateway"
+        "$ref": "#/boundedcontexts/payments_hub"
       },
       "upstreamRoles": [
         "published-language"
@@ -5340,7 +5246,7 @@
       "downstreamRoles": [
         "conformist"
       ],
-      "description": "ISO 20022 as the scheme publishes it; the gateway takes the format as it is"
+      "description": "ISO 20022 as the scheme publishes it; the hub takes the format as it is, the same terms it takes the gateway's"
     },
     {
       "type": "upstream-downstream",

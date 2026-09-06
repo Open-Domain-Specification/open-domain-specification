@@ -248,8 +248,7 @@ The connected timeline, condensed:
 | TransactionFlagged | ScoreTransaction | Open case; block card |
 | FraudCaseOpened | OpenCase | Freeze account |
 | PaymentSubmitted (internal) | SubmitPayment | Submit to scheme |
-| SchemeSettlementConfirmed / Rejected | the scheme (external) | Scheme Gateway answers the hub |
-| SchemeSettlement / SchemeRefusal (answers, not events) | SubmitToScheme returns / rejects with them | Confirm settlement or reject |
+| SchemeSettlementConfirmed / Rejected | the scheme (external) | Instruction lifecycle waits on them; confirms settlement or rejects |
 | PaymentSettled / Rejected | ConfirmSettlement / RejectPayment | Post to ledger |
 | EntryPosted | PostEntry / ReverseEntry | Accounts updates balance; Reporting accumulates |
 | NightlyBatchCompleted | Sovereign batch | Ledger imports; Reporting accumulates |
@@ -761,5 +760,51 @@ guarantee about what that answer carries — every approval AuthoriseCard makes 
 balance of the moment — and it now says so and names the returned amount rather than the
 `Authorisation` entity generally (decision 19, third amendment). No other invariant in the
 model names an operation that returns anything; this was the one candidate.
+
+The deliberate diagnostics of section 7 are untouched: the same four, for the same reasons.
+
+## Revision (card 105): the scheme answers when it answers, not when the call returns
+
+Four things the architect's seventh review found stated one way and modelled another.
+
+`SubmitToScheme` declared `returns: SchemeSettlement` and `rejects: [SchemeRefusal]` --
+"send it and await the response" -- while the Scheme Connectivity lead's own words are "we
+turn a submission into a scheme message and send it. The scheme confirms or rejects", and
+the "Instruction lifecycle" description agreed: the scheme answers "on its own timings".
+An operation that waits for an answer and a scheme that answers whenever it gets round to it
+are not the same shape, and the reaction walk drew two chains that never met: one from the
+call to a synchronous answer, one from the scheme's published facts to a policy nothing else
+used. `SubmitToScheme` is now the returns-less send it always was (decision 13, note of
+2026-09-10); `SchemeSettlement` and `SchemeRefusal`, the bank's own translated shapes for an
+answer the operation never had, come out with it. The gateway's `SchemeGatewayApp` no longer
+hears the scheme's response at all -- `RecordSchemeResponse` and the "Match the scheme's
+response" policy existed only to fake the return, matching a message to the submission that
+was waiting on it, and neither survives an operation that is not waiting. Payments Hub hears
+`SchemeSettlementConfirmed` and `SchemeRejected` directly, the same events the scheme has
+published since card 95, and the "Instruction lifecycle" process waits on those instead of on
+an answer that was never the scheme's to give through the gateway. One relationship moves
+with it: `Payment Scheme` is now declared upstream of Payments Hub, published language to
+conformist, in place of the gateway relationship that backed the consumption which is gone.
+
+CardCo's `RequestAuthorisation` comes out. It named a step inside CardCo's own machine -- a
+merchant asking CardCo, CardCo asking the issuer -- so that CardCo's feed had an operation to
+put in the consumption's `by`, and decision 28 says the inside of somebody else's machine is
+not ours to state. The feed provides nothing at all now, and its consumption of `AuthoriseCard`
+carries no `by`: a consumer with no operations of its own has nothing to name.
+
+Onboarding's process description said it "waits for the engine's answer" while `ScreenParty`
+has been returns-less since it was drawn, raising `PartyMatched` only on a match; the
+description is corrected to say the process waits on the engine's verdict, the event it
+already listens on, rather than an answer the call never carried. `VerifyCustomer` raises
+`CustomerVerified`, the event the process ends on, but nothing issued it -- an operation drawn
+and never called. It is now named in the process's own `issues`, the step KYC takes once
+documents and screening are clear.
+
+`LinesReconcileToLedger` was recorded as a precondition of filing in its own comment --
+"the ledger is another context, so this is a precondition of filing" -- and modelled as a
+persistent rule across two things a return doesn't hold a lasting relationship to (the ledger
+is Ledger's own postings, read at filing time, not a fact Regulatory Reporting keeps). It now
+carries `precondition: true` and names `FileReturn`, the operation it guards, which is what
+decision 19's amendment lets a filing check point at.
 
 The deliberate diagnostics of section 7 are untouched: the same four, for the same reasons.
