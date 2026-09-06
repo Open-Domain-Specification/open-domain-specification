@@ -65,3 +65,7 @@ The third amendment let an external context state a precondition or postconditio
 ## Note (2026-09-10, second)
 
 The bullet "Human actors are not modelled ... the interview asks who calls it" claimed a practice the playbook did not have; the section moves to decision 15 and card 120 adds the question. And `external-is-boundary`'s message still sent an author away from the route the third amendment opened: a kind an external system publishes is a schema of that context, which `identifies` may name; the message and the definition of a schema say so (card 120).
+
+## Note (2026-09-10, third)
+
+The fourth amendment said an external invariant may constrain "that operation's request and answer schemas" without splitting by flag; card 116 read it through `guardedSchemas` like every other invariant, a precondition reaching the request and what it composes, a postcondition the request and the answer, because decision 19 says a precondition is checked before the answer exists. That reading stands.
