@@ -114,3 +114,7 @@ An operation that raises `StockReserved, StockShort` raises one of them; one tha
 ### Corrections (2026-09-09)
 
 Earlier entries in this record said a timeout is an event nobody raises and that deadlines are not fields. Decision 23's fourth amendment gave a process its own deadlines, each an event it raises to itself after a stated interval, counted from a named trigger (card 98). Those sentences are superseded; the rest of the policies entry stands.
+
+## Amendment (2026-09-10)
+
+Card 103 named the agreements and left their exchanges pooled: a consumption could not say which named relationship it belongs to, so `relationship-roles-backed` read every crossing between the pair against every agreement and criticised each for the other's role, and the declared direction was whichever relationship came first. A consumption may name its `relationship`; between a pair with one agreement it need not, between a pair with two it must, and `consumption-agreement` says so once (card 107, Codex's eighth review).
