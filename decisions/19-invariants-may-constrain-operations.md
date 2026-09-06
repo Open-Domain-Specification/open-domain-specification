@@ -32,3 +32,7 @@ A precondition checks the request before the operation runs, and often what it c
 ## Amendment (2026-09-09, second)
 
 A guarantee about an answer is a postcondition: every returned itinerary meets the requested deadline. It is neither a persistent invariant nor a precondition, since the answer does not exist before the operation runs. `postcondition: true` names it and lets it constrain the attributes of what the guarded operation returns or rejects with; and both preconditions and postconditions follow schema composition, reaching a field of any schema the request or answer composes (card 99).
+
+## Amendment (2026-09-09, third)
+
+A postcondition relates the answer to the request: every returned itinerary arrives by the requested time. Its admissible targets therefore include the request schema and what it composes, as a precondition's do (card 103); the second amendment's own example needed this and its implementation left it out.

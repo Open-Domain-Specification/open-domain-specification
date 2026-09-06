@@ -46,3 +46,7 @@ The third note inferred a precondition from an invariant naming an operation, an
 ## Amendment (2026-09-09, second)
 
 The first amendment said a context invariant is checked before acting and can race; the card 94 amendment then let one be written as kept true after its operation, and NorthBank's daily limit claimed exactly that. A context invariant is always a check: `precondition` is refused on it, its page says "checked by", and a rule that must hold after every change is an aggregate's or nobody's (card 100).
+
+## Amendment (2026-09-09, third)
+
+The second amendment refused `precondition` and `postcondition` on a context invariant to stop one claiming to hold at rest, and in doing so left a context with no aggregate, a quotation service that stores nothing, without a home for the contract of its own operation. A context invariant is a check, and a check happens before or after the operation it names: both flags are allowed, the page says "checked before" or "checked after", and what stays refused is a context invariant that names no guard at all (card 103).

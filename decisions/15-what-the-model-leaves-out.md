@@ -40,7 +40,7 @@ Valid-from and valid-to, effective dates, and bi-temporal rules ("the rate that 
 
 ### Two integrations between one pair in one direction are one relationship
 
-`relationship-duplicate` refuses a second directed relationship in the same direction between one pair. A negotiated API and a take-it-as-published event stream between the same two contexts are therefore one relationship carrying both roles, and the map shows one line. Evans draws a map per relationship; the model draws it per pair and direction because a second line between the same two boxes says nothing the roles do not, and the comments on the one relationship say which consumable follows which pattern. Reopened if a reference model needs two dispositions on one pair in one direction.
+`relationship-duplicate` refuses a second directed relationship in the same direction between one pair. A negotiated API and a take-it-as-published event stream between the same two contexts are therefore one relationship carrying both roles, and the map shows one line. Evans draws a map per relationship; the model draws it per pair and direction because a second line between the same two boxes says nothing the roles do not, and the comments on the one relationship say which consumable follows which pattern. Reopened on 2026-09-09 by Codex's seventh review: a negotiated fulfilment API and a tolerated legacy feed from one warehouse are two agreements with two dispositions in one direction. A directed relationship may carry a `name`, two named relationships may join one pair in one direction, and the ref carries the name; an unnamed duplicate is still refused (card 103).
 
 ### Anonymous structures in a type string are the author's shorthand
 
