@@ -10,7 +10,7 @@ The amendment of 2026-09-02 is the current design: the renderer is a client-only
 
 The consequence that cross-file refs resolve within one workspace file still describes the limit, since decision 08's set loader is unimplemented (decision 08, amendment of 2026-09-07). Search exists only in the extension per the consequences; no later note in this record moves it.
 
-Four ways of reading a model are supported and all four are permanent: the VS Code extension's webview, the static site export, the `apps/ods-ui` browsing site, and the markdown `@open-domain-specification/doc` generates (correction of 2026-09-10). `apps/ods-ui` is already the viewer on the shared renderer, depending on `@open-domain-specification/pages` and nothing else; the React and Mantine application the decision bullet retired is gone.
+Four ways of reading a model are supported and all four are permanent: the VS Code extension's webview, the static site export, the viewer site at open-ds.io, and the markdown `@open-domain-specification/doc` generates (correction of 2026-09-10). What this record retired is a package, not a site: `apps/ods-ui` is now a thin deployable that copies the pages bundle into `dist/` for the host to publish, and the React and Mantine implementation is gone.
 
 ## Context
 
@@ -89,6 +89,6 @@ replace the string assertions.
 
 ## Correction (2026-09-10)
 
-The title and the decision bullet read as though the browsing site goes away. They never meant that, and the owner has said so: the project supports four ways of reading a model and all four are permanent. The VS Code extension renders pages in its webview. The static site export writes a folder anyone can host. `apps/ods-ui` is the browsing site, where a reader imports a workspace by URL, form or file and browses it. And `@open-domain-specification/doc` generates markdown, which is how a model reaches a repository, a wiki or a pull request.
+The title and the decision bullet read as though the browsing site goes away. They never meant that, and the owner has said so: a package was retired, not a site. The project supports four ways of reading a model and all four are permanent. The VS Code extension renders pages in its webview. The static site export writes a folder anyone can host. The viewer at [open-ds.io](https://open-ds.io) is where a reader imports a workspace by URL, form or upload and browses it. And `@open-domain-specification/doc` generates markdown, which is how a model reaches a repository, a wiki or a pull request.
 
-What "ods-ui is deleted" meant was the React and Mantine application: it was replaced by the viewer built on the shared Svelte renderer, and that replacement has happened. `apps/ods-ui` depends on `@open-domain-specification/pages` and nothing else; it is the viewer. The pattern stands and there is nothing outstanding.
+"`apps/ods-ui` is deleted" meant the React and Mantine implementation, and that retirement has happened: the package at `apps/ods-ui` is now a thin deployable whose build copies the pages package's Vite bundle into `dist/`, which the host publishes, so the site serves the same renderer as the extension and the static export. The site stays deployed; only its implementation changed. Nothing here is outstanding, and a change to the renderer or the core model must keep all four working.
