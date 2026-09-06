@@ -92,7 +92,10 @@ another context's entity implies an edge in the same way, marked `«id»` and
 carrying no roles, since nothing is exchanged; so does an identity naming an
 external context, which is how an id belonging to a system nobody here models
 inside still shows as a dependency. Declaring a relationship
-replaces the implied edge, and `relationship-declared` warns until one is.
+replaces the implied edge. `relationship-declared` warns only where a
+consumption or a borrowed value object has no relationship behind it; an
+identity crossing draws its implied `«id»` edge either way, because nothing
+is exchanged for a relationship to describe.
 
 ```ts file=../../tests/strategic.example.test.ts
 ```
