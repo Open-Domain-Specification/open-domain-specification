@@ -14,6 +14,8 @@ The section "no rule reads `by` as causality" no longer holds; see the amendment
 
 The consequences' petstore examples changed (cards 77 and 78).
 
+Since then: an answer routes back along the local `by` chain to the nearest reactor that issued an operation on it, one hop across a boundary (card 126); the single-operation inference routes only to a reactor that issues the sole operation (card 128); a consumer that provides no operation and consumes a foreign operation is reported (card 130); a process hears the answers of the calls its start made (decision 23, card 135).
+
 ## Context
 
 A consumption is declared on an aggregate or a service, so the model reads it

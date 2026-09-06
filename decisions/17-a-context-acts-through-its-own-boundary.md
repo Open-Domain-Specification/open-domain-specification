@@ -14,6 +14,8 @@ Named costs, all still accepted: every outbound call is an internal operation on
 
 Decision 08's crossing table reads `on` yes, `then` no, as this record corrected it. A precondition on an aggregate's operation may read what its front fetched (decision 19, card 116), which is how the clinic's record-exists check is drawn (card 122).
 
+Since then: condition (b) is reworded so a blind model can meet or fail it, and the answer routing that was condition (a) shipped on its own (decision 21, card 126); `raises-in-aggregate` refuses an aggregate's or a domain service's operation raising another aggregate's event, the application service the one exemption (cards 130, 132); the boundary drawn twice is measured at more than half of every stress model's operations against two of sixteen in the clinic.
+
 ## Context
 
 Two shortcuts in the model let a context reach into another. A policy's `then` may name an operation provided by another context (petstore's Sales policies issue Catalog's `reservePet` and `markPetSold`, `workspace.ts:604-615`), while decision 08 says `PolicySchema.then` may not cross a file; the model is valid in one file and a load error in two. And an aggregate may provide a consumable carrying an upstream pattern (`Pet` provides `ReservePet` as an open host service, `:280-286`) alongside its application service doing the same, so nothing says which of the two is the context's public boundary.

@@ -14,6 +14,8 @@ Absent `returns` still means nothing worth naming, and an operation without it s
 
 An answer is a trigger a policy or process names by origin, `<op>/returns` (decision 23, card 94), and a postcondition may constrain what an operation returns (decision 19). Whether `returns` ever becomes a list is decision 18's open condition.
 
+Since then (card 130): a rejection entry may carry `many`, so a refusal answered as a root array is stated as one.
+
 ## Context
 
 A consumable of type `operation` carries one payload, `schema`, and `raises` may only name events. A query such as petstore's `GetPetSummary` therefore models its input and has nowhere to say what comes back; its description promises an id, name and status while its schema is the id parameter. Queries are half of any system, and the reference model contradicts itself. Raised in an external review of the metamodel; confirmed against `packages/core/src/schema.ts` and `models/petstore/src/workspace.ts`.

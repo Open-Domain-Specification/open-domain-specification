@@ -8,6 +8,8 @@ date: 2026-09-02
 
 Stable. The skill package, its generated schema and validation references, the `RULE_CATALOG` in core, installation by the extension command, and the rule that the model's word is `operation` and the skill never emits `type: "command"` all stand unamended (decision 15, "Commands and operations are one thing", restates the last). The references regenerate whenever a rule or field changes, which later decisions rely on: each of 13, 14, 16, 18, 21 to 25 and 27 names a regenerated reference or an interview question added to the skill. The interview's playbook gained a rule to sweep for `identifies` (decision 14's amendment of 2026-09-09) and the question "who calls it" (decision 15's second amendment of 2026-09-10, card 120). Rule ids change under the catalogue, for example `context-invariant-guarded` merged into `context-invariant-is-checked` (decision 27, card 103).
 
+Since then (cards 129, 131, 133, 135): the hand-written references and the skill's generator drifted from the validator after amendments and were corrected; a drift test in `packages/skill` bans the old sentences and pins the current wording positively for the facts that drifted twice, and a card that changes a rule's reach lists the surfaces that state it.
+
 ## Context
 
 The only help an LLM had for authoring ODS workspaces was a docs page with a copy-paste

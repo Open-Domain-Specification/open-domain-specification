@@ -14,6 +14,8 @@ Added to `ConsumableSchema` since: `returns` (decision 13) and `rejects` (decisi
 
 The promised `odsVersion` bump became the `2.0.0` constant of decision 29 (card 114).
 
+Since then: the wire and the model are typed apart, an entity never carries a schema and a schema never names an entity, which is the published-language discipline and a named cost (note of 2026-09-10).
+
 ## Context
 
 Decision 04 added domain events and commands as aggregate members beside the

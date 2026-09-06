@@ -18,6 +18,8 @@ A `bigBallOfMud` context is exempt from `event-unraised`, `aggregate-root` and `
 
 NorthBank's kernel stays a real context; its invented subdomain came out under decision 16's exemption (card 95).
 
+Since then: an external context's invariant may name one of its own events, flagged `postcondition`, and constrain that event's payload (fifth amendment, card 128); `boundaryOnly` is the third kind of context, ours and coherent and modelled at its boundary only, with its own rule and stereotype (sixth amendment, card 132); an external or boundary-only consumer is not asked for a downstream role (card 135); the Clock route's ceremony is named and the scheduled operation is the usual route; `subscription-backed` skips a mud consumer (card 124).
+
 ## Context
 
 Every provider in the model is an aggregate or service inside a bounded context that serves a subdomain and has a team. The systems a business integrates with, a card scheme, a payment provider, a licensor, a regulator, a clock, are none of those things, and the reference models leave them out or dress them up: NorthBank's shared library became a context with an invented subdomain and team to satisfy `context-serves-subdomain`. An event that no operation raises, ingested telemetry or a timeout, validates clean and reads as dead model; decision 15 claimed a rule asked about it and none did. DDD's context map has always drawn the outside world as contexts one does not own.

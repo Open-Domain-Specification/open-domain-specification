@@ -12,6 +12,8 @@ The kernel-as-context reading is a convenience for many sharers, not a rule: two
 
 No aggregate-private value objects (note of 2026-09-07); an entity has one home, now listed as a preference in decision 15. An external context's value objects may carry a standard's invariants (decision 28, card 91).
 
+Since then (card 130): a downstream of a `customer-supplier` relationship borrows the supplier's value objects and schemas as a conformist does; partners share no shape through the partnership and declare a shared kernel beside it, and the fix text says so.
+
 ## Context
 
 `ValueObjectSchema` lives under an aggregate (`schema.ts:34`), so a value object used by several aggregates of one context, NorthBank's `Money` or petstore's `PetStatus`, is declared once per aggregate, and `models/_shared/src/index.ts` exists only to repeat the declaration. In DDD a value object is part of the context's ubiquitous language, not an aggregate's. Separately, `shared-kernel` is a relationship type the map draws but no rule reads: two contexts declaring it still cannot reference one another's value objects or schemas (`schema-context`, decision 08's cross-file table). The relationship claims a sharing the model forbids.

@@ -14,6 +14,8 @@ Of the rule gaps the decision lists, two are superseded. `context-invariant-is-c
 
 `odsVersion` is a constant core writes, `2.0.0`, with an `ods-version` diagnostic on a differing or missing major, bumped from here on by the decision that breaks it (note of 2026-09-10, card 114); the bumps decisions 01, 02, 03, 08 and 09 promised were never made.
 
+Since then (card 132): `unknown-field` reports unknown keys inside nested objects too, with the path; the `mud-needs-acl` item of the decision list is superseded by decision 28 (correction).
+
 ## Context
 
 A workspace written by hand, in the extension or in JSON, will contain typos. Until card 100 the loader threw on the first unresolvable reference, so an author lost every other diagnostic to one bad ref, while the same mistake made through the DSL produced a rule violation. Decision 26 had stated the principle for one field. The sixth architect review reproduced eleven sites where it did not hold.

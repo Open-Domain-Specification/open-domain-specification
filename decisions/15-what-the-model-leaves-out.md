@@ -18,6 +18,8 @@ Stable sections: commands and operations are one thing; attribute types are free
 
 Added on 2026-09-10: people are not modelled (moved from decision 28, card 120); a value object has no operations; translation across a boundary is prose (ninth round); the exemptions were shaped by four exemplars, and card 117's fifth held them, though its brief named the shapes.
 
+Since then: four more named preferences, lifecycle states and transitions are prose, there is no extension field, a value object relates to no entity, and the problem space is two levels deep; the fifth model ran (card 117) and its worked-around shapes were the record's own shapes chosen wrongly, and the brief had named them.
+
 ## Context
 
 The model is written from an interview with the people who own a domain, in their own words, and read back by architects, developers and product people on one page per element. Every field is a question the interview must ask and a row a reader must scan. An external review of the metamodel (2026-09-05) listed several constructs it expected and did not find. Some were real gaps and became decisions 13 and 14. The rest are deliberate, and this record says so in one place so the next review finds the reasoning rather than the absence.

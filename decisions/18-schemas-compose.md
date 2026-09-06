@@ -10,6 +10,8 @@ Status is Accepted (2026-09-10, after thirteen review rounds; it had read Propos
 
 No inheritance and no unions still holds, now with reasons and a condition (amendment of 2026-09-10): kinds of a value are `specialises` (decision 22), a structured either-or on an answer is `returns` plus `rejects` plus `reasons` (decisions 13 and 25), and `returns` becomes a list the day a reference model's operation answers with two or more shapes none of which is a refusal and a process waits on that answer. Card 117's waitlisted-not-booked case was a second successful outcome with no caller waiting, so it is the `raises` list with no `returns`; the condition is unmet (note after card 117), and a rejection shape the operation also raises as an event draws a warning (card 123). Attribute-level unions stay on decision 15's condition. A flat discriminated object is a faithful wire shape (decision 13, card 119).
 
+Since then: a refusal enumerates its outcomes as `reasons` and a success has one edge, an asymmetry now named; the reopening condition is judged on one fact, a reactor waits on the answer and branches on which non-refusal shape came back.
+
 ## Context
 
 A `DataSchema` is a flat dictionary of attributes, and an attribute's only structural type is a value object (`AttributeSchema.valueobject`). A payload with a nested shape (an order with lines, an address inside a customer) cannot be modelled without either flattening it or pointing at a tactical value object, which couples a published language to the domain's internals. Decision 09 chose the value-object bridge deliberately and it stays; what is missing is a schema naming another schema.

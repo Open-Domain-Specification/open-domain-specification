@@ -16,6 +16,8 @@ A consumable carries one `pattern`. A published-language role is backed by a sch
 
 `role-coherence` asks each end for the role its position implies, and nothing where the declared upstream is the caller (card 99); a customer-supplier downstream is a conformist (note of 2026-09-10). A partnership clears a ring of calls between its pair (correction of 2026-09-10, card 104).
 
+Since then (cards 128 and 130): `role-coherence` asks no downstream role on a consumption whose pair has a `customer-supplier` relationship, and a customer borrows its supplier's shapes as a conformist does (decision 16); roles restated on every exchange and again on the relationship is a named cost.
+
 ## Context
 
 Relationship patterns were split between `ConsumablePattern` on the provider
