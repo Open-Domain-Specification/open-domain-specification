@@ -208,7 +208,6 @@ export class OdsProject implements vscode.Disposable {
 		description: string,
 	): Promise<WorkspaceFile> {
 		const workspace = new Workspace(name, {
-			odsVersion: "1.0.0",
 			description,
 			version: "0.1.0",
 		});

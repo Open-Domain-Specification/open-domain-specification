@@ -7,7 +7,6 @@ const rulesOf = (ws: Workspace) =>
 
 function emptyWorkspace() {
 	return new Workspace("V", {
-		odsVersion: "1.0.0",
 		description: "",
 		version: "0",
 	});
@@ -1038,9 +1037,7 @@ describe("consumable-kind on the completion of a returning operation", () => {
 			.filter((d) => d.rule === "consumable-kind")
 			.map((d) => d.message);
 		const schema = ws.toSchema();
-		const rebuilt = Workspace.fromSchema(
-			JSON.parse(JSON.stringify(schema)),
-		);
+		const rebuilt = Workspace.fromSchema(JSON.parse(JSON.stringify(schema)));
 		const viaJson = rebuilt
 			.validate()
 			.filter((d) => d.rule === "consumable-kind")
@@ -3451,7 +3448,6 @@ describe("comments-required", () => {
 	/** Two contexts, one commented relationship and one bare one. */
 	function twoRelationships(options?: Workspace["options"]) {
 		const ws = new Workspace("V", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0",
 			options,
@@ -5605,15 +5601,13 @@ describe("reaction-cycle", () => {
 		// different instance and no state holds it together (card 113).
 		it("reports the ring as spawning instances where the translated event starts the process", () => {
 			const { ws, translator } = gateway("starts");
-			expect(reactions(ws).map((d) => [d.severity, d.message, d.ref])).toEqual(
+			expect(reactions(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 				[
-					[
-						"warning",
-						'Reactions run in a cycle that spawns instances: "Publish Scheme Answer" -> "Publish Authorised" -> "Instruction Authorised" -> "Instruction" -> "Send Authorisation" -> "Authorise" -> "Authorised" -> "Publish Scheme Answer"; the event that closes the ring starts "Instruction" rather than continuing it, so every turn begins another instance and nothing in the model says what ends them; it runs through "Bank" and "Scheme", so no one context can see the whole ring',
-						translator.ref,
-					],
+					"warning",
+					'Reactions run in a cycle that spawns instances: "Publish Scheme Answer" -> "Publish Authorised" -> "Instruction Authorised" -> "Instruction" -> "Send Authorisation" -> "Authorise" -> "Authorised" -> "Publish Scheme Answer"; the event that closes the ring starts "Instruction" rather than continuing it, so every turn begins another instance and nothing in the model says what ends them; it runs through "Bank" and "Scheme", so no one context can see the whole ring',
+					translator.ref,
 				],
-			);
+			]);
 		});
 
 		// An ending fact completes an instance rather than waking it, so the

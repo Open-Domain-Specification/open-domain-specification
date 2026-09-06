@@ -7,7 +7,6 @@ import {
 import { describe, expect, it } from "vitest";
 
 const workspace = new Workspace("Example Workspace", {
-	odsVersion: "0.0.0",
 	homepage: "https://example.com",
 	logoUrl: "https://example.com/logo.png",
 	primaryColor: "#123456",

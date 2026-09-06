@@ -142,7 +142,6 @@ export function strategicPositionFixture(count: number): {
 } {
 	const workspace = new Workspace("Density", {
 		id: "density",
-		odsVersion: "1.0.0",
 		description:
 			"Synthetic workspace for the strategic position density stories.",
 		version: "0.0.1",

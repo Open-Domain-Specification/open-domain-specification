@@ -11,8 +11,10 @@ the VS Code extension, the docs generator and anyone else load it with `Workspac
   `node_modules/@open-domain-specification/core/dist/workspace.schema.json`.
 - `.ods/<workspace-id>.json`: one workspace per file. The first key is
   `"$schema": "./schema.json"`; the loader ignores it, editors use it for completion.
-- Keep the file's `id` equal to its basename, and `odsVersion` equal to the other files' (use
-  `"1.0.0"` for a first file).
+- Keep the file's `id` equal to its basename, and `odsVersion` equal to the ODS version core
+  writes: `"2.0.0"`, which is what the `minimal.ods.json` example carries. A file whose major
+  differs from the core reading it, or that states none, gets an `ods-version` error saying so;
+  the number is bumped by the decision that breaks the metamodel, never by hand to silence it.
 
 The smallest valid file is `examples/minimal.ods.json`. Copy it when creating a workspace, then
 grow it.

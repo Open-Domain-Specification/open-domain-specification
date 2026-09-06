@@ -4,6 +4,14 @@
 
 `Workspace.validate()` returns diagnostics `{ severity, rule, message, ref }`. Errors describe a model that contradicts itself and should be fixed before finishing. Warnings describe a decision that is missing; discuss them with the user rather than silently fixing them. Explain a diagnostic to the user in the plain words below, not by quoting the rule id.
 
+## `ods-version` (error)
+
+**Requires:** The file states the ODS version it was written against, and its major is this core's.
+
+**Why it matters:** The metamodel's major is bumped by the decision that breaks it, so a file whose major differs was written against a model this reader does not read the same way: a field that has moved, a ref shape that has changed, a rule that now asks for something else. Until this rule existed nothing compared the version, and such a file failed as unresolved refs and rule errors that named the symptom rather than the cause. The file still loads and every other rule still runs, because most of it is usually still readable.
+
+**Usual fix:** Regenerate the file from the DSL with this version of core, which writes the current odsVersion. A file written by hand should be brought up to the current metamodel and given the current odsVersion; never just edit the number, since the point of it is to say which model the rest of the file follows.
+
 ## `unresolved-ref` (error)
 
 **Requires:** Every $ref a loaded file writes names something, and something the field it sits in can hold.
@@ -448,9 +456,9 @@
 
 **Requires:** Policies and processes react to events and issue operations; only operations raise events, and they raise only events.
 
-**Why it matters:** An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable. A reaction may also wait on an answer, and then two things have to hold: the operation declares that answer, and the reactor can hear it come back — because its context consumes the operation, or because the reactor issues the operation itself, which is the local call-and-branch. An operation that returns nothing answers with its bare completion, and that is an answer like any other; an operation that does answer with a shape has no separate completion, because naming one would be a second name for the same call coming back.
+**Why it matters:** An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable. A reaction may also wait on an answer — a shape the call comes back with, or one of the outcomes a refusal enumerates — and then two things have to hold: the operation declares that answer, and the reactor can hear it come back — because its context consumes the operation, or because the reactor issues the operation itself, which is the local call-and-branch. An operation that returns nothing answers with its bare completion, and that is an answer like any other; an operation that does answer with a shape has no separate completion, because naming one would be a second name for the same call coming back.
 
-**Usual fix:** Check the type of each consumable a policy or raises list points at and swap it for the right kind. For an answer, either declare it on the operation it is named from, or issue or consume that operation; where the operation returns a shape, wait for that shape rather than for the operation completing. A process starting on an operation is not a reaction at all and is left to process-in-context.
+**Usual fix:** Check the type of each consumable a policy or raises list points at and swap it for the right kind. For an answer, either declare it on the operation it is named from — a shape in returns or rejects, an outcome in that refusal's reasons — or issue or consume that operation; where the operation returns a shape, wait for that shape rather than for the operation completing. A process starting on an operation is not a reaction at all and is left to process-in-context.
 
 ## `raises-in-context` (error)
 

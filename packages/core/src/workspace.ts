@@ -9,6 +9,7 @@ import type * as ods from "./schema";
 import {
 	type DownstreamRole,
 	type EntityRelationType,
+	ODS_VERSION,
 	type RelationCardinality,
 	RelationType,
 	type UpstreamRole,
@@ -45,7 +46,6 @@ function asArray<R, T extends SchemaConvertible<R>>(map: Array<T>): Array<R> {
 }
 
 export type WorkspaceAttributes = {
-	odsVersion: `${number}.${number}.${number}`;
 	description: string;
 	homepage?: string;
 	logoUrl?: string;
@@ -145,7 +145,13 @@ export class Workspace
 {
 	debug: Debugger;
 	id: string;
-	odsVersion: `${number}.${number}.${number}`;
+	/**
+	 * The metamodel version this workspace is written against, which is always
+	 * this core's {@link ODS_VERSION}: the model in memory is the one this
+	 * library knows, whatever the file it came from said. What a file said is
+	 * kept in {@link odsVersionMismatch} when it disagreed.
+	 */
+	readonly odsVersion = ODS_VERSION;
 	name: string;
 	homepage?: string;
 	logoUrl?: string;
@@ -165,6 +171,15 @@ export class Workspace
 	 * See {@link UnresolvedReference}.
 	 */
 	readonly unresolved: UnresolvedReference[] = [];
+	/**
+	 * What a loaded file said its `odsVersion` was, when that was not a version
+	 * this core reads: a different major, or none at all, in which case `found`
+	 * is absent. Unset for a file that agreed and for a workspace built through
+	 * the DSL, which is written against this core by construction. The
+	 * `ods-version` rule turns it into an error (decision 29, noted
+	 * 2026-09-10).
+	 */
+	odsVersionMismatch?: { found?: string };
 
 	get path(): string {
 		return `${this.id}`;
@@ -173,7 +188,6 @@ export class Workspace
 	constructor(name: string, attributes: WorkspaceAttributes) {
 		this.debug = getDebug(`workspace:${name}`);
 		this.id = attributes.id || snakeCase(name);
-		this.odsVersion = attributes.odsVersion;
 		this.name = name;
 		this.homepage = attributes.homepage;
 		this.logoUrl = attributes.logoUrl;
@@ -487,11 +501,14 @@ export class Workspace
 	}
 
 	/**
-	 * Resolves an answer ref: `<operation ref>/returns`, or
-	 * `<operation ref>/rejects/<schema id>` for one of its refusals. The shape
-	 * is looked up among the ones that operation declares, because an answer is
-	 * the operation coming back and nothing else can say what it comes back as
-	 * (decision 23, third amendment).
+	 * Resolves an answer ref: `<operation ref>/returns`, `<operation
+	 * ref>/rejects/<schema id>` for one of its refusals, or that with a final
+	 * `/<reason>` for one enumerated outcome of it. The shape is looked up
+	 * among the ones that operation declares, and the reason among the ones
+	 * that refusal enumerates, because an answer is the operation coming back
+	 * and nothing else can say what it comes back as (decision 23, third
+	 * amendment; decision 25, amended). A reason nothing enumerates resolves
+	 * to nothing, which is what `unresolved-ref` reports.
 	 */
 	getAnswerByRef(ref: string): Answer | undefined {
 		// A completion is named by any operation, resolved the same way whether
@@ -508,16 +525,23 @@ export class Workspace
 			);
 			return operation?.completed();
 		}
-		const [operationRef, rejectionId] = ref.endsWith("/returns")
+		const [operationRef, refusal] = ref.endsWith("/returns")
 			? [ref.slice(0, -"/returns".length)]
 			: ref.split("/rejects/");
 		if (!operationRef) return undefined;
 		const operation = this.getConsumableByRef(operationRef);
 		if (!operation) return undefined;
-		if (rejectionId === undefined)
+		if (refusal === undefined)
 			return operation.returns ? operation.returned() : undefined;
-		const rejection = operation.rejects.find((it) => it.id === rejectionId);
-		return rejection && operation.rejected(rejection);
+		const [rejectionId, reason, ...rest] = refusal.split("/");
+		if (rest.length) return undefined;
+		const rejection = operation.rejections.find(
+			(it) => it.schema.id === rejectionId,
+		);
+		if (!rejection) return undefined;
+		if (reason !== undefined && !rejection.reasons.includes(reason))
+			return undefined;
+		return operation.rejected(rejection.schema, reason);
 	}
 
 	getAnswerByRefOrThrow(ref: string): Answer {
@@ -684,6 +708,13 @@ export class Workspace
 			case "rejects":
 				return this.getAnswerByRef(ref);
 			default:
+				// One enumerated outcome of a refusal hangs one segment further
+				// down: `.../rejects/<schema id>/<reason>`, whose collection
+				// segment is the shape's id, so `rejects` is looked for one
+				// place back before the successful answer and the completion,
+				// which end in a segment no collection is named.
+				if (segments[segments.length - 3] === "rejects")
+					return this.getAnswerByRef(ref);
 				return ["returns", "completed"].includes(segments[segments.length - 1])
 					? this.getAnswerByRef(ref)
 					: undefined;
@@ -1313,14 +1344,44 @@ export class Aggregate
 	}
 }
 
+/**
+ * One shape an operation refuses with, and the outcomes the contract
+ * enumerates for it.
+ *
+ * A refusal is keyed by its shape, and one shape with a `code` field gave a
+ * process one branch whatever the code said: an acquirer's 05 and its 51 are
+ * different answers to the caller and the model could not tell them apart. A
+ * schema per reason would have said the contract has several shapes, which is
+ * the misstatement decision 13 refused for lists. So the shape stays one and
+ * names the outcomes it can carry; each is an answer of its own, alongside the
+ * shape-level answer that hears them all (decision 25, amended).
+ *
+ * A reason is a named outcome the contract states, not a condition on data:
+ * "the issuer said insufficient funds", never "the amount was over the limit".
+ * That line is decision 15's and this does not move it.
+ */
+export type Rejection = {
+	/** The shape the operation answers with when it refuses this way. */
+	schema: DataSchema;
+	/** The outcomes the contract enumerates for that shape; may be empty. */
+	reasons: string[];
+};
+
 export type ConsumableAttributes = {
 	description: string;
 	pattern?: UpstreamRole;
 	type: ods.ConsumableType;
 	/** Stays inside the context; never offered to other contexts. */
 	internal?: boolean;
-	/** The payload the caller sends, one of the context's schemas. */
-	schema?: DataSchema;
+	/**
+	 * The payload the caller sends, one of the context's schemas.
+	 *
+	 * A shape on its own is one of it; `{ of: schema, many: true }` is a list
+	 * of it, which is what Swagger's `createUsersWithList` takes (decision 13,
+	 * amended). The two are written as one field so that a list can never be
+	 * declared without the shape it is a list of.
+	 */
+	schema?: DataSchema | { of: DataSchema; many?: boolean };
 	/**
 	 * For operations: the payload shape the caller gets back. Absent means the
 	 * operation returns nothing worth naming. Never valid on an event.
@@ -1335,8 +1396,12 @@ export type ConsumableAttributes = {
 	 * For operations: the shapes the operation answers with when it refuses.
 	 * Absent means it always succeeds, or refuses without a shape worth
 	 * naming. Never valid on an event.
+	 *
+	 * A shape on its own refuses without saying more; `{ schema, reasons }`
+	 * enumerates the outcomes the contract states for that shape, each of
+	 * which a reactor may wait on by itself (decision 25, amended).
 	 */
-	rejects?: DataSchema[];
+	rejects?: (DataSchema | { schema: DataSchema; reasons?: string[] })[];
 	id?: string;
 } & EvidenceOptions;
 
@@ -1350,12 +1415,19 @@ export class Consumable
 	type: ods.ConsumableType;
 	internal: boolean;
 	schema?: DataSchema;
+	/** Whether the request is a list of {@link schema} rather than one of it. */
+	schemaMany: boolean;
 	/** For operations: the payload shape the caller gets back. */
 	returns?: DataSchema;
 	/** Whether the answer is a list of {@link returns} rather than one of it. */
 	returnsMany: boolean;
-	/** For operations: the shapes the operation answers with when it refuses. */
-	rejects: DataSchema[] = [];
+	/**
+	 * For operations: the shapes the operation answers with when it refuses,
+	 * each with the outcomes the contract enumerates for it. {@link rejects}
+	 * is the shapes alone, which is what every reader that only asks what a
+	 * call can come back as needs.
+	 */
+	rejections: Rejection[] = [];
 	/** For operations: the event consumables this operation may raise. */
 	raisedEvents: Consumable[] = [];
 	provider: Aggregate | Service;
@@ -1385,13 +1457,22 @@ export class Consumable
 		this.pattern = attributes.pattern;
 		this.type = attributes.type;
 		this.internal = attributes.internal ?? false;
-		this.schema = attributes.schema;
+		const request =
+			attributes.schema instanceof DataSchema
+				? { of: attributes.schema }
+				: attributes.schema;
+		this.schema = request?.of;
+		this.schemaMany = request?.many ?? false;
 		const returns = attributes.returns;
 		const answer =
 			returns instanceof DataSchema ? { schema: returns } : returns;
 		this.returns = answer?.schema;
 		this.returnsMany = answer?.many ?? false;
-		this.rejects = attributes.rejects ?? [];
+		this.rejections = (attributes.rejects ?? []).map((it) =>
+			it instanceof DataSchema
+				? { schema: it, reasons: [] }
+				: { schema: it.schema, reasons: it.reasons ?? [] },
+		);
 		this.comments = attributes.comments ?? [];
 		this.disposition = normaliseDisposition(attributes.disposition);
 		this.provider = provider;
@@ -1404,6 +1485,19 @@ export class Consumable
 	 * the walk keys what it wakes by the answer itself.
 	 */
 	private readonly answersGiven = new Map<string, Answer>();
+
+	/**
+	 * The shapes this operation refuses with, without their reasons: what a
+	 * rule or a page asking "what can this call come back as" needs.
+	 */
+	get rejects(): DataSchema[] {
+		return this.rejections.map((it) => it.schema);
+	}
+
+	/** How this operation refuses with one shape, if it says it does at all. */
+	rejectsWith(schema: DataSchema): Rejection | undefined {
+		return this.rejections.find((it) => it.schema === schema);
+	}
 
 	/**
 	 * The successful answer: what a caller gets back when this operation does
@@ -1424,9 +1518,20 @@ export class Consumable
 	 * One refusal: what a caller gets back when this operation says no. The
 	 * schema is named rather than looked up, because `consumable-kind` is where
 	 * a refusal the operation never declared is reported.
+	 *
+	 * Naming a `reason` waits on one enumerated outcome of that shape — the
+	 * acquirer's `insufficient_funds` rather than any decline — and naming
+	 * none waits on the shape, which hears them all (decision 25, amended). A
+	 * reason the operation does not enumerate is an undeclared answer, and
+	 * reported by `consumable-kind` for the same reason an undeclared shape is.
 	 */
-	rejected(schema: DataSchema): Answer {
-		return this.answerFor(`rejects/${schema.ref}`, schema, true);
+	rejected(schema: DataSchema, reason?: string): Answer {
+		return this.answerFor(
+			`rejects/${schema.ref}${reason ? `/${reason}` : ""}`,
+			schema,
+			true,
+			reason,
+		);
 	}
 
 	/**
@@ -1462,17 +1567,26 @@ export class Consumable
 			: this.type === "operation"
 				? [this.completed()]
 				: [];
-		return [...succeeded, ...this.rejects.map((it) => this.rejected(it))];
+		return [
+			...succeeded,
+			// A refusal that enumerates its outcomes answers in as many ways as
+			// it names, plus the shape-level answer that hears them all.
+			...this.rejections.flatMap((it) => [
+				this.rejected(it.schema),
+				...it.reasons.map((reason) => this.rejected(it.schema, reason)),
+			]),
+		];
 	}
 
 	private answerFor(
 		key: string,
 		schema: DataSchema | undefined,
 		rejection: boolean,
+		reason?: string,
 	): Answer {
 		const existing = this.answersGiven.get(key);
 		if (existing) return existing;
-		const answer = new Answer(this, schema, rejection);
+		const answer = new Answer(this, schema, rejection, reason);
 		this.answersGiven.set(key, answer);
 		return answer;
 	}
@@ -1513,7 +1627,10 @@ export class Consumable
 	toSchema(): ods.ConsumableSchema {
 		const rejects = this.unresolvedWrites.list(
 			"rejects",
-			this.rejects.map((it) => ({ $ref: it.ref })),
+			this.rejections.map((it) => ({
+				$ref: it.schema.ref,
+				reasons: it.reasons.length ? it.reasons : undefined,
+			})),
 		);
 		const raises = this.unresolvedWrites.list(
 			"raises",
@@ -1526,7 +1643,7 @@ export class Consumable
 			type: this.type,
 			internal: this.internal || undefined,
 			schema: this.schema
-				? { $ref: this.schema.ref }
+				? { $ref: this.schema.ref, many: this.schemaMany || undefined }
 				: this.unresolvedWrites.one("schema"),
 			returns: this.returns
 				? {
@@ -1552,8 +1669,10 @@ export class Consumable
  * nobody was waiting on. Naming the origin says which call came back:
  * `<operation ref>/returns` is the successful answer, `<operation
  * ref>/rejects/<schema id>` one of its refusals (decision 23, third
- * amendment), and `<operation ref>/completed` the bare completion of an
- * operation that returns nothing (decision 13, second amendment).
+ * amendment), `<operation ref>/rejects/<schema id>/<reason>` one enumerated
+ * outcome of that refusal (decision 25, amended), and `<operation
+ * ref>/completed` the bare completion of an operation that returns nothing
+ * (decision 13, second amendment).
  *
  * A completion is the one answer with no shape. There is nothing to say about
  * what it carries, because it carries nothing: it says only that the call came
@@ -1573,15 +1692,23 @@ export class Answer implements Referenceable {
 	readonly schema?: DataSchema;
 	/** Whether this is a refusal rather than the successful answer. */
 	readonly rejection: boolean;
+	/**
+	 * Which enumerated outcome of the refusal this is, when it is one of them
+	 * rather than the shape-level answer that hears them all. Only a refusal
+	 * has one.
+	 */
+	readonly reason?: string;
 
 	constructor(
 		operation: Consumable,
 		schema: DataSchema | undefined,
 		rejection: boolean,
+		reason?: string,
 	) {
 		this.operation = operation;
 		this.schema = schema;
 		this.rejection = rejection;
+		this.reason = rejection ? reason : undefined;
 	}
 
 	/**
@@ -1594,9 +1721,9 @@ export class Answer implements Referenceable {
 
 	get ref(): string {
 		if (!this.schema) return `${this.operation.ref}/completed`;
-		return this.rejection
-			? `${this.operation.ref}/rejects/${this.schema.id}`
-			: `${this.operation.ref}/returns`;
+		if (!this.rejection) return `${this.operation.ref}/returns`;
+		const rejects = `${this.operation.ref}/rejects/${this.schema.id}`;
+		return this.reason ? `${rejects}/${this.reason}` : rejects;
 	}
 
 	/**
@@ -1605,7 +1732,13 @@ export class Answer implements Referenceable {
 	 * completion, which came back as nothing — that the call completes.
 	 */
 	get name(): string {
-		return this.schema ? this.schema.name : "completes";
+		if (!this.schema) return "completes";
+		// The reason is part of the name because it is part of the answer: two
+		// outcomes of one shape are two different things to hear, and a flow
+		// map edge labelled with the shape alone would say they were one.
+		return this.reason
+			? `${this.schema.name} (${this.reason})`
+			: this.schema.name;
 	}
 
 	/**
@@ -1634,7 +1767,7 @@ export class Answer implements Referenceable {
 			: this.many
 				? "returns many"
 				: "returns";
-		return `${this.operation.name} ${verb} ${this.schema.name}`;
+		return `${this.operation.name} ${verb} ${this.name}`;
 	}
 
 	/** The context the call went to, which is where the answer comes from. */
@@ -1644,7 +1777,8 @@ export class Answer implements Referenceable {
 
 	/**
 	 * Whether the operation really answers this way. A refusal is written by
-	 * naming a schema, so the DSL can name one the operation never declared;
+	 * naming a schema, and a reason by naming a string beside it, so the DSL
+	 * can name either one the operation never declared;
 	 * `consumable-kind` reports that rather than the constructor refusing it,
 	 * because a model with a mistake in it still has to load and be validated.
 	 *
@@ -1656,9 +1790,12 @@ export class Answer implements Referenceable {
 	get declared(): boolean {
 		if (!this.schema)
 			return this.operation.type === "operation" && !this.operation.returns;
-		return this.rejection
-			? this.operation.rejects.includes(this.schema)
-			: this.operation.returns === this.schema;
+		if (!this.rejection) return this.operation.returns === this.schema;
+		const rejection = this.operation.rejectsWith(this.schema);
+		if (!rejection) return false;
+		// A reason the contract does not enumerate is an answer that never
+		// arrives, exactly as a shape the operation never refuses with is.
+		return this.reason === undefined || rejection.reasons.includes(this.reason);
 	}
 }
 

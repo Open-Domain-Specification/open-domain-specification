@@ -171,7 +171,10 @@ Repeat for each context the user wants detailed. Ask which one to start with.
 - "Is that something only this part uses, or would other parts care?" → `internal: true`, or
   an upstream `pattern`.
 - "What information travels with that announcement or request?" → a schema on the context,
-  attached with `schema`.
+  attached with `schema`. Then, for an operation: "one of those, or a list of them?" →
+  `schema: {of: schema, many: true}` where the request is a root array, as a bulk create is.
+  Do not wrap the list in a schema of its own; a root array and an object holding an array are
+  different shapes, and only the mark tells them apart.
 - When a field of that payload is described as a thing with parts of its own — "each line has
   a sku and a quantity", "the address inside it" — ask "is that a shape of its own?" If yes,
   declare a second schema on the same context and point the attribute at it with `schema`,
@@ -213,12 +216,19 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   happened: a declined payment, an over-limit transfer, a reservation the stock would not
   cover. If the answer is a status code and nothing else, leave `rejects` off rather than
   inventing a shape, and never put one on an event.
+- Then, once per refusal: "does the contract list the outcomes that shape can carry?" → an
+  acquirer's decline codes, a scheme's response codes, listed in `reasons` on that entry:
+  `rejects: [{schema, reasons: ["insufficient_funds", "issuer_unavailable"]}]`. Take only what
+  the contract enumerates, in its own words. A reason is a named outcome, never a condition on
+  data — "the issuer said no money", not "the amount was over the limit" — and if the caller
+  does nothing different for each of them, leave `reasons` off: one shape is one answer.
 - "When <event> happens, what do you then do automatically?" → a policy with `on` the event
   and `then` the operation. If what it waits for is a reply rather than a fact — "when the
   authorisation comes back declined" — that is an answer, and `on` names it as the call it
-  comes back from: `operation.returned()`, `operation.rejected(schema)` or, for a call that
-  answers with nothing, `operation.completed()` — never the schema alone, since two
-  operations may refuse with one shape. The event in `on` may belong to another context, because reacting
+  comes back from: `operation.returned()`, `operation.rejected(schema)`,
+  `operation.rejected(schema, reason)` where it waits on one enumerated outcome of that
+  refusal, or, for a call that answers with nothing, `operation.completed()` — never the
+  schema alone, since two operations may refuse with one shape. The event in `on` may belong to another context, because reacting
   to a published fact is a consumption; the operation in `then` is always the policy's own
   context's. To act on a neighbour, name a local operation that consumes theirs.
 - Then, once: "Does anything here wait for more than one event before it acts, and what tells

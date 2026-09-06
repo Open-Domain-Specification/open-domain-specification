@@ -44,7 +44,7 @@ Open-host service for /user endpoints
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| User | The legacy user record, as GET /user/{username} answers with it | **username**: `string`, email: `string`, userStatus: `UserStatus` | GetUserByUsername |
+| User | The legacy user record, as GET /user/{username} answers with it | **username**: `string`, email: `string`, userStatus: `UserStatus` | GetUserByUsername, CreateUsersWithList |
 
 
 ## Policies

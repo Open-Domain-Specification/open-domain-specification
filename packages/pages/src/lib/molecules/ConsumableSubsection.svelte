@@ -33,7 +33,7 @@ const {
 	</Heading>
 	{#if c.description}<p class="description">{c.description}</p>{/if}
 	<DefinitionList>
-		<Definition term="Payload">
+		<Definition term={c.schemaMany ? "Payload, many" : "Payload"}>
 			{#if c.schema}<Lockup kind="schema" name={c.schema.name} ref={c.schema.ref} />{:else}<Keyword text="no schema" />{/if}
 		</Definition>
 		{#if c.returns}

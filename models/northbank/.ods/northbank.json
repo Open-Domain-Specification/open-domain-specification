@@ -4,7 +4,7 @@
   "name": "NorthBank",
   "description": "A fictional retail bank: onboarding and KYC, consent, accounts and ledger, payments and schemes, cards, lending and credit decisioning, fraud, sanctions, regulatory reporting, branches and contact centre, and a legacy core.",
   "version": "1.0.0",
-  "odsVersion": "1.0.0",
+  "odsVersion": "2.0.0",
   "primaryColor": "#1d4ed8",
   "domains": {
     "customer": {

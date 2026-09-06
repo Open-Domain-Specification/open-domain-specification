@@ -11,12 +11,19 @@ import { pathToIndexMd } from "./lib/paths";
 const schemaRowLinkMd = (schema: DataSchema, fromPath: string): string =>
 	`[${schema.name}](${pathToIndexMd(schema.boundedcontext.path, fromPath)}#schemas)`;
 
-/** Link to the schema's row in the Schemas table of its bounded context page. */
+/**
+ * Link to the schema's row in the Schemas table of its bounded context page,
+ * said as "many X" where the request is a list of that shape rather than one
+ * of it, the way an answer is (decision 13, amended).
+ */
 export const schemaLinkMd = (
 	consumable: Consumable,
 	fromPath: string,
-): string =>
-	consumable.schema ? schemaRowLinkMd(consumable.schema, fromPath) : "-";
+): string => {
+	if (!consumable.schema) return "-";
+	const link = schemaRowLinkMd(consumable.schema, fromPath);
+	return consumable.schemaMany ? `many ${link}` : link;
+};
 
 /**
  * The shape the operation answers with, linked the same way its payload is,
@@ -29,10 +36,18 @@ const returnsLinkMd = (consumable: Consumable, fromPath: string): string => {
 	return consumable.returnsMany ? `many ${link}` : link;
 };
 
-/** Every shape the operation refuses with, linked the same way its payload is. */
+/**
+ * Every shape the operation refuses with, linked the same way its payload is,
+ * each with the outcomes the contract enumerates for it, which are what a
+ * reactor branches on (decision 25, amended).
+ */
 const rejectsLinkMd = (consumable: Consumable, fromPath: string): string =>
-	consumable.rejects.map((it) => schemaRowLinkMd(it, fromPath)).join(", ") ||
-	"-";
+	consumable.rejections
+		.map(({ schema, reasons }) => {
+			const link = schemaRowLinkMd(schema, fromPath);
+			return reasons.length ? `${link} (${reasons.join(", ")})` : link;
+		})
+		.join(", ") || "-";
 
 const consumableRow = (consumable: Consumable, fromPath: string) => [
 	consumable.name,

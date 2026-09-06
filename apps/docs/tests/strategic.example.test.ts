@@ -2,7 +2,6 @@ import { ODSContextMap, Workspace } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 
 const ws = new Workspace("eCommerce", {
-	odsVersion: "1.0.0",
 	description: "Strategic design example",
 	version: "0.1.0",
 });

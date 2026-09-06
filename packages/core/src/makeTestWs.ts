@@ -2,7 +2,6 @@ import { type Attribute, Workspace } from "./workspace";
 
 export function makeTestWs() {
 	const ws = new Workspace("WS", {
-		odsVersion: "1.0.0",
 		description: "Demo",
 		version: "test",
 	});
@@ -134,7 +133,6 @@ export function makeTestWs() {
  */
 export function makeRichTestWs() {
 	const ws = new Workspace("Rich WS", {
-		odsVersion: "1.0.0",
 		description: "Rich fixture",
 		version: "1.2.3",
 		homepage: "https://example.com",

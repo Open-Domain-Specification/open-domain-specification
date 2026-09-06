@@ -25,7 +25,6 @@ import { type Attribute, Workspace } from "@open-domain-specification/core";
  */
 export const workspace = new Workspace("NorthBank", {
 	id: "northbank",
-	odsVersion: "1.0.0",
 	description:
 		"A fictional retail bank: onboarding and KYC, consent, accounts and ledger, payments and schemes, cards, lending and credit decisioning, fraud, sanctions, regulatory reporting, branches and contact centre, and a legacy core.",
 	version: "1.0.0",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeRichTestWs, makeTestWs } from "./makeTestWs";
-import type { WorkspaceSchema } from "./schema";
+import { ODS_VERSION, type WorkspaceSchema } from "./schema";
 import { getWorkspaceFromSchema } from "./workspace-from-schema";
 
 describe("workspaceFromSchema", () => {
@@ -22,7 +22,7 @@ describe("a file that leaves its empty collections out", () => {
 	const bare: WorkspaceSchema = {
 		id: "bare",
 		name: "Bare",
-		odsVersion: "1.0.0",
+		odsVersion: "2.0.0",
 		description: "",
 		version: "0",
 		domains: {},
@@ -94,8 +94,7 @@ describe("a file that leaves its empty collections out", () => {
 	 */
 	it("loads a context, a policy and a process that leave every one of those keys out", () => {
 		const schema = structuredClone(bare);
-		delete (schema.boundedcontexts.only as { subdomains?: unknown })
-			.subdomains;
+		delete (schema.boundedcontexts.only as { subdomains?: unknown }).subdomains;
 		schema.boundedcontexts.only.policies = {
 			idle: { name: "Idle", description: "" },
 		};
@@ -393,5 +392,129 @@ describe("a ref that resolves to nothing", () => {
 		expect(
 			loaded.getBoundedContextByRefOrThrow(rich.orderingBc.ref).aggregates.size,
 		).toBe(2);
+	});
+});
+
+/**
+ * The version a file says it was written against (decision 29, noted
+ * 2026-09-10; card 114). The major is what is compared, because that is what
+ * the decision that breaks the metamodel bumps, and a file that gets it wrong
+ * still loads: most of a file written against a neighbouring major is
+ * readable, and the author is better off seeing the rest of it.
+ */
+describe("a file that says which metamodel it was written against", () => {
+	const rich = makeRichTestWs();
+	const clean = rich.ws.toSchema();
+
+	/** The file with its `odsVersion` replaced, loaded. */
+	function loadAt(odsVersion: WorkspaceSchema["odsVersion"]) {
+		const schema = structuredClone(clean);
+		if (odsVersion === undefined) delete schema.odsVersion;
+		else schema.odsVersion = odsVersion;
+		const loaded = getWorkspaceFromSchema(schema);
+		return {
+			loaded,
+			version: loaded.validate().filter((d) => d.rule === "ods-version"),
+		};
+	}
+
+	it("writes this core's version, and says nothing about a file that carries it", () => {
+		expect(clean.odsVersion).toBe(ODS_VERSION);
+		expect(loadAt(ODS_VERSION).version).toEqual([]);
+	});
+
+	it("says nothing about a later minor or patch of the same major", () => {
+		expect(loadAt("2.7.3").version).toEqual([]);
+	});
+
+	it("reports a file whose major is not this one, and loads it anyway", () => {
+		const { loaded, version } = loadAt("1.0.0");
+		expect(version).toHaveLength(1);
+		expect(version[0].severity).toBe("error");
+		expect(version[0].ref).toBe("#/odsVersion");
+		expect(version[0].message).toContain("written against ODS 1.0.0");
+		expect(version[0].message).toContain(`this is ODS ${ODS_VERSION}`);
+		expect(loaded.boundedcontexts.size).toBe(
+			Object.keys(clean.boundedcontexts).length,
+		);
+		// The model in memory is this core's, whatever the file said.
+		expect(loaded.odsVersion).toBe(ODS_VERSION);
+		expect(loaded.toSchema().odsVersion).toBe(ODS_VERSION);
+	});
+
+	it("reports a file that states no version at all, and loads it anyway", () => {
+		const { loaded, version } = loadAt(undefined);
+		expect(version).toHaveLength(1);
+		expect(version[0].message).toContain("states no odsVersion");
+		expect(loaded.boundedcontexts.size).toBe(
+			Object.keys(clean.boundedcontexts).length,
+		);
+	});
+
+	it("leaves every other rule to run over what did load", () => {
+		// The mismatch is the only new diagnostic: the file is the fixture's,
+		// which is otherwise the same file.
+		const mismatched = loadAt("1.0.0")
+			.loaded.validate()
+			.filter((d) => d.rule !== "ods-version")
+			.map((d) => `${d.rule}|${d.ref}`);
+		const clean2 = getWorkspaceFromSchema(structuredClone(clean))
+			.validate()
+			.map((d) => `${d.rule}|${d.ref}`);
+		expect(mismatched).toEqual(clean2);
+	});
+});
+
+/**
+ * A reason is part of an answer's ref, so a reason the contract does not
+ * enumerate names nothing, and that is an `unresolved-ref` like any other
+ * (decision 25, amended; card 114).
+ */
+describe("a reaction that waits on one outcome of a refusal", () => {
+	const rich = makeRichTestWs();
+
+	/** The fixture with reasons on Place Order's refusal, and one edit. */
+	function loadWith(edit: (schema: WorkspaceSchema) => void) {
+		const schema = structuredClone(rich.ws.toSchema());
+		schema.boundedcontexts.ordering_bc.services!.order_app
+			.provides!.place_order.rejects = [
+			{ $ref: rich.orderRefused.ref, reasons: ["out_of_stock"] },
+		];
+		edit(schema);
+		const loaded = getWorkspaceFromSchema(schema);
+		return {
+			loaded,
+			unresolved: loaded.validate().filter((d) => d.rule === "unresolved-ref"),
+		};
+	}
+
+	const on = (ref: string) => (schema: WorkspaceSchema) => {
+		schema.boundedcontexts.invoicing_bc.processes!.invoice_to_customer.on = [
+			{ $ref: ref },
+		];
+	};
+
+	it("resolves an outcome the refusal enumerates", () => {
+		const ref = `${rich.placeOrder.ref}/rejects/order_refused/out_of_stock`;
+		const { loaded, unresolved } = loadWith(on(ref));
+		expect(unresolved).toEqual([]);
+		expect(loaded.getAnswerByRef(ref)?.reason).toBe("out_of_stock");
+	});
+
+	it("reports one it does not, and leaves the link unset", () => {
+		const ref = `${rich.placeOrder.ref}/rejects/order_refused/never_heard_of_it`;
+		const { loaded, unresolved } = loadWith(on(ref));
+		expect(unresolved).toHaveLength(1);
+		expect(unresolved[0].message).toContain(ref);
+		expect(unresolved[0].message).toContain('Process "Invoice to customer"');
+		expect(loaded.getAnswerByRef(ref)).toBeUndefined();
+	});
+
+	it("keeps the reasons through the file", () => {
+		const { loaded } = loadWith(() => {});
+		expect(
+			loaded.getConsumableByRefOrThrow(rich.placeOrder.ref).rejections[0]
+				.reasons,
+		).toEqual(["out_of_stock"]);
 	});
 });

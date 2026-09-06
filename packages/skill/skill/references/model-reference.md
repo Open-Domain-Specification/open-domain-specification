@@ -18,7 +18,7 @@ Represents a workspace in the Open Domain Specification (ODS).
 | `id` | string | yes |  |
 | `logoUrl` | string | no |  |
 | `name` | string | yes |  |
-| `odsVersion` | string | yes |  |
+| `odsVersion` | string | no | The version of the ODS metamodel this file was written against, which core writes and nobody edits by hand. Its major is bumped by the decision that breaks the metamodel, so a file whose major differs from the reading core's was written against a different model; `ods-version` says so and the file still loads what it can. A file that states none is older than the version being written at all, and gets the same diagnostic (decision 29, noted 2026-09-10). |
 | `options` | [WorkspaceOptions](#workspaceoptions) | no | Switches for behaviour that is not part of the model, such as opt-in rules. |
 | `primaryColor` | string | no |  |
 | `relationships` | array of [ContextRelationship](#contextrelationship) | yes |  |
@@ -118,9 +118,9 @@ Represents a consumable in the Open Domain Specification (ODS).
 | `name` | string | yes |  |
 | `pattern` | "open-host-service" | "published-language" | no | The upstream role this consumable is offered under. Absent on internal consumables. |
 | `raises` | array of `{ "$ref": string }` | no | For operations: the event consumables this operation may raise. |
-| `rejects` | array of `{ "$ref": string }` | no | For operations: the shapes the operation answers with when it refuses, each one of the context's schemas. A rejection is not an event, because nothing happened, and not a transport error, which stays outside the model. Absent means the operation either always succeeds or refuses without a domain-meaningful shape. Never valid on an event. |
+| `rejects` | array of object | no | For operations: the shapes the operation answers with when it refuses, each one of the context's schemas. A rejection is not an event, because nothing happened, and not a transport error, which stays outside the model. Absent means the operation either always succeeds or refuses without a domain-meaningful shape. Never valid on an event. `reasons` are the enumerated outcomes of that shape as the contract states them — an acquirer's decline codes, ISO 8583 response codes — each one an answer a reactor may wait on, `<operation ref>/rejects/<schema id>/<reason>`, alongside the shape-level answer that hears them all. A reason is a named outcome the contract states and not a condition on data, which stays out of the model (decisions 25, amended, and 15). |
 | `returns` | object | no | For operations: the payload shape the caller gets back, one of the context's schemas. Absent means the operation returns nothing worth naming, which is honest for commands. Never valid on an event. `many` says the answer is a list of that shape rather than one of it: a search answers with the matches it found. A named collection and an object holding one are different shapes, and a wrapper schema said the wrong one — a consumer of `Pets { pets: PetSummary[] }` could not tell that the call really answers with a root array (decision 13, amended). A wrapper stays where the answer really is an object with a list among its attributes, as search results with a total and hits are. |
-| `schema` | `{ "$ref": string }` | no | The payload the caller sends, one of the context's schemas. |
+| `schema` | object | no | The payload the caller sends, one of the context's schemas. `many` says the request is a list of that shape rather than one of it: Swagger's `createUsersWithList` takes a root array of users. A named collection and an object holding one are different shapes, and the argument that gave `returns` its `many` is the same one here (decision 13, amended). A wrapper stays where the request really is an object with a list among its attributes. |
 | `type` | "event" | "operation" | yes |  |
 
 No other fields are allowed.
@@ -131,7 +131,7 @@ Represents a consumption in the Open Domain Specification (ODS).
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `by` | array of `{ "$ref": string }` | no | The consumer's own operations or policies that make this exchange, when only some of them do: a subscription service consumes a payment gateway when it renews, not when it lists entitlements. Absent means the whole consumer depends on the consumable, which is the common case. Optional detail, not a call graph. |
+| `by` | array of `{ "$ref": string }` | no | The consumer's own operations or policies that make this exchange, when only some of them do: a subscription service consumes a payment gateway when it renews, not when it lists entitlements. Absent means the whole consumer, which is fine for a consumer that provides one operation, or none, because there is nothing to choose between. A consumer with two or more names which of them makes the call, and `consumption-by-required` asks for it: `by` is the one causal link the model has from one operation to the next, so without it the reaction walk and the flow map stop at the boundary and an answer reaches nobody (decision 21). |
 | `comments` | array of [Comment](#comment) | no | Grounded statements about the real system behind this consumption. |
 | `consumable` | `{ "$ref": string }` | yes |  |
 | `disposition` | "by-design" | "refactor" | "tolerated" | no | What the architecture thinks of this consumption. Absent means `by-design`. |
@@ -263,7 +263,7 @@ A reaction: when these events happen, issue these commands.
 |---|---|---|---|
 | `description` | string | yes |  |
 | `name` | string | yes |  |
-| `on` | array of `{ "$ref": string }` | no | What triggers this policy: an event consumable, or an answer of an operation this context consumes, which means "when that answer comes back". An answer is named by its origin — `<operation ref>/returns`, `<operation ref>/rejects/<schema id>`, or `<operation ref>/completed` for an operation that returns nothing and whose completion is all there is to wait on — and never by the shape alone, so two operations refusing with one schema wake only whoever named the call that was made. The answer is synchronous because the operation is, so nothing else says so (decision 23). |
+| `on` | array of `{ "$ref": string }` | no | What triggers this policy: an event consumable, or an answer of an operation this context consumes, which means "when that answer comes back". An answer is named by its origin — `<operation ref>/returns`, `<operation ref>/rejects/<schema id>`, `<operation ref>/rejects/<schema id>/<reason>` for one enumerated outcome of that refusal, or `<operation ref>/completed` for an operation that returns nothing and whose completion is all there is to wait on — and never by the shape alone, so two operations refusing with one schema wake only whoever named the call that was made. The answer is synchronous because the operation is, so nothing else says so (decision 23). |
 | `then` | array of `{ "$ref": string }` | no | The operation consumables this policy issues. Optional, like every list in this schema: an absent list is an empty one. |
 
 No other fields are allowed.
@@ -399,6 +399,7 @@ Every cross-link is an object `{ "$ref": "<path>" }`. Paths are JSON pointers in
 | Schema | `#/boundedcontexts/<bc>/schemas/<schema>` |
 | Answer an operation returns | `<operation path>/returns` |
 | Answer an operation rejects with | `<operation path>/rejects/<schema>` |
+| Answer for one enumerated reason of that refusal | `<operation path>/rejects/<schema>/<reason>` |
 | Consumption | `<consumer path>/consumes/<consumable path, with ~ for />`, plus `/<id of the first caller in by>` where the consumer takes that consumable more than once |
 | Relationship | `#/relationships/<source>~<type>~<target>`, plus `~<name in snake case>` where the agreement carries a name |
 
@@ -406,6 +407,6 @@ A consumption has no id of its own, so its path is derived from the pair it join
 
 A relationship has no id of its own either: its path is the two contexts it joins and the type that joins them, so `#/relationships/catalog_bc~customer-supplier~sales_bc` is the customer-supplier relationship from Catalog to Sales. It too is computed rather than stored, and it is what a diagnostic about a relationship points at. One pair may hold two agreements in one direction — a negotiated fulfilment API and a tolerated legacy feed from the same warehouse — and each of those carries a `name`, which is appended in snake case: `#/relationships/warehouse_bc~upstream-downstream~sales_bc~legacy_feed`. Two agreements between one pair in one direction that are both unnamed, or that share a name, are one declaration made twice, and `relationship-duplicate` refuses them.
 
-An answer has no id of its own either: it is one operation coming back, so its path is that operation's plus what it came back as. `#/boundedcontexts/payments/services/payments_api/provides/authorise_payment/rejects/payment_declined` is what AuthorisePayment refuses with, and the same path ending `/returns` is what it answers with when it succeeds. A reaction waiting on an answer names it this way and never by the schema alone: schemas are shared, so two operations may refuse with one shape, and the shape alone cannot say which call came back. The schema id in a `/rejects/` path is one the operation declares in `rejects`; anything else resolves to nothing.
+An answer has no id of its own either: it is one operation coming back, so its path is that operation's plus what it came back as. `#/boundedcontexts/payments/services/payments_api/provides/authorise_payment/rejects/payment_declined` is what AuthorisePayment refuses with, and the same path ending `/returns` is what it answers with when it succeeds. A reaction waiting on an answer names it this way and never by the schema alone: schemas are shared, so two operations may refuse with one shape, and the shape alone cannot say which call came back. The schema id in a `/rejects/` path is one the operation declares in `rejects`; anything else resolves to nothing. Where that refusal enumerates `reasons`, one of them may be named in a further segment — `.../rejects/provider_decline/issuer_unavailable` — which waits on that outcome alone, while the path without it waits on every refusal of that shape; a reason the contract does not enumerate resolves to nothing.
 
 A bounded context path never embeds the domain or subdomain, so moving a context between subdomains breaks no refs. A ref that points at nothing makes the whole file fail to load.

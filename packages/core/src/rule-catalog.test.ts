@@ -5,7 +5,6 @@ import { type Entity, Workspace } from "./workspace";
 /** A root entity that belongs to some other workspace than the fixture's. */
 function strangerEntity(): Entity {
 	return new Workspace("Elsewhere", {
-		odsVersion: "1.0.0",
 		description: "",
 		version: "0",
 	})
@@ -17,7 +16,6 @@ function strangerEntity(): Entity {
 /** A workspace that trips every rule at least once. */
 function everythingWrong(): Workspace {
 	const ws = new Workspace("Broken", {
-		odsVersion: "1.0.0",
 		description: "",
 		version: "0",
 		// comments-required is opt-in, so the fixture has to ask for it to trip it.
@@ -378,7 +376,6 @@ function everythingWrong(): Workspace {
  */
 function loadedWithABadRef(): Workspace {
 	const ws = new Workspace("Mistyped", {
-		odsVersion: "1.0.0",
 		description: "",
 		version: "0",
 	});
@@ -398,10 +395,23 @@ function loadedWithABadRef(): Workspace {
 	return Workspace.fromSchema(schema);
 }
 
+/**
+ * The other thing only a file can get wrong: saying it was written against a
+ * metamodel this core does not read. A workspace built through the DSL is
+ * written against this core by construction, so `ods-version` cannot fire on
+ * one; it is written here as JSON with the major before this one and loaded
+ * (card 114).
+ */
+function loadedFromAnOlderMajor(): Workspace {
+	const ws = new Workspace("Ancient", { description: "", version: "0" });
+	return Workspace.fromSchema({ ...ws.toSchema(), odsVersion: "1.0.0" });
+}
+
 describe("RULE_CATALOG", () => {
 	const diagnostics = [
 		...everythingWrong().validate(),
 		...loadedWithABadRef().validate(),
+		...loadedFromAnOlderMajor().validate(),
 	];
 
 	it("has one entry per rule id, and no rule fires that is not catalogued", () => {

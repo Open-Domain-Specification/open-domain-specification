@@ -8,6 +8,7 @@ import {
 	contextInvariantRef,
 	entityRef,
 	invariantRef,
+	ODS_VERSION,
 	policyRef,
 	processRef,
 	type ServiceSchema,
@@ -237,12 +238,19 @@ function addProvides(
 			`${provider.ref}/provides/${id}`,
 		);
 		const returns = refs.one(at, "returns", A_SCHEMA, returnsRef);
+		const request = refs.one(at, "schema", A_SCHEMA, schemaRef);
 		provider.addConsumable(consumableSchema.name, {
 			...rest,
 			id,
-			schema: refs.one(at, "schema", A_SCHEMA, schemaRef),
+			schema: request && { of: request, many: schemaRef?.many },
 			returns: returns && { schema: returns, many: returnsRef?.many },
-			rejects: refs.many(at, "rejects", A_SCHEMA, rejectsRefs),
+			// A refusal's reasons travel with the shape they enumerate, so a
+			// shape that resolves to nothing takes its reasons with it: they
+			// are outcomes of that shape and mean nothing without it.
+			rejects: listOf(rejectsRefs).flatMap((written) => {
+				const schema = refs.one(at, "rejects", A_SCHEMA, written);
+				return schema ? [{ schema, reasons: written.reasons }] : [];
+			}),
 		});
 	}
 }
@@ -991,13 +999,30 @@ function keepUnresolvedRefs(workspace: Workspace) {
 	}
 }
 
+/**
+ * Notes what the file said its `odsVersion` was, when that is not a version
+ * this core reads.
+ *
+ * The major is what is compared: it is bumped by the decision that breaks the
+ * metamodel, so a file whose major differs was written against a model this
+ * core reads differently, and a file that states none was written before the
+ * version was written at all. Either way the load goes on and the file comes
+ * back as much as it can, because a version mismatch is a mistake in the file
+ * and a mistake is a diagnostic (decision 29, noted 2026-09-10). The minor and
+ * the patch are additive by definition and say nothing here.
+ */
+function recordOdsVersion(workspace: Workspace, found: string | undefined) {
+	const majorOf = (version: string) => version.split(".")[0];
+	if (found !== undefined && majorOf(found) === majorOf(ODS_VERSION)) return;
+	workspace.odsVersionMismatch = { found };
+}
+
 export function getWorkspaceFromSchema(
 	workspaceSchema: WorkspaceSchema,
 ): Workspace {
 	debug(`Creating workspace from schema: ${workspaceSchema.name}`);
 	const workspace = new WorkspaceModel(workspaceSchema.name, {
 		id: workspaceSchema.id,
-		odsVersion: workspaceSchema.odsVersion,
 		description: workspaceSchema.description,
 		homepage: workspaceSchema.homepage,
 		logoUrl: workspaceSchema.logoUrl,
@@ -1005,6 +1030,7 @@ export function getWorkspaceFromSchema(
 		version: workspaceSchema.version,
 		options: workspaceSchema.options,
 	});
+	recordOdsVersion(workspace, workspaceSchema.odsVersion);
 	const refs = new Refs(workspace);
 
 	addDomains(workspace, workspaceSchema);

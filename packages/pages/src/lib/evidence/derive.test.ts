@@ -37,7 +37,6 @@ describe("hasEvidence", () => {
 		// A relationship with nothing said and nothing marked discloses nothing.
 		const workspace = new Workspace("Silent", {
 			id: "silent",
-			odsVersion: "1.0.0",
 			description: "One by-design relationship, nothing written down.",
 			version: "0.0.1",
 		});
@@ -123,7 +122,6 @@ describe("health", () => {
 	it("reports nothing when every intent is by design and has a comment", () => {
 		const workspace = new Workspace("Clean", {
 			id: "clean",
-			odsVersion: "1.0.0",
 			description: "One well-evidenced relationship.",
 			version: "0.0.1",
 		});
@@ -167,7 +165,6 @@ describe("healthCounts", () => {
 	it("is all zeroes for a workspace with no relationships", () => {
 		const workspace = new Workspace("Bare", {
 			id: "bare",
-			odsVersion: "1.0.0",
 			description: "Nothing related to anything.",
 			version: "0.0.1",
 		});
@@ -236,7 +233,6 @@ describe("relationshipLinks", () => {
 		expect(relationshipLinks(ofType(model, "partnership"), [])).toEqual([]);
 		const workspace = new Workspace("Bare", {
 			id: "bare",
-			odsVersion: "1.0.0",
 			description: "One uncited comment.",
 			version: "0.0.1",
 		});

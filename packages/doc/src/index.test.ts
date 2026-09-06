@@ -15,7 +15,6 @@ const petstore = Workspace.fromSchema(petstoreSchema);
 describe("toDoc", () => {
 	it("should generate documentation for empty workspace", async () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 		});
@@ -37,7 +36,6 @@ describe("toDoc", () => {
 
 	it("should generate documentation for workspace with domains", async () => {
 		const workspace = new Workspace("eCommerce", {
-			odsVersion: "1.0.0",
 			description: "eCommerce platform",
 			version: "0.1.0",
 		});
@@ -76,7 +74,6 @@ describe("toDoc", () => {
 
 	it("should generate documentation for complex workspace structure", async () => {
 		const workspace = new Workspace("Complex System", {
-			odsVersion: "1.0.0",
 			description: "A complex system",
 			version: "0.1.0",
 		});
@@ -132,7 +129,6 @@ describe("toDoc", () => {
 
 	it("renders provides, schemas and policies from consumables", async () => {
 		const workspace = new Workspace("Flow", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0.1.0",
 		});
@@ -186,6 +182,15 @@ describe("toDoc", () => {
 			description: "Lists the orders",
 			returns: { schema: digest, many: true },
 		});
+		// A request that is a list of a shape, printed the way an answer is,
+		// and a refusal that enumerates its outcomes (decisions 13 and 25,
+		// amended; card 114).
+		order.provides("Import Orders", {
+			type: "operation",
+			description: "Imports a batch of orders",
+			schema: { of: digest, many: true },
+			rejects: [{ schema: refusal, reasons: ["duplicate", "unknown_sku"] }],
+		});
 		// A transition rule names the operation that makes the transition.
 		order
 			.addInvariant("Approved once", { description: "" })
@@ -213,6 +218,9 @@ describe("toDoc", () => {
 		expect(aggregateDoc).toContain(
 			"| List Orders | operation | no | - | Lists the orders | - | many [Order Digest](../../index.md#schemas) | - | - | - |",
 		);
+		expect(aggregateDoc).toContain(
+			"| Import Orders | operation | no | - | Imports a batch of orders | many [Order Digest](../../index.md#schemas) | - | [Approval Refused](../../index.md#schemas) (duplicate, unknown_sku) | - | - |",
+		);
 
 		const contextDoc = docs["boundedcontexts/ordering/index.md"];
 		expect(contextDoc).toContain("## Schemas");
@@ -225,7 +233,7 @@ describe("toDoc", () => {
 		// A schema nothing sends and nothing answers with is still used: it is
 		// what Approve Order says no with.
 		expect(contextDoc).toContain(
-			"| Approval Refused | Why an approval was declined | reason: `string` | Approve Order |",
+			"| Approval Refused | Why an approval was declined | reason: `string` | Approve Order, Import Orders |",
 		);
 		// A schema nothing sends is still used: Approve Order answers with it.
 		expect(contextDoc).toContain(
@@ -239,7 +247,6 @@ describe("toDoc", () => {
 
 	it("prints a context's own invariants, with the operation that guards each", async () => {
 		const workspace = new Workspace("Across", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0.1.0",
 		});
@@ -274,7 +281,6 @@ describe("toDoc", () => {
 
 	it("says a context has no invariants across aggregates when it has none", async () => {
 		const workspace = new Workspace("Quiet", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0.1.0",
 		});
@@ -287,7 +293,6 @@ describe("toDoc", () => {
 
 	it("should emit a docsify shell so the folder is a complete static site", async () => {
 		const workspace = new Workspace('Ac"me & <Co>', {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 		});
@@ -318,7 +323,6 @@ describe("toDoc", () => {
 
 	it("should handle workspace with options", async () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 		});
@@ -357,7 +361,6 @@ describe("toDoc", () => {
 
 	it("says what a kind is a kind of, and lists what it has from it beside its own", async () => {
 		const ws = new Workspace("Kinds", {
-			odsVersion: "1.0.0",
 			description: "A model with kinds.",
 			version: "1.0.0",
 			id: "kinds",
@@ -413,7 +416,6 @@ describe("toDoc", () => {
 
 	it("falls back to the generated sentence, in italics, when a relationship has no description", async () => {
 		const workspace = new Workspace("Bare", {
-			odsVersion: "1.0.0",
 			description: "One relationship nobody described.",
 			version: "0.1.0",
 		});
@@ -664,7 +666,6 @@ describe("toDoc", () => {
 
 	it("says so in each health list a workspace has nothing for", async () => {
 		const workspace = new Workspace("Quiet", {
-			odsVersion: "1.0.0",
 			description: "Two contexts, one unexplained relationship.",
 			version: "0.1.0",
 		});

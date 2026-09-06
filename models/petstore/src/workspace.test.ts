@@ -6,7 +6,7 @@ import { workspace } from "./workspace";
 describe("Swagger Petstore Example Workspace", () => {
 	it("should create a valid workspace", () => {
 		expect(workspace.name).toBe("Swagger Petstore (v3)");
-		expect(workspace.odsVersion).toBe("1.0.0");
+		expect(workspace.odsVersion).toBe("2.0.0");
 		expect(workspace.description).toContain("Swagger Petstore v3");
 		expect(workspace.homepage).toBe("https://petstore.swagger.io/");
 		expect(workspace.primaryColor).toBe("#0ea5e9");
@@ -52,7 +52,7 @@ describe("Swagger Petstore Example Workspace", () => {
 		const schema = workspace.toSchema();
 
 		expect(schema.name).toBe("Swagger Petstore (v3)");
-		expect(schema.odsVersion).toBe("1.0.0");
+		expect(schema.odsVersion).toBe("2.0.0");
 		expect(schema.domains).toBeDefined();
 		expect(Object.keys(schema.domains).length).toBe(2);
 	});
@@ -333,5 +333,35 @@ describe("Swagger Petstore schema round-trip", () => {
 		const schema = workspace.toSchema();
 		const rebuilt = Workspace.fromSchema(JSON.parse(JSON.stringify(schema)));
 		expect(rebuilt.toSchema()).toEqual(schema);
+	});
+});
+
+/**
+ * POST /user/createWithList takes a root array of User. The model left it out
+ * while only an answer could be a list, because the alternative said the
+ * endpoint takes an object holding users, which it does not (decision 13,
+ * amended; card 114).
+ */
+describe("Swagger Petstore's bulk user create", () => {
+	const createUsersWithList = workspace.getConsumableByRefOrThrow(
+		"#/boundedcontexts/identity_bc/services/user_app/provides/create_users_with_list",
+	);
+
+	it("takes many of the User shape, not a wrapper around them", () => {
+		expect(createUsersWithList.schema?.name).toBe("User");
+		expect(createUsersWithList.schemaMany).toBe(true);
+		expect(createUsersWithList.toSchema().schema).toEqual({
+			$ref: "#/boundedcontexts/identity_bc/schemas/user",
+			many: true,
+		});
+	});
+
+	it("says so still after a round trip through its own JSON", () => {
+		const rebuilt = Workspace.fromSchema(
+			JSON.parse(JSON.stringify(workspace.toSchema())),
+		);
+		expect(
+			rebuilt.getConsumableByRefOrThrow(createUsersWithList.ref).schemaMany,
+		).toBe(true);
 	});
 });

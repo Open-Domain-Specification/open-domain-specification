@@ -39,7 +39,6 @@ const money = (boundedcontext: BoundedContext) => {
  */
 export const workspace = new Workspace("StreamLine", {
 	id: "streamline",
-	odsVersion: "1.0.0",
 	description:
 		"A fictional streaming service: studio production, licensing, catalogue, encoding, playback and edge delivery, recommendations, households and profiles, billing and plans, devices, an ads tier and a legacy disc business.",
 	version: "1.0.0",

@@ -14,14 +14,13 @@ import { getWorkspaceFromSchema } from "./workspace-from-schema";
 describe("Workspace", () => {
 	it("should create a workspace with basic attributes", () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 		});
 
 		expect(workspace.name).toBe("Test Workspace");
 		expect(workspace.id).toBe("test_workspace");
-		expect(workspace.odsVersion).toBe("1.0.0");
+		expect(workspace.odsVersion).toBe("2.0.0");
 		expect(workspace.description).toBe("A test workspace");
 		expect(workspace.version).toBe("0.1.0");
 		expect(workspace.path).toBe("test_workspace");
@@ -29,7 +28,6 @@ describe("Workspace", () => {
 
 	it("should create a workspace with custom id", () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 			id: "custom-id",
@@ -41,7 +39,6 @@ describe("Workspace", () => {
 
 	it("should create a workspace with optional attributes", () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 			homepage: "https://example.com",
@@ -56,7 +53,6 @@ describe("Workspace", () => {
 
 	it("should add a domain and retrieve it", () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 		});
@@ -74,7 +70,6 @@ describe("Workspace", () => {
 
 	it("should find domain by ref", () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 		});
@@ -89,7 +84,6 @@ describe("Workspace", () => {
 
 	it("should throw error when domain not found by ref", () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 		});
@@ -101,7 +95,6 @@ describe("Workspace", () => {
 
 	it("should find subdomain by ref", () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 		});
@@ -121,7 +114,6 @@ describe("Workspace", () => {
 
 	it("should throw error when subdomain not found by ref", () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 		});
@@ -133,7 +125,6 @@ describe("Workspace", () => {
 
 	it("should convert to schema", () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 			homepage: "https://example.com",
@@ -146,7 +137,7 @@ describe("Workspace", () => {
 		const schema = workspace.toSchema();
 
 		expect(schema.name).toBe("Test Workspace");
-		expect(schema.odsVersion).toBe("1.0.0");
+		expect(schema.odsVersion).toBe("2.0.0");
 		expect(schema.description).toBe("A test workspace");
 		expect(schema.version).toBe("0.1.0");
 		expect(schema.homepage).toBe("https://example.com");
@@ -158,7 +149,6 @@ describe("Workspace", () => {
 describe("Domain", () => {
 	it("should create a domain with correct path and ref", () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 		});
@@ -174,7 +164,6 @@ describe("Domain", () => {
 
 	it("should add subdomains", () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 		});
@@ -195,7 +184,6 @@ describe("Domain", () => {
 
 	it("should convert to schema", () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 		});
@@ -216,7 +204,6 @@ describe("Domain", () => {
 describe("Subdomain", () => {
 	it("should create a subdomain with correct path and ref", () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 		});
@@ -237,7 +224,6 @@ describe("Subdomain", () => {
 
 	it("should add bounded contexts", () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 		});
@@ -279,7 +265,6 @@ describe("Workspace lookup methods", () => {
 
 	beforeEach(() => {
 		workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "A test workspace",
 			version: "0.1.0",
 		});
@@ -392,7 +377,6 @@ describe("Workspace lookup methods", () => {
 describe("an external bounded context", () => {
 	function workspaceWith(external: boolean) {
 		const ws = new Workspace("W", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0",
 		});
@@ -422,7 +406,6 @@ describe("a process", () => {
 	/** A context with the four consumables one lifecycle needs. */
 	function lifecycle() {
 		const ws = new Workspace("W", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0",
 		});
@@ -507,7 +490,6 @@ describe("a kind of another entity or value object", () => {
 	/** Account with two kinds, and a kernel value object with one. */
 	function kinds() {
 		const ws = new Workspace("W", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0",
 		});
@@ -607,7 +589,6 @@ describe("an operation that answers with many of a shape", () => {
 	 */
 	function searching() {
 		const ws = new Workspace("Catalog", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0.1.0",
 		});
@@ -662,5 +643,183 @@ describe("an operation that answers with many of a shape", () => {
 		const reloaded = rebuilt.getConsumableByRefOrThrow(search.ref);
 		expect(reloaded.returns?.ref).toBe(search.returns?.ref);
 		expect(reloaded.returnsMany).toBe(true);
+	});
+});
+
+describe("an operation whose request is many of a shape", () => {
+	/**
+	 * A bulk create taking a root array: the request is a list of the shape,
+	 * which is a different thing from an object holding one, exactly as an
+	 * answer is (decision 13, amended; card 114).
+	 */
+	function importing() {
+		const ws = new Workspace("Identity", {
+			description: "",
+			version: "0.1.0",
+		});
+		const bc = ws.addBoundedContext("Identity BC", { description: "" });
+		const user = bc.addSchema("User", { description: "" });
+		user.addAttribute("username", { type: "string", identity: true });
+		const app = bc.addService("User App", {
+			description: "",
+			type: "application",
+		});
+		const many = app.provides("Create Users With List", {
+			description: "",
+			type: "operation",
+			schema: { of: user, many: true },
+		});
+		const one = app.provides("Create User", {
+			description: "",
+			type: "operation",
+			schema: user,
+		});
+		return { ws, many, one };
+	}
+
+	it("names the shape and says the request is a list of it", () => {
+		const { many } = importing();
+		expect(many.schema?.name).toBe("User");
+		expect(many.schemaMany).toBe(true);
+	});
+
+	it("takes one of the shape unless the model says many", () => {
+		const { one } = importing();
+		expect(one.schemaMany).toBe(false);
+		// Nothing to say is left unsaid, so a single request carries no flag.
+		expect(one.toSchema().schema).toEqual({
+			$ref: "#/boundedcontexts/identity_bc/schemas/user",
+		});
+	});
+
+	it("carries many through the schema and back", () => {
+		const { ws, many } = importing();
+		expect(many.toSchema().schema).toEqual({
+			$ref: "#/boundedcontexts/identity_bc/schemas/user",
+			many: true,
+		});
+		const rebuilt = getWorkspaceFromSchema(ws.toSchema());
+		const reloaded = rebuilt.getConsumableByRefOrThrow(many.ref);
+		expect(reloaded.schema?.ref).toBe(many.schema?.ref);
+		expect(reloaded.schemaMany).toBe(true);
+		expect(rebuilt.toSchema()).toEqual(ws.toSchema());
+	});
+});
+
+describe("a refusal that enumerates the outcomes it carries", () => {
+	/**
+	 * An acquirer refusing a hold with one shape and its own response code:
+	 * each code is an answer of its own, beside the shape-level answer that
+	 * hears them all (decision 25, amended; card 114).
+	 */
+	function acquirer() {
+		const ws = new Workspace("Payments", {
+			description: "",
+			version: "0.1.0",
+		});
+		const bc = ws.addBoundedContext("Payments BC", { description: "" });
+		const declined = bc.addSchema("Provider Decline", { description: "" });
+		const hold = bc
+			.addService("Payments API", { description: "", type: "application" })
+			.provides("Hold Funds", {
+				description: "",
+				type: "operation",
+				rejects: [
+					{ schema: declined, reasons: ["insufficient_funds", "issuer_down"] },
+				],
+			});
+		return { ws, declined, hold };
+	}
+
+	it("keeps the shapes it refuses with, and what each of them may say", () => {
+		const { declined, hold } = acquirer();
+		expect(hold.rejects).toEqual([declined]);
+		expect(hold.rejectsWith(declined)?.reasons).toEqual([
+			"insufficient_funds",
+			"issuer_down",
+		]);
+	});
+
+	it("names one outcome by its own ref, beside the answer that hears them all", () => {
+		const { declined, hold } = acquirer();
+		const one = hold.rejected(declined, "issuer_down");
+		const any = hold.rejected(declined);
+		expect(one.ref).toBe(`${hold.ref}/rejects/provider_decline/issuer_down`);
+		expect(any.ref).toBe(`${hold.ref}/rejects/provider_decline`);
+		expect(one.name).toBe("Provider Decline (issuer_down)");
+		expect(one.origin).toBe(
+			"Hold Funds rejects with Provider Decline (issuer_down)",
+		);
+		expect(any.origin).toBe("Hold Funds rejects with Provider Decline");
+		// Naming one twice names one object, which is what the walk keys on.
+		expect(hold.rejected(declined, "issuer_down")).toBe(one);
+		expect(one).not.toBe(any);
+	});
+
+	it("answers in as many ways as it enumerates, plus the shape and the completion", () => {
+		const { hold } = acquirer();
+		expect(hold.answers.map((it) => it.ref)).toEqual([
+			`${hold.ref}/completed`,
+			`${hold.ref}/rejects/provider_decline`,
+			`${hold.ref}/rejects/provider_decline/insufficient_funds`,
+			`${hold.ref}/rejects/provider_decline/issuer_down`,
+		]);
+	});
+
+	it("declares the outcomes it lists and no others", () => {
+		const { declined, hold } = acquirer();
+		expect(hold.rejected(declined).declared).toBe(true);
+		expect(hold.rejected(declined, "issuer_down").declared).toBe(true);
+		expect(hold.rejected(declined, "no_such_code").declared).toBe(false);
+	});
+
+	it("resolves a reason ref, and nothing for one the contract does not state", () => {
+		const { ws, hold } = acquirer();
+		const reasonRef = `${hold.ref}/rejects/provider_decline/issuer_down`;
+		expect(ws.getAnswerByRef(reasonRef)?.ref).toBe(reasonRef);
+		// Reached the same way through the one place ref shapes are read.
+		expect(ws.getByRef(reasonRef)?.ref).toBe(reasonRef);
+		expect(
+			ws.getAnswerByRef(`${hold.ref}/rejects/provider_decline/nope`),
+		).toBeUndefined();
+		expect(
+			ws.getAnswerByRef(`${hold.ref}/rejects/no_such_shape/issuer_down`),
+		).toBeUndefined();
+	});
+
+	it("carries the reasons through the schema and back", () => {
+		const { ws, hold } = acquirer();
+		expect(hold.toSchema().rejects).toEqual([
+			{
+				$ref: "#/boundedcontexts/payments_bc/schemas/provider_decline",
+				reasons: ["insufficient_funds", "issuer_down"],
+			},
+		]);
+		const rebuilt = getWorkspaceFromSchema(
+			JSON.parse(JSON.stringify(ws.toSchema())),
+		);
+		const reloaded = rebuilt.getConsumableByRefOrThrow(hold.ref);
+		expect(reloaded.rejections[0].reasons).toEqual([
+			"insufficient_funds",
+			"issuer_down",
+		]);
+		expect(rebuilt.toSchema()).toEqual(ws.toSchema());
+	});
+
+	it("leaves reasons unwritten where the contract enumerates none", () => {
+		const { ws, declined } = acquirer();
+		const bc = ws.getBoundedContextByRefOrThrow(
+			"#/boundedcontexts/payments_bc",
+		);
+		const plain = bc.services.get("payments_api")?.provides("Take Funds", {
+			description: "",
+			type: "operation",
+			rejects: [declined],
+		});
+		if (!plain) throw new Error("the service is the one just added");
+		expect(plain.toSchema().rejects).toEqual([
+			{ $ref: "#/boundedcontexts/payments_bc/schemas/provider_decline" },
+		]);
+		expect(plain.rejected(declined, "issuer_down").declared).toBe(false);
 	});
 });

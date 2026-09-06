@@ -41,7 +41,7 @@ const columns: Column[] = [
  */
 const directionOf = (c: (typeof carriers)[number]) =>
 	[
-		c.schema === s ? "payload" : "",
+		c.schema === s ? (c.schemaMany ? "payload, many" : "payload") : "",
 		c.returns === s ? (c.returnsMany ? "returns many" : "returns") : "",
 		c.rejects.includes(s) ? "rejects with" : "",
 	]

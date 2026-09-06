@@ -6,7 +6,7 @@ describe("Workspace Schema Validation", () => {
 		const schema = {
 			id: "test_workspace",
 			name: "Test Workspace",
-			odsVersion: "1.0.0" as const,
+			odsVersion: "2.0.0" as const,
 			description: "A test workspace",
 			version: "0.1.0",
 			domains: {
@@ -25,7 +25,7 @@ describe("Workspace Schema Validation", () => {
 		const workspace = Workspace.fromSchema(schema);
 
 		expect(workspace.name).toBe("Test Workspace");
-		expect(workspace.odsVersion).toBe("1.0.0");
+		expect(workspace.odsVersion).toBe("2.0.0");
 		expect(workspace.domains.size).toBe(1);
 		expect(workspace.domains.get("commerce")?.name).toBe("Commerce");
 	});
@@ -59,7 +59,7 @@ describe("Workspace Schema Validation", () => {
 		const schema = {
 			id: "empty_workspace",
 			name: "Empty Workspace",
-			odsVersion: "1.0.0" as const,
+			odsVersion: "2.0.0" as const,
 			description: "Empty workspace for testing",
 			version: "0.1.0",
 			domains: {},
@@ -78,7 +78,6 @@ describe("Workspace Schema Validation", () => {
 describe("Workspace Edge Cases", () => {
 	it("should handle special characters in names", () => {
 		const workspace = new Workspace("Test & Special Characters!", {
-			odsVersion: "1.0.0",
 			description: "Testing special characters",
 			version: "0.1.0",
 		});
@@ -89,7 +88,6 @@ describe("Workspace Edge Cases", () => {
 
 	it("should handle empty search results gracefully", () => {
 		const workspace = new Workspace("Empty Workspace", {
-			odsVersion: "1.0.0",
 			description: "Empty workspace",
 			version: "0.1.0",
 		});
@@ -123,7 +121,6 @@ describe("Workspace Edge Cases", () => {
 
 	it("should handle malformed refs in entity/value object search", () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "Test workspace",
 			version: "0.1.0",
 		});
@@ -140,7 +137,6 @@ describe("Workspace Edge Cases", () => {
 
 	it("should provide proper visitor interface", () => {
 		const workspace = new Workspace("Test Workspace", {
-			odsVersion: "1.0.0",
 			description: "Test workspace",
 			version: "0.1.0",
 		});

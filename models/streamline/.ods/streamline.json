@@ -4,7 +4,7 @@
   "name": "StreamLine",
   "description": "A fictional streaming service: studio production, licensing, catalogue, encoding, playback and edge delivery, recommendations, households and profiles, billing and plans, devices, an ads tier and a legacy disc business.",
   "version": "1.0.0",
-  "odsVersion": "1.0.0",
+  "odsVersion": "2.0.0",
   "primaryColor": "#e11d48",
   "domains": {
     "content": {

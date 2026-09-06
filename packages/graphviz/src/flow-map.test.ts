@@ -4,7 +4,6 @@ import { flowMapToDigraph } from "./flow-map";
 
 function makeWorkspace() {
 	const ws = new Workspace("Flow", {
-		odsVersion: "1.0.0",
 		description: "",
 		version: "0.0.1",
 	});
@@ -100,7 +99,6 @@ describe("flowMapToDigraph", () => {
 
 	it("renders an empty map without throwing", async () => {
 		const ws = new Workspace("Empty", {
-			odsVersion: "1.0.0",
 			description: "",
 			version: "0.0.1",
 		});

@@ -41,7 +41,6 @@ const money = (boundedcontext: BoundedContext) => {
  */
 export const workspace = new Workspace("RiverMart", {
 	id: "rivermart",
-	odsVersion: "1.0.0",
 	description:
 		"A fictional online marketplace: catalogue, search, sellers and the buy box, cart and checkout, payments, warehousing, last mile, advertising, customer service and fraud.",
 	version: "1.0.0",
@@ -1498,6 +1497,18 @@ const refundPayment = paymentsApi
 	})
 	.raises(refundIssued);
 
+// DISCOVERY: Payments engineering lead, on the acquirer's 91: "that one is
+// the issuer being down for a minute, so we just ask again; 51 and 05 we pass
+// straight back to the customer." The second attempt is Payments' own step,
+// made through Payments' own boundary, so it is an operation here and not a
+// second meaning for AuthorisePayment (decision 17).
+const retryHold = paymentsApi.provides("RetryHold", {
+	description:
+		"Ask the acquirer for the same hold again after a decline it publishes as temporary; internal, because a caller of AuthorisePayment never asks for this",
+	type: "operation",
+	internal: true,
+});
+
 // DISCOVERY: Payments engineering lead. The hold, the take and the return all
 // happen at the acquirer; Payments is the model over them, and it translates
 // every answer into its own words (decision 28, card 71).
@@ -1521,11 +1532,41 @@ const acquirerApi = paymentProviderBC.addService("Acquirer API", {
 	description: "The provider's documented interface, and all RiverMart sees",
 	type: "application",
 });
+// What the acquirer answers with when it will not hold the money, and the
+// outcomes its own documentation enumerates for that answer. One shape with a
+// response code in it gave every decline one branch, whatever the code said,
+// and the model could not tell a customer with no money from an issuer that
+// is briefly down — which are different things to do next. The shape stays
+// one, because the acquirer sends one, and it names the outcomes it carries
+// (decision 25, amended; card 114).
+const providerDeclineSchema = paymentProviderBC.addSchema("ProviderDecline", {
+	description:
+		"The acquirer's refusal of a hold, carrying the response code from its own published list",
+});
+providerDeclineSchema.addAttribute("merchantReference", {
+	type: "string",
+	identity: true,
+});
+providerDeclineSchema.addAttribute("responseCode", {
+	type: "ISO 8583 response code",
+	description:
+		"The acquirer's own code for the refusal: 51, 05 or 91 on a hold",
+});
 const holdFunds = acquirerApi.provides("HoldFunds", {
 	description: "Put a hold on the customer's instrument",
 	type: "operation",
 	pattern: "open-host-service",
 	schema: providerRequestSchema,
+	rejects: [
+		{
+			schema: providerDeclineSchema,
+			// The acquirer's published decline codes for a hold, in its words
+			// and not RiverMart's: 51 the customer has no money, 05 the issuer
+			// refused and will refuse again, 91 the issuer could not be reached
+			// this time.
+			reasons: ["insufficient_funds", "do_not_honour", "issuer_unavailable"],
+		},
+	],
 });
 const takeFunds = acquirerApi.provides("TakeFunds", {
 	description: "Take money against an existing hold",
@@ -1556,7 +1597,7 @@ paymentProviderBC
 
 paymentsApi.consumes(holdFunds, {
 	pattern: "anti-corruption-layer",
-	by: [authorisePayment],
+	by: [authorisePayment, retryHold],
 });
 paymentsApi.consumes(takeFunds, {
 	pattern: "anti-corruption-layer",
@@ -1572,6 +1613,22 @@ paymentProviderBC.upstreamOf(paymentsBC, {
 	upstreamRoles: ["open-host-service"],
 	downstreamRoles: ["anti-corruption-layer"],
 });
+
+// A process rather than a policy: an attempt remembers how the acquirer has
+// answered so far, which is what tells a second try from a third. It branches
+// on one of the acquirer's enumerated outcomes and not on the shape, because
+// the shape is every decline and only 91 is worth asking again about; 51 and
+// 05 are the customer's answer and AuthorisePayment refuses with PaymentDeclined
+// in RiverMart's own words (decision 25, amended; card 114).
+paymentsBC
+	.addProcess("Hold attempt", {
+		description:
+			"From Payments being asked to hold the cart total to the funds being held. Most attempts end at the acquirer's first answer. When it declines with issuer_unavailable — the code it publishes for an issuer it could not reach — the attempt asks again, unchanged, and the caller is told nothing until it stops trying; on insufficient_funds or do_not_honour there is nothing to retry and AuthorisePayment refuses. Correlation is by the merchant reference, which the acquirer answers with",
+	})
+	.starts(authorisePayment)
+	.on(holdFunds.rejected(providerDeclineSchema, "issuer_unavailable"))
+	.issues(retryHold)
+	.ends(paymentAuthorised);
 
 paymentsBC.addTerm("Authorisation", {
 	definition:
