@@ -60,7 +60,7 @@ run_vitest graphviz packages/graphviz
 run_vitest doc packages/doc
 
 echo "==> generating skill bundle"
-(cd "$ROOT/packages/skill" && npm run generate)
+(cd "$ROOT/packages/skill" && npm run generate && npm run build)
 run_vitest skill packages/skill
 
 for model in northbank petstore rivermart streamline; do
