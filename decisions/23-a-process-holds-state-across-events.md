@@ -63,3 +63,7 @@ An answer routes to the reactor that called: when two reactors in one context ca
 ## Amendment (2026-09-10)
 
 The only-reactor lifecycle exemption was written for a process alone on its ring. NorthBank's honest wiring of its gateway put a second reactor on the ring, the gateway's policy that hears the scheme's answer through an anti-corruption layer and republishes it as the bank's own event, and `reaction-cycle` reported the instruction lifecycle twice (card 109). Such a policy translates; it starts nothing the process did not start. A ring on which one process sits and every other reactor is a policy that hears its event through an `anti-corruption-layer` consumption and whose operations raise its own context's events is that process's lifecycle through the layer, not a cycle (card 108). NorthBank's reference model wires the send once the rule says so (card 110).
+
+## Note (2026-09-10, second)
+
+The lifecycle-through-a-layer exemption was implemented on the shape of the ring alone, one process and translating policies, without proving its premise: that the event the process hears on the ring continues an instance. A translated event that starts the process spawns a new instance every time round, and Codex's ninth review drew one that validated clean. The exemption holds only where the process hears the ring's event through `on` or `ends`; a ring whose translated event is in `starts` is a cycle that spawns instances and is reported as one (card 113).

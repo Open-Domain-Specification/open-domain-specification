@@ -53,3 +53,7 @@ Two rules still asked for the inside of a system this record says is not ours. `
 ## Note (2026-09-10)
 
 Card 107 gave RiverMart's legacy purchasing context, a big ball of mud, a gateway service with the one operation the warehouse calls every morning, next to card 90's deletion of a nightly-export service from the same context. Both hold: an operation of a mud context that another context calls is its boundary, known because we reach it, the same reasoning this record applies to an external context's operations; a service invented so an event has a raiser is a mechanism nobody could describe. The mud says what it offers and what it takes, and nothing about how.
+
+## Amendment (2026-09-10, third)
+
+An identity attribute into an external context named the context itself because the context has no entities. That was less than the context publishes: a processor documents Customer, Payment, Refund and Dispute as distinct kinds with distinct ids, and those kinds are its published schemas, which an external context may declare. An identity may name a schema of an external context, and the model reads it as an identity into that context naming that kind; the context itself remains the target where no schema is published. Aggregates, policies and processes stay refused: a published shape is knowledge, a lifecycle inside their machine is invention (card 113, Codex's ninth review).

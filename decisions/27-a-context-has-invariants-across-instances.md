@@ -54,3 +54,7 @@ The second amendment refused `precondition` and `postcondition` on a context inv
 ## Note (2026-09-10)
 
 Card 103 merged `context-invariant-guarded` into `context-invariant-is-checked`: one rule says a context invariant without a flag must name its guard, and the flagged ones are checked by the two names-operation rules. Where this record names `context-invariant-guarded`, read the surviving id.
+
+## Amendment (2026-09-10)
+
+A value object's invariant may constrain only its own and inherited attributes, which kept it from reaching unrelated objects and also from reaching the values its own attributes hold: an itinerary whose legs are a `Leg` value object cannot say that each arrival precedes the next departure. The reach is through composition: an invariant on a value object may name attributes reachable through its own attributes' types, transitively through value objects, and nothing outside that path (card 113, Codex's ninth review).

@@ -6,11 +6,11 @@ Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel
 
 ## Now
 
-No card is live. The eighth panel round is running on the card 110 head: Antigravity run 20 is in, yes with named costs with every issue decided ground; Codex run 9 and a fresh architect-deep round 9 are still running, all with the same prompt. Stopping point: each reviewer's verdict is read and ruled, new defects become cards, restatements are answered by the decision they restate. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 110 landed green; 107 gave RiverMart the first two named agreements in a reference model.
+No card is live. The eighth panel round is running on the card 110 head: Antigravity run 20 is in, yes with named costs with every issue decided ground; Codex run 9 is in, no, with three reproduced gaps accepted as card 113 (live, senior-developer) and nine restatements; a fresh architect-deep round 9 is still running, all with the same prompt. Stopping point: each reviewer's verdict is read and ruled, new defects become cards, restatements are answered by the decision they restate. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 110 landed green; 107 gave RiverMart the first two named agreements in a reference model.
 
 ## Next
 
-Read the three verdicts. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
+Read the architect's verdict, land card 113 and any card the architect adds, and run the ninth round. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
 
 ## Later
 
