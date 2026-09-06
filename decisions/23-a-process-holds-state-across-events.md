@@ -51,3 +51,7 @@ A command starts a saga as often as an event does: `starts` may name an operatio
 ## Amendment (2026-09-09, fourth)
 
 An answer returns to its caller: a reactor waits on an operation's answer only when it, or an operation it issued, made the call, so two contexts that each call one service never wake each other through it (card 100). A named cost: a deadline belongs to a process, and an aggregate that expires on its own clock, an authorisation, a quote, a session, is modelled by the process that watches it or by a scheduled operation that raises the expiry; the aggregate itself holds no timer.
+
+## Note (2026-09-09)
+
+The lifecycle test is whether the process is the ring's only reactor, not whether the ring stays inside one context: a process that issues its operation, whose call reaches the next context, and waits for that context's fact is stepping through its own life across a boundary, and NorthBank's onboarding and RiverMart's checkout are that shape. Card 102 briefly narrowed the exemption to own-context steps and the two reference models warned; the narrowing was carrying no weight, because the two-caller defect it aimed at was closed by routing an answer to the call that asked (card 100).
