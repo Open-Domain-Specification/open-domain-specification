@@ -35,9 +35,14 @@ flagged `external`. It may still provide and consume consumables and take
 part in relationships, but it needs no subdomain, no team and no internals:
 `external-is-boundary` refuses aggregates, policies and processes on it,
 because what happens inside it is not ours to state. What it publishes is a
-different matter: its value objects may carry the standard's own rules, and it
-may state a context invariant marked `precondition` or `postcondition` on one
-of its own operations — a published contract is citable where a rule the
+different matter, and three things stay legal precisely because they are
+published rather than invented: its **schemas**, the payload shapes and named
+kinds that system documents — a processor's Customer beside its Payment, its
+Refund and its Dispute — which an `identifies` attribute of ours may name
+directly instead of the context as a whole; its **value objects**, which may
+carry the standard's own rules (an IBAN's mod-97 checksum, an ISO 20022 field
+rule); and a **context invariant** marked `precondition` or `postcondition` on
+one of its own operations — a published contract is citable where a rule the
 machine keeps at rest is not. Such an invariant names one of that context's own
 operations and constrains only the attributes of the shapes that operation
 carries and the context's own value objects.
@@ -67,11 +72,18 @@ anybody pretending they are ours, and `conformist-backed` asks in return that
 the two contexts really exchange something.
 
 Two contexts sharing a library declare `shared-kernel` directly between
-them. When several contexts share one library, model the library as a
-bounded context of its own and give each sharer a `shared-kernel`
-relationship with that context, rather than one relationship per pair: six
-contexts sharing a financial-primitives library are six relationships to
-one kernel context, not fifteen among themselves.
+them and borrow one another's value objects and schemas across it — that
+pairwise kernel is Evans's shared subset, modelled as such. When several
+contexts share one library, model the library as a bounded context of its
+own and give each sharer a `shared-kernel` relationship with that context,
+rather than one relationship per pair: six contexts sharing a
+financial-primitives library are six relationships to one kernel context,
+not fifteen among themselves. A kernel context is also the one place for
+something a pairwise kernel cannot hold: an entity two contexts jointly own.
+A relation and a kind never cross a bounded context, and an entity has one
+home, so a Product a manufacturing context and a sales context both change is
+an aggregate of a kernel context both consume through its operations, not an
+entity duplicated or shared directly between the two.
 
 Where two contexts exchange consumables and no relationship is declared, the
 context map draws an **implied** upstream-downstream edge (dashed) with the
