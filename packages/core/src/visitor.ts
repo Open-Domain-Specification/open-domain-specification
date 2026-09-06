@@ -12,6 +12,7 @@ import type {
 	GlossaryTerm,
 	Invariant,
 	Policy,
+	Process,
 	Service,
 	Subdomain,
 	ValueObject,
@@ -34,6 +35,7 @@ export interface Visitor {
 	visitContextRelationship(node: ContextRelationship): void;
 	visitDataSchema(node: DataSchema): void;
 	visitPolicy(node: Policy): void;
+	visitProcess(node: Process): void;
 	visitGlossaryTerm(node: GlossaryTerm): void;
 }
 
@@ -125,7 +127,8 @@ export abstract class AbstractVisitor implements Visitor {
 	}
 
 	/**
-	 * Visits a BoundedContext node and traverses its services and aggregates.
+	 * Visits a BoundedContext node and traverses its services, aggregates, the
+	 * value objects the context defines and the invariants it holds across them.
 	 * @param node - The BoundedContext node to visit.
 	 */
 	visitBoundedContext(node: BoundedContext): void {
@@ -135,12 +138,24 @@ export abstract class AbstractVisitor implements Visitor {
 			service.accept(this);
 		}
 
+		for (const valueObject of node.valueobjects.values()) {
+			valueObject.accept(this);
+		}
+
 		for (const aggregate of node.aggregates.values()) {
 			aggregate.accept(this);
 		}
 
+		for (const invariant of node.invariants.values()) {
+			invariant.accept(this);
+		}
+
 		for (const policy of node.policies.values()) {
 			policy.accept(this);
+		}
+
+		for (const process of node.processes.values()) {
+			process.accept(this);
 		}
 
 		for (const term of node.glossary.values()) {
@@ -174,6 +189,16 @@ export abstract class AbstractVisitor implements Visitor {
 	}
 
 	/**
+	 * Visits a Process node. Processes are leaves, like policies; the
+	 * consumables they join are reached through their providers.
+	 * @param node - The Process node to visit.
+	 */
+	visitProcess(node: Process): void {
+		this.before(node);
+		this.after(node);
+	}
+
+	/**
 	 * Visits a Service node and traverses its consumables and consumptions.
 	 * @param node - The Service node to visit.
 	 */
@@ -189,7 +214,7 @@ export abstract class AbstractVisitor implements Visitor {
 	}
 
 	/**
-	 * Visits an Aggregate node and traverses its consumables, invariants, entities, value objects, and consumptions.
+	 * Visits an Aggregate node and traverses its consumables, invariants, entities and consumptions.
 	 * @param node - The Aggregate node to visit.
 	 */
 	visitAggregate(node: Aggregate): void {
@@ -202,9 +227,6 @@ export abstract class AbstractVisitor implements Visitor {
 		}
 		for (const entity of node.entities.values()) {
 			entity.accept(this);
-		}
-		for (const valueObject of node.valueobjects.values()) {
-			valueObject.accept(this);
 		}
 		if (this.followConsumptions) {
 			for (const cons of node.consumptions) cons.accept(this);
@@ -254,11 +276,15 @@ export abstract class AbstractVisitor implements Visitor {
 	}
 
 	/**
-	 * Visits a ValueObject node and traverses its relations.
+	 * Visits a ValueObject node and traverses the rules that hold of it and its
+	 * relations.
 	 * @param node - The ValueObject node to visit.
 	 */
 	visitValueObject(node: ValueObject): void {
 		this.before(node);
+		for (const invariant of node.invariants.values()) {
+			invariant.accept(this);
+		}
 		if (this.followRelations) {
 			for (const rel of node.relations) rel.accept(this);
 		}

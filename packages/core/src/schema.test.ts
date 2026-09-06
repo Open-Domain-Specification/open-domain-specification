@@ -114,9 +114,7 @@ describe("Workspace Edge Cases", () => {
 			),
 		).toBeUndefined();
 		expect(
-			workspace.getValueObjectByRef(
-				"#/boundedcontexts/test/aggregates/test/valueobjects/test",
-			),
+			workspace.getValueObjectByRef("#/boundedcontexts/test/valueobjects/test"),
 		).toBeUndefined();
 		expect(
 			workspace.getEntityOrValueobjectByRef("#/invalid/ref"),
@@ -163,6 +161,7 @@ describe("Workspace Edge Cases", () => {
 			visitContextRelationship: vi.fn(),
 			visitDataSchema: vi.fn(),
 			visitPolicy: vi.fn(),
+			visitProcess: vi.fn(),
 			visitGlossaryTerm: vi.fn(),
 		};
 

@@ -18,6 +18,8 @@ import {
 import { getDebug } from "./debug";
 import {
 	DOWNSTREAM_ROLE_LABELS,
+	EXTERNAL_STEREOTYPE,
+	IDENTITY_EDGE_LABEL,
 	RELATIONSHIP_LABELS,
 	UPSTREAM_ROLE_LABELS,
 } from "./role-labels";
@@ -49,33 +51,53 @@ const SYMMETRIC_EDGE_COLORS: Partial<Record<ContextRelationshipType, string>> =
 		"separate-ways": "grey",
 	};
 
-/** A big ball of mud is drawn as an irregular, muddy blob. */
+/**
+ * A big ball of mud is drawn as an irregular, muddy blob; a system the
+ * enterprise does not own is a plain grey box under the «external system»
+ * stereotype, so the wall between our model and somebody else's is the first
+ * thing a reader sees.
+ */
 function nodeAttributes(node: ODSContextMapNode): NodeAttributesObject {
 	const lines = [
+		node.external && EXTERNAL_STEREOTYPE,
 		node.name,
 		node.bigBallOfMud && "(big ball of mud)",
 		node.team && `[${node.team.name}]`,
 	].filter(Boolean);
 	return {
 		label: lines.join("\n"),
-		shape: node.bigBallOfMud ? "doubleoctagon" : "egg",
+		shape: node.bigBallOfMud ? "doubleoctagon" : node.external ? "box" : "egg",
 		tooltip: node.description,
 		width: 1.5,
 		height: 1,
-		fillcolor: node.bigBallOfMud ? "#d7ccc8" : "white",
+		fillcolor: node.bigBallOfMud
+			? "#d7ccc8"
+			: node.external
+				? "#eceff1"
+				: "white",
 		style: node.bigBallOfMud ? "filled,dashed" : "filled,solid",
 		fontname: "sans-serif",
 	};
 }
 
-/** Graphviz attributes that express one context-map edge. */
+/**
+ * Graphviz attributes that express one context-map edge. An edge implied by an
+ * identity is drawn like any other implied one — dashed, no roles — under the
+ * `«id»` stereotype, so the map says both that the dependency exists and what
+ * put it there.
+ */
 function edgeAttributes(edge: ODSContextMapEdge): EdgeAttributesObject {
 	const isDirected = isDirectedRelationshipType(edge.type);
+	const byIdentity = edge.implied === "identity";
 	const roles = (labels: Record<string, string>, values: string[]) =>
 		values.map((it) => labels[it]).join("+");
 	return {
-		label: RELATIONSHIP_LABELS[edge.type],
-		tooltip: edge.description ?? edge.type,
+		label: byIdentity ? IDENTITY_EDGE_LABEL : RELATIONSHIP_LABELS[edge.type],
+		tooltip:
+			edge.description ??
+			(byIdentity
+				? "implied by an identity attribute naming an entity of the other context"
+				: edge.type),
 		dir: isDirected ? "forward" : "none",
 		style: edge.implied ? "dashed" : "solid",
 		color: SYMMETRIC_EDGE_COLORS[edge.type] ?? "black",

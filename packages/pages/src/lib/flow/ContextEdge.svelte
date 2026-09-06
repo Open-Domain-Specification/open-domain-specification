@@ -1,6 +1,7 @@
 <script lang="ts">
 import { BaseEdge, type EdgeProps, useInternalNode } from "@xyflow/svelte";
 import { edgeEndpoints, edgePath, padEndpoints, portCentre } from "./edge-path";
+import type { ContextEdgeData } from "./flow-nodes";
 import PortBadge from "./PortBadge.svelte";
 import { roleTitle } from "./roles";
 
@@ -10,6 +11,14 @@ import { roleTitle } from "./roles";
  * downstream ones (CF, ACL) as a port at the target end. Implied edges arrive
  * dashed and symmetric types without an arrowhead; the ends follow the handle
  * and edge-style options.
+ *
+ * All three are badges, so all three can carry the evidence layer (RFC-002
+ * section 4.2): a refactor intent takes the warning colour, a tolerated one is
+ * outlined instead of filled, a by-design one is unchanged, each hovers to the
+ * pattern's meaning and what is known, and each click reports its flow
+ * coordinates so the disclosure card can be anchored to it. A symmetric
+ * relationship has no role badges, which is why the stereotype is a badge
+ * too — otherwise a shared kernel could never be marked.
  */
 let {
 	id,
@@ -20,8 +29,7 @@ let {
 	style,
 	data,
 	...ends
-}: EdgeProps & { data?: { sourceLabel?: string; targetLabel?: string } } =
-	$props();
+}: EdgeProps & { data?: ContextEdgeData } = $props();
 // An edge's ends never change once created, so the initial ids are the ids.
 // svelte-ignore state_referenced_locally
 const sourceNode = useInternalNode(source);
@@ -50,19 +58,26 @@ const edgeStyle = $derived(
 	[style, stroke && `stroke: ${stroke}`].filter(Boolean).join("; ") ||
 		undefined,
 );
+/** By-design is the unmarked default, so only the other two name a class. */
+const mark = $derived(
+	data?.disposition && data.disposition !== "by-design" ? data.disposition : "",
+);
+/** A role badge hovers to its pattern names, then to what is known about the intent. */
+const titleFor = (text: string) =>
+	[roleTitle(text), data?.summary].filter(Boolean).join("\n");
 </script>
 
 {#if params && path}
 	<BaseEdge {id} path={path[0]} {markerEnd} style={edgeStyle} class="context-edge" />
 	{#if label}
-		<text class="edge-label stereotype" x={path[1]} y={path[2]} text-anchor="middle" dominant-baseline="middle">{label}</text>
+		<PortBadge class="stereotype" x={path[1]} y={path[2]} label={String(label)} title={data?.summary} {mark} onclick={data?.onBadgeClick} />
 	{/if}
 	{#if data?.sourceLabel}
 		{@const at = portCentre(params.sourceX, params.sourceY, params.sourcePosition)}
-		<PortBadge class="role upstream" x={at.x} y={at.y} label={data.sourceLabel} title={roleTitle(data.sourceLabel)} />
+		<PortBadge class="role upstream" x={at.x} y={at.y} label={data.sourceLabel} title={titleFor(data.sourceLabel)} {mark} onclick={data.onBadgeClick} />
 	{/if}
 	{#if data?.targetLabel}
 		{@const at = portCentre(params.targetX, params.targetY, params.targetPosition)}
-		<PortBadge class="role downstream" x={at.x} y={at.y} label={data.targetLabel} title={roleTitle(data.targetLabel)} />
+		<PortBadge class="role downstream" x={at.x} y={at.y} label={data.targetLabel} title={titleFor(data.targetLabel)} {mark} onclick={data.onBadgeClick} />
 	{/if}
 {/if}

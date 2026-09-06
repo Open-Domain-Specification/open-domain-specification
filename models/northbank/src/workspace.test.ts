@@ -13,6 +13,11 @@ import { workspace } from "./workspace";
  */
 const deliberate: Array<{ rule: string; severity: "error" | "warning" }> = [
 	{ rule: "separate-ways", severity: "error" },
+	// The same violated separate ways, seen from the other side: Channels calls
+	// Credit Decisioning and separate ways is the declaration that they do not
+	// integrate, so it accounts for nothing and `relationship-declared` still
+	// asks how the two contexts stand to each other (card 70).
+	{ rule: "relationship-declared", severity: "warning" },
 	{ rule: "consumable-kind", severity: "error" },
 	{ rule: "context-serves-subdomain", severity: "warning" },
 ];

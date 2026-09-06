@@ -4,35 +4,66 @@ import { describe, expect, it } from "vitest";
 import { petstoreModel } from "../fixtures";
 import ConsumesTable from "./ConsumesTable.svelte";
 
-function firstConsumption() {
-	const { workspace } = petstoreModel();
-	for (const bc of workspace.boundedcontexts.values())
-		for (const m of [...bc.aggregates.values(), ...bc.services.values()])
-			for (const c of m.consumptions) return c;
-	throw new Error("petstore has no consumptions to test with");
-}
+const consumptions = (): Consumption[] =>
+	[...petstoreModel().workspace.boundedcontexts.values()].flatMap((bc) =>
+		[...bc.aggregates.values(), ...bc.services.values()].flatMap(
+			(m) => m.consumptions,
+		),
+	);
 
 describe("ConsumesTable", () => {
-	it("shows nothing when there are no consumptions", () => {
-		render(ConsumesTable, { consumptions: [] });
+	it("names what is consumed, who provides it, from which context, what makes the call, and the protection", () => {
+		const rows = consumptions();
+		const { container } = render(ConsumesTable, { consumptions: rows });
 		expect(
-			screen.getByText("Depends on nothing outside itself."),
+			[...container.querySelectorAll("thead th")].map((th) =>
+				th.textContent?.trim(),
+			),
+		).toEqual(["Consumable", "Provider", "Context", "Made By", "Protection"]);
+		expect(container.querySelectorAll("tbody tr")).toHaveLength(rows.length);
+		expect(
+			container.querySelector(".codicon-symbol-class"),
+		).toBeInTheDocument();
+		// The protection is a code from the pattern table, in the editor font.
+		expect(
+			container.querySelector("tbody td:nth-child(5) .keyword.mono"),
 		).toBeInTheDocument();
 	});
 
-	it("shows the declared protection pattern", () => {
-		const consumption = firstConsumption();
-		expect(consumption.pattern).toBeTruthy();
-		render(ConsumesTable, { consumptions: [consumption] });
-		expect(screen.getByText(consumption.pattern as string)).toBeInTheDocument();
+	it("names the consumer's own operation behind a consumption, and says so when it is the whole consumer", () => {
+		// Sales asks Catalog to reserve a pet, to mark it sold and to read its
+		// summary, from one operation of its own each — a call is made by an
+		// operation (card 92); the whole of Inventory's projection takes the pet
+		// facts.
+		const { container } = render(ConsumesTable, {
+			consumptions: consumptions(),
+		});
+		const madeBy = [...container.querySelectorAll("tbody tr")].map((tr) => [
+			tr.querySelector("td:nth-child(1)")?.textContent?.trim(),
+			tr.querySelector("td:nth-child(4)")?.textContent?.trim(),
+		]);
+		expect(madeBy).toContainEqual(["ReservePetForOrder", "ReservePet"]);
+		expect(madeBy).toContainEqual(["MarkPetSoldForOrder", "MarkPetSold"]);
+		expect(madeBy).toContainEqual(["GetPetSummary", "CheckPetAvailable"]);
+		expect(madeBy).toContainEqual(["PetRegistered", "whole consumer"]);
+		expect(screen.getAllByText("whole consumer")[0]).toHaveClass("keyword");
 	});
 
-	it("shows 'unspecified' when no protection pattern is declared", () => {
-		const consumption = {
-			...firstConsumption(),
-			pattern: undefined,
-		} as unknown as Consumption;
-		render(ConsumesTable, { consumptions: [consumption] });
-		expect(screen.getByText("unspecified")).toBeInTheDocument();
+	it("says a consumption with no declared protection is unspecified", () => {
+		const rows = consumptions();
+		const bare = rows[0];
+		Object.defineProperty(bare, "pattern", {
+			value: undefined,
+			configurable: true,
+		});
+		render(ConsumesTable, { consumptions: [bare] });
+		expect(screen.getByText("unspecified")).toHaveClass("keyword");
+	});
+
+	it("says what would fill it when the context depends on nothing", () => {
+		render(ConsumesTable, { consumptions: [] });
+		expect(screen.getByText("Depends on nothing outside itself.")).toHaveClass(
+			"empty",
+		);
 	});
 });

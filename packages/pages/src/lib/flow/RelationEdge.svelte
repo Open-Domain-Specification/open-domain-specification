@@ -13,8 +13,14 @@ import PortBadge from "./PortBadge.svelte";
  * A UML connector for one entity relation, picked by the edge `type`:
  * `relation-includes` is a composition (filled diamond on the whole),
  * `relation-references` a navigable association (open arrow) and
- * `relation-uses` a dependency (dashed, open arrow). The core expresses no
- * aggregation, so there is no hollow diamond. The role label sits at the
+ * `relation-uses` a dependency (dashed, open arrow). `relation-identifies` is
+ * a dependency too — the identity an attribute holds of another root, the one
+ * line allowed to cross a bounded context — and says so with an «identifies»
+ * stereotype, since its dashes alone would read as a "uses".
+ * `relation-specialises` is a generalisation: a solid line with a hollow
+ * triangle at the thing the kind is a kind of, carrying neither label nor
+ * multiplicity, because the line says the whole of it (decision 22). The core
+ * expresses no aggregation, so there is no hollow diamond. The role label sits at the
  * midpoint and the multiplicities are ports at the ends: the cardinality at
  * the target, as in the Graphviz image, and "1" at the whole of a
  * composition. Ends follow the diagram options: fixed handles or floating
@@ -37,8 +43,12 @@ const sourceNode = useInternalNode(source);
 const targetNode = useInternalNode(target);
 
 const relation = $derived(type.replace(/^relation-/, ""));
-const dashed = $derived(relation === "uses");
+const dashed = $derived(relation === "uses" || relation === "identifies");
 const diamond = $derived(relation === "includes");
+const triangle = $derived(relation === "specialises");
+const text = $derived(
+	relation === "identifies" && label ? `«identifies» ${label}` : label,
+);
 
 const params = $derived(
 	edgeEndpoints(ends, sourceNode.current, targetNode.current),
@@ -63,6 +73,11 @@ const path = $derived(
 		<marker id={`${id}-vee`} viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" markerUnits="strokeWidth" orient="auto">
 			<path d="M0,0 L10,5 L0,10" class="marker-stroke" />
 		</marker>
+		<!-- UML's generalisation: a closed triangle the background shows through,
+		     so the line reads as "is a kind of" rather than as an arrow. -->
+		<marker id={`${id}-triangle`} viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" markerUnits="strokeWidth" orient="auto">
+			<path d="M0,0 L10,5 L0,10 Z" class="marker-hollow" />
+		</marker>
 	</defs>
 	<BaseEdge
 		{id}
@@ -70,10 +85,10 @@ const path = $derived(
 		class={`relation-edge ${relation}${dashed ? ` ${DASHED_EDGE_CLASS}` : ""}`}
 		style="stroke: var(--fg); stroke-opacity: 0.7;"
 		markerStart={diamond ? `url(#${id}-diamond)` : undefined}
-		markerEnd={diamond ? undefined : `url(#${id}-vee)`}
+		markerEnd={diamond ? undefined : `url(#${id}-${triangle ? "triangle" : "vee"})`}
 	/>
-	{#if label}
-		<text class="edge-label" x={path[1]} y={path[2]} text-anchor="middle" dominant-baseline="middle">{label}</text>
+	{#if text}
+		<text class="edge-label" x={path[1]} y={path[2]} text-anchor="middle" dominant-baseline="middle">{text}</text>
 	{/if}
 	{#if data?.sourceLabel}
 		{@const at = portCentre(params.sourceX, params.sourceY, params.sourcePosition)}
@@ -88,4 +103,5 @@ const path = $derived(
 <style>
 	.marker-fill { fill: var(--fg); stroke: none; }
 	.marker-stroke { fill: none; stroke: var(--fg); stroke-width: 1px; }
+	.marker-hollow { fill: var(--bg); stroke: var(--fg); stroke-width: 1px; }
 </style>

@@ -6,35 +6,259 @@
 
 ## `aggregate-root` (warning, error)
 
-**Requires:** Every aggregate has exactly one root entity.
+**Requires:** Every aggregate of a context whose insides are knowable has exactly one root entity.
 
-**Why it matters:** The root is the one thing you name the cluster after and reach it through; without it nobody knows where the rules are enforced, and with two the boundary is really two aggregates.
+**Why it matters:** The root is the one thing you name the cluster after and reach it through; without it nobody knows where the rules are enforced, and with two the boundary is really two aggregates. A big ball of mud is exempt: it is the enterprise's own system, so it is not external, but nobody can read it well enough to say what leads its clusters, and demanding a root there only invites an invented one (decision 28).
 
-**Usual fix:** Mark the entity the aggregate is named after with root: true, or split the aggregate if two entities genuinely lead their own clusters.
+**Usual fix:** Mark the entity the aggregate is named after with root: true, or split the aggregate if two entities genuinely lead their own clusters. If the truth is that nobody knows, and the context really is one nobody can read, say so with bigBallOfMud: true rather than guessing.
 
 ## `cross-aggregate-reference` (error)
 
-**Requires:** A relation into another aggregate uses references and targets that aggregate's root.
+**Requires:** A relation into another aggregate uses references and targets that aggregate's root, or a kind of that root; a relation to a value object crosses nothing.
 
-**Why it matters:** Aggregates are consistency boundaries; reaching inside another one couples the two so they can no longer change or be stored independently.
+**Why it matters:** Aggregates are consistency boundaries; reaching inside another one couples the two so they can no longer change or be stored independently. A value object belongs to the whole context rather than to one aggregate, so using one is not reaching into anybody. A kind of the root is the root said more precisely — an instance of it is an instance of the root, carrying the same identity — so naming the kind the business names reaches no further inside than naming the root would.
 
-**Usual fix:** Change the relation to "references" and point it at the other aggregate's root entity, holding only its identity.
+**Usual fix:** Change the relation to "references" and point it at the other aggregate's root entity, or at a kind of that root, holding only its identity. When the thing you mean is a child of that aggregate, hold its id as an attribute beside the root's: the pair says which child without reaching past the root that owns it.
+
+## `cross-context-relation` (error)
+
+**Requires:** A relation never crosses a bounded context; only an identity does.
+
+**Why it matters:** Each context is its own model with its own language and lifecycle (decision 03), so a relation across the boundary makes one context's entity part of the other's object graph and the two can no longer be loaded, changed or stored apart. Decision 08's crossing table already says an entity relation's target may not cross a file, and splitting the contexts into their own files is exactly what turns this relation into a load error.
+
+**Usual fix:** Delete the relation and give the source an attribute holding the other entity's identity — an Order in Sales carries petId rather than a relation to Catalog's Pet. That identity may name a child of the other model as readily as its root, since the child is reached through that root. The dependency between the two contexts then reads where it belongs, on the consumable map: the consumable the source consumes and the context relationship between the two.
+
+## `identifies-entity` (error)
+
+**Requires:** An attribute's identifies names an entity of this workspace, root or child, in any aggregate of any context, or a bounded context marked external.
+
+**Why it matters:** An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about, and it is the one dependency allowed to cross a bounded context (decision 14). That thing may be a child, because systems point at child identities constantly — a playback session names a profile inside a household, a claim a coverage inside a policy, a shipment an order's line — and the child stays inside its aggregate exactly because its parent's invariants need it there; you hold the child's id, with its root's id beside it, and reach it through that root, so the dependency is really on the aggregate the root leads. Holding the id is not reaching inside: what reaches inside is a relation into another aggregate's members, and cross-aggregate-reference refuses that and recommends this id in its place. It may also be an external context: a card scheme's authorisation id or a payment provider's customer id belongs to a system whose entities are not ours to state (decision 28), so the attribute names the system and the maps still draw the dependency. A context that is not external is refused, because there the entity exists and naming the whole context would say less. What the id may never name is something this workspace does not have, since then it reaches nothing.
+
+**Usual fix:** Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child, with the root's id beside it — or, for an id that belongs to a system you do not model inside, at that system's bounded context, marked external: true. Check the target has not been renamed or moved out from under the attribute.
+
+## `root-identity` (error)
+
+**Requires:** The root entity of an aggregate in a context whose insides are knowable declares at least one identity attribute.
+
+**Why it matters:** An entity is the thing that stays itself while its values change, and the root is what the rest of the model reaches the aggregate by. With no identity on it, nothing can say which one of them a reference, an event payload or a stored row is about. A big ball of mud is exempt for the same reason it is exempt from aggregate-root: nobody can read its keys either (decision 28).
+
+**Usual fix:** Mark the attribute the business uses to tell one apart — the order number, the customer id — with identity: true, or make the element a value object if there really is nothing to identify.
+
+## `entity-identity` (warning)
+
+**Requires:** Every non-root entity of a context whose insides are knowable declares at least one identity attribute.
+
+**Why it matters:** An entity is precisely the thing you can still tell apart from another one holding exactly the same values. Without an identity attribute nothing does the telling apart, so the element is a value object that has been filed under the wrong heading, and readers will expect a lifecycle and a history it does not have. A kind counts as identified by what it is a kind of, since it has that entity's attributes as its own. A big ball of mud is exempt, as it is from aggregate-root and root-identity: nobody can read a legacy system well enough to say which of its columns tells one row from another, and asking only invites an invented key (decision 28).
+
+**Usual fix:** Give the entity the attribute the business identifies it by — the line number, the reference — with identity: true, or make it a value object, which is usually what an entity with nothing to identify really was. If the truth is that nobody knows, and the context really is one nobody can read, say so with bigBallOfMud: true rather than guessing.
+
+## `value-object-shape` (error)
+
+**Requires:** A value object declares no identity attribute, and its relations use other value objects: it includes nothing, references nothing and reaches no entity.
+
+**Why it matters:** Two value objects with the same values are the same value: that is what makes them safe to copy, compare and replace. An identity attribute contradicts that; includes claims a lifecycle a value object does not own; and a reference holds another aggregate's identity, which a value has none of. Reaching an entity is the one cross-aggregate-reference cannot see — that rule reads the aggregate at each end and a value object sits in none, since it belongs to the whole context — so a value pointing into another aggregate's insides went unreported while the same relation from an entity was refused. The reason here is the value's own: a value is a value of something, and nothing is reached through it.
+
+**Usual fix:** Drop identity: true from the attribute, or promote the element to an entity if it really has a life of its own; change an includes or a references on a value object to uses; and where the target is an entity, hold its id as an attribute with identifies instead of relating to it.
+
+## `identity-not-optional` (error)
+
+**Requires:** An identity attribute is not marked optional.
+
+**Why it matters:** An identity is the one thing that tells an instance apart from another holding exactly the same values, and it is what a reference, an event payload or a stored row names that instance by. An identity that is sometimes absent cannot do either job: the instances without it are indistinguishable and unreachable, so what the element really has is no identity at all.
+
+**Usual fix:** Drop optional: true from the identity attribute. If the value genuinely is sometimes missing, it is not the identity — mark the attribute the business always has as the identity instead, or make the element a value object if there is nothing it is always identified by.
+
+## `specialisation-in-boundary` (error)
+
+**Requires:** An entity is a kind of an entity of its own aggregate; a value object is a kind of one its own context declares, or one it borrows through a shared kernel or as a conformist of the context that owns it.
+
+**Why it matters:** A kind is the same thing said more precisely, so it lives where the thing lives. An entity and the entity it is a kind of are loaded, saved and kept consistent through one root, and a parent in another aggregate would make one boundary's rules depend on another's. A value object is part of a context's ubiquitous language, and that language is legitimately shared in two places: a shared kernel, the declaration that two contexts keep part of one model between them, and a conformist's relationship with its upstream, where the downstream has said it takes that model as it stands.
+
+**Usual fix:** Move the parent into the same aggregate as the kind, or the kind into the parent's; for a value object, declare the parent in this context, declare the shared kernel with the context that owns it if the two really do keep it in step, or declare this context a conformist of that one if it takes that model as it stands.
+
+## `specialisation-cycle` (error)
+
+**Requires:** No chain of "is a kind of" returns to where it started.
+
+**Why it matters:** A kind adds to what it is a kind of, so the chain has to end somewhere at the thing all of them are. A ring has no such end: no reader and no tool can list what any element on it holds, because every answer needs the next one first, and whatever concept the chain was refining has been lost.
+
+**Usual fix:** Point one of the links at the thing both of them really are, or drop it: two elements that are each a kind of the other are one element, or they are two kinds of a third that has not been named yet.
+
+## `specialisation-not-root` (error)
+
+**Requires:** An entity that is a kind of another is not itself marked root.
+
+**Why it matters:** An aggregate has exactly one root, and it is what everything else reaches the aggregate by. A kind of the root is reached through the root — an instance of the kind is an instance of it — so marking the kind root as well leaves a reference with two entities to land on and no way to say which the aggregate is saved through.
+
+**Usual fix:** Drop root: true from the kind and leave it on the entity it is a kind of. If the kind really does lead a cluster of its own, it is another aggregate rather than a kind.
+
+## `specialisation-redeclares` (error)
+
+**Requires:** A kind does not declare an attribute it already has from what it is a kind of.
+
+**Why it matters:** The kind already has every attribute of its parent; declaring one of them again gives the same name two types, two descriptions and two places to change, and a reader has no way to tell which of them applies. It is also the usual sign of a hierarchy drawn after the fact over two elements that were written separately.
+
+**Usual fix:** Delete the attribute from the kind and leave the parent's. If the kind genuinely holds something different under that name, the two are not the same attribute: give the kind's its own name, or the parent's attribute belongs on its other kinds rather than on the parent.
+
+## `aggregate-tree` (error, warning)
+
+**Requires:** Inside an aggregate, includes points at entities and uses at value objects, and every entity is reachable from the root.
+
+**Why it matters:** The aggregate is loaded and saved as one thing through its root, so the parts of one instance hang off it as a tree. That is a claim about instances, and the model declares types, so no ring in the type graph is reported at all: a questionnaire whose groups hold questions that hold groups is a finite tree in every instance, and so is a category of categories. Keeping the instance tree a tree is the code's job. What the type graph can say is checked: an includes onto a value object or a uses onto an entity says the opposite of what the author means, and an entity nothing reaches is either dead or a missing relation. A kind is reached wherever the entity it is a kind of is reached, since an instance of it is one of those; specialisation is not containment and never joins the tree itself.
+
+**Usual fix:** Point includes at entities and uses at value objects, and give an unreachable entity the relation that reaches it — or move it to its own aggregate.
+
+## `attribute-relation-coherence` (warning)
+
+**Requires:** An attribute typed by a value object has a matching uses relation, matched by the relation's for where one value object is used twice, and the two agree about how many there are.
+
+**Why it matters:** The attribute list and the relation map are two views of the same statement. When one has what the other lacks, a reader gets a different model depending on which page they opened; and when they disagree about number the model says two things at once. Presence is not size: optional says whether the attribute is there and the cardinality says how many the value holds, so a required list may still hold none — Swagger's photoUrls is required with no minimum — and only three pairings are coherent. One value object may be used twice, a current address beside an address history, so with several relations to it each says with for which attribute it draws; the label stays the phrase the map reads. What a kind inherits counts as its own on both sides, so the pair may be completed by whatever it is a kind of.
+
+**Usual fix:** Add the missing uses relation or the missing attribute, and give the relation the cardinality the attribute already implies: * or 1..* for a list whether or not it is optional, 1 for a required attribute that is not a list, 0..1 for an optional one that is not a list. Where two relations point at the same value object, set for on each to the name of the attribute it draws. The type itself is free text and is never checked against the value object's name; only a trailing [] is read, as "many".
+
+## `relation-for-resolves` (error)
+
+**Requires:** A relation's for names an attribute of the entity or value object that declares the relation.
+
+**Why it matters:** for is how a relation says which attribute it draws, so that a label can stay a phrase where one value object is used twice. A for naming nothing pairs nothing: the attribute has been renamed or removed, or the name written is the target's rather than the source's, and the coherence check silently loses the half it was meant to find.
+
+**Usual fix:** Write the name of the attribute on this entity or value object that the relation draws, spelled as the attribute is; an attribute a parent declares counts as this one's own. Where the relation is the only one to its target, drop for altogether and the two halves pair by themselves.
+
+## `attribute-one-shape` (error)
+
+**Requires:** An attribute is typed by a value object or by a schema, never by both, and only a schema's attribute names a schema.
+
+**Why it matters:** A value object and a schema are two different things to be. A value object is a concept the context models and compares by value; a schema is a payload shape the context publishes to whoever is listening. An attribute claiming both leaves a reader unable to say which model the field belongs to, and a change to either shape becomes a change nobody can scope. For the same reason an entity or a value object holds only value objects: a payload shape belongs at the boundary, and letting one inside puts the vocabulary of the wire into the model the boundary exists to protect.
+
+**Usual fix:** Keep the value object when the attribute is a concept of the domain, and the schema when it is a nested part of a payload; drop the other. On an entity or a value object, declare the value object the field really is and point at that. Collections stay in the type string, so a list of a nested shape is OrderLine[] beside one schema reference.
+
+## `invariant-in-value-object` (error)
+
+**Requires:** Every element a value object's invariant constrains is an attribute of that value object, or the value object itself.
+
+**Why it matters:** A value is defined by what it holds, and a rule about it is kept by refusing to make one that breaks it: an IBAN whose checksum fails is not a badly configured IBAN, it is not an IBAN. Such a rule needs no save and no guard, and it can only be about what the value carries — a value object knows nothing of the entity holding it, of another value, or of any operation, so a rule naming one of those is a rule the value cannot keep.
+
+**Usual fix:** Point the invariant at this value object's own attributes. If the rule is really about the thing that holds the value — a transition, a balance across two entities — move it to that aggregate; if it is about several instances at once, it is the context's (decision 27).
+
+## `invariant-in-aggregate` (error)
+
+**Requires:** An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object something in the aggregate holds, its context's own or one borrowed from elsewhere, or is an operation of a service of its own context, application or domain, that guards it. A precondition may also constrain attributes of a schema the operation it guards takes, returns or rejects with.
+
+**Why it matters:** Naming an operation says which operation keeps the rule; it does not say what kind of rule it is. The invariant says that itself, with precondition: set, it is checked before that operation runs and nothing re-establishes it afterwards — enough funds at initiation, an entitlement at playback start, a pet still available at approval. Unset, the operation is named for responsibility and the rule is still true after it: PostEntry must produce balanced postings and the postings stay balanced. The invariant's page says which of the two it is reading, because the two promise different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not, wherever it was declared. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts. A precondition reaches one place further still: what it checks is often in the request rather than in the model — pickup before delivery, a positive weight, on a quotation no aggregate holds yet — so it may name attributes of a schema its guarded operation takes, returns or rejects with. No other invariant may: a rule kept true on every save is a rule about the model, and a transport shape is not the model.
+
+**Usual fix:** Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one, and it is asked of the context's own values as much as of borrowed ones. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them; the attributes it may then constrain are those of that operation's own schema, returns or rejections.
+
+## `invariant-in-context` (error)
+
+**Requires:** Every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, a value object something in the context holds, its own or a borrowed one, or one of its operations. A precondition may also constrain attributes of a schema the operation it guards takes, returns or rejects with.
+
+**Why it matters:** A context's invariant is the rule that holds across its own instances — one open application per customer, one active offer per seller and SKU — and the context can hold it because everything it counts is its own to read in one place. A value borrowed over a shared kernel is its own to read too, once one of its aggregates holds one: the instance is here even though the definition is not, and the holding is the whole question, asked of the context's own values as much as of borrowed ones. A rule reaching into another context's entities, or into a value nothing here holds, counts what a neighbour owns or what nobody keeps, which is a consistency no boundary offers. That rule is a policy or a process reacting to the other context's events instead. A precondition is the one rule that may look at a request: it runs before the call, and what it checks — pickup before delivery, a positive weight — is often in the call rather than in anything saved, so it may name attributes of a schema its guarded operation takes, returns or rejects with.
+
+**Usual fix:** Point the invariant at this context's own model, or at a value object its aggregates hold — give an entity or a value here an attribute typed by it, which is what says the context holds one — or move the rule to the context that owns what it counts. Where the two contexts really must agree, model the reaction: the other context raises an event and a policy here issues the operation that responds. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them.
+
+## `context-invariant-guarded` (error)
+
+**Requires:** A context's invariant names at least one operation of that context as a guard.
+
+**Why it matters:** No instance can see its siblings, so nothing enforces a cross-instance rule as a side effect of being saved. It holds only because something checks it before acting: the operation that refuses the second open application, the one that counts the household's open sessions before starting another. Naming that operation is the difference between a rule the model can be read for and a sentence with nowhere to look.
+
+**Usual fix:** Name the operation that does the checking in constrains, alongside what the rule is about. If no operation checks it, the rule is not being kept: either the check belongs somewhere and has not been modelled, or the rule holds inside one aggregate and belongs there instead.
+
+## `precondition-names-operation` (error)
+
+**Requires:** An invariant marked a precondition names at least one operation it guards.
+
+**Why it matters:** A precondition is a rule checked at one moment — before a particular call runs — and not kept true afterwards. Marking one without naming that call says a rule stops holding after something the model never identifies, which leaves a reader with a sentence and nowhere to look for the check. It is also how the flag stays a statement rather than a way of quietly weakening every rule it is put on.
+
+**Usual fix:** Name the operation that does the checking in constrains, alongside what the rule is about. If nothing checks it before acting, the rule is not a precondition: drop the flag, and the operations it names — if any — keep it and it holds after them.
+
+## `relationship-roles-backed` (warning)
+
+**Requires:** A directed relationship's declared roles are carried by consumables and consumptions crossing between the two contexts — or, for published language and for conformist, by the downstream borrowing the upstream's shapes — and a crossing consumption's role is declared on the relationship.
+
+**Why it matters:** The context map and the consumable map are the same integration told twice, strategically and concretely. A role on the map that nothing carries is a claim about a team's way of working with nothing behind it, and a consumption whose role the map never mentions is an integration decision made without the map noticing.
+
+**Usual fix:** Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a schema, since a published language is a data shape rather than a second flag, and equally by the downstream naming one of the upstream's schemas or value objects: a standards body publishes a language and offers nothing to consume, so the shapes borrowed from it are the whole of what it provides. A conformist role is backed by borrowing too: a downstream naming one of the upstream's schemas or value objects has adopted its model, which is what the role says, so a conformist to a standards body needs no consumption to prove it.
+
+## `relationship-declared` (warning)
+
+**Requires:** Two contexts joined by a crossing — a consumption of the other's consumable, a policy or process reacting to the other's event, or an entity or value object holding an identity that names the other's entity — declare a relationship in that direction.
+
+**Why it matters:** Decision 03 made the relationship the place where the terms of an integration are written: who is upstream, what the provider commits to, whether the consumer translates. A consumption or an identity with no relationship still draws on the context map, as a dashed implied edge, but that edge only says a dependency exists; the relationship is what says on what terms, and it is the thing a team can argue about, comment on and change. A subscription counts because reacting to a neighbour's event is an integration by another route, the same one separate ways forbids and a partnership is backed by; the map draws it through the consumption subscription-consumed requires. An identity counts because since decision 14 it is the only structural record that one context's model depends on another's, even when nothing is consumed — an identity echoed in a payload schema is not that, because the payload carries it for its reader and the context publishing it owes the other nothing.
+
+**Usual fix:** Declare the relationship the two contexts really have, naming both of them: upstream-downstream or customer-supplier from the provider to the consumer, or a partnership or shared kernel if they meet as equals — either of those counts whichever way round the crossing runs. Separate ways does not count: it says the two do not integrate, so it contradicts the crossing instead of explaining it. If neither context should depend on the other, remove the crossing rather than declaring a relationship for it.
+
+## `relationship-duplicate` (error)
+
+**Requires:** A pair of contexts declares at most one relationship of each type and direction; a symmetric type has no direction, so either order counts as the same one.
+
+**Why it matters:** A relationship is the one model element with no id of its own — its ref is the two contexts and the type. Declare the same one twice and both carry the same ref, so only the first can ever be reached: the second's description, comments and disposition are written somewhere no reader, link or tool will land, and the model has quietly lost them.
+
+**Usual fix:** Roles go on one relationship: keep a single declaration between the pair and give it every upstream and downstream role the crossings carry, then delete the other. If the two contexts really do stand in two different ways, one of those ways is a different type of relationship, not a second copy of the same one.
+
+## `relationship-cycle` (warning)
+
+**Requires:** The directed relationships whose traffic is calls form no cycle; steps carried only by events, and steps the downstream translates behind an anti-corruption layer, do not count.
+
+**Why it matters:** Downstream means a context shapes its model around what the upstream offers. In a ring of calls the contexts depend on each other's contracts: each one is written against a neighbour's model that is written against its own. Two kinds of step are exempt because neither creates that dependency. Events are one: reacting to a fact commits nobody to another model's shape, and rings of reactions are reaction-cycle's business instead. An anti-corruption layer is the other: the downstream translates at its edge, so the upstream's contract stops there and each side stays free to change, which is the whole point of the pattern.
+
+**Usual fix:** Put an anti-corruption layer on one of the steps, so that context translates what it calls and can change behind it; or declare a partnership where two of the contexts really do move as one, which says the mutual dependency is deliberate; or reverse a dependency by turning that call into an event the other side reacts to.
+
+## `partnership-backed` (warning)
+
+**Requires:** Two contexts declaring a partnership exchange consumables — or events a policy reacts to — in at least one direction.
+
+**Why it matters:** A partnership says two teams succeed or fail together and plan their releases as one. That is a fact about the teams, not about the direction of the arrows, so traffic one way is enough: one side may consume everything the other publishes and give back nothing, and the joint release train is still real. What the rule will not accept is a partnership with no exchange at all, which is a wish — nothing in the model holds the two contexts together, and the relationship is a claim on the map with nothing under it.
+
+**Usual fix:** Add the consumable, or the event a policy reacts to, that the partnership is really about; or replace the partnership with the relationship the two contexts actually have — separate ways if they genuinely never meet.
+
+## `shared-kernel-backed` (warning)
+
+**Requires:** Two contexts declaring a shared kernel share something across it: a value object, a schema, or an operation one of them calls on the other.
+
+**Why it matters:** A shared kernel is a piece of model two teams agree to keep in step, and it costs them the freedom to change it alone. Declaring one with nothing in it pays that price for nothing, and it stands in the model as the warrant for a sharing nobody has made: it is one of the two declarations over which a value object or a payload schema may be borrowed, and the only symmetric one — a conformist borrows downstream from its upstream and nothing comes back. Shapes are not the whole kernel, though. Anything in it with identity and behaviour is an aggregate of a kernel context both sides reach through its operations rather than a value either side copies, so calling one of those operations is the sharing too (decision 16).
+
+**Usual fix:** Type an attribute by a value object the other context declares, nest one of its schemas in an attribute, carry one on a consumable, or consume one of its operations; or replace the shared kernel with the relationship the two contexts really have.
+
+## `conformist-backed` (warning)
+
+**Requires:** A downstream that declares the conformist role takes something of its upstream's: a schema or value object named here, or anything the upstream provides consumed here.
+
+**Why it matters:** Conformist is the strongest thing a downstream can say about itself: it gives up its own language for the upstream's and accepts every change the upstream makes. It is also what lets this context name the upstream's schemas and value objects at all, so a reader takes it as the warrant for a borrowing. Declared between two contexts that exchange nothing at all, it is a claim on the map with nothing under it, exactly as an empty shared kernel or an unbacked partnership is. What the rule does not ask is that the conforming show in the shapes: whether a downstream subscribing to a published event translates it or takes it as it comes is not something the model records, so asking for a borrowed schema would report every event-driven conformist there is. It does not ask for a payload either: a consumed event whose name is the whole of it is still the upstream's language, and demanding a schema on the event reported the conformists of contexts that publish bare notifications.
+
+**Usual fix:** Consume something the upstream provides, of any kind and with or without a payload, or name one of its schemas or value objects here; or drop the conformist role if the two contexts really exchange nothing.
+
+## `mud-needs-acl` (warning)
+
+**Requires:** A consumption from a big ball of mud declares the anti-corruption-layer downstream role.
+
+**Why it matters:** A big ball of mud has no coherent model to conform to. Taking its shapes as they come drags its confusion across the boundary, and the consumer's own language starts to look like the legacy one.
+
+**Usual fix:** Set pattern: anti-corruption-layer on the consumption and translate at the edge, or drop bigBallOfMud if the context is no longer one.
+
+## `term-in-context` (error)
+
+**Requires:** A glossary term's embodiedBy names an element of the term's own bounded context.
+
+**Why it matters:** The glossary is one context's ubiquitous language, and the same word means something different in the context next door — that is the whole reason contexts have boundaries. A term pointing outside says the two contexts share a meaning they do not.
+
+**Usual fix:** Point the term at the element of its own context that embodies it, add the term to the context that owns that element, or leave embodiedBy off when nothing local embodies it.
 
 ## `role-coherence` (warning)
 
-**Requires:** A consumable used from another context declares an upstream role, and the consumption declares a downstream role.
+**Requires:** A consumable used from another context declares an upstream role, and the consumption declares a downstream role — unless the two contexts are partners or share a kernel.
 
-**Why it matters:** Crossing a context boundary is an integration decision: how the provider offers it (a documented API or a published format) and how the consumer takes it (as-is or translated) should be explicit.
+**Why it matters:** Crossing a context boundary is an integration decision: how the provider offers it (a documented API or a published format) and how the consumer takes it (as-is or translated) should be explicit. Partnership and shared kernel are the exception: neither side is upstream of the other, so there is no role for either end to declare.
 
-**Usual fix:** Set pattern on the consumable to open-host-service or published-language, and pattern on the consumption to conformist or anti-corruption-layer.
+**Usual fix:** Set pattern on the consumable to open-host-service or published-language, and pattern on the consumption to conformist or anti-corruption-layer; or declare the partnership or shared kernel that makes the two contexts equals.
 
 ## `separate-ways` (error)
 
-**Requires:** Contexts that declare separate ways exchange no consumables.
+**Requires:** Contexts that declare separate ways exchange no consumables, and neither context's policies react to the other's events.
 
-**Why it matters:** Separate ways is a deliberate decision not to integrate; a consumption between the two contradicts it.
+**Why it matters:** Separate ways is a deliberate decision not to integrate; a consumption between the two contradicts it, and a policy subscribing to the other's events is the same integration by another route — the coupling is real whether it is declared as a consumption or reached through a policy.
 
-**Usual fix:** Remove the consumption, or remove the separate-ways relationship and declare the real one.
+**Usual fix:** Remove the consumption or the policy's subscription, or remove the separate-ways relationship and declare the real one.
 
 ## `internal-consumable` (error, warning)
 
@@ -44,21 +268,181 @@
 
 **Usual fix:** Drop internal and give the consumable an upstream role, or stop the other context from using it.
 
+## `consumption-once` (error)
+
+**Requires:** A consumer consumes a given consumable once, or several times with each consumption naming callers in by that no other of them names.
+
+**Why it matters:** One pair may carry more than one exchange — an archive taking a provider's response as it stands beside a decision that translates it through an anti-corruption layer, each with its own pattern and disposition — and the callers are what tell them apart. A consumption has no id of its own: its ref is the pair it joins, plus the first caller in by where the pair repeats. So a repeated pair whose consumptions name no caller, or name the same one, produces two consumptions with one ref. Only one of them can ever be reached: the other's pattern, by, comments and disposition are written where no reader, link or tool will land, and any surface keyed by the ref has two rows claiming one key, which is a render crash rather than a model a reader can follow.
+
+**Usual fix:** Name the callers. Give each consumption of the pair the operations, policies or processes of the consumer that make that exchange, and make sure no caller appears in two of them. If the callers are the same, the two are one exchange: merge them, keeping the pattern, comments and disposition either of them carried.
+
+## `consumption-by-resolves` (error)
+
+**Requires:** A consumption's by names the consumer's own operations, or the policies and processes of the consumer's context.
+
+**Why it matters:** A consumption belongs to the consumer: it is that node saying what it depends on, and by is the detail of which of its own operations or reactions make the exchange. Naming another node's operation would have one part of the model declare behaviour it does not own, and the reader would have no way to check it against the node's own page.
+
+**Usual fix:** Point by at operations the consumer itself provides, or at the policies and processes of its bounded context, and let the node that really makes the call declare its own consumption. If nothing narrower than the whole consumer is true, drop by — absent means the whole consumer, which is the common case.
+
+## `consumption-by-operation` (error)
+
+**Requires:** A consumption of an operation names operations in its by; a policy or a process may only be named on a consumption of an event.
+
+**Why it matters:** A subscription is taken in by the reactor itself, with nothing between the fact arriving and the reaction, which is why a policy or a process is allowed there. A call is not like that: a reactor issues an operation of its own context and that operation makes the call (decision 17), and that local operation is where both the flow map and the reaction walk read the boundary. A by naming the reactor skips it — no local operation exists to be drawn, and the chain stops where the caller should have been — while the model reads as though a policy had reached across a boundary itself.
+
+**Usual fix:** Add the consumer's own operation that makes the call, name it in the reactor's then, and put it in by in place of the reactor. If the reactor really does nothing but subscribe, then what it consumes is the event, not the operation.
+
+## `consumption-by-required` (warning)
+
+**Requires:** A consumption of another context's operation names, in by, which of the consumer's own operations makes the call — unless the consumer provides fewer than two operations, and so has nothing to choose between.
+
+**Why it matters:** by is the only causal link the model has across a boundary: the flow map and the reaction walk follow it from a local operation through the consumption to the operation it calls and on to what that raises. Without it a lifecycle running through three contexts reads as three unrelated stubs, each stopping at the edge, and the reader is told only that some part of a six-operation service depends on a neighbour — which is barely more than the context map already said.
+
+**Usual fix:** Name the consumer's own operations that make this call in by. Pick from the operations the message lists; if several of them call out, name them all. A consumer with one operation needs nothing, because that operation is the answer.
+
+## `subscription-consumed` (error)
+
+**Requires:** A policy or process whose on, starts or ends names another context's event has a consumption of that event somewhere in its own context.
+
+**Why it matters:** Reacting to a neighbour's published fact is an integration, and decision 17 says a subscription is a consumption. Written only as a subscription it is nowhere else in the model: neither the context map nor the consumable map draws the dependency, no downstream role says whether the fact is translated or taken as it comes, and the rules that judge an exchange — the anti-corruption layer a big ball of mud needs, the roles a relationship claims — never see it at all.
+
+**Usual fix:** Declare the consumption on the service or aggregate that owns the reaction, which is the node providing the operations the reactor issues, and name the policy or process in its by. Give it the downstream role the reaction really has: conformist if the event is taken as published, anti-corruption-layer if something translates it. If the reactor should not depend on that context, react to an event of your own instead.
+
+## `subscription-backed` (warning)
+
+**Requires:** A consumed event is reacted to by a policy or a process of the consumer's context, or the consumption names in by which of the consumer's parts it is for.
+
+**Why it matters:** subscription-consumed asks the other half of this question, and between them the two say that a subscription and its reaction are one fact written from two sides. A consumption with neither is a claim with nothing under it: the model says this context takes that fact in, nothing in it does anything when the fact arrives, and the consumable map draws an edge a reader cannot follow anywhere. Usually the reaction was never written down; sometimes the dependency is stale.
+
+**Usual fix:** Add the policy or process that reacts to the event and the operation it issues, or name in by the consumer's own operation that reads the feed — a projection that updates, a report that accumulates. If nothing here acts on it, delete the consumption: the dependency is not real.
+
+## `process-in-context` (error)
+
+**Requires:** A process issues operations of its own bounded context; what starts it, what it waits for and what ends it may be another context's events.
+
+**Why it matters:** A process is its context's own way of running something that takes several facts to finish, and like a policy it may only act through its own model: reaching into a neighbour to run an operation there is that context acting through someone else's model rather than through the boundary they published. Listening is different — subscribing to published facts is how contexts integrate — so the events a process starts on, waits for and ends on may cross where the operations it issues may not (decision 23).
+
+**Usual fix:** Give the process's own context an operation that consumes the foreign one — an application service operation is the usual place — and name that in then.
+
+## `process-has-ends` (warning)
+
+**Requires:** A process names at least one event that completes an instance.
+
+**Why it matters:** A process is worth its extra weight only because it remembers something between events, and what is remembered has to be forgotten. Without an ending fact a reader cannot tell whether this is a policy wearing a longer name — stateless, one reaction, nothing to wait for — or a real process whose author never said how it finishes, which is also the state nobody can operate or test.
+
+**Usual fix:** Name the event that means this instance is done in ends — usually one its own then operations raise — or, if nothing is really being waited for, make it a policy again.
+
+## `process-starts` (error)
+
+**Requires:** A process names at least one event that begins an instance.
+
+**Why it matters:** A process has instances, and an instance begins when some fact arrives: without one the model never says when a process exists, so there is nothing to correlate the later events against and nothing for a reader to follow the chain back to.
+
+**Usual fix:** Put the event that begins an instance in starts. If the process really reacts to anything at any time, it is a policy, not a process.
+
+## `policy-in-context` (error)
+
+**Requires:** A policy issues operations of its own bounded context; it may still react to another context's event.
+
+**Why it matters:** A policy is its context's own rule, and reaching into another context to run an operation there is that context acting through someone else's model rather than through the boundary they published. Reacting is different: subscribing to a published event is how contexts integrate, so a policy's on may cross where its then may not (decision 08's crossing table).
+
+**Usual fix:** Give the policy's own context an operation that consumes the foreign one — an application service operation is the usual place — and name that in then.
+
+## `aggregate-not-public` (error)
+
+**Requires:** An aggregate's operations declare no upstream role and are consumed only inside their own context.
+
+**Why it matters:** An aggregate is a consistency boundary, not an integration boundary. When it offers operations outward as well as the application service in front of it, nothing in the model says which of the two is the context's public surface, and a caller outside can change the aggregate without passing the service that guards it. Its events are unaffected: publishing facts is how a context speaks outward.
+
+**Usual fix:** Mark the aggregate's operation internal: true and drop its pattern, then give the context's application service the public operation that consumes it; point the outside caller at that one.
+
+## `aggregate-consumes-inside` (error)
+
+**Requires:** An aggregate consumes only consumables of its own bounded context.
+
+**Why it matters:** An aggregate is a consistency boundary, not a client. A call out of the context is translation, latency and someone else's availability, and none of that belongs inside the transaction that holds an invariant true; an aggregate that waits on a neighbour has made that neighbour part of its consistency boundary. The context's application service owns the use case and calls out, and a policy is how the context reacts to a fact from outside.
+
+**Usual fix:** Move the consumption to the application service that owns the use case, naming its own operation in by where the caller plainly differs, and let that operation pass the result to the aggregate; for a foreign event, add a policy on that event issuing an operation of this context.
+
+## `domain-service-consumes-inside` (error)
+
+**Requires:** A domain service consumes only consumables of its own bounded context.
+
+**Why it matters:** A domain service is the inside of the model: logic that belongs to no single aggregate, written in this context's own words. Decision 17 keeps it internal in the other direction already — nobody outside may call it — and the outbound half is the same principle. A call across a boundary is translation, failure and waiting on somebody else's availability, and logic that has to do that is not this context's own rule about its own model any more.
+
+**Usual fix:** Move the consumption to the application service that owns the use case, naming its own operation in by, and let that operation hand the domain service what it needs; for a foreign event, take it in at the application service with the policy or process that reacts to it named in by.
+
+## `domain-service-internal` (error)
+
+**Requires:** A domain service's operations declare no upstream role and are consumed only inside their own context.
+
+**Why it matters:** A domain service holds domain logic that belongs to no single aggregate — it is the inside of the model, the same as an aggregate. Offering it outward makes another context depend on how this one arranges its logic instead of on what it promises.
+
+**Usual fix:** Mark the domain service's operation internal: true and drop its pattern, then let the context's application service provide the public operation that consumes it.
+
+## `valueobject-context` (error)
+
+**Requires:** An attribute types itself by a value object of its own bounded context, of one it shares a kernel with, or of an upstream it has declared itself a conformist of.
+
+**Why it matters:** A value object is part of a bounded context's ubiquitous language: what a Money, a PetStatus or an IBAN means is settled inside one boundary and may be resettled there. An attribute typed by another context's value writes this model in a word somebody else owns, and the day they redefine it this context changes without anybody editing it. A shared kernel is where two teams have said they keep part of one model between them and accepted the price; a conformist is a downstream that takes the upstream's model as it stands. Those are the two places the borrowing is declared, and the rule reads them exactly as schema-context does.
+
+**Usual fix:** Declare the value object in the context that uses it, in that context's own words; or declare the shared kernel if the two contexts really do keep that value between them; or, if this context takes the other's model as it stands, declare the directed relationship with conformist among its downstreamRoles.
+
 ## `schema-context` (error)
 
-**Requires:** A consumable's payload schema belongs to the consumable's own context.
+**Requires:** A schema named by a consumable's payload, by its returns, by one of its rejections or by a nested attribute belongs to the naming element's own context, to one it shares a kernel with, or to an upstream it has declared itself a conformist of.
 
-**Why it matters:** The context that publishes a message owns its shape; borrowing another context's schema ties the two together.
+**Why it matters:** The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A nested schema is the same borrowing one level down. Two declarations say the tie is intended. A shared kernel is where two teams have said they keep part of one model between them and accepted the price. A conformist is a downstream that has said it takes the upstream's model as it stands rather than translating it, which is exactly what carrying the upstream's shapes is — it is how a regulator's formats or a scheme's record layouts enter a model honestly. That borrowing runs downstream only; the upstream is never shaped by its conformists.
 
-**Usual fix:** Move or copy the schema into the publishing context and point the consumable at that one.
+**Usual fix:** Move or copy the schema into the publishing context and point the consumable or attribute at that one; or declare the shared kernel if the two contexts really do keep that shape between them; or, if this context genuinely takes the other's model as it stands, declare the directed relationship with conformist among its downstreamRoles.
+
+## `returns-on-operation` (error)
+
+**Requires:** Only an operation declares returns; an event never does.
+
+**Why it matters:** returns names what a caller gets back from a request. An event is a fact already published to whoever is listening; there is no caller to answer, so a returns on one describes an exchange that does not happen.
+
+**Usual fix:** Drop returns from the event, or change the consumable's type to operation if it really is a request.
+
+## `rejects-on-operation` (error)
+
+**Requires:** Only an operation declares rejections; an event never does.
+
+**Why it matters:** A rejection is the shape an operation answers with when it refuses: nothing happened and the caller is told why. An event is a fact that already happened and is announced to whoever is listening, so it has nobody to refuse and nothing left to refuse them.
+
+**Usual fix:** Drop rejects from the event, or change the consumable's type to operation if it really is a request that can be refused.
 
 ## `consumable-kind` (error)
 
-**Requires:** Policies react to events and issue operations; only operations raise events, and they raise only events.
+**Requires:** Policies and processes react to events and issue operations; only operations raise events, and they raise only events.
 
-**Why it matters:** An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable.
+**Why it matters:** An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable. A reaction may also wait on an answer, and then two things have to hold: the operation declares that answer, and the reactor can hear it come back — because its context consumes the operation, or because the reactor issues the operation itself, which is the local call-and-branch.
 
-**Usual fix:** Check the type of each consumable a policy or raises list points at and swap it for the right kind.
+**Usual fix:** Check the type of each consumable a policy or raises list points at and swap it for the right kind. For an answer, either declare it on the operation it is named from, or issue or consume that operation.
+
+## `raises-in-context` (error)
+
+**Requires:** An operation raises only events its own bounded context provides.
+
+**Why it matters:** A context publishes its own facts. An event is something that happened inside one boundary, named in that boundary's language, and only the context it happened in is in a position to say so. Raising another context's event claims both that this operation can make a fact true over there and that the neighbour's published event means whatever this one needs — and since the flow map and reaction-cycle read a consumption's by as the causal link across a boundary, a foreign event under raises would fake that link and draw a chain that reaches through the wall.
+
+**Usual fix:** Raise an event of this context and let the other context react to it, or, if the point is to act over there, consume that context's operation and let it raise its own event.
+
+## `raises-restated` (warning)
+
+**Requires:** An operation does not restate under raises an event an operation it calls already raises.
+
+**Why it matters:** An event is raised where it happens, once. When an open-host operation fronts an aggregate's transition and names itself in the consumption's by, the chain already carries that transition's events across to whoever is reading: by is the causal link the flow map draws and reaction-cycle walks. Repeating the event on the front says two things happen instead of one, and the copy is free to drift from what the aggregate actually raises, so the front ends up describing behaviour the aggregate no longer has.
+
+**Usual fix:** Drop the event from the front's raises and leave it on the operation that really raises it; the chain carries it. If the front genuinely produces its own fact as well, that fact is a different event with its own name.
+
+## `event-unraised` (warning)
+
+**Requires:** Every event of a context whose insides are knowable is raised by one of that context's own operations.
+
+**Why it matters:** An event says a fact became true, and the model says what made it true by naming the operation that raises it. An event nothing raises reads as dead model: a reader cannot follow the chain back to the behaviour that causes it, and a policy waiting on it looks like it will never fire. Two contexts are exempt, for the same reason: an external system's insides are not ours to state, and a big ball of mud's cannot be read at all, so a mud context may say what it emits without saying how (decision 28).
+
+**Usual fix:** Name the operation that raises the event with raises; or, if the fact really comes from outside the business, move the event to the system that emits it and mark that context external: true; or, if it comes out of a legacy system nobody can read, mark that context bigBallOfMud: true rather than inventing the job that emits it.
 
 ## `policy-complete` (warning)
 
@@ -68,10 +452,42 @@
 
 **Usual fix:** Add the missing event to on or the missing operation to then.
 
+## `reaction-cycle` (warning)
+
+**Requires:** The reactions form no cycle: no operation raises an event whose policy or process issues an operation that leads back to the first.
+
+**Why it matters:** A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with one exemption that is the whole point of it: a process fed by its own steps — it issues an operation, the operation raises the event it waits for next, and so on to the end — is a lifecycle, not a ring, because the process holds state and declares what ends it (decision 23). So a cycle is reported only when the walk comes back to a reactor other than the one process it started from: a ring through two processes, or through a process and a policy, is a genuine loop and is reported.
+
+**Usual fix:** Break the ring, usually one of the policies is reacting to too broad an event or issues an operation it should not. If the loop is a real feedback loop that converges, say what ends it in the description of the policy that closes the ring; the model has no conditions on purpose (decision 15), so the ending condition is prose a reader finds where the loop closes, and the warning stands to send them there.
+
 ## `context-serves-subdomain` (warning)
 
-**Requires:** Every bounded context serves at least one subdomain.
+**Requires:** Every bounded context serves at least one subdomain, except an external one and a shared kernel context.
 
-**Why it matters:** A context that serves no subdomain has no place in the problem-space view, so nobody can see which part of the business it exists for.
+**Why it matters:** A context that serves no subdomain has no place in the problem-space view, so nobody can see which part of the business it exists for. An external context was never in that view: a card scheme or a licensor is not part of anybody's problem space here. A shared kernel context is under all of it rather than outside it — a library of Money and AccountNumber serves whatever its sharers serve — so asking it for a subdomain of its own only invents one.
 
-**Usual fix:** Add the subdomain the context serves to its subdomains list.
+**Usual fix:** Add the subdomain the context serves to its subdomains list. If the context is somebody else's system, mark it external. If it is a kernel two or more contexts share and nothing else, every relationship it has is a shared kernel and the rule leaves it alone.
+
+## `external-is-boundary` (error)
+
+**Requires:** An external context declares no aggregates, no policies, no processes and no invariants of its own; its value objects may carry invariants, because a standard's published rules are citable.
+
+**Why it matters:** An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. A rule about the context's own instances is different, because that is exactly the invention we cannot make.
+
+**Usual fix:** Move the aggregate, policy, process or context invariant into the context of ours that actually holds it — a rule about several instances is a rule of the context that keeps them — or drop external: true if this is a system the enterprise really does model inside. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay.
+
+## `comments-required` (warning)
+
+**Requires:** Every context relationship carries at least one comment. Opt-in: set options.rules.commentsRequired on the workspace.
+
+**Why it matters:** A relationship is a claim about how two teams meet; without a note saying where that shows up in the real system, nobody can tell whether the map is still true.
+
+**Usual fix:** Add a comment to the relationship saying what backs it in the code, or turn options.rules.commentsRequired off while the evidence layer is still being written.
+
+## `disposition-needs-comment` (warning)
+
+**Requires:** A strategic intent whose disposition is tolerated or refactor carries at least one comment.
+
+**Why it matters:** by-design says nothing is owed. Any other disposition is a claim that something is wrong, and a claim on its own is not actionable: the next reader cannot tell what makes it wrong, how much it costs, or what would let it be cleared. The comment is where that lives, and without it the disposition is a flag nobody can act on or retire.
+
+**Usual fix:** Add a comment to the relationship, consumable, consumption or process saying what the trouble is and what clearing it would take, or set the disposition back to by-design if the intent is how it should be after all.

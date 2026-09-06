@@ -3,37 +3,54 @@ import { Panel } from "@xyflow/svelte";
 import type { Graph } from "./graph";
 import type { DiagramKind } from "./kind";
 import { legendEntries } from "./legend";
-import { diagramOptions } from "./options.svelte";
+import { LEGEND_PANEL_CLASS } from "./panel-fit";
+import type { PanelState } from "./panel-state.svelte";
 
 /**
  * Top-left index of the terms the diagram shows: abbreviations with their
  * full names, line styles and node marks, only those present in the graph.
- * Collapsible from its header; the collapsed state is remembered with the
- * other diagram options. Nothing renders for a graph with no terms.
+ *
+ * A section that opens and closes from its header, as every VS Code panel
+ * does: a chevron and a label in one row, the row is the button, `aria-
+ * expanded` says which way it is and `aria-controls` names the list it opens.
+ * Collapsed it is that row and nothing else, so the fit reserves a corner
+ * rather than a column. It is the first thing to give way when the fit runs
+ * out of room (`panel-fit.ts`); `panel-state.svelte.ts` holds which way it is.
+ * Nothing renders for a graph with no terms.
  */
-let { graph, kind }: { graph: Graph; kind: DiagramKind } = $props();
+let {
+	graph,
+	kind,
+	legend,
+}: { graph: Graph; kind: DiagramKind; legend: PanelState } = $props();
 const entries = $derived(legendEntries(graph, kind));
-const collapsed = $derived(diagramOptions.legendCollapsed);
-const toggle = () => diagramOptions.set({ legendCollapsed: !collapsed });
+const collapsed = $derived(legend.collapsed);
+const uid = $props.id();
+const terms = `legend-terms-${uid}`;
 </script>
 
 {#if entries.length}
-	<Panel position="top-left" class="diagram-legend">
-		<button class="legend-header" type="button" aria-expanded={!collapsed} onclick={toggle}>
-			<i class={`codicon codicon-chevron-${collapsed ? "right" : "down"}`}></i> Legend
+	<Panel position="top-left" class={LEGEND_PANEL_CLASS}>
+		<button
+			class="legend-header"
+			type="button"
+			aria-expanded={!collapsed}
+			aria-controls={terms}
+			onclick={legend.toggle}
+		>
+			<i class={`codicon codicon-chevron-${collapsed ? "right" : "down"}`} aria-hidden="true"></i> Legend
 		</button>
-		{#if !collapsed}
-			<dl class="legend-terms">
-				{#each entries as entry (entry.mark)}
-					<dt>{entry.mark}</dt>
-					<dd>{entry.name}</dd>
-				{/each}
-			</dl>
-		{/if}
+		<dl class="legend-terms" id={terms} hidden={collapsed}>
+			{#each entries as entry (entry.mark)}
+				<dt>{entry.mark}</dt>
+				<dd title={entry.title}>{entry.name}</dd>
+			{/each}
+		</dl>
 	</Panel>
 {/if}
 
 <style>
+	/* The class is panel-fit.ts's LEGEND_PANEL_CLASS; keep the two in step. */
 	:global(.diagram-legend) {
 		max-width: 240px;
 		max-height: calc(100% - 140px);
@@ -47,6 +64,8 @@ const toggle = () => diagramOptions.set({ legendCollapsed: !collapsed });
 		opacity: 0.85;
 	}
 	:global(.diagram-legend:hover) { opacity: 1; }
+	/* Collapsed, the panel is its one row: no scroller and no room to claim. */
+	:global(.diagram-legend:has(.legend-terms[hidden])) { overflow: visible; }
 	.legend-header {
 		display: flex;
 		align-items: center;
@@ -59,6 +78,10 @@ const toggle = () => diagramOptions.set({ legendCollapsed: !collapsed });
 		padding: 0;
 		cursor: pointer;
 	}
+	.legend-header:focus-visible {
+		outline: 1px solid var(--vscode-focusBorder, var(--accent));
+		outline-offset: 2px;
+	}
 	.legend-header .codicon { font-size: 11px; }
 	.legend-terms {
 		display: grid;
@@ -67,6 +90,7 @@ const toggle = () => diagramOptions.set({ legendCollapsed: !collapsed });
 		row-gap: 1px;
 		margin: 4px 0 0;
 	}
+	.legend-terms[hidden] { display: none; }
 	dt { font-weight: 600; color: var(--fg); white-space: nowrap; }
 	dd { margin: 0; white-space: nowrap; }
 </style>

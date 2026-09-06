@@ -1,11 +1,49 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { installXyflowTestEnv } from "../xyflow-test-env";
 import Harness from "./DiagramOptionsPanel.harness.svelte";
 import { createFullscreen } from "./fullscreen.svelte";
 import { diagramOptions } from "./options.svelte";
+import { resetPanelChoices } from "./panel-state.svelte";
 
 installXyflowTestEnv();
+
+beforeEach(() => {
+	sessionStorage.clear();
+	resetPanelChoices();
+});
+
+describe("DiagramOptionsPanel gives way", () => {
+	it("opens and closes from its header, keeping the fullscreen action either way", async () => {
+		const { container } = render(Harness);
+		const header = screen.getByRole("button", { name: "Options" });
+		const controls = container.querySelector(
+			".options-controls",
+		) as HTMLElement;
+		expect(header).toHaveAttribute("aria-expanded", "true");
+		expect(header.getAttribute("aria-controls")).toBe(controls.id);
+		expect(controls.hidden).toBe(false);
+		await fireEvent.click(header);
+		expect(header).toHaveAttribute("aria-expanded", "false");
+		expect(controls.hidden).toBe(true);
+		// The one command action stays: a map too big for the canvas is exactly
+		// when a reader reaches for fullscreen.
+		expect(screen.getByLabelText("Enter fullscreen")).toBeInTheDocument();
+		await fireEvent.click(header);
+		expect(controls.hidden).toBe(false);
+	});
+
+	it("comes up collapsed when the fit has run out of room", () => {
+		const { container } = render(Harness, { crowded: true });
+		expect(screen.getByRole("button", { name: "Options" })).toHaveAttribute(
+			"aria-expanded",
+			"false",
+		);
+		expect(
+			(container.querySelector(".options-controls") as HTMLElement).hidden,
+		).toBe(true);
+	});
+});
 
 describe("DiagramOptionsPanel", () => {
 	it("changes handle placement and edge style through the selects", async () => {

@@ -1,5 +1,21 @@
-import { Workspace } from "@open-domain-specification/core";
-import { money } from "@open-domain-specification/model-tools";
+import {
+	type BoundedContext,
+	Workspace,
+} from "@open-domain-specification/core";
+
+/**
+ * Money, declared once in each context that carries an amount: a value object
+ * belongs to the context's language, and every aggregate in that context
+ * holds the same one.
+ */
+const money = (boundedcontext: BoundedContext) => {
+	const vo = boundedcontext.addValueObject("Money", {
+		description: "An amount in a currency: minor units and an ISO 4217 code",
+	});
+	vo.addAttribute("amountMinor", { type: "int64" });
+	vo.addAttribute("currency", { type: "ISO 4217 code" });
+	return vo;
+};
 
 /**
  * RiverMart: a fictional online retailer in the shape of a large marketplace.
@@ -13,9 +29,9 @@ import { money } from "@open-domain-specification/model-tools";
  *
  * This workspace exists to stress the tooling: many contexts, cross-context
  * events and operations with schemas, a shared kernel, a partnership, a
- * separate-ways pair, a legacy big ball of mud, deep aggregates and three
- * deliberate mistakes (marked DELIBERATE) that trigger the rules
- * aggregate-root, cross-aggregate-reference and role-coherence.
+ * separate-ways pair, a legacy big ball of mud, deep aggregates and two
+ * deliberate findings (marked DELIBERATE) that trigger the rules
+ * aggregate-root and cross-aggregate-reference.
  *
  * Provenance: BRIEF.md is the client onboarding pack and DISCOVERY.md the
  * record of the interviews and the event-storming session the model came
@@ -237,6 +253,16 @@ const identityBC = identitySD.addBoundedcontext("Identity", {
 	team: platformTeam,
 });
 
+// The one system RiverMart integrates with and does not run. Payments' own
+// pages already spoke of "the provider's hold" and "the provider refused"
+// without the provider being anywhere in the model; it is a bounded context
+// now, with no subdomain, no team and no insides of ours (decision 28).
+const paymentProviderBC = workspace.addBoundedContext("Payment Provider", {
+	description:
+		"The acquirer that actually holds, takes and returns the customer's money. RiverMart calls it and translates everything it says",
+	external: true,
+});
+
 /* =======================
    CATALOGUE
    DISCOVERY: Head of Catalogue. "A product is one thing that can be sold,
@@ -254,12 +280,12 @@ const variant = productAgg.addEntity("Variant", {
 	description:
 		"A sellable version of the product (size, colour). An entity because each has its own SKU",
 });
-const brandVO = productAgg.addValueObject("Brand", {
+const brandVO = catalogueBC.addValueObject("Brand", {
 	description:
 		"The maker's name; a value shared by every product of that brand",
 });
 brandVO.addAttribute("name", { type: "string" });
-const dimensionVO = productAgg.addValueObject("Dimensions", {
+const dimensionVO = catalogueBC.addValueObject("Dimensions", {
 	description: "Packaged size and weight, which the warehouse needs to slot it",
 });
 dimensionVO.addAttribute("weightGrams", { type: "int" });
@@ -267,7 +293,12 @@ dimensionVO.addAttribute("lengthMm", { type: "int" });
 
 product.addAttribute("productId", { type: "string", identity: true });
 product.addAttribute("title", { type: "string" });
-product.addAttribute("brand", { type: "Brand", valueobject: brandVO });
+product.addAttribute("brand", {
+	type: "Brand",
+	valueobject: brandVO,
+	optional: true,
+	description: "Absent on own-label and unbranded goods",
+});
 variant.addAttribute("sku", { type: "string", identity: true });
 variant.addAttribute("option", {
 	type: "string",
@@ -305,6 +336,21 @@ productListedSchema.addAttribute("title", { type: "string" });
 productListedSchema.addAttribute("skus", { type: "string[]" });
 const productRefSchema = catalogueBC.addSchema("ProductRef");
 productRefSchema.addAttribute("productId", { type: "string", identity: true });
+// A returned shape: GetProduct is asked with a ProductRef and answers with
+// this, which is wider than the ProductListed event other contexts react to.
+const productDetailSchema = catalogueBC.addSchema("ProductDetail", {
+	description: "One product with its variants, as GetProduct answers it",
+});
+productDetailSchema.addAttribute("productId", {
+	type: "string",
+	identity: true,
+});
+productDetailSchema.addAttribute("title", { type: "string" });
+productDetailSchema.addAttribute("brand", {
+	type: "Brand",
+	valueobject: brandVO,
+});
+productDetailSchema.addAttribute("variants", { type: "Variant[]" });
 
 const productListed = productAgg.provides("ProductListed", {
 	description: "A product joined the catalogue",
@@ -341,10 +387,12 @@ catalogueApi
 	})
 	.raises(productRetired);
 const getProduct = catalogueApi.provides("GetProduct", {
-	description: "Read one product with its variants",
+	description:
+		"Asked with a ProductRef, answers with one product and its variants",
 	type: "operation",
 	pattern: "open-host-service",
 	schema: productRefSchema,
+	returns: productDetailSchema,
 });
 
 catalogueBC.addTerm("Product", {
@@ -362,37 +410,30 @@ catalogueBC.addTerm("SKU", {
    DISCOVERY: Search product lead. "The index is a copy, never the truth."
    ======================= */
 
-const indexAgg = searchBC.addAggregate("SearchIndex", {
-	description:
-		"The searchable documents. A projection: it holds copies, never the truth",
-});
-const searchDoc = indexAgg.addRootEntity("SearchDocument", {
+// A projection is a service that provides a query operation, not an
+// aggregate with an invented root (decision 15). The index is a copy, never
+// the truth, and SearchAPI is that service: it answers SearchProducts and
+// takes the update operations the feeding policies below issue.
+const searchHitSchema = searchBC.addSchema("SearchHit", {
 	description: "One indexed product with the fields ranking needs",
 });
-searchDoc.addAttribute("productId", { type: "string", identity: true });
-searchDoc.addAttribute("buyBoxPriceMinor", { type: "int64" });
-searchDoc.addAttribute("nextDayEligible", {
+searchHitSchema.addAttribute("productId", {
+	type: "string",
+	identity: true,
+	identifies: product,
+});
+searchHitSchema.addAttribute("buyBoxPriceMinor", { type: "int64" });
+searchHitSchema.addAttribute("nextDayEligible", {
 	type: "boolean",
 	description:
 		"The badge: the buy box offer ships from a RiverMart warehouse, so next-day is the default",
 });
-
-const documentIndexed = indexAgg.provides("DocumentIndexed", {
-	description: "A document was (re)written into the index",
-	type: "event",
-	internal: true,
+const searchResultsSchema = searchBC.addSchema("SearchResults", {
+	description: "A ranked page of hits",
 });
-const indexProduct = indexAgg
-	.provides("IndexProduct", {
-		description: "Write or refresh a product's document",
-		type: "operation",
-		internal: true,
-	})
-	.raises(documentIndexed);
-const removeDocument = indexAgg.provides("RemoveDocument", {
-	description: "Drop a retired product from the index",
-	type: "operation",
-	internal: true,
+searchResultsSchema.addAttribute("hits", {
+	type: "SearchHit[]",
+	schema: searchHitSchema,
 });
 
 const ranker = searchBC.addService("Ranker", {
@@ -404,33 +445,65 @@ ranker.provides("RankCandidates", {
 	description: "Score and sort a candidate set",
 	type: "operation",
 	internal: true,
+	returns: searchResultsSchema,
 });
 
 const searchApi = searchBC.addService("SearchAPI", {
-	description: "The results page endpoint",
+	description:
+		"The results page endpoint and the index it is read from: a projection modelled as a query service (decision 15)",
 	type: "application",
 });
-searchApi.provides("SearchProducts", {
+const searchProducts = searchApi.provides("SearchProducts", {
 	description: "Query → ranked page, with sponsored slots merged in",
 	type: "operation",
 	pattern: "open-host-service",
+	returns: searchResultsSchema,
+});
+const documentIndexed = searchApi.provides("DocumentIndexed", {
+	description: "A document was (re)written into the index",
+	type: "event",
+	internal: true,
+});
+const indexProduct = searchApi
+	.provides("IndexProduct", {
+		description: "Write or refresh a product's document",
+		type: "operation",
+		internal: true,
+	})
+	.raises(documentIndexed);
+const removeDocument = searchApi.provides("RemoveDocument", {
+	description: "Drop a retired product from the index",
+	type: "operation",
+	internal: true,
+});
+// DISCOVERY: Ads, "Search calls us for the slots ... and tells us when one of
+// them is clicked". Telling Advertising is an outbound call, and a context
+// makes those through its own boundary (decision 17), so it is an operation of
+// SearchAPI. It was left unnamed while the consumption of RecordAdClick named
+// no caller at all, which made the whole of Search look like the caller
+// (card 90).
+const reportAdClick = searchApi.provides("ReportAdClick", {
+	description:
+		"Tell Advertising that a sponsored slot on the results page was clicked; the click, not the impression, is what the seller pays for",
+	type: "operation",
+	internal: true,
 });
 
-indexAgg.consumes(productListed, { pattern: "conformist" });
-indexAgg.consumes(productRetired, { pattern: "conformist" });
+searchApi.consumes(productListed, { pattern: "conformist" });
+searchApi.consumes(productRetired, { pattern: "conformist" });
 
 searchBC
 	.addPolicy("Index on listing", {
 		description: "Every listed product becomes searchable",
 	})
 	.on(productListed)
-	.then(indexProduct);
+	.issues(indexProduct);
 searchBC
 	.addPolicy("Remove on retirement", {
 		description: "A retired product disappears from results",
 	})
 	.on(productRetired)
-	.then(removeDocument);
+	.issues(removeDocument);
 
 searchBC.addTerm("Relevance", {
 	definition:
@@ -450,16 +523,20 @@ const offerAgg = offersBC.addAggregate("Offer", {
 const offer = offerAgg.addRootEntity("Offer", {
 	description: "The seller's terms for a SKU",
 });
-const offerMoney = money(offerAgg);
-const conditionVO = offerAgg.addValueObject("Condition", {
+const offerMoney = money(offersBC);
+const conditionVO = offersBC.addValueObject("Condition", {
 	description: "new, used-like-new, used-good; buyers filter on it",
 });
 conditionVO.addAttribute("value", {
 	type: "'new' | 'used-like-new' | 'used-good'",
 });
 offer.addAttribute("offerId", { type: "string", identity: true });
-const offerSellerId = offer.addAttribute("sellerId", { type: "string" });
-const offerSku = offer.addAttribute("sku", { type: "string" });
+// `sellerId` is declared with the SellerAccount root further down, because the
+// root it identifies has to exist before the attribute can name it.
+const offerSku = offer.addAttribute("sku", {
+	type: "string",
+	identifies: variant,
+});
 offer.addAttribute("price", { type: "Money", valueobject: offerMoney });
 offer.addAttribute("availableQuantity", { type: "int" });
 offer.addAttribute("condition", {
@@ -487,31 +564,42 @@ offerAgg
 		description: "An offer's price is greater than zero",
 	})
 	.constrains(offer.attributes.get("price")!);
-// A uniqueness rule across offers: no single Offer can see the others, so
-// PublishOffer enforces it by looking up the seller's offers for the SKU
-// before creating a new one. The invariant names the pair that must be unique.
-offerAgg
-	.addInvariant("OneActiveOfferPerSellerSku", {
-		description:
-			"A seller has at most one active offer per SKU, so the buy box compares like with like. Enforced by PublishOffer over the seller's existing offers, since one Offer cannot see another",
-	})
-	.constrains(offerSellerId, offerSku);
+// `OneActiveOfferPerSellerSku` is declared with the SellerAccount root further
+// down, because it constrains `sellerId`, and that attribute can only be
+// declared once the root it identifies exists.
 
 const offerPublishedSchema = offersBC.addSchema("OfferPublished");
 offerPublishedSchema.addAttribute("offerId", {
 	type: "string",
 	identity: true,
 });
-offerPublishedSchema.addAttribute("sku", { type: "string" });
+offerPublishedSchema.addAttribute("sku", {
+	type: "string",
+	identifies: variant,
+});
 offerPublishedSchema.addAttribute("price", {
 	type: "Money",
 	valueobject: offerMoney,
 });
 const buyBoxAwardedSchema = offersBC.addSchema("BuyBoxAwarded");
-buyBoxAwardedSchema.addAttribute("sku", { type: "string", identity: true });
+buyBoxAwardedSchema.addAttribute("sku", {
+	type: "string",
+	identity: true,
+	identifies: variant,
+});
 buyBoxAwardedSchema.addAttribute("offerId", { type: "string" });
 const offerRefSchema = offersBC.addSchema("OfferRef");
 offerRefSchema.addAttribute("offerId", { type: "string", identity: true });
+// A returned shape: what GetOffer answers with.
+const offerDetailSchema = offersBC.addSchema("OfferDetail", {
+	description: "One offer with its current price and stock",
+});
+offerDetailSchema.addAttribute("offerId", { type: "string", identity: true });
+offerDetailSchema.addAttribute("price", {
+	type: "Money",
+	valueobject: offerMoney,
+});
+offerDetailSchema.addAttribute("availableQuantity", { type: "int" });
 
 const offerPublished = offerAgg.provides("OfferPublished", {
 	description: "A seller's offer went live",
@@ -556,7 +644,7 @@ const offerApi = offersBC.addService("OfferAPI", {
 	description: "Seller-facing and internal offer endpoints",
 	type: "application",
 });
-offerApi
+const publishOffer = offerApi
 	.provides("PublishOffer", {
 		description: "Create or update an offer",
 		type: "operation",
@@ -569,18 +657,42 @@ const getOffer = offerApi.provides("GetOffer", {
 	type: "operation",
 	pattern: "open-host-service",
 	schema: offerRefSchema,
+	returns: offerDetailSchema,
 });
 
+// DISCOVERY: Head of Marketplace, "the catalogue sends us events when products
+// appear or disappear and we keep our own SKU list from them; we don't want
+// their whole product model in our tables". Keeping that list is the reaction,
+// and until card 92 the model had the consumptions with nothing under them.
+const recordCatalogueSku = offerApi.provides("RecordCatalogueSku", {
+	description:
+		"Add a listed product to Offers' own SKU list, or take a retired one off it; the list is Offers' translation of the catalogue and holds no product model",
+	type: "operation",
+	internal: true,
+});
 // Offers translate the catalogue into their own SKU list rather than embedding Product.
-offerAgg.consumes(productListed, { pattern: "anti-corruption-layer" });
-offerAgg.consumes(productRetired, { pattern: "anti-corruption-layer" });
+const keepSkuList = offersBC
+	.addPolicy("Keep the SKU list in step", {
+		description:
+			"Offers may only be published against a SKU the catalogue has, so the list follows every listing and retirement",
+	})
+	.on(productListed, productRetired)
+	.issues(recordCatalogueSku);
+offerApi.consumes(productListed, {
+	pattern: "anti-corruption-layer",
+	by: [keepSkuList],
+});
+offerApi.consumes(productRetired, {
+	pattern: "anti-corruption-layer",
+	by: [keepSkuList],
+});
 
 offersBC
 	.addPolicy("Recompute buy box on offer change", {
 		description: "Any published offer can win or lose the buy box",
 	})
 	.on(offerPublished, offerWithdrawn)
-	.then(awardBuyBox);
+	.issues(awardBuyBox);
 
 offersBC.addTerm("Buy Box", {
 	definition: "The default offer a customer adds to cart for a SKU",
@@ -594,13 +706,13 @@ offersBC.addTerm("Offer", {
 });
 
 // Search also indexes the buy box price, declared here because the event exists now.
-indexAgg.consumes(buyBoxAwarded, { pattern: "conformist" });
+searchApi.consumes(buyBoxAwarded, { pattern: "conformist" });
 searchBC
 	.addPolicy("Reindex on buy box change", {
 		description: "Results show the buy box price, so it must be refreshed",
 	})
 	.on(buyBoxAwarded)
-	.then(indexProduct);
+	.issues(indexProduct);
 
 /* =======================
    SELLER ONBOARDING
@@ -617,7 +729,7 @@ const seller = sellerAgg.addRootEntity("SellerAccount", {
 const verificationCheck = sellerAgg.addEntity("VerificationCheck", {
 	description: "One identity or bank check run on the seller; kept for audit",
 });
-const sellerStatusVO = sellerAgg.addValueObject("SellerStatus", {
+const sellerStatusVO = sellerBC.addValueObject("SellerStatus", {
 	description: "registered, active or suspended",
 });
 sellerStatusVO.addAttribute("value", {
@@ -629,6 +741,7 @@ seller.addAttribute("status", {
 	type: "SellerStatus",
 	valueobject: sellerStatusVO,
 });
+verificationCheck.addAttribute("checkId", { type: "string", identity: true });
 verificationCheck.addAttribute("checkType", {
 	type: "'identity' | 'bank-account' | 'address'",
 });
@@ -642,6 +755,22 @@ sellerAgg
 			"A seller becomes active only when identity and bank checks both passed",
 	})
 	.constrains(sellerStatusVO, verificationCheck);
+// `sellerId` on Offer is declared here, because an attribute can only name a
+// root that already exists and this is where the SellerAccount root is.
+const offerSellerId = offer.addAttribute("sellerId", {
+	type: "string",
+	identifies: seller,
+});
+// A uniqueness rule across offers: no single Offer can see the others, so the
+// context holds the rule and names the operation that keeps it. PublishOffer
+// looks up the seller's offers for the SKU before creating a new one, and the
+// invariant names the pair that must be unique (decision 27).
+offersBC
+	.addInvariant("OneActiveOfferPerSellerSku", {
+		description:
+			"A seller has at most one active offer per SKU, so the buy box compares like with like. PublishOffer checks the seller's existing offers, since one Offer cannot see another",
+	})
+	.constrains(offerSellerId, offerSku, publishOffer);
 
 const sellerRefSchema = sellerBC.addSchema("SellerRef");
 sellerRefSchema.addAttribute("sellerId", { type: "string", identity: true });
@@ -671,15 +800,6 @@ const verifySeller = sellerAgg
 		internal: true,
 	})
 	.raises(sellerActivated);
-const suspendSeller = sellerAgg
-	.provides("SuspendSeller", {
-		description:
-			"Suspend a seller; used by Trust & Safety through the policy below",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: sellerRefSchema,
-	})
-	.raises(sellerSuspended);
 
 const sellerCentral = sellerBC.addService("SellerCentralAPI", {
 	description: "The seller sign-up endpoints",
@@ -692,13 +812,24 @@ sellerCentral
 		pattern: "open-host-service",
 	})
 	.raises(sellerRegistered);
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const suspendSeller = sellerCentral
+	.provides("SuspendSeller", {
+		description:
+			"Suspend a seller; used by Trust & Safety through the policy below",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: sellerRefSchema,
+	})
+	.raises(sellerSuspended);
 
 sellerBC
 	.addPolicy("Verify on registration", {
 		description: "Every new seller is checked before selling",
 	})
 	.on(sellerRegistered)
-	.then(verifySeller);
+	.issues(verifySeller);
 
 sellerBC.addTerm("Seller", {
 	definition: "A third party selling through RiverMart under its own name",
@@ -708,18 +839,24 @@ sellerBC.addTerm("Seller", {
 // Recorded as its own term, not an alias, so the 2015 decision stays visible.
 sellerBC.addTerm("Vendor", {
 	definition:
-		"Not a seller. A wholesale supplier to first-party retail, handled by Vendor Purchasing; the two accounts were never unified and will not be",
-	embodiedBy: vendorBC,
+		"Not a seller. A wholesale supplier to first-party retail, handled by Vendor Purchasing; the two accounts were never unified and will not be. Seller Onboarding has no vendor of its own, which is the point: the word is a false friend and nothing here embodies it",
 });
 
-offerAgg.consumes(sellerActivated, { pattern: "conformist" });
-offerAgg.consumes(sellerSuspended, { pattern: "conformist" });
+// DISCOVERY: Head of Seller Services and the wall's "Offers allows publishing".
+// Nothing in Offers reacts to an activation — no offer appears because a seller
+// was activated — so what the subscription is for is `PublishOffer`, the part of
+// Offers that refuses a seller who is not active yet (`subscription-backed`).
+offerApi.consumes(sellerActivated, {
+	pattern: "conformist",
+	by: [publishOffer],
+});
+offerApi.consumes(sellerSuspended, { pattern: "conformist" });
 offersBC
 	.addPolicy("Withdraw offers of suspended seller", {
 		description: "A suspended seller's offers come down immediately",
 	})
 	.on(sellerSuspended)
-	.then(withdrawSellerOffers);
+	.issues(withdrawSellerOffers);
 
 /* =======================
    CART & CHECKOUT
@@ -737,16 +874,17 @@ const cart = cartAgg.addRootEntity("Cart", {
 const cartLine = cartAgg.addEntity("CartLine", {
 	description: "An offer and a quantity",
 });
-const cartMoney = money(cartAgg);
+const cartMoney = money(cartBC);
 cart.addAttribute("cartId", { type: "string", identity: true });
-cart.addAttribute("customerId", { type: "string" });
-cartLine.addAttribute("offerId", { type: "string" });
+// `customerId` is declared with the CustomerAccount root further down.
+cartLine.addAttribute("lineId", { type: "string", identity: true });
+cartLine.addAttribute("offerId", { type: "string", identifies: offer });
 cartLine.addAttribute("quantity", { type: "int" });
 cartLine.addAttribute("unitPrice", { type: "Money", valueobject: cartMoney });
 cart.includes(cartLine, "contains", "*");
 cartLine.uses(cartMoney, "priced-at", "1");
-// The line points at the Offer root in another context, by identity only.
-cartLine.references(offer, "for-offer", "1");
+// The Offer root lives in Offers, another bounded context: a relation never
+// crosses one, so `offerId` above is the only thing that crosses the boundary.
 
 cartAgg
 	.addInvariant("LineQuantityAtLeastOne", {
@@ -764,7 +902,7 @@ const cartCheckedOutSchema = cartBC.addSchema("CartCheckedOut", {
 	description: "The snapshot handed to payments and orders",
 });
 cartCheckedOutSchema.addAttribute("cartId", { type: "string", identity: true });
-cartCheckedOutSchema.addAttribute("customerId", { type: "string" });
+// `customerId` is declared with the CustomerAccount root further down.
 cartCheckedOutSchema.addAttribute("total", {
 	type: "Money",
 	valueobject: cartMoney,
@@ -776,19 +914,6 @@ const cartCheckedOut = cartAgg.provides("CartCheckedOut", {
 	pattern: "published-language",
 	schema: cartCheckedOutSchema,
 });
-cartAgg.provides("AddToCart", {
-	description: "Add or increase a line",
-	type: "operation",
-	pattern: "open-host-service",
-});
-cartAgg
-	.provides("Checkout", {
-		description: "Freeze the cart and start the purchase",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: cartCheckedOutSchema,
-	})
-	.raises(cartCheckedOut);
 // "If the hold fails the customer sees an error and the cart stays open":
 // the frozen cart is reopened, which is a change to the cart, so it is an operation.
 const reopenCart = cartAgg.provides("ReopenCart", {
@@ -810,15 +935,45 @@ const wishlistItem = wishlistAgg.addRootEntity("WishlistItem", {
 	description: "One saved product",
 });
 wishlist.addAttribute("wishlistId", { type: "string", identity: true });
-wishlistItem.addAttribute("productId", { type: "string" });
+wishlistItem.addAttribute("productId", {
+	type: "string",
+	identity: true,
+	identifies: product,
+});
 wishlist.includes(wishlistItem, "saves", "*");
+// DELIBERATE (cross-aggregate-reference): the cart "includes" wishlist items
+// from the Wishlist aggregate. The basket screen wanted the saved items beside
+// the lines and the modeller copied them in. Across aggregates only references
+// is allowed, and only to the other aggregate's root. Both aggregates are in
+// Cart & Checkout, so this trips that one rule and nothing else.
+cart.includes(wishlistItem, "saves-for-later", "*");
 
 const checkoutOrchestrator = cartBC.addService("CheckoutOrchestrator", {
 	description:
 		"Drives a checkout through payment authorisation and order placement; an application service because it coordinates other contexts",
 	type: "application",
 });
-checkoutOrchestrator.consumes(getOffer, { pattern: "anti-corruption-layer" });
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const addToCart = checkoutOrchestrator.provides("AddToCart", {
+	description: "Add or increase a line",
+	type: "operation",
+	pattern: "open-host-service",
+});
+const checkoutOperation = checkoutOrchestrator
+	.provides("Checkout", {
+		description: "Freeze the cart and start the purchase",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: cartCheckedOutSchema,
+	})
+	.raises(cartCheckedOut);
+// DISCOVERY: Checkout tech lead, "we read offers through the Offers API but
+// keep our own line shape" — which happens as a line goes in, not at checkout.
+checkoutOrchestrator.consumes(getOffer, {
+	pattern: "anti-corruption-layer",
+	by: [addToCart],
+});
 
 cartBC.addTerm("Cart", {
 	definition: "The basket a customer fills before checkout",
@@ -854,28 +1009,28 @@ const returnEntity = orderAgg.addEntity("Return", {
 const returnLine = orderAgg.addEntity("ReturnLine", {
 	description: "One order line and the quantity returned from it",
 });
-const orderMoney = money(orderAgg);
-const addressVO = orderAgg.addValueObject("Address", {
+const orderMoney = money(orderBC);
+const addressVO = orderBC.addValueObject("Address", {
 	description:
 		"Where it ships; a value because the same address on two orders is the same place",
 });
 addressVO.addAttribute("lines", { type: "string[]" });
 addressVO.addAttribute("postcode", { type: "string" });
 addressVO.addAttribute("country", { type: "ISO 3166 code" });
-const orderStatusVO = orderAgg.addValueObject("OrderStatus", {
+const orderStatusVO = orderBC.addValueObject("OrderStatus", {
 	description:
 		"placed, awaiting-stock, cancelled, partially-shipped, shipped, completed",
 });
 orderStatusVO.addAttribute("value", {
 	type: "'placed' | 'awaiting-stock' | 'cancelled' | 'partially-shipped' | 'shipped' | 'completed'",
 });
-const trackingRefVO = orderAgg.addValueObject("TrackingReference", {
+const trackingRefVO = orderBC.addValueObject("TrackingReference", {
 	description: "The carrier reference the customer sees",
 });
 trackingRefVO.addAttribute("value", { type: "string" });
 
 order.addAttribute("orderId", { type: "string", identity: true });
-order.addAttribute("customerId", { type: "string" });
+// `customerId` is declared with the CustomerAccount root further down.
 order.addAttribute("total", { type: "Money", valueobject: orderMoney });
 order.addAttribute("shippingAddress", {
 	type: "Address",
@@ -886,17 +1041,26 @@ order.addAttribute("status", {
 	valueobject: orderStatusVO,
 });
 orderLine.addAttribute("lineId", { type: "string", identity: true });
-orderLine.addAttribute("sku", { type: "string" });
+orderLine.addAttribute("sku", { type: "string", identifies: variant });
+orderLine.addAttribute("offerId", {
+	type: "string",
+	description:
+		"Identity of the Offer root in Offers; only the id crosses the boundary. `sku` is the catalogue code the line was bought under, which is not the same thing",
+	identifies: offer,
+});
 orderLine.addAttribute("quantity", { type: "int" });
 orderLine.addAttribute("unitPrice", { type: "Money", valueobject: orderMoney });
 shipment.addAttribute("shipmentId", { type: "string", identity: true });
 shipment.addAttribute("tracking", {
 	type: "TrackingReference",
 	valueobject: trackingRefVO,
+	optional: true,
+	description: "Absent until the carrier has given a reference",
 });
 returnEntity.addAttribute("returnId", { type: "string", identity: true });
 returnEntity.addAttribute("reason", { type: "string" });
 returnEntity.addAttribute("refund", { type: "Money", valueobject: orderMoney });
+returnLine.addAttribute("returnLineId", { type: "string", identity: true });
 returnLine.addAttribute("quantity", { type: "int" });
 
 order.includes(orderLine, "has-lines", "1..*");
@@ -906,10 +1070,13 @@ shipment.references(orderLine, "carries", "1..*");
 returnEntity.includes(returnLine, "for-lines", "1..*");
 returnLine.references(orderLine, "returns", "1");
 order.uses(orderMoney, "totals", "1");
+orderLine.uses(orderMoney, "priced-at", "1");
+returnEntity.uses(orderMoney, "refunds", "1");
 order.uses(addressVO, "ships-to", "1");
 order.uses(orderStatusVO, "has-status", "1");
 shipment.uses(trackingRefVO, "tracked-as", "0..1");
-orderLine.references(offer, "bought-from-offer", "1");
+// The Offer root is in another bounded context, so the line holds `offerId`
+// and no relation.
 
 orderAgg
 	.addInvariant("TotalEqualsLines", {
@@ -934,25 +1101,88 @@ orderAgg
 	})
 	.constrains(orderStatusVO);
 
+// A payload with a shape inside it: the line is a schema of its own rather
+// than a flattened type string, so a consumer reads its fields on one page.
+const orderLineSchema = orderBC.addSchema("OrderLine", {
+	description: "One line of an order, as the fact carries it",
+});
+orderLineSchema.addAttribute("sku", { type: "string", identity: true });
+orderLineSchema.addAttribute("quantity", { type: "int32" });
+
 const orderPlacedSchema = orderBC.addSchema("OrderPlaced", {
 	description: "The fact warehouse, fraud and payments react to",
 });
 orderPlacedSchema.addAttribute("orderId", { type: "string", identity: true });
-orderPlacedSchema.addAttribute("customerId", { type: "string" });
-orderPlacedSchema.addAttribute("lines", { type: "{sku, quantity}[]" });
+// `customerId` is declared with the CustomerAccount root further down.
+orderPlacedSchema.addAttribute("lines", {
+	type: "OrderLine[]",
+	schema: orderLineSchema,
+});
 orderPlacedSchema.addAttribute("total", {
 	type: "Money",
 	valueobject: orderMoney,
 });
 const orderRefSchema = orderBC.addSchema("OrderRef");
 orderRefSchema.addAttribute("orderId", { type: "string", identity: true });
+// A returned shape: what GetOrder answers with.
+const orderDetailSchema = orderBC.addSchema("OrderDetail", {
+	description: "One order with its lines, shipments and returns",
+});
+orderDetailSchema.addAttribute("orderId", { type: "string", identity: true });
+orderDetailSchema.addAttribute("status", {
+	type: "OrderStatus",
+	valueobject: orderStatusVO,
+});
+orderDetailSchema.addAttribute("total", {
+	type: "Money",
+	valueobject: orderMoney,
+});
+orderDetailSchema.addAttribute("lines", {
+	type: "OrderLine[]",
+	schema: orderLineSchema,
+});
+orderDetailSchema.addAttribute("shipmentIds", {
+	type: "string[]",
+	description: "Shipments dispatched for this order",
+});
+orderDetailSchema.addAttribute("returnIds", {
+	type: "string[]",
+	description: "Returns opened for this order",
+});
+const returnLineSchema = orderBC.addSchema("ReturnLine", {
+	description: "One line of a return: which line of the order, and how many",
+});
+returnLineSchema.addAttribute("lineId", { type: "string", identity: true });
+returnLineSchema.addAttribute("quantity", { type: "int32" });
+// A rejection shape: what CancelOrder answers with once something has shipped.
+// Nothing was cancelled, so no OrderCancelled is raised; the storefront is
+// told which shipment blocked it so it can offer a return instead (decision 25).
+const cancelRefusedSchema = orderBC.addSchema("CancelRefused", {
+	description:
+		"Why the order could not be cancelled: a shipment has already left the dock",
+});
+cancelRefusedSchema.addAttribute("orderId", {
+	type: "string",
+	identifies: order,
+});
+cancelRefusedSchema.addAttribute("shipmentId", {
+	type: "string",
+	identifies: shipment,
+});
 const returnRequestedSchema = orderBC.addSchema("ReturnRequested");
 returnRequestedSchema.addAttribute("returnId", {
 	type: "string",
 	identity: true,
+	identifies: returnEntity,
 });
-returnRequestedSchema.addAttribute("orderId", { type: "string" });
-returnRequestedSchema.addAttribute("lines", { type: "{lineId, quantity}[]" });
+returnRequestedSchema.addAttribute("orderId", {
+	type: "string",
+	identifies: order,
+});
+returnRequestedSchema.addAttribute("lines", {
+	type: "ReturnLine[]",
+	schema: returnLineSchema,
+});
 
 const orderPlaced = orderAgg.provides("OrderPlaced", {
 	description: "A paid-for order exists",
@@ -979,36 +1209,12 @@ const orderCompleted = orderAgg.provides("OrderCompleted", {
 	schema: orderRefSchema,
 });
 
-const placeOrder = orderAgg
-	.provides("PlaceOrder", {
-		description: "Create the order from a checked-out cart",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: orderPlacedSchema,
-	})
-	.raises(orderPlaced);
-const cancelOrder = orderAgg
-	.provides("CancelOrder", {
-		description: "Cancel before anything ships",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: orderRefSchema,
-	})
-	.raises(orderCancelled);
 const recordShipment = orderAgg.provides("RecordShipment", {
 	description:
 		"Attach a warehouse dispatch to the order as a customer-visible shipment",
 	type: "operation",
 	internal: true,
 });
-const requestReturn = orderAgg
-	.provides("RequestReturn", {
-		description: "Open a return for some lines",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: returnRequestedSchema,
-	})
-	.raises(returnRequested);
 const completeOrder = orderAgg
 	.provides("CompleteOrder", {
 		description: "Close the order once every shipment is delivered",
@@ -1033,7 +1239,35 @@ const getOrder = orderApi.provides("GetOrder", {
 	type: "operation",
 	pattern: "open-host-service",
 	schema: orderRefSchema,
+	returns: orderDetailSchema,
 });
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const placeOrder = orderApi
+	.provides("PlaceOrder", {
+		description: "Create the order from a checked-out cart",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: orderPlacedSchema,
+	})
+	.raises(orderPlaced);
+const cancelOrder = orderApi
+	.provides("CancelOrder", {
+		description: "Cancel before anything ships",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: orderRefSchema,
+		rejects: [cancelRefusedSchema],
+	})
+	.raises(orderCancelled);
+const requestReturn = orderApi
+	.provides("RequestReturn", {
+		description: "Open a return for some lines",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: returnRequestedSchema,
+	})
+	.raises(returnRequested);
 
 orderBC.addTerm("Order", {
 	definition: "A paid-for purchase of one or more lines",
@@ -1072,14 +1306,31 @@ const capture = paymentAgg.addEntity("Capture", {
 const refund = paymentAgg.addEntity("Refund", {
 	description: "Money given back against a capture",
 });
-const paymentMoney = money(paymentAgg);
+const paymentMoney = money(paymentsBC);
 paymentIntent.addAttribute("paymentId", { type: "string", identity: true });
-paymentIntent.addAttribute("orderId", { type: "string" });
+// Optional, because the model's own comment on `AttachOrder` says why: the hold
+// is taken against a cart and the order id only exists after PlaceOrder, so an
+// intent has none until the order is placed (decision 24; card 92).
+paymentIntent.addAttribute("orderId", {
+	type: "string",
+	identifies: order,
+	optional: true,
+	description: "Absent until the order exists; AttachOrder fills it",
+});
 paymentIntent.addAttribute("amount", {
 	type: "Money",
 	valueobject: paymentMoney,
 });
-authorisation.addAttribute("providerRef", { type: "string", identity: true });
+// The acquirer's own reference for the hold: it identifies the Authorisation
+// here and it is the provider's id out there. The provider has no entities of
+// RiverMart's to name -- what happens inside the acquirer is not RiverMart's
+// to state -- so the attribute names the system the id belongs to
+// (decision 28, card 81).
+authorisation.addAttribute("providerRef", {
+	type: "string",
+	identity: true,
+	identifies: paymentProviderBC,
+});
 authorisation.addAttribute("expiresAt", { type: "date-time" });
 capture.addAttribute("captureId", { type: "string", identity: true });
 capture.addAttribute("amount", { type: "Money", valueobject: paymentMoney });
@@ -1089,6 +1340,8 @@ paymentIntent.includes(authorisation, "held-by", "0..1");
 paymentIntent.includes(capture, "captured-by", "*");
 capture.includes(refund, "refunded-by", "*");
 paymentIntent.uses(paymentMoney, "for-amount", "1");
+capture.uses(paymentMoney, "of-amount", "1");
+refund.uses(paymentMoney, "of-amount", "1");
 
 paymentAgg
 	.addInvariant("CapturesWithinAuthorisation", {
@@ -1111,14 +1364,37 @@ paymentAuthorisedSchema.addAttribute("paymentId", {
 	type: "string",
 	identity: true,
 });
-paymentAuthorisedSchema.addAttribute("cartId", { type: "string" });
+paymentAuthorisedSchema.addAttribute("cartId", {
+	type: "string",
+	identifies: cart,
+});
 const paymentRefSchema = paymentsBC.addSchema("PaymentRef");
 paymentRefSchema.addAttribute("paymentId", { type: "string", identity: true });
+// DISCOVERY: Checkout tech lead, "if the hold fails the customer sees an error
+// and the cart stays open". A decline is the authorisation call refusing, not
+// a fact the world is told about: nothing happened, and the only party who
+// hears it is the caller who asked. It was published as an event until card 92,
+// against decision 25's own example; it is now what AuthorisePayment rejects
+// with, and the Checkout process waits on the answer (decision 23).
+const paymentDeclinedSchema = paymentsBC.addSchema("PaymentDeclined", {
+	description: "Why the hold was refused, in the words the customer is shown",
+});
+paymentDeclinedSchema.addAttribute("paymentId", {
+	type: "string",
+	identity: true,
+});
+paymentDeclinedSchema.addAttribute("reason", {
+	type: "'insufficient-funds' | 'instrument-refused' | 'provider-unavailable'",
+	description: "What the storefront tells the customer to try instead",
+});
 const authorisePaymentSchema = paymentsBC.addSchema("AuthorisePayment", {
 	description:
 		"What checkout sends: the cart total and the customer's instrument token",
 });
-authorisePaymentSchema.addAttribute("cartId", { type: "string" });
+authorisePaymentSchema.addAttribute("cartId", {
+	type: "string",
+	identifies: cart,
+});
 authorisePaymentSchema.addAttribute("amount", {
 	type: "Money",
 	valueobject: paymentMoney,
@@ -1130,12 +1406,6 @@ const paymentAuthorised = paymentAgg.provides("PaymentAuthorised", {
 	type: "event",
 	pattern: "published-language",
 	schema: paymentAuthorisedSchema,
-});
-const paymentDeclined = paymentAgg.provides("PaymentDeclined", {
-	description: "The provider refused; checkout shows an error",
-	type: "event",
-	pattern: "published-language",
-	schema: paymentRefSchema,
 });
 const paymentCaptured = paymentAgg.provides("PaymentCaptured", {
 	description: "Money was taken for a dispatched shipment",
@@ -1150,15 +1420,24 @@ const refundIssued = paymentAgg.provides("RefundIssued", {
 	schema: paymentRefSchema,
 });
 
-const authorisePayment = paymentAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const paymentsApi = paymentsBC.addService("PaymentsAPI", {
+	description:
+		"Payments' application service: the boundary checkout and order management ask for money through",
+	type: "application",
+});
+const authorisePayment = paymentsApi
 	.provides("AuthorisePayment", {
-		description: "Hold the cart total on the customer's instrument",
+		description:
+			"Hold the cart total on the customer's instrument; the caller waits, and is told either that the money is held or why it is not",
 		type: "operation",
 		pattern: "open-host-service",
 		schema: authorisePaymentSchema,
+		rejects: [paymentDeclinedSchema],
 	})
-	.raises(paymentAuthorised, paymentDeclined);
-const capturePayment = paymentAgg
+	.raises(paymentAuthorised);
+const capturePayment = paymentsApi
 	.provides("CapturePayment", {
 		description:
 			"Take the money for one shipment; charging at dispatch keeps cancelled orders free",
@@ -1167,7 +1446,7 @@ const capturePayment = paymentAgg
 		schema: paymentRefSchema,
 	})
 	.raises(paymentCaptured);
-const refundPayment = paymentAgg
+const refundPayment = paymentsApi
 	.provides("RefundPayment", {
 		description: "Return money for a received return",
 		type: "operation",
@@ -1176,6 +1455,60 @@ const refundPayment = paymentAgg
 	})
 	.raises(refundIssued);
 
+// DISCOVERY: Payments engineering lead. The hold, the take and the return all
+// happen at the acquirer; Payments is the model over them, and it translates
+// every answer into its own words (decision 28, card 71).
+const providerRequestSchema = paymentProviderBC.addSchema("ProviderRequest", {
+	description: "The acquirer's wire format, which RiverMart does not shape",
+});
+providerRequestSchema.addAttribute("merchantReference", {
+	type: "string",
+	identity: true,
+});
+providerRequestSchema.addAttribute("amountMinorUnits", { type: "int64" });
+providerRequestSchema.addAttribute("currency", { type: "ISO 4217 code" });
+providerRequestSchema.addAttribute("instrumentToken", { type: "string" });
+const acquirerApi = paymentProviderBC.addService("Acquirer API", {
+	description: "The provider's documented interface, and all RiverMart sees",
+	type: "application",
+});
+const holdFunds = acquirerApi.provides("HoldFunds", {
+	description: "Put a hold on the customer's instrument",
+	type: "operation",
+	pattern: "open-host-service",
+	schema: providerRequestSchema,
+});
+const takeFunds = acquirerApi.provides("TakeFunds", {
+	description: "Take money against an existing hold",
+	type: "operation",
+	pattern: "open-host-service",
+	schema: providerRequestSchema,
+});
+const returnFunds = acquirerApi.provides("ReturnFunds", {
+	description: "Send money back against something already taken",
+	type: "operation",
+	pattern: "open-host-service",
+	schema: providerRequestSchema,
+});
+paymentsApi.consumes(holdFunds, {
+	pattern: "anti-corruption-layer",
+	by: [authorisePayment],
+});
+paymentsApi.consumes(takeFunds, {
+	pattern: "anti-corruption-layer",
+	by: [capturePayment],
+});
+paymentsApi.consumes(returnFunds, {
+	pattern: "anti-corruption-layer",
+	by: [refundPayment],
+});
+paymentProviderBC.upstreamOf(paymentsBC, {
+	description:
+		"The acquirer's API is the acquirer's; Payments keeps its own intent, capture and refund and translates at the edge",
+	upstreamRoles: ["open-host-service"],
+	downstreamRoles: ["anti-corruption-layer"],
+});
+
 paymentsBC.addTerm("Authorisation", {
 	definition:
 		"A hold on funds that expires if not captured; the customer sees it as pending",
@@ -1183,33 +1516,79 @@ paymentsBC.addTerm("Authorisation", {
 	embodiedBy: authorisation,
 });
 
-// Checkout chains: cart checked out → authorise; authorised → place order.
+// Checkout is one process, not three policies: it holds the frozen cart from
+// the moment the customer confirms it until an order exists, and what it does
+// next depends on which answer comes back from Payments.
+//
+// A policy names operations of its own context, so the orchestrator holds the
+// two steps that reach out through the ACL (decision 17).
+const requestAuthorisation = checkoutOrchestrator.provides(
+	"RequestAuthorisation",
+	{
+		description:
+			"Ask Payments to hold the cart total, through the ACL; the checkout's own step",
+		type: "operation",
+		internal: true,
+	},
+);
+const placeOrderForCart = checkoutOrchestrator.provides("PlaceOrderForCart", {
+	description:
+		"Ask Order Management to create the order for an authorised cart, through the ACL",
+	type: "operation",
+	internal: true,
+});
+const checkout = cartBC
+	.addProcess("Checkout", {
+		description:
+			"From the customer confirming the basket to an order existing. It asks Payments to hold the cart total and then waits: on a hold the order is placed, on a decline — the answer AuthorisePayment refuses with — the cart is unfrozen so another instrument can be tried and the same instance waits for the next attempt. Correlation is by cartId, which the authorisation carries back. An instance nobody comes back to ends when its own clock runs out: the hold Payments took lasts thirty minutes, and after that the checkout is over. The cart is not: a cart nobody returns to is the customer's to abandon",
+	})
+	.starts(cartCheckedOut)
+	.on(paymentAuthorised, authorisePayment.rejected(paymentDeclinedSchema))
+	.issues(requestAuthorisation, placeOrderForCart, reopenCart);
+// DISCOVERY: Payments engineering lead, and the Authorisation glossary entry:
+// a hold "expires if not captured"; neither gives an interval. Card 92
+// wrote that as an `ExpireAuthorisations` operation on Payments that a
+// scheduler ran and an `AuthorisationExpired` event only the checkout heard,
+// which is five declarations and a fact about the world — that something
+// outside the software sweeps holds — for one instance's clock. It is the
+// process's own: it starts when this instance asks for the hold, nobody
+// outside knows the instance exists, and running out of time is how a checkout
+// nobody comes back to finishes (decision 23, fourth amendment; card 95).
+checkout.ends(
+	orderPlaced,
+	checkout.addDeadline("Authorisation expiry", {
+		description:
+			"The hold Payments took is released and the checkout is over; the cart stays open for the customer to come back to",
+		after: "when the hold expires; the interviews give no interval",
+	}),
+);
+// Everything the checkout reaches for, declared together now that both the
+// operations and the process exist to be named. The orchestrator offers four
+// operations, so which one calls out is a real question and `by` answers it
+// (decision 21, third amendment); the facts the process waits on are
+// consumptions as well as subscriptions, because a context takes a foreign fact
+// in at its own boundary (decision 17; `subscription-consumed`). The decline
+// needs no consumption of its own: it comes back down the AuthorisePayment call
+// the line above already declares, which is what makes it this context's to
+// hear (decision 23).
 checkoutOrchestrator.consumes(authorisePayment, {
 	pattern: "anti-corruption-layer",
+	by: [requestAuthorisation],
 });
-checkoutOrchestrator.consumes(placeOrder, { pattern: "anti-corruption-layer" });
-cartBC
-	.addPolicy("Authorise on checkout", {
-		description: "A checked-out cart is paid for before anything else happens",
-	})
-	.on(cartCheckedOut)
-	.then(authorisePayment);
-cartBC
-	.addPolicy("Place order on authorisation", {
-		description: "Once funds are held the order becomes real",
-	})
-	.on(paymentAuthorised)
-	.then(placeOrder);
-checkoutOrchestrator.consumes(paymentDeclined, {
+checkoutOrchestrator.consumes(placeOrder, {
 	pattern: "anti-corruption-layer",
+	by: [placeOrderForCart],
 });
-cartBC
-	.addPolicy("Reopen cart on decline", {
-		description:
-			"A declined hold leaves the cart open so the customer can try another instrument",
-	})
-	.on(paymentDeclined)
-	.then(reopenCart);
+checkoutOrchestrator.consumes(paymentAuthorised, {
+	pattern: "anti-corruption-layer",
+	by: [checkout],
+});
+// The order the checkout ends on. Cart & Checkout hears that the order exists
+// and stops there; what happens to the order afterwards is Order Management's.
+checkoutOrchestrator.consumes(orderPlaced, {
+	pattern: "anti-corruption-layer",
+	by: [checkout],
+});
 
 // The intent is authorised against a cart; the order id only exists after
 // PlaceOrder, and captures at dispatch arrive by order id, so Payments
@@ -1220,13 +1599,13 @@ const attachOrder = paymentAgg.provides("AttachOrder", {
 	type: "operation",
 	internal: true,
 });
-paymentAgg.consumes(orderPlaced, { pattern: "anti-corruption-layer" });
+paymentsApi.consumes(orderPlaced, { pattern: "anti-corruption-layer" });
 paymentsBC
 	.addPolicy("Attach order to payment", {
 		description: "Every placed order is linked to the hold that paid for it",
 	})
 	.on(orderPlaced)
-	.then(attachOrder);
+	.issues(attachOrder);
 
 /* =======================
    FRAUD
@@ -1241,27 +1620,57 @@ const assessmentAgg = fraudBC.addAggregate("RiskAssessment", {
 const assessment = assessmentAgg.addRootEntity("RiskAssessment", {
 	description: "One scoring run",
 });
-const riskScoreVO = assessmentAgg.addValueObject("RiskScore", {
+const riskScoreVO = fraudBC.addValueObject("RiskScore", {
 	description: "0 to 1000; above the threshold is flagged",
 });
 riskScoreVO.addAttribute("value", { type: "int 0..1000" });
-const signalVO = assessmentAgg.addValueObject("Signal", {
+const signalVO = fraudBC.addValueObject("Signal", {
 	description:
 		"A named contribution to the score, e.g. 'new account, high value'",
 });
 signalVO.addAttribute("name", { type: "string" });
 signalVO.addAttribute("weight", { type: "int" });
 assessment.addAttribute("assessmentId", { type: "string", identity: true });
-assessment.addAttribute("subjectId", {
+// DISCOVERY: Trust & Safety lead. "We score an order or a seller." One
+// attribute called subjectId, typed string and described as "an order id or a
+// seller id", identified nothing: `identifies` names one kind of thing, and an
+// id that is either of two is not one. Decision 15 gave the model's answer in
+// the same breath and cited this very attribute as following it, which it did
+// not: two optional attributes, each identifying its own target, and an
+// invariant in prose that exactly one is set (card 95).
+const assessedOrder = assessment.addAttribute("orderId", {
 	type: "string",
-	description: "An order id or a seller id",
+	optional: true,
+	identifies: order,
+	description: "Set when the assessment is of an order",
+});
+const assessedSeller = assessment.addAttribute("sellerId", {
+	type: "string",
+	optional: true,
+	identifies: seller,
+	description: "Set when the assessment is of a seller",
 });
 assessment.addAttribute("score", {
 	type: "RiskScore",
 	valueobject: riskScoreVO,
 });
+assessment.addAttribute("signals", {
+	type: "Signal[]",
+	valueobject: signalVO,
+	description:
+		"What the score is made of; at least one, or the score is unexplained",
+});
 assessment.uses(riskScoreVO, "scored", "1");
 assessment.uses(signalVO, "explained-by", "1..*");
+// The rule the two optional ids need, and the one the model states in prose
+// because no field can: a union identity would need a union type, which
+// decision 18 leaves out.
+assessmentAgg
+	.addInvariant("OneSubject", {
+		description:
+			"Exactly one of orderId and sellerId is set: an assessment is of an order or of a seller, never both and never neither",
+	})
+	.constrains(assessedOrder, assessedSeller);
 assessmentAgg
 	.addInvariant("ScoreExplained", {
 		description:
@@ -1270,13 +1679,21 @@ assessmentAgg
 	.constrains(signalVO);
 
 const orderRiskSchema = fraudBC.addSchema("OrderRiskFlagged");
-orderRiskSchema.addAttribute("orderId", { type: "string", identity: true });
+orderRiskSchema.addAttribute("orderId", {
+	type: "string",
+	identity: true,
+	identifies: order,
+});
 orderRiskSchema.addAttribute("score", {
 	type: "RiskScore",
 	valueobject: riskScoreVO,
 });
 const sellerRiskSchema = fraudBC.addSchema("SellerRiskFlagged");
-sellerRiskSchema.addAttribute("sellerId", { type: "string", identity: true });
+sellerRiskSchema.addAttribute("sellerId", {
+	type: "string",
+	identity: true,
+	identifies: seller,
+});
 sellerRiskSchema.addAttribute("score", {
 	type: "RiskScore",
 	valueobject: riskScoreVO,
@@ -1315,20 +1732,28 @@ const scoreSeller = riskScorer
 	})
 	.raises(sellerRiskFlagged);
 
-assessmentAgg.consumes(orderPlaced, { pattern: "anti-corruption-layer" });
-assessmentAgg.consumes(sellerActivated, { pattern: "anti-corruption-layer" });
+// Fraud takes the facts it scores in at its own boundary: an aggregate is a
+// consistency boundary, not a client, and the policies below are what react
+// (decision 17).
+const fraudApi = fraudBC.addService("FraudAPI", {
+	description:
+		"Trust & Safety's application service: the boundary through which the orders and sellers to be scored arrive",
+	type: "application",
+});
+fraudApi.consumes(orderPlaced, { pattern: "anti-corruption-layer" });
+fraudApi.consumes(sellerActivated, { pattern: "anti-corruption-layer" });
 fraudBC
 	.addPolicy("Score every order", {
 		description: "No order ships unscored",
 	})
 	.on(orderPlaced)
-	.then(scoreOrder);
+	.issues(scoreOrder);
 fraudBC
 	.addPolicy("Score every new seller", {
 		description: "Activation triggers a first assessment",
 	})
 	.on(sellerActivated)
-	.then(scoreSeller);
+	.issues(scoreSeller);
 
 fraudBC.addTerm("Flag", {
 	definition: "A score above threshold; it pauses the subject until reviewed",
@@ -1336,20 +1761,20 @@ fraudBC.addTerm("Flag", {
 });
 
 // Downstream reactions to fraud verdicts.
-orderAgg.consumes(orderRiskFlagged, { pattern: "anti-corruption-layer" });
+orderApi.consumes(orderRiskFlagged, { pattern: "anti-corruption-layer" });
 orderBC
 	.addPolicy("Cancel flagged orders", {
 		description: "A flagged order is cancelled before the warehouse picks it",
 	})
 	.on(orderRiskFlagged)
-	.then(cancelOrder);
-sellerAgg.consumes(sellerRiskFlagged, { pattern: "anti-corruption-layer" });
+	.issues(cancelOrder);
+sellerCentral.consumes(sellerRiskFlagged, { pattern: "anti-corruption-layer" });
 sellerBC
 	.addPolicy("Suspend flagged sellers", {
 		description: "Trust & Safety's verdict suspends the seller pending review",
 	})
 	.on(sellerRiskFlagged)
-	.then(suspendSeller);
+	.issues(suspendSeller);
 
 /* =======================
    WAREHOUSE
@@ -1366,16 +1791,25 @@ const position = inventoryAgg.addRootEntity("InventoryPosition", {
 const reservation = inventoryAgg.addEntity("Reservation", {
 	description: "Stock promised to an order but not yet picked",
 });
-const binVO = inventoryAgg.addValueObject("Bin", {
+const binVO = warehouseBC.addValueObject("Bin", {
 	description: "Aisle, shelf, slot",
 });
 binVO.addAttribute("code", { type: "string" });
 position.addAttribute("sku", { type: "string", identity: true });
 position.addAttribute("siteId", { type: "string", identity: true });
 const onHand = position.addAttribute("onHand", { type: "int" });
-reservation.addAttribute("orderId", { type: "string" });
+reservation.addAttribute("reservationId", { type: "string", identity: true });
+reservation.addAttribute("orderId", {
+	type: "string",
+	identifies: order,
+});
 reservation.addAttribute("quantity", { type: "int" });
 position.includes(reservation, "reserved-by", "*");
+position.addAttribute("bins", {
+	type: "Bin[]",
+	valueobject: binVO,
+	description: "Where in the site the stock physically sits",
+});
 position.uses(binVO, "stored-in", "1..*");
 inventoryAgg
 	.addInvariant("ReservedWithinOnHand", {
@@ -1405,7 +1839,7 @@ const pickTask = fulfilmentOrderAgg.addEntity("PickTask", {
 const packageEntity = fulfilmentOrderAgg.addEntity("Package", {
 	description: "A box that leaves the dock",
 });
-const trackingLabelVO = fulfilmentOrderAgg.addValueObject("TrackingLabel", {
+const trackingLabelVO = warehouseBC.addValueObject("TrackingLabel", {
 	description:
 		"Carrier barcode and scan vocabulary. Part of the kernel shared with Last Mile: one library, one format",
 });
@@ -1415,7 +1849,8 @@ fulfilmentOrder.addAttribute("fulfilmentOrderId", {
 	type: "string",
 	identity: true,
 });
-fulfilmentOrder.addAttribute("orderId", { type: "string" });
+fulfilmentOrder.addAttribute("orderId", { type: "string", identifies: order });
+pickTask.addAttribute("taskId", { type: "string", identity: true });
 pickTask.addAttribute("sku", { type: "string" });
 pickTask.addAttribute("quantity", { type: "int" });
 const pickStatus = pickTask.addAttribute("status", {
@@ -1434,7 +1869,8 @@ fulfilmentOrder.includes(packageEntity, "packed-into", "*");
 // invariant below reads. Inside one aggregate a reference is enough.
 packageEntity.references(pickTask, "packs", "1..*");
 packageEntity.uses(trackingLabelVO, "labelled", "1");
-fulfilmentOrder.references(order, "fulfils", "1");
+// The Order root is in Order Management, another bounded context: the
+// fulfilment order holds `orderId` and nothing more.
 fulfilmentOrderAgg
 	.addInvariant("DispatchOnlyWhenPicked", {
 		description:
@@ -1443,7 +1879,11 @@ fulfilmentOrderAgg
 	.constrains(packageEntity, pickStatus);
 
 const stockReservedSchema = warehouseBC.addSchema("StockReserved");
-stockReservedSchema.addAttribute("orderId", { type: "string", identity: true });
+stockReservedSchema.addAttribute("orderId", {
+	type: "string",
+	identity: true,
+	identifies: order,
+});
 stockReservedSchema.addAttribute("siteId", { type: "string" });
 const shipmentDispatchedSchema = warehouseBC.addSchema("ShipmentDispatched", {
 	description: "The fact orders, payments and last mile all react to",
@@ -1451,8 +1891,12 @@ const shipmentDispatchedSchema = warehouseBC.addSchema("ShipmentDispatched", {
 shipmentDispatchedSchema.addAttribute("packageId", {
 	type: "string",
 	identity: true,
+	identifies: packageEntity,
 });
-shipmentDispatchedSchema.addAttribute("orderId", { type: "string" });
+shipmentDispatchedSchema.addAttribute("orderId", {
+	type: "string",
+	identifies: order,
+});
 shipmentDispatchedSchema.addAttribute("label", {
 	type: "TrackingLabel",
 	valueobject: trackingLabelVO,
@@ -1461,6 +1905,7 @@ const returnReceivedSchema = warehouseBC.addSchema("ReturnReceived");
 returnReceivedSchema.addAttribute("returnId", {
 	type: "string",
 	identity: true,
+	identifies: returnEntity,
 });
 returnReceivedSchema.addAttribute("condition", {
 	type: "'resellable' | 'damaged'",
@@ -1483,7 +1928,14 @@ const stockReceived = inventoryAgg.provides("StockReceived", {
 	type: "event",
 	internal: true,
 });
-const reserveStock = inventoryAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const warehouseApi = warehouseBC.addService("WarehouseAPI", {
+	description:
+		"The warehouse's application service: the boundary stock is reserved through",
+	type: "application",
+});
+const reserveStock = warehouseApi
 	.provides("ReserveStock", {
 		description:
 			"Hold stock for an order, choosing the nearest site that has it",
@@ -1538,8 +1990,8 @@ const receiveReturn = fulfilmentOrderAgg
 	})
 	.raises(returnReceived);
 
-inventoryAgg.consumes(orderPlaced, { pattern: "anti-corruption-layer" });
-fulfilmentOrderAgg.consumes(returnRequested, {
+warehouseApi.consumes(orderPlaced, { pattern: "anti-corruption-layer" });
+warehouseApi.consumes(returnRequested, {
 	pattern: "anti-corruption-layer",
 });
 warehouseBC
@@ -1547,33 +1999,32 @@ warehouseBC
 		description: "Every placed order gets stock held immediately",
 	})
 	.on(orderPlaced)
-	.then(reserveStock);
+	.issues(reserveStock);
 warehouseBC
 	.addPolicy("Pick on reservation", {
 		description: "Held stock becomes pick tasks",
 	})
 	.on(stockReserved)
-	.then(createPickTasks);
+	.issues(createPickTasks);
 warehouseBC
 	.addPolicy("Expect requested returns", {
 		description: "A requested return is graded on arrival",
 	})
 	.on(returnRequested)
-	.then(receiveReturn);
+	.issues(receiveReturn);
 // The guarantee the warehouse asked for: a cancellation (fraud or customer)
 // releases the reservation and voids the pick tasks, so a flagged order that
 // was reserved a moment earlier is never picked.
-inventoryAgg.consumes(orderCancelled, { pattern: "anti-corruption-layer" });
-fulfilmentOrderAgg.consumes(orderCancelled, {
-	pattern: "anti-corruption-layer",
-});
+// One consumption, though two aggregates act on it: the context takes the
+// cancellation in at its boundary and the policy below is what fans it out.
+warehouseApi.consumes(orderCancelled, { pattern: "anti-corruption-layer" });
 warehouseBC
 	.addPolicy("Release on cancellation", {
 		description:
 			"A cancelled order gives its stock back and its pick tasks are voided before a picker reaches them",
 	})
 	.on(orderCancelled)
-	.then(releaseReservation, voidPickTasks);
+	.issues(releaseReservation, voidPickTasks);
 
 warehouseBC.addTerm("On hand", {
 	definition: "Physically present stock, whether or not reserved",
@@ -1593,36 +2044,47 @@ warehouseBC.addTerm("Fulfilment order", {
 });
 
 // Order, payments and customer service react to warehouse facts.
-orderAgg.consumes(shipmentDispatched, { pattern: "anti-corruption-layer" });
-orderAgg.consumes(returnReceived, { pattern: "anti-corruption-layer" });
-orderAgg.consumes(stockShort, { pattern: "anti-corruption-layer" });
-orderAgg.consumes(refundPayment, { pattern: "anti-corruption-layer" });
-orderBC
-	.addPolicy("Record dispatch", {
-		description: "A dispatched package appears on the order as a shipment",
-	})
-	.on(shipmentDispatched)
-	.then(recordShipment);
-orderBC
-	.addPolicy("Hold on stock short", {
+orderApi.consumes(shipmentDispatched, { pattern: "anti-corruption-layer" });
+orderApi.consumes(returnReceived, { pattern: "anti-corruption-layer" });
+orderApi.consumes(stockShort, { pattern: "anti-corruption-layer" });
+// The refund is asked for by an operation of Order Management's own boundary,
+// which is what the policy below names and what makes the call (decision 17).
+const requestRefund = orderApi.provides("RequestRefund", {
+	description:
+		"Ask Payments to return the money for a graded return, through the ACL",
+	type: "operation",
+	internal: true,
+});
+orderApi.consumes(refundPayment, {
+	pattern: "anti-corruption-layer",
+	by: [requestRefund],
+});
+// One order, from placed to delivered, is a process: it remembers which of its
+// shipments have gone and which have arrived, so nothing completes the order
+// until the last parcel is handed over. The last mile's fact is joined to it
+// further down, once ParcelDelivered exists.
+const orderToDelivery = orderBC
+	.addProcess("Order to delivery", {
 		description:
-			"When no site can reserve for the order it waits as awaiting-stock rather than silently stalling",
+			"From a paid-for order to every line in the customer's hands. It waits for the warehouse: a dispatch becomes a customer-visible shipment, a stock shortage puts the order into awaiting-stock rather than letting it stall silently, and the last parcel handed over completes it. Correlation is by orderId, which every fact it waits for carries; it ends when the order is completed, or earlier if the order is cancelled before anything ships",
 	})
-	.on(stockShort)
-	.then(holdForStock);
+	.starts(orderPlaced)
+	.on(shipmentDispatched, stockShort)
+	.issues(recordShipment, holdForStock)
+	.ends(orderCompleted, orderCancelled);
 orderBC
 	.addPolicy("Refund on received return", {
 		description: "Money goes back once the warehouse has graded the return",
 	})
 	.on(returnReceived)
-	.then(refundPayment);
-paymentAgg.consumes(shipmentDispatched, { pattern: "anti-corruption-layer" });
+	.issues(requestRefund);
+paymentsApi.consumes(shipmentDispatched, { pattern: "anti-corruption-layer" });
 paymentsBC
 	.addPolicy("Capture on dispatch", {
 		description: "Charge for each shipment as it leaves",
 	})
 	.on(shipmentDispatched)
-	.then(capturePayment);
+	.issues(capturePayment);
 
 /* =======================
    LAST MILE
@@ -1645,27 +2107,34 @@ const parcel = routeAgg.addEntity("Parcel", {
 	description:
 		"One labelled item to hand over at a stop; the warehouse's package once it is on a van",
 });
-const lastMileLabelVO = routeAgg.addValueObject("TrackingLabel", {
-	description:
-		"The same barcode and scan vocabulary the warehouse prints; the shared kernel means both contexts read one format",
-});
-lastMileLabelVO.addAttribute("barcode", { type: "string" });
-const proofVO = routeAgg.addValueObject("ProofOfDelivery", {
+// The same barcode and scan vocabulary the warehouse prints: the shared
+// kernel is one library, so Last Mile holds the warehouse's own value object
+// rather than a copy of it. A relation may not cross a context boundary, so
+// the attribute's `valueobject` is the whole of the link.
+const lastMileLabelVO = trackingLabelVO;
+const proofVO = lastMileBC.addValueObject("ProofOfDelivery", {
 	description: "Photo, signature or safe-place note",
 });
 proofVO.addAttribute("kind", { type: "'photo' | 'signature' | 'safe-place'" });
 proofVO.addAttribute("capturedAt", { type: "date-time" });
 route.addAttribute("routeId", { type: "string", identity: true });
 route.addAttribute("date", { type: "date" });
-stop.addAttribute("sequence", { type: "int" });
+// A stop is told apart from the next by where it falls on the route.
+stop.addAttribute("sequence", { type: "int", identity: true });
 parcel.addAttribute("label", {
 	type: "TrackingLabel",
 	valueobject: lastMileLabelVO,
 });
-parcel.addAttribute("orderId", { type: "string" });
+parcel.addAttribute("parcelId", { type: "string", identity: true });
+parcel.addAttribute("orderId", { type: "string", identifies: order });
 route.includes(stop, "visits", "1..*");
 stop.includes(parcel, "hands-over", "1..*");
-parcel.uses(lastMileLabelVO, "scanned-as", "1");
+stop.addAttribute("proofOfDelivery", {
+	type: "ProofOfDelivery",
+	valueobject: proofVO,
+	optional: true,
+	description: "Captured at the door; absent until the stop is completed",
+});
 stop.uses(proofVO, "proven-by", "0..1");
 routeAgg
 	.addInvariant("MaxStopsPerRoute", {
@@ -1679,11 +2148,17 @@ parcelDeliveredSchema.addAttribute("barcode", {
 	type: "string",
 	identity: true,
 });
-parcelDeliveredSchema.addAttribute("orderId", { type: "string" });
+parcelDeliveredSchema.addAttribute("orderId", {
+	type: "string",
+	identifies: order,
+});
 parcelDeliveredSchema.addAttribute("deliveredAt", { type: "date-time" });
 const attemptFailedSchema = lastMileBC.addSchema("DeliveryAttemptFailed");
 attemptFailedSchema.addAttribute("barcode", { type: "string", identity: true });
-attemptFailedSchema.addAttribute("orderId", { type: "string" });
+attemptFailedSchema.addAttribute("orderId", {
+	type: "string",
+	identifies: order,
+});
 attemptFailedSchema.addAttribute("reason", { type: "string" });
 
 const parcelDelivered = routeAgg.provides("ParcelDelivered", {
@@ -1711,16 +2186,21 @@ routeAgg
 	})
 	.raises(parcelDelivered, attemptFailed);
 
-// DELIBERATE (role-coherence): this consumption declares no downstream role.
-// The team never decided whether they conform to the warehouse's event or
-// translate it; the rule asks them to.
-routeAgg.consumes(shipmentDispatched, {});
+// No downstream role, and none is wanted: Warehouse and Last Mile share a
+// kernel, so neither is upstream of the other and there is nothing to conform
+// to or translate. role-coherence exempts symmetric partners for that reason.
+const lastMileApi = lastMileBC.addService("LastMileAPI", {
+	description:
+		"Last Mile's application service: the boundary through which dispatched packages arrive to be routed",
+	type: "application",
+});
+lastMileApi.consumes(shipmentDispatched, {});
 lastMileBC
 	.addPolicy("Route dispatched packages", {
 		description: "Every dispatched package gets a stop",
 	})
 	.on(shipmentDispatched)
-	.then(assignParcel);
+	.issues(assignParcel);
 
 lastMileBC.addTerm("Stop", {
 	definition: "One address on a route, however many parcels go there",
@@ -1733,13 +2213,10 @@ lastMileBC.addTerm("Parcel", {
 	embodiedBy: parcel,
 });
 
-orderAgg.consumes(parcelDelivered, { pattern: "anti-corruption-layer" });
-orderBC
-	.addPolicy("Complete on delivery", {
-		description: "When the last package is delivered the order is done",
-	})
-	.on(parcelDelivered)
-	.then(completeOrder);
+orderApi.consumes(parcelDelivered, { pattern: "anti-corruption-layer" });
+// The last step of the order-to-delivery process above: it is written here
+// because ParcelDelivered belongs to Last Mile, which is declared below Orders.
+orderToDelivery.on(parcelDelivered).issues(completeOrder);
 
 /* =======================
    ADVERTISING
@@ -1756,13 +2233,14 @@ const campaign = campaignAgg.addRootEntity("Campaign", {
 const adGroup = campaignAgg.addEntity("AdGroup", {
 	description: "Products and keywords that share a bid",
 });
-const campaignMoney = money(campaignAgg);
-const bidVO = campaignAgg.addValueObject("Bid", {
+const campaignMoney = money(adsBC);
+const bidVO = adsBC.addValueObject("Bid", {
 	description: "What the seller pays per click, at most",
 });
 bidVO.addAttribute("maxCpc", { type: "Money", valueobject: campaignMoney });
+bidVO.uses(campaignMoney, "capped-at", "1");
 campaign.addAttribute("campaignId", { type: "string", identity: true });
-campaign.addAttribute("sellerId", { type: "string" });
+campaign.addAttribute("sellerId", { type: "string", identifies: seller });
 const dailyBudget = campaign.addAttribute("dailyBudget", {
 	type: "Money",
 	valueobject: campaignMoney,
@@ -1770,10 +2248,17 @@ const dailyBudget = campaign.addAttribute("dailyBudget", {
 adGroup.addAttribute("adGroupId", { type: "string", identity: true });
 adGroup.addAttribute("keywords", { type: "string[]" });
 adGroup.addAttribute("bid", { type: "Bid", valueobject: bidVO });
+adGroup.addAttribute("productId", {
+	type: "string",
+	description:
+		"Identity of the Product root in Catalogue; only the id crosses the boundary",
+	identifies: product,
+});
 campaign.includes(adGroup, "spends-through", "1..*");
 campaign.uses(campaignMoney, "budgeted", "1");
 adGroup.uses(bidVO, "bids", "1");
-adGroup.references(product, "advertises", "1..*");
+// The Product root is in Catalogue, another bounded context, so the ad group
+// holds `productId` instead of pointing at it.
 campaignAgg
 	.addInvariant("BidWithinBudget", {
 		description: "No bid exceeds the daily budget",
@@ -1787,7 +2272,10 @@ campaignAgg
 
 const adClickedSchema = adsBC.addSchema("AdClicked");
 adClickedSchema.addAttribute("campaignId", { type: "string", identity: true });
-adClickedSchema.addAttribute("productId", { type: "string" });
+adClickedSchema.addAttribute("productId", {
+	type: "string",
+	identifies: product,
+});
 adClickedSchema.addAttribute("cost", {
 	type: "Money",
 	valueobject: campaignMoney,
@@ -1816,6 +2304,24 @@ const pauseCampaigns = campaignAgg.provides("PauseSellerCampaigns", {
 	internal: true,
 });
 
+// A returned shape: the winners RunAuction and GetSponsoredResults answer with.
+const sponsoredSlotSchema = adsBC.addSchema("SponsoredSlot", {
+	description: "One paid placement won for a query",
+});
+sponsoredSlotSchema.addAttribute("productId", {
+	type: "string",
+	identity: true,
+	identifies: product,
+});
+sponsoredSlotSchema.addAttribute("bid", { type: "Bid", valueobject: bidVO });
+const sponsoredResultsSchema = adsBC.addSchema("SponsoredResults", {
+	description: "The winning slots for a query, ranked",
+});
+sponsoredResultsSchema.addAttribute("slots", {
+	type: "SponsoredSlot[]",
+	schema: sponsoredSlotSchema,
+});
+
 const auction = adsBC.addService("AuctionService", {
 	description:
 		"Runs the second-price auction for the sponsored slots on a results page",
@@ -1828,6 +2334,7 @@ auction
 		description: "Pick winners for a query's sponsored slots",
 		type: "operation",
 		internal: true,
+		returns: sponsoredResultsSchema,
 	})
 	.raises(slotsAwarded);
 
@@ -1836,7 +2343,7 @@ const adsApi = adsBC.addService("AdsAPI", {
 		"Campaign management for sellers and the sponsored-results read for Search",
 	type: "application",
 });
-adsApi
+const createCampaign = adsApi
 	.provides("CreateCampaign", {
 		description: "Start a campaign",
 		type: "operation",
@@ -1848,6 +2355,7 @@ const getSponsoredResults = adsApi.provides("GetSponsoredResults", {
 		"Sponsored slots for a query, merged into organic results by Search",
 	type: "operation",
 	pattern: "open-host-service",
+	returns: sponsoredResultsSchema,
 });
 const recordAdClick = adsApi
 	.provides("RecordAdClick", {
@@ -1858,22 +2366,32 @@ const recordAdClick = adsApi
 		schema: adClickedSchema,
 	})
 	.raises(adClicked);
-// Ad groups advertise catalogue products; the ids are checked against the product API.
-adsApi.consumes(getProduct, { pattern: "conformist" });
+// Ad groups advertise catalogue products; the ids are checked against the
+// product API when the campaign is created, which is the only one of AdsAPI's
+// three operations that reaches Catalogue.
+adsApi.consumes(getProduct, { pattern: "conformist", by: [createCampaign] });
 
-campaignAgg.consumes(sellerSuspended, { pattern: "conformist" });
+adsApi.consumes(sellerSuspended, { pattern: "conformist" });
 adsBC
 	.addPolicy("Pause campaigns of suspended seller", {
 		description:
 			"A suspended seller stops spending the moment they are suspended",
 	})
 	.on(sellerSuspended)
-	.then(pauseCampaigns);
+	.issues(pauseCampaigns);
 
 // Partnership: search and ads tune the results page together, so Search
 // takes the sponsored slots as-is and reports clicks on them the same way.
-searchApi.consumes(getSponsoredResults, { pattern: "conformist" });
-searchApi.consumes(recordAdClick, { pattern: "conformist" });
+// SearchAPI answers four operations and one of them makes each call: the
+// results page merges the slots, and the click report is its own step.
+searchApi.consumes(getSponsoredResults, {
+	pattern: "conformist",
+	by: [searchProducts],
+});
+searchApi.consumes(recordAdClick, {
+	pattern: "conformist",
+	by: [reportAdClick],
+});
 
 adsBC.addTerm("Sponsored slot", {
 	definition:
@@ -1897,24 +2415,35 @@ const caseRoot = caseAgg.addRootEntity("Case", {
 const interaction = caseAgg.addEntity("Interaction", {
 	description: "A call, chat or email on the case",
 });
-const resolutionVO = caseAgg.addValueObject("Resolution", {
+const resolutionVO = csBC.addValueObject("Resolution", {
 	description: "How it ended: refund, replacement, information, no action",
 });
 resolutionVO.addAttribute("kind", {
 	type: "'refund' | 'replacement' | 'information' | 'no-action'",
 });
 caseRoot.addAttribute("caseId", { type: "string", identity: true });
-caseRoot.addAttribute("customerId", { type: "string" });
-caseRoot.addAttribute("orderId", { type: "string" });
+// OpenCase creates a case for a customer and only optionally about an order,
+// so a case that is about the account rather than an order holds no orderId.
+caseRoot.addAttribute("orderId", {
+	type: "string",
+	identifies: order,
+	optional: true,
+});
+// `customerId` is declared with the CustomerAccount root further down, because
+// the root it identifies has to exist before the attribute can name it.
+interaction.addAttribute("interactionId", { type: "string", identity: true });
 interaction.addAttribute("channel", { type: "'call' | 'chat' | 'email'" });
 interaction.addAttribute("at", { type: "date-time" });
 caseRoot.includes(interaction, "logged", "*");
+caseRoot.addAttribute("resolution", {
+	type: "Resolution",
+	valueobject: resolutionVO,
+	optional: true,
+	description: "Absent while the case is open",
+});
 caseRoot.uses(resolutionVO, "resolved-as", "0..1");
-caseRoot.references(order, "about-order", "0..1");
-// DELIBERATE (cross-aggregate-reference): the case "includes" order lines
-// from the Order aggregate. Agents wanted the lines on the case screen and
-// the modeller copied them in. Across aggregates only references is allowed.
-caseRoot.includes(orderLine, "disputes", "*");
+// The Order root is in Order Management, another bounded context, so the case
+// holds `orderId` above and no relation.
 
 caseAgg
 	.addInvariant("ResolvedCaseHasInteraction", {
@@ -1928,7 +2457,14 @@ const caseOpened = caseAgg.provides("CaseOpened", {
 	type: "event",
 	pattern: "published-language",
 });
-const openCase = caseAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const caseApi = csBC.addService("CaseAPI", {
+	description:
+		"Customer Service's application service: the boundary cases are opened through",
+	type: "application",
+});
+const openCase = caseApi
 	.provides("OpenCase", {
 		description: "Create a case for a customer, optionally about an order",
 		type: "operation",
@@ -1941,16 +2477,23 @@ caseAgg.provides("ResolveCase", {
 	internal: true,
 });
 
-caseAgg.consumes(getOrder, { pattern: "anti-corruption-layer" });
-caseAgg.consumes(requestReturn, { pattern: "anti-corruption-layer" });
-caseAgg.consumes(attemptFailed, { pattern: "anti-corruption-layer" });
+caseApi.consumes(getOrder, {
+	pattern: "anti-corruption-layer",
+	by: [openCase],
+});
+// RequestReturn names no caller: an agent raises a return while working a case,
+// and the operation that does it is the aggregate's ResolveCase, which is not
+// CaseAPI's to name (decision 21). CaseAPI offers one operation, so nothing is
+// ambiguous either way (`consumption-by-required`).
+caseApi.consumes(requestReturn, { pattern: "anti-corruption-layer" });
+caseApi.consumes(attemptFailed, { pattern: "anti-corruption-layer" });
 csBC
 	.addPolicy("Open case on failed delivery", {
 		description:
 			"A failed attempt reaches an agent before the customer has to call",
 	})
 	.on(attemptFailed)
-	.then(openCase);
+	.issues(openCase);
 
 csBC.addTerm("Case", {
 	definition: "One customer problem tracked to an outcome",
@@ -1974,11 +2517,19 @@ const purchaseOrder = purchaseOrderAgg.addRootEntity("PurchaseOrder", {
 purchaseOrder.addAttribute("poNumber", { type: "string", identity: true });
 purchaseOrder.addAttribute("vendorCode", { type: "string" });
 
+const purchaseOrderLineSchema = vendorBC.addSchema("PurchaseOrderLine", {
+	description: "One line of the nightly export",
+});
+purchaseOrderLineSchema.addAttribute("sku", { type: "string", identity: true });
+purchaseOrderLineSchema.addAttribute("quantity", { type: "int32" });
 const poReceivedSchema = vendorBC.addSchema("PurchaseOrderReceived", {
 	description: "The nightly export the warehouse reads",
 });
 poReceivedSchema.addAttribute("poNumber", { type: "string", identity: true });
-poReceivedSchema.addAttribute("lines", { type: "{sku, quantity}[]" });
+poReceivedSchema.addAttribute("lines", {
+	type: "PurchaseOrderLine[]",
+	schema: purchaseOrderLineSchema,
+});
 const purchaseOrderReceived = purchaseOrderAgg.provides(
 	"PurchaseOrderReceived",
 	{
@@ -1990,6 +2541,14 @@ const purchaseOrderReceived = purchaseOrderAgg.provides(
 	},
 );
 
+// DISCOVERY: Retail Systems engineer, "the nightly export of received vendor
+// stock". Card 81 gave that a NightlyExport service with a RunNightlyExport
+// operation so the event had a raiser, and its own description gave the game
+// away: "the one job of the ninety that anyone can describe". Ninety jobs
+// nobody can read is what a big ball of mud is, and such a context may say what
+// it emits without saying how (decision 28, second amendment; card 90). The
+// service and its operation are gone; the export file still arrives.
+
 vendorBC.addTerm("Purchase order", {
 	definition:
 		"An order RiverMart places with a wholesale vendor; the second of the three meanings of 'order' on a warehouse floor",
@@ -1997,7 +2556,7 @@ vendorBC.addTerm("Purchase order", {
 	embodiedBy: purchaseOrderAgg,
 });
 
-inventoryAgg.consumes(purchaseOrderReceived, {
+warehouseApi.consumes(purchaseOrderReceived, {
 	pattern: "anti-corruption-layer",
 });
 warehouseBC
@@ -2005,7 +2564,7 @@ warehouseBC
 		description: "The legacy export is translated into stock receipts",
 	})
 	.on(purchaseOrderReceived)
-	.then(receiveStock);
+	.issues(receiveStock);
 
 /* =======================
    IDENTITY
@@ -2019,6 +2578,23 @@ const customer = customerAgg.addRootEntity("CustomerAccount", {
 });
 customer.addAttribute("customerId", { type: "string", identity: true });
 customer.addAttribute("email", { type: "string" });
+// Every customer id in the model is declared here, because an attribute can
+// only name a root that already exists and this is where the CustomerAccount
+// root is. Each of these aggregates is in another bounded context, so this
+// identity is the whole of what it holds of a customer.
+cart.addAttribute("customerId", { type: "string", identifies: customer });
+order.addAttribute("customerId", { type: "string", identifies: customer });
+caseRoot.addAttribute("customerId", { type: "string", identifies: customer });
+// The same customer id, carried on two payloads declared earlier: a payload
+// that carries an id says whose it is, same as an attribute.
+cartCheckedOutSchema.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
+orderPlacedSchema.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
 
 const customerRegistered = customerAgg.provides("CustomerRegistered", {
 	description: "A new customer account exists",
@@ -2036,13 +2612,29 @@ identityApi
 		pattern: "open-host-service",
 	})
 	.raises(customerRegistered);
+// A returned shape: what GetCustomer answers with.
+const customerProfileSchema = identityBC.addSchema("CustomerProfile", {
+	description: "A customer's profile",
+});
+customerProfileSchema.addAttribute("customerId", {
+	type: "string",
+	identity: true,
+});
+customerProfileSchema.addAttribute("email", { type: "string" });
 const getCustomer = identityApi.provides("GetCustomer", {
 	description: "Read a customer's profile",
 	type: "operation",
 	pattern: "open-host-service",
+	returns: customerProfileSchema,
 });
-checkoutOrchestrator.consumes(getCustomer, { pattern: "conformist" });
-caseAgg.consumes(getCustomer, { pattern: "conformist" });
+// Who the cart belongs to is read as the cart is frozen: CartCheckedOut carries
+// the customer id, and none of the orchestrator's other three operations asks
+// Identity for anything. Opening a case does the same on the other side.
+checkoutOrchestrator.consumes(getCustomer, {
+	pattern: "conformist",
+	by: [checkoutOperation],
+});
+caseApi.consumes(getCustomer, { pattern: "conformist", by: [openCase] });
 
 // "Customer" is said in three contexts; only this one holds the record.
 identityBC.addTerm("Customer", {
@@ -2099,11 +2691,49 @@ cartBC.downstreamOf(identityBC, {
 	upstreamRoles: ["open-host-service"],
 	downstreamRoles: ["conformist"],
 });
+// Identity-only dependencies. Each pair below is joined by nothing but an
+// identity attribute naming the other context's entity, which since decision
+// 14 is how the model records a dependency on another context's model. Nothing
+// is exchanged, so neither end plays an upstream or downstream role and both
+// lists stay empty; the relationship says which way the dependency runs and
+// that somebody looked at it, which is what `relationship-declared` asks for
+// (card 70). This first one was written before the rule existed and was read
+// then as an invention; it is now simply what the rule requires.
 orderBC.downstreamOf(offersBC, {
-	upstreamRoles: ["open-host-service"],
-	downstreamRoles: ["conformist"],
+	upstreamRoles: [],
+	downstreamRoles: [],
 	description:
-		"Order lines carry the offer id they were bought from; Orders never reads Offers back, so the coupling is identity only",
+		"Order lines carry the offer id they were bought from; Orders never reads Offers back, so the coupling is identity only and neither side plays a role in an exchange that does not happen",
+});
+cartBC.downstreamOf(catalogueBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A wishlist item names the product it saves; the shopper's list holds ids, and prices and titles come from Offers",
+});
+orderBC.downstreamOf(catalogueBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"An order line names the variant it was bought as, by SKU; the order never reads the catalogue back",
+});
+orderBC.downstreamOf(identityBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description: "An order names the customer account it was placed by, by id",
+});
+// Payments was listed here too, for the cart id its PaymentAuthorised and
+// AuthorisePayment payloads carry. The description said it plainly — "so
+// checkout can match it back" — which is a payload carrying an id for its
+// reader, not Payments depending on Cart & Checkout's model: Payments stores no
+// cart and asks Checkout for nothing (decision 14, second amendment). The
+// relationship that matters between the two runs the other way, and is
+// declared below; this one was the rule's invention and is gone (card 90).
+lastMileBC.downstreamOf(orderBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A delivery event names the order it belongs to; Last Mile keeps the id, not the order",
 });
 orderBC.downstreamOf(paymentsBC, {
 	upstreamRoles: ["open-host-service"],
@@ -2157,7 +2787,7 @@ sellerBC.downstreamOf(fraudBC, {
 lastMileBC.downstreamOf(warehouseBC, {
 	upstreamRoles: ["published-language"],
 	description:
-		"Roles on the consumption were never agreed; see the role-coherence warning",
+		"Last Mile takes the dispatch feed as the warehouse publishes it, and declares no downstream role: the two also share a kernel, so neither is upstream of the other and neither has a role to declare (card 47)",
 });
 orderBC.downstreamOf(lastMileBC, {
 	upstreamRoles: ["published-language"],
@@ -2191,18 +2821,54 @@ warehouseBC.downstreamOf(vendorBC, {
 
 // Shared kernel: one tracking label library and scan vocabulary, co-owned by
 // Fulfilment and Logistics, because a label printed in one is scanned in the other.
-warehouseBC.sharesKernelWith(
-	lastMileBC,
-	"TrackingLabel format and scan events are one shared library",
-);
+warehouseBC.sharesKernelWith(lastMileBC, {
+	description: "TrackingLabel format and scan events are one shared library",
+	disposition: "tolerated",
+	comments: [
+		{
+			text: "TrackingLabel and the scan event codes live in @rivermart/tracking, imported by both.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/rivermart/blob/main/packages/tracking/src/TrackingLabel.ts",
+				label: "packages/tracking/src/TrackingLabel.ts",
+			},
+		},
+		{
+			text: "The label format is a carrier standard, so neither side can own it; the kernel is the cheapest place to keep it in step.",
+			link: {
+				kind: "contract",
+				url: "https://github.com/example/rivermart/blob/main/docs/carrier-label-spec.md",
+				label: "Carrier label spec",
+			},
+		},
+	],
+});
 
-// Partnership: organic ranking and sponsored slots are tuned together and
-// released together; neither team changes the results page alone.
-searchBC.partnerOf(adsBC, "The results page is one product owned by two teams");
+// Partnership: organic ranking and sponsored slots are tuned and released
+// together. Every dependency runs one way — Search calls GetSponsoredResults
+// and reports clicks through RecordAdClick, and Advertising consumes nothing
+// of Search's — and that is fine: Evans's partnership is two teams whose
+// success is mutual and whose releases are planned as one, which does not
+// require traffic both ways (decision 20's second amendment). This used to
+// raise partnership-backed; card 69 relaxed the rule and it is no longer a
+// finding. See DISCOVERY.md section 7.
+searchBC.partnerOf(adsBC, {
+	description: "The results page is one product owned by two teams",
+	comments: [
+		{
+			text: "Organic ranking and sponsored slots are blended in one service; neither team deploys the results page alone.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/rivermart/blob/main/search/results/BlendedRanker.ts",
+				label: "search/results/BlendedRanker.ts",
+			},
+		},
+	],
+});
 
 // Separate ways: first-party vendors and third-party sellers are different
 // businesses with different contracts; integrating them was tried and abandoned.
-vendorBC.separateWaysFrom(
-	sellerBC,
-	"Vendors and sellers are kept apart by policy; no shared identity, no shared data",
-);
+vendorBC.separateWaysFrom(sellerBC, {
+	description:
+		"Vendors and sellers are kept apart by policy; no shared identity, no shared data",
+});

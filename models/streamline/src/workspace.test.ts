@@ -6,10 +6,13 @@ import { describe, expect, it } from "vitest";
 import { workspace } from "./workspace";
 
 /**
- * StreamLine plants exactly three structural problems, chosen so that it,
- * RiverMart and NorthBank together exercise every rule in the validation
- * catalog; see the DELIBERATE comments in workspace.ts and section 7 of
- * DISCOVERY.md.
+ * StreamLine plants three structural problems, chosen so that it, RiverMart and
+ * NorthBank together exercise every rule in the validation catalog; see the
+ * DELIBERATE comments in workspace.ts and section 7 of DISCOVERY.md. A fourth,
+ * partnership-backed, was retired off this list on card 69 rather than fixed in
+ * the model: Playback and Devices share a release train and a lab run, which is
+ * what a partnership is, and decision 20's second amendment accepts traffic in
+ * one direction. The list states what `validate()` prints today.
  */
 const deliberate: Array<{ rule: string; severity: "error" | "warning" }> = [
 	{ rule: "internal-consumable", severity: "error" },

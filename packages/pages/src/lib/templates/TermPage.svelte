@@ -6,57 +6,94 @@ export const sections = [
 </script>
 
 <script lang="ts">
-	import type { GlossaryTerm } from "@open-domain-specification/core";
-	import Chip from "../atoms/Chip.svelte";
-	import Empty from "../atoms/Empty.svelte";
-	import RefLink from "../atoms/RefLink.svelte";
-	import Card from "../molecules/Card.svelte";
-	import Fact from "../molecules/Fact.svelte";
-	import { ICONS, problemsUnder, useModel } from "../model";
-	import PageHeader from "../organisms/PageHeader.svelte";
-	import Section from "../organisms/Section.svelte";
-	import { termsOf } from "./elements";
+import type { GlossaryTerm } from "@open-domain-specification/core";
+import { problemsUnder, useModel } from "../model";
+import { termsOf } from "../elements";
+import type { Column } from "../atoms/DataTable.svelte";
+import DataTable from "../atoms/DataTable.svelte";
+import Definition from "../atoms/Definition.svelte";
+import DefinitionList from "../atoms/DefinitionList.svelte";
+import EmptyState from "../atoms/EmptyState.svelte";
+import Keyword from "../atoms/Keyword.svelte";
+import Lockup from "../atoms/Lockup.svelte";
+import { contextCrumbs } from "../molecules/crumbs";
+import { kindOf } from "../molecules/element-kind";
+import PageHeader from "../organisms/PageHeader.svelte";
+import Section from "../organisms/Section.svelte";
+import Ref from "../atoms/Ref.svelte";
 
-	let { term: t }: { term: GlossaryTerm } = $props();
-	const model = useModel();
-	const ws = model.workspace;
-	const bc = $derived(t.boundedcontext);
-	const embodied = $derived(t.embodiedBy as { ref: string; name?: string; description?: string } | undefined);
-	const sameWord = $derived([...termsOf(ws)].filter((x) => x !== t && x.name.toLowerCase() === t.name.toLowerCase()));
-	const crumbs = $derived<[string, string][]>([["#", ws.name], [bc.ref, bc.name]]);
+/** One word of the ubiquitous language: what it means here, what carries it, and who else uses it. */
+const { term: t }: { term: GlossaryTerm } = $props();
+const model = useModel();
+const ws = model.workspace;
+const bc = $derived(t.boundedcontext);
+const embodied = $derived(
+	t.embodiedBy as
+		| { ref: string; name?: string; description?: string }
+		| undefined,
+);
+const sameWord = $derived(
+	[...termsOf(ws)].filter(
+		(x) => x !== t && x.name.toLowerCase() === t.name.toLowerCase(),
+	),
+);
+const crumbs = $derived(contextCrumbs(ws, bc));
+const columns: Column[] = [
+	{ key: "context", label: "Context" },
+	{ key: "definition", label: "Definition" },
+];
 </script>
 
-<PageHeader kind="Glossary Term" icon={ICONS.term} name={t.name} id={t.id} description={t.definition} {crumbs}>
+<PageHeader description={t.definition} {crumbs}>
+	{#snippet title()}<Lockup kind="term" name={t.name} id={t.id} detail="Glossary term" size="title" />{/snippet}
 	{#snippet meta()}
-		{#each t.aliases as a}<Chip label={a} tone="muted" title="alias" />{/each}
+		{#each t.aliases as a (a)}<Keyword text={a} title="alias" />{/each}
 	{/snippet}
 	{#snippet facts()}
-		<Fact label="Language of"><RefLink ref={bc.ref} label={bc.name} icon={ICONS.boundedcontext} /></Fact>
+		<DefinitionList>
+			<Definition term="Language of"><Lockup kind="boundedcontext" name={bc.name} ref={bc.ref} /></Definition>
+		</DefinitionList>
 	{/snippet}
 </PageHeader>
 
-<Section id="embodied" title="Embodied by" lead="The model element that carries this meaning. Language and model should say the same thing." problems={problemsUnder(model, t.ref)}>
+<Section
+	id="embodied"
+	title="Embodied by"
+	lead="The model element that carries this meaning. Language and model should say the same thing."
+	problems={problemsUnder(model, t.ref)}
+>
 	{#if embodied}
-		<Card ref={embodied.ref} name={embodied.name ?? embodied.ref} icon="symbol-misc" description={embodied.description} />
+		<p class="embodied"><Lockup kind={kindOf(embodied)} name={embodied.name ?? embodied.ref} ref={embodied.ref} /> <span class="description">{embodied.description ?? ""}</span></p>
 	{:else}
-		<Empty text="Not modelled. Either the word is not needed, or the model is missing something." />
+		<EmptyState text="Not modelled. Either the word is not needed, or the model is missing something." />
 	{/if}
 </Section>
 
-<Section id="elsewhere" title="Same word elsewhere" lead="The same term in other contexts. Different definitions are expected; that is what bounded contexts are for.">
-	{#if sameWord.length}
-		<table>
-			<thead><tr><th>Context</th><th>Definition</th></tr></thead>
-			<tbody>
-				{#each sameWord as x}
-					<tr>
-						<td><RefLink ref={x.boundedcontext.ref} label={x.boundedcontext.name} icon={ICONS.boundedcontext} /></td>
-						<td><RefLink ref={x.ref} label={x.definition} /></td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-	{:else}
-		<Empty text="Only this context uses the word." />
-	{/if}
+<Section
+	id="elsewhere"
+	title="Same word elsewhere"
+	lead="The same term in other contexts. Different definitions are expected; that is what bounded contexts are for."
+	count={sameWord.length}
+>
+	<DataTable {columns} rows={sameWord} empty="Only this context uses the word." rowId={(x) => x.ref}>
+		{#snippet cell(x, col)}
+			{#if col.key === "context"}
+				<Lockup kind="boundedcontext" name={x.boundedcontext.name} ref={x.boundedcontext.ref} />
+			{:else}
+				<Ref ref={x.ref} label={x.definition} />
+			{/if}
+		{/snippet}
+	</DataTable>
 </Section>
+
+<style>
+	.embodied {
+		margin: 0;
+		padding: 0 8px;
+		line-height: 22px;
+		max-width: 80ch;
+	}
+	.description {
+		margin-left: 8px;
+	}
+</style>

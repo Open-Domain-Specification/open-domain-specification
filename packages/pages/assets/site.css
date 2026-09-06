@@ -50,56 +50,30 @@
 	}
 }
 
-/* Sidebar navigation stands in for the extension's tree view. */
+/* Sidebar navigation stands in for the extension's tree view. Only the
+   column it sits in is styled here, and the app shell owns that column's
+   class: the rows, the brand line and the selection belong to the Sidebar
+   organism, which draws them as the workbench tree does. */
 .site {
 	display: grid;
 	grid-template-columns: 260px minmax(0, 1fr);
 	min-height: 100vh;
 }
-.site-nav .brand {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-.site-nav {
+.site > .site-nav {
 	position: sticky;
 	top: 0;
 	height: 100vh;
 	overflow: auto;
-	padding: 12px 16px;
+	padding: 12px 8px;
 	background: var(--vscode-sideBar-background);
 	border-right: 1px solid var(--vscode-panel-border);
-	font-size: 0.92em;
 }
-.site-nav ul {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-.site-nav ul ul {
-	padding-left: 14px;
-}
-.site-nav a {
-	display: block;
-	padding: 3px 6px;
-	border-radius: 4px;
-	color: var(--vscode-foreground);
-	white-space: nowrap;
+/* The nav column is its own scroller, so locking the document (Modal.svelte,
+   which adds this class to <html> while a modal is open) does not stop a
+   wheel over the tree from moving it. This is the site shell's own half of
+   that fix. */
+html.modal-open .site > .site-nav {
 	overflow: hidden;
-	text-overflow: ellipsis;
-}
-.site-nav a .codicon {
-	font-size: 0.95em;
-	vertical-align: -1px;
-	margin-right: 4px;
-	color: var(--vscode-icon-foreground);
-}
-.site-nav a:hover {
-	background: var(--vscode-toolbar-hoverBackground);
-	text-decoration: none;
-}
-.site-nav a.active {
-	color: var(--vscode-textLink-foreground);
 }
 .site-page {
 	min-width: 0;
@@ -115,7 +89,7 @@
 	.site {
 		grid-template-columns: 1fr;
 	}
-	.site-nav {
+	.site > .site-nav {
 		position: static;
 		height: auto;
 		border-right: 0;

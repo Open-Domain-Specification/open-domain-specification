@@ -32,33 +32,73 @@ Open-host service for /pet endpoints
 
 
 
+## Invariants
+> No invariants across aggregates.
+
+## Value Objects
+| Name | Description | Attributes | Invariants | Used by |
+| --- | --- | --- | --- | --- |
+| Category | The kind of animal, e.g. Dogs. A value because two pets in Dogs share one category | id: `int64`, name: `string` | - | Pet |
+| Tag | Free-form label on a pet | name: `string` | - | Pet |
+| PhotoUrl | Where a photo of the pet can be fetched | url: `string (URL)` | - | Pet |
+| PetStatus | Where the pet is in its sales lifecycle. Shared with Inventory, which keys its counts by these values | value: `'available' | 'pending' | 'sold'` | - | Pet |
+
+
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
 | PetRegistered | What the outside learns when a pet joins the catalog | **petId**: `int64`, name: `string`, category: `Category` | PetRegistered |
 | PetStatusChanged | - | **petId**: `int64`, from: `PetStatus`, to: `PetStatus` | PetStatusChanged, ChangePetStatus |
 | RegisterPet | Request body for adding a pet | name: `string`, category: `Category` | AddPet |
-| PetId | Identifies one pet; shared by every consumable that only needs the id | **petId**: `int64` | PetUpdated, PetDeleted, ReservePet, MarkPetSold, GetPetById, UploadImage, DeletePet, GetPetSummary |
+| PetId | Identifies one pet; shared by every consumable that only needs the id | **petId**: `int64` | PetUpdated, PetReserved, PetSold, PetDeleted, ReservePet, MarkPetSold, GetPetById, UploadImage, DeletePet, GetPetSummary, ReservePetForOrder, MarkPetSoldForOrder |
+| Pet | The full pet resource, as GET /pet/{petId} answers with it | **petId**: `int64`, name: `string`, category: `Category`, photoUrls: `PhotoUrl[]`, tags: `Tag[]`, status: `PetStatus` | GetPetById |
+| PetSummary | The slim read of a pet other contexts are allowed to hold | **petId**: `int64`, name: `string`, status: `PetStatus` | FindPetsByStatus, GetPetSummary |
+| PetUnavailable | Why the pet could not be held: it is already pending or sold | **petId**: `int64`, status: `PetStatus` | ReservePetForOrder |
 
 
 ## Policies
 > No policies.
 
-## Context Relationships
-| Upstream | Relationship | Downstream | Upstream Roles | Downstream Roles |
-| --- | --- | --- | --- | --- |
-| Catalog BC | customer-supplier | Sales BC | open-host-service | anti-corruption-layer |
-| Catalog BC | shared-kernel | Inventory BC | - | - |
+## Processes
+> No processes.
 
+## Context Relationships
+### Depended on by
+| With | Description | Type | Upstream Roles | Downstream Roles |
+| --- | --- | --- | --- | --- |
+| Sales BC | Sales needs pet availability; Catalog commits to the summary contract | customer-supplier | open-host-service | anti-corruption-layer |
+
+- **Sales BC** (customer-supplier)
+	- Sales reads Catalog through PetSummaryClient, which maps the catalog payload onto the Sales order model. [sales/acl/PetSummaryClient.ts](https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts)
+	- The summary contract is versioned and published; Catalog will not break it without a major release. [catalog/openapi.yaml](https://github.com/example/petstore/blob/main/catalog/openapi.yaml)
+
+### Works alongside
+| With | Description | Type | Upstream Roles | Downstream Roles |
+| --- | --- | --- | --- | --- |
+| Inventory BC | PetStatus and its values are one shared definition | shared-kernel | - | - |
+
+- **Inventory BC** (shared-kernel)
+	- PetStatus and its values live in @petstore/kernel and both services compile against it. [packages/kernel/src/PetStatus.ts](https://github.com/example/petstore/blob/main/packages/kernel/src/PetStatus.ts)
+	- The kernel has grown past the status enum and now carries pricing rules; it should become a Published Language from Catalog. [ADR-014 Shrink the kernel](https://github.com/example/petstore/blob/main/docs/adr/014-shrink-the-kernel.md)
+
+- `open-host-service` — **Open Host Service** (OHS). A public, stable protocol or API provided by an upstream context.
+- `anti-corruption-layer` — **Anti-Corruption Layer** (ACL). A translating boundary isolating a downstream model from external concepts.
+- `customer-supplier` — **Customer/Supplier** (C/S). Upstream plans for and prioritizes downstream requirements.
+- `shared-kernel` — **Shared Kernel** (SK). A shared subset of domain model and code, co-owned by both teams.
 
 ## Consumptions
-| Consumer | Consumed As | Provider | Consumable | Provided As |
-| --- | --- | --- | --- | --- |
-| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Pet | PetRegistered | published-language |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Pet | PetStatusChanged | published-language |
-| [InventoryProjection](../inventory_bc/aggregates/inventory_projection/index.md) | conformist | Pet | PetDeleted | published-language |
-| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | Pet | ReservePet | open-host-service |
-| [OrderApp](../sales_bc/services/order_app/index.md) | anti-corruption-layer | Pet | MarkPetSold | open-host-service |
+| Consumer | Made By | Consumed As | Provider | Consumable | Provided As |
+| --- | --- | --- | --- | --- | --- |
+| [OrderApp](../sales_bc/services/order_app/index.md) | CheckPetAvailable | anti-corruption-layer | PetApp | GetPetSummary | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | ReservePet | anti-corruption-layer | PetApp | ReservePetForOrder | open-host-service |
+| [OrderApp](../sales_bc/services/order_app/index.md) | MarkPetSold | anti-corruption-layer | PetApp | MarkPetSoldForOrder | open-host-service |
+| [PetApp](services/pet_app/index.md) | ReservePetForOrder | - | Pet | ReservePet | - |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetRegistered | published-language |
+| [OrderApp](../sales_bc/services/order_app/index.md) | Order fulfilment | anti-corruption-layer | Pet | PetStatusChanged | published-language |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetStatusChanged | published-language |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetReserved | published-language |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetSold | published-language |
+| [InventoryQuery](../inventory_bc/services/inventory_query/index.md) | - | conformist | Pet | PetDeleted | published-language |
+| [PetApp](services/pet_app/index.md) | MarkPetSoldForOrder | - | Pet | MarkPetSold | - |
 
 

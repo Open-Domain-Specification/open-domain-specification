@@ -56,9 +56,14 @@ update availability; a window expiring means we unpublish. Everything comes in t
 own translation; nobody else's model gets into our tables. We expose a documented read API
 that Playback uses."
 
-Recorded as: Catalogue as supporting; Title with Season and Episode `includes`, Artwork,
+Recorded as: Catalogue as supporting; Title with Film and Series as kinds of it (card 59,
+section 11), Season and Episode `includes` under Series, Artwork,
 MaturityRating and Availability; invariants `PublishedTitleHasPlayableAsset`,
-`RatingRequiredBeforePublish`, `AvailabilityMatchesLicence`; four policies; anti-corruption
+`RatingRequiredBeforePublish`, `AvailabilityMatchesLicence`; the "Master to publication"
+process, which starts on `MasterDelivered`, queues the encode, waits for
+`EncodingCompleted` and ends on `TitlePublished` — it is what holds the productionId to
+titleId match while the encode runs (card 60) — and the two licensing-window policies;
+anti-corruption
 consumptions of Studio, Licensing and Encoding; customer-supplier towards Encoding
 because Catalogue is the caller of `SubmitEncode`.
 
@@ -93,11 +98,14 @@ said the breaks were asked for before the start; the Ads lead's account is the o
 teams confirmed, and the model follows it.)
 
 Recorded as: Playback as core; PlaybackSession with Bookmark and StreamManifest; invariants
-`SessionNeedsEntitlement`, `WithinStreamLimit`, `BookmarkWithinRuntime`; the
+`SessionNeedsEntitlement` and `BookmarkWithinRuntime` on the aggregate and
+`WithinStreamLimit` on the context, guarded by `StartPlayback`; the
 AdaptiveBitrateSelector domain service; `PlaybackStarted` and `PlaybackStopped` published,
 `BookmarkUpdated` internal; anti-corruption consumptions of Billing, Catalogue and Ads;
 conformist consumption of Edge's `ResolveEdge` (shared kernel) and Devices'
-`DeviceCertified` (partnership).
+`DeviceCertified` (partnership). `StartPlayback` rejects with `PlaybackDenied` when the
+subscription has lapsed or the device is not certified: no session exists, so the player is
+told which of the two stopped it.
 
 ### Edge Delivery lead
 
@@ -150,8 +158,9 @@ consulted on changes. The disc business posts a monthly charge to us through an 
 translate it into an invoice line. We would happily buy all of this."
 
 Recorded as: Billing & Plans as generic; Subscription with Invoice `includes`, Plan, Price
-and BillingPeriod; invariants `OneActiveSubscriptionPerHousehold`,
-`SubscriptionLineEqualsPlanPrice`, `NoEntitlementWhenLapsed`; `GetEntitlement` as an open
+and BillingPeriod; invariants `SubscriptionLineEqualsPlanPrice` and `NoEntitlementWhenLapsed`
+on the aggregate and `OneActiveSubscriptionPerHousehold` on the context, guarded by
+`StartSubscription`; `GetEntitlement` as an open
 host; policies "Await plan on household", "Dun on failed payment" and "Add disc charge to
 bill"; customer-supplier towards Playback; anti-corruption consumption of the legacy event.
 
@@ -201,9 +210,9 @@ to connect them. The connected timeline, condensed:
 | Event | Raised by | Reacted to by |
 |---|---|---|
 | ProductionGreenlit (internal) | Greenlight | (studio scheduling, out of scope) |
-| MasterDelivered | SubmitDelivery | Catalogue requests encode; Encoding queues |
+| MasterDelivered | SubmitDelivery | Catalogue's "Master to publication" process starts; Encoding queues |
 | EncodeQueued (internal) | SubmitEncode | Plan ladder |
-| EncodingCompleted | CompleteJob | Catalogue publishes; Edge pre-positions |
+| EncodingCompleted | CompleteJob | Catalogue's process publishes; Edge pre-positions |
 | LicenseWindowOpened / Expired | OpenWindow / ExpireWindow | Catalogue updates availability / unpublishes |
 | TitlePublished / TitleAvailabilityChanged | PublishTitle / UpdateAvailability | Recommendations adds candidate ("Add candidate on publish") |
 | AccountCreated | CreateAccount | Create household |
@@ -279,8 +288,16 @@ Three diagnostics, each a finding the client asked to keep visible:
 - `schema-context` on Playback's `PlaybackStarted`: the event carries the catalogue's
   `TitleRef` schema instead of one of Playback's own. It was quicker to reuse; it ties the
   player's contract to the catalogue's.
-- `internal-consumable` on Recommendations' consumption of `BookmarkUpdated`: the resume
+- `internal-consumable` on `RecommendationsAPI`'s consumption of `BookmarkUpdated`: the resume
   point update is internal to the player and the dependency was never agreed.
+
+The partnership between Playback and Devices used to raise `partnership-backed` as a fourth
+finding. They ship on one release train and certify in the same lab run, but the only
+traffic is Playback consuming `DeviceCertified`; Devices consumes nothing of Playback's. The
+declaration is true: a partnership in DDD is two teams whose success is mutual and whose
+releases are planned as one, which is exactly what the player and the SDK have, and it does
+not require consumption in both directions. Decision 20's second amendment relaxed the rule
+to traffic in at least one direction; the model is unchanged and the diagnostic is gone.
 
 ## 8. What the model leaves out
 
@@ -292,8 +309,8 @@ beyond its monthly export. Each is a further session with its own owner.
 ## 9. Peer review
 
 An independent review of the model was taken as a second opinion. Each finding is listed
-with the outcome. The three deliberate problems in section 7 were out of bounds for the
-review and are unchanged; the workspace still reports exactly those three.
+with the outcome. The four deliberate problems in section 7 were out of bounds for the
+review and are unchanged; the workspace still reports exactly those four.
 
 Accepted
 
@@ -340,12 +357,15 @@ Accepted
 Partially accepted
 
 - `WithinStreamLimit` on a single session: a session cannot count its siblings. The rule is
-  real and is enforced at start, using the stream count `GetEntitlement` returns. Changed:
-  PlaybackSession has `householdId`, the invariant constrains it and says where the check
-  runs. No new "lease" aggregate: that is a design choice for the Playback team.
-- `OneActiveSubscriptionPerHousehold` on a single subscription: same shape. Changed: the
-  invariant constrains `householdId` and says `StartSubscription` enforces it. No
-  BillingAccount root was invented; the Commerce lead described none.
+  real and is kept at start, using the stream count `GetEntitlement` returns. Changed:
+  PlaybackSession has `householdId`, and since decision 27 the rule is Playback's own
+  invariant rather than the session aggregate's, constraining `householdId` and naming
+  `StartPlayback` as its guard. No new "lease" aggregate: that is a design choice for the
+  Playback team.
+- `OneActiveSubscriptionPerHousehold` on a single subscription: same shape. Changed: it is
+  the Billing & Plans context's invariant, constraining `householdId` and naming
+  `StartSubscription` as its guard. No BillingAccount root was invented; the Commerce lead
+  described none.
 - Playback and Ads are mutually downstream, and the Playback summary said breaks were asked
   for before the start. The two interviews disagreed and the record hid it. The Ads lead's
   sequence (start event, then resolve each break when reached) is what both teams confirmed,
@@ -358,9 +378,10 @@ Partially accepted
 
 Rejected
 
-- Cross-context `references` from PlaybackSession and Signal to Title: `references` is the
-  DSL's way of holding another root's identity and is exactly what the cross-aggregate rule
-  permits; both entities also carry a scalar `titleId`.
+- Cross-context identity from PlaybackSession and Signal to Title: decision 14 makes a
+  relation that crosses a context an error, so neither entity holds a `references` relation
+  to Title; each carries a scalar `titleId` attribute whose `identifies` names the Title
+  root across the boundary, which is exactly what `cross-context-relation` requires.
 - Billing should not conform to Households, and cannot be customer-supplier with Playback,
   because it is generic: generic classifies the subdomain (buy rather than build), not the
   integration stance; the Commerce team is internal, said Playback is consulted, and
@@ -379,3 +400,82 @@ Rejected
 - "We would happily buy all of this" is unrealistic at 41 countries: it is the Commerce
   lead's stance on differentiation, which is what the classification asks, not a claim that
   the work is small.
+
+## 10. Revision (card 71): the licensors become an external context
+
+Two lines of section 2 named companies outside StreamLine that the model never drew. The
+Head of Studio Technology: "our delivery portal is the documented way in; external post
+houses use it too." The Head of Content Acquisition: "a deal is with a licensor." Neither had
+anywhere to live, so `StudioPortal` was an open host with no caller and the licence deals
+were with nobody. Decision 28 gives them one context: **Licensors & Post Houses**, with
+`external: true` — no subdomain, no team, no aggregates, because a licensor's business is not
+StreamLine's to model — whose one service consumes `SubmitDelivery` as a conformist. The
+relationship on the map is Studio Production upstream, open host, with the licensors
+conformist downstream, which is what "the documented way in" means: they deliver to
+StreamLine's spec or the master is not accepted.
+
+The licence deal itself stays in Licensing, where the Head of Content Acquisition put it: the
+deal, its term and its windows are StreamLine's record of an agreement, and nothing in the
+interviews describes a system on the licensor's side that sends or receives anything. The
+external context says only what the record can support.
+
+Card 71 also added `event-unraised`, a warning about an event no operation of its context
+raises. StreamLine had one: Disc Rental's `DiscRentalInvoiced`, which Billing turns into an
+invoice line and which nothing in the model caused. Legacy Operations named the cause — "a
+monthly export of charges to billing" — so the model named the job: a `MonthlyExport`
+service with one internal operation, `RunMonthlyExport`, raising the event. The three
+deliberate diagnostics of section 7 are untouched.
+
+## 12. Revision (card 90): the export job comes back out, and two guards are named
+
+Legacy Operations described four jobs and could explain one of them. `MonthlyExport` was
+built from that one sentence so an event had a raiser, and its own description called it
+"the charge export, the one job anyone will describe" — which is the model admitting it
+knows nothing about the other three. Disc Rental is flagged a big ball of mud for exactly
+that reason, and such a context is now exempt from `event-unraised`, `aggregate-root` and
+`root-identity` as an external one is (decision 28's second amendment). The service and its
+operation are gone; `DiscRentalInvoiced` still carries the export's shape and Billing still
+turns it into an invoice line.
+
+Two preconditions that were carried in prose now name their guards.
+`SessionNeedsEntitlement` is checked by `StartPlayback` on PlaybackAPI, which reads
+`GetEntitlement` before it creates a session — an aggregate invariant may name an operation
+of its context's application service when that operation is the guard (decision 19's
+2026-09-08 amendment). `AdsOnlyOnAdSupportedPlan` is checked by `PrepareBreaks`, which is the
+Ad Break aggregate's own operation and always could have been named. Both invariants now say
+where they are enforced instead of describing it.
+
+`CatalogueAPI`'s consumption of `SubmitEncode` also names its caller, `RequestEncode`. The
+service answers `GetTitle` too, so which of the two calls Encoding was a real question, and
+the chain from a delivered master through the encode to the publication now runs end to end
+on the flow map (decision 21's third amendment).
+
+## 11. Revision (card 59): a title is a film or a series
+
+The first sentence of the Catalogue interview is "a title is a film or a series; a series has
+seasons and seasons have episodes", and the model could not say it. It flattened the two into
+one Title with a `kind: 'film' | 'series'` attribute, a `playableRenditionSet` whose
+description read "for a film, the encoding job whose renditions it plays; a series plays
+through its episodes", and `has-seasons` at `*` because a film has none. Three fields
+apologising for a distinction the business states in its first breath.
+
+Decision 22 lets the model write it. Title keeps what every title has — the id, the name, the
+rating, the artwork, the availability, the production it came from — and gains two kinds:
+**Film**, which holds `playableRenditionSet`, and **Series**, which `includes` Season at
+`1..*`. The `kind` attribute is gone, and so is the `*` that meant "unless it is a film". The
+relation map draws the two as generalisations, a hollow triangle at Title, and their pages
+list what they inherit under the heading of where it comes from.
+
+Neither kind is the root: an aggregate has one, and a Film is reached through Title exactly as
+before, which is why nothing outside the aggregate changed. `TitleDetail`, the shape `GetTitle`
+answers with, keeps its `kind` field: a caller parsing JSON has no kinds to dispatch on, so the
+wire still says which it is. The three deliberate diagnostics of section 7 are untouched.
+
+## Value invariants and optionality (card 82)
+
+`LadderHasLowestRung` moved from the `EncodingJob` aggregate to the `Ladder` value: a ladder
+without a rung under 300 kbit/s is refused when the ladder is made, not when the job is
+saved. Separately, `attribute-relation-coherence` now reads `optional` against the relation's
+cardinality, and four attributes whose descriptions already said "absent" — a title's
+availability, an episode's own rating and artwork, a profile's PIN, a taste profile's
+affinities — were marked required. They say what their relations said all along.

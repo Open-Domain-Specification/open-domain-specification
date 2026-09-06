@@ -86,4 +86,26 @@ describe("RelationNode", () => {
 			expect(container.querySelector(".relation-node")).toHaveClass("muted"),
 		);
 	});
+
+	it("says a borrowed value object is borrowed and whose it is", async () => {
+		const { container } = relation({
+			id: "#/money",
+			type: "relation",
+			label: "Money",
+			icon: "symbol-constant",
+			groupPath: "Shared Kernel",
+			chips: ["borrowed value object"],
+			tone: "muted",
+		});
+		await waitFor(() =>
+			expect(container.querySelector(".relation-node")).toHaveClass("muted"),
+		);
+		expect(container.querySelector(".stereotype")).toHaveTextContent(
+			"«borrowed value object»",
+		);
+		// The subtitle is the lending context, so the box names the owner.
+		expect(container.querySelector(".group")).toHaveTextContent(
+			"Shared Kernel",
+		);
+	});
 });

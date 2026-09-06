@@ -10,27 +10,19 @@ The journey of one approved order to its owner. Attempts live inside it because 
 ## Entities and Value Objects
 | Type | Name | Description | Attributes |
 | --- | --- | --- | --- |
-| Entity (Root) | **Shipment** | One consignment for one order | **id**: `int64`, orderId: `int64`, status: `ShipmentStatus` |
-| Entity | DeliveryAttempt | A dated try at handing over the pet; an entity because attempts are counted and ordered, a child because it never exists without its shipment | attemptedAt: `date-time`, succeeded: `boolean` |
-| Value Object | TrackingNumber | Carrier reference; a value because two shipments never share one | value: `string` |
-| Value Object | ShipmentStatus | planned, in-transit or delivered | value: `'planned' | 'in-transit' | 'delivered'` |
+| Entity (Root) | **Shipment** | One consignment for one order | **id**: `int64`, orderId: `int64` (identifies [Order](../../../sales_bc/aggregates/order/index.md)), carrierId: `int64`, status: `ShipmentStatus`, trackingNumber: `TrackingNumber` |
+| Entity | DeliveryAttempt | A dated try at handing over the pet; an entity because attempts are counted and ordered, a child because it never exists without its shipment | **attemptNumber**: `int32`, attemptedAt: `date-time`, succeeded: `boolean` |
+| Value Object | [ShipmentStatus](../../index.md#value-objects) | planned, in-transit or delivered | value: `'planned' | 'in-transit' | 'delivered'` |
+| Value Object | [TrackingNumber](../../index.md#value-objects) | Carrier reference; a value because two shipments never share one | value: `string` |
 
 
 ## Relationships
 | Source | Description | Target | Relation | Cardinality |
 | --- | --- | --- | --- | --- |
 | [Shipment - Shipment](./index.md#entities-and-value-objects) | attempted-by | Shipment - DeliveryAttempt | includes | * |
-| [Shipment - Shipment](./index.md#entities-and-value-objects) | tracked-as | Shipment - TrackingNumber | uses | 1 |
-| [Shipment - Shipment](./index.md#entities-and-value-objects) | has-status | Shipment - ShipmentStatus | uses | 1 |
-| [Shipment - Shipment](./index.md#entities-and-value-objects) | fulfils | Order - Order | references | 1 |
-| [Order - Order](../../../sales_bc/aggregates/order/index.md#entities-and-value-objects) | has-status | Order - OrderStatus | uses | 1 |
-| [Order - Order](../../../sales_bc/aggregates/order/index.md#entities-and-value-objects) | has-quantity | Order - Quantity | uses | 1 |
-| [Order - Order](../../../sales_bc/aggregates/order/index.md#entities-and-value-objects) | ships-on | Order - ShipDate | uses | 0..1 |
-| [Order - Order](../../../sales_bc/aggregates/order/index.md#entities-and-value-objects) | for-pet | Pet - Pet | references | 1 |
-| [Pet - Pet](../../../catalog_bc/aggregates/pet/index.md#entities-and-value-objects) | categorized-as | Pet - Category | uses | 0..1 |
-| [Pet - Pet](../../../catalog_bc/aggregates/pet/index.md#entities-and-value-objects) | tagged-with | Pet - Tag | uses | * |
-| [Pet - Pet](../../../catalog_bc/aggregates/pet/index.md#entities-and-value-objects) | has-photo | Pet - PhotoUrl | uses | 1..* |
-| [Pet - Pet](../../../catalog_bc/aggregates/pet/index.md#entities-and-value-objects) | has-status | Pet - PetStatus | uses | 1 |
+| [Shipment - Shipment](./index.md#entities-and-value-objects) | tracked-as | Fulfilment BC - TrackingNumber | uses | 1 |
+| [Shipment - Shipment](./index.md#entities-and-value-objects) | has-status | Fulfilment BC - ShipmentStatus | uses | 1 |
+| [Shipment - Shipment](./index.md#entities-and-value-objects) | shipped-by | Carrier - Carrier | references | 1 |
 
 
 ## Invariants
@@ -40,17 +32,13 @@ The journey of one approved order to its owner. Attempts live inside it because 
 
 
 ## Provides
-| Name | Type | Internal | Pattern | Description | Schema | Raises |
-| --- | --- | --- | --- | --- | --- | --- |
-| ShipmentPlanned | event | yes | - | A ship date was chosen for an approved order | - | - |
-| ShipmentDelivered | event | no | published-language | The pet reached its owner | [ShipmentDelivered](../../index.md#schemas) | - |
-| RecordDeliveryAttempt | operation | yes | - | Log a delivery attempt; a successful one delivers the shipment | - | ShipmentDelivered |
+| Name | Type | Internal | Pattern | Description | Schema | Returns | Rejects with | Raises | Guarded by |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| ShipmentPlanned | event | yes | - | A ship date was chosen for an approved order | - | - | - | - | - |
+| ShipmentDelivered | event | no | published-language | The pet reached its owner | [ShipmentDelivered](../../index.md#schemas) | - | - | - | - |
+| RecordDeliveryAttempt | operation | yes | - | Log a delivery attempt; a successful one delivers the shipment | - | - | - | ShipmentDelivered | - |
 
 
 ## Consumes
-
-### OrderApproved [conformist]
-Order approved (status=approved); Inventory and Fulfilment both react
-- **Provider**: [Order](../../../sales_bc/aggregates/order/index.md)
-
+> No consumptions.
 	

@@ -15,8 +15,11 @@ import type {
 	Entity,
 	EntityRelation,
 	Invariant,
+	Policy,
+	Process,
 	Service,
 	Subdomain,
+	ValueObject,
 	Workspace,
 } from "./workspace";
 
@@ -34,6 +37,8 @@ class TestVisitor extends AbstractVisitor implements Visitor {
 	visitedConsumable = vi.fn();
 	visitedInvariant = vi.fn();
 	visitedDataSchema = vi.fn();
+	visitedPolicy = vi.fn();
+	visitedProcess = vi.fn();
 
 	constructor(props: AbstractVisitorOptions) {
 		super(props);
@@ -72,7 +77,7 @@ class TestVisitor extends AbstractVisitor implements Visitor {
 		this.visitedEntity(node);
 		super.visitEntity(node);
 	}
-	visitValueObject(node: Entity) {
+	visitValueObject(node: ValueObject) {
 		this.visitedValueObject(node);
 		super.visitValueObject(node);
 	}
@@ -91,6 +96,14 @@ class TestVisitor extends AbstractVisitor implements Visitor {
 	visitInvariant(node: Invariant) {
 		this.visitedInvariant(node);
 		super.visitInvariant(node);
+	}
+	visitPolicy(node: Policy) {
+		this.visitedPolicy(node);
+		super.visitPolicy(node);
+	}
+	visitProcess(node: Process) {
+		this.visitedProcess(node);
+		super.visitProcess(node);
 	}
 }
 
@@ -327,12 +340,26 @@ describe("Visitor", () => {
 		expect(visitor.visitedValueObject).toHaveBeenCalledWith(d2Sd1Bc1S1Ag1Vo1);
 	});
 
+	it("reaches the policies and the processes of a bounded context", () => {
+		const f = makeRichTestWs();
+		const visitor = new TestVisitor({});
+		visitor.visitWorkspace(f.ws);
+		expect(visitor.visitedPolicy).toHaveBeenCalledWith(f.invoiceOnOrderPlaced);
+		expect(visitor.visitedProcess).toHaveBeenCalledWith(f.invoiceToCustomer);
+		expect(visitor.visitedProcess).toHaveBeenCalledTimes(1);
+	});
+
 	it("reaches every schema of a bounded context", () => {
 		const f = makeRichTestWs();
 		const visitor = new TestVisitor({});
 		visitor.visitWorkspace(f.ws);
 		expect(visitor.visitedDataSchema).toHaveBeenCalledWith(f.orderSummary);
 		expect(visitor.visitedDataSchema).toHaveBeenCalledWith(f.orderRequest);
-		expect(visitor.visitedDataSchema).toHaveBeenCalledTimes(2);
+		// The nested shape is a schema of the context in its own right, so the
+		// visitor reaches it there rather than through the attribute that names it.
+		expect(visitor.visitedDataSchema).toHaveBeenCalledWith(f.orderLineShape);
+		// The shape Place Order refuses with is a schema of the context too.
+		expect(visitor.visitedDataSchema).toHaveBeenCalledWith(f.orderRefused);
+		expect(visitor.visitedDataSchema).toHaveBeenCalledTimes(4);
 	});
 });

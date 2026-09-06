@@ -2,13 +2,13 @@ import type { Graph } from "./graph";
 
 /**
  * Which map a graph draws, from its node types: the DDD context map, the
- * consumable map (a UML component diagram) or the relation map (a UML class
- * diagram). Only the context map has the sketch style; the other two are
- * always drawn in their UML form.
+ * consumable map (a UML component diagram), the relation map (a UML class
+ * diagram) or the flow map (the reaction chain). Only the context map has the
+ * sketch style; the other three are always drawn in their own form.
  */
-export type DiagramKind = "context" | "consumable" | "relation";
+export type DiagramKind = "context" | "consumable" | "relation" | "flow";
 
-const KINDS: DiagramKind[] = ["context", "consumable", "relation"];
+const KINDS: DiagramKind[] = ["context", "consumable", "relation", "flow"];
 
 /** The kind of the graph's first node; an empty or unknown graph counts as a context map. */
 export function diagramKind(graph: Pick<Graph, "nodes">): DiagramKind {

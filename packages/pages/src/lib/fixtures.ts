@@ -1,4 +1,7 @@
-import { Workspace } from "@open-domain-specification/core";
+import {
+	type BoundedContext,
+	Workspace,
+} from "@open-domain-specification/core";
 import northbank from "../../../../models/northbank/.ods/northbank.json";
 import petstore from "../../../../models/petstore/.ods/petstore.json";
 import rivermart from "../../../../models/rivermart/.ods/rivermart.json";
@@ -13,6 +16,52 @@ export function petstoreModel(): Model {
 	return {
 		workspace,
 		fileLabel: "petstore.json",
+		diagnostics: workspace.validate(),
+	};
+}
+
+/**
+ * The petstore seen from Sales, which every evidence surface uses: Sales is
+ * the one context that touches all four others, so its strategic position
+ * fills each of the three groups and shows a marked relationship, a silent
+ * one and a well-evidenced one at once.
+ */
+export function petstoreSales(): { model: Model; context: BoundedContext } {
+	const model = petstoreModel();
+	return {
+		model,
+		context: model.workspace.boundedcontexts.get("sales_bc") as BoundedContext,
+	};
+}
+
+/**
+ * RiverMart as a model. It is the reference organisation whose order payloads
+ * nest a shape of their own, so it is what a story showing composed schemas
+ * draws.
+ */
+export function rivermartModel(): Model {
+	const workspace = Workspace.fromSchema(
+		rivermart as Parameters<typeof Workspace.fromSchema>[0],
+	);
+	return {
+		workspace,
+		fileLabel: "rivermart.json",
+		diagnostics: workspace.validate(),
+	};
+}
+
+/**
+ * StreamLine as a model. Its catalogue is the reference model with kinds — a
+ * title is a film or a series (decision 22) — so it is what a test or a story
+ * about specialisation draws.
+ */
+export function streamlineModel(): Model {
+	const workspace = Workspace.fromSchema(
+		streamline as Parameters<typeof Workspace.fromSchema>[0],
+	);
+	return {
+		workspace,
+		fileLabel: "streamline.json",
 		diagnostics: workspace.validate(),
 	};
 }
@@ -66,13 +115,32 @@ export function edgeCaseModel(): Model {
 	});
 	ePlain.addAttribute("Id A", { type: "string", identity: true });
 	ePlain.addAttribute("Id B", { type: "string", identity: true });
-	aggNoRoot.addValueObject("Unused Value Object", {
+	// The branch the petstore no longer reaches: every entity there carries
+	// attributes now, and one of them is marked as the identity.
+	aggNoRoot.addEntity("Bare Entity", {
+		description: "Has no attributes at all, so nothing identifies it.",
+	});
+	bcMain.addValueObject("Unused Value Object", {
 		description: "Never used as an attribute type, and has no relations.",
 	});
-	const voLinker = aggNoRoot.addValueObject("Linking Value Object", {
+	const voLinker = bcMain.addValueObject("Linking Value Object", {
 		description: "Points at the plain entity.",
 	});
 	voLinker.addRelation(ePlain, { relation: "references", cardinality: "1" });
+	// A rule of the value's own, which holds by construction: the third kind of
+	// invariant, and the one no operation guards (decision 27).
+	const voRuled = bcMain.addValueObject("Ruled Value Object", {
+		description: "Keeps a rule of its own.",
+	});
+	const voRuledField = voRuled.addAttribute("Field", { type: "string" });
+	voRuled
+		.addInvariant("Value Invariant", {
+			description: "Holds of every instance of this value.",
+		})
+		.constrains(voRuledField);
+	voRuled.addInvariant("Whole-Value Invariant", {
+		description: "Constrains nothing named in particular.",
+	});
 	aggNoRoot.addInvariant("Whole-Aggregate Invariant", {
 		description: "Constrains nothing named in particular.",
 	});
@@ -89,19 +157,91 @@ export function edgeCaseModel(): Model {
 		description: "Nothing carries this payload.",
 	});
 	schemaUnused.addAttribute("Field", { type: "string" });
+	const schemaEchoed = bcMain.addSchema("Echoed Schema", {
+		description: "Sent and returned by the same operation.",
+	});
+	schemaEchoed.addAttribute("Field", { type: "string" });
+	const schemaAnswer = bcMain.addSchema("Answer Schema", {
+		description: "Only ever returned, never sent.",
+	});
+	schemaAnswer.addAttribute("Result", { type: "string" });
+	const schemaRefused = bcMain.addSchema("Refusal Schema", {
+		description: "Only ever refused with, never sent or returned.",
+	});
+	schemaRefused.addAttribute("Reason", { type: "string" });
+	const schemaOverLimit = bcMain.addSchema("Over Limit Schema", {
+		description: "The second of two ways the same operation says no.",
+	});
+	schemaOverLimit.addAttribute("Limit", { type: "int" });
 
-	aggNoRoot.addConsumable("Silent Operation", {
+	const opSilent = aggNoRoot.addConsumable("Silent Operation", {
 		type: "operation",
 		description: "Carries a payload with no attributes.",
 		schema: schemaEmpty,
+	});
+	// Provided by an aggregate rather than a service, so the subsection an
+	// AggregatePage draws is the surface that has to show the returned shape.
+	// No reference model has one of these yet.
+	aggNoRoot.addConsumable("Answering Operation", {
+		type: "operation",
+		description: "Asked with one shape and answered with another.",
+		schema: schemaEmpty,
+		returns: schemaAnswer,
+	});
+	// An answer that is a list of a shape rather than one of it, again on an
+	// aggregate: the subsection is where "Returns many" has to read, and every
+	// reference model that answers with a list does it from a service.
+	aggNoRoot.addConsumable("Listing Operation", {
+		type: "operation",
+		description: "Answered with a list of a shape rather than one of it.",
+		schema: schemaEmpty,
+		returns: { schema: schemaAnswer, many: true },
+	});
+	// Two rejections on one operation, again on an aggregate rather than a
+	// service: the subsection has to name both and the consumable page has to
+	// draw a table for each. No reference model refuses in two ways yet.
+	aggNoRoot.addConsumable("Refusing Operation", {
+		type: "operation",
+		description: "Says no in two different shapes.",
+		schema: schemaEmpty,
+		rejects: [schemaRefused, schemaOverLimit],
 	});
 	aggNoRoot.addConsumable("Orphan Event", {
 		type: "event",
 		description: "Never raised by any operation.",
 	});
+	// One shape on both ends of the same exchange: an upsert asked with the
+	// record and answered with the record as stored.
+	aggNoRoot.addConsumable("Echoing Operation", {
+		type: "operation",
+		description: "Takes and answers with the same shape.",
+		schema: schemaEchoed,
+		returns: schemaEchoed,
+	});
+
+	// The context's own rules (decision 27): one that counts across instances
+	// and names the operation checking it, and one that names nothing at all,
+	// which is the unguarded case a reader has to be shown.
+	bcMain
+		.addInvariant("Cross-Instance Invariant", {
+			description: "Counts the plain entities and is checked before acting.",
+		})
+		.constrains(ePlain, opSilent);
+	bcMain.addInvariant("Unguarded Context Invariant", {
+		description: "Names nothing, so nothing keeps it.",
+	});
 
 	bcMain.addPolicy("Idle Policy", {
 		description: "Reacts to nothing and issues nothing.",
+	});
+
+	// The empty process: nothing begins it, nothing ends it, and it is marked
+	// for refactoring with a note saying why, so every branch a process page
+	// and a context row can take is drawn somewhere.
+	bcMain.addProcess("Idle Process", {
+		description: "Nothing starts it, it waits for nothing and it never ends.",
+		comments: [{ text: "Two cron jobs and a spreadsheet, in truth." }],
+		disposition: "refactor",
 	});
 
 	bcMain.addTerm("Ticket", {
@@ -138,6 +278,13 @@ export function edgeCaseModel(): Model {
 
 	workspace.addBoundedContext("Thin Context", {
 		description: "Has no aggregates and no services.",
+	});
+
+	// A system the enterprise does not own: no subdomain, no team, no
+	// aggregates, and the one surface every page has to draw differently.
+	workspace.addBoundedContext("Outside System", {
+		description: "Somebody else's machine, integrated with and not modelled.",
+		external: true,
 	});
 
 	bcMain.upstreamOf(bcSecond, {

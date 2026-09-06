@@ -1,7 +1,11 @@
 import {
+	type ContextRelationship,
 	type Domain,
+	dispositionOf,
 	ODSConsumptionGraph,
 	ODSContextMap,
+	relationshipsWithoutComments,
+	relationshipTitle,
 	type Workspace,
 } from "@open-domain-specification/core";
 import { breadcrumbsMd } from "./breadcrumbs.md";
@@ -37,6 +41,47 @@ const diagnosticsSection = (workspace: Workspace) => {
 		: "> No diagnostics.";
 };
 
+/**
+ * The health report (RFC-002 section 4.5) as markdown: the same three lists
+ * the pages surface shows, in the same order and off the same helpers, so a
+ * reader on docsify and a reader in the extension see the same model.
+ */
+const healthSection = (workspace: Workspace) => {
+	const withDisposition = (want: string) =>
+		workspace.relationships.filter((r) => dispositionOf(r) === want);
+	const list = (
+		heading: string,
+		relationships: ContextRelationship[],
+		empty: string,
+	) => {
+		const entry = (r: ContextRelationship) =>
+			[
+				`- **${relationshipTitle(r)}** (${r.type})`,
+				...r.comments.map(({ text, link }) => {
+					const cite = link ? ` [${link.label ?? link.url}](${link.url})` : "";
+					return `\t- ${text}${cite}`;
+				}),
+			].join("\n");
+		const body = relationships.length
+			? relationships.map(entry).join("\n")
+			: `> ${empty}`;
+		return `### ${heading}\n${body}\n`;
+	};
+	return [
+		list(
+			"Refactor",
+			withDisposition("refactor"),
+			"Nothing is marked for refactoring.",
+		),
+		list("Tolerated", withDisposition("tolerated"), "No compromises recorded."),
+		list(
+			"No comments",
+			relationshipsWithoutComments(workspace),
+			"Every relationship carries at least one comment.",
+		),
+	].join("\n");
+};
+
 export const workspaceMd = (workspace: Workspace, options?: Options) => `
 ${options?.breadcrumbs ? breadcrumbsMd(workspace) : ""}
 # ${workspace.name}
@@ -57,6 +102,9 @@ ${
 
 ## Diagnostics
 ${diagnosticsSection(workspace)}
+
+## Health
+${healthSection(workspace)}
 
 ## Teams
 ${

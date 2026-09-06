@@ -26,6 +26,17 @@ DDD workspace for an eCommerce platform example
 ## Diagnostics
 > No diagnostics.
 
+## Health
+### Refactor
+> Nothing is marked for refactoring.
+
+### Tolerated
+> No compromises recorded.
+
+### No comments
+> Every relationship carries at least one comment.
+
+
 ## Teams
 > No teams.
 
@@ -42,6 +53,31 @@ const glossaryMd = `
 # eCommerce Glossary
 
 > No glossary terms in any bounded context.
+`;
+
+const indexHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>eCommerce</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+</head>
+<body>
+	<div id="app"></div>
+	<script>
+		if (!location.hash) location.hash = "#/e_commerce/index.md";
+		window.$docsify = {
+			name: "eCommerce",
+			loadSidebar: true,
+			alias: { "/.*/_sidebar.md": "/_sidebar.md" },
+			relativePath: true,
+			subMaxLevel: 2
+		};
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>
+</body>
+</html>
 `;
 
 const contextMap = `\
@@ -68,6 +104,7 @@ describe("Generate example documentation", () => {
 			"e_commerce/contextmap.svg": contextMap,
 			"e_commerce/glossary.md": glossaryMd,
 			"e_commerce/index.md": wsMd,
+			"index.html": indexHtml,
 		});
 	});
 });

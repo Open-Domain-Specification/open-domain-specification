@@ -56,7 +56,10 @@ interviewing as soon as you know enough for one coherent increment; you can alwa
 
 Map answers with `references/translation-table.md`. Every element gets a `description` in
 the user's own words, and every noun they used more than once becomes a glossary term in its
-context. Use `references/ddd-glossary.md` for the one-sentence explanations.
+context. Use `references/ddd-glossary.md` for the one-sentence explanations. For a context
+relationship type or an upstream/downstream role, explain it from
+`references/strategic-relationships.md`, which is generated from the same table the diagrams
+and the generated docs read, so your words match what the user is looking at.
 
 ## Step 4: edit
 
@@ -67,14 +70,29 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   id (in the DSL, pass `id` explicitly at the moment of renaming). Rewriting a key means
   updating every ref that uses it, and confirming with the user first.
 - Every required collection is present even when empty. A context always has `aggregates`,
-  `services`, `policies`, `glossary`, `schemas` and `subdomains`; an aggregate always has
-  `entities`, `valueobjects`, `invariants`, `provides`, `consumes`; an entity or value object
-  always has `attributes` and `relations`. See `references/model-reference.md`.
+  `services`, `policies`, `processes`, `glossary`, `valueobjects`, `schemas`, `invariants`
+  and `subdomains`;
+  an aggregate always has `entities`, `invariants`, `provides`, `consumes`; an entity always
+  has `attributes` and `relations`, and a value object those and `invariants`. See `references/model-reference.md`.
 - Every `$ref` resolves to an element that exists. A dangling ref is a load failure, not a
   warning: the whole file stops loading.
 - Consumables (events and operations) live only under `provides` of an aggregate or a
-  service. Policies and consumptions point at them by ref.
-- A payload schema belongs to the context that publishes the consumable.
+  service. Policies, processes and consumptions point at them by ref.
+- A value object belongs to the context, not to an aggregate: declare it once there and any
+  aggregate may hold it.
+- An entity or a value object may be a kind of another: `specialises` gives it every attribute
+  and relation of that one, plus its own, and it never repeats one of them. An entity is a kind
+  of an entity of its own aggregate and is never itself `root`; a value object is a kind of one
+  its own context declares or borrows over a `shared-kernel`.
+- An invariant belongs to a value object when it holds by construction of the value — an IBAN's
+  checksum, a Money's single currency — and then it constrains that value's own attributes and
+  nothing else, and needs no guard. It belongs to an aggregate when it holds inside that
+  boundary on every save, and to the context when it holds across instances or aggregates —
+  uniqueness, a quota, a limit. A context's invariant names at least one operation of the
+  context that checks it before acting, and reaches no further than that context.
+- A payload schema belongs to the context that publishes the consumable. A value object or a
+  schema may be named across a boundary only where the two contexts declare a `shared-kernel`
+  relationship.
 - Reference another aggregate only through its root entity, with `references`.
 
 ## Step 5: validate and explain
@@ -92,6 +110,29 @@ using `references/validation-rules.md`. Errors block finishing. Warnings mark a 
 decision: discuss them and let the user decide, rather than fixing them silently. If loading
 throws "... with ref ... not found", a ref is dangling: fix it first.
 
+## Step 6: reconcile the model with the code
+
+The model is a claim about a real system. When the user asks you to check it — "does the ACL
+actually exist", "reconcile the model with the code" — walk the intents that carry no comments
+(the health report's "No comments" list, or `intentsWithoutComments(workspace)`) and go looking.
+An anti-corruption layer means an adapter or translator on the downstream side; an open host
+service means a published contract; a shared kernel means a shared package both sides depend on;
+a conformist consumption means the upstream's own types used directly. Full search recipes and
+the shape of a comment are in `references/reconciliation.md`.
+
+Each intent ends one of three ways, and each way is a comment:
+
+- It is there → one comment saying what you found, with a link to the file or contract you
+  opened. Leave the disposition alone; absent already means `by-design`.
+- It is not what the model says → one comment saying what is there instead, and a *proposed*
+  `tolerated` (a compromise nobody plans to change) or `refactor` (it should be removed or
+  replaced). Say why in one sentence and wait for the user; the disposition is their call.
+- You cannot tell → one comment naming what you searched for and where, no disposition, then
+  ask the user where it lives.
+
+Only relationships, cross-boundary consumables and consumptions are reconciled. Internal
+consumables never cross a boundary, so they are not strategic and carry no evidence.
+
 ## Educating without preaching
 
 The first time a DDD term comes up, explain it in one sentence tied to the user's example,
@@ -106,6 +147,8 @@ correctly. Say "command" in conversation if it helps, but the model's word is `o
 | Operation used by another context | `pattern: "open-host-service"` |
 | Event used by another context | `pattern: "published-language"` |
 | Consuming from a legacy or `bigBallOfMud` context | `pattern: "anti-corruption-layer"` |
+| A system outside the business the model has to name | a context of its own with `external: true` |
+| An event nothing in its context raises | ask which operation raises it; if it comes from outside, it belongs to an external context |
 | Consuming from any other context | `pattern: "conformist"` |
 | Two contexts exchange consumables, nothing else known | relationship `upstream-downstream` |
 | Cardinality unknown | omit it |

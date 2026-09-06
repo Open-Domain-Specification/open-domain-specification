@@ -8,74 +8,132 @@ export const sections = [
 </script>
 
 <script lang="ts">
-	import { Entity } from "@open-domain-specification/core";
-	import Chip from "../atoms/Chip.svelte";
-	import Dim from "../atoms/Dim.svelte";
-	import Empty from "../atoms/Empty.svelte";
-	import RefLink from "../atoms/RefLink.svelte";
-	import Card from "../molecules/Card.svelte";
-	import Fact from "../molecules/Fact.svelte";
-	import { ICONS, problemsUnder, useModel } from "../model";
-	import AttributesSection from "../organisms/AttributesSection.svelte";
-	import InvariantsSection from "../organisms/InvariantsSection.svelte";
-	import LanguageSection from "../organisms/LanguageSection.svelte";
-	import PageHeader from "../organisms/PageHeader.svelte";
-	import Section from "../organisms/Section.svelte";
-	import { ownerCrumbs } from "./elements";
+import type { Entity } from "@open-domain-specification/core";
+import { problemsUnder, useModel } from "../model";
+import { ownerCrumbs } from "../elements";
+import type { Column } from "../atoms/DataTable.svelte";
+import DataTable from "../atoms/DataTable.svelte";
+import Definition from "../atoms/Definition.svelte";
+import DefinitionList from "../atoms/DefinitionList.svelte";
+import Heading from "../atoms/Heading.svelte";
+import Keyword from "../atoms/Keyword.svelte";
+import Code from "../molecules/Code.svelte";
+import Lockup from "../atoms/Lockup.svelte";
+import AttributesSection from "../organisms/AttributesSection.svelte";
+import { kindOf } from "../molecules/element-kind";
+import InvariantsSection from "../organisms/InvariantsSection.svelte";
+import LanguageSection from "../organisms/LanguageSection.svelte";
+import PageHeader from "../organisms/PageHeader.svelte";
+import Section from "../organisms/Section.svelte";
 
-	let { entity: e }: { entity: Entity } = $props();
-	const model = useModel();
-	const ws = model.workspace;
-	const a = $derived(e.aggregate);
-	const incoming = $derived(
-		[...a.entities.values(), ...a.valueobjects.values()]
-			.flatMap((o) => o.relations)
-			.filter((r) => r.target === e),
-	);
-	const invariants = $derived([...a.invariants.values()].filter((i) => i.targets.includes(e)));
-	const identity = $derived([...e.attributes.values()].filter((x) => x.identity));
-	const iconOf = (t: unknown) => (t instanceof Entity ? ICONS.entity : ICONS.valueobject);
+/** One entity: what identifies it, what it holds, what points back and what constrains it. */
+const { entity: e }: { entity: Entity } = $props();
+const model = useModel();
+const a = $derived(e.aggregate);
+// Value objects belong to the context, so what may point at an entity is
+// every entity of the aggregate and every value object of the context.
+const incoming = $derived(
+	[...a.entities.values(), ...e.boundedcontext.valueobjects.values()]
+		.flatMap((o) => o.relations)
+		.filter((r) => r.target === e),
+);
+const invariants = $derived(
+	[...a.invariants.values()].filter((i) => i.targets.includes(e)),
+);
+// What identifies a kind may be declared by what it is a kind of, so the
+// identity fact reads the inherited attributes too (decision 22).
+const identity = $derived(e.allAttributes.filter((x) => x.identity));
+const kinds = $derived(e.kinds);
+
+const outgoingColumns: Column[] = [
+	{ key: "relation", label: "Relation" },
+	{ key: "target", label: "Target" },
+	{ key: "cardinality", label: "Cardinality" },
+	{ key: "label", label: "Label" },
+];
+const incomingColumns: Column[] = [
+	{ key: "source", label: "Source" },
+	{ key: "relation", label: "Relation" },
+	{ key: "cardinality", label: "Cardinality" },
+	{ key: "label", label: "Label" },
+];
 </script>
 
-<PageHeader kind="Entity" icon={ICONS.entity} name={e.name} id={e.id} description={e.description} crumbs={ownerCrumbs(ws, a)}>
+<PageHeader description={e.description} crumbs={ownerCrumbs(model.workspace, a)}>
+	{#snippet title()}<Lockup kind="entity" name={e.name} id={e.id} detail="Entity" size="title" />{/snippet}
 	{#snippet meta()}
-		{#if e.root}<Chip label="aggregate root" tone="core" title="Every change to the aggregate enters through the root, which enforces the invariants." />{/if}
+		{#if e.root}<Keyword
+				text="aggregate root"
+				title="Every change to the aggregate enters through the root, which enforces the invariants."
+			/>{/if}
 	{/snippet}
 	{#snippet facts()}
-		<Fact label="Aggregate"><RefLink ref={a.ref} label={a.name} icon={ICONS.aggregate} /></Fact>
-		<Fact label="Identity">
-			{#each identity as x, i}{#if i}, {/if}<code>{x.name}</code>{:else}<Dim>no identity attribute marked</Dim>{/each}
-		</Fact>
+		<DefinitionList>
+			<Definition term="Aggregate"><Lockup kind="aggregate" name={a.name} ref={a.ref} /></Definition>
+			{#if e.specialises}
+				<Definition term="A kind of">
+					<Lockup kind="entity" name={e.specialises.name} ref={e.specialises.ref} />
+				</Definition>
+			{/if}
+			{#if kinds.length}
+				<Definition term="Kinds">
+					{#each kinds as k, i (k.ref)}{#if i}, {/if}<Lockup kind="entity" name={k.name} ref={k.ref} />{/each}
+				</Definition>
+			{/if}
+			<Definition term="Identity">
+				{#each identity as x, i (x.ref)}{#if i}, {/if}<Code text={x.name} />{:else}<Keyword text="no identity attribute marked" />{/each}
+			</Definition>
+		</DefinitionList>
 	{/snippet}
 </PageHeader>
 
-<AttributesSection attributes={e.attributes.values()} lead="An entity is known by its identity, not its attributes; the key marks what identifies it." />
+<AttributesSection
+	attributes={e.attributes.values()}
+	inherited={e.inheritedAttributes}
+	lead="An entity is known by its identity, not its attributes; the key marks what identifies it."
+/>
 
 <Section
 	id="relations"
 	title="Relations"
 	lead="What this entity holds or points at, and what points back. References across aggregates carry identity only."
+	count={e.relations.length + incoming.length}
 	problems={problemsUnder(model, e.ref)}
 >
-	{#if e.relations.length}
-		<h3>Outgoing</h3>
-		<ul class="relations">
-			{#each e.relations as r}
-				<li><Chip label={r.relation} tone="muted" /> <RefLink ref={r.target.ref} label={r.target.name} icon={iconOf(r.target)} />{#if r.cardinality} <Dim>{r.cardinality}</Dim>{/if}{#if r.label} <Dim>{r.label}</Dim>{/if}</li>
-			{/each}
-		</ul>
-	{/if}
-	{#if incoming.length}
-		<h3>Incoming</h3>
-		<ul class="relations">
-			{#each incoming as r}
-				<li><RefLink ref={r.source.ref} label={r.source.name} icon={iconOf(r.source)} /> <Chip label={r.relation} tone="muted" /> this{#if r.cardinality} <Dim>{r.cardinality}</Dim>{/if}</li>
-			{/each}
-		</ul>
-	{/if}
-	{#if !e.relations.length && !incoming.length}<Empty text="No relations." />{/if}
+	<Heading level={3} count={e.relations.length}>Outgoing</Heading>
+	<DataTable columns={outgoingColumns} rows={e.relations} empty="Points at nothing.">
+		{#snippet cell(r, col)}
+			{#if col.key === "relation"}
+				<Keyword text={r.relation} />
+			{:else if col.key === "target"}
+				<Lockup kind={kindOf(r.target)} name={r.target.name} ref={r.target.ref} />
+			{:else if col.key === "cardinality"}
+				{#if r.cardinality}<Keyword text={r.cardinality} mono />{/if}
+			{:else if r.label}
+				<Keyword text={r.label} mono />
+			{/if}
+		{/snippet}
+	</DataTable>
+	<Heading level={3} count={incoming.length}>Incoming</Heading>
+	<DataTable columns={incomingColumns} rows={incoming} empty="Nothing points at this entity.">
+		{#snippet cell(r, col)}
+			{#if col.key === "source"}
+				<Lockup kind={kindOf(r.source)} name={r.source.name} ref={r.source.ref} />
+			{:else if col.key === "relation"}
+				<Keyword text={r.relation} />
+			{:else if col.key === "cardinality"}
+				{#if r.cardinality}<Keyword text={r.cardinality} mono />{/if}
+			{:else if r.label}
+				<Keyword text={r.label} mono />
+			{/if}
+		{/snippet}
+	</DataTable>
 </Section>
 
-<InvariantsSection {invariants} lead="Invariants that name this entity explicitly. The root enforces them on every change." emptyText="No invariant names this entity." />
+<InvariantsSection
+	{invariants}
+	lead="Invariants that name this entity explicitly. The root enforces them on every change."
+	emptyText="No invariant names this entity."
+/>
 
 <LanguageSection target={e} />

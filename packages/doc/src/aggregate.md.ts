@@ -1,8 +1,7 @@
 import {
 	type Aggregate,
-	type Consumption,
 	constrainableLabel,
-	type Entity,
+	Entity,
 	type Invariant,
 	ODSRelationGraph,
 	type ValueObject,
@@ -10,26 +9,50 @@ import {
 import { attributeListMd } from "./attributes.md";
 import { contextBreadcrumbsMd } from "./breadcrumbs.md";
 import { providesTableMd } from "./consumables.md";
+import { consumptionSectionMd } from "./consumptions.md";
 import { markdownTable } from "./lib/markdown-table";
 import {
 	pathToConsumableMapSvg,
 	pathToIndexMd,
 	pathToRelationMapSvg,
 } from "./lib/paths";
+import { valueObjectsUsedBy } from "./lib/value-objects";
 import type { Options } from "./options";
 
-const valueObjectSection = (valueObject: ValueObject) => [
-	"Value Object",
-	valueObject.name,
-	valueObject.description,
-	attributeListMd(valueObject.attributes),
-];
+/**
+ * What kind of thing a row is, and what it is a kind of. A kind says so in
+ * this column rather than in a column of its own, because it is the answer to
+ * the same question: what am I looking at (decision 22).
+ */
+const kindOf = (member: Entity | ValueObject, type: string) =>
+	member.specialises ? `${type} (a kind of ${member.specialises.name})` : type;
 
-const entitySection = (entity: Entity) => [
-	entity.root ? "Entity (Root)" : "Entity",
+/** A value object the aggregate holds, linked to the context that declares it. */
+const valueObjectSection =
+	(aggregate: Aggregate) => (valueObject: ValueObject) => [
+		kindOf(valueObject, "Value Object"),
+		`[${valueObject.name}](${pathToIndexMd(valueObject.boundedcontext.path, aggregate.path)}#value-objects)`,
+		valueObject.description,
+		attributeListMd(
+			valueObject.attributes,
+			aggregate.path,
+			valueObject.inheritedAttributes,
+		),
+	];
+
+/** Where a relation end is documented: its aggregate, or its context. */
+const ownerOf = (member: Entity | ValueObject) =>
+	member instanceof Entity ? member.aggregate : member.boundedcontext;
+
+const entitySection = (aggregate: Aggregate) => (entity: Entity) => [
+	kindOf(entity, entity.root ? "Entity (Root)" : "Entity"),
 	entity.root ? `**${entity.name}**` : entity.name,
 	entity.description,
-	attributeListMd(entity.attributes),
+	attributeListMd(
+		entity.attributes,
+		aggregate.path,
+		entity.inheritedAttributes,
+	),
 ];
 
 const invariantSection = (invariant: Invariant) => [
@@ -37,12 +60,6 @@ const invariantSection = (invariant: Invariant) => [
 	invariant.description,
 	invariant.targets.map(constrainableLabel).join(", ") || "-",
 ];
-
-const consumptionSection = (consumption: Consumption) => `
-### ${consumption.consumable.name} ${consumption.pattern ? `[${consumption.pattern}]` : ""}
-${consumption.consumable.description}
-- **Provider**: [${consumption.consumable.provider.name}](${pathToIndexMd(consumption.consumable.provider.path, consumption.consumer.path)})
-`;
 
 export const aggergateMd = (aggregate: Aggregate, options?: Options) => `
 ${options?.breadcrumbs ? contextBreadcrumbsMd(aggregate.boundedcontext) : ""}
@@ -55,7 +72,7 @@ ${aggregate.description}
 
 ## Entities and Value Objects
 ${
-	aggregate.entities.size > 0 || aggregate.valueobjects.size > 0
+	aggregate.entities.size > 0 || valueObjectsUsedBy(aggregate).length > 0
 		? markdownTable(
 				["Type", "Name", "Description", "Attributes"],
 				[
@@ -67,10 +84,8 @@ ${
 									? -1
 									: 1,
 						)
-						.map(entitySection),
-					...Array.from(aggregate.valueobjects.values()).map(
-						valueObjectSection,
-					),
+						.map(entitySection(aggregate)),
+					...valueObjectsUsedBy(aggregate).map(valueObjectSection(aggregate)),
 				],
 			)
 		: ""
@@ -81,10 +96,11 @@ ${markdownTable(
 	["Source", "Description", "Target", "Relation", "Cardinality"],
 	ODSRelationGraph.fromAggregate(aggregate).relations.map((it) => [
 		// Entities have no page of their own, so a source links to the section
-		// of its aggregate's page that lists it.
-		`[${it.source.aggregate.name} - ${it.source.name}](${pathToIndexMd(it.source.aggregate.path, aggregate.path)}#entities-and-value-objects)`,
+		// that lists it: its aggregate's page, or, for a value object, the page
+		// of the context that declares it.
+		`[${ownerOf(it.source).name} - ${it.source.name}](${pathToIndexMd(ownerOf(it.source).path, aggregate.path)}#${it.source instanceof Entity ? "entities-and-value-objects" : "value-objects"})`,
 		it.label || "-",
-		`${it.target.aggregate.name} - ${it.target.name}`,
+		`${ownerOf(it.target).name} - ${it.target.name}`,
 		it.relation,
 		it.cardinality ?? "-",
 	]),
@@ -107,7 +123,7 @@ ${providesTableMd(aggregate.consumables, aggregate.path)}
 ${
 	aggregate.consumptions.length > 0
 		? Array.from(aggregate.consumptions.entries())
-				.map(([_name, consumption]) => consumptionSection(consumption))
+				.map(([_name, consumption]) => consumptionSectionMd(consumption))
 				.join("")
 		: "> No consumptions."
 }

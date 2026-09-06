@@ -1,0 +1,30 @@
+---
+status: Proposed
+date: 2026-09-06
+---
+# Decision 19 — An invariant may constrain the operations that guard it
+
+## Context
+
+`InvariantSchema.constrains` names entities, value objects and attributes (decision 05). Many invariants are transition rules: petstore's `SoldNotReopen` ("once sold, a pet does not revert to available") is about what `ChangePetStatus` may do, and today it can only point at the status attribute.
+
+## Decision
+
+- `constrains` may also name a consumable of the same aggregate. The invariant then reads as the rule that operation must uphold.
+- Invariants stay prose; no expression language (decision 15).
+
+## Consequences
+
+- The `invariant-in-aggregate` rule (card 50 kept the existing id rather than add a second rule) accepts consumables of the invariant's aggregate; the invariant page lists them under "Guarded by"; the consumable page lists its invariants; the doc generator follows; petstore's `SoldNotReopen` names `ChangePetStatus`.
+
+## Amendment (2026-09-08)
+
+An invariant may also name an operation of an application service of its own context when that operation is the guard: a funds check at initiation, an entitlement check at playback start. Decision 17 put the public operation on the service, so the guard often lives there and the invariant must be able to point at it (card 90). The five precondition invariants in the reference models that carried their guard in prose now name it.
+
+## Amendment (2026-09-08, second)
+
+The guard may be an operation of any service of the invariant's own context, domain or application. A rule that reads two aggregates before acting lives in a domain service, and refusing it as a guard sent the model back to prose (card 91).
+
+## Amendment (2026-09-09)
+
+A precondition checks the request before the operation runs, and often what it checks is in the request: pickup before delivery, a positive weight, on a quotation no aggregate yet holds. A precondition may constrain attributes of the schema its guarded operation takes, returns or rejects with (card 97); an invariant that is not a precondition still may not, because a persistent rule about the model is not a rule about a transport shape.

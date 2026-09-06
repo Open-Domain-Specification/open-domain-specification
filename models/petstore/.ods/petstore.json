@@ -5,6 +5,11 @@
   "description": "DDD/ODS model for Swagger Petstore v3. Inventory is a projection returning a status→count map; Orders use placed|approved|delivered.",
   "version": "0.2.0",
   "odsVersion": "1.0.0",
+  "options": {
+    "rules": {
+      "commentsRequired": true
+    }
+  },
   "primaryColor": "#0ea5e9",
   "domains": {
     "petstore_commerce": {
@@ -82,11 +87,29 @@
             },
             "pet_status_changed": {
               "name": "PetStatusChanged",
-              "description": "Pet status changed (available|pending|sold)",
+              "description": "The catalogue moved a pet between statuses itself, e.g. relisting a returned pet as available",
               "pattern": "published-language",
               "type": "event",
               "schema": {
                 "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_status_changed"
+              }
+            },
+            "pet_reserved": {
+              "name": "PetReserved",
+              "description": "available → pending: the pet is held for an approved order",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
+              }
+            },
+            "pet_sold": {
+              "name": "PetSold",
+              "description": "pending → sold: the pet has gone to its owner",
+              "pattern": "published-language",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
               }
             },
             "pet_deleted": {
@@ -100,7 +123,7 @@
             },
             "change_pet_status": {
               "name": "ChangePetStatus",
-              "description": "Move a pet between available, pending and sold; the catalogue's own edits, e.g. relisting",
+              "description": "Move a pet between available, pending and sold; the catalogue's own edits, e.g. relisting a returned pet",
               "type": "operation",
               "internal": true,
               "schema": {
@@ -114,29 +137,29 @@
             },
             "reserve_pet": {
               "name": "ReservePet",
-              "description": "available → pending: the pet is held for an approved order; issued by Sales on approval",
-              "pattern": "open-host-service",
+              "description": "available → pending: the pet is held for an approved order; run by PetApp on the request Sales makes",
               "type": "operation",
+              "internal": true,
               "schema": {
                 "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
               },
               "raises": [
                 {
-                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_reserved"
                 }
               ]
             },
             "mark_pet_sold": {
               "name": "MarkPetSold",
-              "description": "pending → sold: the pet has gone to its owner; issued by Sales on delivery",
-              "pattern": "open-host-service",
+              "description": "pending → sold: the pet has gone to its owner; run by PetApp on the request Sales makes",
               "type": "operation",
+              "internal": true,
               "schema": {
                 "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
               },
               "raises": [
                 {
-                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_sold"
                 }
               ]
             }
@@ -160,36 +183,39 @@
                 "category": {
                   "name": "category",
                   "type": "Category",
+                  "optional": true,
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/category"
                   }
                 },
                 "photo_urls": {
                   "name": "photoUrls",
                   "type": "PhotoUrl[]",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/photo_url"
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/photo_url"
                   }
                 },
                 "tags": {
                   "name": "tags",
                   "type": "Tag[]",
+                  "optional": true,
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/tag"
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/tag"
                   }
                 },
                 "status": {
                   "name": "status",
                   "type": "PetStatus",
+                  "optional": true,
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/category"
                   },
                   "relation": "uses",
                   "label": "categorized-as",
@@ -197,7 +223,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/tag"
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/tag"
                   },
                   "relation": "uses",
                   "label": "tagged-with",
@@ -205,71 +231,21 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/photo_url"
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/photo_url"
                   },
                   "relation": "uses",
                   "label": "has-photo",
-                  "cardinality": "1..*"
+                  "cardinality": "*"
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+                    "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
-                  "cardinality": "1"
+                  "cardinality": "0..1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "category": {
-              "name": "Category",
-              "description": "The kind of animal, e.g. Dogs. A value because two pets in Dogs share one category",
-              "attributes": {
-                "id": {
-                  "name": "id",
-                  "type": "int64"
-                },
-                "name": {
-                  "name": "name",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "tag": {
-              "name": "Tag",
-              "description": "Free-form label on a pet",
-              "attributes": {
-                "name": {
-                  "name": "name",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "photo_url": {
-              "name": "PhotoUrl",
-              "description": "Where a photo of the pet can be fetched",
-              "attributes": {
-                "url": {
-                  "name": "url",
-                  "type": "string (URL)"
-                }
-              },
-              "relations": []
-            },
-            "pet_status": {
-              "name": "PetStatus",
-              "description": "Where the pet is in its sales lifecycle. Shared with Inventory, which keys its counts by these values",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'available' | 'pending' | 'sold'"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -284,16 +260,20 @@
             },
             "sold_not_reopen": {
               "name": "SoldNotReopen",
-              "description": "Once sold, a pet does not revert to available without an explicit policy, so a buyer is never undercut. Constrains the Pet because the transition is the pet's, not the status value's",
+              "description": "Once sold, a pet does not revert to available without an explicit policy, so a buyer is never undercut. Constrains the Pet because the transition is the pet's, not the status value's, and the operation that makes the transition, because that is where the rule is enforced",
               "constrains": [
                 {
                   "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet"
+                },
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/change_pet_status"
                 }
               ]
             }
           }
         }
       },
+      "invariants": {},
       "services": {
         "pet_app": {
           "name": "PetApp",
@@ -329,7 +309,11 @@
               "name": "FindPetsByStatus",
               "description": "GET /pet/findByStatus?status=available|pending|sold",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "returns": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_summary",
+                "many": true
+              }
             },
             "get_pet_by_id": {
               "name": "GetPetById",
@@ -338,6 +322,9 @@
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet"
               }
             },
             "upload_image": {
@@ -370,7 +357,54 @@
             },
             "get_pet_summary": {
               "name": "GetPetSummary",
-              "description": "Slim {id,name,status} read offered to other contexts, so Sales can check availability without coupling to the full Pet",
+              "description": "GET /pets/{id}/summary; asked with a PetId, answers with a PetSummary, so Sales can check availability without coupling to the full Pet",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_summary"
+              },
+              "comments": [
+                {
+                  "text": "The summary projection is the only Catalog read Sales is allowed to make.",
+                  "link": {
+                    "kind": "contract",
+                    "url": "https://github.com/example/petstore/blob/main/catalog/openapi.yaml#/paths/~1pets~1{id}~1summary",
+                    "label": "GET /pets/{id}/summary"
+                  }
+                }
+              ]
+            },
+            "reserve_pet_for_order": {
+              "name": "ReservePetForOrder",
+              "description": "POST /pet/{petId}/reserve; holds the pet for an approved order by running the aggregate's ReservePet",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_id"
+              },
+              "rejects": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_unavailable"
+                }
+              ],
+              "comments": [
+                {
+                  "text": "Reservation is a synchronous call into Catalog; it should become an order-placed subscription so Sales stops blocking on Catalog.",
+                  "link": {
+                    "kind": "adr",
+                    "url": "https://github.com/example/petstore/blob/main/docs/adr/017-reserve-asynchronously.md",
+                    "label": "ADR-017 Reserve asynchronously"
+                  }
+                }
+              ],
+              "disposition": "refactor"
+            },
+            "mark_pet_sold_for_order": {
+              "name": "MarkPetSoldForOrder",
+              "description": "POST /pet/{petId}/sold; records the sale by running the aggregate's MarkPetSold",
               "pattern": "open-host-service",
               "type": "operation",
               "schema": {
@@ -378,10 +412,32 @@
               }
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/reserve_pet"
+              },
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/services/pet_app/provides/reserve_pet_for_order"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/mark_pet_sold"
+              },
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/services/pet_app/provides/mark_pet_sold_for_order"
+                }
+              ]
+            }
+          ]
         }
       },
       "policies": {},
+      "processes": {},
       "glossary": {
         "pet": {
           "name": "Pet",
@@ -397,15 +453,69 @@
             "Species"
           ],
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+            "$ref": "#/boundedcontexts/catalog_bc/valueobjects/category"
           }
         },
         "available": {
           "name": "Available",
           "definition": "A pet that can be ordered; it becomes pending when Sales approves an order for it (ReservePet) and sold when that order is delivered (MarkPetSold)",
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+            "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
           }
+        }
+      },
+      "valueobjects": {
+        "category": {
+          "name": "Category",
+          "description": "The kind of animal, e.g. Dogs. A value because two pets in Dogs share one category",
+          "attributes": {
+            "id": {
+              "name": "id",
+              "type": "int64"
+            },
+            "name": {
+              "name": "name",
+              "type": "string"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "tag": {
+          "name": "Tag",
+          "description": "Free-form label on a pet",
+          "attributes": {
+            "name": {
+              "name": "name",
+              "type": "string"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "photo_url": {
+          "name": "PhotoUrl",
+          "description": "Where a photo of the pet can be fetched",
+          "attributes": {
+            "url": {
+              "name": "url",
+              "type": "string (URL)"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "pet_status": {
+          "name": "PetStatus",
+          "description": "Where the pet is in its sales lifecycle. Shared with Inventory, which keys its counts by these values",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'available' | 'pending' | 'sold'"
+            }
+          },
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -426,7 +536,7 @@
               "name": "category",
               "type": "Category",
               "valueobject": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/category"
               }
             }
           }
@@ -443,14 +553,14 @@
               "name": "from",
               "type": "PetStatus",
               "valueobject": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
               }
             },
             "to": {
               "name": "to",
               "type": "PetStatus",
               "valueobject": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/pet_status"
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
               }
             }
           }
@@ -467,7 +577,7 @@
               "name": "category",
               "type": "Category",
               "valueobject": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/valueobjects/category"
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/category"
               }
             }
           }
@@ -480,6 +590,89 @@
               "name": "petId",
               "type": "int64",
               "identity": true
+            }
+          }
+        },
+        "pet": {
+          "name": "Pet",
+          "description": "The full pet resource, as GET /pet/{petId} answers with it",
+          "attributes": {
+            "pet_id": {
+              "name": "petId",
+              "type": "int64",
+              "identity": true
+            },
+            "name": {
+              "name": "name",
+              "type": "string"
+            },
+            "category": {
+              "name": "category",
+              "type": "Category",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/category"
+              }
+            },
+            "photo_urls": {
+              "name": "photoUrls",
+              "type": "PhotoUrl[]",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/photo_url"
+              }
+            },
+            "tags": {
+              "name": "tags",
+              "type": "Tag[]",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/tag"
+              }
+            },
+            "status": {
+              "name": "status",
+              "type": "PetStatus",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
+              }
+            }
+          }
+        },
+        "pet_summary": {
+          "name": "PetSummary",
+          "description": "The slim read of a pet other contexts are allowed to hold",
+          "attributes": {
+            "pet_id": {
+              "name": "petId",
+              "type": "int64",
+              "identity": true
+            },
+            "name": {
+              "name": "name",
+              "type": "string"
+            },
+            "status": {
+              "name": "status",
+              "type": "PetStatus",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
+              }
+            }
+          }
+        },
+        "pet_unavailable": {
+          "name": "PetUnavailable",
+          "description": "Why the pet could not be held: it is already pending or sold",
+          "attributes": {
+            "pet_id": {
+              "name": "petId",
+              "type": "int64",
+              "identity": true
+            },
+            "status": {
+              "name": "status",
+              "type": "PetStatus",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
+              }
             }
           }
         }
@@ -553,9 +746,9 @@
             },
             "deliver_order": {
               "name": "DeliverOrder",
-              "description": "Mark an approved order as delivered; issued by Fulfilment when the shipment arrives",
-              "pattern": "open-host-service",
+              "description": "Mark an approved order as delivered; run by OrderApp when Fulfilment reports the shipment arrived",
               "type": "operation",
+              "internal": true,
               "schema": {
                 "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
               },
@@ -581,34 +774,39 @@
                 "pet_id": {
                   "name": "petId",
                   "type": "int64",
-                  "description": "Identity of the Pet root in Catalog; only the id crosses the boundary"
+                  "description": "Identity of the Pet root in Catalog; only the id crosses the boundary",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet"
+                  }
                 },
                 "quantity": {
                   "name": "quantity",
                   "type": "Quantity",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
+                    "$ref": "#/boundedcontexts/sales_bc/valueobjects/quantity"
                   }
                 },
                 "ship_date": {
                   "name": "shipDate",
                   "type": "ShipDate",
+                  "description": "Absent until Fulfilment has planned the dispatch",
+                  "optional": true,
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/ship_date"
+                    "$ref": "#/boundedcontexts/sales_bc/valueobjects/ship_date"
                   }
                 },
                 "status": {
                   "name": "status",
                   "type": "OrderStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status"
+                    "$ref": "#/boundedcontexts/sales_bc/valueobjects/order_status"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status"
+                    "$ref": "#/boundedcontexts/sales_bc/valueobjects/order_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
@@ -616,7 +814,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
+                    "$ref": "#/boundedcontexts/sales_bc/valueobjects/quantity"
                   },
                   "relation": "uses",
                   "label": "has-quantity",
@@ -624,56 +822,13 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/ship_date"
+                    "$ref": "#/boundedcontexts/sales_bc/valueobjects/ship_date"
                   },
                   "relation": "uses",
                   "label": "ships-on",
                   "cardinality": "0..1"
-                },
-                {
-                  "target": {
-                    "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet"
-                  },
-                  "relation": "references",
-                  "label": "for-pet",
-                  "cardinality": "1"
                 }
               ]
-            }
-          },
-          "valueobjects": {
-            "order_status": {
-              "name": "OrderStatus",
-              "description": "Where the order is in its lifecycle",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'placed' | 'approved' | 'delivered'"
-                }
-              },
-              "relations": []
-            },
-            "quantity": {
-              "name": "Quantity",
-              "description": "The v3 API's quantity field, kept for the wire shape. A Pet is an individual animal, so the invariant below pins it to 1",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "int > 0"
-                }
-              },
-              "relations": []
-            },
-            "ship_date": {
-              "name": "ShipDate",
-              "description": "When the order ships; set by Fulfilment once dispatch is planned",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "date-time"
-                }
-              },
-              "relations": []
             }
           },
           "invariants": {
@@ -682,16 +837,7 @@
               "description": "Quantity is exactly 1: a Pet is one animal with one status, so it cannot be sold five times. The API's quantity field is accepted but never exceeds one",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
-                }
-              ]
-            },
-            "approve_only_when_available": {
-              "name": "ApproveOnlyWhenAvailable",
-              "description": "Move to approved only after the catalogue's summary reported the pet available; the catalogue's status itself is outside this aggregate, so the check is a read through the ACL, not a shared invariant",
-              "constrains": [
-                {
-                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status"
+                  "$ref": "#/boundedcontexts/sales_bc/valueobjects/quantity"
                 }
               ]
             },
@@ -700,16 +846,30 @@
               "description": "Deliver only from approved and only once a ship date is set, so nothing is marked delivered that was never checked or never dispatched",
               "constrains": [
                 {
-                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/order_status"
+                  "$ref": "#/boundedcontexts/sales_bc/valueobjects/order_status"
                 },
                 {
-                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/ship_date"
+                  "$ref": "#/boundedcontexts/sales_bc/valueobjects/ship_date"
+                }
+              ]
+            },
+            "approve_only_when_available": {
+              "name": "ApproveOnlyWhenAvailable",
+              "description": "Move to approved only after the catalogue's summary reported the pet available; the catalogue's status itself is outside this aggregate, so the check is a read through the ACL, not a shared invariant",
+              "precondition": true,
+              "constrains": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/valueobjects/order_status"
+                },
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/approve_order"
                 }
               ]
             }
           }
         }
       },
+      "invariants": {},
       "services": {
         "order_app": {
           "name": "OrderApp",
@@ -737,6 +897,9 @@
               "type": "operation",
               "schema": {
                 "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/order_detail"
               }
             },
             "delete_order": {
@@ -752,73 +915,154 @@
                   "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_deleted"
                 }
               ]
+            },
+            "confirm_delivery": {
+              "name": "ConfirmDelivery",
+              "description": "POST /store/order/{orderId}/delivered; Fulfilment reports the shipment arrived and the order moves to delivered",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
+              }
+            },
+            "reserve_pet": {
+              "name": "ReservePet",
+              "description": "Ask Catalog to hold the ordered pet, through the ACL; Sales' own step in the order lifecycle",
+              "type": "operation",
+              "internal": true,
+              "schema": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
+              }
+            },
+            "mark_pet_sold": {
+              "name": "MarkPetSold",
+              "description": "Tell Catalog the ordered pet has gone to its owner, through the ACL",
+              "type": "operation",
+              "internal": true,
+              "schema": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
+              }
+            },
+            "check_pet_available": {
+              "name": "CheckPetAvailable",
+              "description": "Read the ordered pet's summary from Catalog, through the ACL, and decide whether Sales may approve the order",
+              "type": "operation",
+              "internal": true,
+              "schema": {
+                "$ref": "#/boundedcontexts/sales_bc/schemas/order_id"
+              }
             }
           },
           "consumes": [
             {
               "consumable": {
+                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/deliver_order"
+              },
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/confirm_delivery"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalog_bc/services/pet_app/provides/reserve_pet_for_order"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/reserve_pet"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalog_bc/services/pet_app/provides/mark_pet_sold_for_order"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/mark_pet_sold"
+                }
+              ]
+            },
+            {
+              "consumable": {
                 "$ref": "#/boundedcontexts/catalog_bc/services/pet_app/provides/get_pet_summary"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/check_pet_available"
+                }
+              ],
+              "comments": [
+                {
+                  "text": "PetSummaryClient is the translator; nothing else in Sales knows the catalog payload shape.",
+                  "link": {
+                    "kind": "code",
+                    "url": "https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts",
+                    "label": "sales/acl/PetSummaryClient.ts"
+                  }
+                }
+              ]
             },
             {
               "consumable": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/reserve_pet"
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
               },
-              "pattern": "anti-corruption-layer"
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/mark_pet_sold"
-              },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/processes/order_fulfilment"
+                }
+              ],
+              "comments": [
+                {
+                  "text": "PetSummaryClient maps the catalogue's status change onto the process's one question, is this pet free.",
+                  "link": {
+                    "kind": "code",
+                    "url": "https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts",
+                    "label": "sales/acl/PetSummaryClient.ts"
+                  }
+                }
+              ]
             }
           ]
         }
       },
-      "policies": {
-        "approve_when_pet_available": {
-          "name": "Approve when pet available",
-          "description": "On OrderPlaced, or on PetStatusChanged to available, look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest",
-          "on": [
-            {
-              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
-            },
+      "policies": {},
+      "processes": {
+        "order_fulfilment": {
+          "name": "Order fulfilment",
+          "description": "From an order being placed to the pet being sold. It starts on OrderPlaced and waits, because the pet may not be available yet: a relisting (PetStatusChanged) makes it look up the placed orders for that petId, confirm availability through GetPetSummary and approve the oldest. On approval it holds the pet (available → pending), and once the order is delivered it tells the catalogue the pet has gone to its owner (pending → sold). It does not listen to PetReserved: that is the fact this very chain produces. Correlation is by petId and then orderId; an order nobody can fulfil is cancelled by hand, which is why there is no timeout here",
+          "starts": [
             {
               "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_placed"
             }
           ],
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
+            }
+          ],
           "then": [
+            {
+              "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/check_pet_available"
+            },
             {
               "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/approve_order"
-            }
-          ]
-        },
-        "reserve_pet_on_approval": {
-          "name": "Reserve pet on approval",
-          "description": "When an order is approved, hold its pet (available → pending) so nobody else can be approved for the same animal",
-          "on": [
+            },
             {
-              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_approved"
+              "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/reserve_pet"
+            },
+            {
+              "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/mark_pet_sold"
             }
           ],
-          "then": [
-            {
-              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/reserve_pet"
-            }
-          ]
-        },
-        "mark_pet_sold_on_delivery": {
-          "name": "Mark pet sold on delivery",
-          "description": "When an order is delivered, the pet is sold (pending → sold)",
-          "on": [
+          "ends": [
             {
               "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_delivered"
-            }
-          ],
-          "then": [
-            {
-              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/mark_pet_sold"
             }
           ]
         }
@@ -849,6 +1093,44 @@
           }
         }
       },
+      "valueobjects": {
+        "order_status": {
+          "name": "OrderStatus",
+          "description": "Where the order is in its lifecycle",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'placed' | 'approved' | 'delivered'"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "quantity": {
+          "name": "Quantity",
+          "description": "The v3 API's quantity field, kept for the wire shape. A Pet is an individual animal, so the invariant below pins it to 1",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "int > 0"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "ship_date": {
+          "name": "ShipDate",
+          "description": "When the order ships; set by Fulfilment once dispatch is planned",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "date-time"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        }
+      },
       "schemas": {
         "order_placed": {
           "name": "OrderPlaced",
@@ -860,13 +1142,16 @@
             },
             "pet_id": {
               "name": "petId",
-              "type": "int64"
+              "type": "int64",
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet"
+              }
             },
             "quantity": {
               "name": "quantity",
               "type": "Quantity",
               "valueobject": {
-                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
+                "$ref": "#/boundedcontexts/sales_bc/valueobjects/quantity"
               }
             }
           }
@@ -877,13 +1162,16 @@
           "attributes": {
             "pet_id": {
               "name": "petId",
-              "type": "int64"
+              "type": "int64",
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet"
+              }
             },
             "quantity": {
               "name": "quantity",
               "type": "Quantity",
               "valueobject": {
-                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/valueobjects/quantity"
+                "$ref": "#/boundedcontexts/sales_bc/valueobjects/quantity"
               }
             }
           }
@@ -895,6 +1183,45 @@
               "name": "orderId",
               "type": "int64",
               "identity": true
+            }
+          }
+        },
+        "order_detail": {
+          "name": "OrderDetail",
+          "description": "One order, as GET /store/order/{orderId} answers with it",
+          "attributes": {
+            "order_id": {
+              "name": "orderId",
+              "type": "int64",
+              "identity": true
+            },
+            "pet_id": {
+              "name": "petId",
+              "type": "int64",
+              "identifies": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet"
+              }
+            },
+            "quantity": {
+              "name": "quantity",
+              "type": "Quantity",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/sales_bc/valueobjects/quantity"
+              }
+            },
+            "ship_date": {
+              "name": "shipDate",
+              "type": "ShipDate",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/sales_bc/valueobjects/ship_date"
+              }
+            },
+            "status": {
+              "name": "status",
+              "type": "OrderStatus",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/sales_bc/valueobjects/order_status"
+              }
             }
           }
         }
@@ -914,16 +1241,31 @@
       "team": {
         "$ref": "#/teams/pet_shop_team"
       },
-      "aggregates": {
-        "inventory_projection": {
-          "name": "InventoryProjection",
-          "description": "Materialized view: { available: number, pending: number, sold: number }. An aggregate because the counts are rebuilt as one unit",
+      "aggregates": {},
+      "invariants": {},
+      "services": {
+        "inventory_query": {
+          "name": "InventoryQuery",
+          "description": "Open-host service for /store/inventory: a projection is a service that provides a query (decision 15), not an aggregate with an invented root",
+          "type": "application",
           "provides": {
+            "get_inventory": {
+              "name": "GetInventory",
+              "description": "GET /store/inventory; takes nothing, answers with the counts",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "returns": {
+                "$ref": "#/boundedcontexts/inventory_bc/schemas/inventory_counts"
+              }
+            },
             "inventory_updated": {
               "name": "InventoryUpdated",
               "description": "Inventory counts changed",
               "pattern": "published-language",
-              "type": "event"
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/inventory_bc/schemas/inventory_updated_payload"
+              }
             },
             "recount_inventory": {
               "name": "RecountInventory",
@@ -932,7 +1274,7 @@
               "internal": true,
               "raises": [
                 {
-                  "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection/provides/inventory_updated"
+                  "$ref": "#/boundedcontexts/inventory_bc/services/inventory_query/provides/inventory_updated"
                 }
               ]
             }
@@ -958,6 +1300,18 @@
             },
             {
               "consumable": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_reserved"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_sold"
+              },
+              "pattern": "conformist"
+            },
+            {
+              "consumable": {
                 "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_approved"
               },
               "pattern": "conformist"
@@ -973,39 +1327,6 @@
                 "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_deleted"
               },
               "pattern": "conformist"
-            }
-          ],
-          "entities": {
-            "inventory_view": {
-              "name": "InventoryView",
-              "description": "Status→count map for /store/inventory",
-              "root": true,
-              "attributes": {},
-              "relations": []
-            }
-          },
-          "valueobjects": {},
-          "invariants": {}
-        }
-      },
-      "services": {
-        "inventory_query": {
-          "name": "InventoryQuery",
-          "description": "Open-host service for /store/inventory",
-          "type": "application",
-          "provides": {
-            "get_inventory": {
-              "name": "GetInventory",
-              "description": "GET /store/inventory → { [status]: count }",
-              "pattern": "open-host-service",
-              "type": "operation"
-            }
-          },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection/provides/inventory_updated"
-              }
             }
           ]
         }
@@ -1025,6 +1346,12 @@
               "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_status_changed"
             },
             {
+              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_reserved"
+            },
+            {
+              "$ref": "#/boundedcontexts/catalog_bc/aggregates/pet/provides/pet_sold"
+            },
+            {
               "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_approved"
             },
             {
@@ -1036,11 +1363,12 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection/provides/recount_inventory"
+              "$ref": "#/boundedcontexts/inventory_bc/services/inventory_query/provides/recount_inventory"
             }
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "availability": {
           "name": "Availability",
@@ -1049,11 +1377,45 @@
             "Stock"
           ],
           "embodiedBy": {
-            "$ref": "#/boundedcontexts/inventory_bc/aggregates/inventory_projection"
+            "$ref": "#/boundedcontexts/inventory_bc/services/inventory_query"
           }
         }
       },
-      "schemas": {}
+      "valueobjects": {},
+      "schemas": {
+        "inventory_counts": {
+          "name": "InventoryCounts",
+          "description": "How many pets stand in each status right now",
+          "attributes": {
+            "available": {
+              "name": "available",
+              "type": "int32"
+            },
+            "pending": {
+              "name": "pending",
+              "type": "int32"
+            },
+            "sold": {
+              "name": "sold",
+              "type": "int32"
+            }
+          }
+        },
+        "inventory_updated_payload": {
+          "name": "InventoryUpdatedPayload",
+          "description": "Which status's count changed",
+          "attributes": {
+            "status": {
+              "name": "status",
+              "type": "PetStatus",
+              "description": "The status whose count moved",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/catalog_bc/valueobjects/pet_status"
+              }
+            }
+          }
+        }
+      }
     },
     "fulfilment_bc": {
       "name": "Fulfilment BC",
@@ -1098,14 +1460,7 @@
               ]
             }
           },
-          "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_approved"
-              },
-              "pattern": "conformist"
-            }
-          ],
+          "consumes": [],
           "entities": {
             "shipment": {
               "name": "Shipment",
@@ -1119,13 +1474,28 @@
                 },
                 "order_id": {
                   "name": "orderId",
+                  "type": "int64",
+                  "description": "Identity of the Order root in Sales; only the id crosses the boundary",
+                  "identifies": {
+                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/entities/order"
+                  }
+                },
+                "carrier_id": {
+                  "name": "carrierId",
                   "type": "int64"
                 },
                 "status": {
                   "name": "status",
                   "type": "ShipmentStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/fulfilment_bc/aggregates/shipment/valueobjects/shipment_status"
+                    "$ref": "#/boundedcontexts/fulfilment_bc/valueobjects/shipment_status"
+                  }
+                },
+                "tracking_number": {
+                  "name": "trackingNumber",
+                  "type": "TrackingNumber",
+                  "valueobject": {
+                    "$ref": "#/boundedcontexts/fulfilment_bc/valueobjects/tracking_number"
                   }
                 }
               },
@@ -1140,7 +1510,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/fulfilment_bc/aggregates/shipment/valueobjects/tracking_number"
+                    "$ref": "#/boundedcontexts/fulfilment_bc/valueobjects/tracking_number"
                   },
                   "relation": "uses",
                   "label": "tracked-as",
@@ -1148,7 +1518,7 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/fulfilment_bc/aggregates/shipment/valueobjects/shipment_status"
+                    "$ref": "#/boundedcontexts/fulfilment_bc/valueobjects/shipment_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
@@ -1156,10 +1526,10 @@
                 },
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/sales_bc/aggregates/order/entities/order"
+                    "$ref": "#/boundedcontexts/fulfilment_bc/aggregates/carrier/entities/carrier"
                   },
                   "relation": "references",
-                  "label": "fulfils",
+                  "label": "shipped-by",
                   "cardinality": "1"
                 }
               ]
@@ -1169,6 +1539,11 @@
               "description": "A dated try at handing over the pet; an entity because attempts are counted and ordered, a child because it never exists without its shipment",
               "root": false,
               "attributes": {
+                "attempt_number": {
+                  "name": "attemptNumber",
+                  "type": "int32",
+                  "identity": true
+                },
                 "attempted_at": {
                   "name": "attemptedAt",
                   "type": "date-time"
@@ -1176,30 +1551,6 @@
                 "succeeded": {
                   "name": "succeeded",
                   "type": "boolean"
-                }
-              },
-              "relations": []
-            }
-          },
-          "valueobjects": {
-            "tracking_number": {
-              "name": "TrackingNumber",
-              "description": "Carrier reference; a value because two shipments never share one",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "string"
-                }
-              },
-              "relations": []
-            },
-            "shipment_status": {
-              "name": "ShipmentStatus",
-              "description": "planned, in-transit or delivered",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "'planned' | 'in-transit' | 'delivered'"
                 }
               },
               "relations": []
@@ -1216,8 +1567,35 @@
               ]
             }
           }
+        },
+        "carrier": {
+          "name": "Carrier",
+          "description": "The company that carries a consignment. Its own cluster because carriers are onboarded, rated and retired on their own schedule, nothing to do with any one shipment",
+          "provides": {},
+          "consumes": [],
+          "entities": {
+            "carrier": {
+              "name": "Carrier",
+              "description": "One carrier Fulfilment ships with",
+              "root": true,
+              "attributes": {
+                "id": {
+                  "name": "id",
+                  "type": "int64",
+                  "identity": true
+                },
+                "name": {
+                  "name": "name",
+                  "type": "string"
+                }
+              },
+              "relations": []
+            }
+          },
+          "invariants": {}
         }
       },
+      "invariants": {},
       "services": {
         "dispatch_planner": {
           "name": "DispatchPlanner",
@@ -1237,6 +1615,45 @@
             }
           },
           "consumes": []
+        },
+        "shipment_app": {
+          "name": "ShipmentApp",
+          "description": "Fulfilment's application service: the boundary through which Fulfilment reports delivery to Sales",
+          "type": "application",
+          "provides": {
+            "report_delivery": {
+              "name": "ReportDelivery",
+              "description": "Tell Sales the shipment arrived, by calling the order's ConfirmDelivery",
+              "type": "operation",
+              "internal": true,
+              "schema": {
+                "$ref": "#/boundedcontexts/fulfilment_bc/schemas/shipment_delivered"
+              }
+            }
+          },
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/confirm_delivery"
+              },
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/fulfilment_bc/services/shipment_app/provides/report_delivery"
+                }
+              ]
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/order_approved"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/fulfilment_bc/policies/plan_dispatch_on_approval"
+                }
+              ]
+            }
+          ]
         }
       },
       "policies": {
@@ -1256,7 +1673,7 @@
         },
         "deliver_order_on_delivery": {
           "name": "Deliver order on delivery",
-          "description": "When a shipment is delivered, mark the order delivered in Sales",
+          "description": "When a shipment is delivered, report it to Sales so the order moves to delivered",
           "on": [
             {
               "$ref": "#/boundedcontexts/fulfilment_bc/aggregates/shipment/provides/shipment_delivered"
@@ -1264,11 +1681,12 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/deliver_order"
+              "$ref": "#/boundedcontexts/fulfilment_bc/services/shipment_app/provides/report_delivery"
             }
           ]
         }
       },
+      "processes": {},
       "glossary": {
         "shipment": {
           "name": "Shipment",
@@ -1279,6 +1697,32 @@
           "embodiedBy": {
             "$ref": "#/boundedcontexts/fulfilment_bc/aggregates/shipment"
           }
+        }
+      },
+      "valueobjects": {
+        "tracking_number": {
+          "name": "TrackingNumber",
+          "description": "Carrier reference; a value because two shipments never share one",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "string"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        },
+        "shipment_status": {
+          "name": "ShipmentStatus",
+          "description": "planned, in-transit or delivered",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "'planned' | 'in-transit' | 'delivered'"
+            }
+          },
+          "relations": [],
+          "invariants": {}
         }
       },
       "schemas": {
@@ -1292,7 +1736,10 @@
             },
             "order_id": {
               "name": "orderId",
-              "type": "int64"
+              "type": "int64",
+              "identifies": {
+                "$ref": "#/boundedcontexts/sales_bc/aggregates/order/entities/order"
+              }
             },
             "delivered_at": {
               "name": "deliveredAt",
@@ -1358,14 +1805,14 @@
                   "name": "userStatus",
                   "type": "UserStatus",
                   "valueobject": {
-                    "$ref": "#/boundedcontexts/identity_bc/aggregates/user/valueobjects/user_status"
+                    "$ref": "#/boundedcontexts/identity_bc/valueobjects/user_status"
                   }
                 }
               },
               "relations": [
                 {
                   "target": {
-                    "$ref": "#/boundedcontexts/identity_bc/aggregates/user/valueobjects/user_status"
+                    "$ref": "#/boundedcontexts/identity_bc/valueobjects/user_status"
                   },
                   "relation": "uses",
                   "label": "has-status",
@@ -1374,22 +1821,10 @@
               ]
             }
           },
-          "valueobjects": {
-            "user_status": {
-              "name": "UserStatus",
-              "description": "Untyped int per the Petstore v3 model; nobody remembers the meaning of each value",
-              "attributes": {
-                "value": {
-                  "name": "value",
-                  "type": "int"
-                }
-              },
-              "relations": []
-            }
-          },
           "invariants": {}
         }
       },
+      "invariants": {},
       "services": {
         "user_app": {
           "name": "UserApp",
@@ -1433,13 +1868,17 @@
               "name": "GetUserByUsername",
               "description": "GET /user/{username}",
               "pattern": "open-host-service",
-              "type": "operation"
+              "type": "operation",
+              "returns": {
+                "$ref": "#/boundedcontexts/identity_bc/schemas/user"
+              }
             }
           },
           "consumes": []
         }
       },
       "policies": {},
+      "processes": {},
       "glossary": {
         "user": {
           "name": "User",
@@ -1452,7 +1891,44 @@
           }
         }
       },
-      "schemas": {}
+      "valueobjects": {
+        "user_status": {
+          "name": "UserStatus",
+          "description": "Untyped int per the Petstore v3 model; nobody remembers the meaning of each value",
+          "attributes": {
+            "value": {
+              "name": "value",
+              "type": "int"
+            }
+          },
+          "relations": [],
+          "invariants": {}
+        }
+      },
+      "schemas": {
+        "user": {
+          "name": "User",
+          "description": "The legacy user record, as GET /user/{username} answers with it",
+          "attributes": {
+            "username": {
+              "name": "username",
+              "type": "string",
+              "identity": true
+            },
+            "email": {
+              "name": "email",
+              "type": "string"
+            },
+            "user_status": {
+              "name": "userStatus",
+              "type": "UserStatus",
+              "valueobject": {
+                "$ref": "#/boundedcontexts/identity_bc/valueobjects/user_status"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "relationships": [
@@ -1470,7 +1946,25 @@
       "downstreamRoles": [
         "anti-corruption-layer"
       ],
-      "description": "Sales needs pet availability; Catalog commits to the summary contract"
+      "description": "Sales needs pet availability; Catalog commits to the summary contract",
+      "comments": [
+        {
+          "text": "Sales reads Catalog through PetSummaryClient, which maps the catalog payload onto the Sales order model.",
+          "link": {
+            "kind": "code",
+            "url": "https://github.com/example/petstore/blob/main/sales/acl/PetSummaryClient.ts",
+            "label": "sales/acl/PetSummaryClient.ts"
+          }
+        },
+        {
+          "text": "The summary contract is versioned and published; Catalog will not break it without a major release.",
+          "link": {
+            "kind": "contract",
+            "url": "https://github.com/example/petstore/blob/main/catalog/openapi.yaml",
+            "label": "catalog/openapi.yaml"
+          }
+        }
+      ]
     },
     {
       "type": "upstream-downstream",
@@ -1486,7 +1980,18 @@
       "downstreamRoles": [
         "conformist"
       ],
-      "description": "The projection counts orders as Sales reports them"
+      "description": "The projection counts orders as Sales reports them",
+      "comments": [
+        {
+          "text": "The projection conforms to the Sales order events rather than translating them; accepted while Inventory stays read-only.",
+          "link": {
+            "kind": "code",
+            "url": "https://github.com/example/petstore/blob/main/inventory/projection/OrderEventHandler.ts",
+            "label": "inventory/projection/OrderEventHandler.ts"
+          }
+        }
+      ],
+      "disposition": "tolerated"
     },
     {
       "type": "shared-kernel",
@@ -1498,7 +2003,26 @@
           "$ref": "#/boundedcontexts/inventory_bc"
         }
       ],
-      "description": "PetStatus and its values are one shared definition"
+      "description": "PetStatus and its values are one shared definition",
+      "comments": [
+        {
+          "text": "PetStatus and its values live in @petstore/kernel and both services compile against it.",
+          "link": {
+            "kind": "code",
+            "url": "https://github.com/example/petstore/blob/main/packages/kernel/src/PetStatus.ts",
+            "label": "packages/kernel/src/PetStatus.ts"
+          }
+        },
+        {
+          "text": "The kernel has grown past the status enum and now carries pricing rules; it should become a Published Language from Catalog.",
+          "link": {
+            "kind": "adr",
+            "url": "https://github.com/example/petstore/blob/main/docs/adr/014-shrink-the-kernel.md",
+            "label": "ADR-014 Shrink the kernel"
+          }
+        }
+      ],
+      "disposition": "refactor"
     },
     {
       "type": "partnership",
@@ -1510,7 +2034,15 @@
           "$ref": "#/boundedcontexts/fulfilment_bc"
         }
       ],
-      "description": "Order lifecycle and shipment lifecycle are designed and released together"
+      "description": "Order lifecycle and shipment lifecycle are designed and released together",
+      "comments": [
+        {
+          "text": "Both services ship from one release train; the pipeline deploys sales and fulfilment as a pair and fails the build if only one is tagged."
+        },
+        {
+          "text": "OrderApproved crosses into Fulfilment and Fulfilment calls ConfirmDelivery back, both with no translation layer. Neither side treats the other as a supplier to be protected from, which is what makes this a partnership rather than customer-supplier; the traffic happening to run one way says nothing about that."
+        }
+      ]
     },
     {
       "type": "separate-ways",
@@ -1522,7 +2054,25 @@
           "$ref": "#/boundedcontexts/sales_bc"
         }
       ],
-      "description": "Orders are anonymous in Petstore v3; no integration by design"
+      "description": "Orders are anonymous in Petstore v3; no integration by design",
+      "comments": [
+        {
+          "text": "The order payload carries no user field and the Sales service holds no credentials for the Identity API, so nothing links an order to an account.",
+          "link": {
+            "kind": "contract",
+            "url": "https://github.com/example/petstore/blob/main/sales/openapi.yaml",
+            "label": "sales/openapi.yaml"
+          }
+        },
+        {
+          "text": "Keeping the two apart is deliberate: checkout must work for a visitor who never signs in.",
+          "link": {
+            "kind": "adr",
+            "url": "https://github.com/example/petstore/blob/main/docs/adr/007-anonymous-checkout.md",
+            "label": "ADR-007 Anonymous checkout"
+          }
+        }
+      ]
     }
   ],
   "teams": {

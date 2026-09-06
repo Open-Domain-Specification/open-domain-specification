@@ -1,3 +1,4 @@
+import { PATTERNS } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { depthOf, flowEdges, flowNodes, groupLabels } from "./flow-nodes";
 import type { Graph } from "./graph";
@@ -129,5 +130,36 @@ describe("flowEdges", () => {
 			markerEnd: undefined,
 			class: undefined,
 		});
+		// Nothing said about these edges' intents, so their badges stay unmarked.
+		expect(e.data).not.toHaveProperty("disposition");
+	});
+
+	it("puts the intent's disposition and its one-line summary on the edge data", () => {
+		const intent = {
+			type: "shared-kernel",
+			disposition: "refactor",
+			comments: [{ text: "It should become a Published Language." }],
+		} as unknown as NonNullable<Graph["edges"][number]["intent"]>;
+		const [e] = flowEdges(
+			layout({ ...graph, edges: [{ ...graph.edges[0], intent }] }, "LR"),
+		);
+		expect(e.data).toMatchObject({
+			disposition: "refactor",
+			summary: `${PATTERNS["shared-kernel"].summary} It should become a Published Language.`,
+		});
+	});
+
+	it("says so on the badge when nobody has written anything down", () => {
+		const intent = {
+			type: "partnership",
+			comments: [],
+		} as unknown as NonNullable<Graph["edges"][number]["intent"]>;
+		const [e] = flowEdges(
+			layout({ ...graph, edges: [{ ...graph.edges[0], intent }] }, "LR"),
+		);
+		expect(e.data).toMatchObject({ disposition: "by-design" });
+		expect((e.data as { summary: string }).summary).toContain(
+			"No comments recorded yet.",
+		);
 	});
 });

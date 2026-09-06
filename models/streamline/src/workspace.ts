@@ -1,5 +1,21 @@
-import { Workspace } from "@open-domain-specification/core";
-import { money } from "@open-domain-specification/model-tools";
+import {
+	type BoundedContext,
+	Workspace,
+} from "@open-domain-specification/core";
+
+/**
+ * Money, declared once in each context that carries an amount: a value object
+ * belongs to the context's language, and every aggregate in that context
+ * holds the same one.
+ */
+const money = (boundedcontext: BoundedContext) => {
+	const vo = boundedcontext.addValueObject("Money", {
+		description: "An amount in a currency: minor units and an ISO 4217 code",
+	});
+	vo.addAttribute("amountMinor", { type: "int64" });
+	vo.addAttribute("currency", { type: "ISO 4217 code" });
+	return vo;
+};
 
 /**
  * StreamLine: a fictional streaming service in the shape of a large one.
@@ -14,7 +30,7 @@ import { money } from "@open-domain-specification/model-tools";
  * Stress-test features: thirteen contexts, a master-to-playable sequence that
  * crosses four of them, a shared kernel (player and edge), a partnership
  * (player and devices), a separate-ways pair (ads and recommendations), a
- * legacy big ball of mud (the disc business), and three deliberate mistakes
+ * legacy big ball of mud (the disc business), and three deliberate findings
  * (marked DELIBERATE) that trigger policy-complete, schema-context and
  * internal-consumable.
  *
@@ -221,6 +237,16 @@ const discsBC = physicalSD.addBoundedcontext("Disc Rental (legacy)", {
 	team: legacyTeam,
 });
 
+// The companies StreamLine licenses from and takes delivery from. The portal
+// interview already said "external post houses use it too" and the deals are
+// "with a licensor"; neither was anywhere in the model. They are one context
+// StreamLine does not own: no subdomain, no team, no insides (decision 28).
+const licensorsBC = workspace.addBoundedContext("Licensors & Post Houses", {
+	description:
+		"The studios, distributors and post houses StreamLine licenses titles from and takes masters from. Somebody else's businesses; only what they do at our edge is modelled",
+	external: true,
+});
+
 /* =======================
    STUDIO PRODUCTION
    DISCOVERY: Head of Studio Technology. No shoot before the budget is
@@ -237,11 +263,11 @@ const studioEpisode = productionAgg.addEntity("Episode", {
 	description:
 		"A production artefact: a number, a runtime and eventually a master. Not the catalogue's episode",
 });
-const budgetVO = productionAgg.addValueObject("Budget", {
+const budgetVO = studioBC.addValueObject("Budget", {
 	description:
 		"Approved spend; a value because two productions with the same figures have the same budget",
 });
-const budgetMoney = money(productionAgg);
+const budgetMoney = money(studioBC);
 budgetVO.addAttribute("approved", { type: "Money", valueobject: budgetMoney });
 budgetVO.addAttribute("approvedOn", { type: "date" });
 production.addAttribute("productionId", { type: "string", identity: true });
@@ -262,6 +288,10 @@ const episodeNumber = studioEpisode.addAttribute("episodeNumber", {
 studioEpisode.addAttribute("runtimeMinutes", { type: "int" });
 studioEpisode.addAttribute("masterUri", { type: "string (URI)" });
 production.includes(studioEpisode, "made-of", "1..*");
+production.addAttribute("budget", {
+	type: "Budget",
+	valueobject: budgetVO,
+});
 production.uses(budgetVO, "funded-by", "1");
 budgetVO.uses(budgetMoney, "amount", "1");
 
@@ -286,7 +316,10 @@ masterDeliveredSchema.addAttribute("productionId", {
 	type: "string",
 	identity: true,
 });
-masterDeliveredSchema.addAttribute("episodeNumber", { type: "int" });
+masterDeliveredSchema.addAttribute("episodeNumber", {
+	type: "int",
+	identifies: studioEpisode,
+});
 masterDeliveredSchema.addAttribute("mezzanineUri", { type: "string (URI)" });
 masterDeliveredSchema.addAttribute("runtimeMinutes", { type: "int" });
 
@@ -314,7 +347,7 @@ const studioPortal = studioBC.addService("StudioPortal", {
 		"The documented delivery portal; external post houses use it too",
 	type: "application",
 });
-studioPortal
+const submitDelivery = studioPortal
 	.provides("SubmitDelivery", {
 		description: "Upload a master against a production and episode",
 		type: "operation",
@@ -322,6 +355,22 @@ studioPortal
 		schema: masterDeliveredSchema,
 	})
 	.raises(masterDelivered);
+// DISCOVERY: Head of Studio Technology. "External post houses use it too", so
+// the portal has a caller outside the company, delivering to StreamLine's spec
+// without negotiating it, which is what a conformist is (card 71).
+licensorsBC
+	.addService("Licensor Delivery", {
+		description:
+			"However a licensor or post house gets a master to us; all StreamLine sees is the upload",
+		type: "application",
+	})
+	.consumes(submitDelivery, { pattern: "conformist" });
+studioBC.upstreamOf(licensorsBC, {
+	description:
+		"The delivery spec is StreamLine's and it is published; a licensor delivers to it or the master is not accepted",
+	upstreamRoles: ["open-host-service"],
+	downstreamRoles: ["conformist"],
+});
 
 studioBC.addTerm("Master", {
 	definition: "The finished file for one film or episode, to the delivery spec",
@@ -358,22 +407,27 @@ const window = dealAgg.addEntity("Window", {
 	description:
 		"A territory, a start, an end and whether StreamLine is exclusive",
 });
-const territoryVO = dealAgg.addValueObject("Territory", {
+const territoryVO = licensingBC.addValueObject("Territory", {
 	description: "A set of countries a window covers. Not a cache region",
 });
 territoryVO.addAttribute("countries", { type: "ISO 3166 code[]" });
-const feeMoney = money(dealAgg);
+const feeMoney = money(licensingBC);
 deal.addAttribute("dealId", { type: "string", identity: true });
 deal.addAttribute("licensor", { type: "string" });
 deal.addAttribute("termStart", { type: "date" });
 deal.addAttribute("termEnd", { type: "date" });
 deal.addAttribute("fee", { type: "Money", valueobject: feeMoney });
 window.addAttribute("windowId", { type: "string", identity: true });
-window.addAttribute("titleId", { type: "string" });
+// `titleId` is declared with the Title root further down, because the root it
+// identifies has to exist before the attribute can name it.
 window.addAttribute("start", { type: "date" });
 window.addAttribute("end", { type: "date" });
 window.addAttribute("exclusive", { type: "boolean" });
 deal.includes(window, "grants", "1..*");
+window.addAttribute("territory", {
+	type: "Territory",
+	valueobject: territoryVO,
+});
 window.uses(territoryVO, "covers", "1");
 deal.uses(feeMoney, "costs", "1");
 
@@ -391,7 +445,7 @@ dealAgg
 const windowSchema = licensingBC.addSchema("LicenseWindow", {
 	description: "Title, territories and dates; used by both window events",
 });
-windowSchema.addAttribute("titleId", { type: "string", identity: true });
+// `titleId` is declared with the Title root further down.
 windowSchema.addAttribute("territory", {
 	type: "Territory",
 	valueobject: territoryVO,
@@ -447,7 +501,21 @@ const titleAgg = catalogueBC.addAggregate("Title", {
 		"A film or series as members see it, with seasons, episodes, artwork, rating and availability",
 });
 const title = titleAgg.addRootEntity("Title", {
-	description: "One film or series",
+	description:
+		"What a member browses to: a name, a rating, artwork and where it plays. No title is ever just a Title; every one of them is a film or a series",
+});
+// DISCOVERY: Catalogue Team lead, "a title is a film or a series; a series has
+// seasons and seasons have episodes". The two kinds hold different things — a
+// film plays one encode, a series plays through its episodes — so they are
+// kinds of Title rather than one entity with a `kind` flag and attributes that
+// apply only sometimes (decision 22).
+const film = titleAgg.addEntity("Film", {
+	description: "A title a member watches in one sitting, playing one encode",
+	specialises: title,
+});
+const series = titleAgg.addEntity("Series", {
+	description: "A title watched an episode at a time, through its seasons",
+	specialises: title,
 });
 const season = titleAgg.addEntity("Season", {
 	description: "A numbered group of episodes",
@@ -456,16 +524,16 @@ const catalogueEpisode = titleAgg.addEntity("Episode", {
 	description:
 		"What a member plays; carries artwork and a rating, unlike the studio's episode",
 });
-const artworkVO = titleAgg.addValueObject("Artwork", {
+const artworkVO = catalogueBC.addValueObject("Artwork", {
 	description: "Images by aspect ratio",
 });
 artworkVO.addAttribute("images", { type: "{ratio, uri}[]" });
-const ratingVO = titleAgg.addValueObject("MaturityRating", {
+const ratingVO = catalogueBC.addValueObject("MaturityRating", {
 	description: "The rating shown and enforced by profile maturity settings",
 });
 ratingVO.addAttribute("scheme", { type: "string" });
 ratingVO.addAttribute("value", { type: "string" });
-const availabilityVO = titleAgg.addValueObject("Availability", {
+const availabilityVO = catalogueBC.addValueObject("Availability", {
 	description:
 		"Countries and dates a title is live, derived from licence windows or studio ownership",
 });
@@ -473,8 +541,17 @@ availabilityVO.addAttribute("countries", { type: "ISO 3166 code[]" });
 availabilityVO.addAttribute("from", { type: "date" });
 availabilityVO.addAttribute("until", { type: "date" });
 title.addAttribute("titleId", { type: "string", identity: true });
+// `titleId` on Window and LicenseWindow is declared here, because an
+// attribute can only name a root that already exists and this is where the
+// Title root is. Licensing is another bounded context, so this identity is
+// the whole of what those hold of a title.
+window.addAttribute("titleId", { type: "string", identifies: title });
+windowSchema.addAttribute("titleId", {
+	type: "string",
+	identity: true,
+	identifies: title,
+});
 title.addAttribute("name", { type: "string" });
-title.addAttribute("kind", { type: "'film' | 'series'" });
 title.addAttribute("rating", { type: "MaturityRating", valueobject: ratingVO });
 // DISCOVERY: Catalogue Team lead, peer review. The correlation keys: a
 // delivered master names a production and an episode number, and the
@@ -482,13 +559,15 @@ title.addAttribute("rating", { type: "MaturityRating", valueobject: ratingVO });
 // have no production; their masters arrive through the licensor.
 title.addAttribute("productionId", {
 	type: "string",
+	optional: true,
 	description:
 		"The studio production behind an original, or absent for a licensed title; how MasterDelivered is matched to a title",
+	identifies: production,
 });
-title.addAttribute("playableRenditionSet", {
+film.addAttribute("playableRenditionSet", {
 	type: "string",
 	description:
-		"For a film, the encoding job whose renditions it plays; a series plays through its episodes",
+		"The encoding job whose renditions this film plays; a series plays through its episodes instead",
 });
 season.addAttribute("seasonNumber", { type: "int", identity: true });
 catalogueEpisode.addAttribute("episodeId", { type: "string", identity: true });
@@ -504,10 +583,32 @@ catalogueEpisode.addAttribute("playableRenditionSet", {
 catalogueEpisode.addAttribute("rating", {
 	type: "MaturityRating",
 	valueobject: ratingVO,
-	description: "An episode may be rated above its series",
+	optional: true,
+	description:
+		"An episode may be rated above its series; absent means the series rating",
 });
-title.includes(season, "has-seasons", "*");
+// Seasons hang off the series, not off every title: a film has none, and the
+// "*" that used to say so said nothing about which titles it meant.
+series.includes(season, "has-seasons", "1..*");
 season.includes(catalogueEpisode, "has-episodes", "1..*");
+title.addAttribute("artwork", {
+	type: "Artwork",
+	valueobject: artworkVO,
+});
+title.addAttribute("availability", {
+	type: "Availability[]",
+	valueobject: availabilityVO,
+	optional: true,
+	description:
+		"One entry per territory and window the title is playable in; absent while nothing is licensed",
+});
+catalogueEpisode.addAttribute("artwork", {
+	type: "Artwork",
+	valueobject: artworkVO,
+	optional: true,
+	description:
+		"An episode may carry its own still; absent means the series artwork",
+});
 title.uses(artworkVO, "shown-with", "1");
 title.uses(ratingVO, "rated", "1");
 title.uses(availabilityVO, "available", "*");
@@ -536,7 +637,34 @@ const titleRefSchema = catalogueBC.addSchema("TitleRef", {
 	description: "Identifies one title, optionally one episode",
 });
 titleRefSchema.addAttribute("titleId", { type: "string", identity: true });
-titleRefSchema.addAttribute("episodeId", { type: "string" });
+// The schema identifies one title and, for a series, one episode of it.
+titleRefSchema.addAttribute("episodeId", {
+	type: "string",
+	optional: true,
+	identifies: catalogueEpisode,
+});
+// A returned shape: GetTitle is asked with a TitleRef and answers with this.
+const titleDetailSchema = catalogueBC.addSchema("TitleDetail", {
+	description: "A title with its seasons, episodes and availability",
+});
+titleDetailSchema.addAttribute("titleId", { type: "string", identity: true });
+titleDetailSchema.addAttribute("name", { type: "string" });
+// The payload keeps the discriminator the model no longer needs: a caller
+// reading JSON has no kinds to dispatch on, so the wire says which it is.
+titleDetailSchema.addAttribute("kind", { type: "'film' | 'series'" });
+titleDetailSchema.addAttribute("rating", {
+	type: "MaturityRating",
+	valueobject: ratingVO,
+});
+titleDetailSchema.addAttribute("artwork", {
+	type: "Artwork",
+	valueobject: artworkVO,
+});
+titleDetailSchema.addAttribute("availability", {
+	type: "Availability",
+	valueobject: availabilityVO,
+});
+titleDetailSchema.addAttribute("seasons", { type: "Season[]" });
 const availabilityChangedSchema = catalogueBC.addSchema(
 	"TitleAvailabilityChanged",
 );
@@ -593,10 +721,12 @@ const catalogueApi = catalogueBC.addService("CatalogueAPI", {
 	type: "application",
 });
 const getTitle = catalogueApi.provides("GetTitle", {
-	description: "Read a title with seasons, episodes and availability",
+	description:
+		"Asked with a TitleRef, answers with the title's seasons, episodes and availability",
 	type: "operation",
 	pattern: "open-host-service",
 	schema: titleRefSchema,
+	returns: titleDetailSchema,
 });
 
 catalogueBC.addTerm("Title", {
@@ -629,13 +759,23 @@ const rendition = jobAgg.addEntity("Rendition", {
 	description:
 		"One codec, bitrate and resolution; an entity because each is addressed by the player",
 });
-const ladderVO = jobAgg.addValueObject("Ladder", {
+const ladderVO = encodingBC.addValueObject("Ladder", {
 	description:
 		"The planned rungs: bitrate and resolution pairs chosen for this title's content",
 });
-ladderVO.addAttribute("rungs", { type: "{bitrateKbps, height}[]" });
+const ladderRungs = ladderVO.addAttribute("rungs", {
+	type: "{bitrateKbps, height}[]",
+});
+// The value's own rule: a ladder without a low rung is not a ladder anything
+// may be encoded against, and it is refused when the ladder is made.
+ladderVO
+	.addInvariant("LadderHasLowestRung", {
+		description:
+			"Every ladder has a rung under 300 kbit/s so a stream starts on a bad network",
+	})
+	.constrains(ladderRungs);
 job.addAttribute("jobId", { type: "string", identity: true });
-job.addAttribute("titleId", { type: "string" });
+job.addAttribute("titleId", { type: "string", identifies: title });
 job.addAttribute("sourceUri", { type: "string (URI)" });
 job.addAttribute("status", {
 	type: "'queued' | 'running' | 'completed' | 'failed'",
@@ -645,14 +785,12 @@ rendition.addAttribute("codec", { type: "string" });
 rendition.addAttribute("bitrateKbps", { type: "int" });
 rendition.addAttribute("height", { type: "int" });
 job.includes(rendition, "produces", "*");
+job.addAttribute("ladder", {
+	type: "Ladder",
+	valueobject: ladderVO,
+});
 job.uses(ladderVO, "planned-as", "1");
 
-jobAgg
-	.addInvariant("LadderHasLowestRung", {
-		description:
-			"Every ladder has a rung under 300 kbit/s so a stream starts on a bad network",
-	})
-	.constrains(ladderVO);
 jobAgg
 	.addInvariant("RenditionsMatchLadder", {
 		description: "A completed job has exactly one rendition per planned rung",
@@ -660,7 +798,10 @@ jobAgg
 	.constrains(rendition, ladderVO);
 
 const submitEncodeSchema = encodingBC.addSchema("SubmitEncode");
-submitEncodeSchema.addAttribute("titleId", { type: "string" });
+submitEncodeSchema.addAttribute("titleId", {
+	type: "string",
+	identifies: title,
+});
 submitEncodeSchema.addAttribute("sourceUri", { type: "string (URI)" });
 const encodingCompletedSchema = encodingBC.addSchema("EncodingCompleted", {
 	description: "The rendition list the catalogue and the edge react to",
@@ -669,8 +810,14 @@ encodingCompletedSchema.addAttribute("jobId", {
 	type: "string",
 	identity: true,
 });
-encodingCompletedSchema.addAttribute("titleId", { type: "string" });
-encodingCompletedSchema.addAttribute("renditionIds", { type: "string[]" });
+encodingCompletedSchema.addAttribute("titleId", {
+	type: "string",
+	identifies: title,
+});
+encodingCompletedSchema.addAttribute("renditionIds", {
+	type: "string[]",
+	identifies: rendition,
+});
 
 const encodeQueued = jobAgg.provides("EncodeQueued", {
 	description: "A job is waiting for a ladder plan",
@@ -683,7 +830,14 @@ const encodingCompleted = jobAgg.provides("EncodingCompleted", {
 	pattern: "published-language",
 	schema: encodingCompletedSchema,
 });
-const submitEncode = jobAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const encodingApi = encodingBC.addService("EncodingAPI", {
+	description:
+		"Encoding's application service: the boundary Catalogue queues masters through",
+	type: "application",
+});
+const submitEncode = encodingApi
 	.provides("SubmitEncode", {
 		description: "Queue a master for encoding",
 		type: "operation",
@@ -711,13 +865,20 @@ const planLadder = ladderPlanner.provides("PlanLadder", {
 });
 
 // The delivery spec is the industry format, so Encoding conforms to it.
-jobAgg.consumes(masterDelivered, { pattern: "conformist" });
+// DISCOVERY: Media Engineering lead, "we consume the studio's delivery spec as
+// it is". Nothing in Encoding reacts to a delivery — Catalogue's process is what
+// queues the encode, and it calls `SubmitEncode` — so what the subscription is
+// for is that operation, which reads the delivered master (`subscription-backed`).
+encodingApi.consumes(masterDelivered, {
+	pattern: "conformist",
+	by: [submitEncode],
+});
 encodingBC
 	.addPolicy("Plan ladder on queue", {
 		description: "Every queued job gets a per-title ladder before it runs",
 	})
 	.on(encodeQueued)
-	.then(planLadder);
+	.issues(planLadder);
 
 encodingBC.addTerm("Ladder", {
 	definition: "The set of bitrate and resolution rungs a title is encoded at",
@@ -731,36 +892,50 @@ encodingBC.addTerm("Rendition", {
 });
 
 // The catalogue sits between studio, licensing and encoding: four reactions.
-titleAgg.consumes(masterDelivered, { pattern: "anti-corruption-layer" });
-titleAgg.consumes(encodingCompleted, { pattern: "anti-corruption-layer" });
-titleAgg.consumes(windowOpened, { pattern: "anti-corruption-layer" });
-titleAgg.consumes(windowExpired, { pattern: "anti-corruption-layer" });
-titleAgg.consumes(submitEncode, { pattern: "anti-corruption-layer" });
+catalogueApi.consumes(masterDelivered, { pattern: "anti-corruption-layer" });
+catalogueApi.consumes(encodingCompleted, { pattern: "anti-corruption-layer" });
+catalogueApi.consumes(windowOpened, { pattern: "anti-corruption-layer" });
+catalogueApi.consumes(windowExpired, { pattern: "anti-corruption-layer" });
+// The call out to Encoding is made by Catalogue's own application service,
+// and it is that operation the policy below names (decision 17).
+const requestEncode = catalogueApi.provides("RequestEncode", {
+	description:
+		"Queue the matched title for encoding, by calling Encoding's SubmitEncode behind the ACL",
+	type: "operation",
+	internal: true,
+});
+// CatalogueAPI answers GetTitle as well as queueing encodes, so which of the
+// two makes the call is a real question: RequestEncode does, and the chain from
+// a delivered master through the encode to the publication runs through it
+// (decision 21, third amendment).
+catalogueApi.consumes(submitEncode, {
+	pattern: "anti-corruption-layer",
+	by: [requestEncode],
+});
+// Getting a title on the service is a process, not two policies: it holds the
+// match from productionId to titleId while the encode runs, which is the one
+// thing a stateless policy could not carry from the master to the publication.
 catalogueBC
-	.addPolicy("Request encode on master", {
+	.addProcess("Master to publication", {
 		description:
-			"A delivered master is matched to the title by productionId (and the episode by masterEpisodeNumber) and queued for encoding under that titleId",
+			"From a delivered master to a title members can play. The master is matched to the title by productionId (and the episode by masterEpisodeNumber) and queued for encoding under that titleId; the process then waits, sometimes for hours, and publishes the title when the encode comes back. Correlation is by that titleId, which it remembers for the encode's whole run; a ladder that never completes is chased by the operations team, so nothing here times out",
 	})
-	.on(masterDelivered)
-	.then(submitEncode);
-catalogueBC
-	.addPolicy("Publish on encode", {
-		description: "A completed encode makes the title publishable",
-	})
+	.starts(masterDelivered)
 	.on(encodingCompleted)
-	.then(publishTitle);
+	.issues(requestEncode, publishTitle)
+	.ends(titlePublished);
 catalogueBC
 	.addPolicy("Update availability on window", {
 		description: "An opened window changes where the title is live",
 	})
 	.on(windowOpened)
-	.then(updateAvailability);
+	.issues(updateAvailability);
 catalogueBC
 	.addPolicy("Unpublish on expiry", {
 		description: "An expired window takes the title down that day",
 	})
 	.on(windowExpired)
-	.then(unpublishTitle);
+	.issues(unpublishTitle);
 
 /* =======================
    PLAYBACK
@@ -774,62 +949,55 @@ const sessionAgg = playbackBC.addAggregate("PlaybackSession", {
 const session = sessionAgg.addRootEntity("PlaybackSession", {
 	description: "The unit playback rules are stated about",
 });
-const bookmarkVO = sessionAgg.addValueObject("Bookmark", {
+const bookmarkVO = playbackBC.addValueObject("Bookmark", {
 	description:
 		"The resume point; updated every few seconds, kept inside the player",
 });
 bookmarkVO.addAttribute("positionSeconds", { type: "int" });
-const manifestVO = sessionAgg.addValueObject("StreamManifest", {
+const manifestVO = playbackBC.addValueObject("StreamManifest", {
 	description:
 		"The renditions and the edge to fetch from, in the format shared with Edge Delivery",
 });
-manifestVO.addAttribute("renditionIds", { type: "string[]" });
+manifestVO.addAttribute("renditionIds", {
+	type: "string[]",
+	identifies: rendition,
+});
 manifestVO.addAttribute("edgeUrl", { type: "string (URL)" });
 session.addAttribute("sessionId", { type: "string", identity: true });
-session.addAttribute("profileId", { type: "string" });
 // DISCOVERY: peer review. The household is what entitlement and the stream
 // limit are about, and a series is watched an episode at a time, so both
-// identities belong on the session.
-const sessionHousehold = session.addAttribute("householdId", {
-	type: "string",
-	description:
-		"The paying unit the profile belongs to; what entitlement is checked for",
-});
-session.addAttribute("titleId", { type: "string" });
+// identities belong on the session. `householdId`, the invariant that reads
+// it and `deviceModelId` are declared further down, with the Household and
+// Device roots they identify.
+session.addAttribute("titleId", { type: "string", identifies: title });
 session.addAttribute("episodeId", {
 	type: "string",
+	optional: true,
 	description:
 		"Absent for a film; for a series, the episode being played and bookmarked",
+	identifies: catalogueEpisode,
 });
 const sessionDevice = session.addAttribute("deviceId", {
 	type: "string",
 	description: "The individual unit (an installation), not the partner model",
 });
-session.addAttribute("deviceModelId", {
-	type: "string",
-	description:
-		"The partner model the unit is an instance of; what certification is checked against",
-});
 session.addAttribute("bookmark", { type: "Bookmark", valueobject: bookmarkVO });
+session.addAttribute("manifest", {
+	type: "StreamManifest",
+	valueobject: manifestVO,
+});
 session.uses(bookmarkVO, "resumes-at", "1");
 session.uses(manifestVO, "streams-from", "1");
-session.references(title, "plays", "1");
+// The Title root is in Catalogue, another bounded context: a relation never
+// crosses one, so the session holds `titleId` and nothing more.
 
-sessionAgg
-	.addInvariant("SessionNeedsEntitlement", {
-		description:
-			"A session starts only with a current entitlement from billing",
-	})
-	.constrains(session);
-// One session cannot see its siblings, so the limit is checked at start:
-// GetEntitlement returns the plan's stream count and Playback counts the
-// household's open sessions before it creates another.
-sessionAgg
-	.addInvariant("WithinStreamLimit", {
-		description:
-			"A session starts only if the household's open sessions are fewer than the plan's stream count from GetEntitlement; checked at StartPlayback because a session cannot see its siblings",
-	})
-	.constrains(sessionHousehold);
+// `SessionNeedsEntitlement` is declared further down, with PlaybackAPI: the
+// entitlement is checked at the moment of the call and StartPlayback is the
+// operation that checks it, so the invariant names it rather than leaving the
+// guard in prose (decision 19, amended).
+// `WithinStreamLimit` is declared with the Household root further down,
+// because it constrains `householdId`, and that attribute can only be
+// declared once the root it identifies exists.
 sessionAgg
 	.addInvariant("BookmarkWithinRuntime", {
 		description: "The resume point never exceeds the title's runtime",
@@ -837,12 +1005,31 @@ sessionAgg
 	.constrains(bookmarkVO);
 
 const startPlaybackSchema = playbackBC.addSchema("StartPlayback");
-startPlaybackSchema.addAttribute("profileId", { type: "string" });
-startPlaybackSchema.addAttribute("householdId", { type: "string" });
-startPlaybackSchema.addAttribute("titleId", { type: "string" });
-startPlaybackSchema.addAttribute("episodeId", { type: "string" });
+// `profileId` and `householdId` are declared with the Profile and Household
+// roots further down; `deviceModelId` with the Device root.
+startPlaybackSchema.addAttribute("titleId", {
+	type: "string",
+	identifies: title,
+});
+startPlaybackSchema.addAttribute("episodeId", {
+	type: "string",
+	optional: true,
+	identifies: catalogueEpisode,
+});
 startPlaybackSchema.addAttribute("deviceId", { type: "string" });
-startPlaybackSchema.addAttribute("deviceModelId", { type: "string" });
+// A rejection shape: what StartPlayback answers with when it will not start.
+// No session exists, so there is no PlaybackStarted to raise; the player is
+// told whether to send the member to billing or to say the device is not
+// certified (decision 25).
+const playbackDeniedSchema = playbackBC.addSchema("PlaybackDenied", {
+	description:
+		"Why the session did not start: no entitlement, or a device that is not certified",
+});
+playbackDeniedSchema.addAttribute("reason", { type: "string" });
+playbackDeniedSchema.addAttribute("titleId", {
+	type: "string",
+	identifies: title,
+});
 const playbackStoppedSchema = playbackBC.addSchema("PlaybackStopped", {
 	description: "The fact personalisation learns from",
 });
@@ -850,9 +1037,16 @@ playbackStoppedSchema.addAttribute("sessionId", {
 	type: "string",
 	identity: true,
 });
-playbackStoppedSchema.addAttribute("profileId", { type: "string" });
-playbackStoppedSchema.addAttribute("titleId", { type: "string" });
-playbackStoppedSchema.addAttribute("episodeId", { type: "string" });
+// `profileId` is declared with the Profile root further down.
+playbackStoppedSchema.addAttribute("titleId", {
+	type: "string",
+	identifies: title,
+});
+playbackStoppedSchema.addAttribute("episodeId", {
+	type: "string",
+	optional: true,
+	identifies: catalogueEpisode,
+});
 playbackStoppedSchema.addAttribute("watchedSeconds", { type: "int" });
 playbackStoppedSchema.addAttribute("completed", { type: "boolean" });
 
@@ -876,15 +1070,23 @@ const bookmarkUpdated = sessionAgg.provides("BookmarkUpdated", {
 	type: "event",
 	internal: true,
 });
-sessionAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const playbackApi = playbackBC.addService("PlaybackAPI", {
+	description:
+		"Playback's application service: the boundary players start and stop sessions through",
+	type: "application",
+});
+const startPlayback = playbackApi
 	.provides("StartPlayback", {
 		description: "Check entitlement and device, build the manifest, start",
 		type: "operation",
 		pattern: "open-host-service",
 		schema: startPlaybackSchema,
+		rejects: [playbackDeniedSchema],
 	})
 	.raises(playbackStarted);
-sessionAgg
+playbackApi
 	.provides("StopPlayback", {
 		description: "End the session and report what was watched",
 		type: "operation",
@@ -910,7 +1112,22 @@ bitrateSelector.provides("SelectRendition", {
 	internal: true,
 });
 
-sessionAgg.consumes(getTitle, { pattern: "anti-corruption-layer" });
+playbackApi.consumes(getTitle, {
+	pattern: "anti-corruption-layer",
+	by: [startPlayback],
+});
+// A rule about one session, so it is the aggregate's; checked before the
+// session exists, so what upholds it is StartPlayback on the application
+// service, which is where the entitlement read happens (decision 19, amended).
+sessionAgg
+	.addInvariant("SessionNeedsEntitlement", {
+		description:
+			"A session starts only with a current entitlement from billing, read by StartPlayback through GetEntitlement before the session is created",
+		// The entitlement may lapse while the session runs, and nothing here
+		// re-establishes it: it is checked at the call and no later (card 94).
+		precondition: true,
+	})
+	.constrains(session, startPlayback);
 
 playbackBC.addTerm("Session", {
 	definition: "One profile watching one title on one device",
@@ -943,7 +1160,7 @@ const appliance = applianceAgg.addRootEntity("EdgeAppliance", {
 const cachedAsset = applianceAgg.addEntity("CachedAsset", {
 	description: "One rendition on disk with its last hit time",
 });
-const capacityVO = applianceAgg.addValueObject("Capacity", {
+const capacityVO = edgeBC.addValueObject("Capacity", {
 	description: "Disk bytes available for cache",
 });
 capacityVO.addAttribute("bytes", { type: "int64" });
@@ -953,10 +1170,18 @@ appliance.addAttribute("region", {
 	type: "string",
 	description: "A cache region; not a licensing territory",
 });
-cachedAsset.addAttribute("renditionId", { type: "string", identity: true });
+cachedAsset.addAttribute("renditionId", {
+	type: "string",
+	identity: true,
+	identifies: rendition,
+});
 cachedAsset.addAttribute("bytes", { type: "int64" });
 cachedAsset.addAttribute("lastHitAt", { type: "date-time" });
 appliance.includes(cachedAsset, "caches", "*");
+appliance.addAttribute("capacity", {
+	type: "Capacity",
+	valueobject: capacityVO,
+});
 appliance.uses(capacityVO, "sized", "1");
 applianceAgg
 	.addInvariant("CachedBytesWithinCapacity", {
@@ -966,18 +1191,39 @@ applianceAgg
 
 const resolveEdgeSchema = edgeBC.addSchema("ResolveEdge");
 resolveEdgeSchema.addAttribute("clientIp", { type: "string" });
-resolveEdgeSchema.addAttribute("renditionIds", { type: "string[]" });
+resolveEdgeSchema.addAttribute("renditionIds", {
+	type: "string[]",
+	identifies: rendition,
+});
 
 const assetPrepositioned = applianceAgg.provides("AssetPrepositioned", {
 	description: "A rendition was pushed to an appliance ahead of demand",
 	type: "event",
 	internal: true,
 });
-const resolveEdge = applianceAgg.provides("ResolveEdge", {
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const edgeApi = edgeBC.addService("EdgeAPI", {
+	description:
+		"Edge Delivery's application service: the boundary Playback resolves appliances through",
+	type: "application",
+});
+// The answer comes back in the manifest format the kernel defines, so Edge
+// fills in Playback's own StreamManifest rather than a shape of its own: that
+// borrowing is what the shared kernel between the two contexts permits.
+const edgeManifestSchema = edgeBC.addSchema("EdgeManifest", {
+	description: "The appliance to fetch from, in the shared manifest format",
+});
+edgeManifestSchema.addAttribute("manifest", {
+	type: "StreamManifest",
+	valueobject: manifestVO,
+});
+const resolveEdge = edgeApi.provides("ResolveEdge", {
 	description: "Which appliance a client should fetch from",
 	type: "operation",
 	pattern: "open-host-service",
 	schema: resolveEdgeSchema,
+	returns: edgeManifestSchema,
 });
 const prepositionAsset = applianceAgg
 	.provides("PrepositionAsset", {
@@ -987,17 +1233,20 @@ const prepositionAsset = applianceAgg
 	})
 	.raises(assetPrepositioned);
 
-applianceAgg.consumes(encodingCompleted, { pattern: "conformist" });
+edgeApi.consumes(encodingCompleted, { pattern: "conformist" });
 edgeBC
 	.addPolicy("Preposition on encode", {
 		description:
 			"New renditions are pushed to appliances by predicted popularity",
 	})
 	.on(encodingCompleted)
-	.then(prepositionAsset);
+	.issues(prepositionAsset);
 
 // Shared kernel: the manifest format is one library, so Playback takes the answer as it is.
-sessionAgg.consumes(resolveEdge, { pattern: "conformist" });
+playbackApi.consumes(resolveEdge, {
+	pattern: "conformist",
+	by: [startPlayback],
+});
 
 edgeBC.addTerm("Appliance", {
 	definition: "A cache box installed in an ISP's network",
@@ -1025,7 +1274,7 @@ const device = deviceAgg.addRootEntity("Device", {
 const certification = deviceAgg.addEntity("Certification", {
 	description: "A pass or fail against one SDK version",
 });
-const capabilityVO = deviceAgg.addValueObject("Capability", {
+const capabilityVO = devicesBC.addValueObject("Capability", {
 	description: "Codecs, DRM level and maximum resolution",
 });
 capabilityVO.addAttribute("codecs", { type: "string[]" });
@@ -1038,7 +1287,24 @@ certification.addAttribute("sdkVersion", { type: "string", identity: true });
 certification.addAttribute("passed", { type: "boolean" });
 certification.addAttribute("certifiedOn", { type: "date" });
 device.includes(certification, "certified-by", "*");
+device.addAttribute("capability", {
+	type: "Capability",
+	valueobject: capabilityVO,
+});
 device.uses(capabilityVO, "capable-of", "1");
+// `deviceModelId` on PlaybackSession and StartPlayback is declared here,
+// because an attribute can only name a root that already exists and this is
+// where the Device root is.
+session.addAttribute("deviceModelId", {
+	type: "string",
+	description:
+		"The partner model the unit is an instance of; what certification is checked against",
+	identifies: device,
+});
+startPlaybackSchema.addAttribute("deviceModelId", {
+	type: "string",
+	identifies: device,
+});
 deviceAgg
 	.addInvariant("CertifiedBeforePlayback", {
 		description:
@@ -1073,7 +1339,14 @@ const deviceCertified = deviceAgg.provides("DeviceCertified", {
 	pattern: "published-language",
 	schema: deviceCertifiedSchema,
 });
-deviceAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const devicesApi = devicesBC.addService("DevicesAPI", {
+	description:
+		"Devices' application service: the boundary manufacturers submit models through",
+	type: "application",
+});
+devicesApi
 	.provides("RegisterDevice", {
 		description: "Submit a model with its capabilities",
 		type: "operation",
@@ -1098,7 +1371,14 @@ devicesBC
 	.on(deviceCertified);
 
 // Partnership: releases are planned as one, so Playback conforms.
-sessionAgg.consumes(deviceCertified, { pattern: "conformist" });
+// DISCOVERY: Playback engineering lead, "we don't start a session on a device
+// that isn't certified against the current SDK". Nothing here reacts to a
+// certification; `StartPlayback` is the part of Playback that reads it, and
+// refuses when the device is not certified (`subscription-backed`).
+playbackApi.consumes(deviceCertified, {
+	pattern: "conformist",
+	by: [startPlayback],
+});
 
 devicesBC.addTerm("Device", {
 	definition: "A partner device model, not an individual unit",
@@ -1121,22 +1401,29 @@ const signal = tasteAgg.addEntity("Signal", {
 	description:
 		"One viewing fact with a weight and a time; an entity because signals decay and are audited",
 });
-const affinityVO = tasteAgg.addValueObject("Affinity", {
+const affinityVO = recsBC.addValueObject("Affinity", {
 	description: "A genre or theme and how strongly the profile leans to it",
 });
 affinityVO.addAttribute("genre", { type: "string" });
 affinityVO.addAttribute("score", { type: "float 0..1" });
-taste.addAttribute("profileId", { type: "string", identity: true });
 signal.addAttribute("signalId", { type: "string", identity: true });
-signal.addAttribute("titleId", { type: "string" });
+signal.addAttribute("titleId", { type: "string", identifies: title });
 signal.addAttribute("kind", {
 	type: "'watched' | 'completed' | 'abandoned' | 'rated'",
 });
 signal.addAttribute("weight", { type: "float" });
 signal.addAttribute("at", { type: "date-time" });
 taste.includes(signal, "built-from", "*");
+taste.addAttribute("affinities", {
+	type: "Affinity[]",
+	valueobject: affinityVO,
+	optional: true,
+	description:
+		"What the profile leans to, strongest first; absent until it has watched something",
+});
 taste.uses(affinityVO, "leans-to", "*");
-signal.references(title, "about", "1");
+// The Title root is in Catalogue, another bounded context, so the signal holds
+// `titleId` and no relation.
 
 tasteAgg
 	.addInvariant("SignalsFromOwnProfileOnly", {
@@ -1150,10 +1437,34 @@ tasteAgg
 	})
 	.constrains(signal);
 
+const openTasteProfile = tasteAgg.provides("OpenTasteProfile", {
+	description:
+		"Open the empty taste profile for a new member profile; signals arrive against it later",
+	type: "operation",
+	internal: true,
+});
 const recordSignal = tasteAgg.provides("RecordSignal", {
 	description: "Add a viewing signal from a stopped session",
 	type: "operation",
 	internal: true,
+});
+
+// A returned shape: what RankRows and GetHomepageRows answer with.
+const homepageRowSchema = recsBC.addSchema("HomepageRow", {
+	description:
+		"One ranked row: a title in a candidate pool the profile may see",
+});
+homepageRowSchema.addAttribute("titleId", {
+	type: "string",
+	identity: true,
+	identifies: title,
+});
+const homepageRowsSchema = recsBC.addSchema("HomepageRows", {
+	description: "The ranked rows for a profile",
+});
+homepageRowsSchema.addAttribute("rows", {
+	type: "HomepageRow[]",
+	schema: homepageRowSchema,
 });
 
 const ranker = recsBC.addService("Ranker", {
@@ -1165,6 +1476,7 @@ ranker.provides("RankRows", {
 	description: "Build the home screen rows for a profile",
 	type: "operation",
 	internal: true,
+	returns: homepageRowsSchema,
 });
 // DISCOVERY: Head of Personalisation ("we consume ... new titles"), peer
 // review. The candidate pool is what the ranker orders; a title enters it when
@@ -1179,32 +1491,52 @@ const recsApi = recsBC.addService("RecommendationsAPI", {
 	description: "What the apps call for the home screen",
 	type: "application",
 });
-recsApi.provides("GetHomepageRows", {
+const getHomepageRows = recsApi.provides("GetHomepageRows", {
 	description: "Rows for a profile, ranked",
 	type: "operation",
 	pattern: "open-host-service",
+	returns: homepageRowsSchema,
 });
 
-tasteAgg.consumes(playbackStopped, { pattern: "anti-corruption-layer" });
-ranker.consumes(titlePublished, { pattern: "conformist" });
-ranker.consumes(availabilityChanged, { pattern: "conformist" });
-recsBC
+recsApi.consumes(playbackStopped, { pattern: "anti-corruption-layer" });
+const addCandidateOnPublish = recsBC
 	.addPolicy("Add candidate on publish", {
 		description:
 			"A published title joins the candidate pool; an availability change updates where it may be recommended",
 	})
 	.on(titlePublished, availabilityChanged)
-	.then(addCandidate);
+	.issues(addCandidate);
+// The two facts the candidate pool is built from. They came in at the Ranker
+// until card 92: a domain service is the inside of the model, the same as an
+// aggregate, so a foreign consumable is taken in at the application service and
+// handed on (decision 17's amendment). What reacts to each is the policy above,
+// and `by` says so, which is also what keeps the subscription backed.
+recsApi.consumes(titlePublished, {
+	pattern: "conformist",
+	by: [addCandidateOnPublish],
+});
+recsApi.consumes(availabilityChanged, {
+	pattern: "conformist",
+	by: [addCandidateOnPublish],
+});
 // DELIBERATE (internal-consumable): Personalisation reads the player's
-// bookmark updates, which Playback declares internal. The dependency was never agreed.
-tasteAgg.consumes(bookmarkUpdated, { pattern: "anti-corruption-layer" });
+// bookmark updates, which Playback declares internal. The dependency was never
+// agreed. DISCOVERY: Head of Personalisation, "we also started reading the
+// player's bookmark updates to make 'continue watching' fresher". No policy
+// reacts to one — the rows are built when they are asked for — so `by` names the
+// operation that reads them, which is also what says how far the unagreed
+// dependency reaches (`subscription-backed`).
+recsApi.consumes(bookmarkUpdated, {
+	pattern: "anti-corruption-layer",
+	by: [getHomepageRows],
+});
 recsBC
 	.addPolicy("Record signal on stop", {
 		description:
 			"Every stopped session becomes a signal on the profile's taste",
 	})
 	.on(playbackStopped)
-	.then(recordSignal);
+	.issues(recordSignal);
 
 recsBC.addTerm("Row", {
 	definition: "A horizontal list on the home screen, ranked for one profile",
@@ -1231,22 +1563,74 @@ const household = householdAgg.addRootEntity("Household", {
 const profile = householdAgg.addEntity("Profile", {
 	description: "One person's viewing identity",
 });
-const maturityVO = householdAgg.addValueObject("MaturitySetting", {
+const maturityVO = householdsBC.addValueObject("MaturitySetting", {
 	description: "The highest rating a profile may play",
 });
 maturityVO.addAttribute("maxRating", { type: "string" });
-const pinVO = householdAgg.addValueObject("ProfilePin", {
+const pinVO = householdsBC.addValueObject("ProfilePin", {
 	description: "Four digits that unlock a profile or raise a maturity cap",
 });
 pinVO.addAttribute("hash", { type: "string" });
 household.addAttribute("householdId", { type: "string", identity: true });
-household.addAttribute("accountId", { type: "string" });
+// `accountId` is declared with the Account root further down.
 household.addAttribute("country", { type: "ISO 3166 code" });
 profile.addAttribute("profileId", { type: "string", identity: true });
+// Every profile id in the model is declared here, because an attribute can
+// only name an entity that already exists and this is where Profile is. A
+// profile is a child of its household and stays one — entitlement and the
+// stream limit are stated about the household — so what these hold is the
+// child's id, reached through the Household root (decision 14, amended).
+session.addAttribute("profileId", { type: "string", identifies: profile });
+taste.addAttribute("profileId", {
+	type: "string",
+	identity: true,
+	identifies: profile,
+});
+startPlaybackSchema.addAttribute("profileId", {
+	type: "string",
+	identifies: profile,
+});
+playbackStoppedSchema.addAttribute("profileId", {
+	type: "string",
+	identifies: profile,
+});
+// PlaybackSession's `householdId` and the invariant that reads it, and
+// StartPlayback's own `householdId`, are declared here too, because the
+// Household root they identify has to exist first.
+const sessionHousehold = session.addAttribute("householdId", {
+	type: "string",
+	description:
+		"The paying unit the profile belongs to; what entitlement is checked for",
+	identifies: household,
+});
+// One session cannot see its siblings, so the limit is the context's rule and
+// StartPlayback is where it is kept: GetEntitlement returns the plan's stream
+// count and Playback counts the household's open sessions before it creates
+// another (decision 27).
+playbackBC
+	.addInvariant("WithinStreamLimit", {
+		description:
+			"A session starts only if the household's open sessions are fewer than the plan's stream count from GetEntitlement; StartPlayback counts them, because a session cannot see its siblings",
+	})
+	.constrains(sessionHousehold, startPlayback);
+startPlaybackSchema.addAttribute("householdId", {
+	type: "string",
+	identifies: household,
+});
 profile.addAttribute("name", { type: "string" });
 profile.addAttribute("kids", { type: "boolean" });
 profile.addAttribute("primary", { type: "boolean" });
 household.includes(profile, "has-profiles", "1..*");
+profile.addAttribute("maturity", {
+	type: "MaturitySetting",
+	valueobject: maturityVO,
+});
+profile.addAttribute("pin", {
+	type: "ProfilePin",
+	valueobject: pinVO,
+	optional: true,
+	description: "Absent on an unlocked profile",
+});
 profile.uses(maturityVO, "limited-to", "1");
 profile.uses(pinVO, "locked-by", "0..1");
 
@@ -1272,12 +1656,13 @@ householdCreatedSchema.addAttribute("householdId", {
 	type: "string",
 	identity: true,
 });
-householdCreatedSchema.addAttribute("accountId", { type: "string" });
+// `accountId` is declared with the Account root further down.
 householdCreatedSchema.addAttribute("country", { type: "ISO 3166 code" });
 const profileCreatedSchema = householdsBC.addSchema("ProfileCreated");
 profileCreatedSchema.addAttribute("profileId", {
 	type: "string",
 	identity: true,
+	identifies: profile,
 });
 profileCreatedSchema.addAttribute("householdId", { type: "string" });
 profileCreatedSchema.addAttribute("kids", { type: "boolean" });
@@ -1302,7 +1687,14 @@ const createHousehold = householdAgg
 		internal: true,
 	})
 	.raises(householdCreated, profileCreated);
-householdAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const profilesApi = householdsBC.addService("ProfilesAPI", {
+	description:
+		"Households & Profiles' application service: the boundary members manage profiles through",
+	type: "application",
+});
+profilesApi
 	.provides("CreateProfile", {
 		description: "Add a profile, within the limit",
 		type: "operation",
@@ -1322,7 +1714,22 @@ householdsBC.addTerm("Profile", {
 	embodiedBy: profile,
 });
 
-tasteAgg.consumes(profileCreated, { pattern: "conformist" });
+// DISCOVERY: Head of Personalisation, "every profile has a taste profile", and
+// the wall's "Recommendations creates taste profile" against `ProfileCreated`.
+// The reaction was on the wall and never in the model, so the consumption stood
+// on its own (`subscription-backed`, card 92). It is written here because the
+// event is declared in this section.
+const openOnProfileCreated = recsBC
+	.addPolicy("Open a taste profile on profile created", {
+		description:
+			"A new profile gets an empty taste profile, so its first signal has somewhere to go",
+	})
+	.on(profileCreated)
+	.issues(openTasteProfile);
+recsApi.consumes(profileCreated, {
+	pattern: "conformist",
+	by: [openOnProfileCreated],
+});
 
 /* =======================
    BILLING & PLANS
@@ -1339,17 +1746,17 @@ const subscription = subscriptionAgg.addRootEntity("Subscription", {
 const invoice = subscriptionAgg.addEntity("Invoice", {
 	description: "One period's charge; an entity because it is numbered and paid",
 });
-const planVO = subscriptionAgg.addValueObject("Plan", {
+const planVO = billingBC.addValueObject("Plan", {
 	description: "A tier: price, concurrent streams, ad-supported or not",
 });
-const planMoney = money(subscriptionAgg);
+const planMoney = money(billingBC);
 planVO.addAttribute("tier", {
 	type: "'basic-with-ads' | 'standard' | 'premium'",
 });
 planVO.addAttribute("price", { type: "Money", valueobject: planMoney });
 planVO.addAttribute("maxStreams", { type: "int" });
 planVO.addAttribute("adSupported", { type: "boolean" });
-const periodVO = subscriptionAgg.addValueObject("BillingPeriod", {
+const periodVO = billingBC.addValueObject("BillingPeriod", {
 	description: "The month an invoice covers",
 });
 periodVO.addAttribute("from", { type: "date" });
@@ -1357,6 +1764,7 @@ periodVO.addAttribute("to", { type: "date" });
 subscription.addAttribute("subscriptionId", { type: "string", identity: true });
 const subscriptionHousehold = subscription.addAttribute("householdId", {
 	type: "string",
+	identifies: household,
 });
 subscription.addAttribute("status", {
 	type: "'active' | 'dunning' | 'lapsed'",
@@ -1374,19 +1782,15 @@ invoice.addAttribute("amount", {
 });
 invoice.addAttribute("paid", { type: "boolean" });
 subscription.includes(invoice, "billed-by", "*");
+planVO.uses(planMoney, "priced-at", "1");
 subscription.uses(planVO, "on-plan", "1");
+invoice.addAttribute("period", {
+	type: "BillingPeriod",
+	valueobject: periodVO,
+});
 invoice.uses(periodVO, "covers", "1");
 invoice.uses(planMoney, "charges", "1");
 
-// One Subscription cannot see its siblings, so the rule is enforced where a
-// subscription is created: StartSubscription refuses a household that already
-// has an active one, keyed on householdId.
-subscriptionAgg
-	.addInvariant("OneActiveSubscriptionPerHousehold", {
-		description:
-			"A household has at most one active subscription; enforced by StartSubscription on householdId, since one subscription cannot see another",
-	})
-	.constrains(subscriptionHousehold);
 // DISCOVERY: Commerce lead, peer review. "Equals the plan price" was said of
 // the subscription line; the disc export adds a separate line, so the invoice
 // total is the sum of its lines.
@@ -1407,11 +1811,23 @@ subscriptionSchema.addAttribute("subscriptionId", {
 	type: "string",
 	identity: true,
 });
-subscriptionSchema.addAttribute("householdId", { type: "string" });
+subscriptionSchema.addAttribute("householdId", {
+	type: "string",
+	identifies: household,
+});
 const entitlementSchema = billingBC.addSchema("EntitlementRequest", {
 	description: "What Playback asks: which household, for how many streams",
 });
-entitlementSchema.addAttribute("householdId", { type: "string" });
+entitlementSchema.addAttribute("householdId", {
+	type: "string",
+	identifies: household,
+});
+// A returned shape: what GetEntitlement answers with.
+const entitlementResultSchema = billingBC.addSchema("Entitlement", {
+	description: "Whether the household may stream, and how many at once",
+});
+entitlementResultSchema.addAttribute("entitled", { type: "boolean" });
+entitlementResultSchema.addAttribute("maxConcurrentStreams", { type: "int" });
 
 const subscriptionActivated = subscriptionAgg.provides(
 	"SubscriptionActivated",
@@ -1433,7 +1849,14 @@ const paymentFailed = subscriptionAgg.provides("PaymentFailed", {
 	type: "event",
 	internal: true,
 });
-subscriptionAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const billingApi = billingBC.addService("BillingAPI", {
+	description:
+		"Billing & Plans' application service: the boundary plans are bought and entitlement is read through",
+	type: "application",
+});
+const startSubscription = billingApi
 	.provides("StartSubscription", {
 		description: "Put a household on a plan",
 		type: "operation",
@@ -1441,11 +1864,21 @@ subscriptionAgg
 		schema: subscriptionSchema,
 	})
 	.raises(subscriptionActivated);
-const getEntitlement = subscriptionAgg.provides("GetEntitlement", {
+// One Subscription cannot see its siblings, so the rule belongs to the context
+// and names the operation that keeps it: StartSubscription refuses a household
+// that already has an active one, keyed on householdId (decision 27).
+billingBC
+	.addInvariant("OneActiveSubscriptionPerHousehold", {
+		description:
+			"A household has at most one active subscription; StartSubscription refuses a second on householdId, since one subscription cannot see another",
+	})
+	.constrains(subscriptionHousehold, startSubscription);
+const getEntitlement = billingApi.provides("GetEntitlement", {
 	description: "Whether a household may stream, and how many at once",
 	type: "operation",
 	pattern: "open-host-service",
 	schema: entitlementSchema,
+	returns: entitlementResultSchema,
 });
 subscriptionAgg
 	.provides("ChargeRenewal", {
@@ -1481,24 +1914,32 @@ const registerHousehold = subscriptionAgg.provides("RegisterHousehold", {
 	type: "operation",
 	internal: true,
 });
-subscriptionAgg.consumes(householdCreated, { pattern: "conformist" });
-billingBC
+const awaitPlan = billingBC
 	.addPolicy("Await plan on household", {
 		description:
 			"A new household is registered in billing until it picks a plan",
 	})
 	.on(householdCreated)
-	.then(registerHousehold);
+	.issues(registerHousehold);
+// Nothing in billing reads Identity's event except this reaction; renewing,
+// dunning and answering entitlement never touch it.
+billingApi.consumes(householdCreated, {
+	pattern: "conformist",
+	by: [awaitPlan],
+});
 billingBC
 	.addPolicy("Dun on failed payment", {
 		description:
 			"A failed renewal starts the grace period, not an immediate lapse",
 	})
 	.on(paymentFailed)
-	.then(startDunning);
+	.issues(startDunning);
 
 // Playback asks billing before every start, translating the answer to its own yes/no.
-sessionAgg.consumes(getEntitlement, { pattern: "anti-corruption-layer" });
+playbackApi.consumes(getEntitlement, {
+	pattern: "anti-corruption-layer",
+	by: [startPlayback],
+});
 
 billingBC.addTerm("Plan", {
 	definition: "A tier with a price, a stream limit and whether it carries ads",
@@ -1521,6 +1962,14 @@ const account = accountAgg.addRootEntity("Account", {
 });
 account.addAttribute("accountId", { type: "string", identity: true });
 account.addAttribute("email", { type: "string" });
+// `accountId` on Household and HouseholdCreated is declared here, because an
+// attribute can only name a root that already exists and this is where the
+// Account root is.
+household.addAttribute("accountId", { type: "string", identifies: account });
+householdCreatedSchema.addAttribute("accountId", {
+	type: "string",
+	identifies: account,
+});
 const accountCreatedSchema = identityBC.addSchema("AccountCreated");
 accountCreatedSchema.addAttribute("accountId", {
 	type: "string",
@@ -1556,13 +2005,13 @@ identityBC.addTerm("Account", {
 	embodiedBy: accountAgg,
 });
 
-householdAgg.consumes(accountCreated, { pattern: "conformist" });
+profilesApi.consumes(accountCreated, { pattern: "conformist" });
 householdsBC
 	.addPolicy("Create household on account", {
 		description: "Every new account gets a household and a primary profile",
 	})
 	.on(accountCreated)
-	.then(createHousehold);
+	.issues(createHousehold);
 
 /* =======================
    ADS TIER
@@ -1579,20 +2028,23 @@ const adBreak = breakAgg.addRootEntity("AdBreak", {
 const adSlot = breakAgg.addEntity("AdSlot", {
 	description: "One creative in the break",
 });
-const advertiserVO = breakAgg.addValueObject("Advertiser", {
+const advertiserVO = adsBC.addValueObject("Advertiser", {
 	description: "Who paid for the creative",
 });
 advertiserVO.addAttribute("name", { type: "string" });
-const frequencyCapVO = breakAgg.addValueObject("FrequencyCap", {
+const frequencyCapVO = adsBC.addValueObject("FrequencyCap", {
 	description:
 		"The creative's rule for how often one household may see it in a day. The break carries the rule; PrepareBreaks applies it against the household's impressions so far today, which a single break cannot hold",
 });
 frequencyCapVO.addAttribute("maxPerDay", { type: "int" });
 adBreak.addAttribute("breakId", { type: "string", identity: true });
-adBreak.addAttribute("sessionId", { type: "string" });
+adBreak.addAttribute("sessionId", { type: "string", identifies: session });
 // DISCOVERY: Ads Team lead ("we work with plan and country"), peer review.
 // The plan is what the ad-supported rule reads, so the break records it.
-adBreak.addAttribute("householdId", { type: "string" });
+adBreak.addAttribute("householdId", {
+	type: "string",
+	identifies: household,
+});
 const breakPlanTier = adBreak.addAttribute("planTier", {
 	type: "'basic-with-ads' | 'standard' | 'premium'",
 	description:
@@ -1604,6 +2056,14 @@ adSlot.addAttribute("slotId", { type: "string", identity: true });
 adSlot.addAttribute("creativeId", { type: "string" });
 adSlot.addAttribute("durationSeconds", { type: "int" });
 adBreak.includes(adSlot, "filled-by", "1..*");
+adSlot.addAttribute("advertiser", {
+	type: "Advertiser",
+	valueobject: advertiserVO,
+});
+adSlot.addAttribute("frequencyCap", {
+	type: "FrequencyCap",
+	valueobject: frequencyCapVO,
+});
 adSlot.uses(advertiserVO, "paid-by", "1");
 adSlot.uses(frequencyCapVO, "capped", "1");
 
@@ -1617,16 +2077,26 @@ breakAgg
 		description: "A creative appears at most once per break",
 	})
 	.constrains(adSlot);
-breakAgg
-	.addInvariant("AdsOnlyOnAdSupportedPlan", {
-		description:
-			"Breaks exist only for sessions whose planTier is ad-supported; the tier comes from billing's entitlement answer",
-	})
-	.constrains(breakPlanTier);
+// `AdsOnlyOnAdSupportedPlan` is declared further down, with PrepareBreaks: the
+// tier is checked before any break exists, and PrepareBreaks is the operation
+// that checks it, so the guard is named rather than described (decision 19).
 
 const resolveBreakSchema = adsBC.addSchema("ResolveAdBreak");
 resolveBreakSchema.addAttribute("sessionId", { type: "string" });
 resolveBreakSchema.addAttribute("positionSeconds", { type: "int" });
+// A returned shape: what ResolveAdBreak answers with.
+const adSlotSchema = adsBC.addSchema("AdSlot", {
+	description: "One slot in the break, with the creative to show",
+});
+adSlotSchema.addAttribute("creativeId", { type: "string", identity: true });
+adSlotSchema.addAttribute("durationSeconds", { type: "int" });
+const adBreakResultSchema = adsBC.addSchema("AdBreakSlots", {
+	description: "The slots for the break the player has reached",
+});
+adBreakResultSchema.addAttribute("slots", {
+	type: "AdSlot[]",
+	schema: adSlotSchema,
+});
 const impressionSchema = adsBC.addSchema("AdImpressionRecorded", {
 	description: "What advertiser billing consumes; out of scope here",
 });
@@ -1640,11 +2110,19 @@ const impressionRecorded = breakAgg.provides("AdImpressionRecorded", {
 	pattern: "published-language",
 	schema: impressionSchema,
 });
-const resolveAdBreak = breakAgg.provides("ResolveAdBreak", {
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const adsApi = adsBC.addService("AdsAPI", {
+	description:
+		"Ads Tier's application service: the boundary Playback resolves breaks through",
+	type: "application",
+});
+const resolveAdBreak = adsApi.provides("ResolveAdBreak", {
 	description: "The slots for a break the player has reached",
 	type: "operation",
 	pattern: "open-host-service",
 	schema: resolveBreakSchema,
+	returns: adBreakResultSchema,
 });
 const prepareBreaks = breakAgg.provides("PrepareBreaks", {
 	description:
@@ -1652,6 +2130,17 @@ const prepareBreaks = breakAgg.provides("PrepareBreaks", {
 	type: "operation",
 	internal: true,
 });
+// The precondition on that plan: a rule about one break, checked at the moment
+// the breaks are planned, so it names the operation that plans them.
+breakAgg
+	.addInvariant("AdsOnlyOnAdSupportedPlan", {
+		description:
+			"Breaks exist only for sessions whose planTier is ad-supported; the tier comes from billing's entitlement answer, which PrepareBreaks reads before it plans anything",
+		// The tier is another context's to change, so the check holds at the
+		// moment PrepareBreaks reads it and not afterwards (card 94).
+		precondition: true,
+	})
+	.constrains(breakPlanTier, prepareBreaks);
 breakAgg
 	.provides("RecordImpression", {
 		description: "The player confirmed a creative played",
@@ -1660,17 +2149,23 @@ breakAgg
 	})
 	.raises(impressionRecorded);
 
-breakAgg.consumes(playbackStarted, { pattern: "anti-corruption-layer" });
+adsApi.consumes(playbackStarted, { pattern: "anti-corruption-layer" });
 // The plan is billing's fact; Ads asks for it the same way Playback does.
-breakAgg.consumes(getEntitlement, { pattern: "anti-corruption-layer" });
+adsApi.consumes(getEntitlement, {
+	pattern: "anti-corruption-layer",
+	by: [resolveAdBreak],
+});
 adsBC
 	.addPolicy("Prepare breaks on start", {
 		description:
 			"Breaks are planned when the session starts, before the first one is reached",
 	})
 	.on(playbackStarted)
-	.then(prepareBreaks);
-sessionAgg.consumes(resolveAdBreak, { pattern: "anti-corruption-layer" });
+	.issues(prepareBreaks);
+playbackApi.consumes(resolveAdBreak, {
+	pattern: "anti-corruption-layer",
+	by: [startPlayback],
+});
 
 adsBC.addTerm("Pod", {
 	definition: "A break's worth of slots. The player says break",
@@ -1709,16 +2204,28 @@ const discRentalInvoiced = queueAgg.provides("DiscRentalInvoiced", {
 	schema: discInvoicedSchema,
 });
 
-subscriptionAgg.consumes(discRentalInvoiced, {
-	pattern: "anti-corruption-layer",
-});
-billingBC
+// DISCOVERY: Legacy Operations, "a monthly export of charges to billing".
+// Card 81 gave that a MonthlyExport service with a RunMonthlyExport operation
+// so the event had a raiser, and it was already labelled "the one job anyone
+// will describe": the rest of the monolith is unreadable, which is what
+// bigBallOfMud says. Such a context may say what it emits without saying how,
+// and `event-unraised` no longer asks it to (decision 28, second amendment;
+// card 90). The service and its operation are gone; the export still arrives
+// each month.
+
+const addDiscCharge = billingBC
 	.addPolicy("Add disc charge to bill", {
 		description:
 			"The legacy export is translated into an invoice line on the household",
 	})
 	.on(discRentalInvoiced)
-	.then(addInvoiceLine);
+	.issues(addInvoiceLine);
+// The monthly export reaches billing through this one reaction; the rest of
+// the subscription lifecycle knows nothing about discs.
+billingApi.consumes(discRentalInvoiced, {
+	pattern: "anti-corruption-layer",
+	by: [addDiscCharge],
+});
 
 /* =======================
    CONTEXT RELATIONSHIPS
@@ -1810,18 +2317,90 @@ billingBC.downstreamOf(discsBC, {
 		"The monthly export is translated; nothing else of Discs is touched",
 });
 
+// Identity-only dependencies. Each pair below is joined by nothing but an
+// identity attribute naming the other context's entity, which since decision
+// 14 is how the model records a dependency on another context's model. Nothing
+// is exchanged, so neither end plays an upstream or downstream role and both
+// lists stay empty; the relationship says which way the dependency runs and
+// that somebody looked at it (`relationship-declared`, card 70).
+licensingBC.downstreamOf(catalogueBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A licence window names the title it covers; the rights are Licensing's own model and the title stays Catalogue's",
+});
+encodingBC.downstreamOf(catalogueBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"An encode request carries the title id it is for; Encoding never reads the catalogue entry",
+});
+playbackBC.downstreamOf(householdsBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A session names the profile watching, by id; who that profile is stays with Households",
+});
+playbackBC.downstreamOf(encodingBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A manifest lists the renditions it can offer, by id; the renditions themselves are Encoding's",
+});
+adsBC.downstreamOf(householdsBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description: "An ad break names the household it was served to, by id",
+});
+
 // Shared kernel: one manifest and segment format library, changed by both.
-playbackBC.sharesKernelWith(
-	edgeBC,
-	"Manifest and segment formats are one library; the 2019 split was reverted",
-);
+playbackBC.sharesKernelWith(edgeBC, {
+	description:
+		"Manifest and segment formats are one library; the 2019 split was reverted",
+	disposition: "tolerated",
+	comments: [
+		{
+			text: "Manifest and segment parsing live in @streamline/manifest; the player and the edge both link it.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/streamline/blob/main/packages/manifest/src/Manifest.ts",
+				label: "packages/manifest/src/Manifest.ts",
+			},
+		},
+		{
+			text: "The 2019 attempt to give each side its own parser produced two subtly different players and was reverted.",
+			link: {
+				kind: "adr",
+				url: "https://github.com/example/streamline/blob/main/docs/adr/009-one-manifest-parser.md",
+				label: "ADR-009 One manifest parser",
+			},
+		},
+	],
+});
 // Partnership: SDK and player versioned, certified and released together.
-playbackBC.partnerOf(
-	devicesBC,
-	"Player and device SDK ship as one release; certification is joint",
-);
+// One release train and a joint lab run; the only traffic is Playback
+// consuming DeviceCertified, and Devices consumes nothing of Playback's. That
+// is fine: Evans's partnership is two teams whose success is mutual and whose
+// releases are planned as one, which is exactly what the player and the SDK
+// have, and it does not require traffic both ways (decision 20's second
+// amendment). This used to raise partnership-backed; card 69 relaxed the rule
+// and it is no longer a finding. See DISCOVERY.md section 7.
+playbackBC.partnerOf(devicesBC, {
+	description:
+		"Player and device SDK ship as one release; certification is joint",
+	comments: [
+		{
+			text: "One release train: the player and the device SDK are versioned together and certified in the same lab run.",
+			link: {
+				kind: "runbook",
+				url: "https://github.com/example/streamline/blob/main/docs/runbooks/joint-certification.md",
+				label: "Joint certification runbook",
+			},
+		},
+	],
+});
 // Separate ways: a public commitment, enforced by having no integration at all.
-adsBC.separateWaysFrom(
-	recsBC,
-	"Advertising is never a ranking signal and recommendations never reach ads",
-);
+adsBC.separateWaysFrom(recsBC, {
+	description:
+		"Advertising is never a ranking signal and recommendations never reach ads",
+});

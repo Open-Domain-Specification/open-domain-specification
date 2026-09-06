@@ -1,6 +1,7 @@
 import { ODSContextMap, Workspace } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { contextMapToDigraph } from "./context-map";
+import { EXTERNAL_STEREOTYPE } from "./role-labels";
 
 describe("contextMapToDigraph edge cases", () => {
 	it("should handle empty context map", async () => {
@@ -96,6 +97,30 @@ describe("contextMapToDigraph edge cases", () => {
 		expect(svg).toContain("Payments");
 	});
 
+	it("draws an identity-only dependency dashed, under the «id» stereotype", () => {
+		const workspace = new Workspace("Identity Only", {
+			odsVersion: "1.0.0",
+			description: "One identity across a boundary and nothing else",
+			version: "0.1.0",
+		});
+		const up = workspace.addBoundedContext("Catalogue", { description: "" });
+		const down = workspace.addBoundedContext("Orders", { description: "" });
+		const product = up
+			.addAggregate("Product", { description: "" })
+			.addRootEntity("Product", { description: "" });
+		down
+			.addAggregate("Order", { description: "" })
+			.addRootEntity("Order", { description: "" })
+			.addAttribute("Product Id", { type: "uuid", identifies: product });
+
+		const dot = contextMapToDigraph(
+			ODSContextMap.fromWorkspace(workspace),
+		).toDot();
+		expect(dot).toContain('label = "«id»"');
+		expect(dot).toContain('style = "dashed"');
+		expect(dot).not.toContain('label = "U/D"');
+	});
+
 	it("should handle error cases gracefully", async () => {
 		// Test with null/undefined input - this would be a development error
 		// but we want to ensure it doesn't crash the system
@@ -110,5 +135,24 @@ describe("contextMapToDigraph edge cases", () => {
 		// The digraph should handle empty maps gracefully
 		const digraph = contextMapToDigraph(contextMap);
 		expect(() => digraph.toSVG()).not.toThrow();
+	});
+
+	it("draws a context nobody owns under the external-system stereotype", async () => {
+		const workspace = new Workspace("Outside", {
+			odsVersion: "1.0.0",
+			description: "One of ours and one of theirs",
+			version: "0.1.0",
+		});
+		workspace.addBoundedContext("Payments", { description: "Ours" });
+		workspace.addBoundedContext("Card Scheme", {
+			description: "Theirs",
+			external: true,
+		});
+
+		const digraph = contextMapToDigraph(ODSContextMap.fromWorkspace(workspace));
+		const dot = digraph.toDot();
+		expect(dot).toContain(`${EXTERNAL_STEREOTYPE}\\nCard Scheme`);
+		expect(dot).not.toContain(`${EXTERNAL_STEREOTYPE}\\nPayments`);
+		expect(await digraph.toSVG()).toContain("external system");
 	});
 });

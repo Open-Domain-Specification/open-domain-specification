@@ -1,4 +1,5 @@
 <script lang="ts">
+import { EXTERNAL_STEREOTYPE } from "@open-domain-specification/graphviz";
 import type { NodeProps } from "@xyflow/svelte";
 import { type ContextNodeData, clusterHue } from "./context-graph";
 import NodeHandles from "./NodeHandles.svelte";
@@ -9,8 +10,10 @@ import { sketchClass } from "./node-class";
  * A bounded context on the context map: name, team in brackets and the
  * domain/subdomain cluster path, with a colour band per cluster standing in
  * for the Graphviz namespace cluster. A big ball of mud is an octagon with a
- * dashed, muddy border. `floating` hides the fixed handles; `sketch` draws
- * the card as an ellipse.
+ * dashed, muddy border; a system the enterprise does not own is a square grey
+ * card under the «external system» stereotype, and carries no cluster band
+ * because it is in nobody's domain. `floating` hides the fixed handles;
+ * `sketch` draws the card as an ellipse.
  */
 let {
 	data,
@@ -22,8 +25,9 @@ const band = $derived(
 );
 </script>
 
-<div class={`flow-card context-node ${data.bigBallOfMud ? "mud" : ""} ${sketchClass(data)}`} style={band} title={data.description ?? data.id} data-cluster={data.cluster}>
+<div class={`flow-card context-node ${data.bigBallOfMud ? "mud" : ""} ${data.external ? "external" : ""} ${sketchClass(data)}`} style={band} title={data.description ?? data.id} data-cluster={data.cluster}>
 	<NodeHandles floating={data.floating} />
+	{#if data.external}<div class="stereotype">{EXTERNAL_STEREOTYPE}</div>{/if}
 	<NodeHead icon={data.icon} name={data.label} subtitle={data.groupPath} />
 	{#if data.bigBallOfMud}<div class="mud-label">(big ball of mud)</div>{/if}
 	{#if data.team}<div class="team">{`[${data.team}]`}</div>{/if}
@@ -48,5 +52,10 @@ const band = $derived(
 		padding: 10px 28px;
 	}
 	.context-node.mud.sketch { clip-path: none; border-radius: 50%; }
-	.team, .mud-label { color: var(--muted); font-size: 11px; white-space: nowrap; }
+	.context-node.external {
+		border-radius: 2px;
+		border-top-color: var(--border);
+		background: color-mix(in srgb, var(--muted) 12%, var(--card));
+	}
+	.team, .mud-label, .stereotype { color: var(--muted); font-size: 11px; white-space: nowrap; }
 </style>

@@ -51,19 +51,72 @@ colours follow the page theme; every edge is animated so the direction reads. A
 collapsible **legend** at the top left indexes only the abbreviations, line styles and node
 marks the current diagram shows. Every choice is remembered per browser.
 
+## Reading a relationship
+
+A bounded context page lists its **Strategic position**: who it depends on, who depends on it,
+and who it merely works alongside, grouped under those three headings. The Description column
+prints what the author wrote on the relationship. Where nobody wrote anything, it prints a
+generated sentence instead — for example *"Sales BC depends on Catalog BC as a customer,
+consuming its Open Host Service, and it protects its model with an Anti-Corruption Layer."*
+The sentence is `relationshipNarrative` in core, read from the context whose page you are on,
+so the same relationship reads one way from each end. It is also the hover text of the
+counterpart on every row, described or not, and the doc generator prints it in italics in the
+same column.
+
+A row whose relationship has anything recorded against it — a disposition other than the
+default, or a comment — carries a chevron. Expanding it opens the same block the
+relationship's own page renders, in place, without navigating away: the roles, the comments
+with their links, and the consumables that cross the boundary. The type and the role codes
+beside it (`OHS`, `PL`, `CF`, `ACL`) are keywords, set in the editor font because they are
+codes from a table, and each opens a hover card: the pattern's full name, its one-line
+meaning and its architectural nature, then — under a rule, and only when there is anything
+to show — that relationship's disposition and its comments with their links. It opens after
+a short pause on hover and at once on keyboard focus, a click pins it, and Escape, a click
+anywhere else or scrolling the page closes it; only one is ever open. It places itself as the
+editor's hover does: under the word, shifted left to stay inside the window when the word is
+near the right edge, above the word when there is no room below.
+
+The table itself has three widths. At full width every column sits at its content and the
+description takes the rest. Beside the site tree, or in an editor tab narrower than about
+1150px, the codes in a cell stack one per line and a context's `big ball of mud` drops under
+its name, so the description keeps a readable measure. Narrower still, the table scrolls
+sideways inside its own frame rather than letting the page scroll.
+
+A relationship's own page renders that same block at page level, so what a row discloses in
+place and what the page shows are one component. Every pattern keyword there opens the same
+hover card as it does in the table.
+
 ## Component library
 
-The library follows atomic design under `src/lib`: atoms (icon, chip, ref link, markdown),
-molecules (cards, tables, fact rows), organisms (section, page header, diagram figure, sidebar, table of contents) and one template per element page. Run Storybook to
-browse it against the petstore example:
+The library follows atomic design under `src/lib`, built to the design language in
+`docs/design/design-language-v2.md`: rows, tables and keywords in the workbench's own idiom
+rather than cards, chips and pills.
+
+- **atoms** — heading, keyword, lockup, ref, definition list, data table, disposition, empty
+  state, comments, hover card, markdown, icon, logo.
+- **molecules** — crumbs, problems, the provides, consumes, attribute and subdomain tables,
+  the context and team lockups, the structure and consumable subsections, the pattern hover.
+- **organisms** — section, page header, table of contents, sidebar, attributes, invariants and
+  language sections, health report, strategic position table, relationship detail, diagram
+  figure and the interactive diagram.
+- **templates** — `PageLayout`, the two columns and the table of contents every page is drawn
+  in, and one template per element page.
+
+Every page renders through `Page.svelte`, which picks the template for a ref and puts it in
+`PageLayout`. Each component carries its own styles, so a page draws correctly wherever it is
+mounted.
+
+Run Storybook to browse it against the petstore example:
 
 ```bash
 cd packages/pages
 npm run storybook
 ```
 
-`page.css` styles everything and reads the VS Code theme variables; `site.css` defines those
-variables for light and dark outside the editor.
+`page.css` supplies the theme tokens, the document defaults and the few things no single
+component owns — the toolbar, the anchor flash, the import screen — and reads the VS Code
+theme variables; `site.css` defines those variables for light and dark outside the editor and
+styles the column the site's tree sits in.
 
 ## Tests
 

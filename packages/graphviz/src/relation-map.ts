@@ -24,11 +24,25 @@ import {
 
 const debug = getDebug("relation-map");
 
+/** Every line the map can draw: the three relations, and the identity. */
+type EdgeKind = ODSRelationMapEdge["relation"];
+
 /**
  * UML arrow for each relation: `references` is a navigable association,
  * `includes` a composition with the diamond on the whole, `uses` a dependency.
+ * An identity is a dependency too, and draws as one: dashed, with an
+ * «identifies» stereotype that says which kind it is. The holder knows the
+ * other entity's id and nothing else about it, which is exactly why this is
+ * the one line allowed to leave a bounded context (decision 14). When that
+ * entity is a child, the line lands on the child inside its aggregate's
+ * cluster, where the root it is reached through is drawn beside it.
+ *
+ * A specialisation is UML's generalisation: a solid line with a hollow
+ * triangle at the thing the kind is a kind of (`onormal`, Graphviz's unfilled
+ * triangle), and no label or multiplicity, because the line says the whole of
+ * it (decision 22).
  */
-const UML_ARROWS: Record<RelationType, EdgeAttributesObject> = {
+const UML_ARROWS: Record<EdgeKind, EdgeAttributesObject> = {
 	[RelationType.References]: {
 		arrowhead: "vee",
 		arrowtail: "none",
@@ -45,14 +59,30 @@ const UML_ARROWS: Record<RelationType, EdgeAttributesObject> = {
 		arrowtail: "none",
 		style: "dashed",
 	},
+	identifies: {
+		arrowhead: "vee",
+		arrowtail: "none",
+		style: "dashed",
+	},
+	specialises: {
+		arrowhead: "onormal",
+		arrowtail: "none",
+		style: "solid",
+	},
 };
 
 /** PlantUML connector for each relation, mirroring {@link UML_ARROWS}. */
-const PLANTUML_ARROWS: Record<RelationType, string> = {
+const PLANTUML_ARROWS: Record<EdgeKind, string> = {
 	[RelationType.References]: "-->",
 	[RelationType.Includes]: "*--",
 	[RelationType.Uses]: "..>",
+	identifies: "..>",
+	specialises: "--|>",
 };
+
+/** The identity edge says what it is, since its line alone cannot. */
+const edgeLabel = (edge: ODSRelationMapEdge) =>
+	edge.relation === "identifies" ? `«identifies» ${edge.label}` : edge.label;
 
 /** The aggregate is the innermost namespace; the rest is its context path. */
 function aggregateOf(node: ODSRelationMapNode) {
@@ -65,7 +95,7 @@ function clusterLabel(node: ODSRelationMapNode): string {
 }
 
 function attributeRow(attribute: ODSRelationMapNode["attributes"][number]) {
-	const text = `${attribute.identity ? "{id} " : ""}${attribute.name}: ${attribute.type}`;
+	const text = `${attribute.identity ? "{id} " : ""}${attribute.optional ? "{opt} " : ""}${attribute.name}: ${attribute.type}`;
 	const title = attribute.description
 		? ` TITLE="${escapeHtml(attribute.description)}"`
 		: "";
@@ -84,7 +114,7 @@ function classLabel(node: ODSRelationMapNode): string {
 function edgeAttributes(edge: ODSRelationMapEdge): EdgeAttributesObject {
 	return {
 		...UML_ARROWS[edge.relation],
-		label: edge.label,
+		label: edgeLabel(edge),
 		headlabel: edge.cardinality ?? "",
 		labeldistance: 1.5,
 		fontsize: 10,
@@ -99,7 +129,8 @@ function plantUmlAlias(node: ODSRelationMapNode): string {
 function plantUmlClass(node: ODSRelationMapNode): string {
 	const body = node.attributes
 		.map(
-			(it) => `    ${it.identity ? "{field} {id} " : ""}${it.name}: ${it.type}`,
+			(it) =>
+				`    ${it.identity ? "{field} {id} " : ""}${it.optional ? "{opt} " : ""}${it.name}: ${it.type}`,
 		)
 		.join("\n");
 	return `  class "${node.name}" as ${plantUmlAlias(node)} <<${STEREOTYPES[node.type]}>> {\n${body}${body ? "\n" : ""}  }`;
@@ -107,7 +138,8 @@ function plantUmlClass(node: ODSRelationMapNode): string {
 
 function plantUmlEdge(edge: ODSRelationMapEdge): string {
 	const cardinality = edge.cardinality ? ` "${edge.cardinality}"` : "";
-	const label = edge.label ? ` : ${edge.label}` : "";
+	const text = edgeLabel(edge);
+	const label = text ? ` : ${text}` : "";
 	return `${plantUmlAlias(edge.source)} ${PLANTUML_ARROWS[edge.relation]}${cardinality} ${plantUmlAlias(edge.target)}${label}`;
 }
 

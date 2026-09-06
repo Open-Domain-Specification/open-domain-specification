@@ -31,7 +31,7 @@ job is to get the model out of their head without making them learn the vocabula
 - Explain once: a subdomain is one slice of the problem; calling it core only marks where your
   competitive effort goes.
 
-## Phase C: ownership (produces Teams, Bounded Contexts, `subdomains`, `bigBallOfMud`)
+## Phase C: ownership (produces Teams, Bounded Contexts, `subdomains`, `bigBallOfMud`, `external`)
 
 - "Which teams or people work on this, and which parts does each look after?" → teams, and a
   candidate context per part.
@@ -44,6 +44,12 @@ job is to get the model out of their head without making them learn the vocabula
 - "Is any of these an old system that nobody fully understands, where the data model is a
   mess?" → `bigBallOfMud: true`. Explain: we flag it so anything talking to it knows to
   translate rather than trust.
+- "Which systems outside the business does this talk to?" → one bounded context per system,
+  with `external: true`: a card scheme, a payment provider, a licensor, a regulator, a
+  clock. Explain: we draw it because you depend on it, and we write down only what it sends
+  you and what you send it; nobody here can say what happens inside it, so it gets no
+  aggregates, no team and no subdomain. Follow up with "what does it send you, and what do
+  you send it?" → its events and operations, and the consumption on your side.
 
 ## Phase D: the integration map (produces Relationships and seeds consumptions)
 
@@ -52,7 +58,11 @@ job is to get the model out of their head without making them learn the vocabula
 - "When the upstream team changes something, does the downstream team get a say beforehand?"
   Yes → `customer-supplier`.
 - "Do those two teams plan and release together, as one?" → `partnership`.
-- "Do they share actual code or tables that both change?" → `shared-kernel`.
+- "Do they share actual code or tables that both change?" → `shared-kernel`, declared
+  directly between the two. If more than two contexts share the same library, model the
+  library as a bounded context of its own and give each sharer its own `shared-kernel`
+  relationship with that context — six sharers is six relationships to one kernel, not
+  fifteen among themselves.
 - "Are there two parts that you have decided, on purpose, should never integrate?" →
   `separate-ways`.
 - "How does the downstream side take the data: as it comes, or does it copy and reshape it
@@ -61,6 +71,7 @@ job is to get the model out of their head without making them learn the vocabula
 - "Does the upstream side publish a documented API, or a documented message format?" →
   `open-host-service` / `published-language`. Goes on `upstreamRoles` and on each exposed
   consumable's `pattern`.
+- Then the two evidence questions (see below), once for the relationship you just recorded.
 
 ## Phase E: inside one context (produces Aggregates, Entities, Value Objects, Invariants, Glossary)
 
@@ -71,38 +82,184 @@ Repeat for each context the user wants detailed. Ask which one to start with.
 - Per noun: "If two of these had identical details, would they still be two different things?"
   Yes → entity; no → value object. Explain once: an entity matters because of which one it is
   (this order, not that one); a value object matters only by its values (an address).
+- "Which values does this context define once — money, an address, a status — and which of
+  them do several of these things carry?" → value objects, declared on the context
+  (`context.addValueObject`), not on one aggregate: any aggregate here may hold one. If a
+  value is genuinely the same in a neighbouring context, that is a `shared-kernel`
+  relationship, and it is the only way one context may name another's value object. If the
+  same value is genuinely the same in several contexts, it is not declared in any of them:
+  it belongs to a kernel context of its own, and each sharer borrows it over its own
+  `shared-kernel` relationship with that context.
 - "What identifies it: an order number, an email?" → an attribute with `identity: true`.
 - "What details does it carry?" → attributes, with `type` in the user's words.
+- "Are there kinds of this that differ in what they hold?" → ask when an attribute applies
+  only sometimes, when a type field lists the sorts of something, or when the user says "a
+  title is a film or a series". Each kind is its own entity or value object with
+  `specialises` pointing at the one they are all kinds of; it has that one's attributes and
+  relations already and declares only what it adds. The parent keeps what every kind has, and
+  its description says so when no instance is ever just the parent — there is no abstract
+  flag. An entity is a kind of an entity of its own aggregate and is never itself `root`; a
+  value object is a kind of one its own context declares, or one it borrows over a
+  `shared-kernel`. If the kinds differ only in a label, not in what they hold, it is one
+  element with a value object of closed values, not a hierarchy.
+- "Which of these are always present?" → ask once per entity, value object and schema, after
+  the attributes are listed. Everything the user does not name is `optional: true`; the ones
+  they do name are left unmarked, because required is the common case and stays unwritten. An
+  identity attribute is never optional — if the user says the id is sometimes missing, the
+  thing they named is not what identifies it, so ask what always tells one apart.
 - "Which of these do you always change or check together? What must be true across all of
   them at once?" → the aggregate boundary. The thing they state the rule about is the root.
   Explain once: an aggregate is the cluster you change together and check rules across; the
   root is the one you name it after.
 - "What must never be allowed to happen to a <root>?" → invariants, each constraining the
-  entity, value object or attribute it is about.
+  entity, value object or attribute it is about. If the answer is about a change rather than
+  a value — "once it's sold it can't go back to available" — follow up with "which operation
+  makes that change?" and name that operation in `constrains` too: the rule is enforced where
+  the transition is made, and the operation then shows the rule it has to uphold. Only an
+  operation of the same aggregate; if the user names the API endpoint, the aggregate's own
+  operation behind it is the one to name.
+- Per rule that names an operation: "is it still true after that runs, or only checked as it
+  runs?" → only checked as it runs is a precondition: `precondition: true`, and it must name
+  the operation it guards. Enough funds at initiation, an entitlement at playback start, the
+  pet still available at approval — each was read somewhere else and may have moved on by the
+  next save. Still true after is the ordinary case and takes no flag: a posting operation has
+  to balance its postings, and they stay balanced.
+- Per precondition: "what does the check read — something you have stored, or what was sent
+  in?" → where it reads the request, name the attributes of that operation's `schema`,
+  `returns` or a rejection in `constrains` alongside the operation. Pickup before delivery
+  and a positive weight on a quotation are the case: nothing is stored yet, and the fields
+  are the request's. Only a precondition may name a schema's attributes; a rule that is still
+  true after the call is about the model, so it names the model.
+- Per rule: "is this true of the value itself, whatever holds it?" → a rule that is about a
+  value alone — a checksum, a currency, a range — is that value object's:
+  `valueObject.addInvariant(...)`, constraining its own attributes and nothing else. Nothing
+  guards it, because a value that breaks it is never constructed.
+- Per rule: "is this true of one of these, or of all of them together?" → one of them is the
+  aggregate's invariant, checked every time that one is saved. All of them together — at most
+  one open application per customer, one active offer per seller and SKU, a daily total — is
+  the context's invariant: `boundedContext.addInvariant(...)`, constraining what it counts in
+  any of the context's aggregates. Then ask "who checks that before acting?" and name that
+  operation in `constrains` too; nothing keeps a rule across instances as a side effect of
+  being saved, so a context invariant without a guard is a rule nobody keeps.
 - "Does a <root> point at things in another cluster, for example an order pointing at a
-  product?" → `references` to that cluster's root; ask "one or many?" for cardinality.
+  product?" → first ask "is that other cluster inside this same part of the business, or
+  somewhere else?" Inside the same context → `references` to that cluster's root; ask "one
+  or many?" for cardinality. In another context → no relation at all: ask "which id does it
+  hold?" and add that as an attribute with `identifies` pointing at the entity that id names,
+  then pick the dependency up in Phase F as a consumable the source consumes. Explain once: a relation
+  is one model's object graph, and two contexts are two models, so only the id crosses — and
+  `identifies` is how the id still says which thing it is of.
 - "Does it contain things that cannot exist without it?" → `includes`.
 - "Does it use a value like an address, money or a status?" → `uses`.
 
-## Phase F: behaviour (produces Consumables, `raises`, Policies, Schemas)
+## Phase F: behaviour (produces Consumables, `raises`, Policies, Processes, Schemas)
 
 - "What can someone ask this part to do?" → `operation` consumables. Put an API entry point on
-  an application service, and a state change of one aggregate on that aggregate.
+  an application service, and a state change of one aggregate on that aggregate. What an
+  aggregate or a domain service offers stays inside the context: only an application service's
+  operations carry an upstream `pattern` or are consumed from outside.
 - "When that happens, what fact would you announce to the rest of the business?" → `event`
   consumable, linked from the operation with `raises`. Events are past tense.
 - "Is that something only this part uses, or would other parts care?" → `internal: true`, or
   an upstream `pattern`.
 - "What information travels with that announcement or request?" → a schema on the context,
   attached with `schema`.
+- When a field of that payload is described as a thing with parts of its own — "each line has
+  a sku and a quantity", "the address inside it" — ask "is that a shape of its own?" If yes,
+  declare a second schema on the same context and point the attribute at it with `schema`,
+  keeping any collection in the type string (`OrderLine[]`); if no, leave it a plain typed
+  attribute. An attribute carries `valueobject` or `schema`, never both: a value object is a
+  concept of this context's own model, a schema a payload it publishes. Only a schema's own
+  attribute may name a schema — if the thing with parts is an entity's or a value object's
+  field, it is a value object, so declare one and use `valueobject`.
+- When an attribute is an id of something the part does not own — "the order this
+  invoice bills", "the pet the order is for" — ask "which thing does that id identify?" and
+  point `identifies` at that entity. It may be in another bounded context: an identity is
+  the only thing allowed to cross one (a relation never does), and `identifies` is what keeps
+  that dependency structural instead of leaving it in the description. If the honest answer
+  names something inside another aggregate rather than its root — the profile inside a
+  household, the coverage inside a policy — that child is the right target: take the answer as
+  given, because the holder reaches the child through its root and the dependency is on the
+  aggregate that root leads. If the id belongs to a system nobody here models inside — the card
+  scheme's authorisation reference, the payment provider's customer id, the regulator's case
+  number — there is no entity to name, so point `identifies` at that system's bounded context,
+  which is declared `external: true`. Apply it everywhere rather than case by case: any
+  attribute whose name or description says it is another entity's or another system's id sets
+  `identifies`. The one exception is a same-context id already drawn as a `references` relation
+  to that entity, where `identifies` would say the same thing twice. Schema attributes follow
+  the same rule, because a payload that carries an id says whose it is.
+- For an operation, follow up: "and what comes back?" → a second schema on the same context,
+  attached with `returns`. A command that answers with nothing leaves `returns` off; a query
+  that answers with nothing is not a query, so keep asking. Never put `returns` on an event.
+- Then: "one of those, or a list of them?" → `returns: {schema, many: true}` for a list, which
+  is what a search or a "find all" answers with. Do not wrap the list in a schema of its own:
+  a root array and an object holding an array are different shapes, and only the mark tells
+  them apart. A wrapper is right only when the answer really is an object — matches beside a
+  total, a page beside a cursor — where the wrapper's own attributes carry something.
+- Then, still on the operation: "and when it says no, what does it say?" → a schema per
+  refusal on the same context, listed in `rejects`. A rejection is a refusal, so nothing
+  happened: a declined payment, an over-limit transfer, a reservation the stock would not
+  cover. If the answer is a status code and nothing else, leave `rejects` off rather than
+  inventing a shape, and never put one on an event.
 - "When <event> happens, what do you then do automatically?" → a policy with `on` the event
-  and `then` the operation. Either side may live in another context.
+  and `then` the operation. If what it waits for is a reply rather than a fact — "when the
+  authorisation comes back declined" — that is an answer, and `on` names it as the call it
+  comes back from: `operation.returned()` or `operation.rejected(schema)`, never the schema
+  alone, since two operations may refuse with one shape. The event in `on` may belong to another context, because reacting
+  to a published fact is a consumption; the operation in `then` is always the policy's own
+  context's. To act on a neighbour, name a local operation that consumes theirs.
+- Then, once: "Does anything here wait for more than one event before it acts, and what tells
+  it that it is done?" → a process. Take the answer in the order it runs: what starts an
+  instance (`starts`), what it waits for while it is alive (`on`), what it issues (`then`,
+  always its own context's operations), and what finishes it (`ends`). Two signs an author is
+  describing one: a policy that would have to remember something between two events ("we hold
+  the order until the payment clears"), and a chain of policies the author names as one thing
+  ("checkout", "onboarding", "order to delivery") — that chain is one process, not three
+  policies. What it correlates on, how long it waits and what it undoes go in the
+  description, in the author's own words; the model has no fields for them, and inventing a
+  timeout the author did not state is worse than saying nothing. A reaction that fires on any
+  one event and remembers nothing stays a policy.
 - "Who outside this part listens for <event>?" → a consumption on their aggregate or service,
   with a downstream `pattern`.
+- For each consumption: "which operations of this service actually make that call?" → `by`,
+  naming the consumer's own operations, or the policy or process of its context that reacts. Only ask
+  it back if the answer is one or two of several; "all of it" is the common case and leaves
+  `by` off. Never guess a call graph from names — if the author does not know, it stays absent.
 - Close: "Which of the words we used should I define, and does each map to one of the things
   we modelled?" → glossary terms with `embodiedBy`.
+- Ask the two evidence questions (see below) for each consumable or consumption that came out
+  of this phase with a `pattern` on it.
 
 ## Phase G: validate and reflect
 
 Run validation. Explain each diagnostic in one plain sentence, propose the fix, and ask before
 applying fixes for warnings. Then summarise what changed, in the user's words, and ask what to
 model next.
+
+## The two evidence questions
+
+Every strategic intent — a relationship, a consumable that leaves its context, a consumption —
+gets exactly these two, and only when it is new:
+
+- "Is that how you want it, or is it something you are living with?" → `disposition`. "How we
+  want it" is `by-design`, which is the default and is never written down. "Living with it, and
+  nobody is going to change it" is `tolerated`. "It should not stay like that" is `refactor`;
+  follow up with "what should it become?" and put the answer in the comment.
+- "Where does that live — a file, a repo, an API doc, a decision record?" → the first `comment`,
+  with its `link`. Take a path or a URL, whichever they give; `kind` is `code`, `contract`,
+  `adr`, `runbook` or `dashboard`. If they have nothing to point at, still record what they
+  said as a comment with no link.
+
+Rules for asking them:
+
+- Once per intent, never per role. A relationship with an `open-host-service` upstream role and
+  an `anti-corruption-layer` downstream role is still one relationship and gets one pair of
+  questions, not two.
+- Never for an internal consumable. It does not cross a boundary, so there is no strategic
+  claim to back up.
+- Never for an intent that already carries comments. Read first, ask second, as everywhere else.
+- Do not ask them before the intent itself is settled; they are the follow-up to "so I'd note a
+  ... right?", not a replacement for it.
+
+If the codebase is at hand, offer to answer the second question yourself instead of asking:
+that is reconciliation, and it is in `reconciliation.md`.

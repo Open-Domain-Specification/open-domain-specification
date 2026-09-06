@@ -122,15 +122,27 @@ Every cross-link is an object \`{ "$ref": "<path>" }\`. Paths are JSON pointers 
 | Bounded context | \`#/boundedcontexts/<bc>\` |
 | Aggregate | \`#/boundedcontexts/<bc>/aggregates/<aggregate>\` |
 | Entity | \`#/boundedcontexts/<bc>/aggregates/<aggregate>/entities/<entity>\` |
-| Value object | \`#/boundedcontexts/<bc>/aggregates/<aggregate>/valueobjects/<vo>\` |
-| Invariant | \`#/boundedcontexts/<bc>/aggregates/<aggregate>/invariants/<invariant>\` |
+| Value object | \`#/boundedcontexts/<bc>/valueobjects/<vo>\` |
+| Invariant of an aggregate | \`#/boundedcontexts/<bc>/aggregates/<aggregate>/invariants/<invariant>\` |
+| Invariant of a context | \`#/boundedcontexts/<bc>/invariants/<invariant>\` |
 | Attribute | \`<owner path>/attributes/<attribute>\` (owner is an entity, value object or schema) |
 | Consumable of an aggregate | \`#/boundedcontexts/<bc>/aggregates/<aggregate>/provides/<consumable>\` |
 | Service | \`#/boundedcontexts/<bc>/services/<service>\` |
 | Consumable of a service | \`#/boundedcontexts/<bc>/services/<service>/provides/<consumable>\` |
 | Policy | \`#/boundedcontexts/<bc>/policies/<policy>\` |
+| Process | \`#/boundedcontexts/<bc>/processes/<process>\` |
 | Glossary term | \`#/boundedcontexts/<bc>/glossary/<term>\` |
 | Schema | \`#/boundedcontexts/<bc>/schemas/<schema>\` |
+| Answer an operation returns | \`<operation path>/returns\` |
+| Answer an operation rejects with | \`<operation path>/rejects/<schema>\` |
+| Consumption | \`<consumer path>/consumes/<consumable path, with ~ for />\`, plus \`/<id of the first caller in by>\` where the consumer takes that consumable more than once |
+| Relationship | \`#/relationships/<source>~<type>~<target>\` |
+
+A consumption has no id of its own, so its path is derived from the pair it joins: \`#/boundedcontexts/sales/services/order_app/consumes/boundedcontexts~catalog~services~pet_app~provides~get_pet\` is Order App's consumption of Pet App's Get Pet. It is never the position in \`consumes[]\`, so reordering the array changes no ref, and it is computed rather than stored, so nothing writes it in a file: it is what a diagnostic about a consumption points at. One consumer may take one consumable more than once when the exchanges differ — an archive keeping the response as it stands, a decision translating it through an anti-corruption layer — and the pair alone then no longer identifies a consumption: each of them names the callers that make it, no two of them name the same caller (\`consumption-once\`), and the id of the first caller in \`by\` is appended as a further segment. A pair declared once keeps the plain ref.
+
+A relationship has no id of its own either: its path is the two contexts it joins and the type that joins them, so \`#/relationships/catalog_bc~customer-supplier~sales_bc\` is the customer-supplier relationship from Catalog to Sales. It too is computed rather than stored, and it is what a diagnostic about a relationship points at.
+
+An answer has no id of its own either: it is one operation coming back, so its path is that operation's plus what it came back as. \`#/boundedcontexts/payments/services/payments_api/provides/authorise_payment/rejects/payment_declined\` is what AuthorisePayment refuses with, and the same path ending \`/returns\` is what it answers with when it succeeds. A reaction waiting on an answer names it this way and never by the schema alone: schemas are shared, so two operations may refuse with one shape, and the shape alone cannot say which call came back. The schema id in a \`/rejects/\` path is one the operation declares in \`rejects\`; anything else resolves to nothing.
 
 A bounded context path never embeds the domain or subdomain, so moving a context between subdomains breaks no refs. A ref that points at nothing makes the whole file fail to load.
 `;
@@ -194,12 +206,78 @@ export function renderValidationRules(): string {
 	return parts.join("\n");
 }
 
+// ---------------------------------------------------------------------------
+// strategic-relationships.md
+// ---------------------------------------------------------------------------
+
+const CATEGORY_HEADINGS: Array<[string, string, string]> = [
+	[
+		"relationship",
+		"Relationship types",
+		"The `type` of a context relationship. Exactly one per relationship.",
+	],
+	[
+		"upstream-role",
+		"Upstream roles",
+		"How the upstream side exposes what it provides: a relationship's `upstreamRoles`, and a consumable's `pattern`.",
+	],
+	[
+		"downstream-role",
+		"Downstream roles",
+		"How the downstream side protects itself: a relationship's `downstreamRoles`, and a consumption's `pattern`.",
+	],
+];
+
+export function renderStrategicRelationships(): string {
+	const { PATTERNS } = require("@open-domain-specification/core") as {
+		PATTERNS: Record<
+			string,
+			{
+				name: string;
+				abbreviation: string;
+				category: string;
+				summary: string;
+				architecturalNature: string;
+				tradeOffs: string[];
+			}
+		>;
+	};
+	const parts: string[] = [
+		GENERATED_HEADER("PATTERNS"),
+		"# Strategic relationships",
+		"",
+		"What each strategic pattern means. Explain one to the user in these words: the diagram legend, the hover summaries and the generated documentation all read the same table, so your explanation and what they are looking at agree. The value in the left column is what goes in the model.",
+		"",
+	];
+	for (const [category, heading, blurb] of CATEGORY_HEADINGS) {
+		parts.push(`## ${heading}`, "", blurb, "");
+		for (const [key, pattern] of Object.entries(PATTERNS)) {
+			if (pattern.category !== category) continue;
+			parts.push(
+				`### \`${key}\` — ${pattern.name} (${pattern.abbreviation})`,
+				"",
+				pattern.summary,
+				"",
+				pattern.architecturalNature,
+				"",
+				...pattern.tradeOffs.map((t) => `- ${t}`),
+				"",
+			);
+		}
+	}
+	return parts.join("\n");
+}
+
 export function generateReferences(): Array<{ path: string; content: string }> {
 	return [
 		{ path: "references/model-reference.md", content: renderModelReference() },
 		{
 			path: "references/validation-rules.md",
 			content: renderValidationRules(),
+		},
+		{
+			path: "references/strategic-relationships.md",
+			content: renderStrategicRelationships(),
 		},
 	];
 }

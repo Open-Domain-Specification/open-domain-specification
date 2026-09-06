@@ -1,6 +1,6 @@
 {
 	"name": "ods-ui",
-	"version": "0.2.0",
+	"version": "0.4.0",
 	"description": "The ODS viewer published at open-ds.io: the pages viewer bundle as a deployable site, with the reference models as examples",
 	"private": true,
 	"type": "module",
@@ -10,12 +10,12 @@
 		"depcheck": "npx depcheck"
 	},
 	"dependencies": {
-		"@open-domain-specification/pages": "^0.2.0"
+		"@open-domain-specification/pages": "^0.4.0"
 	},
 	"devDependencies": {
-		"@open-domain-specification/model-northbank": "^0.2.0",
-		"@open-domain-specification/model-petstore": "^0.2.0",
-		"@open-domain-specification/model-rivermart": "^0.2.0",
-		"@open-domain-specification/model-streamline": "^0.2.0"
+		"@open-domain-specification/model-northbank": "^0.4.0",
+		"@open-domain-specification/model-petstore": "^0.4.0",
+		"@open-domain-specification/model-rivermart": "^0.4.0",
+		"@open-domain-specification/model-streamline": "^0.4.0"
 	}
 }

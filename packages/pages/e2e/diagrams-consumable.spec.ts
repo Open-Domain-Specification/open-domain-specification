@@ -18,19 +18,21 @@ test("draws «component» boxes with a lollipop per provided consumable and a so
 	await expect(
 		flow.locator(".diagram-options").getByLabel("Edge style"),
 	).toBeVisible();
+	// Catalog offers its operations through PetApp, so the open host Sales
+	// calls is the application service's, not the Pet aggregate's.
 	const pet = flow.locator(
-		'.svelte-flow__node[data-id="#/boundedcontexts/catalog_bc/aggregates/pet"]',
+		'.svelte-flow__node[data-id="#/boundedcontexts/catalog_bc/services/pet_app"]',
 	);
 	await expect(pet.locator(".consumable-node")).toHaveClass(/component/);
 	await expect(pet.locator(".stereotype")).toHaveText("«component»");
 	await expect(pet.locator("svg.component-icon")).toBeVisible();
-	await expect(pet.locator("strong")).toHaveText("Pet");
+	await expect(pet.locator("strong")).toHaveText("PetApp");
 	await expect(pet.locator(".group")).toContainText("Catalog");
 	const slot = pet.locator(
-		'.slot.provided[data-slot$="/provides/reserve_pet"]',
+		'.slot.provided[data-slot$="/provides/reserve_pet_for_order"]',
 	);
 	await expect(slot).toBeVisible();
-	await expect(slot.locator(".name")).toHaveText("ReservePet");
+	await expect(slot.locator(".name")).toHaveText("ReservePetForOrder");
 	// The lollipop is the slot's target handle, a port showing the pattern it is offered under.
 	const port = slot.locator(".svelte-flow__handle.target");
 	await expect(port).toHaveClass(/lollipop/);
@@ -39,7 +41,7 @@ test("draws «component» boxes with a lollipop per provided consumable and a so
 	await expect(port).toHaveAttribute("title", "open-host-service");
 	await expect(port).toHaveAttribute(
 		"data-handleid",
-		"#/boundedcontexts/catalog_bc/aggregates/pet/provides/reserve_pet",
+		"#/boundedcontexts/catalog_bc/services/pet_app/provides/reserve_pet_for_order",
 	);
 	await expect(port).toHaveCSS("height", "22px");
 	await expect(port).toHaveCSS("border-radius", "11px");

@@ -156,6 +156,84 @@ describe("ODS extension in a real VS Code window", function () {
 			);
 		});
 
+		it("opens a relationship's page from its row in the tree", async () => {
+			const file = petstoreFile(api);
+			const root = api.tree.getChildren()[0];
+			const relationships = api.tree
+				.getChildren(root)
+				.find((n) => n.label === "Relationships");
+			assert.ok(relationships, "the tree has no Relationships group");
+			const [first] = api.tree.getChildren(relationships);
+			assert.ok(first?.ref, "a relationship row carries no ref to open");
+			assert.match(first.ref, /^#\/relationships\//);
+
+			// Exactly what clicking the row does: the command its tree item carries.
+			const item = api.tree.getTreeItem(first);
+			assert.equal(item.command?.command, "ods.openPage");
+			await vscode.commands.executeCommand("ods.openPage", first);
+
+			const navigated = await log.waitFor(
+				(m) => m.type === "navigated" && m.ref === first.ref,
+				`{ type: "navigated", ref: "${first.ref}" }`,
+			);
+			assert.equal(navigated.type, "navigated");
+			assert.equal(first.file.relativePath, file.relativePath);
+		});
+
+		it("labels a symmetric relationship row the same way pages does, not with a direction", async () => {
+			const root = api.tree.getChildren()[0];
+			const relationships = api.tree
+				.getChildren(root)
+				.find((n) => n.label === "Relationships");
+			assert.ok(relationships, "the tree has no Relationships group");
+			const separateWays = api.tree
+				.getChildren(relationships)
+				.find((n) => n.options.description === "separate-ways");
+			assert.ok(
+				separateWays,
+				"the petstore workspace has no separate-ways relationship",
+			);
+			assert.match(
+				separateWays.label,
+				/↔/,
+				"a symmetric relationship's row should use the same double arrow as pages, not a directional label",
+			);
+		});
+
+		it("carries the health report's three counts on the workspace node", async () => {
+			const file = petstoreFile(api);
+			const root = api.tree
+				.getChildren()
+				.find((n) => n.file.relativePath === file.relativePath);
+			assert.ok(root, "the tree has no node for the petstore workspace");
+
+			const description = api.tree.getTreeItem(root).description;
+			assert.equal(typeof description, "string");
+			// One shared kernel marked refactor, one tolerated projection, and
+			// petstore turns comments-required on so nothing is uncommented.
+			assert.match(
+				description as string,
+				/1 to refactor, 1 tolerated, 0 uncommented/,
+			);
+			// The file name stays: the counts are appended, not a replacement.
+			assert.ok((description as string).startsWith(file.relativePath));
+		});
+
+		it("opens the health report from its row in search", async () => {
+			const file = petstoreFile(api);
+
+			await vscode.commands.executeCommand("ods.openPage", {
+				file,
+				ref: "#/health",
+			});
+
+			const navigated = await log.waitFor(
+				(m) => m.type === "navigated" && m.ref === "#/health",
+				'{ type: "navigated", ref: "#/health" }',
+			);
+			assert.equal(navigated.type, "navigated");
+		});
+
 		it("reuses the webview for a second ref in the same file", async () => {
 			const file = petstoreFile(api);
 			const readyCount = log.messages.filter((m) => m.type === "ready").length;

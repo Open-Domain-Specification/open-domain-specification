@@ -10,7 +10,7 @@ let { models, onpick }: { models: Model[]; onpick: (index: number) => void } =
 const keep = location.hash.length > 2 ? location.hash : "#/";
 </script>
 
-<div class="layout">
+<div class="screen">
 	<main>
 		<h1 class="brand"><Logo size={32} /> Domain Model</h1>
 		<ul class="site-index">

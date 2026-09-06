@@ -24,7 +24,7 @@
 
 | Term | Definition | Aliases | Embodied by |
 | --- | --- | --- | --- |
-| **Availability** | How many pets are available, pending and sold right now; a projection, not a source of truth | Stock | InventoryProjection |
+| **Availability** | How many pets are available, pending and sold right now; a projection, not a source of truth | Stock | InventoryQuery |
 
 
 ## [Fulfilment BC](../boundedcontexts/fulfilment_bc/index.md)

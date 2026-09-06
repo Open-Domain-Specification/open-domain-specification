@@ -1,0 +1,36 @@
+---
+column: done
+labels: [backend, ddd, breaking]
+priority: high
+agent: senior-dev
+live: false
+clean-code-swept: true
+updatedAt: 2026-09-05T12:10:00.000Z
+---
+# An attribute may be optional
+
+Implements [decision 24](../../decisions/24-an-attribute-may-be-optional.md): `AttributeSchema.optional?: boolean`, `identity-not-optional`, marks on every attribute table, the interview question, and the reference models set it where their source says so.
+
+## Checklist
+
+- [x] `optional?: boolean` on `AttributeSchema`; workspace model, DSL, `toSchema`/`fromSchema`, JSON schema regenerated
+- [x] `identity-not-optional` (error) with a DDD reason in its doc comment and catalogue entry
+- [x] Pages: `AttributeTable` marks an optional attribute in the design language (the design lead's call if the mark is new; otherwise the existing keyword style); story and test; doc generator prints it
+- [x] Skill: DSL reference, interview question "which of these are always present?", regenerated bundle
+- [x] Reference models: petstore from the Swagger contract (`Pet.tag` at least); the other three only where DISCOVERY.md or a comment already says a field is sometimes absent; `.ods/` and petstore `docs/` regenerated
+- [x] Decision 15's deferred-flag sentence points at decision 24
+- [x] Root suites green inside each package in build order; pages at 100% with `npm run check` clean; `cmp` of the petstore schema against core dist silent
+
+## Gates
+
+- `clean-code-swept`: swept 2026-09-05. The new rule reuses the existing `attributeOwnersOf` walk rather than a fourth copy of the schema/value-object/entity loop, and the pages mark reuses the `Keyword` atom rather than adding a visual. biome clean on every file touched after formatting three of them; per-package `tsc --noEmit` clean. Two pre-existing conditions are left alone and out of scope: the two `noThenProperty` errors in packages/core/src/workspace.ts, and the generated `.ods/*.json`, which biome has never formatted (verified against the HEAD copy of models/petstore/.ods/petstore.json).
+- `qa-automated`: core 311 across 13 files; graphviz 19 across 6; doc 27 across 4; skill 26 across 2; petstore 18, northbank 3, rivermart 3, streamline 3, each `npm run build` emitting only its declared deliberate diagnostics (petstore 0, northbank 3, rivermart 3, streamline 4); pages 669 across 94 files at 100/100/100/100 with `npm run check` at 0 errors, 0 warnings over 924 files; apps/docs 22 across 11 and apps/ods-vscode 9 across 1, both building. `cmp models/petstore/.ods/schema.json packages/core/dist/workspace.schema.json` silent.
+
+## Comments
+
+- **lead** (2026-09-07T09:00:00.000Z): the senior developer, first schema card of sprint 02; `feat!`. `git fetch && git reset --hard origin/develop` and `npm install` in the worktree before anything.
+- **senior-dev** (2026-09-05T11:55:00.000Z): Claimed. Reset to fa6556f and installed. `optional?: boolean` is at packages/core/src/schema.ts:12-17, `AttributeOptions` at packages/core/src/workspace.ts:1683-1684, the field and constructor at packages/core/src/workspace.ts:1708 and :1734, and `toSchema` at packages/core/src/workspace.ts:1748 writes it only when true, so required stays unwritten. `fromSchema` needed no change: packages/core/src/workspace-from-schema.ts:102-104 spreads the attribute schema, so the flag carries. Round trip is asserted at packages/core/src/round-trip.test.ts:123-131 over a new optional attribute on the shared fixture (packages/core/src/makeTestWs.ts:175-177), which is core-only and touches no other package's snapshots.
+- **senior-dev** (2026-09-05T12:00:00.000Z): `identity-not-optional` (error) is at packages/core/src/validate.ts:272-297 with its catalogue entry at packages/core/src/validate.ts:1535-1543. It walks `attributeOwnersOf`, so it reads schemas and value objects as well as entities, and reports at the attribute's own ref rather than the owner's, because the fix is on one line. The doc comment and the `why` both make the DDD argument rather than restating the check: an identity is what tells one instance from another and what a reference, an event payload or a stored row names it by, so an identity that may be missing leaves those instances indistinguishable and unreachable — the element has no identity, and is either a value object or missing the attribute that really identifies it. Four cases at packages/core/src/validate.test.ts:1445-1508 (quiet, the error and its message, an optional non-identity, and value objects and schemas); the completeness fixture plants one at packages/core/src/rule-catalog.test.ts:26-33.
+- **senior-dev** (2026-09-05T12:05:00.000Z): The mark on the attribute table is the existing keyword style, not a new visual: `Keyword text="optional"` after the type in packages/pages/src/lib/molecules/AttributeTable.svelte:48-50, so nothing went to the design lead. It reads the way the design language means a keyword to — secondary colour, no box, the reader's eye stays on the name column — and because only the exception is written, the few words down a type column are exactly the list of what may be missing. A `title` says so on hover. Story and harness are new at packages/pages/src/lib/molecules/AttributeTable.stories.svelte and .harness.svelte, drawing the petstore's Pet in the three theme sets because it is the one table with an identity, linked types and three optional attributes at once; the test is at packages/pages/src/lib/molecules/AttributeTable.test.ts:69-82. The generated docs print `(optional)` after the type (packages/doc/src/attributes.md.ts:25), asserted against the regenerated petstore at packages/doc/src/index.test.ts:275-282.
+- **senior-dev** (2026-09-05T12:08:00.000Z): Models. Petstore follows the v3 contract, which requires only `name` and `photoUrls` on Pet: `category`, `tags` and `status` are marked, and `id` deliberately is not, because it is the identity and the new rule forbids it — the comment at models/petstore/src/workspace.ts:170-174 says so, which is the flag teaching the reader the rule. The other three were only marked where the model already said the field goes missing, so no new claim about any domain: StreamLine's `Title.productionId`, `TitleRef.episodeId`, `PlaybackSession.episodeId` and the `episodeId` on StartPlayback and PlaybackStopped (DISCOVERY.md:305-315 and the attribute descriptions); RiverMart's `Stop.proofOfDelivery` ("absent until the stop is completed"), `Case.resolution` ("Absent while the case is open") and `Case.orderId`, whose OpenCase is described as "for a customer, optionally about an order"; NorthBank's `Entry.reversalOf` ("The entry this one reverses, if any"). Model edits are attributes only, so nothing collides with card 63's relationship and DISCOVERY.md work.
+- **senior-dev** (2026-09-05T12:10:00.000Z): Two edits beyond the checklist, both the same rule's own surface: the hand-written rule table at apps/docs/docs/3-core/4-validation.md gained the row (it mirrors the catalogue), and apps/docs/tests/tactical.example.test.ts had two inline snapshots of an attribute that now carry `"optional": undefined`, updated with `vitest -u`. Everything else regenerated: skill references and bundle, all four `.ods/`, petstore `docs/`, core `dist/workspace.schema.json`. Ready for review; not pushed.

@@ -34,7 +34,14 @@ describe("Workspace ref lookups", () => {
 		);
 		expect(fixture.orderPlaced.schema).toBe(fixture.orderSummary);
 		expect(fixture.orderPlaced.type).toBe("event");
-		expect(fixture.orderSummary.consumables).toEqual([fixture.orderPlaced]);
+		// Both ends count: the event carries the summary, and Place Order answers
+		// with it. Order Request is only ever sent, so it lists one consumable.
+		expect(fixture.orderSummary.consumables).toEqual([
+			fixture.orderPlaced,
+			fixture.placeOrder,
+		]);
+		expect(fixture.placeOrder.returns).toBe(fixture.orderSummary);
+		expect(fixture.orderRequest.consumables).toEqual([fixture.placeOrder]);
 		expect(fixture.orderSummary.attributes.get("total")?.valueobject).toBe(
 			fixture.money,
 		);
@@ -75,7 +82,26 @@ describe("Workspace ref lookups", () => {
 			fixture.orderLine,
 		);
 		expect(() => ws.getConstrainableByRefOrThrow("#/nope")).toThrow(
-			/Entity, Value Object or Attribute/,
+			/Entity, Value Object, Attribute or Consumable/,
+		);
+		// An invariant may also be a rule about one of its aggregate's
+		// operations, so a consumable ref resolves as something constrainable.
+		expect(ws.getConstrainableByRef(fixture.raiseInvoice.ref)).toBe(
+			fixture.raiseInvoice,
+		);
+	});
+
+	it("resolves what makes a consumption", () => {
+		expect(ws.getConsumptionCallerByRef(fixture.invoiceOnOrderPlaced.ref)).toBe(
+			fixture.invoiceOnOrderPlaced,
+		);
+		expect(ws.getConsumptionCallerByRef(fixture.raiseInvoice.ref)).toBe(
+			fixture.raiseInvoice,
+		);
+		// An aggregate is a node, not something that calls out on its own.
+		expect(ws.getConsumptionCallerByRef(fixture.orderAgg.ref)).toBeUndefined();
+		expect(() => ws.getConsumptionCallerByRefOrThrow("#/nope")).toThrow(
+			/Consumable, Policy or Process/,
 		);
 	});
 
@@ -88,6 +114,22 @@ describe("Workspace ref lookups", () => {
 			fixture.raiseInvoice,
 		]);
 		expect(() => ws.getPolicyByRefOrThrow("#/nope")).toThrow(/Policy/);
+	});
+
+	it("resolves processes and the lifecycle they join", () => {
+		expect(ws.getProcessByRef(fixture.invoiceToCustomer.ref)).toBe(
+			fixture.invoiceToCustomer,
+		);
+		expect(fixture.invoiceToCustomer.startEvents).toEqual([
+			fixture.invoiceRaised,
+		]);
+		expect(fixture.invoiceToCustomer.commands).toEqual([fixture.sendInvoice]);
+		expect(fixture.invoiceToCustomer.endEvents).toEqual([fixture.invoiceSent]);
+		// A process is a caller a consumption may name, like a policy.
+		expect(ws.getConsumptionCallerByRef(fixture.invoiceToCustomer.ref)).toBe(
+			fixture.invoiceToCustomer,
+		);
+		expect(() => ws.getProcessByRefOrThrow("#/nope")).toThrow(/Process/);
 	});
 
 	it("resolves glossary terms and what embodies them", () => {
@@ -111,6 +153,7 @@ describe("Workspace ref lookups", () => {
 			fixture.placeOrder,
 			fixture.orderPlaced,
 			fixture.invoiceOnOrderPlaced,
+			fixture.invoiceToCustomer,
 			fixture.orderTerm,
 			fixture.order.attributes.get("total"),
 		]) {
@@ -162,6 +205,28 @@ describe("Workspace ref lookups", () => {
 		);
 		expect(() => ws.getInvariantByRefOrThrow(missing)).toThrow(/Invariant/);
 		expect(() => ws.getConsumableByRefOrThrow(missing)).toThrow(/Consumable/);
+		expect(() => ws.getDeadlineByRefOrThrow(missing)).toThrow(/Deadline/);
+		expect(() => ws.getProcessTriggerByRefOrThrow(missing)).toThrow(
+			/Consumable, Answer or Deadline/,
+		);
+	});
+
+	it("resolves a deadline by its ref, under the process that keeps it", () => {
+		const bc = ws.addBoundedContext("Reservations", { description: "" });
+		const held = bc
+			.addService("App", { description: "", type: "application" })
+			.provides("Held", { description: "", type: "event" });
+		const process = bc.addProcess("Hold until paid", { description: "" });
+		const expiry = process.addDeadline("Unpaid", {
+			description: "",
+			after: "30 minutes",
+		});
+		process.starts(held).on(expiry);
+		expect(ws.getDeadlineByRef(expiry.ref)).toBe(expiry);
+		expect(ws.getByRef(expiry.ref)).toBe(expiry);
+		expect(ws.getProcessTriggerByRef(expiry.ref)).toBe(expiry);
+		// A policy's `on` never resolves one: a deadline is the process's.
+		expect(ws.getReactionTriggerByRef(expiry.ref)).toBeUndefined();
 	});
 
 	it("honours explicit ids over name-derived ids", () => {
@@ -198,8 +263,16 @@ describe("Workspace ref lookups", () => {
 		schema.boundedcontexts.renamed_key = schema.boundedcontexts.reporting_bc;
 		delete schema.boundedcontexts.reporting_bc;
 		schema.boundedcontexts.renamed_key.subdomains = [];
-		// nothing else may point at the old key
+		// nothing else may point at the old key: not the relationships, and not
+		// the ordering consumption that reads reporting's sales figures
 		schema.relationships = [];
+		schema.boundedcontexts.ordering_bc.services.order_app.consumes = [];
+		// nor reporting's own raises link, whose ref carries the old key too, nor
+		// its consumption of Order Placed, whose `by` names one of its own
+		// operations by the old key
+		schema.boundedcontexts.renamed_key.services.reporting_app.provides.compile_sales_figures.raises =
+			[];
+		schema.boundedcontexts.renamed_key.services.reporting_app.consumes = [];
 		const rebuilt = Workspace.fromSchema(schema);
 		expect(
 			rebuilt.getBoundedContextByRef("#/boundedcontexts/renamed_key")?.name,
@@ -207,5 +280,86 @@ describe("Workspace ref lookups", () => {
 		expect(
 			rebuilt.getBoundedContextByRef("#/boundedcontexts/reporting_bc"),
 		).toBeUndefined();
+	});
+});
+
+describe("consumption refs", () => {
+	const fixture = makeRichTestWs();
+	const { ws } = fixture;
+
+	it("names a consumption by the consumer and the consumable it takes", () => {
+		const consumption = fixture.invoiceConsumesOrderPlaced;
+		expect(consumption.ref).toBe(
+			`${consumption.consumer.ref}/consumes/${consumption.consumable.path.split("/").join("~")}`,
+		);
+		expect(consumption.path).toBe(consumption.ref.slice(2));
+	});
+
+	it("resolves a consumption ref back to the consumption", () => {
+		expect(ws.findConsumption(fixture.invoiceConsumesOrderPlaced.ref)).toBe(
+			fixture.invoiceConsumesOrderPlaced,
+		);
+		expect(ws.findConsumption(fixture.orderAppConsumesSalesFigures.ref)).toBe(
+			fixture.orderAppConsumesSalesFigures,
+		);
+		expect(
+			ws.findConsumption(`${fixture.invoiceApp.ref}/consumes/nothing~here`),
+		).toBeUndefined();
+	});
+
+	it("tells two consumptions by the same consumer apart", () => {
+		expect(fixture.invoiceConsumesOrderPlaced.ref).not.toBe(
+			fixture.invoiceAppConsumesPlaceOrder.ref,
+		);
+	});
+
+	it("keeps the ref across a round trip, because nothing stores it", () => {
+		const before = fixture.invoiceConsumesOrderPlaced.ref;
+		const after = Workspace.fromSchema(ws.toSchema());
+		expect(after.findConsumption(before)?.consumable.name).toBe(
+			fixture.orderPlaced.name,
+		);
+	});
+});
+
+describe("relationship refs", () => {
+	const { ws, orderingBc, reportingBc } = makeRichTestWs();
+
+	it("names a relationship by its two contexts and the pattern joining them", () => {
+		const relationship = ws.addRelationship({
+			type: "shared-kernel",
+			participants: [orderingBc, reportingBc],
+		});
+		expect(relationship.ref).toBe(
+			`#/relationships/${orderingBc.id}~shared-kernel~${reportingBc.id}`,
+		);
+		expect(relationship.path).toBe(relationship.ref.slice(2));
+	});
+
+	it("resolves a relationship ref back to the relationship", () => {
+		const relationship = ws.addRelationship({
+			type: "separate-ways",
+			participants: [orderingBc, reportingBc],
+		});
+		expect(ws.findRelationship(relationship.ref)).toBe(relationship);
+		expect(ws.findRelationship("#/relationships/nope~partnership~nope")).toBe(
+			undefined,
+		);
+	});
+
+	it("tells two relationships between the same pair apart by their type", () => {
+		const supplier = ws.addRelationship({
+			type: "customer-supplier",
+			upstream: orderingBc,
+			downstream: reportingBc,
+		});
+		const stream = ws.addRelationship({
+			type: "upstream-downstream",
+			upstream: orderingBc,
+			downstream: reportingBc,
+		});
+		expect(supplier.ref).not.toBe(stream.ref);
+		expect(ws.findRelationship(supplier.ref)).toBe(supplier);
+		expect(ws.findRelationship(stream.ref)).toBe(stream);
 	});
 });

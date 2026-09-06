@@ -1,12 +1,4 @@
-import { type Aggregate, Workspace } from "@open-domain-specification/core";
-import { money as sharedMoney } from "@open-domain-specification/model-tools";
-
-/** NorthBank's Money carries the shared-kernel note from the interviews. */
-const money = (aggregate: Aggregate) =>
-	sharedMoney(
-		aggregate,
-		"Minor units and an ISO 4217 code. Never a float; the shared kernel library is the one implementation",
-	);
+import { type Attribute, Workspace } from "@open-domain-specification/core";
 
 /**
  * NorthBank: a fictional mid-sized retail bank.
@@ -19,12 +11,14 @@ const money = (aggregate: Aggregate) =>
  * identity are generic.
  *
  * The emphasis is on invariants and value objects: Money, IBAN, PAN, Consent,
- * a balanced journal entry, a loan schedule. Stress-test features: fourteen
- * contexts, a shared kernel (accounts and ledger), a partnership (lending and
- * decisioning), a separate-ways pair (branches and decisioning), a legacy
- * mainframe big ball of mud, and three deliberate mistakes (marked
- * DELIBERATE) that trigger separate-ways, context-serves-subdomain and
- * consumable-kind.
+ * a balanced journal entry, a loan schedule. Stress-test features: seventeen
+ * contexts, two of them external (CardCo and the screening vendor), a shared
+ * kernel (a Shared Kernel context, borrowed from by
+ * Accounts, Ledger, Payments, Cards, Lending and Reporting), a partnership
+ * (lending and decisioning), a separate-ways pair (branches and
+ * decisioning), a legacy mainframe big ball of mud, and three deliberate
+ * mistakes (marked DELIBERATE) that trigger separate-ways,
+ * context-serves-subdomain and consumable-kind.
  *
  * Provenance: BRIEF.md and DISCOVERY.md. Comments "DISCOVERY: <who>" point at
  * the interview an element came from.
@@ -141,8 +135,7 @@ const financialCrimeTeam = workspace.addTeam("Financial Crime Team", {
 	description: "Sanctions screening, fraud scoring, cases",
 });
 const accountsTeam = workspace.addTeam("Accounts Team", {
-	description:
-		"The account platform; co-owns the Money library with Core Banking",
+	description: "The account platform",
 });
 const coreBankingTeam = workspace.addTeam("Core Banking Team", {
 	description: "The ledger, and Sovereign",
@@ -170,6 +163,10 @@ const channelsTeam = workspace.addTeam("Channels Team", {
 });
 const digitalPlatformTeam = workspace.addTeam("Digital Platform Team", {
 	description: "Identity and access",
+});
+const sharedKernelTeam = workspace.addTeam("Shared Kernel Team", {
+	description:
+		"Owns Money and AccountNumber; changes only by agreement of the teams that borrow them",
 });
 
 /* =======================
@@ -243,6 +240,50 @@ const identityBC = workspace.addBoundedContext("Identity & Access", {
 	description: "Usernames, credentials, step-up authentication",
 	team: digitalPlatformTeam,
 });
+// Six contexts carry an amount or a ledger account, so the library is a
+// context of its own rather than fifteen pairwise agreements (decision 16's
+// amendment): each sharer declares one shared-kernel relationship with this
+// one and borrows what it needs.
+//
+// It serves no subdomain of its own, and until card 95 it had one: a supporting
+// "Shared Financial Primitives" invented so that `context-serves-subdomain`
+// would stop asking, on a capability map that has no such capability and that
+// no customer journey runs through. What the kernel serves is whatever its
+// sharers serve. The rule now exempts a context whose relationships are all
+// shared kernel with two or more sharers, and the invented row is gone; the
+// team that owns Money and AccountNumber stays, because somebody does own them.
+const sharedKernelBC = workspace.addBoundedContext("Shared Kernel", {
+	description:
+		"The shared library the bank's contexts compile against: Money and AccountNumber, and nothing else. Not a product; nobody's customer journey runs through it",
+	team: sharedKernelTeam,
+});
+
+// The three systems the bank integrates with and does not run: the screening
+// vendor behind Sanctions Screening ("the lists are bought; the screening
+// engine is bought"), CardCo, which sends the authorisation requests Cards
+// answers, and the payment scheme the gateway submits to. None has a subdomain
+// or a team here, and none has aggregates, because what happens inside
+// somebody else's machine is not ours to state (decision 28).
+const screeningVendorBC = workspace.addBoundedContext("Screening Vendor", {
+	description:
+		"The bought sanctions lists and the bought screening engine, behind a documented API. Not the bank's",
+	external: true,
+});
+const cardCoBC = workspace.addBoundedContext("CardCo", {
+	description:
+		"The outsourced card processor: it sends the authorisation requests and takes the answers, in its own format",
+	external: true,
+});
+// DISCOVERY: Scheme Connectivity lead. "We turn a submission into a scheme
+// message and send it. The scheme confirms or rejects." The confirmation is
+// the scheme's fact, not the gateway's, and until card 95 the model credited
+// SubmitToScheme with raising both of them and never declared the scheme at
+// all -- the one system in the whole payment path nobody had written down.
+const paymentSchemeBC = workspace.addBoundedContext("Payment Scheme", {
+	description:
+		"The clearing scheme the bank submits to: it settles or refuses, in ISO 20022 and on its own timings. Not the bank's",
+	external: true,
+});
 
 /* =======================
    CUSTOMER & KYC
@@ -260,16 +301,16 @@ const identityDocument = customerAgg.addEntity("IdentityDocument", {
 	description:
 		"A passport or licence checked during onboarding; kept for audit",
 });
-const dateOfBirthVO = customerAgg.addValueObject("DateOfBirth", {
+const dateOfBirthVO = customerBC.addValueObject("DateOfBirth", {
 	description: "A date; the source of the age rule",
 });
 dateOfBirthVO.addAttribute("value", { type: "date" });
-const addressVO = customerAgg.addValueObject("Address", {
+const addressVO = customerBC.addValueObject("Address", {
 	description: "Residential address, verified against the electoral roll",
 });
 addressVO.addAttribute("lines", { type: "string[]" });
 addressVO.addAttribute("postcode", { type: "string" });
-const kycStatusVO = customerAgg.addValueObject("KycStatus", {
+const kycStatusVO = customerBC.addValueObject("KycStatus", {
 	description: "pending, held (sanctions match), verified",
 });
 kycStatusVO.addAttribute("value", { type: "'pending' | 'held' | 'verified'" });
@@ -291,6 +332,10 @@ const documentExpiry = identityDocument.addAttribute("expiresOn", {
 	type: "date",
 });
 customer.includes(identityDocument, "verified-by", "*");
+customer.addAttribute("address", {
+	type: "Address",
+	valueobject: addressVO,
+});
 customer.uses(dateOfBirthVO, "born-on", "1");
 customer.uses(addressVO, "lives-at", "1");
 customer.uses(kycStatusVO, "has-status", "1");
@@ -323,14 +368,14 @@ const consentAgg = customerBC.addAggregate("Consent", {
 const consent = consentAgg.addRootEntity("Consent", {
 	description: "A permission given, and possibly withdrawn, by a customer",
 });
-const purposeVO = consentAgg.addValueObject("ConsentPurpose", {
+const purposeVO = customerBC.addValueObject("ConsentPurpose", {
 	description:
 		"marketing, data-sharing or open-banking; the purpose decides the rules",
 });
 purposeVO.addAttribute("value", {
 	type: "'marketing' | 'data-sharing' | 'open-banking'",
 });
-const scopeVO = consentAgg.addValueObject("ConsentScope", {
+const scopeVO = customerBC.addValueObject("ConsentScope", {
 	description: "Channels and data categories the permission covers",
 });
 scopeVO.addAttribute("channels", { type: "string[]" });
@@ -340,6 +385,14 @@ consent.addAttribute("customerId", { type: "string" });
 consent.addAttribute("givenAt", { type: "date-time" });
 const withdrawnAt = consent.addAttribute("withdrawnAt", { type: "date-time" });
 const expiresAt = consent.addAttribute("expiresAt", { type: "date-time" });
+consent.addAttribute("purpose", {
+	type: "ConsentPurpose",
+	valueobject: purposeVO,
+});
+consent.addAttribute("scope", {
+	type: "ConsentScope",
+	valueobject: scopeVO,
+});
 consent.uses(purposeVO, "for", "1");
 consent.uses(scopeVO, "covers", "1");
 consent.references(customer, "given-by", "1");
@@ -373,12 +426,36 @@ customerVerifiedSchema.addAttribute("customerId", {
 	identity: true,
 });
 customerVerifiedSchema.addAttribute("verifiedAt", { type: "date-time" });
+// A returned shape: GetCustomer is asked with a CustomerRef and answers with
+// this, so callers can see what they depend on without reading the aggregate.
+const customerDetailsSchema = customerBC.addSchema("CustomerDetails", {
+	description: "The verified details GetCustomer answers with",
+});
+customerDetailsSchema.addAttribute("customerId", {
+	type: "string",
+	identity: true,
+});
+customerDetailsSchema.addAttribute("dateOfBirth", {
+	type: "DateOfBirth",
+	valueobject: dateOfBirthVO,
+});
+customerDetailsSchema.addAttribute("address", {
+	type: "Address",
+	valueobject: addressVO,
+});
+customerDetailsSchema.addAttribute("kycStatus", {
+	type: "KycStatus",
+	valueobject: kycStatusVO,
+});
 const consentSchema = customerBC.addSchema("ConsentChanged", {
 	description:
 		"Used by both consent events; the contact centre acts on it the same day",
 });
 consentSchema.addAttribute("consentId", { type: "string", identity: true });
-consentSchema.addAttribute("customerId", { type: "string" });
+consentSchema.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
 consentSchema.addAttribute("purpose", {
 	type: "ConsentPurpose",
 	valueobject: purposeVO,
@@ -419,7 +496,14 @@ const holdOnboarding = customerAgg.provides("HoldOnboarding", {
 	type: "operation",
 	internal: true,
 });
-consentAgg
+
+const onboardingApp = customerBC.addService("OnboardingApp", {
+	description: "The onboarding journey and the customer read API",
+	type: "application",
+});
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+onboardingApp
 	.provides("GiveConsent", {
 		description: "Record a permission",
 		type: "operation",
@@ -427,7 +511,7 @@ consentAgg
 		schema: consentSchema,
 	})
 	.raises(consentGiven);
-consentAgg
+onboardingApp
 	.provides("WithdrawConsent", {
 		description: "End a permission, finally",
 		type: "operation",
@@ -435,11 +519,6 @@ consentAgg
 		schema: consentSchema,
 	})
 	.raises(consentWithdrawn);
-
-const onboardingApp = customerBC.addService("OnboardingApp", {
-	description: "The onboarding journey and the customer read API",
-	type: "application",
-});
 onboardingApp
 	.provides("StartOnboarding", {
 		description: "Begin with name, date of birth, address and a document",
@@ -448,19 +527,24 @@ onboardingApp
 	})
 	.raises(onboardingStarted);
 const getCustomer = onboardingApp.provides("GetCustomer", {
-	description: "Read a customer's verified details",
+	description:
+		"Asked with a CustomerRef, answers with the customer's verified details",
 	type: "operation",
 	pattern: "open-host-service",
 	schema: customerRefSchema,
+	returns: customerDetailsSchema,
 });
 
-const kycScreening = customerBC.addService("KycScreening", {
+// DISCOVERY: Head of Customer Platform, "onboarding starts, we screen the name
+// against the sanctions lists". That is one step and it leaves the bank's
+// boundary, so it is an operation of the application service that makes the
+// call (decision 17). It was the KycScreening domain service's until card 92:
+// a domain service is the inside of the model, the same as an aggregate, and
+// that one held nothing else — no rule, no reading across aggregates, only the
+// call — so what is left of it is this operation.
+const screenCustomer = onboardingApp.provides("ScreenCustomer", {
 	description:
-		"Runs sanctions and document checks; a domain service because it spans the customer and the screening result",
-	type: "domain",
-});
-const screenCustomer = kycScreening.provides("ScreenCustomer", {
-	description: "Screen the prospective customer against sanctions lists",
+		"Screen the prospective customer against the sanctions lists, through the ACL",
 	type: "operation",
 	internal: true,
 });
@@ -492,11 +576,18 @@ const screeningAgg = sanctionsBC.addAggregate("ScreeningResult", {
 const screening = screeningAgg.addRootEntity("ScreeningResult", {
 	description: "The outcome for one party",
 });
-const matchScoreVO = screeningAgg.addValueObject("MatchScore", {
+const matchScoreVO = sanctionsBC.addValueObject("MatchScore", {
 	description: "0 to 100; above the threshold is a match",
 });
 matchScoreVO.addAttribute("value", { type: "int 0..100" });
 screening.addAttribute("resultId", { type: "string", identity: true });
+// The engine's own reference for the match. The vendor has no entities here
+// to name -- what is inside a bought engine is not the bank's to state -- so
+// the attribute names the system the id belongs to (decision 28, card 81).
+screening.addAttribute("vendorMatchRef", {
+	type: "string",
+	identifies: screeningVendorBC,
+});
 screening.addAttribute("partyName", { type: "string" });
 screening.addAttribute("score", {
 	type: "MatchScore",
@@ -504,10 +595,26 @@ screening.addAttribute("score", {
 });
 screening.uses(matchScoreVO, "scored", "1");
 
-const screenPartySchema = sanctionsBC.addSchema("ScreenParty");
-screenPartySchema.addAttribute("name", { type: "string" });
-screenPartySchema.addAttribute("dateOfBirth", { type: "date" });
-screenPartySchema.addAttribute("country", { type: "ISO 3166 code" });
+// DISCOVERY: Financial Crime lead. "The lists are bought; the screening
+// engine is bought; the API is documented" -- so the engine is a system the
+// bank calls, and Screening takes its answer as published (decision 28).
+const listMatchSchema = screeningVendorBC.addSchema("ListMatchQuery", {
+	description: "The vendor's query format, which the bank does not negotiate",
+});
+listMatchSchema.addAttribute("name", { type: "string" });
+listMatchSchema.addAttribute("dateOfBirth", { type: "date" });
+listMatchSchema.addAttribute("country", { type: "ISO 3166 code" });
+const vendorApi = screeningVendorBC.addService("Screening Engine API", {
+	description: "The vendor's documented interface, and all the bank can see",
+	type: "application",
+});
+const matchAgainstLists = vendorApi.provides("MatchAgainstLists", {
+	description: "Score a name against the bought lists",
+	type: "operation",
+	pattern: "open-host-service",
+	schema: listMatchSchema,
+});
+
 const partyMatchedSchema = sanctionsBC.addSchema("PartyMatched");
 partyMatchedSchema.addAttribute("resultId", { type: "string", identity: true });
 partyMatchedSchema.addAttribute("score", {
@@ -521,29 +628,79 @@ const partyMatched = screeningAgg.provides("PartyMatched", {
 	pattern: "published-language",
 	schema: partyMatchedSchema,
 });
-const screenParty = screeningAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const screeningApp = sanctionsBC.addService("ScreeningApp", {
+	description:
+		"Sanctions Screening's application service: the boundary the bank screens names through",
+	type: "application",
+});
+// Screening asks for a name in the vendor's own words: it is the vendor's
+// query format that goes in at the bank's boundary and straight out at the
+// vendor's, which is what "reshapes nothing" means. A conformist may carry
+// its upstream's schema, and that borrowing is the whole of the role
+// (decisions 03 and 16, card 81); the duplicate shape Screening used to
+// declare said the same thing twice and let the two drift apart.
+const screenParty = screeningApp
 	.provides("ScreenParty", {
 		description: "Check a name, date of birth and country against the lists",
 		type: "operation",
 		pattern: "open-host-service",
-		schema: screenPartySchema,
+		schema: listMatchSchema,
 	})
 	.raises(partyMatched);
 
-kycScreening.consumes(screenParty, { pattern: "anti-corruption-layer" });
-customerAgg.consumes(partyMatched, { pattern: "anti-corruption-layer" });
+screeningApp.consumes(matchAgainstLists, {
+	pattern: "conformist",
+	by: [screenParty],
+});
+screeningVendorBC.upstreamOf(sanctionsBC, {
+	description:
+		"The engine's API is the vendor's; Screening calls it as documented and reshapes nothing",
+	upstreamRoles: ["open-host-service"],
+	downstreamRoles: ["conformist"],
+});
+
+onboardingApp.consumes(screenParty, {
+	pattern: "anti-corruption-layer",
+	by: [screenCustomer],
+});
+onboardingApp.consumes(partyMatched, { pattern: "anti-corruption-layer" });
+// Onboarding is a process, not two policies: it holds the prospective
+// customer from the moment their details arrive until KYC passes, and a
+// sanctions match keeps that same instance alive rather than ending it.
 customerBC
-	.addPolicy("Screen on onboarding", {
-		description: "Every prospective customer is screened before anything else",
+	.addProcess("Customer onboarding", {
+		description:
+			"From a prospective customer's details to a verified one. Everyone is screened before anything else, and the process then waits for the engine's answer: a match holds the onboarding until Financial Crime clears it by hand, which is why there is no timeout. Correlation is by customerId, which the screening answer carries back; the instance ends when KYC passes and accounts may be opened",
 	})
-	.on(onboardingStarted)
-	.then(screenCustomer);
-customerBC
-	.addPolicy("Hold on sanctions match", {
-		description: "A match holds onboarding until Financial Crime clears it",
-	})
+	.starts(onboardingStarted)
 	.on(partyMatched)
-	.then(holdOnboarding);
+	.issues(screenCustomer, holdOnboarding)
+	.ends(customerVerified);
+
+/* =======================
+   SHARED KERNEL
+   DISCOVERY: card 56. Money and AccountNumber are declared once here and
+   borrowed, over a shared-kernel relationship, by every context that carries
+   an amount or a ledger account. Neither is typed by a `uses` relation from
+   the borrower: a relation never crosses a context boundary (decision 15),
+   so the attribute's `valueobject` reference is the only link, exactly as
+   decision 16's amendment describes.
+   ======================= */
+
+const kernelMoneyVO = sharedKernelBC.addValueObject("Money", {
+	description:
+		"Minor units and an ISO 4217 code. Never a float; @northbank/money is the one implementation",
+});
+kernelMoneyVO.addAttribute("amountMinor", { type: "int64" });
+kernelMoneyVO.addAttribute("currency", { type: "ISO 4217 code" });
+const kernelAccountNumberVO = sharedKernelBC.addValueObject("AccountNumber", {
+	description:
+		"Sort code and eight-digit number, from the same library as Money",
+});
+kernelAccountNumberVO.addAttribute("sortCode", { type: "string" });
+kernelAccountNumberVO.addAttribute("number", { type: "string" });
 
 /* =======================
    ACCOUNTS
@@ -563,23 +720,31 @@ const mandate = accountAgg.addEntity("Mandate", {
 	description:
 		"A customer's authority to operate the account; an entity because it is granted and revoked over time",
 });
-const ibanVO = accountAgg.addValueObject("IBAN", {
+const ibanVO = accountsBC.addValueObject("IBAN", {
 	description:
 		"Country, check digits, bank and account identifiers; valid only if the mod-97 checksum holds",
 });
-ibanVO.addAttribute("value", { type: "string (ISO 13616)" });
-const accountNumberVO = accountAgg.addValueObject("AccountNumber", {
-	description:
-		"Sort code and eight-digit number; part of the shared kernel library",
+const ibanValue = ibanVO.addAttribute("value", {
+	type: "string (ISO 13616)",
 });
-accountNumberVO.addAttribute("sortCode", { type: "string" });
-accountNumberVO.addAttribute("number", { type: "string" });
-const accountMoney = money(accountAgg);
-const overdraftVO = accountAgg.addValueObject("OverdraftLimit", {
+// A value's own rule: an IBAN whose mod-97 checksum fails is not a badly
+// configured IBAN, it is not an IBAN, so the rule holds by construction and
+// needs no aggregate to save it (decision 27's 2026-09-08 amendment).
+ibanVO
+	.addInvariant("IbanChecksumValid", {
+		description:
+			"The IBAN's mod-97 checksum holds, or the value is not an IBAN at all",
+	})
+	.constrains(ibanValue);
+// AccountNumber and Money are the Shared Kernel's; borrowed by reference,
+// not declared here (decision 16's amendment).
+const accountNumberVO = kernelAccountNumberVO;
+const accountMoney = kernelMoneyVO;
+const overdraftVO = accountsBC.addValueObject("OverdraftLimit", {
 	description: "How far below zero the available balance may go",
 });
 overdraftVO.addAttribute("limit", { type: "Money", valueobject: accountMoney });
-const accountStatusVO = accountAgg.addValueObject("AccountStatus", {
+const accountStatusVO = accountsBC.addValueObject("AccountStatus", {
 	description: "open, frozen or closed",
 });
 accountStatusVO.addAttribute("value", { type: "'open' | 'frozen' | 'closed'" });
@@ -614,22 +779,25 @@ account.addAttribute("status", {
 	type: "AccountStatus",
 	valueobject: accountStatusVO,
 });
-mandate.addAttribute("customerId", { type: "string", identity: true });
+mandate.addAttribute("customerId", {
+	type: "string",
+	identity: true,
+	identifies: customer,
+});
 mandate.addAttribute("powers", { type: "'sole' | 'joint' | 'view-only'" });
 account.includes(mandate, "operated-under", "1..*");
+account.addAttribute("overdraft", {
+	type: "OverdraftLimit",
+	valueobject: overdraftVO,
+});
 account.uses(ibanVO, "identified-by", "1");
-account.uses(accountNumberVO, "numbered", "1");
-account.uses(accountMoney, "balance", "1");
 account.uses(overdraftVO, "overdraft", "1");
 account.uses(accountStatusVO, "has-status", "1");
-mandate.references(customer, "held-by", "1");
+// Customer lives in Customer & KYC: a relation never crosses a bounded
+// context, so the mandate holds `customerId` and nothing more. AccountNumber
+// and Money are the Shared Kernel's, so they are typed by `valueobject`
+// reference only; a relation never crosses a context boundary either.
 
-accountAgg
-	.addInvariant("IbanChecksumValid", {
-		description:
-			"The IBAN's mod-97 checksum holds, or the account does not exist",
-	})
-	.constrains(ibanVO);
 accountAgg
 	.addInvariant("BalanceWithinOverdraft", {
 		description:
@@ -661,6 +829,15 @@ accountAgg
 
 const accountRefSchema = accountsBC.addSchema("AccountRef");
 accountRefSchema.addAttribute("accountId", { type: "string", identity: true });
+// A returned shape: what GetAvailableBalance answers with.
+const availableBalanceSchema = accountsBC.addSchema("AvailableBalance", {
+	description:
+		"Posted balance less pending authorisations, at the moment of the call",
+});
+availableBalanceSchema.addAttribute("amount", {
+	type: "Money",
+	valueobject: accountMoney,
+});
 const accountOpenedSchema = accountsBC.addSchema("AccountOpened", {
 	description: "What reporting and the ledger learn about a new account",
 });
@@ -669,10 +846,16 @@ accountOpenedSchema.addAttribute("accountId", {
 	identity: true,
 });
 accountOpenedSchema.addAttribute("iban", { type: "IBAN", valueobject: ibanVO });
-accountOpenedSchema.addAttribute("customerId", { type: "string" });
+accountOpenedSchema.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
 accountOpenedSchema.addAttribute("productCode", { type: "'current'" });
 const openAccountSchema = accountsBC.addSchema("OpenAccount");
-openAccountSchema.addAttribute("customerId", { type: "string" });
+openAccountSchema.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
 openAccountSchema.addAttribute("productCode", { type: "'current'" });
 
 const accountOpened = accountAgg.provides("AccountOpened", {
@@ -693,14 +876,6 @@ const accountClosed = accountAgg.provides("AccountClosed", {
 	pattern: "published-language",
 	schema: accountRefSchema,
 });
-const freezeAccount = accountAgg
-	.provides("FreezeAccount", {
-		description: "Block debits; issued when Financial Crime opens a case",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: accountRefSchema,
-	})
-	.raises(accountFrozen);
 accountAgg
 	.provides("CloseAccount", {
 		description: "Close at zero balance",
@@ -725,7 +900,7 @@ const accountServicing = accountsBC.addService("AccountServicing", {
 	description: "The documented account API for channels, cards and lending",
 	type: "application",
 });
-accountServicing
+const openAccount = accountServicing
 	.provides("OpenAccount", {
 		description: "Open a product for a verified customer",
 		type: "operation",
@@ -738,9 +913,28 @@ const getAvailableBalance = accountServicing.provides("GetAvailableBalance", {
 	type: "operation",
 	pattern: "open-host-service",
 	schema: accountRefSchema,
+	returns: availableBalanceSchema,
 });
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const freezeAccount = accountServicing
+	.provides("FreezeAccount", {
+		description: "Block debits; issued when Financial Crime opens a case",
+		type: "operation",
+		pattern: "open-host-service",
+		schema: accountRefSchema,
+	})
+	.raises(accountFrozen);
 
-accountAgg.consumes(customerVerified, { pattern: "conformist" });
+// DISCOVERY: Head of Customer Platform, "only then can an account be opened",
+// and the Accounts lead's "mandates saying which verified customers can operate
+// it". Nothing in Accounts reacts to a verification — no account opens by
+// itself — so what the subscription is for is `OpenAccount`, the part of
+// Accounts that needs to know (`subscription-backed`, decision 21).
+accountServicing.consumes(customerVerified, {
+	pattern: "conformist",
+	by: [openAccount],
+});
 
 accountsBC.addTerm("Account", {
 	definition:
@@ -774,37 +968,49 @@ const entry = entryAgg.addRootEntity("JournalEntry", {
 const posting = entryAgg.addEntity("Posting", {
 	description: "A debit or credit of an amount to one ledger account",
 });
-const ledgerMoney = money(entryAgg);
-// The shared kernel's second type, declared here as the ledger's own value
-// object: the same library as Accounts' AccountNumber.
-const ledgerAccountNumberVO = entryAgg.addValueObject("AccountNumber", {
-	description:
-		"Sort code and eight-digit number; the shared kernel library, so it is the same value Accounts holds",
-});
-ledgerAccountNumberVO.addAttribute("sortCode", { type: "string" });
-ledgerAccountNumberVO.addAttribute("number", { type: "string" });
+// Money and AccountNumber are the Shared Kernel's, borrowed here just as
+// Accounts borrows them, rather than a copy of each. A relation may not cross
+// a context boundary, so the link is the attribute's `valueobject` and
+// nothing else.
+const ledgerMoney = kernelMoneyVO;
+const ledgerAccountNumberVO = kernelAccountNumberVO;
 // A posting goes to a ledger account, not to an Accounts product: a customer's
 // account number or a nominal such as the loan book or scheme suspense.
 // Otherwise a disbursement (debit loan book, credit customer) could not balance.
-const ledgerAccountVO = entryAgg.addValueObject("LedgerAccount", {
+const ledgerAccountVO = ledgerBC.addValueObject("LedgerAccount", {
 	description:
-		"Where a posting lands: a customer account by its AccountNumber, or a nominal from the chart of accounts (loan book, scheme suspense, fee income)",
+		"Where a posting lands. No posting lands on a LedgerAccount as such: every one of them is a customer account or a nominal, and the two are named differently",
 });
-ledgerAccountVO.addAttribute("kind", { type: "'customer' | 'nominal'" });
-ledgerAccountVO.addAttribute("accountNumber", {
+// DISCOVERY: Core Banking lead, "a ledger account is a customer's account
+// number or a nominal: the loan book, scheme suspense, fee income". The two
+// hold different things, so they are kinds of LedgerAccount rather than one
+// value with a `kind` flag beside two fields each set only sometimes
+// (decision 22).
+const customerLedgerAccountVO = ledgerBC.addValueObject(
+	"CustomerLedgerAccount",
+	{
+		description: "A customer's account, named by its account number",
+		specialises: ledgerAccountVO,
+	},
+);
+customerLedgerAccountVO.addAttribute("accountNumber", {
 	type: "AccountNumber",
 	valueobject: ledgerAccountNumberVO,
-	description: "Set when kind is customer",
 });
-ledgerAccountVO.addAttribute("nominalCode", {
+const nominalLedgerAccountVO = ledgerBC.addValueObject("NominalLedgerAccount", {
+	description:
+		"An account of the bank's own chart rather than a customer's: the loan book, scheme suspense, fee income",
+	specialises: ledgerAccountVO,
+});
+nominalLedgerAccountVO.addAttribute("nominalCode", {
 	type: "string",
-	description: "Set when kind is nominal, e.g. LOAN-BOOK, SCHEME-SUSPENSE",
+	description: "From the chart of accounts, e.g. LOAN-BOOK, SCHEME-SUSPENSE",
 });
-const directionVO = entryAgg.addValueObject("PostingDirection", {
+const directionVO = ledgerBC.addValueObject("PostingDirection", {
 	description: "debit or credit",
 });
 directionVO.addAttribute("value", { type: "'debit' | 'credit'" });
-const valueDateVO = entryAgg.addValueObject("ValueDate", {
+const valueDateVO = ledgerBC.addValueObject("ValueDate", {
 	description:
 		"The date the money counts from, which may differ from the posting date",
 });
@@ -813,6 +1019,7 @@ entry.addAttribute("entryId", { type: "string", identity: true });
 entry.addAttribute("postedAt", { type: "date-time" });
 entry.addAttribute("reversalOf", {
 	type: "string",
+	optional: true,
 	description: "The entry this one reverses, if any",
 });
 posting.addAttribute("postingId", { type: "string", identity: true });
@@ -826,8 +1033,11 @@ posting.addAttribute("direction", {
 	valueobject: directionVO,
 });
 entry.includes(posting, "made-of", "1..*");
+entry.addAttribute("valueDate", {
+	type: "ValueDate",
+	valueobject: valueDateVO,
+});
 entry.uses(valueDateVO, "valued-on", "1");
-posting.uses(ledgerMoney, "of", "1");
 posting.uses(directionVO, "as", "1");
 posting.uses(ledgerAccountVO, "to", "1");
 
@@ -846,7 +1056,9 @@ entryAgg
 	.addInvariant("SingleCurrencyPerEntry", {
 		description: "Every posting in an entry shares one currency",
 	})
-	.constrains(ledgerMoney);
+	// Money itself is the Shared Kernel's, held here over that relationship;
+	// the rule belongs to the posting amount inside this aggregate.
+	.constrains(posting.attributes.get("amount") as Attribute);
 entryAgg
 	.addInvariant("ImmutableOncePosted", {
 		description:
@@ -854,11 +1066,22 @@ entryAgg
 	})
 	.constrains(entry);
 
+// One shape inside two payloads: the request and the fact carry the same
+// posting line, so it is a schema of its own rather than a type string
+// written out twice.
+const postingLineSchema = ledgerBC.addSchema("PostingLine", {
+	description: "One side of a double entry, as a payload carries it",
+});
+postingLineSchema.addAttribute("ledgerAccount", { type: "string" });
+postingLineSchema.addAttribute("amount", { type: "Money" });
+postingLineSchema.addAttribute("direction", { type: "'debit' | 'credit'" });
+
 const postEntrySchema = ledgerBC.addSchema("PostEntry", {
 	description: "The postings a caller wants made, as one balanced entry",
 });
 postEntrySchema.addAttribute("postings", {
-	type: "{ledgerAccount, amount, direction}[]",
+	type: "PostingLine[]",
+	schema: postingLineSchema,
 });
 postEntrySchema.addAttribute("valueDate", {
 	type: "ValueDate",
@@ -867,7 +1090,8 @@ postEntrySchema.addAttribute("valueDate", {
 const entryPostedSchema = ledgerBC.addSchema("EntryPosted");
 entryPostedSchema.addAttribute("entryId", { type: "string", identity: true });
 entryPostedSchema.addAttribute("postings", {
-	type: "{ledgerAccount, amount, direction}[]",
+	type: "PostingLine[]",
+	schema: postingLineSchema,
 });
 
 const entryPosted = entryAgg.provides("EntryPosted", {
@@ -876,7 +1100,14 @@ const entryPosted = entryAgg.provides("EntryPosted", {
 	pattern: "published-language",
 	schema: entryPostedSchema,
 });
-const postEntry = entryAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const ledgerApp = ledgerBC.addService("LedgerApp", {
+	description:
+		"The ledger's application service: the documented posting API every other context uses",
+	type: "application",
+});
+const postEntry = ledgerApp
 	.provides("PostEntry", {
 		description: "Post a balanced entry",
 		type: "operation",
@@ -884,7 +1115,7 @@ const postEntry = entryAgg
 		schema: postEntrySchema,
 	})
 	.raises(entryPosted);
-entryAgg
+ledgerApp
 	.provides("ReverseEntry", {
 		description: "Post the opposite entry against an earlier one",
 		type: "operation",
@@ -930,13 +1161,13 @@ ledgerBC.addTerm("Value date", {
 });
 
 // Shared kernel: same library, so Accounts takes ledger events as published.
-accountAgg.consumes(entryPosted, { pattern: "conformist" });
+accountServicing.consumes(entryPosted, { pattern: "conformist" });
 accountsBC
 	.addPolicy("Update balance on posting", {
 		description: "Every posting to an account recomputes its available balance",
 	})
 	.on(entryPosted)
-	.then(updateBalance);
+	.issues(updateBalance);
 
 /* =======================
    PAYMENTS HUB
@@ -950,25 +1181,29 @@ const instructionAgg = paymentsBC.addAggregate("PaymentInstruction", {
 const instruction = instructionAgg.addRootEntity("PaymentInstruction", {
 	description: "One instruction, from initiation to settlement or rejection",
 });
-const payeeVO = instructionAgg.addValueObject("Payee", {
+const payeeVO = paymentsBC.addValueObject("Payee", {
 	description:
 		"Name and IBAN of who gets paid; a value because the same details are the same payee",
 });
 payeeVO.addAttribute("name", { type: "string" });
 payeeVO.addAttribute("iban", { type: "string (ISO 13616)" });
-const paymentMoney = money(instructionAgg);
-const executionDateVO = instructionAgg.addValueObject("ExecutionDate", {
+// Money is the Shared Kernel's, borrowed by reference (decision 16's amendment).
+const paymentMoney = kernelMoneyVO;
+const executionDateVO = paymentsBC.addValueObject("ExecutionDate", {
 	description: "When to send it; today means before the scheme cut-off",
 });
 executionDateVO.addAttribute("value", { type: "date" });
-const paymentStatusVO = instructionAgg.addValueObject("PaymentStatus", {
+const paymentStatusVO = paymentsBC.addValueObject("PaymentStatus", {
 	description: "initiated, cleared, flagged, submitted, settled, rejected",
 });
 paymentStatusVO.addAttribute("value", {
 	type: "'initiated' | 'cleared' | 'flagged' | 'submitted' | 'settled' | 'rejected'",
 });
 instruction.addAttribute("instructionId", { type: "string", identity: true });
-instruction.addAttribute("payerAccountId", { type: "string" });
+instruction.addAttribute("payerAccountId", {
+	type: "string",
+	identifies: account,
+});
 const paymentAmount = instruction.addAttribute("amount", {
 	type: "Money",
 	valueobject: paymentMoney,
@@ -977,11 +1212,17 @@ instruction.addAttribute("status", {
 	type: "PaymentStatus",
 	valueobject: paymentStatusVO,
 });
+instruction.addAttribute("payee", { type: "Payee", valueobject: payeeVO });
+instruction.addAttribute("executionDate", {
+	type: "ExecutionDate",
+	valueobject: executionDateVO,
+});
 instruction.uses(payeeVO, "to", "1");
-instruction.uses(paymentMoney, "of", "1");
 instruction.uses(executionDateVO, "on", "1");
 instruction.uses(paymentStatusVO, "has-status", "1");
-instruction.references(account, "from-account", "1");
+// Account lives in Accounts: `payerAccountId` above is the only thing that
+// crosses the boundary. Money is the Shared Kernel's, so it is typed by
+// `valueobject` reference only, with no `uses` relation to cross with it.
 
 instructionAgg
 	.addInvariant("PayerNotPayee", {
@@ -993,21 +1234,10 @@ instructionAgg
 		description: "The amount is greater than zero",
 	})
 	.constrains(paymentAmount);
-// A rule across instructions, not inside one: the hub checks it when it
-// creates the instruction, over the account's instructions for the day.
-instructionAgg
-	.addInvariant("DailyLimit", {
-		description:
-			"Instructions from one account never exceed the daily limit in total; checked at initiation over the day's instructions for the payer account, since no single instruction can know the others",
-	})
-	.constrains(paymentAmount);
-// DISCOVERY: Payments Hub lead. "The account has to cover it."
-instructionAgg
-	.addInvariant("FundsAvailableAtInitiation", {
-		description:
-			"An instruction is created only if the payer's available balance, read through AccountServicing, covers the amount; the overdraft itself is Accounts' rule at posting",
-	})
-	.constrains(paymentAmount);
+// DISCOVERY: Payments Hub lead. "The account has to cover it." A precondition
+// is checked at the moment of the call, and the call is InitiatePayment on
+// PaymentsApp, so the invariant names it further down where that operation
+// exists (decision 19, amended).
 instructionAgg
 	.addInvariant("CutOffRespected", {
 		description:
@@ -1021,7 +1251,10 @@ instructionAgg
 	.constrains(paymentStatusVO);
 
 const initiatePaymentSchema = paymentsBC.addSchema("InitiatePayment");
-initiatePaymentSchema.addAttribute("payerAccountId", { type: "string" });
+initiatePaymentSchema.addAttribute("payerAccountId", {
+	type: "string",
+	identifies: account,
+});
 initiatePaymentSchema.addAttribute("payee", {
 	type: "Payee",
 	valueobject: payeeVO,
@@ -1034,6 +1267,23 @@ initiatePaymentSchema.addAttribute("executionDate", {
 	type: "ExecutionDate",
 	valueobject: executionDateVO,
 });
+// A rejection shape: what InitiatePayment answers with when it will not create
+// the instruction. No payment exists, so there is no payment event to raise;
+// the channel is told which rule stopped it (decision 25).
+const instructionRefusedSchema = paymentsBC.addSchema("InstructionRefused", {
+	description:
+		"Why an instruction was not created: over the daily limit, not covered, or past the cut-off",
+});
+instructionRefusedSchema.addAttribute("reason", { type: "string" });
+instructionRefusedSchema.addAttribute("payerAccountId", {
+	type: "string",
+	identifies: account,
+});
+instructionRefusedSchema.addAttribute("remainingToday", {
+	type: "Money",
+	optional: true,
+	valueobject: paymentMoney,
+});
 const paymentEventSchema = paymentsBC.addSchema("PaymentEvent", {
 	description: "Instruction id, amount and payee; shared by the payment events",
 });
@@ -1041,7 +1291,10 @@ paymentEventSchema.addAttribute("instructionId", {
 	type: "string",
 	identity: true,
 });
-paymentEventSchema.addAttribute("payerAccountId", { type: "string" });
+paymentEventSchema.addAttribute("payerAccountId", {
+	type: "string",
+	identifies: account,
+});
 paymentEventSchema.addAttribute("amount", {
 	type: "Money",
 	valueobject: paymentMoney,
@@ -1074,19 +1327,54 @@ const paymentRejected = instructionAgg.provides("PaymentRejected", {
 	pattern: "published-language",
 	schema: paymentEventSchema,
 });
-instructionAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const paymentsApp = paymentsBC.addService("PaymentsApp", {
+	description:
+		"The hub's application service: the boundary channels initiate payments through, and the one that calls the scheme, the ledger and fraud",
+	type: "application",
+});
+const initiatePayment = paymentsApp
 	.provides("InitiatePayment", {
 		description:
 			"Create an instruction from a channel, once AccountServicing confirms the available balance covers it and the daily limit holds",
 		type: "operation",
 		pattern: "open-host-service",
 		schema: initiatePaymentSchema,
+		rejects: [instructionRefusedSchema],
 	})
 	.raises(paymentInitiated);
+// A rule across instructions, not inside one: the context holds it and
+// InitiatePayment keeps it, summing the day's instructions for the payer
+// account, since no single instruction can know the others (decision 27).
+// Not a precondition, on its own words: the total never exceeding the limit is
+// as true after InitiatePayment as before it, and everything it counts is this
+// context's own to read. InitiatePayment is named because it is the operation
+// that keeps it, which is what naming a guard says (card 94).
+paymentsBC
+	.addInvariant("DailyLimit", {
+		description:
+			"Instructions from one account never exceed the daily limit in total; InitiatePayment sums the day's instructions for the payer account, since no single instruction can know the others",
+	})
+	.constrains(paymentAmount, initiatePayment);
+// DISCOVERY: Payments Hub lead. "The account has to cover it." A rule about one
+// instruction, so it is the aggregate's; checked before the instruction exists,
+// so what upholds it is InitiatePayment, the application service operation the
+// channel calls (decision 19, amended). The guard was in prose until card 90.
+instructionAgg
+	.addInvariant("FundsAvailableAtInitiation", {
+		description:
+			"An instruction is created only if the payer's available balance, read through AccountServicing, covers the amount; the overdraft itself is Accounts' rule at posting",
+		// The balance is Accounts' to move, so the cover holds at initiation and
+		// nothing here re-establishes it afterwards (card 94).
+		precondition: true,
+	})
+	.constrains(paymentAmount, initiatePayment);
 // The funds check is a read of Accounts' documented API, translated: the hub
 // keeps its own notion of "covered" rather than Accounts' balance model.
-instructionAgg.consumes(getAvailableBalance, {
+paymentsApp.consumes(getAvailableBalance, {
 	pattern: "anti-corruption-layer",
+	by: [initiatePayment],
 });
 const submitPayment = instructionAgg
 	.provides("SubmitPayment", {
@@ -1143,7 +1431,7 @@ const schemeMessageAgg = schemeBC.addAggregate("SchemeMessage", {
 const schemeMessage = schemeMessageAgg.addRootEntity("SchemeMessage", {
 	description: "A submission or a response",
 });
-const schemeFormatVO = schemeMessageAgg.addValueObject("SchemeFormat", {
+const schemeFormatVO = schemeBC.addValueObject("SchemeFormat", {
 	description: "The ISO 20022 message type",
 });
 schemeFormatVO.addAttribute("messageType", {
@@ -1152,6 +1440,10 @@ schemeFormatVO.addAttribute("messageType", {
 schemeMessage.addAttribute("messageId", { type: "string", identity: true });
 schemeMessage.addAttribute("schemeRef", { type: "string" });
 schemeMessage.addAttribute("direction", { type: "'outbound' | 'inbound'" });
+schemeMessage.addAttribute("format", {
+	type: "SchemeFormat",
+	valueobject: schemeFormatVO,
+});
 schemeMessage.uses(schemeFormatVO, "formatted-as", "1");
 
 const submissionSchema = schemeBC.addSchema("SchemeSubmission", {
@@ -1160,70 +1452,145 @@ const submissionSchema = schemeBC.addSchema("SchemeSubmission", {
 submissionSchema.addAttribute("instructionId", {
 	type: "string",
 	identity: true,
+	identifies: instruction,
 });
 submissionSchema.addAttribute("messageType", {
 	type: "SchemeFormat",
 	valueobject: schemeFormatVO,
 });
-const settlementSchema = schemeBC.addSchema("SchemeSettlement");
+// What the gateway hands back to the hub once the scheme has answered: the
+// bank's reading of the scheme's response, in the bank's own terms.
+const settlementSchema = schemeBC.addSchema("SchemeSettlement", {
+	description:
+		"The scheme settled: which instruction, and the scheme's own reference",
+});
 settlementSchema.addAttribute("instructionId", {
 	type: "string",
 	identity: true,
+	identifies: instruction,
 });
 settlementSchema.addAttribute("schemeRef", { type: "string" });
+const schemeRefusalSchema = schemeBC.addSchema("SchemeRefusal", {
+	description:
+		"The scheme refused: which instruction, and the scheme's status reason passed through untranslated, because you do not negotiate with a scheme",
+});
+schemeRefusalSchema.addAttribute("instructionId", {
+	type: "string",
+	identity: true,
+	identifies: instruction,
+});
+schemeRefusalSchema.addAttribute("schemeRef", { type: "string" });
+schemeRefusalSchema.addAttribute("reason", { type: "string" });
 
-const schemeSettlementConfirmed = schemeMessageAgg.provides(
+// The scheme's own answers, published by the scheme. They carry the scheme's
+// shape, as CardCo's authorisation message carries CardCo's: what arrives is a
+// pacs.002 with the reference the gateway sent in it, and the gateway is what
+// takes it in (decision 28).
+const schemeResponseSchema = paymentSchemeBC.addSchema("SchemeResponse", {
+	description: "The scheme's status report, as it arrives on the wire",
+});
+schemeResponseSchema.addAttribute("originalInstructionId", { type: "string" });
+schemeResponseSchema.addAttribute("schemeRef", { type: "string" });
+schemeResponseSchema.addAttribute("statusReason", {
+	type: "string",
+	optional: true,
+});
+const schemeRail = paymentSchemeBC.addService("Scheme Rail", {
+	description: "The scheme's inbound leg, and all the bank can see of it",
+	type: "application",
+});
+const schemeSettlementConfirmed = schemeRail.provides(
 	"SchemeSettlementConfirmed",
 	{
 		description: "The scheme settled the payment",
 		type: "event",
 		pattern: "published-language",
-		schema: settlementSchema,
+		schema: schemeResponseSchema,
 	},
 );
-const schemeRejected = schemeMessageAgg.provides("SchemeRejected", {
+const schemeRejected = schemeRail.provides("SchemeRejected", {
 	description: "The scheme refused the message",
 	type: "event",
 	pattern: "published-language",
-	schema: settlementSchema,
+	schema: schemeResponseSchema,
 });
-const submitToScheme = schemeMessageAgg
-	.provides("SubmitToScheme", {
-		description: "Send a submission and await the response",
-		type: "operation",
-		pattern: "open-host-service",
-		schema: submissionSchema,
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const schemeApp = schemeBC.addService("SchemeGatewayApp", {
+	description:
+		"The gateway's application service: the boundary the hub submits messages through",
+	type: "application",
+});
+// "Send a submission and await the response": the caller waits, and what it
+// gets back is the gateway's reading of whichever answer the scheme gave. The
+// operation used to claim to raise the scheme's two events itself, which said
+// the gateway made the settlement happen (card 95).
+const submitToScheme = schemeApp.provides("SubmitToScheme", {
+	description:
+		"Send a submission in the scheme's format and await the response; the caller is answered with the settlement or with the scheme's refusal",
+	type: "operation",
+	pattern: "open-host-service",
+	schema: submissionSchema,
+	returns: settlementSchema,
+	rejects: [schemeRefusalSchema],
+});
+// Waiting for the response is taking the scheme's fact in at the gateway's own
+// boundary, and SubmitToScheme is the operation that waits.
+schemeApp.consumes(schemeSettlementConfirmed, {
+	pattern: "conformist",
+	by: [submitToScheme],
+});
+schemeApp.consumes(schemeRejected, {
+	pattern: "conformist",
+	by: [submitToScheme],
+});
+paymentSchemeBC.upstreamOf(schemeBC, {
+	description:
+		"ISO 20022 as the scheme publishes it; the gateway takes the format as it is",
+	upstreamRoles: ["published-language"],
+	downstreamRoles: ["conformist"],
+});
+// A policy names operations of its own context, so each step that reaches
+// another context is an operation of the hub's own app service (decision 17).
+const sendToScheme = paymentsApp.provides("SendToScheme", {
+	description:
+		"Hand a submitted instruction to the gateway, by calling SubmitToScheme",
+	type: "operation",
+	internal: true,
+});
+const postSettlement = paymentsApp.provides("PostSettlement", {
+	description:
+		"Post the settled instruction to the ledger, through the ACL over PostEntry",
+	type: "operation",
+	internal: true,
+});
+// PaymentsApp offers four operations and only one of them makes each of these
+// calls, so the chain from an initiated instruction to the scheme's answer and
+// on to the ledger runs through `by` rather than stopping at the boundary
+// (decision 21, third amendment).
+paymentsApp.consumes(submitToScheme, {
+	pattern: "conformist",
+	by: [sendToScheme],
+});
+paymentsApp.consumes(postEntry, {
+	pattern: "anti-corruption-layer",
+	by: [postSettlement],
+});
+// The hub lead described one instruction going from initiated to settled, and
+// the model used to spell it as seven policies. It is one process: it holds
+// the instruction while the scorer and then the scheme answer, and each step
+// it takes is an operation of the hub's own boundary (decisions 17 and 23).
+// What it waits for from Fraud is joined further down, where that answer is
+// declared.
+const instructionLifecycle = paymentsBC
+	.addProcess("Instruction lifecycle", {
+		description:
+			"From an instruction being initiated to the money having moved. It scores every instruction with Fraud and waits for the verdict to come back: above the threshold it rejects the instruction and never submits it, below it submits to the scheme through the gateway, in the scheme's own format, and the process then waits again for the answer that call comes back with. A settlement settles the instruction and posts it to the ledger; a refusal rejects it. Correlation is by instructionId, which the scorer's verdict and the gateway's answer both carry; an instruction the scheme never answers stays open for the operations team, because the scheme's own timings are not the bank's to model",
 	})
-	.raises(schemeSettlementConfirmed, schemeRejected);
-
-instructionAgg.consumes(submitToScheme, { pattern: "conformist" });
-instructionAgg.consumes(schemeSettlementConfirmed, { pattern: "conformist" });
-instructionAgg.consumes(schemeRejected, { pattern: "conformist" });
-instructionAgg.consumes(postEntry, { pattern: "anti-corruption-layer" });
-paymentsBC
-	.addPolicy("Submit to scheme", {
-		description: "A submitted instruction goes to the gateway",
-	})
-	.on(paymentSubmitted)
-	.then(submitToScheme);
-paymentsBC
-	.addPolicy("Confirm settlement", {
-		description: "The scheme's confirmation settles the instruction",
-	})
-	.on(schemeSettlementConfirmed)
-	.then(confirmSettlement);
-paymentsBC
-	.addPolicy("Reject on scheme refusal", {
-		description: "A refused message rejects the instruction",
-	})
-	.on(schemeRejected)
-	.then(rejectPayment);
-paymentsBC
-	.addPolicy("Post on settlement", {
-		description: "A settled instruction posts to the ledger",
-	})
-	.on(paymentSettled)
-	.then(postEntry);
+	.starts(paymentInitiated)
+	.on(submitToScheme.returned(), submitToScheme.rejected(schemeRefusalSchema))
+	.issues(sendToScheme, confirmSettlement, rejectPayment, postSettlement)
+	.ends(paymentSettled, paymentRejected);
 
 /* =======================
    FRAUD
@@ -1240,24 +1607,38 @@ const fraudCase = fraudCaseAgg.addRootEntity("FraudCase", {
 const alert = fraudCaseAgg.addEntity("Alert", {
 	description: "One flagged transaction with its score",
 });
-const riskScoreVO = fraudCaseAgg.addValueObject("RiskScore", {
+const riskScoreVO = fraudBC.addValueObject("RiskScore", {
 	description: "0 to 1000 with the reasons that produced it",
 });
 riskScoreVO.addAttribute("value", { type: "int 0..1000" });
-riskScoreVO.addAttribute("reasons", { type: "string[]" });
-const caseStatusVO = fraudCaseAgg.addValueObject("CaseStatus", {
+const riskReasons = riskScoreVO.addAttribute("reasons", { type: "string[]" });
+// The value's own rule: a score without its reasons is not a score the bank
+// may act on, and no save is involved in keeping that true.
+riskScoreVO
+	.addInvariant("ScoreExplained", {
+		description:
+			"A score carries its reasons, because the customer may be entitled to them",
+	})
+	.constrains(riskReasons);
+const caseStatusVO = fraudBC.addValueObject("CaseStatus", {
 	description: "open, confirmed, dismissed",
 });
 caseStatusVO.addAttribute("value", {
 	type: "'open' | 'confirmed' | 'dismissed'",
 });
 fraudCase.addAttribute("caseId", { type: "string", identity: true });
-fraudCase.addAttribute("customerId", { type: "string" });
-fraudCase.addAttribute("accountId", { type: "string" });
+// The customer and the account a case is about both live in other contexts, so
+// the case holds their identities and says which roots they are of.
+fraudCase.addAttribute("customerId", { type: "string", identifies: customer });
+fraudCase.addAttribute("accountId", { type: "string", identifies: account });
 alert.addAttribute("alertId", { type: "string", identity: true });
 alert.addAttribute("transactionRef", { type: "string" });
 alert.addAttribute("score", { type: "RiskScore", valueobject: riskScoreVO });
 fraudCase.includes(alert, "raised-by", "1..*");
+fraudCase.addAttribute("status", {
+	type: "CaseStatus",
+	valueobject: caseStatusVO,
+});
 fraudCase.uses(caseStatusVO, "has-status", "1");
 alert.uses(riskScoreVO, "scored", "1");
 
@@ -1266,12 +1647,6 @@ fraudCaseAgg
 		description: "A case always has at least one alert",
 	})
 	.constrains(fraudCase, alert);
-fraudCaseAgg
-	.addInvariant("ScoreExplained", {
-		description:
-			"A score carries its reasons, because the customer may be entitled to them",
-	})
-	.constrains(riskScoreVO);
 
 const scoreTransactionSchema = fraudBC.addSchema("ScoreTransaction", {
 	description:
@@ -1284,8 +1659,14 @@ scoreTransactionSchema.addAttribute("transactionRef", {
 scoreTransactionSchema.addAttribute("channel", { type: "'payment' | 'card'" });
 scoreTransactionSchema.addAttribute("amountMinor", { type: "int64" });
 scoreTransactionSchema.addAttribute("payeeIban", { type: "string" });
+// DISCOVERY: Financial Crime lead, "synchronous scoring": the caller waits and
+// is told. The verdict is what ScoreTransaction answers with, so it is the
+// operation's `returns` and the shape Payments' process waits on (decision 23).
+// It was a pair of published events until card 92, which made a caller
+// subscribe to hear the answer to its own question.
 const transactionVerdictSchema = fraudBC.addSchema("TransactionVerdict", {
-	description: "Shared by flagged and cleared",
+	description:
+		"What the scorer answers with: the transaction and its score, reasons and all; above the threshold is a flag",
 });
 transactionVerdictSchema.addAttribute("transactionRef", {
 	type: "string",
@@ -1302,21 +1683,19 @@ const fraudCaseSchema = fraudBC.addSchema("FraudCaseOpened");
 fraudCaseSchema.addAttribute("caseId", { type: "string", identity: true });
 fraudCaseSchema.addAttribute("accountId", { type: "string" });
 
-// The verdicts belong to the scorer, not the case: a cleared transaction
-// opens no case, so the FraudCase aggregate cannot be what raises it.
+// The flag belongs to the scorer, not the case: a flag opens a case, so the
+// FraudCase aggregate cannot be what raises it. A flag is a fact the bank acts
+// on wherever it happened — Cards blocks the card on one — which is why it is
+// still an event beside the answer the caller waited for; a clearance is not a
+// fact anybody publishes, it is the call coming back, and it was an event only
+// because the model had nowhere else to put it (card 92).
 const transactionScorer = fraudBC.addService("TransactionScorer", {
 	description:
 		"The bank's own model; a domain service because it reads across every customer's history",
 	type: "domain",
 });
 const transactionFlagged = transactionScorer.provides("TransactionFlagged", {
-	description: "Above threshold; the caller stops the transaction",
-	type: "event",
-	pattern: "published-language",
-	schema: transactionVerdictSchema,
-});
-const transactionCleared = transactionScorer.provides("TransactionCleared", {
-	description: "Below threshold; the caller proceeds",
+	description: "Above threshold; a case is opened and the card is blocked",
 	type: "event",
 	pattern: "published-language",
 	schema: transactionVerdictSchema,
@@ -1340,21 +1719,30 @@ fraudCaseAgg.provides("CloseCase", {
 	internal: true,
 });
 
-const scoreTransaction = transactionScorer
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const fraudApp = fraudBC.addService("FraudApp", {
+	description:
+		"Fraud's application service: the boundary other contexts ask for a verdict through, in front of the scorer",
+	type: "application",
+});
+const scoreTransaction = fraudApp
 	.provides("ScoreTransaction", {
-		description: "Score synchronously; callers wait on the verdict",
+		description:
+			"Score synchronously; the caller waits and is answered with the verdict, and a flag is published as well because other contexts act on it",
 		type: "operation",
 		pattern: "open-host-service",
 		schema: scoreTransactionSchema,
+		returns: transactionVerdictSchema,
 	})
-	.raises(transactionFlagged, transactionCleared);
+	.raises(transactionFlagged);
 
 fraudBC
 	.addPolicy("Open case on flag", {
 		description: "Every flag becomes a case with the alert attached",
 	})
 	.on(transactionFlagged)
-	.then(openCase);
+	.issues(openCase);
 
 fraudBC.addTerm("Alert", {
 	definition: "One flagged transaction and its score",
@@ -1366,40 +1754,37 @@ fraudBC.addTerm("APP scam", {
 	embodiedBy: transactionScorer,
 });
 
-// Payments waits on the scorer; flags reject, clears submit.
-instructionAgg.consumes(scoreTransaction, { pattern: "anti-corruption-layer" });
-instructionAgg.consumes(transactionFlagged, {
-	pattern: "anti-corruption-layer",
+// Payments waits on the scorer: it calls and holds the instruction until the
+// verdict comes back, and what it does then — reject on a flag, submit on a
+// clearance — is the process's own business (decisions 15 and 23).
+const scoreInstruction = paymentsApp.provides("ScoreInstruction", {
+	description:
+		"Send an initiated instruction to Fraud for a verdict, through the ACL",
+	type: "operation",
+	internal: true,
 });
-instructionAgg.consumes(transactionCleared, {
+paymentsApp.consumes(scoreTransaction, {
 	pattern: "anti-corruption-layer",
+	by: [scoreInstruction],
 });
-paymentsBC
-	.addPolicy("Score on initiation", {
-		description: "Every instruction is scored before it goes anywhere",
-	})
-	.on(paymentInitiated)
-	.then(scoreTransaction);
-paymentsBC
-	.addPolicy("Submit on clear", {
-		description: "A cleared instruction is submitted",
-	})
-	.on(transactionCleared)
-	.then(submitPayment);
-paymentsBC
-	.addPolicy("Reject on flag", {
-		description: "A flagged instruction is rejected, never submitted",
-	})
-	.on(transactionFlagged)
-	.then(rejectPayment);
+// The first half of the instruction lifecycle above: scoring, and what the
+// verdict does. It is written here because Fraud's shapes are declared in this
+// section. The process waits on the answer to the call it made, named by that
+// call, which is what "synchronous scoring" means and what it could not say
+// before card 92.
+instructionLifecycle
+	.on(scoreTransaction.returned())
+	.issues(scoreInstruction, submitPayment);
 // Accounts freezes when a case opens.
-accountAgg.consumes(fraudCaseOpened, { pattern: "anti-corruption-layer" });
+accountServicing.consumes(fraudCaseOpened, {
+	pattern: "anti-corruption-layer",
+});
 accountsBC
 	.addPolicy("Freeze on fraud case", {
 		description: "An opened case freezes the account the same second",
 	})
 	.on(fraudCaseOpened)
-	.then(freezeAccount);
+	.issues(freezeAccount);
 
 /* =======================
    CARDS
@@ -1418,32 +1803,51 @@ const cardAuthorisation = cardAgg.addEntity("Authorisation", {
 	description:
 		"A merchant's approved request to take an amount; an entity because it is later captured or expires",
 });
-const panVO = cardAgg.addValueObject("PAN", {
+const panVO = cardsBC.addValueObject("PAN", {
 	description:
 		"The card number, held as a token plus last four; the full number passes Luhn",
 });
 panVO.addAttribute("token", { type: "string" });
 panVO.addAttribute("lastFour", { type: "string" });
-const expiryVO = cardAgg.addValueObject("Expiry", {
+// A construction rule, and so the value's own: the stored value is a token and
+// four digits, on which Luhn cannot be run, so the check happens once, before
+// tokenisation, and a value that failed it is never made at all. It names the
+// value rather than either attribute, because the number it checked is neither
+// of them (decision 27's 2026-09-08 amendment).
+panVO
+	.addInvariant("PanLuhnValid", {
+		description:
+			"A PAN value is only ever created from a full number that passed the Luhn check; the token and last four are never re-checked because they cannot be",
+	})
+	.constrains(panVO);
+const expiryVO = cardsBC.addValueObject("Expiry", {
 	description: "Month and year after which nothing authorises",
 });
 expiryVO.addAttribute("month", { type: "int 1..12" });
 expiryVO.addAttribute("year", { type: "int" });
-const cardStatusVO = cardAgg.addValueObject("CardStatus", {
+const cardStatusVO = cardsBC.addValueObject("CardStatus", {
 	description: "active, blocked, expired",
 });
 cardStatusVO.addAttribute("value", {
 	type: "'active' | 'blocked' | 'expired'",
 });
-const cardMoney = money(cardAgg);
+// Money is the Shared Kernel's, borrowed by reference (decision 16's amendment).
+const cardMoney = kernelMoneyVO;
 card.addAttribute("cardId", { type: "string", identity: true });
-card.addAttribute("accountId", { type: "string" });
+card.addAttribute("accountId", { type: "string", identifies: account });
 card.addAttribute("pan", { type: "PAN", valueobject: panVO });
 card.addAttribute("expiry", { type: "Expiry", valueobject: expiryVO });
 card.addAttribute("status", { type: "CardStatus", valueobject: cardStatusVO });
 cardAuthorisation.addAttribute("authorisationId", {
 	type: "string",
 	identity: true,
+});
+// CardCo's own reference for the same authorisation, quoted back on every
+// message. CardCo is a system the bank does not model inside, so the id names
+// the processor rather than an entity of theirs (decision 28, card 81).
+cardAuthorisation.addAttribute("cardCoRef", {
+	type: "string",
+	identifies: cardCoBC,
 });
 cardAuthorisation.addAttribute("merchant", { type: "string" });
 cardAuthorisation.addAttribute("amount", {
@@ -1455,17 +1859,10 @@ card.includes(cardAuthorisation, "authorised", "*");
 card.uses(panVO, "numbered", "1");
 card.uses(expiryVO, "expires", "1");
 card.uses(cardStatusVO, "has-status", "1");
-cardAuthorisation.uses(cardMoney, "of", "1");
-card.references(account, "on-account", "1");
+// Account lives in Accounts: `accountId` above is the only thing that crosses
+// the boundary. Money is the Shared Kernel's, so it is typed by
+// `valueobject` reference only, with no `uses` relation to cross with it.
 
-// A construction rule: the stored value is a token and four digits, on which
-// Luhn cannot be run, so the check happens once, before tokenisation.
-cardAgg
-	.addInvariant("PanLuhnValid", {
-		description:
-			"A PAN value is only ever created from a full number that passed the Luhn check; the token and last four are never re-checked because they cannot be",
-	})
-	.constrains(panVO);
 cardAgg
 	.addInvariant("NoAuthOnBlockedCard", {
 		description: "A blocked card authorises nothing",
@@ -1478,15 +1875,13 @@ cardAgg
 	.constrains(expiryVO, cardAuthorisation);
 // The balance lives in Accounts, so this is a check at authorisation time
 // through the ACL (GetAvailableBalance), not a rule Cards can hold on its own.
-cardAgg
-	.addInvariant("AuthWithinAvailableBalance", {
-		description:
-			"An authorisation is approved only if the available balance read from AccountServicing at that moment covers it; Accounts then holds the amount",
-	})
-	.constrains(cardAuthorisation);
+// The operation that makes the check is AuthoriseCard on CardsApp, so the
+// invariant is declared further down where that operation exists and names it
+// (decision 19, amended; card 90).
 
 const cardAuthRequestSchema = cardsBC.addSchema("CardAuthorisationRequest", {
-	description: "CardCo's format, translated on the way in",
+	description:
+		"What CardCo's message becomes once Cards has translated it (card 71: CardCo's own format is CardCo's, and lives there)",
 });
 cardAuthRequestSchema.addAttribute("panToken", { type: "string" });
 cardAuthRequestSchema.addAttribute("merchant", { type: "string" });
@@ -1498,14 +1893,23 @@ const cardEventSchema = cardsBC.addSchema("CardEvent", {
 	description: "Card and account; shared by the card events",
 });
 cardEventSchema.addAttribute("cardId", { type: "string", identity: true });
-cardEventSchema.addAttribute("accountId", { type: "string" });
+cardEventSchema.addAttribute("accountId", {
+	type: "string",
+	identifies: account,
+});
 const cardAuthorisedSchema = cardsBC.addSchema("CardAuthorised", {
 	description:
 		"Card, account and the authorised amount; Accounts needs the amount to place the hold",
 });
 cardAuthorisedSchema.addAttribute("cardId", { type: "string", identity: true });
-cardAuthorisedSchema.addAttribute("accountId", { type: "string" });
-cardAuthorisedSchema.addAttribute("authorisationId", { type: "string" });
+cardAuthorisedSchema.addAttribute("accountId", {
+	type: "string",
+	identifies: account,
+});
+cardAuthorisedSchema.addAttribute("authorisationId", {
+	type: "string",
+	identifies: cardAuthorisation,
+});
 cardAuthorisedSchema.addAttribute("amount", {
 	type: "Money",
 	valueobject: cardMoney,
@@ -1524,15 +1928,83 @@ const cardBlocked = cardAgg.provides("CardBlocked", {
 	pattern: "published-language",
 	schema: cardEventSchema,
 });
-cardAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const cardsApp = cardsBC.addService("CardsApp", {
+	description:
+		"Cards' application service: the boundary CardCo authorises against and channels block cards through",
+	type: "application",
+});
+// DISCOVERY: Cards Team lead. "CardCo sends us the authorisation request in
+// their format and we translate it", and Cards answers in the same terms:
+// CardCo waits on the call, and what comes back is an approval or a decline.
+// The model said the operation approved or declined and named neither answer,
+// so the decline -- the outcome three of Cards' own rules produce -- existed
+// nowhere (decisions 13 and 25; card 95).
+const cardApprovalSchema = cardsBC.addSchema("CardAuthorisationApproved", {
+	description:
+		"What CardCo is answered with when the request is approved: the authorisation and the amount now held",
+});
+cardApprovalSchema.addAttribute("authorisationId", {
+	type: "string",
+	identity: true,
+	identifies: cardAuthorisation,
+});
+cardApprovalSchema.addAttribute("amount", {
+	type: "Money",
+	valueobject: cardMoney,
+});
+const cardDeclineSchema = cardsBC.addSchema("CardAuthorisationDeclined", {
+	description:
+		"Why the request was declined: the card is blocked, the card has expired, or the available balance does not cover it. No authorisation exists, so there is no card event to raise",
+});
+cardDeclineSchema.addAttribute("cardId", { type: "string", identifies: card });
+cardDeclineSchema.addAttribute("reason", {
+	type: "'blocked' | 'expired' | 'insufficient-funds'",
+});
+const authoriseCard = cardsApp
 	.provides("AuthoriseCard", {
-		description: "Approve or decline a merchant's request from CardCo",
+		description:
+			"Approve or decline a merchant's request from CardCo; the caller waits, and is answered with the authorisation or with the rule that stopped it",
 		type: "operation",
 		pattern: "open-host-service",
 		schema: cardAuthRequestSchema,
+		returns: cardApprovalSchema,
+		rejects: [cardDeclineSchema],
 	})
 	.raises(cardAuthorised);
-const blockCard = cardAgg
+// DISCOVERY: Cards Team lead. "CardCo sends us the authorisation request in
+// their format and we translate it." CardCo is a system the bank does not
+// own, so the message it sends is CardCo's event, carrying CardCo's shape,
+// and the translating is what makes Cards' consumption of it (decision 28).
+const cardCoMessageSchema = cardCoBC.addSchema("CardCoAuthorisationMessage", {
+	description: "CardCo's wire format, as it arrives",
+});
+cardCoMessageSchema.addAttribute("panToken", { type: "string" });
+cardCoMessageSchema.addAttribute("merchant", { type: "string" });
+cardCoMessageSchema.addAttribute("amountMinorUnits", { type: "int64" });
+cardCoMessageSchema.addAttribute("currency", { type: "ISO 4217 code" });
+const cardCoFeed = cardCoBC.addService("CardCo Authorisation Feed", {
+	description: "The processor's outbound feed, and all the bank can see",
+	type: "application",
+});
+const authorisationRequested = cardCoFeed.provides("AuthorisationRequested", {
+	description: "A merchant asked CardCo to take an amount on one of our cards",
+	type: "event",
+	pattern: "published-language",
+	schema: cardCoMessageSchema,
+});
+cardsApp.consumes(authorisationRequested, {
+	pattern: "anti-corruption-layer",
+	by: [authoriseCard],
+});
+cardCoBC.upstreamOf(cardsBC, {
+	description:
+		"CardCo's format is CardCo's; Cards translates every message on the way in and answers in the same terms",
+	upstreamRoles: ["published-language"],
+	downstreamRoles: ["anti-corruption-layer"],
+});
+const blockCard = cardsApp
 	.provides("BlockCard", {
 		description:
 			"Block a card; issued by fraud or by a customer through a channel",
@@ -1547,26 +2019,52 @@ cardAgg.provides("IssueCard", {
 	internal: true,
 });
 
-cardAgg.consumes(getAvailableBalance, { pattern: "anti-corruption-layer" });
-cardAgg.consumes(scoreTransaction, { pattern: "anti-corruption-layer" });
-cardAgg.consumes(transactionFlagged, { pattern: "anti-corruption-layer" });
+cardsApp.consumes(getAvailableBalance, {
+	pattern: "anti-corruption-layer",
+	by: [authoriseCard],
+});
+// The precondition on that read: a rule about one authorisation, so it is the
+// aggregate's, and checked at the moment of the call, so what upholds it is
+// AuthoriseCard rather than anything the aggregate saves (decision 19,
+// amended). The guard was in the comment above until card 90.
+cardAgg
+	.addInvariant("AuthWithinAvailableBalance", {
+		description:
+			"An authorisation is approved only if the available balance read from AccountServicing at that moment covers it; Accounts then holds the amount",
+		// "At that moment" is the whole of it: the balance moves next door and
+		// the check is not made again (card 94).
+		precondition: true,
+	})
+	.constrains(cardAuthorisation, authoriseCard);
+cardsApp.consumes(scoreTransaction, {
+	pattern: "anti-corruption-layer",
+	by: [authoriseCard],
+});
+cardsApp.consumes(transactionFlagged, { pattern: "anti-corruption-layer" });
 cardsBC
 	.addPolicy("Block on flagged card transaction", {
 		description: "A flag on a card-channel transaction blocks the card",
 	})
 	.on(transactionFlagged)
-	.then(blockCard);
-fraudCaseAgg.consumes(cardAuthorised, { pattern: "anti-corruption-layer" });
+	.issues(blockCard);
+// Post-authorisation monitoring: card authorisations are part of the history
+// the scorer reads, translated at Fraud's boundary into its own words. Nothing
+// reacts to one on its own, and `ScoreTransaction` is the part of Fraud they
+// feed (`subscription-backed`).
+fraudApp.consumes(cardAuthorised, {
+	pattern: "anti-corruption-layer",
+	by: [scoreTransaction],
+});
 // DISCOVERY: Accounts Team lead. "Our balance is ledger balance less pending
 // card authorisations": Accounts must hear every authorisation to hold it.
-accountAgg.consumes(cardAuthorised, { pattern: "anti-corruption-layer" });
+accountServicing.consumes(cardAuthorised, { pattern: "anti-corruption-layer" });
 accountsBC
 	.addPolicy("Hold on card authorisation", {
 		description:
 			"Every approved authorisation places a hold on its account the same second, so the available balance is what the merchant has not yet captured",
 	})
 	.on(cardAuthorised)
-	.then(placeHold);
+	.issues(placeHold);
 
 cardsBC.addTerm("PAN", {
 	definition: "The card number; held as a token and the last four digits",
@@ -1595,19 +2093,23 @@ const applicationAgg = lendingBC.addAggregate("LoanApplication", {
 const application = applicationAgg.addRootEntity("LoanApplication", {
 	description: "One request for credit",
 });
-const applicationMoney = money(applicationAgg);
-const termVO = applicationAgg.addValueObject("Term", {
+// Money is the Shared Kernel's, borrowed by reference (decision 16's amendment).
+const applicationMoney = kernelMoneyVO;
+const termVO = lendingBC.addValueObject("Term", {
 	description: "Months to repay over",
 });
 termVO.addAttribute("months", { type: "int" });
-const decisionVO = applicationAgg.addValueObject("Decision", {
+const decisionVO = lendingBC.addValueObject("Decision", {
 	description:
 		"approved or declined, with the reasons the customer is entitled to",
 });
 decisionVO.addAttribute("outcome", { type: "'approved' | 'declined'" });
 decisionVO.addAttribute("reasons", { type: "string[]" });
 application.addAttribute("applicationId", { type: "string", identity: true });
-application.addAttribute("customerId", { type: "string" });
+application.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
 application.addAttribute("requested", {
 	type: "Money",
 	valueobject: applicationMoney,
@@ -1615,18 +2117,18 @@ application.addAttribute("requested", {
 application.addAttribute("status", {
 	type: "'open' | 'decided' | 'withdrawn'",
 });
-application.uses(applicationMoney, "requests", "1");
+application.addAttribute("term", { type: "Term", valueobject: termVO });
+application.addAttribute("decision", {
+	type: "Decision",
+	valueobject: decisionVO,
+	optional: true,
+	description: "Absent until Credit Decisioning has answered",
+});
 application.uses(termVO, "over", "1");
 application.uses(decisionVO, "decided", "0..1");
-application.references(customer, "made-by", "1");
-// A rule across applications, so it is checked when SubmitApplication runs,
-// over the customer's applications; one instance cannot see the others.
-applicationAgg
-	.addInvariant("OneOpenApplicationPerCustomer", {
-		description:
-			"A customer has at most one open application; SubmitApplication refuses a second while one is open",
-	})
-	.constrains(application);
+// Customer lives in Customer & KYC: `customerId` above is the only thing that
+// crosses the boundary. Money is the Shared Kernel's, so it is typed by
+// `valueobject` reference only, with no `uses` relation to cross with it.
 
 const loanAgg = lendingBC.addAggregate("Loan", {
 	description:
@@ -1642,12 +2144,13 @@ const schedule = loanAgg.addEntity("RepaymentSchedule", {
 const installment = loanAgg.addEntity("Installment", {
 	description: "One due payment",
 });
-const loanMoney = money(loanAgg);
-const aprVO = loanAgg.addValueObject("InterestRate", {
+// Lending's Money is the Shared Kernel's, borrowed with the application above.
+const loanMoney = applicationMoney;
+const aprVO = lendingBC.addValueObject("InterestRate", {
 	description: "Annual percentage rate, within the regulatory cap",
 });
 aprVO.addAttribute("aprPercent", { type: "decimal" });
-const loanStatusVO = loanAgg.addValueObject("LoanStatus", {
+const loanStatusVO = lendingBC.addValueObject("LoanStatus", {
 	description: "approved, signed, disbursed, in-arrears, repaid",
 });
 loanStatusVO.addAttribute("value", {
@@ -1655,6 +2158,12 @@ loanStatusVO.addAttribute("value", {
 });
 loan.addAttribute("loanId", { type: "string", identity: true });
 loan.addAttribute("applicationId", { type: "string" });
+loan.addAttribute("accountId", {
+	type: "string",
+	description:
+		"Identity of the Account the loan is disbursed to, in Accounts; only the id crosses the boundary",
+	identifies: account,
+});
 loan.addAttribute("principal", { type: "Money", valueobject: loanMoney });
 loan.addAttribute("apr", { type: "InterestRate", valueobject: aprVO });
 loan.addAttribute("status", { type: "LoanStatus", valueobject: loanStatusVO });
@@ -1664,12 +2173,14 @@ installment.addAttribute("amount", { type: "Money", valueobject: loanMoney });
 installment.addAttribute("paid", { type: "boolean" });
 loan.includes(schedule, "repaid-under", "1");
 schedule.includes(installment, "due", "1..*");
-loan.uses(loanMoney, "principal", "1");
 loan.uses(aprVO, "charged-at", "1");
 loan.uses(loanStatusVO, "has-status", "1");
-installment.uses(loanMoney, "of", "1");
 loan.references(application, "from-application", "1");
-loan.references(account, "disbursed-to", "1");
+// The account the loan is disbursed to lives in Accounts: `accountId` above is
+// the only thing that crosses the boundary. The application it came from is in
+// Lending too, so that one stays a relation. Money is the Shared Kernel's, so
+// it is typed by `valueobject` reference only, with no `uses` relation to
+// cross with it.
 
 loanAgg
 	.addInvariant("NoDrawdownBeforeSignature", {
@@ -1699,7 +2210,10 @@ applicationSubmittedSchema.addAttribute("applicationId", {
 	type: "string",
 	identity: true,
 });
-applicationSubmittedSchema.addAttribute("customerId", { type: "string" });
+applicationSubmittedSchema.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
 applicationSubmittedSchema.addAttribute("requested", {
 	type: "Money",
 	valueobject: applicationMoney,
@@ -1712,7 +2226,10 @@ const loanEventSchema = lendingBC.addSchema("LoanEvent", {
 	description: "Loan, account and amount; shared by the loan events",
 });
 loanEventSchema.addAttribute("loanId", { type: "string", identity: true });
-loanEventSchema.addAttribute("accountId", { type: "string" });
+loanEventSchema.addAttribute("accountId", {
+	type: "string",
+	identifies: account,
+});
 loanEventSchema.addAttribute("amount", {
 	type: "Money",
 	valueobject: loanMoney,
@@ -1734,7 +2251,14 @@ const applicationDeclined = applicationAgg.provides("ApplicationDeclined", {
 	type: "event",
 	internal: true,
 });
-applicationAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const lendingApp = lendingBC.addService("LendingApp", {
+	description:
+		"Lending's application service: the boundary applications arrive through, and the one that calls decisioning and the ledger",
+	type: "application",
+});
+const submitApplication = lendingApp
 	.provides("SubmitApplication", {
 		description: "Ask for an amount over a term",
 		type: "operation",
@@ -1742,6 +2266,15 @@ applicationAgg
 		schema: applicationSubmittedSchema,
 	})
 	.raises(applicationSubmitted);
+// A rule across applications, so it belongs to the context and names the
+// operation that keeps it: SubmitApplication looks over the customer's
+// applications, because one instance cannot see the others (decision 27).
+lendingBC
+	.addInvariant("OneOpenApplicationPerCustomer", {
+		description:
+			"A customer has at most one open application; SubmitApplication refuses a second while one is open",
+	})
+	.constrains(application, submitApplication);
 const recordDecision = applicationAgg
 	.provides("RecordDecision", {
 		description: "Store decisioning's outcome and reasons",
@@ -1773,7 +2306,7 @@ const arrearsNoticeIssued = loanAgg.provides("ArrearsNoticeIssued", {
 	type: "event",
 	internal: true,
 });
-loanAgg
+lendingApp
 	.provides("SignAgreement", {
 		description: "Record the signed agreement and create the loan",
 		type: "operation",
@@ -1811,23 +2344,36 @@ lendingBC
 		description: "A missed installment triggers the arrears notice",
 	})
 	.on(installmentMissed)
-	.then(arrearsNoticeIssued);
+	.issues(arrearsNoticeIssued);
 
 lendingBC
 	.addPolicy("Disburse on signature", {
 		description: "A signed agreement is disbursed",
 	})
 	.on(agreementSigned)
-	.then(disburse);
-loanAgg.consumes(postEntry, { pattern: "anti-corruption-layer" });
+	.issues(disburse);
+// Lending's own step, which is what the policy names (decision 17).
+const postDisbursement = lendingApp.provides("PostDisbursement", {
+	description:
+		"Post the disbursement to the ledger, through the ACL over PostEntry",
+	type: "operation",
+	internal: true,
+});
+lendingApp.consumes(postEntry, {
+	pattern: "anti-corruption-layer",
+	by: [postDisbursement],
+});
 lendingBC
 	.addPolicy("Post disbursement", {
 		description:
 			"Disbursement is a ledger entry: debit loan book, credit the account",
 	})
 	.on(loanDisbursed)
-	.then(postEntry);
-applicationAgg.consumes(getCustomer, { pattern: "anti-corruption-layer" });
+	.issues(postDisbursement);
+lendingApp.consumes(getCustomer, {
+	pattern: "anti-corruption-layer",
+	by: [submitApplication],
+});
 
 lendingBC.addTerm("Loan", {
 	definition: "Money lent under a signed agreement, repaid by a schedule",
@@ -1858,26 +2404,43 @@ const creditDecisionAgg = decisioningBC.addAggregate("CreditDecision", {
 const creditDecision = creditDecisionAgg.addRootEntity("CreditDecision", {
 	description: "The outcome for one application",
 });
-const bureauVO = creditDecisionAgg.addValueObject("BureauReport", {
+const bureauVO = decisioningBC.addValueObject("BureauReport", {
 	description: "The external credit file at a moment in time",
 });
 bureauVO.addAttribute("bureau", { type: "string" });
 bureauVO.addAttribute("score", { type: "int" });
 bureauVO.addAttribute("pulledAt", { type: "date-time" });
-const affordabilityVO = creditDecisionAgg.addValueObject("Affordability", {
+const affordabilityVO = decisioningBC.addValueObject("Affordability", {
 	description: "Monthly income, commitments and their ratio",
 });
 affordabilityVO.addAttribute("monthlyIncomeMinor", { type: "int64" });
 affordabilityVO.addAttribute("monthlyCommitmentsMinor", { type: "int64" });
 affordabilityVO.addAttribute("ratio", { type: "decimal" });
-const creditScoreVO = creditDecisionAgg.addValueObject("CreditScore", {
+const creditScoreVO = decisioningBC.addValueObject("CreditScore", {
 	description: "The scorecard's output with the reason codes",
 });
 creditScoreVO.addAttribute("value", { type: "int" });
 creditScoreVO.addAttribute("reasonCodes", { type: "string[]" });
 creditDecision.addAttribute("decisionId", { type: "string", identity: true });
-creditDecision.addAttribute("applicationId", { type: "string" });
+// The application it decides on lives in Lending, another bounded context: a
+// relation never crosses one, so this is the only thing that crosses.
+creditDecision.addAttribute("applicationId", {
+	type: "string",
+	identifies: application,
+});
 creditDecision.addAttribute("outcome", { type: "'approved' | 'declined'" });
+creditDecision.addAttribute("bureauReport", {
+	type: "BureauReport",
+	valueobject: bureauVO,
+});
+creditDecision.addAttribute("affordability", {
+	type: "Affordability",
+	valueobject: affordabilityVO,
+});
+creditDecision.addAttribute("score", {
+	type: "CreditScore",
+	valueobject: creditScoreVO,
+});
 creditDecision.uses(bureauVO, "based-on", "1");
 creditDecision.uses(affordabilityVO, "assessed", "1");
 creditDecision.uses(creditScoreVO, "scored", "1");
@@ -1904,14 +2467,19 @@ const decisionRequestSchema = decisioningBC.addSchema("DecisionRequest");
 decisionRequestSchema.addAttribute("applicationId", {
 	type: "string",
 	identity: true,
+	identifies: application,
 });
-decisionRequestSchema.addAttribute("customerId", { type: "string" });
+decisionRequestSchema.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
 decisionRequestSchema.addAttribute("requestedMinor", { type: "int64" });
 decisionRequestSchema.addAttribute("termMonths", { type: "int" });
 const decisionMadeSchema = decisioningBC.addSchema("DecisionMade");
 decisionMadeSchema.addAttribute("applicationId", {
 	type: "string",
 	identity: true,
+	identifies: application,
 });
 decisionMadeSchema.addAttribute("outcome", { type: "'approved' | 'declined'" });
 decisionMadeSchema.addAttribute("score", {
@@ -1925,7 +2493,14 @@ const decisionMade = creditDecisionAgg.provides("DecisionMade", {
 	pattern: "published-language",
 	schema: decisionMadeSchema,
 });
-const decide = creditDecisionAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const decisioningApp = decisioningBC.addService("DecisioningApp", {
+	description:
+		"Credit Decisioning's application service: the boundary Lending and the channels ask for a decision through",
+	type: "application",
+});
+const decide = decisioningApp
 	.provides("Decide", {
 		description: "Pull the bureau, run the scorecard, check affordability",
 		type: "operation",
@@ -1943,23 +2518,47 @@ scorecard.provides("ScoreApplication", {
 	type: "operation",
 	internal: true,
 });
-creditDecisionAgg.consumes(getCustomer, { pattern: "anti-corruption-layer" });
+decisioningApp.consumes(getCustomer, {
+	pattern: "anti-corruption-layer",
+	by: [decide],
+});
 
+// And the other way, which the model already described and never wired up:
+// ApplicationSubmitted's schema is named "What decisioning receives" and the
+// event says "decisioning runs". Without this consumption the partnership had
+// traffic one way only, and a partnership is a two-way dependency.
+// `Decide` is where a submitted application arrives: Lending's policy sends it
+// through RequestDecision, and that operation is the part of Decisioning the
+// fact is for. Nothing here reacts to the event on its own
+// (`subscription-backed`).
+decisioningApp.consumes(applicationSubmitted, {
+	pattern: "conformist",
+	by: [decide],
+});
+const requestDecision = lendingApp.provides("RequestDecision", {
+	description: "Send a submitted application to Credit Decisioning",
+	type: "operation",
+	internal: true,
+});
 // Partnership: one planning board, so Lending conforms rather than translates.
-applicationAgg.consumes(decide, { pattern: "conformist" });
-applicationAgg.consumes(decisionMade, { pattern: "conformist" });
+// RequestDecision is the one operation of LendingApp that makes the call.
+lendingApp.consumes(decide, {
+	pattern: "conformist",
+	by: [requestDecision],
+});
+lendingApp.consumes(decisionMade, { pattern: "conformist" });
 lendingBC
 	.addPolicy("Decide on submission", {
 		description: "Every submitted application is sent for a decision",
 	})
 	.on(applicationSubmitted)
-	.then(decide);
+	.issues(requestDecision);
 lendingBC
 	.addPolicy("Record decision", {
 		description: "The outcome and reasons are stored on the application",
 	})
 	.on(decisionMade)
-	.then(recordDecision);
+	.issues(recordDecision);
 
 decisioningBC.addTerm("Scorecard", {
 	definition: "The bank's own credit model",
@@ -1985,21 +2584,27 @@ const regReturn = returnAgg.addRootEntity("RegulatoryReturn", {
 const reportLine = returnAgg.addEntity("ReportLine", {
 	description: "One line code and its amount",
 });
-const periodVO = returnAgg.addValueObject("ReportingPeriod", {
+const periodVO = reportingBC.addValueObject("ReportingPeriod", {
 	description: "Month or quarter; closed before filing",
 });
 periodVO.addAttribute("from", { type: "date" });
 periodVO.addAttribute("to", { type: "date" });
 periodVO.addAttribute("closed", { type: "boolean" });
-const reportMoney = money(returnAgg);
+// Money is the Shared Kernel's, borrowed by reference (decision 16's amendment).
+const reportMoney = kernelMoneyVO;
 regReturn.addAttribute("returnId", { type: "string", identity: true });
 regReturn.addAttribute("reportCode", { type: "string" });
 regReturn.addAttribute("filedAt", { type: "date-time" });
 reportLine.addAttribute("lineCode", { type: "string", identity: true });
 reportLine.addAttribute("amount", { type: "Money", valueobject: reportMoney });
 regReturn.includes(reportLine, "made-of", "1..*");
+regReturn.addAttribute("period", {
+	type: "ReportingPeriod",
+	valueobject: periodVO,
+});
 regReturn.uses(periodVO, "for-period", "1");
-reportLine.uses(reportMoney, "of", "1");
+// Money is the Shared Kernel's, so it is typed by `valueobject` reference
+// only, with no `uses` relation to cross with it.
 
 // The ledger is another context, so this is a precondition of filing: a
 // reconciliation run before FileReturn, not a rule one line can hold alone.
@@ -2038,16 +2643,24 @@ returnAgg
 	})
 	.raises(returnFiled);
 
-returnAgg.consumes(entryPosted, { pattern: "conformist" });
-returnAgg.consumes(accountOpened, { pattern: "conformist" });
-returnAgg.consumes(loanDisbursed, { pattern: "conformist" });
-reportingBC
+// Reporting takes its facts in at its own boundary: an aggregate is a
+// consistency boundary, not a client, so ReportingApp is what subscribes and
+// the policy below is what accumulates (decision 17).
+const reportingApp = reportingBC.addService("ReportingApp", {
+	description:
+		"Regulatory Reporting's application service: the boundary through which the postings, openings and disbursements a return is built from arrive",
+	type: "application",
+});
+reportingApp.consumes(entryPosted, { pattern: "conformist" });
+reportingApp.consumes(accountOpened, { pattern: "conformist" });
+reportingApp.consumes(loanDisbursed, { pattern: "conformist" });
+const accumulateOnPosting = reportingBC
 	.addPolicy("Accumulate on posting", {
 		description:
-			"Ledger postings, account openings and disbursements each add to a line as they happen",
+			"Ledger postings, account openings and disbursements each add to a line as they happen, and Sovereign's nightly batch adds the savings movements",
 	})
 	.on(entryPosted, accountOpened, loanDisbursed)
-	.then(accumulateLine);
+	.issues(accumulateLine);
 
 reportingBC.addTerm("Return", {
 	definition:
@@ -2074,25 +2687,31 @@ const request = requestAgg.addRootEntity("ServiceRequest", {
 const note = requestAgg.addEntity("Note", {
 	description: "What an agent recorded; added, never edited",
 });
-const channelVO = requestAgg.addValueObject("Channel", {
+const channelVO = channelsBC.addValueObject("Channel", {
 	description: "branch, phone or chat",
 });
 channelVO.addAttribute("value", { type: "'branch' | 'phone' | 'chat'" });
-const requestStatusVO = requestAgg.addValueObject("RequestStatus", {
+const requestStatusVO = channelsBC.addValueObject("RequestStatus", {
 	description: "open, resolved",
 });
 requestStatusVO.addAttribute("value", { type: "'open' | 'resolved'" });
 request.addAttribute("requestId", { type: "string", identity: true });
-request.addAttribute("customerId", { type: "string" });
+request.addAttribute("customerId", { type: "string", identifies: customer });
 request.addAttribute("authenticated", { type: "boolean" });
 note.addAttribute("noteId", { type: "string", identity: true });
 note.addAttribute("author", { type: "string" });
 note.addAttribute("text", { type: "string" });
 note.addAttribute("at", { type: "date-time" });
 request.includes(note, "annotated-by", "*");
+request.addAttribute("channel", { type: "Channel", valueobject: channelVO });
+request.addAttribute("status", {
+	type: "RequestStatus",
+	valueobject: requestStatusVO,
+});
 request.uses(channelVO, "through", "1");
 request.uses(requestStatusVO, "has-status", "1");
-request.references(customer, "raised-by", "1");
+// Customer lives in Customer & KYC: `customerId` above is the only thing that
+// crosses the boundary.
 
 requestAgg
 	.addInvariant("AuthenticatedBeforeAction", {
@@ -2111,7 +2730,14 @@ const requestRaised = requestAgg.provides("ServiceRequestRaised", {
 	type: "event",
 	internal: true,
 });
-requestAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const channelsApp = channelsBC.addService("ChannelsApp", {
+	description:
+		"The branch and contact centre application service: the boundary agents raise requests through",
+	type: "application",
+});
+const raiseRequest = channelsApp
 	.provides("RaiseRequest", {
 		description: "Open a request in a branch or on the phone",
 		type: "operation",
@@ -2124,21 +2750,33 @@ const suppressMarketing = requestAgg.provides("SuppressMarketing", {
 	internal: true,
 });
 
-requestAgg.consumes(getCustomer, { pattern: "conformist" });
-requestAgg.consumes(getAvailableBalance, { pattern: "conformist" });
-requestAgg.consumes(blockCard, { pattern: "conformist" });
-requestAgg.consumes(consentWithdrawn, { pattern: "conformist" });
+// RaiseRequest is the whole of ChannelsApp's outward surface: an agent opens a
+// request and the screen fills from the four systems behind it, so every one of
+// these calls is made by that operation and by nothing else.
+channelsApp.consumes(getCustomer, {
+	pattern: "conformist",
+	by: [raiseRequest],
+});
+channelsApp.consumes(getAvailableBalance, {
+	pattern: "conformist",
+	by: [raiseRequest],
+});
+channelsApp.consumes(blockCard, { pattern: "conformist", by: [raiseRequest] });
+channelsApp.consumes(consentWithdrawn, { pattern: "conformist" });
 // DELIBERATE (separate-ways): the quick-quote button. Front-line staff may
 // not influence a credit decision, and the relationship below says so; this
 // consumption contradicts it.
-requestAgg.consumes(decide, { pattern: "anti-corruption-layer" });
+channelsApp.consumes(decide, {
+	pattern: "anti-corruption-layer",
+	by: [raiseRequest],
+});
 channelsBC
 	.addPolicy("Suppress marketing on withdrawal", {
 		description:
 			"A withdrawn marketing consent stops outbound contact the same day; the fix for the fine",
 	})
 	.on(consentWithdrawn)
-	.then(suppressMarketing);
+	.issues(suppressMarketing);
 
 channelsBC.addTerm("Request", {
 	definition: "One customer ask tracked to an outcome",
@@ -2193,14 +2831,31 @@ const nightlyBatchCompleted = savingsRecordAgg.provides(
 	},
 );
 
-entryAgg.consumes(nightlyBatchCompleted, { pattern: "anti-corruption-layer" });
+// DISCOVERY: Core Banking lead, "runs the nightly batch". Card 81 turned that
+// into a NightlyBatch service with a RunNightlyBatch operation so the event had
+// a raiser, and nobody at NorthBank could have told you that: what the lead
+// knows is that the file appears each night, not which of Sovereign's programs
+// cuts it. A big ball of mud says what it emits without saying how, and
+// `event-unraised` no longer asks it to (decision 28, second amendment; card
+// 90). The service and its operation are gone.
+
+ledgerApp.consumes(nightlyBatchCompleted, { pattern: "anti-corruption-layer" });
 ledgerBC
 	.addPolicy("Import nightly batch", {
 		description: "Each line of the batch file becomes a ledger entry",
 	})
 	.on(nightlyBatchCompleted)
-	.then(importBatch);
-returnAgg.consumes(nightlyBatchCompleted, { pattern: "anti-corruption-layer" });
+	.issues(importBatch);
+// DISCOVERY: Finance Systems lead, "we accumulate lines from ledger postings,
+// account openings and loan disbursements as they happen, and from Sovereign's
+// batch for savings". The fourth event was consumed and never reacted to, so
+// the model said Reporting depended on the batch and never what it did with it
+// (`subscription-backed`, card 92). It is written here because the batch event
+// is declared in this section.
+reportingApp.consumes(nightlyBatchCompleted, {
+	pattern: "anti-corruption-layer",
+});
+accumulateOnPosting.on(nightlyBatchCompleted);
 
 /* =======================
    IDENTITY & ACCESS
@@ -2212,7 +2867,13 @@ const credentialAgg = identityBC.addAggregate("Credential", {
 const credential = credentialAgg.addRootEntity("Credential", {
 	description: "Username and step-up factors for one customer",
 });
-credential.addAttribute("customerId", { type: "string", identity: true });
+// The credential is identified by whose it is, and the Customer root is in
+// Customer & KYC: the same id is this entity's identity and a foreign one.
+credential.addAttribute("customerId", {
+	type: "string",
+	identity: true,
+	identifies: customer,
+});
 credential.addAttribute("username", { type: "string" });
 credential.addAttribute("stepUpEnrolled", { type: "boolean" });
 const customerAuthenticated = credentialAgg.provides("CustomerAuthenticated", {
@@ -2220,14 +2881,24 @@ const customerAuthenticated = credentialAgg.provides("CustomerAuthenticated", {
 	type: "event",
 	pattern: "published-language",
 });
-const authenticateCustomer = credentialAgg
+// What a context offers outward leaves an application service; an
+// aggregate's operations are its own context's (decision 17).
+const identityApp = identityBC.addService("IdentityApp", {
+	description:
+		"Identity & Access' application service: the boundary channels authenticate customers through",
+	type: "application",
+});
+const authenticateCustomer = identityApp
 	.provides("AuthenticateCustomer", {
 		description: "Verify credentials and step-up",
 		type: "operation",
 		pattern: "open-host-service",
 	})
 	.raises(customerAuthenticated);
-requestAgg.consumes(authenticateCustomer, { pattern: "conformist" });
+channelsApp.consumes(authenticateCustomer, {
+	pattern: "conformist",
+	by: [raiseRequest],
+});
 
 /* =======================
    CONTEXT RELATIONSHIPS
@@ -2265,6 +2936,12 @@ lendingBC.downstreamOf(ledgerBC, {
 	type: "customer-supplier",
 	upstreamRoles: ["open-host-service"],
 	downstreamRoles: ["anti-corruption-layer"],
+});
+accountsBC.downstreamOf(ledgerBC, {
+	upstreamRoles: ["published-language"],
+	downstreamRoles: ["conformist"],
+	description:
+		"Balances follow the ledger: Accounts takes EntryPosted as published, with no translation",
 });
 paymentsBC.downstreamOf(fraudBC, {
 	type: "customer-supplier",
@@ -2340,18 +3017,112 @@ reportingBC.downstreamOf(sovereignBC, {
 	downstreamRoles: ["anti-corruption-layer"],
 });
 
-// Shared kernel: the Money and AccountNumber library, changed and released together.
-accountsBC.sharesKernelWith(
-	ledgerBC,
-	"Money and AccountNumber are one library owned by both teams",
-);
+// Identity-only dependencies. Each of these pairs is joined by nothing but an
+// identity attribute an entity holds naming the other context's entity, which
+// since decision 14 is how the model records a dependency on another context's
+// model. Nothing is exchanged, so neither end plays an upstream or downstream
+// role and both lists stay empty; what the relationship says is which way the
+// dependency runs and that somebody looked at it (`relationship-declared`,
+// card 70).
+//
+// Scheme Gateway used to be listed here too, for the instruction id its
+// SchemeSubmission and SchemeSettlement payloads carry. An id echoed in a
+// payload is not a dependency: the gateway writes the instruction id into the
+// message so that Payments can recognise the answer, and it stores nothing and
+// asks Payments for nothing (decision 14, second amendment). The relationship
+// that matters between the two is the one above, Payments downstream of the
+// scheme; this one was the rule's invention and is gone (card 90).
+lendingBC.downstreamOf(accountsBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A loan event names the account it settles against; Lending holds the number, not the balance",
+});
+fraudBC.downstreamOf(customerBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A fraud case names the customer it is about; the case file carries the id and nothing of the customer model",
+});
+fraudBC.downstreamOf(accountsBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description: "A fraud case names the account it is about, by id",
+});
+identityBC.downstreamOf(customerBC, {
+	upstreamRoles: [],
+	downstreamRoles: [],
+	description:
+		"A credential names the customer it belongs to; who they are stays in Customer & KYC",
+});
+
+// Shared kernel: six contexts compile against one Money/AccountNumber
+// library, so each declares one relationship with the kernel context rather
+// than fifteen pairwise agreements among themselves (decision 16's
+// amendment). Accounts and Ledger also borrow AccountNumber; the rest borrow
+// Money only.
+accountsBC.sharesKernelWith(sharedKernelBC, {
+	description: "Money and AccountNumber, from @northbank/money",
+	comments: [
+		{
+			text: "Money and AccountNumber live in @northbank/money; every borrowing context compiles against the same version.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/northbank/blob/main/packages/money/src/Money.ts",
+				label: "packages/money/src/Money.ts",
+			},
+		},
+		{
+			text: "Kept deliberately tiny: two value objects and their parsers, changed only by agreement of the teams that borrow them.",
+			link: {
+				kind: "adr",
+				url: "https://github.com/example/northbank/blob/main/docs/adr/006-money-kernel.md",
+				label: "ADR-006 The money kernel",
+			},
+		},
+	],
+});
+ledgerBC.sharesKernelWith(sharedKernelBC, {
+	description: "Money and AccountNumber, from @northbank/money",
+});
+paymentsBC.sharesKernelWith(sharedKernelBC, {
+	description: "Money, from @northbank/money",
+});
+cardsBC.sharesKernelWith(sharedKernelBC, {
+	description: "Money, from @northbank/money",
+});
+lendingBC.sharesKernelWith(sharedKernelBC, {
+	description: "Money, from @northbank/money",
+});
+reportingBC.sharesKernelWith(sharedKernelBC, {
+	description: "Money, from @northbank/money",
+});
 // Partnership: one planning board, joint releases, no translation.
-lendingBC.partnerOf(
-	decisioningBC,
-	"Origination and decisioning release together; a scorecard change is an application-form change",
-);
+lendingBC.partnerOf(decisioningBC, {
+	description:
+		"Origination and decisioning release together; a scorecard change is an application-form change",
+});
 // Separate ways: conduct policy. Front-line staff may not influence a credit decision.
-channelsBC.separateWaysFrom(
-	decisioningBC,
-	"No integration by policy; the quick-quote consumption above contradicts this and is under investigation",
-);
+channelsBC.separateWaysFrom(decisioningBC, {
+	description:
+		"No integration by policy; the quick-quote consumption above contradicts this and is under investigation",
+	disposition: "refactor",
+	comments: [
+		{
+			text: "The map says separate ways but Channels calls the quick-quote endpoint directly; one of the two has to go.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/northbank/blob/main/channels/quote/QuickQuoteClient.ts",
+				label: "channels/quote/QuickQuoteClient.ts",
+			},
+		},
+		{
+			text: "Conduct policy is explicit that front-line staff may not influence a credit decision.",
+			link: {
+				kind: "adr",
+				url: "https://github.com/example/northbank/blob/main/docs/adr/021-conduct-separation.md",
+				label: "ADR-021 Conduct separation",
+			},
+		},
+	],
+});

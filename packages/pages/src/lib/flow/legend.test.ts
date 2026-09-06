@@ -1,28 +1,58 @@
 import {
 	ODSConsumableMap,
 	ODSContextMap,
+	ODSFlowMap,
 	ODSRelationMap,
+	PATTERNS,
 } from "@open-domain-specification/core";
+import {
+	DOWNSTREAM_ROLE_LABELS,
+	RELATIONSHIP_LABELS,
+	UPSTREAM_ROLE_LABELS,
+} from "@open-domain-specification/graphviz";
 import { describe, expect, it } from "vitest";
 import { petstoreModel } from "../fixtures";
 import type { ConsumableNodeData } from "./consumable-graph";
 import type { ContextNodeData } from "./context-graph";
-import { consumableGraph, contextGraph, relationGraph } from "./graph";
+import type { FlowNodeData } from "./flow-graph";
+import {
+	consumableGraph,
+	contextGraph,
+	flowGraph,
+	relationGraph,
+} from "./graph";
 import { legendEntries } from "./legend";
+import type { RelationNodeData } from "./relation-graph";
 
 const { workspace } = petstoreModel();
 const sales = workspace.boundedcontexts.get("sales_bc")!;
 const order = sales.aggregates.get("order")!;
 const marks = (entries: { mark: string }[]) => entries.map((e) => e.mark);
 
+describe("the marks the legend names", () => {
+	it("are the abbreviations core's knowledge base gives, for every pattern graphviz draws", () => {
+		const drawn: Record<string, string> = {
+			...RELATIONSHIP_LABELS,
+			...UPSTREAM_ROLE_LABELS,
+			...DOWNSTREAM_ROLE_LABELS,
+		};
+		expect(Object.keys(drawn).sort()).toEqual(Object.keys(PATTERNS).sort());
+		for (const [pattern, mark] of Object.entries(drawn))
+			expect(
+				PATTERNS[pattern as keyof typeof PATTERNS].abbreviation,
+				pattern,
+			).toBe(mark);
+	});
+});
+
 describe("legendEntries for the context map", () => {
 	it("lists the stereotypes, roles and marks the petstore map shows, with full names", () => {
 		const graph = contextGraph(ODSContextMap.fromWorkspace(workspace));
 		const entries = legendEntries(graph, "context");
 		const byMark = new Map(entries.map((e) => [e.mark, e.name]));
-		expect(byMark.get("U/D")).toBe("Upstream/downstream");
-		expect(byMark.get("OHS")).toBe("Open host service");
-		expect(byMark.get("ACL")).toBe("Anti-corruption layer");
+		expect(byMark.get("U/D")).toBe("Upstream/Downstream");
+		expect(byMark.get("OHS")).toBe("Open Host Service");
+		expect(byMark.get("ACL")).toBe("Anti-Corruption Layer");
 		expect(byMark.get("band")).toBe("Domain colour");
 		// Every stereotype and role listed is on an edge of the map.
 		const onEdges = new Set(
@@ -34,6 +64,39 @@ describe("legendEntries for the context map", () => {
 		);
 		for (const e of entries)
 			if (/^[A-Z/]+$/.test(e.mark)) expect(onEdges.has(e.mark)).toBe(true);
+	});
+	it("names one row per disposition mark the map draws, and never the unmarked default", () => {
+		const graph = contextGraph(
+			ODSContextMap.fromWorkspace(workspace),
+			workspace.relationships,
+		);
+		const entries = legendEntries(graph, "context");
+		const byMark = new Map(entries.map((e) => [e.mark, e]));
+		// The petstore has one tolerated and one refactor relationship.
+		expect(byMark.get("outlined badge")?.name).toBe("tolerated");
+		expect(byMark.get("warning badge")?.name).toBe("refactor");
+		expect(byMark.get("warning badge")?.title).toBeTruthy();
+		expect(byMark.has("filled badge")).toBe(false);
+
+		// Drawn without the workspace's relationships, the map marks nothing.
+		const unmarked = legendEntries(
+			contextGraph(ODSContextMap.fromWorkspace(workspace)),
+			"context",
+		);
+		expect(marks(unmarked)).not.toContain("warning badge");
+		expect(marks(unmarked)).not.toContain("outlined badge");
+	});
+	it("names only the marks present: a map of by-design intents gets no extra row", () => {
+		const byDesign = workspace.relationships.filter(
+			(r) => !r.disposition && r.type === "partnership",
+		);
+		expect(byDesign.length).toBeGreaterThan(0);
+		const entries = legendEntries(
+			contextGraph(ODSContextMap.fromWorkspace(workspace), byDesign),
+			"context",
+		);
+		expect(marks(entries)).not.toContain("outlined badge");
+		expect(marks(entries)).not.toContain("warning badge");
 	});
 	it("lists nothing the graph does not draw", () => {
 		const bare = legendEntries(
@@ -79,6 +142,7 @@ describe("legendEntries for the context map", () => {
 						target: "#/a",
 						label: "SK",
 						dashed: true,
+						impliedBy: "consumption",
 						sourceLabel: "OHS+PL",
 						targetLabel: "CF+???",
 					},
@@ -95,10 +159,61 @@ describe("legendEntries for the context map", () => {
 			"dashed octagon",
 			"band",
 		]);
-		expect(full.find((e) => e.mark === "SK")?.name).toBe("Shared kernel");
+		expect(full.find((e) => e.mark === "SK")?.name).toBe("Shared Kernel");
 		expect(full.find((e) => e.mark === "dashed")?.name).toBe(
 			"Implied relationship",
 		);
+	});
+
+	it("gives a context nobody here owns a row of its own", () => {
+		const entries = legendEntries(
+			{
+				nodes: [
+					{
+						id: "#/a",
+						type: "context",
+						label: "A",
+						icon: "x",
+						bigBallOfMud: false,
+						external: true,
+					},
+				] as ContextNodeData[],
+				edges: [],
+			},
+			"context",
+		);
+		expect(marks(entries)).toEqual(["\u00abexternal system\u00bb"]);
+		expect(entries[0].name).toBe("External system");
+	});
+
+	it("names an identity dependency in its own row, apart from a consumption's", () => {
+		const graph = {
+			nodes: [
+				{
+					id: "#/a",
+					type: "context",
+					label: "A",
+					icon: "x",
+					bigBallOfMud: false,
+				},
+			] as ContextNodeData[],
+			edges: [
+				{
+					id: "e",
+					type: "context",
+					source: "#/a",
+					target: "#/a",
+					label: "«id»",
+					dashed: true,
+					impliedBy: "identity" as const,
+				},
+			],
+		};
+		expect(marks(legendEntries(graph, "context"))).toEqual(["dashed «id»"]);
+		expect(
+			legendEntries(graph, "context").find((e) => e.mark === "dashed «id»")
+				?.name,
+		).toBe("Identity dependency");
 	});
 });
 
@@ -174,6 +289,37 @@ describe("legendEntries for the relation map", () => {
 		expect(marks(entries).includes("dashed")).toBe(kinds.has("relation-uses"));
 		expect(marks(entries)).toContain("1, *, 0..1");
 	});
+	it("names the borrowed mark only when a value of another context is drawn", () => {
+		const nodes: RelationNodeData[] = [
+			{ id: "#/a", type: "relation", label: "A", icon: "x" },
+		];
+		const edges = [
+			{ id: "c", type: "relation-uses", source: "#/a", target: "#/k" },
+		];
+		expect(marks(legendEntries({ nodes, edges }, "relation"))).toEqual([
+			"dashed",
+		]);
+		expect(
+			marks(
+				legendEntries(
+					{
+						nodes: [
+							...nodes,
+							{
+								id: "#/k",
+								type: "relation",
+								label: "Money",
+								icon: "x",
+								borrowed: true,
+							},
+						],
+						edges,
+					},
+					"relation",
+				),
+			),
+		).toEqual(["dashed", "«borrowed value object»"]);
+	});
 	it("is empty for classes with no relations", () => {
 		expect(
 			legendEntries(
@@ -196,10 +342,76 @@ describe("legendEntries for the relation map", () => {
 						target: "#/b",
 					},
 					{ id: "c", type: "relation-uses", source: "#/a", target: "#/b" },
+					{
+						id: "d",
+						type: "relation-identifies",
+						source: "#/a",
+						target: "#/b",
+					},
+					{
+						id: "e",
+						type: "relation-specialises",
+						source: "#/a",
+						target: "#/b",
+					},
 				],
 			},
 			"relation",
 		);
-		expect(marks(all)).toEqual(["filled diamond", "open arrow", "dashed"]);
+		expect(marks(all)).toEqual([
+			"filled diamond",
+			"open arrow",
+			"dashed",
+			"dashed «identifies»",
+			"hollow triangle",
+		]);
+	});
+});
+
+describe("legendEntries for the flow map", () => {
+	const fulfilment = sales.processes.get("order_fulfilment")!;
+
+	it("names the shape of every step the map draws, the step arrow and the ends edge", () => {
+		const graph = flowGraph(ODSFlowMap.fromBoundedContext(sales));
+		const entries = legendEntries(graph, "flow");
+		const steps = new Set((graph.nodes as FlowNodeData[]).map((n) => n.step));
+		expect(steps).toContain("process");
+		expect(marks(entries)).toEqual([
+			"stadium",
+			"box",
+			"folder",
+			"arrow",
+			"dashed ends",
+		]);
+		expect(entries.map((e) => e.name)).toEqual([
+			"Event",
+			"Operation",
+			"Process",
+			"What happens next",
+			"What completes a process",
+		]);
+		// Sales declares no policy, so the note is not in the index.
+		expect(marks(entries)).not.toContain("note");
+	});
+
+	it("names the mark on the page's own reaction only when one is marked", () => {
+		const map = ODSFlowMap.fromBoundedContext(sales);
+		expect(
+			marks(legendEntries(flowGraph(map, fulfilment.ref), "flow")),
+		).toContain("bold outline");
+		expect(marks(legendEntries(flowGraph(map), "flow"))).not.toContain(
+			"bold outline",
+		);
+	});
+
+	it("names a policy's note, and nothing at all for a map with no steps", () => {
+		const inventory = workspace.boundedcontexts.get("inventory_bc")!;
+		const entries = legendEntries(
+			flowGraph(ODSFlowMap.fromBoundedContext(inventory)),
+			"flow",
+		);
+		expect(marks(entries)).toContain("note");
+		expect(marks(entries)).not.toContain("folder");
+		expect(legendEntries({ nodes: [], edges: [] }, "flow")).toEqual([]);
 	});
 });

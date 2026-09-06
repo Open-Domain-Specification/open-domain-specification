@@ -2,6 +2,7 @@
 import { type Edge, type Node, Position, SvelteFlow } from "@xyflow/svelte";
 import "@xyflow/svelte/dist/style.css";
 import type { Component } from "svelte";
+import type { ContextEdgeData } from "./flow-nodes";
 
 /**
  * One edge component inside a real flow: node `#/a` with a source handle at
@@ -17,6 +18,7 @@ let {
 	markerEnd = undefined,
 	style = undefined,
 	data = undefined,
+	edgeClass = undefined,
 	sourcePosition = Position.Right,
 	targetPosition = Position.Left,
 	targetHandleId = undefined,
@@ -28,7 +30,9 @@ let {
 	label?: string;
 	markerEnd?: string;
 	style?: string;
-	data?: { sourceLabel?: string; targetLabel?: string };
+	data?: ContextEdgeData;
+	/** A class the graph puts on the edge itself, such as the flow map's dashed `ends`. */
+	edgeClass?: string;
 	sourcePosition?: Position;
 	targetPosition?: Position;
 	targetHandleId?: string | null;
@@ -78,6 +82,7 @@ let edges = $state.raw<Edge[]>([
 		markerEnd,
 		style,
 		data,
+		class: edgeClass,
 	},
 ]);
 // svelte-ignore state_referenced_locally

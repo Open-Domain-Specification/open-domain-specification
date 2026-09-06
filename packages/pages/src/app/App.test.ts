@@ -44,7 +44,7 @@ describe("App (standalone host)", () => {
 		const initial: Bootstrap = { workspaces: [payload()] };
 		render(App, { initial });
 		await waitFor(() =>
-			expect(document.querySelector("nav.site-nav")).toBeInTheDocument(),
+			expect(document.querySelector("nav.tree")).toBeInTheDocument(),
 		);
 		expect(document.querySelector(".site")).not.toHaveClass("embedded");
 		expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
@@ -56,12 +56,12 @@ describe("App (standalone host)", () => {
 		};
 		render(App, { initial });
 		expect(screen.getByText("Domain Model")).toBeInTheDocument();
-		expect(document.querySelector("nav.site-nav")).not.toBeInTheDocument();
+		expect(document.querySelector("nav.tree")).not.toBeInTheDocument();
 
 		const link = screen.getAllByRole("link")[0];
 		await fireEvent.click(link);
 		await waitFor(() =>
-			expect(document.querySelector("nav.site-nav")).toBeInTheDocument(),
+			expect(document.querySelector("nav.tree")).toBeInTheDocument(),
 		);
 	});
 
@@ -94,7 +94,7 @@ describe("App (standalone host)", () => {
 		});
 		await fireEvent.click(screen.getByRole("button", { name: /load/i }));
 		await waitFor(() =>
-			expect(document.querySelector("nav.site-nav")).toBeInTheDocument(),
+			expect(document.querySelector("nav.tree")).toBeInTheDocument(),
 		);
 	});
 
@@ -109,7 +109,7 @@ describe("App (standalone host)", () => {
 		const initial: Bootstrap = { workspaces: [payload()] };
 		render(App, { initial });
 		await waitFor(() =>
-			expect(document.querySelector("nav.site-nav")).toBeInTheDocument(),
+			expect(document.querySelector("nav.tree")).toBeInTheDocument(),
 		);
 		expect(location.hash).toBe("");
 	});
@@ -140,7 +140,7 @@ describe("App (embedded in VS Code)", () => {
 		await waitFor(() =>
 			expect(document.querySelector(".site")).toHaveClass("embedded"),
 		);
-		expect(document.querySelector("nav.site-nav")).not.toBeInTheDocument();
+		expect(document.querySelector("nav.tree")).not.toBeInTheDocument();
 		await waitFor(() =>
 			expect(api.postMessage).toHaveBeenCalledWith({
 				type: "navigated",

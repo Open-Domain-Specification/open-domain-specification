@@ -1,17 +1,44 @@
 <script lang="ts">
-import Dim from "../atoms/Dim.svelte";
-import RefLink from "../atoms/RefLink.svelte";
+import Keyword from "../atoms/Keyword.svelte";
+import type { Kind } from "../atoms/kinds";
+import Ref from "../atoms/Ref.svelte";
+import { ICONS, nameOf } from "../model";
 
-/** Comma-separated links, or a dim placeholder when there are none. */
-let {
+/**
+ * A short list of links, comma-separated. v1 gave each one a pill; in v2 a
+ * link looks like a link and the commas do the separating, which is what the
+ * editor does wherever it lists related symbols. When there is nothing to
+ * list the caller's word takes its place, in the secondary colour, because a
+ * cell that says `none` reads better than an empty one. `block` is for the
+ * standalone case, where the list is the whole content of a section and needs
+ * the row's padding; inside a table cell it is inline.
+ */
+const {
 	items,
-	icon,
+	kind,
 	empty = "none",
+	block = false,
 }: {
-	items: { ref: string; name: string }[];
-	icon?: string;
+	items: { ref: string; name?: string }[];
+	kind?: Kind;
 	empty?: string;
+	block?: boolean;
 } = $props();
 </script>
 
-{#each items as i, n}{#if n}, {/if}<RefLink ref={i.ref} label={i.name} {icon} />{:else}<Dim>{empty}</Dim>{/each}
+{#snippet list()}{#each items as item, i (item.ref)}{#if i}, {/if}<Ref
+			ref={item.ref}
+			label={nameOf(item)}
+			icon={kind ? ICONS[kind] : undefined}
+			{kind}
+		/>{:else}<Keyword text={empty} />{/each}{/snippet}
+
+{#if block}<p class="refs">{@render list()}</p>{:else}{@render list()}{/if}
+
+<style>
+	.refs {
+		margin: 0;
+		padding: 0 8px;
+		line-height: 22px;
+	}
+</style>

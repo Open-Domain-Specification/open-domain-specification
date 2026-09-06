@@ -11,6 +11,7 @@ const types = {
 	".json": "application/json",
 	".md": "text/markdown",
 	".ttf": "font/ttf",
+	".woff2": "font/woff2",
 	".svg": "image/svg+xml",
 };
 createServer((req, res) => {
