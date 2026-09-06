@@ -44,3 +44,7 @@ Decisions 01, 02, 03, 08 and 09 each promise that `odsVersion` bumps on a breaki
 ## Correction (2026-09-10, second)
 
 The decision list's `mud-needs-acl` item, counting an identity into a big ball of mud, is superseded: the rule reads consumptions and a held key is not traffic (decision 28, cards 107 and 108). The sentence stands as written on the day.
+
+## Note (2026-09-10, second)
+
+`unknown-field` (card 121) read element-level keys only, so an unknown key inside a `$ref` object, `returns: { $ref, reasons }`, loaded with no diagnostic and was dropped on the round trip in silence, which this record says a mistake never is. Every nested object the loader reads is checked (card 132, architect's fifteenth round).

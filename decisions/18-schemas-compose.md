@@ -35,3 +35,7 @@ The blind clinic model produced a second outcome that is not a refusal, a patien
 ## Note (2026-09-10, second)
 
 The architect's twelfth round found the reopening condition hard to meet as judged: the clinic's referral and a scorecard's approve-refer-decline are both the shape, and each was answerable inside the record because nothing waited. The condition stands and is judged on one fact only: a reactor waits on the answer and branches on which non-refusal shape came back. The first model that writes that reopens the first tier.
+
+## Note (2026-09-10, third)
+
+A refusal enumerates its outcomes as `reasons` and each is an edge a process may wait on; a success has one edge and its outcomes are prose until the condition above is met. The asymmetry is what makes an author reach for `returns.reasons`, which the loader now reports as an unknown field (card 132); named here and on the docs (card 133).

@@ -171,3 +171,7 @@ An aggregate's state machine has no form: a `status` attribute's values are the 
 ### There is no extension field
 
 An unknown key is an `unknown-field` diagnostic and is dropped on save (card 121); `comments` with links live on consumables, consumptions, relationships and processes. A tool that wants to attach a code location or a ticket to an aggregate or an invariant has nowhere to put it. Named by the architect's fourteenth round; reopen with "Rules carry no comments": when a model needs the citation, `comments` extends to every named declaration in one change.
+
+### A value object relates to no entity
+
+`value-object-shape` refuses `includes`, `references` and any relation from a value object to an entity; a value that must point at an entity holds an `identifies` attribute, which the rule's fix text names. Evans allows a value object to hold a reference to an entity; refusing the relation is this model's preference, a value has no identity and draws no line, and the identity attribute carries the fact. Named by the architect's fifteenth round.

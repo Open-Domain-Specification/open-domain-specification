@@ -42,3 +42,7 @@ The context claimed that splitting kinds into separate aggregates "says they are
 ## Correction (2026-09-10)
 
 `aggregate-tree`'s reachability walk follows `includes` and `references` inside the aggregate, not `includes` only; the record's wording was narrower than the rule.
+
+## Note (2026-09-10)
+
+Decision 16's second amendment widened borrowing to a customer-supplier downstream, and `specialisation-in-boundary` follows the same predicate, so a value object may be a kind of one borrowed through a shared kernel, as a conformist, or as a customer of a supplier; this record's text, the rule's catalogue text, the schema comment and the docs said the first two only (card 133, architect's fifteenth round).

@@ -78,3 +78,7 @@ The architect's twelfth round read card 117's outcome as a condition met in form
 ## Amendment (2026-09-10, second)
 
 `aggregate-consumes-inside` refuses an aggregate calling the aggregate next door because the call spans two transactions with nothing on any map to say so, and `raises-in-context` let an aggregate's operation raise the neighbour's event, the same act stated as a fact. An aggregate's operation raises only its own aggregate's events; an application service's operation may raise any aggregate's event of its context, as the second amendment allows (card 130). The architect's fourteenth round measured the boundary drawn twice: more than half of every stress model's operations are internal, most of them fronts, against two of sixteen in the clinic written blind; the cost stands as named.
+
+## Note (2026-09-10, third)
+
+`raises-in-aggregate` (card 130) walked aggregates only, so a domain service's operation could raise two aggregates' events, the act the rule's own reason refuses; a domain service is inside the model like an aggregate and raises no aggregate's event either; the application service stays the one exemption (card 132).
