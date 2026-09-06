@@ -2,7 +2,11 @@
 status: Accepted
 date: 2026-09-02
 ---
-# Decision 12 — One page renderer, three hosts; ods-ui is retired
+# Decision 12 — One page renderer, four ways to read a model
+
+> Originally titled "One page renderer, three hosts; ods-ui is retired", which read as
+> though the browsing site went away. It never did: a package was retired, not a site.
+> See the current position below and the correction of 2026-09-10.
 
 ## Current position (2026-09-10)
 
@@ -85,7 +89,7 @@ replace the string assertions.
 
 ## Note (2026-09-10)
 
-`apps/ods-ui` is still in the tree. The owner has said the extension is the user interface and the web application is likely to go; it goes when the extension covers import and browsing, and this record will say so when it does.
+Withdrawn the same day: it said `apps/ods-ui` was still in the tree and likely to go, which mistook the deployable for the retired React and Mantine implementation, and read the extension being the authoring surface as the browsing site being temporary. The correction below is the record.
 
 ## Correction (2026-09-10)
 

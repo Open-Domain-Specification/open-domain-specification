@@ -12,3 +12,8 @@ be shared: `#/boundedcontexts/sales_bc/aggregates/order` opens the Order aggrega
 The viewer, the static site export and the extension's detail panel are one Svelte app from
 the pages package; `apps/ods-ui` is the deployable copy that open-ds.io publishes. See the
 [Pages](8-pages.md) section for the component library and the export.
+
+There are four ways to read a model and all four are permanent: this viewer, the extension's
+detail panel, the static site export, and the [markdown](5-doc.md) the doc package generates.
+The React and Mantine application that once served this site was retired when the site moved to
+the shared renderer; the site itself stays.
