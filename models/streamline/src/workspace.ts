@@ -663,7 +663,13 @@ titleDetailSchema.addAttribute("availability", {
 	type: "Availability",
 	valueobject: availabilityVO,
 });
-titleDetailSchema.addAttribute("seasons", { type: "Season[]" });
+// A film carries none: the wire's own `kind` tells a film from a series, and
+// `seasons` is honest about the shape only when a film's absence of the field
+// is stated rather than implied (decision 24; card 119).
+titleDetailSchema.addAttribute("seasons", {
+	type: "Season[]",
+	optional: true,
+});
 const availabilityChangedSchema = catalogueBC.addSchema(
 	"TitleAvailabilityChanged",
 );

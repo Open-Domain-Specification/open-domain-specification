@@ -1195,7 +1195,8 @@
             },
             "seasons": {
               "name": "seasons",
-              "type": "Season[]"
+              "type": "Season[]",
+              "optional": true
             }
           }
         },
