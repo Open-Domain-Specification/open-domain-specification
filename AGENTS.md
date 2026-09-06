@@ -54,6 +54,7 @@ the viewer. A package was retired, not a site. Read its current position, not it
 - **Generated files are generated.** The JSON schema, the model reference, the validation rules
   reference and every model's `.ods` output and `docs/` folder come from a build. Rerun it;
   never hand-edit them.
+- **Releasing is deliberate.** A push to main builds and tests like any other branch and publishes nothing. A release is run by hand: the workflow's manual trigger from main with its release input set, which cuts the version lerna computes from the commits, publishes the packages, and cuts a GitHub release with the extension and the pages archive.
 - **The hand-written surfaces must not lie.** `packages/skill/skill/SKILL.md`, its hand-written
   references, and the documentation site describe what the validator does. When you change a
   rule's reach, change every surface that states it; a drift test in `packages/skill` fails when

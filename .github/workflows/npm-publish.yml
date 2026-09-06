@@ -7,6 +7,14 @@ on:
   pull_request:
     branches:
       - '**'
+  # Releasing is deliberate: run this workflow by hand when the time is right.
+  # A push to main builds and tests like any other branch and publishes nothing.
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Cut a version and publish to npm'
+        type: boolean
+        default: false
 
 jobs:
   test:
@@ -69,7 +77,13 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     needs: [test, e2e]
-    if: github.ref == 'refs/heads/main'
+    # Never on a push. Lerna decides the version from the commits, so a merge to
+    # main used to publish whatever had accumulated; releasing is now something
+    # somebody asks for, from main, with the release input set.
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.release &&
+      github.ref == 'refs/heads/main'
     permissions:
       contents: write
     steps:
