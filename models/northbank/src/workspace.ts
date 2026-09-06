@@ -257,12 +257,13 @@ const sharedKernelBC = workspace.addBoundedContext("Shared Kernel", {
 	team: sharedKernelTeam,
 });
 
-// The three systems the bank integrates with and does not run: the screening
+// The systems the bank integrates with and does not run: the screening
 // vendor behind Sanctions Screening ("the lists are bought; the screening
 // engine is bought"), CardCo, which sends the authorisation requests Cards
-// answers, and the payment scheme the gateway submits to. None has a subdomain
-// or a team here, and none has aggregates, because what happens inside
-// somebody else's machine is not ours to state (decision 28).
+// answers, the payment scheme the gateway submits to, and the credit bureau
+// Credit Decisioning pulls a report from. None has a subdomain or a team
+// here, and none has aggregates, because what happens inside somebody else's
+// machine is not ours to state (decision 28).
 const screeningVendorBC = workspace.addBoundedContext("Screening Vendor", {
 	description:
 		"The bought sanctions lists and the bought screening engine, behind a documented API. Not the bank's",
@@ -271,6 +272,19 @@ const screeningVendorBC = workspace.addBoundedContext("Screening Vendor", {
 const cardCoBC = workspace.addBoundedContext("CardCo", {
 	description:
 		"The outsourced card processor: it sends the authorisation requests and takes the answers, in its own format",
+	external: true,
+});
+// DISCOVERY: Head of Credit Risk. "We take the application and the customer
+// record, pull a bureau report no older than thirty days, run the scorecard,
+// and check affordability." Those words never say who pulls the report, and
+// until card 119 the model had a `BureauReport` value object and a freshness
+// invariant with no bureau anywhere: a fact appearing from nowhere, which
+// decision 28 refuses. The bureau is a system the bank buys a file from, not
+// one it runs, so it is declared here and Decide pulls from it at the
+// boundary (card 119).
+const creditBureauBC = workspace.addBoundedContext("Credit Bureau", {
+	description:
+		"The credit reference agency: it holds the credit file and answers a pull with a report at a point in time. Not the bank's",
 	external: true,
 });
 // DISCOVERY: Scheme Connectivity lead. "We turn a submission into a scheme
@@ -2671,6 +2685,38 @@ const decisionMade = creditDecisionAgg.provides("DecisionMade", {
 	pattern: "published-language",
 	schema: decisionMadeSchema,
 });
+// DISCOVERY: Head of Credit Risk, "pull a bureau report no older than thirty
+// days" -- the words say the report is pulled, not who pulls it. The bureau
+// is bought, not run, so it is declared where the vendor and the scheme are:
+// an external context, providing the one thing it publishes, a pull that
+// answers with its own report shape (decision 28; card 119). The
+// `BureauReport` value object above is unchanged -- it is what the decision
+// keeps once pulled -- and this is the wire the bureau hands back.
+const bureauReportSchema = creditBureauBC.addSchema("BureauReport", {
+	description:
+		"The bureau's own report format for one customer, at the moment it is pulled",
+});
+bureauReportSchema.addAttribute("bureau", { type: "string" });
+bureauReportSchema.addAttribute("score", { type: "int" });
+bureauReportSchema.addAttribute("pulledAt", { type: "date-time" });
+const bureauPullRequestSchema = creditBureauBC.addSchema("BureauPullRequest", {
+	description: "Who to pull the file for",
+});
+bureauPullRequestSchema.addAttribute("customerId", {
+	type: "string",
+	identifies: customer,
+});
+const bureauApi = creditBureauBC.addService("Bureau API", {
+	description: "The bureau's documented interface, and all the bank can see",
+	type: "application",
+});
+const pullBureauReport = bureauApi.provides("PullBureauReport", {
+	description: "Pull a fresh credit file for a customer",
+	type: "operation",
+	pattern: "open-host-service",
+	schema: bureauPullRequestSchema,
+	returns: bureauReportSchema,
+});
 // What a context offers outward leaves an application service; an
 // aggregate's operations are its own context's (decision 17).
 const decisioningApp = decisioningBC.addService("DecisioningApp", {
@@ -2680,12 +2726,23 @@ const decisioningApp = decisioningBC.addService("DecisioningApp", {
 });
 const decide = decisioningApp
 	.provides("Decide", {
-		description: "Pull the bureau, run the scorecard, check affordability",
+		description:
+			"Pull the bureau report and hand it to the scorecard, run it, then check affordability",
 		type: "operation",
 		pattern: "open-host-service",
 		schema: decisionRequestSchema,
 	})
 	.raises(decisionMade);
+decisioningApp.consumes(pullBureauReport, {
+	pattern: "anti-corruption-layer",
+	by: [decide],
+});
+creditBureauBC.upstreamOf(decisioningBC, {
+	description:
+		"The bureau's pull is the bureau's; Credit Decisioning takes the report at the edge and keeps its own BureauReport once pulled",
+	upstreamRoles: ["open-host-service"],
+	downstreamRoles: ["anti-corruption-layer"],
+});
 const scorecard = decisioningBC.addService("Scorecard", {
 	description:
 		"The bank's own model; a domain service because it is tuned across the whole book",

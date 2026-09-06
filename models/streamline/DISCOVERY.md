@@ -534,3 +534,16 @@ ledgers that never reconcile against each other are what decision 16's default d
 value object belonging to its own context; the player/edge kernel exists because those two
 genuinely compile against one shared model, and nothing in these interviews says the same of
 budgets, deal fees and household bills. Nothing changed.
+
+## Revision (card 119): `TitleDetail.seasons` becomes optional
+
+`TitleDetail`, the shape `GetTitle` answers with, kept its `kind` field on purpose (section
+11): a caller reading JSON has no kinds to dispatch on, so the wire says which it is. It also
+listed `seasons: Season[]` on every title, film or series alike, which the wire does not carry
+for a film — a false contract the model stated as if it were true for both. Decision 24 gives
+an attribute a way to say so: `seasons` is now optional, absent on a film's payload and
+present on a series', which is what the comment beside `kind` already meant.
+
+Nothing else about the payload moves: the discriminator stays a flat field on one schema, not
+a wrapper (decision 13's 2026-09-10 note), because the wire really is that object. The four
+deliberate diagnostics of section 7 are untouched.

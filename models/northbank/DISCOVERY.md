@@ -870,3 +870,25 @@ and not `Payments`' `AuthorisePayment` schema. Two contexts, two shapes, transla
 boundary, which is what the layer is for.
 
 The deliberate diagnostics of section 7 are untouched: the same three, for the same reasons.
+
+## Revision (card 119): the bureau becomes an external context
+
+The Head of Credit Risk's own words, "pull a bureau report no older than thirty days, run
+the scorecard, and check affordability", say the report is pulled and never say who pulls
+it. The model had taken the silence as license to invent nothing at all: a `BureauReport`
+value object and a `BureauReportFresh` invariant existed on `CreditDecision`, and no bureau
+did -- a fact with no source, which decision 28 refuses the same way it refused a batch job
+with no program behind it (section 13).
+
+`Credit Bureau` is now declared where the screening vendor and the payment scheme are: an
+external context, bought and not run, providing the one thing it publishes, `PullBureauReport`,
+which answers with its own `BureauReport` schema (decision 13; decision 28). `Decide` --
+Credit Decisioning's own open host, unchanged in every other respect -- pulls through an
+anti-corruption layer, `by: [decide]`, exactly as the gateway pulls the scheme's answer and
+the fraud scorer's caller pulls its verdict. The description now says what the interview
+always meant: "pull the bureau report and hand it to the scorecard, run it, then check
+affordability". The `BureauReport` value object on `CreditDecision` and `BureauReportFresh`
+stay untouched -- what the decision keeps once pulled is still the decision's own, and the
+freshness invariant is still the decision's to check, not the bureau's.
+
+The deliberate diagnostics of section 7 are untouched: the same three, for the same reasons.

@@ -3884,7 +3884,7 @@
           "provides": {
             "decide": {
               "name": "Decide",
-              "description": "Pull the bureau, run the scorecard, check affordability",
+              "description": "Pull the bureau report and hand it to the scorecard, run it, then check affordability",
               "pattern": "open-host-service",
               "type": "operation",
               "schema": {
@@ -3898,6 +3898,17 @@
             }
           },
           "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/credit_bureau/services/bureau_api/provides/pull_bureau_report"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/credit_decisioning/services/decisioning_app/provides/decide"
+                }
+              ]
+            },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/customer_&_kyc/services/onboarding_app/provides/get_customer"
@@ -5262,6 +5273,73 @@
         }
       }
     },
+    "credit_bureau": {
+      "name": "Credit Bureau",
+      "description": "The credit reference agency: it holds the credit file and answers a pull with a report at a point in time. Not the bank's",
+      "subdomains": [],
+      "external": true,
+      "aggregates": {},
+      "invariants": {},
+      "services": {
+        "bureau_api": {
+          "name": "Bureau API",
+          "description": "The bureau's documented interface, and all the bank can see",
+          "type": "application",
+          "provides": {
+            "pull_bureau_report": {
+              "name": "PullBureauReport",
+              "description": "Pull a fresh credit file for a customer",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/credit_bureau/schemas/bureau_pull_request"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/credit_bureau/schemas/bureau_report"
+              }
+            }
+          },
+          "consumes": []
+        }
+      },
+      "policies": {},
+      "processes": {},
+      "glossary": {},
+      "valueobjects": {},
+      "schemas": {
+        "bureau_report": {
+          "name": "BureauReport",
+          "description": "The bureau's own report format for one customer, at the moment it is pulled",
+          "attributes": {
+            "bureau": {
+              "name": "bureau",
+              "type": "string"
+            },
+            "score": {
+              "name": "score",
+              "type": "int"
+            },
+            "pulled_at": {
+              "name": "pulledAt",
+              "type": "date-time"
+            }
+          }
+        },
+        "bureau_pull_request": {
+          "name": "BureauPullRequest",
+          "description": "Who to pull the file for",
+          "attributes": {
+            "customer_id": {
+              "name": "customerId",
+              "type": "string",
+              "identifies": {
+                "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/entities/customer"
+              }
+            }
+          }
+        }
+      }
+    },
     "payment_scheme": {
       "name": "Payment Scheme",
       "description": "The clearing scheme the bank submits to: it settles or refuses, in ISO 20022 and on its own timings. Not the bank's",
@@ -5440,6 +5518,22 @@
         "anti-corruption-layer"
       ],
       "description": "CardCo's format is CardCo's: it dictates the message every authorisation arrives in, and Cards translates it at its own boundary rather than adopting it. The bank provides the operation and offers it as an open host; who provides is not who is upstream"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/credit_bureau"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/credit_decisioning"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "The bureau's pull is the bureau's; Credit Decisioning takes the report at the edge and keeps its own BureauReport once pulled"
     },
     {
       "type": "upstream-downstream",
