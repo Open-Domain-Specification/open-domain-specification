@@ -6,6 +6,10 @@ Date: 2026-09-07
 
 Accepted
 
+## Current position (2026-09-10)
+
+Stable. `optional` on attributes, absent meaning required, `identity-not-optional` as an error, and nothing else reading the flag; no amendment moves these. The note of 2026-09-08 (card 89) fixed what `attribute-relation-coherence` reads: presence is not size, so a required scalar pairs with `1`, an optional scalar with `0..1`, and a list with `*` or `1..*` whatever its presence; the first rule's equation of required with non-empty no longer holds. Decision 13's note of 2026-09-10 (card 119) applies the flag to a flat discriminated object: attributes that apply only to some kinds are marked optional. Decision 22 offers `specialises` where the flag would otherwise be explaining a hierarchy.
+
 ## Context
 
 Decision 15 deferred an optional flag on attributes "until a reference model needs it". The petstore reference model is built from the Swagger Petstore, whose `Pet.tag` is optional in the source contract, and the model has been saying otherwise since the first commit. A reader of an attribute table cannot tell a field that is always present from one that is sometimes absent, and the skill's interview cannot ask. The condition for reopening is met by the oldest model in the repository.

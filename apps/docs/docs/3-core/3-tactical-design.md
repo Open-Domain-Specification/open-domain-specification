@@ -30,7 +30,7 @@ contexts jointly own it. And a context invariant records who checks it, not
 how strongly the store holds it. See
 [decision 15](https://github.com/Open-Domain-Specification/open-domain-specification/blob/main/decisions/15-what-the-model-leaves-out.md)
 and the rest of the
-[`decisions/`](https://github.com/Open-Domain-Specification/open-domain-specification/tree/main/decisions)
+[`decisions/`](https://github.com/Open-Domain-Specification/open-domain-specification/tree/main/decisions) (each decision opens with a dated current position that states what holds today; read that first, and the amendments below it only for the history)
 folder for the reasoning behind each of these, and where a review would find
 the argument rather than the absence.
 

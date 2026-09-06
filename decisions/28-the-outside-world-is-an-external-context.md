@@ -6,6 +6,18 @@ Date: 2026-09-07
 
 Accepted
 
+## Current position (2026-09-10)
+
+`external: true` marks a system the enterprise does not own, `external-is-boundary` refuses aggregates, policies and processes on it, internal rules skip it, a Clock is an external context, and `event-unraised` warns on an event nothing raises; stable. The decision bullet on human actors no longer holds here; see the second note of 2026-09-10 (card 120): it moved to decision 15, and the interview question it claimed was added by card 120.
+
+What an external context may state has settled through four amendments. Value objects with a standard's invariants are allowed (third amendment of 2026-09-08, card 91), superseding the second amendment's refusal, as the second amendment of 2026-09-10 says outright. Context invariants on its own operations are allowed only flagged `precondition` or `postcondition`, naming one of its own operations, constraining that operation's request (precondition) or request and answer (postcondition) per decision 19's `guardedSchemas` reading, and its own value objects; anything else is refused (amendments of 2026-09-10, cards 107 and 116; third note of 2026-09-10). Published schemas are allowed, and an identity may name one as the kind it identifies, the context itself remaining the target where none is published (third amendment of 2026-09-10, card 113, superseding the 2026-09-08 amendment's "names the context"). An external context states no internal operations (decision 29, card 100), and its service type is not read (card 116).
+
+A standards body is a published language backed by borrowed schemas (2026-09-09, card 95); a conformist downstream borrows an external upstream's schemas (2026-09-08, card 81). A scheduler calls an operation that raises the event; device telemetry comes from an external context (second note of 2026-09-08).
+
+A `bigBallOfMud` context is exempt from `event-unraised`, `aggregate-root` and `root-identity` (second amendment of 2026-09-08, card 90), is not asked which operation makes a call (`consumption-by-required`) or which policy reacts (`subscription-backed`, fourth note of 2026-09-10, card 124), and may carry an operation another context calls as its boundary, while a raiser invented for an event is refused (note of 2026-09-10, card 107). `mud-needs-acl` reads consumptions, not a held identity (second amendment of 2026-09-10, cards 107 and 108; verified in `packages/core/src/validate.ts`, `mudNeedsAcl`).
+
+NorthBank's kernel stays a real context; its invented subdomain came out under decision 16's exemption (card 95).
+
 ## Context
 
 Every provider in the model is an aggregate or service inside a bounded context that serves a subdomain and has a team. The systems a business integrates with, a card scheme, a payment provider, a licensor, a regulator, a clock, are none of those things, and the reference models leave them out or dress them up: NorthBank's shared library became a context with an invented subdomain and team to satisfy `context-serves-subdomain`. An event that no operation raises, ingested telemetry or a timeout, validates clean and reads as dead model; decision 15 claimed a rule asked about it and none did. DDD's context map has always drawn the outside world as contexts one does not own.

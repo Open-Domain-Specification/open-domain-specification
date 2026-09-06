@@ -4,6 +4,16 @@ date: 2026-09-06
 ---
 # Decision 17 — A context acts through its own boundary
 
+## Current position (2026-09-10)
+
+Status is Proposed. The three decision rules stand: `policy-in-context` (`then` names own-context operations; `on` crosses only through a consumption), `aggregate-not-public` (operations only; events are published as raised), and `domain-service-internal`. The domain-service half was argued both ways and stands (amendment of 2026-09-10); it reopens only when both conditions hold: decision 21's answer routing follows the local `by` chain and has shipped, and a blind or interview-rewritten model carries a domain service with a rule of its own that must consume across a boundary. Card 117's clinic model produced the shape without the rule and did not meet the condition (note after card 117; card 122). One exemption this record does not name: a kernel context's aggregate operations may be consumed by its sharers (decision 16, card 98).
+
+The outbound half was added: an aggregate consumes only its own context's consumables (`aggregate-consumes-inside`, card 73), and not another aggregate's operation in its own context (decision 29, card 100); a domain service likewise consumes only its own context's (second amendment of 2026-09-08, card 92). A policy holds no consumption; where a policy reacts, the consumption sits on the application service with `by` naming the policy (2026-09-07; decision 21). `subscription-consumed` requires that consumption (2026-09-08, card 90), and a consumed event nothing reacts to is refused (card 92; `subscription-backed` skips a big-ball-of-mud consumer, decision 28, card 124). `by` on an operation consumption names operations only (card 92; decision 21's correction of 2026-09-10).
+
+Named costs, all still accepted: every outbound call is an internal operation on the application service, the boundary drawn twice; a subscribe-only context needs an application service that provides nothing; an application-service operation may raise an aggregate's event directly; an aggregate that initiates an outbound call reads as its front's act, `by` naming the front (notes of 2026-09-09, card 98); a domain service holds no outbound port and the front hands in what it fetched; an application-service query that reads an aggregate is invisible to the reaction walk (note of 2026-09-10). The pricing example is the record's answer: the front is the caller, and it costs no extra operation when the use-case operation is the `by`.
+
+Decision 08's crossing table reads `on` yes, `then` no, as this record corrected it. A precondition on an aggregate's operation may read what its front fetched (decision 19, card 116), which is how the clinic's record-exists check is drawn (card 122).
+
 ## Context
 
 Two shortcuts in the model let a context reach into another. A policy's `then` may name an operation provided by another context (petstore's Sales policies issue Catalog's `reservePet` and `markPetSold`, `workspace.ts:604-615`), while decision 08 says `PolicySchema.then` may not cross a file; the model is valid in one file and a load error in two. And an aggregate may provide a consumable carrying an upstream pattern (`Pet` provides `ReservePet` as an open host service, `:280-286`) alongside its application service doing the same, so nothing says which of the two is the context's public boundary.
@@ -56,3 +66,7 @@ After Codex's sixth to ninth reviews and the architect's eighth to tenth, the le
 ## Note (2026-09-10, after card 117)
 
 The blind clinic model produced the shape the condition names, a domain service consuming across a boundary, and both debate parties judged it from the model and the interview: the service holds no rule of its own, only the call (`KycScreening`'s shape, card 92), and the nurse's sentence granting it reads as the brief's permission recited back, because the brief named the shape. Condition (b) is not met; the rule stands and the condition is unchanged. The nurse's real check, a record must exist before a referral is accepted, is a precondition on the aggregate's operation reading a summary its front fetched, decision 19's card-116 shape (card 122).
+
+## Note (2026-09-10, second)
+
+One exemption this record did not name: a kernel context's aggregate operations may be consumed by the contexts that share the kernel, and for any other context the aggregate stays internal (decision 16, card 98).

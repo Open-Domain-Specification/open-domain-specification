@@ -4,6 +4,20 @@ date: 2026-09-06
 ---
 # Decision 15 — What the model deliberately leaves out, and why
 
+## Current position (2026-09-10)
+
+This record lists the model's preferences, not DDD's laws, and the second amendment of 2026-09-10 (card 120) widened the list to: no modules, no actors, no read-model element, no operations on a value object, an entity has one home (decision 16), and a context invariant records the check, not the store (decision 27).
+
+Sections superseded outright: "There is no subtyping" (decision 22); "A rule that spans aggregates is not an invariant" (decision 27); the policy section's former claim that a process is an aggregate (decision 23). Within the policy section, the sentences that a timeout is an event nobody raises and that deadlines are not fields no longer hold; see Corrections (2026-09-09) and decision 23's `deadlines` (card 98). Correlation, compensation and branching stay prose.
+
+"Delivery is implied by the consumable's type" no longer holds as worded; see the second amendment of 2026-09-10: type is kind, not delivery; a queued command is an operation, and its consumption comment explains a `relationship-cycle` finding. "A context has no modules" keeps its conclusion with a corrected reason: the context is the namespace and no rule reads a grouping. "Read models are query services" gains its write side: a policy issues an internal operation that writes what the query reads.
+
+"Two integrations in one direction are one relationship" was reopened on 2026-09-09 (card 103): named directed relationships may join one pair in one direction, and since the amendment of 2026-09-10 (card 107) a consumption between such a pair names its `relationship`.
+
+Stable sections: commands and operations are one thing; attribute types are free text, with `optional` added (decision 24); versions are names; time inside an attribute; anonymous structures; comments and dispositions on the seam, extended by "Rules carry no comments" (2026-09-10); primary-subdomain clustering; the aggregate as a boundary; the tree of instances (card 82); one multiplicity from the source (decision 24, card 89); two participants per relationship, with the kernel context for many sharers (decision 16); glossary per context; a policy issues operations; array order; an identity names one kind of thing (card 95); `raises` lists what may follow.
+
+Added on 2026-09-10: people are not modelled (moved from decision 28, card 120); a value object has no operations; translation across a boundary is prose (ninth round); the exemptions were shaped by four exemplars, and card 117's fifth held them, though its brief named the shapes.
+
 ## Context
 
 The model is written from an interview with the people who own a domain, in their own words, and read back by architects, developers and product people on one page per element. Every field is a question the interview must ask and a row a reader must scan. An external review of the metamodel (2026-09-05) listed several constructs it expected and did not find. Some were real gaps and became decisions 13 and 14. The rest are deliberate, and this record says so in one place so the next review finds the reasoning rather than the absence.
@@ -145,3 +159,7 @@ The five-whys on every reviewer contradiction (owner's instruction, 2026-09-10) 
 ## Note (2026-09-10, after card 117)
 
 The fifth model ran: one modelling mistake, two rules worked around, none believed wrong, and both worked-around shapes were the ones the brief had named as things the author was free to do, which the interviews show being recited back. The exemptions held; the test was weaker than a blind one because the brief named the shapes. A second blind model, if one is ever needed, is briefed with the domain only.
+
+## Note (2026-09-10, second)
+
+The section "Rules carry no comments" listed the seams as consumables, consumptions and relationships and left out processes, which decision 23 gave `comments` and `disposition`; the list is all four.

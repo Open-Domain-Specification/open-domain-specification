@@ -6,6 +6,12 @@ Date: 2026-09-07
 
 Accepted (2026-09-07; the architect review raised no objection and the reasoning stands)
 
+## Current position (2026-09-10)
+
+`specialises` on entities and value objects, with `specialisation-in-boundary`, `specialisation-cycle`, `specialisation-not-root` and `specialisation-redeclares`, no abstract flag and no multiple parents; stable. The reference case is the ledger account (customer's or nominal) and the title (film or series), not NorthBank's accounts (amendment of 2026-09-07, card 59). The context's claim that splitting kinds into aggregates is false was overclaimed; specialisation stays inside one aggregate and one context on purpose, and a product line whose kinds are separate aggregates repeats shared attributes, a named cost (second amendment of 2026-09-08).
+
+The consequence bullet that `aggregate-tree` walks `includes` only no longer holds; see the amendment of 2026-09-07 and the correction of 2026-09-10: reachability follows `includes`, `references` and specialisation, while containment checks do not follow specialisation. A cross-aggregate `references` may target a kind of the other root, never a kind of a non-root entity (2026-09-07). A value object's invariant reaches its own and inherited attributes and what they compose (decision 27, card 113). Kinds of a value are the model's answer to unions (decision 18, amendment of 2026-09-10).
+
 ## Context
 
 Decision 15 refused subtyping: a hierarchy usually hides a missing concept, and modelling it as `includes` would be wrong, so the model refused rather than misdrew. The condition for reopening was a reference model that cannot name its concept without inheritance. Two do. NorthBank's accounts are current, savings and loan accounts: one identity scheme, one lifecycle, one set of invariants on balances, and attributes each kind has and the others do not. An insurer's coverages, a marketplace's offers, a logistics network's legs are the same shape. Flattening them into one entity leaves attributes that apply only sometimes, which decision 24 can now mark optional but cannot explain; splitting them into three aggregates says they are consistent separately, which is false. The ubiquitous language has a word for this relation, "is a kind of", and the model should be able to write it.

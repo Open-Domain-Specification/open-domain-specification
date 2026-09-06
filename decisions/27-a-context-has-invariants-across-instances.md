@@ -6,6 +6,18 @@ Date: 2026-09-07
 
 Accepted
 
+## Current position (2026-09-10)
+
+An invariant belongs to an aggregate, a context, or, since the amendment of 2026-09-08 (card 82), a value object; the kind is named on its page. Three points of the decision have moved.
+
+An aggregate invariant holds on every save inside its boundary, and that boundary holds instances: a borrowed value object held inside it may be constrained (second note of 2026-09-08, card 89). Naming an operation does not make it a precondition; `precondition: true` says so and must name the guarded operation, and an unflagged invariant naming an operation is kept by it and holds after it (amendment of 2026-09-08, card 94). The third note of 2026-09-08 (card 92), which inferred a precondition from the named operation, no longer holds; see that amendment.
+
+A context invariant is always a check and never claims to hold at rest (second amendment of 2026-09-09, card 100). The decision bullet that it must name a guard, and the second amendment's refusal of `precondition` on it, are both narrowed by the third amendment of 2026-09-09 (card 103): both flags are allowed, the page says "checked before" or "checked after", and what is refused is a context invariant with no flag and no guard. `context-invariant-guarded` merged into `context-invariant-is-checked` (note of 2026-09-10, card 103); read the surviving id. "Always a check" means the model records who checks the rule, not how strongly the store holds it (second note of 2026-09-10, card 120); a "kept by the store" mark and a process as keeper are deferred.
+
+A value object's invariant reaches its own and inherited attributes and, through composition, the attributes of the value objects its attributes hold (amendment of 2026-09-10, card 113; decision 22).
+
+The note of 2026-09-07 stands: five cross-instance rules, not eleven, and a rule checked against another context's data is a precondition on the aggregate's operation (decision 19). The bullet "nothing crosses a context" stands for targets, with a qualification recorded in decision 19: a precondition may constrain the `returns` of a consumed consumable or a consumed event's payload held in the same context (cards 116 and 124), never another context's entities. An external context may state flagged invariants on its own operations, reaching their request and answer schemas and its own value objects (decision 28, cards 107 and 116). An obligation across contexts is a process (amendment of 2026-09-08).
+
 ## Context
 
 Decision 15 said a rule that spans aggregates is not an invariant but a domain service's operation. The four reference models disagree with it in eleven places: one open application per customer, one active offer per seller and SKU, a daily transfer limit, a stream limit per household are all written as aggregate invariants with prose admitting "one instance cannot see another" and NorthBank's discovery notes say "ODS has no other place for a rule the business states". The `invariant-in-aggregate` rule's own text says an invariant holds every time its aggregate is saved, which is false for every one of those. The specification gave two answers and the exemplars chose the one the rules forbid, because a business rule with a name and a sentence is an invariant to the people who state it, whatever a transaction can promise.
@@ -62,3 +74,7 @@ A value object's invariant may constrain only its own and inherited attributes, 
 ## Note (2026-09-10, second)
 
 Reviewers read "a context invariant is always a check, because a count across instances can race" as a claim about their database, which a unique index refutes. The record means something narrower: the model records who checks the rule, not how strongly the store holds it, and what a context invariant may not claim is that it is kept on every save, because the model's only unit of consistency is the aggregate. That is the model's rule, not a fact about systems; the rule text and the docs say so (card 120). A mark for "kept by the store", and a context invariant naming a process as its keeper for an obligation across contexts, are options deferred until a reference model needs them; wording first.
+
+## Note (2026-09-10, third)
+
+"Nothing crosses a context" is about entities and their attributes. A precondition that reads the answer its front fetched (card 116) or the payload its reactor heard (card 124) reads the context's own copy of a fact in the shape it arrived, which decision 19 allows; another context's entity is still out of reach.

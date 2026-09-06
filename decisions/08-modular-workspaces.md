@@ -4,6 +4,14 @@ date: 2026-09-02
 ---
 # Decision 08 — Several workspace files per project, linked by JSON References
 
+## Current position (2026-09-10)
+
+Status is Proposed: `WorkspaceSet` is not implemented (amendment of 2026-09-07), and nothing since has changed that. The file model, the JSON Reference form, the two-phase load, the dump rules and the rejected alternatives stand as the design to build; none has been amended.
+
+The crossing table is to be read as the single-file rules read today, and a crossing will be allowed across files exactly where it is allowed across contexts (amendment of 2026-09-09). Rows that no longer state the single-file rule: `AttributeSchema.valueobject` and `ConsumableSchema.schema` may cross to a shared kernel or a conformed-to upstream (decisions 16 and 03, cards 81 and 92), and `InvariantSchema.constrains` may reach a borrowed value held inside the boundary (decision 27, card 89). The `AttributeSchema.schema` row says "no (decision 18)" while decision 18 admits a shared-kernel partner's schema and `schema-context` admits a conformed-to upstream's as well (verified in `packages/core/src/validate.ts`, `schemaContext`); the amendment's general rule covers it, the row does not. `PolicySchema.on` and the process fields may also name an answer of a consumed operation (decision 23).
+
+The promised set rule that a consumption needs a matching relationship exists for one file as `relationship-declared` (card 70), narrowed since so that an identity crossing is not asked (decision 14, card 100). The `odsVersion` minor bump became the `2.0.0` constant of decision 29 (card 114). Whether `Workspace.fromSchema` still throws on a file-qualified `$ref` under decision 29's rule that loading never throws is not stated by either record.
+
 ## Context
 
 A workspace is one self-contained JSON document. Every ref is a fragment
@@ -141,3 +149,7 @@ The architect review found this record cited as in force while nothing implement
 ## Amendment (2026-09-09)
 
 The crossing table above predates decisions 16, 19, 27 and 28: `AttributeSchema.valueobject` and `ConsumableSchema.schema` may now cross to a shared kernel or a conformed-to upstream, and an invariant may constrain a borrowed value held inside its boundary. Read the table as the single-file rules read today; when the set is implemented, a crossing is allowed across files exactly where it is allowed across contexts.
+
+## Note (2026-09-10)
+
+Two rows of the crossing table lag the record: `AttributeSchema.schema` reads "no", and decision 18 with decision 16's amendment of 2026-09-08 lets an attribute be typed by a shared-kernel partner's or a conformed upstream's schema, so the row reads "yes, where decision 16 allows it"; and "it throws and names the set loader" predates decision 29, under which a file-qualified ref is an `unresolved-ref` diagnostic until this record is implemented.

@@ -4,6 +4,16 @@ date: 2026-09-05
 ---
 # Decision 21 — A consumption belongs to the consumer, and may name the operations behind it
 
+## Current position (2026-09-10)
+
+`by` exists on `ConsumptionSchema`, absent means the whole consumer, and `consumption-by-resolves` refuses an event; stable. The decision bullet that `by` may name policies of the consumer's context on any consumption no longer holds; see the correction of 2026-09-10 and decision 17's second amendment of 2026-09-08 (card 92): a policy or process is named on an event consumption, an operation consumption names the operation that makes the call (`consumption-by-operation`).
+
+The section "no rule reads `by` as causality" no longer holds; see the amendment of 2026-09-07 (card 69): `by` is the one causal link across a boundary, the flow map and cycle walk follow it through the consumed operation to what it raises, and `raises-in-context` keeps it the only link. Order and timing are still not modelled. A front declares no `raises` for what it reaches (`raises-restated`, card 77).
+
+`consumption-by-required` warns where a multi-operation consumer names no caller, across contexts (third amendment of 2026-09-08, card 90) and inside one (note of 2026-09-10, card 107); an external or big-ball-of-mud consumer is not asked (decision 28, card 107). A single-operation consumer is inferred as its own `by`, with no opt-out (amendment and note of 2026-09-09, card 95). Two consumptions of one pair need disjoint `by` (decision 26, card 89). An answer routes to the reactor whose `by` made the call (decision 23, card 104); a transitive `by`-chain routing is pre-specified for decision 17's reopening, not built (second note of 2026-09-10).
+
+The consequences' petstore examples changed (cards 77 and 78).
+
 ## Context
 
 A consumption is declared on an aggregate or a service, so the model reads it

@@ -4,6 +4,16 @@ date: 2026-09-02
 ---
 # Decision 02 — Bounded contexts belong to the workspace and link to subdomains
 
+## Current position (2026-09-10)
+
+The structure holds: every bounded context lives in `WorkspaceSchema.boundedcontexts`, links to the subdomains it serves through `BoundedContextSchema.subdomains`, and context-owned refs are `#/boundedcontexts/<id>/...`; no amendment has moved this. Array order carries meaning: the first subdomain is the primary and the one the context is drawn under (decision 15, "Array order is meaning").
+
+The bullet "zero or more" holds at the schema, but a context that serves no subdomain draws a `context-serves-subdomain` warning, a rule this record never names. Decision 16's amendment of 2026-09-09 (card 95) exempts a shared-kernel context with two or more sharers, and decision 28 exempts an external context. (Severity verified in `packages/core/src/schema.ts:245`, since neither record states it.)
+
+The DSL convenience `subdomain.addBoundedcontext(...)` and the derived `Subdomain.boundedcontexts` view are unamended. Decision 07 completed the rename-stability point by making the JSON key the id.
+
+The promised `odsVersion` bump was not made until decision 29's note of 2026-09-10 (card 114) fixed the version at `2.0.0`.
+
 ## Context
 
 Subdomains are problem space; bounded contexts are solution space. One
@@ -35,3 +45,7 @@ rename above the context broke every ref beneath it. See board card 01.
 - Sidebars list a context under every subdomain it serves.
 - Stable refs for everything below a context no longer depend on domain or
   subdomain names, which partly addresses board card 15.
+
+## Note (2026-09-10)
+
+"Zero or more" subdomains holds at the schema, and a context that serves none draws `context-serves-subdomain`, a warning, unless it is a kernel context or an external one (decisions 16 and 28); this record never named the rule, and now does.

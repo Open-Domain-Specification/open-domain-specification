@@ -4,6 +4,10 @@ date: 2026-09-02
 ---
 # Decision 11 — One agent skill package, generated from core, installed by the extension
 
+## Current position (2026-09-10)
+
+Stable. The skill package, its generated schema and validation references, the `RULE_CATALOG` in core, installation by the extension command, and the rule that the model's word is `operation` and the skill never emits `type: "command"` all stand unamended (decision 15, "Commands and operations are one thing", restates the last). The references regenerate whenever a rule or field changes, which later decisions rely on: each of 13, 14, 16, 18, 21 to 25 and 27 names a regenerated reference or an interview question added to the skill. The interview's playbook gained a rule to sweep for `identifies` (decision 14's amendment of 2026-09-09) and the question "who calls it" (decision 15's second amendment of 2026-09-10, card 120). Rule ids change under the catalogue, for example `context-invariant-guarded` merged into `context-invariant-is-checked` (decision 27, card 103).
+
 ## Context
 
 The only help an LLM had for authoring ODS workspaces was a docs page with a copy-paste

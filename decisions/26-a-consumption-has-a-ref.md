@@ -6,6 +6,10 @@ Date: 2026-09-07
 
 Accepted
 
+## Current position (2026-09-10)
+
+A consumption's ref is derived from consumer and consumable and round-trips because it is computed; stable. Two qualifications since. One consumer may consume one consumable more than once when the exchanges differ; each such consumption names a non-empty, mutually disjoint `by`, `consumption-once` asks for it, and the ref appends the first caller's id only when the pair is not unique, so the ref changes when a second consumption of the pair appears, a named cost (amendment of 2026-09-08, card 89; correction of 2026-09-10). The decision bullet that every rule judging a consumption reports at its ref no longer holds; see the correction of 2026-09-10: `separate-ways`, `internal-consumable`, `relationship-declared` and the two consumes-inside rules report at the consumer node. A consumption still has no page of its own. Related: a consumption's `consumable` ref is one of four that cannot survive a round trip when it resolves to nothing (decision 29, card 102), and a consumption between a pair with two named relationships names its `relationship` (decision 15, card 107).
+
 ## Context
 
 A consumption is a strategic intent: it carries a pattern, comments and a disposition, and four rules judge it (`role-coherence`, `mud-needs-acl`, `disposition-needs-comment`, `consumption-by-resolves`). It is the one element without a ref, so every one of those rules reports at the consumer node, and a reader with three consumptions on one service cannot tell which the diagnostic means. Two cards flagged it in passing.

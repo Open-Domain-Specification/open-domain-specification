@@ -4,6 +4,14 @@ date: 2026-09-06
 ---
 # Decision 14 — A relation never crosses a bounded context; only an identity does
 
+## Current position (2026-09-10)
+
+Status is Proposed. `cross-context-relation` refuses a relation into another context and the identity attribute is the crossing; stable. Since the amendment of 2026-09-06 (card 54) the attribute says which boundary through `identifies`, which may name any entity anywhere, child or root, in its own context or another (amendments of 2026-09-07, card 67, and 2026-09-08 third, card 91, which reversed card 90's refusal of a same-context child), an external context (2026-09-08, card 81), or a schema an external context publishes (decision 28's third amendment of 2026-09-10, card 113). `identifies-entity` checks only that the target is of this workspace.
+
+The decision's sentence that the consumable map is where the dependency reads no longer holds; see the amendment of 2026-09-07 (card 70): the context map draws it as an implied «id» edge.
+
+The consequences' sentence that `relationship-declared` asks for the relationship behind an identity crossing no longer holds; see the amendment of 2026-09-09 (card 100): the «id» edge is its own record, and a relationship is declared where something is exchanged or a language is borrowed. `relationship-declared` reads entity and value-object attributes only, never a payload's echoed id (2026-09-08 second, card 90). `mud-needs-acl` likewise reads consumptions, not a held key (decision 28, cards 107 and 108). Two named costs stand: `identifies` is opt-in, and a denormalised copy of another context's fact is invisible unless its carrying event is modelled (2026-09-09).
+
 ## Context
 
 The `cross-aggregate-reference` rule checks that a relation into another aggregate targets that aggregate's root, but not that both aggregates share a bounded context. Petstore's `Order` (Sales BC) holds a `references` relation to `Pet` (Catalog BC) at `models/petstore/src/workspace.ts:452`, while also holding the `petId` attribute that is, by its own description, the only thing that crosses the boundary. Decision 08 says an `EntityRelationSchema.target` may not cross a file, so the same model becomes a load error once its contexts are split. The aggregate page already promises "references to other aggregates are by identity only", a rule the validator does not enforce. Raised in an external review; confirmed against `packages/core/src/validate.ts:70-86`.

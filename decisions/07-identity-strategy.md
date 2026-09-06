@@ -4,6 +4,10 @@ date: 2026-09-02
 ---
 # Decision 07 — Ids are the JSON keys; names are labels
 
+## Current position (2026-09-10)
+
+Stable. The JSON key is the id, the DSL takes an explicit `id` on every `add*`, and no diagnostic nudges toward explicit ids; nothing has moved these. The note of 2026-09-08 adds that a composite or natural key is a value object typing an identity attribute, and no rule refuses it. Since then two elements gained refs derived rather than keyed: a consumption's ref is computed from the pair it joins, with the first caller's id appended only when the pair is not unique (decision 26, card 89), and an answer is addressed as `<operation>/returns` or `<operation>/rejects/<schema>` (decision 23, card 94). A ref that names nothing is an `unresolved-ref` diagnostic, not a load failure (decision 29, card 100).
+
 ## Context
 
 Refs are string paths built from ids, and ids defaulted to a snake-cased

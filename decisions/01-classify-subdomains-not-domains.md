@@ -4,6 +4,12 @@ date: 2026-09-02
 ---
 # Decision 01 — Classify subdomains, not domains, as core / supporting / generic
 
+## Current position (2026-09-10)
+
+The record is stable. `SubdomainSchema.type` is required (`core | supporting | generic`) and `DomainSchema` carries no classification; no later amendment or card has moved either point. Every surface reads the classification from the subdomain, and the context map clusters a context under its first subdomain (decision 02; decision 15, "Context maps cluster by primary subdomain").
+
+One consequence did not happen as written: the promised `odsVersion` bump was never made. The field read `1.0.0` from the first commit until decision 29's note of 2026-09-10 (card 114) made the version a constant core writes, `2.0.0`, checked by an `ods-version` diagnostic.
+
 ## Context
 
 DDD's strategic classification (core, supporting, generic) applies to

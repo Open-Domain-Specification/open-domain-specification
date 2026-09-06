@@ -4,6 +4,14 @@ date: 2026-09-06
 ---
 # Decision 19 — An invariant may constrain the operations that guard it
 
+## Current position (2026-09-10)
+
+Status is Proposed. An invariant may name the operations that guard it, and invariants stay prose; stable. The guard may be an operation of the invariant's aggregate (the decision, card 50) or of any service, application or domain, of its own context (amendments of 2026-09-08, cards 90 and 91). A precondition is stated with `precondition: true` and must name the operation it guards (decision 27, card 94); a postcondition with `postcondition: true` (second amendment of 2026-09-09, card 99).
+
+Reach is by flag. A precondition may constrain the request schema and what it composes (cards 97, 99 and 104); the `returns` schemas of consumables consumed by the guarded operation or by its front in the same context (second amendment of 2026-09-10, card 116); and the payload of an event consumed by the policy or process that issues the guarded operation (third amendment of 2026-09-10, card 124); never another context's entities. The amendment of 2026-09-09 (card 97) that let a precondition name what its own operation returns or rejects with no longer holds; see the amendment of 2026-09-10 (card 104). A postcondition reaches the request, the answer and the rejections, through composition (cards 99, 103 and 104). An invariant with neither flag constrains model elements only, not transport shapes (2026-09-09).
+
+Context invariants and external contexts use the same flags (decision 27, card 103; decision 28, cards 107 and 116).
+
 ## Context
 
 `InvariantSchema.constrains` names entities, value objects and attributes (decision 05). Many invariants are transition rules: petstore's `SoldNotReopen` ("once sold, a pet does not revert to available") is about what `ChangePetStatus` may do, and today it can only point at the status attribute.

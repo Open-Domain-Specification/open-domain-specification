@@ -4,6 +4,16 @@ date: 2026-09-02
 ---
 # Decision 09 — Consumables are the only behaviour construct; payloads live in schemas
 
+## Current position (2026-09-10)
+
+The one-construct model holds: a consumable typed `event` or `operation` is the only thing a node provides, `internal` marks what stays inside, `schema` names the payload, `raises` names the events an operation may raise, and policies name consumables. The schemas block belongs to the context and a workspace-level block stays rejected (decision 16 restates it). Nothing has reversed these.
+
+Added to `ConsumableSchema` since: `returns` (decision 13) and `rejects` (decision 25), each a schema of the provider's context; `many` on `returns` (decision 13, card 97) and on `schema` (decision 13's amendment of 2026-09-10, card 114); `reasons` on a rejection (decision 25, card 114). A schema attribute may nest another schema (decision 18). A schema or value object may be borrowed across a shared kernel or from a conformed-to upstream (decisions 16 and 03), and an external context may publish schemas of its own (decision 28, card 113).
+
+`raises` names the operation's own context's events only (`raises-in-context`, decision 21, card 69), lists what may follow rather than which combination (decision 15), and a front that calls out does not restate what it reaches (`raises-restated`, decision 21, card 77). An event that nothing raises is a warning unless its context is external or a big ball of mud (decision 28). Which nodes may carry an upstream pattern is decision 17's: application services only.
+
+The promised `odsVersion` bump became the `2.0.0` constant of decision 29 (card 114).
+
 ## Context
 
 Decision 04 added domain events and commands as aggregate members beside the

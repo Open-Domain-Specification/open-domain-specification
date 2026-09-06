@@ -4,6 +4,12 @@ date: 2026-09-02
 ---
 # Decision 12 — One page renderer, three hosts; ods-ui is retired
 
+## Current position (2026-09-10)
+
+The amendment of 2026-09-02 is the current design: the renderer is a client-only Svelte app built with Vite in `@open-domain-specification/pages`, hash-routed, rendering Graphviz in the browser, with an atomic-design component library exercised in Storybook. The decision bullets that the package holds HTML string builders and that the static site writes one HTML file per element no longer hold; see the amendment of 2026-09-02. What the amendment kept: three hosts (extension webview over `postMessage`, static export as the bundle beside the workspace JSON, browser viewer with an import screen), pages read-only with mutations in a host-owned drawer, and the intent that `apps/ods-ui` is deleted once the viewer covers import and browsing, with no compatibility period. The record does not say whether that deletion has happened.
+
+The consequence that cross-file refs resolve within one workspace file still describes the limit, since decision 08's set loader is unimplemented (decision 08, amendment of 2026-09-07). Search exists only in the extension per the consequences; no later note in this record moves it.
+
 ## Context
 
 The project carried two UIs for the same model. `apps/ods-ui` is a React and Mantine single
@@ -74,3 +80,7 @@ replace the string assertions.
 - Search exists only in the extension for now. The viewer and static site need a client-side
   index before they match it.
 - Cross-file refs resolve within one workspace file, matching the panel's current limit.
+
+## Note (2026-09-10)
+
+`apps/ods-ui` is still in the tree. The owner has said the extension is the user interface and the web application is likely to go; it goes when the extension covers import and browsing, and this record will say so when it does.

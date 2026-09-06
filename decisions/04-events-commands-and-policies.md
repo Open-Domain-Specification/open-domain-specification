@@ -4,6 +4,14 @@ date: 2026-09-02
 ---
 # Decision 04 — Domain events, commands and policies are first-class aggregate members
 
+## Current position (2026-09-10)
+
+The decision bullets on `AggregateSchema.events`, `AggregateSchema.commands`, `DomainEventSchema`, `CommandSchema` and the `event` and `command` back-links no longer hold; decision 09 removed them, and a consumable typed `event` or `operation` is the only behaviour construct, with payloads in the context's schemas block. The consequence that aggregate pages gain Commands and Events sections is superseded with them.
+
+Policies stand, as decision 09 said they would, with `on` naming event consumables and `then` naming operation consumables. What has moved since: `then` names operations of the policy's own context only, and `on` reaches another context's event only through a consumption (decision 17, `policy-in-context`; `subscription-consumed` since its amendment of 2026-09-08, card 90); `on` may also name an answer of an operation, `<op>/returns` or `<op>/rejects/<schema>` (decision 23, cards 92 and 94). A policy is stateless and any-of; anything that waits on more than one event is a process (decisions 15 and 23).
+
+The bullet that event and command attributes share `AttributeSchema` holds for schemas (decision 09); the ref forms `.../events/<id>` and `.../commands/<id>` are gone with the objects.
+
 ## Context
 
 Events existed only as a `type: "event"` flag on a consumable, so an event

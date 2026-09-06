@@ -4,6 +4,18 @@ date: 2026-09-02
 ---
 # Decision 03 — Context relationships are explicit, not inferred per consumable
 
+## Current position (2026-09-10)
+
+Relationships are explicit on the workspace, directed ones carrying roles and symmetric ones two participants; stable. Since decision 15's amendments of 2026-09-09 (card 103) and 2026-09-10 (card 107), a directed relationship may carry a `name`, two named relationships may join one pair in one direction, and a consumption between such a pair names its `relationship`.
+
+Upstream is who dictates the model, not the provider (amendment of 2026-09-09, card 98). A downstream carries the upstream's schema as a conformist or, behind an anti-corruption layer, only on the consumable the upstream calls (second amendment of 2026-09-09).
+
+A consumable carries one `pattern`. A published-language role is backed by a schema it carries (amendment of 2026-09-07, card 53), by any schema the downstream carries in a request, return or rejection (card 98), or by a borrowed schema or value object (decision 28, card 95).
+
+`relationship-declared` asks for a relationship where a consumption or a borrowed value object crosses (decision 16, card 92), in either direction; symmetric types satisfy it, separate-ways does not (notes of 2026-09-09, card 99). The second amendment's sentence that it warns on an identity crossing no longer holds; see the correction of 2026-09-10 and decision 14's amendment of 2026-09-09 (card 100).
+
+`role-coherence` asks each end for the role its position implies, and nothing where the declared upstream is the caller (card 99); a customer-supplier downstream is a conformist (note of 2026-09-10). A partnership clears a ring of calls between its pair (correction of 2026-09-10, card 104).
+
 ## Context
 
 Relationship patterns were split between `ConsumablePattern` on the provider

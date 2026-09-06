@@ -4,6 +4,12 @@ date: 2026-09-02
 ---
 # Decision 10 — UML notation for non-DDD diagrams, rendered with Graphviz, not PlantUML
 
+## Current position (2026-09-10)
+
+Stable. Graphviz is the only renderer, the relation map is a UML class diagram with `toPlantUML()` as text output, and PlantUML rendering stays ruled out; no amendment touches this record. Decision 12's amendment moved the pages to a Svelte app that renders Graphviz in the browser, which keeps the in-process, offline constraint this record set.
+
+The relation map has since gained notation from other records: a dashed identity edge across a boundary, drawn to the entity named, child or root, or to an external context or its published schema (decision 14, cards 54, 67 and 81; decision 28, card 113); a borrowed value object with its context named (decision 16, card 93); a value-object line derived from the attribute, a declared `uses` relation adding only a label or cardinality (decision 16, card 104); and a hollow-triangle generalisation for `specialises` (decision 22). The context map gained the «id» implied edge (decision 14, card 70) and an external stereotype (decision 28).
+
 ## Context
 
 The four generated diagrams split into two kinds. Context maps, consumable

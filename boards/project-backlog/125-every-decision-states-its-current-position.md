@@ -1,9 +1,9 @@
 ---
-column: todo
+column: done
 labels: [docs]
 priority: high
 agent: lead
-live: true
+live: false
 updatedAt: 2026-09-10T22:30:00.000Z
 ---
 # Every decision states its current position
@@ -12,9 +12,11 @@ The architect's eleventh round: the decisions are a changelog, and superseded st
 
 ## Checklist
 
-- [ ] A `## Current position (2026-09-10)` section in every decision 01 to 29, written from the record's last word on each point, naming the card or amendment that decided it
-- [ ] Where a decision bullet is contradicted by a later amendment, the current position says so in one sentence; the bullet is not edited
-- [ ] The docs site's pointer to `decisions/` says to read the current position first
-- [ ] `bash scripts/verify-all.sh` green (a doc test may read decision files)
+- [x] A `## Current position (2026-09-10)` section in every decision 01 to 29, written from the record's last word on each point, naming the card or amendment that decided it
+- [x] Where a decision bullet is contradicted by a later amendment, the current position says so in one sentence; the bullet is not edited
+- [x] The docs site's pointer to `decisions/` says to read the current position first
+- [x] `bash scripts/verify-all.sh` green (a doc test may read decision files): run on the card 124 landing, which carries this card's docs change through the gate; CI on the push covers the decisions
 
 ## Comments
+
+- 2026-09-10, lead: the architect drafted all twenty-nine sections from the records (scratchpad `current-position/`), flagging ten inconsistencies between records; the lead read the flags, spot-checked 17, applied every section directly under the status block, and settled each flag with a dated note on the decision it concerns (02, 08, 12, 13, 15, 17, 20, 27, 29). The docs pointer says to read the current position first.

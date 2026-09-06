@@ -4,6 +4,14 @@ date: 2026-09-06
 ---
 # Decision 16 — Value objects belong to the bounded context, and a shared kernel shares them
 
+## Current position (2026-09-10)
+
+Value objects belong to the bounded context and no workspace-level value objects or schemas exist; stable. The borrowing rule has widened: a value object or schema crosses to a shared-kernel partner (the decision) or, downstream only, from a conformed-to upstream (amendment of 2026-09-08, card 81), and `valueobject-context` (third amendment of 2026-09-08, card 92) now enforces on `attribute.valueobject` what the decision claimed and nothing checked. A borrowed value object is drawn on the relation map with its context named (card 93), and a local value-object attribute derives its own line without a restated `uses` relation (note of 2026-09-10, card 104).
+
+The kernel-as-context reading is a convenience for many sharers, not a rule: two contexts sharing a kernel borrow directly, and the kernel context exists for many sharers or for an entity both teams own (note of 2026-09-10, card 120, reading the amendment of 2026-09-07). A kernel context's aggregate operations may be consumed by its sharers, which `shared-kernel-backed` counts (amendments of 2026-09-08 second, card 90, and 2026-09-09 second, card 98; the latter corrected the note that contradicted `aggregate-not-public`). A kernel context is exempt from `context-serves-subdomain` when all its relationships are shared-kernel with two or more sharers (2026-09-09, card 95). The kernel's `team` is its keeper; co-owners are not listed, a named cost.
+
+No aggregate-private value objects (note of 2026-09-07); an entity has one home, now listed as a preference in decision 15. An external context's value objects may carry a standard's invariants (decision 28, card 91).
+
 ## Context
 
 `ValueObjectSchema` lives under an aggregate (`schema.ts:34`), so a value object used by several aggregates of one context, NorthBank's `Money` or petstore's `PetStatus`, is declared once per aggregate, and `models/_shared/src/index.ts` exists only to repeat the declaration. In DDD a value object is part of the context's ubiquitous language, not an aggregate's. Separately, `shared-kernel` is a relationship type the map draws but no rule reads: two contexts declaring it still cannot reference one another's value objects or schemas (`schema-context`, decision 08's cross-file table). The relationship claims a sharing the model forbids.

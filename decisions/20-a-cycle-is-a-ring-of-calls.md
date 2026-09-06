@@ -6,6 +6,14 @@ Date: 2026-09-07
 
 Accepted
 
+## Current position (2026-09-10)
+
+`relationship-cycle` walks only steps where an operation of the upstream is consumed by the downstream; event steps are `reaction-cycle`'s; a mutual pair of calls is reported. Stable, with three narrowings: a step whose consumption declares an anti-corruption layer toward that upstream does not count, read per consumption (amendment of 2026-09-08, card 82; note of 2026-09-09, card 100); a declared partnership clears a ring that is nothing but the pair, not a longer ring the pair is part of (note of 2026-09-10, card 104; decision 03's correction); and a ring both `reaction-cycle` and `relationship-cycle` see is reported once, as calls (note of 2026-09-10, card 108).
+
+The decision's sentence that `partnership-backed` was specified as traffic both ways no longer holds; see the second amendment of 2026-09-07 (cards 63 and 69): traffic in at least one direction. The message no longer claims a runtime wait (amendment of 2026-09-07, card 49) and offers an ACL, a partnership or an event as repairs (card 82).
+
+The context's reliance on "delivery fixed by type" is qualified: decision 15's second amendment of 2026-09-10 (card 120) says type is kind, not delivery, most operations are awaited and this rule assumes so, and a queued command on a ring is answered by an ACL, a comment, or modelling it as the event it is (note of 2026-09-09, card 100). The lifecycle exemptions on `reaction-cycle` are decision 23's.
+
 ## Context
 
 Card 53 added `relationship-cycle`, a warning for directed relationships that run in a ring. Written over every directed relationship it found eleven rings in the reference models, most of them a pair of contexts each upstream of the other in one respect and downstream in another. That shape is common and not wrong: Ordering publishes events that Fulfilment reacts to, and Fulfilment offers a query Ordering calls. Nobody on that ring waits for anyone; the events arrive when they arrive.
@@ -45,3 +53,7 @@ A declared partnership clears a ring that is nothing but the partnered pair, bec
 ## Note (2026-09-10)
 
 `reaction-cycle` words a ring of single-operation services calling each other as reactions that trigger themselves, and `relationship-cycle` reports the same ring across contexts. The ring is real and the claim is recursion, so the message says calls, and the ring is reported once (card 108, architect's eighth round).
+
+## Note (2026-09-10, second)
+
+The context above says decision 15 fixes delivery by type; decision 15's second amendment of 2026-09-10 withdrew that: type is kind, not delivery. This rule still assumes a call binds at the moment of the call, which is true of most operations, and a queued command that trips it says so in the consumption's comment.
