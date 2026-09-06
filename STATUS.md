@@ -2,15 +2,15 @@
 
 ## Goal / health
 
-Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel is a good, clean, detailed specification for modelling systems the DDD way, answers yes without a caveat, and every independent reviewer agrees. Health: green. Develop CI passes on every commit since the history squash; the landing gate (`npm run verify`) was green at the last landing (card 110). Review panel on the card 104 head: Antigravity yes with named costs (seven consecutive runs, every issue decided ground); Codex no on run 8 with two accepted gaps and nine decided; the fresh-context architect yes with named costs on round 8 with three rule gaps and one bent exemplar. Every accepted item landed as cards 107 to 110; the eighth round on the card 110 head is running.
+Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel is a good, clean, detailed specification for modelling systems the DDD way, answers yes without a caveat, and every independent reviewer agrees. Health: green. Develop CI passes on every commit since the history squash; the landing gate (`npm run verify`) was green at the last landing (card 113). Review panel on the card 104 head: Antigravity yes with named costs (seven consecutive runs, every issue decided ground); Codex no on run 8 with two accepted gaps and nine decided; the fresh-context architect yes with named costs on round 8 with three rule gaps and one bent exemplar. Every accepted item landed as cards 107 to 110; the eighth round on the card 110 head is running.
 
 ## Now
 
-No card is live. The eighth panel round is running on the card 110 head: Antigravity run 20 is in, yes with named costs with every issue decided ground; Codex run 9 is in, no, with three reproduced gaps accepted as card 113 (live, senior-developer) and nine restatements; the fresh architect-deep round 9 is in, yes with named costs, with one defect and two unnamed costs accepted as card 114 (after 113) and the rest named in decisions. Stopping point: each reviewer's verdict is read and ruled, new defects become cards, restatements are answered by the decision they restate. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 110 landed green; 107 gave RiverMart the first two named agreements in a reference model.
+Card 114 ([`odsVersion` is real; a rejection names its reasons; a request may be a collection; the `by` comment tells the truth](boards/project-backlog/114-odsversion-is-real-a-rejection-names-its-reasons-a-request-may-be-a-collection.md), senior-developer) is live in its worktree; it is the last card from the eighth round. Eighth round on the card 110 head: Antigravity run 20 yes with named costs, every issue decided ground; Codex run 9 no, three reproduced gaps landed as card 113 and nine restatements; architect round 9 yes with named costs, one defect and two unnamed costs in card 114, the rest named in decisions. Stopping point: each reviewer's verdict is read and ruled, new defects become cards, restatements are answered by the decision they restate. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 110 and 113 landed green; 107 gave RiverMart the first two named agreements in a reference model.
 
 ## Next
 
-Land card 113, dispatch and land card 114, and run the ninth round on that head. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
+Land card 114 and run the ninth round on that head. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
 
 ## Later
 

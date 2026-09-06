@@ -3,6 +3,7 @@ column: todo
 labels: [backend, docs]
 priority: medium
 agent: senior-developer
+live: true
 updatedAt: 2026-09-10T12:30:00.000Z
 ---
 # `odsVersion` is real; a rejection names its reasons; a request may be a collection; the `by` comment tells the truth
