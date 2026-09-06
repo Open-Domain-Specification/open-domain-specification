@@ -30,7 +30,11 @@ import Keyword from "../atoms/Keyword.svelte";
 import Lockup from "../atoms/Lockup.svelte";
 import ConsumableKeywords from "../molecules/ConsumableKeywords.svelte";
 import { contextCrumbs } from "../molecules/crumbs";
-import { kindOf } from "../molecules/element-kind";
+import {
+	answerKeyword,
+	answerRef,
+	kindOf,
+} from "../molecules/element-kind";
 import DiagramFigure from "../organisms/DiagramFigure.svelte";
 import LanguageSection from "../organisms/LanguageSection.svelte";
 import PageHeader from "../organisms/PageHeader.svelte";
@@ -64,16 +68,18 @@ const sourceOf = (trigger: ProcessTrigger) => {
 };
 
 /**
- * What the name in the first column links to. An answer has no page of its
- * own — it is a call coming back, not an element — so it links to the shape it
- * came back as, and the Provider column says which call. A deadline has none
- * either, and links to the process that declares it.
+ * What the name in the first column links to. An answer links to what
+ * {@link answerRef} says: the shape it came back as, or the call itself where
+ * it came back as nothing, with the Provider column naming the call either
+ * way. A deadline has no page of its own either, and links to the process that
+ * declares it.
  */
 const linkOf = (trigger: ProcessTrigger) => {
-	if (trigger instanceof Answer) return trigger.schema.ref;
+	if (trigger instanceof Answer) return answerRef(trigger);
 	if (trigger instanceof Deadline) return trigger.process.ref;
 	return trigger.ref;
 };
+
 
 /**
  * How long an instance had, and what the clock counts from where the process
@@ -100,7 +106,7 @@ const columnsFor = (label: string, withKind: boolean): Column[] => [
 			{#if col.key === "name"}
 				<Lockup kind={kindOf(c)} name={c.name} ref={linkOf(c)} detail={detailOf(c)} />
 			{:else if col.key === "kind"}
-				{#if c instanceof Answer}<Keyword text={c.rejection ? "rejection" : "answer"} />{:else if c instanceof Deadline}<Keyword text="deadline" title="A time limit this process keeps on its own instances; it needs no clock outside the model." />{:else}<ConsumableKeywords consumable={c} />{/if}
+				{#if c instanceof Answer}<Keyword text={answerKeyword(c)} />{:else if c instanceof Deadline}<Keyword text="deadline" title="A time limit this process keeps on its own instances; it needs no clock outside the model." />{:else}<ConsumableKeywords consumable={c} />{/if}
 			{:else if col.key === "provider"}
 				{@const source = sourceOf(c)}
 				<Lockup kind={kindOf(source)} name={source.name} ref={source.ref} />

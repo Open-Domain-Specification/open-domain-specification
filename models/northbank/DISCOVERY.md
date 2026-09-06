@@ -669,3 +669,29 @@ at all, it is called through `RequestDecision` by Lending's own policy, and a pa
 needs traffic in one direction only.
 
 The deliberate diagnostics of section 7 are untouched: the same four, for the same reasons.
+
+## Revision (card 99): one relationship with CardCo, and no conformist
+
+Card 98 got the direction right and then had to write it twice. `relationship-declared` was
+satisfied only by an arrow pointing the way the traffic ran, and `role-coherence` asked the
+provider of a consumable for an upstream role and its caller for a downstream one — so the
+truthful relationship, CardCo upstream of Cards with a published language and an
+anti-corruption layer, did not answer either rule. A second relationship went in beside it,
+`Cards upstream of CardCo` with an open host service and a **conformist** downstream role,
+and the consumption carried `pattern: "conformist"` to match.
+
+Both said the opposite of what the Cards lead described. A conformist takes the other side's
+model as it stands; CardCo is the side whose model is taken. Nobody at the bank would call
+the processor a conformist of the bank, and the map showed a two-way strategic dependency
+where there is one.
+
+Direction is now the author's strategic claim rather than a reading of the call, so one
+relationship answers the question the crossing raises whichever way it points, and
+`role-coherence` reads the declared direction before it asks anything of either end
+(decision 03, note of 2026-09-09). The second relationship and the conformist claim are
+gone. What is left is the integration as it was described: CardCo dictates the message,
+`AuthoriseCard` carries `CardCoAuthorisationMessage` and is still offered as an open host —
+who provides is not who is upstream — and Cards translates behind its own boundary. The
+relationship count drops by one; nothing else about Cards or CardCo changes.
+
+The deliberate diagnostics of section 7 are untouched: the same four, for the same reasons.

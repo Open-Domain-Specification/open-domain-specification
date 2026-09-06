@@ -92,9 +92,21 @@ Naming an operation says which operation keeps the rule, and nothing more. A
 rule checked before that operation runs and not kept true afterwards — enough
 funds at initiation, an entitlement at playback start — says so with
 `precondition: true`, and must name the operation it guards
-(`precondition-names-operation`). Without the flag the rule is still true after
-the operation it names: `PostEntry` must produce balanced postings, and the
-postings stay balanced.
+(`precondition-names-operation`). A guarantee about what the call answers with
+— every returned itinerary meets the requested deadline — is the mirror of it
+and says so with `postcondition: true`
+(`postcondition-names-operation`); the two are exclusive, because one is about
+the moment before the call and the other about what comes back. Without either
+flag the rule is still true after the operation it names: `PostEntry` must
+produce balanced postings, and the postings stay balanced.
+
+Both may reach the payload the call carries. A precondition may constrain the
+attributes of a schema its guarded operation takes, returns or rejects with, a
+postcondition those of what it returns or rejects with, and either follows
+composition: a rule about the amount of an order line is a rule about the
+request that holds the lines. No other invariant may name a schema's attribute
+at all — a rule kept true on every save is a rule about the model, and a
+transport shape is not the model.
 
 An invariant may instead belong to a value object. A rule that is about a
 value alone — an IBAN's mod-97 checksum, a Money's single currency — holds by
@@ -176,9 +188,12 @@ A **policy** lives on a bounded context and says "on these events, then
 these operations" (`policy.on(...events).issues(...operations)`). The
 consumables may belong to other contexts as long as they are not internal.
 `on` may also name an answer of an operation this context consumes
-(`operation.returned()`, `operation.rejected(schema)`), which means "when that
-answer comes back": a call is answered and the reaction is to the answer, not
-to an event somebody invented for it. An answer is named by the call it comes
+(`operation.returned()`, `operation.rejected(schema)`,
+`operation.completed()`), which means "when that answer comes back": a call is
+answered and the reaction is to the answer, not to an event somebody invented
+for it. An operation that returns nothing still comes back, and
+`completed()` is that answer — one with no shape, which is the whole of what
+the caller of a command learns. An answer is named by the call it comes
 back from, never by the shape alone, so two operations refusing with one shared
 schema wake only whoever named the call that was made.
 The flow map walks from the policies of a context through what they react
@@ -190,10 +205,14 @@ A **process** is the reaction that outlives one event
 (`bc.addProcess(name, { description }).starts(...events).on(...events).issues(...operations).ends(...events)`).
 A policy is stateless and any-of; a process remembers which of its events
 have arrived, so it can wait for two facts before it acts, and it says what
-finishes an instance. `starts`, `on` and `ends` may name another context's
-events, exactly as a policy's `on` may, and `on` and `ends` may name an
-answer of an operation this context calls, which is what the commonest process
-is made of: it calls, waits, and branches on what came back. `then` names operations of the process's own context. What it correlates on, how long it waits and what it
+finishes an instance. `starts` names the event, or the operation of this
+context, that creates an instance: a command starts a saga as often as a fact
+does — open a claim, submit an application — and a starting command is this
+context's own, though a starting event may be a neighbour's. `starts`, `on`
+and `ends` may name another context's events, exactly as a policy's `on` may,
+and `on` and `ends` may name an answer of an operation this context calls,
+which is what the commonest process is made of: it calls, waits, and branches
+on what came back. `then` names operations of the process's own context. What it correlates on, how long it waits and what it
 compensates are prose in its description: the model says a process exists
 and what it listens to and does, and leaves how it decides to the code. An
 author who finds a policy waiting for a second event promotes it to a

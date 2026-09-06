@@ -1330,8 +1330,16 @@ describe("invariant-in-aggregate", () => {
 		const pickup = request.addAttribute("pickupDate", { type: "date" });
 		const delivery = request.addAttribute("deliveryDate", { type: "date" });
 		const weight = request.addAttribute("weightKg", { type: "decimal" });
+		// The request composes its lines, and a rule about a line's amount is a
+		// rule about the request that carries them (decision 18; card 99).
+		const line = bc.addSchema("Quote Line", { description: "" });
+		const amount = line.addAttribute("amount", { type: "decimal" });
+		request.addAttribute("lines", { type: "Quote Line[]", schema: line });
 		const quote = bc.addSchema("Quote", { description: "" });
 		const price = quote.addAttribute("price", { type: "decimal" });
+		const leg = bc.addSchema("Quoted Leg", { description: "" });
+		const arrival = leg.addAttribute("arrivesAt", { type: "date" });
+		quote.addAttribute("legs", { type: "Quoted Leg[]", schema: leg });
 		const elsewhere = bc.addSchema("Booking", { description: "" });
 		const reference = elsewhere.addAttribute("reference", { type: "string" });
 		const quoting = bc.addService("Quoting", {
@@ -1351,7 +1359,9 @@ describe("invariant-in-aggregate", () => {
 			pickup,
 			delivery,
 			weight,
+			amount,
 			price,
+			arrival,
 			reference,
 			requestQuote,
 		};
@@ -1390,8 +1400,57 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, reference);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Reads Someone Else\'s Request" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which no operation this precondition guards takes, returns or rejects with; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
+				'Invariant "Reads Someone Else\'s Request" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which no operation this precondition guards takes, returns or rejects with, directly or through a shape one of those composes; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
 				stray.ref,
+			],
+		]);
+	});
+
+	it("follows composition into a shape the request carries", () => {
+		const { ws, shipment, amount, requestQuote } = quotation();
+		shipment
+			.addInvariant("Every Line Is Priced", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(requestQuote, amount);
+		expect(inAggregate(ws)).toEqual([]);
+	});
+
+	it("lets a postcondition constrain the answer its guard comes back with", () => {
+		const { ws, shipment, price, requestQuote } = quotation();
+		shipment
+			.addInvariant("Quoted Price Is Positive", {
+				description: "",
+				postcondition: true,
+			})
+			.constrains(requestQuote, price);
+		expect(inAggregate(ws)).toEqual([]);
+	});
+
+	it("follows composition into a shape the answer carries", () => {
+		const { ws, shipment, arrival, requestQuote } = quotation();
+		shipment
+			.addInvariant("Every Leg Meets The Deadline", {
+				description: "",
+				postcondition: true,
+			})
+			.constrains(requestQuote, arrival);
+		expect(inAggregate(ws)).toEqual([]);
+	});
+
+	it("refuses a postcondition the request the guard receives", () => {
+		const { ws, shipment, pickup, requestQuote } = quotation();
+		const wrongWay = shipment
+			.addInvariant("Pickup Before Delivery", {
+				description: "",
+				postcondition: true,
+			})
+			.constrains(requestQuote, pickup);
+		expect(inAggregate(ws)).toEqual([
+			[
+				'Invariant "Pickup Before Delivery" of aggregate "Shipment" constrains "Quote Request.pickupDate", which is an attribute of schema "Quote Request", which no operation this postcondition guards returns or rejects with, directly or through a shape one of those composes; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
+				wrongWay.ref,
 			],
 		]);
 	});
@@ -1405,7 +1464,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, pickup);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Pickup Before Delivery" of aggregate "Shipment" constrains "Quote Request.pickupDate", which is an attribute of schema "Quote Request", and only a precondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
+				'Invariant "Pickup Before Delivery" of aggregate "Shipment" constrains "Quote Request.pickupDate", which is an attribute of schema "Quote Request", and only a precondition or a postcondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape; an aggregate\'s invariant holds inside the boundary on every save, and the only thing outside it may name is an operation of a service of its own context that guards it',
 				persistent.ref,
 			],
 		]);
@@ -1470,7 +1529,7 @@ describe("invariant-in-context", () => {
 				.map((d) => [d.message, d.ref]),
 		).toEqual([
 			[
-				'Invariant "Counts A Payload" of bounded context "BC" constrains "Place Order.Customer Id", which is an attribute of schema "Place Order", and only a precondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape; a context\'s invariant holds across its own aggregates and no further',
+				'Invariant "Counts A Payload" of bounded context "BC" constrains "Place Order.Customer Id", which is an attribute of schema "Place Order", and only a precondition or a postcondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape; a context\'s invariant holds across its own aggregates and no further',
 				rule.ref,
 			],
 		]);
@@ -2502,6 +2561,97 @@ describe("role-coherence and symmetric relationships", () => {
 			ws.validate().filter((d) => d.rule === "role-coherence"),
 		).toHaveLength(2);
 	});
+
+	it("asks the provider for the upstream role when the provider is upstream", () => {
+		const { ws, one, two } = bareExchange();
+		one.upstreamOf(two, {});
+		expect(
+			ws.validate().filter((d) => d.rule === "role-coherence"),
+		).toHaveLength(2);
+	});
+
+	// The caller dictates the format and the provider translates behind its own
+	// boundary: a consumable carries only an upstream role and a consumption
+	// only a downstream one, so neither field is where either role belongs, and
+	// the relationship is what carries them (decision 03, 2026-09-09; card 99).
+	it("asks neither end when the consumer is the declared upstream", () => {
+		const { ws, one, two } = bareExchange();
+		two.upstreamOf(one, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		expect(ws.validate().filter((d) => d.rule === "role-coherence")).toEqual(
+			[],
+		);
+	});
+});
+
+describe("postcondition-names-operation", () => {
+	/** One operation, one answer shape, and an aggregate to hang rules on. */
+	function answering() {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Travel", { description: "" });
+		const agg = bc.addAggregate("Itinerary", { description: "" });
+		agg.addRootEntity("Itinerary", { description: "" });
+		const answer = bc.addSchema("Itinerary", { description: "" });
+		const arrives = answer.addAttribute("arrivesAt", { type: "date" });
+		const plan = bc
+			.addService("Planning", { description: "", type: "application" })
+			.provides("Plan Trip", {
+				description: "",
+				type: "operation",
+				returns: answer,
+			});
+		return { ws, agg, plan, arrives };
+	}
+
+	const postconditions = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "postcondition-names-operation")
+			.map((d) => [d.message, d.ref]);
+
+	it("takes a postcondition that names the call it is a guarantee about", () => {
+		const { ws, agg, plan, arrives } = answering();
+		agg
+			.addInvariant("Meets The Requested Deadline", {
+				description: "",
+				postcondition: true,
+			})
+			.constrains(plan, arrives);
+		expect(postconditions(ws)).toEqual([]);
+	});
+
+	it("refuses a postcondition that names no operation", () => {
+		const { ws, agg } = answering();
+		const nowhere = agg.addInvariant("Guaranteed Of Nothing", {
+			description: "",
+			postcondition: true,
+		});
+		expect(postconditions(ws)).toEqual([
+			[
+				'Invariant "Guaranteed Of Nothing" is marked a postcondition but names no operation; a postcondition is a guarantee about what a call answers with, so say which call',
+				nowhere.ref,
+			],
+		]);
+	});
+
+	it("refuses a rule marked both a precondition and a postcondition", () => {
+		const { ws, agg, plan } = answering();
+		const both = agg
+			.addInvariant("Two Moments At Once", {
+				description: "",
+				precondition: true,
+				postcondition: true,
+			})
+			.constrains(plan);
+		expect(postconditions(ws)).toEqual([
+			[
+				'Invariant "Two Moments At Once" is marked both a precondition and a postcondition; a rule is checked before a call or guaranteed of what comes back, and one that is both says two things about when it holds',
+				both.ref,
+			],
+		]);
+	});
 });
 
 describe("term-in-context", () => {
@@ -2814,7 +2964,7 @@ describe("process rules", () => {
 	});
 
 	describe("process-starts", () => {
-		it("wants an event that begins an instance", () => {
+		it("wants an event or a command that begins an instance", () => {
 			const { ws, down, downApp } = reachingProcess();
 			const nothing = down
 				.addProcess("Never Begins", { description: "" })
@@ -2827,7 +2977,7 @@ describe("process rules", () => {
 			expect(ruleOf(ws, "process-starts")).toEqual([
 				[
 					"error",
-					'Process "Never Begins" names no event that begins an instance, so nothing in the model says when one exists',
+					'Process "Never Begins" names no event or command that begins an instance, so nothing in the model says when one exists',
 					nothing.ref,
 				],
 			]);
@@ -2836,6 +2986,49 @@ describe("process rules", () => {
 		it("says nothing about a process that names one", () => {
 			const { ws } = reachingProcess();
 			expect(ruleOf(ws, "process-starts")).toEqual([]);
+		});
+
+		// A command starts a saga as often as an event does (decision 23, third
+		// amendment): the whole point of card 99 is that the model no longer
+		// makes an author invent a fact for the call they already have.
+		it("takes an operation of the process's own context as a start", () => {
+			const { ws, down, downApp } = reachingProcess();
+			const open = downApp.provides("Open Claim", {
+				description: "",
+				type: "operation",
+			});
+			const raised = downApp.provides("Claim Closed", {
+				description: "",
+				type: "event",
+			});
+			down
+				.addProcess("Claim Handling", { description: "" })
+				.starts(open)
+				.ends(raised);
+			expect(ruleOf(ws, "process-starts")).toEqual([]);
+			expect(ruleOf(ws, "consumable-kind")).toEqual([]);
+			expect(ruleOf(ws, "process-in-context")).toEqual([]);
+		});
+
+		it("refuses a command of another context as a start", () => {
+			const { ws, down, upApp } = reachingProcess();
+			const foreign = upApp.provides("Open Elsewhere", {
+				description: "",
+				type: "operation",
+			});
+			const process = down
+				.addProcess("Claim Handling", { description: "" })
+				.starts(foreign)
+				.ends(
+					down
+						.addService("Claims", { description: "", type: "application" })
+						.provides("Claim Closed", { description: "", type: "event" }),
+				);
+			expect(ruleOf(ws, "process-in-context")).toContainEqual([
+				"error",
+				'Process "Claim Handling" in "Down" starts on "Open Elsewhere", an operation of "Up"; the command that creates an instance is this context\'s own, though an event that starts one may cross',
+				process.ref,
+			]);
 		});
 	});
 
@@ -3004,10 +3197,13 @@ describe("process rules", () => {
 				'Process "Long Running" in "Down" reacts to "Happened" from "Up" although the contexts declare separate ways',
 				process.ref,
 			]);
-			// An operation in `starts` is a kind error, exactly as it is on a policy.
+			// An operation in `on` is a kind error, exactly as it is on a policy;
+			// one in `starts` is the command that creates an instance and is not
+			// (decision 23, third amendment).
 			const wrong = down
 				.addProcess("Kinds", { description: "" })
-				.starts(downApp.provides("Ask", { description: "", type: "operation" }))
+				.starts(downApp.provides("Began", { description: "", type: "event" }))
+				.on(downApp.provides("Ask", { description: "", type: "operation" }))
 				.ends(downApp.provides("Finished", { description: "", type: "event" }));
 			expect(ruleOf(ws, "consumable-kind")).toContainEqual([
 				"error",
@@ -4616,10 +4812,14 @@ describe("relationship-declared", () => {
 		expect(declared(ws)).toEqual([]);
 	});
 
-	it("still warns when the only relationship points the other way", () => {
+	// The arrow is the author's claim about who dictates the model, not about
+	// who calls whom, so a relationship pointing against the traffic answers
+	// the question the crossing raises just as well (decision 03, note of
+	// 2026-09-09; card 99).
+	it("takes a directed relationship pointing the other way", () => {
 		const { ws, up, down } = crossing();
 		down.upstreamOf(up, {});
-		expect(declared(ws)).toHaveLength(1);
+		expect(declared(ws)).toEqual([]);
 	});
 
 	it("takes a partnership either way round", () => {
@@ -5782,13 +5982,89 @@ describe("waiting on an answer", () => {
 	});
 
 	it("refuses an answer of an operation that returns nothing at the DSL", () => {
-		// There is no answer to name, so nothing is built to be waited on: the
-		// mistake is refused where it is written rather than carried as an
-		// answer with no shape.
+		// There is no shape to name, so nothing is built to be waited on: the
+		// mistake is refused where it is written, and the message says what to
+		// wait on instead.
 		const { authorise } = answered({ reject: false });
 		expect(() => authorise.returned()).toThrow(
 			"Operation Authorise Payment returns nothing",
 		);
+	});
+
+	// An operation with no `returns` still comes back, and that is all a caller
+	// of a command ever learns (decision 13, second amendment; card 99).
+	it("accepts the bare completion of an operation that returns nothing", () => {
+		const { ws, checkout, authorise, reopen } = answered({ reject: false });
+		checkout.processes.clear();
+		checkout
+			.addPolicy("Confirm on completion", { description: "" })
+			.on(authorise.completed())
+			.issues(reopen);
+		expect(kinds(ws)).toEqual([]);
+	});
+
+	it("names the completion by its origin, and resolves that ref", () => {
+		const { ws, authorise } = answered({ reject: false });
+		const completion = authorise.completed();
+		expect(completion.ref).toBe(`${authorise.ref}/completed`);
+		expect(completion.name).toBe("completes");
+		expect(completion.origin).toBe("Authorise Payment completes");
+		expect(completion.completion).toBe(true);
+		expect(completion.many).toBe(false);
+		expect(ws.getByRef(completion.ref)).toBe(completion);
+	});
+
+	it("refuses the completion of an operation that answers with a shape", () => {
+		const { ws, checkout, authorise, declined, reopen } = answered({
+			reject: false,
+		});
+		authorise.returns = declined;
+		checkout.processes.clear();
+		const policy = checkout
+			.addPolicy("Confirm on completion", { description: "" })
+			.on(authorise.completed())
+			.issues(reopen);
+		expect(kinds(ws)).toEqual([
+			[
+				"error",
+				'Policy "Confirm on completion" waits for "Authorise Payment" to complete, but "Authorise Payment" returns "Payment Declined"; wait for that answer, which is the same call coming back and says what it came back with',
+				policy.ref,
+			],
+		]);
+	});
+
+	it("refuses the completion of an event, which nobody calls", () => {
+		const { ws, checkout, confirmed, reopen } = answered({ reject: false });
+		checkout.processes.clear();
+		const policy = checkout
+			.addPolicy("Confirm on completion", { description: "" })
+			.on(confirmed.completed())
+			.issues(reopen);
+		expect(kinds(ws)).toContainEqual([
+			"error",
+			'Policy "Confirm on completion" waits for "Cart Confirmed" to complete, but "Cart Confirmed" is an event, not an operation; an event is a fact that already happened and nobody is waiting on it to finish',
+			policy.ref,
+		]);
+	});
+
+	it("round-trips a completion through the schema and back", () => {
+		const { ws, checkout, confirmed, authorise, reopen } = answered({
+			reject: false,
+		});
+		checkout.processes.clear();
+		const process = checkout
+			.addProcess("Checkout", { description: "" })
+			.starts(confirmed)
+			.on(authorise.completed())
+			.issues(reopen)
+			.ends(confirmed);
+		const rebuilt = Workspace.fromSchema(
+			JSON.parse(JSON.stringify(ws.toSchema())),
+		);
+		expect(
+			rebuilt.getProcessByRefOrThrow(process.ref).events.map((it) => it.ref),
+		).toEqual([`${authorise.ref}/completed`]);
+		expect(rebuilt.toSchema()).toEqual(ws.toSchema());
 	});
 
 	it("reads a policy's on and a process's ends the same way", () => {

@@ -115,11 +115,13 @@ export interface PolicySchema {
 	/**
 	 * What triggers this policy: an event consumable, or an answer of an
 	 * operation this context consumes, which means "when that answer comes
-	 * back". An answer is named by its origin — `<operation ref>/returns` or
-	 * `<operation ref>/rejects/<schema id>` — and never by the shape alone, so
-	 * two operations refusing with one schema wake only whoever named the call
-	 * that was made. The answer is synchronous because the operation is, so
-	 * nothing else says so (decision 23).
+	 * back". An answer is named by its origin — `<operation ref>/returns`,
+	 * `<operation ref>/rejects/<schema id>`, or `<operation ref>/completed` for
+	 * an operation that returns nothing and whose completion is all there is to
+	 * wait on — and never by the shape alone, so two operations refusing with
+	 * one schema wake only whoever named the call that was made. The answer is
+	 * synchronous because the operation is, so nothing else says so
+	 * (decision 23).
 	 */
 	on: { $ref: string }[];
 	/** The operation consumables this policy issues. */
@@ -163,17 +165,30 @@ export interface ProcessSchema {
 	name: string;
 	description: string;
 	/**
-	 * The event consumables that begin an instance of this process. An answer
-	 * is what a caller gets back from a call, so something was already waiting
-	 * for it and an instance that did not exist cannot have been: only an event
-	 * starts one.
+	 * What begins an instance of this process: an event consumable, or an
+	 * operation of the process's own context — the command that creates one.
+	 *
+	 * A command starts a saga as often as an event does: "open a claim", "start
+	 * an onboarding", "submit an application for a decision". The earlier
+	 * reading allowed only an event, on the argument that something was already
+	 * waiting for whatever starts an instance; that argument is about answers,
+	 * where a caller has to have made the call, and it was overapplied to
+	 * commands, which nobody has to be waiting for (decision 23, third
+	 * amendment).
+	 *
+	 * A starting command belongs to this process's own context, for the reason
+	 * `then` does: a process that claimed a neighbour's operation created its
+	 * instances would be acting through somebody else's model. An answer and a
+	 * deadline still start nothing, because in both cases the instance had to
+	 * exist before to have been waiting.
 	 */
 	starts: { $ref: string }[];
 	/**
 	 * Further event consumables the process waits for or reacts to while an
 	 * instance is alive, and the answers it waits to come back: an answer of an
 	 * operation this context consumes, named by its origin the way a policy's
-	 * `on` names one, means "when that answer comes back", which is the
+	 * `on` names one — including the bare completion of an operation that
+	 * returns nothing — means "when that answer comes back", which is the
 	 * call-and-branch a process manager is usually made of. Like a policy's
 	 * `on`, one of these may belong to another context: subscribing to a
 	 * published fact, or calling out and waiting, is how contexts integrate
@@ -529,10 +544,15 @@ export interface InvariantSchema {
 	 * A precondition may also name attributes of a schema its guarded operation
 	 * takes, returns or rejects with: pickup before delivery, a positive
 	 * weight, on a quotation no aggregate yet holds. The check reads the
-	 * request, so the request is what the rule is about. An invariant that is
-	 * not a precondition may not, because a rule kept true on every save is a
-	 * rule about the model and not about a transport shape (decision 19,
-	 * amended).
+	 * request, so the request is what the rule is about. A postcondition
+	 * reaches the answer only — the shapes its guarded operation returns or
+	 * rejects with — because that is what it is a guarantee about. Either may
+	 * follow composition: an attribute of any schema reachable from those
+	 * through `attribute.schema` is one of the fields the call carries, so a
+	 * rule about the amount of an order line is a rule about the request that
+	 * holds the lines. An invariant that is neither may name no schema
+	 * attribute at all, because a rule kept true on every save is a rule about
+	 * the model and not about a transport shape (decision 19, amended).
 	 */
 	constrains: { $ref: string }[];
 	/**
@@ -549,6 +569,25 @@ export interface InvariantSchema {
 	 * particular is a check nowhere (decision 27, second amendment).
 	 */
 	precondition?: boolean;
+	/**
+	 * Whether this rule is a postcondition: a guarantee about what an operation
+	 * answers with — every returned itinerary meets the requested deadline,
+	 * every quoted premium is within the band the schedule allows.
+	 *
+	 * It is neither a persistent invariant nor a precondition. The answer does
+	 * not exist before the call runs, so nothing can be checked beforehand, and
+	 * it is not saved anywhere afterwards, so no aggregate keeps it true. What
+	 * holds it is the operation, every time it answers, which is why a
+	 * postcondition names the operation it is about
+	 * (`postcondition-names-operation`) and may constrain the attributes of
+	 * what that operation returns or rejects with (decision 19, third
+	 * amendment).
+	 *
+	 * Exclusive with `precondition`: a rule is checked before a call or
+	 * guaranteed of what comes back, and one marked both says two different
+	 * things about when it holds.
+	 */
+	postcondition?: boolean;
 }
 
 /**

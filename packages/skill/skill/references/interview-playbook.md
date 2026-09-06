@@ -128,8 +128,16 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   in?" → where it reads the request, name the attributes of that operation's `schema`,
   `returns` or a rejection in `constrains` alongside the operation. Pickup before delivery
   and a positive weight on a quotation are the case: nothing is stored yet, and the fields
-  are the request's. Only a precondition may name a schema's attributes; a rule that is still
-  true after the call is about the model, so it names the model.
+  are the request's. A field of a shape the request composes counts as the request's — a rule
+  about the amount of an order line is a rule about the request that holds the lines.
+- Per rule about what comes back: "is this a promise about what you answer with?" → a
+  guarantee about the answer is a postcondition, not a precondition: `postcondition: true`,
+  naming the operation and the attributes of what it returns or rejects with. Every returned
+  itinerary meets the requested deadline, every quoted premium is inside the band. The answer
+  does not exist before the call, so nothing checks it beforehand, and it is saved nowhere,
+  so no aggregate keeps it true. The two flags are exclusive. Only a precondition or a
+  postcondition may name a schema's attributes; a rule that is still true after the call is
+  about the model, so it names the model.
 - Per rule: "is this true of the value itself, whatever holds it?" → a rule that is about a
   value alone — a checksum, a currency, a range — is that value object's:
   `valueObject.addInvariant(...)`, constraining its own attributes and nothing else. Nothing
@@ -204,14 +212,16 @@ Repeat for each context the user wants detailed. Ask which one to start with.
 - "When <event> happens, what do you then do automatically?" → a policy with `on` the event
   and `then` the operation. If what it waits for is a reply rather than a fact — "when the
   authorisation comes back declined" — that is an answer, and `on` names it as the call it
-  comes back from: `operation.returned()` or `operation.rejected(schema)`, never the schema
-  alone, since two operations may refuse with one shape. The event in `on` may belong to another context, because reacting
+  comes back from: `operation.returned()`, `operation.rejected(schema)` or, for a call that
+  answers with nothing, `operation.completed()` — never the schema alone, since two
+  operations may refuse with one shape. The event in `on` may belong to another context, because reacting
   to a published fact is a consumption; the operation in `then` is always the policy's own
   context's. To act on a neighbour, name a local operation that consumes theirs.
 - Then, once: "Does anything here wait for more than one event before it acts, and what tells
   it that it is done?" → a process. Take the answer in the order it runs: what starts an
-  instance (`starts`), what it waits for while it is alive (`on`), what it issues (`then`,
-  always its own context's operations), and what finishes it (`ends`). Two signs an author is
+  instance (`starts`, an event or this context's own operation — "opening a claim starts it"
+  is a command and is named as one), what it waits for while it is alive (`on`), what it
+  issues (`then`, always its own context's operations), and what finishes it (`ends`). Two signs an author is
   describing one: a policy that would have to remember something between two events ("we hold
   the order until the payment clears"), and a chain of policies the author names as one thing
   ("checkout", "onboarding", "order to delivery") — that chain is one process, not three

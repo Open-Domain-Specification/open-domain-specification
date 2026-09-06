@@ -37,15 +37,18 @@ ${aggregate.description}
  * What a reaction waits for, named in one cell. An answer is named by the call
  * it comes back from, because in a column of event names a shape would
  * otherwise read as one more event, and two operations may answer with the
- * same one (decision 23). A deadline is named by how long the instance had and,
- * where the process anchors the clock, what it counts from: a limit nobody
- * outside can see is nothing but its length and its start.
+ * same one (decision 23); a completion has no shape at all, so the call is the
+ * whole of what there is to name. A deadline is named by how long the instance
+ * had and, where the process anchors the clock, what it counts from: a limit
+ * nobody outside can see is nothing but its length and its start.
  */
 const triggerList = (triggers: ProcessTrigger[]) =>
 	triggers
 		.map((it) => {
 			if (it instanceof Answer)
-				return `${it.name} (answer to ${it.operation.name})`;
+				return it.completion
+					? `${it.operation.name} (completes)`
+					: `${it.name} (answer to ${it.operation.name})`;
 			if (it instanceof Deadline)
 				return `${it.name} (after ${it.after}${it.from ? ` from ${it.from.name}` : ""})`;
 			return it.name;

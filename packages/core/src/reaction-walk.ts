@@ -38,7 +38,11 @@ export type ReactionStep = {
  * A policy issues its operations, an operation raises its events, and an
  * event wakes the policies listening for it. A process is walked the same
  * way: what wakes it is what starts an instance and what it waits for while
- * alive, and what it does is what it issues. What ends it takes no step —
+ * alive, and what it does is what it issues. What starts one may be a command
+ * rather than an event, and the walk needs nothing new for it — the step runs
+ * from that operation to the process exactly as it does from an event, because
+ * both are consumables the process listens for (decision 23, third
+ * amendment). What ends it takes no step —
  * an ending fact completes the instance rather than waking it again, which
  * is why a process that ends on an event its own operations raise is the
  * normal shape and no ring at all (decision 23). Those steps stay inside a
@@ -48,11 +52,12 @@ export type ReactionStep = {
  *
  * An operation also answers its caller, and that is the fifth step. When a
  * policy or a process waits on a schema an operation returns or rejects with,
- * the chain runs from that operation to the reactor: the call went out, the
- * answer came back, and what was waiting wakes. It is the same causal link
- * `by` carries, read on the way home rather than on the way out, and it is
- * what lets a process say "I called and branched on what came back" without
- * inventing an event for a non-event (decision 23, second amendment).
+ * or on the bare completion of one that returns nothing, the chain runs from
+ * that operation to the reactor: the call went out, the answer came back, and
+ * what was waiting wakes. It is the same causal link `by` carries, read on the
+ * way home rather than on the way out, and it is what lets a process say "I
+ * called and branched on what came back" without inventing an event for a
+ * non-event (decision 23, second amendment; decision 13, second amendment).
  *
  * So a consumption is the fourth step. When its `by` names an operation
  * (decision 21), the consumer is saying that operation is what makes the

@@ -164,7 +164,9 @@ export function edgeCaseModel(): Model {
 	const schemaAnswer = bcMain.addSchema("Answer Schema", {
 		description: "Only ever returned, never sent.",
 	});
-	schemaAnswer.addAttribute("Result", { type: "string" });
+	const schemaAnswerResult = schemaAnswer.addAttribute("Result", {
+		type: "string",
+	});
 	const schemaRefused = bcMain.addSchema("Refusal Schema", {
 		description: "Only ever refused with, never sent or returned.",
 	});
@@ -182,7 +184,7 @@ export function edgeCaseModel(): Model {
 	// Provided by an aggregate rather than a service, so the subsection an
 	// AggregatePage draws is the surface that has to show the returned shape.
 	// No reference model has one of these yet.
-	aggNoRoot.addConsumable("Answering Operation", {
+	const opAnswering = aggNoRoot.addConsumable("Answering Operation", {
 		type: "operation",
 		description: "Asked with one shape and answered with another.",
 		schema: schemaEmpty,
@@ -230,10 +232,29 @@ export function edgeCaseModel(): Model {
 	bcMain.addInvariant("Unguarded Context Invariant", {
 		description: "Names nothing, so nothing keeps it.",
 	});
+	// The third kind of rule an invariant page has to name: a guarantee about
+	// what a call answers with, which is neither kept on every save nor checked
+	// on the way in (decision 19, third amendment). No reference model states
+	// one yet.
+	bcMain
+		.addInvariant("Answer Guarantee", {
+			description: "Holds of every answer the answering operation gives.",
+			postcondition: true,
+		})
+		.constrains(opAnswering, schemaAnswerResult);
 
 	bcMain.addPolicy("Idle Policy", {
 		description: "Reacts to nothing and issues nothing.",
 	});
+	// A reaction waiting on the bare completion of a call that answers with
+	// nothing: the one trigger with no shape behind it, so the row's link goes
+	// to the call and the flow map labels the edge "completes" (decision 13,
+	// second amendment). No reference model waits on one yet.
+	bcMain
+		.addPolicy("Completion Policy", {
+			description: "Waits for a call that answers with nothing to come back.",
+		})
+		.on(opSilent.completed());
 
 	// The empty process: nothing begins it, nothing ends it, and it is marked
 	// for refactoring with a note saying why, so every branch a process page
@@ -252,6 +273,10 @@ export function edgeCaseModel(): Model {
 		description: "Gives itself two working days from the fact that starts it.",
 	});
 	timedProcess.starts(orphanEvent);
+	// And it waits on the bare completion of a call that answers with nothing,
+	// which is the trigger a process page has to name without a shape to link
+	// to (decision 13, second amendment).
+	timedProcess.on(opSilent.completed());
 	timedProcess.ends(
 		timedProcess.addDeadline("Nobody Answered", {
 			description: "Two working days after the fact that started the instance.",

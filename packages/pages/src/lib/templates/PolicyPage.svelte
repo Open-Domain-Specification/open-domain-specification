@@ -24,7 +24,11 @@ import Keyword from "../atoms/Keyword.svelte";
 import Lockup from "../atoms/Lockup.svelte";
 import ConsumableKeywords from "../molecules/ConsumableKeywords.svelte";
 import { contextCrumbs } from "../molecules/crumbs";
-import { kindOf } from "../molecules/element-kind";
+import {
+	answerKeyword,
+	answerRef,
+	kindOf,
+} from "../molecules/element-kind";
 import DiagramFigure from "../organisms/DiagramFigure.svelte";
 import LanguageSection from "../organisms/LanguageSection.svelte";
 import PageHeader from "../organisms/PageHeader.svelte";
@@ -48,12 +52,13 @@ const sourceOf = (trigger: ReactionTrigger) =>
 	trigger instanceof Answer ? trigger.operation : trigger.provider;
 
 /**
- * What the name in the first column links to. An answer has no page of its
- * own — it is a call coming back, not an element — so it links to the shape it
- * came back as, and the Provider column says which call.
+ * What the name in the first column links to. An answer links to what
+ * {@link answerRef} says: the shape it came back as, or the call itself where
+ * it came back as nothing. The Provider column says which call either way.
  */
 const linkOf = (trigger: ReactionTrigger) =>
-	trigger instanceof Answer ? trigger.schema.ref : trigger.ref;
+	trigger instanceof Answer ? answerRef(trigger) : trigger.ref;
+
 
 /**
  * Both tables name the kind: what a policy issues is an operation or an event,
@@ -74,7 +79,7 @@ const columnsFor = (label: string): Column[] => [
 			{#if col.key === "name"}
 				<Lockup kind={kindOf(c)} name={c.name} ref={linkOf(c)} />
 			{:else if col.key === "kind"}
-				{#if c instanceof Answer}<Keyword text={c.rejection ? "rejection" : "answer"} />{:else}<ConsumableKeywords consumable={c} />{/if}
+				{#if c instanceof Answer}<Keyword text={answerKeyword(c)} />{:else}<ConsumableKeywords consumable={c} />{/if}
 			{:else if col.key === "provider"}
 				{@const source = sourceOf(c)}
 				<Lockup kind={kindOf(source)} name={source.name} ref={source.ref} />

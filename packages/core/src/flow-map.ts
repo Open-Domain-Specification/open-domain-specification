@@ -22,13 +22,15 @@ import {
  * nothing a policy issues reaches, are not.
  *
  * An answer is drawn as one more edge from the operation it names, carrying
- * the name of the shape it came back as. It gets no node of its own: a returned
- * or rejected shape is the operation coming back, not something that happens
- * on the way somewhere, and a reader following the arrow wants the two things
- * the call joined rather than a third box between them. The edge starts at
- * exactly the operation the reactor named, so two operations refusing with one
- * shared shape draw two edges and neither claims the other's caller
- * (decision 23).
+ * the name of the shape it came back as — or, where the operation returns
+ * nothing and what was waited on is its bare completion, the word "completes",
+ * which is the whole of what that call tells its caller. It gets no node of
+ * its own: a returned or rejected shape is the operation coming back, not
+ * something that happens on the way somewhere, and a reader following the
+ * arrow wants the two things the call joined rather than a third box between
+ * them. The edge starts at exactly the operation the reactor named, so two
+ * operations refusing with one shared shape draw two edges and neither claims
+ * the other's caller (decision 23).
  *
  * A process's deadline is drawn the same way, as a loop from the process back
  * to the process labelled with how long the instance had and, where the
@@ -234,9 +236,11 @@ export type ODSFlowMapEdge = {
 	 */
 	kind?: "ends";
 	/**
-	 * The name of the shape an answer came back as, on an edge an answer
-	 * carries: the operation returned or rejected with it and whoever was
-	 * waiting woke. Absent on every other edge.
+	 * What an answer came back as, on an edge an answer carries: the name of
+	 * the shape the operation returned or rejected with, or "completes" where
+	 * it returns nothing and its completion is what was waited on. Either way
+	 * the call came back and whoever was waiting woke. Absent on every other
+	 * edge.
 	 */
 	answer?: string;
 	/**

@@ -2004,8 +2004,8 @@ cardDeclineSchema.addAttribute("reason", {
 // context's schema, so the truthful shape was unwritable and nothing consumed
 // AuthoriseCard at all. Upstream is who dictates the model, not who provides
 // the consumable: the bank offers the operation and translates the caller's
-// format behind an anti-corruption layer, and that is what the two
-// relationships below say.
+// format behind an anti-corruption layer, and that is what the one
+// relationship below says.
 const authoriseCard = cardsApp
 	.provides("AuthoriseCard", {
 		description:
@@ -2032,21 +2032,25 @@ const requestAuthorisation = cardCoFeed.provides("RequestAuthorisation", {
 	type: "operation",
 	internal: true,
 });
-cardCoFeed.consumes(authoriseCard, {
-	pattern: "conformist",
-	by: [requestAuthorisation],
-});
+// No downstream role on the consumption: CardCo is the upstream here, and a
+// consumption carries only a downstream one. Card 98 wrote "conformist" to
+// quieten `role-coherence`, which read the roles from the call rather than
+// from the relationship, and it said the opposite of the truth -- a conformist
+// takes the other side's model as it stands, and CardCo is the side whose
+// model is taken. The rule now reads the declared direction and asks nothing
+// of either end here (decision 03, note of 2026-09-09; card 99).
+cardCoFeed.consumes(authoriseCard, { by: [requestAuthorisation] });
+// One relationship, not two. Card 98 declared a second, `cardsBC.upstreamOf(
+// cardCoBC)`, because `relationship-declared` was satisfied only by an arrow
+// pointing the way the call ran, so the truthful relationship did not answer
+// it. The direction is the author's strategic claim about who dictates the
+// model, and either arrow answers the question a crossing raises, so the
+// second one -- which said the processor conforms to the bank -- comes out.
 cardCoBC.upstreamOf(cardsBC, {
 	description:
-		"CardCo's format is CardCo's: it dictates the message every authorisation arrives in, and Cards translates it at its own boundary rather than adopting it",
+		"CardCo's format is CardCo's: it dictates the message every authorisation arrives in, and Cards translates it at its own boundary rather than adopting it. The bank provides the operation and offers it as an open host; who provides is not who is upstream",
 	upstreamRoles: ["published-language"],
 	downstreamRoles: ["anti-corruption-layer"],
-});
-cardsBC.upstreamOf(cardCoBC, {
-	description:
-		"The other half of the same integration: the operation is the bank's, offered as an open host, and CardCo calls it as it stands",
-	upstreamRoles: ["open-host-service"],
-	downstreamRoles: ["conformist"],
 });
 const blockCard = cardsApp
 	.provides("BlockCard", {

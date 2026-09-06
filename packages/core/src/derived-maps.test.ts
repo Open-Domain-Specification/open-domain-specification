@@ -711,6 +711,43 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 		);
 	});
 
+	// An operation that returns nothing still comes back, and that is what a
+	// caller of a command waits on (decision 13, second amendment; card 99).
+	it('labels the completion of a returns-less call "completes"', () => {
+		const { ws, process, authorise, declined } = callAndBranch();
+		authorise.rejects.length = 0;
+		process.events.length = 0;
+		process.on(authorise.completed());
+		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
+			"Authorise Payment -> Checkout [completes]",
+		);
+		// The completion has no shape, so there is nothing else to draw.
+		expect(ODSFlowMap.fromWorkspace(ws).nodes.has(declined.ref)).toBe(false);
+	});
+
+	it("draws an ending completion from the operation into the process", () => {
+		const { ws, process, authorise } = callAndBranch();
+		authorise.rejects.length = 0;
+		process.events.length = 0;
+		process.endEvents.length = 0;
+		process.ends(authorise.completed());
+		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
+			"Authorise Payment -> Checkout [completes (ends)]",
+		);
+	});
+
+	// A command starts a saga as often as an event does, and the walk needs
+	// nothing new for it: the step runs from the operation to the process the
+	// way it runs from an event (decision 23, third amendment).
+	it("steps from the command a process starts on to the process", () => {
+		const { ws, process, ask } = callAndBranch();
+		process.startEvents.length = 0;
+		process.starts(ask);
+		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
+			"Request Authorisation -> Checkout",
+		);
+	});
+
 	it("draws an ending answer from the operation into the process", () => {
 		const { ws, process, declined, held, authorise } = callAndBranch();
 		process.events.length = 0;

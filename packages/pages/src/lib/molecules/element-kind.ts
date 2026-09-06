@@ -37,9 +37,11 @@ export const kindOf = (element: unknown): Kind => {
 	if (element instanceof Subdomain) return "subdomain";
 	if (element instanceof Domain) return "domain";
 	// An answer is read as the shape it came back as: what a reader clicks is
-	// the schema, and which call it came from is said beside it.
-	if (element instanceof DataSchema || element instanceof Answer)
-		return "schema";
+	// the schema, and which call it came from is said beside it. A completion
+	// came back as nothing, so what a reader clicks is the call itself.
+	if (element instanceof Answer)
+		return element.completion ? "command" : "schema";
+	if (element instanceof DataSchema) return "schema";
 	if (element instanceof Policy) return "policy";
 	if (element instanceof Process) return "process";
 	if (element instanceof Deadline) return "deadline";
@@ -50,3 +52,19 @@ export const kindOf = (element: unknown): Kind => {
 		return element.type === "event" ? "event" : "command";
 	return "consumable";
 };
+
+/**
+ * What an answer's row links to. An answer has no page of its own — it is a
+ * call coming back, not an element — so it links to the shape it came back as,
+ * and the row says which call. A completion came back as nothing, so the call
+ * is the only thing there is to link to (decision 13, second amendment).
+ */
+export const answerRef = (answer: Answer): string =>
+	answer.schema?.ref ?? answer.operation.ref;
+
+/**
+ * Which of the three kinds of answer a reaction is waiting on. A completion is
+ * neither of the other two: what came back is that the call is done.
+ */
+export const answerKeyword = (answer: Answer): string =>
+	answer.completion ? "completion" : answer.rejection ? "rejection" : "answer";

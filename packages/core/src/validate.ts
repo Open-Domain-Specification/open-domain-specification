@@ -144,6 +144,21 @@ function subscribedTriggers(reactor: Policy | Process): ProcessTrigger[] {
 }
 
 /**
+ * The operations a process starts on: the commands that create an instance.
+ *
+ * A command starts a saga as often as an event does — "open a claim", "submit
+ * an application" — so `starts` may name one of the process's own operations
+ * (decision 23, third amendment). It is the one thing in a reactor's lists
+ * that is neither a subscription nor something the reactor issues, so it is
+ * separated here and every rule about subscriptions is told to ignore it.
+ */
+function startingCommands(reactor: Policy | Process): Consumable[] {
+	return reactor instanceof Process
+		? reactor.startEvents.filter((it) => it.type === "operation")
+		: [];
+}
+
+/**
  * The consumables a policy or a process waits for, which is what every rule
  * about a subscription is about: an event is published by a provider in a
  * context, and that is what makes it a crossing, an internal consumable or the
@@ -153,10 +168,17 @@ function subscribedTriggers(reactor: Policy | Process): ProcessTrigger[] {
  * what an answer has to be (decision 23, second amendment). A deadline is none
  * of those either, and crosses nothing at all: it is the process's own timer,
  * so no boundary, no provider and no subscription is involved.
+ *
+ * A command a process starts on is none of them either. Nobody subscribes to a
+ * command: it is issued, by whoever creates the instance, and it belongs to
+ * the process's own context (`process-in-context`), so there is no boundary
+ * for a subscription rule to have an opinion about (see
+ * {@link startingCommands}).
  */
 function subscribedEvents(reactor: Policy | Process): Consumable[] {
+	const starting = new Set<Consumable>(startingCommands(reactor));
 	return subscribedTriggers(reactor).filter(
-		(it): it is Consumable => it instanceof Consumable,
+		(it): it is Consumable => it instanceof Consumable && !starting.has(it),
 	);
 }
 
@@ -1029,30 +1051,77 @@ function guardedByService(target: Constrainable, bc: BoundedContext): boolean {
 }
 
 /**
- * Whether a target is an attribute of a schema one of this invariant's guarded
- * operations takes, answers with or refuses with.
+ * Every schema reachable from these, following `attribute.schema` as far as it
+ * goes: the shapes nested inside a payload are part of that payload.
+ *
+ * Composition is a schema's own business (decision 18), so a request that
+ * carries lines carries their fields too — an order's `lines` typed by
+ * `OrderLine` puts `OrderLine.amount` in the call as surely as a top-level
+ * field. A rule about the amount of a line is a rule about the request that
+ * holds the lines, and reading only the top level refused it (card 99).
+ *
+ * The queue is walked with a `for...of` over a growing array, which reads its
+ * length each step, so nesting is followed to the end; `reached` makes a cycle
+ * of schemas terminate rather than hang.
+ */
+function composedSchemas(roots: Iterable<DataSchema>): Set<DataSchema> {
+	const reached = new Set<DataSchema>(roots);
+	const queue = [...reached];
+	for (const schema of queue) {
+		for (const attribute of schema.attributes.values()) {
+			const nested = attribute.schema;
+			if (!nested || reached.has(nested)) continue;
+			reached.add(nested);
+			queue.push(nested);
+		}
+	}
+	return reached;
+}
+
+/**
+ * The payload shapes this invariant's guarded operations put within its reach,
+ * composition included.
+ *
+ * A precondition reads the call, so everything the call carries is its: the
+ * request it is checked against, and — since decision 19's first 2026-09-09
+ * amendment — the answer and the refusals too. A postcondition is a guarantee
+ * about what came back, so it reaches the answer and the refusals and not the
+ * request: what the caller sent is not what the operation promises.
+ */
+function guardedSchemas(invariant: Invariant): Set<DataSchema> {
+	const roots: DataSchema[] = [];
+	for (const operation of invariant.guarded) {
+		if (operation.type !== "operation") continue;
+		if (invariant.precondition && operation.schema)
+			roots.push(operation.schema);
+		if (operation.returns) roots.push(operation.returns);
+		roots.push(...operation.rejects);
+	}
+	return composedSchemas(roots);
+}
+
+/**
+ * Whether a target is an attribute of a shape one of this invariant's guarded
+ * operations carries, or of a shape one of those composes.
  *
  * A precondition is checked before the call runs, and often what it checks is
  * in the call: pickup before delivery, a positive weight, on a quotation no
  * aggregate holds yet. The rule is about the request, so the request is what
  * it names, and refusing it sent those rules back to prose (decision 19,
- * amended). Only a precondition may: an invariant kept true on every save is a
- * rule about the model, and a transport shape is not the model.
+ * amended). A postcondition is the mirror: a guarantee about the answer, which
+ * does not exist until the call returns, so what it names is what the
+ * operation answers or refuses with (decision 19, third amendment). Nothing
+ * else may name a schema's attribute at all: an invariant kept true on every
+ * save is a rule about the model, and a transport shape is not the model.
  */
 function inGuardedRequest(
 	target: Constrainable,
 	invariant: Invariant,
 ): boolean {
-	if (!invariant.precondition) return false;
+	if (!invariant.precondition && !invariant.postcondition) return false;
 	const schema = schemaOf(target);
 	if (!schema) return false;
-	return invariant.guarded.some(
-		(operation) =>
-			operation.type === "operation" &&
-			(operation.schema === schema ||
-				operation.returns === schema ||
-				operation.rejects.includes(schema)),
-	);
+	return guardedSchemas(invariant).has(schema);
 }
 
 /** The schema a target is an attribute of, when it is one. */
@@ -1063,17 +1132,21 @@ function schemaOf(target: Constrainable): DataSchema | undefined {
 }
 
 /**
- * Why a schema's attribute is out of reach, which is not the same sentence
- * twice: a rule that is no precondition may not name a transport shape at all,
- * and one that is may only name the request its own guard handles.
+ * Why a schema's attribute is out of reach, which is not one sentence three
+ * times: a rule that is neither a precondition nor a postcondition may not
+ * name a transport shape at all, a precondition may name the call its own
+ * guard handles, and a postcondition only what that guard answers with.
  */
 function schemaAttributeRefusal(
 	schema: DataSchema,
 	invariant: Invariant,
 ): string {
-	return invariant.precondition
-		? `an attribute of schema "${schema.name}", which no operation this precondition guards takes, returns or rejects with`
-		: `an attribute of schema "${schema.name}", and only a precondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape`;
+	const where = `an attribute of schema "${schema.name}"`;
+	if (invariant.precondition)
+		return `${where}, which no operation this precondition guards takes, returns or rejects with, directly or through a shape one of those composes`;
+	if (invariant.postcondition)
+		return `${where}, which no operation this postcondition guards returns or rejects with, directly or through a shape one of those composes`;
+	return `${where}, and only a precondition or a postcondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape`;
 }
 
 /** The value object a target is, or the one whose attribute it is. */
@@ -1394,6 +1467,44 @@ const preconditionNamesOperation: Rule = (workspace) => {
 	return diagnostics;
 };
 
+/**
+ * A postcondition is a guarantee about what one operation answers with, so it
+ * has to say which operation, and it is not also a precondition.
+ *
+ * The two are different promises about different moments. A precondition is
+ * checked before the call, against something that may have moved by the time
+ * it returns; a postcondition holds of what the call comes back with, which
+ * did not exist before it ran. A rule marked both says its own subject is two
+ * things at once, and every reader of the flag — the page that names the kind,
+ * the reach the rule is allowed over a payload — has to pick one and would
+ * pick differently. Named without a guard, a postcondition is worse off than a
+ * precondition without one: there is not even a call whose answer it could be
+ * about (decision 19, third amendment).
+ */
+const postconditionNamesOperation: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const invariant of invariantsOf(workspace)) {
+		if (!invariant.postcondition) continue;
+		if (invariant.precondition) {
+			diagnostics.push({
+				severity: "error",
+				rule: "postcondition-names-operation",
+				message: `Invariant "${invariant.name}" is marked both a precondition and a postcondition; a rule is checked before a call or guaranteed of what comes back, and one that is both says two things about when it holds`,
+				ref: invariant.ref,
+			});
+			continue;
+		}
+		if (invariant.guarded.some((it) => it.type === "operation")) continue;
+		diagnostics.push({
+			severity: "error",
+			rule: "postcondition-names-operation",
+			message: `Invariant "${invariant.name}" is marked a postcondition but names no operation; a postcondition is a guarantee about what a call answers with, so say which call`,
+			ref: invariant.ref,
+		});
+	}
+	return diagnostics;
+};
+
 /** Whether the two contexts declare a shared kernel with one another. */
 function sharesKernelWith(
 	workspace: Workspace,
@@ -1586,27 +1697,30 @@ function symmetricallyRelated(
 }
 
 /**
- * Whether a relationship accounts for a crossing running from `upstream` to
- * `downstream`.
+ * Whether a relationship accounts for a crossing between two contexts.
  *
- * A partnership or a shared kernel counts either way round: the two contexts
- * meet as equals, so there is no direction to get wrong. A directed
- * relationship counts only the way it points — a crossing running against it
- * is a second dependency the map has never been told about. Separate ways
- * counts for nothing: it is the declaration that the two do *not* integrate,
- * so it contradicts the crossing rather than explaining it.
+ * Direction is not asked about. A directed relationship's direction is the
+ * author's strategic claim — who dictates the model — and not a statement
+ * about which way the traffic runs: a card processor that calls the bank in
+ * its own format is upstream of the bank though the bank provides the
+ * operation (decision 03, 2026-09-09). Reading the arrow as the call's meant
+ * that the truthful relationship did not satisfy the rule and a second,
+ * false one had to be declared beside it to quieten the warning, which is
+ * exactly what NorthBank had done. So a relationship joining the two contexts
+ * answers the question the crossing raises — on what terms do these two
+ * stand? — whichever way it points.
+ *
+ * Separate ways counts for nothing, and only it: it is the declaration that
+ * the two do *not* integrate, so it contradicts the crossing rather than
+ * explaining it.
  */
 function relationshipJoins(
 	workspace: Workspace,
-	upstream: BoundedContext,
-	downstream: BoundedContext,
+	one: BoundedContext,
+	other: BoundedContext,
 ): boolean {
-	return workspace.relationships.some((r) =>
-		isDirectedRelationshipType(r.type)
-			? r.source === upstream && r.target === downstream
-			: (r.type === "partnership" || r.type === "shared-kernel") &&
-				r.involves(upstream) &&
-				r.involves(downstream),
+	return workspace.relationships.some(
+		(r) => r.type !== "separate-ways" && r.involves(one) && r.involves(other),
 	);
 }
 
@@ -1633,9 +1747,11 @@ function relationshipJoins(
  * that consumption the map draws. What is missing here is the answer to the
  * question the edge raises, which is on what terms.
  *
- * One diagnostic per undeclared pair and direction, not per crossing: one
- * relationship is what would clear them all, so one warning is what a reader
- * can act on.
+ * One diagnostic per undeclared pair, not per crossing and not per direction:
+ * one relationship in either direction is what would clear them all, so one
+ * warning is what a reader can act on. Two contexts that each depend on the
+ * other may still want two relationships, and `relationship-duplicate` keeps
+ * those apart; this rule asks only that the pair has been described at all.
  */
 const relationshipDeclared: Rule = (workspace) => {
 	const missing = new Map<string, Diagnostic>();
@@ -1645,7 +1761,9 @@ const relationshipDeclared: Rule = (workspace) => {
 		message: string,
 		ref: string,
 	) => {
-		const key = `${upstream.ref}|${downstream.ref}`;
+		// Keyed by the pair rather than by the direction, because one
+		// relationship either way round is what clears it.
+		const key = [upstream.ref, downstream.ref].sort().join("|");
 		if (missing.has(key) || relationshipJoins(workspace, upstream, downstream))
 			return;
 		missing.set(key, {
@@ -1794,7 +1912,47 @@ const relationshipDuplicate: Rule = (workspace) => {
 	return diagnostics;
 };
 
-/** Consumables and consumptions declare roles that fit their type. */
+/**
+ * Which of two contexts the model says is upstream, where a directed
+ * relationship says anything at all. Undefined means the pair has declared
+ * none, and the implied edge the context map draws reads the provider as the
+ * upstream, which is what the rules below fall back on.
+ */
+function declaredUpstream(
+	workspace: Workspace,
+	one: BoundedContext,
+	other: BoundedContext,
+): BoundedContext | undefined {
+	return workspace.relationships.find(
+		(r) =>
+			isDirectedRelationshipType(r.type) &&
+			r.involves(one) &&
+			r.involves(other),
+	)?.source;
+}
+
+/**
+ * Consumables and consumptions declare roles that fit their declared position.
+ *
+ * The roles belong to the two ends of a relationship, not to the two ends of a
+ * call. Upstream is who dictates the model (decision 03, 2026-09-09), so the
+ * provider of a consumable is the upstream in the common case and not always:
+ * where the caller sends its own format and the provider translates it, the
+ * provider is downstream of the context calling it. Asking that provider for
+ * an upstream role, and its caller for a downstream one, asks each side to
+ * claim the opposite of what the relationship says — which is how NorthBank
+ * came to call a card processor a conformist of the bank it dictates the
+ * message to.
+ *
+ * So the rule reads the declared direction first. Where the provider is the
+ * declared upstream, or the pair has declared nothing and the implied edge
+ * reads the provider as upstream, the consumable carries the upstream role and
+ * the consumption the downstream one, as before. Where the consumer is the
+ * declared upstream, neither field is the right place for either role — a
+ * consumable carries only an upstream role and a consumption only a downstream
+ * one — so the roles live on the relationship, and `relationship-roles-backed`
+ * is what reads them there.
+ */
 const roleCoherence: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const consumption of consumptionsOf(workspace)) {
@@ -1805,6 +1963,9 @@ const roleCoherence: Rule = (workspace) => {
 		// Partners and shared-kernel contexts have no upstream or downstream
 		// side, so neither end of the exchange carries a role to declare.
 		if (symmetricallyRelated(workspace, provider, consumer)) continue;
+		// The call runs against the declared direction: the caller is upstream
+		// and the provider translates for it. Nothing to ask of either end here.
+		if (declaredUpstream(workspace, provider, consumer) === consumer) continue;
 		if (!consumable.pattern && !consumable.internal) {
 			diagnostics.push({
 				severity: "warning",
@@ -2717,6 +2878,13 @@ const policyInContext: Rule = (workspace) => {
  * context's events — subscribing to a published fact is how contexts
  * integrate — but acting inside a neighbour is that neighbour's own to do
  * (decisions 17 and 23).
+ *
+ * The command a process starts on is read the same way. An instance of this
+ * process is this context's own thing to create, so the operation that creates
+ * one is this context's own operation; a process claiming that a neighbour's
+ * call makes its instances says the neighbour runs a lifecycle it has never
+ * heard of. A foreign *event* starting one is a subscription and stays
+ * allowed, which is the difference (decision 23, third amendment).
  */
 const processInContext: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -2728,6 +2896,16 @@ const processInContext: Rule = (workspace) => {
 				severity: "error",
 				rule: "process-in-context",
 				message: `Process "${process.name}" in "${process.boundedcontext.name}" issues "${command.name}", which belongs to "${owner.name}"`,
+				ref: process.ref,
+			});
+		}
+		for (const command of startingCommands(process)) {
+			const owner = command.boundedcontext;
+			if (owner === process.boundedcontext) continue;
+			diagnostics.push({
+				severity: "error",
+				rule: "process-in-context",
+				message: `Process "${process.name}" in "${process.boundedcontext.name}" starts on "${command.name}", an operation of "${owner.name}"; the command that creates an instance is this context's own, though an event that starts one may cross`,
 				ref: process.ref,
 			});
 		}
@@ -2759,7 +2937,19 @@ const processHasEnds: Rule = (workspace) => {
 	return diagnostics;
 };
 
-/** A process says what begins an instance. */
+/**
+ * A process says what begins an instance: an event, or the command of its own
+ * context that creates one.
+ *
+ * Both are ordinary. A saga begun by a fact — an application was submitted, a
+ * card was authorised — and one begun by a command — open a claim, start the
+ * onboarding — are the same construct started two ways, and allowing only the
+ * first sent authors back to inventing an event for the call they already had
+ * (decision 23, third amendment). What may not start one is an answer or a
+ * deadline: a caller has to have made the call to hear it come back, and a
+ * deadline is counted from the moment an instance began waiting, so both need
+ * the instance to exist already.
+ */
 const processStarts: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const process of processesOf(workspace)) {
@@ -2767,7 +2957,7 @@ const processStarts: Rule = (workspace) => {
 		diagnostics.push({
 			severity: "error",
 			rule: "process-starts",
-			message: `Process "${process.name}" names no event that begins an instance, so nothing in the model says when one exists`,
+			message: `Process "${process.name}" names no event or command that begins an instance, so nothing in the model says when one exists`,
 			ref: process.ref,
 		});
 	}
@@ -3095,7 +3285,37 @@ const rejectsOnOperation: Rule = (workspace) => {
  * with the same shape (decision 23, third amendment). What the model does not
  * check is which branch the reactor takes on it; that is the code's, as every
  * other condition in a process is (decisions 15 and 23).
+ *
+ * An operation that returns nothing answers with its bare completion, and a
+ * reactor may wait on that: a workflow that ends when the activation call
+ * succeeds names the completion rather than inventing a response shape
+ * (decision 13, second amendment). It is declared by an operation with no
+ * `returns` and by nothing else, so waiting on the completion of an operation
+ * that does answer with a shape is caught here and told to name that shape.
+ *
+ * A process may also *start* on an operation of its own context, the command
+ * that creates an instance. That is not a reaction to a consumable of the
+ * wrong kind, so it is left alone here and asked about by
+ * `process-in-context`, which is where the model says whose operation it has
+ * to be (see {@link startingCommands}).
  */
+/**
+ * Why an answer a reactor named is not one the operation gives, which is not
+ * the same sentence in the three cases. An operation that answers with a shape
+ * has no bare completion — naming one is a second name for the same call
+ * coming back, and the shape is the one to wait for — and an event is never
+ * called at all, so it has neither.
+ */
+function undeclaredAnswer(reactor: Policy | Process, answer: Answer): string {
+	const who = `${reactorLabel(reactor)} "${reactor.name}"`;
+	const { operation } = answer;
+	if (!answer.completion)
+		return `${who} waits for "${answer.origin}", which "${operation.name}" never declares; wait for an answer the operation says it comes back with, or react to an event instead`;
+	if (operation.type !== "operation")
+		return `${who} waits for "${operation.name}" to complete, but "${operation.name}" is an event, not an operation; an event is a fact that already happened and nobody is waiting on it to finish`;
+	return `${who} waits for "${operation.name}" to complete, but "${operation.name}" returns "${operation.returns?.name}"; wait for that answer, which is the same call coming back and says what it came back with`;
+}
+
 const consumableKinds: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const bc of workspace.boundedcontexts.values()) {
@@ -3112,7 +3332,7 @@ const consumableKinds: Rule = (workspace) => {
 					diagnostics.push({
 						severity: "error",
 						rule: "consumable-kind",
-						message: `${reactorLabel(reactor)} "${reactor.name}" waits for "${trigger.origin}", which "${trigger.operation.name}" never declares; wait for an answer the operation says it comes back with, or react to an event instead`,
+						message: undeclaredAnswer(reactor, trigger),
 						ref: reactor.ref,
 					});
 				else if (
@@ -3717,18 +3937,18 @@ const RULES: CataloguedRule[] = [
 		rule: "invariant-in-aggregate",
 		severities: ["error"],
 		summary:
-			"An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object something in the aggregate holds, its context's own or one borrowed from elsewhere, or is an operation of a service of its own context, application or domain, that guards it. A precondition may also constrain attributes of a schema the operation it guards takes, returns or rejects with.",
-		why: "Naming an operation says which operation keeps the rule; it does not say what kind of rule it is. The invariant says that itself, with precondition: set, it is checked before that operation runs and nothing re-establishes it afterwards — enough funds at initiation, an entitlement at playback start, a pet still available at approval. Unset, the operation is named for responsibility and the rule is still true after it: PostEntry must produce balanced postings and the postings stay balanced. The invariant's page says which of the two it is reading, because the two promise different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not, wherever it was declared. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts. A precondition reaches one place further still: what it checks is often in the request rather than in the model — pickup before delivery, a positive weight, on a quotation no aggregate holds yet — so it may name attributes of a schema its guarded operation takes, returns or rejects with. No other invariant may: a rule kept true on every save is a rule about the model, and a transport shape is not the model.",
-		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one, and it is asked of the context's own values as much as of borrowed ones. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them; the attributes it may then constrain are those of that operation's own schema, returns or rejections.",
+			"An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object something in the aggregate holds, its context's own or one borrowed from elsewhere, or is an operation of a service of its own context, application or domain, that guards it. A precondition may also constrain attributes of a schema the operation it guards takes, returns or rejects with, and a postcondition those of what it returns or rejects with; both follow composition into the shapes those compose.",
+		why: "Naming an operation says which operation keeps the rule; it does not say what kind of rule it is. The invariant says that itself, with precondition: set, it is checked before that operation runs and nothing re-establishes it afterwards — enough funds at initiation, an entitlement at playback start, a pet still available at approval. Unset, the operation is named for responsibility and the rule is still true after it: PostEntry must produce balanced postings and the postings stay balanced. The invariant's page says which of the two it is reading, because the two promise different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not, wherever it was declared. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts. A precondition reaches one place further still: what it checks is often in the request rather than in the model — pickup before delivery, a positive weight, on a quotation no aggregate holds yet — so it may name attributes of a schema its guarded operation takes, returns or rejects with, and a postcondition may name those of what that operation answers or refuses with. Either follows composition, because the fields of a shape nested in a payload are fields the call carries: a rule about the amount of an order line is a rule about the request that holds the lines. No other invariant may name a schema's attribute at all: a rule kept true on every save is a rule about the model, and a transport shape is not the model.",
+		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one, and it is asked of the context's own values as much as of borrowed ones. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them; if it is a guarantee about what comes back, mark it a postcondition instead. Either way the attributes it may then constrain are those of that operation's own schema, returns or rejections, and of the shapes those compose.",
 		check: invariantInAggregate,
 	},
 	{
 		rule: "invariant-in-context",
 		severities: ["error"],
 		summary:
-			"Every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, a value object something in the context holds, its own or a borrowed one, or one of its operations. A precondition may also constrain attributes of a schema the operation it guards takes, returns or rejects with.",
-		why: "A context's invariant is the rule that holds across its own instances — one open application per customer, one active offer per seller and SKU — and the context can hold it because everything it counts is its own to read in one place. A value borrowed over a shared kernel is its own to read too, once one of its aggregates holds one: the instance is here even though the definition is not, and the holding is the whole question, asked of the context's own values as much as of borrowed ones. A rule reaching into another context's entities, or into a value nothing here holds, counts what a neighbour owns or what nobody keeps, which is a consistency no boundary offers. That rule is a policy or a process reacting to the other context's events instead. A precondition is the one rule that may look at a request: it runs before the call, and what it checks — pickup before delivery, a positive weight — is often in the call rather than in anything saved, so it may name attributes of a schema its guarded operation takes, returns or rejects with.",
-		fix: "Point the invariant at this context's own model, or at a value object its aggregates hold — give an entity or a value here an attribute typed by it, which is what says the context holds one — or move the rule to the context that owns what it counts. Where the two contexts really must agree, model the reaction: the other context raises an event and a policy here issues the operation that responds. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them.",
+			"Every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, a value object something in the context holds, its own or a borrowed one, or one of its operations. A precondition may also constrain attributes of a schema the operation it guards takes, returns or rejects with, and a postcondition those of what it returns or rejects with; both follow composition into the shapes those compose.",
+		why: "A context's invariant is the rule that holds across its own instances — one open application per customer, one active offer per seller and SKU — and the context can hold it because everything it counts is its own to read in one place. A value borrowed over a shared kernel is its own to read too, once one of its aggregates holds one: the instance is here even though the definition is not, and the holding is the whole question, asked of the context's own values as much as of borrowed ones. A rule reaching into another context's entities, or into a value nothing here holds, counts what a neighbour owns or what nobody keeps, which is a consistency no boundary offers. That rule is a policy or a process reacting to the other context's events instead. A precondition is the one rule that may look at a request: it runs before the call, and what it checks — pickup before delivery, a positive weight — is often in the call rather than in anything saved, so it may name attributes of a schema its guarded operation takes, returns or rejects with. A postcondition is its mirror and may name what that operation answers or refuses with. Either follows composition into the shapes those compose, because the fields of a nested shape are fields the call carries.",
+		fix: "Point the invariant at this context's own model, or at a value object its aggregates hold — give an entity or a value here an attribute typed by it, which is what says the context holds one — or move the rule to the context that owns what it counts. Where the two contexts really must agree, model the reaction: the other context raises an event and a policy here issues the operation that responds. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them; if it is a guarantee about what that call answers with, mark it a postcondition instead.",
 		check: invariantInContext,
 	},
 	{
@@ -3750,6 +3970,15 @@ const RULES: CataloguedRule[] = [
 		check: preconditionNamesOperation,
 	},
 	{
+		rule: "postcondition-names-operation",
+		severities: ["error"],
+		summary:
+			"An invariant marked a postcondition names at least one operation it guards, and is not also marked a precondition.",
+		why: "A postcondition is a guarantee about what a call answers with: every returned itinerary meets the requested deadline, every quoted premium is inside the band the schedule allows. The answer does not exist until the operation runs, so a postcondition that names no operation is a promise about the answer to a question nobody asked. And a rule marked a precondition as well says two things about when it holds — checked beforehand against something that may since have moved, and guaranteed of what came back — so every reader of the flag, the page that names the kind and the reach the rule gets over a payload among them, has to pick one and would pick differently.",
+		fix: "Name the operation whose answer this is a guarantee about in constrains, alongside the attributes of what it returns or rejects with. If the rule is really checked on the way in, it is a precondition instead: drop postcondition and set precondition, which reaches the request as well. If it is neither — a rule kept true on every save — drop both flags and let the operations it names keep it.",
+		check: postconditionNamesOperation,
+	},
+	{
 		rule: "relationship-roles-backed",
 		severities: ["warning"],
 		summary:
@@ -3762,9 +3991,9 @@ const RULES: CataloguedRule[] = [
 		rule: "relationship-declared",
 		severities: ["warning"],
 		summary:
-			"Two contexts joined by a crossing — a consumption of the other's consumable, a policy or process reacting to the other's event, or an entity or value object holding an identity that names the other's entity — declare a relationship in that direction.",
+			"Two contexts joined by a crossing — a consumption of the other's consumable, a policy or process reacting to the other's event, or an entity or value object holding an identity that names the other's entity — declare a relationship, in either direction.",
 		why: "Decision 03 made the relationship the place where the terms of an integration are written: who is upstream, what the provider commits to, whether the consumer translates. A consumption or an identity with no relationship still draws on the context map, as a dashed implied edge, but that edge only says a dependency exists; the relationship is what says on what terms, and it is the thing a team can argue about, comment on and change. A subscription counts because reacting to a neighbour's event is an integration by another route, the same one separate ways forbids and a partnership is backed by; the map draws it through the consumption subscription-consumed requires. An identity counts because since decision 14 it is the only structural record that one context's model depends on another's, even when nothing is consumed — an identity echoed in a payload schema is not that, because the payload carries it for its reader and the context publishing it owes the other nothing.",
-		fix: "Declare the relationship the two contexts really have, naming both of them: upstream-downstream or customer-supplier from the provider to the consumer, or a partnership or shared kernel if they meet as equals — either of those counts whichever way round the crossing runs. Separate ways does not count: it says the two do not integrate, so it contradicts the crossing instead of explaining it. If neither context should depend on the other, remove the crossing rather than declaring a relationship for it.",
+		fix: "Declare the relationship the two contexts really have, naming both of them: upstream-downstream or customer-supplier pointing from whichever context dictates the model to the one that takes it, or a partnership or shared kernel if they meet as equals. Any of them counts whichever way round the crossing runs, because the arrow is a claim about who sets the language and not about who calls whom — a card processor that sends its own format is upstream of the bank that provides the operation. Separate ways does not count: it says the two do not integrate, so it contradicts the crossing instead of explaining it. If neither context should depend on the other, remove the crossing rather than declaring a relationship for it.",
 		check: relationshipDeclared,
 	},
 	{
@@ -3834,9 +4063,9 @@ const RULES: CataloguedRule[] = [
 		rule: "role-coherence",
 		severities: ["warning"],
 		summary:
-			"A consumable used from another context declares an upstream role, and the consumption declares a downstream role — unless the two contexts are partners or share a kernel.",
-		why: "Crossing a context boundary is an integration decision: how the provider offers it (a documented API or a published format) and how the consumer takes it (as-is or translated) should be explicit. Partnership and shared kernel are the exception: neither side is upstream of the other, so there is no role for either end to declare.",
-		fix: "Set pattern on the consumable to open-host-service or published-language, and pattern on the consumption to conformist or anti-corruption-layer; or declare the partnership or shared kernel that makes the two contexts equals.",
+			"Where the provider of a consumable is the upstream side, the consumable declares an upstream role and the consumption a downstream one — unless the two contexts are partners or share a kernel.",
+		why: "Crossing a context boundary is an integration decision: how the upstream offers what it offers (a documented API or a published format) and how the downstream takes it (as-is or translated) should be explicit. Which end is which is the relationship's to say, not the call's: upstream is whoever dictates the model, so where the caller sends its own format and the provider translates it, the provider is downstream of the context calling it. A consumable can carry only an upstream role and a consumption only a downstream one, so in that case neither field is the right place for either role — the roles are on the relationship, and relationship-roles-backed reads them there. Partnership and shared kernel are the other exception: neither side is upstream, so there is no role for either end to declare.",
+		fix: "Set pattern on the consumable to open-host-service or published-language, and pattern on the consumption to conformist or anti-corruption-layer; or declare the partnership or shared kernel that makes the two contexts equals. If the warning is on an integration where the caller dictates the format, the relationship is the wrong way round: declare the caller upstream, with the roles on the relationship, and this rule stops asking.",
 		check: roleCoherence,
 	},
 	{
@@ -3924,9 +4153,9 @@ const RULES: CataloguedRule[] = [
 		rule: "process-in-context",
 		severities: ["error"],
 		summary:
-			"A process issues operations of its own bounded context; what starts it, what it waits for and what ends it may be another context's events.",
+			"A process issues operations of its own bounded context, and starts on an event or on one of its own context's operations; what it waits for and what ends it may be another context's events.",
 		why: "A process is its context's own way of running something that takes several facts to finish, and like a policy it may only act through its own model: reaching into a neighbour to run an operation there is that context acting through someone else's model rather than through the boundary they published. Listening is different — subscribing to published facts is how contexts integrate — so the events a process starts on, waits for and ends on may cross where the operations it issues may not (decision 23).",
-		fix: "Give the process's own context an operation that consumes the foreign one — an application service operation is the usual place — and name that in then.",
+		fix: "Give the process's own context an operation that consumes the foreign one — an application service operation is the usual place — and name that in then. If the foreign operation is what starts an instance, start on the event that call raises instead: a neighbour's command is not this context's to say creates its instances, but a neighbour's published fact is something this context may listen for.",
 		check: processInContext,
 	},
 	{
@@ -3940,9 +4169,10 @@ const RULES: CataloguedRule[] = [
 	{
 		rule: "process-starts",
 		severities: ["error"],
-		summary: "A process names at least one event that begins an instance.",
-		why: "A process has instances, and an instance begins when some fact arrives: without one the model never says when a process exists, so there is nothing to correlate the later events against and nothing for a reader to follow the chain back to.",
-		fix: "Put the event that begins an instance in starts. If the process really reacts to anything at any time, it is a policy, not a process.",
+		summary:
+			"A process names at least one event, or one operation of its own context, that begins an instance.",
+		why: "A process has instances, and an instance begins when some fact arrives or some command creates one: without either the model never says when a process exists, so there is nothing to correlate the later events against and nothing for a reader to follow the chain back to. A command starts a saga as often as an event does — open a claim, submit an application — and allowing only an event sent authors back to inventing a fact for the call they already had. An answer and a deadline still start nothing: a caller has to have made the call to hear it come back, and a deadline counts from the moment an instance began waiting, so both need the instance to exist already.",
+		fix: "Put the event, or the operation of this context that creates an instance, in starts. If the process really reacts to anything at any time, it is a policy, not a process.",
 		check: processStarts,
 	},
 	{
@@ -4029,8 +4259,8 @@ const RULES: CataloguedRule[] = [
 		severities: ["error"],
 		summary:
 			"Policies and processes react to events and issue operations; only operations raise events, and they raise only events.",
-		why: "An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable. A reaction may also wait on an answer, and then two things have to hold: the operation declares that answer, and the reactor can hear it come back — because its context consumes the operation, or because the reactor issues the operation itself, which is the local call-and-branch.",
-		fix: "Check the type of each consumable a policy or raises list points at and swap it for the right kind. For an answer, either declare it on the operation it is named from, or issue or consume that operation.",
+		why: "An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable. A reaction may also wait on an answer, and then two things have to hold: the operation declares that answer, and the reactor can hear it come back — because its context consumes the operation, or because the reactor issues the operation itself, which is the local call-and-branch. An operation that returns nothing answers with its bare completion, and that is an answer like any other; an operation that does answer with a shape has no separate completion, because naming one would be a second name for the same call coming back.",
+		fix: "Check the type of each consumable a policy or raises list points at and swap it for the right kind. For an answer, either declare it on the operation it is named from, or issue or consume that operation; where the operation returns a shape, wait for that shape rather than for the operation completing. A process starting on an operation is not a reaction at all and is left to process-in-context.",
 		check: consumableKinds,
 	},
 	{

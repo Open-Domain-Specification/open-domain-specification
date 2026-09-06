@@ -181,6 +181,12 @@ function everythingWrong(): Workspace {
 		description: "",
 		precondition: true,
 	});
+	// postcondition-names-operation: a guarantee about the answer to a call
+	// nobody names
+	tree.addInvariant("Guaranteed Of Nothing", {
+		description: "",
+		postcondition: true,
+	});
 	// attribute-relation-coherence: attribute without relation, relation
 	// without attribute, and a list against a single-valued relation
 	const coherence = a.addAggregate("Coherence", { description: "" });
