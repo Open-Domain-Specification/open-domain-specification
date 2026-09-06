@@ -6,11 +6,11 @@ Goal (set 2026-09-07): the lead, asked whether the DDD metamodel is a good, clea
 
 ## Now
 
-Card 98 ([boards/project-backlog/98](boards/project-backlog/98-upstream-is-who-dictates-the-language.md)): upstream is who dictates the language; a subscriber is a reactor; an aggregate-initiated call has a front. Owner: the senior developer spawned before the roster change, in its own worktree. Stopping point: the developer reports; the lead merges, runs the gate, pushes.
+No card is live. Develop was squashed to one clean commit over main on 2026-09-09 at the owner's request, with every themed agent name replaced by its role and the installer's agent and skill files removed for a lore-free reinstall; card 98 then landed as a second commit. The panel's fifth round (Antigravity, Codex, a fresh-context architect) is running on that head.
 
 ## Next
 
-Land card 98, then run the panel a fifth time on that head (Antigravity, Codex, a fresh-context architect on the Fable model). Expected result: all three hold at yes with named costs and name no new defect, after which the lead answers the question and the pull request is ready for the owner to merge.
+Read the three verdicts. If all hold at yes with named costs and name no new defect, the lead answers the question and pull request 25 is ready for the owner to merge; any real defect becomes a card, dispatched once the replacement roster is installed.
 
 ## Later
 
@@ -26,4 +26,4 @@ Land card 98, then run the panel a fifth time on that head (Antigravity, Codex, 
 
 ## Working state
 
-Updated: 2026-09-09. Branch: develop. Checked commit: the single squashed commit develop carries over main (see `git log main..develop`). Partial changes in the checkout not the lead's: `apps/ods-vscode/README.md` and `boards/vsc-extension/14-*.md`, modified by the Codex session; left untouched.
+Updated: 2026-09-09. Branch: develop, two commits over main (the squash and card 98). Partial changes in the checkout not the lead's: files created by a Codex session under `docs/team/design`, `docs/team/qa`, `boards/vsc-extension/83` to `92`, and two modified files; all untracked or unstaged, left untouched.
