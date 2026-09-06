@@ -31,10 +31,11 @@ import {
  * (decision 23).
  *
  * A process's deadline is drawn the same way, as a loop from the process back
- * to the process labelled with how long the instance had. It gets no node
+ * to the process labelled with how long the instance had and, where the
+ * process anchors the clock, the trigger it counts from. It gets no node
  * either, and for a stronger reason: there is no provider it could hang under,
  * because a per-instance timer is the process's own and nobody else's fact
- * (decision 23, fourth amendment).
+ * (decision 23, fourth and fifth amendments).
  *
  * That is also why a front need not restate what it calls raises: the map
  * already draws the front, the operation it calls and the event that
@@ -57,11 +58,12 @@ export class ODSFlowMap {
 	 * keyed by its shape as well as by its ends: a call answering the same
 	 * reactor it already reached some other way is a second edge, and the
 	 * reader is told which is which by the name on it. A deadline is keyed by
-	 * how long it waits for the same reason: a process with two limits on one
-	 * instance draws two loops, not one.
+	 * how long it waits and what it waits from, for the same reason: a process
+	 * with two limits on one instance draws two loops, not one, even where both
+	 * run for the same length of time from different moments.
 	 */
 	addEdge(edge: ODSFlowMapEdge) {
-		const label = edge.answer ?? edge.after;
+		const label = edge.answer ?? waitOf(edge);
 		const id = `${edge.source.id}|${edge.target.id}${label ? `|${label}` : ""}`;
 		const existing = this.edges.get(id);
 		if (existing) return existing;
@@ -99,6 +101,7 @@ export class ODSFlowMap {
 						target: node,
 						kind: "ends",
 						after: ending.after,
+						...(ending.from && { from: ending.from.name }),
 					});
 					continue;
 				}
@@ -155,7 +158,10 @@ export class ODSFlowMap {
 				source: from,
 				target: this.addNode(nodeFor(to)),
 				...(answer && { answer: answer.name }),
-				...(deadline && { after: deadline.after }),
+				...(deadline && {
+					after: deadline.after,
+					...(deadline.from && { from: deadline.from.name }),
+				}),
 			});
 			this.walk(to, chain, walked);
 		}
@@ -238,18 +244,35 @@ export type ODSFlowMapEdge = {
 	 * the process back to itself. Absent on every other edge.
 	 */
 	after?: string;
+	/**
+	 * What that timer counts from: the name of the trigger the process anchors
+	 * it to. Absent where the clock runs from the start of the instance, which
+	 * is the common case, and on every edge that is not a deadline.
+	 */
+	from?: string;
 };
 
 /**
+ * How long a deadline made an instance wait, and from what, on the one edge
+ * that carries one: the phrase the label reads and what tells two of a
+ * process's limits apart.
+ */
+function waitOf(edge: ODSFlowMapEdge): string | undefined {
+	return edge.after && `${edge.after}${edge.from ? ` from ${edge.from}` : ""}`;
+}
+
+/**
  * What an edge is labelled with, so the three renderers say the same thing: an
- * answer by the shape it came back as, a deadline by how long the instance
- * had, what completes a process as `ends`, and a plain step not at all. A dash
+ * answer by the shape it came back as, a deadline by how long the instance had
+ * and, where the process anchors the clock, what it counts from, what
+ * completes a process as `ends`, and a plain step not at all. A dash
  * alone cannot say which of the things a dashed line means across these
  * diagrams a reader is looking at, and an unlabelled arrow into a process
  * could not say the call had come back.
  */
 export function flowEdgeLabel(edge: ODSFlowMapEdge): string | undefined {
-	const named = edge.answer ?? (edge.after && `after ${edge.after}`);
+	const waited = waitOf(edge);
+	const named = edge.answer ?? (waited && `after ${waited}`);
 	if (named) return edge.kind === "ends" ? `${named} (ends)` : named;
 	return edge.kind === "ends" ? "ends" : undefined;
 }

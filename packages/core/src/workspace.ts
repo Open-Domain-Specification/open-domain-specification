@@ -2304,8 +2304,9 @@ export type AttributeOptions = {
 	schema?: DataSchema;
 	/**
 	 * What this attribute holds the identity of: an entity in any context, or
-	 * an external context itself when the id belongs to a system whose
-	 * entities are not ours to state (decisions 14 and 28).
+	 * a context itself when it is external or a big ball of mud, and the id
+	 * belongs to a system whose entities are not ours to state or not anyone's
+	 * to find (decisions 14 and 28).
 	 */
 	identifies?: Entity | BoundedContext;
 	id?: string;
@@ -2332,8 +2333,9 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 	schema?: DataSchema;
 	/**
 	 * What this attribute holds the identity of: an entity in any context, or
-	 * an external context itself when the id belongs to a system whose
-	 * entities are not ours to state (decisions 14 and 28).
+	 * a context itself when it is external or a big ball of mud, and the id
+	 * belongs to a system whose entities are not ours to state or not anyone's
+	 * to find (decisions 14 and 28).
 	 */
 	identifies?: Entity | BoundedContext;
 	owner: AttributeOwner;
@@ -2594,6 +2596,14 @@ export type DeadlineAttributes = {
 	 * exists and how long it is, and leaves the arithmetic to the code.
 	 */
 	after: string;
+	/**
+	 * The trigger the interval counts from: one of the process's own `starts`
+	 * or `on` entries. Absent means from the moment the instance began, which
+	 * is the common case and stays unwritten. Also settable with
+	 * `.countsFrom(...)`, which is how the loader sets it once the process's
+	 * triggers are linked.
+	 */
+	from?: ProcessTrigger;
 	id?: string;
 };
 
@@ -2615,7 +2625,14 @@ export type DeadlineAttributes = {
  * on one, when running out of time is how the instance finishes. It behaves as
  * an event the process raises to itself, and the reaction walk and the flow
  * map draw it that way — one step from the process back to the process,
- * labelled with how long the wait was.
+ * labelled with how long the wait was and, where it is set, what it counts
+ * from.
+ *
+ * The anchor is `from`: one of the process's own triggers, because a clock
+ * starts on something the process has already heard. A statutory decision
+ * window runs from the application's receipt rather than from whenever the
+ * process happened to begin, and where the two differ the model said the wrong
+ * thing until it could name the anchor (decision 23, fifth amendment).
  */
 export class Deadline
 	implements Referenceable, SchemaConvertible<ods.DeadlineSchema>
@@ -2625,6 +2642,11 @@ export class Deadline
 	description: string;
 	/** How long the instance waits before it falls; see {@link DeadlineAttributes.after}. */
 	after: string;
+	/**
+	 * The trigger the interval counts from, when it is not the start of the
+	 * instance; see {@link DeadlineAttributes.from}.
+	 */
+	from?: ProcessTrigger;
 	/** The process whose instances keep it. */
 	process: Process;
 
@@ -2648,6 +2670,36 @@ export class Deadline
 		this.after = attributes.after;
 		this.process = process;
 		process.deadlines.set(this.id, this);
+		if (attributes.from) this.countsFrom(attributes.from);
+	}
+
+	/**
+	 * Sets what the interval counts from: a trigger the process already waits
+	 * for, in `starts` or in `on`.
+	 *
+	 * Anything else is refused where it is written, as a foreign deadline is
+	 * (see {@link Process}). A clock counts from a moment the instance can tell
+	 * has arrived, and the only moments it knows are the ones it listens for;
+	 * naming a fact the process never hears, or the deadline itself, is not a
+	 * rule to report but a sentence with nothing behind it. An ending trigger
+	 * is refused for the same reason: the instance is over, so no clock of its
+	 * own starts there.
+	 */
+	countsFrom(trigger: ProcessTrigger): this {
+		if (trigger === this)
+			throw new Error(
+				`Deadline ${this.name} cannot count from itself; a clock starts on something that happened before it`,
+			);
+		const waitsFor = [
+			...this.process.startEvents,
+			...this.process.events,
+		].includes(trigger);
+		if (!waitsFor)
+			throw new Error(
+				`Deadline ${this.name} counts from ${trigger.name}, which process ${this.process.name} does not wait for; a deadline counts from one of the process's own starts or on triggers`,
+			);
+		this.from = trigger;
+		return this;
 	}
 
 	toSchema(): ods.DeadlineSchema {
@@ -2655,6 +2707,7 @@ export class Deadline
 			name: this.name,
 			description: this.description,
 			after: this.after,
+			from: this.from && { $ref: this.from.ref },
 		};
 	}
 }

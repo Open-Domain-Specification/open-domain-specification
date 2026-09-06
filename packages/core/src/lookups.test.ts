@@ -269,10 +269,14 @@ describe("Workspace ref lookups", () => {
 		schema.boundedcontexts.ordering_bc.services.order_app.consumes = [];
 		// nor reporting's own raises link, whose ref carries the old key too, nor
 		// its consumption of Order Placed, whose `by` names one of its own
-		// operations by the old key
+		// reactions by the old key
 		schema.boundedcontexts.renamed_key.services.reporting_app.provides.compile_sales_figures.raises =
 			[];
 		schema.boundedcontexts.renamed_key.services.reporting_app.consumes = [];
+		// nor the two reactions: reporting's own policy issues an operation of
+		// the old key, and ordering's waits on an event of it
+		schema.boundedcontexts.renamed_key.policies = {};
+		schema.boundedcontexts.ordering_bc.policies = {};
 		const rebuilt = Workspace.fromSchema(schema);
 		expect(
 			rebuilt.getBoundedContextByRef("#/boundedcontexts/renamed_key")?.name,

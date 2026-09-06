@@ -255,8 +255,11 @@ function addBoundedContext(
 		for (const [deadlineId, deadlineSchema] of Object.entries(
 			deadlines ?? {},
 		)) {
+			// What it counts from is joined in the second pass, once the process
+			// waits for something (linkProcesses).
+			const { from: _from, ...deadlineRest } = deadlineSchema;
 			process.addDeadline(deadlineSchema.name, {
-				...deadlineSchema,
+				...deadlineRest,
 				id: deadlineId,
 			});
 		}
@@ -559,6 +562,20 @@ function linkProcesses(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 			process.on(...triggers(processSchema.on));
 			process.issues(...consumables(processSchema.then));
 			process.ends(...triggers(processSchema.ends));
+			// A deadline's anchor is one of the triggers linked just above, so
+			// it is set here rather than where the deadline was made: in the
+			// first pass the process waited for nothing yet, and `countsFrom`
+			// refuses an anchor the process does not wait for.
+			for (const [deadlineId, deadlineSchema] of Object.entries(
+				processSchema.deadlines ?? {},
+			)) {
+				if (!deadlineSchema.from) continue;
+				const deadline = process.deadlines.get(deadlineId);
+				if (!deadline) continue;
+				deadline.countsFrom(
+					workspace.getProcessTriggerByRefOrThrow(deadlineSchema.from.$ref),
+				);
+			}
 		}
 	}
 }

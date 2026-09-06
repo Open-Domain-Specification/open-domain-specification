@@ -221,10 +221,14 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   one event and remembers nothing stays a policy.
 - "Who outside this part listens for <event>?" → a consumption on their aggregate or service,
   with a downstream `pattern`.
-- For each consumption: "which operations of this service actually make that call?" → `by`,
-  naming the consumer's own operations, or the policy or process of its context that reacts. Only ask
-  it back if the answer is one or two of several; "all of it" is the common case and leaves
-  `by` off. Never guess a call graph from names — if the author does not know, it stays absent.
+- For each consumption of an operation: "which operations of this service actually make that
+  call?" → `by`, naming the consumer's own operations. Only ask it back if the answer is one or
+  two of several; "all of it" is the common case and leaves `by` off. Never guess a call graph
+  from names — if the author does not know, it stays absent.
+- For each consumption of an event: "what here runs when that arrives?" → `by`, naming the
+  policy or process of the consumer's context that wakes on it. A subscription is woken rather
+  than issued, so an operation is never the answer: where the answer is "our query reads it",
+  what is missing is the reaction that wrote what the query reads.
 - Close: "Which of the words we used should I define, and does each map to one of the things
   we modelled?" → glossary terms with `embodiedBy`.
 - Ask the two evidence questions (see below) for each consumable or consumption that came out

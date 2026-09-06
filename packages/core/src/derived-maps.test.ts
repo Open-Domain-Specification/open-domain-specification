@@ -531,7 +531,7 @@ describe("ODSFlowMap", () => {
 	it("leaves out operations no policy or process issues", () => {
 		const map = ODSFlowMap.fromWorkspace(f.ws);
 		expect(map.nodes.has(f.placeOrder.ref)).toBe(false);
-		expect(map.nodes.size).toBe(7);
+		expect(map.nodes.size).toBe(12);
 	});
 
 	it("follows a consumption's by out of the context and on from what it raises", () => {
@@ -773,6 +773,41 @@ describe("ODSFlowMap and the answer a call comes back with", () => {
 		const map = ODSFlowMap.fromWorkspace(ws);
 		expect(drawn(map)).toContain("Checkout -> Checkout [after 30 minutes]");
 		expect(map.nodes.has(expiry.ref)).toBe(false);
+	});
+
+	// A clock has an anchor as well as a length, and the label says both: this
+	// one starts when the call was refused, not when the instance began
+	// (decision 23, fifth amendment; card 98).
+	it("labels a deadline with what it counts from, where the process anchors it", () => {
+		const { ws, process, authorise, declined } = callAndBranch();
+		const expiry = process.addDeadline("Hold expiry", {
+			description: "",
+			after: "30 minutes",
+			from: authorise.rejected(declined),
+		});
+		process.on(expiry);
+		expect(drawn(ODSFlowMap.fromWorkspace(ws))).toContain(
+			"Checkout -> Checkout [after 30 minutes from Payment Declined]",
+		);
+	});
+
+	it("draws two limits of one instance as two loops, however long each waits", () => {
+		const { ws, process, authorise, declined } = callAndBranch();
+		process.on(
+			process.addDeadline("Chased", {
+				description: "",
+				after: "30 minutes",
+			}),
+			process.addDeadline("Abandoned", {
+				description: "",
+				after: "30 minutes",
+				from: authorise.rejected(declined),
+			}),
+		);
+		const loops = drawn(ODSFlowMap.fromWorkspace(ws)).filter((it) =>
+			it.startsWith("Checkout -> Checkout"),
+		);
+		expect(loops).toHaveLength(2);
 	});
 
 	it("draws a deadline a process ends on as the ending edge", () => {

@@ -55,3 +55,7 @@ An identity attribute naming another context's entity (decision 14) implies an e
 ## Amendment (2026-09-09)
 
 Upstream is who dictates the model, not who provides the consumable. A card processor that calls the bank in its own format is upstream of the bank though the bank provides the operation; the bank is downstream with an anti-corruption layer that translates the caller's language at its boundary. The rules assumed provider equals upstream, and NorthBank hid the mismatch by inverting the call into an event. `schema-context` now lets a downstream carry the upstream's schema behind an anti-corruption layer as well as as a conformist, and `relationship-roles-backed` backs an upstream role by any schema the downstream carries, in a request, a return or a rejection (card 98).
+
+## Amendment (2026-09-09, second)
+
+Card 98 settled two mechanics the previous amendment left open. An anti-corruption layer lets a downstream carry the upstream's shape only on the consumable the upstream itself calls, the operation where the caller's language arrives and is translated; a wider reading, any consumable of the downstream, would let a context launder a foreign shape into its own events, which `schema-context` exists to refuse. And the downstream's anti-corruption-layer role is backed by that caller-facing shape, since nothing else crosses from an upstream that is the caller.

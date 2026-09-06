@@ -900,7 +900,7 @@ const accountServicing = accountsBC.addService("AccountServicing", {
 	description: "The documented account API for channels, cards and lending",
 	type: "application",
 });
-const openAccount = accountServicing
+accountServicing
 	.provides("OpenAccount", {
 		description: "Open a product for a verified customer",
 		type: "operation",
@@ -928,12 +928,29 @@ const freezeAccount = accountServicing
 
 // DISCOVERY: Head of Customer Platform, "only then can an account be opened",
 // and the Accounts lead's "mandates saying which verified customers can operate
-// it". Nothing in Accounts reacts to a verification — no account opens by
-// itself — so what the subscription is for is `OpenAccount`, the part of
-// Accounts that needs to know (`subscription-backed`, decision 21).
+// it". No account opens by itself, so what Accounts does when it hears the
+// verification is remember it, and `OpenAccount` reads that when a channel asks
+// for a product. The reaction is what the subscription names: an operation is
+// issued rather than woken (`consumption-by-reactor`, card 98).
+const recordVerifiedCustomer = accountServicing.provides(
+	"RecordVerifiedCustomer",
+	{
+		description:
+			"Note that a customer has passed KYC, so a product may be opened for them and a mandate may name them",
+		type: "operation",
+		internal: true,
+	},
+);
+const noteVerification = accountsBC
+	.addPolicy("Note a verified customer", {
+		description:
+			"A verified customer is one Accounts may open a product for; nothing opens by itself",
+	})
+	.on(customerVerified)
+	.issues(recordVerifiedCustomer);
 accountServicing.consumes(customerVerified, {
 	pattern: "conformist",
-	by: [openAccount],
+	by: [noteVerification],
 });
 
 accountsBC.addTerm("Account", {
@@ -1534,15 +1551,32 @@ const submitToScheme = schemeApp.provides("SubmitToScheme", {
 	returns: settlementSchema,
 	rejects: [schemeRefusalSchema],
 });
-// Waiting for the response is taking the scheme's fact in at the gateway's own
-// boundary, and SubmitToScheme is the operation that waits.
+// The scheme answers "on its own timings", so the gateway hears the response
+// as a fact and matches it to the message it sent; SubmitToScheme, which is
+// waiting, is answered from what that match recorded. Card 95 named the
+// waiting operation as the subscriber, which said a thing that is issued was
+// somehow listening and left the reaction unwritten (`consumption-by-reactor`,
+// card 98).
+const recordSchemeResponse = schemeMessageAgg.provides("RecordSchemeResponse", {
+	description:
+		"Match the scheme's status report to the message it answers, so the caller waiting on that submission is told",
+	type: "operation",
+	internal: true,
+});
+const matchSchemeResponse = schemeBC
+	.addPolicy("Match the scheme's response", {
+		description:
+			"Either answer the scheme gives -- a settlement or a refusal -- is recorded against the message it quotes, which is what the submission was waiting for",
+	})
+	.on(schemeSettlementConfirmed, schemeRejected)
+	.issues(recordSchemeResponse);
 schemeApp.consumes(schemeSettlementConfirmed, {
 	pattern: "conformist",
-	by: [submitToScheme],
+	by: [matchSchemeResponse],
 });
 schemeApp.consumes(schemeRejected, {
 	pattern: "conformist",
-	by: [submitToScheme],
+	by: [matchSchemeResponse],
 });
 paymentSchemeBC.upstreamOf(schemeBC, {
 	description:
@@ -1879,16 +1913,18 @@ cardAgg
 // invariant is declared further down where that operation exists and names it
 // (decision 19, amended; card 90).
 
-const cardAuthRequestSchema = cardsBC.addSchema("CardAuthorisationRequest", {
-	description:
-		"What CardCo's message becomes once Cards has translated it (card 71: CardCo's own format is CardCo's, and lives there)",
+// DISCOVERY: Cards Team lead. "CardCo sends us the authorisation request in
+// their format and we translate it." CardCo dictates the language, so it is
+// upstream however much of the traffic runs the other way, and the shape at
+// the boundary is CardCo's own with the translation behind it (decision 03,
+// 2026-09-09). It is declared here because AuthoriseCard below carries it.
+const cardCoMessageSchema = cardCoBC.addSchema("CardCoAuthorisationMessage", {
+	description: "CardCo's wire format, as it arrives",
 });
-cardAuthRequestSchema.addAttribute("panToken", { type: "string" });
-cardAuthRequestSchema.addAttribute("merchant", { type: "string" });
-cardAuthRequestSchema.addAttribute("amount", {
-	type: "Money",
-	valueobject: cardMoney,
-});
+cardCoMessageSchema.addAttribute("panToken", { type: "string" });
+cardCoMessageSchema.addAttribute("merchant", { type: "string" });
+cardCoMessageSchema.addAttribute("amountMinorUnits", { type: "int64" });
+cardCoMessageSchema.addAttribute("currency", { type: "ISO 4217 code" });
 const cardEventSchema = cardsBC.addSchema("CardEvent", {
 	description: "Card and account; shared by the card events",
 });
@@ -1962,47 +1998,55 @@ cardDeclineSchema.addAttribute("cardId", { type: "string", identifies: card });
 cardDeclineSchema.addAttribute("reason", {
 	type: "'blocked' | 'expired' | 'insufficient-funds'",
 });
+// The call CardCo makes, in CardCo's own words. Until card 98 the model
+// inverted it -- CardCo published an `AuthorisationRequested` event that Cards
+// consumed -- because `schema-context` refused a consumable carrying another
+// context's schema, so the truthful shape was unwritable and nothing consumed
+// AuthoriseCard at all. Upstream is who dictates the model, not who provides
+// the consumable: the bank offers the operation and translates the caller's
+// format behind an anti-corruption layer, and that is what the two
+// relationships below say.
 const authoriseCard = cardsApp
 	.provides("AuthoriseCard", {
 		description:
-			"Approve or decline a merchant's request from CardCo; the caller waits, and is answered with the authorisation or with the rule that stopped it",
+			"Approve or decline a merchant's request from CardCo, in the message CardCo sends; the caller waits, and is answered with the authorisation or with the rule that stopped it",
 		type: "operation",
 		pattern: "open-host-service",
-		schema: cardAuthRequestSchema,
+		schema: cardCoMessageSchema,
 		returns: cardApprovalSchema,
 		rejects: [cardDeclineSchema],
 	})
 	.raises(cardAuthorised);
-// DISCOVERY: Cards Team lead. "CardCo sends us the authorisation request in
-// their format and we translate it." CardCo is a system the bank does not
-// own, so the message it sends is CardCo's event, carrying CardCo's shape,
-// and the translating is what makes Cards' consumption of it (decision 28).
-const cardCoMessageSchema = cardCoBC.addSchema("CardCoAuthorisationMessage", {
-	description: "CardCo's wire format, as it arrives",
-});
-cardCoMessageSchema.addAttribute("panToken", { type: "string" });
-cardCoMessageSchema.addAttribute("merchant", { type: "string" });
-cardCoMessageSchema.addAttribute("amountMinorUnits", { type: "int64" });
-cardCoMessageSchema.addAttribute("currency", { type: "ISO 4217 code" });
 const cardCoFeed = cardCoBC.addService("CardCo Authorisation Feed", {
-	description: "The processor's outbound feed, and all the bank can see",
+	description:
+		"The processor's authorisation side, and all the bank can see of it: it takes the merchant's request and calls the issuer",
 	type: "application",
 });
-const authorisationRequested = cardCoFeed.provides("AuthorisationRequested", {
-	description: "A merchant asked CardCo to take an amount on one of our cards",
-	type: "event",
-	pattern: "published-language",
-	schema: cardCoMessageSchema,
+// What the bank sees of CardCo is the call arriving, so the step that makes it
+// is named and nothing else about the processor is. It is internal because
+// CardCo offers it to its merchants, not to us: naming it is how the
+// consumption below says who calls (decisions 21 and 28).
+const requestAuthorisation = cardCoFeed.provides("RequestAuthorisation", {
+	description:
+		"A merchant asked CardCo to take an amount on one of our cards, so CardCo asks the issuer to approve it",
+	type: "operation",
+	internal: true,
 });
-cardsApp.consumes(authorisationRequested, {
-	pattern: "anti-corruption-layer",
-	by: [authoriseCard],
+cardCoFeed.consumes(authoriseCard, {
+	pattern: "conformist",
+	by: [requestAuthorisation],
 });
 cardCoBC.upstreamOf(cardsBC, {
 	description:
-		"CardCo's format is CardCo's; Cards translates every message on the way in and answers in the same terms",
+		"CardCo's format is CardCo's: it dictates the message every authorisation arrives in, and Cards translates it at its own boundary rather than adopting it",
 	upstreamRoles: ["published-language"],
 	downstreamRoles: ["anti-corruption-layer"],
+});
+cardsBC.upstreamOf(cardCoBC, {
+	description:
+		"The other half of the same integration: the operation is the bank's, offered as an open host, and CardCo calls it as it stands",
+	upstreamRoles: ["open-host-service"],
+	downstreamRoles: ["conformist"],
 });
 const blockCard = cardsApp
 	.provides("BlockCard", {
@@ -2048,12 +2092,27 @@ cardsBC
 	.on(transactionFlagged)
 	.issues(blockCard);
 // Post-authorisation monitoring: card authorisations are part of the history
-// the scorer reads, translated at Fraud's boundary into its own words. Nothing
-// reacts to one on its own, and `ScoreTransaction` is the part of Fraud they
-// feed (`subscription-backed`).
+// the scorer reads, translated at Fraud's boundary into its own words. What
+// takes the fact in is a reaction, not the query that later reads it -- an
+// operation is issued rather than woken -- so the policy is what the
+// subscription names, and it issues the step that files the authorisation
+// (`consumption-by-reactor`, card 98).
+const recordAuthorisation = fraudApp.provides("RecordCardAuthorisation", {
+	description:
+		"File an approved card authorisation in the history the scorer reads, in Fraud's own words",
+	type: "operation",
+	internal: true,
+});
+const fileCardAuthorisation = fraudBC
+	.addPolicy("File a card authorisation", {
+		description:
+			"Every approved authorisation joins the history the scorer reads; nothing else happens on one",
+	})
+	.on(cardAuthorised)
+	.issues(recordAuthorisation);
 fraudApp.consumes(cardAuthorised, {
 	pattern: "anti-corruption-layer",
-	by: [scoreTransaction],
+	by: [fileCardAuthorisation],
 });
 // DISCOVERY: Accounts Team lead. "Our balance is ledger balance less pending
 // card authorisations": Accounts must hear every authorisation to hold it.
@@ -2523,18 +2582,14 @@ decisioningApp.consumes(getCustomer, {
 	by: [decide],
 });
 
-// And the other way, which the model already described and never wired up:
-// ApplicationSubmitted's schema is named "What decisioning receives" and the
-// event says "decisioning runs". Without this consumption the partnership had
-// traffic one way only, and a partnership is a two-way dependency.
-// `Decide` is where a submitted application arrives: Lending's policy sends it
-// through RequestDecision, and that operation is the part of Decisioning the
-// fact is for. Nothing here reacts to the event on its own
-// (`subscription-backed`).
-decisioningApp.consumes(applicationSubmitted, {
-	pattern: "conformist",
-	by: [decide],
-});
+// Credit Decisioning does not subscribe to ApplicationSubmitted at all: it is
+// called. Lending's own policy hears the event and sends the application
+// through RequestDecision, which is the crossing. The consumption that used to
+// sit here named `Decide` as the subscriber so that the partnership would show
+// traffic both ways; a partnership needs traffic in one direction only
+// (`partnership-backed`), an operation is issued rather than woken
+// (`consumption-by-reactor`), and the dependency it claimed was never real
+// (card 98).
 const requestDecision = lendingApp.provides("RequestDecision", {
 	description: "Send a submitted application to Credit Decisioning",
 	type: "operation",

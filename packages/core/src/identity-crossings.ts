@@ -35,8 +35,9 @@ function* modelOwnersIn(context: BoundedContext): Iterable<AttributeOwner> {
 
 /**
  * An identity attribute of an entity or a value object in one context naming an
- * entity of another, or an external context itself. Decision 14 made this the
- * only way a model records a dependency on another context's model, so it is a
+ * entity of another, or a context the model does not state the insides of.
+ * Decision 14 made this the only way a model records a dependency on another
+ * context's model, so it is a
  * crossing in its own right: it wants a declared relationship
  * (`relationship-declared`) and it draws on the context map even when nothing
  * is consumed. A payload schema's identity is left out; see
@@ -47,7 +48,8 @@ export type IdentityCrossing = {
 	attribute: Attribute;
 	/**
 	 * What it identifies: the other context's entity, or that context itself
-	 * when the id belongs to a system whose entities are not ours to state
+	 * when it is external or a big ball of mud and the id belongs to a system
+	 * whose entities are not ours to state or not anyone's to find
 	 * (decision 28).
 	 */
 	target: Entity | BoundedContext;

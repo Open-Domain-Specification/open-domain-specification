@@ -587,3 +587,28 @@ is set — which is the model's answer to a polymorphic reference, and the decis
 very attribute as an example of it while the model did something else.
 
 The deliberate diagnostics of section 7 are untouched.
+
+## Revision (card 98): the case's return is made by a front, and the seller list is a reaction
+
+Two consumptions said something the model could not draw.
+
+Customer Service's consumption of Returns' `RequestReturn` named no caller, and a comment
+said why: "an agent raises a return while working a case, and the operation that does it is
+the aggregate's `ResolveCase`, which is not CaseAPI's to name". The walk did not read it
+that way. `CaseAPI` offered one operation, so the single-operation inference read `OpenCase`
+as the caller — the one thing the comment denied — and there is no opt-out, because a model
+that cannot name the caller has not yet said who acts (decision 21's note). An aggregate is
+a consistency boundary and not a client, so the honest shape is decision 17's: `CaseAPI`
+gains the front `ResolveCase`, which closes the case through the aggregate's own
+`ResolveCase` and raises the return with Returns, and `by` names the front on both
+consumptions. The chain from the front now reaches the aggregate's transition and Returns'
+`RequestReturn`, which is what the comment always meant.
+
+Offers' consumption of `SellerActivated` named `PublishOffer` as the subscriber, on the
+reading that publishing is the part of Offers that cares. An operation is issued rather than
+woken (`consumption-by-reactor`), and what Offers really does with an activation is keep its
+own list of who may publish — the same shape as the SKU list it keeps from the catalogue's
+events. So "Keep the seller list in step" reacts and issues `RecordActiveSeller`, and
+`PublishOffer` reads that list to refuse a seller onboarding has not activated.
+
+The deliberate diagnostics of section 7 are untouched.

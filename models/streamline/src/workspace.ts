@@ -866,12 +866,29 @@ const planLadder = ladderPlanner.provides("PlanLadder", {
 
 // The delivery spec is the industry format, so Encoding conforms to it.
 // DISCOVERY: Media Engineering lead, "we consume the studio's delivery spec as
-// it is". Nothing in Encoding reacts to a delivery — Catalogue's process is what
-// queues the encode, and it calls `SubmitEncode` — so what the subscription is
-// for is that operation, which reads the delivered master (`subscription-backed`).
+// it is", and the Head of Studio Technology, "the catalogue and the encoding
+// pipeline both react". What the pipeline does on a delivery is note the
+// mezzanine as a source it can encode from; the job itself is queued later,
+// under a titleId, by Catalogue's call to SubmitEncode. Naming SubmitEncode as
+// the subscriber named a thing that is issued rather than woken, and left the
+// reaction the studio lead described unwritten (`consumption-by-reactor`,
+// card 98).
+const recordDeliveredMaster = encodingApi.provides("RecordDeliveredMaster", {
+	description:
+		"Note a delivered mezzanine as a source the pipeline can encode from, read in the studio's delivery spec as it stands",
+	type: "operation",
+	internal: true,
+});
+const noteDeliveredMaster = encodingBC
+	.addPolicy("Note a delivered master", {
+		description:
+			"Every delivered mezzanine becomes a source the pipeline knows about, ready for the encode Catalogue queues",
+	})
+	.on(masterDelivered)
+	.issues(recordDeliveredMaster);
 encodingApi.consumes(masterDelivered, {
 	pattern: "conformist",
-	by: [submitEncode],
+	by: [noteDeliveredMaster],
 });
 encodingBC
 	.addPolicy("Plan ladder on queue", {
@@ -1372,12 +1389,27 @@ devicesBC
 
 // Partnership: releases are planned as one, so Playback conforms.
 // DISCOVERY: Playback engineering lead, "we don't start a session on a device
-// that isn't certified against the current SDK". Nothing here reacts to a
-// certification; `StartPlayback` is the part of Playback that reads it, and
-// refuses when the device is not certified (`subscription-backed`).
+// that isn't certified against the current SDK". Playback keeps its own list of
+// what is certified against which SDK, and `StartPlayback` reads that list to
+// refuse an uncertified device. Keeping the list is the reaction; naming the
+// operation that reads it named a thing that is issued rather than woken
+// (`consumption-by-reactor`, card 98).
+const recordCertifiedDevice = playbackApi.provides("RecordCertifiedDevice", {
+	description:
+		"Note a device model as certified against an SDK version, so a session may start on it",
+	type: "operation",
+	internal: true,
+});
+const keepCertifiedDevices = playbackBC
+	.addPolicy("Keep the certified device list", {
+		description:
+			"Every certification joins the list StartPlayback checks before a session begins",
+	})
+	.on(deviceCertified)
+	.issues(recordCertifiedDevice);
 playbackApi.consumes(deviceCertified, {
 	pattern: "conformist",
-	by: [startPlayback],
+	by: [keepCertifiedDevices],
 });
 
 devicesBC.addTerm("Device", {
@@ -1491,7 +1523,7 @@ const recsApi = recsBC.addService("RecommendationsAPI", {
 	description: "What the apps call for the home screen",
 	type: "application",
 });
-const getHomepageRows = recsApi.provides("GetHomepageRows", {
+recsApi.provides("GetHomepageRows", {
 	description: "Rows for a profile, ranked",
 	type: "operation",
 	pattern: "open-host-service",
@@ -1519,16 +1551,32 @@ recsApi.consumes(availabilityChanged, {
 	pattern: "conformist",
 	by: [addCandidateOnPublish],
 });
-// DELIBERATE (internal-consumable): Personalisation reads the player's
-// bookmark updates, which Playback declares internal. The dependency was never
-// agreed. DISCOVERY: Head of Personalisation, "we also started reading the
-// player's bookmark updates to make 'continue watching' fresher". No policy
-// reacts to one — the rows are built when they are asked for — so `by` names the
-// operation that reads them, which is also what says how far the unagreed
-// dependency reaches (`subscription-backed`).
+// DELIBERATE (internal-consumable, twice): Personalisation reads the player's
+// bookmark updates, which Playback declares internal, and reacts to them. The
+// dependency was never agreed, and the model now says so at both ends: the
+// consumption at the boundary and the reaction behind it. DISCOVERY: Head of
+// Personalisation, "we also started reading the player's bookmark updates to
+// make 'continue watching' fresher". The rows are built when they are asked
+// for, so what the reaction does is keep the resume point where the ranker can
+// find it; `GetHomepageRows` reads that. Naming the query as the subscriber
+// named a thing that is issued rather than woken (`consumption-by-reactor`,
+// card 98).
+const recordResumePoint = recsApi.provides("RecordResumePoint", {
+	description:
+		"Keep a profile's latest resume point where the ranker can find it, so 'continue watching' is fresh when the rows are asked for",
+	type: "operation",
+	internal: true,
+});
+const freshenContinueWatching = recsBC
+	.addPolicy("Freshen continue watching", {
+		description:
+			"A moved resume point updates what 'continue watching' will show next time the rows are built",
+	})
+	.on(bookmarkUpdated)
+	.issues(recordResumePoint);
 recsApi.consumes(bookmarkUpdated, {
 	pattern: "anti-corruption-layer",
-	by: [getHomepageRows],
+	by: [freshenContinueWatching],
 });
 recsBC
 	.addPolicy("Record signal on stop", {

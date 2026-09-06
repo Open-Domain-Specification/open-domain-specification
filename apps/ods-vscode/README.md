@@ -56,3 +56,5 @@ The screenshots above are generated, never taken by hand. `npm run screenshots -
 ## Testing
 
 `npm test` runs the unit suite. `npm run test:vscode` builds the extension, downloads VS Code into `.vscode-test/` on first run, opens the example workspace in an Extension Development Host and drives the commands from Mocha inside it; the webview is verified by the messages the real pages bundle posts back.
+
+For the final change-set review, use the [manual regression suite](../../docs/team/qa/README.md). It covers extension functionality, every shared page type, diagrams, export/viewer, skill installation, packaging, accessibility and a separate lead designer review, with reproducible fixtures and per-case evidence records.

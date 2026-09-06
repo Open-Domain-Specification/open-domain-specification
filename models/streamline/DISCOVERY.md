@@ -281,15 +281,18 @@ to connect them. The connected timeline, condensed:
 
 ## 7. Validation and what we left in
 
-Three diagnostics, each a finding the client asked to keep visible:
+Four diagnostics, three findings the client asked to keep visible:
 
 - `policy-complete` on Devices' "Recertify on SDK release": reacts to `DeviceCertified` and
   issues nothing. It is the half-written automation the Partner Devices lead mentioned.
 - `schema-context` on Playback's `PlaybackStarted`: the event carries the catalogue's
   `TitleRef` schema instead of one of Playback's own. It was quicker to reuse; it ties the
   player's contract to the catalogue's.
-- `internal-consumable` on `RecommendationsAPI`'s consumption of `BookmarkUpdated`: the resume
-  point update is internal to the player and the dependency was never agreed.
+- `internal-consumable`, twice, on Recommendations' reading of `BookmarkUpdated`: the resume
+  point update is internal to the player and the dependency was never agreed. Since card 98
+  the model says so at both ends — the consumption at Recommendations' boundary, and the
+  reaction behind it that the subscription has to name — so the unagreed dependency is
+  reported wherever a reader lands.
 
 The partnership between Playback and Devices used to raise `partnership-backed` as a fourth
 finding. They ship on one release train and certify in the same lab run, but the only
@@ -479,3 +482,25 @@ saved. Separately, `attribute-relation-coherence` now reads `optional` against t
 cardinality, and four attributes whose descriptions already said "absent" — a title's
 availability, an episode's own rating and artwork, a profile's PIN, a taste profile's
 affinities — were marked required. They say what their relations said all along.
+
+## Revision (card 98): three subscriptions gain the reaction they always had
+
+Three consumptions named an operation as what takes a foreign fact in. An operation is
+issued rather than woken, so each named something that does nothing when the fact arrives,
+and `consumption-by-reactor` now refuses it. In all three the reaction existed in the
+interview and had simply never been written down.
+
+- Encoding's consumption of `MasterDelivered` named `SubmitEncode`, which Catalogue calls.
+  The Head of Studio Technology said "the catalogue and the encoding pipeline both react":
+  what the pipeline does on a delivery is note the mezzanine as a source it can encode from
+  (`RecordDeliveredMaster`), read in the studio's delivery spec as it stands, which is the
+  conformist relationship the Media Engineering lead described. The job itself is still
+  queued later, under a titleId, by Catalogue's call.
+- Playback's consumption of `DeviceCertified` named `StartPlayback`. Playback keeps its own
+  list of what is certified against which SDK (`RecordCertifiedDevice`), and `StartPlayback`
+  reads that list to refuse an uncertified device, which is what "we don't start a session
+  on a device that isn't certified against the current SDK" means.
+- Recommendations' consumption of `BookmarkUpdated` named `GetHomepageRows`. The rows are
+  built when they are asked for, so what the reaction does is keep the latest resume point
+  where the ranker can find it (`RecordResumePoint`). The dependency is still the unagreed
+  one of section 7, and is now reported at both ends.

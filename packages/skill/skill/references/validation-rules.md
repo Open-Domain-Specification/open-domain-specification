@@ -30,11 +30,11 @@
 
 ## `identifies-entity` (error)
 
-**Requires:** An attribute's identifies names an entity of this workspace, root or child, in any aggregate of any context, or a bounded context marked external.
+**Requires:** An attribute's identifies names an entity of this workspace, root or child, in any aggregate of any context, or a bounded context marked external or bigBallOfMud.
 
-**Why it matters:** An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about, and it is the one dependency allowed to cross a bounded context (decision 14). That thing may be a child, because systems point at child identities constantly — a playback session names a profile inside a household, a claim a coverage inside a policy, a shipment an order's line — and the child stays inside its aggregate exactly because its parent's invariants need it there; you hold the child's id, with its root's id beside it, and reach it through that root, so the dependency is really on the aggregate the root leads. Holding the id is not reaching inside: what reaches inside is a relation into another aggregate's members, and cross-aggregate-reference refuses that and recommends this id in its place. It may also be an external context: a card scheme's authorisation id or a payment provider's customer id belongs to a system whose entities are not ours to state (decision 28), so the attribute names the system and the maps still draw the dependency. A context that is not external is refused, because there the entity exists and naming the whole context would say less. What the id may never name is something this workspace does not have, since then it reaches nothing.
+**Why it matters:** An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about, and it is the one dependency allowed to cross a bounded context (decision 14). That thing may be a child, because systems point at child identities constantly — a playback session names a profile inside a household, a claim a coverage inside a policy, a shipment an order's line — and the child stays inside its aggregate exactly because its parent's invariants need it there; you hold the child's id, with its root's id beside it, and reach it through that root, so the dependency is really on the aggregate the root leads. Holding the id is not reaching inside: what reaches inside is a relation into another aggregate's members, and cross-aggregate-reference refuses that and recommends this id in its place. It may also be a context whose insides the model does not state: a card scheme's authorisation id belongs to a system whose entities are not ours to state, and a legacy account key to one nobody can read well enough to say which entity it is of (decision 28), so the attribute names the system and the maps still draw the dependency. Any other context is refused, because there the entity exists and naming the whole context would say less. What the id may never name is something this workspace does not have, since then it reaches nothing.
 
-**Usual fix:** Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child, with the root's id beside it — or, for an id that belongs to a system you do not model inside, at that system's bounded context, marked external: true. Check the target has not been renamed or moved out from under the attribute.
+**Usual fix:** Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child, with the root's id beside it — or, for an id that belongs to a system you do not model inside or cannot read, at that system's bounded context, marked external: true or bigBallOfMud: true. Check the target has not been renamed or moved out from under the attribute.
 
 ## `root-identity` (error)
 
@@ -174,11 +174,11 @@
 
 ## `relationship-roles-backed` (warning)
 
-**Requires:** A directed relationship's declared roles are carried by consumables and consumptions crossing between the two contexts — or, for published language and for conformist, by the downstream borrowing the upstream's shapes — and a crossing consumption's role is declared on the relationship.
+**Requires:** A directed relationship's declared roles are carried by consumables and consumptions crossing between the two contexts — or, for published language and for either downstream role, by the downstream borrowing the upstream's shapes — and a crossing consumption's role is declared on the relationship.
 
 **Why it matters:** The context map and the consumable map are the same integration told twice, strategically and concretely. A role on the map that nothing carries is a claim about a team's way of working with nothing behind it, and a consumption whose role the map never mentions is an integration decision made without the map noticing.
 
-**Usual fix:** Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a schema, since a published language is a data shape rather than a second flag, and equally by the downstream naming one of the upstream's schemas or value objects: a standards body publishes a language and offers nothing to consume, so the shapes borrowed from it are the whole of what it provides. A conformist role is backed by borrowing too: a downstream naming one of the upstream's schemas or value objects has adopted its model, which is what the role says, so a conformist to a standards body needs no consumption to prove it.
+**Usual fix:** Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a shape — sent, answered or refused — since a published language is a data shape rather than a second flag, and equally by the downstream naming one of the upstream's schemas or value objects: a standards body publishes a language and offers nothing to consume, so the shapes borrowed from it are the whole of what it provides. A downstream role is backed by that same borrowing: a context naming one of the upstream's schemas or value objects has taken its language, whether it conforms to it or translates it at the boundary, and where the upstream is the caller nothing crosses the other way at all.
 
 ## `relationship-declared` (warning)
 
@@ -190,11 +190,11 @@
 
 ## `relationship-duplicate` (error)
 
-**Requires:** A pair of contexts declares at most one relationship of each type and direction; a symmetric type has no direction, so either order counts as the same one.
+**Requires:** A pair of contexts declares at most one directed relationship per direction and at most one of each symmetric type; a symmetric type has no direction, so either order counts as the same one.
 
-**Why it matters:** A relationship is the one model element with no id of its own — its ref is the two contexts and the type. Declare the same one twice and both carry the same ref, so only the first can ever be reached: the second's description, comments and disposition are written somewhere no reader, link or tool will land, and the model has quietly lost them.
+**Why it matters:** A relationship is the one model element with no id of its own — its ref is the two contexts and the type. Declare the same one twice and both carry the same ref, so only the first can ever be reached: the second's description, comments and disposition are written somewhere no reader, link or tool will land, and the model has quietly lost them. Declare an upstream-downstream and a customer-supplier the same way round and the two are both reachable and both drawn, contradicting each other on the one thing the type says — whether the downstream has a say in the upstream's planning — and splitting the roles across two rows that no rule reads together.
 
-**Usual fix:** Roles go on one relationship: keep a single declaration between the pair and give it every upstream and downstream role the crossings carry, then delete the other. If the two contexts really do stand in two different ways, one of those ways is a different type of relationship, not a second copy of the same one.
+**Usual fix:** Roles go on one relationship: keep a single declaration between the pair and give it every upstream and downstream role the crossings carry, then delete the other. Between one pair in one direction, choose customer-supplier when the downstream has a say in the upstream's planning and upstream-downstream when it does not. Two contexts that each depend on the other are a different case: that is one directed relationship each way, and both are kept.
 
 ## `relationship-cycle` (warning)
 
@@ -292,6 +292,14 @@
 
 **Usual fix:** Add the consumer's own operation that makes the call, name it in the reactor's then, and put it in by in place of the reactor. If the reactor really does nothing but subscribe, then what it consumes is the event, not the operation.
 
+## `consumption-by-reactor` (error)
+
+**Requires:** A consumption of an event names policies and processes in its by; an operation may only be named on a consumption of an operation.
+
+**Why it matters:** A subscription is not made, it is woken: the fact arrives and a policy or a process of the consumer's context runs. An operation is issued by something, so naming one here says a thing that does nothing when the fact arrives is what takes it in, and the reaction walk stops there — the reader is shown an event coming into a context and nothing that happens next. Ten consumptions across the reference models were written this way, most of them meaning "this is the part of us that cares", which is a reaction nobody had written down yet.
+
+**Usual fix:** Write the reaction: a policy or a process of the consumer's context that reacts to the event and issues a local operation, then name that reactor in by. For a projection or a report, the local operation is the one that writes what the query later reads. If nothing here reacts, delete the consumption.
+
 ## `consumption-by-required` (warning)
 
 **Requires:** A consumption of another context's operation names, in by, which of the consumer's own operations makes the call — unless the consumer provides fewer than two operations, and so has nothing to choose between.
@@ -310,11 +318,11 @@
 
 ## `subscription-backed` (warning)
 
-**Requires:** A consumed event is reacted to by a policy or a process of the consumer's context, or the consumption names in by which of the consumer's parts it is for.
+**Requires:** A consumed event is reacted to by a policy or a process of the consumer's context.
 
-**Why it matters:** subscription-consumed asks the other half of this question, and between them the two say that a subscription and its reaction are one fact written from two sides. A consumption with neither is a claim with nothing under it: the model says this context takes that fact in, nothing in it does anything when the fact arrives, and the consumable map draws an edge a reader cannot follow anywhere. Usually the reaction was never written down; sometimes the dependency is stale.
+**Why it matters:** subscription-consumed asks the other half of this question, and between them the two say that a subscription and its reaction are one fact written from two sides. A consumption with no reaction is a claim with nothing under it: the model says this context takes that fact in, nothing in it does anything when the fact arrives, and the consumable map draws an edge a reader cannot follow anywhere. Usually the reaction was never written down; sometimes the dependency is stale. Naming an operation in by used to clear it, on the reading that a projection or a report was what the subscription was for; an operation is issued rather than woken, so that named something which does not run when the fact arrives, and consumption-by-reactor now refuses it.
 
-**Usual fix:** Add the policy or process that reacts to the event and the operation it issues, or name in by the consumer's own operation that reads the feed — a projection that updates, a report that accumulates. If nothing here acts on it, delete the consumption: the dependency is not real.
+**Usual fix:** Add the policy or process that reacts to the event and name the local operation it issues in its then — for a projection, the operation that writes what the query reads. If nothing here acts on the fact, delete the consumption: the dependency is not real.
 
 ## `process-in-context` (error)
 
@@ -350,11 +358,11 @@
 
 ## `aggregate-not-public` (error)
 
-**Requires:** An aggregate's operations declare no upstream role and are consumed only inside their own context.
+**Requires:** An aggregate's operations declare no upstream role and are consumed only inside their own context, or by a context that shares a kernel with it.
 
-**Why it matters:** An aggregate is a consistency boundary, not an integration boundary. When it offers operations outward as well as the application service in front of it, nothing in the model says which of the two is the context's public surface, and a caller outside can change the aggregate without passing the service that guards it. Its events are unaffected: publishing facts is how a context speaks outward.
+**Why it matters:** An aggregate is a consistency boundary, not an integration boundary. When it offers operations outward as well as the application service in front of it, nothing in the model says which of the two is the context's public surface, and a caller outside can change the aggregate without passing the service that guards it. Its events are unaffected: publishing facts is how a context speaks outward. A shared kernel is the exception: the kernel is code its sharers run as their own, so an aggregate two teams maintain together — a Product with its unit conversions — is reached through its operations by each sharer, which is what backs the relationship in the first place (decision 16).
 
-**Usual fix:** Mark the aggregate's operation internal: true and drop its pattern, then give the context's application service the public operation that consumes it; point the outside caller at that one.
+**Usual fix:** Mark the aggregate's operation internal: true and drop its pattern, then give the context's application service the public operation that consumes it; point the outside caller at that one. If the two contexts really do own this model together, declare the shared kernel and the call is the sharing.
 
 ## `aggregate-consumes-inside` (error)
 
@@ -390,11 +398,11 @@
 
 ## `schema-context` (error)
 
-**Requires:** A schema named by a consumable's payload, by its returns, by one of its rejections or by a nested attribute belongs to the naming element's own context, to one it shares a kernel with, or to an upstream it has declared itself a conformist of.
+**Requires:** A schema named by a consumable's payload, by its returns, by one of its rejections or by a nested attribute belongs to the naming element's own context, to one it shares a kernel with, or to an upstream it has declared itself a conformist of; a consumable may also carry the shape of an upstream it translates behind an anti-corruption layer.
 
-**Why it matters:** The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A nested schema is the same borrowing one level down. Two declarations say the tie is intended. A shared kernel is where two teams have said they keep part of one model between them and accepted the price. A conformist is a downstream that has said it takes the upstream's model as it stands rather than translating it, which is exactly what carrying the upstream's shapes is — it is how a regulator's formats or a scheme's record layouts enter a model honestly. That borrowing runs downstream only; the upstream is never shaped by its conformists.
+**Why it matters:** The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A nested schema is the same borrowing one level down. Two declarations say the tie is intended. A shared kernel is where two teams have said they keep part of one model between them and accepted the price. A conformist is a downstream that has said it takes the upstream's model as it stands rather than translating it, which is exactly what carrying the upstream's shapes is — it is how a regulator's formats or a scheme's record layouts enter a model honestly. That borrowing runs downstream only; the upstream is never shaped by its conformists. An anti-corruption layer is the third case and belongs to consumables alone: upstream is who dictates the language, so a caller that sends its own format is upstream of the context it calls, and the operation it reaches carries the caller's shape with the translation behind it. An attribute is inside the model and past the layer, so it gets no such exception.
 
-**Usual fix:** Move or copy the schema into the publishing context and point the consumable or attribute at that one; or declare the shared kernel if the two contexts really do keep that shape between them; or, if this context genuinely takes the other's model as it stands, declare the directed relationship with conformist among its downstreamRoles.
+**Usual fix:** Move or copy the schema into the publishing context and point the consumable or attribute at that one; or declare the shared kernel if the two contexts really do keep that shape between them; or, if this context genuinely takes the other's model as it stands, declare the directed relationship with conformist among its downstreamRoles; or, where the other context is the caller and this one translates its format at the boundary, declare that context upstream with anti-corruption-layer among this one's downstreamRoles and let its consumption of this operation say that it calls it.
 
 ## `returns-on-operation` (error)
 
@@ -470,11 +478,11 @@
 
 ## `external-is-boundary` (error)
 
-**Requires:** An external context declares no aggregates, no policies, no processes and no invariants of its own; its value objects may carry invariants, because a standard's published rules are citable.
+**Requires:** An external context declares no aggregates, no policies, no processes and no invariants of its own, and is not a big ball of mud as well; its value objects may carry invariants, because a standard's published rules are citable.
 
-**Why it matters:** An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. A rule about the context's own instances is different, because that is exactly the invention we cannot make.
+**Why it matters:** An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. A rule about the context's own instances is different, because that is exactly the invention we cannot make. A big ball of mud is the opposite kind of unknown — the enterprise's own system, unreadable but ours to carve up — so a context marked both leaves every rule that reads one of the two flags guessing which reading was meant.
 
-**Usual fix:** Move the aggregate, policy, process or context invariant into the context of ours that actually holds it — a rule about several instances is a rule of the context that keeps them — or drop external: true if this is a system the enterprise really does model inside. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay.
+**Usual fix:** Move the aggregate, policy, process or context invariant into the context of ours that actually holds it — a rule about several instances is a rule of the context that keeps them — or drop external: true if this is a system the enterprise really does model inside. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay. Where both flags are set, keep the one that says who may change the system: external for somebody else's, bigBallOfMud for ours.
 
 ## `comments-required` (warning)
 

@@ -11,7 +11,7 @@ import {
 	type Reactor,
 	reachedEvents,
 } from "./reaction-walk";
-import type { UpstreamRole } from "./schema";
+import type { DownstreamRole, UpstreamRole } from "./schema";
 import {
 	Aggregate,
 	Answer,
@@ -304,10 +304,18 @@ const crossContextRelation: Rule = (workspace) => {
  * An external context has no entities of ours to name (decision 28), and a
  * card scheme's authorisation id or a payment provider's customer id is still
  * an id of something: the attribute names the system it belongs to, and the
- * maps draw the dependency on that context. A context that is not external is
- * refused, because there the entity does exist and is what the id is of —
- * naming the whole context instead would say less than the model already
- * holds.
+ * maps draw the dependency on that context.
+ *
+ * A big ball of mud is named the same way and for the same reason. It is the
+ * enterprise's own system, so it may state aggregates and every rule about
+ * what it does state applies; what it cannot be held to is completeness, which
+ * is why {@link knowableContexts} lets it name a cluster without a root. An id
+ * out of a forty-year-old core banking system — a customer number, a legacy
+ * account key — is exactly the fact nobody can trace to an entity in there,
+ * and demanding one invites an invented aggregate (decision 28, second
+ * amendment; card 98). Any other context is refused, because there the entity
+ * does exist and is what the id is of — naming the whole context instead would
+ * say less than the model already holds.
  *
  * What the rule otherwise refuses is an identity naming an entity this
  * workspace does not have: one built against another workspace, or dropped
@@ -320,11 +328,11 @@ const identifiesEntity: Rule = (workspace) => {
 			const target = attribute.identifies;
 			if (!target) continue;
 			if (target instanceof BoundedContext) {
-				if (target.external) continue;
+				if (target.external || target.bigBallOfMud) continue;
 				diagnostics.push({
 					severity: "error",
 					rule: "identifies-entity",
-					message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of bounded context "${target.name}", which is not external; a context whose insides the model states has the entity the id is of, so name that entity instead`,
+					message: `"${owner.name}" holds attribute "${attribute.name}" as the identity of bounded context "${target.name}", which is neither external nor a big ball of mud; a context whose insides the model states has the entity the id is of, so name that entity instead`,
 					ref: attribute.ref,
 				});
 				continue;
@@ -1398,26 +1406,61 @@ function sharesKernelWith(
 }
 
 /**
- * Whether `downstream` has declared itself a conformist of `upstream`: a
+ * Whether `downstream` has declared the given role toward `upstream`: a
  * directed relationship from the one to the other whose `downstreamRoles`
- * carry `conformist` (decision 03).
+ * carry it (decision 03).
  *
- * The direction is the whole of it. A conformist adopts the upstream's model
- * as it stands rather than translating it, so the borrowing runs downstream
- * from upstream and never the other way: the upstream owes the conformist
- * nothing and must not be shaped by it.
+ * The direction is the whole of it. A downstream is the side that takes the
+ * other's model — as it stands, or translated — so the borrowing runs
+ * downstream from upstream and never the other way: the upstream owes the
+ * downstream nothing and must not be shaped by it.
  */
-function conformsTo(
+function downstreamRoleToward(
 	workspace: Workspace,
 	downstream: BoundedContext,
 	upstream: BoundedContext,
+	role: DownstreamRole,
 ): boolean {
 	return workspace.relationships.some(
 		(r) =>
 			isDirectedRelationshipType(r.type) &&
 			r.source === upstream &&
 			r.target === downstream &&
-			r.downstreamRoles.includes("conformist"),
+			r.downstreamRoles.includes(role),
+	);
+}
+
+/** Whether `downstream` has declared itself a conformist of `upstream`. */
+function conformsTo(
+	workspace: Workspace,
+	downstream: BoundedContext,
+	upstream: BoundedContext,
+): boolean {
+	return downstreamRoleToward(workspace, downstream, upstream, "conformist");
+}
+
+/**
+ * Whether `downstream` has declared an anti-corruption layer toward
+ * `upstream`: it translates the upstream's language at its own boundary.
+ *
+ * Upstream is who dictates the model, not who provides the consumable
+ * (decision 03's 2026-09-09 amendment). A card processor that calls the bank
+ * in its own format, an EDI partner, an HL7 orderer: each dictates the shape
+ * of the request, and the context it calls is downstream of it however much
+ * of the traffic runs the other way. What that context translates at its
+ * boundary is the caller's language, so the foreign shape is carried on the
+ * operation the caller reaches and nowhere else.
+ */
+function translatesFrom(
+	workspace: Workspace,
+	downstream: BoundedContext,
+	upstream: BoundedContext,
+): boolean {
+	return downstreamRoleToward(
+		workspace,
+		downstream,
+		upstream,
+		"anti-corruption-layer",
 	);
 }
 
@@ -1436,6 +1479,63 @@ function mayBorrowFrom(
 	return (
 		sharesKernelWith(workspace, borrower, owner) ||
 		conformsTo(workspace, borrower, owner)
+	);
+}
+
+/**
+ * Whether this consumable is the boundary an anti-corruption layer translates:
+ * it carries a shape `caller` declares, and `caller` is what consumes it.
+ *
+ * This is the case the model had no room for. Upstream is who dictates the
+ * language, so a context whose caller sends its own format is downstream of
+ * that caller, and what it offers at the boundary is an operation in the
+ * caller's shape with the translation behind it. That is not conforming — the
+ * model inside is the downstream's own and stays its own, which is the whole
+ * point of the layer — and refusing the foreign shape left the truthful form
+ * unwritable: NorthBank inverted the call into an event nobody makes, so
+ * nothing consumed the operation the processor actually calls (decision 03,
+ * 2026-09-09; card 98).
+ *
+ * Both halves are needed, and the second is what keeps the exception honest. A
+ * layer excuses the shape on the one consumable the caller reaches, not on
+ * everything the downstream publishes: a context that puts a neighbour's schema
+ * on a fact of its own has written its model in somebody else's words, whoever
+ * happens to read it, and that is the borrowing this rule exists to refuse.
+ */
+function translatesForCaller(
+	consumable: Consumable,
+	caller: BoundedContext,
+): boolean {
+	const carries =
+		consumable.schema?.boundedcontext === caller ||
+		consumable.returns?.boundedcontext === caller ||
+		consumable.rejects.some((it) => it.boundedcontext === caller);
+	return (
+		carries &&
+		consumable.consumptions.some((c) => c.consumer.boundedcontext === caller)
+	);
+}
+
+/**
+ * Whether a consumable of `carrier`'s may carry a payload shape `owner`
+ * declares: everything {@link mayBorrowFrom} allows, and the operation an
+ * upstream caller reaches through an anti-corruption layer.
+ *
+ * A consumable only, and deliberately. The layer is at the boundary, and a
+ * consumable is the boundary; an attribute nesting a foreign schema is inside
+ * the model, where a translation has already happened or should have, so
+ * attributes keep {@link mayBorrowFrom}'s narrower reading.
+ */
+function mayCarrySchemaFrom(
+	workspace: Workspace,
+	carrier: BoundedContext,
+	owner: BoundedContext,
+	consumable: Consumable,
+): boolean {
+	return (
+		mayBorrowFrom(workspace, carrier, owner) ||
+		(translatesFrom(workspace, carrier, owner) &&
+			translatesForCaller(consumable, owner))
 	);
 }
 
@@ -1629,42 +1729,65 @@ const relationshipDeclared: Rule = (workspace) => {
 };
 
 /**
- * What two relationships collide on: the type and, for a directed type, the
- * order of the pair. A symmetric type has no direction, so participants either
- * way round are the same relationship declared twice.
+ * What two relationships collide on: the pair, and how they are joined. A
+ * symmetric type has no direction, so participants either way round are the
+ * same relationship declared twice.
+ *
+ * Every directed type shares one key. `customer-supplier` is not a second kind
+ * of joint but a flavour of upstream/downstream — decision 03's own words for
+ * it — so a pair that declares both in one direction has said one thing twice
+ * and disagreed with itself about whether the downstream has a say in the
+ * upstream's planning. The direction is still part of the key: two contexts
+ * that each depend on the other are two relationships, one each way, and the
+ * map draws them as two arrows (card 98).
  */
 function relationshipKey(relationship: ContextRelationship): string {
 	const { source, target, type } = relationship;
-	const ends = isDirectedRelationshipType(type)
-		? [source.id, target.id]
-		: [source.id, target.id].sort();
+	if (isDirectedRelationshipType(type))
+		return `${source.id}~directed~${target.id}`;
+	const ends = [source.id, target.id].sort();
 	return `${ends[0]}~${type}~${ends[1]}`;
 }
 
 /**
- * One relationship per type and direction between a pair of contexts.
+ * One relationship per direction between a pair of contexts, and one per
+ * symmetric type.
  *
  * A relationship is the one model element with no id of its own: its ref is
  * the two contexts and the type. Declare the same one twice and the two share
  * a ref, so the second is unreachable — nothing can link to it, and a comment
- * or a disposition on it is written where no reader will ever land. It is an
- * error rather than a warning because the model has lost information the
- * moment it is written.
+ * or a disposition on it is written where no reader will ever land.
+ *
+ * Two directed relationships of different types in one direction keep their
+ * separate refs and are worse for it: both are reachable, both are drawn, and
+ * they contradict each other on the one question the type answers. The roles
+ * are split across two rows, so neither says what the pair has agreed, and a
+ * rule reading the roles — `schema-context`, `relationship-roles-backed`,
+ * `relationship-cycle` — gets a different answer depending on which row it
+ * lands on.
+ *
+ * An error either way, because the model has lost information the moment it is
+ * written.
  */
 const relationshipDuplicate: Rule = (workspace) => {
-	const seen = new Set<string>();
+	const seen = new Map<string, ContextRelationship>();
 	const diagnostics: Diagnostic[] = [];
 	for (const relationship of workspace.relationships) {
 		const key = relationshipKey(relationship);
-		if (!seen.has(key)) {
-			seen.add(key);
+		const first = seen.get(key);
+		if (!first) {
+			seen.set(key, relationship);
 			continue;
 		}
 		const { source, target, type } = relationship;
+		const message =
+			first.type === type
+				? `"${source.name}" and "${target.name}" declare a ${type} relationship more than once; the two share a ref, so only the first can be reached and everything said on this one is lost`
+				: `"${source.name}" and "${target.name}" declare both a ${first.type} and a ${type} relationship with "${source.name}" upstream; customer-supplier is a flavour of upstream/downstream, so one direction between one pair carries one directed relationship, and two of them disagree about how the pair stands`;
 		diagnostics.push({
 			severity: "error",
 			rule: "relationship-duplicate",
-			message: `"${source.name}" and "${target.name}" declare a ${type} relationship more than once; the two share a ref, so only the first can be reached and everything said on this one is lost`,
+			message,
 			ref: relationship.ref,
 		});
 	}
@@ -1717,16 +1840,30 @@ function crossingsBetween(
 
 /**
  * Whether a crossing consumable carries an upstream role. A published language
- * is a data shape, not a second flag, so any crossing consumable with a
- * `schema` publishes one: an open-host-service operation with a schema backs
- * both roles at once.
+ * is a data shape, not a second flag, so any crossing consumable with a shape
+ * on it publishes one: an open-host-service operation with a schema backs both
+ * roles at once.
+ *
+ * Any shape, in either direction. The rule used to read `schema` alone, so a
+ * query whose whole language is what it answers with — a read model returning
+ * `Counts`, taking an id as its parameter and nothing more — published a
+ * language the rule could not see (card 98).
  */
 function carriesUpstreamRole(
 	consumable: Consumable,
 	role: UpstreamRole,
 ): boolean {
 	if (consumable.pattern === role) return true;
-	return role === "published-language" && consumable.schema !== undefined;
+	return role === "published-language" && carriesAnySchema(consumable);
+}
+
+/** Whether a consumable names a payload shape at all: sent, answered or refused. */
+function carriesAnySchema(consumable: Consumable): boolean {
+	return (
+		consumable.schema !== undefined ||
+		consumable.returns !== undefined ||
+		consumable.rejects.length > 0
+	);
 }
 
 /**
@@ -1753,6 +1890,16 @@ function carriesUpstreamRole(
  * Backing the role only by a schema-carrying consumption meant the one role
  * that describes a standards body was warned unbacked whenever it was declared
  * (decision 28's amendment, card 95).
+ *
+ * An anti-corruption layer reads the borrowing for the same reason a
+ * conformist does, and it is the case decision 03's 2026-09-09 amendment is
+ * about. Where the upstream is the caller — a card processor sending its own
+ * format, an EDI partner, an HL7 orderer — nothing crosses from upstream to
+ * downstream at all: the traffic runs the other way and the only trace of who
+ * dictates the language is the foreign shape on the operation the caller
+ * reaches. That shape is exactly what `schema-context` takes the layer as the
+ * warrant for, so it is what backs it here; asking for a consumption instead
+ * would warn on every inbound integration there is (card 98).
  */
 const relationshipRolesBacked: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -1780,10 +1927,15 @@ const relationshipRolesBacked: Rule = (workspace) => {
 		for (const role of relationship.downstreamRoles) {
 			if (crossings.some((c) => c.pattern === role)) continue;
 			if (role === "conformist" && borrowsFrom(downstream, upstream)) continue;
+			if (
+				role === "anti-corruption-layer" &&
+				translatesForUpstream(downstream, upstream)
+			)
+				continue;
 			const alsoBorrows =
 				role === "conformist"
 					? `, and nothing in it carries one of "${upstream.name}"'s schemas or value objects`
-					: "";
+					: `, and nothing it offers "${upstream.name}" is in "${upstream.name}"'s own shapes`;
 			diagnostics.push({
 				severity: "warning",
 				rule: "relationship-roles-backed",
@@ -1804,6 +1956,24 @@ const relationshipRolesBacked: Rule = (workspace) => {
 	}
 	return diagnostics;
 };
+
+/**
+ * Whether `downstream` offers `upstream` something in `upstream`'s own shapes:
+ * the inbound half of an integration, where the caller dictates the format and
+ * the layer translates it (see {@link translatesForCaller}).
+ */
+function translatesForUpstream(
+	downstream: BoundedContext,
+	upstream: BoundedContext,
+): boolean {
+	for (const p of [
+		...downstream.aggregates.values(),
+		...downstream.services.values(),
+	])
+		for (const c of p.consumables.values())
+			if (translatesForCaller(c, upstream)) return true;
+	return false;
+}
 
 /** Whether the downstream context calls an operation the upstream one offers. */
 function callCrosses(
@@ -1888,8 +2058,14 @@ function* attributesOf(bc: BoundedContext): Iterable<Attribute> {
 
 /**
  * Whether anything in `borrower` is typed by a value object `owner` declares,
- * nests one of its schemas, or carries one on a consumable: the ways a kernel
- * is shared.
+ * nests one of its schemas, or carries one on a consumable — sent, answered or
+ * refused: the ways a kernel is shared, and the evidence that one context has
+ * taken another's language.
+ *
+ * All three payload fields count, because all three are the owner's shape in
+ * the borrower's hands. Reading `schema` and `returns` and not `rejects` left
+ * a context whose only borrowing is the refusal it passes on unaccounted for
+ * (card 98).
  */
 function borrowsFrom(borrower: BoundedContext, owner: BoundedContext): boolean {
 	for (const attribute of attributesOf(borrower)) {
@@ -1903,6 +2079,7 @@ function borrowsFrom(borrower: BoundedContext, owner: BoundedContext): boolean {
 		for (const c of p.consumables.values()) {
 			if (c.schema?.boundedcontext === owner) return true;
 			if (c.returns?.boundedcontext === owner) return true;
+			if (c.rejects.some((it) => it.boundedcontext === owner)) return true;
 		}
 	}
 	return false;
@@ -2335,6 +2512,47 @@ const consumptionByOperation: Rule = (workspace) => {
 };
 
 /**
+ * What takes a fact in is a reaction.
+ *
+ * `consumption-by-operation` says the other half: a call is made by an
+ * operation, because a reactor issues one and that operation crosses the
+ * boundary. A subscription is the mirror image. Nothing is issued and nothing
+ * waits; the fact arrives and a policy or a process of the consumer's context
+ * wakes, which is what a subscription *is* (decisions 17 and 21). Naming an
+ * operation instead says that the operation is somehow listening, and an
+ * operation does not listen: it is issued. Ten consumptions across the
+ * reference models were written that way, and each one left the reaction walk
+ * dark at exactly the point a reader wants it — the event arrived, and the
+ * model named a thing that does nothing when it does (card 98).
+ *
+ * The truthful shape is a policy that reacts and issues a local operation, and
+ * the operation that was named here reads what that one wrote. Where nobody
+ * reacts at all, the honest edit is to delete the consumption: a fact this
+ * context does nothing with is not a dependency, however plausible the
+ * dependency sounds.
+ *
+ * An error, because the model is telling the reader about a reaction by naming
+ * something that never runs when the fact arrives.
+ */
+const consumptionByReactor: Rule = (workspace) => {
+	const diagnostics: Diagnostic[] = [];
+	for (const consumption of consumptionsOf(workspace)) {
+		const { consumer, consumable } = consumption;
+		if (consumable.type !== "event") continue;
+		for (const caller of consumption.by) {
+			if (!(caller instanceof Consumable)) continue;
+			diagnostics.push({
+				severity: "error",
+				rule: "consumption-by-reactor",
+				message: `"${consumer.name}" says its subscription to "${consumable.name}" is made by the operation "${caller.name}"; an operation is issued rather than woken, so name the policy or the process of "${consumer.boundedcontext.name}" that reacts to the fact`,
+				ref: consumption.ref,
+			});
+		}
+	}
+	return diagnostics;
+};
+
+/**
  * A cross-context consumption of an operation says which of the consumer's own
  * operations makes the call, unless the consumer has only one and there is
  * nothing to choose between.
@@ -2423,8 +2641,7 @@ const subscriptionConsumed: Rule = (workspace) => {
 
 /**
  * A consumed event has something under it: a policy or a process of the
- * consumer's context that reacts to it, or a `by` saying which of the
- * consumer's own parts the subscription is for.
+ * consumer's context that reacts to it.
  *
  * `subscription-consumed` asks the other half of the question — a reactor's
  * foreign event needs a consumption — and between them the two say that a
@@ -2435,11 +2652,18 @@ const subscriptionConsumed: Rule = (workspace) => {
  * dependency is stale and the honest edit is to delete it. Either way the
  * consumable map draws an edge a reader cannot follow anywhere.
  *
+ * Only a reactor clears it. Naming an operation in `by` used to, on the
+ * reading that a projection updated by an operation or a report that
+ * accumulates had said what the subscription was for. It had not: an operation
+ * is issued, not woken, so the model was left saying that a fact arrives and
+ * pointing at something that does not run when it does, and the reaction walk
+ * stopped there in ten places across the reference models.
+ * `consumption-by-reactor` now refuses that `by` outright, and what a
+ * projection really has is a policy that reacts and issues the operation which
+ * writes it (decision 21; card 98).
+ *
  * A warning rather than an error, because the subscription may be real and the
- * reaction simply not modelled yet, and because `by` clears it: a consumer that
- * says which of its operations reads the feed has said what is under it, even
- * where no policy reacts (a projection updated by an operation, a report that
- * accumulates).
+ * reaction simply not modelled yet.
  */
 const subscriptionBacked: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -2451,11 +2675,11 @@ const subscriptionBacked: Rule = (workspace) => {
 			for (const consumption of member.consumptions) {
 				const { consumable } = consumption;
 				if (consumable.type !== "event") continue;
-				if (reacted.has(consumable) || consumption.by.length > 0) continue;
+				if (reacted.has(consumable)) continue;
 				diagnostics.push({
 					severity: "warning",
 					rule: "subscription-backed",
-					message: `"${member.name}" consumes "${consumable.name}" from "${consumable.provider.boundedcontext.name}", but nothing in "${bc.name}" reacts to it and the consumption names no caller; a subscription nothing acts on is a dependency with nothing under it`,
+					message: `"${member.name}" consumes "${consumable.name}" from "${consumable.provider.boundedcontext.name}", but no policy or process of "${bc.name}" reacts to it; a subscription nothing acts on is a dependency with nothing under it`,
 					ref: consumption.ref,
 				});
 			}
@@ -2560,6 +2784,7 @@ function operationsStayInside(
 	rule: string,
 	label: string,
 	provider: Aggregate | Service,
+	shares: (consumer: BoundedContext) => boolean = () => false,
 ): Diagnostic[] {
 	const bc = provider.boundedcontext;
 	const diagnostics: Diagnostic[] = [];
@@ -2575,6 +2800,7 @@ function operationsStayInside(
 		}
 		for (const { consumer } of operation.consumptions) {
 			if (consumer.boundedcontext === bc) continue;
+			if (shares(consumer.boundedcontext)) continue;
 			diagnostics.push({
 				severity: "error",
 				rule,
@@ -2586,11 +2812,34 @@ function operationsStayInside(
 	return diagnostics;
 }
 
-/** An aggregate's operations are its context's own, not its public boundary. */
+/**
+ * An aggregate's operations are its context's own, not its public boundary —
+ * except across a shared kernel, where the sharers' own is what they are.
+ *
+ * A kernel is a piece of model two or more teams keep in step and run inside
+ * their own contexts. Where the thing they share has identity and behaviour —
+ * a jointly maintained Product with its unit conversions — it is an aggregate
+ * of a kernel context, and each sharer reaches it through its operations;
+ * decision 16's note says so, `shared-kernel-backed` counts exactly that call
+ * as what backs the relationship, and this rule refused it, so the model
+ * recommended a shape it then rejected (decision 16, second amendment of
+ * 2026-09-09; card 98). A sharer is not another context reaching in: the
+ * kernel is its own code. For every context that does not share it, the
+ * aggregate stays internal and the exemption does not apply.
+ *
+ * The upstream-role half is untouched. An operation offered as an open host is
+ * offered to everyone, and what a context offers everyone still leaves an
+ * application service.
+ */
 const aggregateNotPublic: Rule = (workspace) =>
 	Array.from(modelledContexts(workspace)).flatMap((bc) =>
 		Array.from(bc.aggregates.values()).flatMap((aggregate) =>
-			operationsStayInside("aggregate-not-public", "Aggregate", aggregate),
+			operationsStayInside(
+				"aggregate-not-public",
+				"Aggregate",
+				aggregate,
+				(consumer) => sharesKernelWith(workspace, bc, consumer),
+			),
 		),
 	);
 
@@ -2720,10 +2969,16 @@ const valueObjectContext: Rule = (workspace) => {
  * what carrying its shapes is, and it is how a regulator's message formats or
  * a scheme's record layouts enter a model without anybody pretending they are
  * ours (decisions 03 and 28). The borrowing runs downstream only.
+ *
+ * On a consumable there is a third, and it is the boundary rather than the
+ * model: an anti-corruption layer toward the upstream, where the shape is the
+ * caller's language and the translation is what the layer is for
+ * ({@link mayCarrySchemaFrom}). An attribute gets no such exception, because
+ * an attribute is inside the model and past the layer.
  */
 const schemaContext: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
-	/** Whether the schema is another context's and nothing lets this one borrow it. */
+	/** Whether the schema is another context's and nothing lets this one hold it. */
 	const borrowedBy = (schema: DataSchema, bc: BoundedContext) =>
 		schema.boundedcontext !== bc &&
 		!mayBorrowFrom(workspace, bc, schema.boundedcontext);
@@ -2739,9 +2994,11 @@ const schemaContext: Rule = (workspace) => {
 		}
 	}
 	for (const bc of workspace.boundedcontexts.values()) {
-		const borrowed = (schema: DataSchema) => borrowedBy(schema, bc);
 		for (const p of [...bc.aggregates.values(), ...bc.services.values()]) {
 			for (const c of p.consumables.values()) {
+				const borrowed = (schema: DataSchema) =>
+					schema.boundedcontext !== bc &&
+					!mayCarrySchemaFrom(workspace, bc, schema.boundedcontext, c);
 				if (c.schema && borrowed(c.schema)) {
 					diagnostics.push({
 						severity: "error",
@@ -3198,6 +3455,15 @@ const contextServesSubdomain: Rule = (workspace) => {
  * name so that our own model can carry its shapes (decision 28, second
  * amendment). Marking the context external is the author saying "this is
  * somebody else's machine", and this rule holds them to it.
+ *
+ * It is also not a big ball of mud. The two marks look alike — neither can be
+ * held to completeness — and they say opposite things about ownership. A mud
+ * context is the enterprise's own: somebody can be sent into it, its clusters
+ * and its rules are ours to state as far as anyone can read them, and the
+ * strategy is to carve it up. An external one is nobody here's to change, ever,
+ * and stating its insides is invention. A context marked both leaves every
+ * rule that reads one of the two flags to guess which reading the author meant
+ * (decision 28; card 98).
  */
 const externalIsBoundary: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -3209,6 +3475,13 @@ const externalIsBoundary: Rule = (workspace) => {
 				rule: "external-is-boundary",
 				message: `External context "${bc.name}" declares ${what}; what happens inside a system we do not own is not ours to state, only what it provides and what it consumes`,
 				ref,
+			});
+		if (bc.bigBallOfMud)
+			diagnostics.push({
+				severity: "error",
+				rule: "external-is-boundary",
+				message: `Bounded context "${bc.name}" is marked both external and a big ball of mud; a mud context is the enterprise's own, however unreadable, and an external one is somebody else's system, so a context is one or the other`,
+				ref: bc.ref,
 			});
 		for (const aggregate of bc.aggregates.values())
 			refuse(`aggregate "${aggregate.name}"`, aggregate.ref);
@@ -3321,9 +3594,9 @@ const RULES: CataloguedRule[] = [
 		rule: "identifies-entity",
 		severities: ["error"],
 		summary:
-			"An attribute's identifies names an entity of this workspace, root or child, in any aggregate of any context, or a bounded context marked external.",
-		why: "An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about, and it is the one dependency allowed to cross a bounded context (decision 14). That thing may be a child, because systems point at child identities constantly — a playback session names a profile inside a household, a claim a coverage inside a policy, a shipment an order's line — and the child stays inside its aggregate exactly because its parent's invariants need it there; you hold the child's id, with its root's id beside it, and reach it through that root, so the dependency is really on the aggregate the root leads. Holding the id is not reaching inside: what reaches inside is a relation into another aggregate's members, and cross-aggregate-reference refuses that and recommends this id in its place. It may also be an external context: a card scheme's authorisation id or a payment provider's customer id belongs to a system whose entities are not ours to state (decision 28), so the attribute names the system and the maps still draw the dependency. A context that is not external is refused, because there the entity exists and naming the whole context would say less. What the id may never name is something this workspace does not have, since then it reaches nothing.",
-		fix: "Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child, with the root's id beside it — or, for an id that belongs to a system you do not model inside, at that system's bounded context, marked external: true. Check the target has not been renamed or moved out from under the attribute.",
+			"An attribute's identifies names an entity of this workspace, root or child, in any aggregate of any context, or a bounded context marked external or bigBallOfMud.",
+		why: "An identity attribute is how one part of the model depends on another without holding it: it says which thing out there this one is about, and it is the one dependency allowed to cross a bounded context (decision 14). That thing may be a child, because systems point at child identities constantly — a playback session names a profile inside a household, a claim a coverage inside a policy, a shipment an order's line — and the child stays inside its aggregate exactly because its parent's invariants need it there; you hold the child's id, with its root's id beside it, and reach it through that root, so the dependency is really on the aggregate the root leads. Holding the id is not reaching inside: what reaches inside is a relation into another aggregate's members, and cross-aggregate-reference refuses that and recommends this id in its place. It may also be a context whose insides the model does not state: a card scheme's authorisation id belongs to a system whose entities are not ours to state, and a legacy account key to one nobody can read well enough to say which entity it is of (decision 28), so the attribute names the system and the maps still draw the dependency. Any other context is refused, because there the entity exists and naming the whole context would say less. What the id may never name is something this workspace does not have, since then it reaches nothing.",
+		fix: "Point identifies at an entity of this workspace — the root when you deal with the whole, the child when the business really names the child, with the root's id beside it — or, for an id that belongs to a system you do not model inside or cannot read, at that system's bounded context, marked external: true or bigBallOfMud: true. Check the target has not been renamed or moved out from under the attribute.",
 		check: identifiesEntity,
 	},
 	{
@@ -3480,9 +3753,9 @@ const RULES: CataloguedRule[] = [
 		rule: "relationship-roles-backed",
 		severities: ["warning"],
 		summary:
-			"A directed relationship's declared roles are carried by consumables and consumptions crossing between the two contexts — or, for published language and for conformist, by the downstream borrowing the upstream's shapes — and a crossing consumption's role is declared on the relationship.",
+			"A directed relationship's declared roles are carried by consumables and consumptions crossing between the two contexts — or, for published language and for either downstream role, by the downstream borrowing the upstream's shapes — and a crossing consumption's role is declared on the relationship.",
 		why: "The context map and the consumable map are the same integration told twice, strategically and concretely. A role on the map that nothing carries is a claim about a team's way of working with nothing behind it, and a consumption whose role the map never mentions is an integration decision made without the map noticing.",
-		fix: "Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a schema, since a published language is a data shape rather than a second flag, and equally by the downstream naming one of the upstream's schemas or value objects: a standards body publishes a language and offers nothing to consume, so the shapes borrowed from it are the whole of what it provides. A conformist role is backed by borrowing too: a downstream naming one of the upstream's schemas or value objects has adopted its model, which is what the role says, so a conformist to a standards body needs no consumption to prove it.",
+		fix: "Set the matching pattern on the consumable the downstream context consumes, or on the consumption, or take the role off the relationship if the integration is not really like that. A published-language role is backed by any crossing consumable carrying a shape — sent, answered or refused — since a published language is a data shape rather than a second flag, and equally by the downstream naming one of the upstream's schemas or value objects: a standards body publishes a language and offers nothing to consume, so the shapes borrowed from it are the whole of what it provides. A downstream role is backed by that same borrowing: a context naming one of the upstream's schemas or value objects has taken its language, whether it conforms to it or translates it at the boundary, and where the upstream is the caller nothing crosses the other way at all.",
 		check: relationshipRolesBacked,
 	},
 	{
@@ -3498,9 +3771,9 @@ const RULES: CataloguedRule[] = [
 		rule: "relationship-duplicate",
 		severities: ["error"],
 		summary:
-			"A pair of contexts declares at most one relationship of each type and direction; a symmetric type has no direction, so either order counts as the same one.",
-		why: "A relationship is the one model element with no id of its own — its ref is the two contexts and the type. Declare the same one twice and both carry the same ref, so only the first can ever be reached: the second's description, comments and disposition are written somewhere no reader, link or tool will land, and the model has quietly lost them.",
-		fix: "Roles go on one relationship: keep a single declaration between the pair and give it every upstream and downstream role the crossings carry, then delete the other. If the two contexts really do stand in two different ways, one of those ways is a different type of relationship, not a second copy of the same one.",
+			"A pair of contexts declares at most one directed relationship per direction and at most one of each symmetric type; a symmetric type has no direction, so either order counts as the same one.",
+		why: "A relationship is the one model element with no id of its own — its ref is the two contexts and the type. Declare the same one twice and both carry the same ref, so only the first can ever be reached: the second's description, comments and disposition are written somewhere no reader, link or tool will land, and the model has quietly lost them. Declare an upstream-downstream and a customer-supplier the same way round and the two are both reachable and both drawn, contradicting each other on the one thing the type says — whether the downstream has a say in the upstream's planning — and splitting the roles across two rows that no rule reads together.",
+		fix: "Roles go on one relationship: keep a single declaration between the pair and give it every upstream and downstream role the crossings carry, then delete the other. Between one pair in one direction, choose customer-supplier when the downstream has a say in the upstream's planning and upstream-downstream when it does not. Two contexts that each depend on the other are a different case: that is one directed relationship each way, and both are kept.",
 		check: relationshipDuplicate,
 	},
 	{
@@ -3612,6 +3885,15 @@ const RULES: CataloguedRule[] = [
 		check: consumptionByOperation,
 	},
 	{
+		rule: "consumption-by-reactor",
+		severities: ["error"],
+		summary:
+			"A consumption of an event names policies and processes in its by; an operation may only be named on a consumption of an operation.",
+		why: 'A subscription is not made, it is woken: the fact arrives and a policy or a process of the consumer\'s context runs. An operation is issued by something, so naming one here says a thing that does nothing when the fact arrives is what takes it in, and the reaction walk stops there — the reader is shown an event coming into a context and nothing that happens next. Ten consumptions across the reference models were written this way, most of them meaning "this is the part of us that cares", which is a reaction nobody had written down yet.',
+		fix: "Write the reaction: a policy or a process of the consumer's context that reacts to the event and issues a local operation, then name that reactor in by. For a projection or a report, the local operation is the one that writes what the query later reads. If nothing here reacts, delete the consumption.",
+		check: consumptionByReactor,
+	},
+	{
 		rule: "consumption-by-required",
 		severities: ["warning"],
 		summary:
@@ -3633,9 +3915,9 @@ const RULES: CataloguedRule[] = [
 		rule: "subscription-backed",
 		severities: ["warning"],
 		summary:
-			"A consumed event is reacted to by a policy or a process of the consumer's context, or the consumption names in by which of the consumer's parts it is for.",
-		why: "subscription-consumed asks the other half of this question, and between them the two say that a subscription and its reaction are one fact written from two sides. A consumption with neither is a claim with nothing under it: the model says this context takes that fact in, nothing in it does anything when the fact arrives, and the consumable map draws an edge a reader cannot follow anywhere. Usually the reaction was never written down; sometimes the dependency is stale.",
-		fix: "Add the policy or process that reacts to the event and the operation it issues, or name in by the consumer's own operation that reads the feed — a projection that updates, a report that accumulates. If nothing here acts on it, delete the consumption: the dependency is not real.",
+			"A consumed event is reacted to by a policy or a process of the consumer's context.",
+		why: "subscription-consumed asks the other half of this question, and between them the two say that a subscription and its reaction are one fact written from two sides. A consumption with no reaction is a claim with nothing under it: the model says this context takes that fact in, nothing in it does anything when the fact arrives, and the consumable map draws an edge a reader cannot follow anywhere. Usually the reaction was never written down; sometimes the dependency is stale. Naming an operation in by used to clear it, on the reading that a projection or a report was what the subscription was for; an operation is issued rather than woken, so that named something which does not run when the fact arrives, and consumption-by-reactor now refuses it.",
+		fix: "Add the policy or process that reacts to the event and name the local operation it issues in its then — for a projection, the operation that writes what the query reads. If nothing here acts on the fact, delete the consumption: the dependency is not real.",
 		check: subscriptionBacked,
 	},
 	{
@@ -3676,9 +3958,9 @@ const RULES: CataloguedRule[] = [
 		rule: "aggregate-not-public",
 		severities: ["error"],
 		summary:
-			"An aggregate's operations declare no upstream role and are consumed only inside their own context.",
-		why: "An aggregate is a consistency boundary, not an integration boundary. When it offers operations outward as well as the application service in front of it, nothing in the model says which of the two is the context's public surface, and a caller outside can change the aggregate without passing the service that guards it. Its events are unaffected: publishing facts is how a context speaks outward.",
-		fix: "Mark the aggregate's operation internal: true and drop its pattern, then give the context's application service the public operation that consumes it; point the outside caller at that one.",
+			"An aggregate's operations declare no upstream role and are consumed only inside their own context, or by a context that shares a kernel with it.",
+		why: "An aggregate is a consistency boundary, not an integration boundary. When it offers operations outward as well as the application service in front of it, nothing in the model says which of the two is the context's public surface, and a caller outside can change the aggregate without passing the service that guards it. Its events are unaffected: publishing facts is how a context speaks outward. A shared kernel is the exception: the kernel is code its sharers run as their own, so an aggregate two teams maintain together — a Product with its unit conversions — is reached through its operations by each sharer, which is what backs the relationship in the first place (decision 16).",
+		fix: "Mark the aggregate's operation internal: true and drop its pattern, then give the context's application service the public operation that consumes it; point the outside caller at that one. If the two contexts really do own this model together, declare the shared kernel and the call is the sharing.",
 		check: aggregateNotPublic,
 	},
 	{
@@ -3721,9 +4003,9 @@ const RULES: CataloguedRule[] = [
 		rule: "schema-context",
 		severities: ["error"],
 		summary:
-			"A schema named by a consumable's payload, by its returns, by one of its rejections or by a nested attribute belongs to the naming element's own context, to one it shares a kernel with, or to an upstream it has declared itself a conformist of.",
-		why: "The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A nested schema is the same borrowing one level down. Two declarations say the tie is intended. A shared kernel is where two teams have said they keep part of one model between them and accepted the price. A conformist is a downstream that has said it takes the upstream's model as it stands rather than translating it, which is exactly what carrying the upstream's shapes is — it is how a regulator's formats or a scheme's record layouts enter a model honestly. That borrowing runs downstream only; the upstream is never shaped by its conformists.",
-		fix: "Move or copy the schema into the publishing context and point the consumable or attribute at that one; or declare the shared kernel if the two contexts really do keep that shape between them; or, if this context genuinely takes the other's model as it stands, declare the directed relationship with conformist among its downstreamRoles.",
+			"A schema named by a consumable's payload, by its returns, by one of its rejections or by a nested attribute belongs to the naming element's own context, to one it shares a kernel with, or to an upstream it has declared itself a conformist of; a consumable may also carry the shape of an upstream it translates behind an anti-corruption layer.",
+		why: "The context that publishes a message owns its shape; borrowing another context's schema ties the two together so neither can change it alone. A nested schema is the same borrowing one level down. Two declarations say the tie is intended. A shared kernel is where two teams have said they keep part of one model between them and accepted the price. A conformist is a downstream that has said it takes the upstream's model as it stands rather than translating it, which is exactly what carrying the upstream's shapes is — it is how a regulator's formats or a scheme's record layouts enter a model honestly. That borrowing runs downstream only; the upstream is never shaped by its conformists. An anti-corruption layer is the third case and belongs to consumables alone: upstream is who dictates the language, so a caller that sends its own format is upstream of the context it calls, and the operation it reaches carries the caller's shape with the translation behind it. An attribute is inside the model and past the layer, so it gets no such exception.",
+		fix: "Move or copy the schema into the publishing context and point the consumable or attribute at that one; or declare the shared kernel if the two contexts really do keep that shape between them; or, if this context genuinely takes the other's model as it stands, declare the directed relationship with conformist among its downstreamRoles; or, where the other context is the caller and this one translates its format at the boundary, declare that context upstream with anti-corruption-layer among this one's downstreamRoles and let its consumption of this operation say that it calls it.",
 		check: schemaContext,
 	},
 	{
@@ -3809,9 +4091,9 @@ const RULES: CataloguedRule[] = [
 		rule: "external-is-boundary",
 		severities: ["error"],
 		summary:
-			"An external context declares no aggregates, no policies, no processes and no invariants of its own; its value objects may carry invariants, because a standard's published rules are citable.",
-		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. A rule about the context's own instances is different, because that is exactly the invention we cannot make.",
-		fix: "Move the aggregate, policy, process or context invariant into the context of ours that actually holds it — a rule about several instances is a rule of the context that keeps them — or drop external: true if this is a system the enterprise really does model inside. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay.",
+			"An external context declares no aggregates, no policies, no processes and no invariants of its own, and is not a big ball of mud as well; its value objects may carry invariants, because a standard's published rules are citable.",
+		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. A rule about the context's own instances is different, because that is exactly the invention we cannot make. A big ball of mud is the opposite kind of unknown — the enterprise's own system, unreadable but ours to carve up — so a context marked both leaves every rule that reads one of the two flags guessing which reading was meant.",
+		fix: "Move the aggregate, policy, process or context invariant into the context of ours that actually holds it — a rule about several instances is a rule of the context that keeps them — or drop external: true if this is a system the enterprise really does model inside. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay. Where both flags are set, keep the one that says who may change the system: external for somebody else's, bigBallOfMud for ours.",
 		check: externalIsBoundary,
 	},
 	{

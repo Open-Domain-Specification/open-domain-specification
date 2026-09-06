@@ -206,7 +206,7 @@ export function edgeCaseModel(): Model {
 		schema: schemaEmpty,
 		rejects: [schemaRefused, schemaOverLimit],
 	});
-	aggNoRoot.addConsumable("Orphan Event", {
+	const orphanEvent = aggNoRoot.addConsumable("Orphan Event", {
 		type: "event",
 		description: "Never raised by any operation.",
 	});
@@ -243,6 +243,22 @@ export function edgeCaseModel(): Model {
 		comments: [{ text: "Two cron jobs and a spreadsheet, in truth." }],
 		disposition: "refactor",
 	});
+
+	// A clock with an anchor: the interval counts from a trigger the process
+	// names rather than from the start of the instance, which is what the
+	// "after ... from ..." beside a deadline's name reads. No reference model
+	// anchors one yet.
+	const timedProcess = bcMain.addProcess("Timed Process", {
+		description: "Gives itself two working days from the fact that starts it.",
+	});
+	timedProcess.starts(orphanEvent);
+	timedProcess.ends(
+		timedProcess.addDeadline("Nobody Answered", {
+			description: "Two working days after the fact that started the instance.",
+			after: "two working days",
+			from: orphanEvent,
+		}),
+	);
 
 	bcMain.addTerm("Ticket", {
 		definition: "Definition A, in the main context.",

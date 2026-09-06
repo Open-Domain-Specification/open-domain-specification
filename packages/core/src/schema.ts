@@ -50,12 +50,12 @@ export interface AttributeSchema {
 	 * beside it, which is how the model points at a child without the relation
 	 * `cross-aggregate-reference` refuses (`identifies-entity`).
 	 *
-	 * It may also be a bounded context flagged `external`: a card scheme's
-	 * authorisation id or a payment provider's customer id belongs to a system
-	 * whose entities are not ours to state (decision 28), so the attribute
-	 * names the system instead of an entity inside it. A context that is not
-	 * external is refused, because there the entity exists and is what the id
-	 * is of.
+	 * It may also be a bounded context flagged `external` or `bigBallOfMud`: a
+	 * card scheme's authorisation id belongs to a system whose entities are not
+	 * ours to state, and a legacy account key belongs to one nobody can read
+	 * well enough to say which entity it is of (decision 28), so the attribute
+	 * names the system instead of an entity inside it. Any other context is
+	 * refused, because there the entity exists and is what the id is of.
 	 */
 	identifies?: { $ref: string };
 }
@@ -140,6 +140,19 @@ export interface DeadlineSchema {
 	 * leaves the arithmetic to the code (decision 15).
 	 */
 	after: string;
+	/**
+	 * The trigger the interval counts from: one of the process's own `starts`
+	 * or `on` entries, named the same way those name one. Absent means from the
+	 * moment the instance began.
+	 *
+	 * A clock has an anchor as well as a length, and which fact starts it is
+	 * the business's own rule: a statutory decision window runs from the
+	 * application's receipt, a delivery window from the dispatch, a chaser from
+	 * the last time anybody wrote. Pausing a clock stays prose in the
+	 * description — the model says when a clock starts and how long it runs,
+	 * not the conditions that stop it (decision 23, fifth amendment).
+	 */
+	from?: { $ref: string };
 }
 
 /**
@@ -198,7 +211,12 @@ export interface BoundedContextSchema {
 	subdomains: { $ref: string }[];
 	/**
 	 * Marks a context whose model is not coherent (typically legacy) so that
-	 * neighbours know to protect themselves from it.
+	 * neighbours know to protect themselves from it. It is still the
+	 * enterprise's own system, so it may state aggregates, rules and reactions
+	 * and every rule about what it does state applies; what it cannot be held
+	 * to is completeness. Never `external` as well: that one is somebody else's
+	 * machine, and the two say opposite things about who may change it
+	 * (`external-is-boundary`).
 	 */
 	bigBallOfMud?: boolean;
 	/**

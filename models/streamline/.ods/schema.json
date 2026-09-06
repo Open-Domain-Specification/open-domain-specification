@@ -57,7 +57,7 @@
                 },
                 "identifies": {
                     "additionalProperties": false,
-                    "description": "What this attribute holds the identity of, when it is an identity of\nsomething else: `Order.petId` identifies Catalog's `Pet`. The target may\nbe in another bounded context — that is the point, since an identity is\nthe only thing that crosses a boundary (decision 14) — and there it may\nbe a child rather than a root, since a session holds the id of a profile\ninside a household; the child is reached through its own root. The same\ngoes inside one context: a shipment holds an order's id and its line's id\nbeside it, which is how the model points at a child without the relation\n`cross-aggregate-reference` refuses (`identifies-entity`).\n\nIt may also be a bounded context flagged `external`: a card scheme's\nauthorisation id or a payment provider's customer id belongs to a system\nwhose entities are not ours to state (decision 28), so the attribute\nnames the system instead of an entity inside it. A context that is not\nexternal is refused, because there the entity exists and is what the id\nis of.",
+                    "description": "What this attribute holds the identity of, when it is an identity of\nsomething else: `Order.petId` identifies Catalog's `Pet`. The target may\nbe in another bounded context — that is the point, since an identity is\nthe only thing that crosses a boundary (decision 14) — and there it may\nbe a child rather than a root, since a session holds the id of a profile\ninside a household; the child is reached through its own root. The same\ngoes inside one context: a shipment holds an order's id and its line's id\nbeside it, which is how the model points at a child without the relation\n`cross-aggregate-reference` refuses (`identifies-entity`).\n\nIt may also be a bounded context flagged `external` or `bigBallOfMud`: a\ncard scheme's authorisation id belongs to a system whose entities are not\nours to state, and a legacy account key belongs to one nobody can read\nwell enough to say which entity it is of (decision 28), so the attribute\nnames the system instead of an entity inside it. Any other context is\nrefused, because there the entity exists and is what the id is of.",
                     "properties": {
                         "$ref": {
                             "type": "string"
@@ -128,7 +128,7 @@
                     "type": "object"
                 },
                 "bigBallOfMud": {
-                    "description": "Marks a context whose model is not coherent (typically legacy) so that\nneighbours know to protect themselves from it.",
+                    "description": "Marks a context whose model is not coherent (typically legacy) so that\nneighbours know to protect themselves from it. It is still the\nenterprise's own system, so it may state aggregates, rules and reactions\nand every rule about what it does state applies; what it cannot be held\nto is completeness. Never `external` as well: that one is somebody else's\nmachine, and the two say opposite things about who may change it\n(`external-is-boundary`).",
                     "type": "boolean"
                 },
                 "description": {
@@ -492,6 +492,19 @@
                 },
                 "description": {
                     "type": "string"
+                },
+                "from": {
+                    "additionalProperties": false,
+                    "description": "The trigger the interval counts from: one of the process's own `starts`\nor `on` entries, named the same way those name one. Absent means from the\nmoment the instance began.\n\nA clock has an anchor as well as a length, and which fact starts it is\nthe business's own rule: a statutory decision window runs from the\napplication's receipt, a delivery window from the dispatch, a chaser from\nthe last time anybody wrote. Pausing a clock stays prose in the\ndescription — the model says when a clock starts and how long it runs,\nnot the conditions that stop it (decision 23, fifth amendment).",
+                    "properties": {
+                        "$ref": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "$ref"
+                    ],
+                    "type": "object"
                 },
                 "name": {
                     "type": "string"

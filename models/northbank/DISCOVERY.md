@@ -621,3 +621,51 @@ reason is one of those three rules.
 Last, the Shared Kernel context lost the subdomain card 56 gave it. See section 5.
 
 The deliberate diagnostics of section 7 are untouched: the same four, for the same reasons.
+
+## Revision (card 98): CardCo calls the bank, and a subscription names what wakes
+
+Two things the model inverted or left unwritten.
+
+The Cards lead said "CardCo sends us the authorisation request in their format and we
+translate it", and until now the model drew that backwards: CardCo published an
+`AuthorisationRequested` event carrying its own wire format, Cards consumed it, and nothing
+in the workspace consumed `AuthoriseCard` — the operation the processor actually calls. The
+inversion was not the author's choice. `schema-context` refused a consumable carrying
+another context's schema, so the truthful shape could not be written down, and the schema
+that stood in for CardCo's format, `CardAuthorisationRequest`, described a translated form
+that only exists behind the layer.
+
+Upstream is who dictates the model, not who provides the consumable (decision 03, amended).
+CardCo dictates the message; the bank provides the operation and translates at its own
+boundary. So `AuthoriseCard` now carries **CardCo's** `CardCoAuthorisationMessage` as its
+request and answers in the bank's own shapes, CardCo's feed **consumes** it — named in `by`
+by `RequestAuthorisation`, the processor's own step, which is all the bank sees of it — and
+the pair carries two relationships, one each way: CardCo upstream with a published language
+and Cards downstream with an anti-corruption layer, and Cards upstream with an open host
+service that CardCo takes as it stands. `CardAuthorisationRequest` is gone; what the ACL
+produces behind the boundary is the code's, and the model no longer names a shape nothing
+at the boundary carries. The reaction walk now runs from the processor's call into
+`AuthoriseCard` and on to `CardAuthorised`, `GetAvailableBalance` and `ScoreTransaction`,
+where before it ran into an event nobody makes.
+
+Six consumptions named an operation as what takes a foreign fact in. An operation is issued,
+not woken, so each of them pointed at something that does nothing when the fact arrives, and
+`consumption-by-reactor` now refuses it. Four became the reaction that was missing:
+
+- Accounts hears `CustomerVerified` and **notes the verified customer**
+  (`RecordVerifiedCustomer`); `OpenAccount` reads that list when a channel asks for a
+  product, which is what "only then can an account be opened" means.
+- Fraud hears `CardAuthorised` and **files it in the history the scorer reads**
+  (`RecordCardAuthorisation`); `ScoreTransaction` reads that history.
+- The Scheme Gateway hears the scheme's `SchemeSettlementConfirmed` and `SchemeRejected` and
+  **matches each to the message it answers** (`RecordSchemeResponse`); the submission that
+  is waiting is answered from what the match recorded. The scheme answers "on its own
+  timings", so the fact really is a fact, and the operation that waits was never what heard
+  it.
+
+One came out. Credit Decisioning's consumption of `ApplicationSubmitted` was written so that
+the Lending partnership would show traffic both ways; Decisioning does not subscribe to it
+at all, it is called through `RequestDecision` by Lending's own policy, and a partnership
+needs traffic in one direction only.
+
+The deliberate diagnostics of section 7 are untouched: the same four, for the same reasons.

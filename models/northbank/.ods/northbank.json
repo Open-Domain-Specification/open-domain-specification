@@ -1163,6 +1163,12 @@
                   "$ref": "#/boundedcontexts/accounts/aggregates/account/provides/account_frozen"
                 }
               ]
+            },
+            "record_verified_customer": {
+              "name": "RecordVerifiedCustomer",
+              "description": "Note that a customer has passed KYC, so a product may be opened for them and a mandate may name them",
+              "type": "operation",
+              "internal": true
             }
           },
           "consumes": [
@@ -1173,7 +1179,7 @@
               "pattern": "conformist",
               "by": [
                 {
-                  "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/open_account"
+                  "$ref": "#/boundedcontexts/accounts/policies/note_a_verified_customer"
                 }
               ]
             },
@@ -1199,6 +1205,20 @@
         }
       },
       "policies": {
+        "note_a_verified_customer": {
+          "name": "Note a verified customer",
+          "description": "A verified customer is one Accounts may open a product for; nothing opens by itself",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/customer_&_kyc/aggregates/customer/provides/customer_verified"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/record_verified_customer"
+            }
+          ]
+        },
         "update_balance_on_posting": {
           "name": "Update balance on posting",
           "description": "Every posting to an account recomputes its available balance",
@@ -2360,7 +2380,14 @@
         "scheme_message": {
           "name": "SchemeMessage",
           "description": "One message to or from a scheme",
-          "provides": {},
+          "provides": {
+            "record_scheme_response": {
+              "name": "RecordSchemeResponse",
+              "description": "Match the scheme's status report to the message it answers, so the caller waiting on that submission is told",
+              "type": "operation",
+              "internal": true
+            }
+          },
           "consumes": [],
           "entities": {
             "scheme_message": {
@@ -2437,7 +2464,7 @@
               "pattern": "conformist",
               "by": [
                 {
-                  "$ref": "#/boundedcontexts/scheme_gateway/services/scheme_gateway_app/provides/submit_to_scheme"
+                  "$ref": "#/boundedcontexts/scheme_gateway/policies/match_the_scheme's_response"
                 }
               ]
             },
@@ -2448,14 +2475,32 @@
               "pattern": "conformist",
               "by": [
                 {
-                  "$ref": "#/boundedcontexts/scheme_gateway/services/scheme_gateway_app/provides/submit_to_scheme"
+                  "$ref": "#/boundedcontexts/scheme_gateway/policies/match_the_scheme's_response"
                 }
               ]
             }
           ]
         }
       },
-      "policies": {},
+      "policies": {
+        "match_the_scheme's_response": {
+          "name": "Match the scheme's response",
+          "description": "Either answer the scheme gives -- a settlement or a refusal -- is recorded against the message it quotes, which is what the submission was waiting for",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/payment_scheme/services/scheme_rail/provides/scheme_settlement_confirmed"
+            },
+            {
+              "$ref": "#/boundedcontexts/payment_scheme/services/scheme_rail/provides/scheme_rejected"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/scheme_gateway/aggregates/scheme_message/provides/record_scheme_response"
+            }
+          ]
+        }
+      },
       "processes": {},
       "glossary": {},
       "valueobjects": {
@@ -2739,11 +2784,11 @@
           "provides": {
             "authorise_card": {
               "name": "AuthoriseCard",
-              "description": "Approve or decline a merchant's request from CardCo; the caller waits, and is answered with the authorisation or with the rule that stopped it",
+              "description": "Approve or decline a merchant's request from CardCo, in the message CardCo sends; the caller waits, and is answered with the authorisation or with the rule that stopped it",
               "pattern": "open-host-service",
               "type": "operation",
               "schema": {
-                "$ref": "#/boundedcontexts/cards/schemas/card_authorisation_request"
+                "$ref": "#/boundedcontexts/card_co/schemas/card_co_authorisation_message"
               },
               "returns": {
                 "$ref": "#/boundedcontexts/cards/schemas/card_authorisation_approved"
@@ -2775,17 +2820,6 @@
             }
           },
           "consumes": [
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/card_co/services/card_co_authorisation_feed/provides/authorisation_requested"
-              },
-              "pattern": "anti-corruption-layer",
-              "by": [
-                {
-                  "$ref": "#/boundedcontexts/cards/services/cards_app/provides/authorise_card"
-                }
-              ]
-            },
             {
               "consumable": {
                 "$ref": "#/boundedcontexts/accounts/services/account_servicing/provides/get_available_balance"
@@ -2914,27 +2948,6 @@
         }
       },
       "schemas": {
-        "card_authorisation_request": {
-          "name": "CardAuthorisationRequest",
-          "description": "What CardCo's message becomes once Cards has translated it (card 71: CardCo's own format is CardCo's, and lives there)",
-          "attributes": {
-            "pan_token": {
-              "name": "panToken",
-              "type": "string"
-            },
-            "merchant": {
-              "name": "merchant",
-              "type": "string"
-            },
-            "amount": {
-              "name": "amount",
-              "type": "Money",
-              "valueobject": {
-                "$ref": "#/boundedcontexts/shared_kernel/valueobjects/money"
-              }
-            }
-          }
-        },
         "card_event": {
           "name": "CardEvent",
           "description": "Card and account; shared by the card events",
@@ -3868,17 +3881,6 @@
                   "$ref": "#/boundedcontexts/credit_decisioning/services/decisioning_app/provides/decide"
                 }
               ]
-            },
-            {
-              "consumable": {
-                "$ref": "#/boundedcontexts/lending/aggregates/loan_application/provides/application_submitted"
-              },
-              "pattern": "conformist",
-              "by": [
-                {
-                  "$ref": "#/boundedcontexts/credit_decisioning/services/decisioning_app/provides/decide"
-                }
-              ]
             }
           ]
         },
@@ -4214,6 +4216,12 @@
                   "$ref": "#/boundedcontexts/fraud/services/transaction_scorer/provides/transaction_flagged"
                 }
               ]
+            },
+            "record_card_authorisation": {
+              "name": "RecordCardAuthorisation",
+              "description": "File an approved card authorisation in the history the scorer reads, in Fraud's own words",
+              "type": "operation",
+              "internal": true
             }
           },
           "consumes": [
@@ -4224,7 +4232,7 @@
               "pattern": "anti-corruption-layer",
               "by": [
                 {
-                  "$ref": "#/boundedcontexts/fraud/services/fraud_app/provides/score_transaction"
+                  "$ref": "#/boundedcontexts/fraud/policies/file_a_card_authorisation"
                 }
               ]
             }
@@ -4243,6 +4251,20 @@
           "then": [
             {
               "$ref": "#/boundedcontexts/fraud/aggregates/fraud_case/provides/open_case"
+            }
+          ]
+        },
+        "file_a_card_authorisation": {
+          "name": "File a card authorisation",
+          "description": "Every approved authorisation joins the history the scorer reads; nothing else happens on one",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/cards/aggregates/card/provides/card_authorised"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/fraud/services/fraud_app/provides/record_card_authorisation"
             }
           ]
         }
@@ -5174,20 +5196,29 @@
       "services": {
         "card_co_authorisation_feed": {
           "name": "CardCo Authorisation Feed",
-          "description": "The processor's outbound feed, and all the bank can see",
+          "description": "The processor's authorisation side, and all the bank can see of it: it takes the merchant's request and calls the issuer",
           "type": "application",
           "provides": {
-            "authorisation_requested": {
-              "name": "AuthorisationRequested",
-              "description": "A merchant asked CardCo to take an amount on one of our cards",
-              "pattern": "published-language",
-              "type": "event",
-              "schema": {
-                "$ref": "#/boundedcontexts/card_co/schemas/card_co_authorisation_message"
-              }
+            "request_authorisation": {
+              "name": "RequestAuthorisation",
+              "description": "A merchant asked CardCo to take an amount on one of our cards, so CardCo asks the issuer to approve it",
+              "type": "operation",
+              "internal": true
             }
           },
-          "consumes": []
+          "consumes": [
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/cards/services/cards_app/provides/authorise_card"
+              },
+              "pattern": "conformist",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/card_co/services/card_co_authorisation_feed/provides/request_authorisation"
+                }
+              ]
+            }
+          ]
         }
       },
       "policies": {},
@@ -5328,7 +5359,23 @@
       "downstreamRoles": [
         "anti-corruption-layer"
       ],
-      "description": "CardCo's format is CardCo's; Cards translates every message on the way in and answers in the same terms"
+      "description": "CardCo's format is CardCo's: it dictates the message every authorisation arrives in, and Cards translates it at its own boundary rather than adopting it"
+    },
+    {
+      "type": "upstream-downstream",
+      "upstream": {
+        "$ref": "#/boundedcontexts/cards"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/card_co"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "conformist"
+      ],
+      "description": "The other half of the same integration: the operation is the bank's, offered as an open host, and CardCo calls it as it stands"
     },
     {
       "type": "upstream-downstream",

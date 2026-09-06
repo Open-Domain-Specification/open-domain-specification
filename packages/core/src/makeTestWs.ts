@@ -391,16 +391,36 @@ export function makeRichTestWs() {
 			internal: true,
 		})
 		.raises(salesFigures);
-	// Neither subscription is reacted to by a policy, and both are honest: one
-	// operation accumulates the orders it hears, and the other reads the figures
-	// when it plans. `by` is what says so, and what keeps both backed
-	// (`subscription-backed`).
+	// Each subscription is woken by a reaction of the consuming context, which
+	// is the only thing that backs one: a fact arrives and a policy runs, and
+	// the operation that keeps the totals or the plan is what that policy
+	// issues (`subscription-backed`, `consumption-by-reactor`).
+	const totalOnOrderPlaced = reportingBc
+		.addPolicy("Total on order placed", {
+			description: "Every placed order goes into yesterday's totals",
+		})
+		.on(orderPlaced)
+		.issues(compileSalesFigures);
 	const reportingConsumesOrderPlaced = reportingApp.consumes(orderPlaced, {
-		by: [compileSalesFigures],
+		by: [totalOnOrderPlaced],
 	});
+	// Ordering reads the figures back when it plans. What it does with them
+	// raises nothing, so the traffic each way backs the partnership without the
+	// two contexts forming a ring (`reaction-cycle`).
+	const noteSalesFigures = orderApp.provides("Note Sales Figures", {
+		description: "Files yesterday's figures against the ordering plan",
+		type: "operation",
+		internal: true,
+	});
+	const planOnSalesFigures = orderingBc
+		.addPolicy("Plan on sales figures", {
+			description: "Yesterday's figures are filed against the plan",
+		})
+		.on(salesFigures)
+		.issues(noteSalesFigures);
 	const orderAppConsumesSalesFigures = orderApp.consumes(salesFigures, {
 		pattern: "anti-corruption-layer",
-		by: [placeOrder],
+		by: [planOnSalesFigures],
 	});
 
 	return {
@@ -446,6 +466,10 @@ export function makeRichTestWs() {
 		reportingApp,
 		reportingConsumesOrderPlaced,
 		salesFigures,
+		compileSalesFigures,
+		totalOnOrderPlaced,
+		noteSalesFigures,
+		planOnSalesFigures,
 		orderAppConsumesSalesFigures,
 	};
 }

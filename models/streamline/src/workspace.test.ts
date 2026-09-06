@@ -15,6 +15,10 @@ import { workspace } from "./workspace";
  * one direction. The list states what `validate()` prints today.
  */
 const deliberate: Array<{ rule: string; severity: "error" | "warning" }> = [
+	// The unagreed bookmark dependency is reported at both ends since card 98:
+	// the consumption at Recommendations' boundary, and the reaction behind it
+	// that the subscription now has to name.
+	{ rule: "internal-consumable", severity: "error" },
 	{ rule: "internal-consumable", severity: "error" },
 	{ rule: "schema-context", severity: "error" },
 	{ rule: "policy-complete", severity: "warning" },

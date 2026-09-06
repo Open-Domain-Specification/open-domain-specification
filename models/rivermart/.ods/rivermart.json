@@ -838,6 +838,12 @@
               "description": "Add a listed product to Offers' own SKU list, or take a retired one off it; the list is Offers' translation of the catalogue and holds no product model",
               "type": "operation",
               "internal": true
+            },
+            "record_active_seller": {
+              "name": "RecordActiveSeller",
+              "description": "Add a seller to Offers' own list of who may publish; the list is Offers' translation of onboarding and holds no seller model",
+              "type": "operation",
+              "internal": true
             }
           },
           "consumes": [
@@ -870,7 +876,7 @@
               "pattern": "conformist",
               "by": [
                 {
-                  "$ref": "#/boundedcontexts/offers/services/offer_api/provides/publish_offer"
+                  "$ref": "#/boundedcontexts/offers/policies/keep_the_seller_list_in_step"
                 }
               ]
             },
@@ -915,6 +921,20 @@
           "then": [
             {
               "$ref": "#/boundedcontexts/offers/services/buy_box_service/provides/award_buy_box"
+            }
+          ]
+        },
+        "keep_the_seller_list_in_step": {
+          "name": "Keep the seller list in step",
+          "description": "An offer may only be published by a seller onboarding has activated, so the list follows every activation",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/seller_onboarding/aggregates/seller_account/provides/seller_activated"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/offers/services/offer_api/provides/record_active_seller"
             }
           ]
         },
@@ -4636,6 +4656,12 @@
                   "$ref": "#/boundedcontexts/customer_service/aggregates/case/provides/case_opened"
                 }
               ]
+            },
+            "resolve_case": {
+              "name": "ResolveCase",
+              "description": "Resolve a case as the agent working it: close it with a resolution, and raise the return with Returns where the resolution is a refund or a replacement",
+              "pattern": "open-host-service",
+              "type": "operation"
             }
           },
           "consumes": [
@@ -4652,9 +4678,24 @@
             },
             {
               "consumable": {
+                "$ref": "#/boundedcontexts/customer_service/aggregates/case/provides/resolve_case"
+              },
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/customer_service/services/case_api/provides/resolve_case"
+                }
+              ]
+            },
+            {
+              "consumable": {
                 "$ref": "#/boundedcontexts/order_management/services/order_api/provides/request_return"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/customer_service/services/case_api/provides/resolve_case"
+                }
+              ]
             },
             {
               "consumable": {

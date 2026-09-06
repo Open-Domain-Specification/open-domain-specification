@@ -1377,6 +1377,12 @@
                   "$ref": "#/boundedcontexts/encoding/aggregates/encoding_job/provides/encode_queued"
                 }
               ]
+            },
+            "record_delivered_master": {
+              "name": "RecordDeliveredMaster",
+              "description": "Note a delivered mezzanine as a source the pipeline can encode from, read in the studio's delivery spec as it stands",
+              "type": "operation",
+              "internal": true
             }
           },
           "consumes": [
@@ -1387,7 +1393,7 @@
               "pattern": "conformist",
               "by": [
                 {
-                  "$ref": "#/boundedcontexts/encoding/services/encoding_api/provides/submit_encode"
+                  "$ref": "#/boundedcontexts/encoding/policies/note_a_delivered_master"
                 }
               ]
             }
@@ -1409,6 +1415,20 @@
         }
       },
       "policies": {
+        "note_a_delivered_master": {
+          "name": "Note a delivered master",
+          "description": "Every delivered mezzanine becomes a source the pipeline knows about, ready for the encode Catalogue queues",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/studio_production/aggregates/production/provides/master_delivered"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/encoding/services/encoding_api/provides/record_delivered_master"
+            }
+          ]
+        },
         "plan_ladder_on_queue": {
           "name": "Plan ladder on queue",
           "description": "Every queued job gets a per-title ladder before it runs",
@@ -1730,6 +1750,12 @@
                   "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/playback_stopped"
                 }
               ]
+            },
+            "record_certified_device": {
+              "name": "RecordCertifiedDevice",
+              "description": "Note a device model as certified against an SDK version, so a session may start on it",
+              "type": "operation",
+              "internal": true
             }
           },
           "consumes": [
@@ -1762,7 +1788,7 @@
               "pattern": "conformist",
               "by": [
                 {
-                  "$ref": "#/boundedcontexts/playback/services/playback_api/provides/start_playback"
+                  "$ref": "#/boundedcontexts/playback/policies/keep_the_certified_device_list"
                 }
               ]
             },
@@ -1805,7 +1831,22 @@
           "consumes": []
         }
       },
-      "policies": {},
+      "policies": {
+        "keep_the_certified_device_list": {
+          "name": "Keep the certified device list",
+          "description": "Every certification joins the list StartPlayback checks before a session begins",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/devices/aggregates/device/provides/device_certified"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/playback/services/playback_api/provides/record_certified_device"
+            }
+          ]
+        }
+      },
       "processes": {},
       "glossary": {
         "session": {
@@ -2597,6 +2638,12 @@
               "returns": {
                 "$ref": "#/boundedcontexts/recommendations/schemas/homepage_rows"
               }
+            },
+            "record_resume_point": {
+              "name": "RecordResumePoint",
+              "description": "Keep a profile's latest resume point where the ranker can find it, so 'continue watching' is fresh when the rows are asked for",
+              "type": "operation",
+              "internal": true
             }
           },
           "consumes": [
@@ -2635,7 +2682,7 @@
               "pattern": "anti-corruption-layer",
               "by": [
                 {
-                  "$ref": "#/boundedcontexts/recommendations/services/recommendations_api/provides/get_homepage_rows"
+                  "$ref": "#/boundedcontexts/recommendations/policies/freshen_continue_watching"
                 }
               ]
             },
@@ -2668,6 +2715,20 @@
           "then": [
             {
               "$ref": "#/boundedcontexts/recommendations/services/ranker/provides/add_candidate"
+            }
+          ]
+        },
+        "freshen_continue_watching": {
+          "name": "Freshen continue watching",
+          "description": "A moved resume point updates what 'continue watching' will show next time the rows are built",
+          "on": [
+            {
+              "$ref": "#/boundedcontexts/playback/aggregates/playback_session/provides/bookmark_updated"
+            }
+          ],
+          "then": [
+            {
+              "$ref": "#/boundedcontexts/recommendations/services/recommendations_api/provides/record_resume_point"
             }
           ]
         },

@@ -353,6 +353,19 @@ describe("the tactical templates on the alternate branches", () => {
 		expect(text).toContain("Two cron jobs and a spreadsheet, in truth.");
 	});
 
+	// A clock says how long and, where the process anchors it, from what: the
+	// two together are the whole of a limit nobody outside can see
+	// (decision 23, fifth amendment).
+	it("ProcessPage: an anchored deadline says how long it waits and from what", () => {
+		const { container } = render(Harness, {
+			model,
+			ref: processRef("main_context", "timed_process").$ref,
+		});
+		expect(container.querySelector("#ends")).toHaveTextContent(
+			"after two working days from Orphan Event",
+		);
+	});
+
 	it("SchemaPage: nothing carries it", () => {
 		expect(textOf(schemaRef("main_context", "unused_schema").$ref)).toContain(
 			"Nothing carries this schema yet.",

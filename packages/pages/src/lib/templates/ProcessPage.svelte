@@ -75,9 +75,14 @@ const linkOf = (trigger: ProcessTrigger) => {
 	return trigger.ref;
 };
 
-/** How long an instance had, said beside a deadline's name and nowhere else. */
+/**
+ * How long an instance had, and what the clock counts from where the process
+ * anchors it: said beside a deadline's name and nowhere else.
+ */
 const detailOf = (trigger: ProcessTrigger) =>
-	trigger instanceof Deadline ? `after ${trigger.after}` : undefined;
+	trigger instanceof Deadline
+		? `after ${trigger.after}${trigger.from ? ` from ${trigger.from.name}` : ""}`
+		: undefined;
 
 /** Every table names the kind, since what a process waits for may be an answer. */
 const columnsFor = (label: string, withKind: boolean): Column[] => [

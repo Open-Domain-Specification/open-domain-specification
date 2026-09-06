@@ -843,12 +843,27 @@ sellerBC.addTerm("Vendor", {
 });
 
 // DISCOVERY: Head of Seller Services and the wall's "Offers allows publishing".
-// Nothing in Offers reacts to an activation — no offer appears because a seller
-// was activated — so what the subscription is for is `PublishOffer`, the part of
-// Offers that refuses a seller who is not active yet (`subscription-backed`).
+// No offer appears because a seller was activated, but Offers keeps its own
+// list of who may publish — the same shape as the SKU list above — and
+// `PublishOffer` reads it to refuse a seller who is not active yet. That list
+// is the reaction, and naming `PublishOffer` as the subscriber named a thing
+// that is issued rather than woken (`consumption-by-reactor`, card 98).
+const recordActiveSeller = offerApi.provides("RecordActiveSeller", {
+	description:
+		"Add a seller to Offers' own list of who may publish; the list is Offers' translation of onboarding and holds no seller model",
+	type: "operation",
+	internal: true,
+});
+const keepSellerList = offersBC
+	.addPolicy("Keep the seller list in step", {
+		description:
+			"An offer may only be published by a seller onboarding has activated, so the list follows every activation",
+	})
+	.on(sellerActivated)
+	.issues(recordActiveSeller);
 offerApi.consumes(sellerActivated, {
 	pattern: "conformist",
-	by: [publishOffer],
+	by: [keepSellerList],
 });
 offerApi.consumes(sellerSuspended, { pattern: "conformist" });
 offersBC
@@ -2471,21 +2486,34 @@ const openCase = caseApi
 		pattern: "open-host-service",
 	})
 	.raises(caseOpened);
-caseAgg.provides("ResolveCase", {
+const resolveCaseInside = caseAgg.provides("ResolveCase", {
 	description: "Close the case with a resolution",
 	type: "operation",
 	internal: true,
+});
+// The front for it. An aggregate is a consistency boundary, not a client, so
+// the call to Returns is made by the application service and the aggregate's
+// transition is what the chain reaches through it: `by` names the front, and
+// the reader is told who acts (decision 17's notes of 2026-09-09; card 98).
+// The model said in a comment that the aggregate made the call and then let
+// the walk infer CaseAPI's only operation, `OpenCase`, as the caller, so the
+// one thing the comment denied is what the chain drew.
+const resolveCase = caseApi.provides("ResolveCase", {
+	description:
+		"Resolve a case as the agent working it: close it with a resolution, and raise the return with Returns where the resolution is a refund or a replacement",
+	type: "operation",
+	pattern: "open-host-service",
 });
 
 caseApi.consumes(getOrder, {
 	pattern: "anti-corruption-layer",
 	by: [openCase],
 });
-// RequestReturn names no caller: an agent raises a return while working a case,
-// and the operation that does it is the aggregate's ResolveCase, which is not
-// CaseAPI's to name (decision 21). CaseAPI offers one operation, so nothing is
-// ambiguous either way (`consumption-by-required`).
-caseApi.consumes(requestReturn, { pattern: "anti-corruption-layer" });
+caseApi.consumes(resolveCaseInside, { by: [resolveCase] });
+caseApi.consumes(requestReturn, {
+	pattern: "anti-corruption-layer",
+	by: [resolveCase],
+});
 caseApi.consumes(attemptFailed, { pattern: "anti-corruption-layer" });
 csBC
 	.addPolicy("Open case on failed delivery", {
