@@ -2,13 +2,13 @@
 column: backlog
 labels: [bug, frontend]
 priority: high
-agent: optimus-prime
+agent: lead
 live: false
 updatedAt: 2026-09-05T17:02:24.857910+00:00
 ---
 # Move focus with page and table-of-contents navigation
 
-Baseline SHA: 6ec06edc0aa6b1db920a4c962170a8f8ac83e92d. Review: Arcee; independently reproduced by Optimus. Case: A11Y-01 / A11Y-02 / NAV-02.
+Baseline SHA: 6ec06edc0aa6b1db920a4c962170a8f8ac83e92d. Review: the accessibility reviewer; independently reproduced by the lead. Case: A11Y-01 / A11Y-02 / NAV-02.
 
 Reproduction: Keyboard-focus a TOC link and activate it; then navigate through a persistent browser sidebar link to another page.
 
@@ -18,7 +18,7 @@ Expected: The reading/focus position should follow the requested section/page/de
 
 Source: packages/pages/src/lib/organisms/Toc.svelte:11-15; packages/pages/src/lib/Page.svelte:87-100.
 
-Evidence: docs/autobots/design/baseline-arcee/accessibility.probe.test.ts:1. Run from packages/pages: `npx vitest run --config ../../docs/autobots/design/baseline-arcee/vitest.config.ts`. Parent result: 7/7 probes pass (they assert observed baseline defects, not corrected behaviour).
+Evidence: the accessibility review (report deleted 2026-09-07)accessibility.probe.test.ts:1. Run from packages/pages: `npx vitest run --config ../../the accessibility review (report deleted 2026-09-07)vitest.config.ts`. Parent result: 7/7 probes pass (they assert observed baseline defects, not corrected behaviour).
 
 Related implementation history: boards/vsc-extension/08-detail-pages-webview.md:1, boards/vsc-extension/25-map-disposition-marks.md:1, boards/vsc-extension/43-relationship-detail-modal.md:1. No equivalent open defect found; this is a separate acceptance gap.
 
@@ -30,6 +30,6 @@ Related implementation history: boards/vsc-extension/08-detail-pages-webview.md:
 
 ## Comments
 
-- **optimus-prime** (2026-09-05T16:26:34.943276+00:00): Raised from Arcee's baseline with independently rerun component probes at docs/autobots/design/baseline-arcee/accessibility.probe.test.ts:1. No production fix applied.
+- **lead** (2026-09-05T16:26:34.943276+00:00): Raised from the accessibility reviewer's baseline with independently rerun component probes at the accessibility review (report deleted 2026-09-07)accessibility.probe.test.ts:1. No production fix applied.
 
-- **optimus-prime** (2026-09-05T17:02:24.857910+00:00): Jazz native runtime corroboration: opening OrderApp from a below-fold context table retains old vertical scroll and initially hides the destination header. docs/autobots/design/2026-09-05-jazz-baseline.md:1. Loaded native bundle provenance remains unverified; retest with final candidate.
+- **lead** (2026-09-05T17:02:24.857910+00:00): the design reviewer native runtime corroboration: opening OrderApp from a below-fold context table retains old vertical scroll and initially hides the destination header. the design review (report deleted 2026-09-07):1. Loaded native bundle provenance remains unverified; retest with final candidate.

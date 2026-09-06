@@ -2,13 +2,13 @@
 column: backlog
 labels: [bug, frontend]
 priority: high
-agent: optimus-prime
+agent: lead
 live: false
 updatedAt: 2026-09-05T16:20:54.090835+00:00
 ---
 # Neutralize unsafe URL schemes in rendered Markdown
 
-Baseline: 6ec06edc0aa6b1db920a4c962170a8f8ac83e92d, 2026-09-05 designer sweep. Review owner: Arcee; validation/triage: Optimus. Regression case: PAGE-03.
+Baseline: 6ec06edc0aa6b1db920a4c962170a8f8ac83e92d, 2026-09-05 designer sweep. Review owner: the accessibility reviewer; validation/triage: the lead. Regression case: PAGE-03.
 
 Markdown escapes raw angle brackets but leaves link URL schemes untouched. A workspace author can supply an active `javascript:` link. This is source/parser-confirmed; no malicious link was executed during the review. Browser/export handling needs a safe-scheme boundary instead of relying on the VS Code CSP.
 
@@ -26,4 +26,4 @@ Source: packages/pages/src/lib/atoms/Markdown.svelte:6-15. Related baseline: boa
 
 ## Comments
 
-- **optimus-prime** (2026-09-05T16:20:54.090835+00:00): Raised from Arcee baseline source review and independent verification of packages/pages/src/lib/atoms/Markdown.svelte:6-15. This card records a defect; no production fix or release approval is implied.
+- **lead** (2026-09-05T16:20:54.090835+00:00): Raised from the accessibility reviewer baseline source review and independent verification of packages/pages/src/lib/atoms/Markdown.svelte:6-15. This card records a defect; no production fix or release approval is implied.

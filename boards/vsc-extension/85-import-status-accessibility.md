@@ -2,13 +2,13 @@
 column: backlog
 labels: [bug, frontend]
 priority: med
-agent: optimus-prime
+agent: lead
 live: false
 updatedAt: 2026-09-05T16:20:54.090835+00:00
 ---
 # Announce viewer import loading and errors to assistive technology
 
-Baseline: 6ec06edc0aa6b1db920a4c962170a8f8ac83e92d, 2026-09-05 designer sweep. Review owner: Arcee; validation/triage: Optimus. Regression case: A11Y-03 / VIEW-02.
+Baseline: 6ec06edc0aa6b1db920a4c962170a8f8ac83e92d, 2026-09-05 designer sweep. Review owner: the accessibility reviewer; validation/triage: the lead. Regression case: A11Y-03 / VIEW-02.
 
 Source-confirmed accessibility gap: the import flow changes button text and inserts a plain error paragraph without a live region, error association or focus handoff.
 
@@ -26,4 +26,4 @@ Source: packages/pages/src/app/ImportScreen.svelte:40-60 and packages/pages/src/
 
 ## Comments
 
-- **optimus-prime** (2026-09-05T16:20:54.090835+00:00): Raised from Arcee baseline source review and independent verification of packages/pages/src/app/ImportScreen.svelte:40-60 and packages/pages/src/app/ImportScreen.svelte:86-106. This card records a defect; no production fix or release approval is implied.
+- **lead** (2026-09-05T16:20:54.090835+00:00): Raised from the accessibility reviewer baseline source review and independent verification of packages/pages/src/app/ImportScreen.svelte:40-60 and packages/pages/src/app/ImportScreen.svelte:86-106. This card records a defect; no production fix or release approval is implied.
