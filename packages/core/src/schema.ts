@@ -50,18 +50,23 @@ export interface AttributeSchema {
 	 * beside it, which is how the model points at a child without the relation
 	 * `cross-aggregate-reference` refuses (`identifies-entity`).
 	 *
-	 * It may also be a bounded context flagged `external` or `bigBallOfMud`: a
-	 * card scheme's authorisation id belongs to a system whose entities are not
-	 * ours to state, and a legacy account key belongs to one nobody can read
-	 * well enough to say which entity it is of (decision 28), so the attribute
-	 * names the system instead of an entity inside it.
+	 * It may also be a bounded context flagged `external`, `bigBallOfMud` or
+	 * `boundaryOnly`: a card scheme's authorisation id belongs to a system
+	 * whose entities are not ours to state, a legacy account key to one nobody
+	 * can read well enough to say which entity it is of, and a customer id
+	 * into our own CRM to one of ours nobody has interviewed yet (decision 28,
+	 * second and sixth amendments), so the attribute names the system instead
+	 * of an entity inside it.
 	 *
-	 * Or a schema an `external` context publishes, where that system documents
-	 * the kind the id names: a processor's Customer, Payment, Refund and
-	 * Dispute are distinct kinds with distinct ids, and the identity says which
-	 * of them it holds while still reading as an identity into that context
-	 * (decision 28, third amendment). Any other context is refused, and so is a
-	 * schema of one, because there the entity exists and is what the id is of.
+	 * Or a schema an `external` or `boundaryOnly` context publishes, where that
+	 * system documents the kind the id names: a processor's Customer, Payment,
+	 * Refund and Dispute are distinct kinds with distinct ids, and the identity
+	 * says which of them it holds while still reading as an identity into that
+	 * context (decision 28, third and sixth amendments). A big ball of mud's
+	 * schemas are not a route: what it emits it emits, but it publishes no
+	 * catalogue of kinds anyone can rely on. Any other context is refused, and
+	 * so is a schema of one, because there the entity exists and is what the id
+	 * is of.
 	 */
 	identifies?: { $ref: string };
 }
@@ -73,7 +78,13 @@ export interface AttributeSchema {
 export interface DataSchemaSchema {
 	name: string;
 	description?: string;
-	attributes: { [attribute: string]: AttributeSchema };
+	/**
+	 * The fields of this payload, by id. Optional, and an absent map is an
+	 * empty one, like every map of elements in this schema: a marker shape
+	 * carrying nothing writes nothing (card 104). Required here until card 135,
+	 * which is how the JSON schema came to refuse a file the loader reads.
+	 */
+	attributes?: { [attribute: string]: AttributeSchema };
 }
 
 /**
@@ -619,7 +630,13 @@ export interface EntitySchema {
 	 * has one root and a kind of it is reached through it (decision 22).
 	 */
 	specialises?: { $ref: string };
-	attributes: { [attribute: string]: AttributeSchema };
+	/**
+	 * This entity's own attributes, by id. Optional, and an absent map is an
+	 * empty one, like every map of elements in this schema: a subtype that
+	 * adds only relations writes none (card 104). Required here until card 135,
+	 * which is how the JSON schema came to refuse a file the loader reads.
+	 */
+	attributes?: { [attribute: string]: AttributeSchema };
 	/** What this entity points at; empty when left out. */
 	relations?: EntityRelationSchema[];
 }

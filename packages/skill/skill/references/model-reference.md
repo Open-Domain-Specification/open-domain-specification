@@ -49,7 +49,7 @@ A named, typed property of an entity, value object or schema.
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `description` | string | no |  |
-| `identifies` | `{ "$ref": string }` | no | What this attribute holds the identity of, when it is an identity of something else: `Order.petId` identifies Catalog's `Pet`. The target may be in another bounded context — that is the point, since an identity is the only thing that crosses a boundary (decision 14) — and there it may be a child rather than a root, since a session holds the id of a profile inside a household; the child is reached through its own root. The same goes inside one context: a shipment holds an order's id and its line's id beside it, which is how the model points at a child without the relation `cross-aggregate-reference` refuses (`identifies-entity`). It may also be a bounded context flagged `external` or `bigBallOfMud`: a card scheme's authorisation id belongs to a system whose entities are not ours to state, and a legacy account key belongs to one nobody can read well enough to say which entity it is of (decision 28), so the attribute names the system instead of an entity inside it. Or a schema an `external` context publishes, where that system documents the kind the id names: a processor's Customer, Payment, Refund and Dispute are distinct kinds with distinct ids, and the identity says which of them it holds while still reading as an identity into that context (decision 28, third amendment). Any other context is refused, and so is a schema of one, because there the entity exists and is what the id is of. |
+| `identifies` | `{ "$ref": string }` | no | What this attribute holds the identity of, when it is an identity of something else: `Order.petId` identifies Catalog's `Pet`. The target may be in another bounded context — that is the point, since an identity is the only thing that crosses a boundary (decision 14) — and there it may be a child rather than a root, since a session holds the id of a profile inside a household; the child is reached through its own root. The same goes inside one context: a shipment holds an order's id and its line's id beside it, which is how the model points at a child without the relation `cross-aggregate-reference` refuses (`identifies-entity`). It may also be a bounded context flagged `external`, `bigBallOfMud` or `boundaryOnly`: a card scheme's authorisation id belongs to a system whose entities are not ours to state, a legacy account key to one nobody can read well enough to say which entity it is of, and a customer id into our own CRM to one of ours nobody has interviewed yet (decision 28, second and sixth amendments), so the attribute names the system instead of an entity inside it. Or a schema an `external` or `boundaryOnly` context publishes, where that system documents the kind the id names: a processor's Customer, Payment, Refund and Dispute are distinct kinds with distinct ids, and the identity says which of them it holds while still reading as an identity into that context (decision 28, third and sixth amendments). A big ball of mud's schemas are not a route: what it emits it emits, but it publishes no catalogue of kinds anyone can rely on. Any other context is refused, and so is a schema of one, because there the entity exists and is what the id is of. |
 | `identity` | boolean | no | True when this attribute is (part of) the identity of an entity: the thing that tells one instance from another that holds the same values, and what `root-identity` and `entity-identity` look for. On a value object it is refused (`value-object-shape`): a value is what it holds and has nothing to be identified by. On a schema it says which field of the payload is the key a reader correlates on — the order number in an `OrderPlaced`, the instruction id in a settlement message — which is a fact about the payload and not a claim that the publishing context holds anything. That is why an identity on a schema attribute draws no edge on the context map and asks for no relationship: the payload carries the id for its reader, and the context owes the other nothing for it (decision 14, second amendment). Where the id belongs to another context, say so with `identifies` beside it. |
 | `name` | string | yes |  |
 | `optional` | boolean | no | True when the attribute is sometimes absent. Left off means required, which is the common case and stays unwritten (decision 24). An identity attribute is never optional. |
@@ -153,7 +153,7 @@ A named payload shape owned by a bounded context, shared by the consumables that
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `attributes` | map of id to [Attribute](#attribute) | yes |  |
+| `attributes` | map of id to [Attribute](#attribute) | no | The fields of this payload, by id. Optional, and an absent map is an empty one, like every map of elements in this schema: a marker shape carrying nothing writes nothing (card 104). Required here until card 135, which is how the JSON schema came to refuse a file the loader reads. |
 | `description` | string | no |  |
 | `name` | string | yes |  |
 
@@ -220,7 +220,7 @@ Represents an entity in the Open Domain Specification (ODS).
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `attributes` | map of id to [Attribute](#attribute) | yes |  |
+| `attributes` | map of id to [Attribute](#attribute) | no | This entity's own attributes, by id. Optional, and an absent map is an empty one, like every map of elements in this schema: a subtype that adds only relations writes none (card 104). Required here until card 135, which is how the JSON schema came to refuse a file the loader reads. |
 | `description` | string | yes |  |
 | `name` | string | yes |  |
 | `relations` | array of [EntityRelation](#entityrelation) | no | What this entity points at; empty when left out. |
@@ -333,7 +333,7 @@ A relationship between two bounded contexts with no upstream or downstream side.
 | `description` | string | no |  |
 | `disposition` | "by-design" | "refactor" | "tolerated" | no | What the architecture thinks of this relationship. Absent means `by-design`. |
 | `name` | string | no | What this agreement is called, where one pair holds more than one in the same direction: a negotiated fulfilment API beside a tolerated legacy feed from the same warehouse, each with its own roles, comments and disposition. Absent is the common case, one agreement between the pair, and the ref stays what it always was. Where it is present the name is appended to the ref, so the two are separately reachable and a diagnostic about one is not read as a diagnostic about the other; the map draws two lines and labels each with its name. Two agreements between one pair in one direction that are both unnamed, or share a name, are one declaration made twice and `relationship-duplicate` refuses them (decision 15). |
-| `participants` | array of unknown | yes |  |
+| `participants` | [`{ "$ref": string }`, `{ "$ref": string }`] | yes |  |
 | `type` | "partnership" | "separate-ways" | "shared-kernel" | yes |  |
 
 No other fields are allowed.

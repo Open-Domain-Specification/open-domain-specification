@@ -76,10 +76,17 @@ describe("RiverMart's acquirer and the outcomes it enumerates", () => {
 		expect(waited[0].operation).toBe(holdFunds);
 	});
 
-	it("hears it through the call it makes itself", () => {
-		// The answer comes back down the call that asked for it, which is the
-		// retry the process issues (decision 21).
+	it("hears it through the calls it makes itself", () => {
+		// The answer comes back down the calls that asked for it: the
+		// operation that starts the attempt, whose handler makes the first
+		// hold, and the retry the process issues after a decline it can try
+		// again (decisions 21 and 23, third amendment of 2026-09-10). Until
+		// card 135 only the retry counted, so this model passed on the
+		// accident that a second `by` was written beside the first — the same
+		// process with one attempt and no retry could not have waited on the
+		// answer at all.
 		expect(routesTo(attempt, holdFunds).map((it) => it.name)).toEqual([
+			"AuthorisePayment",
 			"RetryHold",
 		]);
 	});

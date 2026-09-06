@@ -610,12 +610,16 @@ function* subtypesOf(workspace: Workspace): Iterable<Entity | ValueObject> {
  * is the same thing said more precisely: it is loaded, saved and kept
  * consistent through the one root, and a parent in another aggregate would
  * make one boundary's invariants depend on another's. A value object is a
- * kind of one its own context declares, or of one it borrows: over a shared
+ * kind of one its own context declares, or of one it borrows. It borrows
+ * wherever {@link mayBorrowFrom} says it may, which is the same question
+ * `schema-context` and `valueobject-context` ask, asked once: over a shared
  * kernel, the relationship that says two contexts keep part of one model
- * between them (decision 16), or down a relationship it has declared itself a
+ * between them (decision 16); down a relationship it has declared itself a
  * conformist on, where it takes the upstream's model as it stands rather than
- * translating it (decision 03). Those are the two places a kind may reach
- * across, and the conformist one reaches in one direction only.
+ * translating it; or as the customer of a customer-supplier pair, where the
+ * interface it uses is one it helped negotiate and no downstream role is
+ * written at all (decision 03, amendment of 2026-09-10). All three reach in
+ * one direction only, downstream.
  */
 const specialisationInBoundary: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -638,7 +642,7 @@ const specialisationInBoundary: Rule = (workspace) => {
 		diagnostics.push({
 			severity: "error",
 			rule: "specialisation-in-boundary",
-			message: `"${member.name}" in "${context.name}" is a kind of "${parent.name}" in "${owner.name}", which "${context.name}" neither shares a kernel with nor conforms to; a value object is a kind of one its own context declares, or of one it borrows through a shared kernel or as a conformist of the context that owns it`,
+			message: `"${member.name}" in "${context.name}" is a kind of "${parent.name}" in "${owner.name}", which "${context.name}" neither shares a kernel with, conforms to, nor is the customer of; a value object is a kind of one its own context declares, or of one it borrows through a shared kernel, as a conformist, or as the customer of a customer-supplier relationship with the context that owns it`,
 			ref: member.ref,
 		});
 	}
@@ -2516,6 +2520,19 @@ function relationshipLabel(relationship: ContextRelationship): string {
  * such a crossing; one written there is still read wherever roles are read,
  * by `relationship-roles-backed`, and the upstream role on the consumable is
  * asked for as it always was (decision 03, note and amendment of 2026-09-10).
+ *
+ * It reads who the consumer is, for the same reason. A downstream role says
+ * how the consumer takes the upstream's model in: a conformist adopts it as
+ * it stands, an anti-corruption layer translates it at the edge. That is a
+ * fact about the inside of the consuming system, and where the consumer is a
+ * system we do not own, or one of ours nobody has interviewed yet, the model
+ * has already said that its inside is not ours to state — so a partner
+ * carrier subscribing to our shipment event is not asked whether it conforms
+ * or translates, any more than `consumption-by-required` asks which of its
+ * operations makes the call. The upstream role on our own consumable is still
+ * asked for: that half is ours to answer (decision 28, fifth note of
+ * 2026-09-10; card 135). A big ball of mud is ours and is asked, which is
+ * what `mud-needs-acl` exists to say.
  */
 const roleCoherence: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -2546,8 +2563,15 @@ const roleCoherence: Rule = (workspace) => {
 		}
 		// A customer-supplier downstream is asked for no role: the negotiated
 		// interface is the pattern, and the two words on offer both say
-		// something else about it.
-		if (!consumption.pattern && agreement?.type !== "customer-supplier") {
+		// something else about it. Nor is a consumer whose insides are not
+		// ours to state, or not yet read: how it takes our fact in is what
+		// the flag says nobody here can answer.
+		if (
+			!consumption.pattern &&
+			agreement?.type !== "customer-supplier" &&
+			!consumer.external &&
+			!consumer.boundaryOnly
+		) {
 			diagnostics.push({
 				severity: "warning",
 				rule: "role-coherence",
@@ -4105,7 +4129,14 @@ const rejectsOnOperation: Rule = (workspace) => {
  * an operation it issues reaches that consumption along this context's `by`
  * chain through any number of local fronts, or nothing says who calls and
  * there is one call in this context to hear, made by a consumer with a single
- * operation to infer. Read with the third clause missing, as it was until
+ * operation to infer. For a process, the operation that starts it counts as
+ * one it issues: the start is the instance's own first step, so the calls that
+ * operation makes are the process's and their answers come back to it. Read
+ * without that, as it was until card 135, a process started by the command
+ * whose handler makes the first outbound call could not wait on that call's
+ * answer at all, and the only clean form cost an extra internal operation and
+ * an extra event to restate what `starts` had already said (decision 23,
+ * third amendment of 2026-09-10). Read with the third clause missing, as it was until
  * card 126, this rule dictated the model's shape: a saga issuing a use-case
  * front that calls an adapter that calls the provider could not wait on the
  * provider's answer, though the events coming back up that same chain had
@@ -4175,7 +4206,7 @@ const consumableKinds: Rule = (workspace) => {
 					diagnostics.push({
 						severity: "error",
 						rule: "consumable-kind",
-						message: `${reactorLabel(reactor)} "${reactor.name}" waits for "${trigger.origin}", but nothing says ${reactorLabel(reactor).toLowerCase()} "${reactor.name}" made that call: it does not issue "${trigger.operation.name}", and no chain of "by" inside "${bc.name}" runs from an operation it issues to the consumption of "${trigger.operation.name}". An answer comes back to whoever called, routing along the local "by" chain through as many of this context's fronts as it takes, so issue that operation, or say in "by" which of this context's operations makes the call, or react to an event instead`,
+						message: `${reactorLabel(reactor)} "${reactor.name}" waits for "${trigger.origin}", but nothing says ${reactorLabel(reactor).toLowerCase()} "${reactor.name}" made that call: it does not issue "${trigger.operation.name}", and no chain of "by" inside "${bc.name}" runs from an operation it issues${reactor instanceof Process ? " or starts on" : ""} to the consumption of "${trigger.operation.name}". An answer comes back to whoever called, routing along the local "by" chain through as many of this context's fronts as it takes, so issue that operation, or say in "by" which of this context's operations makes the call, or react to an event instead`,
 						ref: reactor.ref,
 					});
 			}
@@ -4548,9 +4579,8 @@ const policyComplete: Rule = (workspace) => {
  * was carrying no weight in it (card 102, the lead's ruling).
  */
 function isProcessLifecycle(cycle: Reactor[]): boolean {
-	const reactors = liveReactorsOf(cycle);
-	const [process] = reactors;
-	if (reactors.length !== 1 || !(process instanceof Process)) return false;
+	const process = lifecycleProcessOf(cycle);
+	if (!process) return false;
 	return reEntersWhileAlive(process, beforeOnRing(cycle, process));
 }
 
@@ -4570,11 +4600,10 @@ function isProcessLifecycle(cycle: Reactor[]): boolean {
  * ring — and reported a shape every referral, booking and sub-case model has
  * (decision 23, amendment of 2026-09-10, second; card 116).
  *
- * What is left is the live reactors, and the lifecycle tests are asked of
- * those: one live process and nothing else is {@link isProcessLifecycle}, one
- * live process among translating policies is
- * {@link processThroughTranslatingLayer}, and two live processes is the loop
- * the message has always described.
+ * What is left is the live reactors, and the lifecycle test is asked of
+ * those: one live process, alone or among policies that only translate here,
+ * is {@link lifecycleProcessOf}, and two live processes is the loop the
+ * message has always described.
  */
 function liveReactorsOf(cycle: Reactor[]): Array<Policy | Process> {
 	return cycle.filter(
@@ -4638,14 +4667,26 @@ function isCalledProcess(process: Process, cycle: Reactor[]): boolean {
  * calls, which is the same wait seen from the call that carries it (see
  * {@link routesTo}). A trigger that is both a `starts` and an `on` is a wait
  * as well as a start, and is left exempt.
+ *
+ * A node the process only starts on closes the ring by starting an instance,
+ * whatever else routes through that node, and the answer clause used to say
+ * otherwise. The shortest workaround for a process that could not hear its own
+ * first call — start on the operation and issue it too — put the starting
+ * command on the ring and made it the process's caller as well, so the ring
+ * read as "the answer I was waiting for came back" when what it does is make
+ * another instance every turn. The start is asked about before the answer, so
+ * such a ring is reported for what it does (decision 23, third amendment of
+ * 2026-09-10; card 135).
  */
 function reEntersWhileAlive(process: Process, before: Reactor): boolean {
 	if (before === process) return true;
+	if (process.events.some((trigger) => trigger === before)) return true;
+	if (before instanceof Consumable && process.startEvents.includes(before))
+		return false;
 	return process.events.some(
 		(trigger) =>
-			trigger === before ||
-			(trigger instanceof Answer &&
-				routesTo(process, trigger.operation).includes(before)),
+			trigger instanceof Answer &&
+			routesTo(process, trigger.operation).includes(before),
 	);
 }
 
@@ -4669,8 +4710,8 @@ function afterOnRing(cycle: Reactor[], node: Reactor): Reactor {
  * answers, the policy hears the answer as the event it publishes through its
  * own translated consumption, and it republishes it as the bank's own fact.
  * It starts nothing the process did not start and holds no state of its own,
- * so it is not a second reactor for {@link isProcessLifecycleThroughLayer}'s
- * purposes — it is the layer the process's lifecycle runs through.
+ * so it is not a second reactor for {@link lifecycleProcessOf}'s purposes —
+ * it is the layer the process's lifecycle runs through.
  *
  * Read on the policy alone, as it was until card 113, this asked less than it
  * claimed: a policy with an anti-corruption subscription anywhere and any
@@ -4702,31 +4743,36 @@ function isTranslatingPolicy(policy: Policy, cycle: Reactor[]): boolean {
 }
 
 /**
- * The one process of a ring whose every other reactor is a policy translating
- * on it, or undefined where the ring is not that shape.
+ * The one process a ring could be the life of, or undefined where the ring is
+ * not that shape: the ring's only live process, every other live reactor on it
+ * being a policy that merely translates there.
  *
- * {@link isProcessLifecycle} exempts a ring on which the process is the only
- * reactor. NorthBank's honest gateway wiring put a second reactor on the
- * ring: the policy that hears the scheme's answer through an
+ * The plainest shape is a process alone on its ring — it issues an operation,
+ * the operation raises the event it waits for next, and so on to the end
+ * (decision 23). NorthBank's honest gateway wiring put a second reactor on
+ * that ring: the policy that hears the scheme's answer through an
  * anti-corruption-layer consumption and republishes it as the bank's own
  * event, which the process then hears. That policy translates; it starts
  * nothing the process did not start and holds no state between events of its
  * own, so a ring on which one process sits and every other reactor is such a
- * translating policy is the process's lifecycle carried through the layer
- * rather than two cycles, one for each direction of the same call
- * (decision 23, amended 2026-09-10, second; card 108).
+ * translating policy is the same lifecycle carried through the layer rather
+ * than two cycles, one for each direction of the same call (decision 23,
+ * amended 2026-09-10, second; card 108). The two readings are one question
+ * with one answer, so they are asked once: a ring with no policy on it passes
+ * the "every policy translates" test vacuously.
  *
  * A process the ring calls and hears back from is not one of the reactors
- * counted here either, for {@link liveReactorsOf}'s reason: it is a call at
- * process granularity, so a ring on which one process waits while a gateway
- * translates and a sub-process is called and finishes is still that one
- * process's lifecycle (card 116).
+ * counted here, for {@link liveReactorsOf}'s reason: it is a call at process
+ * granularity, so a ring on which one process waits while a gateway translates
+ * and a sub-process is called and finishes is still that one process's
+ * lifecycle (card 116).
  *
  * The shape alone is not the exemption, only its first half; whether the
  * process is living or being born again on this ring is
- * {@link isProcessLifecycleThroughLayer}'s question.
+ * {@link reEntersWhileAlive}'s question, asked by {@link isProcessLifecycle}
+ * and answered the other way by {@link spawnsInstances}.
  */
-function processThroughTranslatingLayer(cycle: Reactor[]): Process | undefined {
+function lifecycleProcessOf(cycle: Reactor[]): Process | undefined {
 	const reactors = liveReactorsOf(cycle);
 	const processes = reactors.filter(
 		(node): node is Process => node instanceof Process,
@@ -4734,24 +4780,27 @@ function processThroughTranslatingLayer(cycle: Reactor[]): Process | undefined {
 	const policies = reactors.filter(
 		(node): node is Policy => node instanceof Policy,
 	);
-	if (processes.length !== 1 || policies.length === 0) return undefined;
+	if (processes.length !== 1) return undefined;
 	if (!policies.every((policy) => isTranslatingPolicy(policy, cycle)))
 		return undefined;
 	return processes[0];
 }
 
 /**
- * Whether a ring is one process's lifecycle running through a translating
- * layer, rather than a cycle.
+ * The process a ring spawns a new instance of every time round: one whose ring
+ * has the lifecycle shape in every respect except that what comes back to it
+ * there is a `starts` trigger.
  *
- * The shape — one process, every other reactor translating on the ring — is
- * {@link processThroughTranslatingLayer}. The exemption's premise is the other
- * half, and card 108 asserted it without checking it: that the event the
- * process hears here continues an instance. A translated event named in the
- * process's `starts` does not; it makes another instance every time round, so
- * no instance's state holds the ring together and the lifecycle argument is
- * gone. Codex's ninth review drew exactly that ring and it validated clean
- * (decision 23, note of 2026-09-10, second; card 113).
+ * The exemption's premise is that the step coming back into the process
+ * continues an instance, and card 108 asserted it without checking it. A
+ * translated event named in the process's `starts` does not continue one; it
+ * makes another every time round, so no instance's state holds the ring
+ * together and the lifecycle argument is gone. Codex's ninth review drew
+ * exactly that ring through a gateway and it validated clean (decision 23,
+ * note of 2026-09-10, second; card 113), and the architect's sixteenth round
+ * drew the same thing with no gateway at all — a process that starts on and
+ * issues one operation — which the message now names for what it does as well
+ * (card 135).
  *
  * What continues an instance is {@link reEntersWhileAlive}: a trigger the
  * process waits on while alive, an answer routed back through one of its
@@ -4759,23 +4808,8 @@ function processThroughTranslatingLayer(cycle: Reactor[]): Process | undefined {
  * walk takes no step from one, because a fact that completes an instance does
  * not wake it — so `ends` never reaches this question.
  */
-function isProcessLifecycleThroughLayer(cycle: Reactor[]): boolean {
-	const process = processThroughTranslatingLayer(cycle);
-	if (!process) return false;
-	return reEntersWhileAlive(process, beforeOnRing(cycle, process));
-}
-
-/**
- * The process a ring spawns a new instance of every time round: one whose ring
- * is a translating layer's in every respect except that what comes back to it
- * through the layer is a `starts` trigger.
- *
- * It is a cycle, and the reason it is one is worth saying in the message: a
- * reader who has drawn a lifecycle through a gateway needs to be told that the
- * event coming back begins the process rather than continuing it (card 113).
- */
-function spawnsInstancesThroughLayer(cycle: Reactor[]): Process | undefined {
-	const process = processThroughTranslatingLayer(cycle);
+function spawnsInstances(cycle: Reactor[]): Process | undefined {
+	const process = lifecycleProcessOf(cycle);
 	if (!process) return undefined;
 	return reEntersWhileAlive(process, beforeOnRing(cycle, process))
 		? undefined
@@ -4796,12 +4830,12 @@ function spawnsInstancesThroughLayer(cycle: Reactor[]): Process | undefined {
  * loop nobody owns end to end is the one worth spelling out.
  *
  * One shape is exempt: a process fed by its own steps, which is a lifecycle
- * and not a ring (see {@link isProcessLifecycle}); another is a ring with a
- * process and a translating policy on it, its lifecycle through an
- * anti-corruption layer (see {@link isProcessLifecycleThroughLayer}). Both ask
- * that what comes back to the process continues an instance; where it starts
- * one instead, the ring is reported for what it does — every turn spawns
- * another instance (see {@link spawnsInstancesThroughLayer}; card 113).
+ * and not a ring, whether it runs through policies that only translate on the
+ * ring or through nothing but its own operations (see
+ * {@link isProcessLifecycle} and {@link lifecycleProcessOf}). The exemption
+ * asks that what comes back to the process continues an instance; where it
+ * starts one instead, the ring is reported for what it does — every turn
+ * spawns another instance (see {@link spawnsInstances}; cards 113 and 135).
  *
  * A ring with no policy or process on it at all is not a chain of reactions —
  * nothing on it wakes on anything, it is a call reaching the next operation
@@ -4824,7 +4858,6 @@ const reactionCycle: Rule = (workspace) => {
 		(node) => node.ref,
 	)
 		.filter((cycle) => !isProcessLifecycle(cycle))
-		.filter((cycle) => !isProcessLifecycleThroughLayer(cycle))
 		.flatMap((cycle) => {
 			const contexts = [...new Set(cycle.map((n) => n.boundedcontext))];
 			const across =
@@ -4836,13 +4869,13 @@ const reactionCycle: Rule = (workspace) => {
 			);
 			if (!hasReactor && contexts.length > 1) return [];
 			const named = [...cycle, cycle[0]].map((n) => `"${n.name}"`).join(" -> ");
-			// A ring that would be a lifecycle through a translating layer but
-			// for the event coming back into the process's `starts` is named
-			// for what it does: each turn begins another instance, so a reader
-			// who drew it as one instance's life sees why it is not.
-			const spawning = spawnsInstancesThroughLayer(cycle);
+			// A ring that would be a lifecycle but for the step coming back
+			// into the process's `starts` is named for what it does: each turn
+			// begins another instance, so a reader who drew it as one
+			// instance's life sees why it is not.
+			const spawning = spawnsInstances(cycle);
 			const message = spawning
-				? `Reactions run in a cycle that spawns instances: ${named}; the event that closes the ring starts "${spawning.name}" rather than continuing it, so every turn begins another instance and nothing in the model says what ends them${across}`
+				? `Reactions run in a cycle that spawns instances: ${named}; what closes the ring starts "${spawning.name}" rather than continuing it, so every turn begins another instance and nothing in the model says what ends them${across}`
 				: hasReactor
 					? `Reactions run in a cycle: ${named}; the chain triggers itself and nothing in the model says what ends it${across}`
 					: `Calls run in a cycle: ${named}; each of these calls the next and nothing on the ring reacts to anything, so it is a loop of calls rather than a chain of reactions${across}`;
@@ -5740,9 +5773,9 @@ const RULES: CataloguedRule[] = [
 		rule: "role-coherence",
 		severities: ["warning"],
 		summary:
-			"Where the provider of a consumable is the upstream side, the consumable declares an upstream role and the consumption a downstream one — unless the two contexts are partners or share a kernel, and no downstream role is asked for where their relationship is customer-supplier.",
-		why: "Crossing a context boundary is an integration decision: how the upstream offers what it offers (a documented API or a published format) and how the downstream takes it (as-is or translated) should be explicit. Which end is which is the relationship's to say, not the call's: upstream is whoever dictates the model, so where the caller sends its own format and the provider translates it, the provider is downstream of the context calling it. A consumable can carry only an upstream role and a consumption only a downstream one, so in that case neither field is the right place for either role — the roles are on the relationship, and relationship-roles-backed reads them there. Partnership and shared kernel are the other exception: neither side is upstream, so there is no role for either end to declare. Customer-supplier is an exception on the downstream side only: a customer negotiates the interface it uses, so neither downstream word fits — a conformist is the downstream with no say, which is the opposite of a customer, and an anti-corruption layer is a translation the negotiated interface saves it from. The type is the answer, so the question is not asked.",
-		fix: "Set pattern on the consumable to open-host-service or published-language, and pattern on the consumption to conformist or anti-corruption-layer; or declare the partnership or shared kernel that makes the two contexts equals. If the downstream really has a say in what the upstream builds, the relationship is a customer-supplier one: declare it and no downstream role is asked for, though one is still read if you write it. If the warning is on an integration where the caller dictates the format, the relationship is the wrong way round: declare the caller upstream, with the roles on the relationship, and this rule stops asking. Where the pair holds two agreements, which direction this exchange runs under is the exchange's to say: name it in the consumption's relationship.",
+			"Where the provider of a consumable is the upstream side, the consumable declares an upstream role and the consumption a downstream one — unless the two contexts are partners or share a kernel, and no downstream role is asked for where their relationship is customer-supplier or where the consumer is external or modelled at its boundary only.",
+		why: "Crossing a context boundary is an integration decision: how the upstream offers what it offers (a documented API or a published format) and how the downstream takes it (as-is or translated) should be explicit. Which end is which is the relationship's to say, not the call's: upstream is whoever dictates the model, so where the caller sends its own format and the provider translates it, the provider is downstream of the context calling it. A consumable can carry only an upstream role and a consumption only a downstream one, so in that case neither field is the right place for either role — the roles are on the relationship, and relationship-roles-backed reads them there. Partnership and shared kernel are the other exception: neither side is upstream, so there is no role for either end to declare. Customer-supplier is an exception on the downstream side only: a customer negotiates the interface it uses, so neither downstream word fits — a conformist is the downstream with no say, which is the opposite of a customer, and an anti-corruption layer is a translation the negotiated interface saves it from. The type is the answer, so the question is not asked. Who the consumer is is the last exception, on the downstream side only: a downstream role says how the consumer takes the upstream's model in, as it stands or translated, and that is a fact about the inside of the consuming system. Where the consumer is marked external, somebody else's machine, or boundaryOnly, one of ours nobody has interviewed yet, the model has already said that inside is not ours to state — so a partner carrier subscribing to our shipment event is not asked whether it conforms or translates, just as consumption-by-required does not ask which of its operations makes the call. A big ball of mud is ours and is still asked, which is what mud-needs-acl exists to say.",
+		fix: "Set pattern on the consumable to open-host-service or published-language, and pattern on the consumption to conformist or anti-corruption-layer; or declare the partnership or shared kernel that makes the two contexts equals. If the downstream really has a say in what the upstream builds, the relationship is a customer-supplier one: declare it and no downstream role is asked for, though one is still read if you write it. If the downstream is a system nobody here owns or has yet interviewed, mark its context external: true or boundaryOnly: true and no downstream role is asked for. If the warning is on an integration where the caller dictates the format, the relationship is the wrong way round: declare the caller upstream, with the roles on the relationship, and this rule stops asking. Where the pair holds two agreements, which direction this exchange runs under is the exchange's to say: name it in the consumption's relationship.",
 		check: roleCoherence,
 	},
 	{
@@ -5936,8 +5969,8 @@ const RULES: CataloguedRule[] = [
 		severities: ["error"],
 		summary:
 			"Policies and processes react to events and issue operations; only operations raise events, and they raise only events.",
-		why: "An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable. A reaction may also wait on an answer — a shape the call comes back with, or one of the outcomes a refusal enumerates — and then two things have to hold: the operation declares that answer, and the reactor can hear it come back — because its context consumes the operation — through a `by` naming an operation the reactor issues, or a chain of `by` inside this context running from an operation it issues to that consumption through any number of local fronts, or through the context's one silent consumption where the consumer has a single operation to infer — or because the reactor issues the operation itself, which is the local call-and-branch. Where the consumer provides several operations and `by` says nothing, nobody has said who called, and the walk draws no answer step either. An operation that returns nothing answers with its bare completion, and that is an answer like any other; an operation that does answer with a shape has no separate completion, because naming one would be a second name for the same call coming back.",
-		fix: "Check the type of each consumable a policy or raises list points at and swap it for the right kind. For an answer, either declare it on the operation it is named from — a shape in returns or rejects, an outcome in that refusal's reasons — or issue or consume that operation; where the operation returns a shape, wait for that shape rather than for the operation completing. Where the consumer provides several operations, name the one that makes the call in the consumption's `by`, which is the same thing `consumption-by-required` asks for; an unnamed caller anywhere along the chain breaks it, and the answer stops there. Past the boundary the chain is the neighbour's, so a reactor hears the answer to the call its own context made and no call behind it. A process starting on an operation is not a reaction at all and is left to process-in-context.",
+		why: "An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable. A reaction may also wait on an answer — a shape the call comes back with, or one of the outcomes a refusal enumerates — and then two things have to hold: the operation declares that answer, and the reactor can hear it come back — because its context consumes the operation — through a `by` naming an operation the reactor issues, or a chain of `by` inside this context running from an operation it issues to that consumption through any number of local fronts, or through the context's one silent consumption where the consumer has a single operation to infer — or because the reactor issues the operation itself, which is the local call-and-branch. For a process, the operation named in starts counts as one it issues, because the operation that starts a process is that process's own first step and the calls it makes are the process's calls, their answers coming back to it. Where the consumer provides several operations and `by` says nothing, nobody has said who called, and the walk draws no answer step either. An operation that returns nothing answers with its bare completion, and that is an answer like any other; an operation that does answer with a shape has no separate completion, because naming one would be a second name for the same call coming back.",
+		fix: "Check the type of each consumable a policy or raises list points at and swap it for the right kind. For an answer, either declare it on the operation it is named from — a shape in returns or rejects, an outcome in that refusal's reasons — or issue or consume that operation; where the operation returns a shape, wait for that shape rather than for the operation completing. Where the consumer provides several operations, name the one that makes the call in the consumption's `by`, which is the same thing `consumption-by-required` asks for; an unnamed caller anywhere along the chain breaks it, and the answer stops there. Past the boundary the chain is the neighbour's, so a reactor hears the answer to the call its own context made and no call behind it. A process starting on an operation is not a reaction at all and is left to process-in-context — and that starting operation is also where a process's first call is made from, so a saga started by the command whose handler calls out waits on that call's answer without an extra front to issue.",
 		check: consumableKinds,
 	},
 	{
@@ -5999,7 +6032,7 @@ const RULES: CataloguedRule[] = [
 		severities: ["warning"],
 		summary:
 			"The reactions form no cycle: no operation raises an event whose policy or process issues an operation that leads back to the first.",
-		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with two exemptions that are the whole point of it. A process fed by its own steps — it issues an operation, the operation raises the event it waits for next, and so on to the end — is a lifecycle, not a ring, because the process holds state and declares what ends it (decision 23). And a ring on which one process sits and every other reactor is a policy that only translates — hearing its event through an anti-corruption-layer consumption and republishing it as its own context's fact — is that process's lifecycle carried through the layer, not a second reactor (decision 23, amended 2026-09-10, second); the policy has to be translating on this ring — woken here by its anti-corruption subscription and leaving here by an operation that raises the event carrying the ring on — and not merely to have such a subscription somewhere. A process the ring merely calls is not a second reactor either: where the ring enters a process on one of its `starts` and leaves it on one of its `ends`, that is a call at process granularity — a triage process booking with a scheduling process and hearing the slot — and the instance it made was born on the way in and finished on the way out, so nothing on the ring keeps it alive (decision 23, amendment of 2026-09-10, second). So a cycle is reported only when the walk comes back to a reactor other than that process, such a translating policy or such a called process: a ring through two processes each waiting on it while alive, or through a process and an ordinary policy, is a genuine loop and is reported. Both exemptions ask for one more thing, that the ring comes back to an instance already running: a process that hears the event coming back — round its own steps or through the layer — as one of its `starts` makes a new instance every time round, so no instance's state holds the ring together and nothing says what stops the next one; that ring is reported as a cycle that spawns instances, in those words (card 113). A ring with no policy or process on it at all is not a chain of reactions — nothing on it wakes on anything — so it is worded as calls rather than reactions, and reported once: where every step of it crosses a context, `relationship-cycle` already reports the same ring as a ring of calls between contexts, and this rule stays quiet there (decision 20, note of 2026-09-10).",
+		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with one exemption that is the whole point of it, read over the ring's live reactors. A process fed by its own steps — it issues an operation, the operation raises the event it waits for next, and so on to the end — is a lifecycle, not a ring, because the process holds state and declares what ends it (decision 23). And a ring on which one process sits and every other reactor is a policy that only translates — hearing its event through an anti-corruption-layer consumption and republishing it as its own context's fact — is the same lifecycle carried through the layer, not a second reactor (decision 23, amended 2026-09-10, second); the policy has to be translating on this ring — woken here by its anti-corruption subscription and leaving here by an operation that raises the event carrying the ring on — and not merely to have such a subscription somewhere. A process the ring merely calls is not a second reactor either: where the ring enters a process on one of its `starts` and leaves it on one of its `ends`, that is a call at process granularity — a triage process booking with a scheduling process and hearing the slot — and the instance it made was born on the way in and finished on the way out, so nothing on the ring keeps it alive (decision 23, amendment of 2026-09-10, second). So a cycle is reported only when the walk comes back to a reactor other than that process, such a translating policy or such a called process: a ring through two processes each waiting on it while alive, or through a process and an ordinary policy, is a genuine loop and is reported. The exemption asks for one more thing, that the ring comes back to an instance already running: a process that hears what comes back — round its own steps or through the layer — as one of its `starts` makes a new instance every time round, so no instance's state holds the ring together and nothing says what stops the next one; that ring is reported as a cycle that spawns instances, in those words (cards 113 and 135). The shortest way to write it is a process that starts on and issues the same operation, and it is reported in those words too, with no policy on the ring at all. A ring with no policy or process on it at all is not a chain of reactions — nothing on it wakes on anything — so it is worded as calls rather than reactions, and reported once: where every step of it crosses a context, `relationship-cycle` already reports the same ring as a ring of calls between contexts, and this rule stays quiet there (decision 20, note of 2026-09-10).",
 		fix: "Break the ring, usually one of the policies is reacting to too broad an event or issues an operation it should not. Where the ring closes on a process's own starting event, the step that restarts it is the one to look at: wait on that fact with `on` if the instance is meant to carry on, or raise a different event if a fresh instance is really meant each time and say in the process's description what stops the next one. If the loop is a real feedback loop that converges, say what ends it in the description of the policy that closes the ring; the model has no conditions on purpose (decision 15), so the ending condition is prose a reader finds where the loop closes, and the warning stands to send them there. If the ring is nothing but calls with no reactor at all, the fix is `relationship-cycle`'s: an anti-corruption layer, a partnership, or turning a call into an event.",
 		check: reactionCycle,
 	},

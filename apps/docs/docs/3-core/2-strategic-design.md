@@ -65,11 +65,15 @@ kinds that system documents — a processor's Customer beside its Payment, its
 Refund and its Dispute — which an `identifies` attribute of ours may name
 directly instead of the context as a whole; its **value objects**, which may
 carry the standard's own rules (an IBAN's mod-97 checksum, an ISO 20022 field
-rule); and a **context invariant** marked `precondition` or `postcondition` on
-one of its own operations — a published contract is citable where a rule the
-machine keeps at rest is not. Such an invariant names one of that context's own
-operations and constrains only the attributes of the shapes that operation
-carries and the context's own value objects.
+rule); and a **context invariant** marked `precondition` or `postcondition` —
+a published contract is citable where a rule the machine keeps at rest is not.
+Such an invariant names one of that context's own operations and constrains
+only the attributes of the shapes that operation carries and the context's own
+value objects; or, flagged `postcondition`, it names one of that context's own
+events and constrains the attributes of that event's payload, which is how a
+provider that only sends — a webhook, a settlement feed — states the contract
+of what it sends. Another context's operation or event, or anything outside
+what the guarded one carries, is refused.
 
 ## Context relationships
 

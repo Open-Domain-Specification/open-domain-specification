@@ -55,7 +55,7 @@
                 },
                 "identifies": {
                     "additionalProperties": false,
-                    "description": "What this attribute holds the identity of, when it is an identity of\nsomething else: `Order.petId` identifies Catalog's `Pet`. The target may\nbe in another bounded context — that is the point, since an identity is\nthe only thing that crosses a boundary (decision 14) — and there it may\nbe a child rather than a root, since a session holds the id of a profile\ninside a household; the child is reached through its own root. The same\ngoes inside one context: a shipment holds an order's id and its line's id\nbeside it, which is how the model points at a child without the relation\n`cross-aggregate-reference` refuses (`identifies-entity`).\n\nIt may also be a bounded context flagged `external` or `bigBallOfMud`: a\ncard scheme's authorisation id belongs to a system whose entities are not\nours to state, and a legacy account key belongs to one nobody can read\nwell enough to say which entity it is of (decision 28), so the attribute\nnames the system instead of an entity inside it.\n\nOr a schema an `external` context publishes, where that system documents\nthe kind the id names: a processor's Customer, Payment, Refund and\nDispute are distinct kinds with distinct ids, and the identity says which\nof them it holds while still reading as an identity into that context\n(decision 28, third amendment). Any other context is refused, and so is a\nschema of one, because there the entity exists and is what the id is of.",
+                    "description": "What this attribute holds the identity of, when it is an identity of\nsomething else: `Order.petId` identifies Catalog's `Pet`. The target may\nbe in another bounded context — that is the point, since an identity is\nthe only thing that crosses a boundary (decision 14) — and there it may\nbe a child rather than a root, since a session holds the id of a profile\ninside a household; the child is reached through its own root. The same\ngoes inside one context: a shipment holds an order's id and its line's id\nbeside it, which is how the model points at a child without the relation\n`cross-aggregate-reference` refuses (`identifies-entity`).\n\nIt may also be a bounded context flagged `external`, `bigBallOfMud` or\n`boundaryOnly`: a card scheme's authorisation id belongs to a system\nwhose entities are not ours to state, a legacy account key to one nobody\ncan read well enough to say which entity it is of, and a customer id\ninto our own CRM to one of ours nobody has interviewed yet (decision 28,\nsecond and sixth amendments), so the attribute names the system instead\nof an entity inside it.\n\nOr a schema an `external` or `boundaryOnly` context publishes, where that\nsystem documents the kind the id names: a processor's Customer, Payment,\nRefund and Dispute are distinct kinds with distinct ids, and the identity\nsays which of them it holds while still reading as an identity into that\ncontext (decision 28, third and sixth amendments). A big ball of mud's\nschemas are not a route: what it emits it emits, but it publishes no\ncatalogue of kinds anyone can rely on. Any other context is refused, and\nso is a schema of one, because there the entity exists and is what the id\nis of.",
                     "properties": {
                         "$ref": {
                             "type": "string"
@@ -485,6 +485,7 @@
                     "additionalProperties": {
                         "$ref": "#/definitions/AttributeSchema"
                     },
+                    "description": "The fields of this payload, by id. Optional, and an absent map is an\nempty one, like every map of elements in this schema: a marker shape\ncarrying nothing writes nothing (card 104). Required here until card 135,\nwhich is how the JSON schema came to refuse a file the loader reads.",
                     "type": "object"
                 },
                 "description": {
@@ -495,7 +496,6 @@
                 }
             },
             "required": [
-                "attributes",
                 "name"
             ],
             "title": "DataSchema",
@@ -710,6 +710,7 @@
                     "additionalProperties": {
                         "$ref": "#/definitions/AttributeSchema"
                     },
+                    "description": "This entity's own attributes, by id. Optional, and an absent map is an\nempty one, like every map of elements in this schema: a subtype that\nadds only relations writes none (card 104). Required here until card 135,\nwhich is how the JSON schema came to refuse a file the loader reads.",
                     "type": "object"
                 },
                 "description": {
@@ -743,7 +744,6 @@
                 }
             },
             "required": [
-                "attributes",
                 "description",
                 "name"
             ],

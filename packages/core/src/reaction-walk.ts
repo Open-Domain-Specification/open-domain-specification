@@ -247,7 +247,12 @@ function callsTo(bc: BoundedContext, operation: Consumable): Consumption[] {
  *   back to it (decisions 17 and 21). `by` may also name the reactor itself
  *   where the consumption is of an event, which is not a call and has no
  *   answer, so the case costs nothing to allow.
- * - An operation it issues reaches the call along this context's `by` chain,
+ * - The operation that starts it made the call, in either of the two ways
+ *   above. A process's start is its own first step, so the calls that
+ *   operation makes are the process's calls and their answers come back to it
+ *   (decision 23, third amendment of 2026-09-10; see {@link firstSteps}).
+ * - An operation it issues, or the one that starts it, reaches the call along
+ *   this context's `by` chain,
  *   through any number of local fronts (see {@link callChainReaches}). A saga
  *   that issues the use-case operation, which calls the payments adapter,
  *   which calls the provider, made that call as surely as if it had made it
@@ -303,11 +308,47 @@ export function hearsAnswerOf(
  * the call, so the walk reads it rather than dropping the answer on the floor.
  */
 function callersFor(reactor: Policy | Process, call: Consumption): Reactor[] {
+	const own = firstSteps(reactor);
 	return call.by.filter(
 		(caller): caller is Reactor =>
 			caller === reactor ||
-			(caller instanceof Consumable && reactor.commands.includes(caller)),
+			(caller instanceof Consumable && own.includes(caller)),
 	);
+}
+
+/**
+ * The operations of this context whose outbound calls are this reactor's: the
+ * ones it issues, and — for a process — the operation that starts it.
+ *
+ * A policy's is the plain list. A process has one more, and decision 23's
+ * third amendment of 2026-09-10 is why. `starts` may name an operation of the
+ * process's own context, the command that creates an instance, and that
+ * operation is the instance's own first step: the handler that opens a
+ * checkout is what calls Payments. Read without it, a process started by a
+ * command could never wait on the answer of the first call its own start
+ * made — an answer routes only to a reactor that issued the call, and the
+ * process had issued nothing yet — so the only clean form cost an extra
+ * internal operation and an extra event to say what `starts` already said,
+ * and RiverMart's `Hold attempt` passed only because a second `by` happened
+ * to exist beside the starting one.
+ *
+ * It is the calls the start makes that come back here, not the start's own
+ * answer: whoever called the starting operation is waiting for that, and the
+ * process is what the call created rather than what asked for it. So this list
+ * is read for the `by` a consumption names and for the chain that leads to it,
+ * and never as "the reactor issues this operation" (see {@link routesTo}).
+ */
+function firstSteps(reactor: Policy | Process): Consumable[] {
+	if (!(reactor instanceof Process)) return reactor.commands;
+	return [
+		...reactor.commands,
+		...reactor.startEvents.filter(
+			(it) =>
+				it.type === "operation" &&
+				it.boundedcontext === reactor.boundedcontext &&
+				!reactor.commands.includes(it),
+		),
+	];
 }
 
 /**
@@ -331,7 +372,8 @@ function callersFor(reactor: Policy | Process, call: Consumption): Reactor[] {
  * for that to be wrong: two processes that each call one scorer through an
  * operation of their own were each drawn the other's verdict as well as their
  * own, on the flow map and in the ring `reaction-cycle` walks. A caller is
- * this reactor's when the reactor issues it, or when it is the reactor —
+ * this reactor's when the reactor issues it, when it is the operation that
+ * starts the process (see {@link firstSteps}), or when it is the reactor —
  * which the model should not say of a call and sometimes does (see
  * {@link callersFor}).
  *
@@ -365,7 +407,7 @@ export function routesTo(
 	const calls = callsTo(reactor.boundedcontext, operation);
 	const named = calls.flatMap((call) => callersFor(reactor, call));
 	if (named.length > 0) return named;
-	return reactor.commands.filter((issued) =>
+	return firstSteps(reactor).filter((issued) =>
 		callChainReaches(issued, operation, reactor.boundedcontext),
 	);
 }

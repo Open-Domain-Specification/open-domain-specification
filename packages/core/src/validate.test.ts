@@ -6544,7 +6544,7 @@ describe("reaction-cycle", () => {
 			expect(reactions(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 				[
 					"warning",
-					'Reactions run in a cycle that spawns instances: "Publish Scheme Answer" -> "Publish Authorised" -> "Instruction Authorised" -> "Instruction" -> "Send Authorisation" -> "Authorise" -> "Authorised" -> "Publish Scheme Answer"; the event that closes the ring starts "Instruction" rather than continuing it, so every turn begins another instance and nothing in the model says what ends them; it runs through "Bank" and "Scheme", so no one context can see the whole ring',
+					'Reactions run in a cycle that spawns instances: "Publish Scheme Answer" -> "Publish Authorised" -> "Instruction Authorised" -> "Instruction" -> "Send Authorisation" -> "Authorise" -> "Authorised" -> "Publish Scheme Answer"; what closes the ring starts "Instruction" rather than continuing it, so every turn begins another instance and nothing in the model says what ends them; it runs through "Bank" and "Scheme", so no one context can see the whole ring',
 					translator.ref,
 				],
 			]);
@@ -8949,7 +8949,7 @@ describe("waiting on an answer", () => {
 		expect(kinds(ws)).toEqual([
 			[
 				"error",
-				'Process "Checkout" waits for "Authorise Payment rejects with Payment Declined", but nothing says process "Checkout" made that call: it does not issue "Authorise Payment", and no chain of "by" inside "Checkout" runs from an operation it issues to the consumption of "Authorise Payment". An answer comes back to whoever called, routing along the local "by" chain through as many of this context\'s fronts as it takes, so issue that operation, or say in "by" which of this context\'s operations makes the call, or react to an event instead',
+				'Process "Checkout" waits for "Authorise Payment rejects with Payment Declined", but nothing says process "Checkout" made that call: it does not issue "Authorise Payment", and no chain of "by" inside "Checkout" runs from an operation it issues or starts on to the consumption of "Authorise Payment". An answer comes back to whoever called, routing along the local "by" chain through as many of this context\'s fronts as it takes, so issue that operation, or say in "by" which of this context\'s operations makes the call, or react to an event instead',
 				process.ref,
 			],
 		]);
@@ -9936,5 +9936,349 @@ describe("subscription-backed", () => {
 		if (!read) throw new Error("no operation");
 		down.services.get("offer_api")?.consumes(read, { pattern: "conformist" });
 		expect(backed(ws)).toEqual([]);
+	});
+});
+
+/**
+ * A process started by a command hears the answers of the calls that command's
+ * handler made (decision 23, third amendment of 2026-09-10; card 135).
+ *
+ * The third amendment of 2026-09-09 let a command start a process and the
+ * fourth of the same day routed an answer only to a reactor that issued the
+ * call. Between them a checkout saga that starts on `Submit Order`, whose
+ * handler calls Payments, could not wait on Payments' answer: it had issued
+ * nothing when the call went out. The operation that starts a process is that
+ * process's own first step, so the call is the process's and the answer comes
+ * home to it.
+ */
+describe("a process hears the answer of the call its start made", () => {
+	/**
+	 * Checkout's `Submit Order` calls Payments' `Pay`, and the saga that
+	 * `Submit Order` starts branches on what `Pay` answers. `by` names the
+	 * caller unless `silent`; `startsOnTheCaller` false gives the saga a
+	 * different starting command, which makes no call at all.
+	 */
+	function saga({ silent = false, startsOnTheCaller = true } = {}) {
+		const ws = emptyWorkspace();
+		const payments = ws.addBoundedContext("Payments", { description: "" });
+		const checkout = ws.addBoundedContext("Checkout", { description: "" });
+		payments.upstreamOf(checkout, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		const paymentsApi = payments.addService("Payments API", {
+			description: "",
+			type: "application",
+		});
+		const declined = payments.addSchema("Payment Declined");
+		const pay = paymentsApi.provides("Pay", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+			rejects: [declined],
+		});
+		const app = checkout.addService("Checkout App", {
+			description: "",
+			type: "application",
+		});
+		const submit = app.provides("Submit Order", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const abandon = app.provides("Abandon Order", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		app.consumes(pay, {
+			pattern: "anti-corruption-layer",
+			...(silent ? {} : { by: [submit] }),
+		});
+		const process = checkout
+			.addProcess("Checkout", { description: "" })
+			.starts(startsOnTheCaller ? submit : abandon)
+			.on(pay.rejected(declined))
+			.ends(pay.completed());
+		return { ws, checkout, payments, pay, submit, abandon, process, app };
+	}
+
+	/** Every diagnostic but the unserved-subdomain noise of a bare fixture. */
+	const diags = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule !== "context-serves-subdomain")
+			.map((d) => [d.rule, d.severity, d.ref]);
+
+	it("routes the answer of the call its starting operation made", () => {
+		const { ws, pay, submit, process } = saga();
+		expect(hearsAnswerOf(process, pay)).toBe(true);
+		expect(routesTo(process, pay)).toEqual([submit]);
+		expect(diags(ws)).toEqual([]);
+	});
+
+	// The step is drawn from the starting operation, which is the node the
+	// reader follows the call out on, so the call leaves on one arrow and the
+	// answer arrives on another.
+	it("draws the answer step from the starting operation", () => {
+		const { ws, submit } = saga();
+		expect(
+			new ReactionChain(ws.boundedcontexts.values())
+				.stepsFrom(submit)
+				.map((step) => [step.to.name, step.answer?.origin]),
+		).toEqual([
+			["Pay", undefined],
+			["Checkout", undefined],
+			["Checkout", "Pay rejects with Payment Declined"],
+		]);
+	});
+
+	// The `by` chain from the start is followed like any other: a front the
+	// starting operation calls, which calls out, still routes home.
+	it("follows the local by chain from the starting operation", () => {
+		const { ws, checkout, pay, submit, process, app } = saga({ silent: true });
+		const adapter = checkout.addService("Payments Adapter", {
+			description: "",
+			type: "application",
+		});
+		app.consumptions.length = 0;
+		adapter.consumes(pay, { pattern: "anti-corruption-layer" });
+		const call = adapter.provides("Call Payments", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		app.consumes(call, { by: [submit] });
+		expect(routesTo(process, pay)).toEqual([submit]);
+		expect(diags(ws)).toEqual([]);
+	});
+
+	// The narrowing card 100 made stands: a process started by some other
+	// command made no call, so the answer is still somebody else's.
+	it("refuses a process whose starting command makes no call", () => {
+		const { ws, pay, process } = saga({ startsOnTheCaller: false });
+		expect(hearsAnswerOf(process, pay)).toBe(false);
+		expect(routesTo(process, pay)).toEqual([]);
+		expect(diags(ws)).toEqual([
+			["consumable-kind", "error", process.ref],
+			["consumable-kind", "error", process.ref],
+		]);
+	});
+
+	// Crossing a boundary is one hop: what Payments does with the call is its
+	// own chain, and Checkout's saga has said nothing about it.
+	it("stops at the boundary, as an issued operation's chain does", () => {
+		const { ws, payments, process } = saga();
+		const scheme = ws.addBoundedContext("Scheme", {
+			description: "",
+			external: true,
+		});
+		scheme.upstreamOf(payments, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		const schemeApi = scheme.addService("Scheme API", {
+			description: "",
+			type: "application",
+		});
+		const authorise = schemeApi.provides("Authorise", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		payments.services.get("payments_api")!.consumes(authorise, {
+			pattern: "anti-corruption-layer",
+			by: [payments.services.get("payments_api")!.consumables.get("pay")!],
+		});
+		expect(hearsAnswerOf(process, authorise)).toBe(false);
+		expect(routesTo(process, authorise)).toEqual([]);
+	});
+
+	// It is the calls the start makes that come home, not the start's own
+	// answer: whoever called the starting operation is waiting for that, and
+	// the process is what the call created rather than what asked for it.
+	it("does not let the process wait on its own starting operation's answer", () => {
+		const { ws, checkout, submit, process } = saga();
+		const refused = checkout.addSchema("Order Refused");
+		submit.rejects.push(refused);
+		process.on(submit.rejected(refused));
+		expect(hearsAnswerOf(process, submit)).toBe(false);
+		expect(diags(ws)).toEqual([["consumable-kind", "error", process.ref]]);
+	});
+
+	// RiverMart's `Hold attempt` is this shape with a retry beside it: the
+	// consumption names both the starting operation and the operation the
+	// process issues, and both are the process's own calls.
+	it("routes through the starting operation and an issued one alike", () => {
+		const { ws, pay, submit, process, app } = saga();
+		const retry = app.provides("Retry Hold", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		app.consumptions[0]!.by.push(retry);
+		process.issues(retry);
+		expect(routesTo(process, pay)).toEqual([submit, retry]);
+		expect(diags(ws)).toEqual([]);
+	});
+});
+
+/**
+ * A ring that closes on one of the process's own `starts` begins an instance
+ * rather than continuing one, whatever else routes through that node
+ * (decision 23, third amendment of 2026-09-10; card 135).
+ */
+describe("reaction-cycle and a ring closed by a process's own start", () => {
+	/**
+	 * A claims context whose process both starts on and issues one operation —
+	 * the shortest workaround for a saga that could not hear its own first
+	 * call, and a loop that makes an instance every turn. `waitsToo` also
+	 * names the starting operation in `on`, which is a wait as well as a start.
+	 */
+	function selfStarting({ waitsToo = false } = {}) {
+		const ws = emptyWorkspace();
+		const payments = ws.addBoundedContext("Payments", { description: "" });
+		const claims = ws.addBoundedContext("Claims", { description: "" });
+		payments.upstreamOf(claims, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		const paymentsApi = payments.addService("Payments API", {
+			description: "",
+			type: "application",
+		});
+		const declined = payments.addSchema("Payment Declined");
+		const pay = paymentsApi.provides("Pay", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+			rejects: [declined],
+		});
+		const app = claims.addService("Claims App", {
+			description: "",
+			type: "application",
+		});
+		const settle = app.provides("Settle Claim", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const settled = app.provides("Claim Settled", {
+			description: "",
+			type: "event",
+		});
+		app
+			.provides("Record Settlement", {
+				description: "",
+				type: "operation",
+				internal: true,
+			})
+			.raises(settled);
+		app.consumes(pay, { pattern: "anti-corruption-layer", by: [settle] });
+		const process = claims
+			.addProcess("Settlement", { description: "" })
+			.starts(settle)
+			.issues(settle)
+			.on(pay.rejected(declined))
+			.ends(settled);
+		if (waitsToo) process.on(settle);
+		return { ws, process, settle };
+	}
+
+	const cycles = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "reaction-cycle")
+			.map((d) => [d.severity, d.message, d.ref]);
+
+	// Until card 135 this validated clean: the answer clause read the ring as
+	// "the answer I was waiting for came back", because the starting operation
+	// was also the process's caller.
+	it("reports a process that starts on and issues one operation", () => {
+		const { ws, process } = selfStarting();
+		expect(cycles(ws)).toEqual([
+			[
+				"warning",
+				'Reactions run in a cycle that spawns instances: "Settlement" -> "Settle Claim" -> "Settlement"; what closes the ring starts "Settlement" rather than continuing it, so every turn begins another instance and nothing in the model says what ends them',
+				process.ref,
+			],
+		]);
+	});
+
+	// A trigger that is both a `starts` and an `on` is a wait as well as a
+	// start, and stays exempt: the model has said the instance carries on.
+	it("leaves a trigger that is both a start and a wait exempt", () => {
+		expect(cycles(selfStarting({ waitsToo: true }).ws)).toEqual([]);
+	});
+});
+
+/**
+ * `role-coherence` asks no downstream role of a consumer whose inside the
+ * model says is not ours to state, or has not yet been read (decision 28,
+ * fifth note of 2026-09-10; card 135).
+ */
+describe("role-coherence and a consumer we do not model inside", () => {
+	/** Shipping publishes a fact; `flag` decides what the subscriber is. */
+	function subscriber(flag?: "external" | "boundaryOnly") {
+		const ws = emptyWorkspace();
+		const shipping = ws.addBoundedContext("Shipping", { description: "" });
+		const carrier = ws.addBoundedContext("Carrier", {
+			description: "",
+			...(flag ? { [flag]: true } : {}),
+		});
+		const shipmentApi = shipping.addService("Shipping API", {
+			description: "",
+			type: "application",
+		});
+		const payload = shipping.addSchema("Shipment Booked");
+		const booked = shipmentApi.provides("Shipment Booked", {
+			description: "",
+			type: "event",
+			pattern: "published-language",
+			schema: payload,
+		});
+		shipmentApi
+			.provides("Book Shipment", { description: "", type: "operation" })
+			.raises(booked);
+		const gateway = carrier.addService("Carrier Gateway", {
+			description: "",
+			type: "application",
+		});
+		const consumption = gateway.consumes(booked, {});
+		shipping.upstreamOf(carrier, {
+			upstreamRoles: ["published-language"],
+			downstreamRoles: [],
+		});
+		return { ws, consumption, carrier };
+	}
+
+	const roles = (ws: Workspace) =>
+		ws
+			.validate()
+			.filter((d) => d.rule === "role-coherence")
+			.map((d) => [d.severity, d.ref]);
+
+	it("asks a partner carrier of ours which it is", () => {
+		const { ws, consumption } = subscriber();
+		expect(roles(ws)).toEqual([["warning", consumption.ref]]);
+	});
+
+	it("asks nothing of an external or boundary-only consumer", () => {
+		for (const flag of ["external", "boundaryOnly"] as const)
+			expect(roles(subscriber(flag).ws)).toEqual([]);
+	});
+
+	// Only the downstream half goes: the upstream role is on our own
+	// consumable, and that is ours to answer for.
+	it("still asks our own consumable for its upstream role", () => {
+		const { ws, carrier } = subscriber("external");
+		const booked = ws.boundedcontexts
+			.get("shipping")!
+			.services.get("shipping_api")!
+			.consumables.get("shipment_booked")!;
+		booked.pattern = undefined;
+		booked.schema = undefined;
+		expect(roles(ws)).toEqual([["warning", booked.ref]]);
+		expect(carrier.external).toBe(true);
 	});
 });
