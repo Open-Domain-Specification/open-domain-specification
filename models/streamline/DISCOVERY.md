@@ -504,3 +504,13 @@ interview and had simply never been written down.
   built when they are asked for, so what the reaction does is keep the latest resume point
   where the ranker can find it (`RecordResumePoint`). The dependency is still the unagreed
   one of section 7, and is now reported at both ends.
+
+## Revision (card 101): re-read, nothing moved
+
+The invariants and the one process were re-read against decision 19's amendments and
+decision 23's third. `Master to publication` starts on `MasterDelivered`, which crosses from
+Production — decision 23's amendment lets `starts` name a command only of the process's own
+context, so an event is the only honest way to cross that boundary here, exactly as before.
+No invariant in the model names an operation that returns anything (`SessionNeedsEntitlement`
+guards `StartPlayback`, which only rejects), so none is a postcondition candidate. Nothing
+changed.

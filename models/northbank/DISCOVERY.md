@@ -33,7 +33,7 @@ KycStatus, invariants `AdultOnly`, `VerifiedNeedsDocument`, `DocumentNotExpired`
 Consent aggregate with ConsentPurpose and ConsentScope, invariants `WithdrawnIsFinal`,
 `PurposeRequired`, `OpenBankingConsentExpires`; `ScreenCustomer` on the onboarding
 application service, which is what makes the screening call (card 92); the
-"Customer onboarding" process, which starts on `OnboardingStarted`, screens, waits for the
+"Customer onboarding" process, which starts on the `StartOnboarding` command, screens, waits for the
 engine's answer, holds on a match and ends on `CustomerVerified` (card 60: it was two
 policies, and neither could hold the prospective customer between the two events);
 `CustomerVerified`, `ConsentGiven`
@@ -238,7 +238,7 @@ The connected timeline, condensed:
 
 | Event | Raised by | Reacted to by |
 |---|---|---|
-| OnboardingStarted (internal) | StartOnboarding | Screen on onboarding |
+| StartOnboarding (a command, not an event; card 101) | the channel that calls it | starts Customer onboarding |
 | PartyMatched | ScreenParty | Hold on sanctions match |
 | CustomerVerified | VerifyCustomer | Accounts allows opening |
 | ConsentGiven / ConsentWithdrawn | GiveConsent / WithdrawConsent | Contact centre suppresses marketing |
@@ -737,5 +737,29 @@ its own record: the context map draws it under «id», and the rule no longer as
 relationship on top of it (decision 14's amendment of 2026-09-09). The dependencies are not
 lost; they read on the map, from the attributes that hold them. The relationship count drops
 by four and rises by two, for the standard.
+
+The deliberate diagnostics of section 7 are untouched: the same four, for the same reasons.
+
+## Revision (card 101): a command starts the saga it creates, and one answer names its guarantee
+
+`OnboardingStarted` existed for one reason: so "Customer onboarding" had something to start
+on, since a process could once only start on an event. It was `internal`, and nothing but
+that process ever heard it — an event invented to be waited for is exactly what decision 23's
+third amendment (card 99) lets the model stop doing. The process now starts on
+`StartOnboarding` itself, the command a channel calls to begin one, and `OnboardingStarted`
+comes out along with the `raises` that manufactured it. `PaymentInitiated`, `CartCheckedOut`
+and `MasterDelivered` stay: each is `published-language`, a fact the model states because it
+is one, not a device for a process to hear, and `MasterDelivered` crosses from Production
+besides, where only an event can start a saga.
+
+`AuthWithinAvailableBalance` becomes a postcondition. It reads the same as
+`FundsAvailableAtInitiation` — a balance read from AccountServicing, checked at the moment of
+the call — but the two are not the same shape of rule. `InitiatePayment` returns nothing, so
+there is nothing for `FundsAvailableAtInitiation` to promise about an answer, and it stays a
+check on the way in. `AuthoriseCard` returns the approval, amount and all, so the rule is a
+guarantee about what that answer carries — every approval AuthoriseCard makes is within the
+balance of the moment — and it now says so and names the returned amount rather than the
+`Authorisation` entity generally (decision 19, third amendment). No other invariant in the
+model names an operation that returns anything; this was the one candidate.
 
 The deliberate diagnostics of section 7 are untouched: the same four, for the same reasons.
