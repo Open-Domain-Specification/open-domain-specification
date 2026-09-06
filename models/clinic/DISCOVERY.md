@@ -171,3 +171,23 @@ may (`cross-context-relation`, decision 14's note of 2026-09-10), so
 (`models/clinic/src/workspace.ts:425-433`). Triage's conformist relationship
 with the regulator is what carries both the attribute and the relation; the
 model still reports zero diagnostics.
+
+## Revision (card 127)
+
+The appointment lifecycle's deadline held a data-fixed date in `after`
+("until the day of the appointment"), which decision 23's fifth note of
+2026-09-10 named as a mistake: an interval counts from a trigger, and a
+calendar date the record already holds has no home in one. The interview
+gives no interval to count and no reason to invent one — "nothing, until
+either the patient cancels, or the day of the appointment arrives" is a date
+`Clinic Session` already states, not a duration. That rules out a Clock: a
+Clock context is honest for a calendar boundary every context shares
+(day-end, month-end), and this is a single booking's own session date, known
+in advance and specific to the instance, not a shared tick. The honest shape
+is the scheduled-operation reading decisions 23 (fourth amendment) and 28
+(note of 2026-09-08, second) both give: the clinic's own scheduler calls
+`Mark Appointment Day Reached` on `Booking` once a confirmed booking's
+session date arrives with no cancellation received, and that operation
+raises `Appointment Day Reached`, which the process ends on instead of a
+deadline (`models/clinic/src/workspace.ts:767-840`). The model still reports
+zero diagnostics.

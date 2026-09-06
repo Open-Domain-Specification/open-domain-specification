@@ -1134,6 +1134,27 @@
               "schema": {
                 "$ref": "#/boundedcontexts/scheduling/schemas/booking_cancelled_details"
               }
+            },
+            "mark_appointment_day_reached": {
+              "name": "Mark Appointment Day Reached",
+              "description": "Called by the clinic's own scheduler once a confirmed booking's clinic session date arrives with no cancellation received; the date is the session's own, already held, not an interval the process counts (see DISCOVERY.md).",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/scheduling/schemas/appointment_day_reached_details"
+              },
+              "raises": [
+                {
+                  "$ref": "#/boundedcontexts/scheduling/aggregates/booking/provides/appointment_day_reached"
+                }
+              ]
+            },
+            "appointment_day_reached": {
+              "name": "Appointment Day Reached",
+              "description": "A confirmed booking's clinic session date arrived with no cancellation received.",
+              "type": "event",
+              "schema": {
+                "$ref": "#/boundedcontexts/scheduling/schemas/appointment_day_reached_details"
+              }
             }
           },
           "consumes": [],
@@ -1252,14 +1273,7 @@
       "processes": {
         "appointment_lifecycle": {
           "name": "Appointment Lifecycle",
-          "description": "Remembers a confirmed booking until either it is cancelled or the day of the appointment arrives; that is the whole of what a booking waits for.",
-          "deadlines": {
-            "appointment_day_reached": {
-              "name": "Appointment Day Reached",
-              "description": "The clinic session's own date arrives with no cancellation received.",
-              "after": "until the day of the appointment"
-            }
-          },
+          "description": "Remembers a confirmed booking until either it is cancelled or the clinic's own scheduler marks its session date reached; that is the whole of what a booking waits for. The session's date is data the booking already holds, not an interval from a trigger, so it is the scheduler's own scheduled operation that raises the fact, not a process deadline (see DISCOVERY.md).",
           "starts": [
             {
               "$ref": "#/boundedcontexts/scheduling/aggregates/booking/provides/booking_confirmed"
@@ -1272,7 +1286,7 @@
               "$ref": "#/boundedcontexts/scheduling/aggregates/booking/provides/booking_cancelled"
             },
             {
-              "$ref": "#/boundedcontexts/scheduling/processes/appointment_lifecycle/deadlines/appointment_day_reached"
+              "$ref": "#/boundedcontexts/scheduling/aggregates/booking/provides/appointment_day_reached"
             }
           ]
         }
@@ -1380,6 +1394,17 @@
               "name": "reason",
               "type": "string",
               "optional": true
+            }
+          }
+        },
+        "appointment_day_reached_details": {
+          "name": "Appointment Day Reached Details",
+          "description": "Which confirmed booking's clinic session date has arrived.",
+          "attributes": {
+            "booking_id": {
+              "name": "bookingId",
+              "type": "string",
+              "identity": true
             }
           }
         }

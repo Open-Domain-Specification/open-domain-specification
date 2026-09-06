@@ -56,6 +56,7 @@ Rules that hold across this context's instances and aggregates; each names the o
 | Patient Waitlisted | The offered slot did not suit the patient, so they were put on the waiting list for a better one instead -- a second fact, not a refusal, carried under raises alongside the booking (see DISCOVERY.md). | **bookingId**: `string`, note: `string` (optional) | Patient Waitlisted |
 | Booking Cancelled Details | Which booking was cancelled, and why. | reason: `string` (optional) | Booking Cancelled |
 | Cancellation Request | Which booking is being cancelled. | reason: `string` (optional) | Cancel Booking |
+| Appointment Day Reached Details | Which confirmed booking's clinic session date has arrived. | **bookingId**: `string` | Mark Appointment Day Reached, Appointment Day Reached |
 
 
 ## Policies
@@ -71,7 +72,7 @@ Reactions that hold state across events: each one remembers which of its events 
 
 | Name | Description | Starts | On | Then | Ends |
 | --- | --- | --- | --- | --- | --- |
-| Appointment Lifecycle | Remembers a confirmed booking until either it is cancelled or the day of the appointment arrives; that is the whole of what a booking waits for. | Booking Confirmed | - | - | Booking Cancelled, Appointment Day Reached (after until the day of the appointment) |
+| Appointment Lifecycle | Remembers a confirmed booking until either it is cancelled or the clinic's own scheduler marks its session date reached; that is the whole of what a booking waits for. The session's date is data the booking already holds, not an interval from a trigger, so it is the scheduler's own scheduled operation that raises the fact, not a process deadline (see DISCOVERY.md). | Booking Confirmed | - | - | Booking Cancelled, Appointment Day Reached |
 
 
 ## Context Relationships

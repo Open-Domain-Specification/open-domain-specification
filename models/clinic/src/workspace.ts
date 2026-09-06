@@ -766,6 +766,37 @@ const bookingCancelledEvent = bookingAgg.provides("Booking Cancelled", {
 });
 cancelBookingOp.raises(bookingCancelledEvent);
 
+const appointmentDayReachedSchema = schedulingBC.addSchema(
+	"Appointment Day Reached Details",
+	{
+		description: "Which confirmed booking's clinic session date has arrived.",
+	},
+);
+appointmentDayReachedSchema.addAttribute("bookingId", {
+	type: "string",
+	identity: true,
+});
+
+const markAppointmentDayReachedOp = bookingAgg.provides(
+	"Mark Appointment Day Reached",
+	{
+		type: "operation",
+		description:
+			"Called by the clinic's own scheduler once a confirmed booking's clinic session date arrives with no cancellation received; the date is the session's own, already held, not an interval the process counts (see DISCOVERY.md).",
+		schema: appointmentDayReachedSchema,
+	},
+);
+const appointmentDayReachedEvent = bookingAgg.provides(
+	"Appointment Day Reached",
+	{
+		type: "event",
+		description:
+			"A confirmed booking's clinic session date arrived with no cancellation received.",
+		schema: appointmentDayReachedSchema,
+	},
+);
+markAppointmentDayReachedOp.raises(appointmentDayReachedEvent);
+
 const schedulingDeskSvc = schedulingBC.addService("Scheduling Desk", {
 	type: "application",
 	description: "Offers the patient a slot once triage accepts their case.",
@@ -802,19 +833,11 @@ const appointmentLifecycleProcess = schedulingBC.addProcess(
 	"Appointment Lifecycle",
 	{
 		description:
-			"Remembers a confirmed booking until either it is cancelled or the day of the appointment arrives; that is the whole of what a booking waits for.",
+			"Remembers a confirmed booking until either it is cancelled or the clinic's own scheduler marks its session date reached; that is the whole of what a booking waits for. The session's date is data the booking already holds, not an interval from a trigger, so it is the scheduler's own scheduled operation that raises the fact, not a process deadline (see DISCOVERY.md).",
 	},
 );
 appointmentLifecycleProcess.starts(bookingConfirmedEvent);
-const appointmentDayDeadline = appointmentLifecycleProcess.addDeadline(
-	"Appointment Day Reached",
-	{
-		description:
-			"The clinic session's own date arrives with no cancellation received.",
-		after: "until the day of the appointment",
-	},
-);
-appointmentLifecycleProcess.ends(bookingCancelledEvent, appointmentDayDeadline);
+appointmentLifecycleProcess.ends(bookingCancelledEvent, appointmentDayReachedEvent);
 
 schedulingBC.downstreamOf(triageBC, {
 	upstreamRoles: ["published-language"],
