@@ -3637,6 +3637,12 @@
                   "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/stock_short"
                 }
               ]
+            },
+            "book_vendor_delivery": {
+              "name": "BookVendorDelivery",
+              "description": "Book a vendor delivery in: look its purchase order up in the legacy system, then receive the stock against it",
+              "type": "operation",
+              "internal": true
             }
           },
           "consumes": [
@@ -3662,7 +3668,34 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)/aggregates/purchase_order/provides/purchase_order_received"
               },
-              "pattern": "anti-corruption-layer"
+              "pattern": "anti-corruption-layer",
+              "relationship": {
+                "$ref": "#/relationships/vendor_purchasing_(legacy)~upstream-downstream~warehouse~legacy_stock_feed"
+              }
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)/services/purchasing_gateway/provides/get_purchase_order"
+              },
+              "pattern": "anti-corruption-layer",
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/warehouse/services/warehouse_api/provides/book_vendor_delivery"
+                }
+              ],
+              "relationship": {
+                "$ref": "#/relationships/vendor_purchasing_(legacy)~customer-supplier~warehouse~purchase_order_lookup"
+              }
+            },
+            {
+              "consumable": {
+                "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/receive_stock"
+              },
+              "by": [
+                {
+                  "$ref": "#/boundedcontexts/warehouse/services/warehouse_api/provides/book_vendor_delivery"
+                }
+              ]
             }
           ]
         }
@@ -3737,7 +3770,7 @@
           ],
           "then": [
             {
-              "$ref": "#/boundedcontexts/warehouse/aggregates/inventory_position/provides/receive_stock"
+              "$ref": "#/boundedcontexts/warehouse/services/warehouse_api/provides/book_vendor_delivery"
             }
           ]
         }
@@ -4814,7 +4847,28 @@
         }
       },
       "invariants": {},
-      "services": {},
+      "services": {
+        "purchasing_gateway": {
+          "name": "Purchasing Gateway",
+          "description": "The one negotiated endpoint over the 2009 system; the only part of it with a contract anybody agreed to",
+          "type": "application",
+          "provides": {
+            "get_purchase_order": {
+              "name": "GetPurchaseOrder",
+              "description": "Asked with a PO number, answers with the purchase order and its lines, so a delivery can be booked against it before the nightly file arrives",
+              "pattern": "open-host-service",
+              "type": "operation",
+              "schema": {
+                "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)/schemas/purchase_order_ref"
+              },
+              "returns": {
+                "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)/schemas/purchase_order_received"
+              }
+            }
+          },
+          "consumes": []
+        }
+      },
       "policies": {},
       "processes": {},
       "glossary": {
@@ -4861,6 +4915,17 @@
               "schema": {
                 "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)/schemas/purchase_order_line"
               }
+            }
+          }
+        },
+        "purchase_order_ref": {
+          "name": "PurchaseOrderRef",
+          "description": "The PO number on the delivery paperwork",
+          "attributes": {
+            "po_number": {
+              "name": "poNumber",
+              "type": "string",
+              "identity": true
             }
           }
         }
@@ -5084,6 +5149,51 @@
         "anti-corruption-layer"
       ],
       "description": "The acquirer's API is the acquirer's; Payments keeps its own intent, capture and refund and translates at the edge"
+    },
+    {
+      "type": "customer-supplier",
+      "name": "purchase order lookup",
+      "upstream": {
+        "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/warehouse"
+      },
+      "upstreamRoles": [
+        "open-host-service"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "One read endpoint over the legacy box, negotiated with the receiving desk: the warehouse got a say in its shape and Retail Systems maintains it"
+    },
+    {
+      "type": "upstream-downstream",
+      "name": "legacy stock feed",
+      "upstream": {
+        "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)"
+      },
+      "downstream": {
+        "$ref": "#/boundedcontexts/warehouse"
+      },
+      "upstreamRoles": [
+        "published-language"
+      ],
+      "downstreamRoles": [
+        "anti-corruption-layer"
+      ],
+      "description": "The nightly export is translated; nobody touches the legacy tables directly",
+      "comments": [
+        {
+          "text": "The export is a fixed-width file dropped on an FTP share at 02:00; the warehouse parses it and nobody will change either end. It stays until the purchasing system is replaced.",
+          "link": {
+            "kind": "code",
+            "url": "https://github.com/example/rivermart/blob/main/warehouse/receiving/VendorExportReader.ts",
+            "label": "warehouse/receiving/VendorExportReader.ts"
+          }
+        }
+      ],
+      "disposition": "tolerated"
     },
     {
       "type": "upstream-downstream",
@@ -5454,22 +5564,6 @@
       "downstreamRoles": [
         "conformist"
       ]
-    },
-    {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/vendor_purchasing_(legacy)"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/warehouse"
-      },
-      "upstreamRoles": [
-        "published-language"
-      ],
-      "downstreamRoles": [
-        "anti-corruption-layer"
-      ],
-      "description": "The nightly export is translated; nobody touches the legacy tables directly"
     },
     {
       "type": "shared-kernel",

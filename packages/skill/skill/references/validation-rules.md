@@ -198,11 +198,11 @@
 
 ## `consumption-agreement` (warning)
 
-**Requires:** A consumption crossing a pair that has more than one directed relationship in that direction names, in relationship, which agreement the exchange belongs to — and what it names is an agreement between those two contexts, in that direction.
+**Requires:** A consumption crossing a pair that has more than one directed relationship in that direction names, in relationship, which agreement the exchange belongs to — and what it names is an agreement joining those two contexts, either way round.
 
 **Why it matters:** One pair may hold two agreements in one direction: a negotiated fulfilment API beside a tolerated legacy feed from the same warehouse, each with its own roles, comments and disposition. The exchanges are what those roles are claims about, so an exchange that belongs to neither leaves both agreements judged by traffic that is not theirs — each is told nothing carries its upstream role while the crossing that does belongs to the other, and each is told about the other's downstream role as though it were an undeclared one. The direction is read off it too: which context dictates the model is the agreement's to say, and with two of them the answer was whichever came first in the file. Where the pair holds one agreement nothing is asked, because there is nothing to tell apart.
 
-**Usual fix:** Set relationship on the consumption to the agreement this exchange really runs under, using the ref that carries its name. If the exchange belongs to neither of them, it belongs to a third agreement nobody has declared yet — declare it. If the two agreements are really one, merge them and the question stops being asked. A consumption reported here belongs to no agreement, so relationship-roles-backed says nothing about it until it names one.
+**Usual fix:** Set relationship on the consumption to the agreement this exchange really runs under, using the ref that carries its name. It may point either way between the two contexts: upstream is whoever dictates the model, so an exchange whose caller is the upstream runs under an agreement that points against the traffic. If the exchange belongs to neither of them, it belongs to a third agreement nobody has declared yet — declare it. If the two agreements are really one, merge them and the question stops being asked. A consumption reported here belongs to no agreement, so relationship-roles-backed says nothing about it until it names one.
 
 ## `relationship-declared` (warning)
 

@@ -2010,6 +2010,30 @@ function agreementsFrom(
 }
 
 /**
+ * Every directed agreement joining two contexts, whichever way round it runs.
+ *
+ * An exchange may belong to an agreement pointing either way, because the
+ * arrow is a claim about who dictates the model and not about who calls whom:
+ * a card processor that sends its own format is upstream of the bank whose
+ * operation it calls, and the crossing runs from the bank to the processor
+ * (decision 03, amendment of 2026-09-09). So membership of the pair is what a
+ * named agreement is held to, and the direction is what tells two agreements
+ * apart when the pair has two of them.
+ */
+function agreementsBetween(
+	workspace: Workspace,
+	one: BoundedContext,
+	other: BoundedContext,
+): ContextRelationship[] {
+	return workspace.relationships.filter(
+		(r) =>
+			isDirectedRelationshipType(r.type) &&
+			r.involves(one) &&
+			r.involves(other),
+	);
+}
+
+/**
  * The agreement a crossing belongs to: the one it names, or the pair's only
  * one in the crossing's direction.
  *
@@ -2074,6 +2098,15 @@ function declaredUpstream(
  * one fact that tells the two apart, and where the pair holds one there is
  * nothing to tell apart, so nothing is asked (decision 15's amendment).
  *
+ * What it names is held to joining its two contexts and nothing more. An
+ * agreement pointing the other way is a legitimate answer: upstream is
+ * whoever dictates the model, so a card processor that sends its own format
+ * is upstream of the bank whose operation it calls, and the one agreement
+ * that exchange runs under points against the traffic (decision 03). The
+ * direction is still what the question is asked about — two agreements from
+ * the provider's context to the consumer's are what nothing tells apart — but
+ * it is not what an answer is measured against.
+ *
  * A warning, and it is the whole diagnostic for such a crossing: an exchange
  * this rule reports belongs to no agreement, so `relationship-roles-backed`
  * neither counts it for one nor criticises it against one, and the author is
@@ -2085,18 +2118,19 @@ const consumptionAgreement: Rule = (workspace) => {
 		const provider = consumption.consumable.provider.boundedcontext;
 		const consumer = consumption.consumer.boundedcontext;
 		if (provider === consumer) continue;
-		const agreements = agreementsFrom(workspace, provider, consumer);
 		const named = consumption.relationship;
 		if (named) {
-			if (agreements.includes(named)) continue;
+			if (agreementsBetween(workspace, provider, consumer).includes(named))
+				continue;
 			diagnostics.push({
 				severity: "warning",
 				rule: "consumption-agreement",
-				message: `"${consumption.consumer.name}" says its consumption of "${consumption.consumable.name}" belongs to ${relationshipLabel(named)}, which is not an agreement from "${provider.name}" to "${consumer.name}"; an exchange belongs to an agreement between the two contexts it crosses, in the direction it crosses them`,
+				message: `"${consumption.consumer.name}" says its consumption of "${consumption.consumable.name}" belongs to ${relationshipLabel(named)}, which does not join "${provider.name}" and "${consumer.name}"; an exchange belongs to an agreement between the two contexts it crosses`,
 				ref: consumption.ref,
 			});
 			continue;
 		}
+		const agreements = agreementsFrom(workspace, provider, consumer);
 		if (agreements.length < 2) continue;
 		diagnostics.push({
 			severity: "warning",
@@ -4551,9 +4585,9 @@ const RULES: CataloguedRule[] = [
 		rule: "consumption-agreement",
 		severities: ["warning"],
 		summary:
-			"A consumption crossing a pair that has more than one directed relationship in that direction names, in relationship, which agreement the exchange belongs to — and what it names is an agreement between those two contexts, in that direction.",
+			"A consumption crossing a pair that has more than one directed relationship in that direction names, in relationship, which agreement the exchange belongs to — and what it names is an agreement joining those two contexts, either way round.",
 		why: "One pair may hold two agreements in one direction: a negotiated fulfilment API beside a tolerated legacy feed from the same warehouse, each with its own roles, comments and disposition. The exchanges are what those roles are claims about, so an exchange that belongs to neither leaves both agreements judged by traffic that is not theirs — each is told nothing carries its upstream role while the crossing that does belongs to the other, and each is told about the other's downstream role as though it were an undeclared one. The direction is read off it too: which context dictates the model is the agreement's to say, and with two of them the answer was whichever came first in the file. Where the pair holds one agreement nothing is asked, because there is nothing to tell apart.",
-		fix: "Set relationship on the consumption to the agreement this exchange really runs under, using the ref that carries its name. If the exchange belongs to neither of them, it belongs to a third agreement nobody has declared yet — declare it. If the two agreements are really one, merge them and the question stops being asked. A consumption reported here belongs to no agreement, so relationship-roles-backed says nothing about it until it names one.",
+		fix: "Set relationship on the consumption to the agreement this exchange really runs under, using the ref that carries its name. It may point either way between the two contexts: upstream is whoever dictates the model, so an exchange whose caller is the upstream runs under an agreement that points against the traffic. If the exchange belongs to neither of them, it belongs to a third agreement nobody has declared yet — declare it. If the two agreements are really one, merge them and the question stops being asked. A consumption reported here belongs to no agreement, so relationship-roles-backed says nothing about it until it names one.",
 		check: consumptionAgreement,
 	},
 	{

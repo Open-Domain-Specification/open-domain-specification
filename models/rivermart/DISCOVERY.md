@@ -647,3 +647,47 @@ hold in lockstep (decision 16's amendment); five contexts independently pricing 
 different things is what decision 16's default, a value object belonging to its own context,
 describes, and forcing them onto one library would couple a seller's listing price to an
 auction's bid ceiling for no reason the interviews give. Nothing changed.
+
+## Revision (card 107): two agreements with Vendor Purchasing, and which exchange belongs to which
+
+Went back to the Retail Systems engineer with the warehouse receiving supervisor in the room,
+because card 103 made it possible for one pair of contexts to hold two agreements in one
+direction and nobody had asked whether RiverMart has such a pair.
+
+Receiving supervisor: "The file is fine for the books but it's no good at the dock. A lorry
+turns up at seven with a PO number on the paperwork and I need that PO now, not in tomorrow's
+02:00 drop. We asked for a lookup and we got one — it took a year and we had a say in what it
+answers with."
+
+Retail Systems engineer: "The export I will not touch; nobody dares. The lookup is different.
+It's one read endpoint we wrote over the purchase order table, we agreed its shape with the
+warehouse, and I maintain it. Those are not the same deal at all — one is what we support,
+the other is what everyone puts up with until the box is replaced."
+
+Recorded as two agreements between Vendor Purchasing (legacy) and Warehouse in the same
+direction, each named and each with its own disposition, which is exactly the shape decision
+15's amendment of 2026-09-10 reopened the rule for and the first the reference set has:
+
+- `purchase order lookup`, a customer-supplier agreement — the downstream had a say in the
+  contract, which is what that type says — carrying `GetPurchaseOrder` as an open-host-service
+  operation on a Purchasing Gateway service, taken behind the warehouse's anti-corruption
+  layer. No disposition: this is how the integration should be.
+- `legacy stock feed`, upstream-downstream, carrying `PurchaseOrderReceived` as published
+  language, translated on arrival. `tolerated`, with a comment saying what it is (a fixed-width
+  file on an FTP share at 02:00) and what would clear it (replacing the purchasing system).
+
+Each consumption names its agreement in `relationship`, so `relationship-roles-backed` reads
+each agreement against its own traffic instead of criticising the lookup for the feed's
+published language and the feed for the lookup's open host. Take the two refs off and
+`consumption-agreement` warns twice, which is the point of the field.
+
+Two things this revision deliberately did not do. It did not put the endpoint's insides in the
+model: a Purchasing Gateway with one operation is the boundary RiverMart calls every morning,
+known because RiverMart calls it, and how the 2009 box answers is still nobody's to state —
+which is a different thing from the nightly-export job card 90 deleted, since that was a
+mechanism nobody could describe invented so an event would have a raiser. And it gave the
+warehouse a front of its own, `BookVendorDelivery` on WarehouseAPI, because a context acts on
+another through its own application service (decision 17): the policy that used to issue the
+aggregate's `ReceiveStock` directly now issues the front, the front looks the PO up through the
+layer and then receives the stock against it, and `by` on both calls is what carries the chain
+from the export through to `StockReceived`.

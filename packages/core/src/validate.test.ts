@@ -2580,7 +2580,7 @@ describe("consumption-agreement", () => {
 		]);
 	});
 
-	it("warns about an exchange naming an agreement that does not run that way", () => {
+	it("warns about an exchange naming an agreement that joins other contexts", () => {
 		const { ws, shop, reserve, order } = twoAgreements();
 		const other = ws.addBoundedContext("Payments", { description: "" });
 		const wrong = other.upstreamOf(
@@ -2595,10 +2595,55 @@ describe("consumption-agreement", () => {
 		expect(agreement(ws)).toEqual([
 			[
 				"warning",
-				'"Shop App" says its consumption of "Reserve Stock" belongs to the agreement "Settlement" between "Payments" and "Shop", which is not an agreement from "Warehouse" to "Shop"; an exchange belongs to an agreement between the two contexts it crosses, in the direction it crosses them',
+				'"Shop App" says its consumption of "Reserve Stock" belongs to the agreement "Settlement" between "Payments" and "Shop", which does not join "Warehouse" and "Shop"; an exchange belongs to an agreement between the two contexts it crosses',
 				named.ref,
 			],
 		]);
+	});
+
+	/**
+	 * The inbound integration decision 03's 2026-09-09 amendment is about: the
+	 * caller dictates the format and the provider translates it, so the caller
+	 * is the upstream and the one agreement the exchange runs under points
+	 * against the traffic. Naming it is right, not a mistake.
+	 */
+	it("accepts an agreement pointing the other way, where the caller is upstream", () => {
+		const ws = emptyWorkspace();
+		const banking = ws
+			.addDomain("Banking", { description: "" })
+			.addSubdomain("Payments", { description: "", type: "core" });
+		const processor = ws.addBoundedContext("Card Processor", {
+			description: "",
+			subdomains: [banking],
+		});
+		const bank = ws.addBoundedContext("Bank", {
+			description: "",
+			subdomains: [banking],
+		});
+		// The processor's own message format, on the operation it reaches.
+		const message = processor.addSchema("Scheme Message");
+		message.addAttribute("messageType", { type: "string" });
+		const settle = bank
+			.addService("Bank API", { description: "", type: "application" })
+			.provides("Settle", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+				schema: message,
+			});
+		const dictated = processor.upstreamOf(bank, {
+			name: "Scheme Rules",
+			upstreamRoles: ["published-language"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		processor
+			.addService("Processor", { description: "", type: "application" })
+			.consumes(settle, {
+				pattern: "anti-corruption-layer",
+				relationship: dictated,
+			});
+		expect(agreement(ws)).toEqual([]);
+		expect(ws.validate()).toEqual([]);
 	});
 
 	it("asks nothing of a pair with one agreement, named or not", () => {
