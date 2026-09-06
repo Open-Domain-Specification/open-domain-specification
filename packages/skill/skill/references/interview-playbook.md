@@ -170,6 +170,11 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   an application service, and a state change of one aggregate on that aggregate. What an
   aggregate or a domain service offers stays inside the context: only an application service's
   operations carry an upstream `pattern` or are consumed from outside.
+- Per operation: "who asks it to do that — a person at a screen, another part, a schedule?" →
+  record the answer as a sentence in the operation's `description`. There is no actor construct
+  and no consumption for a human clicking a button: an operation nobody in the model consumes
+  is simply one people call through a screen, and that is the normal case for most of a
+  system's public surface, not a sign of dead model.
 - "When that happens, what fact would you announce to the rest of the business?" → `event`
   consumable, linked from the operation with `raises`. Events are past tense.
 - "Is that something only this part uses, or would other parts care?" → `internal: true`, or

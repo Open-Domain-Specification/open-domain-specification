@@ -103,6 +103,11 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
   schema may be named across a boundary only where the two contexts declare a `shared-kernel`
   relationship.
 - Reference another aggregate only through its root entity, with `references`.
+- No delivery flag, no modules, no actors, no read-model element, no operations on a value
+  object, an entity has one home, a context invariant records the check rather than the store —
+  these and the rest of what the model leaves out are this model's own preferences, not DDD's
+  laws; `references/model-reference.md` is exactly the model, and `decisions/15-what-the-model-leaves-out.md`
+  in the repository is where the reasoning for each one lives.
 
 ## Step 5: validate and explain
 
