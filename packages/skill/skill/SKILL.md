@@ -95,7 +95,10 @@ Follow the mode reference for mechanics. Rules that hold in both modes:
 - An external context is somebody else's machine: it states no aggregates, policies or
   processes, and no rule it keeps at rest. What it publishes it may state — the rules on its
   value objects, and a `precondition` or `postcondition` on one of its own operations, which is
-  that operation's published contract.
+  that operation's published contract. Such a rule names one of that context's own operations
+  and constrains only the attributes of the shapes that operation carries and the context's own
+  value objects; it says nothing about a context of ours. Its services still carry a `type`, but
+  nothing reads it.
 - A payload schema belongs to the context that publishes the consumable. A value object or a
   schema may be named across a boundary only where the two contexts declare a `shared-kernel`
   relationship.

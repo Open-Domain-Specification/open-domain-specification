@@ -1114,6 +1114,50 @@ function composedSchemas(roots: Iterable<DataSchema>): Set<DataSchema> {
 }
 
 /**
+ * What a guard has already been told: the shapes the calls made for this
+ * operation answered with.
+ *
+ * A precondition is checked at the moment of the call, and a check that reads
+ * something from another context reads an answer, not that context's model.
+ * "Approve an order only if the customer is in good standing" is one call
+ * before the decision — the front asks the customers context and holds the
+ * standing it came back with — so the fact the rule names is the `returns` of
+ * the consumable that call consumed. Naming it is the difference between a
+ * rule a reader can follow to the call that feeds it and a sentence saying
+ * "somewhere we look this up".
+ *
+ * Two ways a call belongs to a guard, and both are `by` read as the causal
+ * link it is (decision 21's amendment). The guard makes the call itself: its
+ * own provider's consumption names it in `by`. Or the front that calls the
+ * guard makes it: a public operation of this same context that reaches the
+ * guard through a consumption naming the front, which is decision 17's shape —
+ * the aggregate keeps the rule and the application service is what talks to
+ * anybody, so the aggregate's operation never holds the consumption itself.
+ * Only calls declared inside the guard's own context count: a consumption is
+ * the consumer's, and a rule of ours may not be fed by somebody else's call.
+ */
+function fetchedByGuard(guard: Consumable): DataSchema[] {
+	const bc = guard.boundedcontext;
+	const members = [...bc.aggregates.values(), ...bc.services.values()];
+	const consumptions = members.flatMap((member) => member.consumptions);
+	// The fronts: operations of this context whose own call reaches the guard.
+	const fronts = new Set<Consumable | Policy | Process>(
+		consumptions
+			.filter((c) => c.consumable === guard)
+			.flatMap((c) => c.by)
+			.filter((caller): caller is Consumable => caller instanceof Consumable),
+	);
+	const answers: DataSchema[] = [];
+	for (const consumption of consumptions) {
+		const { returns } = consumption.consumable;
+		if (!returns) continue;
+		if (!consumption.by.some((by) => by === guard || fronts.has(by))) continue;
+		if (!answers.includes(returns)) answers.push(returns);
+	}
+	return answers;
+}
+
+/**
  * The payload shapes this invariant's guarded operations put within its reach,
  * composition included.
  *
@@ -1130,12 +1174,25 @@ function composedSchemas(roots: Iterable<DataSchema>): Set<DataSchema> {
  * itinerary arrives by the requested time names one attribute of each, and
  * reading the answer alone refused the very example the flag was introduced
  * for (decision 19, third amendment).
+ *
+ * A precondition reaches one place further still: what the guard already
+ * fetched. "Approve only if the customer is in good standing" is checked
+ * before the approval runs and the standing it reads is not in the request and
+ * not this operation's answer — it is the answer of a call somebody here made
+ * first, over an anti-corruption layer, before deciding. That answer exists at
+ * the moment of the check, so the rule may name it, and until card 116 it
+ * could name neither that nor the other context's attribute and had to leave
+ * what it reads in prose. What it reaches is the `returns` of the consumables
+ * the guard itself consumes, or that the front calling the guard consumes (see
+ * {@link fetchedByGuard}); the other context's entities stay out of reach, as
+ * they always were (decision 19, amendment of 2026-09-10, second).
  */
 function guardedSchemas(invariant: Invariant): Set<DataSchema> {
 	const roots: DataSchema[] = [];
 	for (const operation of invariant.guarded) {
 		if (operation.type !== "operation") continue;
 		if (operation.schema) roots.push(operation.schema);
+		if (invariant.precondition) roots.push(...fetchedByGuard(operation));
 		if (!invariant.postcondition) continue;
 		if (operation.returns) roots.push(operation.returns);
 		roots.push(...operation.rejects);
@@ -1190,7 +1247,7 @@ function schemaAttributeRefusal(
 	if (invariant.postcondition)
 		return `${where}, which no operation this postcondition guards takes, returns or rejects with, directly or through a shape one of those composes`;
 	if (invariant.precondition)
-		return `${where}, which no operation this precondition guards takes, directly or through a shape its request composes; a precondition is checked before the call runs, so it reads the request and not what comes back`;
+		return `${where}, which is neither in the request of an operation this precondition guards nor in what a call that guard makes answers with, directly or through a shape one of those composes; a precondition reads what it has by the time it runs — the request, and what the guard or the front that calls it already fetched — and not what this call comes back with`;
 	return `${where}, and only a precondition or a postcondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape`;
 }
 
@@ -1382,6 +1439,14 @@ function outsideAggregate(
  * request, the answer and the refusals (see {@link inGuardedShapes}). Any
  * other invariant naming a schema's attribute is refused, and told which of
  * the reasons it is.
+ *
+ * A precondition reaches what the guard fetched as well as what it was sent:
+ * "approve only if the customer is in good standing" reads a standing that
+ * came back from another context before this call began, and the shape it came
+ * back in is the one the rule names (see {@link fetchedByGuard}). What stays
+ * out of reach is that context's own entities and attributes: an answer we
+ * were given is a fact we hold, and their model is not (decision 19,
+ * amendment of 2026-09-10, second).
  */
 const invariantInAggregate: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -1408,7 +1473,7 @@ const invariantInAggregate: Rule = (workspace) => {
 				diagnostics.push({
 					severity: "error",
 					rule: "invariant-in-aggregate",
-					message: `Invariant "${invariant.name}" of aggregate "${aggregate.name}" constrains "${constrainableLabel(target)}", which is ${outsideAggregate(target, aggregate, invariant)}; an aggregate's invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries`,
+					message: `Invariant "${invariant.name}" of aggregate "${aggregate.name}" constrains "${constrainableLabel(target)}", which is ${outsideAggregate(target, aggregate, invariant)}; an aggregate's invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched before deciding`,
 					ref: invariant.ref,
 				});
 			}
@@ -3596,9 +3661,21 @@ const domainServiceConsumesInside: Rule = (workspace) => {
 	return diagnostics;
 };
 
-/** A domain service is internal logic, so its operations stay inside too. */
+/**
+ * A domain service is internal logic, so its operations stay inside too.
+ *
+ * Asked of the contexts whose insides the model states, and of no others. A
+ * service's type says where a piece of our own model sits — orchestration at
+ * the edge, domain logic in the middle — and an external context has no inside
+ * for that distinction to be about: what we know of somebody else's machine is
+ * the operations it offers us. Read on an external context the rule made a
+ * card scheme that wrote `domain` invalid twice over, once here and once at
+ * every operation it publishes, and the repair was to pick the word that kept
+ * the validator quiet rather than the word that was true (decision 28,
+ * amendment of 2026-09-10, fourth; card 116).
+ */
 const domainServiceInternal: Rule = (workspace) =>
-	Array.from(workspace.boundedcontexts.values()).flatMap((bc) =>
+	Array.from(modelledContexts(workspace)).flatMap((bc) =>
 		Array.from(bc.services.values())
 			.filter((service) => service.type === "domain")
 			.flatMap((service) =>
@@ -3769,10 +3846,15 @@ const rejectsOnOperation: Rule = (workspace) => {
  * true of it. The reactor has to have made the call, which is
  * {@link hearsAnswerOf}'s question: it issues the operation itself, or an
  * operation it issues is named in `by` on a consumption of that operation, or
- * nothing says who calls and there is one call in this context to hear. Read
- * at the level of the context, as it was until card 100, it let a reactor wait
- * on an answer to somebody else's call: two teams calling one shared scorer
- * each heard the other's verdict, and the reaction walk drew the step. And the
+ * nothing says who calls and there is one call in this context to hear, made
+ * by a consumer with a single operation to infer. Read at the level of the
+ * context, as it was until card 100, it let a reactor wait on an answer to
+ * somebody else's call: two teams calling one shared scorer each heard the
+ * other's verdict, and the reaction walk drew the step. Read without the
+ * single-operation half of the third clause, as it was until card 116, this
+ * rule and the walk disagreed: a by-less consumer with three operations passed
+ * here and the walk drew no step, so a process waited for an answer the flow
+ * map never delivered (decision 21, 2026-09-09 amendment). And the
  * operation has to answer that way — a refusal it never declared is a reply
  * that never arrives, however many other operations refuse with the same shape
  * (decision 23, third amendment), and so is an outcome the refusal does not
@@ -4037,9 +4119,11 @@ const policyComplete: Rule = (workspace) => {
  * arrived — so the second pass round is a later step of the same instance, and
  * what ends it is the `ends` the process declares (decision 23). Two things
  * make that safe to say. The walk came back to the process itself and to no
- * other reactor: a ring through two processes, or through a process and a
- * policy, is a genuine loop nobody on it can see the whole of, and is
- * reported. And it came back to an instance that is already running, which is
+ * other reactor that is living on this ring: a ring through two live
+ * processes, or through a process and a policy, is a genuine loop nobody on it
+ * can see the whole of, and is reported, while a process the ring calls and
+ * hears back from is not a second reactor at all (see {@link isCalledProcess}).
+ * And it came back to an instance that is already running, which is
  * {@link reEntersWhileAlive}.
  *
  * The contexts the ring crosses do not come into it. A process that issues
@@ -4054,17 +4138,76 @@ const policyComplete: Rule = (workspace) => {
  * was carrying no weight in it (card 102, the lead's ruling).
  */
 function isProcessLifecycle(cycle: Reactor[]): boolean {
-	const reactors = cycle.filter(
-		(node): node is Policy | Process =>
-			node instanceof Process || node instanceof Policy,
-	);
+	const reactors = liveReactorsOf(cycle);
 	const [process] = reactors;
 	if (reactors.length !== 1 || !(process instanceof Process)) return false;
-	const at = cycle.indexOf(process);
-	return reEntersWhileAlive(
-		process,
-		cycle[(at + cycle.length - 1) % cycle.length],
+	return reEntersWhileAlive(process, beforeOnRing(cycle, process));
+}
+
+/**
+ * Every reactor on a ring except the processes the ring merely calls: the ones
+ * whose own life the ring might be.
+ *
+ * A ring holding two processes was reported as a genuine loop, and for the
+ * commonest shape a second process takes on a ring that is wrong. A triage
+ * process issues a booking operation, a scheduling process starts on that
+ * operation and its end is the slot the triage process was waiting for: at
+ * process granularity that is a call and an answer, one lifecycle asking
+ * another to do something and hearing that it is done. Decision 23 already
+ * says a process may be started by a command and that its `ends` is how it
+ * finishes; reading the second process as a reactor living on the same ring
+ * asserted something the model denies — that its instance is kept alive by the
+ * ring — and reported a shape every referral, booking and sub-case model has
+ * (decision 23, amendment of 2026-09-10, second; card 116).
+ *
+ * What is left is the live reactors, and the lifecycle tests are asked of
+ * those: one live process and nothing else is {@link isProcessLifecycle}, one
+ * live process among translating policies is
+ * {@link processThroughTranslatingLayer}, and two live processes is the loop
+ * the message has always described.
+ */
+function liveReactorsOf(cycle: Reactor[]): Array<Policy | Process> {
+	return cycle.filter(
+		(node): node is Policy | Process =>
+			node instanceof Policy ||
+			(node instanceof Process && !isCalledProcess(node, cycle)),
 	);
+}
+
+/**
+ * Whether the ring calls this process rather than running through its life:
+ * it comes in on one of the process's `starts` and leaves on one of its
+ * `ends`.
+ *
+ * Those two facts are what a call is, said at the granularity of a process.
+ * Something the ring did began an instance — a command addressed to this
+ * context, or a fact it starts on — and the step by which the ring carries on
+ * is the very event that completes that instance, so the process did its work
+ * and answered. Nothing about the ring keeps this instance alive: it was born
+ * on the way in and finished on the way out, and the next turn of the ring
+ * makes a different one, exactly as a second call to an operation is a second
+ * call. The process whose life the ring might be is the one that is waiting
+ * while all of this happens.
+ *
+ * The exit is looked for along the ring's own steps out of the process, up to
+ * the next reactor: a process leaves by an operation it issues, that operation
+ * raises the fact, and it is the fact that has to be an `ends`. Read as "the
+ * ring holds an `ends` of this process somewhere" it would exempt a process
+ * that ends on a fact raised in a different arm of the ring, which is not this
+ * shape. An `ends` never wakes the process again — the walk takes no step from
+ * an ending trigger — so a ring reaching one has genuinely left.
+ */
+function isCalledProcess(process: Process, cycle: Reactor[]): boolean {
+	const entry = beforeOnRing(cycle, process);
+	if (!(entry instanceof Consumable) || !process.startEvents.includes(entry))
+		return false;
+	const at = cycle.indexOf(process);
+	for (let step = 1; step < cycle.length; step++) {
+		const node = cycle[(at + step) % cycle.length];
+		if (node instanceof Policy || node instanceof Process) return false;
+		if (process.endEvents.includes(node)) return true;
+	}
+	return false;
 }
 
 /**
@@ -4163,15 +4306,18 @@ function isTranslatingPolicy(policy: Policy, cycle: Reactor[]): boolean {
  * rather than two cycles, one for each direction of the same call
  * (decision 23, amended 2026-09-10, second; card 108).
  *
+ * A process the ring calls and hears back from is not one of the reactors
+ * counted here either, for {@link liveReactorsOf}'s reason: it is a call at
+ * process granularity, so a ring on which one process waits while a gateway
+ * translates and a sub-process is called and finishes is still that one
+ * process's lifecycle (card 116).
+ *
  * The shape alone is not the exemption, only its first half; whether the
  * process is living or being born again on this ring is
  * {@link isProcessLifecycleThroughLayer}'s question.
  */
 function processThroughTranslatingLayer(cycle: Reactor[]): Process | undefined {
-	const reactors = cycle.filter(
-		(node): node is Policy | Process =>
-			node instanceof Process || node instanceof Policy,
-	);
+	const reactors = liveReactorsOf(cycle);
 	const processes = reactors.filter(
 		(node): node is Process => node instanceof Process,
 	);
@@ -4361,6 +4507,52 @@ const contextServesSubdomain: Rule = (workspace) => {
 };
 
 /**
+ * What an external context's published contract may state, said once so that
+ * every refusal of one says the same thing.
+ */
+const externalContractMay =
+	"A published contract states what one of this system's own operations takes and answers with, in the attributes of its own request and answer schemas, and what its own value objects are; anything else about that system is ours to guess and not to state";
+
+/**
+ * Everything a published contract of an external context may constrain: the
+ * context's own operations, the attributes of the shapes those operations
+ * carry, and the context's own value objects with their attributes.
+ *
+ * The reach is the contract and nothing beside it. A payment provider
+ * documents that capture takes a capturable payment reference and answers with
+ * the captured payment, and it documents the shape of an IBAN; both are
+ * published, citable and ours to write down. What it does not document, and
+ * what we would be inventing if we wrote it, is a rule about our entities: an
+ * external invariant naming a modelled context's attribute is that system
+ * promising something about our model, which is the reach rules would have
+ * refused had any of them looked at an external context at all — they iterate
+ * the modelled ones, so until card 116 nothing did (decision 28, amendment of
+ * 2026-09-10, fourth).
+ *
+ * The shapes come from {@link guardedSchemas}, so the reach follows the flag
+ * the same way a modelled context's does: a precondition reads the request it
+ * is checked against, a postcondition the request and what comes back. A
+ * standard's published rule about a value is left to the value objects, which
+ * an external context has always been allowed to state (third amendment).
+ */
+function externalContractReach(
+	bc: BoundedContext,
+	invariant: Invariant,
+): Set<Constrainable> {
+	const reach = new Set<Constrainable>();
+	for (const provider of [...bc.aggregates.values(), ...bc.services.values()])
+		for (const consumable of provider.consumables.values())
+			if (consumable.type === "operation") reach.add(consumable);
+	for (const schema of guardedSchemas(invariant))
+		for (const attribute of schema.attributes.values()) reach.add(attribute);
+	for (const vo of bc.valueobjects.values()) {
+		reach.add(vo);
+		for (const attribute of vo.allAttributes) reach.add(attribute);
+	}
+	return reach;
+}
+
+/**
  * An external context is a boundary and nothing more.
  *
  * A card scheme, a payment provider, a licensor or a clock is a system the
@@ -4385,6 +4577,15 @@ const contextServesSubdomain: Rule = (workspace) => {
  * how the machine keeps itself, and a flagged one guarding another context's
  * operation is still this model promising for a system it does not own
  * (decision 28, amendment of 2026-09-10).
+ *
+ * That allowance was implemented at half its width, and this is the only rule
+ * that reads an external context's invariant at all: every reach rule —
+ * `invariant-in-context`, `precondition-names-operation` — walks the modelled
+ * contexts. So a flagged external invariant could name no operation at all,
+ * and could constrain an attribute of one of our aggregates, with nothing said
+ * either time. Both are asked here now, against the reach a published contract
+ * has (see {@link externalContractReach}; decision 28, amendment of
+ * 2026-09-10, fourth; card 116).
  *
  * It is also not a big ball of mud. The two marks look alike — neither can be
  * held to completeness — and they say opposite things about ownership. A mud
@@ -4430,6 +4631,14 @@ const externalIsBoundary: Rule = (workspace) => {
 		// rest inside the machine, and a flagged one guarding another context's
 		// operation, which is this model promising something about a system it
 		// does not own (decision 28, amendment of 2026-09-10).
+		//
+		// Half of that was implemented and the other half was not, and this is
+		// the only rule that looks at an external context's invariant at all:
+		// `invariant-in-context` and `precondition-names-operation` walk the
+		// modelled contexts, so a flagged external invariant could name no
+		// operation and could reach into one of our aggregates with nothing
+		// said (decision 28, amendment of 2026-09-10, fourth; card 116). Both
+		// are asked here, where the reader already is.
 		for (const invariant of bc.invariants.values()) {
 			if (!invariant.precondition && !invariant.postcondition) {
 				diagnostics.push({
@@ -4441,13 +4650,27 @@ const externalIsBoundary: Rule = (workspace) => {
 				continue;
 			}
 			const kind = invariant.precondition ? "precondition" : "postcondition";
-			for (const target of invariant.targets) {
-				if (!(target instanceof Consumable)) continue;
-				if (target.boundedcontext === bc) continue;
+			const guards = invariant.guarded.filter(
+				(it) => it.type === "operation" && it.boundedcontext === bc,
+			);
+			if (guards.length === 0)
 				diagnostics.push({
 					severity: "error",
 					rule: "external-is-boundary",
-					message: `External context "${bc.name}" states a ${kind} on "${target.name}", an operation of "${target.boundedcontext.name}"; a system we do not own publishes the contract of its own operations and promises nothing about anybody else's. Move the rule to the context that provides the operation`,
+					message: `External context "${bc.name}" states ${kind} "${invariant.name}" on none of its own operations; what a system we do not own publishes is the contract of an operation it offers, so name that operation. ${externalContractMay}`,
+					ref: invariant.ref,
+				});
+			const reach = externalContractReach(bc, invariant);
+			for (const target of invariant.targets) {
+				if (reach.has(target)) continue;
+				const elsewhere =
+					target instanceof Consumable && target.boundedcontext !== bc
+						? `"${target.name}", an operation of "${target.boundedcontext.name}"; a system we do not own publishes the contract of its own operations and promises nothing about anybody else's. Move the rule to the context that provides the operation`
+						: `"${constrainableLabel(target)}", which is not part of that contract. ${externalContractMay}`;
+				diagnostics.push({
+					severity: "error",
+					rule: "external-is-boundary",
+					message: `External context "${bc.name}" states a ${kind} on ${elsewhere}`,
 					ref: invariant.ref,
 				});
 			}
@@ -4780,17 +5003,17 @@ const RULES: CataloguedRule[] = [
 		rule: "invariant-in-aggregate",
 		severities: ["error"],
 		summary:
-			"An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object something in the aggregate holds, its context's own or one borrowed from elsewhere, or is an operation of a service of its own context, application or domain, that guards it. A precondition may also constrain attributes of the schema the operation it guards takes, and a postcondition those of the request, the answer and the refusals; both follow composition into the shapes those compose.",
-		why: "Naming an operation says which operation keeps the rule; it does not say what kind of rule it is. The invariant says that itself, with precondition: set, it is checked before that operation runs and nothing re-establishes it afterwards — enough funds at initiation, an entitlement at playback start, a pet still available at approval. Unset, the operation is named for responsibility and the rule is still true after it: PostEntry must produce balanced postings and the postings stay balanced. The invariant's page says which of the two it is reading, because the two promise different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not, wherever it was declared. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts. A precondition reaches one place further still: what it checks is often in the request rather than in the model — pickup before delivery, a positive weight, on a quotation no aggregate holds yet — so it may name attributes of the schema its guarded operation takes, and only that one, because before the call runs there is no answer to read. A postcondition is the one that may name what that operation answers or refuses with, and the request beside it, since what it guarantees relates the two. Either follows composition, because the fields of a shape nested in a payload are fields the call carries: a rule about the amount of an order line is a rule about the request that holds the lines. No other invariant may name a schema's attribute at all: a rule kept true on every save is a rule about the model, and a transport shape is not the model.",
-		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one, and it is asked of the context's own values as much as of borrowed ones. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them, and the attributes it may then constrain are those of that operation's own schema and of the shapes that composes; if it is a guarantee about what comes back, mark it a postcondition instead, which reaches the answer and the rejections as well as the request.",
+			"An aggregate's invariant holds inside the boundary on every save, so every element it constrains belongs to that aggregate — an entity, an attribute, one of its operations — or is a value object something in the aggregate holds, its context's own or one borrowed from elsewhere, or is an operation of a service of its own context, application or domain, that guards it. A precondition may also constrain attributes of the schema the operation it guards takes and of what a call that guard, or the front that calls it, already made comes back with, and a postcondition those of the request, the answer and the refusals; both follow composition into the shapes those compose.",
+		why: "Naming an operation says which operation keeps the rule; it does not say what kind of rule it is. The invariant says that itself, with precondition: set, it is checked before that operation runs and nothing re-establishes it afterwards — enough funds at initiation, an entitlement at playback start, a pet still available at approval. Unset, the operation is named for responsibility and the rule is still true after it: PostEntry must produce balanced postings and the postings stay balanced. The invariant's page says which of the two it is reading, because the two promise different things. Either way the boundary is the same: something outside it can change between one save and the next with nothing to stop it, so an aggregate cannot promise a rule stretched across two of them. A value object is one exception: it carries no state of its own and is saved as part of whichever aggregate holds one. The boundary holds instances rather than definitions, so a value borrowed over a shared kernel or conformed to upstream is inside it just as one of the context's own is, as long as an entity or a value in the aggregate holds one; a value nobody there holds is not, wherever it was declared. And a guard is the other: it is usually the aggregate's own operation, but decision 17 puts the public operation on the application service, and a guard that has to read two aggregates before it can say yes belongs to a domain service, so an operation of either kind of service of this context counts. A precondition reaches one place further still: what it checks is often in the request rather than in the model — pickup before delivery, a positive weight, on a quotation no aggregate holds yet — so it may name attributes of the schema its guarded operation takes, and of what its guard, or the front that calls it, already fetched: approve only if the customer is in good standing reads a standing that came back from another context before this call began, and the shape it came back in is a fact we hold. What it may not name is this call's own answer, which does not exist yet, or the other context's entities, which are never ours. A postcondition is the one that may name what that operation answers or refuses with, and the request beside it, since what it guarantees relates the two. Either follows composition, because the fields of a shape nested in a payload are fields the call carries: a rule about the amount of an order line is a rule about the request that holds the lines. No other invariant may name a schema's attribute at all: a rule kept true on every save is a rule about the model, and a transport shape is not the model.",
+		fix: "Move the invariant to the aggregate that owns what it constrains, or drop the foreign target. If the target is a value object, give an entity of this aggregate an attribute typed by it — that is what says the aggregate holds one, and it is asked of the context's own values as much as of borrowed ones. If the rule really is about several instances or several aggregates — a uniqueness, a quota, a limit — it belongs to the bounded context instead, where it names the operation that checks it (decision 27). A service's operation, application or domain, is accepted when the service belongs to this aggregate's own context; one from a neighbouring context is not, because nobody here can keep a rule checked next door. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them, and the attributes it may then constrain are those of that operation's own schema and of the shapes that composes; if it is a guarantee about what comes back, mark it a postcondition instead, which reaches the answer and the rejections as well as the request. If it reads a fact from another context, name the operation of this context that fetches it as a guard beside the transition, and constrain the attribute of what that call returns rather than the other context's entity.",
 		check: invariantInAggregate,
 	},
 	{
 		rule: "invariant-in-context",
 		severities: ["error"],
 		summary:
-			"Every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, a value object something in the context holds, its own or a borrowed one, or one of its operations. A precondition may also constrain attributes of the schema the operation it guards takes, and a postcondition those of the request, the answer and the refusals; both follow composition into the shapes those compose.",
-		why: "A context's invariant is the rule that holds across its own instances — one open application per customer, one active offer per seller and SKU — and the context can hold it because everything it counts is its own to read in one place. A value borrowed over a shared kernel is its own to read too, once one of its aggregates holds one: the instance is here even though the definition is not, and the holding is the whole question, asked of the context's own values as much as of borrowed ones. A rule reaching into another context's entities, or into a value nothing here holds, counts what a neighbour owns or what nobody keeps, which is a consistency no boundary offers. That rule is a policy or a process reacting to the other context's events instead. A precondition is the one rule that may look at a request: it runs before the call, and what it checks — pickup before delivery, a positive weight — is often in the call rather than in anything saved, so it may name attributes of the schema its guarded operation takes. That is as far as it reaches, because the answer does not exist when it is checked. A postcondition is its mirror and may name what that operation answers or refuses with, and the request it relates them to. Either follows composition into the shapes those compose, because the fields of a nested shape are fields the call carries.",
+			"Every element a context's invariant constrains belongs to that context: an entity or attribute of any of its aggregates, a value object something in the context holds, its own or a borrowed one, or one of its operations. A precondition may also constrain attributes of the schema the operation it guards takes and of what a call that guard, or the front that calls it, already made comes back with, and a postcondition those of the request, the answer and the refusals; both follow composition into the shapes those compose.",
+		why: "A context's invariant is the rule that holds across its own instances — one open application per customer, one active offer per seller and SKU — and the context can hold it because everything it counts is its own to read in one place. A value borrowed over a shared kernel is its own to read too, once one of its aggregates holds one: the instance is here even though the definition is not, and the holding is the whole question, asked of the context's own values as much as of borrowed ones. A rule reaching into another context's entities, or into a value nothing here holds, counts what a neighbour owns or what nobody keeps, which is a consistency no boundary offers. That rule is a policy or a process reacting to the other context's events instead. A precondition is the one rule that may look at a request: it runs before the call, and what it checks — pickup before delivery, a positive weight — is often in the call rather than in anything saved, so it may name attributes of the schema its guarded operation takes, and of what its guard, or the front that calls it, already fetched from elsewhere. That is as far as it reaches: this call's own answer does not exist when the check runs, and the other context's entities are never in reach. A postcondition is its mirror and may name what that operation answers or refuses with, and the request it relates them to. Either follows composition into the shapes those compose, because the fields of a nested shape are fields the call carries.",
 		fix: "Point the invariant at this context's own model, or at a value object its aggregates hold — give an entity or a value here an attribute typed by it, which is what says the context holds one — or move the rule to the context that owns what it counts. A context with no entity at all cannot be given one just to hold a value object; a quotation service that stores nothing has no aggregate to reach for, so a rule of its own is a precondition or a postcondition on its operation instead, naming the schema's attributes rather than the value object (decision 27, third amendment) — or, where the value really is state this context should keep, add the aggregate that holds it. Where the two contexts really must agree, model the reaction: the other context raises an event and a policy here issues the operation that responds. If the rule is about the fields of a request, mark it a precondition and name the operation that receives them; if it is a guarantee about what that call answers with, mark it a postcondition instead.",
 		check: invariantInContext,
 	},
@@ -5067,8 +5290,8 @@ const RULES: CataloguedRule[] = [
 		rule: "domain-service-internal",
 		severities: ["error"],
 		summary:
-			"A domain service's operations declare no upstream role and are consumed only inside their own context.",
-		why: "A domain service holds domain logic that belongs to no single aggregate — it is the inside of the model, the same as an aggregate. Offering it outward makes another context depend on how this one arranges its logic instead of on what it promises.",
+			"A domain service's operations declare no upstream role and are consumed only inside their own context. Not asked of an external context, whose service type nothing reads.",
+		why: "A domain service holds domain logic that belongs to no single aggregate — it is the inside of the model, the same as an aggregate. Offering it outward makes another context depend on how this one arranges its logic instead of on what it promises. A system we do not own has no inside for that distinction to be about — what we know of it is the operations it offers us — so the type of an external context's service is not read, and a provider that documents its API as a domain service is not made to rewrite the word to keep the validator quiet.",
 		fix: "Mark the domain service's operation internal: true and drop its pattern, then let the context's application service provide the public operation that consumes it.",
 		check: domainServiceInternal,
 	},
@@ -5111,8 +5334,8 @@ const RULES: CataloguedRule[] = [
 		severities: ["error"],
 		summary:
 			"Policies and processes react to events and issue operations; only operations raise events, and they raise only events.",
-		why: "An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable. A reaction may also wait on an answer — a shape the call comes back with, or one of the outcomes a refusal enumerates — and then two things have to hold: the operation declares that answer, and the reactor can hear it come back — because its context consumes the operation, or because the reactor issues the operation itself, which is the local call-and-branch. An operation that returns nothing answers with its bare completion, and that is an answer like any other; an operation that does answer with a shape has no separate completion, because naming one would be a second name for the same call coming back.",
-		fix: "Check the type of each consumable a policy or raises list points at and swap it for the right kind. For an answer, either declare it on the operation it is named from — a shape in returns or rejects, an outcome in that refusal's reasons — or issue or consume that operation; where the operation returns a shape, wait for that shape rather than for the operation completing. A process starting on an operation is not a reaction at all and is left to process-in-context.",
+		why: "An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable. A reaction may also wait on an answer — a shape the call comes back with, or one of the outcomes a refusal enumerates — and then two things have to hold: the operation declares that answer, and the reactor can hear it come back — because its context consumes the operation — through a `by` naming an operation the reactor issues, or through the context's one silent consumption where the consumer has a single operation to infer — or because the reactor issues the operation itself, which is the local call-and-branch. Where the consumer provides several operations and `by` says nothing, nobody has said who called, and the walk draws no answer step either. An operation that returns nothing answers with its bare completion, and that is an answer like any other; an operation that does answer with a shape has no separate completion, because naming one would be a second name for the same call coming back.",
+		fix: "Check the type of each consumable a policy or raises list points at and swap it for the right kind. For an answer, either declare it on the operation it is named from — a shape in returns or rejects, an outcome in that refusal's reasons — or issue or consume that operation; where the operation returns a shape, wait for that shape rather than for the operation completing. Where the consumer provides several operations, name the one that makes the call in the consumption's `by`, which is the same thing `consumption-by-required` asks for. A process starting on an operation is not a reaction at all and is left to process-in-context.",
 		check: consumableKinds,
 	},
 	{
@@ -5156,7 +5379,7 @@ const RULES: CataloguedRule[] = [
 		severities: ["warning"],
 		summary:
 			"The reactions form no cycle: no operation raises an event whose policy or process issues an operation that leads back to the first.",
-		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with two exemptions that are the whole point of it. A process fed by its own steps — it issues an operation, the operation raises the event it waits for next, and so on to the end — is a lifecycle, not a ring, because the process holds state and declares what ends it (decision 23). And a ring on which one process sits and every other reactor is a policy that only translates — hearing its event through an anti-corruption-layer consumption and republishing it as its own context's fact — is that process's lifecycle carried through the layer, not a second reactor (decision 23, amended 2026-09-10, second); the policy has to be translating on this ring — woken here by its anti-corruption subscription and leaving here by an operation that raises the event carrying the ring on — and not merely to have such a subscription somewhere. So a cycle is reported only when the walk comes back to a reactor other than that process or such a translating policy: a ring through two processes, or through a process and an ordinary policy, is a genuine loop and is reported. Both exemptions ask for one more thing, that the ring comes back to an instance already running: a process that hears the event coming back — round its own steps or through the layer — as one of its `starts` makes a new instance every time round, so no instance's state holds the ring together and nothing says what stops the next one; that ring is reported as a cycle that spawns instances, in those words (card 113). A ring with no policy or process on it at all is not a chain of reactions — nothing on it wakes on anything — so it is worded as calls rather than reactions, and reported once: where every step of it crosses a context, `relationship-cycle` already reports the same ring as a ring of calls between contexts, and this rule stays quiet there (decision 20, note of 2026-09-10).",
+		why: "A ring of reactions runs forever unless something outside the model stops it, and nothing in the model says what that something is. Whoever reads the model next cannot tell whether the loop is a bug or a legitimate retry with a condition that was never written down. A process is walked the same way, with two exemptions that are the whole point of it. A process fed by its own steps — it issues an operation, the operation raises the event it waits for next, and so on to the end — is a lifecycle, not a ring, because the process holds state and declares what ends it (decision 23). And a ring on which one process sits and every other reactor is a policy that only translates — hearing its event through an anti-corruption-layer consumption and republishing it as its own context's fact — is that process's lifecycle carried through the layer, not a second reactor (decision 23, amended 2026-09-10, second); the policy has to be translating on this ring — woken here by its anti-corruption subscription and leaving here by an operation that raises the event carrying the ring on — and not merely to have such a subscription somewhere. A process the ring merely calls is not a second reactor either: where the ring enters a process on one of its `starts` and leaves it on one of its `ends`, that is a call at process granularity — a triage process booking with a scheduling process and hearing the slot — and the instance it made was born on the way in and finished on the way out, so nothing on the ring keeps it alive (decision 23, amendment of 2026-09-10, second). So a cycle is reported only when the walk comes back to a reactor other than that process, such a translating policy or such a called process: a ring through two processes each waiting on it while alive, or through a process and an ordinary policy, is a genuine loop and is reported. Both exemptions ask for one more thing, that the ring comes back to an instance already running: a process that hears the event coming back — round its own steps or through the layer — as one of its `starts` makes a new instance every time round, so no instance's state holds the ring together and nothing says what stops the next one; that ring is reported as a cycle that spawns instances, in those words (card 113). A ring with no policy or process on it at all is not a chain of reactions — nothing on it wakes on anything — so it is worded as calls rather than reactions, and reported once: where every step of it crosses a context, `relationship-cycle` already reports the same ring as a ring of calls between contexts, and this rule stays quiet there (decision 20, note of 2026-09-10).",
 		fix: "Break the ring, usually one of the policies is reacting to too broad an event or issues an operation it should not. Where the ring closes on a process's own starting event, the step that restarts it is the one to look at: wait on that fact with `on` if the instance is meant to carry on, or raise a different event if a fresh instance is really meant each time and say in the process's description what stops the next one. If the loop is a real feedback loop that converges, say what ends it in the description of the policy that closes the ring; the model has no conditions on purpose (decision 15), so the ending condition is prose a reader finds where the loop closes, and the warning stands to send them there. If the ring is nothing but calls with no reactor at all, the fix is `relationship-cycle`'s: an anti-corruption layer, a partnership, or turning a call into an event.",
 		check: reactionCycle,
 	},
@@ -5173,9 +5396,9 @@ const RULES: CataloguedRule[] = [
 		rule: "external-is-boundary",
 		severities: ["error"],
 		summary:
-			"An external context declares no aggregates, no policies, no processes and no internal operations or events, and is not a big ball of mud as well; its value objects may carry invariants and it may state a precondition or a postcondition on one of its own operations, because a published contract is citable.",
-		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. The contract of one of its own operations is the same kind of published fact: a payment provider documents that capturing needs a capturable payment and what the capture answers with, and the merchant integrating with it is in no position to promise that, so the rule is stated where it is published — as a precondition or a postcondition of that provider's own operation. A rule with neither flag is different, because a rule the machine keeps at rest is exactly the invention we cannot make, and so is a precondition guarding somebody else's operation. Internal is the same invention in one word: it says an operation, or an event, never leaves that system, and the ones of somebody else's system we can name at all are those that reach us or that we reach. A big ball of mud is the opposite kind of unknown — the enterprise's own system, unreadable but ours to carve up — so a context marked both leaves every rule that reads one of the two flags guessing which reading was meant.",
-		fix: "Drop internal from the operation or the event, which is a fact about that system's insides. Move the aggregate, policy or process into the context of ours that actually holds it, or drop external: true if this is a system the enterprise really does model inside. For an invariant, the question is which of two things it is. If it is the published contract of one of this context's own operations, mark it precondition (checked before that operation runs) or postcondition (guaranteed of what it answers with) and name that operation in constrains; both flags are allowed here and one of them is required, because an unflagged rule is a claim about the machine at rest. If it is a rule about several instances of a context of ours, or a precondition guarding another context's operation, move it to the context that keeps it. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay. Where both flags are set, keep the one that says who may change the system: external for somebody else's, bigBallOfMud for ours.",
+			"An external context declares no aggregates, no policies, no processes and no internal operations or events, and is not a big ball of mud as well; its value objects may carry invariants and it may state a precondition or a postcondition on one of its own operations, because a published contract is citable. Such an invariant names one of that context's own operations and constrains only the attributes of the shapes that operation carries and the context's own value objects.",
+		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. The contract of one of its own operations is the same kind of published fact: a payment provider documents that capturing needs a capturable payment and what the capture answers with, and the merchant integrating with it is in no position to promise that, so the rule is stated where it is published — as a precondition or a postcondition of that provider's own operation. A rule with neither flag is different, because a rule the machine keeps at rest is exactly the invention we cannot make, and so is a precondition guarding somebody else's operation. The reach is the contract and nothing beside it: a flagged rule that names no operation at all is a contract about nothing, and one that constrains an entity of ours is that system promising something about our model. Neither was reported until card 116, because every reach rule walks the contexts whose insides we state and an external context is not one of them. Internal is the same invention in one word: it says an operation, or an event, never leaves that system, and the ones of somebody else's system we can name at all are those that reach us or that we reach. A big ball of mud is the opposite kind of unknown — the enterprise's own system, unreadable but ours to carve up — so a context marked both leaves every rule that reads one of the two flags guessing which reading was meant.",
+		fix: "Drop internal from the operation or the event, which is a fact about that system's insides. Move the aggregate, policy or process into the context of ours that actually holds it, or drop external: true if this is a system the enterprise really does model inside. For an invariant, the question is which of two things it is. If it is the published contract of one of this context's own operations, mark it precondition (checked before that operation runs) or postcondition (guaranteed of what it answers with) and name that operation in constrains; both flags are allowed here and one of them is required, because an unflagged rule is a claim about the machine at rest. What it may then constrain is the attributes of that operation's request and answer shapes and this context's own value objects; anything else names something the provider does not publish. If it is a rule about several instances of a context of ours, or a precondition guarding another context's operation, move it to the context that keeps it. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay. Where both flags are set, keep the one that says who may change the system: external for somebody else's, bigBallOfMud for ours.",
 		check: externalIsBoundary,
 	},
 	{

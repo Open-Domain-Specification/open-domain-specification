@@ -855,7 +855,7 @@
             },
             "approve_only_when_available": {
               "name": "ApproveOnlyWhenAvailable",
-              "description": "Move to approved only after the catalogue's summary reported the pet available; the catalogue's status itself is outside this aggregate, so the check is a read through the ACL, not a shared invariant",
+              "description": "Move to approved only while PetSummary.status, fetched through the ACL by CheckPetAvailable, says the pet is available; the catalogue's own Pet is outside this aggregate, so what the rule reads is the answer we were given, not the catalogue's model",
               "precondition": true,
               "constrains": [
                 {
@@ -863,6 +863,12 @@
                 },
                 {
                   "$ref": "#/boundedcontexts/sales_bc/aggregates/order/provides/approve_order"
+                },
+                {
+                  "$ref": "#/boundedcontexts/sales_bc/services/order_app/provides/check_pet_available"
+                },
+                {
+                  "$ref": "#/boundedcontexts/catalog_bc/schemas/pet_summary/attributes/status"
                 }
               ]
             }

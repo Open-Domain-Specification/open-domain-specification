@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { makeRichTestWs } from "./makeTestWs";
-import { Workspace } from "./workspace";
+import { hearsAnswerOf, routesTo } from "./reaction-walk";
+import { type BoundedContext, Workspace } from "./workspace";
 
 const rulesOf = (ws: Workspace) =>
 	ws.validate().map((d) => `${d.severity}:${d.rule}`);
@@ -1270,7 +1271,7 @@ describe("invariant-in-aggregate", () => {
 				severity: "error",
 				rule: "invariant-in-aggregate",
 				message:
-					'Invariant "Stretched" of aggregate "Order" constrains "Customer", which is in aggregate "Customer"; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
+					'Invariant "Stretched" of aggregate "Order" constrains "Customer", which is in aggregate "Customer"; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched before deciding',
 				ref: stretched.ref,
 			},
 		]);
@@ -1352,7 +1353,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(theirs);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Reaches Out" of aggregate "Order" constrains "Check", which is an application service\'s, on "TheirApp" in bounded context "Next"; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
+				'Invariant "Reaches Out" of aggregate "Order" constrains "Check", which is an application service\'s, on "TheirApp" in bounded context "Next"; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched before deciding',
 				abroad.ref,
 			],
 		]);
@@ -1401,7 +1402,7 @@ describe("invariant-in-aggregate", () => {
 				.map((d) => [d.message, d.ref]),
 		).toEqual([
 			[
-				'Invariant "Reaches Out" of aggregate "Invoice" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
+				'Invariant "Reaches Out" of aggregate "Invoice" constrains "Rate", which is a value object of bounded context "Kernel" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched before deciding',
 				reaching.ref,
 			],
 		]);
@@ -1424,7 +1425,7 @@ describe("invariant-in-aggregate", () => {
 				.map((d) => [d.message, d.ref]),
 		).toEqual([
 			[
-				'Invariant "Reaches Sideways" of aggregate "Invoice" constrains "Discount", which is a value object of bounded context "Billing" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
+				'Invariant "Reaches Sideways" of aggregate "Invoice" constrains "Discount", which is a value object of bounded context "Billing" that nothing in "Invoice" holds; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched before deciding',
 				reaching.ref,
 			],
 		]);
@@ -1519,7 +1520,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, price);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Quoted Price Is Positive" of aggregate "Shipment" constrains "Quote.price", which is an attribute of schema "Quote", which no operation this precondition guards takes, directly or through a shape its request composes; a precondition is checked before the call runs, so it reads the request and not what comes back; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
+				'Invariant "Quoted Price Is Positive" of aggregate "Shipment" constrains "Quote.price", which is an attribute of schema "Quote", which is neither in the request of an operation this precondition guards nor in what a call that guard makes answers with, directly or through a shape one of those composes; a precondition reads what it has by the time it runs — the request, and what the guard or the front that calls it already fetched — and not what this call comes back with; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched before deciding',
 				early.ref,
 			],
 		]);
@@ -1535,7 +1536,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, reference);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Reads Someone Else\'s Request" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which no operation this precondition guards takes, directly or through a shape its request composes; a precondition is checked before the call runs, so it reads the request and not what comes back; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
+				'Invariant "Reads Someone Else\'s Request" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which is neither in the request of an operation this precondition guards nor in what a call that guard makes answers with, directly or through a shape one of those composes; a precondition reads what it has by the time it runs — the request, and what the guard or the front that calls it already fetched — and not what this call comes back with; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched before deciding',
 				stray.ref,
 			],
 		]);
@@ -1599,7 +1600,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, reference);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Booked Under A Reference" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which no operation this postcondition guards takes, returns or rejects with, directly or through a shape one of those composes; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
+				'Invariant "Booked Under A Reference" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which no operation this postcondition guards takes, returns or rejects with, directly or through a shape one of those composes; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched before deciding',
 				wrongShape.ref,
 			],
 		]);
@@ -1614,10 +1615,122 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, pickup);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Pickup Before Delivery" of aggregate "Shipment" constrains "Quote Request.pickupDate", which is an attribute of schema "Quote Request", and only a precondition or a postcondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
+				'Invariant "Pickup Before Delivery" of aggregate "Shipment" constrains "Quote Request.pickupDate", which is an attribute of schema "Quote Request", and only a precondition or a postcondition may constrain one — a rule kept true on every save is a rule about the model, not about a transport shape; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries, a precondition also reading what the guard or the front that calls it fetched before deciding',
 				persistent.ref,
 			],
 		]);
+	});
+
+	/**
+	 * "Approve an order only if the customer is in good standing." The standing
+	 * is another context's, and what Sales holds is the answer its front
+	 * fetched over the anti-corruption layer before deciding — so the rule can
+	 * name that answer's shape and still not the other context's entity
+	 * (decision 19, amendment of 2026-09-10, second; card 116).
+	 */
+	function goodStanding({ front = false } = {}) {
+		const ws = emptyWorkspace();
+		const customers = ws.addBoundedContext("Customers", { description: "" });
+		const sales = ws.addBoundedContext("Sales", { description: "" });
+		sales.downstreamOf(customers, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		const customer = customers
+			.addAggregate("Customer", { description: "" })
+			.addRootEntity("Customer", { description: "" });
+		customer.addAttribute("id", { type: "int64", identity: true });
+		const theirStanding = customer.addAttribute("standing", {
+			type: "string",
+		});
+		const answer = customers.addSchema("Standing", { description: "" });
+		const standing = answer.addAttribute("standing", { type: "string" });
+		const getStanding = customers
+			.addService("Customer App", { description: "", type: "application" })
+			.provides("Get Standing", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+				returns: answer,
+			});
+		const orders = sales.addAggregate("Order", { description: "" });
+		const order = orders.addRootEntity("Order", { description: "" });
+		order.addAttribute("id", { type: "int64", identity: true });
+		const approve = orders.provides("Approve", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		const salesApp = sales.addService("Sales App", {
+			description: "",
+			type: "application",
+		});
+		const check = salesApp.provides("Check Standing", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		salesApp.consumes(getStanding, {
+			pattern: "anti-corruption-layer",
+			by: [check],
+		});
+		// The front reaches the aggregate's transition, so the guard is
+		// `Approve` alone and the call belongs to what calls it.
+		if (front) salesApp.consumes(approve, { by: [check] });
+		return { ws, orders, approve, check, standing, theirStanding };
+	}
+
+	it("lets a precondition read what its own guard fetched", () => {
+		const { ws, orders, approve, check, standing } = goodStanding();
+		orders
+			.addInvariant("Approve Only In Good Standing", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(approve, check, standing);
+		expect(inAggregate(ws)).toEqual([]);
+	});
+
+	it("lets it read what the front calling the guard fetched", () => {
+		const { ws, orders, approve, standing } = goodStanding({ front: true });
+		orders
+			.addInvariant("Approve Only In Good Standing", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(approve, standing);
+		expect(inAggregate(ws)).toEqual([]);
+	});
+
+	it("still refuses the other context's own attribute", () => {
+		const { ws, orders, approve, check, theirStanding } = goodStanding();
+		const reaching = orders
+			.addInvariant("Approve Only In Good Standing", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(approve, check, theirStanding);
+		expect(inAggregate(ws).map(([, ref]) => ref)).toEqual([reaching.ref]);
+		expect(inAggregate(ws)[0][0]).toContain(
+			'constrains "Customer.standing", which is in aggregate "Customer"',
+		);
+	});
+
+	// Nobody here made that call, so the answer is not ours to read: the
+	// consumption belongs to the other context's own service.
+	it("does not reach an answer no call of this context fetched", () => {
+		const { ws, orders, approve, check, standing } = goodStanding();
+		const sales = ws.getBoundedContextByRefOrThrow("#/boundedcontexts/sales");
+		const salesApp = sales.services.get("sales_app");
+		if (!salesApp) throw new Error("no service");
+		salesApp.consumptions.length = 0;
+		const reaching = orders
+			.addInvariant("Approve Only In Good Standing", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(approve, check, standing);
+		expect(inAggregate(ws).map(([, ref]) => ref)).toEqual([reaching.ref]);
 	});
 });
 
@@ -4051,6 +4164,178 @@ describe("process rules", () => {
 				.issues(authorize, reserve, dispatch)
 				.ends(orderDispatched);
 			expect(ruleOf(ws, "reaction-cycle")).toEqual([]);
+		});
+
+		/**
+		 * The referral ring: a triage process asks a scheduling process to book
+		 * a slot and waits for the booking. Triage issues its own operation,
+		 * that operation calls Scheduling's public one through the `by` on its
+		 * consumption, and Scheduling's process starts on that call, assigns a
+		 * slot and ends on the fact triage was waiting for.
+		 *
+		 * At process granularity that is a call and its answer: the scheduling
+		 * instance is born on the way in and finished on the way out, so
+		 * nothing on the ring keeps it alive and it is not a second reactor
+		 * living here (decision 23, amendment of 2026-09-10, second; card 116).
+		 */
+		function referral() {
+			const ws = emptyWorkspace();
+			const triage = ws.addBoundedContext("Triage", { description: "" });
+			const scheduling = ws.addBoundedContext("Scheduling", {
+				description: "",
+			});
+			const triageApp = triage.addService("Triage App", {
+				description: "",
+				type: "application",
+			});
+			const schedulingApp = scheduling.addService("Scheduling App", {
+				description: "",
+				type: "application",
+			});
+			const referred = triageApp.provides("Referred", {
+				description: "",
+				type: "event",
+			});
+			const caseClosed = triageApp.provides("Case Closed", {
+				description: "",
+				type: "event",
+			});
+			const closeCase = triageApp
+				.provides("Close Case", { description: "", type: "operation" })
+				.raises(caseClosed);
+			const requestBooking = triageApp.provides("Request Booking", {
+				description: "",
+				type: "operation",
+			});
+			const appointmentBooked = schedulingApp.provides("Appointment Booked", {
+				description: "",
+				type: "event",
+				pattern: "published-language",
+			});
+			const assignSlot = schedulingApp
+				.provides("Assign Slot", { description: "", type: "operation" })
+				.raises(appointmentBooked);
+			const bookAppointment = schedulingApp.provides("Book Appointment", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			});
+			triageApp.consumes(bookAppointment, {
+				pattern: "anti-corruption-layer",
+				by: [requestBooking],
+			});
+			triage.downstreamOf(scheduling, {
+				upstreamRoles: ["open-host-service", "published-language"],
+				downstreamRoles: ["anti-corruption-layer"],
+			});
+			return {
+				ws,
+				triage,
+				triageApp,
+				scheduling,
+				referred,
+				requestBooking,
+				closeCase,
+				caseClosed,
+				bookAppointment,
+				assignSlot,
+				appointmentBooked,
+			};
+		}
+
+		it("reads a sub-process the ring calls and hears back from as a call", () => {
+			const {
+				ws,
+				triage,
+				triageApp,
+				scheduling,
+				referred,
+				requestBooking,
+				closeCase,
+				caseClosed,
+				bookAppointment,
+				assignSlot,
+				appointmentBooked,
+			} = referral();
+			triageApp.consumes(appointmentBooked, {
+				pattern: "anti-corruption-layer",
+				by: [requestBooking],
+			});
+			const triaging = triage
+				.addProcess("Triaging", { description: "" })
+				.starts(referred)
+				.on(appointmentBooked)
+				.issues(requestBooking, closeCase)
+				.ends(caseClosed);
+			scheduling
+				.addProcess("Scheduling", { description: "" })
+				.starts(bookAppointment)
+				.issues(assignSlot)
+				.ends(appointmentBooked);
+			// The ring is Triaging -> Request Booking -> Book Appointment ->
+			// Scheduling -> Assign Slot -> Appointment Booked -> Triaging, and
+			// the only reactor living on it is Triaging.
+			expect(ruleOf(ws, "reaction-cycle")).toEqual([]);
+			expect(triaging.name).toBe("Triaging");
+		});
+
+		it("still finds a ring whose second process is waiting on it, not called", () => {
+			const {
+				ws,
+				triage,
+				triageApp,
+				scheduling,
+				referred,
+				requestBooking,
+				closeCase,
+				caseClosed,
+				bookAppointment,
+				assignSlot,
+				appointmentBooked,
+			} = referral();
+			triageApp.consumes(appointmentBooked, {
+				pattern: "anti-corruption-layer",
+				by: [requestBooking],
+			});
+			triage
+				.addProcess("Triaging", { description: "" })
+				.starts(referred)
+				.on(appointmentBooked)
+				.issues(requestBooking, closeCase)
+				.ends(caseClosed);
+			// The same ring, except that the booking call reaches an instance
+			// that was already alive and waiting: `on`, not `starts`. Both
+			// processes live on the ring, neither can see the whole of it, and
+			// each turn wakes the other again.
+			const rota = scheduling.addService("Rota", {
+				description: "",
+				type: "application",
+			});
+			const rotaOpened = rota.provides("Rota Opened", {
+				description: "",
+				type: "event",
+			});
+			const rotaClosed = rota.provides("Rota Closed", {
+				description: "",
+				type: "event",
+			});
+			rota
+				.provides("Close Rota", { description: "", type: "operation" })
+				.raises(rotaClosed);
+			scheduling
+				.addProcess("Scheduling", { description: "" })
+				.starts(rotaOpened)
+				.on(bookAppointment)
+				.issues(assignSlot)
+				.ends(rotaClosed);
+			const cycles = ruleOf(ws, "reaction-cycle");
+			expect(cycles).toHaveLength(1);
+			expect(cycles[0][0]).toBe("warning");
+			expect(cycles[0][1]).toContain(
+				"the chain triggers itself and nothing in the model says what ends it",
+			);
+			expect(cycles[0][1]).toContain('"Scheduling"');
+			expect(cycles[0][1]).toContain('"Triaging"');
 		});
 
 		it("still finds a ring that runs through two processes", () => {
@@ -6606,16 +6891,18 @@ describe("external-is-boundary", () => {
 	});
 
 	it("still refuses a precondition guarding another context's operation", () => {
-		const { ws, external, ours } = publishedCapture();
+		const { ws, external, ours, capture } = publishedCapture();
 		const ourCapture = ours
 			.addService("Payments App", { description: "", type: "application" })
 			.provides("Capture Payment", { description: "", type: "operation" });
+		// Its own operation as well, so the one thing reported is the reach
+		// outward rather than the missing guard the next test is about.
 		const reaching = external
 			.addInvariant("Capture Needs An Authorisation", {
 				description: "",
 				precondition: true,
 			})
-			.constrains(ourCapture);
+			.constrains(capture, ourCapture);
 		expect(boundary(ws)).toEqual([
 			[
 				"error",
@@ -6623,6 +6910,110 @@ describe("external-is-boundary", () => {
 				reaching.ref,
 			],
 		]);
+	});
+
+	// Every reach rule walks the modelled contexts, so until card 116 nothing
+	// asked what a flagged external invariant named: it could name no
+	// operation at all and could reach into one of our aggregates
+	// (decision 28, amendment of 2026-09-10, fourth).
+	it("refuses a flagged invariant that names none of its own operations", () => {
+		const { ws, external } = publishedCapture();
+		const unguarded = external.addInvariant("Never Overdrawn", {
+			description: "",
+			precondition: true,
+		});
+		expect(boundary(ws)).toEqual([
+			[
+				"error",
+				'External context "Card Scheme" states precondition "Never Overdrawn" on none of its own operations; what a system we do not own publishes is the contract of an operation it offers, so name that operation. A published contract states what one of this system\'s own operations takes and answers with, in the attributes of its own request and answer schemas, and what its own value objects are; anything else about that system is ours to guess and not to state',
+				unguarded.ref,
+			],
+		]);
+	});
+
+	/** One of our aggregates, for an external rule to reach into. */
+	function ourOrder(ours: BoundedContext) {
+		const aggregate = ours.addAggregate("Order", { description: "" });
+		const order = aggregate.addRootEntity("Order", { description: "" });
+		order.addAttribute("id", { type: "int64", identity: true });
+		return { order, total: order.addAttribute("total", { type: "int64" }) };
+	}
+
+	it("refuses a flagged invariant that constrains one of our entities", () => {
+		const { ws, external, ours } = publishedCapture();
+		const { total } = ourOrder(ours);
+		const reaching = external
+			.addInvariant("Capture Within The Order Total", {
+				description: "",
+				postcondition: true,
+			})
+			.constrains(total);
+		expect(boundary(ws).map((d) => [d[0], d[2]])).toEqual([
+			// It names no operation of its own either, so both faults are said.
+			["error", reaching.ref],
+			["error", reaching.ref],
+		]);
+		expect(boundary(ws)[1][1]).toBe(
+			'External context "Card Scheme" states a postcondition on "Order.total", which is not part of that contract. A published contract states what one of this system\'s own operations takes and answers with, in the attributes of its own request and answer schemas, and what its own value objects are; anything else about that system is ours to guess and not to state',
+		);
+	});
+
+	it("refuses the reach even where the rule does name its own operation", () => {
+		const { ws, external, ours, capture } = publishedCapture();
+		const { order, total } = ourOrder(ours);
+		const reaching = external
+			.addInvariant("Capture Within The Order Total", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(capture, order, total);
+		expect(boundary(ws).map((d) => [d[0], d[2]])).toEqual([
+			["error", reaching.ref],
+			["error", reaching.ref],
+		]);
+		expect(boundary(ws).map((d) => d[1])).toEqual([
+			expect.stringContaining('states a precondition on "Order"'),
+			expect.stringContaining('states a precondition on "Order.total"'),
+		]);
+	});
+
+	it("lets the contract name its own value object as well as its shapes", () => {
+		const { ws, external, capture, reference } = publishedCapture();
+		const iban = external.addValueObject("IBAN", { description: "" });
+		const checksum = iban.addAttribute("checksum", { type: "string" });
+		external
+			.addInvariant("Capture Needs A Capturable Payment", {
+				description: "",
+				precondition: true,
+			})
+			.constrains(capture, reference, iban, checksum);
+		expect(boundary(ws)).toEqual([]);
+		expect(ws.validate().filter((d) => d.severity === "error")).toEqual([]);
+	});
+
+	// A service's type says where a piece of our own model sits, and a system
+	// we do not own has no inside for that distinction to be about; read on an
+	// external context, `domain-service-internal` made a provider that wrote
+	// `domain` invalid at every operation it publishes (card 116).
+	it("does not read the type of an external context's service", () => {
+		const { ws, external, ours } = scheme();
+		const api = external.addService("Scheme API", {
+			description: "",
+			type: "domain",
+		});
+		const capture = api.provides("Capture", {
+			description: "",
+			type: "operation",
+			pattern: "open-host-service",
+		});
+		ours
+			.addService("Payments App", { description: "", type: "application" })
+			.consumes(capture, { pattern: "anti-corruption-layer" });
+		ours.downstreamOf(external, {
+			upstreamRoles: ["open-host-service"],
+			downstreamRoles: ["anti-corruption-layer"],
+		});
+		expect(ws.validate().filter((d) => d.severity === "error")).toEqual([]);
 	});
 
 	it("asks an external context for no subdomain", () => {
@@ -7428,6 +7819,54 @@ describe("waiting on an answer", () => {
 		expect(kinds(ws).map(([severity, , ref]) => [severity, ref])).toEqual([
 			["error", policy.ref],
 		]);
+	});
+
+	// Decision 21's inference is "a consumer with one operation is its own
+	// `by`", and this rule claimed it while asking only whether the lone
+	// consumption was silent. So a by-less consumer with three operations was
+	// told it might wait on the answer, and `routesTo` — which does ask —
+	// drew no step: the process waited for something the flow map never
+	// delivered (card 116).
+	it("refuses a by-less consumption whose consumer has several operations", () => {
+		const { ws, process, authorise } = answered();
+		const orchestrator = ws
+			.getBoundedContextByRefOrThrow("#/boundedcontexts/checkout")
+			.services.get("checkout_orchestrator");
+		if (!orchestrator) throw new Error("no service");
+		orchestrator.consumptions[0].by.length = 0;
+		expect(kinds(ws).map(([severity, , ref]) => [severity, ref])).toEqual([
+			["error", process.ref],
+		]);
+		expect(hearsAnswerOf(process, authorise)).toBe(false);
+		expect(routesTo(process, authorise)).toEqual([]);
+	});
+
+	it("accepts one whose consumer provides a single operation", () => {
+		const { ws, checkout, authorise, declined, confirmed } = answered({
+			consume: false,
+		});
+		checkout.processes.clear();
+		// A front of its own: one operation, so there is nothing to choose
+		// between and the model is not made to write the only answer there is.
+		const front = checkout.addService("Authorisation Client", {
+			description: "",
+			type: "application",
+		});
+		const ask = front.provides("Ask For Authorisation", {
+			description: "",
+			type: "operation",
+			internal: true,
+		});
+		front.consumes(authorise, { pattern: "anti-corruption-layer" });
+		const waiting = checkout
+			.addProcess("Checkout", { description: "" })
+			.starts(confirmed)
+			.on(authorise.rejected(declined))
+			.issues(ask)
+			.ends(confirmed);
+		expect(kinds(ws)).toEqual([]);
+		expect(hearsAnswerOf(waiting, authorise)).toBe(true);
+		expect(routesTo(waiting, authorise)).toEqual([ask]);
 	});
 
 	it("accepts the answer of an operation the reactor issues itself", () => {

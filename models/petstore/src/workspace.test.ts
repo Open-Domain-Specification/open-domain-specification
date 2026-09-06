@@ -321,6 +321,24 @@ describe("Swagger Petstore Example Workspace", () => {
 		expect(workspace.validate()).toEqual([]);
 	});
 
+	// The approval rule reads a fact from Catalog, and it names it: the check
+	// that fetches it, and the field of the answer it decides on. Before card
+	// 116 a precondition reached only its own request, so this was a sentence
+	// in the description pointing at a call nothing connected it to.
+	it("has its approval precondition name what it reads", () => {
+		const invariant = workspace
+			.getBoundedContextByRefOrThrow("#/boundedcontexts/sales_bc")
+			.aggregates.get("order")
+			?.invariants.get("approve_only_when_available");
+		expect(invariant?.precondition).toBe(true);
+		expect(invariant?.targets.map((it) => it.name)).toEqual([
+			"OrderStatus",
+			"ApproveOrder",
+			"CheckPetAvailable",
+			"status",
+		]);
+	});
+
 	// Rendering every diagram through graphviz-wasm takes tens of seconds on
 	// the larger models, so this one test gets a generous timeout.
 	it("generates a complete docsify site with no broken links", async () => {

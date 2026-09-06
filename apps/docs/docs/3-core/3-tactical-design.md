@@ -105,12 +105,18 @@ flag the rule is still true after the operation it names: `PostEntry` must
 produce balanced postings, and the postings stay balanced.
 
 Both may reach the payload the call carries. A precondition may constrain the
-attributes of a schema its guarded operation takes, returns or rejects with, a
-postcondition those of what it returns or rejects with, and either follows
-composition: a rule about the amount of an order line is a rule about the
-request that holds the lines. No other invariant may name a schema's attribute
-at all — a rule kept true on every save is a rule about the model, and a
-transport shape is not the model.
+attributes of the schema its guarded operation takes, and those of what a call
+that guard — or the front that calls it in the same context — already made
+comes back with: "approve only if the customer is in good standing" reads a
+standing another context answered with before this call began, and the shape it
+came back in is a fact this context holds. It may not name this call's own
+answer, which does not exist when the check runs, nor the other context's
+entities, which are never in reach. A postcondition constrains what its
+operation returns or rejects with, and the request it relates them to. Either
+follows composition: a rule about the amount of an order line is a rule about
+the request that holds the lines. No other invariant may name a schema's
+attribute at all — a rule kept true on every save is a rule about the model,
+and a transport shape is not the model.
 
 An invariant may instead belong to a value object. A rule that is about a
 value alone — an IBAN's mod-97 checksum, a Money's single currency — holds by

@@ -124,12 +124,16 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   pet still available at approval — each was read somewhere else and may have moved on by the
   next save. Still true after is the ordinary case and takes no flag: a posting operation has
   to balance its postings, and they stay balanced.
-- Per precondition: "what does the check read — something you have stored, or what was sent
-  in?" → where it reads the request, name the attributes of that operation's `schema`,
-  `returns` or a rejection in `constrains` alongside the operation. Pickup before delivery
-  and a positive weight on a quotation are the case: nothing is stored yet, and the fields
-  are the request's. A field of a shape the request composes counts as the request's — a rule
-  about the amount of an order line is a rule about the request that holds the lines.
+- Per precondition: "what does the check read — something you have stored, what was sent in,
+  or something you fetched first?" → where it reads the request, name the attributes of that
+  operation's `schema` in `constrains` alongside the operation. Pickup before delivery and a
+  positive weight on a quotation are the case: nothing is stored yet, and the fields are the
+  request's. A field of a shape the request composes counts as the request's — a rule about
+  the amount of an order line is a rule about the request that holds the lines. Where it
+  reads something fetched first — "approve only if the customer is in good standing" — name
+  the operation of this context that makes that call as a guard beside the transition, and
+  the attribute of what that call `returns`; never the other context's entity, which is
+  theirs and not ours to constrain.
 - Per rule about what comes back: "is this a promise about what you answer with?" → a
   guarantee about the answer is a postcondition, not a precondition: `postcondition: true`,
   naming the operation and the attributes of what it returns or rejects with. Every returned

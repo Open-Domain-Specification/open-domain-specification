@@ -247,10 +247,11 @@ function callsTo(bc: BoundedContext, operation: Consumable): Consumption[] {
  *   back to it (decisions 17 and 21). `by` may also name the reactor itself
  *   where the consumption is of an event, which is not a call and has no
  *   answer, so the case costs nothing to allow.
- * - Nothing says who calls, and there is one call in this context to hear. A
- *   consumer providing a single operation is not made to write `by` down
- *   (`consumption-by-required`), and the walk reads the same inference here as
- *   it does in `callsOut`: only where there is nothing to choose between. The
+ * - Nothing says who calls, and there is one call in this context to hear,
+ *   made by a consumer that provides exactly one operation. Such a consumer is
+ *   not made to write `by` down (`consumption-by-required`), and the walk
+ *   reads the same inference here as it does in `callsOut` and
+ *   {@link routesTo}: only where there is nothing to choose between. The
  *   consumption has to be silent for the silence to be stood in for: a lone
  *   call that does name its caller has said who made it, and reading that one
  *   as "anybody here" let a second reactor beside the caller hear an answer
@@ -259,15 +260,21 @@ function callsTo(bc: BoundedContext, operation: Consumable): Consumption[] {
  * Where `by` is written and names somebody else, the answer is somebody
  * else's. That is the whole narrowing, and the repair for a model it catches
  * is to say which of the context's operations makes this call.
+ *
+ * This is {@link routesTo} asked as a yes-or-no question, and it is written as
+ * one call to it rather than as the same three clauses again. Until card 116
+ * the third clause here asked only whether the lone call was silent, while
+ * `routesTo` also asked whether the consumer had a single operation to infer,
+ * so a by-less consumer providing three operations passed `consumable-kind` —
+ * the reactor was allowed to wait on the answer — and the walk then drew no
+ * step from it, leaving a process waiting for something the flow map never
+ * delivered (decision 21, 2026-09-09 amendment; architect's tenth round).
  */
 export function hearsAnswerOf(
 	reactor: Policy | Process,
 	operation: Consumable,
 ): boolean {
-	if (reactor.commands.includes(operation)) return true;
-	const calls = callsTo(reactor.boundedcontext, operation);
-	if (calls.some((call) => callersFor(reactor, call).length > 0)) return true;
-	return calls.length === 1 && calls[0].by.length === 0;
+	return routesTo(reactor, operation).length > 0;
 }
 
 /**
