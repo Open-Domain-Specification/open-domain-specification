@@ -274,7 +274,7 @@ function addConsumes(
 		consumer.name,
 		consumer.ref,
 	);
-	for (const consumption of schema.consumes) {
+	for (const consumption of listOf(schema.consumes)) {
 		debug(
 			`Adding consumption: ${consumption.consumable.$ref} to ${consumer.name}`,
 		);
@@ -327,10 +327,10 @@ function identifiedBy(
  */
 function addAttributes(
 	owner: AttributeOwner,
-	attributes: Record<string, AttributeSchema>,
+	attributes: Record<string, AttributeSchema> | undefined,
 	refs: Refs,
 ) {
-	for (const [id, attributeSchema] of Object.entries(attributes)) {
+	for (const [id, attributeSchema] of entriesOf(attributes)) {
 		const at = site(
 			"Attribute",
 			`${owner.name}.${attributeSchema.name}`,

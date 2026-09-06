@@ -28,8 +28,9 @@ grow it.
 - Ids are the object keys. Create them as `snake_case` of the name, then never change them.
   Renaming is changing `name`.
 - Every `$ref` follows the grammar at the end of `model-reference.md` and points at something
-  that exists. A dangling ref makes the whole file fail to load; the extension then shows
-  "Workspace file could not be loaded" instead of diagnostics.
+  that exists. A dangling ref does not fail the whole file: it loads, the field it was in is left
+  unset, and validation reports it as an `unresolved-ref` diagnostic at the element that wrote it,
+  alongside whatever else the rest of the file finds.
 - Preserve the key order and two-space indentation of the file so diffs stay readable.
 - Prefer several small edits, each followed by validation, over one large rewrite.
 

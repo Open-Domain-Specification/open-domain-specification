@@ -7,6 +7,7 @@
             "description": "Represents an aggregate in the Open Domain Specification (ODS).",
             "properties": {
                 "consumes": {
+                    "description": "What this aggregate consumes. Optional, like every list in this schema: an absent list is an empty one.",
                     "items": {
                         "$ref": "#/definitions/ConsumptionSchema"
                     },
@@ -39,7 +40,6 @@
                 }
             },
             "required": [
-                "consumes",
                 "description",
                 "name"
             ],
@@ -985,6 +985,7 @@
             "description": "Represents a service in the Open Domain Specification (ODS).",
             "properties": {
                 "consumes": {
+                    "description": "What this service consumes. Optional, like every list in this schema: an absent list is an empty one.",
                     "items": {
                         "$ref": "#/definitions/ConsumptionSchema"
                     },
@@ -1007,7 +1008,6 @@
                 }
             },
             "required": [
-                "consumes",
                 "description",
                 "name",
                 "type"
@@ -1163,6 +1163,7 @@
                     "additionalProperties": {
                         "$ref": "#/definitions/AttributeSchema"
                     },
+                    "description": "This value's own attributes, by id. An absent map is an empty one, like every map of elements in this schema.",
                     "type": "object"
                 },
                 "description": {
@@ -1172,7 +1173,7 @@
                     "additionalProperties": {
                         "$ref": "#/definitions/InvariantSchema"
                     },
-                    "description": "The rules that hold of every instance of this value: a Money's two\namounts in one currency, an IBAN's mod-97 checksum. Such a rule holds by\nconstruction — a value that breaks it is never made — so it constrains\nthis value's own attributes and needs no operation to guard it\n(decision 27).",
+                    "description": "The rules that hold of every instance of this value: a Money's two\namounts in one currency, an IBAN's mod-97 checksum. Such a rule holds by\nconstruction — a value that breaks it is never made — so it constrains\nthis value's own attributes and needs no operation to guard it\n(decision 27). Optional, and an absent map is an empty one, like every\nmap of elements in this schema.",
                     "type": "object"
                 },
                 "name": {
@@ -1200,9 +1201,7 @@
                 }
             },
             "required": [
-                "attributes",
                 "description",
-                "invariants",
                 "name"
             ],
             "title": "ValueObject",

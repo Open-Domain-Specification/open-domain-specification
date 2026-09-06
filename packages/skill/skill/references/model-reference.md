@@ -33,7 +33,7 @@ Represents an aggregate in the Open Domain Specification (ODS).
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `consumes` | array of [Consumption](#consumption) | yes |  |
+| `consumes` | array of [Consumption](#consumption) | no | What this aggregate consumes. Optional, like every list in this schema: an absent list is an empty one. |
 | `description` | string | yes |  |
 | `entities` | map of id to [Entity](#entity) | no | The entities inside this aggregate, by id. Optional, like every map of elements in this schema: an absent map is an empty one. |
 | `invariants` | map of id to [Invariant](#invariant) | no |  |
@@ -301,7 +301,7 @@ Represents a service in the Open Domain Specification (ODS).
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `consumes` | array of [Consumption](#consumption) | yes |  |
+| `consumes` | array of [Consumption](#consumption) | no | What this service consumes. Optional, like every list in this schema: an absent list is an empty one. |
 | `description` | string | yes |  |
 | `name` | string | yes |  |
 | `provides` | map of id to [Consumable](#consumable) | no |  |
@@ -354,9 +354,9 @@ Represents a value object in the Open Domain Specification (ODS).
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `attributes` | map of id to [Attribute](#attribute) | yes |  |
+| `attributes` | map of id to [Attribute](#attribute) | no | This value's own attributes, by id. An absent map is an empty one, like every map of elements in this schema. |
 | `description` | string | yes |  |
-| `invariants` | map of id to [Invariant](#invariant) | yes | The rules that hold of every instance of this value: a Money's two amounts in one currency, an IBAN's mod-97 checksum. Such a rule holds by construction — a value that breaks it is never made — so it constrains this value's own attributes and needs no operation to guard it (decision 27). |
+| `invariants` | map of id to [Invariant](#invariant) | no | The rules that hold of every instance of this value: a Money's two amounts in one currency, an IBAN's mod-97 checksum. Such a rule holds by construction — a value that breaks it is never made — so it constrains this value's own attributes and needs no operation to guard it (decision 27). Optional, and an absent map is an empty one, like every map of elements in this schema. |
 | `name` | string | yes |  |
 | `relations` | array of [EntityRelation](#entityrelation) | no | What this value points at; empty when left out. |
 | `specialises` | `{ "$ref": string }` | no | The value object this one is a kind of: it has every attribute and relation of that value object, plus its own. The target belongs to this context, or to a context this one shares a kernel with (decision 22). |
