@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [backend]
 priority: medium
 agent: developer-lite
