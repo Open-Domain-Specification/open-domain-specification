@@ -43,7 +43,7 @@ describe("Validation", () => {
 		).toMatchInlineSnapshot(`
 			[
 			  "error cross-aggregate-reference: "Order" references "Price", which is neither the root of aggregate "Product" nor a kind of that root; reference "Product" by its root's identity, holding "Price"'s id beside it when the child is what you mean",
-			  "error cross-context-relation: "Order" in "Ordering" references "Price" in "Catalog"; a relation never crosses a bounded context, so hold "Price"'s identity in an attribute of "Order" with \`identifies\`; where what you need is a value rather than an entity, borrow it through a shared kernel or as a conformist",
+			  "error cross-context-relation: "Order" in "Ordering" references "Price" in "Catalog"; a relation never crosses a bounded context, so hold "Price"'s identity in an attribute of "Order" with \`identifies\`; where what you need is a value rather than an entity, borrow it through a shared kernel, as a conformist, or as a customer of a supplier",
 			  "error root-identity: Root entity "Order" of aggregate "Order" declares no identity attribute, so nothing says which "Order" a reference means",
 			  "error root-identity: Root entity "Product" of aggregate "Product" declares no identity attribute, so nothing says which "Product" a reference means",
 			  "warning entity-identity: Entity "Price" in aggregate "Product" declares no identity attribute; an entity is what you tell apart from another holding the same values, so without one "Price" is a value object",
