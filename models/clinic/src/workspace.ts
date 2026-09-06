@@ -423,11 +423,14 @@ referralEntity.addAttribute("labResultCode", {
 	type: "string",
 	optional: true,
 });
-// No `uses` relation to diagnosisCode: a relation never crosses a bounded
-// context (`cross-context-relation`), and Clinical Code belongs to the
-// regulator's context. The attribute's own `valueobject` link is what
-// borrowing a conformed-to context's value looks like; only a same-context
-// value can also carry a relation on the map.
+// A `uses` relation to the borrowed Clinical Code, which the map needs for its
+// label and its multiplicity: the attribute alone draws an unnamed line. Triage
+// is a conformist of the regulator, which is what lets the value be borrowed at
+// all, and the relation goes exactly where the borrowing goes
+// (`cross-context-relation`, card 126).
+referralEntity.uses(clinicalCodeVO, "coded-as", "0..1", {
+	for: "diagnosisCode",
+});
 
 const registerReferralOp = referralCaseAgg.provides("Register Referral", {
 	type: "operation",

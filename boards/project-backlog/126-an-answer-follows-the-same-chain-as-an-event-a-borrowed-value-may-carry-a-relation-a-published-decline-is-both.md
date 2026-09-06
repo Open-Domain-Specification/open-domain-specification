@@ -1,10 +1,11 @@
 ---
-column: todo
+column: review
 labels: [backend, docs]
 priority: medium
 agent: senior-developer
-live: true
-updatedAt: 2026-09-10T23:50:00.000Z
+live: false
+clean-code-swept: true
+updatedAt: 2026-09-06T16:40:00.000Z
 ---
 # An answer follows the same chain as an event; a borrowed value may carry a relation; a published decline is both an answer and a fact
 
@@ -12,9 +13,20 @@ The architect's twelfth round found three things. `reachedEvents` follows `by` t
 
 ## Checklist
 
-- [ ] `routesTo` and `hearsAnswerOf` follow `callsOut` transitively inside the context, cycle-guarded, drawing the answer step from the operation the reactor issued; card 104's rule holds (to the caller and nobody else); tests for a two-front chain and for a chain that leaves the context (still one hop across a boundary); `consumable-kind`'s message and the docs say an answer routes along the local `by` chain
-- [ ] `cross-context-relation` allows a `uses` relation from an entity to a value object of another context where `valueobject-context` allows the borrowing (a shared kernel, or a conformist downstream of the value's context); the relation map draws it with its label and cardinality; anything else still refused, with fix text that names the two honest routes (borrow through a kernel or conformist, or an `identifies` attribute for an entity); test
-- [ ] `rejection-raised` does not fire when the event carrying the rejection's shape is consumed by another context, and its message says: a rejection answers the caller and an event tells the world; where both are true, keep both, and the fact somebody hears is what makes it an event; test for the published decline and for the unheard one
-- [ ] Docs rows and skill references for the rules touched; every model's diagnostics unchanged; `bash scripts/verify-all.sh` green
+- [x] `routesTo` and `hearsAnswerOf` follow `callsOut` transitively inside the context, cycle-guarded, drawing the answer step from the operation the reactor issued; card 104's rule holds (to the caller and nobody else); tests for a two-front chain and for a chain that leaves the context (still one hop across a boundary); `consumable-kind`'s message and the docs say an answer routes along the local `by` chain
+- [x] `cross-context-relation` allows a `uses` relation from an entity to a value object of another context where `valueobject-context` allows the borrowing (a shared kernel, or a conformist downstream of the value's context); the relation map draws it with its label and cardinality; anything else still refused, with fix text that names the two honest routes (borrow through a kernel or conformist, or an `identifies` attribute for an entity); test
+- [x] `rejection-raised` does not fire when the event carrying the rejection's shape is consumed by another context, and its message says: a rejection answers the caller and an event tells the world; where both are true, keep both, and the fact somebody hears is what makes it an event; test for the published decline and for the unheard one
+- [x] Docs rows and skill references for the rules touched; every model's diagnostics unchanged; `bash scripts/verify-all.sh` green
+
+## Gates
+
+- [x] clean-code-swept — biome clean on every core file touched; the one remaining biome complaint in `models/clinic/src/workspace.ts` is pre-existing and unrelated to the lines added (senior-developer, 2026-09-06T16:40:00.000Z)
+- [x] verify-all — `bash scripts/verify-all.sh` exit 0 end to end: core 750, graphviz 28, doc 31, skill 26, northbank 3, petstore 23, rivermart 6, streamline 3, clinic 7, models/_shared 9, pages 765, apps/docs 23, apps/ods-vscode 15, pages e2e 297 passed, schema comparison match, esm builds import ok (senior-developer, 2026-09-06T16:40:00.000Z)
 
 ## Comments
+
+- **senior-developer** (2026-09-06T00:00:00.000Z): Claimed the card. Reading decisions 21, 23, 14, 16 and 25 plus the architect's round-12 probes before touching `packages/core/src/reaction-walk.ts`, `packages/core/src/validate.ts` and `packages/core/src/relation-map.ts`.
+- **senior-developer** (2026-09-06T16:40:00.000Z): All three findings shipped. (1) `routesTo` follows `callsOut` transitively inside the reactor's own context, cycle-guarded exactly as `reachedEvents` is, and draws the step from the operation the reactor issued — `packages/core/src/reaction-walk.ts:344-401`; `hearsAnswerOf` is still one call to it, so the rule and the walk cannot disagree. The chain stops the moment it leaves the context, which keeps card 104's rule: every hop is the reactor's own `by`. `consumable-kind`'s message and its rule-catalog entry say so — `packages/core/src/validate.ts:4030-4033` and `packages/core/src/validate.ts:5545-5552`. Tests: a two-front chain (saga issues the use case, which calls the adapter, which calls the provider), the same chain running on past a second boundary (still refused, `routesTo` empty), and a ring of local calls that terminates — `packages/core/src/validate.test.ts:8415-8560`. The architect's P13 probe now reports `routesTo(proc, Y) = [F1]` and zero diagnostics.
+- **senior-developer** (2026-09-06T16:40:00.000Z): (2) `cross-context-relation` allows a `uses` relation to another context's value object exactly where `mayBorrowFrom` allows the borrowing, the same predicate `valueobject-context` reads — `packages/core/src/validate.ts:297-346`. Anything else is still refused, and the fix text now names the two honest routes and never asks for a value's identity. The relation map draws the declared line with its label and cardinality and marks the box foreign in the lending context's cluster — `packages/core/src/relation-map.ts:166-179` and `packages/core/src/relation-map.ts:243-258`; a derived line no longer doubles it. `attribute-relation-coherence` reads borrowed values too, so the cardinality a crossing relation adds is checked like any other — `packages/core/src/validate.ts:967-1000`. Tests at `packages/core/src/validate.test.ts:7889-7975` and `packages/core/src/derived-maps.test.ts:537-580`. P4 reports zero diagnostics.
+- **senior-developer** (2026-09-06T16:40:00.000Z): (3) `rejection-raised` is quiet where another context consumes the event carrying the rejection's shape — `packages/core/src/validate.ts:4188-4225`. Its message and catalogue entry now say that a rejection answers the caller and an event tells the world, that where both are true the model keeps both, and that the fact somebody hears is what makes it an event. Tests cover the published decline, the unheard one, and the one only the raising context subscribes to.
+- **senior-developer** (2026-09-06T16:40:00.000Z): The clinic's comment about the refused relation became the relation itself — `models/clinic/src/workspace.ts:426-433` declares `coded-as` at `0..1` on the borrowed `Clinical Code`, carried by Triage's conformist relationship with the regulator. The clinic still reports zero diagnostics, and the change is noted in `models/clinic/DISCOVERY.md:161-173`. Every model's diagnostics are byte-identical to the baseline built from `origin/develop` (diffed, no change). Docs rows for the three rules updated at `apps/docs/docs/3-core/4-validation.md:19,71,74`, the answer's named cost rewritten at `apps/docs/docs/3-core/3-tactical-design.md:43-47`, and `packages/skill/skill/references/validation-rules.md` regenerated from the rule catalogue.

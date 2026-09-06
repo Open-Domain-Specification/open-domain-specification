@@ -157,3 +157,17 @@ correction of:
   (`models/clinic/src/workspace.ts:770-775`); the interview text stands
   unchanged, since the compromise was in the model, not in what the
   scheduler said.
+
+## Revision (card 126)
+
+The referral's diagnosis code carried no relation, and a comment beside it
+said why: a relation never crossed a bounded context, and `Clinical Code`
+belongs to the regulator. The architect's twelfth round found the refusal
+wrong — the rule told the author to hold the value's identity instead, which a
+value object has none of, and the label and the multiplicity the map needs went
+unsaid. A `uses` relation may now reach a value object wherever the borrowing
+may (`cross-context-relation`, decision 14's note of 2026-09-10), so
+`Referral`'s `diagnosisCode` declares one, `coded-as` at `0..1`
+(`models/clinic/src/workspace.ts:425-433`). Triage's conformist relationship
+with the regulator is what carries both the attribute and the relation; the
+model still reports zero diagnostics.

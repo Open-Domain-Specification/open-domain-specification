@@ -11,150 +11,151 @@
 <polygon fill="white" stroke="none" points="-4,4 -4,-462 688.54,-462 688.54,4 -4,4"/>
 <g id="clust1" class="cluster namespace">
 <title>#/boundedcontexts/triage/aggregates/referral_case</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="0,-64 0,-372 245.06,-372 245.06,-64 0,-64"/>
-<text xml:space="preserve" text-anchor="middle" x="122.53" y="-359" font-family="sans-serif" font-size="10.00">Outpatient Care / Referral Triage / Triage / Referral Case</text>
+<polygon fill="lightgrey" stroke="lightgrey" points="0,-60 0,-368 245.06,-368 245.06,-60 0,-60"/>
+<text xml:space="preserve" text-anchor="middle" x="122.53" y="-355" font-family="sans-serif" font-size="10.00">Outpatient Care / Referral Triage / Triage / Referral Case</text>
 </g>
 <g id="clust2" class="cluster namespace">
-<title>#/boundedcontexts/patient_records/aggregates/patient_record</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="398.05,-318 398.05,-450 684.54,-450 684.54,-318 398.05,-318"/>
-<text xml:space="preserve" text-anchor="middle" x="541.29" y="-437" font-family="sans-serif" font-size="10.00">Outpatient Care / Patient Identity / Patient Records / Patient Record</text>
+<title>#/boundedcontexts/clinical_coding_regulator</title>
+<polygon fill="lightgrey" stroke="lightgrey" points="478.09,-340 478.09,-450 603.5,-450 603.5,-340 478.09,-340"/>
+<text xml:space="preserve" text-anchor="middle" x="540.79" y="-437" font-family="sans-serif" font-size="10.00">Clinical Coding Regulator</text>
 </g>
 <g id="clust3" class="cluster namespace">
-<title>#/boundedcontexts/gp_practice_system</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="485.59,-222 485.59,-310 596,-310 596,-222 485.59,-222"/>
-<text xml:space="preserve" text-anchor="middle" x="540.79" y="-297" font-family="sans-serif" font-size="10.00">GP Practice System</text>
+<title>#/boundedcontexts/patient_records/aggregates/patient_record</title>
+<polygon fill="lightgrey" stroke="lightgrey" points="398.05,-200 398.05,-332 684.54,-332 684.54,-200 398.05,-200"/>
+<text xml:space="preserve" text-anchor="middle" x="541.29" y="-319" font-family="sans-serif" font-size="10.00">Outpatient Care / Patient Identity / Patient Records / Patient Record</text>
 </g>
 <g id="clust4" class="cluster namespace">
-<title>#/boundedcontexts/laboratory</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="491.55,-126 491.55,-214 590.03,-214 590.03,-126 491.55,-126"/>
-<text xml:space="preserve" text-anchor="middle" x="540.79" y="-201" font-family="sans-serif" font-size="10.00">Laboratory</text>
+<title>#/boundedcontexts/gp_practice_system</title>
+<polygon fill="lightgrey" stroke="lightgrey" points="485.59,-104 485.59,-192 596,-192 596,-104 485.59,-104"/>
+<text xml:space="preserve" text-anchor="middle" x="540.79" y="-179" font-family="sans-serif" font-size="10.00">GP Practice System</text>
 </g>
 <g id="clust5" class="cluster namespace">
-<title>#/boundedcontexts/clinical_coding_regulator</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="478.09,-8 478.09,-118 603.5,-118 603.5,-8 478.09,-8"/>
-<text xml:space="preserve" text-anchor="middle" x="540.79" y="-105" font-family="sans-serif" font-size="10.00">Clinical Coding Regulator</text>
+<title>#/boundedcontexts/laboratory</title>
+<polygon fill="lightgrey" stroke="lightgrey" points="491.55,-8 491.55,-96 590.03,-96 590.03,-8 491.55,-8"/>
+<text xml:space="preserve" text-anchor="middle" x="540.79" y="-83" font-family="sans-serif" font-size="10.00">Laboratory</text>
 </g>
 <!-- #/boundedcontexts/triage/aggregates/referral_case/entities/referral -->
 <g id="node1" class="node">
 <title>#/boundedcontexts/triage/aggregates/referral_case/entities/referral</title>
 <g id="a_node1"><a xlink:title="A GP referral, once it is a case of ours rather than the GP&#39;s message.">
-<polygon fill="white" stroke="none" points="197.93,-344 46.12,-344 46.12,-72 197.93,-72 197.93,-344"/>
-<polygon fill="none" stroke="black" points="46.12,-314 46.12,-344 197.93,-344 197.93,-314 46.12,-314"/>
-<text xml:space="preserve" text-anchor="start" x="96.34" y="-331" font-family="sans-serif" font-size="10.00">«root entity»</text>
-<text xml:space="preserve" text-anchor="start" x="103.99" y="-321" font-family="sans-serif" font-weight="bold" font-size="10.00">Referral</text>
-<polygon fill="none" stroke="black" points="46.12,-292 46.12,-314 197.93,-314 197.93,-292 46.12,-292"/>
-<text xml:space="preserve" text-anchor="start" x="51.12" y="-300" font-family="sans-serif" font-size="10.00">{id} referralId: string</text>
+<polygon fill="white" stroke="none" points="197.93,-340 46.12,-340 46.12,-68 197.93,-68 197.93,-340"/>
+<polygon fill="none" stroke="black" points="46.12,-310 46.12,-340 197.93,-340 197.93,-310 46.12,-310"/>
+<text xml:space="preserve" text-anchor="start" x="96.34" y="-327" font-family="sans-serif" font-size="10.00">«root entity»</text>
+<text xml:space="preserve" text-anchor="start" x="103.99" y="-317" font-family="sans-serif" font-weight="bold" font-size="10.00">Referral</text>
+<polygon fill="none" stroke="black" points="46.12,-288 46.12,-310 197.93,-310 197.93,-288 46.12,-288"/>
+<text xml:space="preserve" text-anchor="start" x="51.12" y="-296" font-family="sans-serif" font-size="10.00">{id} referralId: string</text>
 <g id="a_node1_0"><a xlink:title="Set once Records has matched this referral to one of our patients.">
-<polygon fill="none" stroke="black" points="46.12,-270 46.12,-292 197.93,-292 197.93,-270 46.12,-270"/>
-<text xml:space="preserve" text-anchor="start" x="51.12" y="-278" font-family="sans-serif" font-size="10.00">{opt} patientId: string</text>
+<polygon fill="none" stroke="black" points="46.12,-266 46.12,-288 197.93,-288 197.93,-266 46.12,-266"/>
+<text xml:space="preserve" text-anchor="start" x="51.12" y="-274" font-family="sans-serif" font-size="10.00">{opt} patientId: string</text>
 </a>
 </g>
-<polygon fill="none" stroke="black" points="46.12,-248 46.12,-270 197.93,-270 197.93,-248 46.12,-248"/>
-<text xml:space="preserve" text-anchor="start" x="51.12" y="-256" font-family="sans-serif" font-size="10.00">gpReferralReference: string</text>
-<polygon fill="none" stroke="black" points="46.12,-226 46.12,-248 197.93,-248 197.93,-226 46.12,-226"/>
-<text xml:space="preserve" text-anchor="start" x="51.12" y="-234" font-family="sans-serif" font-size="10.00">requestedSpecialty: string</text>
-<polygon fill="none" stroke="black" points="46.12,-204 46.12,-226 197.93,-226 197.93,-204 46.12,-204"/>
-<text xml:space="preserve" text-anchor="start" x="51.12" y="-212" font-family="sans-serif" font-size="10.00">urgency: string</text>
-<polygon fill="none" stroke="black" points="46.12,-182 46.12,-204 197.93,-204 197.93,-182 46.12,-182"/>
-<text xml:space="preserve" text-anchor="start" x="51.12" y="-190" font-family="sans-serif" font-size="10.00">clinicalSummary: string</text>
-<polygon fill="none" stroke="black" points="46.12,-160 46.12,-182 197.93,-182 197.93,-160 46.12,-160"/>
-<text xml:space="preserve" text-anchor="start" x="51.12" y="-168" font-family="sans-serif" font-size="10.00">status: string</text>
-<polygon fill="none" stroke="black" points="46.12,-138 46.12,-160 197.93,-160 197.93,-138 46.12,-138"/>
-<text xml:space="preserve" text-anchor="start" x="51.12" y="-146" font-family="sans-serif" font-size="10.00">{opt} diagnosisCode: ClinicalCode</text>
-<polygon fill="none" stroke="black" points="46.12,-116 46.12,-138 197.93,-138 197.93,-116 46.12,-116"/>
-<text xml:space="preserve" text-anchor="start" x="51.12" y="-124" font-family="sans-serif" font-size="10.00">{opt} assignedConsultantId: string</text>
-<polygon fill="none" stroke="black" points="46.12,-94 46.12,-116 197.93,-116 197.93,-94 46.12,-94"/>
-<text xml:space="preserve" text-anchor="start" x="51.12" y="-102" font-family="sans-serif" font-size="10.00">{opt} labOrderReference: string</text>
-<polygon fill="none" stroke="black" points="46.12,-72 46.12,-94 197.93,-94 197.93,-72 46.12,-72"/>
-<text xml:space="preserve" text-anchor="start" x="51.12" y="-80" font-family="sans-serif" font-size="10.00">{opt} labResultCode: string</text>
+<polygon fill="none" stroke="black" points="46.12,-244 46.12,-266 197.93,-266 197.93,-244 46.12,-244"/>
+<text xml:space="preserve" text-anchor="start" x="51.12" y="-252" font-family="sans-serif" font-size="10.00">gpReferralReference: string</text>
+<polygon fill="none" stroke="black" points="46.12,-222 46.12,-244 197.93,-244 197.93,-222 46.12,-222"/>
+<text xml:space="preserve" text-anchor="start" x="51.12" y="-230" font-family="sans-serif" font-size="10.00">requestedSpecialty: string</text>
+<polygon fill="none" stroke="black" points="46.12,-200 46.12,-222 197.93,-222 197.93,-200 46.12,-200"/>
+<text xml:space="preserve" text-anchor="start" x="51.12" y="-208" font-family="sans-serif" font-size="10.00">urgency: string</text>
+<polygon fill="none" stroke="black" points="46.12,-178 46.12,-200 197.93,-200 197.93,-178 46.12,-178"/>
+<text xml:space="preserve" text-anchor="start" x="51.12" y="-186" font-family="sans-serif" font-size="10.00">clinicalSummary: string</text>
+<polygon fill="none" stroke="black" points="46.12,-156 46.12,-178 197.93,-178 197.93,-156 46.12,-156"/>
+<text xml:space="preserve" text-anchor="start" x="51.12" y="-164" font-family="sans-serif" font-size="10.00">status: string</text>
+<polygon fill="none" stroke="black" points="46.12,-134 46.12,-156 197.93,-156 197.93,-134 46.12,-134"/>
+<text xml:space="preserve" text-anchor="start" x="51.12" y="-142" font-family="sans-serif" font-size="10.00">{opt} diagnosisCode: ClinicalCode</text>
+<polygon fill="none" stroke="black" points="46.12,-112 46.12,-134 197.93,-134 197.93,-112 46.12,-112"/>
+<text xml:space="preserve" text-anchor="start" x="51.12" y="-120" font-family="sans-serif" font-size="10.00">{opt} assignedConsultantId: string</text>
+<polygon fill="none" stroke="black" points="46.12,-90 46.12,-112 197.93,-112 197.93,-90 46.12,-90"/>
+<text xml:space="preserve" text-anchor="start" x="51.12" y="-98" font-family="sans-serif" font-size="10.00">{opt} labOrderReference: string</text>
+<polygon fill="none" stroke="black" points="46.12,-68 46.12,-90 197.93,-90 197.93,-68 46.12,-68"/>
+<text xml:space="preserve" text-anchor="start" x="51.12" y="-76" font-family="sans-serif" font-size="10.00">{opt} labResultCode: string</text>
 </a>
 </g>
-</g>
-<!-- #/boundedcontexts/patient_records/aggregates/patient_record/entities/patient -->
-<g id="node2" class="node">
-<title>#/boundedcontexts/patient_records/aggregates/patient_record/entities/patient</title>
-<g id="a_node2"><a xlink:title="Somebody the clinic has, or will, care for.">
-<polygon fill="white" stroke="none" points="587.53,-422 494.05,-422 494.05,-326 587.53,-326 587.53,-422"/>
-<polygon fill="none" stroke="black" points="494.05,-392 494.05,-422 587.53,-422 587.53,-392 494.05,-392"/>
-<text xml:space="preserve" text-anchor="start" x="515.1" y="-409" font-family="sans-serif" font-size="10.00">«root entity»</text>
-<text xml:space="preserve" text-anchor="start" x="525.52" y="-399" font-family="sans-serif" font-weight="bold" font-size="10.00">Patient</text>
-<polygon fill="none" stroke="black" points="494.05,-370 494.05,-392 587.53,-392 587.53,-370 494.05,-370"/>
-<text xml:space="preserve" text-anchor="start" x="499.05" y="-378" font-family="sans-serif" font-size="10.00">{id} patientId: string</text>
-<polygon fill="none" stroke="black" points="494.05,-348 494.05,-370 587.53,-370 587.53,-348 494.05,-348"/>
-<text xml:space="preserve" text-anchor="start" x="499.05" y="-356" font-family="sans-serif" font-size="10.00">fullName: string</text>
-<polygon fill="none" stroke="black" points="494.05,-326 494.05,-348 587.53,-348 587.53,-326 494.05,-326"/>
-<text xml:space="preserve" text-anchor="start" x="499.05" y="-334" font-family="sans-serif" font-size="10.00">dateOfBirth: string</text>
-</a>
-</g>
-</g>
-<!-- #/boundedcontexts/triage/aggregates/referral_case/entities/referral&#45;&gt;#/boundedcontexts/patient_records/aggregates/patient_record/entities/patient -->
-<g id="edge1" class="edge">
-<title>#/boundedcontexts/triage/aggregates/referral_case/entities/referral&#45;&gt;#/boundedcontexts/patient_records/aggregates/patient_record/entities/patient</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M197.54,-237.68C279.83,-270.45 410.42,-322.47 484.22,-351.87"/>
-<polygon fill="black" stroke="black" points="493.12,-355.41 482.16,-355.89 489.6,-354.01 483.83,-351.71 483.83,-351.71 483.83,-351.71 489.6,-354.01 485.49,-347.53 493.12,-355.41"/>
-<text xml:space="preserve" text-anchor="middle" x="321.55" y="-313.75" font-family="sans-serif" font-size="10.00">«identifies» patientId</text>
-</g>
-<!-- #/boundedcontexts/gp_practice_system -->
-<g id="node3" class="node">
-<title>#/boundedcontexts/gp_practice_system</title>
-<g id="a_node3"><a xlink:title="The GP&#39;s own practice management system. Not ours to model inside: it sends referrals in its own message format, and every practice may run a different one.">
-<polygon fill="white" stroke="none" points="588,-282 493.59,-282 493.59,-230 588,-230 588,-282"/>
-<polygon fill="none" stroke="black" points="493.59,-252 493.59,-282 588,-282 588,-252 493.59,-252"/>
-<text xml:space="preserve" text-anchor="start" x="504.55" y="-269" font-family="sans-serif" font-size="10.00">«external system»</text>
-<text xml:space="preserve" text-anchor="start" x="498.59" y="-259" font-family="sans-serif" font-weight="bold" font-size="10.00">GP Practice System</text>
-<polygon fill="none" stroke="black" points="493.59,-230 493.59,-252 588,-252 588,-230 493.59,-230"/>
-<text xml:space="preserve" text-anchor="start" x="498.59" y="-238" font-family="sans-serif" font-size="10.00"> </text>
-</a>
-</g>
-</g>
-<!-- #/boundedcontexts/triage/aggregates/referral_case/entities/referral&#45;&gt;#/boundedcontexts/gp_practice_system -->
-<g id="edge2" class="edge">
-<title>#/boundedcontexts/triage/aggregates/referral_case/entities/referral&#45;&gt;#/boundedcontexts/gp_practice_system</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M197.54,-216.58C279.27,-225.99 408.65,-240.9 482.71,-249.43"/>
-<polygon fill="black" stroke="black" points="492.45,-250.55 482.01,-253.87 488.7,-250.12 482.52,-249.4 482.52,-249.4 482.52,-249.4 488.7,-250.12 483.04,-244.93 492.45,-250.55"/>
-<text xml:space="preserve" text-anchor="middle" x="321.55" y="-240.71" font-family="sans-serif" font-size="10.00">«identifies» gpReferralReference</text>
-</g>
-<!-- #/boundedcontexts/laboratory -->
-<g id="node4" class="node">
-<title>#/boundedcontexts/laboratory</title>
-<g id="a_node4"><a xlink:title="The clinic&#39;s contracted laboratory service. Takes a test order and answers with a result later, in its own report format. Not ours to model inside.">
-<polygon fill="white" stroke="none" points="582.03,-186 499.55,-186 499.55,-134 582.03,-134 582.03,-186"/>
-<polygon fill="none" stroke="black" points="499.55,-156 499.55,-186 582.03,-186 582.03,-156 499.55,-156"/>
-<text xml:space="preserve" text-anchor="start" x="504.55" y="-173" font-family="sans-serif" font-size="10.00">«external system»</text>
-<text xml:space="preserve" text-anchor="start" x="516.07" y="-163" font-family="sans-serif" font-weight="bold" font-size="10.00">Laboratory</text>
-<polygon fill="none" stroke="black" points="499.55,-134 499.55,-156 582.03,-156 582.03,-134 499.55,-134"/>
-<text xml:space="preserve" text-anchor="start" x="504.55" y="-142" font-family="sans-serif" font-size="10.00"> </text>
-</a>
-</g>
-</g>
-<!-- #/boundedcontexts/triage/aggregates/referral_case/entities/referral&#45;&gt;#/boundedcontexts/laboratory -->
-<g id="edge3" class="edge">
-<title>#/boundedcontexts/triage/aggregates/referral_case/entities/referral&#45;&gt;#/boundedcontexts/laboratory</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M197.54,-199.42C281.61,-189.74 416.09,-174.25 488.93,-165.86"/>
-<polygon fill="black" stroke="black" points="498.43,-164.76 489.01,-170.38 494.68,-165.2 488.5,-165.91 488.5,-165.91 488.5,-165.91 494.68,-165.2 487.98,-161.44 498.43,-164.76"/>
-<text xml:space="preserve" text-anchor="middle" x="321.55" y="-195.47" font-family="sans-serif" font-size="10.00">«identifies» labOrderReference</text>
 </g>
 <!-- #/boundedcontexts/clinical_coding_regulator/valueobjects/clinical_code -->
-<g id="node5" class="node">
+<g id="node2" class="node">
 <title>#/boundedcontexts/clinical_coding_regulator/valueobjects/clinical_code</title>
-<g id="a_node5"><a xlink:title="A single code from the current published coding standard, and the version of the standard it was taken from.">
-<polygon fill="white" stroke="none" points="595.5,-90 486.09,-90 486.09,-16 595.5,-16 595.5,-90"/>
-<polygon fill="none" stroke="black" points="486.09,-60 486.09,-90 595.5,-90 595.5,-60 486.09,-60"/>
-<text xml:space="preserve" text-anchor="start" x="491.09" y="-77" font-family="sans-serif" font-size="10.00">«borrowed value object»</text>
-<text xml:space="preserve" text-anchor="start" x="511.76" y="-67" font-family="sans-serif" font-weight="bold" font-size="10.00">Clinical Code</text>
-<polygon fill="none" stroke="black" points="486.09,-38 486.09,-60 595.5,-60 595.5,-38 486.09,-38"/>
-<text xml:space="preserve" text-anchor="start" x="491.09" y="-46" font-family="sans-serif" font-size="10.00">code: string</text>
-<polygon fill="none" stroke="black" points="486.09,-16 486.09,-38 595.5,-38 595.5,-16 486.09,-16"/>
-<text xml:space="preserve" text-anchor="start" x="491.09" y="-24" font-family="sans-serif" font-size="10.00">codeSetVersion: string</text>
+<g id="a_node2"><a xlink:title="A single code from the current published coding standard, and the version of the standard it was taken from.">
+<polygon fill="white" stroke="none" points="595.5,-422 486.09,-422 486.09,-348 595.5,-348 595.5,-422"/>
+<polygon fill="none" stroke="black" points="486.09,-392 486.09,-422 595.5,-422 595.5,-392 486.09,-392"/>
+<text xml:space="preserve" text-anchor="start" x="491.09" y="-409" font-family="sans-serif" font-size="10.00">«borrowed value object»</text>
+<text xml:space="preserve" text-anchor="start" x="511.76" y="-399" font-family="sans-serif" font-weight="bold" font-size="10.00">Clinical Code</text>
+<polygon fill="none" stroke="black" points="486.09,-370 486.09,-392 595.5,-392 595.5,-370 486.09,-370"/>
+<text xml:space="preserve" text-anchor="start" x="491.09" y="-378" font-family="sans-serif" font-size="10.00">code: string</text>
+<polygon fill="none" stroke="black" points="486.09,-348 486.09,-370 595.5,-370 595.5,-348 486.09,-348"/>
+<text xml:space="preserve" text-anchor="start" x="491.09" y="-356" font-family="sans-serif" font-size="10.00">codeSetVersion: string</text>
 </a>
 </g>
 </g>
 <!-- #/boundedcontexts/triage/aggregates/referral_case/entities/referral&#45;&gt;#/boundedcontexts/clinical_coding_regulator/valueobjects/clinical_code -->
-<g id="edge4" class="edge">
+<g id="edge1" class="edge">
 <title>#/boundedcontexts/triage/aggregates/referral_case/entities/referral&#45;&gt;#/boundedcontexts/clinical_coding_regulator/valueobjects/clinical_code</title>
-<path fill="none" stroke="black" stroke-dasharray="5,2" d="M197.54,-180.29C276.81,-150.81 400.9,-104.65 475.88,-76.77"/>
-<polygon fill="black" stroke="black" points="484.98,-73.39 477.17,-81.09 481.43,-74.7 475.6,-76.87 475.6,-76.87 475.6,-76.87 481.43,-74.7 474.04,-72.65 484.98,-73.39"/>
-<text xml:space="preserve" text-anchor="middle" x="321.55" y="-160.86" font-family="sans-serif" font-size="10.00">diagnosisCode</text>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M197.85,-242.79C252.57,-270.44 328.98,-307.6 398.05,-336 423.11,-346.31 451.23,-356.34 475.77,-364.61"/>
+<polygon fill="black" stroke="black" points="485.26,-367.77 474.35,-368.87 481.67,-366.57 475.77,-364.6 475.77,-364.6 475.77,-364.6 481.67,-366.57 477.2,-360.34 485.26,-367.77"/>
+<text xml:space="preserve" text-anchor="middle" x="321.55" y="-332.68" font-family="sans-serif" font-size="10.00">coded&#45;as</text>
+<text xml:space="preserve" text-anchor="middle" x="471.51" y="-366.87" font-family="sans-serif" font-size="10.00">0..1</text>
+</g>
+<!-- #/boundedcontexts/patient_records/aggregates/patient_record/entities/patient -->
+<g id="node3" class="node">
+<title>#/boundedcontexts/patient_records/aggregates/patient_record/entities/patient</title>
+<g id="a_node3"><a xlink:title="Somebody the clinic has, or will, care for.">
+<polygon fill="white" stroke="none" points="587.53,-304 494.05,-304 494.05,-208 587.53,-208 587.53,-304"/>
+<polygon fill="none" stroke="black" points="494.05,-274 494.05,-304 587.53,-304 587.53,-274 494.05,-274"/>
+<text xml:space="preserve" text-anchor="start" x="515.1" y="-291" font-family="sans-serif" font-size="10.00">«root entity»</text>
+<text xml:space="preserve" text-anchor="start" x="525.52" y="-281" font-family="sans-serif" font-weight="bold" font-size="10.00">Patient</text>
+<polygon fill="none" stroke="black" points="494.05,-252 494.05,-274 587.53,-274 587.53,-252 494.05,-252"/>
+<text xml:space="preserve" text-anchor="start" x="499.05" y="-260" font-family="sans-serif" font-size="10.00">{id} patientId: string</text>
+<polygon fill="none" stroke="black" points="494.05,-230 494.05,-252 587.53,-252 587.53,-230 494.05,-230"/>
+<text xml:space="preserve" text-anchor="start" x="499.05" y="-238" font-family="sans-serif" font-size="10.00">fullName: string</text>
+<polygon fill="none" stroke="black" points="494.05,-208 494.05,-230 587.53,-230 587.53,-208 494.05,-208"/>
+<text xml:space="preserve" text-anchor="start" x="499.05" y="-216" font-family="sans-serif" font-size="10.00">dateOfBirth: string</text>
+</a>
+</g>
+</g>
+<!-- #/boundedcontexts/triage/aggregates/referral_case/entities/referral&#45;&gt;#/boundedcontexts/patient_records/aggregates/patient_record/entities/patient -->
+<g id="edge2" class="edge">
+<title>#/boundedcontexts/triage/aggregates/referral_case/entities/referral&#45;&gt;#/boundedcontexts/patient_records/aggregates/patient_record/entities/patient</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M197.54,-213.3C279.49,-223.52 409.35,-239.73 483.31,-248.95"/>
+<polygon fill="black" stroke="black" points="493.04,-250.17 482.56,-253.39 489.29,-249.7 483.12,-248.93 483.12,-248.93 483.12,-248.93 489.29,-249.7 483.67,-244.46 493.04,-250.17"/>
+<text xml:space="preserve" text-anchor="middle" x="321.55" y="-239.19" font-family="sans-serif" font-size="10.00">«identifies» patientId</text>
+</g>
+<!-- #/boundedcontexts/gp_practice_system -->
+<g id="node4" class="node">
+<title>#/boundedcontexts/gp_practice_system</title>
+<g id="a_node4"><a xlink:title="The GP&#39;s own practice management system. Not ours to model inside: it sends referrals in its own message format, and every practice may run a different one.">
+<polygon fill="white" stroke="none" points="588,-164 493.59,-164 493.59,-112 588,-112 588,-164"/>
+<polygon fill="none" stroke="black" points="493.59,-134 493.59,-164 588,-164 588,-134 493.59,-134"/>
+<text xml:space="preserve" text-anchor="start" x="504.55" y="-151" font-family="sans-serif" font-size="10.00">«external system»</text>
+<text xml:space="preserve" text-anchor="start" x="498.59" y="-141" font-family="sans-serif" font-weight="bold" font-size="10.00">GP Practice System</text>
+<polygon fill="none" stroke="black" points="493.59,-112 493.59,-134 588,-134 588,-112 493.59,-112"/>
+<text xml:space="preserve" text-anchor="start" x="498.59" y="-120" font-family="sans-serif" font-size="10.00"> </text>
+</a>
+</g>
+</g>
+<!-- #/boundedcontexts/triage/aggregates/referral_case/entities/referral&#45;&gt;#/boundedcontexts/gp_practice_system -->
+<g id="edge3" class="edge">
+<title>#/boundedcontexts/triage/aggregates/referral_case/entities/referral&#45;&gt;#/boundedcontexts/gp_practice_system</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M197.54,-192.2C279.27,-179.26 408.65,-158.77 482.71,-147.04"/>
+<polygon fill="black" stroke="black" points="492.46,-145.5 483.29,-151.5 488.73,-146.09 482.58,-147.06 482.58,-147.06 482.58,-147.06 488.73,-146.09 481.88,-142.62 492.46,-145.5"/>
+<text xml:space="preserve" text-anchor="middle" x="321.55" y="-185.65" font-family="sans-serif" font-size="10.00">«identifies» gpReferralReference</text>
+</g>
+<!-- #/boundedcontexts/laboratory -->
+<g id="node5" class="node">
+<title>#/boundedcontexts/laboratory</title>
+<g id="a_node5"><a xlink:title="The clinic&#39;s contracted laboratory service. Takes a test order and answers with a result later, in its own report format. Not ours to model inside.">
+<polygon fill="white" stroke="none" points="582.03,-68 499.55,-68 499.55,-16 582.03,-16 582.03,-68"/>
+<polygon fill="none" stroke="black" points="499.55,-38 499.55,-68 582.03,-68 582.03,-38 499.55,-38"/>
+<text xml:space="preserve" text-anchor="start" x="504.55" y="-55" font-family="sans-serif" font-size="10.00">«external system»</text>
+<text xml:space="preserve" text-anchor="start" x="516.07" y="-45" font-family="sans-serif" font-weight="bold" font-size="10.00">Laboratory</text>
+<polygon fill="none" stroke="black" points="499.55,-16 499.55,-38 582.03,-38 582.03,-16 499.55,-16"/>
+<text xml:space="preserve" text-anchor="start" x="504.55" y="-24" font-family="sans-serif" font-size="10.00"> </text>
+</a>
+</g>
+</g>
+<!-- #/boundedcontexts/triage/aggregates/referral_case/entities/referral&#45;&gt;#/boundedcontexts/laboratory -->
+<g id="edge4" class="edge">
+<title>#/boundedcontexts/triage/aggregates/referral_case/entities/referral&#45;&gt;#/boundedcontexts/laboratory</title>
+<path fill="none" stroke="black" stroke-dasharray="5,2" d="M197.79,-170.89C216.42,-162.87 236.4,-154.46 255.06,-147 336.4,-114.47 432.21,-79.9 489.36,-59.66"/>
+<polygon fill="black" stroke="black" points="498.77,-56.34 490.84,-63.91 495.21,-57.6 489.34,-59.67 489.34,-59.67 489.34,-59.67 495.21,-57.6 487.84,-55.43 498.77,-56.34"/>
+<text xml:space="preserve" text-anchor="middle" x="321.55" y="-150" font-family="sans-serif" font-size="10.00">«identifies» labOrderReference</text>
 </g>
 </g>
 </svg>

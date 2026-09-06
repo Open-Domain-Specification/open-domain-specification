@@ -16,7 +16,12 @@ import {
 	reachedEvents,
 	routesTo,
 } from "./reaction-walk";
-import { type DownstreamRole, ODS_VERSION, type UpstreamRole } from "./schema";
+import {
+	type DownstreamRole,
+	ODS_VERSION,
+	RelationType,
+	type UpstreamRole,
+} from "./schema";
 import {
 	Aggregate,
 	Answer,
@@ -290,9 +295,28 @@ const crossAggregateReference: Rule = (workspace) => {
 };
 
 /**
- * A relation never crosses a bounded context. Crossing a boundary is an
- * integration, so the source holds the other entity's identity as an attribute
- * and the dependency reads on the consumable map instead.
+ * A relation never crosses a bounded context, with one exception: the value
+ * object the model has already said this context may borrow.
+ *
+ * Crossing a boundary is an integration, so the source holds the other
+ * entity's identity as an attribute and the dependency reads on the consumable
+ * map instead. That is the answer for an entity, which has an identity to
+ * hold. It was given for a value object too, and a value object has none: the
+ * rule told an author to hold the identity of a thing defined by not having
+ * one, so the only way out was to write nothing. Meanwhile the attribute typed
+ * by that borrowed value already draws its own line on the relation map
+ * (decision 16, note of 2026-09-10), so what a `uses` relation adds is a label
+ * and a cardinality the map otherwise cannot show, and refusing it lost those
+ * and nothing else.
+ *
+ * So a `uses` relation to another context's value object is allowed exactly
+ * where {@link mayBorrowFrom} allows the borrowing itself: a shared kernel, or
+ * a conformist downstream of the context that owns the value. That is the same
+ * predicate `valueobject-context` reads about the attribute, asked about the
+ * relation beside it, so the two never disagree about one crossing
+ * (decision 14, note of 2026-09-10; card 126). Every other relation across a
+ * boundary is still refused, and the fix names the two honest routes: borrow
+ * the value where the model lets you, or hold an entity's identity.
  */
 const crossContextRelation: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -300,10 +324,20 @@ const crossContextRelation: Rule = (workspace) => {
 		const source = relation.source.boundedcontext;
 		const target = relation.target.boundedcontext;
 		if (source === target) continue;
+		const value = relation.target instanceof ValueObject;
+		if (
+			value &&
+			relation.relation === RelationType.Uses &&
+			mayBorrowFrom(workspace, source, target)
+		)
+			continue;
+		const fix = value
+			? `a relation reaches another context's value object only where the borrowing does, so declare a shared kernel with "${target.name}" or a conformist relationship toward it and type an attribute by "${relation.target.name}"`
+			: `a relation never crosses a bounded context, so hold "${relation.target.name}"'s identity in an attribute of "${relation.source.name}" with \`identifies\`; where what you need is a value rather than an entity, borrow it through a shared kernel or as a conformist`;
 		diagnostics.push({
 			severity: "error",
 			rule: "cross-context-relation",
-			message: `"${relation.source.name}" in "${source.name}" ${relation.relation} "${relation.target.name}" in "${target.name}"; a relation never crosses a bounded context, so hold "${relation.target.name}"'s identity as an attribute on "${relation.source.name}" instead`,
+			message: `"${relation.source.name}" in "${source.name}" ${relation.relation} "${relation.target.name}" in "${target.name}"; ${fix}`,
 			ref: relation.source.ref,
 		});
 	}
@@ -897,12 +931,18 @@ function cardinalityDiagnostics(
  *
  * The line itself is not asked for. An attribute typed by a value object is a
  * dependency on that value, and the relation map draws it from the attribute
- * whether or not a relation is written — as it always has for a value borrowed
- * from another context, where no relation may be declared at all (decision 16,
- * note of 2026-09-10). A declared relation adds a label or a cardinality to
- * that line, and what this rule checks is that what it adds is true. Demanding
- * the declaration made the reference models write the pair out hundreds of
- * times and told an author to restate a fact the model already had.
+ * whether or not a relation is written (decision 16, note of 2026-09-10). A
+ * declared relation adds a label or a cardinality to that line, and what this
+ * rule checks is that what it adds is true. Demanding the declaration made the
+ * reference models write the pair out hundreds of times and told an author to
+ * restate a fact the model already had.
+ *
+ * A borrowed value is read the same way. Until card 126 no relation to another
+ * context's value object could be declared at all, so this rule skipped one
+ * and said so; now a `uses` relation may reach a value borrowed over a shared
+ * kernel or from a conformed-to upstream (`cross-context-relation`,
+ * decision 14's note of 2026-09-10), and a label and a cardinality that
+ * crossed a boundary would be the one pair nothing checked.
  *
  * The attribute's `type` is free text by decision 15, so the validator does
  * not parse it and never asks it to spell the value object's name. The one
@@ -927,14 +967,9 @@ function cardinalityDiagnostics(
 const attributeRelationCoherence: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
 	for (const member of modelMembersOf(workspace)) {
-		const context = member.boundedcontext;
 		for (const attribute of member.attributes.values()) {
 			const vo = attribute.valueobject;
-			// A relation may not leave the context, so only a value object of
-			// this one can have a declared relation to disagree with; a borrowed
-			// value is drawn from the attribute alone (decision 16, third
-			// amendment).
-			if (!vo || vo.boundedcontext !== context) continue;
+			if (!vo) continue;
 			const candidates = usesOfValueObject(member.allRelations, vo);
 			// Nothing declared is the ordinary case now: the line is derived.
 			if (candidates.length === 0) continue;
@@ -954,7 +989,6 @@ const attributeRelationCoherence: Rule = (workspace) => {
 			if (relation.relation !== "uses") continue;
 			const target = relation.target;
 			if (!(target instanceof ValueObject)) continue;
-			if (target.boundedcontext !== context) continue;
 			const typed = member.allAttributes.filter(
 				(a) => a.valueobject === target,
 			);
@@ -3921,8 +3955,14 @@ const rejectsOnOperation: Rule = (workspace) => {
  * true of it. The reactor has to have made the call, which is
  * {@link hearsAnswerOf}'s question: it issues the operation itself, or an
  * operation it issues is named in `by` on a consumption of that operation, or
- * nothing says who calls and there is one call in this context to hear, made
- * by a consumer with a single operation to infer. Read at the level of the
+ * an operation it issues reaches that consumption along this context's `by`
+ * chain through any number of local fronts, or nothing says who calls and
+ * there is one call in this context to hear, made by a consumer with a single
+ * operation to infer. Read with the third clause missing, as it was until
+ * card 126, this rule dictated the model's shape: a saga issuing a use-case
+ * front that calls an adapter that calls the provider could not wait on the
+ * provider's answer, though the events coming back up that same chain had
+ * always been read through it (decision 21, amendment of 2026-09-10). Read at the level of the
  * context, as it was until card 100, it let a reactor wait on an answer to
  * somebody else's call: two teams calling one shared scorer each heard the
  * other's verdict, and the reaction walk drew the step. Read without the
@@ -3988,7 +4028,7 @@ const consumableKinds: Rule = (workspace) => {
 					diagnostics.push({
 						severity: "error",
 						rule: "consumable-kind",
-						message: `${reactorLabel(reactor)} "${reactor.name}" waits for "${trigger.origin}", but nothing says ${reactorLabel(reactor).toLowerCase()} "${reactor.name}" made that call: it does not issue "${trigger.operation.name}", and no consumption of "${trigger.operation.name}" in "${bc.name}" names an operation it issues in "by". An answer comes back to whoever called, so issue that operation, or say in "by" which of this context's operations makes the call, or react to an event instead`,
+						message: `${reactorLabel(reactor)} "${reactor.name}" waits for "${trigger.origin}", but nothing says ${reactorLabel(reactor).toLowerCase()} "${reactor.name}" made that call: it does not issue "${trigger.operation.name}", and no chain of "by" inside "${bc.name}" runs from an operation it issues to the consumption of "${trigger.operation.name}". An answer comes back to whoever called, routing along the local "by" chain through as many of this context's fronts as it takes, so issue that operation, or say in "by" which of this context's operations makes the call, or react to an event instead`,
 						ref: reactor.ref,
 					});
 			}
@@ -4125,16 +4165,25 @@ const raisersAmong = (operation: Consumable, event: Consumable): string[] =>
 		.map((called) => called.name);
 
 /**
- * A rejection an operation also raises as an event is a warning.
+ * A rejection an operation also raises as an event, where nobody hears the
+ * event, is a warning.
  *
- * A rejection says nothing happened (decision 25): the caller is refused, and
- * the shape it is refused with is not a fact about the world. A raised event
- * says the opposite, that something did happen. An operation that both
- * rejects with a shape and raises an event carrying that same shape is a
- * model telling on itself: whichever is true, the other statement is false.
- * If something happened, it is the event and not a refusal, and the
- * rejection should be dropped; if nothing happened, it is not an event, and
- * the raises entry is the one to drop.
+ * A declined authorisation is both things at once. The caller asked and was
+ * refused, which is the rejection (decision 25); and in event storming
+ * `PaymentDeclined` is a canonical event, because the decision happened even
+ * though the payment did not, and fraud, dunning and analytics all listen for
+ * it. Card 123 read the pair as a contradiction and told an author one of the
+ * two shapes was false, which for the commonest refusal in any model it is
+ * not: a rejection answers the caller, an event tells the world, and where
+ * both are true the model keeps both (decision 25, note of 2026-09-10;
+ * card 126).
+ *
+ * What is left of the warning is the half that was always right. An event
+ * nobody outside this context consumes tells nobody anything, so a refusal
+ * shape published as an event with no listener is a fact invented for the
+ * caller who was already answered. Somebody hearing it is what makes it an
+ * event, so that is what the rule asks, and it asks it of the contexts
+ * outside: the provider's own reactors already have the answer in their hands.
  */
 const rejectionRaised: Rule = (workspace) => {
 	const diagnostics: Diagnostic[] = [];
@@ -4146,11 +4195,11 @@ const rejectionRaised: Rule = (workspace) => {
 					const event = operation.raisedEvents.find(
 						(it) => it.schema === rejection.schema,
 					);
-					if (!event) continue;
+					if (!event || heardElsewhere(event)) continue;
 					diagnostics.push({
 						severity: "warning",
 						rule: "rejection-raised",
-						message: `"${operation.name}" rejects with "${rejection.schema.name}", which it also raises as the event "${event.name}"; a rejection says nothing happened and a raised event says something did \u2014 if something happened, drop the rejection and keep the event, otherwise it is not an event`,
+						message: `"${operation.name}" rejects with "${rejection.schema.name}", which it also raises as the event "${event.name}", and no other context consumes "${event.name}"; a rejection answers the caller and an event tells the world, and where both are true keep both \u2014 the fact somebody hears is what makes it an event, so say who consumes "${event.name}" or drop it and let the rejection answer`,
 						ref: operation.ref,
 					});
 				}
@@ -4159,6 +4208,20 @@ const rejectionRaised: Rule = (workspace) => {
 	}
 	return diagnostics;
 };
+
+/**
+ * Whether a context other than the one that raises this event consumes it.
+ *
+ * Telling the world is what an event does that an answer does not, and the
+ * world here is the other contexts. A consumption inside the raising context
+ * is not it: the caller who made the call is already holding the refusal it
+ * was answered with, so a subscription beside it says nothing new about
+ * whether the fact travels.
+ */
+function heardElsewhere(event: Consumable): boolean {
+	const owner = event.boundedcontext;
+	return event.consumptions.some((c) => c.consumer.boundedcontext !== owner);
+}
 
 /**
  * Something in a context raises each of its events.
@@ -5020,9 +5083,9 @@ const RULES: CataloguedRule[] = [
 		rule: "cross-context-relation",
 		severities: ["error"],
 		summary:
-			"A relation never crosses a bounded context; only an identity does.",
-		why: "Each context is its own model with its own language and lifecycle (decision 03), so a relation across the boundary makes one context's entity part of the other's object graph and the two can no longer be loaded, changed or stored apart. Decision 08's crossing table already says an entity relation's target may not cross a file, and splitting the contexts into their own files is exactly what turns this relation into a load error.",
-		fix: "Delete the relation and give the source an attribute holding the other entity's identity — an Order in Sales carries petId rather than a relation to Catalog's Pet. That identity may name a child of the other model as readily as its root, since the child is reached through that root. The dependency between the two contexts then reads where it belongs, on the context map: an identity across a boundary consumes nothing, so it draws there as an implied edge under the id stereotype rather than on the consumable map, which has nothing to draw when nothing is consumed. Where the entity really is one both contexts hold and change together, an entity has one home: give it to a kernel context the two share and consume its operations from each side instead of relating into each other's aggregate (decision 16).",
+			"A relation never crosses a bounded context, except a uses relation to a value object the model already lets this context borrow.",
+		why: "Each context is its own model with its own language and lifecycle (decision 03), so a relation across the boundary makes one context's entity part of the other's object graph and the two can no longer be loaded, changed or stored apart. Decision 08's crossing table already says an entity relation's target may not cross a file, and splitting the contexts into their own files is exactly what turns this relation into a load error. A value object is the exception, because it has no identity to hold instead and no object graph to be part of: where a shared kernel or a conformist relationship already lets this context type an attribute by that value (valueobject-context), a uses relation beside the attribute adds only the label and the multiplicity the map cannot otherwise show (decision 14, note of 2026-09-10).",
+		fix: "For an entity, delete the relation and give the source an attribute holding the other entity's identity with identifies — an Order in Sales carries petId rather than a relation to Catalog's Pet. That identity may name a child of the other model as readily as its root, since the child is reached through that root. The dependency between the two contexts then reads where it belongs, on the context map: an identity across a boundary consumes nothing, so it draws there as an implied edge under the id stereotype rather than on the consumable map, which has nothing to draw when nothing is consumed. Where the entity really is one both contexts hold and change together, an entity has one home: give it to a kernel context the two share and consume its operations from each side instead of relating into each other's aggregate (decision 16). For a value object, declare the relationship that carries the borrowing — a shared kernel with the value's context, or a conformist relationship toward it — and type an attribute by the value; the uses relation is then allowed beside it, and only uses, since a value is borrowed rather than referenced.",
 		check: crossContextRelation,
 	},
 	{
@@ -5483,8 +5546,8 @@ const RULES: CataloguedRule[] = [
 		severities: ["error"],
 		summary:
 			"Policies and processes react to events and issue operations; only operations raise events, and they raise only events.",
-		why: "An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable. A reaction may also wait on an answer — a shape the call comes back with, or one of the outcomes a refusal enumerates — and then two things have to hold: the operation declares that answer, and the reactor can hear it come back — because its context consumes the operation — through a `by` naming an operation the reactor issues, or through the context's one silent consumption where the consumer has a single operation to infer — or because the reactor issues the operation itself, which is the local call-and-branch. Where the consumer provides several operations and `by` says nothing, nobody has said who called, and the walk draws no answer step either. An operation that returns nothing answers with its bare completion, and that is an answer like any other; an operation that does answer with a shape has no separate completion, because naming one would be a second name for the same call coming back.",
-		fix: "Check the type of each consumable a policy or raises list points at and swap it for the right kind. For an answer, either declare it on the operation it is named from — a shape in returns or rejects, an outcome in that refusal's reasons — or issue or consume that operation; where the operation returns a shape, wait for that shape rather than for the operation completing. Where the consumer provides several operations, name the one that makes the call in the consumption's `by`, which is the same thing `consumption-by-required` asks for. A process starting on an operation is not a reaction at all and is left to process-in-context.",
+		why: "An event is a fact that happened, an operation is a request to do something; mixing them up makes flows unreadable. A reaction may also wait on an answer — a shape the call comes back with, or one of the outcomes a refusal enumerates — and then two things have to hold: the operation declares that answer, and the reactor can hear it come back — because its context consumes the operation — through a `by` naming an operation the reactor issues, or a chain of `by` inside this context running from an operation it issues to that consumption through any number of local fronts, or through the context's one silent consumption where the consumer has a single operation to infer — or because the reactor issues the operation itself, which is the local call-and-branch. Where the consumer provides several operations and `by` says nothing, nobody has said who called, and the walk draws no answer step either. An operation that returns nothing answers with its bare completion, and that is an answer like any other; an operation that does answer with a shape has no separate completion, because naming one would be a second name for the same call coming back.",
+		fix: "Check the type of each consumable a policy or raises list points at and swap it for the right kind. For an answer, either declare it on the operation it is named from — a shape in returns or rejects, an outcome in that refusal's reasons — or issue or consume that operation; where the operation returns a shape, wait for that shape rather than for the operation completing. Where the consumer provides several operations, name the one that makes the call in the consumption's `by`, which is the same thing `consumption-by-required` asks for; an unnamed caller anywhere along the chain breaks it, and the answer stops there. Past the boundary the chain is the neighbour's, so a reactor hears the answer to the call its own context made and no call behind it. A process starting on an operation is not a reaction at all and is left to process-in-context.",
 		check: consumableKinds,
 	},
 	{
@@ -5509,9 +5572,9 @@ const RULES: CataloguedRule[] = [
 		rule: "rejection-raised",
 		severities: ["warning"],
 		summary:
-			"An operation does not reject with a shape it also raises as an event.",
-		why: "A rejection says nothing happened (decision 25): the caller is refused, and the shape it is refused with names why, not a fact about the world. A raised event says the opposite, that something did happen. An operation whose rejects and raises name the same shape is a model telling on itself, stating both that nothing happened and that something did.",
-		fix: "If something happened, it is the event and not a refusal: drop the rejection and keep the raised event. If nothing happened, it is not an event: drop it from raises and keep the rejection.",
+			"An operation does not raise, as an event no other context consumes, a shape it also rejects with.",
+		why: "A rejection answers the caller and an event tells the world, and a declined authorisation is honestly both: the caller was refused, and the decision happened, which is why PaymentDeclined is a canonical event in every storming session. Where both are true the model keeps both. What is left to report is a refusal shape published as an event that nobody outside the context consumes: the caller who asked already holds the answer, so an event with no listener adds a fact nobody hears, and somebody hearing it is what makes it an event at all (decision 25, note of 2026-09-10).",
+		fix: "If the fact really does travel, say who hears it: declare the consumption in the context that reacts to the decline, and the rejection stays beside it as the caller's answer. If nobody hears it, it is not an event: drop it from raises and let the rejection answer.",
 		check: rejectionRaised,
 	},
 	{

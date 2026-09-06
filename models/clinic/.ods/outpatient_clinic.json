@@ -735,7 +735,17 @@
                   "optional": true
                 }
               },
-              "relations": []
+              "relations": [
+                {
+                  "target": {
+                    "$ref": "#/boundedcontexts/clinical_coding_regulator/valueobjects/clinical_code"
+                  },
+                  "relation": "uses",
+                  "label": "coded-as",
+                  "cardinality": "0..1",
+                  "for": "diagnosisCode"
+                }
+              ]
             }
           },
           "invariants": {

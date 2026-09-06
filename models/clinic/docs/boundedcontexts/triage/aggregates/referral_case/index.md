@@ -15,6 +15,9 @@ One referral, from the moment it becomes a case of ours.
 
 
 ## Relationships
+| Source | Description | Target | Relation | Cardinality |
+| --- | --- | --- | --- | --- |
+| [Referral Case - Referral](./index.md#entities-and-value-objects) | coded-as | Clinical Coding Regulator - Clinical Code | uses | 0..1 |
 
 
 ## Invariants
