@@ -3712,6 +3712,17 @@ const policyComplete: Rule = (workspace) => {
  * process itself and to no other reactor: a ring through two processes, or
  * through a process and a policy, is a genuine loop nobody on it can see the
  * whole of, and is reported.
+ *
+ * The contexts the ring crosses do not come into it. A process that issues
+ * its own operation, whose call reaches the next context through a
+ * consumption's `by`, and that waits for the fact that context raises is
+ * exactly the shape decision 23 describes; it is one process's lifecycle
+ * however far the call travels, and NorthBank's onboarding and RiverMart's
+ * checkout are both written that way. Card 102 tried narrowing this to steps
+ * of the process's own context and made both of them warn. The two-caller
+ * defect card 100 found was closed by routing an answer to the call that
+ * asked for it (decision 23, fourth amendment), not here, so this exemption
+ * was carrying no weight in it (card 102, the lead's ruling).
  */
 function isProcessLifecycle(cycle: Reactor[]): boolean {
 	const reactors = cycle.filter(
@@ -3872,18 +3883,22 @@ const externalIsBoundary: Rule = (workspace) => {
 			refuse(`process "${process.name}"`, process.ref);
 		for (const invariant of bc.invariants.values())
 			refuse(`invariant "${invariant.name}"`, invariant.ref);
-		// `internal` says an operation never leaves its context, which is a
+		// `internal` says a consumable never leaves its context, which is a
 		// claim about what happens inside a system we do not run. What we can
 		// say about somebody else's machine is what it offers and what it
-		// takes; an operation of theirs we know about is one we know about
-		// because it reaches us or we reach it, and that is not internal.
+		// takes; an operation or an event of theirs we know about is one we
+		// know about because it reaches us or we reach it, and that is not
+		// internal. An event is the same invention as an operation here: a
+		// fact of theirs that nobody outside hears is a fact nobody outside
+		// can know they raise (card 102).
 		for (const provider of [...bc.aggregates.values(), ...bc.services.values()])
 			for (const consumable of provider.consumables.values()) {
-				if (!consumable.internal || consumable.type !== "operation") continue;
+				if (!consumable.internal) continue;
+				const kind = consumable.type === "event" ? "event" : "operation";
 				diagnostics.push({
 					severity: "error",
 					rule: "external-is-boundary",
-					message: `External context "${bc.name}" marks operation "${consumable.name}" internal; whether an operation of a system we do not own stays inside it is not ours to state, only that it exists and who it reaches. Drop internal, or drop the operation if nothing here depends on it`,
+					message: `External context "${bc.name}" marks ${kind} "${consumable.name}" internal; whether an ${kind} of a system we do not own stays inside it is not ours to state, only that it exists and who it reaches. Drop internal, or drop the ${kind} if nothing here depends on it`,
 					ref: consumable.ref,
 				});
 			}
@@ -4546,9 +4561,9 @@ const RULES: CataloguedRule[] = [
 		rule: "external-is-boundary",
 		severities: ["error"],
 		summary:
-			"An external context declares no aggregates, no policies, no processes, no invariants of its own and no internal operations, and is not a big ball of mud as well; its value objects may carry invariants, because a standard's published rules are citable.",
-		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. A rule about the context's own instances is different, because that is exactly the invention we cannot make. Internal is the same invention in one word: it says an operation never leaves that system, and the operations of somebody else's system we can name at all are the ones that reach us or that we reach. A big ball of mud is the opposite kind of unknown — the enterprise's own system, unreadable but ours to carve up — so a context marked both leaves every rule that reads one of the two flags guessing which reading was meant.",
-		fix: "Drop internal from the operation, which is a fact about that system's insides. Move the aggregate, policy, process or context invariant into the context of ours that actually holds it — a rule about several instances is a rule of the context that keeps them — or drop external: true if this is a system the enterprise really does model inside. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay. Where both flags are set, keep the one that says who may change the system: external for somebody else's, bigBallOfMud for ours.",
+			"An external context declares no aggregates, no policies, no processes, no invariants of its own and no internal operations or events, and is not a big ball of mud as well; its value objects may carry invariants, because a standard's published rules are citable.",
+		why: "An external context is a system the enterprise does not own: a card scheme, a payment provider, a licensor, a clock. What it offers and what it takes are ours to write down, because we depend on them; how it keeps its own model is not, because we cannot know it and anything the model says about it is invention a reader would take for fact. Its value objects stay, because they are the vocabulary our own model has to carry, and the rules on those values stay with them: an IBAN's mod-97 checksum or an ISO 20022 field rule is the standard's published contract, known and citable, not a guess about somebody's insides. A rule about the context's own instances is different, because that is exactly the invention we cannot make. Internal is the same invention in one word: it says an operation, or an event, never leaves that system, and the ones of somebody else's system we can name at all are those that reach us or that we reach. A big ball of mud is the opposite kind of unknown — the enterprise's own system, unreadable but ours to carve up — so a context marked both leaves every rule that reads one of the two flags guessing which reading was meant.",
+		fix: "Drop internal from the operation or the event, which is a fact about that system's insides. Move the aggregate, policy, process or context invariant into the context of ours that actually holds it — a rule about several instances is a rule of the context that keeps them — or drop external: true if this is a system the enterprise really does model inside. A rule that a value of a published standard always satisfies belongs on the value object itself, where it may stay. Where both flags are set, keep the one that says who may change the system: external for somebody else's, bigBallOfMud for ours.",
 		check: externalIsBoundary,
 	},
 	{

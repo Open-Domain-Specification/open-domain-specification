@@ -4758,6 +4758,95 @@ describe("reaction-cycle", () => {
 	it("does not follow a consumption of an event, which the consumer reacts to rather than causes", () => {
 		expect(reactions(twoContexts({ callBack: false }).ws)).toEqual([]);
 	});
+
+	/**
+	 * Card 100's two-caller shape with a process at the top of it: A's process
+	 * issues A's own operation, that operation calls B's public one through a
+	 * consumption's `by`, and the fact B raises comes back to the process.
+	 * NorthBank's onboarding and RiverMart's checkout are both written this
+	 * way.
+	 *
+	 * With `bReacts`, B has a policy on that event which calls back into A,
+	 * so a second reactor stands on the ring and nobody on it sees the whole.
+	 */
+	function outAndBack({ bReacts = false }: { bReacts?: boolean } = {}) {
+		const ws = emptyWorkspace();
+		const a = ws.addBoundedContext("A", { description: "" });
+		const b = ws.addBoundedContext("B", { description: "" });
+		const aApp = a.addService("A App", {
+			description: "",
+			type: "application",
+		});
+		const bApp = b.addService("B App", {
+			description: "",
+			type: "application",
+		});
+		const started = aApp.provides("Started", {
+			description: "",
+			type: "event",
+		});
+		const aHappened = aApp.provides("A Happened", {
+			description: "",
+			type: "event",
+		});
+		const bHappened = bApp.provides("B Happened", {
+			description: "",
+			type: "event",
+		});
+		const aPublic = aApp
+			.provides("A Public", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			})
+			.raises(aHappened);
+		const bPublic = bApp
+			.provides("B Public", {
+				description: "",
+				type: "operation",
+				pattern: "open-host-service",
+			})
+			.raises(bHappened);
+		const aLocal = aApp.provides("A Local", {
+			description: "",
+			type: "operation",
+		});
+		aApp.consumes(bPublic, { pattern: "conformist", by: [aLocal] });
+		const run = a
+			.addProcess("Run", { description: "" })
+			.starts(started)
+			.on(bHappened)
+			.issues(aLocal);
+		if (bReacts) {
+			const bLocal = bApp.provides("B Local", {
+				description: "",
+				type: "operation",
+			});
+			bApp.consumes(aPublic, { pattern: "conformist", by: [bLocal] });
+			b.addPolicy("B Policy", { description: "" }).on(bHappened).issues(bLocal);
+			run.on(aHappened);
+		}
+		return { ws, run };
+	}
+
+	// A process's lifecycle is a lifecycle however far its own call travels:
+	// the contexts the ring crosses do not make it a loop, and narrowing this
+	// to the process's own context made two reference models warn about the
+	// shape decision 23 describes (card 102, the lead's ruling).
+	it("is quiet when a process calls the next context and waits for its fact", () => {
+		expect(reactions(outAndBack().ws)).toEqual([]);
+	});
+
+	it("still reports that ring once a second reactor stands on it", () => {
+		const { ws } = outAndBack({ bReacts: true });
+		expect(reactions(ws)).toHaveLength(1);
+		const [diagnostic] = reactions(ws);
+		expect(diagnostic.message).toContain('"B Happened" -> "B Policy"');
+		expect(diagnostic.message).toContain('"B Local" -> "A Public"');
+		expect(diagnostic.message).toContain(
+			'it runs through "A" and "B", so no one context can see the whole ring',
+		);
+	});
 });
 
 describe("disposition-needs-comment", () => {
@@ -5451,6 +5540,29 @@ describe("external-is-boundary", () => {
 			[
 				"error",
 				'External context "Card Scheme" marks operation "Settle Internally" internal; whether an operation of a system we do not own stays inside it is not ours to state, only that it exists and who it reaches. Drop internal, or drop the operation if nothing here depends on it',
+				hidden.ref,
+			],
+		]);
+	});
+
+	// An event of theirs nobody outside hears is a fact nobody outside can
+	// know they raise, which is the same invention as an internal operation
+	// and was left unreported until card 102.
+	it("refuses an internal event on a system we do not own", () => {
+		const { ws, external } = scheme();
+		const api = external.addService("Scheme API", {
+			description: "",
+			type: "application",
+		});
+		const hidden = api.provides("Ledger Rolled", {
+			description: "",
+			type: "event",
+			internal: true,
+		});
+		expect(boundary(ws)).toEqual([
+			[
+				"error",
+				'External context "Card Scheme" marks event "Ledger Rolled" internal; whether an event of a system we do not own stays inside it is not ours to state, only that it exists and who it reaches. Drop internal, or drop the event if nothing here depends on it',
 				hidden.ref,
 			],
 		]);

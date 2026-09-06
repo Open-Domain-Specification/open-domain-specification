@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeRichTestWs } from "./makeTestWs";
+import type { WorkspaceSchema } from "./schema";
 import { Entity, Workspace } from "./workspace";
 
 describe("schema round-trip", () => {
@@ -344,4 +345,71 @@ describe("one pair, two exchanges", () => {
 			rebuilt.validate().filter((d) => d.rule === "consumption-once"),
 		).toEqual([]);
 	});
+});
+
+/**
+ * A `$ref` that names nothing is left unset and reported rather than thrown on
+ * (card 100, decision 29), and the file still says what its author wrote:
+ * opening it and saving it keeps the typo, so the `unresolved-ref` diagnostic
+ * is still there next time and the fix is still the author's to make.
+ *
+ * Written against JSON, because the DSL passes objects and a ref that names
+ * nothing cannot be written there at all.
+ */
+describe("a bad ref survives a round trip", () => {
+	const GONE = "#/boundedcontexts/nowhere/schemas/gone";
+	const rich = makeRichTestWs();
+
+	/** The file with one bad ref in it, opened and saved; and reopened. */
+	function reopened(edit: (schema: WorkspaceSchema) => void) {
+		const written = structuredClone(rich.ws.toSchema());
+		edit(written);
+		const saved = Workspace.fromSchema(structuredClone(written)).toSchema();
+		return {
+			written,
+			saved,
+			unresolved: Workspace.fromSchema(structuredClone(saved))
+				.validate()
+				.filter((d) => d.rule === "unresolved-ref"),
+		};
+	}
+
+	const sites: Array<[string, (schema: WorkspaceSchema) => void, string]> = [
+		[
+			"returns",
+			(s) => {
+				s.boundedcontexts.ordering_bc.services.order_app.provides.place_order.returns =
+					{ $ref: GONE };
+			},
+			rich.placeOrder.ref,
+		],
+		[
+			"valueobject",
+			(s) => {
+				s.boundedcontexts.ordering_bc.aggregates.order.entities.order.attributes.total.valueobject =
+					{ $ref: GONE };
+			},
+			`${rich.order.ref}/attributes/total`,
+		],
+		[
+			"on",
+			(s) => {
+				s.boundedcontexts.invoicing_bc.policies.invoice_on_order_placed.on.push(
+					{ $ref: GONE },
+				);
+			},
+			rich.invoiceOnOrderPlaced.ref,
+		],
+	];
+
+	for (const [field, edit, at] of sites) {
+		it(`writes an unresolvable "${field}" back unchanged`, () => {
+			const { written, saved, unresolved } = reopened(edit);
+			expect(saved).toEqual(written);
+			expect(unresolved).toHaveLength(1);
+			expect(unresolved[0].ref).toBe(at);
+			expect(unresolved[0].message).toContain(`in "${field}"`);
+			expect(unresolved[0].message).toContain(GONE);
+		});
+	}
 });
