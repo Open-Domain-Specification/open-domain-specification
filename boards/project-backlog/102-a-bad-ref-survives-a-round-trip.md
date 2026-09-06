@@ -1,5 +1,5 @@
 ---
-column: review
+column: done
 labels: [backend, bug]
 priority: medium
 agent: senior-developer
