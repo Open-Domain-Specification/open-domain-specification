@@ -342,8 +342,8 @@ const crossContextRelation: Rule = (workspace) => {
 		)
 			continue;
 		const fix = value
-			? `a relation reaches another context's value object only where the borrowing does, so declare a shared kernel with "${target.name}" or a conformist relationship toward it and type an attribute by "${relation.target.name}"`
-			: `a relation never crosses a bounded context, so hold "${relation.target.name}"'s identity in an attribute of "${relation.source.name}" with \`identifies\`; where what you need is a value rather than an entity, borrow it through a shared kernel or as a conformist`;
+			? `a relation reaches another context's value object only where the borrowing does, so declare a shared kernel with "${target.name}", a conformist relationship toward it, or a customer-supplier relationship under which you are the customer, and type an attribute by "${relation.target.name}"`
+			: `a relation never crosses a bounded context, so hold "${relation.target.name}"'s identity in an attribute of "${relation.source.name}" with \`identifies\`; where what you need is a value rather than an entity, borrow it through a shared kernel, as a conformist, or as a customer of a supplier`;
 		diagnostics.push({
 			severity: "error",
 			rule: "cross-context-relation",

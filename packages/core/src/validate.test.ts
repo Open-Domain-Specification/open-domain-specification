@@ -110,7 +110,7 @@ describe("Workspace.validate", () => {
 				severity: "error",
 				rule: "cross-context-relation",
 				message:
-					'"Order" in "Sales" references "Pet" in "Catalog"; a relation never crosses a bounded context, so hold "Pet"\'s identity in an attribute of "Order" with `identifies`; where what you need is a value rather than an entity, borrow it through a shared kernel or as a conformist',
+					'"Order" in "Sales" references "Pet" in "Catalog"; a relation never crosses a bounded context, so hold "Pet"\'s identity in an attribute of "Order" with `identifies`; where what you need is a value rather than an entity, borrow it through a shared kernel, as a conformist, or as a customer of a supplier',
 				ref: order.ref,
 			},
 		]);
@@ -132,7 +132,7 @@ describe("Workspace.validate", () => {
 		// Nothing says the two contexts share anything, so the borrowing the
 		// relation assumes has not been declared and the fix names the routes.
 		expect(messages).toEqual([
-			'"Vo" in "One" uses "Their Vo" in "Two"; a relation reaches another context\'s value object only where the borrowing does, so declare a shared kernel with "Two" or a conformist relationship toward it and type an attribute by "Their Vo"',
+			'"Vo" in "One" uses "Their Vo" in "Two"; a relation reaches another context\'s value object only where the borrowing does, so declare a shared kernel with "Two", a conformist relationship toward it, or a customer-supplier relationship under which you are the customer, and type an attribute by "Their Vo"',
 		]);
 	});
 
@@ -8775,7 +8775,7 @@ describe("a relation to a value object of another context", () => {
 		expect(crossings(ws)).toEqual([
 			[
 				"cross-context-relation",
-				'"Invoice" in "Billing" uses "Money" in "Financial Primitives"; a relation reaches another context\'s value object only where the borrowing does, so declare a shared kernel with "Financial Primitives" or a conformist relationship toward it and type an attribute by "Money"',
+				'"Invoice" in "Billing" uses "Money" in "Financial Primitives"; a relation reaches another context\'s value object only where the borrowing does, so declare a shared kernel with "Financial Primitives", a conformist relationship toward it, or a customer-supplier relationship under which you are the customer, and type an attribute by "Money"',
 			],
 			[
 				"valueobject-context",
