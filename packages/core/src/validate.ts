@@ -141,10 +141,22 @@ function* processesOf(workspace: Workspace): Iterable<Process> {
  * points in a lifecycle rather than one, and every rule that reads a policy's
  * `on` — separate ways, internal consumables, the kind of each one — means the
  * same thing by all three (decision 23).
+ *
+ * A trigger named twice — an event or answer that both starts, keeps alive or
+ * ends the same process instance — is the same object wherever it is named
+ * (`Answer`'s own doc says so, and a consumable is loaded once), so a `Set`
+ * collapses it to one and every rule that walks this list reports it once
+ * rather than once per list it appears in.
  */
 function subscribedTriggers(reactor: Policy | Process): ProcessTrigger[] {
 	return reactor instanceof Process
-		? [...reactor.startEvents, ...reactor.events, ...reactor.endEvents]
+		? [
+				...new Set([
+					...reactor.startEvents,
+					...reactor.events,
+					...reactor.endEvents,
+				]),
+			]
 		: reactor.events;
 }
 

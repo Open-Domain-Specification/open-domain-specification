@@ -189,7 +189,7 @@ describe("a ref that resolves to nothing", () => {
 		[
 			"by",
 			(s) => {
-				s.boundedcontexts.invoicing_bc.services!.invoice_app.consumes[1].by = [
+				s.boundedcontexts.invoicing_bc.services!.invoice_app.consumes![1].by = [
 					{ $ref: GONE },
 				];
 			},
@@ -276,8 +276,8 @@ describe("a ref that resolves to nothing", () => {
 
 	it("leaves a consumption out when the consumable it names is gone", () => {
 		const { loaded, unresolved } = loadWith((s) => {
-			s.boundedcontexts.invoicing_bc
-				.services!.invoice_app.consumes[0].consumable = { $ref: GONE };
+			s.boundedcontexts.invoicing_bc.services!.invoice_app
+				.consumes![0].consumable = { $ref: GONE };
 		});
 		expect(unresolved).toHaveLength(1);
 		expect(unresolved[0].ref).toBe(rich.invoiceApp.ref);

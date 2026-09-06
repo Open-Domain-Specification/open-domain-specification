@@ -84,7 +84,8 @@ export interface AggregateSchema {
 	entities?: { [entity: string]: EntitySchema };
 	invariants?: { [invariant: string]: InvariantSchema };
 	provides?: { [consumable: string]: ConsumableSchema };
-	consumes: ConsumptionSchema[];
+	/** What this aggregate consumes. Optional, like every list in this schema: an absent list is an empty one. */
+	consumes?: ConsumptionSchema[];
 }
 
 /**
@@ -647,7 +648,8 @@ export interface ServiceSchema {
 	name: string;
 	description: string;
 	provides?: { [consumable: string]: ConsumableSchema };
-	consumes: ConsumptionSchema[];
+	/** What this service consumes. Optional, like every list in this schema: an absent list is an empty one. */
+	consumes?: ConsumptionSchema[];
 }
 
 /**
@@ -673,7 +675,8 @@ export interface ValueObjectSchema {
 	 * context, or to a context this one shares a kernel with (decision 22).
 	 */
 	specialises?: { $ref: string };
-	attributes: { [attribute: string]: AttributeSchema };
+	/** This value's own attributes, by id. An absent map is an empty one, like every map of elements in this schema. */
+	attributes?: { [attribute: string]: AttributeSchema };
 	/** What this value points at; empty when left out. */
 	relations?: EntityRelationSchema[];
 	/**
@@ -681,9 +684,10 @@ export interface ValueObjectSchema {
 	 * amounts in one currency, an IBAN's mod-97 checksum. Such a rule holds by
 	 * construction — a value that breaks it is never made — so it constrains
 	 * this value's own attributes and needs no operation to guard it
-	 * (decision 27).
+	 * (decision 27). Optional, and an absent map is an empty one, like every
+	 * map of elements in this schema.
 	 */
-	invariants: { [invariant: string]: InvariantSchema };
+	invariants?: { [invariant: string]: InvariantSchema };
 }
 
 /**
