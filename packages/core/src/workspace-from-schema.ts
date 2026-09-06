@@ -24,6 +24,7 @@ import type {
 	Constrainable,
 	Consumable,
 	ConsumptionCaller,
+	ContextRelationship,
 	DataSchema,
 	Process,
 	ProcessTrigger,
@@ -209,6 +210,10 @@ const A_CONTEXT: Kind<BoundedContext> = {
 	what: "a bounded context of this workspace",
 	find: (workspace, ref) => workspace.getBoundedContextByRef(ref),
 };
+const AN_AGREEMENT: Kind<ContextRelationship> = {
+	what: "a relationship between two bounded contexts of this workspace",
+	find: (workspace, ref) => workspace.findRelationship(ref),
+};
 
 /** Consumables are added in the second pass because their schema must already exist. */
 function addProvides(
@@ -296,6 +301,16 @@ function addConsumes(
 				"by",
 				A_CALLER,
 				consumption.by,
+				`its consumption of "${consumable.name}"`,
+			),
+			// The relationships are loaded before the consumptions for this
+			// ref, since an agreement has to exist before an exchange can say
+			// it belongs to it.
+			relationship: refs.one(
+				at,
+				"relationship",
+				AN_AGREEMENT,
+				consumption.relationship,
 				`its consumption of "${consumable.name}"`,
 			),
 		});
@@ -994,12 +1009,15 @@ export function getWorkspaceFromSchema(
 	)) {
 		addBoundedContext(workspace, id, boundedcontextSchema, refs);
 	}
+	// Relationships come before the references because a consumption may name
+	// the agreement it belongs to, and they need nothing but the two contexts,
+	// which exist by now.
+	addRelationships(workspace, workspaceSchema, refs);
 	linkSpecialisations(workspace, workspaceSchema, refs);
 	linkReferences(workspace, workspaceSchema, refs);
 	linkPolicies(workspace, workspaceSchema, refs);
 	linkProcesses(workspace, workspaceSchema, refs);
 	linkGlossary(workspace, workspaceSchema, refs);
-	addRelationships(workspace, workspaceSchema, refs);
 	keepUnresolvedRefs(workspace);
 
 	return workspace;

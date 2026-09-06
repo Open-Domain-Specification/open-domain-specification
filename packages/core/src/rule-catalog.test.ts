@@ -336,8 +336,34 @@ function everythingWrong(): Workspace {
 		}),
 		{ pattern: "conformist" },
 	);
-	// context-serves-subdomain: A, B, C and D serve nothing; Scheme is external
-	// and serves none by design
+	// consumption-agreement: F and G hold two agreements in one direction and
+	// the one exchange between them names neither, so nothing says which of the
+	// two it runs under
+	const f = ws.addBoundedContext("F", { description: "" });
+	const g = ws.addBoundedContext("G", { description: "" });
+	f.upstreamOf(g, {
+		name: "Negotiated API",
+		upstreamRoles: ["open-host-service"],
+		downstreamRoles: ["conformist"],
+	});
+	f.upstreamOf(g, {
+		name: "Legacy Feed",
+		upstreamRoles: ["published-language"],
+		downstreamRoles: ["anti-corruption-layer"],
+	});
+	const fPost = f
+		.addService("F API", { description: "", type: "application" })
+		.provides("F Post", {
+			type: "operation",
+			description: "",
+			pattern: "open-host-service",
+		});
+	g.addService("G App", { description: "", type: "application" }).consumes(
+		fPost,
+		{ pattern: "conformist" },
+	);
+	// context-serves-subdomain: A, B, C, D, F and G serve nothing; Scheme is
+	// external and serves none by design
 	return ws;
 }
 

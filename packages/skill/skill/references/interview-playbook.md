@@ -235,6 +235,10 @@ Repeat for each context the user wants detailed. Ask which one to start with.
   call?" → `by`, naming the consumer's own operations. Only ask it back if the answer is one or
   two of several; "all of it" is the common case and leaves `by` off. Never guess a call graph
   from names — if the author does not know, it stays absent.
+- Where the two contexts have agreed more than one thing in that direction — a negotiated API
+  beside a tolerated legacy feed — ask "which of those two does this one run under?" →
+  `relationship`, naming that agreement. Ask it only when the pair really holds two: one
+  agreement is the answer to its own question and the field stays off.
 - For each consumption of an event: "what here runs when that arrives?" → `by`, naming the
   policy or process of the consumer's context that wakes on it. A subscription is woken rather
   than issued, so an operation is never the answer: where the answer is "our query reads it",

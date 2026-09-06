@@ -1476,11 +1476,17 @@ const refundPayment = paymentsApi
 const providerRequestSchema = paymentProviderBC.addSchema("ProviderRequest", {
 	description: "The acquirer's wire format, which RiverMart does not shape",
 });
-providerRequestSchema.addAttribute("merchantReference", {
-	type: "string",
-	identity: true,
-});
-providerRequestSchema.addAttribute("amountMinorUnits", { type: "int64" });
+const merchantReference = providerRequestSchema.addAttribute(
+	"merchantReference",
+	{
+		type: "string",
+		identity: true,
+	},
+);
+const amountMinorUnits = providerRequestSchema.addAttribute(
+	"amountMinorUnits",
+	{ type: "int64" },
+);
 providerRequestSchema.addAttribute("currency", { type: "ISO 4217 code" });
 providerRequestSchema.addAttribute("instrumentToken", { type: "string" });
 const acquirerApi = paymentProviderBC.addService("Acquirer API", {
@@ -1505,6 +1511,21 @@ const returnFunds = acquirerApi.provides("ReturnFunds", {
 	pattern: "open-host-service",
 	schema: providerRequestSchema,
 });
+// The acquirer's own documentation, not RiverMart's guess at its insides. The
+// take is defined against a hold that already exists and has not expired, and
+// for no more than that hold, which is the acquirer's published contract and
+// the reason a capture at dispatch can fail. RiverMart cannot promise it — the
+// merchant is not the one who keeps it — so it is stated where it is
+// published, as a precondition of the provider's own operation (decision 28,
+// amendment of 2026-09-10; card 107).
+paymentProviderBC
+	.addInvariant("TakeIsAgainstALiveHold", {
+		description:
+			"TakeFunds is accepted only for a merchant reference the acquirer still holds funds against, and for no more than the amount held. The acquirer publishes this; RiverMart's capture at dispatch is written against it and fails when the hold has gone",
+		precondition: true,
+	})
+	.constrains(takeFunds, merchantReference, amountMinorUnits);
+
 paymentsApi.consumes(holdFunds, {
 	pattern: "anti-corruption-layer",
 	by: [authorisePayment],
@@ -2577,6 +2598,41 @@ const purchaseOrderReceived = purchaseOrderAgg.provides(
 // it emits without saying how (decision 28, second amendment; card 90). The
 // service and its operation are gone; the export file still arrives.
 
+// DISCOVERY: Warehouse receiving supervisor and a Retail Systems engineer,
+// together. The nightly export is not enough at the dock: a lorry arrives with
+// a PO number on the paperwork and the receiving desk needs that PO now, not in
+// tomorrow's file. Retail Systems will not touch the export — nobody dares —
+// but they were prepared to negotiate one read endpoint over the legacy box,
+// and the warehouse got a say in its shape. That is a second agreement between
+// the same two contexts in the same direction, with a different disposition:
+// the lookup is by design, the export is tolerated (decision 15, amendment of
+// 2026-09-10; card 107).
+//
+// An endpoint the warehouse calls every day is not an invention about the
+// inside of a mud context, which is what card 90 deleted: it is the boundary
+// RiverMart integrates with, known because RiverMart reaches it. How the box
+// answers is still nobody's to say.
+const purchaseOrderRefSchema = vendorBC.addSchema("PurchaseOrderRef", {
+	description: "The PO number on the delivery paperwork",
+});
+purchaseOrderRefSchema.addAttribute("poNumber", {
+	type: "string",
+	identity: true,
+});
+const purchasingGateway = vendorBC.addService("Purchasing Gateway", {
+	description:
+		"The one negotiated endpoint over the 2009 system; the only part of it with a contract anybody agreed to",
+	type: "application",
+});
+const getPurchaseOrder = purchasingGateway.provides("GetPurchaseOrder", {
+	description:
+		"Asked with a PO number, answers with the purchase order and its lines, so a delivery can be booked against it before the nightly file arrives",
+	type: "operation",
+	pattern: "open-host-service",
+	schema: purchaseOrderRefSchema,
+	returns: poReceivedSchema,
+});
+
 vendorBC.addTerm("Purchase order", {
 	definition:
 		"An order RiverMart places with a wholesale vendor; the second of the three meanings of 'order' on a warehouse floor",
@@ -2584,15 +2640,68 @@ vendorBC.addTerm("Purchase order", {
 	embodiedBy: purchaseOrderAgg,
 });
 
+// Two agreements between one pair in one direction, which is what card 103
+// made possible and what decision 15's amendment of 2026-09-10 reopened the
+// rule for. They are two different things the two teams have agreed, with two
+// dispositions: the negotiated lookup is how this integration should be, the
+// nightly export is what everyone puts up with. Each exchange says which of
+// them it runs under (`consumption-agreement`), so the roles on one are read
+// against its own traffic and not the other's. They are declared here rather
+// than with the other relationships below because the consumptions that name
+// them are here.
+const purchaseOrderLookup = warehouseBC.downstreamOf(vendorBC, {
+	name: "purchase order lookup",
+	type: "customer-supplier",
+	upstreamRoles: ["open-host-service"],
+	downstreamRoles: ["anti-corruption-layer"],
+	description:
+		"One read endpoint over the legacy box, negotiated with the receiving desk: the warehouse got a say in its shape and Retail Systems maintains it",
+});
+const legacyStockFeed = warehouseBC.downstreamOf(vendorBC, {
+	name: "legacy stock feed",
+	upstreamRoles: ["published-language"],
+	downstreamRoles: ["anti-corruption-layer"],
+	description:
+		"The nightly export is translated; nobody touches the legacy tables directly",
+	disposition: "tolerated",
+	comments: [
+		{
+			text: "The export is a fixed-width file dropped on an FTP share at 02:00; the warehouse parses it and nobody will change either end. It stays until the purchasing system is replaced.",
+			link: {
+				kind: "code",
+				url: "https://github.com/example/rivermart/blob/main/warehouse/receiving/VendorExportReader.ts",
+				label: "warehouse/receiving/VendorExportReader.ts",
+			},
+		},
+	],
+});
+
+// A context acts on another through its own application service (decision 17),
+// so the front is the warehouse's: it looks the PO up through the ACL and then
+// receives the stock against it. `by` names it on both calls, which is what
+// carries the chain from the export through to StockReceived.
+const bookVendorDelivery = warehouseApi.provides("BookVendorDelivery", {
+	description:
+		"Book a vendor delivery in: look its purchase order up in the legacy system, then receive the stock against it",
+	type: "operation",
+	internal: true,
+});
 warehouseApi.consumes(purchaseOrderReceived, {
 	pattern: "anti-corruption-layer",
+	relationship: legacyStockFeed,
 });
+warehouseApi.consumes(getPurchaseOrder, {
+	pattern: "anti-corruption-layer",
+	by: [bookVendorDelivery],
+	relationship: purchaseOrderLookup,
+});
+warehouseApi.consumes(receiveStock, { by: [bookVendorDelivery] });
 warehouseBC
 	.addPolicy("Book in vendor deliveries", {
 		description: "The legacy export is translated into stock receipts",
 	})
 	.on(purchaseOrderReceived)
-	.issues(receiveStock);
+	.issues(bookVendorDelivery);
 
 /* =======================
    IDENTITY
@@ -2813,12 +2922,9 @@ adsBC.downstreamOf(sellerBC, {
 	upstreamRoles: ["published-language"],
 	downstreamRoles: ["conformist"],
 });
-warehouseBC.downstreamOf(vendorBC, {
-	upstreamRoles: ["published-language"],
-	downstreamRoles: ["anti-corruption-layer"],
-	description:
-		"The nightly export is translated; nobody touches the legacy tables directly",
-});
+// Vendor Purchasing and the Warehouse hold two agreements in this direction —
+// "purchase order lookup" and "legacy stock feed" — and both are declared
+// beside the exchanges that name them, in the VENDOR PURCHASING section above.
 
 // Shared kernel: one tracking label library and scan vocabulary, co-owned by
 // Fulfilment and Logistics, because a label printed in one is scanned in the other.
