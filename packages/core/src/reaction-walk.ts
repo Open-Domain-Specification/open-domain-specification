@@ -425,8 +425,14 @@ function callChainReaches(
  * and RiverMart's single-operation front reached nothing (card 95). Inferred
  * only where there is nothing to choose between: two operations and an absent
  * `by` still stops here, which is the warning's whole point.
+ *
+ * Exported because `raises-restated` has to name the operation that really
+ * raises the fact, and it read the consumptions itself with the inference left
+ * out — so a single-operation front was told it restated an event that
+ * `""` already raises (card 130). One reading of "what does this operation
+ * call" is what keeps the walk and the warning saying the same thing.
  */
-function callsOut(operation: Consumable): Consumable[] {
+export function callsOut(operation: Consumable): Consumable[] {
 	if (operation.type !== "operation") return [];
 	const { provider } = operation;
 	const soleCaller =

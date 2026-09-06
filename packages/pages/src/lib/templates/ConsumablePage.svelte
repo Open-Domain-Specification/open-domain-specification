@@ -46,6 +46,7 @@ import Joined from "../molecules/Joined.svelte";
 import { contextCrumbs } from "../molecules/crumbs";
 import { kindOf } from "../molecules/element-kind";
 import RefList from "../molecules/RefList.svelte";
+import RejectionList from "../molecules/RejectionList.svelte";
 import LanguageSection from "../organisms/LanguageSection.svelte";
 import PageHeader from "../organisms/PageHeader.svelte";
 import Section from "../organisms/Section.svelte";
@@ -141,8 +142,8 @@ const processColumns: Column[] = [
 			{#if c.returns}
 				<Definition term={c.returnsMany ? "Returns many" : "Returns"}><Lockup kind="schema" name={c.returns.name} ref={c.returns.ref} /></Definition>
 			{/if}
-			{#if c.rejects.length}
-				<Definition term="Rejects with"><RefList items={c.rejects} kind="schema" /></Definition>
+			{#if c.rejections.length}
+				<Definition term="Rejects with"><RejectionList rejections={c.rejections} /></Definition>
 			{/if}
 			{#if c.disposition && c.disposition !== "by-design"}
 				<Definition term="Disposition"><Disposition disposition={c.disposition} /></Definition>
@@ -189,10 +190,14 @@ const processColumns: Column[] = [
 		lead="What the operation answers with when it refuses. Nothing happened, so none of these is an event; a caller reads them to know why it was told no."
 		count={c.rejects.length}
 	>
-		{#each c.rejections as { schema, reasons } (schema.ref)}
+		{#each c.rejections as { schema, many, reasons } (schema.ref)}
 			<div class="subsection">
 				<Heading level={3} id={schema.ref}>
 					<Lockup kind="schema" name={schema.name} ref={schema.ref} />
+					<!-- A refusal answered as a root array of that shape rather
+					     than one of it, said beside the shape because only some
+					     of an operation's refusals may be lists. -->
+					{#if many}<Keyword text="many" />{/if}
 				</Heading>
 				{#if schema.description}<p class="description">{schema.description}</p>{/if}
 				{#if reasons.length}

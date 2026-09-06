@@ -706,6 +706,80 @@ describe("an operation whose request is many of a shape", () => {
 	});
 });
 
+describe("a refusal that is a list of a shape", () => {
+	/**
+	 * A validation failure answered as a root array of field errors: the
+	 * commonest refusal on the wire, and a wrapper around it would say the call
+	 * comes back as an object it does not come back as. `returns` and `schema`
+	 * carry `many` for exactly that argument, and `rejects` did not (decision
+	 * 13, second amendment of 2026-09-10; card 130).
+	 */
+	function validating() {
+		const ws = new Workspace("Ordering", {
+			description: "",
+			version: "0.1.0",
+		});
+		const bc = ws.addBoundedContext("Ordering BC", { description: "" });
+		const fieldError = bc.addSchema("Field Error", { description: "" });
+		fieldError.addAttribute("field", { type: "string" });
+		const conflict = bc.addSchema("Order Conflict", { description: "" });
+		const place = bc
+			.addService("Order App", { description: "", type: "application" })
+			.provides("Place Order", {
+				description: "",
+				type: "operation",
+				rejects: [{ schema: fieldError, many: true }, conflict],
+			});
+		return { ws, fieldError, conflict, place };
+	}
+
+	it("says which refusal is a list and which is one of the shape", () => {
+		const { fieldError, conflict, place } = validating();
+		expect(place.rejects).toEqual([fieldError, conflict]);
+		expect(place.rejectsWith(fieldError)?.many).toBe(true);
+		expect(place.rejectsWith(conflict)?.many).toBe(false);
+	});
+
+	it("reads the answer as a list, and says so in words", () => {
+		const { fieldError, conflict, place } = validating();
+		expect(place.rejected(fieldError).many).toBe(true);
+		expect(place.rejected(fieldError).origin).toBe(
+			"Place Order rejects with many Field Error",
+		);
+		expect(place.rejected(conflict).many).toBe(false);
+		expect(place.rejected(conflict).origin).toBe(
+			"Place Order rejects with Order Conflict",
+		);
+	});
+
+	it("carries many through the schema and back, leaving a single refusal unflagged", () => {
+		const { ws, place } = validating();
+		expect(place.toSchema().rejects).toEqual([
+			{
+				$ref: "#/boundedcontexts/ordering_bc/schemas/field_error",
+				many: true,
+			},
+			{ $ref: "#/boundedcontexts/ordering_bc/schemas/order_conflict" },
+		]);
+		const rebuilt = getWorkspaceFromSchema(
+			JSON.parse(JSON.stringify(ws.toSchema())),
+		);
+		const reloaded = rebuilt.getConsumableByRefOrThrow(place.ref);
+		expect(reloaded.rejections.map((it) => it.many)).toEqual([true, false]);
+		expect(rebuilt.toSchema()).toEqual(ws.toSchema());
+	});
+
+	it("says nothing of a bare schema, which refuses with one of it", () => {
+		const { ws, place } = validating();
+		const bare = place.provider.provides("Cancel Order", {
+			description: "",
+			type: "operation",
+			rejects: [ws.getSchemaByRefOrThrow(place.rejects[1].ref)],
+		});
+		expect(bare.rejections[0].many).toBe(false);
+	});
+});
+
 describe("a refusal that enumerates the outcomes it carries", () => {
 	/**
 	 * An acquirer refusing a hold with one shape and its own response code:

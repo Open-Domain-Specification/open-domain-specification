@@ -9,6 +9,7 @@ import AttributeTable from "./AttributeTable.svelte";
 import ConsumableKeywords from "./ConsumableKeywords.svelte";
 import { kindOf } from "./element-kind";
 import RefList from "./RefList.svelte";
+import RejectionList from "./RejectionList.svelte";
 
 /**
  * One operation or event where the aggregate that provides it lists it: the
@@ -39,8 +40,8 @@ const {
 		{#if c.returns}
 			<Definition term={c.returnsMany ? "Returns many" : "Returns"}><Lockup kind="schema" name={c.returns.name} ref={c.returns.ref} /></Definition>
 		{/if}
-		{#if c.rejects.length}
-			<Definition term="Rejects with"><RefList items={c.rejects} kind="schema" /></Definition>
+		{#if c.rejections.length}
+			<Definition term="Rejects with"><RejectionList rejections={c.rejections} /></Definition>
 		{/if}
 		{#if c.type === "event"}
 			<Definition term="Raised by">

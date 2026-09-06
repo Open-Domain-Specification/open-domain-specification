@@ -191,6 +191,15 @@ describe("toDoc", () => {
 			schema: { of: digest, many: true },
 			rejects: [{ schema: refusal, reasons: ["duplicate", "unknown_sku"] }],
 		});
+		// A refusal that is a list of a shape, printed the way a request and an
+		// answer are: a root array of field errors rather than a wrapper
+		// (decision 13, second amendment; card 130).
+		order.provides("Validate Orders", {
+			type: "operation",
+			description: "Validates a batch of orders",
+			schema: { of: digest, many: true },
+			rejects: [{ schema: refusal, many: true }],
+		});
 		// A transition rule names the operation that makes the transition.
 		order
 			.addInvariant("Approved once", { description: "" })
@@ -221,6 +230,9 @@ describe("toDoc", () => {
 		expect(aggregateDoc).toContain(
 			"| Import Orders | operation | no | - | Imports a batch of orders | many [Order Digest](../../index.md#schemas) | - | [Approval Refused](../../index.md#schemas) (duplicate, unknown_sku) | - | - |",
 		);
+		expect(aggregateDoc).toContain(
+			"| Validate Orders | operation | no | - | Validates a batch of orders | many [Order Digest](../../index.md#schemas) | - | many [Approval Refused](../../index.md#schemas) | - | - |",
+		);
 
 		const contextDoc = docs["boundedcontexts/ordering/index.md"];
 		expect(contextDoc).toContain("## Schemas");
@@ -233,7 +245,7 @@ describe("toDoc", () => {
 		// A schema nothing sends and nothing answers with is still used: it is
 		// what Approve Order says no with.
 		expect(contextDoc).toContain(
-			"| Approval Refused | Why an approval was declined | reason: `string` | Approve Order, Import Orders |",
+			"| Approval Refused | Why an approval was declined | reason: `string` | Approve Order, Import Orders, Validate Orders |",
 		);
 		// A schema nothing sends is still used: Approve Order answers with it.
 		expect(contextDoc).toContain(

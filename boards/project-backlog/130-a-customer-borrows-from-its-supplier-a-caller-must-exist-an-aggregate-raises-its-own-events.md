@@ -1,10 +1,11 @@
 ---
-column: todo
+column: review
 labels: [backend, docs]
 priority: high
 agent: senior-developer
-live: true
-updatedAt: 2026-09-11T03:20:00.000Z
+live: false
+clean-code-swept: true
+updatedAt: 2026-09-11T13:20:00.000Z
 ---
 # A customer borrows from its supplier; a caller must exist; an aggregate raises its own events; a refusal may be a list
 
@@ -12,10 +13,22 @@ The architect's fourteenth round found two defects and one gap the model's own r
 
 ## Checklist
 
-- [ ] `mayBorrowFrom` licenses a downstream of a `customer-supplier` relationship to borrow the supplier's value objects and schemas, as a conformist may; `valueobject-context` and `schema-context` fix text names the three routes (kernel, conformist, customer-supplier) and, for partners, a shared kernel beside the partnership; tests for the customer that types by the supplier's value and answers with its schema, and for the partner pair
-- [ ] `consumption-by-required` reports an operation consumption on a consumer that provides no operation (external and mud consumers exempt), with fix text that says to add the operation that makes the call; test for the subscribe-only application service
-- [ ] `raises-in-aggregate` (error): an aggregate's operation raises only its own aggregate's events; an application service's operation may raise any aggregate's event of its context (decision 17); message and fix text; test; `raises-restated`'s `raisersAmong` applies the single-operation inference so the message names the raiser
-- [ ] `rejects` entries may carry `many`, mirroring `returns`; the DSL, loader, `toSchema`, JSON schema, pages and doc that print a rejection follow; test and round trip
-- [ ] `apps/docs/docs/3-core/4-validation.md` rows for the rules touched; skill references regenerated; every model's diagnostics unchanged; `bash scripts/verify-all.sh` green
+- [x] `mayBorrowFrom` licenses a downstream of a `customer-supplier` relationship to borrow the supplier's value objects and schemas, as a conformist may; `valueobject-context` and `schema-context` fix text names the three routes (kernel, conformist, customer-supplier) and, for partners, a shared kernel beside the partnership; tests for the customer that types by the supplier's value and answers with its schema, and for the partner pair
+- [x] `consumption-by-required` reports an operation consumption on a consumer that provides no operation (external and mud consumers exempt), with fix text that says to add the operation that makes the call; test for the subscribe-only application service
+- [x] `raises-in-aggregate` (error): an aggregate's operation raises only its own aggregate's events; an application service's operation may raise any aggregate's event of its context (decision 17); message and fix text; test; `raises-restated`'s `raisersAmong` applies the single-operation inference so the message names the raiser
+- [x] `rejects` entries may carry `many`, mirroring `returns`; the DSL, loader, `toSchema`, JSON schema, pages and doc that print a rejection follow; test and round trip
+- [x] `apps/docs/docs/3-core/4-validation.md` rows for the rules touched; skill references regenerated; every model's diagnostics unchanged; `bash scripts/verify-all.sh` green
+
+## Gates
+
+- [x] clean-code-swept — reread every hunk before landing: one borrowing predicate and one message helper rather than three copies of the routes, `raisersAmong` reading the walk's own `callsOut` rather than a second copy of the inference, `Rejection.many` beside its `reasons` rather than a parallel list, and a single `RejectionList` molecule used by both surfaces that print a refusal; no unrelated file touched (senior-developer, 2026-09-11T13:20:00.000Z)
+- [x] verify-all — `bash scripts/verify-all.sh` exit 0 on the first run: core 779, graphviz 28, doc 31, skill 36, northbank 3, petstore 23, rivermart 6, streamline 3, clinic 7, models/_shared 9, pages 766, apps/docs 23, apps/ods-vscode 15, pages e2e 297 passed, petstore schema matches core dist (senior-developer, 2026-09-11T13:20:00.000Z)
 
 ## Comments
+
+- **senior-developer** (2026-09-11T09:00:00.000Z): Claimed the card. Read decisions 16, 21, 17, 13 and 03 (current positions and the named 2026-09-10 amendments) and the architect's four round-14 probes. Starting with `mayBorrowFrom` in packages/core/src/validate.ts:1864.
+- **senior-developer** (2026-09-11T13:20:00.000Z): Widened the borrowing predicate. `isCustomerOf` at packages/core/src/validate.ts:1845 reads the relationship type rather than a downstream role, because decision 03's amendment of 2026-09-10 stopped asking a customer for one, and `mayBorrowFrom` at packages/core/src/validate.ts:1922 now has three routes. The refusal wording moved into one helper, `borrowingRoutes` at packages/core/src/validate.ts:1944, so `valueobject-context` and `schema-context` say the same thing in five places and partners get the sentence they need — a shared kernel beside the partnership, not a relationship they already have. Catalogue `why`/`fix` for both rules updated. Probe B now reports nothing with `downstreamRoles: []`; probe A still errors on the partnership alone and goes quiet once the kernel is declared beside it.
+- **senior-developer** (2026-09-11T13:20:00.000Z): `consumption-by-required` at packages/core/src/validate.ts:3488 skips only the one-operation consumer now; zero operations gets its own message, which says to add the operation rather than the `by`, and external and mud consumers are still exempt. Two real instances of the gap turned up in the repo's own fixtures and were repaired rather than silenced: packages/core/src/makeTestWs.ts:341-352 (Invoicing's subscribe-only app service, now with the one operation that makes the call, so `by` stays absent and is inferred) and the consumption-agreement case at packages/core/src/validate.test.ts:3113-3124. No reference model carries the shape.
+- **senior-developer** (2026-09-11T13:20:00.000Z): New rule `raises-in-aggregate` at packages/core/src/validate.ts:4261, catalogued at packages/core/src/validate.ts:5827. An aggregate's operation raises only its own aggregate's events; a foreign context's event is left to `raises-in-context` so one line is reported once, and an application service may still raise any aggregate's event of its context, which is decision 17's named cost. `raisersAmong` at packages/core/src/validate.ts:4332 now reads `callsOut`, exported at packages/core/src/reaction-walk.ts:435, so the warning and the walk make the same inference — the existing test only checked the ref, which is how the empty name survived; it asserts the message now.
+- **senior-developer** (2026-09-11T13:20:00.000Z): `rejects` carries `many`: packages/core/src/schema.ts:416, `Rejection` at packages/core/src/workspace.ts:1390, the DSL union at packages/core/src/workspace.ts:1443, `toSchema`, the loader at packages/core/src/workspace-from-schema.ts:432, and `Answer.many`/`origin` at packages/core/src/workspace.ts:1806 so a refusal that is a root array reads as one. Printed as "many X" in packages/doc/src/consumables.md.ts:46, as a new `RejectionList` molecule at packages/pages/src/lib/molecules/RejectionList.svelte used by packages/pages/src/lib/molecules/ConsumableSubsection.svelte:42 and packages/pages/src/lib/templates/ConsumablePage.svelte:145, a `many` keyword on the rejection's own heading, and "rejects with many" in packages/pages/src/lib/templates/SchemaPage.svelte:46. Round trip covered in packages/core/src/workspace.test.ts.
+- **senior-developer** (2026-09-11T13:20:00.000Z): Docs and evidence. Rows for `consumption-by-required`, `valueobject-context` and `schema-context` rewritten and `raises-in-aggregate` added at apps/docs/docs/3-core/4-validation.md:73, which is what the rule-id test pins; skill references regenerated by the verify script. Every model's diagnostics are unchanged — northbank, petstore, rivermart, streamline and clinic tests all pass untouched, and none of them carries a cross-aggregate raise. `bash scripts/verify-all.sh` green end to end, first run, no retry needed.
