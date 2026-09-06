@@ -6,15 +6,16 @@ Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel
 
 ## Now
 
-Card 107 ([a consumption names its agreement; an external operation states its contract; `by` on external and in-context consumers](boards/project-backlog/107-a-consumption-names-its-agreement-an-external-operation-states-its-contract.md), senior-developer) and card 109 ([NorthBank's gateway integrates with the scheme honestly](boards/project-backlog/109-northbank-scheme-gateway-integrates-with-the-payment-scheme.md), developer) are live in their own worktrees; card 108 ([JSON and DSL parity, the last required keys, three rule texts](boards/project-backlog/108-the-same-mistake-gets-the-same-answer-in-json-and-the-dsl.md), developer) waits for 107. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 106 landed green.
+Card 107 ([a consumption names its agreement; an external operation states its contract; `by` on external and in-context consumers](boards/project-backlog/107-a-consumption-names-its-agreement-an-external-operation-states-its-contract.md), senior-developer) is live in its worktree, finishing RiverMart's second named agreement after two rulings. Card 108 ([JSON and DSL parity, the last required keys, four rule texts](boards/project-backlog/108-the-same-mistake-gets-the-same-answer-in-json-and-the-dsl.md), developer) waits for 107; card 110 ([`SubmitToScheme` sends to the scheme](boards/project-backlog/110-submittoscheme-sends-to-the-scheme.md), developer) waits for 108. Stopping point for each: the developer reports, the lead lands with `npm run verify`. Cards 99 to 106 and 109 landed green.
 
 ## Next
 
-Land 107 and 109, dispatch 108, land it; then the panel (Antigravity via `agy`, Codex via `codex exec -m gpt-6-astra`, a fresh architect-deep) runs an eighth time on that head. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
+Land 107, dispatch 108, land it, dispatch 110, land it; then the panel (Antigravity via `agy`, Codex via `codex exec -m gpt-6-astra`, a fresh architect-deep) runs an eighth time on that head. Expected result: all three hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
 
 ## Later
 
 - New panel findings become cards; the lead rules, developers implement, the lead lands. Restatements of decided ground are answered by the decision, not by a card.
+- Backlog, not on the release path: card 111 (the pages show which agreement an exchange belongs to) and card 112 (a formatting pass at the root).
 - Decision 08 (multi-file workspaces) stays Proposed until implemented; roadmap milestone 4.
 - Files created by a Codex session in this checkout are untracked and not the lead's: extension cards 83 to 92, `docs/bots/design`, `docs/bots/qa`, and `docs/bots/sprints/2026-09-05-design-baseline.md`; two files it modified (`apps/ods-vscode/README.md`, `boards/vsc-extension/14-*.md`) are unstaged. Leave them unless the owner says otherwise.
 
