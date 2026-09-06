@@ -1,0 +1,86 @@
+/**
+ * The skill and the docs make claims about what the validator does. The
+ * architect's thirteenth round found six of those claims stale against
+ * `packages/core/src/validate.ts` (card 129). This test pins the corrected
+ * wording by asserting the six old, contradicted sentences never come back,
+ * in any hand-written file that could restate them.
+ *
+ * Whitespace is collapsed before matching so a sentence rewrapped across
+ * lines by an editor still matches the exact words it once read.
+ */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import { packageRoot } from "../scripts/generate.mts";
+
+const repoRoot = join(packageRoot, "..", "..");
+
+const normalise = (text: string) => text.replace(/\s+/g, " ");
+
+const handWrittenFiles = [
+	"packages/skill/skill/SKILL.md",
+	"packages/skill/skill/references/interview-playbook.md",
+	"packages/skill/skill/references/preferences.md",
+	"packages/skill/skill/references/json-mode.md",
+	"apps/docs/docs/3-core/2-strategic-design.md",
+	"apps/docs/docs/3-core/3-tactical-design.md",
+	"packages/core/src/schema.ts",
+].map((path) => ({ path, text: normalise(readFileSync(join(repoRoot, path), "utf8")) }));
+
+const corpus = handWrittenFiles.map((f) => f.text).join("\n");
+
+/**
+ * Each entry is one of the architect's six claims. Several were repeated,
+ * worded slightly differently, in more than one file; every wording found is
+ * listed so the drift cannot silently return through any of them.
+ */
+const oldClaims: Array<{ claim: string; sentences: string[] }> = [
+	{
+		claim: "a dangling ref stops the whole file loading (decision 29: it loads and reports unresolved-ref)",
+		sentences: [
+			"A dangling ref is a load failure, not a warning: the whole file stops loading.",
+			'If loading throws "... with ref ... not found", a ref is dangling: fix it first.',
+		],
+	},
+	{
+		claim: "a value object or schema crosses only over a shared kernel (decision 16: a conformist borrows too)",
+		sentences: [
+			"A value object or a schema may be named across a boundary only where the two contexts declare a `shared-kernel` relationship.",
+			"If a value is genuinely the same in a neighbouring context, that is a `shared-kernel` relationship, and it is the only way one context may name another's value object.",
+			"Two contexts may share one only across a `shared-kernel` relationship.",
+		],
+	},
+	{
+		claim: "a specialisation parent borrows only over a shared kernel (decision 22: a conformist borrows too)",
+		sentences: [
+			"a value object is a kind of one its own context declares or borrows over a `shared-kernel`.",
+			"The target belongs to this context, or to a context this one shares a kernel with (decision 22).",
+		],
+	},
+	{
+		claim: "an answer routes one hop through a front (card 126: it follows the local `by` chain and stops at the boundary)",
+		sentences: [
+			"An answer routes one hop. An operation's answer reaches the reactor that issued it and nobody further, so a process whose front makes the call does not hear the neighbour's reply through that front; the chain has to be written where the reader can follow it.",
+		],
+	},
+	{
+		claim: "relationship-declared warns on an identity crossing until a relationship is declared (decision 14: it does not)",
+		sentences: [
+			"Declaring a relationship replaces the implied edge, and `relationship-declared` warns until one is.",
+		],
+	},
+	{
+		claim: "a reference targets the root only (cross-aggregate-reference also accepts a kind of the root)",
+		sentences: ["Reference another aggregate only through its root entity, with `references`."],
+	},
+];
+
+describe("validator drift", () => {
+	for (const { claim, sentences } of oldClaims) {
+		for (const sentence of sentences) {
+			it(`never restates: ${claim} — "${sentence.slice(0, 60)}..."`, () => {
+				expect(corpus).not.toContain(normalise(sentence));
+			});
+		}
+	}
+});
