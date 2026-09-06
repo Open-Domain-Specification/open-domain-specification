@@ -1,6 +1,8 @@
 
 
 # Identity BC
+> **Boundary only.** A context of ours nobody has interviewed yet: what it offers and what it takes is modelled here, and nothing behind that.
+
 The user endpoints and the record they answer with, modelled at the boundary only. Legacy at that boundary: user status is an untyped int and login is a GET
 
 **Owned by:** [Platform Team](https://petstore.swagger.io/#/user)
