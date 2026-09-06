@@ -89,7 +89,7 @@ export class ODSRelationGraph extends AbstractVisitor {
 	protected readonly _relations = new Set<EntityRelation>();
 	protected readonly _identities = new Set<Attribute>();
 	protected readonly _subtypes = new Set<Entity | ValueObject>();
-	protected readonly _borrowings = new Set<Attribute>();
+	protected readonly _derivedUses = new Set<Attribute>();
 
 	get relations(): EntityRelation[] {
 		return Array.from(this._relations.values());
@@ -106,15 +106,22 @@ export class ODSRelationGraph extends AbstractVisitor {
 	}
 
 	/**
-	 * The attributes in scope typed by a value object of another bounded
-	 * context, borrowed over a shared kernel or from an upstream this context
-	 * conforms to. No `uses` relation may say so, because a relation never
-	 * crosses a boundary, so the map derives the dependency from the attribute
-	 * itself and draws the value in the lending context's cluster (decision 16,
-	 * third amendment).
+	 * The attributes in scope whose line to their value object is derived from
+	 * the attribute rather than from a declaration.
+	 *
+	 * An attribute typed by a value object is a dependency on that value, so
+	 * the map draws it either way. Where the value belongs to another context,
+	 * borrowed over a shared kernel or from an upstream this context conforms
+	 * to, there is nothing else it could be drawn from: a relation never
+	 * crosses a boundary, and the value is drawn in the lending context's
+	 * cluster (decision 16, third amendment). Where it belongs to this context
+	 * the model may declare a `uses` relation, which adds a label and a
+	 * cardinality to the same line and is drawn as itself; the line is derived
+	 * only where no relation draws this attribute (decision 16, note of
+	 * 2026-09-10; see {@link Attribute.drawnBy}).
 	 */
-	get borrowings(): Attribute[] {
-		return Array.from(this._borrowings.values());
+	get derivedUses(): Attribute[] {
+		return Array.from(this._derivedUses.values());
 	}
 
 	/**
@@ -138,14 +145,14 @@ export class ODSRelationGraph extends AbstractVisitor {
 	visitEntity(entity: Entity) {
 		this.collectIdentities(entity);
 		this.collectSpecialisation(entity);
-		this.collectBorrowings(entity);
+		this.collectDerivedUses(entity);
 		super.visitEntity(entity);
 	}
 
 	visitValueObject(valueobject: ValueObject) {
 		this.collectIdentities(valueobject);
 		this.collectSpecialisation(valueobject);
-		this.collectBorrowings(valueobject);
+		this.collectDerivedUses(valueobject);
 		super.visitValueObject(valueobject);
 	}
 
@@ -158,11 +165,12 @@ export class ODSRelationGraph extends AbstractVisitor {
 		if (node.specialises) this._subtypes.add(node);
 	}
 
-	private collectBorrowings(node: Entity | ValueObject) {
+	private collectDerivedUses(node: Entity | ValueObject) {
 		for (const attribute of node.attributes.values()) {
 			const vo = attribute.valueobject;
-			if (vo && vo.boundedcontext !== node.boundedcontext)
-				this._borrowings.add(attribute);
+			if (!vo) continue;
+			if (vo.boundedcontext !== node.boundedcontext || !attribute.drawnBy)
+				this._derivedUses.add(attribute);
 		}
 	}
 
@@ -228,7 +236,7 @@ export class ODSRelationMap {
 		relations: EntityRelation[],
 		identities: Attribute[] = [],
 		subtypes: (Entity | ValueObject)[] = [],
-		borrowings: Attribute[] = [],
+		derivedUses: Attribute[] = [],
 	) {
 		for (const relation of relations) {
 			const sourceNode = this.addNode(relationNode(relation.source));
@@ -275,19 +283,22 @@ export class ODSRelationMap {
 				label: "",
 			});
 		}
-		// A value object borrowed from another context draws too, reached by the
-		// same dependency line as a value of this one and named by the attribute
-		// that holds it. That line is never declared, since a relation may not
-		// cross a boundary, so it is derived from the attribute; the box stands
-		// in the lending context's cluster, which is where the reader sees whose
-		// value it is (decision 16, third amendment).
-		for (const attribute of borrowings) {
+		// An attribute typed by a value object no relation draws is a dependency
+		// line of its own, named by the attribute that holds it: the model says
+		// the holder has one, which is the whole of what the line says. A value
+		// borrowed from another context is always drawn this way, since a
+		// relation may not cross a boundary, and its box stands in the lending
+		// context's cluster, which is where the reader sees whose value it is
+		// (decision 16, third amendment and the note of 2026-09-10).
+		for (const attribute of derivedUses) {
 			const { owner, valueobject: vo } = attribute;
 			const drawable = owner instanceof Entity || owner instanceof ValueObject;
 			if (!vo || !drawable) continue;
 			this.addEdge({
 				source: this.addNode(relationNode(owner)),
-				target: this.addNode(relationNode(vo, true)),
+				target: this.addNode(
+					relationNode(vo, vo.boundedcontext !== owner.boundedcontext),
+				),
 				relation: RelationType.Uses,
 				label: attribute.name,
 			});
@@ -299,7 +310,7 @@ export class ODSRelationMap {
 			graph.relations,
 			graph.identities,
 			graph.subtypes,
-			graph.borrowings,
+			graph.derivedUses,
 		);
 	}
 

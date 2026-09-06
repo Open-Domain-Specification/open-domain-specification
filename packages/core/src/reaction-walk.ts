@@ -113,11 +113,14 @@ export class ReactionChain {
 	readonly steps: Reactor[] = [];
 
 	/**
-	 * The answer steps, by the operation each runs from: the local call the
-	 * reactor made, so an answer comes back down the call that asked for it and
-	 * no other (see {@link routesTo}).
+	 * The answer steps, by the node each runs from: the local call the reactor
+	 * made, so an answer comes back down the call that asked for it and no
+	 * other (see {@link routesTo}). Keyed by a reactor rather than a call only
+	 * where the model names the reactor itself as the caller, which
+	 * `consumption-by-operation` refuses; the walk still has somewhere to draw
+	 * it from, and the loop it makes is the process's own.
 	 */
-	private readonly answerSteps = new Map<Consumable, ReactionStep[]>();
+	private readonly answerSteps = new Map<Reactor, ReactionStep[]>();
 
 	constructor(contexts: Iterable<BoundedContext>) {
 		for (const bc of contexts) {
@@ -167,6 +170,16 @@ export class ReactionChain {
 
 	/** What the chain does next from one step, and what carries each step. */
 	stepsFrom(node: Reactor): ReactionStep[] {
+		const steps = this.ownSteps(node);
+		// An answer wakes whoever was waiting for it, and the step is drawn from
+		// the call that asked for it rather than from a node of its own: the
+		// answer is what the step is called, not something that happens.
+		steps.push(...(this.answerSteps.get(node) ?? []));
+		return steps;
+	}
+
+	/** What a step does of itself, before the answers its calls bring back. */
+	private ownSteps(node: Reactor): ReactionStep[] {
 		if (node instanceof Policy) return node.commands.map((to) => ({ to }));
 		if (node instanceof Process)
 			return [
@@ -181,16 +194,11 @@ export class ReactionChain {
 					.filter((it): it is Deadline => it instanceof Deadline)
 					.map((deadline): ReactionStep => ({ to: node, deadline })),
 			];
-		const steps: ReactionStep[] = [
+		return [
 			...node.raisedEvents,
 			...this.consumedThrough(node),
 			...(this.listeners.get(node) ?? []),
 		].map((to) => ({ to }));
-		// An answer wakes whoever was waiting for it, and the step is drawn from
-		// the call that asked for it rather than from a node of its own: the
-		// answer is what the step is called, not something that happens.
-		steps.push(...(this.answerSteps.get(node) ?? []));
-		return steps;
 	}
 
 	/** What the chain does next from one step. */
@@ -240,7 +248,11 @@ function callsTo(bc: BoundedContext, operation: Consumable): Consumption[] {
  * - Nothing says who calls, and there is one call in this context to hear. A
  *   consumer providing a single operation is not made to write `by` down
  *   (`consumption-by-required`), and the walk reads the same inference here as
- *   it does in `callsOut`: only where there is nothing to choose between.
+ *   it does in `callsOut`: only where there is nothing to choose between. The
+ *   consumption has to be silent for the silence to be stood in for: a lone
+ *   call that does name its caller has said who made it, and reading that one
+ *   as "anybody here" let a second reactor beside the caller hear an answer
+ *   the model had already given away (card 104).
  *
  * Where `by` is written and names somebody else, the answer is somebody
  * else's. That is the whole narrowing, and the repair for a model it catches
@@ -252,16 +264,27 @@ export function hearsAnswerOf(
 ): boolean {
 	if (reactor.commands.includes(operation)) return true;
 	const calls = callsTo(reactor.boundedcontext, operation);
-	if (
-		calls.some((call) =>
-			call.by.some(
-				(caller) =>
-					caller === reactor || reactor.commands.some((it) => it === caller),
-			),
-		)
-	)
-		return true;
-	return calls.length === 1;
+	if (calls.some((call) => callersFor(reactor, call).length > 0)) return true;
+	return calls.length === 1 && calls[0].by.length === 0;
+}
+
+/**
+ * Which of a consumption's declared callers are this reactor's: an operation
+ * the reactor issues, or the reactor itself.
+ *
+ * A reactor acts on another context through an operation of its own
+ * (decision 17), so the ordinary caller is one of the operations it issues.
+ * `by` may also name the reactor itself: on a subscription that is the
+ * expected shape (`consumption-by-reactor`), and on a call it is a mistake
+ * `consumption-by-operation` reports — but the model has still said who made
+ * the call, so the walk reads it rather than dropping the answer on the floor.
+ */
+function callersFor(reactor: Policy | Process, call: Consumption): Reactor[] {
+	return call.by.filter(
+		(caller): caller is Reactor =>
+			caller === reactor ||
+			(caller instanceof Consumable && reactor.commands.includes(caller)),
+	);
 }
 
 /**
@@ -280,25 +303,34 @@ export function hearsAnswerOf(
  * following the chain sees the call leave on one edge and the answer arrive on
  * another.
  *
+ * Only this reactor's own calls are routes. Every caller named on every
+ * consumption of the operation was, until card 104, and one context is enough
+ * for that to be wrong: two processes that each call one scorer through an
+ * operation of their own were each drawn the other's verdict as well as their
+ * own, on the flow map and in the ring `reaction-cycle` walks. A caller is
+ * this reactor's when the reactor issues it, or when it is the reactor —
+ * which the model should not say of a call and sometimes does (see
+ * {@link callersFor}).
+ *
  * Where the reactor issues the answering operation itself the two are the same
  * node, because there is no boundary and no local proxy for one (card 95).
  * Where nothing says who calls and the consumer provides a single operation,
  * that operation is the route, which is the inference `callsOut` already makes
  * on the way out; where it provides several, the model has not said, and the
  * chain stops rather than guessing — the same silence `consumption-by-required`
- * warns about.
+ * warns about. That inference is `hearsAnswerOf`'s third clause and is read
+ * with it: a lone call that names its caller is not silent, so it is routed by
+ * what it names or not at all.
  */
 export function routesTo(
 	reactor: Policy | Process,
 	operation: Consumable,
-): Consumable[] {
+): Reactor[] {
 	if (reactor.commands.includes(operation)) return [operation];
 	const calls = callsTo(reactor.boundedcontext, operation);
-	const named = calls.flatMap((call) =>
-		call.by.filter((it): it is Consumable => it instanceof Consumable),
-	);
+	const named = calls.flatMap((call) => callersFor(reactor, call));
 	if (named.length > 0) return named;
-	if (calls.length !== 1) return [];
+	if (calls.length !== 1 || calls[0].by.length > 0) return [];
 	const sole = [...calls[0].consumer.consumables.values()].filter(
 		(it) => it.type === "operation",
 	);

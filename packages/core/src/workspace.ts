@@ -2607,6 +2607,39 @@ export class Attribute implements SchemaConvertible<ods.AttributeSchema> {
 		return `#/${this.path}`;
 	}
 
+	/**
+	 * The declared `uses` relation that draws this attribute, where the model
+	 * declares one.
+	 *
+	 * An attribute typed by a value object is a dependency on that value
+	 * whether or not a relation is written down, so the relation map derives
+	 * the line from the attribute and a declaration only adds a label or a
+	 * cardinality to it (decision 16, note of 2026-09-10). This is the pairing
+	 * of the two halves, and the one place it is decided: with a single `uses`
+	 * relation to the value it is that one, and where the holder uses one value
+	 * twice — a current address beside an address history — it is the one whose
+	 * `for` names this attribute. Undefined where nothing is declared, which is
+	 * the ordinary case, and where several are declared and none says which
+	 * attribute it draws, which is what `attribute-relation-coherence` reports
+	 * rather than guessing.
+	 *
+	 * Inherited relations count as the holder's own (decision 22). A schema's
+	 * attribute has none: a payload shape declares no relations.
+	 */
+	get drawnBy(): EntityRelation | undefined {
+		const vo = this.valueobject;
+		const owner = this.owner;
+		if (!vo || !(owner instanceof Entity || owner instanceof ValueObject))
+			return undefined;
+		const candidates = owner.allRelations.filter(
+			(it) => it.relation === RelationType.Uses && it.target === vo,
+		);
+		return (
+			candidates.find((it) => it.for === this.name) ??
+			(candidates.length === 1 ? candidates[0] : undefined)
+		);
+	}
+
 	/** The refs written here that named nothing; see {@link UnresolvedWrites}. */
 	readonly unresolvedWrites = new UnresolvedWrites();
 

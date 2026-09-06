@@ -1392,15 +1392,22 @@ describe("invariant-in-aggregate", () => {
 		expect(inAggregate(ws)).toEqual([]);
 	});
 
-	it("lets a precondition constrain the answer its guard comes back with", () => {
+	// A precondition is checked before the call runs, so the answer has not been
+	// computed: a rule about it is a postcondition (card 104).
+	it("refuses a precondition that constrains what its guard answers with", () => {
 		const { ws, shipment, price, requestQuote } = quotation();
-		shipment
+		const early = shipment
 			.addInvariant("Quoted Price Is Positive", {
 				description: "",
 				precondition: true,
 			})
 			.constrains(requestQuote, price);
-		expect(inAggregate(ws)).toEqual([]);
+		expect(inAggregate(ws)).toEqual([
+			[
+				'Invariant "Quoted Price Is Positive" of aggregate "Shipment" constrains "Quote.price", which is an attribute of schema "Quote", which no operation this precondition guards takes, directly or through a shape its request composes; a precondition is checked before the call runs, so it reads the request and not what comes back; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
+				early.ref,
+			],
+		]);
 	});
 
 	it("refuses a schema no operation the precondition guards handles", () => {
@@ -1413,7 +1420,7 @@ describe("invariant-in-aggregate", () => {
 			.constrains(requestQuote, reference);
 		expect(inAggregate(ws)).toEqual([
 			[
-				'Invariant "Reads Someone Else\'s Request" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which no operation this precondition guards takes, returns or rejects with, directly or through a shape one of those composes; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
+				'Invariant "Reads Someone Else\'s Request" of aggregate "Shipment" constrains "Booking.reference", which is an attribute of schema "Booking", which no operation this precondition guards takes, directly or through a shape its request composes; a precondition is checked before the call runs, so it reads the request and not what comes back; an aggregate\'s invariant holds inside the boundary on every save. Outside it, a rule may name an operation of a service of its own context that guards it, and — where it is a precondition or a postcondition — the attributes of the shapes that operation carries',
 				stray.ref,
 			],
 		]);
@@ -2103,16 +2110,21 @@ describe("attribute-relation-coherence", () => {
 		expect(coherenceRules(ws)).toEqual([]);
 	});
 
-	it("warns about an attribute with no relation and a relation with no attribute", () => {
+	// The attribute alone is the whole statement: the map derives the line from
+	// it, so nothing is missing and nothing is said (decision 16, note of
+	// 2026-09-10; card 104).
+	it("says nothing about an attribute no relation draws", () => {
+		const { ws, root, money } = pair();
+		root.addAttribute("Total", { type: "Money", valueobject: money });
+		expect(coherenceRules(ws)).toEqual([]);
+	});
+
+	it("warns about a relation with no attribute", () => {
 		const { ws, bc, root, money } = pair();
 		const size = bc.addValueObject("Size", { description: "" });
 		root.addAttribute("Total", { type: "Money", valueobject: money });
 		root.uses(size, "sized", "1");
 		expect(coherenceRules(ws).map((d) => [d.severity, d.message])).toEqual([
-			[
-				"warning",
-				'"Order" types attribute "Total" by value object "Money" but declares no "uses" relation to "Money", so the relation map never draws it',
-			],
 			[
 				"warning",
 				'"Order" uses "Size" but no attribute of "Order" is typed by "Size", so the page says the relation exists and never shows where',
@@ -4350,7 +4362,7 @@ describe("relationship-cycle", () => {
 		expect(cycles(ws).map((d) => [d.severity, d.message, d.ref])).toEqual([
 			[
 				"warning",
-				'Calls run in a cycle: "A" -> "B" -> "C" -> "A"; each of these contexts calls the next, so all of them depend on each other\'s contracts. Put an anti-corruption layer on one of the steps, so that side translates and is free to change; or declare a partnership where two of them really do move as one; or reverse a dependency by turning that call into an event the other side reacts to',
+				'Calls run in a cycle: "A" -> "B" -> "C" -> "A"; each of these calls the next, so all of them depend on each other\'s contracts. Put an anti-corruption layer on one of the steps, so that side translates and is free to change; or declare a partnership between two neighbours on the ring that really do move as one, which makes them one context here; or reverse a dependency by turning that call into an event the other side reacts to',
 				ab.ref,
 			],
 		]);
@@ -4400,6 +4412,35 @@ describe("relationship-cycle", () => {
 		a.bc.upstreamOf(b.bc, {});
 		b.bc.upstreamOf(a.bc, {});
 		expect(cycles(ws)).toEqual([]);
+	});
+
+	// The fix text has always named a partnership as one of the three remedies,
+	// and until card 104 the walk did not read one: the pair moves as one, so
+	// what runs between them is not a step at all.
+	it("clears a ring of two once the pair declares a partnership", () => {
+		const { ws, a, b, step } = three();
+		step(a, b, "operation");
+		step(b, a, "operation");
+		expect(cycles(ws)).toHaveLength(1);
+		a.bc.partnerOf(b.bc, {});
+		expect(cycles(ws)).toEqual([]);
+	});
+
+	it("keeps a longer ring the partners are only part of, and says why", () => {
+		// Merging the pair does not make the third context's dependency go
+		// away: the pair calls C and C calls the pair, which is a ring of two
+		// nodes, one of them a partnership.
+		const { ws, a, b, c, step } = three();
+		step(a, b, "operation");
+		step(b, c, "operation");
+		step(c, a, "operation");
+		a.bc.partnerOf(b.bc, {});
+		expect(cycles(ws)).toHaveLength(1);
+		const [diagnostic] = cycles(ws);
+		expect(diagnostic.message).toContain('"A" and "B" -> "C" -> "A" and "B"');
+		expect(diagnostic.message).toContain(
+			'"A" and "B" are partners, so each of those moves as one context here',
+		);
 	});
 
 	// Decision 20's 2026-09-08 amendment: an anti-corruption layer is where one
@@ -4515,8 +4556,8 @@ describe("relationship-cycle", () => {
 				.sort(),
 		).toEqual(
 			[
-				'Calls run in a cycle: "A" -> "B" -> "C" -> "A"; each of these contexts calls the next, so all of them depend on each other\'s contracts. Put an anti-corruption layer on one of the steps, so that side translates and is free to change; or declare a partnership where two of them really do move as one; or reverse a dependency by turning that call into an event the other side reacts to',
-				'Calls run in a cycle: "B" -> "C" -> "B"; each of these contexts calls the next, so all of them depend on each other\'s contracts. Put an anti-corruption layer on one of the steps, so that side translates and is free to change; or declare a partnership where two of them really do move as one; or reverse a dependency by turning that call into an event the other side reacts to',
+				'Calls run in a cycle: "A" -> "B" -> "C" -> "A"; each of these calls the next, so all of them depend on each other\'s contracts. Put an anti-corruption layer on one of the steps, so that side translates and is free to change; or declare a partnership between two neighbours on the ring that really do move as one, which makes them one context here; or reverse a dependency by turning that call into an event the other side reacts to',
+				'Calls run in a cycle: "B" -> "C" -> "B"; each of these calls the next, so all of them depend on each other\'s contracts. Put an anti-corruption layer on one of the steps, so that side translates and is free to change; or declare a partnership between two neighbours on the ring that really do move as one, which makes them one context here; or reverse a dependency by turning that call into an event the other side reacts to',
 			].sort(),
 		);
 	});
@@ -4925,6 +4966,47 @@ describe("reaction-cycle", () => {
 			'it runs through "A" and "B", so no one context can see the whole ring',
 		);
 	});
+
+	/**
+	 * A process and an operation it issues that raises the very fact the
+	 * process starts on. The ring runs through one process and no other
+	 * reactor, so it used to be read as a lifecycle; it is not one, because
+	 * every pass round begins another instance (card 104).
+	 */
+	function restarts({ waits = false }: { waits?: boolean } = {}) {
+		const ws = emptyWorkspace();
+		const bc = ws.addBoundedContext("Ops", { description: "" });
+		const app = bc.addService("App", { description: "", type: "application" });
+		const started = app.provides("Started", { description: "", type: "event" });
+		const done = app.provides("Done", { description: "", type: "event" });
+		const restart = app
+			.provides("Restart", { description: "", type: "operation" })
+			.raises(started);
+		const finish = app
+			.provides("Finish", { description: "", type: "operation" })
+			.raises(done);
+		const run = bc
+			.addProcess("Run", { description: "" })
+			.starts(started)
+			.issues(restart, finish)
+			.ends(done);
+		if (waits) run.on(started);
+		return { ws, run };
+	}
+
+	it("reports a ring that comes back to a process through what starts it", () => {
+		const { ws } = restarts();
+		expect(reactions(ws)).toHaveLength(1);
+		const [diagnostic] = reactions(ws);
+		expect(diagnostic.message).toContain('"Restart" -> "Started"');
+		expect(diagnostic.message).toContain('"Started" -> "Run"');
+	});
+
+	it("is quiet again once the process waits on that fact as well", () => {
+		// Waiting on it says the running instance is the one that wakes, which
+		// is the lifecycle the exemption is for.
+		expect(reactions(restarts({ waits: true }).ws)).toEqual([]);
+	});
 });
 
 describe("disposition-needs-comment", () => {
@@ -5249,10 +5331,16 @@ describe("relationship-declared", () => {
 		expect(declared(ws)).toEqual([]);
 	});
 
-	it("does not take separate ways as an answer; the contexts still cross", () => {
+	// Separate ways says how the two stand, so this rule has nothing left to
+	// ask; that the crossing contradicts it is `separate-ways`'s error, and one
+	// mistake is one diagnostic (card 104).
+	it("takes separate ways as an answer and leaves the crossing to that rule", () => {
 		const { ws, up, down } = crossing();
 		up.separateWaysFrom(down);
-		expect(declared(ws)).toHaveLength(1);
+		expect(declared(ws)).toEqual([]);
+		expect(
+			ws.validate().filter((d) => d.rule === "separate-ways"),
+		).toHaveLength(1);
 	});
 
 	it("warns once per pair and direction however many crossings there are", () => {
@@ -6427,6 +6515,7 @@ describe("waiting on an answer", () => {
 			declined,
 			authorise,
 			process,
+			ask,
 			reopen,
 		};
 	}
@@ -6442,7 +6531,7 @@ describe("waiting on an answer", () => {
 	});
 
 	it("accepts what that operation returns, the same way", () => {
-		const { ws, checkout, authorise, declined, reopen } = answered({
+		const { ws, checkout, authorise, declined, ask, reopen } = answered({
 			reject: false,
 		});
 		authorise.returns = declined;
@@ -6450,7 +6539,37 @@ describe("waiting on an answer", () => {
 		checkout
 			.addPolicy("Reopen on decline", { description: "" })
 			.on(authorise.returned())
+			// The consumption says "Request Authorisation" makes the call, so the
+			// policy that hears the answer is the one that issues it.
+			.issues(ask, reopen);
+		expect(kinds(ws)).toEqual([]);
+	});
+
+	// One consumption in the context is not "anybody here may listen" once it
+	// says who calls: the answer went back to the caller, and a second reactor
+	// beside it heard nothing (card 104).
+	it("refuses a second reactor the lone consumption does not name", () => {
+		const { ws, checkout, authorise, declined, reopen } = answered();
+		const eavesdropper = checkout
+			.addPolicy("Watch declines", { description: "" })
+			.on(authorise.rejected(declined))
 			.issues(reopen);
+		expect(kinds(ws)).toEqual([
+			[
+				"error",
+				`Policy "Watch declines" waits for "Authorise Payment rejects with Payment Declined", but nothing says policy "Watch declines" made that call: it does not issue "Authorise Payment", and no consumption of "Authorise Payment" in "Checkout" names an operation it issues in "by". An answer comes back to whoever called, so issue that operation, or say in "by" which of this context's operations makes the call, or react to an event instead`,
+				eavesdropper.ref,
+			],
+		]);
+	});
+
+	it("accepts the same reactor once it issues the operation that calls", () => {
+		const { ws, checkout, authorise, declined, ask, reopen } = answered();
+		checkout.processes.clear();
+		checkout
+			.addPolicy("Watch declines", { description: "" })
+			.on(authorise.rejected(declined))
+			.issues(ask, reopen);
 		expect(kinds(ws)).toEqual([]);
 	});
 
@@ -6558,12 +6677,14 @@ describe("waiting on an answer", () => {
 	// An operation with no `returns` still comes back, and that is all a caller
 	// of a command ever learns (decision 13, second amendment; card 99).
 	it("accepts the bare completion of an operation that returns nothing", () => {
-		const { ws, checkout, authorise, reopen } = answered({ reject: false });
+		const { ws, checkout, authorise, ask, reopen } = answered({
+			reject: false,
+		});
 		checkout.processes.clear();
 		checkout
 			.addPolicy("Confirm on completion", { description: "" })
 			.on(authorise.completed())
-			.issues(reopen);
+			.issues(ask, reopen);
 		expect(kinds(ws)).toEqual([]);
 	});
 

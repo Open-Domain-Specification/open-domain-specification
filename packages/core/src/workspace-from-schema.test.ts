@@ -14,6 +14,78 @@ describe("workspaceFromSchema", () => {
 });
 
 /**
+ * Every map of elements is optional in the file, and an absent one loads as an
+ * empty one: a context that states nothing but its name says so by saying
+ * nothing, rather than by writing eight empty maps (card 104).
+ */
+describe("a file that leaves its empty collections out", () => {
+	const bare: WorkspaceSchema = {
+		id: "bare",
+		name: "Bare",
+		odsVersion: "1.0.0",
+		description: "",
+		version: "0",
+		domains: {},
+		teams: {},
+		relationships: [],
+		boundedcontexts: {
+			only: {
+				name: "Only",
+				description: "",
+				subdomains: [],
+			},
+		},
+	};
+
+	it("loads a context that declares nothing but its name", () => {
+		const loaded = getWorkspaceFromSchema(structuredClone(bare));
+		const bc = loaded.getBoundedContextByRefOrThrow("#/boundedcontexts/only");
+		expect([
+			bc.aggregates.size,
+			bc.services.size,
+			bc.policies.size,
+			bc.processes.size,
+			bc.invariants.size,
+			bc.glossary.size,
+			bc.valueobjects.size,
+			bc.schemas.size,
+		]).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
+	});
+
+	it("reads an aggregate, a service, an entity and a value the same way", () => {
+		const schema = structuredClone(bare);
+		schema.boundedcontexts.only.aggregates = {
+			order: {
+				name: "Order",
+				description: "",
+				consumes: [],
+				entities: {
+					order: { name: "Order", description: "", root: true, attributes: {} },
+				},
+			},
+		};
+		schema.boundedcontexts.only.services = {
+			app: { name: "App", description: "", type: "application", consumes: [] },
+		};
+		schema.boundedcontexts.only.valueobjects = {
+			money: { name: "Money", description: "", attributes: {}, invariants: {} },
+		};
+		const loaded = getWorkspaceFromSchema(schema);
+		const order = loaded.getEntityByRefOrThrow(
+			"#/boundedcontexts/only/aggregates/order/entities/order",
+		);
+		expect(order.relations).toEqual([]);
+		expect(order.aggregate.invariants.size).toBe(0);
+		expect(order.aggregate.consumables.size).toBe(0);
+		expect(
+			loaded.getValueObjectByRefOrThrow(
+				"#/boundedcontexts/only/valueobjects/money",
+			).relations,
+		).toEqual([]);
+	});
+});
+
+/**
  * A `$ref` that names nothing is a mistake in the model, and loading reports
  * it instead of throwing: the link is left unset, the rest of the file is
  * still built, and every other rule still runs over it (card 100).
@@ -53,8 +125,8 @@ describe("a ref that resolves to nothing", () => {
 
 	it("still builds everything else in the file", () => {
 		const { loaded, unresolved } = loadWith((s) => {
-			s.boundedcontexts.ordering_bc.aggregates.order.provides.order_placed.schema =
-				{ $ref: GONE };
+			s.boundedcontexts.ordering_bc.aggregates!.order
+				.provides!.order_placed.schema = { $ref: GONE };
 		});
 		expect(unresolved).toHaveLength(1);
 		// The rest of Ordering is there, and so is the context next door.
@@ -71,8 +143,8 @@ describe("a ref that resolves to nothing", () => {
 
 	it("says which element wrote the ref, and where", () => {
 		const { unresolved } = loadWith((s) => {
-			s.boundedcontexts.ordering_bc.services.order_app.provides.place_order.returns =
-				{ $ref: GONE };
+			s.boundedcontexts.ordering_bc.services!.order_app
+				.provides!.place_order.returns = { $ref: GONE };
 		});
 		expect(unresolved[0].ref).toBe(rich.placeOrder.ref);
 		expect(unresolved[0].message).toContain('Operation "Place Order"');
@@ -82,7 +154,7 @@ describe("a ref that resolves to nothing", () => {
 
 	it("says so differently when the ref names the wrong kind of thing", () => {
 		const { unresolved } = loadWith((s) => {
-			s.boundedcontexts.invoicing_bc.processes.invoice_to_customer.starts = [
+			s.boundedcontexts.invoicing_bc.processes!.invoice_to_customer.starts = [
 				{ $ref: `${rich.placeOrder.ref}/returns` },
 			];
 		});
@@ -93,31 +165,31 @@ describe("a ref that resolves to nothing", () => {
 		[
 			"schema",
 			(s) => {
-				s.boundedcontexts.ordering_bc.services.order_app.provides.place_order.schema =
-					{ $ref: GONE };
+				s.boundedcontexts.ordering_bc.services!.order_app
+					.provides!.place_order.schema = { $ref: GONE };
 			},
 			rich.placeOrder.ref,
 		],
 		[
 			"returns",
 			(s) => {
-				s.boundedcontexts.ordering_bc.services.order_app.provides.place_order.returns =
-					{ $ref: GONE };
+				s.boundedcontexts.ordering_bc.services!.order_app
+					.provides!.place_order.returns = { $ref: GONE };
 			},
 			rich.placeOrder.ref,
 		],
 		[
 			"rejects",
 			(s) => {
-				s.boundedcontexts.ordering_bc.services.order_app.provides.place_order.rejects =
-					[{ $ref: GONE }];
+				s.boundedcontexts.ordering_bc.services!.order_app
+					.provides!.place_order.rejects = [{ $ref: GONE }];
 			},
 			rich.placeOrder.ref,
 		],
 		[
 			"by",
 			(s) => {
-				s.boundedcontexts.invoicing_bc.services.invoice_app.consumes[1].by = [
+				s.boundedcontexts.invoicing_bc.services!.invoice_app.consumes[1].by = [
 					{ $ref: GONE },
 				];
 			},
@@ -126,31 +198,31 @@ describe("a ref that resolves to nothing", () => {
 		[
 			"valueobject",
 			(s) => {
-				s.boundedcontexts.ordering_bc.aggregates.order.entities.order.attributes.total.valueobject =
-					{ $ref: GONE };
+				s.boundedcontexts.ordering_bc.aggregates!.order
+					.entities!.order.attributes.total.valueobject = { $ref: GONE };
 			},
 			`${rich.order.ref}/attributes/total`,
 		],
 		[
 			"identifies",
 			(s) => {
-				s.boundedcontexts.invoicing_bc.aggregates.invoice.entities.invoice.attributes.order_id.identifies =
-					{ $ref: GONE };
+				s.boundedcontexts.invoicing_bc.aggregates!.invoice
+					.entities!.invoice.attributes.order_id.identifies = { $ref: GONE };
 			},
 			`${rich.invoice.ref}/attributes/order_id`,
 		],
 		[
 			"constrains",
 			(s) => {
-				s.boundedcontexts.ordering_bc.aggregates.order.invariants.non_empty.constrains =
-					[{ $ref: GONE }];
+				s.boundedcontexts.ordering_bc.aggregates!.order
+					.invariants!.non_empty.constrains = [{ $ref: GONE }];
 			},
 			rich.nonEmpty.ref,
 		],
 		[
 			"on",
 			(s) => {
-				s.boundedcontexts.invoicing_bc.policies.invoice_on_order_placed.on = [
+				s.boundedcontexts.invoicing_bc.policies!.invoice_on_order_placed.on = [
 					{ $ref: GONE },
 				];
 			},
@@ -159,7 +231,7 @@ describe("a ref that resolves to nothing", () => {
 		[
 			"starts",
 			(s) => {
-				s.boundedcontexts.invoicing_bc.processes.invoice_to_customer.starts = [
+				s.boundedcontexts.invoicing_bc.processes!.invoice_to_customer.starts = [
 					{ $ref: GONE },
 				];
 			},
@@ -168,7 +240,7 @@ describe("a ref that resolves to nothing", () => {
 		[
 			"ends",
 			(s) => {
-				s.boundedcontexts.invoicing_bc.processes.invoice_to_customer.ends = [
+				s.boundedcontexts.invoicing_bc.processes!.invoice_to_customer.ends = [
 					{ $ref: GONE },
 				];
 			},
@@ -178,7 +250,7 @@ describe("a ref that resolves to nothing", () => {
 			"from",
 			(s) => {
 				const process =
-					s.boundedcontexts.invoicing_bc.processes.invoice_to_customer;
+					s.boundedcontexts.invoicing_bc.processes!.invoice_to_customer;
 				process.deadlines = {
 					chase: {
 						name: "Chase",
@@ -204,8 +276,8 @@ describe("a ref that resolves to nothing", () => {
 
 	it("leaves a consumption out when the consumable it names is gone", () => {
 		const { loaded, unresolved } = loadWith((s) => {
-			s.boundedcontexts.invoicing_bc.services.invoice_app.consumes[0].consumable =
-				{ $ref: GONE };
+			s.boundedcontexts.invoicing_bc
+				.services!.invoice_app.consumes[0].consumable = { $ref: GONE };
 		});
 		expect(unresolved).toHaveLength(1);
 		expect(unresolved[0].ref).toBe(rich.invoiceApp.ref);
@@ -228,7 +300,7 @@ describe("a ref that resolves to nothing", () => {
 	it("drops a deadline of another process rather than throwing on it", () => {
 		const { loaded, unresolved } = loadWith((s) => {
 			const process =
-				s.boundedcontexts.invoicing_bc.processes.invoice_to_customer;
+				s.boundedcontexts.invoicing_bc.processes!.invoice_to_customer;
 			process.deadlines = {
 				chase: {
 					name: "Chase",

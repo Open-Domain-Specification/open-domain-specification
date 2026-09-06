@@ -317,6 +317,25 @@ function everythingWrong(): Workspace {
 		external: true,
 	});
 	outside.addAggregate("Ledger", { description: "" });
+	// relationship-declared: A calls the scheme and nothing says how the two
+	// stand to each other. Not A and B: those two have declared separate ways,
+	// which does say how they stand, and the crossing is `separate-ways`'s
+	// error rather than this rule's (card 104).
+	const schemeApi = outside.addService("Scheme API", {
+		description: "",
+		type: "application",
+	});
+	a.addService("Scheme Client", {
+		description: "",
+		type: "application",
+	}).consumes(
+		schemeApi.provides("Authorise At Scheme", {
+			type: "operation",
+			description: "",
+			pattern: "open-host-service",
+		}),
+		{ pattern: "conformist" },
+	);
 	// context-serves-subdomain: A, B, C and D serve nothing; Scheme is external
 	// and serves none by design
 	return ws;
@@ -342,7 +361,7 @@ function loadedWithABadRef(): Workspace {
 		description: "",
 	});
 	const schema = ws.toSchema();
-	const entity = schema.boundedcontexts.only.aggregates.thing.entities.thing;
+	const entity = schema.boundedcontexts.only.aggregates!.thing.entities!.thing;
 	entity.attributes = {
 		id: {
 			name: "id",

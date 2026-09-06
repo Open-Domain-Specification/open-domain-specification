@@ -77,9 +77,13 @@ export interface DataSchemaSchema {
 export interface AggregateSchema {
 	name: string;
 	description: string;
-	entities: { [entity: string]: EntitySchema };
-	invariants: { [invariant: string]: InvariantSchema };
-	provides: { [consumable: string]: ConsumableSchema };
+	/**
+	 * The entities inside this aggregate, by id. Optional, like every map of
+	 * elements in this schema: an absent map is an empty one.
+	 */
+	entities?: { [entity: string]: EntitySchema };
+	invariants?: { [invariant: string]: InvariantSchema };
+	provides?: { [consumable: string]: ConsumableSchema };
 	consumes: ConsumptionSchema[];
 }
 
@@ -248,7 +252,13 @@ export interface BoundedContextSchema {
 	external?: boolean;
 	/** The team that owns this context. */
 	team?: { $ref: string };
-	aggregates: { [aggregate: string]: AggregateSchema };
+	/**
+	 * The aggregates of this context, by id. Optional, and an absent map is an
+	 * empty one — as every map of elements in this schema is, so that a file
+	 * states what a context has and writes nothing at all for what it has not
+	 * (card 104).
+	 */
+	aggregates?: { [aggregate: string]: AggregateSchema };
 	/**
 	 * The rules that hold across the instances or the aggregates of this
 	 * context: uniqueness, quotas, limits, conservation. Each one names at
@@ -256,24 +266,24 @@ export interface BoundedContextSchema {
 	 * single instance can see is kept true only by whoever checks it before
 	 * acting (decision 27).
 	 */
-	invariants: { [invariant: string]: InvariantSchema };
-	services: { [service: string]: ServiceSchema };
-	policies: { [policy: string]: PolicySchema };
+	invariants?: { [invariant: string]: InvariantSchema };
+	services?: { [service: string]: ServiceSchema };
+	policies?: { [policy: string]: PolicySchema };
 	/**
 	 * The processes this context runs: the reactions that hold state across
 	 * events, waiting for several of them before they act and knowing how they
 	 * finish. A policy that finds itself waiting for a second event is one of
 	 * these (decision 23).
 	 */
-	processes: { [process: string]: ProcessSchema };
-	glossary: { [term: string]: GlossaryTermSchema };
+	processes?: { [process: string]: ProcessSchema };
+	glossary?: { [term: string]: GlossaryTermSchema };
 	/**
 	 * The values this context defines once: part of its ubiquitous language,
 	 * referenced by the attributes and relations of any of its aggregates.
 	 */
-	valueobjects: { [valueobject: string]: ValueObjectSchema };
+	valueobjects?: { [valueobject: string]: ValueObjectSchema };
 	/** Payload shapes this context publishes or accepts, referenced by its consumables. */
-	schemas: { [schema: string]: DataSchemaSchema };
+	schemas?: { [schema: string]: DataSchemaSchema };
 }
 
 /** What a comment's link points at. */
@@ -516,7 +526,8 @@ export interface EntitySchema {
 	 */
 	specialises?: { $ref: string };
 	attributes: { [attribute: string]: AttributeSchema };
-	relations: EntityRelationSchema[];
+	/** What this entity points at; empty when left out. */
+	relations?: EntityRelationSchema[];
 }
 
 export type EntityRelationType = "references" | "includes" | "uses";
@@ -635,7 +646,7 @@ export interface ServiceSchema {
 	type: ServiceType;
 	name: string;
 	description: string;
-	provides: { [consumable: string]: ConsumableSchema };
+	provides?: { [consumable: string]: ConsumableSchema };
 	consumes: ConsumptionSchema[];
 }
 
@@ -663,7 +674,8 @@ export interface ValueObjectSchema {
 	 */
 	specialises?: { $ref: string };
 	attributes: { [attribute: string]: AttributeSchema };
-	relations: EntityRelationSchema[];
+	/** What this value points at; empty when left out. */
+	relations?: EntityRelationSchema[];
 	/**
 	 * The rules that hold of every instance of this value: a Money's two
 	 * amounts in one currency, an IBAN's mod-97 checksum. Such a rule holds by

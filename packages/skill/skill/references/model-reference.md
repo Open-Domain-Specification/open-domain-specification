@@ -35,10 +35,10 @@ Represents an aggregate in the Open Domain Specification (ODS).
 |---|---|---|---|
 | `consumes` | array of [Consumption](#consumption) | yes |  |
 | `description` | string | yes |  |
-| `entities` | map of id to [Entity](#entity) | yes |  |
-| `invariants` | map of id to [Invariant](#invariant) | yes |  |
+| `entities` | map of id to [Entity](#entity) | no | The entities inside this aggregate, by id. Optional, like every map of elements in this schema: an absent map is an empty one. |
+| `invariants` | map of id to [Invariant](#invariant) | no |  |
 | `name` | string | yes |  |
-| `provides` | map of id to [Consumable](#consumable) | yes |  |
+| `provides` | map of id to [Consumable](#consumable) | no |  |
 
 No other fields are allowed.
 
@@ -65,20 +65,20 @@ Represents a bounded context in the Open Domain Specification (ODS).
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
-| `aggregates` | map of id to [Aggregate](#aggregate) | yes |  |
+| `aggregates` | map of id to [Aggregate](#aggregate) | no | The aggregates of this context, by id. Optional, and an absent map is an empty one — as every map of elements in this schema is, so that a file states what a context has and writes nothing at all for what it has not (card 104). |
 | `bigBallOfMud` | boolean | no | Marks a context whose model is not coherent (typically legacy) so that neighbours know to protect themselves from it. It is still the enterprise's own system, so it may state aggregates, rules and reactions and every rule about what it does state applies; what it cannot be held to is completeness. Never `external` as well: that one is somebody else's machine, and the two say opposite things about who may change it (`external-is-boundary`). |
 | `description` | string | yes |  |
 | `external` | boolean | no | Marks a system the enterprise does not own and does not model inside: a card scheme, a payment provider, a licensor, a regulator, a clock. An external context provides and consumes consumables and takes part in relationships, and it needs no subdomain, no team and no internals — `external-is-boundary` refuses aggregates, policies, processes and context invariants on it, because what happens inside it is not ours to state. Its value objects may carry invariants: an IBAN's checksum or an ISO 20022 field rule is the standard's published contract rather than a guess about the system's insides (decision 28). |
-| `glossary` | map of id to [GlossaryTerm](#glossaryterm) | yes |  |
-| `invariants` | map of id to [Invariant](#invariant) | yes | The rules that hold across the instances or the aggregates of this context: uniqueness, quotas, limits, conservation. Each one names at least one operation of the context that guards it, because a rule no single instance can see is kept true only by whoever checks it before acting (decision 27). |
+| `glossary` | map of id to [GlossaryTerm](#glossaryterm) | no |  |
+| `invariants` | map of id to [Invariant](#invariant) | no | The rules that hold across the instances or the aggregates of this context: uniqueness, quotas, limits, conservation. Each one names at least one operation of the context that guards it, because a rule no single instance can see is kept true only by whoever checks it before acting (decision 27). |
 | `name` | string | yes |  |
-| `policies` | map of id to [Policy](#policy) | yes |  |
-| `processes` | map of id to [Process](#process) | yes | The processes this context runs: the reactions that hold state across events, waiting for several of them before they act and knowing how they finish. A policy that finds itself waiting for a second event is one of these (decision 23). |
-| `schemas` | map of id to [DataSchema](#dataschema) | yes | Payload shapes this context publishes or accepts, referenced by its consumables. |
-| `services` | map of id to [Service](#service) | yes |  |
+| `policies` | map of id to [Policy](#policy) | no |  |
+| `processes` | map of id to [Process](#process) | no | The processes this context runs: the reactions that hold state across events, waiting for several of them before they act and knowing how they finish. A policy that finds itself waiting for a second event is one of these (decision 23). |
+| `schemas` | map of id to [DataSchema](#dataschema) | no | Payload shapes this context publishes or accepts, referenced by its consumables. |
+| `services` | map of id to [Service](#service) | no |  |
 | `subdomains` | array of `{ "$ref": string }` | yes | The subdomains this context serves; a context may serve several. |
 | `team` | `{ "$ref": string }` | no | The team that owns this context. |
-| `valueobjects` | map of id to [ValueObject](#valueobject) | yes | The values this context defines once: part of its ubiquitous language, referenced by the attributes and relations of any of its aggregates. |
+| `valueobjects` | map of id to [ValueObject](#valueobject) | no | The values this context defines once: part of its ubiquitous language, referenced by the attributes and relations of any of its aggregates. |
 
 No other fields are allowed.
 
@@ -221,7 +221,7 @@ Represents an entity in the Open Domain Specification (ODS).
 | `attributes` | map of id to [Attribute](#attribute) | yes |  |
 | `description` | string | yes |  |
 | `name` | string | yes |  |
-| `relations` | array of [EntityRelation](#entityrelation) | yes |  |
+| `relations` | array of [EntityRelation](#entityrelation) | no | What this entity points at; empty when left out. |
 | `root` | boolean | no |  |
 | `specialises` | `{ "$ref": string }` | no | The entity this one is a kind of: it has every attribute and relation of that entity, plus its own. The target is an entity of the same aggregate, and a subtype is never itself the root, because the aggregate has one root and a kind of it is reached through it (decision 22). |
 
@@ -304,7 +304,7 @@ Represents a service in the Open Domain Specification (ODS).
 | `consumes` | array of [Consumption](#consumption) | yes |  |
 | `description` | string | yes |  |
 | `name` | string | yes |  |
-| `provides` | map of id to [Consumable](#consumable) | yes |  |
+| `provides` | map of id to [Consumable](#consumable) | no |  |
 | `type` | "application" | "domain" | yes |  |
 
 No other fields are allowed.
@@ -358,7 +358,7 @@ Represents a value object in the Open Domain Specification (ODS).
 | `description` | string | yes |  |
 | `invariants` | map of id to [Invariant](#invariant) | yes | The rules that hold of every instance of this value: a Money's two amounts in one currency, an IBAN's mod-97 checksum. Such a rule holds by construction — a value that breaks it is never made — so it constrains this value's own attributes and needs no operation to guard it (decision 27). |
 | `name` | string | yes |  |
-| `relations` | array of [EntityRelation](#entityrelation) | yes |  |
+| `relations` | array of [EntityRelation](#entityrelation) | no | What this value points at; empty when left out. |
 | `specialises` | `{ "$ref": string }` | no | The value object this one is a kind of: it has every attribute and relation of that value object, plus its own. The target belongs to this context, or to a context this one shares a kernel with (decision 22). |
 
 No other fields are allowed.

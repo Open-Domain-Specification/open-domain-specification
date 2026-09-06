@@ -46,6 +46,24 @@ import {
 const debug = getDebug("get-workspace-from-schema");
 
 /**
+ * The entries of a collection a file may leave out, in the order it wrote
+ * them.
+ *
+ * Every map of elements is optional in the schema and an absent one means an
+ * empty one: a context with no processes says so by saying nothing, rather
+ * than by writing `"processes": {}` (card 104). The loader reads them all the
+ * same way so that "left out" and "written empty" can never load differently.
+ */
+function entriesOf<T>(map: { [id: string]: T } | undefined): [string, T][] {
+	return Object.entries(map ?? {});
+}
+
+/** The items of a list a file may leave out; an absent list is an empty one. */
+function listOf<T>(items: T[] | undefined): T[] {
+	return items ?? [];
+}
+
+/**
  * Where a `$ref` was written, for the diagnostic that reports it unresolved:
  * the element that wrote it, and how a message names that element.
  *
@@ -198,7 +216,7 @@ function addProvides(
 	schema: AggregateSchema | ServiceSchema,
 	refs: Refs,
 ) {
-	for (const [id, consumableSchema] of Object.entries(schema.provides)) {
+	for (const [id, consumableSchema] of entriesOf(schema.provides)) {
 		debug(`Adding consumable: ${consumableSchema.name} to ${provider.name}`);
 		const {
 			raises: _raises,
@@ -230,7 +248,7 @@ function linkRaises(
 	workspace: Workspace,
 	refs: Refs,
 ) {
-	for (const [id, consumableSchema] of Object.entries(schema.provides)) {
+	for (const [id, consumableSchema] of entriesOf(schema.provides)) {
 		if (!consumableSchema.raises?.length) continue;
 		const consumable = workspace.getConsumableByRefOrThrow(
 			`${provider.ref}/provides/${id}`,
@@ -394,7 +412,7 @@ function addBoundedContext(
 		},
 	);
 
-	for (const [serviceId, serviceSchema] of Object.entries(
+	for (const [serviceId, serviceSchema] of entriesOf(
 		boundedcontextSchema.services,
 	)) {
 		debug(`Adding service: ${serviceSchema.name} to ${boundedcontext.name}`);
@@ -404,9 +422,7 @@ function addBoundedContext(
 		});
 	}
 
-	for (const [termId, termSchema] of Object.entries(
-		boundedcontextSchema.glossary,
-	)) {
+	for (const [termId, termSchema] of entriesOf(boundedcontextSchema.glossary)) {
 		boundedcontext.addTerm(termSchema.name, {
 			...termSchema,
 			id: termId,
@@ -414,7 +430,7 @@ function addBoundedContext(
 		});
 	}
 
-	for (const [invariantId, invariantSchema] of Object.entries(
+	for (const [invariantId, invariantSchema] of entriesOf(
 		boundedcontextSchema.invariants,
 	)) {
 		boundedcontext.addInvariant(invariantSchema.name, {
@@ -425,7 +441,7 @@ function addBoundedContext(
 
 	// The consumables a policy joins may live in any context, so its two lists
 	// are dropped here and joined in the second pass (linkPolicies).
-	for (const [policyId, policySchema] of Object.entries(
+	for (const [policyId, policySchema] of entriesOf(
 		boundedcontextSchema.policies,
 	)) {
 		const { on: _on, then: _then, ...rest } = policySchema;
@@ -436,7 +452,7 @@ function addBoundedContext(
 	// lists are dropped here and joined in the second pass (linkProcesses),
 	// exactly as a policy's are. Its deadlines are its own, so they are made
 	// here, before anything can name one.
-	for (const [processId, processSchema] of Object.entries(
+	for (const [processId, processSchema] of entriesOf(
 		boundedcontextSchema.processes,
 	)) {
 		const {
@@ -464,7 +480,7 @@ function addBoundedContext(
 		}
 	}
 
-	for (const [schemaId, schemaSchema] of Object.entries(
+	for (const [schemaId, schemaSchema] of entriesOf(
 		boundedcontextSchema.schemas,
 	)) {
 		boundedcontext.addSchema(schemaSchema.name, {
@@ -473,7 +489,7 @@ function addBoundedContext(
 		});
 	}
 
-	for (const [valueobjectId, valueobjectSchema] of Object.entries(
+	for (const [valueobjectId, valueobjectSchema] of entriesOf(
 		boundedcontextSchema.valueobjects,
 	)) {
 		// What it is a kind of is joined later: the parent may be in a context
@@ -484,7 +500,7 @@ function addBoundedContext(
 			specialises: undefined,
 		});
 
-		for (const [invariantId, invariantSchema] of Object.entries(
+		for (const [invariantId, invariantSchema] of entriesOf(
 			valueobjectSchema.invariants,
 		)) {
 			valueobject.addInvariant(invariantSchema.name, {
@@ -494,7 +510,7 @@ function addBoundedContext(
 		}
 	}
 
-	for (const [aggregateId, aggregateSchema] of Object.entries(
+	for (const [aggregateId, aggregateSchema] of entriesOf(
 		boundedcontextSchema.aggregates,
 	)) {
 		debug(
@@ -505,7 +521,7 @@ function addBoundedContext(
 			id: aggregateId,
 		});
 
-		for (const [invariantId, invariantSchema] of Object.entries(
+		for (const [invariantId, invariantSchema] of entriesOf(
 			aggregateSchema.invariants,
 		)) {
 			aggregate.addInvariant(invariantSchema.name, {
@@ -513,7 +529,7 @@ function addBoundedContext(
 				id: invariantId,
 			});
 		}
-		for (const [entityId, entitySchema] of Object.entries(
+		for (const [entityId, entitySchema] of entriesOf(
 			aggregateSchema.entities,
 		)) {
 			aggregate.addEntity(entitySchema.name, {
@@ -532,7 +548,7 @@ function* providersOf(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
-		for (const [serviceId, schema] of Object.entries(
+		for (const [serviceId, schema] of entriesOf(
 			boundedcontextSchema.services,
 		)) {
 			const provider = workspace.getServiceByRefOrThrow(
@@ -540,7 +556,7 @@ function* providersOf(workspace: Workspace, workspaceSchema: WorkspaceSchema) {
 			);
 			yield { provider, schema };
 		}
-		for (const [aggregateId, schema] of Object.entries(
+		for (const [aggregateId, schema] of entriesOf(
 			boundedcontextSchema.aggregates,
 		)) {
 			const provider = workspace.getAggregateByRefOrThrow(
@@ -572,7 +588,7 @@ function linkReferences(
 	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
-		for (const [schemaId, schemaSchema] of Object.entries(
+		for (const [schemaId, schemaSchema] of entriesOf(
 			boundedcontextSchema.schemas,
 		)) {
 			addAttributes(
@@ -584,7 +600,7 @@ function linkReferences(
 			);
 		}
 
-		for (const [valueobjectId, valueobjectSchema] of Object.entries(
+		for (const [valueobjectId, valueobjectSchema] of entriesOf(
 			boundedcontextSchema.valueobjects,
 		)) {
 			const valueobject = workspace.getValueObjectByRefOrThrow(
@@ -592,7 +608,7 @@ function linkReferences(
 			);
 			addAttributes(valueobject, valueobjectSchema.attributes, refs);
 			const valueAt = site("Value object", valueobject.name, valueobject.ref);
-			for (const relation of valueobjectSchema.relations) {
+			for (const relation of listOf(valueobjectSchema.relations)) {
 				const target = refs.one(
 					valueAt,
 					"target",
@@ -605,7 +621,7 @@ function linkReferences(
 
 			// A value's rule is about its own attributes, so it is wired once
 			// they exist, the way an aggregate's is below.
-			for (const [invariantId, invariantSchema] of Object.entries(
+			for (const [invariantId, invariantSchema] of entriesOf(
 				valueobjectSchema.invariants,
 			)) {
 				const invariant = workspace.getInvariantByRefOrThrow(
@@ -622,10 +638,10 @@ function linkReferences(
 			}
 		}
 
-		for (const [aggregateId, aggregateSchema] of Object.entries(
+		for (const [aggregateId, aggregateSchema] of entriesOf(
 			boundedcontextSchema.aggregates,
 		)) {
-			for (const [entityId, entitySchema] of Object.entries(
+			for (const [entityId, entitySchema] of entriesOf(
 				aggregateSchema.entities,
 			)) {
 				const entity = workspace.getEntityByRefOrThrow(
@@ -633,7 +649,7 @@ function linkReferences(
 				);
 				addAttributes(entity, entitySchema.attributes, refs);
 				const entityAt = site("Entity", entity.name, entity.ref);
-				for (const relation of entitySchema.relations) {
+				for (const relation of listOf(entitySchema.relations)) {
 					const target = refs.one(
 						entityAt,
 						"target",
@@ -646,7 +662,7 @@ function linkReferences(
 			}
 
 			// Invariants come last: they may constrain attributes added just above.
-			for (const [invariantId, invariantSchema] of Object.entries(
+			for (const [invariantId, invariantSchema] of entriesOf(
 				aggregateSchema.invariants,
 			)) {
 				const invariant = workspace.getInvariantByRefOrThrow(
@@ -664,7 +680,7 @@ function linkReferences(
 
 		// A context's invariants reach into any of its aggregates, so they are
 		// wired once all of them have their attributes (decision 27).
-		for (const [invariantId, invariantSchema] of Object.entries(
+		for (const [invariantId, invariantSchema] of entriesOf(
 			boundedcontextSchema.invariants,
 		)) {
 			const invariant = workspace.getInvariantByRefOrThrow(
@@ -695,7 +711,7 @@ function linkSpecialisations(
 	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
-		for (const [valueobjectId, valueobjectSchema] of Object.entries(
+		for (const [valueobjectId, valueobjectSchema] of entriesOf(
 			boundedcontextSchema.valueobjects,
 		)) {
 			if (!valueobjectSchema.specialises) continue;
@@ -709,10 +725,10 @@ function linkSpecialisations(
 				valueobjectSchema.specialises,
 			);
 		}
-		for (const [aggregateId, aggregateSchema] of Object.entries(
+		for (const [aggregateId, aggregateSchema] of entriesOf(
 			boundedcontextSchema.aggregates,
 		)) {
-			for (const [entityId, entitySchema] of Object.entries(
+			for (const [entityId, entitySchema] of entriesOf(
 				aggregateSchema.entities,
 			)) {
 				if (!entitySchema.specialises) continue;
@@ -739,7 +755,7 @@ function linkGlossary(
 	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
-		for (const [termId, termSchema] of Object.entries(
+		for (const [termId, termSchema] of entriesOf(
 			boundedcontextSchema.glossary,
 		)) {
 			if (!termSchema.embodiedBy) continue;
@@ -766,7 +782,7 @@ function linkPolicies(
 	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
-		for (const [policyId, policySchema] of Object.entries(
+		for (const [policyId, policySchema] of entriesOf(
 			boundedcontextSchema.policies,
 		)) {
 			const policy = workspace.getPolicyByRefOrThrow(
@@ -830,7 +846,7 @@ function linkProcesses(
 	for (const [boundedcontextId, boundedcontextSchema] of Object.entries(
 		workspaceSchema.boundedcontexts,
 	)) {
-		for (const [processId, processSchema] of Object.entries(
+		for (const [processId, processSchema] of entriesOf(
 			boundedcontextSchema.processes,
 		)) {
 			const process = workspace.getProcessByRefOrThrow(

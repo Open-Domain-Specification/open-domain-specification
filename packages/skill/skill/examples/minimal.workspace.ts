@@ -41,10 +41,10 @@ const address = orders.addValueObject("Address", {
 });
 address.addAttribute("lines", { type: "text" });
 address.addAttribute("postcode", { type: "postcode" });
-// The attribute and the relation are one statement: the attribute says the
-// order holds an address, the relation is how the diagram draws it.
+// The attribute is the whole statement: it says the order holds an address,
+// and the relation map draws the line from it. A `uses` relation is optional
+// and only adds a label or a cardinality to that line.
 order.addAttribute("shipsTo", { type: "Address", valueobject: address });
-order.uses(address, "ships-to", "1");
 
 orderAgg
 	.addInvariant("Total not negative", {
