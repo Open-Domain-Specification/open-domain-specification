@@ -20,6 +20,7 @@ One referral, from the moment it becomes a case of ours.
 ## Invariants
 | Name | Description | Constrains |
 | --- | --- | --- |
+| Accept Only Known Patient | Accept a referral only once Records already holds a record for its patient: PatientSummary.patientId, fetched through the ACL by Referral Intake's own Accept Referral front, must resolve before the referral moves to accepted; Records' own Patient is outside this aggregate, so what the rule reads is the answer the front was given, not Records' model. | Referral.status, Accept Referral, Accept Referral, Patient Summary.patientId |
 | Status Moves Forward Only | A referral's status only ever moves on -- once accepted or declined, triage's other decisions no longer apply to it. | Referral.status, Accept Referral, Decline Referral, Request More Information |
 | Accepted Referral Carries A Code | Once a referral is accepted it always carries a diagnosis code from the current coding standard. | Referral.diagnosisCode, Accept Referral |
 
@@ -29,7 +30,7 @@ One referral, from the moment it becomes a case of ours.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Register Referral | operation | no | - | Creates a case of our own from a referral the GP practice system sent. | [Referral Details](../../index.md#schemas) | - | - | Referral Registered | One Active Referral Per Patient |
 | Referral Registered | event | no | published-language | A referral has become a case of ours. | [Referral Details](../../index.md#schemas) | - | - | - | - |
-| Accept Referral | operation | no | - | Called by the triage nurse once she is satisfied the case should go ahead. | - | [Referral Accepted Details](../../index.md#schemas) | - | Referral Accepted | Status Moves Forward Only, Accepted Referral Carries A Code |
+| Accept Referral | operation | yes | - | The aggregate's own transition to accepted, run by Referral Intake's front once it has confirmed a patient record already exists for the referral (decision 17). | - | - | - | Referral Accepted | Accept Only Known Patient, Status Moves Forward Only, Accepted Referral Carries A Code |
 | Referral Accepted | event | no | published-language | A case has been accepted and is ready to be scheduled. | [Referral Accepted Details](../../index.md#schemas) | - | - | - | - |
 | Request More Information | operation | yes | - | Called by the triage nurse when the referral does not yet say enough to decide. | [Information Request Details](../../index.md#schemas) | - | - | More Information Requested | Status Moves Forward Only |
 | More Information Requested | event | yes | - | Triage has asked the GP for more information before it can decide. Only triage itself tracks this. | [Information Request Details](../../index.md#schemas) | - | - | - | - |

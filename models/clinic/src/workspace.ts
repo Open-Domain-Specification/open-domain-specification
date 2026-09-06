@@ -182,7 +182,10 @@ const patientSummarySchema = recordsBC.addSchema("Patient Summary", {
 	description:
 		"What Records answers with when another part of the clinic looks a patient up.",
 });
-patientSummarySchema.addAttribute("patientId", { type: "string", identity: true });
+const patientSummaryPatientIdAttr = patientSummarySchema.addAttribute(
+	"patientId",
+	{ type: "string", identity: true },
+);
 patientSummarySchema.addAttribute("fullName", { type: "string" });
 patientSummarySchema.addAttribute("dateOfBirth", { type: "string" });
 
@@ -379,11 +382,6 @@ const labResultDetailsSchema = triageBC.addSchema("Lab Result Details", {
 });
 labResultDetailsSchema.addAttribute("resultCode", { type: "string" });
 
-const patientHistoryCheckRequestSchema = triageBC.addSchema(
-	"Patient History Check Request",
-	{ description: "Which patient the assessment needs to know about." },
-);
-
 const referralCaseAgg = triageBC.addAggregate("Referral Case", {
 	description: "One referral, from the moment it becomes a case of ours.",
 });
@@ -446,9 +444,9 @@ registerReferralOp.raises(referralRegisteredEvent);
 
 const acceptReferralOp = referralCaseAgg.provides("Accept Referral", {
 	type: "operation",
+	internal: true,
 	description:
-		"Called by the triage nurse once she is satisfied the case should go ahead.",
-	returns: referralAcceptedDetailsSchema,
+		"The aggregate's own transition to accepted, run by Referral Intake's front once it has confirmed a patient record already exists for the referral (decision 17).",
 });
 const referralAcceptedEvent = referralCaseAgg.provides("Referral Accepted", {
 	type: "event",
@@ -457,6 +455,18 @@ const referralAcceptedEvent = referralCaseAgg.provides("Referral Accepted", {
 	schema: referralAcceptedDetailsSchema,
 });
 acceptReferralOp.raises(referralAcceptedEvent);
+// The nurse's real check, "does a record already exist for this patient",
+// reads the summary Referral Intake's front fetched, not a call the aggregate
+// makes itself (decision 17's reopening condition; card 122). What the front
+// consumes to get that answer is named further down, once Referral Intake and
+// its consumption of Records' Get Patient Summary exist.
+const acceptOnlyKnownPatientInvariant = referralCaseAgg
+	.addInvariant("Accept Only Known Patient", {
+		description:
+			"Accept a referral only once Records already holds a record for its patient: PatientSummary.patientId, fetched through the ACL by Referral Intake's own Accept Referral front, must resolve before the referral moves to accepted; Records' own Patient is outside this aggregate, so what the rule reads is the answer the front was given, not Records' model.",
+		precondition: true,
+	})
+	.constrains(referralStatusAttr, acceptReferralOp);
 
 const requestMoreInformationOp = referralCaseAgg.provides(
 	"Request More Information",
@@ -540,23 +550,10 @@ triageBC
 	})
 	.constrains(referralPatientIdAttr, registerReferralOp);
 
-const triageAssessmentSvc = triageBC.addService("Triage Assessment", {
-	type: "domain",
-	description:
-		"The clinical decision logic a referral is judged against. The nurse's own account is that the assessment itself calls out to Records for what is already known about the patient -- not an application service fronting the call -- so that is what is modelled here, even though a domain service is not meant to call outside its own context.",
-});
-triageAssessmentSvc.provides("Check Patient History", {
-	type: "operation",
-	description: "Checks what Records already holds for this referral's patient.",
-	schema: patientHistoryCheckRequestSchema,
-	returns: patientSummarySchema,
-});
-triageAssessmentSvc.consumes(getPatientSummaryOp, { pattern: "conformist" });
-
 const referralIntakeSvc = triageBC.addService("Referral Intake", {
 	type: "application",
 	description:
-		"Takes what the GP's practice system sends and turns it into a case of our own.",
+		"Takes what the GP's practice system sends and turns it into a case of our own, and fronts the nurse's decision to accept a case.",
 });
 const registerReferralOnSubmissionPolicy = triageBC.addPolicy(
 	"Register Referral On Submission",
@@ -570,6 +567,32 @@ referralIntakeSvc.consumes(referralSubmittedEvent, {
 	pattern: "anti-corruption-layer",
 	by: [registerReferralOnSubmissionPolicy],
 });
+
+// The nurse's own account is that it is the acceptance check itself that
+// calls out to Records, not the reception desk that logged the referral --
+// but a domain service may not hold that outbound call (decision 17), so the
+// front that carries the nurse's decision is what makes it, and it is what
+// `Accept Only Known Patient` above names as the guard's front (decision 19's
+// card-116 reach). `Referral Intake` is the whole use case here: it fetches
+// the summary and then runs the aggregate's own transition, rather than
+// inventing a second front for a call this simple (decision 17's note).
+const acceptReferralFrontOp = referralIntakeSvc.provides("Accept Referral", {
+	type: "operation",
+	description:
+		"Called by the triage nurse once she is satisfied the case should go ahead; fetches the patient's summary from Records before the case moves to accepted.",
+	returns: referralAcceptedDetailsSchema,
+});
+referralIntakeSvc.consumes(getPatientSummaryOp, {
+	pattern: "conformist",
+	by: [acceptReferralFrontOp],
+});
+referralIntakeSvc.consumes(acceptReferralOp, {
+	by: [acceptReferralFrontOp],
+});
+acceptOnlyKnownPatientInvariant.constrains(
+	acceptReferralFrontOp,
+	patientSummaryPatientIdAttr,
+);
 
 const labOrderingSvc = triageBC.addService("Lab Ordering", {
 	type: "application",
@@ -617,17 +640,13 @@ triageBC.downstreamOf(recordsBC, {
 	upstreamRoles: ["open-host-service"],
 	downstreamRoles: ["conformist"],
 	description:
-		"Triage's assessment looks a patient up through Records' own directory and takes what it gets back as published.",
+		"Referral Intake's Accept Referral front looks a patient up through Records' own directory and takes what it gets back as published.",
 });
 
 triageBC.addTerm("Referral", {
 	definition: "A GP referral, once triage holds it as a case of its own.",
 	aliases: ["Case"],
 	embodiedBy: referralEntity,
-});
-triageBC.addTerm("Assessment", {
-	definition: "The clinical decision logic a referral is judged against.",
-	embodiedBy: triageAssessmentSvc,
 });
 
 // ---------------------------------------------------------------------------
@@ -665,7 +684,7 @@ bookingConfirmedSchema.addAttribute("startTime", { type: "string" });
 
 const patientWaitlistedSchema = schedulingBC.addSchema("Patient Waitlisted", {
 	description:
-		"The offered slot did not suit the patient, so they were put on the waiting list for a better one instead. Something happened here, just not a booking -- the model has no shape for a second thing that happened, so this is carried as a rejection for want of anywhere better (see DISCOVERY.md).",
+		"The offered slot did not suit the patient, so they were put on the waiting list for a better one instead -- a second fact, not a refusal, carried under raises alongside the booking (see DISCOVERY.md).",
 });
 patientWaitlistedSchema.addAttribute("bookingId", {
 	type: "string",
@@ -751,10 +770,8 @@ const schedulingDeskSvc = schedulingBC.addService("Scheduling Desk", {
 const offerSlotOp = schedulingDeskSvc.provides("Offer Slot", {
 	type: "operation",
 	description:
-		"Offers the patient the next open slot for the case's specialty. The patient's answer is not a refusal either way -- see DISCOVERY.md for why the second outcome is carried under rejects.",
+		"Offers the patient the next open slot for the case's specialty. The patient's answer is two facts, not a refusal either way: booked, or waitlisted. Neither caller waits synchronously on the answer, so the operation names no returns and no rejects -- it raises whichever of the two happened (see DISCOVERY.md).",
 	schema: slotOfferRequestSchema,
-	returns: bookingConfirmedSchema,
-	rejects: [patientWaitlistedSchema],
 });
 offerSlotOp.raises(bookingConfirmedEvent, patientWaitlistedEvent);
 

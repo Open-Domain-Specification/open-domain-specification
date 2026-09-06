@@ -45,7 +45,7 @@ Rules that hold across this context's instances and aggregates; each names the o
 ## Schemas
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
-| Patient Summary | What Records answers with when another part of the clinic looks a patient up. | **patientId**: `string`, fullName: `string`, dateOfBirth: `string` | Register Patient, Get Patient Summary, Check Patient History |
+| Patient Summary | What Records answers with when another part of the clinic looks a patient up. | **patientId**: `string`, fullName: `string`, dateOfBirth: `string` | Register Patient, Get Patient Summary |
 | Patient Lookup Request | Which patient is being asked for. | patientId: `string` | Get Patient Summary |
 | Patient Details | What is known about a new patient when they are first registered. | fullName: `string`, dateOfBirth: `string` | Register Patient, Patient Registered |
 | GP Reference Details | A patient's GP practice number, to be linked to our own record. | patientId: `string`, gpPatientNumber: `string` (identifies [GP Practice System](../gp_practice_system/index.md)) | Link GP Practice Reference |
@@ -72,7 +72,7 @@ Rules that hold across this context's instances and aggregates; each names the o
 ### Depended on by
 | With | Description | Type | Upstream Roles | Downstream Roles |
 | --- | --- | --- | --- | --- |
-| Triage | Triage's assessment looks a patient up through Records' own directory and takes what it gets back as published. | upstream-downstream | open-host-service | conformist |
+| Triage | Referral Intake's Accept Referral front looks a patient up through Records' own directory and takes what it gets back as published. | upstream-downstream | open-host-service | conformist |
 
 - `open-host-service` — **Open Host Service** (OHS). A public, stable protocol or API provided by an upstream context.
 - `conformist` — **Conformist** (CF). Downstream adopts the upstream domain model without translation.
@@ -82,7 +82,7 @@ Rules that hold across this context's instances and aggregates; each names the o
 ## Consumptions
 | Consumer | Made By | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- | --- |
-| [Triage Assessment](../triage/services/triage_assessment/index.md) | - | conformist | Patient Directory | Get Patient Summary | open-host-service |
+| [Referral Intake](../triage/services/referral_intake/index.md) | Accept Referral | conformist | Patient Directory | Get Patient Summary | open-host-service |
 | [Patient Directory](services/patient_directory/index.md) | Register Patient On Referral | conformist | Referral Case | Referral Registered | published-language |
 
 

@@ -52,7 +52,7 @@
 <!-- #/boundedcontexts/patient_records&#45;&gt;#/boundedcontexts/triage -->
 <g id="edge1" class="edge">
 <title>#/boundedcontexts/patient_records&#45;&gt;#/boundedcontexts/triage</title>
-<g id="a_edge1"><a xlink:title="Triage&#39;s assessment looks a patient up through Records&#39; own directory and takes what it gets back as published.">
+<g id="a_edge1"><a xlink:title="Referral Intake&#39;s Accept Referral front looks a patient up through Records&#39; own directory and takes what it gets back as published.">
 <path fill="none" stroke="black" d="M80.03,-170.98C77.04,-164.88 74.43,-158.41 72.78,-152 69.36,-138.71 71.94,-124.52 76.73,-111.71"/>
 <polygon fill="black" stroke="black" points="79.86,-113.28 80.59,-102.71 73.43,-110.52 79.86,-113.28"/>
 </a>

@@ -16,10 +16,7 @@ Everything involved in getting a GP-referred patient seen.
 
 
 ## Diagnostics
-| Severity | Rule | Message | Element |
-| --- | --- | --- | --- |
-| error | domain-service-consumes-inside | Domain service "Triage Assessment" consumes "Get Patient Summary" from "Patient Records"; a domain service is the inside of the model, not a client, so let an application service of "Triage" make the call and hand "Triage Assessment" what it needs | `boundedcontexts/triage/services/triage_assessment` |
-
+> No diagnostics.
 
 ## Health
 ### Refactor
@@ -62,10 +59,11 @@ Everything involved in getting a GP-referred patient seen.
 ## Consumptions
 | Consumer | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- |
-| [Triage Assessment](../boundedcontexts/triage/services/triage_assessment/index.md) | conformist | Patient Directory | Get Patient Summary | open-host-service |
-| [Patient Directory](../boundedcontexts/patient_records/services/patient_directory/index.md) | conformist | Referral Case | Referral Registered | published-language |
-| [Scheduling Desk](../boundedcontexts/scheduling/services/scheduling_desk/index.md) | conformist | Referral Case | Referral Accepted | published-language |
 | [Referral Intake](../boundedcontexts/triage/services/referral_intake/index.md) | anti-corruption-layer | Practice System Interface | Referral Submitted | published-language |
+| [Referral Intake](../boundedcontexts/triage/services/referral_intake/index.md) | conformist | Patient Directory | Get Patient Summary | open-host-service |
+| [Patient Directory](../boundedcontexts/patient_records/services/patient_directory/index.md) | conformist | Referral Case | Referral Registered | published-language |
+| [Referral Intake](../boundedcontexts/triage/services/referral_intake/index.md) | - | Referral Case | Accept Referral | - |
+| [Scheduling Desk](../boundedcontexts/scheduling/services/scheduling_desk/index.md) | conformist | Referral Case | Referral Accepted | published-language |
 | [Lab Ordering](../boundedcontexts/triage/services/lab_ordering/index.md) | anti-corruption-layer | Lab Interface | Order Test | open-host-service |
 | [Lab Ordering](../boundedcontexts/triage/services/lab_ordering/index.md) | anti-corruption-layer | Lab Interface | Test Result Reported | published-language |
 	

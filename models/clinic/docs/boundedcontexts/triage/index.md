@@ -14,7 +14,6 @@ Turns a GP referral into a case of our own, decides whether to accept, ask for m
 | Term | Definition | Aliases | Embodied by |
 | --- | --- | --- | --- |
 | **Referral** | A GP referral, once triage holds it as a case of its own. | Case | Referral |
-| **Assessment** | The clinical decision logic a referral is judged against. | - | Triage Assessment |
 
 
 ## Aggregates
@@ -26,12 +25,8 @@ One referral, from the moment it becomes a case of ours.
 	
 ## Services
 
-### [Triage Assessment](services/triage_assessment/index.md)
-The clinical decision logic a referral is judged against. The nurse's own account is that the assessment itself calls out to Records for what is already known about the patient -- not an application service fronting the call -- so that is what is modelled here, even though a domain service is not meant to call outside its own context.
-
-
 ### [Referral Intake](services/referral_intake/index.md)
-Takes what the GP's practice system sends and turns it into a case of our own.
+Takes what the GP's practice system sends and turns it into a case of our own, and fronts the nurse's decision to accept a case.
 
 
 ### [Lab Ordering](services/lab_ordering/index.md)
@@ -54,12 +49,11 @@ Rules that hold across this context's instances and aggregates; each names the o
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
 | Referral Details | A referral, translated out of the GP practice system's own shape into ours. | gpReferralReference: `string` (identifies [GP Practice System](../gp_practice_system/index.md)), requestedSpecialty: `string`, urgency: `string`, clinicalSummary: `string` | Register Referral, Referral Registered |
-| Referral Accepted Details | Which case was accepted, and for which patient. | - | Accept Referral, Referral Accepted |
+| Referral Accepted Details | Which case was accepted, and for which patient. | - | Referral Accepted, Accept Referral |
 | Information Request Details | What further information triage is asking the GP for. | details: `string` | Request More Information, More Information Requested |
 | Consultant Assignment Details | Which consultant an accepted case has been handed to. | consultantId: `string` | Assign Consultant, Case Assigned To Consultant |
 | Lab Test Request Details | The test triage wants run, in our own terms. | testCode: `string` | Send Referral For Testing |
 | Lab Result Details | A lab result, translated out of the lab's own report shape into ours. | resultCode: `string` | Record Lab Result |
-| Patient History Check Request | Which patient the assessment needs to know about. | - | Check Patient History |
 
 
 ## Policies
@@ -81,7 +75,7 @@ Rules that hold across this context's instances and aggregates; each names the o
 | GP Practice System | The practice system's referral message is theirs to change; triage translates it into a case of our own on the way in. | upstream-downstream | published-language | anti-corruption-layer |
 | Laboratory | Triage orders tests through the lab's documented interface and translates its own report format into a case's own terms. | upstream-downstream | open-host-service, published-language | anti-corruption-layer |
 | Clinical Coding Regulator | Every accepted referral's diagnosis must carry a code from the regulator's published coding standard, taken as it is published. | upstream-downstream | published-language | conformist |
-| Patient Records | Triage's assessment looks a patient up through Records' own directory and takes what it gets back as published. | upstream-downstream | open-host-service | conformist |
+| Patient Records | Referral Intake's Accept Referral front looks a patient up through Records' own directory and takes what it gets back as published. | upstream-downstream | open-host-service | conformist |
 
 ### Depended on by
 | With | Description | Type | Upstream Roles | Downstream Roles |
@@ -98,10 +92,11 @@ Rules that hold across this context's instances and aggregates; each names the o
 ## Consumptions
 | Consumer | Made By | Consumed As | Provider | Consumable | Provided As |
 | --- | --- | --- | --- | --- | --- |
-| [Triage Assessment](services/triage_assessment/index.md) | - | conformist | Patient Directory | Get Patient Summary | open-host-service |
-| [Patient Directory](../patient_records/services/patient_directory/index.md) | Register Patient On Referral | conformist | Referral Case | Referral Registered | published-language |
-| [Scheduling Desk](../scheduling/services/scheduling_desk/index.md) | Offer Slot On Acceptance | conformist | Referral Case | Referral Accepted | published-language |
 | [Referral Intake](services/referral_intake/index.md) | Register Referral On Submission | anti-corruption-layer | Practice System Interface | Referral Submitted | published-language |
+| [Referral Intake](services/referral_intake/index.md) | Accept Referral | conformist | Patient Directory | Get Patient Summary | open-host-service |
+| [Patient Directory](../patient_records/services/patient_directory/index.md) | Register Patient On Referral | conformist | Referral Case | Referral Registered | published-language |
+| [Referral Intake](services/referral_intake/index.md) | Accept Referral | - | Referral Case | Accept Referral | - |
+| [Scheduling Desk](../scheduling/services/scheduling_desk/index.md) | Offer Slot On Acceptance | conformist | Referral Case | Referral Accepted | published-language |
 | [Lab Ordering](services/lab_ordering/index.md) | - | anti-corruption-layer | Lab Interface | Order Test | open-host-service |
 | [Lab Ordering](services/lab_ordering/index.md) | Record Lab Result On Receipt | anti-corruption-layer | Lab Interface | Test Result Reported | published-language |
 

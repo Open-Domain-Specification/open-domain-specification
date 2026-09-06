@@ -52,8 +52,8 @@ Rules that hold across this context's instances and aggregates; each names the o
 | Name | Description | Attributes | Used by |
 | --- | --- | --- | --- |
 | Slot Offer Request | Which accepted case, and which patient, is being offered a slot. | referralId: `string` (identifies [Referral](../triage/aggregates/referral_case/index.md)), patientId: `string` (identifies [Patient](../patient_records/aggregates/patient_record/index.md)) | Offer Slot |
-| Booking Confirmed | The patient took the offered slot. | **bookingId**: `string`, slotId: `string`, startTime: `string` | Booking Confirmed, Offer Slot |
-| Patient Waitlisted | The offered slot did not suit the patient, so they were put on the waiting list for a better one instead. Something happened here, just not a booking -- the model has no shape for a second thing that happened, so this is carried as a rejection for want of anywhere better (see DISCOVERY.md). | **bookingId**: `string`, note: `string` (optional) | Patient Waitlisted, Offer Slot |
+| Booking Confirmed | The patient took the offered slot. | **bookingId**: `string`, slotId: `string`, startTime: `string` | Booking Confirmed |
+| Patient Waitlisted | The offered slot did not suit the patient, so they were put on the waiting list for a better one instead -- a second fact, not a refusal, carried under raises alongside the booking (see DISCOVERY.md). | **bookingId**: `string`, note: `string` (optional) | Patient Waitlisted |
 | Booking Cancelled Details | Which booking was cancelled, and why. | reason: `string` (optional) | Booking Cancelled |
 | Cancellation Request | Which booking is being cancelled. | reason: `string` (optional) | Cancel Booking |
 

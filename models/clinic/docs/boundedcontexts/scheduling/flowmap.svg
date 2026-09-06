@@ -22,7 +22,7 @@
 <!-- #/boundedcontexts/scheduling/services/scheduling_desk/provides/offer_slot -->
 <g id="node3" class="node">
 <title>#/boundedcontexts/scheduling/services/scheduling_desk/provides/offer_slot</title>
-<g id="a_node3"><a xlink:title="Offers the patient the next open slot for the case&#39;s specialty. The patient&#39;s answer is not a refusal either way &#45;&#45; see DISCOVERY.md for why the second outcome is carried under rejects.">
+<g id="a_node3"><a xlink:title="Offers the patient the next open slot for the case&#39;s specialty. The patient&#39;s answer is two facts, not a refusal either way: booked, or waitlisted. Neither caller waits synchronously on the answer, so the operation names no returns and no rejects &#45;&#45; it raises whichever of the two happened (see DISCOVERY.md).">
 <polygon fill="#bbdefb" stroke="black" points="410.7,-57.63 320,-57.63 320,-21.63 410.7,-21.63 410.7,-57.63"/>
 <text xml:space="preserve" text-anchor="middle" x="365.35" y="-42.63" font-family="sans-serif" font-size="10.00">Offer Slot</text>
 <text xml:space="preserve" text-anchor="middle" x="365.35" y="-30.63" font-family="sans-serif" font-size="10.00">(Scheduling Desk)</text>
