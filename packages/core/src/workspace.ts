@@ -402,6 +402,16 @@ export class Workspace
 	 * (decision 23, third amendment).
 	 */
 	getAnswerByRef(ref: string): Answer | undefined {
+		// A completion is the answer of an operation that returns nothing, so it
+		// resolves only when there is nothing to return; an operation with an
+		// answer of its own is named by that (decision 13, second amendment).
+		if (ref.endsWith("/completed")) {
+			const operation = this.getConsumableByRef(
+				ref.slice(0, -"/completed".length),
+			);
+			if (!operation || operation.returns) return undefined;
+			return operation.completed();
+		}
 		const [operationRef, rejectionId] = ref.endsWith("/returns")
 			? [ref.slice(0, -"/returns".length)]
 			: ref.split("/rejects/");
@@ -571,13 +581,14 @@ export class Workspace
 			case "attributes":
 				return this.getAttributeByRef(ref);
 			// An answer hangs off the operation it comes back from rather than
-			// off a collection, so the two shapes are read here: a refusal by the
+			// off a collection, so its shapes are read here: a refusal by the
 			// `rejects` segment before the shape's id, and the successful answer
-			// by its final `returns`, which no collection is named.
+			// or the bare completion by a final `returns` or `completed`, which
+			// no collection is named.
 			case "rejects":
 				return this.getAnswerByRef(ref);
 			default:
-				return segments[segments.length - 1] === "returns"
+				return ["returns", "completed"].includes(segments[segments.length - 1])
 					? this.getAnswerByRef(ref)
 					: undefined;
 		}
@@ -1289,14 +1300,15 @@ export class Consumable
 	 * The successful answer: what a caller gets back when this operation does
 	 * what it was asked. An operation that returns nothing has no such answer,
 	 * so asking for one is a mistake in the model that is refused here rather
-	 * than carried as an answer with no shape.
+	 * than carried as an answer with no shape; what it has instead is a
+	 * {@link completed}.
 	 */
 	returned(): Answer {
 		if (!this.returns)
 			throw new Error(
-				`Operation ${this.name} returns nothing, so it has no answer to wait for`,
+				`Operation ${this.name} returns nothing, so it has no answer to wait for; wait on ${this.name}.completed() instead`,
 			);
-		return this.answerFor(this.returns, false);
+		return this.answerFor("returns", this.returns, false);
 	}
 
 	/**
@@ -1305,19 +1317,50 @@ export class Consumable
 	 * a refusal the operation never declared is reported.
 	 */
 	rejected(schema: DataSchema): Answer {
-		return this.answerFor(schema, true);
+		return this.answerFor(`rejects/${schema.ref}`, schema, true);
 	}
 
-	/** Both answers of this operation: what it returns, then what it refuses with. */
+	/**
+	 * The bare completion: this operation came back and did what it was asked,
+	 * with nothing worth naming to say about it.
+	 *
+	 * A command that returns nothing still completes, and a process may wait on
+	 * that: a provisioning workflow that finishes when the activation call
+	 * succeeds names the completion rather than inventing a response shape or
+	 * an event for a non-event (decision 13, second amendment). It is an answer
+	 * with no shape, so it carries no attributes and nothing may be said about
+	 * what it holds.
+	 *
+	 * Only an operation with no `returns` has one — an operation that answers
+	 * with a shape says so through {@link returned}, and naming its completion
+	 * as well would be two names for one call coming back. As with a refusal
+	 * the operation never declared, that is reported by `consumable-kind`
+	 * rather than refused here, because a model with a mistake in it still has
+	 * to load and be validated.
+	 */
+	completed(): Answer {
+		return this.answerFor("completed", undefined, false);
+	}
+
+	/**
+	 * Every answer of this operation: what it comes back with when it succeeds
+	 * — a shape, or the bare completion where it names none — then what it
+	 * refuses with.
+	 */
 	get answers(): Answer[] {
-		return [
-			...(this.returns ? [this.returned()] : []),
-			...this.rejects.map((it) => this.rejected(it)),
-		];
+		const succeeded = this.returns
+			? [this.returned()]
+			: this.type === "operation"
+				? [this.completed()]
+				: [];
+		return [...succeeded, ...this.rejects.map((it) => this.rejected(it))];
 	}
 
-	private answerFor(schema: DataSchema, rejection: boolean): Answer {
-		const key = rejection ? `rejects/${schema.ref}` : "returns";
+	private answerFor(
+		key: string,
+		schema: DataSchema | undefined,
+		rejection: boolean,
+	): Answer {
 		const existing = this.answersGiven.get(key);
 		if (existing) return existing;
 		const answer = new Answer(this, schema, rejection);
@@ -1390,56 +1433,85 @@ export class Consumable
  * with the same `PaymentDeclined`; a reactor waiting on the shape would be
  * woken by both, and the reaction walk would draw a causal step from a call
  * nobody was waiting on. Naming the origin says which call came back:
- * `<operation ref>/returns` is the successful answer and
- * `<operation ref>/rejects/<schema id>` one of its refusals (decision 23,
- * third amendment).
+ * `<operation ref>/returns` is the successful answer, `<operation
+ * ref>/rejects/<schema id>` one of its refusals (decision 23, third
+ * amendment), and `<operation ref>/completed` the bare completion of an
+ * operation that returns nothing (decision 13, second amendment).
  *
- * Answers are made by {@link Consumable.returned} and
- * {@link Consumable.rejected} and kept by the operation, so the same answer is
- * the same object wherever it is named and the walk can key its listeners by
- * it.
+ * A completion is the one answer with no shape. There is nothing to say about
+ * what it carries, because it carries nothing: it says only that the call came
+ * back having done what it was asked, which is the whole of what the caller of
+ * a command learns. It is still named by its origin, so it still wakes only
+ * whoever named that call.
+ *
+ * Answers are made by {@link Consumable.returned}, {@link Consumable.rejected}
+ * and {@link Consumable.completed} and kept by the operation, so the same
+ * answer is the same object wherever it is named and the walk can key its
+ * listeners by it.
  */
 export class Answer implements Referenceable {
 	/** The operation this answer comes back from. */
 	readonly operation: Consumable;
-	/** The shape it comes back as. */
-	readonly schema: DataSchema;
+	/** The shape it comes back as; absent on a bare completion. */
+	readonly schema?: DataSchema;
 	/** Whether this is a refusal rather than the successful answer. */
 	readonly rejection: boolean;
 
-	constructor(operation: Consumable, schema: DataSchema, rejection: boolean) {
+	constructor(
+		operation: Consumable,
+		schema: DataSchema | undefined,
+		rejection: boolean,
+	) {
 		this.operation = operation;
 		this.schema = schema;
 		this.rejection = rejection;
 	}
 
+	/**
+	 * Whether this is the bare completion of an operation that returns nothing:
+	 * the call came back, and there is no shape to read.
+	 */
+	get completion(): boolean {
+		return this.schema === undefined;
+	}
+
 	get ref(): string {
+		if (!this.schema) return `${this.operation.ref}/completed`;
 		return this.rejection
 			? `${this.operation.ref}/rejects/${this.schema.id}`
 			: `${this.operation.ref}/returns`;
 	}
 
-	/** The shape's name: what the answer is read as in a list of triggers. */
+	/**
+	 * What the answer is read as in a list of triggers, and what labels the one
+	 * flow-map edge it carries: the shape it came back as, or — for a
+	 * completion, which came back as nothing — that the call completes.
+	 */
 	get name(): string {
-		return this.schema.name;
+		return this.schema ? this.schema.name : "completes";
 	}
 
-	/** The shape's description, which is what the answer carries. */
+	/**
+	 * The shape's description, which is what the answer carries. A completion
+	 * carries nothing, so what it says is what the call it came back from says.
+	 */
 	get description(): string | undefined {
-		return this.schema.description;
+		return this.schema ? this.schema.description : this.operation.description;
 	}
 
 	/**
 	 * Whether the answer is a list of the shape rather than one of it. Only a
-	 * successful answer may be: a refusal says why the call was told no, which
-	 * happens once (decision 13, amended).
+	 * successful answer with a shape may be: a refusal says why the call was
+	 * told no, which happens once, and a completion has nothing to be many of
+	 * (decision 13, amended).
 	 */
 	get many(): boolean {
-		return !this.rejection && this.operation.returnsMany;
+		return !this.rejection && !!this.schema && this.operation.returnsMany;
 	}
 
 	/** Where the answer comes from, in words: "X returns many Y". */
 	get origin(): string {
+		if (!this.schema) return `${this.operation.name} completes`;
 		const verb = this.rejection
 			? "rejects with"
 			: this.many
@@ -1458,8 +1530,15 @@ export class Answer implements Referenceable {
 	 * naming a schema, so the DSL can name one the operation never declared;
 	 * `consumable-kind` reports that rather than the constructor refusing it,
 	 * because a model with a mistake in it still has to load and be validated.
+	 *
+	 * A completion is declared by an operation that names no `returns`. An
+	 * operation answering with a shape says so through that shape, so its bare
+	 * completion would be a second name for one call coming back; an event is
+	 * never called at all. Neither has a completion to wait on.
 	 */
 	get declared(): boolean {
+		if (!this.schema)
+			return this.operation.type === "operation" && !this.operation.returns;
 		return this.rejection
 			? this.operation.rejects.includes(this.schema)
 			: this.operation.returns === this.schema;
@@ -1838,6 +1917,8 @@ export type InvariantAttributes = {
 	description: string;
 	/** Whether the rule is a precondition; see {@link Invariant.precondition}. */
 	precondition?: boolean;
+	/** Whether the rule is a postcondition; see {@link Invariant.postcondition}. */
+	postcondition?: boolean;
 	id?: string;
 };
 /**
@@ -1885,6 +1966,19 @@ export class Invariant
 	 * weaken the rule (decision 27, second amendment).
 	 */
 	precondition: boolean;
+	/**
+	 * Whether the rule is a postcondition: a guarantee about what the operation
+	 * it names answers with. Every returned itinerary meets the requested
+	 * deadline; every quoted premium is inside the band the schedule allows.
+	 *
+	 * It is the third thing an invariant can be, and neither of the other two.
+	 * The answer does not exist before the call, so there is nothing to check
+	 * beforehand, and it is saved nowhere afterwards, so no aggregate keeps it
+	 * true: what holds it is the operation, every time it answers (decision 19,
+	 * third amendment). Exclusive with {@link precondition}, which is
+	 * `postcondition-names-operation`'s to report.
+	 */
+	postcondition: boolean;
 
 	get path(): string {
 		return `${this.owner.path}/invariants/${this.id}`;
@@ -1916,6 +2010,7 @@ export class Invariant
 		this.name = name;
 		this.description = attributes.description;
 		this.precondition = attributes.precondition ?? false;
+		this.postcondition = attributes.postcondition ?? false;
 		this.owner = owner;
 		this.owner.invariants.set(this.id, this);
 	}
@@ -1947,6 +2042,7 @@ export class Invariant
 			name: this.name,
 			description: this.description,
 			precondition: this.precondition || undefined,
+			postcondition: this.postcondition || undefined,
 			constrains: this.targets.map((it) => ({ $ref: it.ref })),
 		};
 	}
@@ -2465,10 +2561,12 @@ export class DataSchema
  * operation is, so delivery is still implied by the consumable's type and
  * nothing new says it (decision 23, second amendment).
  *
- * An answer is named by its origin — `op.returned()`, `op.rejected(schema)` —
- * and never by the shape alone, so waiting on a refusal wakes the reactor for
- * that call and not for every other operation that happens to refuse with the
- * same schema (see {@link Answer}).
+ * An answer is named by its origin — `op.returned()`, `op.rejected(schema)`,
+ * `op.completed()` — and never by the shape alone, so waiting on a refusal
+ * wakes the reactor for that call and not for every other operation that
+ * happens to refuse with the same schema (see {@link Answer}). A command that
+ * returns nothing still comes back, and `op.completed()` is that: an answer
+ * with no shape, which is all a caller of such a call ever learns.
  */
 export type ReactionTrigger = Consumable | Answer;
 
@@ -2570,7 +2668,10 @@ export class Policy implements Visitable, SchemaConvertible<ods.PolicySchema> {
 
 export type ProcessAttributes = {
 	description: string;
-	/** The events that begin an instance; also settable with `.starts(...)`. */
+	/**
+	 * The events, or the own-context commands, that begin an instance; also
+	 * settable with `.starts(...)`.
+	 */
 	starts?: Consumable[];
 	/**
 	 * The events, answers and deadlines it waits for while alive; also settable
@@ -2729,10 +2830,12 @@ export class Deadline
  * event, because the commonest process is a call and a branch on what came
  * back (see {@link ReactionTrigger}). It may also be one of the process's own
  * deadlines, because the second commonest is a wait with a time limit on it
- * (see {@link Deadline}). What starts one is an event: an answer is what a
- * caller gets back from a call and a deadline is counted from the moment an
- * instance began waiting, so in both cases something was already there, and an
- * instance that did not exist before cannot have been.
+ * (see {@link Deadline}). What starts one is an event or a command of this
+ * process's own context — "open a claim" starts a saga as surely as a claim
+ * being opened does. An answer and a deadline start nothing: a caller has to
+ * have made the call to get an answer, and a deadline is counted from the
+ * moment an instance began waiting, so in both cases something was already
+ * there, and an instance that did not exist before cannot have been.
  */
 export class Process
 	implements Visitable, Evidenced, SchemaConvertible<ods.ProcessSchema>
@@ -2741,7 +2844,7 @@ export class Process
 	name: string;
 	description: string;
 	boundedcontext: BoundedContext;
-	/** Events that begin an instance. */
+	/** The events and own-context commands that begin an instance. */
 	startEvents: Consumable[] = [];
 	/** The events, answers and deadlines an instance waits for while it is alive. */
 	events: ProcessTrigger[] = [];
@@ -2780,7 +2883,12 @@ export class Process
 		this.ends(...(attributes.ends ?? []));
 	}
 
-	/** Adds an event that begins an instance. */
+	/**
+	 * Adds something that begins an instance: an event, or an operation of this
+	 * process's own context — the command that creates one. A foreign
+	 * operation is `process-in-context`'s to report, as a foreign command in
+	 * `issues` is.
+	 */
 	starts(...events: Consumable[]): this {
 		return this.add(this.startEvents, events);
 	}

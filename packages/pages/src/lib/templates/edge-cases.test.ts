@@ -49,13 +49,45 @@ describe("the tactical templates on the alternate branches", () => {
 		const rows = [...section.querySelectorAll("tbody tr")].map(
 			(r) => r.textContent ?? "",
 		);
-		expect(rows).toHaveLength(2);
+		expect(rows).toHaveLength(3);
 		expect(rows[0]).toContain("Cross-Instance Invariant");
 		expect(rows[0]).toContain("Plain Entity");
 		expect(rows[0]).toContain("Silent Operation");
 		// A rule naming nothing binds the whole boundary, and here that is the
 		// context rather than an aggregate.
 		expect(rows[1]).toContain("whole context");
+		expect(rows[2]).toContain("Answer Guarantee");
+	});
+
+	it("InvariantPage: a postcondition says it is a guarantee about the answer", () => {
+		const { container } = render(Harness, {
+			model,
+			ref: contextInvariantRef("main_context", "answer_guarantee").$ref,
+		});
+		expect(container.querySelector(".page-header .keyword")).toHaveTextContent(
+			"postcondition",
+		);
+		const guards = container.querySelector("#guards") as HTMLElement;
+		expect(guards).toHaveTextContent("Answering Operation");
+		expect(guards.querySelector("p")?.textContent).toContain("guarantee about");
+		// What it constrains is a field of the shape the call answers with.
+		expect(container.querySelector("#constrains")).toHaveTextContent("Result");
+	});
+
+	it("PolicyPage: a completion is a trigger with no shape, linked to the call", () => {
+		const { container } = render(Harness, {
+			model,
+			ref: policyRef("main_context", "completion_policy").$ref,
+		});
+		const when = container.querySelector("#when") as HTMLElement;
+		expect(when).toHaveTextContent("completes");
+		expect(when).toHaveTextContent("completion");
+		// No shape to link to, so the name links to the call that came back.
+		expect(
+			[...when.querySelectorAll("a")].map((a) => a.getAttribute("href")),
+		).toContain(
+			"#/boundedcontexts/main_context/aggregates/rootless_aggregate/provides/silent_operation",
+		);
 	});
 
 	it("InvariantPage: a context's rule says which kind it is and which boundary keeps it", () => {

@@ -206,10 +206,11 @@ describe("ContextPage", () => {
 		expect(screen.getAllByText("no root")[0]).toHaveClass("warn");
 		expect(screen.getByText("unused")).toHaveClass("keyword");
 		expect(screen.getAllByText("not modelled").length).toBeGreaterThan(0);
-		// The policy fires on nothing and issues nothing, the idle process starts
-		// on nothing, waits for nothing, issues nothing and ends on nothing, the
-		// timed one waits for nothing and issues nothing, and none of the
-		// context's three value objects is held by an aggregate.
+		// The idle policy fires on nothing and issues nothing, the completion
+		// policy issues nothing, the idle process starts on nothing, waits for
+		// nothing, issues nothing and ends on nothing, the timed one issues
+		// nothing, and none of the context's three value objects is held by an
+		// aggregate.
 		expect(screen.getAllByText("nothing").length).toBe(11);
 		expect(
 			screen.getByText("The schema has no attributes."),

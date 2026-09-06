@@ -58,10 +58,10 @@ const KIND = {
 		empty:
 			"No operation names this rule; it is checked wherever the aggregate is saved.",
 	},
-	// A precondition is a different promise from a rule kept true afterwards,
-	// and the page says which — but it reads that from the flag the invariant
-	// sets, never from the fact that an operation is named (decision 27's
-	// second amendment).
+	// A precondition and a postcondition are different promises from a rule
+	// kept true afterwards, and the page says which — but it reads that from
+	// the flag the invariant sets, never from the fact that an operation is
+	// named (decision 27's second amendment).
 	precondition: {
 		label: "precondition",
 		title:
@@ -71,6 +71,19 @@ const KIND = {
 			"The operations this rule is checked before. What it was checked against — a balance, an entitlement, another context's answer — may move on the moment the call returns, so nothing re-establishes it afterwards.",
 		empty:
 			"No operation names this rule, so nothing checks it: a precondition is checked before something runs, and the model has to say what.",
+	},
+	// The mirror of a precondition: not checked on the way in but guaranteed of
+	// what comes back, which did not exist until the call ran (decision 19,
+	// third amendment).
+	postcondition: {
+		label: "postcondition",
+		title:
+			"Guaranteed of what the operations it names answer with, every time they answer.",
+		lead: "The elements this rule is about, which are the fields of what the guarded call answers or refuses with.",
+		guards:
+			"The operations this rule is a guarantee about. The answer does not exist before the call runs and is saved nowhere after it, so nothing but the operation itself keeps this true.",
+		empty:
+			"No operation names this rule, so there is no answer for it to be about: a postcondition is a guarantee about what a call comes back with, and the model has to say which call.",
 	},
 	context: {
 		label: "context invariant",
@@ -88,9 +101,21 @@ const KIND = {
 // what each target is: a consumable is an operation the rule guards, anything
 // else is something the rule is about.
 const guarded = $derived(i.guarded);
-// Which of the two an invariant is, the invariant states: naming an operation
-// says who keeps the rule, and `precondition` says whether it survives them.
-const words = $derived(KIND[i.precondition ? "precondition" : i.kind]);
+// Which of the three an invariant is, the invariant states: naming an
+// operation says who keeps the rule, and `precondition` and `postcondition`
+// say whether it is checked before one, guaranteed of what it answers with, or
+// still true after it. The two flags are exclusive
+// (`postcondition-names-operation`), so the order here decides nothing a valid
+// model can see.
+const words = $derived(
+	KIND[
+		i.precondition
+			? "precondition"
+			: i.postcondition
+				? "postcondition"
+				: i.kind
+	],
+);
 const targets = $derived(i.targets.filter((t) => !(t instanceof Consumable)));
 const columns: Column[] = [
 	{ key: "name", label: "Element" },

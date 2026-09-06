@@ -5211,7 +5211,6 @@
               "consumable": {
                 "$ref": "#/boundedcontexts/cards/services/cards_app/provides/authorise_card"
               },
-              "pattern": "conformist",
               "by": [
                 {
                   "$ref": "#/boundedcontexts/card_co/services/card_co_authorisation_feed/provides/request_authorisation"
@@ -5359,23 +5358,7 @@
       "downstreamRoles": [
         "anti-corruption-layer"
       ],
-      "description": "CardCo's format is CardCo's: it dictates the message every authorisation arrives in, and Cards translates it at its own boundary rather than adopting it"
-    },
-    {
-      "type": "upstream-downstream",
-      "upstream": {
-        "$ref": "#/boundedcontexts/cards"
-      },
-      "downstream": {
-        "$ref": "#/boundedcontexts/card_co"
-      },
-      "upstreamRoles": [
-        "open-host-service"
-      ],
-      "downstreamRoles": [
-        "conformist"
-      ],
-      "description": "The other half of the same integration: the operation is the bank's, offered as an open host, and CardCo calls it as it stands"
+      "description": "CardCo's format is CardCo's: it dictates the message every authorisation arrives in, and Cards translates it at its own boundary rather than adopting it. The bank provides the operation and offers it as an open host; who provides is not who is upstream"
     },
     {
       "type": "upstream-downstream",

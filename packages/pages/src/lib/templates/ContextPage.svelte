@@ -46,7 +46,7 @@ import Lockup from "../atoms/Lockup.svelte";
 import AttributeTable from "../molecules/AttributeTable.svelte";
 import ConsumesTable from "../molecules/ConsumesTable.svelte";
 import { EXTERNAL, MUD } from "../molecules/ContextLockup.svelte";
-import { kindOf } from "../molecules/element-kind";
+import { answerRef, kindOf } from "../molecules/element-kind";
 import Joined from "../molecules/Joined.svelte";
 import ProvidesTable from "../molecules/ProvidesTable.svelte";
 import TeamLockup from "../molecules/TeamLockup.svelte";
@@ -123,11 +123,12 @@ const serviceColumns: Column[] = [
  * What one cell of a reaction's row links to and says. An answer has no page
  * of its own, so it links to the shape it came back as and names the call it
  * came back from in the tooltip: two operations may answer with one shape, and
- * the row has to say which one this reaction waits on (decision 23).
+ * the row has to say which one this reaction waits on (decision 23). A
+ * completion came back as nothing, so it links to the call itself.
  */
 const triggerLink = (trigger: ProcessTrigger) => {
 	if (trigger instanceof Answer)
-		return { ref: trigger.schema.ref, title: trigger.origin };
+		return { ref: answerRef(trigger), title: trigger.origin };
 	// A deadline has no page either: it is declared on the process, and how
 	// long the instance had is the whole of what it says.
 	if (trigger instanceof Deadline)
