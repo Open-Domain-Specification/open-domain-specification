@@ -27,6 +27,27 @@
 	--vscode-charts-green: #388a34;
 	--vscode-editorWarning-foreground: #bf8803;
 	--vscode-editorError-foreground: #e51400;
+	--vscode-widget-shadow: rgba(0, 0, 0, 0.16);
+	--vscode-textLink-activeForeground: #005fb8;
+	--vscode-focusBorder: #005fb8;
+	--vscode-contrastBorder: transparent;
+	--vscode-contrastActiveBorder: transparent;
+	--vscode-list-hoverBackground: #f2f2f2;
+	--vscode-list-activeSelectionBackground: #0060c0;
+	--vscode-list-activeSelectionForeground: #ffffff;
+	--vscode-editorHoverWidget-background: #f8f8f8;
+	--vscode-editorHoverWidget-border: #c8c8c8;
+	--vscode-editorHoverWidget-foreground: #3b3b3b;
+	--vscode-symbolIcon-classForeground: #d67e00;
+	--vscode-symbolIcon-eventForeground: #d67e00;
+	--vscode-symbolIcon-fieldForeground: #007acc;
+	--vscode-symbolIcon-functionForeground: #652d90;
+	--vscode-symbolIcon-methodForeground: #652d90;
+	--vscode-symbolIcon-constantForeground: #3b3b3b;
+	--vscode-symbolIcon-moduleForeground: #3b3b3b;
+	--vscode-symbolIcon-namespaceForeground: #3b3b3b;
+	--vscode-symbolIcon-packageForeground: #3b3b3b;
+	--vscode-symbolIcon-structForeground: #3b3b3b;
 }
 @media (prefers-color-scheme: dark) {
 	:root {
@@ -47,6 +68,27 @@
 		--vscode-charts-green: #89d185;
 		--vscode-editorWarning-foreground: #cca700;
 		--vscode-editorError-foreground: #f14c4c;
+		--vscode-widget-shadow: rgba(0, 0, 0, 0.36);
+		--vscode-textLink-activeForeground: #4daafc;
+		--vscode-focusBorder: #0078d4;
+		--vscode-contrastBorder: transparent;
+		--vscode-contrastActiveBorder: transparent;
+		--vscode-list-hoverBackground: #2a2d2e;
+		--vscode-list-activeSelectionBackground: #04395e;
+		--vscode-list-activeSelectionForeground: #ffffff;
+		--vscode-editorHoverWidget-background: #202020;
+		--vscode-editorHoverWidget-border: #454545;
+		--vscode-editorHoverWidget-foreground: #cccccc;
+		--vscode-symbolIcon-classForeground: #ee9d28;
+		--vscode-symbolIcon-eventForeground: #ee9d28;
+		--vscode-symbolIcon-fieldForeground: #75beff;
+		--vscode-symbolIcon-functionForeground: #b180d7;
+		--vscode-symbolIcon-methodForeground: #b180d7;
+		--vscode-symbolIcon-constantForeground: #cccccc;
+		--vscode-symbolIcon-moduleForeground: #cccccc;
+		--vscode-symbolIcon-namespaceForeground: #cccccc;
+		--vscode-symbolIcon-packageForeground: #cccccc;
+		--vscode-symbolIcon-structForeground: #cccccc;
 	}
 }
 
