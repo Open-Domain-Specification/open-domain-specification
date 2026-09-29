@@ -14,4 +14,15 @@ describe("rule cases: the family map", () => {
 			RULE_CATALOG.map((r) => r.rule).sort(),
 		);
 	});
+
+	// Each family's own test file proves that the rules it marks covered have a
+	// pair; this is what stops the map going back. A rule added to the
+	// catalogue fails the test above until it is classified, and this one until
+	// it has both cases.
+	it("has no rule left todo: all of the catalogue has both cases", () => {
+		const todo = Object.entries(RULE_FAMILIES)
+			.filter(([, entry]) => entry.status !== "covered")
+			.map(([rule]) => rule);
+		expect(todo).toEqual([]);
+	});
 });

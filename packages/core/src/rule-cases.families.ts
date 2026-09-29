@@ -32,7 +32,6 @@ const covered = (family: RuleFamily): FamilyEntry => ({
 	family,
 	status: "covered",
 });
-const todo = (family: RuleFamily): FamilyEntry => ({ family, status: "todo" });
 
 export const RULE_FAMILIES: Record<string, FamilyEntry> = {
 	// Slice 1: what crosses a boundary, and who may hold what of a neighbour.
@@ -63,9 +62,9 @@ export const RULE_FAMILIES: Record<string, FamilyEntry> = {
 	"reaction-cycle": covered("callers-and-answer-routing"),
 
 	// The file itself: loading, versions, refs, unknown fields.
-	"ods-version": todo("file-and-loading"),
-	"unresolved-ref": todo("file-and-loading"),
-	"unknown-field": todo("file-and-loading"),
+	"ods-version": covered("file-and-loading"),
+	"unresolved-ref": covered("file-and-loading"),
+	"unknown-field": covered("file-and-loading"),
 
 	// Aggregates, their entities and their identities.
 	"aggregate-root": covered("aggregates-and-identity"),
