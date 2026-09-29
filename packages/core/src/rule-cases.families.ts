@@ -79,12 +79,12 @@ export const RULE_FAMILIES: Record<string, FamilyEntry> = {
 	"specialisation-redeclares": covered("aggregates-and-identity"),
 
 	// Value objects, attributes and relations between them.
-	"value-object-shape": todo("value-objects-and-specialisation"),
-	"attribute-relation-coherence": todo("value-objects-and-specialisation"),
-	"relation-for-resolves": todo("value-objects-and-specialisation"),
-	"attribute-one-shape": todo("value-objects-and-specialisation"),
-	"returns-on-operation": todo("value-objects-and-specialisation"),
-	"rejects-on-operation": todo("value-objects-and-specialisation"),
+	"value-object-shape": covered("value-objects-and-specialisation"),
+	"attribute-relation-coherence": covered("value-objects-and-specialisation"),
+	"relation-for-resolves": covered("value-objects-and-specialisation"),
+	"attribute-one-shape": covered("value-objects-and-specialisation"),
+	"returns-on-operation": covered("value-objects-and-specialisation"),
+	"rejects-on-operation": covered("value-objects-and-specialisation"),
 
 	// Invariants and the contracts an operation is held to.
 	"invariant-in-value-object": covered("invariants"),

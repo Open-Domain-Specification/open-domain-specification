@@ -68,6 +68,7 @@ export const operation = (
 		pattern?: "open-host-service";
 		rejects?: DataSchema[];
 		schema?: DataSchema;
+		returns?: DataSchema;
 	} = {},
 ) => on.provides(name, { description: "", type: "operation", ...extra });
 
