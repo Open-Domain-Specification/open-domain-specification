@@ -77,12 +77,20 @@ export class ODSConsumableMap {
 
 			const sourceNode = this.addNode(memberNode(consumption.consumer));
 
+			const relationship = consumption.relationship;
 			this.addEdge({
 				source: sourceNode,
 				target: targetSlot,
 				sourcePattern: consumption.pattern,
 				targetPattern: consumption.consumable.pattern,
 				by: consumption.by.map((it) => it.name),
+				...(relationship && {
+					agreement: {
+						name: relationship.name,
+						type: relationship.type,
+						ref: relationship.ref,
+					},
+				}),
 			});
 		}
 	}
@@ -153,4 +161,11 @@ export type ODSConsumptionMapEdge = {
 	 * name. Empty means the whole consumer, which is the common case.
 	 */
 	by: string[];
+	/**
+	 * The agreement between the two contexts this exchange runs under, where the
+	 * consumption names one. Absent means the pair's only agreement, which is
+	 * the common case; `name` is absent where that agreement is unnamed.
+	 * `ref` is the relationship's page.
+	 */
+	agreement?: { name?: string; type: string; ref: string };
 };
