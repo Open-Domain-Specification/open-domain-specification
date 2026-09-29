@@ -89,6 +89,48 @@ export async function expectProseRow(description: Locator): Promise<void> {
 }
 
 /**
+ * The grow column of the first row of a `DataTable`, measured in the browser:
+ * its rendered width, its computed `min-width` (the prose floor, 24ch, which
+ * is about 197px in the 13px body font and a different width in any other),
+ * and by how much the table's frame overflows sideways. Asserting against the
+ * computed floor keeps the tests true on every machine's fonts.
+ */
+export async function growColumn(table: Locator): Promise<{
+	width: number;
+	floor: number;
+	overflow: number;
+}> {
+	const cell = table.locator("tbody tr:not(.group, .detail) td.grow").first();
+	await cell.scrollIntoViewIfNeeded();
+	return cell.evaluate((el) => {
+		const frame = el.closest(".frame") as HTMLElement;
+		return {
+			width: el.getBoundingClientRect().width,
+			floor: Number.parseFloat(getComputedStyle(el).minWidth),
+			overflow: frame.scrollWidth - frame.clientWidth,
+		};
+	});
+}
+
+/**
+ * The design's rule for a table's frame: it scrolls sideways only when the
+ * prose cannot have its floor. So the prose never falls under the floor, a
+ * frame that scrolls has its prose at the floor (the scroll is the escape
+ * hatch), and a frame whose prose is above the floor does not scroll.
+ */
+export async function expectScrollOnlyAtTheFloor(
+	table: Locator,
+): Promise<{ atFloor: boolean; overflow: number }> {
+	const { width, floor, overflow } = await growColumn(table);
+	expect(floor).toBeGreaterThan(0);
+	expect(width).toBeGreaterThanOrEqual(floor - 1);
+	const atFloor = width - floor <= 1;
+	if (overflow > 0) expect(atFloor).toBe(true);
+	if (!atFloor) expect(overflow).toBe(0);
+	return { atFloor, overflow };
+}
+
+/**
  * The page has one direction of travel. A frame inside it may scroll sideways
  * -- that is the design's escape hatch when a table's columns cannot fit --
  * but the document itself never does, on any machine's fonts.

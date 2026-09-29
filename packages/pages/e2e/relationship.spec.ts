@@ -1,10 +1,14 @@
 import { PATTERNS } from "@open-domain-specification/core";
 import { expect, test } from "@playwright/test";
 import {
+	EXPORT_ORIGIN,
 	expectNoSidewaysScroll,
 	expectProseRow,
+	expectScrollOnlyAtTheFloor,
+	growColumn,
 	servePetstore,
 	viewerAt,
+	WORKSPACE_NAME,
 	wrapOf,
 } from "./helpers";
 
@@ -14,6 +18,8 @@ import {
  */
 
 const SALES_REF = "#/boundedcontexts/sales_bc";
+/** Where the export is served; overridable so a run can pick its own port. */
+const EXPORT = process.env.ODS_E2E_EXPORT_ORIGIN ?? EXPORT_ORIGIN;
 /** The hover text a role code carries, read from core rather than restated. */
 const ACL_SUMMARY = PATTERNS["anti-corruption-layer"].summary;
 const CATALOG_SALES_REF =
@@ -262,8 +268,6 @@ test("a role code on the relationship page discloses the same card, and the evid
  * for its six columns, which is the width the design's narrow tier is for.
  */
 const BESIDE_THE_TREE = { width: 1300, height: 900 };
-/** 24ch at the 13px body size, the floor a prose column keeps. */
-const PROSE_FLOOR = 24 * 7;
 
 test("beside the site tree the Strategic position keeps its prose readable, its rows on their first line, and its tokens whole", async ({
 	page,
@@ -277,7 +281,8 @@ test("beside the site tree the Strategic position keeps its prose readable, its 
 	// Before the narrow tier the fixed columns took 641 of 760px and the
 	// description fell to a word a line: 119px wide, 111px tall.
 	const description = await first.locator(".description").boundingBox();
-	expect(description?.width ?? 0).toBeGreaterThanOrEqual(PROSE_FLOOR);
+	const prose = await growColumn(table);
+	expect(prose.width).toBeGreaterThanOrEqual(prose.floor - 1);
 
 	// And the row stays short, said in the description's own lines rather than
 	// in pixels, which are only ever the runner's fonts (see `expectProseRow`).
@@ -307,6 +312,7 @@ test("beside the site tree the Strategic position keeps its prose readable, its 
 	// prose keeps its floor, the row stays on the description's own lines,
 	// cells align to the first line, tokens stay whole, and the page below
 	// keeps its single direction of travel.
+	await expectScrollOnlyAtTheFloor(table);
 	await expectNoSidewaysScroll(page);
 });
 
@@ -319,15 +325,64 @@ test("narrower still, the Strategic position scrolls inside its own frame and th
 	const first = table.locator("tbody tr:not(.group)").first();
 	await first.scrollIntoViewIfNeeded();
 
-	// The prose keeps its floor, so the columns no longer fit 560px.
-	const description = await first.locator(".description").boundingBox();
-	expect(description?.width ?? 0).toBeGreaterThanOrEqual(PROSE_FLOOR);
+	// The prose keeps its floor (the column's computed `min-width`, 24ch), so
+	// the columns no longer fit 560px.
+	const { width, floor } = await growColumn(table);
+	expect(width).toBeGreaterThanOrEqual(floor - 1);
 	const frame = table.locator(".frame");
 	expect(
 		await frame.evaluate((el) => el.scrollWidth - el.clientWidth),
 	).toBeGreaterThan(0);
 	await expectNoSidewaysScroll(page);
 });
+
+/**
+ * Card 42 / issue 42. The frame scrolls sideways only when the prose cannot
+ * have its floor (24ch, about 197px in the 13px font). At 1300px with the
+ * tree the columns need 761.5px of the 760px on offer, the prose is at its
+ * floor, and the frame scrolls by the 2px the floor needs: that is the
+ * design working, not a rounding defect. Asserted in the design's own terms
+ * so it holds on every machine's fonts: the page never scrolls, a scrolling
+ * frame has its prose at the floor, and a frame with room does not scroll.
+ */
+for (const [origin, name] of [
+	["viewer", undefined],
+	["export", EXPORT],
+] as const) {
+	for (const width of [1300, 1600]) {
+		test(`${origin} at ${width}px with the tree: the Strategic position frame scrolls only when the prose is at its floor`, async ({
+			browser,
+			baseURL,
+		}) => {
+			const context = await browser.newContext({
+				viewport: { width, height: 900 },
+				baseURL: name ?? baseURL,
+			});
+			const page = await context.newPage();
+			if (name) {
+				await page.goto("/");
+				await page.getByRole("link", { name: WORKSPACE_NAME }).click();
+				await page.evaluate((ref) => {
+					location.hash = ref;
+				}, SALES_REF);
+			} else {
+				await servePetstore(page);
+				await page.goto(viewerAt(SALES_REF));
+			}
+			const table = page.locator(".strategic-position");
+			await expect(table.locator("tbody tr").first()).toBeVisible();
+
+			const { atFloor, overflow } = await expectScrollOnlyAtTheFloor(table);
+			await expectNoSidewaysScroll(page);
+			// A wide viewport is the case the frame has room for.
+			if (width === 1600) {
+				expect(atFloor).toBe(false);
+				expect(overflow).toBe(0);
+			}
+			await context.close();
+		});
+	}
+}
 
 test("beside the site tree the pattern card stays inside the viewport, opens above a word near the bottom, and closes on scroll", async ({
 	page,
