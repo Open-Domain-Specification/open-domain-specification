@@ -235,6 +235,7 @@ ${markdownTable(
 		"Consumer",
 		"Made By",
 		"Consumed As",
+		"Agreement",
 		"Provider",
 		"Consumable",
 		"Provided As",
@@ -245,6 +246,7 @@ ${markdownTable(
 			// Absent means the whole consumer, which is the common case.
 			it.by.map((by) => by.name).join(", ") || "-",
 			it.pattern ?? "-",
+			it.relationship?.name ?? it.relationship?.type ?? "-",
 			it.consumable.provider.name,
 			it.consumable.name,
 			it.consumable.pattern ?? "-",
