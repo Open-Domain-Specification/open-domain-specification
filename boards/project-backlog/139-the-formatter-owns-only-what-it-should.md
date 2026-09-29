@@ -4,7 +4,7 @@ labels: [tooling]
 priority: medium
 agent: developer
 live: false
-updatedAt: 2026-09-29T21:00:00.000Z
+updatedAt: 2026-09-29T21:20:52.000Z
 ---
 # The formatter owns only what it should
 
@@ -33,3 +33,4 @@ Issue #58, a child of epic #60. Running biome at the root reported 23 errors and
 - **lead** (2026-09-29T16:20:00.000Z): Reviewed. Each lint fix is behaviour-neutral, and the one suppression gives its reason. Gate green on 9ce986b0. The card stays in `doing` until the PR merges. Excluding `packages/skill/skill/references` as a whole costs nothing today, because biome formats no Markdown there. The unconfirmed claim that `!**/.claude` keeps agent worktrees out of a run from the main checkout is to be checked on develop once this merges.
 - **lead** (2026-09-29T20:00:00.000Z): Confirmed on the combined epic 60 branch, run from the main checkout while agent worktrees existed under `.claude/worktrees`: `npx @biomejs/biome check .` checked 553 files and made no fixes, so `!**/.claude` keeps the worktrees out.
 - **lead** (2026-09-29T21:00:00.000Z): Landed. PR #72 was merged into develop by the owner as c26ca28 after review, and post-merge CI run 36583350831 is green (test, e2e). Issue #58 closed; the card moves to `done`.
+- **lead** (2026-09-29T21:20:52.000Z): Correction. The lead's entries above carry timestamps the lead wrote by hand, not the times the events happened. From repository evidence: the entry stamped 2026-09-29T16:20:00.000Z was committed at 2026-09-29T13:17:35Z (commit ba724167); the entry stamped 2026-09-29T20:00:00.000Z was committed at 2026-09-29T14:04:20Z (commit 39a12662); the entry stamped 2026-09-29T21:00:00.000Z was committed at 2026-09-29T14:39:35Z (commit 8d4751c1). PR #72 merged at 2026-09-29T14:31:45Z (GitHub's record). The commit times are when each entry was written. When the gate runs they report actually ran cannot be reconstructed, beyond falling before the commit that records them. The entries stay as written.
