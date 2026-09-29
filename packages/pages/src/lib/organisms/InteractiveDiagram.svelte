@@ -37,6 +37,9 @@ import DisclosureCard from "./DisclosureCard.svelte";
 /**
  * What Svelte Flow tells a screen reader about a node, in words that are true
  * here: nothing on these maps is selected, moved or deleted, a node opens its page.
+ * Edges are not tab stops at all (`edgesFocusable={false}` below): clicking a line does
+ * nothing on any of the four maps, and the badges on a context edge are their own buttons,
+ * so a stop on the line would announce "select an edge" for an action that does not exist.
  */
 const NODE_KEYS = {
 	"node.a11yDescription.default": "Press enter or space to open its page.",
@@ -121,7 +124,7 @@ const refit = () => {
 <!-- `data-fit` names the step of relief the fit had to take; the e2e reads it. -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="interactive" onkeydown={onKeydown} class:fullscreen={fullscreen.active} data-fit={fit.step} bind:this={container}>
-	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={fit.minZoom} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} zoomOnDoubleClick={!motion.reduced} onnodeclick={({ node }) => open(node.id)} ariaLabelConfig={NODE_KEYS} onnodedrag={refit} onnodedragstop={refit}>
+	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={fit.minZoom} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} zoomOnDoubleClick={!motion.reduced} edgesFocusable={false} onnodeclick={({ node }) => open(node.id)} ariaLabelConfig={NODE_KEYS} onnodedrag={refit} onnodedragstop={refit}>
 		<Background />
 		{#if sketch}<SketchBackdrop {nodes} groupLabels={labels} />{/if}
 		<Controls showLock={false} />

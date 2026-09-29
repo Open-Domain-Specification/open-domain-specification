@@ -4,7 +4,7 @@ labels: [pages, accessibility]
 priority: medium
 agent: developer
 live: true
-updatedAt: 2026-09-29T16:35:37.000Z
+updatedAt: 2026-09-29T17:07:50.000Z
 ---
 # A diagram node opens from the keyboard
 
@@ -36,3 +36,4 @@ Issue #47, a child of epic #61 (accessible navigation across the viewer, export 
 - **developer** (2026-09-29T16:35:37.000Z): Decision, the order. Tab follows the array order of `flowNodes`, which is the graph's own order, which is the model's; it is stable between renders where a layout order would move with a drag. Clusters are `focusable: false` (`flow-nodes.ts:102`), so they are not stops.
 - **developer** (2026-09-29T16:35:37.000Z): The library's node description read "Press enter or space to select a node. You can then use the arrow keys to move the node around. Press delete to remove it". None of that is true here. `ariaLabelConfig` (`InteractiveDiagram.svelte:40`) replaces both variants with "Press enter or space to open its page." The edge description, which is the same kind of untruth, is left alone (out of scope: issue 47 is about nodes).
 - **developer** (2026-09-29T16:35:37.000Z): Focus ring at `page.css:341`, `1px solid var(--vscode-focusBorder, var(--accent))` with a 2px offset, on the node's box so a big ball of mud's clipped octagon does not clip the ring. The variable needs its fallback: the viewer and the export do not define `--vscode-focusBorder` on that page and the bare form computed to no outline at all, which the e2e caught.
+- **developer** (2026-09-29T17:07:50.000Z): Follow-up from review: edges out of the Tab order. Clicking an edge does nothing on any of the four maps: there is no `onedgeclick` in `InteractiveDiagram.svelte`, and the badges on a context edge are their own buttons (card 150), so no kind of edge has an action to give keyboard parity to. So `edgesFocusable={false}` (`InteractiveDiagram.svelte:132`), and the order is badges, nodes, controls. Before, each edge was a stop named "Edge from A to B" carrying the library's "select an edge ... delete it" description. Failing first: `diagram-keyboard.spec.ts` ("Tab stops only on things that do something") found edge stops and a `select`/`delete` description on the unchanged bundle; it now passes on the viewer and the export, tabbing through the whole context map and asserting no stop is named "Edge from ..." and none is described with select, delete or move. Only the context map has edges with an action of any kind (the badges); the consumable, relation and flow maps' edges have none.

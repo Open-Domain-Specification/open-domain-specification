@@ -80,6 +80,44 @@ for (const host of ["viewer", "export"] as const) {
 			).toBe(true);
 		});
 
+		test("Tab stops only on things that do something: no edge announces an action it does not have", async ({
+			page,
+		}) => {
+			const flow = await openDiagram(page, host, "Context map", "");
+			await arriveAt(flow);
+			const stops: { label: string | null; said: string }[] = [];
+			for (let i = 0; i < 40; i++) {
+				await page.keyboard.press("Tab");
+				const stop = await page.evaluate(() => {
+					const el = document.activeElement as HTMLElement;
+					const id = el.getAttribute("aria-describedby");
+					return {
+						inside: !!el.closest(".svelte-flow"),
+						label: el.getAttribute("aria-label"),
+						said: id ? (document.getElementById(id)?.textContent ?? "") : "",
+					};
+				});
+				if (!stop.inside) break;
+				stops.push(stop);
+			}
+			expect(stops.length).toBeGreaterThan(5);
+			// Nothing here is an edge stop, and nothing says "select" or "delete".
+			expect(stops.filter((s) => /^Edge from/.test(s.label ?? ""))).toEqual([]);
+			expect(stops.filter((s) => /select|delete|move/i.test(s.said))).toEqual(
+				[],
+			);
+			// What is left is badges, then nodes, then the controls.
+			const kinds = stops.map((s) =>
+				/^Show evidence/.test(s.label ?? "")
+					? "badge"
+					: /, /.test(s.label ?? "")
+						? "node"
+						: "control",
+			);
+			expect(kinds.indexOf("node")).toBeGreaterThan(kinds.lastIndexOf("badge"));
+			expect(kinds.lastIndexOf("node")).toBeLessThan(kinds.indexOf("control"));
+		});
+
 		test("the pointer still opens a node", async ({ page }) => {
 			const flow = await openDiagram(page, host, "Context map", "");
 			await flow
