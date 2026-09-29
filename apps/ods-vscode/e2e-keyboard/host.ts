@@ -63,6 +63,17 @@ export async function launchVSCode(options: LaunchOptions): Promise<Host> {
 	});
 	const window = await app.firstWindow();
 	await window.waitForSelector(".monaco-workbench", { timeout: 60_000 });
+	// `.monaco-workbench` is there long before the window takes keys: a key sent
+	// then can be dropped (F1 pressed too early opened no palette, and the next
+	// wait timed out). Ready is the status bar drawn, the folder listed in the
+	// explorer and the window holding focus, which are what a reader waits for.
+	await window.waitForSelector(".statusbar", { timeout: 60_000 });
+	await window.waitForSelector(".explorer-folders-view .monaco-list-row", {
+		timeout: 60_000,
+	});
+	await window.waitForFunction(() => document.hasFocus(), undefined, {
+		timeout: 60_000,
+	});
 	return {
 		app,
 		window,
@@ -84,6 +95,8 @@ export async function openPageByKeyboard(
 	searchText: string,
 ): Promise<void> {
 	await window.keyboard.press("F1");
+	// Type into the palette once it is up, not into whatever had focus.
+	await window.waitForSelector(".quick-input-widget", { state: "visible" });
 	await window.keyboard.type("ODS: Search Domain Model");
 	await window.waitForSelector(
 		".quick-input-list .monaco-list-row:has-text('Search Domain Model')",
