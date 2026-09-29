@@ -1,6 +1,12 @@
 import { PATTERNS } from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
-import { depthOf, flowEdges, flowNodes, groupLabels } from "./flow-nodes";
+import {
+	depthOf,
+	flowEdges,
+	flowNodes,
+	groupLabels,
+	opensPage,
+} from "./flow-nodes";
 import type { Graph } from "./graph";
 import { layout } from "./layout";
 
@@ -10,10 +16,24 @@ const graph: Graph = {
 		{ id: "g:dom", label: "Domain", parent: "g:ws" },
 	],
 	nodes: [
-		{ id: "#/a", type: "context", label: "A", icon: "x", groupId: "g:dom" },
-		{ id: "#/b", type: "context", label: "B", icon: "x", groupId: "g:ws" },
-		{ id: "#/c", type: "context", label: "C", icon: "x" },
-		{ id: "#/d", type: "consumable", label: "D", icon: "x" },
+		{
+			id: "#/a",
+			type: "context",
+			label: "A",
+			kind: "node",
+			icon: "x",
+			groupId: "g:dom",
+		},
+		{
+			id: "#/b",
+			type: "context",
+			label: "B",
+			kind: "node",
+			icon: "x",
+			groupId: "g:ws",
+		},
+		{ id: "#/c", type: "context", label: "C", kind: "node", icon: "x" },
+		{ id: "#/d", type: "consumable", label: "D", kind: "node", icon: "x" },
 	],
 	edges: [
 		{
@@ -94,6 +114,28 @@ describe("flowNodes", () => {
 		expect(nodes[2].parentId).toBe("g:dom");
 		expect(nodes[2].extent).toBeUndefined();
 		expect(nodes[2].data).toMatchObject({ floating: true, sketch: true });
+	});
+	it("names each node '<name>, <kind>' and announces one that opens a page as a link", () => {
+		const nodes = flowNodes(positioned, opts);
+		const [ws, , a, , , d] = nodes;
+		expect(a).toMatchObject({ ariaLabel: "A, node", ariaRole: "link" });
+		expect(d).toMatchObject({ ariaLabel: "D, node", ariaRole: "link" });
+		// A cluster region is decoration behind the nodes: not a stop, and unnamed.
+		expect(ws).toMatchObject({ focusable: false });
+		expect(ws.ariaLabel).toBeUndefined();
+	});
+	it("gives a node that is not a ref its name but no link role, because nothing opens", () => {
+		const plain = layout({
+			nodes: [
+				{ id: "plain", type: "context", label: "P", kind: "thing", icon: "x" },
+			],
+			edges: [],
+		});
+		const [node] = flowNodes(plain, opts);
+		expect(node.ariaLabel).toBe("P, thing");
+		expect(node.ariaRole).toBeUndefined();
+		expect(opensPage("plain")).toBe(false);
+		expect(opensPage("#/a")).toBe(true);
 	});
 	it("handles a graph without groups", () => {
 		const bare = layout({ nodes: graph.nodes.slice(2, 3), edges: [] });

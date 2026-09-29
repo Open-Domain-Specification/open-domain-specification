@@ -106,6 +106,7 @@ describe("legendEntries for the context map", () => {
 						id: "#/a",
 						type: "context",
 						label: "A",
+						kind: "node",
 						icon: "x",
 						bigBallOfMud: false,
 					},
@@ -113,6 +114,7 @@ describe("legendEntries for the context map", () => {
 						id: "#/b",
 						type: "context",
 						label: "B",
+						kind: "node",
 						icon: "x",
 						bigBallOfMud: false,
 					},
@@ -129,6 +131,7 @@ describe("legendEntries for the context map", () => {
 						id: "#/a",
 						type: "context",
 						label: "A",
+						kind: "node",
 						icon: "x",
 						bigBallOfMud: true,
 						cluster: "Commerce",
@@ -173,6 +176,7 @@ describe("legendEntries for the context map", () => {
 						id: "#/a",
 						type: "context",
 						label: "A",
+						kind: "node",
 						icon: "x",
 						bigBallOfMud: false,
 						external: true,
@@ -196,6 +200,7 @@ describe("legendEntries for the context map", () => {
 						id: "#/a",
 						type: "context",
 						label: "A",
+						kind: "node",
 						icon: "x",
 						bigBallOfMud: false,
 						external: false,
@@ -217,6 +222,7 @@ describe("legendEntries for the context map", () => {
 					id: "#/a",
 					type: "context",
 					label: "A",
+					kind: "node",
 					icon: "x",
 					bigBallOfMud: false,
 				},
@@ -260,6 +266,7 @@ describe("legendEntries for the consumable map", () => {
 						id: "#/p",
 						type: "consumable",
 						label: "P",
+						kind: "node",
 						icon: "x",
 						slots: [{ id: "#/p/provides/x", name: "X", kind: "event" }],
 						requires: [],
@@ -277,6 +284,7 @@ describe("legendEntries for the consumable map", () => {
 						id: "#/p",
 						type: "consumable",
 						label: "P",
+						kind: "node",
 						icon: "x",
 						slots: [],
 						requires: [{ id: "#/x", name: "X", pattern: "conformist" }],
@@ -315,7 +323,7 @@ describe("legendEntries for the relation map", () => {
 	});
 	it("names the borrowed mark only when a value of another context is drawn", () => {
 		const nodes: RelationNodeData[] = [
-			{ id: "#/a", type: "relation", label: "A", icon: "x" },
+			{ id: "#/a", type: "relation", label: "A", kind: "node", icon: "x" },
 		];
 		const edges = [
 			{ id: "c", type: "relation-uses", source: "#/a", target: "#/k" },
@@ -333,6 +341,7 @@ describe("legendEntries for the relation map", () => {
 								id: "#/k",
 								type: "relation",
 								label: "Money",
+								kind: "node",
 								icon: "x",
 								borrowed: true,
 							},
@@ -348,7 +357,15 @@ describe("legendEntries for the relation map", () => {
 		expect(
 			legendEntries(
 				{
-					nodes: [{ id: "#/a", type: "relation", label: "A", icon: "x" }],
+					nodes: [
+						{
+							id: "#/a",
+							type: "relation",
+							label: "A",
+							kind: "node",
+							icon: "x",
+						},
+					],
 					edges: [],
 				},
 				"relation",

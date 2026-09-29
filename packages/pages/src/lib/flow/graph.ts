@@ -13,6 +13,12 @@ export type GraphNode = {
 	/** Component to draw with, from the registry. */
 	type: string;
 	label: string;
+	/**
+	 * What the node is, in words: "bounded context", "value object". It is the
+	 * second half of the node's accessible name, "<label>, <kind>", so a reader
+	 * who cannot see the icon or the silhouette still hears what they are on.
+	 */
+	kind: string;
 	icon: string;
 	/** Cluster path shown as a subtitle, e.g. "Petstore Commerce / Sales". */
 	groupPath?: string;

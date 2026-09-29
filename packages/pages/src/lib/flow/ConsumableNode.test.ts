@@ -11,6 +11,7 @@ const base: ConsumableNodeData = {
 	id: "#/boundedcontexts/catalog/aggregates/pet",
 	type: "consumable",
 	label: "Pet",
+	kind: "node",
 	icon: "symbol-structure",
 	slots: [],
 	requires: [],

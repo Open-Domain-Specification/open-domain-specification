@@ -11,6 +11,7 @@ const base: ContextNodeData = {
 	id: "#/boundedcontexts/sales",
 	type: "context",
 	label: "Sales",
+	kind: "node",
 	icon: "boundedcontext",
 	bigBallOfMud: false,
 	external: false,

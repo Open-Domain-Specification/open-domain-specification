@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { diagramKind, hasSketchStyle, sketchApplies } from "./kind";
 
 const graph = (type?: string) => ({
-	nodes: type ? [{ id: "#/a", type, label: "A", icon: "x" }] : [],
+	nodes: type ? [{ id: "#/a", type, label: "A", kind: "node", icon: "x" }] : [],
 });
 
 describe("diagramKind", () => {

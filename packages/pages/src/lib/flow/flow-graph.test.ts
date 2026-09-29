@@ -72,6 +72,7 @@ describe("flowGraph", () => {
 			id: process.id,
 			type: "flow",
 			label: "Order fulfilment",
+			kind: "process",
 			description: "From placed to sold.",
 			icon: ICONS.process,
 			step: "process",
@@ -85,6 +86,15 @@ describe("flowGraph", () => {
 		expect(nodes[1].step).toBe("event");
 		expect(nodes[2].step).toBe("command");
 		expect(nodes[4].step).toBe("policy");
+		// A screen reader hears the step in the words the pages use: an
+		// operation, not the metamodel's "command".
+		expect(nodes.map((n) => n.kind)).toEqual([
+			"process",
+			"event",
+			"operation",
+			"event",
+			"policy",
+		]);
 		// Nothing is focused unless the page asks for it.
 		expect(nodes.some((n) => n.focus)).toBe(false);
 		expect(g.groups).toEqual([

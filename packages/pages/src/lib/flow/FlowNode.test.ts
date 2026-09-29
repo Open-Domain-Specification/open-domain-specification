@@ -12,6 +12,7 @@ const base: FlowNodeData = {
 	id: "#/boundedcontexts/sales_bc/aggregates/order/provides/order_placed",
 	type: "flow",
 	label: "OrderPlaced",
+	kind: "node",
 	icon: ICONS.event,
 	step: "event",
 };
@@ -33,6 +34,7 @@ describe("FlowNode", () => {
 	it("shows the icon, the name and the cluster path, and hovers to the description", () => {
 		const { container } = flow({
 			...base,
+			kind: "node",
 			icon: ICONS.process,
 			step: "process",
 			label: "Order fulfilment",

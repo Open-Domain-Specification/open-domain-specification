@@ -94,6 +94,18 @@ describe("relationGraph", () => {
 		},
 	);
 
+	it.each([
+		["entity_root", "root entity"],
+		["entity", "entity"],
+		["valueobject", "value object"],
+		["foreign_valueobject", "value object"],
+		["external_context", "external system"],
+		["boundary_only_context", "boundary-only bounded context"],
+		["big_ball_of_mud_context", "big ball of mud"],
+	] as const)("names a %s node %s for a screen reader", (type, kind) => {
+		expect(relationGraph(mapOf([node({ type })])).nodes[0].kind).toBe(kind);
+	});
+
 	it("labels a nameless node with its ref", () => {
 		const [n] = relationGraph(
 			mapOf([node({ id: "#/nameless", name: undefined })]),

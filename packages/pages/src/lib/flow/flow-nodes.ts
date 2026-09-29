@@ -43,6 +43,13 @@ export type FlowNodeOptions = {
 	free: boolean;
 };
 
+/**
+ * Whether a node stands for a page: its id is a ref, and clicking it goes
+ * there. Enter and Space do the same, so this one test decides both what the
+ * node is announced as and what the keys do.
+ */
+export const opensPage = (id: string) => id.startsWith("#");
+
 /** How many groups sit above a group; the shade lightens with it. */
 export const depthOf = (positioned: Positioned, id: string | undefined) => {
 	let d = 0;
@@ -91,6 +98,8 @@ export function flowNodes(
 			draggable: false,
 			selectable: false,
 			connectable: false,
+			// A region is decoration behind the nodes, not something to stop on.
+			focusable: false,
 		};
 	});
 	return [
@@ -104,6 +113,10 @@ export function flowNodes(
 			data:
 				n.type === "context" ? { ...n, floating, sketch } : { ...n, floating },
 			draggable: true,
+			// "<name>, <kind>": what a reader who cannot see the card hears it as.
+			ariaLabel: `${n.label}, ${n.kind}`,
+			// A node that opens a page is a link, and is announced as one.
+			...(opensPage(n.id) && { ariaRole: "link" }),
 		})),
 	];
 }
