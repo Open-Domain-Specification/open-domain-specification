@@ -1,7 +1,27 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createRouter } from "./router.svelte";
 
+// Every router listens on the document for the life of the page. Each test
+// makes its own, so the listeners are collected and removed after it, or an
+// earlier router would take a click before the one under test saw it.
+const listening: [string, EventListenerOrEventListenerObject, unknown][] = [];
+const addListener = document.addEventListener.bind(document);
+document.addEventListener = ((
+	type: string,
+	listener: EventListenerOrEventListenerObject,
+	options?: boolean | AddEventListenerOptions,
+) => {
+	listening.push([type, listener, options]);
+	addListener(type, listener, options);
+}) as typeof document.addEventListener;
+
 afterEach(() => {
+	for (const [type, listener, options] of listening.splice(0))
+		document.removeEventListener(
+			type,
+			listener,
+			options as boolean | undefined,
+		);
 	location.hash = "";
 });
 
@@ -111,5 +131,61 @@ describe("createRouter link delegation", () => {
 		click(anchor("#"));
 		window.dispatchEvent(new HashChangeEvent("hashchange"));
 		expect(router.ref).toBe("#");
+	});
+});
+
+describe("createRouter arrivals", () => {
+	const anchor = (href: string) => {
+		const a = document.createElement("a");
+		a.href = href;
+		document.body.appendChild(a);
+		return a;
+	};
+	afterEach(() => {
+		document.body.innerHTML = "";
+	});
+
+	it("counts a followed route anchor once, not again when the hash change lands", () => {
+		location.hash = "";
+		const router = createRouter();
+		expect(router.arrivals).toBe(0);
+		anchor("#/domains/sales").click();
+		expect(router.arrivals).toBe(1);
+		expect(router.ref).toBe("#/domains/sales");
+		window.dispatchEvent(new HashChangeEvent("hashchange"));
+		expect(router.arrivals).toBe(1);
+	});
+
+	it("counts following a link to the page the reader is already on", () => {
+		location.hash = "#/domains/sales";
+		const router = createRouter();
+		anchor("#/domains/sales").click();
+		expect(router.arrivals).toBe(1);
+	});
+
+	it("counts history navigation, which changes the hash without the router", () => {
+		location.hash = "";
+		const router = createRouter();
+		location.hash = "#/teams/pet_shop_team";
+		window.dispatchEvent(new HashChangeEvent("hashchange"));
+		expect(router.ref).toBe("#/teams/pet_shop_team");
+		expect(router.arrivals).toBe(1);
+	});
+
+	it("does not count go(), which is the host opening a page, and ignores its hash change", () => {
+		location.hash = "";
+		const router = createRouter();
+		router.go("#/domains/sales");
+		expect(router.ref).toBe("#/domains/sales");
+		window.dispatchEvent(new HashChangeEvent("hashchange"));
+		router.go("#/domains/sales");
+		expect(router.arrivals).toBe(0);
+	});
+
+	it("does not count section anchors it leaves to the browser", () => {
+		location.hash = "";
+		const router = createRouter();
+		anchor("#overview").click();
+		expect(router.arrivals).toBe(0);
 	});
 });

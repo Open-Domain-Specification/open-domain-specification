@@ -17,7 +17,8 @@ import {
 	ValueObject,
 	Workspace,
 } from "@open-domain-specification/core";
-import { tick } from "svelte";
+import { tick, untrack } from "svelte";
+import { focusArrival } from "./focus";
 import { useModel } from "./model";
 import { HEALTH_PAGE, resolvePage } from "./resolve";
 import AggregatePage, {
@@ -81,8 +82,15 @@ import WorkspacePage, {
  * columns and the table of contents. The team page is the group's final
  * `{:else}`: `resolvePage` only ever returns one of these, so nothing reaches
  * an unhandled branch.
+ *
+ * `arrivals` is the router's count of reader-driven navigations. Each new
+ * count moves focus to where the reader has arrived: the anchored element
+ * when the ref points inside the page, else the page's heading. History
+ * navigation counts, so back and forward land on the heading of the page they
+ * restore. Nothing else moves focus: not the first render, and not a host
+ * that opens a page for the reader, whose focus is somewhere else.
  */
-let { ref }: { ref: string } = $props();
+let { ref, arrivals = 0 }: { ref: string; arrivals?: number } = $props();
 const model = useModel();
 const page = $derived(resolvePage(model.workspace, ref));
 const target = $derived(page.target);
@@ -97,6 +105,20 @@ $effect(() => {
 			el.scrollIntoView({ block: "center" });
 			el.classList.add("flash");
 		}
+	});
+});
+
+let seen = untrack(() => arrivals);
+$effect(() => {
+	const count = arrivals;
+	if (count === seen) return;
+	seen = count;
+	tick().then(() => {
+		const inside = anchor ? document.getElementById(anchor) : null;
+		// Every template's layout draws a `main` with the page's h1 in it.
+		const heading = document.querySelector("main h1") as HTMLElement;
+		if (inside) focusArrival(inside, { preventScroll: true });
+		else focusArrival(heading);
 	});
 });
 </script>

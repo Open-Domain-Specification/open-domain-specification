@@ -92,7 +92,7 @@ $effect(() => {
 		<ModelProvider {model}>
 			<div class="site" class:embedded={embedded}>
 				{#if !embedded}<div class="site-nav"><Sidebar current={router.ref} /></div>{/if}
-				<div class="site-page"><Page ref={router.ref} /></div>
+				<div class="site-page"><Page ref={router.ref} arrivals={router.arrivals} /></div>
 			</div>
 		</ModelProvider>
 	{/key}

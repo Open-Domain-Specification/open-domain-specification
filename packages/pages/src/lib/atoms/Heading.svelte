@@ -28,7 +28,7 @@ const {
 } = $props();
 </script>
 
-<svelte:element this={`h${level}`} {id} class="heading h{level}">
+<svelte:element this={`h${level}`} {id} class="heading h{level}" tabindex="-1">
 	{@render children()}{#if count}<span class="count">{count}</span>{/if}
 </svelte:element>
 {#if lead}<p class="lead">{lead}</p>{/if}
@@ -46,6 +46,12 @@ const {
 		text-transform: none;
 		letter-spacing: normal;
 		scroll-margin-top: 40px;
+	}
+	/* A heading is where focus is sent on arrival, not a control, so it wears
+	   the ring only when the arrival came from the keyboard. */
+	.heading:focus-visible {
+		outline: 1px solid var(--vscode-focusBorder);
+		outline-offset: 2px;
 	}
 	.h1 {
 		font-size: 1.5em;

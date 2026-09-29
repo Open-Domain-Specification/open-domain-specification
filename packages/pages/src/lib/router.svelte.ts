@@ -5,9 +5,15 @@
  * Route anchors are also handled on click rather than left to the browser: the
  * VS Code webview host intercepts every same-page hash link, prevents its
  * default and only scrolls to a matching id, so the hash would never change.
+ *
+ * `arrivals` counts the times a reader, not the host, has arrived at a route:
+ * following a route anchor, or history (back, forward, an edited hash). The
+ * page moves focus to its heading on each, and stays where it is for `go`,
+ * which is what the host calls when the editor's tree view opens a page.
  */
 export function createRouter() {
 	let ref = $state(read());
+	let arrivals = $state(0);
 	function read(): string {
 		if (typeof location === "undefined") return "#";
 		let raw = location.hash;
@@ -19,8 +25,13 @@ export function createRouter() {
 		return raw.length > 2 ? raw.replace(/\/$/, "") : "#";
 	}
 	if (typeof window !== "undefined") {
+		// `go` sets `ref` itself, so a hashchange that finds a new
+		// ref is history: the reader pressed back or forward, or edited the hash.
 		window.addEventListener("hashchange", () => {
-			ref = read();
+			const next = read();
+			if (next === ref) return;
+			ref = next;
+			arrivals += 1;
 		});
 		document.addEventListener("click", onClick, true);
 	}
@@ -34,6 +45,7 @@ export function createRouter() {
 		if (!isRoute(href)) return;
 		e.preventDefault();
 		go(href);
+		arrivals += 1;
 	}
 	/** Route hashes are `#` or `#/…`; section anchors like `#overview` are left to the page. */
 	function isRoute(href: string): boolean {
@@ -45,10 +57,14 @@ export function createRouter() {
 			return;
 		}
 		location.hash = next;
+		ref = read();
 	}
 	return {
 		get ref() {
 			return ref;
+		},
+		get arrivals() {
+			return arrivals;
 		},
 		go,
 	};

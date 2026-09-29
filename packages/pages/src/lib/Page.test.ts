@@ -25,6 +25,66 @@ describe("every element of the petstore renders its own page", () => {
 	}
 });
 
+describe("arriving moves focus", () => {
+	const context = [...model.workspace.boundedcontexts.values()][0];
+
+	it("leaves focus alone on the first render", async () => {
+		const { unmount } = render(Harness, { model, ref: context.ref });
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(document.activeElement).toBe(document.body);
+		unmount();
+	});
+
+	it("puts focus on the page's heading when the count of arrivals goes up, and not before", async () => {
+		const { container, rerender, unmount } = render(Harness, {
+			model,
+			ref: context.ref,
+		});
+		await rerender({ model, ref: context.ref, arrivals: 0 });
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(document.activeElement).toBe(document.body);
+
+		await rerender({ model, ref: context.ref, arrivals: 1 });
+		await waitFor(() =>
+			expect(document.activeElement).toBe(container.querySelector("main h1")),
+		);
+		expect(document.activeElement).toHaveAttribute("tabindex", "-1");
+		unmount();
+	});
+
+	it("lands on the new page's heading when the arrival changes the page", async () => {
+		const other = [...model.workspace.teams.values()][0];
+		const { container, rerender, unmount } = render(Harness, {
+			model,
+			ref: context.ref,
+		});
+		await rerender({ model, ref: other.ref, arrivals: 1 });
+		await waitFor(() =>
+			expect(document.activeElement).toBe(container.querySelector("main h1")),
+		);
+		expect(document.activeElement).toHaveTextContent(other.name);
+		unmount();
+	});
+
+	it("lands on the anchored element when the ref points inside the page", async () => {
+		Element.prototype.scrollIntoView = vi.fn();
+		const aggregate = [...context.aggregates.values()][0];
+		const entity = [...aggregate.entities.values()][0];
+		const attribute = [...entity.attributes.values()][0];
+		const { container, rerender, unmount } = render(Harness, {
+			model,
+			ref: aggregate.ref,
+		});
+		await rerender({ model, ref: attribute.ref, arrivals: 1 });
+		await waitFor(() =>
+			expect(document.activeElement).toBe(
+				container.querySelector(`[id="${attribute.ref}"]`),
+			),
+		);
+		unmount();
+	});
+});
+
 describe("a ref pointing inside a page scrolls to and flashes the target", () => {
 	it("finds the element inside the owning page and flashes it", async () => {
 		Element.prototype.scrollIntoView = vi.fn();

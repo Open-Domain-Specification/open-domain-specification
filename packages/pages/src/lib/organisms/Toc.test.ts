@@ -43,3 +43,35 @@ describe("Toc", () => {
 		).resolves.not.toThrow();
 	});
 });
+
+describe("Toc moves focus to the section", () => {
+	const page = (inner: string) => {
+		const section = document.createElement("section");
+		section.id = "present";
+		section.innerHTML = inner;
+		section.scrollIntoView = vi.fn();
+		document.body.appendChild(section);
+		return section;
+	};
+
+	it("focuses the section's heading without scrolling again", async () => {
+		const section = page('<h2 class="heading" tabindex="-1">Present</h2>');
+		render(Toc, { sections });
+		await fireEvent.click(
+			screen.getByRole("link", { name: "Present Section" }),
+		);
+		expect(document.activeElement).toBe(section.querySelector("h2"));
+		section.remove();
+	});
+
+	it("focuses the section itself when it has no heading of its own", async () => {
+		const section = page("<p>no heading</p>");
+		render(Toc, { sections });
+		await fireEvent.click(
+			screen.getByRole("link", { name: "Present Section" }),
+		);
+		expect(document.activeElement).toBe(section);
+		expect(section).toHaveAttribute("tabindex", "-1");
+		section.remove();
+	});
+});
