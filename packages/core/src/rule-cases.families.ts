@@ -68,15 +68,15 @@ export const RULE_FAMILIES: Record<string, FamilyEntry> = {
 	"unknown-field": todo("file-and-loading"),
 
 	// Aggregates, their entities and their identities.
-	"aggregate-root": todo("aggregates-and-identity"),
-	"cross-aggregate-reference": todo("aggregates-and-identity"),
-	"root-identity": todo("aggregates-and-identity"),
-	"entity-identity": todo("aggregates-and-identity"),
-	"identity-not-optional": todo("aggregates-and-identity"),
-	"aggregate-tree": todo("aggregates-and-identity"),
-	"specialisation-cycle": todo("aggregates-and-identity"),
-	"specialisation-not-root": todo("aggregates-and-identity"),
-	"specialisation-redeclares": todo("aggregates-and-identity"),
+	"aggregate-root": covered("aggregates-and-identity"),
+	"cross-aggregate-reference": covered("aggregates-and-identity"),
+	"root-identity": covered("aggregates-and-identity"),
+	"entity-identity": covered("aggregates-and-identity"),
+	"identity-not-optional": covered("aggregates-and-identity"),
+	"aggregate-tree": covered("aggregates-and-identity"),
+	"specialisation-cycle": covered("aggregates-and-identity"),
+	"specialisation-not-root": covered("aggregates-and-identity"),
+	"specialisation-redeclares": covered("aggregates-and-identity"),
 
 	// Value objects, attributes and relations between them.
 	"value-object-shape": todo("value-objects-and-specialisation"),
