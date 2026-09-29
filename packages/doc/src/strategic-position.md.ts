@@ -1,6 +1,7 @@
 import {
 	type BoundedContext,
 	type ContextRelationship,
+	hasAuthoredDescription,
 	isSymmetricRelationship,
 	narrativeText,
 	relationshipNarrative,
@@ -25,8 +26,9 @@ const counterpartOf = (r: ContextRelationship, bc: BoundedContext) =>
  * same fallback; the italics are only the muted look.
  */
 const description = (r: ContextRelationship, bc: BoundedContext) =>
-	r.description ??
-	`*${narrativeText(relationshipNarrative(r, bc))}* (generated)`;
+	hasAuthoredDescription(r)
+		? (r.description as string)
+		: `*${narrativeText(relationshipNarrative(r, bc))}* (generated)`;
 
 const row = (r: ContextRelationship, bc: BoundedContext) => [
 	counterpartOf(r, bc).name,

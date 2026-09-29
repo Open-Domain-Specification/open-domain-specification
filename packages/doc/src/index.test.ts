@@ -722,6 +722,27 @@ describe("toDoc", () => {
 		);
 	});
 
+	it("treats an empty or whitespace-only relationship description as generated", async () => {
+		const workspace = new Workspace("Blank", {
+			description: "Relationships with blank descriptions.",
+			version: "0.1.0",
+		});
+		const hub = workspace.addBoundedContext("Hub", { description: "The hub." });
+		const a = workspace.addBoundedContext("A", { description: "A." });
+		const b = workspace.addBoundedContext("B", { description: "B." });
+		const empty = hub.upstreamOf(a, { description: "" });
+		const blank = hub.upstreamOf(b, { description: "  \t" });
+
+		const docs = await toDoc(workspace);
+		const table = docs["boundedcontexts/hub/index.md"].split(
+			"## Context Relationships",
+		)[1];
+		for (const r of [empty, blank])
+			expect(table).toContain(
+				`| *${narrativeText(relationshipNarrative(r, hub))}* (generated) |`,
+			);
+	});
+
 	it("marks a generated relationship description as generated and prints an authored one verbatim", async () => {
 		const workspace = new Workspace("Provenance", {
 			description: "Two relationships, one described.",

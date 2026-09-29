@@ -2,6 +2,7 @@
 import {
 	type BoundedContext,
 	type ContextRelationship,
+	hasAuthoredDescription,
 	narrativeText,
 	relationshipNarrative,
 } from "@open-domain-specification/core";
@@ -112,7 +113,7 @@ const columns = $derived<Column[]>([
 				{:else if col.key === "with"}
 					<ContextLockup context={counterpartOf(r, context)} title={narrativeOf(r)} />
 				{:else if col.key === "description"}
-					{#if r.description}
+					{#if hasAuthoredDescription(r)}
 						<span class="description">{r.description}</span>
 					{:else}
 						<span class="description generated">{`${narrativeOf(r)} `}<Keyword text="generated" title={GENERATED_TITLE} /></span>

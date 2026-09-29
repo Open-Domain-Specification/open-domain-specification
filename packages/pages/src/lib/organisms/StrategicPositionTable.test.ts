@@ -149,6 +149,37 @@ describe("StrategicPositionTable", () => {
 		).toHaveClass("empty");
 	});
 
+	it("treats an empty or whitespace-only description as generated, the way the DSL writes it", () => {
+		const workspace = new Workspace("Blank", {
+			description: "Relationships with blank descriptions.",
+			version: "0.1.0",
+		});
+		const hub = workspace.addBoundedContext("Hub", { description: "The hub." });
+		const a = workspace.addBoundedContext("A", { description: "A." });
+		const b = workspace.addBoundedContext("B", { description: "B." });
+		const empty = hub.upstreamOf(a, { description: "" });
+		const blank = hub.upstreamOf(b, { description: "  \t" });
+		const model = { workspace, fileLabel: "b.json", diagnostics: [] };
+		const { container } = position(model, hub);
+
+		const spans = [
+			...container.querySelectorAll<HTMLElement>("span.description"),
+		];
+		expect(spans).toHaveLength(2);
+		for (const [span, r] of [
+			[spans[0], empty],
+			[spans[1], blank],
+		] as const) {
+			expect(span).toHaveClass("description", "generated");
+			expect(
+				span.textContent?.startsWith(
+					narrativeText(relationshipNarrative(r, hub)),
+				),
+			).toBe(true);
+			expect(span.querySelector(".keyword")).toHaveTextContent("generated");
+		}
+	});
+
 	it("marks a description the model generated, and leaves an authored one exactly as written", () => {
 		const workspace = new Workspace("Provenance", {
 			description: "Two relationships, one described.",
