@@ -161,7 +161,11 @@ export function runCases(title: string, families: RuleFamily[], cases: Case[]) {
 				)
 				.map(([rule]) => rule)
 				.sort();
-			expect([...cased].sort()).toEqual(claimed);
+			// A family file may also hold a pair for a rule of another family it
+			// meets on the way; what it may not do is leave one of its own without.
+			expect([...cased].filter((r) => claimed.includes(r)).sort()).toEqual(
+				claimed,
+			);
 		});
 	});
 }

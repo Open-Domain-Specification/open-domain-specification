@@ -677,8 +677,116 @@ const callerCases: Case[] = [
 		},
 	},
 ];
+// ---------------------------------------------------------------------------
+// Supplement: what the first pairs left to the older tests
+// ---------------------------------------------------------------------------
+
+/**
+ * A checkout whose process starts on `Submit`. Payments' `Pay` rejects with a
+ * decline; the process waits on what comes back.
+ */
+function checkoutOf(context: ReturnType<typeof world>["context"]) {
+	const payments = context("Payments");
+	const checkout = context("Checkout");
+	payments.upstreamOf(checkout, {
+		upstreamRoles: ["open-host-service"],
+		downstreamRoles: ["anti-corruption-layer"],
+	});
+	const declined = payments.addSchema("Payment Declined");
+	const paymentsApp = application(payments);
+	const pay = operation(paymentsApp, "Pay", {
+		pattern: "open-host-service",
+		rejects: [declined],
+	});
+	return { payments, checkout, declined, paymentsApp, pay };
+}
+
+const supplementCases: Case[] = [
+	{
+		rules: ["schema-context"],
+		name: "an operation carries the shape of a caller it translates for, behind an anti-corruption layer, only where that caller consumes it",
+		// Nobody calls it, so the layer has nothing to translate and its
+		// declared role is backed by nothing either.
+		fires: ["relationship-roles-backed", "schema-context"],
+		build: (hostile) => {
+			const { ws, context } = world();
+			const caller = context("Caller");
+			const provider = context("Provider");
+			caller.upstreamOf(provider, {
+				downstreamRoles: ["anti-corruption-layer"],
+			});
+			const theirs = caller.addSchema("Their Request");
+			const translate = operation(application(provider), "Translate", {
+				pattern: "open-host-service",
+				schema: theirs,
+			});
+			if (!hostile) {
+				const app = application(caller);
+				const call = operation(app, "Call", { internal: true });
+				app.consumes(translate, { by: [call] });
+			}
+			return ws;
+		},
+	},
+	{
+		rules: ["consumable-kind"],
+		name: "a process hears the answer of a call made through a chain of local operations from the one it starts on; a chain that does not start there is not its call",
+		fires: ["consumable-kind", "consumable-kind"],
+		build: (hostile) => {
+			const { ws, context } = world();
+			const { checkout, declined, pay } = checkoutOf(context);
+			const front = application(checkout, "Checkout Front");
+			const submit = operation(front, "Submit", { internal: true });
+			const other = operation(front, "Other", { internal: true });
+			const adapter = application(checkout, "Payments Adapter");
+			const forward = operation(adapter, "Forward", { internal: true });
+			adapter.consumes(pay, {
+				pattern: "anti-corruption-layer",
+				by: [forward],
+			});
+			front.consumes(forward, { by: [hostile ? other : submit] });
+			checkout
+				.addProcess("Checkout", { description: "" })
+				.starts(submit)
+				.on(pay.rejected(declined))
+				.ends(pay.completed());
+			return ws;
+		},
+	},
+	{
+		rules: ["consumable-kind"],
+		name: "a process hears the answer of the call its own context makes, and stops at the boundary: what Payments does behind it is Payments' own chain",
+		// Naming Scheme's answer also makes Checkout depend on Scheme, unstated.
+		fires: ["consumable-kind", "relationship-declared"],
+		build: (hostile) => {
+			const { ws, context } = world();
+			const { payments, checkout, paymentsApp, pay } = checkoutOf(context);
+			const scheme = context("Scheme", { external: true });
+			scheme.upstreamOf(payments, {
+				upstreamRoles: ["open-host-service"],
+				downstreamRoles: ["anti-corruption-layer"],
+			});
+			const authorise = operation(application(scheme), "Authorise", {
+				pattern: "open-host-service",
+			});
+			paymentsApp.consumes(authorise, {
+				pattern: "anti-corruption-layer",
+				by: [pay],
+			});
+			const front = application(checkout, "Checkout Front");
+			const submit = operation(front, "Submit", { internal: true });
+			front.consumes(pay, { pattern: "anti-corruption-layer", by: [submit] });
+			checkout
+				.addProcess("Checkout", { description: "" })
+				.starts(submit)
+				.ends((hostile ? authorise : pay).completed());
+			return ws;
+		},
+	},
+];
+
 runCases(
 	"rule cases: boundary, caller and answer routing",
 	["boundary-and-borrowing", "callers-and-answer-routing"],
-	[...boundaryCases, ...callerCases],
+	[...boundaryCases, ...callerCases, ...supplementCases],
 );
