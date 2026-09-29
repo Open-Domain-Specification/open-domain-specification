@@ -4,7 +4,7 @@ labels: [backend, ddd]
 priority: high
 agent: developer
 live: true
-updatedAt: 2026-09-29T15:10:00.000Z
+updatedAt: 2026-09-29T15:40:00.000Z
 ---
 # Every validator rule has the smallest model that trips it and the nearest model that must stay clean, starting with the boundary, caller and answer-routing rules
 
@@ -25,7 +25,7 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - value-objects-and-specialisation: 0 of 6 covered
 - invariants: 0 of 6 covered
 - relationships-and-roles: 9 of 9 covered
-- processes-and-policies: 0 of 5 covered
+- processes-and-policies: 5 of 5 covered
 - events-and-raising: 0 of 5 covered
 - documentation-and-strategy: 0 of 4 covered
 
@@ -87,11 +87,11 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 | `shared-kernel-backed` | relationships-and-roles | `rule-cases.relationships`: a shared kernel with nothing in it | `rule-cases.relationships`: Down calls Up's operation | `validate.test.ts` "shared-kernel-backed" | covered |
 | `conformist-backed` | relationships-and-roles | `rule-cases.relationships`: a declared conformist that consumes nothing of its upstream | `rule-cases.relationships`: it consumes Up's operation | `validate.test.ts` "...conformist" tests in "role-coherence" blocks | covered |
 | `mud-needs-acl` | relationships-and-roles | `rule-cases.relationships`: a consumption out of a big ball of mud as conformist | `rule-cases.relationships`: the same behind an anti-corruption layer | `validate.test.ts` "mud-needs-acl" | covered |
-| `process-in-context` | processes-and-policies | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `process-has-ends` | processes-and-policies | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `process-starts` | processes-and-policies | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `policy-in-context` | processes-and-policies | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `policy-complete` | processes-and-policies | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
+| `process-in-context` | processes-and-policies | `rule-cases.processes`: a process issues Up's operation; starts on Up's operation | `rule-cases.processes`: it issues its own; it starts on Up's event, taken in by a consumption | `validate.test.ts` "process-in-context" | covered |
+| `process-has-ends` | processes-and-policies | `rule-cases.processes`: a process that starts and names no end | `rule-cases.processes`: it ends on the event Finish raises | `validate.test.ts` "process-has-ends" | covered |
+| `process-starts` | processes-and-policies | `rule-cases.processes`: a process that ends and names no start | `rule-cases.processes`: it starts on its context's Start operation | `validate.test.ts` "process-starts" | covered |
+| `policy-in-context` | processes-and-policies | `rule-cases.processes`: a policy issues Up's operation | `rule-cases.processes`: it issues its own context's | `validate.test.ts` "policy-in-context" | covered |
+| `policy-complete` | processes-and-policies | `rule-cases.processes`: a policy with no event; a policy issuing nothing | `rule-cases.processes`: each given its missing half | `validate.test.ts` "the rules a process shares with a policy" | covered |
 | `raises-in-context` | events-and-raising | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
 | `raises-in-aggregate` | events-and-raising | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
 | `raises-restated` | events-and-raising | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
@@ -112,7 +112,7 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - [ ] Value objects, attributes and relations (6 rules)
 - [ ] Invariants and contracts (6 rules)
 - [x] Relationships and roles (9 rules): relationship-roles-backed, consumption-agreement, relationship-declared, relationship-duplicate, relationship-cycle, partnership-backed, shared-kernel-backed, conformist-backed, mud-needs-acl
-- [ ] Processes and policies (5 rules)
+- [x] Processes and policies (5 rules): process-in-context, process-has-ends, process-starts, policy-in-context, policy-complete
 - [ ] Events and raising (5 rules)
 - [ ] Documentation and strategy (4 rules)
 
@@ -128,3 +128,4 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - **developer** (2026-09-29T14:30:00.000Z): Mutation checks against `packages/core/src/validate.ts`, each reverted after the run. Widening `role-coherence` to ask a boundary-only consumer for a downstream role fails the role-coherence near-miss. Dropping the shared-kernel exemption from `aggregate-not-public` fails its near-miss. Removing `boundaryOnly` from the `identifies-entity` bounded-context exemption fails that near-miss. Making `consumption-by-operation` never fire fails its trigger. Dropping the single-operation exemption from `consumption-by-required` fails the no-operation near-miss and three fixtures that rely on one operation being its own answer.
 - **developer** (2026-09-29T14:30:00.000Z): No validator defect found in slice 1: every near-miss validated clean and every trigger fired, without changing a rule, a test assertion or a reference model. Nothing under `models/` was touched. Not exercised in this slice, and named so the next one does not assume it was: the anti-corruption-layer carve-out of `schema-context` (a consumable carrying an upstream shape it translates), a process hearing an answer through a local `by` chain, the one-hop boundary stop, and external invariants that name a contract; the older tests in `validate.test.ts` hold those, and the table points at them.
 - **developer** (2026-09-29T15:10:00.000Z): Slice 2, relationships and roles: 10 pairs in `packages/core/src/rule-cases.relationships.test.ts`, all nine rules. The building blocks and the harness moved out of the boundary file into `packages/core/src/rule-cases.support.ts` so every family file is written and run the same way; the boundary pairs are unchanged. Where a rule cannot be tripped without a consequence of the same absence, the consequence is named in `fires`: taking nothing from a conformist upstream also leaves the conformist role undeclared by any consumption (`relationship-roles-backed`); an exchange that names no agreement, or one that joins other contexts, backs neither agreement's roles. Mutation checks, each reverted: widening `partnership-backed` to shared kernels fails the shared-kernel pair; making `conformist-backed` ignore consumptions fails its near-miss and the relationship-cycle pairs, which lean on it; letting any downstream role clear `mud-needs-acl` fails its trigger. No defect found. None of the four behaviours the slice-1 journal names as held only by older tests belongs to this family, so none was added here.
+- **developer** (2026-09-29T15:40:00.000Z): Slice 3, processes and policies: 7 pairs in `packages/core/src/rule-cases.processes.test.ts`, all five rules, each near-miss wholly clean and each hostile model tripping only the rule under test. `process-in-context` has two pairs, one for what a process issues and one for the command it starts on (a neighbour's event may start one, a neighbour's operation may not); `policy-complete` has one per missing half. Mutation checks, each reverted: dropping the starting-command half of `process-in-context` fails the start pair; requiring both halves missing in `policy-complete` fails both of its pairs; making `process-has-ends` never fire fails its trigger. No defect found. The behaviours the slice-1 journal lists as held by older tests (the anti-corruption-layer carve-out, the local `by` chain, the one-hop stop, external invariants) do not belong to this family either.

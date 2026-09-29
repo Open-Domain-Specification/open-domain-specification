@@ -106,11 +106,11 @@ export const RULE_FAMILIES: Record<string, FamilyEntry> = {
 	"mud-needs-acl": covered("relationships-and-roles"),
 
 	// Policies and processes: where they live and what starts and ends them.
-	"process-in-context": todo("processes-and-policies"),
-	"process-has-ends": todo("processes-and-policies"),
-	"process-starts": todo("processes-and-policies"),
-	"policy-in-context": todo("processes-and-policies"),
-	"policy-complete": todo("processes-and-policies"),
+	"process-in-context": covered("processes-and-policies"),
+	"process-has-ends": covered("processes-and-policies"),
+	"process-starts": covered("processes-and-policies"),
+	"policy-in-context": covered("processes-and-policies"),
+	"policy-complete": covered("processes-and-policies"),
 
 	// Events: who raises them, and what raising one may say.
 	"raises-in-context": todo("events-and-raising"),
