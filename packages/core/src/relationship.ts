@@ -14,6 +14,15 @@ const SYMMETRIC = new Set(["partnership", "shared-kernel", "separate-ways"]);
 export const isSymmetricRelationship = (type: string) => SYMMETRIC.has(type);
 
 /**
+ * The glyph between a relationship's two contexts: an arrow when one side
+ * leads, a double arrow when neither does. Every surface that draws the two
+ * contexts as separate parts (each its own link) composes its label from this
+ * one, so the glyph is written once.
+ */
+export const relationshipArrow = (type: string): string =>
+	isSymmetricRelationship(type) ? "↔" : "→";
+
+/**
  * How a relationship is named wherever it is listed — its own page, the
  * strategic position table, the search spotlight, the extension tree. A
  * relationship has no name of its own, so it is named by its two contexts
@@ -21,4 +30,4 @@ export const isSymmetricRelationship = (type: string) => SYMMETRIC.has(type);
  * arrow when neither does.
  */
 export const relationshipTitle = (r: ContextRelationship): string =>
-	`${r.source.name} ${isSymmetricRelationship(r.type) ? "↔" : "→"} ${r.target.name}`;
+	`${r.source.name} ${relationshipArrow(r.type)} ${r.target.name}`;

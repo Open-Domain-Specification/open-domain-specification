@@ -1,8 +1,5 @@
 <script lang="ts">
-import {
-	isSymmetricRelationship,
-	PATTERNS,
-} from "@open-domain-specification/core";
+import { PATTERNS, relationshipArrow } from "@open-domain-specification/core";
 import Comments from "../atoms/Comments.svelte";
 import type { Column, Group } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
@@ -98,7 +95,7 @@ const refactorGroups = $derived<Group<EvidenceRow>[]>(
 			{@const r = entry.relationship}
 			{#if col.key === "intent"}
 				<ContextLockup context={r.source} />
-				<span class="arrow">{isSymmetricRelationship(r.type) ? "↔" : "→"}</span>
+				<span class="arrow">{relationshipArrow(r.type)}</span>
 				<ContextLockup context={r.target} />
 			{:else if col.key === "type"}
 				<Keyword text={r.type} title={PATTERNS[r.type].summary} />

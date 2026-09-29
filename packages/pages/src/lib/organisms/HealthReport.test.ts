@@ -1,3 +1,4 @@
+import { relationshipTitle } from "@open-domain-specification/core";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import { health, healthCounts } from "../evidence/derive";
@@ -72,5 +73,43 @@ describe("HealthReport", () => {
 		await fireEvent.click(screen.getByRole("button", { name: /No comments/ }));
 		const rows = container.querySelectorAll("table:last-of-type tbody tr");
 		expect(rows.length >= counts.noComments).toBe(true);
+	});
+
+	it("reads each relationship as relationshipTitle does, with each end its own link", async () => {
+		const seen = new Set<string>();
+		for (const model of [petstoreModel(), edgeCaseModel()]) {
+			const { container, unmount } = report(model);
+			await fireEvent.click(
+				screen.getByRole("button", { name: /No comments/ }),
+			);
+			const titles = new Map(
+				model.workspace.relationships.map((r) => [relationshipTitle(r), r]),
+			);
+			const cells = [...container.querySelectorAll("td")].filter((td) =>
+				td.querySelector(".arrow"),
+			);
+			expect(cells.length).toBeGreaterThan(0);
+			for (const cell of cells) {
+				// The two lockups and the glyph, less the one-word warnings.
+				const text = [...cell.querySelectorAll(".name, .arrow")]
+					.map((n) => n.textContent?.trim())
+					.join(" ");
+				const r = titles.get(text);
+				expect(r, `no relationship is titled "${text}"`).toBeDefined();
+				const links = [...cell.querySelectorAll("a")];
+				expect(links.map((a) => a.textContent)).toEqual([
+					r?.source.name,
+					r?.target.name,
+				]);
+				expect(links.map((a) => a.getAttribute("href"))).toEqual([
+					r?.source.ref,
+					r?.target.ref,
+				]);
+				seen.add(cell.querySelector(".arrow")?.textContent ?? "");
+			}
+			unmount();
+		}
+		// Both a directed and a symmetric relationship were compared.
+		expect(seen.size).toBe(2);
 	});
 });
