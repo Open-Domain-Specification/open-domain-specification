@@ -6,7 +6,7 @@ agent: lead
 live: false
 status: Baseline complete on 29048949; findings raised as #77 to #94, none blocking epic 61
 progress: 100
-updatedAt: 2026-09-29T22:00:57Z
+updatedAt: 2026-09-29T22:54:29Z
 ---
 # Designer baseline sweep of ODS
 
@@ -43,3 +43,4 @@ User-requested baseline across extension/shared pages: visual consistency, acces
   - Review: the designer opened 107 screenshots, recorded in `docs/design/baseline/final-pass-2.md`. Every one of the 24 page ids was seen at viewer/light/1300, export-http/dark/1300, and one 800 or 390 shot. All nine states were seen in both themes, with export-file spot checks.
   - Findings: nothing blocks the epic. Seven new defects are raised as #87 to #93, and two polish items as #94; the earlier issues #77 to #86 were seen again.
   - Not covered: screen readers, VS Code high contrast, `forced-colors`, and the webview's appearance. The webview's behaviour is covered by the Playwright-Electron journeys.
+- **lead** (2026-09-29T22:54:29Z): Re-verified after the owner's review fixes, on b461666c574cb3bf3475a97d6fd3d3578d539e93. The landing gate ran 22:48:52–22:52:07Z: pages 986 at 100% coverage, pages e2e 395 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match. `npm run test:vscode:keyboard` in real VS Code 1.96.4 passed 21 of 21 on three consecutive runs, and `npm run test:vscode` passed (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), on the same head. The card stays in `doing` until PR #76 merges.

@@ -4,7 +4,7 @@ labels: [accessibility]
 priority: medium
 agent: developer
 live: false
-updatedAt: 2026-09-29T20:49:19Z
+updatedAt: 2026-09-29T22:54:29Z
 ---
 # An import says what it is doing
 
@@ -30,3 +30,4 @@ Issue #45, a child of epic #61. The viewer's import screen changed visually whil
 - **developer** (2026-09-29T16:55:00.000Z): The design record states the status and alert regions and the message pattern, cause then next step (`docs/design/design-language-v2.md`, section 2). Focus after a successful import is card 146's.
 - **developer** (2026-09-29T17:23:44.000Z): Real VS Code host: not applicable. The webview is only ever handed a model by the host (`model`), it never draws the import screen, so there is no URL field, upload or example card to announce. Confirmed in the real webview by `apps/ods-vscode/e2e-keyboard/journeys.spec.ts` (`npm run test:vscode:keyboard`, real VS Code 1.96.4 driven by Playwright-Electron: real key and pointer events at the workbench, the webview's DOM only read; one launch per describe): test `#45 ... not applicable` finds no import screen, no file input and no URL field on the opened page.
 - **lead** (2026-09-29T20:49:19Z): Gate green on 54b75e3f (lead): the gate ran 20:44–20:48Z, core 1040, pages 978 at 100% coverage, pages e2e 389 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match; CI green on the same head. Real host: `npm run test:vscode:keyboard` 19 passed and `npm run test:vscode` green (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), both on 54b75e3f in real VS Code 1.96.4. The card stays in `doing` until PR #76 merges.
+- **lead** (2026-09-29T22:54:29Z): Re-verified after the owner's review fixes, on b461666c574cb3bf3475a97d6fd3d3578d539e93. The landing gate ran 22:48:52–22:52:07Z: pages 986 at 100% coverage, pages e2e 395 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match. `npm run test:vscode:keyboard` in real VS Code 1.96.4 passed 21 of 21 on three consecutive runs, and `npm run test:vscode` passed (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), on the same head. The card stays in `doing` until PR #76 merges.
