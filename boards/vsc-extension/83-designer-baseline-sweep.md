@@ -4,9 +4,9 @@ labels: [frontend, docs]
 priority: high
 agent: lead
 live: false
-status: Partial baseline; remaining visual coverage blocked on browser UI access
-progress: 85
-updatedAt: 2026-09-29T17:05:32+00:00
+status: Baseline complete on 464614f6; findings raised as #77 to #86, none blocking epic 61
+progress: 100
+updatedAt: 2026-09-29T19:29:09Z
 ---
 # Designer baseline sweep of ODS
 
@@ -14,13 +14,13 @@ User-requested baseline across extension/shared pages: visual consistency, acces
 
 ## Checklist
 
-- [ ] the design reviewer visual and user-journey review
+- [x] the design reviewer visual and user-journey review (lead, 2026-09-29; the designer agent was cut off by a usage limit, see final-pass.md)
 - [x] the accessibility reviewer accessibility and interaction review
 - [x] Verify findings, deduplicate existing cards and raise tickets
 - [x] Record tested coverage and limitations
 - [x] Inventory of page families, global surfaces, interactions and the host, theme and viewport matrix (`docs/design/baseline/inventory.md`)
 - [x] Capture harness (`packages/pages/e2e/baseline-capture.spec.ts`, gated behind `ODS_BASELINE=1`)
-- [ ] Final browser pass on the integrated head, with the tested commit recorded and browser, static-export and real-extension-host evidence kept distinct
+- [x] Final browser pass on the integrated head, with the tested commit recorded and browser, static-export and real-extension-host evidence kept distinct
 
 ## Comments
 
@@ -35,3 +35,5 @@ User-requested baseline across extension/shared pages: visual consistency, acces
 - **developer** (2026-09-29T17:05:32+00:00): This card now tracks issue #53 under epic #61 (the design and accessibility sweep finished across a browser and every page family). The inventory is at docs/design/baseline/inventory.md and the capture harness is packages/pages/e2e/baseline-capture.spec.ts. The final browser pass on the integrated head is still to do.
 
 - **developer** (2026-09-29T17:53:35+00:00): Final capture run on integrated head 464614f6 (Chromium 151, viewer, export-http, export-file; light and dark; 370 shots, 0 failed). Against 6469b16: landmark-unique 300 entries / 300 nodes to 0; empty-table-header 114/318, color-contrast 81/379, link-in-text-block 66/212 and heading-order 18/18 unchanged; 36 phone-width shots still overflow sideways, none at wider sizes. The file:// "blocked CSS XHR" message comes from axe-core, not the app. Evidence at docs/design/baseline/final-pass.md and docs/design/audit/464614f6/manifest.json. The final browser pass item stays open for designer review.
+
+- **lead** (2026-09-29T19:29:09Z): The final browser pass ran on the integrated head 464614f6: 370 Playwright Chromium captures across the viewer, export-http and export-file, in light and dark, at 1300×900, 800×900, 390×844 and 1150×700 as the inventory sets out, with axe. `landmark-unique` fell from 300 to 0 (#50). The lead reviewed eight screenshots directly. Findings are in `docs/design/baseline/final-pass.md`, and nine separate defects are raised as #78 to #86, with #77 from the real-host journeys. None blocks epic 61. Real-host behaviour is covered by `apps/ods-vscode/e2e-keyboard/journeys.spec.ts`. No screen reader was run.
