@@ -61,6 +61,19 @@ onMount(() => {
 				type: "rendered",
 				hrefs: attr(".md a[href]", "href"),
 				images: attr(".md img", "src"),
+				...(msg.selectors && {
+					probed: Object.fromEntries(
+						msg.selectors.map((selector) => [
+							selector,
+							[...document.querySelectorAll(selector)].map((el) => ({
+								text: el.textContent as string,
+								class: el.getAttribute("class"),
+								title: el.getAttribute("title"),
+								href: el.getAttribute("href"),
+							})),
+						]),
+					),
+				}),
 			});
 		}
 	};

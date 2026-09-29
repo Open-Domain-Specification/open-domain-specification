@@ -2,6 +2,7 @@
 import {
 	type BoundedContext,
 	type ContextRelationship,
+	hasAuthoredDescription,
 	narrativeText,
 	relationshipNarrative,
 } from "@open-domain-specification/core";
@@ -9,6 +10,7 @@ import type { Column } from "../atoms/DataTable.svelte";
 import DataTable from "../atoms/DataTable.svelte";
 import Disposition from "../atoms/Disposition.svelte";
 import EmptyState from "../atoms/EmptyState.svelte";
+import Keyword from "../atoms/Keyword.svelte";
 import Modal from "../atoms/Modal.svelte";
 import {
 	counterpartOf,
@@ -68,6 +70,9 @@ const shown = $derived(
  */
 const narrativeOf = (r: ContextRelationship) =>
 	narrativeText(relationshipNarrative(r, context));
+/** What the `generated` keyword discloses on hover. */
+const GENERATED_TITLE =
+	"Generated from the relationship's type and roles. The model has no authored description.";
 /** Names both ends, because a row's own cells only name the counterpart. */
 const discloses = (r: ContextRelationship) =>
 	`Evidence for ${r.source.name} and ${r.target.name}`;
@@ -108,7 +113,11 @@ const columns = $derived<Column[]>([
 				{:else if col.key === "with"}
 					<ContextLockup context={counterpartOf(r, context)} title={narrativeOf(r)} />
 				{:else if col.key === "description"}
-					<span class="description">{r.description ? r.description : narrativeOf(r)}</span>
+					{#if hasAuthoredDescription(r)}
+						<span class="description">{r.description}</span>
+					{:else}
+						<span class="description generated">{`${narrativeOf(r)} `}<Keyword text="generated" title={GENERATED_TITLE} /></span>
+					{/if}
 				{:else if col.key === "type"}
 					<PatternHover pattern={r.type} label={r.type} intent={r} />
 				{:else if col.key === "upstream"}
@@ -153,6 +162,11 @@ const columns = $derived<Column[]>([
 	.description {
 		display: block;
 		max-width: 34ch;
+	}
+	/* A sentence the model wrote, not a person: the secondary colour, and the
+	   `generated` keyword inside it says so in words. */
+	.description.generated {
+		color: var(--vscode-descriptionForeground);
 	}
 	.toggle {
 		background: none;

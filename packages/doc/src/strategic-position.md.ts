@@ -1,6 +1,7 @@
 import {
 	type BoundedContext,
 	type ContextRelationship,
+	hasAuthoredDescription,
 	isSymmetricRelationship,
 	narrativeText,
 	relationshipNarrative,
@@ -20,11 +21,14 @@ const counterpartOf = (r: ContextRelationship, bc: BoundedContext) =>
 
 /**
  * What the author wrote, or the sentence core generates from the same
- * relationship read from this context. Italics mark it as generated, which is
- * the muted styling the pages table uses for the same fallback.
+ * relationship read from this context. The suffix `(generated)` is the marker
+ * that says which it is, as the pages table's `generated` keyword does for the
+ * same fallback; the italics are only the muted look.
  */
 const description = (r: ContextRelationship, bc: BoundedContext) =>
-	r.description ?? `*${narrativeText(relationshipNarrative(r, bc))}*`;
+	hasAuthoredDescription(r)
+		? (r.description as string)
+		: `*${narrativeText(relationshipNarrative(r, bc))}* (generated)`;
 
 const row = (r: ContextRelationship, bc: BoundedContext) => [
 	counterpartOf(r, bc).name,

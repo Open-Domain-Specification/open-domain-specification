@@ -35,4 +35,13 @@ export default defineConfig([
 		files: "out/test/link-schemes.test.js",
 		workspaceFolder: "src/test/fixtures/hostile-links",
 	},
+	// One small workspace holding every fact epic #62 compares across the
+	// surfaces; `expected.ts` beside it is the list the viewer, the static
+	// export and generated Markdown are held to as well.
+	{
+		...shared,
+		label: "cross-surface",
+		files: "out/test/cross-surface.test.js",
+		workspaceFolder: "src/test/fixtures/cross-surface",
+	},
 ]);

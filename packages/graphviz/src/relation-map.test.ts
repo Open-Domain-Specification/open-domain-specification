@@ -183,6 +183,27 @@ describe("relationMapToDigraph", () => {
 		expect(drawn.toDot()).toContain('label = "«identifies» schemeRef"');
 	});
 
+	it.each([
+		["external_context", "external system"],
+		["boundary_only_context", "boundary only"],
+		["big_ball_of_mud_context", "big ball of mud"],
+	] as const)("draws a %s box in the %s stereotype", (type, stereotype) => {
+		const map = buildMap();
+		map.addNode({
+			id: "#/boundedcontexts/target",
+			name: "Target",
+			type,
+			namespace: [
+				{ id: "ws", name: "Shop" },
+				{ id: "#/boundedcontexts/target", name: "Target" },
+			],
+			attributes: [],
+		});
+		const drawn = relationMapToDigraph(map);
+		expect(drawn.toDot()).toContain(`«${stereotype}»<BR/><B>Target</B>`);
+		expect(drawn.toPlantUML()).toContain(`<<${stereotype}>>`);
+	});
+
 	it("draws a borrowed value object in the lending context's package, in the borrowed stereotype", () => {
 		const map = buildMap();
 		const order = map.nodes.get(

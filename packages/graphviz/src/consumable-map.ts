@@ -101,6 +101,11 @@ export function consumableMapToDigraph(contextMap: ODSConsumableMap): {
 		const targetNode = nodes[edge.target.node.id];
 
 		debug(`Source node: ${sourceNode.id}, Target node: ${targetNode.id}`);
+		// Where the consumption names its agreement, it goes under the consumable and on
+		// the hover, as the context map does for its lines (issue #55).
+		const agreement = edge.agreement
+			? (edge.agreement.name ?? edge.agreement.type)
+			: undefined;
 		edges[id] =
 			edges[id] ||
 			new Edge([sourceNode, targetNode], {
@@ -115,7 +120,10 @@ export function consumableMapToDigraph(contextMap: ODSConsumableMap): {
 				headtooltip: edge.targetPattern ?? "",
 				fontsize: 10,
 				labeldistance: 0,
-				label: edge.target.name,
+				label: agreement
+					? `${edge.target.name}\n${agreement}`
+					: edge.target.name,
+				...(agreement && { tooltip: `Under the ${agreement} agreement` }),
 				fontname: "sans-serif",
 			});
 		debug(`Adding edge ${id} from ${sourceNode.id} to ${targetNode.id}`);

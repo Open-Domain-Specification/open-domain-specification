@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isSymmetricRelationship, relationshipTitle } from "./relationship";
+import {
+	isSymmetricRelationship,
+	relationshipArrow,
+	relationshipTitle,
+} from "./relationship";
 import { Workspace } from "./workspace";
 
 function makeWs() {
@@ -42,5 +46,29 @@ describe("relationshipTitle", () => {
 			participants: [catalog, sales],
 		});
 		expect(relationshipTitle(r)).toBe("Catalog ↔ Sales");
+	});
+});
+
+describe("relationshipArrow", () => {
+	it("is a directed arrow for a directed type and a double arrow for a symmetric one", () => {
+		expect(relationshipArrow("upstream-downstream")).toBe("→");
+		expect(relationshipArrow("customer-supplier")).toBe("→");
+		expect(relationshipArrow("partnership")).toBe("↔");
+		expect(relationshipArrow("shared-kernel")).toBe("↔");
+		expect(relationshipArrow("separate-ways")).toBe("↔");
+	});
+
+	it("is the arrow relationshipTitle puts between the two contexts", () => {
+		const { ws, catalog, sales } = makeWs();
+		const directed = catalog.upstreamOf(sales, {});
+		const symmetric = ws.addRelationship({
+			type: "partnership",
+			participants: [catalog, sales],
+		});
+		for (const r of [directed, symmetric]) {
+			expect(relationshipTitle(r)).toBe(
+				`Catalog ${relationshipArrow(r.type)} Sales`,
+			);
+		}
 	});
 });

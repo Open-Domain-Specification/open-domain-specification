@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	hasAuthoredDescription,
 	type NarratableRelationship,
 	type NarrativeContext,
 	narrativeText,
@@ -88,6 +89,17 @@ const VERBS: Record<DirectedRelationshipType, string> = {
 };
 
 const TYPES = Object.keys(VERBS) as DirectedRelationshipType[];
+
+describe("hasAuthoredDescription", () => {
+	it("counts only text a person wrote", () => {
+		expect(hasAuthoredDescription({ description: "Says something." })).toBe(
+			true,
+		);
+		expect(hasAuthoredDescription({})).toBe(false);
+		expect(hasAuthoredDescription({ description: "" })).toBe(false);
+		expect(hasAuthoredDescription({ description: " \n\t" })).toBe(false);
+	});
+});
 
 describe("relationshipNarrative, directed", () => {
 	for (const type of TYPES)

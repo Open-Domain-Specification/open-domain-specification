@@ -15,6 +15,7 @@ import {
 } from "@open-domain-specification/core";
 import { attributeListMd } from "./attributes.md";
 import { contextBreadcrumbsMd } from "./breadcrumbs.md";
+import { consumptionsTableMd } from "./consumptions.md";
 import { glossaryTableMd } from "./glossary.md";
 import { markdownTable } from "./lib/markdown-table";
 import {
@@ -230,7 +231,8 @@ ${boundedcontext.policies.size === 0 ? flowMapMd(boundedcontext) : ""}${markdown
 ${strategicPositionMd(boundedcontext)}
 
 ## Consumptions
-${markdownTable(
+${consumptionsTableMd(
+	ODSConsumptionGraph.fromBoundedContext(boundedcontext).consumptions,
 	[
 		"Consumer",
 		"Made By",
@@ -239,17 +241,15 @@ ${markdownTable(
 		"Consumable",
 		"Provided As",
 	],
-	ODSConsumptionGraph.fromBoundedContext(boundedcontext).consumptions.map(
-		(it) => [
-			`[${it.consumer.name}](${pathToIndexMd(it.consumer.path, boundedcontext.path)})`,
-			// Absent means the whole consumer, which is the common case.
-			it.by.map((by) => by.name).join(", ") || "-",
-			it.pattern ?? "-",
-			it.consumable.provider.name,
-			it.consumable.name,
-			it.consumable.pattern ?? "-",
-		],
-	),
+	(it) => [
+		`[${it.consumer.name}](${pathToIndexMd(it.consumer.path, boundedcontext.path)})`,
+		// Absent means the whole consumer, which is the common case.
+		it.by.map((by) => by.name).join(", ") || "-",
+		it.pattern ?? "-",
+		it.consumable.provider.name,
+		it.consumable.name,
+		it.consumable.pattern ?? "-",
+	],
 )}
 
 `;

@@ -40,14 +40,33 @@ export type HostMessage =
 	| { type: "toolbar"; action: "reveal" }
 	/**
 	 * Test seam for the real-host check (`apps/ods-vscode`, `test:vscode`): asks
-	 * the app what its rendered descriptions hold. Nothing in normal use sends it.
+	 * the app what its rendered descriptions hold and, when `selectors` is given,
+	 * what each CSS selector matches (`probed` in the answer). Nothing in normal
+	 * use sends it.
 	 */
-	| { type: "probe" };
+	| { type: "probe"; selectors?: string[] };
 
 /** Messages from the webview back to the extension. */
 export type WebviewMessage =
 	| { type: "ready" }
 	| { type: "navigated"; ref: string }
 	| { type: "reveal"; ref: string }
-	/** The answer to `probe`: the destinations of the links and images inside rendered descriptions. */
-	| { type: "rendered"; hrefs: string[]; images: string[] };
+	/**
+	 * The answer to `probe`: the destinations of the links and images inside
+	 * rendered descriptions and, for a probe that carried `selectors`, the
+	 * elements each one matched, in document order.
+	 */
+	| {
+			type: "rendered";
+			hrefs: string[];
+			images: string[];
+			probed?: Record<string, ProbedElement[]>;
+	  };
+
+/** What the probe reports of one element: its text and the three attributes a fact hangs on. */
+export type ProbedElement = {
+	text: string;
+	class: string | null;
+	title: string | null;
+	href: string | null;
+};

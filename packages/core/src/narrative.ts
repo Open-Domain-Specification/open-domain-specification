@@ -232,6 +232,15 @@ export function relationshipNarrative(
 	]);
 }
 
+/**
+ * Whether a person wrote this relationship's description. An empty or
+ * whitespace-only string is not one (the DSL writes `""` when it is given no
+ * description), so a surface falls back to the generated sentence and marks it
+ * as generated. Pages and Markdown both ask this, so they cannot disagree.
+ */
+export const hasAuthoredDescription = (r: { description?: string }): boolean =>
+	(r.description ?? "").trim() !== "";
+
 /** The sentence as plain prose, for a tooltip, a markdown cell or the skill. */
 export const narrativeText = (segments: NarrativeSegment[]): string =>
 	segments

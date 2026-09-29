@@ -27,6 +27,8 @@ const TONES: Record<ODSRelationMapNode["type"], GraphNode["tone"]> = {
 	valueobject: "muted",
 	foreign_valueobject: "muted",
 	external_context: "muted",
+	boundary_only_context: "muted",
+	big_ball_of_mud_context: "muted",
 };
 
 /** The icon each kind of box carries. */
@@ -36,6 +38,8 @@ const ICON_OF: Record<ODSRelationMapNode["type"], string> = {
 	valueobject: ICONS.valueobject,
 	foreign_valueobject: ICONS.valueobject,
 	external_context: ICONS.boundedcontext,
+	boundary_only_context: ICONS.boundedcontext,
+	big_ball_of_mud_context: ICONS.boundedcontext,
 };
 
 /**

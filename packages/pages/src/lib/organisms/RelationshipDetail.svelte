@@ -4,6 +4,7 @@ import {
 	type DownstreamRole,
 	isSymmetricRelationship,
 	PATTERNS,
+	relationshipArrow,
 	type UpstreamRole,
 } from "@open-domain-specification/core";
 import Comments from "../atoms/Comments.svelte";
@@ -76,7 +77,7 @@ const patternsOf = (crossing: (typeof crossings)[number]) =>
 <div class="relationship-detail">
 	<Heading {level}>
 		<ContextLockup context={r.source} />
-		<span class="arrow">{symmetric ? "↔" : "→"}</span>
+		<span class="arrow">{relationshipArrow(r.type)}</span>
 		<ContextLockup context={r.target} />
 		<PatternHover pattern={r.type} label={r.type} intent={r} />
 		<Disposition disposition={r.disposition} />

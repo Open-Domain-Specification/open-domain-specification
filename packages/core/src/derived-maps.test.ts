@@ -477,6 +477,54 @@ describe("ODSRelationMap", () => {
 		expect(map.nodes.get(payment.ref)).toBeUndefined();
 	});
 
+	it.each([
+		["external", { external: true }, "external_context", true],
+		["boundary-only", { boundaryOnly: true }, "boundary_only_context", true],
+		[
+			"big-ball-of-mud",
+			{ bigBallOfMud: true },
+			"big_ball_of_mud_context",
+			false,
+		],
+	] as const)(
+		"draws an identity into a %s context as that kind of box",
+		(_kind, flags, type, publishesSchemas) => {
+			// The box says which kind of context the id points into, as the context
+			// map does, and never calls a legacy system or a boundary-only one of
+			// ours an external system (issue 56).
+			const ws = new Workspace("Identity kinds", {
+				description: "",
+				version: "1.0.0",
+			});
+			const sales = ws.addBoundedContext("Sales", { description: "" });
+			const target = ws.addBoundedContext("Target", {
+				description: "",
+				...flags,
+			});
+			const order = sales
+				.addAggregate("Order", { description: "" })
+				.addRootEntity("Order", { description: "" });
+			order.addAttribute("id", { type: "string", identity: true });
+			order.addAttribute("targetRef", { type: "string", identifies: target });
+			expect(ODSRelationMap.fromWorkspace(ws).nodes.get(target.ref)?.type).toBe(
+				type,
+			);
+			if (!publishesSchemas) return;
+			// A schema of that context lands on the same box, of the same kind.
+			const other = ws.addBoundedContext("Other", {
+				description: "",
+				...flags,
+			});
+			order.addAttribute("kindRef", {
+				type: "string",
+				identifies: other.addSchema("Kind"),
+			});
+			expect(ODSRelationMap.fromWorkspace(ws).nodes.get(other.ref)?.type).toBe(
+				type,
+			);
+		},
+	);
+
 	it("draws a kind as a generalisation pointing at what it is a kind of", () => {
 		const ws = new Workspace("Kinds", {
 			description: "",

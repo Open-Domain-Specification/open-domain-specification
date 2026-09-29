@@ -22,6 +22,8 @@ Diagram panels: [what gives way when the fit runs out of room](flow-diagram-pane
 
 Diagrams: [the flow map](flow-map-diagram.md).
 
+Relationship provenance: [a generated description and the agreement an exchange runs under](relationship-provenance-and-agreements.md).
+
 Templates: [AggregatePage](template-aggregate-page.md),
 [ConsumablePage](template-consumable-page.md),
 [ContextPage](template-context-page.md), [DomainPage](template-domain-page.md),
