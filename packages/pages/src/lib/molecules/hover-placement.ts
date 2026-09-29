@@ -20,7 +20,11 @@ export type Placement = {
 /** Distance kept from every viewport edge, as the editor's hover keeps. */
 export const MARGIN = 8;
 
-export function placeHover(anchor: Rect, card: Size, viewport: Size): Placement {
+export function placeHover(
+	anchor: Rect,
+	card: Size,
+	viewport: Size,
+): Placement {
 	const below = viewport.height - MARGIN - anchor.bottom;
 	const above = anchor.top - MARGIN;
 	const opensAbove = card.height > below && above > below;

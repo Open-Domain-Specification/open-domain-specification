@@ -42,3 +42,5 @@ updatedAt: 2026-09-05T02:30:00.000Z
 - 2026-09-11, lead: held back from done. Four `Flow/SketchBackdrop` stories still paint an empty canvas, so this card's claim is not met; issue 41.
 
 - 2026-09-11, lead: held back from done. Four `Flow/SketchBackdrop` stories still paint an empty canvas, so this card's claim is not met; issue 41.
+
+- 2026-09-29, lead: the cause of issue 41 was not the `$state.raw` array this card ruled on: `addon-svelte-csf` passes no args through a meta-level `render`, so the SketchBackdrop harness never received `nodes`. Card 137 names the harness as the stories' `component` and makes the Storybook check refuse a canvas that painted nothing. This card can move once card 137 lands.

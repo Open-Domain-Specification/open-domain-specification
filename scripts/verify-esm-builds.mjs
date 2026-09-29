@@ -5,8 +5,8 @@
 // CommonJS-default-only dependency (e.g. `import { debug } from "debug"`)
 // builds fine but throws at import time under Node — this only catches that
 // class of bug if it actually loads the file, so keep it as a real import.
-import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");

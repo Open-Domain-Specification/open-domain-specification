@@ -43,8 +43,12 @@ describe("the outpatient clinic workspace", () => {
 	it("keeps a glossary, at least one process, and several policies", () => {
 		const contexts = [...workspace.boundedcontexts.values()];
 		expect(contexts.some((bc) => bc.glossary.size > 0)).toBe(true);
-		expect(contexts.reduce((n, bc) => n + bc.processes.size, 0)).toBeGreaterThan(0);
-		expect(contexts.reduce((n, bc) => n + bc.policies.size, 0)).toBeGreaterThan(3);
+		expect(
+			contexts.reduce((n, bc) => n + bc.processes.size, 0),
+		).toBeGreaterThan(0);
+		expect(contexts.reduce((n, bc) => n + bc.policies.size, 0)).toBeGreaterThan(
+			3,
+		);
 	});
 
 	it("validates with exactly the diagnostics this card records on purpose", () => {

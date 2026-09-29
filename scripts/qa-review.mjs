@@ -11,7 +11,8 @@ const boards = readdirSync(join(root, "boards"), { withFileTypes: true })
 	.filter((d) => d.isDirectory())
 	.map((d) => d.name);
 
-const PATH_RE = /(?<![\w/@.-])((?:apps|packages|models|decisions|docs|boards|scripts|\.github)\/[\w./@-]+?)(?=:\d|[\s,;)`>]|$)/g;
+const PATH_RE =
+	/(?<![\w/@.-])((?:apps|packages|models|decisions|docs|boards|scripts|\.github)\/[\w./@-]+?)(?=:\d|[\s,;)`>]|$)/g;
 
 let findings = 0;
 const rows = [];
@@ -24,9 +25,9 @@ for (const board of boards) {
 		if (column !== "review") continue;
 		const title = text.match(/^# (.+)$/m)?.[1] ?? file;
 		const unchecked = (text.match(/^- \[ \] /gm) ?? []).length;
-		const swept = /^clean-code-swept:\s*true/m.test(fm);
 		const paths = new Set();
-		for (const m of text.matchAll(PATH_RE)) paths.add(m[1].replace(/[.,]$/, ""));
+		for (const m of text.matchAll(PATH_RE))
+			paths.add(m[1].replace(/[.,]$/, ""));
 		const missing = [...paths].filter((p) => !existsSync(join(root, p)));
 		const problems = [];
 		if (unchecked) problems.push(`${unchecked} unchecked`);
@@ -37,8 +38,13 @@ for (const board of boards) {
 
 for (const r of rows) {
 	const flag = r.problems.length ? "!!" : "ok";
-	console.log(`${flag} ${r.board}/${r.file} — ${r.title} [${r.refs} refs]${r.problems.length ? "\n     " + r.problems.join("; ") : ""}`);
-	if (r.missing.length) console.log(`     stale refs (files since moved or removed): ${r.missing.join(", ")}`);
+	console.log(
+		`${flag} ${r.board}/${r.file} — ${r.title} [${r.refs} refs]${r.problems.length ? `\n     ${r.problems.join("; ")}` : ""}`,
+	);
+	if (r.missing.length)
+		console.log(
+			`     stale refs (files since moved or removed): ${r.missing.join(", ")}`,
+		);
 }
 console.log(`\n${rows.length} cards in review, ${findings} with findings`);
 process.exit(findings ? 1 : 0);

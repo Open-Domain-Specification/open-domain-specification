@@ -208,6 +208,7 @@ h1 {
 .svelte-flow .flow-card.sketch.context-node.mud {
 	border-top-color: #8d6e63;
 }
+/* biome-ignore lint/style/noDescendingSpecificity: the sketch rule above sets only justify-content, a property this rule never sets, so their order cannot change the result. */
 .flow-card .head {
 	display: flex;
 	gap: 6px;

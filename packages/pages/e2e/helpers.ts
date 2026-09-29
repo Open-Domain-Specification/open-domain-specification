@@ -191,3 +191,51 @@ export async function openInteractiveDiagram(
 	await figure.scrollIntoViewIfNeeded();
 	return figure.locator(".svelte-flow");
 }
+
+/**
+ * What a story root actually painted, in terms that an empty canvas cannot
+ * satisfy: the words a reader can read, the SVG shapes with real extent, and
+ * the flow nodes on the canvas.
+ *
+ * Two things a blank story still carries are deliberately not counted. The
+ * diagram library stamps its own attribution into every flow, so that text is
+ * left out. And an SVG element on its own proves nothing (a backdrop whose
+ * paths all have an empty `d` is still an `<svg>`), so a shape counts only
+ * when the browser measures it as non-empty: a `getBBox` with width or height.
+ */
+export type Painted = { text: number; shapes: number; nodes: number };
+
+export async function paintedIn(root: Locator): Promise<Painted> {
+	return root.evaluate((el) => {
+		let text = (el as HTMLElement).innerText ?? "";
+		for (const a of el.querySelectorAll<HTMLElement>(
+			".svelte-flow__attribution",
+		))
+			text = text.replace(a.innerText, "");
+		const shapes = Array.from(
+			el.querySelectorAll<SVGGraphicsElement>(
+				"path, rect, circle, ellipse, line, polyline, polygon",
+			),
+		).filter((s) => {
+			// Definitions (clip paths, markers) are not painted where they sit.
+			if (s.closest("defs, clipPath, marker, mask, pattern")) return false;
+			if (s.tagName === "path" && !s.getAttribute("d")?.trim()) return false;
+			try {
+				const box = s.getBBox();
+				return box.width > 0 || box.height > 0;
+			} catch {
+				return false;
+			}
+		}).length;
+		return {
+			text: text.trim().length,
+			shapes,
+			nodes: el.querySelectorAll(".svelte-flow__node").length,
+		};
+	});
+}
+
+/** The single number a story must be above zero on to count as painted. */
+export function meaningful(p: Painted): number {
+	return p.text + p.shapes + p.nodes;
+}

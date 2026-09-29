@@ -29,10 +29,10 @@ export type Fullscreen = {
  * A tick lets the class land on the element, a frame lets the browser lay the
  * new size out; only then does Svelte Flow measure a viewport worth fitting to.
  */
-async function refit(fit: (() => void) | undefined): Promise<void> {
+async function refit(fitView: (() => void) | undefined): Promise<void> {
 	await tick();
 	await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-	fit?.();
+	fitView?.();
 }
 
 export function createFullscreen(): Fullscreen {
