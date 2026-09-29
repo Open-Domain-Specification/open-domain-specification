@@ -3,6 +3,7 @@ import type { Kind } from "../atoms/kinds";
 import Lockup from "../atoms/Lockup.svelte";
 import Logo from "../atoms/Logo.svelte";
 import { useModel } from "../model";
+import { resolvePage } from "../resolve";
 
 /**
  * The static site's navigation, standing in for the extension's tree view.
@@ -53,14 +54,13 @@ const items = $derived<Item[]>([
 ]);
 const onTheWay = (ref: string) =>
 	current === ref || current.startsWith(`${ref}/`);
-const flat = (entries: Item[]): Item[] =>
-	entries.flatMap((i) => [i, ...flat(i.children ?? [])]);
-/** The row for the page being read: the deepest one the current ref is at or under. */
-const here = $derived(
-	flat(items)
-		.filter((i) => onTheWay(i.ref))
-		.sort((a, b) => b.ref.length - a.ref.length)[0]?.ref,
-);
+/**
+ * The page actually displayed, as the router resolves it: an anchor inside a
+ * page (a consumption row) resolves to its owner, a dedicated page (an entity)
+ * to itself. The current row is the one whose ref is exactly that page's; a
+ * page with no row leaves every row unmarked.
+ */
+const here = $derived(resolvePage(workspace, current).pageRef);
 /*
  * Two separate facts. The wash (`.active`) is drawn on the page's row and on
  * the rows above it, so the reader sees the path. `aria-current="page"` is

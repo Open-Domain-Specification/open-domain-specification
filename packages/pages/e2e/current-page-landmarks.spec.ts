@@ -155,6 +155,44 @@ for (const host of hosts) {
 			expect(await marked(page)).toEqual({ page: [CATALOG] });
 		});
 
+		test("a page with no tree row marks nothing, its ancestors keep the wash, and history moves the mark with the page", async ({
+			page,
+		}) => {
+			const ENTITY = `${PET}/entities/pet`;
+			await page.locator(`nav.tree a[href="${PET}"]`).focus();
+			await page.keyboard.press("Enter");
+			await expect(page.locator("main h1")).toHaveText(/^\s*Pet\b.*Aggregate/);
+			expect(await marked(page)).toEqual({ page: [PET] });
+
+			// The entity has its own page and no row in the tree.
+			await page.locator(`main a[href="${ENTITY}"]`).first().focus();
+			await page.keyboard.press("Enter");
+			await expect(page.locator("main h1")).toContainText("Entity");
+			expect(await page.evaluate(() => location.hash)).toBe(ENTITY);
+			expect(await marked(page)).toEqual({});
+			expect((await drawnActive(page)).sort()).toEqual([CATALOG, PET].sort());
+
+			await page.goBack();
+			await expect(page.locator("main h1")).toContainText("Aggregate");
+			expect(await marked(page)).toEqual({ page: [PET] });
+
+			await page.goForward();
+			await expect(page.locator("main h1")).toContainText("Entity");
+			expect(await marked(page)).toEqual({});
+			expect((await drawnActive(page)).sort()).toEqual([CATALOG, PET].sort());
+		});
+
+		test("a ref that is an anchor inside a page with a row marks that page's row", async ({
+			page,
+		}) => {
+			const SERVICE = "#/boundedcontexts/catalog_bc/services/pet_app";
+			await page.evaluate((ref) => {
+				location.hash = `${ref}/consumes/boundedcontexts~catalog_bc~aggregates~pet~provides~reserve_pet`;
+			}, SERVICE);
+			await expect(page.locator("main h1")).toContainText("PetApp");
+			expect(await marked(page)).toEqual({ page: [SERVICE] });
+		});
+
 		test("a contents entry scrolls within the page and leaves the current mark where it is", async ({
 			page,
 		}) => {

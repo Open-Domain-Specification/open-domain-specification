@@ -96,15 +96,31 @@ describe("Sidebar", () => {
 		]);
 	});
 
-	it("marks the row the page is under when the ref points inside a page the tree has no row for", () => {
+	it("marks nothing on a dedicated page the tree has no row for, and keeps the wash on its ancestors", () => {
 		const { container } = render(Harness, {
 			current: "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet",
 		});
+		expect(container.querySelector("[aria-current]")).toBeNull();
 		expect(
-			container.querySelector(
-				'a[href="#/boundedcontexts/catalog_bc/aggregates/pet"]',
+			[...container.querySelectorAll(".item.active a")].map((a) =>
+				a.getAttribute("href"),
 			),
-		).toHaveAttribute("aria-current", "page");
+		).toEqual([
+			"#/boundedcontexts/catalog_bc",
+			"#/boundedcontexts/catalog_bc/aggregates/pet",
+		]);
+	});
+
+	it("marks the owning page's row when the ref is an anchor inside a page that has one", () => {
+		const service = "#/boundedcontexts/catalog_bc/services/pet_app";
+		const { container } = render(Harness, {
+			current: `${service}/consumes/boundedcontexts~catalog_bc~aggregates~pet~provides~reserve_pet`,
+		});
+		expect(container.querySelectorAll("[aria-current]")).toHaveLength(1);
+		expect(container.querySelector(`a[href="${service}"]`)).toHaveAttribute(
+			"aria-current",
+			"page",
+		);
 	});
 
 	it("marks nothing when the current page has no row, such as the workspace or the health report", () => {
