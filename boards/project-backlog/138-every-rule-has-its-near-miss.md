@@ -6,11 +6,11 @@ agent: developer
 live: true
 updatedAt: 2026-09-29T18:50:00.000Z
 ---
-# Every validator rule has the smallest model that trips it and the nearest model that must stay clean, starting with the boundary, caller and answer-routing rules
+# Every validator rule has the smallest model that trips it and the nearest model that must stay clean
 
 Issue #57, a child of epic #60. Every rule has a fixture that trips it, pinned by the catalogue test, and sixteen review rounds probed the rules from outside; what is missing is the deliberate near-miss for each rule, the model that comes close and must stay clean, so that a change that widens or narrows a rule fails a test rather than a review round. The epic's acceptance is that every validator rule has its specified trigger and nearest-valid case, with reference-model diagnostics preserved or changed only with an explicit semantic justification.
 
-This card is delivered in slices, one rule family at a time. Slice 1 is the boundary and borrowing family and the callers and answer-routing family, the rules the recent cards (126 to 135) changed. Slice 1 is progress, not completion of #57: the issue stays open until the checklist below is all checked.
+This card was delivered in slices, one rule family at a time, starting with the rules the recent cards (126 to 135) changed: the boundary and borrowing family and the callers and answer-routing family. All ten families, covering the 70 rules in the catalogue, now have both cases. `rule-cases.test.ts` refuses any family-map entry still marked `todo`, so a rule added later fails until it has both cases.
 
 How a pair is written: `packages/core/src/rule-cases.<family>.test.ts` holds one builder per pair, taking `hostile`. The hostile model trips the rule and the test pins every rule it trips, so the fixture is known to be the smallest that does; the near-miss differs by the one thing the rule is about and must validate with no diagnostic at all. `packages/core/src/rule-cases.families.ts` maps every catalogue rule to its family and status, and `rule-cases.test.ts` fails when the catalogue and the map disagree, so no rule is dropped silently.
 
