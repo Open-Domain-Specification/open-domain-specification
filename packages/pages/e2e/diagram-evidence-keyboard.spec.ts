@@ -117,6 +117,56 @@ for (const host of ["viewer", "export"] as const) {
 			await expect(diagram).toHaveCount(0);
 		});
 
+		for (const fullscreen of [false, true]) {
+			test(`Escape closes the innermost layer first: pattern explanation, then the card${fullscreen ? ", then fullscreen" : ""}`, async ({
+				page,
+			}) => {
+				const flow = await openDiagram(
+					page,
+					host,
+					"Sales BC context map",
+					SALES,
+				);
+				const badge = flow.locator(BADGE);
+				const overlay = page.locator(".interactive.fullscreen");
+				if (fullscreen) {
+					await flow.getByRole("button", { name: "Enter fullscreen" }).focus();
+					await page.keyboard.press("Enter");
+					await expect(overlay).toHaveCount(1);
+				}
+				await arriveAt(flow);
+				expect(await tabUntil(page, BADGE)).toBe(true);
+				await page.keyboard.press("Enter");
+				const card = flow.getByRole("dialog");
+				await expect(card).toBeVisible();
+
+				// Tab to a pattern keyword inside the card: its explanation opens.
+				const trigger = ".anchored .pattern-hover .trigger";
+				expect(await tabUntil(page, trigger)).toBe(true);
+				const explanation = card.getByRole("tooltip");
+				await expect(explanation).toBeVisible();
+
+				// First Escape: only the explanation goes. The card stays, and
+				// focus stays on the keyword that opened it.
+				await page.keyboard.press("Escape");
+				await expect(explanation).toHaveCount(0);
+				await expect(card).toBeVisible();
+				await expect(page.locator(trigger).first()).toBeFocused();
+				if (fullscreen) await expect(overlay).toHaveCount(1);
+
+				// Second Escape: the card goes and focus returns to its badge.
+				await page.keyboard.press("Escape");
+				await expect(flow.getByRole("dialog")).toHaveCount(0);
+				await expect(badge).toBeFocused();
+				if (fullscreen) {
+					await expect(overlay).toHaveCount(1);
+					// Third Escape: only now does fullscreen end.
+					await page.keyboard.press("Escape");
+					await expect(overlay).toHaveCount(0);
+				}
+			});
+		}
+
 		test("the pointer still opens it, and a click elsewhere closes it without taking focus back", async ({
 			page,
 		}) => {

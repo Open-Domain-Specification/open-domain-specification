@@ -449,6 +449,67 @@ test.describe("diagram nodes and evidence", () => {
 	});
 });
 
+test.describe("Escape closes the innermost layer", () => {
+	let host: Host;
+	test.beforeAll(async () => {
+		host = await launchVSCode({ folder: "src/test/fixtures/cross-surface" });
+		await resize(host, 1300, 900);
+	});
+	test.afterAll(async () => {
+		await host.close();
+	});
+
+	const PATTERN_TRIGGER = ".anchored .pattern-hover .trigger";
+
+	for (const fullscreen of [false, true]) {
+		test(`#48 pattern explanation, then the evidence card${fullscreen ? ", then fullscreen" : ""}, one layer a key`, async () => {
+			const frame = await openOrders(host);
+			const badge = frame.locator(TOLERATED_BADGE);
+			const overlay = frame.locator(".interactive.fullscreen");
+			const badgeLabel = (await badge.getAttribute("aria-label")) as string;
+			if (fullscreen) {
+				await tabToLabel(host, frame, "Enter fullscreen");
+				await host.window.keyboard.press("Enter");
+				await expect(overlay).toHaveCount(1);
+				await tabToLabel(host, frame, badgeLabel, "Shift+Tab");
+			} else {
+				await tabToLabel(host, frame, badgeLabel);
+			}
+			await expect(badge).toBeFocused();
+			await host.window.keyboard.press("Enter");
+			const card = frame.getByRole("dialog");
+			await expect(card).toBeVisible();
+
+			// Tab to a pattern keyword inside the card: its explanation opens.
+			await pressUntil(
+				host,
+				frame,
+				(stop) =>
+					stop.tag === "BUTTON" && stop.label === null && stop.text !== "",
+				"a pattern keyword in the card",
+			);
+			await expect(frame.locator(PATTERN_TRIGGER).first()).toBeFocused();
+			const explanation = card.getByRole("tooltip");
+			await expect(explanation).toBeVisible();
+
+			await host.window.keyboard.press("Escape");
+			await expect(explanation).toHaveCount(0);
+			await expect(card).toBeVisible();
+			await expect(frame.locator(PATTERN_TRIGGER).first()).toBeFocused();
+			if (fullscreen) await expect(overlay).toHaveCount(1);
+
+			await host.window.keyboard.press("Escape");
+			await expect(frame.getByRole("dialog")).toHaveCount(0);
+			await expect(badge).toBeFocused();
+			if (fullscreen) {
+				await expect(overlay).toHaveCount(1);
+				await host.window.keyboard.press("Escape");
+				await expect(overlay).toHaveCount(0);
+			}
+		});
+	}
+});
+
 test.describe("reduced motion", () => {
 	let host: Host;
 	test.beforeAll(async () => {
