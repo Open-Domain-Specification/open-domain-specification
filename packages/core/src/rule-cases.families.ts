@@ -87,12 +87,12 @@ export const RULE_FAMILIES: Record<string, FamilyEntry> = {
 	"rejects-on-operation": todo("value-objects-and-specialisation"),
 
 	// Invariants and the contracts an operation is held to.
-	"invariant-in-value-object": todo("invariants"),
-	"invariant-in-aggregate": todo("invariants"),
-	"invariant-in-context": todo("invariants"),
-	"context-invariant-is-checked": todo("invariants"),
-	"precondition-names-operation": todo("invariants"),
-	"postcondition-names-operation": todo("invariants"),
+	"invariant-in-value-object": covered("invariants"),
+	"invariant-in-aggregate": covered("invariants"),
+	"invariant-in-context": covered("invariants"),
+	"context-invariant-is-checked": covered("invariants"),
+	"precondition-names-operation": covered("invariants"),
+	"postcondition-names-operation": covered("invariants"),
 
 	// Context relationships, their roles and what backs them.
 	"relationship-roles-backed": covered("relationships-and-roles"),

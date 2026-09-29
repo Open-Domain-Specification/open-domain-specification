@@ -4,7 +4,7 @@ labels: [backend, ddd]
 priority: high
 agent: developer
 live: true
-updatedAt: 2026-09-29T16:40:00.000Z
+updatedAt: 2026-09-29T17:00:00.000Z
 ---
 # Every validator rule has the smallest model that trips it and the nearest model that must stay clean, starting with the boundary, caller and answer-routing rules
 
@@ -23,7 +23,7 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - file-and-loading: 0 of 3 covered
 - aggregates-and-identity: 0 of 9 covered
 - value-objects-and-specialisation: 0 of 6 covered
-- invariants: 0 of 6 covered
+- invariants: 6 of 6 covered
 - relationships-and-roles: 9 of 9 covered
 - processes-and-policies: 5 of 5 covered
 - events-and-raising: 5 of 5 covered
@@ -72,12 +72,12 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 | `attribute-one-shape` | value-objects-and-specialisation | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
 | `returns-on-operation` | value-objects-and-specialisation | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
 | `rejects-on-operation` | value-objects-and-specialisation | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `invariant-in-value-object` | invariants | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `invariant-in-aggregate` | invariants | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `invariant-in-context` | invariants | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `context-invariant-is-checked` | invariants | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `precondition-names-operation` | invariants | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `postcondition-names-operation` | invariants | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
+| `invariant-in-value-object` | invariants | `rule-cases.invariants`: Money's invariant constrains Address.Line | `rule-cases.invariants`: it constrains Money.Amount | `validate.test.ts` "invariant-in-value-object" | covered |
+| `invariant-in-aggregate` | invariants | `rule-cases.invariants`: Order's invariant constrains Stock.Level | `rule-cases.invariants`: it constrains Order's own Status | `validate.test.ts` "invariant-in-aggregate" | covered |
+| `invariant-in-context` | invariants | `rule-cases.invariants`: a context invariant constrains another context's Invoice.Total | `rule-cases.invariants`: it constrains its own Order.Status | `validate.test.ts` "invariant-in-context" | covered |
+| `context-invariant-is-checked` | invariants | `rule-cases.invariants`: a context invariant naming no operation | `rule-cases.invariants`: it names Place | `validate.test.ts` "context-invariant-is-checked" | covered |
+| `precondition-names-operation` | invariants | `rule-cases.invariants`: a precondition naming no operation | `rule-cases.invariants`: it names Confirm | `validate.test.ts` "precondition-names-operation" | covered |
+| `postcondition-names-operation` | invariants | `rule-cases.invariants`: a postcondition naming no operation; a rule marked both | `rule-cases.invariants`: it names Confirm; postcondition only | `validate.test.ts` "postcondition-names-operation" | covered |
 | `relationship-roles-backed` | relationships-and-roles | `rule-cases.relationships`: an upstream role (published-language) declared that nothing offered carries | `rule-cases.relationships`: only the role Ping carries | `validate.test.ts` "relationship-roles-backed", "...and published languages" | covered |
 | `consumption-agreement` | relationships-and-roles | `rule-cases.relationships`: a consumption across two named agreements names none; names one that joins other contexts | `rule-cases.relationships`: it names the agreement that joins the pair | `validate.test.ts` "consumption-agreement" | covered |
 | `relationship-declared` | relationships-and-roles | `rule-cases.relationships`: a call from Down to Up with no relationship | `rule-cases.relationships`: the relationship declared | `validate.test.ts` "relationship-declared" | covered |
@@ -110,7 +110,7 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - [ ] File and loading (3 rules)
 - [ ] Aggregates and identity (9 rules)
 - [ ] Value objects, attributes and relations (6 rules)
-- [ ] Invariants and contracts (6 rules)
+- [x] Invariants and contracts (6 rules): invariant-in-value-object, invariant-in-aggregate, invariant-in-context, context-invariant-is-checked, precondition-names-operation, postcondition-names-operation
 - [x] Relationships and roles (9 rules): relationship-roles-backed, consumption-agreement, relationship-declared, relationship-duplicate, relationship-cycle, partnership-backed, shared-kernel-backed, conformist-backed, mud-needs-acl
 - [x] Processes and policies (5 rules): process-in-context, process-has-ends, process-starts, policy-in-context, policy-complete
 - [x] Events and raising (5 rules): raises-in-context, raises-in-aggregate, raises-restated, rejection-raised, event-unraised
@@ -131,3 +131,4 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - **developer** (2026-09-29T15:40:00.000Z): Slice 3, processes and policies: 7 pairs in `packages/core/src/rule-cases.processes.test.ts`, all five rules, each near-miss wholly clean and each hostile model tripping only the rule under test. `process-in-context` has two pairs, one for what a process issues and one for the command it starts on (a neighbour's event may start one, a neighbour's operation may not); `policy-complete` has one per missing half. Mutation checks, each reverted: dropping the starting-command half of `process-in-context` fails the start pair; requiring both halves missing in `policy-complete` fails both of its pairs; making `process-has-ends` never fire fails its trigger. No defect found. The behaviours the slice-1 journal lists as held by older tests (the anti-corruption-layer carve-out, the local `by` chain, the one-hop stop, external invariants) do not belong to this family either.
 - **developer** (2026-09-29T16:10:00.000Z): Slice 4, events and raising: 6 pairs in `packages/core/src/rule-cases.events.test.ts`, all five rules, every near-miss wholly clean and every hostile model tripping only its own rule. `raises-in-aggregate` has two pairs, one for an aggregate raising a sibling's event and one for the domain-service versus application-service line the rule draws. Mutation checks, each reverted: restricting `raises-in-aggregate` to aggregates fails the domain-service pair; ignoring hearers in `rejection-raised` fails its near-miss; making `raises-restated` never fire fails its trigger. No defect found. Slices 2 to 4 leave 28 rules todo across five families; the four behaviours the slice-1 journal names as held only by older tests (the anti-corruption-layer carve-out of `schema-context`, a process hearing an answer through a local `by` chain, the one-hop boundary stop, external invariants) belong to the boundary, callers and invariants families, and none fell in slices 2 to 4, so their fresh near-misses are still owed: the first three to a supplement of the slice-1 files, the last to the invariants slice.
 - **developer** (2026-09-29T16:40:00.000Z): Supplement to slice 1, the three owed near-misses that belong to boundary and callers, three pairs in `packages/core/src/rule-cases.boundary.test.ts`. `schema-context`: an operation carrying the shape of a caller it translates for behind an anti-corruption layer is clean only where that caller consumes it (the hostile model also leaves the layer's declared role unbacked, named in `fires`). `consumable-kind`: a process hears the answer of a call made through a chain of local operations from the one it starts on, and not through a chain that starts elsewhere; and a process hears the answer of its own context's call, not of what Payments does behind it (one hop across a boundary; the hostile model also leaves Checkout depending on Scheme unstated). Mutation checks, each reverted: dropping the anti-corruption-layer clause of `mayCarrySchemaFrom` fails the near-miss; disabling the local chain in `routesTo` fails the chain near-miss; letting the chain walk cross a boundary fails the one-hop trigger. The harness's bookkeeping now asks that every rule the map marks covered has a pair in its family's file, and allows a file to hold a pair for a rule of another family. The fourth owed pair, external invariants naming a contract, goes with the invariants slice.
+- **developer** (2026-09-29T17:00:00.000Z): Slice 5, invariants: 8 pairs in `packages/core/src/rule-cases.invariants.test.ts`, all six rules, plus the fourth owed pair, for `external-is-boundary`: an external context's published precondition may constrain the attributes of the shapes its own operation carries (clean) and not an attribute of our entity (trips). Every near-miss is wholly clean and every hostile model trips only its own rule. `postcondition-names-operation` has a second pair for the rule that a check is a precondition or a postcondition, not both. Mutation checks, each reverted: making `invariant-in-aggregate` never fire, making `context-invariant-is-checked` never fire, letting the contract reach be ignored (fails the external pair and the value-object pair, which share the line), and letting any invariant pass `precondition-names-operation`, each fail the expected pair. No defect found.
