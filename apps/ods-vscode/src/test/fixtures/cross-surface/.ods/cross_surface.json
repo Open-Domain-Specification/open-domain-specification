@@ -1,0 +1,516 @@
+{
+	"id": "cross_surface",
+	"name": "Cross surface",
+	"description": "One small model holding every fact the four surfaces are compared on.",
+	"version": "0.1.0",
+	"odsVersion": "2.0.0",
+	"domains": {
+		"trade": {
+			"name": "Trade",
+			"description": "Selling, billing and shipping goods.",
+			"subdomains": {
+				"order_handling": {
+					"name": "Order Handling",
+					"type": "core",
+					"description": "Taking an order and seeing it through."
+				}
+			}
+		}
+	},
+	"boundedcontexts": {
+		"orders": {
+			"name": "Orders",
+			"description": "Takes orders.",
+			"subdomains": [
+				{
+					"$ref": "#/domains/trade/subdomains/order_handling"
+				}
+			],
+			"team": {
+				"$ref": "#/teams/trade_team"
+			},
+			"aggregates": {
+				"customer_account": {
+					"name": "Customer Account",
+					"description": "A customer and the outside references held for them.",
+					"provides": {},
+					"consumes": [],
+					"entities": {
+						"customer": {
+							"name": "Customer",
+							"description": "Somebody who orders.",
+							"root": true,
+							"attributes": {
+								"customer_id": {
+									"name": "customerId",
+									"type": "string",
+									"identity": true
+								}
+							},
+							"relations": [
+								{
+									"target": {
+										"$ref": "#/boundedcontexts/orders/aggregates/customer_account/entities/gateway_reference"
+									},
+									"relation": "includes",
+									"label": "is known to the gateway as",
+									"cardinality": "1"
+								},
+								{
+									"target": {
+										"$ref": "#/boundedcontexts/orders/aggregates/customer_account/entities/registry_reference"
+									},
+									"relation": "includes",
+									"label": "is known to the registry as",
+									"cardinality": "1"
+								},
+								{
+									"target": {
+										"$ref": "#/boundedcontexts/orders/aggregates/customer_account/entities/mainframe_reference"
+									},
+									"relation": "includes",
+									"label": "is known to the mainframe as",
+									"cardinality": "1"
+								}
+							]
+						},
+						"gateway_reference": {
+							"name": "Gateway Reference",
+							"description": "The customer's id at the payment gateway.",
+							"root": false,
+							"attributes": {
+								"gateway_ref_id": {
+									"name": "gatewayRefId",
+									"type": "string",
+									"identity": true
+								},
+								"reference": {
+									"name": "reference",
+									"type": "string",
+									"identifies": {
+										"$ref": "#/boundedcontexts/payment_gateway"
+									}
+								}
+							},
+							"relations": []
+						},
+						"registry_reference": {
+							"name": "Registry Reference",
+							"description": "The customer's id at the tax registry.",
+							"root": false,
+							"attributes": {
+								"registry_ref_id": {
+									"name": "registryRefId",
+									"type": "string",
+									"identity": true
+								},
+								"reference": {
+									"name": "reference",
+									"type": "string",
+									"identifies": {
+										"$ref": "#/boundedcontexts/tax_registry"
+									}
+								}
+							},
+							"relations": []
+						},
+						"mainframe_reference": {
+							"name": "Mainframe Reference",
+							"description": "The customer's id on the mainframe.",
+							"root": false,
+							"attributes": {
+								"mainframe_ref_id": {
+									"name": "mainframeRefId",
+									"type": "string",
+									"identity": true
+								},
+								"reference": {
+									"name": "reference",
+									"type": "string",
+									"identifies": {
+										"$ref": "#/boundedcontexts/legacy_mainframe"
+									}
+								}
+							},
+							"relations": []
+						}
+					},
+					"invariants": {}
+				}
+			},
+			"invariants": {},
+			"services": {},
+			"policies": {},
+			"processes": {},
+			"glossary": {},
+			"valueobjects": {},
+			"schemas": {}
+		},
+		"billing": {
+			"name": "Billing",
+			"description": "Bills for orders.",
+			"subdomains": [
+				{
+					"$ref": "#/domains/trade/subdomains/order_handling"
+				}
+			],
+			"team": {
+				"$ref": "#/teams/trade_team"
+			},
+			"aggregates": {},
+			"invariants": {},
+			"services": {},
+			"policies": {},
+			"processes": {},
+			"glossary": {},
+			"valueobjects": {},
+			"schemas": {}
+		},
+		"shipping": {
+			"name": "Shipping",
+			"description": "Ships orders.",
+			"subdomains": [
+				{
+					"$ref": "#/domains/trade/subdomains/order_handling"
+				}
+			],
+			"team": {
+				"$ref": "#/teams/trade_team"
+			},
+			"aggregates": {},
+			"invariants": {},
+			"services": {},
+			"policies": {},
+			"processes": {},
+			"glossary": {},
+			"valueobjects": {},
+			"schemas": {}
+		},
+		"warehouse": {
+			"name": "Warehouse",
+			"description": "Holds stock and receives deliveries.",
+			"subdomains": [
+				{
+					"$ref": "#/domains/trade/subdomains/order_handling"
+				}
+			],
+			"team": {
+				"$ref": "#/teams/trade_team"
+			},
+			"aggregates": {},
+			"invariants": {},
+			"services": {
+				"warehouse_api": {
+					"name": "Warehouse API",
+					"description": "The warehouse's front.",
+					"type": "application",
+					"provides": {
+						"record_delivery": {
+							"name": "Record Delivery",
+							"description": "Books a delivery in against what the vendor said.",
+							"type": "operation",
+							"internal": true
+						}
+					},
+					"consumes": [
+						{
+							"consumable": {
+								"$ref": "#/boundedcontexts/vendor/services/vendor_api/provides/purchase_file_published"
+							},
+							"pattern": "anti-corruption-layer",
+							"relationship": {
+								"$ref": "#/relationships/vendor~upstream-downstream~warehouse~purchase_feed"
+							}
+						},
+						{
+							"consumable": {
+								"$ref": "#/boundedcontexts/vendor/services/vendor_api/provides/ask_price"
+							},
+							"pattern": "anti-corruption-layer",
+							"by": [
+								{
+									"$ref": "#/boundedcontexts/warehouse/services/warehouse_api/provides/record_delivery"
+								}
+							],
+							"relationship": {
+								"$ref": "#/relationships/vendor~upstream-downstream~warehouse~price_lookup"
+							}
+						},
+						{
+							"consumable": {
+								"$ref": "#/boundedcontexts/vendor/services/vendor_api/provides/stock_checked"
+							},
+							"pattern": "anti-corruption-layer"
+						}
+					]
+				}
+			},
+			"policies": {
+				"book_in_on_file": {
+					"name": "Book in on file",
+					"description": "A file becomes a delivery.",
+					"on": [
+						{
+							"$ref": "#/boundedcontexts/vendor/services/vendor_api/provides/purchase_file_published"
+						}
+					],
+					"then": [
+						{
+							"$ref": "#/boundedcontexts/warehouse/services/warehouse_api/provides/record_delivery"
+						}
+					]
+				},
+				"book_in_on_stock_report": {
+					"name": "Book in on stock report",
+					"description": "A stock report becomes a delivery.",
+					"on": [
+						{
+							"$ref": "#/boundedcontexts/vendor/services/vendor_api/provides/stock_checked"
+						}
+					],
+					"then": [
+						{
+							"$ref": "#/boundedcontexts/warehouse/services/warehouse_api/provides/record_delivery"
+						}
+					]
+				}
+			},
+			"processes": {},
+			"glossary": {},
+			"valueobjects": {},
+			"schemas": {}
+		},
+		"vendor": {
+			"name": "Vendor",
+			"description": "Supplies the stock the warehouse receives.",
+			"subdomains": [
+				{
+					"$ref": "#/domains/trade/subdomains/order_handling"
+				}
+			],
+			"team": {
+				"$ref": "#/teams/trade_team"
+			},
+			"aggregates": {},
+			"invariants": {},
+			"services": {
+				"vendor_api": {
+					"name": "Vendor API",
+					"description": "What the vendor offers the warehouse.",
+					"type": "application",
+					"provides": {
+						"purchase_file_published": {
+							"name": "PurchaseFilePublished",
+							"description": "The nightly purchase file is ready.",
+							"pattern": "published-language",
+							"type": "event",
+							"schema": {
+								"$ref": "#/boundedcontexts/vendor/schemas/purchase_file"
+							}
+						},
+						"ask_price": {
+							"name": "AskPrice",
+							"description": "Answers with the price of a SKU.",
+							"pattern": "open-host-service",
+							"type": "operation",
+							"schema": {
+								"$ref": "#/boundedcontexts/vendor/schemas/price_answer"
+							},
+							"returns": {
+								"$ref": "#/boundedcontexts/vendor/schemas/price_answer"
+							}
+						},
+						"stock_checked": {
+							"name": "StockChecked",
+							"description": "Reports stock on hand.",
+							"pattern": "published-language",
+							"type": "event",
+							"schema": {
+								"$ref": "#/boundedcontexts/vendor/schemas/stock_level"
+							}
+						},
+						"publish_purchase_file": {
+							"name": "PublishPurchaseFile",
+							"description": "Puts the nightly file out.",
+							"type": "operation",
+							"internal": true,
+							"raises": [
+								{
+									"$ref": "#/boundedcontexts/vendor/services/vendor_api/provides/purchase_file_published"
+								}
+							]
+						},
+						"check_stock": {
+							"name": "CheckStock",
+							"description": "Looks stock up and reports it.",
+							"type": "operation",
+							"internal": true,
+							"raises": [
+								{
+									"$ref": "#/boundedcontexts/vendor/services/vendor_api/provides/stock_checked"
+								}
+							]
+						}
+					},
+					"consumes": []
+				}
+			},
+			"policies": {},
+			"processes": {},
+			"glossary": {},
+			"valueobjects": {},
+			"schemas": {
+				"purchase_file": {
+					"name": "Purchase File",
+					"description": "The nightly file.",
+					"attributes": {
+						"file_name": {
+							"name": "fileName",
+							"type": "string",
+							"identity": true
+						}
+					}
+				},
+				"price_answer": {
+					"name": "Price Answer",
+					"description": "A price.",
+					"attributes": {
+						"sku": {
+							"name": "sku",
+							"type": "string",
+							"identity": true
+						}
+					}
+				},
+				"stock_level": {
+					"name": "Stock Level",
+					"description": "Stock on hand.",
+					"attributes": {
+						"sku": {
+							"name": "sku",
+							"type": "string",
+							"identity": true
+						}
+					}
+				}
+			}
+		},
+		"payment_gateway": {
+			"name": "Payment Gateway",
+			"description": "The provider's own system.",
+			"subdomains": [],
+			"external": true,
+			"aggregates": {},
+			"invariants": {},
+			"services": {},
+			"policies": {},
+			"processes": {},
+			"glossary": {},
+			"valueobjects": {},
+			"schemas": {}
+		},
+		"tax_registry": {
+			"name": "Tax Registry",
+			"description": "Published by a regulator; we know its edge and nothing inside.",
+			"subdomains": [
+				{
+					"$ref": "#/domains/trade/subdomains/order_handling"
+				}
+			],
+			"boundaryOnly": true,
+			"aggregates": {},
+			"invariants": {},
+			"services": {},
+			"policies": {},
+			"processes": {},
+			"glossary": {},
+			"valueobjects": {},
+			"schemas": {}
+		},
+		"legacy_mainframe": {
+			"name": "Legacy Mainframe",
+			"description": "Ninety jobs nobody can describe.",
+			"subdomains": [
+				{
+					"$ref": "#/domains/trade/subdomains/order_handling"
+				}
+			],
+			"bigBallOfMud": true,
+			"aggregates": {},
+			"invariants": {},
+			"services": {},
+			"policies": {},
+			"processes": {},
+			"glossary": {},
+			"valueobjects": {},
+			"schemas": {}
+		}
+	},
+	"relationships": [
+		{
+			"type": "customer-supplier",
+			"upstream": {
+				"$ref": "#/boundedcontexts/orders"
+			},
+			"downstream": {
+				"$ref": "#/boundedcontexts/billing"
+			},
+			"upstreamRoles": [],
+			"downstreamRoles": [],
+			"description": "Billing is told what to charge before an order is confirmed.",
+			"comments": [
+				{
+					"text": "Billing waits on Orders; nobody has had time to decouple them."
+				}
+			],
+			"disposition": "tolerated"
+		},
+		{
+			"type": "customer-supplier",
+			"upstream": {
+				"$ref": "#/boundedcontexts/orders"
+			},
+			"downstream": {
+				"$ref": "#/boundedcontexts/shipping"
+			},
+			"upstreamRoles": [],
+			"downstreamRoles": [],
+			"comments": [
+				{
+					"text": "Shipping takes what Orders hands it."
+				}
+			]
+		},
+		{
+			"type": "upstream-downstream",
+			"name": "purchase feed",
+			"upstream": {
+				"$ref": "#/boundedcontexts/vendor"
+			},
+			"downstream": {
+				"$ref": "#/boundedcontexts/warehouse"
+			},
+			"upstreamRoles": ["published-language"],
+			"downstreamRoles": ["anti-corruption-layer"],
+			"description": "The nightly purchase file."
+		},
+		{
+			"type": "upstream-downstream",
+			"name": "price lookup",
+			"upstream": {
+				"$ref": "#/boundedcontexts/vendor"
+			},
+			"downstream": {
+				"$ref": "#/boundedcontexts/warehouse"
+			},
+			"upstreamRoles": ["open-host-service"],
+			"downstreamRoles": ["anti-corruption-layer"],
+			"description": "One read endpoint for a vendor's price."
+		}
+	],
+	"teams": {
+		"trade_team": {
+			"name": "Trade Team"
+		}
+	}
+}

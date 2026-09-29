@@ -13,5 +13,6 @@
 		"sourceMap": true,
 		"types": ["node", "mocha", "vscode"]
 	},
-	"include": ["src/test"]
+	"include": ["src/test"],
+	"exclude": ["src/test/fixtures/**/generate.ts"]
 }
