@@ -16,7 +16,12 @@ describe("createDisclosure", () => {
 		const disclosure = createDisclosure();
 		expect(disclosure.open).toBeUndefined();
 		disclosure.show(relationship, { x: 12, y: 34 });
-		expect(disclosure.open).toEqual({ relationship, x: 12, y: 34 });
+		expect(disclosure.open).toEqual({
+			relationship,
+			x: 12,
+			y: 34,
+			invoker: undefined,
+		});
 		disclosure.close();
 		expect(disclosure.open).toBeUndefined();
 	});
@@ -66,6 +71,59 @@ describe("createDisclosure", () => {
 	});
 });
 
+describe("returning focus", () => {
+	const badge = () => {
+		const button = document.createElement("button");
+		document.body.append(button);
+		return button;
+	};
+
+	it("gives each disclosure its own card id, so two figures on a page never share one", () => {
+		const [a, b] = [createDisclosure(), createDisclosure()];
+		expect(a.id).toMatch(/^disclosure-card-\d+$/);
+		expect(b.id).not.toBe(a.id);
+	});
+
+	it("hands focus back to the badge on Escape and on dismiss, and remembers which badge opened it", () => {
+		const disclosure = createDisclosure();
+		const first = badge();
+		disclosure.show(relationship, { x: 0, y: 0 }, first);
+		expect(disclosure.open?.invoker).toBe(first);
+		press("Escape");
+		expect(disclosure.open).toBeUndefined();
+		expect(document.activeElement).toBe(first);
+
+		const second = badge();
+		disclosure.show(relationship, { x: 0, y: 0 }, second);
+		first.focus();
+		disclosure.dismiss();
+		expect(disclosure.open).toBeUndefined();
+		expect(document.activeElement).toBe(second);
+		first.remove();
+		second.remove();
+	});
+
+	it("does not take focus back when the card closes because the reader went elsewhere", () => {
+		const disclosure = createDisclosure();
+		const button = badge();
+		const elsewhere = badge();
+		disclosure.show(relationship, { x: 0, y: 0 }, button);
+		elsewhere.focus();
+		disclosure.close();
+		expect(document.activeElement).toBe(elsewhere);
+		button.remove();
+		elsewhere.remove();
+	});
+
+	it("dismisses a card opened without a badge, and one that is not open, without error", () => {
+		const disclosure = createDisclosure();
+		disclosure.dismiss();
+		disclosure.show(relationship, { x: 0, y: 0 });
+		disclosure.dismiss();
+		expect(disclosure.open).toBeUndefined();
+	});
+});
+
 describe("withDisclosure", () => {
 	const graph: Graph = {
 		nodes: [],
@@ -90,8 +148,13 @@ describe("withDisclosure", () => {
 		const [known, plain] = withDisclosure(edges, graph, disclosure);
 		const data = known.data as ContextEdgeData;
 		expect(data.sourceLabel).toBe("OHS");
-		data.onBadgeClick?.({ x: 7, y: 9 });
-		expect(disclosure.open).toEqual({ relationship, x: 7, y: 9 });
+		const invoker = document.createElement("button");
+		expect(data.cardId).toBe(disclosure.id);
+		expect(data.disclosedBy?.()).toBeUndefined();
+		data.onBadgeClick?.({ x: 7, y: 9 }, invoker);
+		expect(disclosure.open).toEqual({ relationship, x: 7, y: 9, invoker });
+		// The badge that opened the card is the one that reads as expanded.
+		expect(data.disclosedBy?.()).toBe(invoker);
 		// An edge with no intent is handed back untouched, so its badges stay inert.
 		expect(plain).toBe(edges[1]);
 		disclosure.stop();

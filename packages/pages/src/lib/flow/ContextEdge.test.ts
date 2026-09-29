@@ -1,8 +1,12 @@
-import { PATTERNS } from "@open-domain-specification/core";
+import {
+	type ContextRelationship,
+	PATTERNS,
+} from "@open-domain-specification/core";
 import { fireEvent, render, waitFor } from "@testing-library/svelte";
 import { describe, expect, it, vi } from "vitest";
 import { type Box, installXyflowTestEnv } from "../xyflow-test-env";
 import ContextEdge from "./ContextEdge.svelte";
+import { createDisclosure } from "./disclosure.svelte";
 import Harness from "./EdgeHarness.svelte";
 import { PORT_RADIUS } from "./edge-path";
 import { diagramOptions } from "./options.svelte";
@@ -192,9 +196,69 @@ describe("ContextEdge disposition marks", () => {
 		for (const badge of badges(container)) {
 			await fireEvent.click(badge.querySelector("button") as HTMLElement);
 			const [x, y] = portAt(badge);
-			expect(onBadgeClick).toHaveBeenLastCalledWith({ x, y });
+			// The badge hands over itself as well, so focus can come back to it.
+			expect(onBadgeClick).toHaveBeenLastCalledWith(
+				{ x, y },
+				badge.querySelector("button"),
+			);
 		}
 		expect(onBadgeClick).toHaveBeenCalledTimes(3);
+	});
+
+	it("names a badge for what it shows, announces a dialog, and reads as expanded only while its own card is open", async () => {
+		// The real disclosure, because "expanded" is read from its reactive state.
+		const disclosure = createDisclosure();
+		const relationship = { ref: "#/relationships/r" } as ContextRelationship;
+		const { container } = edge({
+			label: "U/D",
+			data: {
+				sourceLabel: "OHS",
+				summary: "Tolerated\nReads Catalog through a client.",
+				onBadgeClick: (at: { x: number; y: number }, invoker: HTMLElement) =>
+					disclosure.show(relationship, at, invoker),
+				disclosedBy: () => disclosure.open?.invoker,
+				cardId: disclosure.id,
+			},
+		});
+		await waitFor(() => expect(container.querySelector("path")).toBeTruthy());
+		const [stereotype, role] = [...container.querySelectorAll("button")];
+		// It opens with the text on the button, then what hover says, on one line.
+		expect(stereotype.getAttribute("aria-label")).toBe(
+			"Show evidence for U/D: Tolerated. Reads Catalog through a client.",
+		);
+		expect(role.getAttribute("aria-label")).toMatch(
+			/^Show evidence for OHS: Open Host Service — .+\. Tolerated\. Reads Catalog/,
+		);
+		for (const button of [stereotype, role]) {
+			expect(button.getAttribute("aria-haspopup")).toBe("dialog");
+			expect(button.getAttribute("aria-expanded")).toBe("false");
+			expect(button.hasAttribute("aria-controls")).toBe(false);
+		}
+		await fireEvent.click(role);
+		await waitFor(() =>
+			expect(role.getAttribute("aria-expanded")).toBe("true"),
+		);
+		expect(role.getAttribute("aria-controls")).toBe(disclosure.id);
+		// Another badge on the same edge is not the one that is open.
+		expect(stereotype.getAttribute("aria-expanded")).toBe("false");
+		expect(stereotype.hasAttribute("aria-controls")).toBe(false);
+		// Closing the card puts the badge back to collapsed.
+		disclosure.close();
+		await waitFor(() =>
+			expect(role.getAttribute("aria-expanded")).toBe("false"),
+		);
+		disclosure.stop();
+	});
+
+	it("names a badge that has only its label by the label alone, and is collapsed when no card is tracked", async () => {
+		const { container } = edge({
+			label: "P",
+			data: { onBadgeClick: vi.fn() },
+		});
+		await waitFor(() => expect(container.querySelector("path")).toBeTruthy());
+		const button = container.querySelector("button") as HTMLElement;
+		expect(button.getAttribute("aria-label")).toBe("Show evidence for P");
+		expect(button.getAttribute("aria-expanded")).toBe("false");
 	});
 
 	it("leaves a badge with nothing to disclose inert, as it has always been", async () => {

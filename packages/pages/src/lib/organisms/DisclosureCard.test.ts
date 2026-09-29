@@ -39,6 +39,14 @@ describe("DisclosureCard", () => {
 		// Inside the viewport portal, so it pans and zooms with the map.
 		expect(card.closest(".svelte-flow__viewport-front")).toBeTruthy();
 		expect(card.style.transform).toBe("translate(120px, 48px)");
+		// A dialog with a name and the id the badge's aria-controls points at,
+		// and focus is on it so the next Tab is its contents.
+		expect(card.getAttribute("role")).toBe("dialog");
+		expect(card.id).toBe(disclosure.id);
+		expect(card.getAttribute("aria-label")).toBe(
+			"Evidence for Catalog BC ↔ Inventory BC",
+		);
+		expect(document.activeElement).toBe(card);
 		// The v2 detail's title is the two context lockups either side of the
 		// arrow, then the pattern and its disposition, so the badge a reader
 		// clicked and the card that opens name the same relationship.
@@ -58,6 +66,29 @@ describe("DisclosureCard", () => {
 		await waitFor(() =>
 			expect(container.querySelector(".anchored")).toBeNull(),
 		);
+		disclosure.stop();
+	});
+
+	it("hands focus back to the badge when the reader closes the card with its own button", async () => {
+		const disclosure = createDisclosure();
+		const badge = document.createElement("button");
+		document.body.append(badge);
+		const { container } = render(Harness, { disclosure, model });
+		await waitFor(() =>
+			expect(container.querySelector(".svelte-flow")).toBeTruthy(),
+		);
+		disclosure.show(kernel, { x: 0, y: 0 }, badge);
+		await waitFor(() =>
+			expect(container.querySelector(".anchored")).toBeTruthy(),
+		);
+		await fireEvent.click(
+			container.querySelector('button[aria-label="Close"]') as HTMLElement,
+		);
+		await waitFor(() =>
+			expect(container.querySelector(".anchored")).toBeNull(),
+		);
+		expect(document.activeElement).toBe(badge);
+		badge.remove();
 		disclosure.stop();
 	});
 });

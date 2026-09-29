@@ -22,8 +22,15 @@ export type ContextEdgeData = {
 	disposition?: Disposition;
 	/** One-line hover text, appended to the role names on the end badges. */
 	summary?: string;
-	/** Given the badge's flow coordinates, so the card can be anchored to it. */
-	onBadgeClick?: (at: { x: number; y: number }) => void;
+	/**
+	 * Given the badge's flow coordinates, so the card can be anchored to it, and
+	 * the badge itself, so focus can go back to it when the card is dismissed.
+	 */
+	onBadgeClick?: (at: { x: number; y: number }, invoker: HTMLElement) => void;
+	/** The element id of the card a badge opens, for the badge's `aria-controls`. */
+	cardId?: string;
+	/** The badge whose card is open right now, if any: the one that reads as expanded. */
+	disclosedBy?: () => Element | undefined;
 	/**
 	 * On a consumable edge, the consumer's own operations or policies behind the
 	 * consumption; the edge shows them when the line is hovered.

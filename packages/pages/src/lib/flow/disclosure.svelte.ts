@@ -7,6 +7,12 @@
  * ones, and it means the card closes the three ways a reader expects: Escape,
  * a click anywhere else, and following a link out of it.
  *
+ * A card opened from the keyboard is left the way it was entered. Focus moves
+ * into it when it opens (DisclosureCard) and Escape or its own Close button
+ * hands focus back to the badge that opened it, as the modal does for the
+ * toggle that opened that. A click somewhere else, or a link followed out of
+ * the card, closes it without taking focus from wherever the reader went.
+ *
  * The window listeners exist only while a card is open, so this never swallows
  * a key or a click on a page that has no card up. The card element itself
  * stops `pointerdown` from reaching the window, which is what makes "anywhere
@@ -22,20 +28,37 @@ export type Anchored = {
 	relationship: ContextRelationship;
 	x: number;
 	y: number;
+	/** The badge that opened the card, which is where focus goes back to. */
+	invoker?: HTMLElement;
 };
 
 export type Disclosure = {
+	/** The card's element id, which each badge's `aria-controls` points at while it is open. */
+	readonly id: string;
 	/** The card on show, or nothing. */
 	readonly open: Anchored | undefined;
-	/** Opens the detail for `relationship`, anchored at the badge's flow point. */
-	show(relationship: ContextRelationship, at: { x: number; y: number }): void;
-	/** Closes the card, if one is up. */
+	/**
+	 * Opens the detail for `relationship`, anchored at the badge's flow point.
+	 * `invoker` is the badge, so a keyboard reader can be handed back to it.
+	 */
+	show(
+		relationship: ContextRelationship,
+		at: { x: number; y: number },
+		invoker?: HTMLElement,
+	): void;
+	/** Closes the card, if one is up, and leaves focus where it is. */
 	close(): void;
+	/** Closes the card and returns focus to the badge that opened it: Escape and the Close button. */
+	dismiss(): void;
 	/** Drops the window listeners; call on teardown. */
 	stop(): void;
 };
 
+/** One id per diagram on a page, so two figures never share a card id. */
+let issued = 0;
+
 export function createDisclosure(): Disclosure {
+	const id = `disclosure-card-${++issued}`;
 	let open = $state.raw<Anchored | undefined>(undefined);
 	let onKeydown: ((event: KeyboardEvent) => void) | undefined;
 	let onDismiss: (() => void) | undefined;
@@ -51,15 +74,21 @@ export function createDisclosure(): Disclosure {
 		open = undefined;
 		stop();
 	};
+	const dismiss = () => {
+		const back = open?.invoker;
+		close();
+		back?.focus();
+	};
 	return {
+		id,
 		get open() {
 			return open;
 		},
-		show(relationship, at) {
+		show(relationship, at, invoker) {
 			stop();
-			open = { relationship, x: at.x, y: at.y };
+			open = { relationship, x: at.x, y: at.y, invoker };
 			onKeydown = (event) => {
-				if (event.key === "Escape") close();
+				if (event.key === "Escape") dismiss();
 			};
 			onDismiss = close;
 			window.addEventListener("keydown", onKeydown);
@@ -67,6 +96,7 @@ export function createDisclosure(): Disclosure {
 			window.addEventListener("hashchange", onDismiss);
 		},
 		close,
+		dismiss,
 		stop,
 	};
 }
@@ -86,7 +116,9 @@ export function withDisclosure(
 		if (!intent) return edge;
 		const data: ContextEdgeData = {
 			...(edge.data as ContextEdgeData),
-			onBadgeClick: (at) => disclosure.show(intent, at),
+			cardId: disclosure.id,
+			disclosedBy: () => disclosure.open?.invoker,
+			onBadgeClick: (at, invoker) => disclosure.show(intent, at, invoker),
 		};
 		return { ...edge, data };
 	});
