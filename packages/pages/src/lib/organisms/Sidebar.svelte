@@ -61,21 +61,20 @@ const here = $derived(
 		.filter((i) => onTheWay(i.ref))
 		.sort((a, b) => b.ref.length - a.ref.length)[0]?.ref,
 );
-/**
- * One decision drives the wash and `aria-current`, so they cannot disagree:
- * the row for the page is `page`, its ancestors, which the wash also marks,
- * are `true`, and every other row is neither.
+/*
+ * Two separate facts. The wash (`.active`) is drawn on the page's row and on
+ * the rows above it, so the reader sees the path. `aria-current="page"` is
+ * semantic and goes on the one link for the page being read; ancestors are not
+ * the current item, so they carry none.
  */
-const state = (ref: string) =>
-	ref === here ? "page" : onTheWay(ref) ? "true" : undefined;
 </script>
 
 {#snippet list(entries: Item[])}
 	<ul>
 		{#each entries as i (i.ref)}
 			<li>
-				<span class="item" class:active={state(i.ref) !== undefined}>
-					<Lockup kind={i.kind} name={i.label} ref={i.ref} current={state(i.ref)} />
+				<span class="item" class:active={onTheWay(i.ref)}>
+					<Lockup kind={i.kind} name={i.label} ref={i.ref} current={i.ref === here ? "page" : undefined} />
 				</span>
 				{#if i.children?.length}{@render list(i.children)}{/if}
 			</li>

@@ -8,11 +8,11 @@ describe("Lockup", () => {
 			kind: "boundedcontext",
 			name: "Catalog BC",
 			ref: "#/boundedcontexts/catalog_bc",
-			current: "true",
+			current: "page",
 		});
 		expect(screen.getByRole("link", { name: "Catalog BC" })).toHaveAttribute(
 			"aria-current",
-			"true",
+			"page",
 		);
 	});
 

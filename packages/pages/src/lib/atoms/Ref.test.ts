@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import Ref from "./Ref.svelte";
 
 describe("Ref", () => {
-	it("carries aria-current only when it is told it is the current page or on the way to it", () => {
+	it("carries aria-current only when it is told it is the current page", () => {
 		const { unmount } = render(Ref, { ref: "#/x", label: "Plain" });
 		expect(screen.getByRole("link", { name: "Plain" })).not.toHaveAttribute(
 			"aria-current",

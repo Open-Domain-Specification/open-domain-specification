@@ -68,23 +68,32 @@ describe("Sidebar", () => {
 		);
 	});
 
-	it("marks the page being read aria-current=page, its ancestor true, and every other row neither, on the same rows the wash marks", () => {
+	it("marks exactly one link aria-current=page, the page being read, and no ancestor or other row", () => {
 		const { container } = render(Harness);
 		const link = (ref: string) => container.querySelector(`a[href="${ref}"]`);
 		expect(link("#/boundedcontexts/catalog_bc/aggregates/pet")).toHaveAttribute(
 			"aria-current",
 			"page",
 		);
-		expect(link("#/boundedcontexts/catalog_bc")).toHaveAttribute(
+		expect(link("#/boundedcontexts/catalog_bc")).not.toHaveAttribute(
 			"aria-current",
-			"true",
 		);
 		expect(link("#/boundedcontexts/sales_bc")).not.toHaveAttribute(
 			"aria-current",
 		);
-		expect(container.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
-		const drawn = [...container.querySelectorAll(".item.active a")];
-		expect(drawn).toEqual([...container.querySelectorAll("[aria-current]")]);
+		expect(container.querySelectorAll("[aria-current]")).toHaveLength(1);
+	});
+
+	it("still draws the wash on the ancestor row, apart from which link is current", () => {
+		const { container } = render(Harness);
+		expect(
+			[...container.querySelectorAll(".item.active a")].map((a) =>
+				a.getAttribute("href"),
+			),
+		).toEqual([
+			"#/boundedcontexts/catalog_bc",
+			"#/boundedcontexts/catalog_bc/aggregates/pet",
+		]);
 	});
 
 	it("marks the row the page is under when the ref points inside a page the tree has no row for", () => {

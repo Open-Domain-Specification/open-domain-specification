@@ -10,10 +10,9 @@ import { PETSTORE_SCHEMA, servePetstore, viewerAt } from "./helpers";
 
 /**
  * The reader can tell where they are. The tree marks the page being read with
- * `aria-current="page"` on its link, its ancestors (which the row wash also
- * marks) with `aria-current="true"`, and the accessible state is the visual
- * state: the rows drawn as active are the links that carry `aria-current`. The
- * tree, the page and the contents are three landmarks, and the two
+ * `aria-current="page"` on its link and nothing else carries `aria-current`;
+ * its ancestors are highlighted by the row wash only, which is a separate fact
+ * from which page is current. The tree, the page and the contents are three landmarks, and the two
  * navigations are told apart by name.
  */
 
@@ -132,9 +131,10 @@ for (const host of hosts) {
 			await link.focus();
 			await page.keyboard.press("Enter");
 			await expect(page.locator("main h1")).toHaveText(/^\s*Pet\b/);
-			expect(await marked(page)).toEqual({ page: [PET], true: [CATALOG] });
+			expect(await marked(page)).toEqual({ page: [PET] });
 
-			// The accessible state is the visual state: the same rows.
+			// The wash still marks the page's row and its ancestor; that is
+			// drawn state, asserted apart from the one current link.
 			expect((await drawnActive(page)).sort()).toEqual([CATALOG, PET].sort());
 
 			// Another page: the mark moves, it does not accumulate.
@@ -148,7 +148,8 @@ for (const host of hosts) {
 			// History: back restores the mark with the page.
 			await page.goBack();
 			await expect(page.locator("main h1")).toHaveText(/^\s*Pet\b/);
-			expect(await marked(page)).toEqual({ page: [PET], true: [CATALOG] });
+			expect(await marked(page)).toEqual({ page: [PET] });
+			expect((await drawnActive(page)).sort()).toEqual([CATALOG, PET].sort());
 			await page.goForward();
 			await expect(page.locator("main h1")).toHaveText(/^\s*Catalog\b/);
 			expect(await marked(page)).toEqual({ page: [CATALOG] });

@@ -27,7 +27,7 @@ const {
 	detail?: string;
 	size?: "row" | "title";
 	/** Passed to the link as `aria-current`; only a tree row has one. */
-	current?: "page" | "true";
+	current?: "page";
 } = $props();
 </script>
 

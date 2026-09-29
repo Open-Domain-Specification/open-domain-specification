@@ -25,8 +25,8 @@ const {
 	kind?: Kind;
 	external?: boolean;
 	title?: string;
-	/** `aria-current` for a link to the page being read (`page`) or to something on the way to it (`true`). */
-	current?: "page" | "true";
+	/** `aria-current="page"` for the one link to the page being read. */
+	current?: "page";
 } = $props();
 </script>
 
