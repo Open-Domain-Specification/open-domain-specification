@@ -280,7 +280,18 @@ describe("PatternHover", () => {
 			container.querySelector(".pattern-hover") as HTMLElement,
 		);
 		const remove = vi.spyOn(document, "removeEventListener");
+		const removeFromWindow = vi.spyOn(window, "removeEventListener");
 		unmount();
-		expect(remove).toHaveBeenCalledWith("keydown", expect.any(Function), true);
+		expect(remove).toHaveBeenCalledWith(
+			"pointerdown",
+			expect.any(Function),
+			true,
+		);
+		// And it is off the stack that Escape closes, so the key is nobody's now.
+		expect(removeFromWindow).toHaveBeenCalledWith(
+			"keydown",
+			expect.any(Function),
+			true,
+		);
 	});
 });

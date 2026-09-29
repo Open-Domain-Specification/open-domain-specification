@@ -4,11 +4,12 @@
  * There is no `requestFullscreen` here on purpose: a VS Code webview is an
  * iframe without the fullscreen permission, so the only path that works
  * everywhere is a fixed overlay the figure paints itself. This module owns the
- * boolean behind that overlay, the Escape binding (listened for only while the
- * overlay is up, so it never swallows the key on a normal page) and the refit
+ * boolean behind that overlay, its place in the stack of layers Escape closes (only
+ * while the overlay is up, so it never swallows the key on a normal page) and the refit
  * that follows a size change.
  */
 import { tick } from "svelte";
+import { openLayer } from "../layers";
 
 export type Fullscreen = {
 	/** True while the diagram is drawn as a full-viewport overlay. */
@@ -38,20 +39,18 @@ async function refit(fitView: (() => void) | undefined): Promise<void> {
 export function createFullscreen(): Fullscreen {
 	let active = $state(false);
 	let fit: (() => void) | undefined;
-	let onKeydown: ((event: KeyboardEvent) => void) | undefined;
+	let releaseLayer: (() => void) | undefined;
 	const stop = () => {
-		if (!onKeydown) return;
-		window.removeEventListener("keydown", onKeydown);
-		onKeydown = undefined;
+		releaseLayer?.();
+		releaseLayer = undefined;
 	};
 	const set = (next: boolean) => {
 		if (next === active) return;
 		active = next;
 		if (next) {
-			onKeydown = (event) => {
-				if (event.key === "Escape") set(false);
-			};
-			window.addEventListener("keydown", onKeydown);
+			// The overlay is the outermost layer: Escape reaches it only once
+			// everything opened from inside it has been closed (`layers.ts`).
+			releaseLayer = openLayer({ dismiss: () => set(false) });
 		} else stop();
 		void refit(fit);
 	};

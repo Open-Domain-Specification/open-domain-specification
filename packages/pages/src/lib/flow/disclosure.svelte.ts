@@ -13,9 +13,9 @@
  * toggle that opened that. A click somewhere else, or a link followed out of
  * the card, closes it without taking focus from wherever the reader went.
  *
- * Escape closes the card and nothing else: the listener runs in the capture
- * phase and stops the key there, so a fullscreen diagram stays fullscreen
- * until the second Escape.
+ * Escape is not this module's to interpret: the card is one layer in the
+ * stack of things Escape closes (`layers.ts`), so a fullscreen diagram behind
+ * it stays fullscreen and a pattern explanation inside it goes first.
  *
  * The window listeners exist only while a card is open, so this never swallows
  * a key or a click on a page that has no card up. The card element itself
@@ -24,6 +24,7 @@
  */
 import type { ContextRelationship } from "@open-domain-specification/core";
 import type { Edge } from "@xyflow/svelte";
+import { openLayer } from "../layers";
 import type { ContextEdgeData } from "./flow-nodes";
 import type { Graph } from "./graph";
 
@@ -64,14 +65,14 @@ let issued = 0;
 export function createDisclosure(): Disclosure {
 	const id = `disclosure-card-${++issued}`;
 	let open = $state.raw<Anchored | undefined>(undefined);
-	let onKeydown: ((event: KeyboardEvent) => void) | undefined;
+	let releaseLayer: (() => void) | undefined;
 	let onDismiss: (() => void) | undefined;
 	const stop = () => {
-		if (!onKeydown || !onDismiss) return;
-		window.removeEventListener("keydown", onKeydown, true);
+		if (!releaseLayer || !onDismiss) return;
+		releaseLayer();
 		window.removeEventListener("pointerdown", onDismiss);
 		window.removeEventListener("hashchange", onDismiss);
-		onKeydown = undefined;
+		releaseLayer = undefined;
 		onDismiss = undefined;
 	};
 	const close = () => {
@@ -91,15 +92,10 @@ export function createDisclosure(): Disclosure {
 		show(relationship, at, invoker) {
 			stop();
 			open = { relationship, x: at.x, y: at.y, invoker };
-			onKeydown = (event) => {
-				if (event.key !== "Escape") return;
-				// The card is the innermost layer: Escape is spent closing it, and
-				// does not go on to leave the fullscreen overlay behind it.
-				event.stopImmediatePropagation();
-				dismiss();
-			};
+			// Escape closes whichever layer is innermost (`layers.ts`); while the card
+			// is the top one that is the card, and it hands focus back to its badge.
+			releaseLayer = openLayer({ dismiss });
 			onDismiss = close;
-			window.addEventListener("keydown", onKeydown, true);
 			window.addEventListener("pointerdown", onDismiss);
 			window.addEventListener("hashchange", onDismiss);
 		},

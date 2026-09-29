@@ -2,7 +2,7 @@
  * Open/closed state for one hover disclosure.
  *
  * A hover disclosure is not a tooltip: it opens on hover after a pause, it
- * opens on keyboard focus, a click pins it open, and Escape, a click anywhere
+ * opens on keyboard focus, a click pins it open, and Escape (through the layer stack), a click anywhere
  * else, or the page scrolling or resizing closes it. The pause matters
  * because a table row is a line of keywords — sweeping the pointer along it
  * must open nothing. Scrolling closes it because the card is placed in
@@ -16,6 +16,8 @@
  * This is deliberately not `flow/disclosure.svelte.ts`: that one is per
  * diagram, in flow coordinates, with no delay and no pinning.
  */
+
+import { openLayer } from "../layers";
 
 /** Long enough that the pointer can cross a keyword on its way somewhere else. */
 export const OPEN_DELAY = 150;
@@ -51,9 +53,6 @@ export function createHover(root: () => HTMLElement | undefined): Hover {
 	let pinned = $state(false);
 	let timer: ReturnType<typeof setTimeout> | undefined;
 
-	const onKeydown = (event: Event) => {
-		if ((event as KeyboardEvent).key === "Escape") hover.close();
-	};
 	// Captured on pointerdown rather than click so a card closes before whatever
 	// was clicked underneath it reacts.
 	// A pointer or a scroll inside the disclosure is the reader using it; the
@@ -64,9 +63,13 @@ export function createHover(root: () => HTMLElement | undefined): Hover {
 		hover.close();
 	};
 
+	let releaseLayer: (() => void) | undefined;
 	const listen = (on: boolean) => {
+		// Escape is the layer stack's (`layers.ts`): this explanation is the top layer
+		// while it is the last thing opened, and closing it leaves focus on its keyword.
+		if (on) releaseLayer = openLayer({ dismiss: hover.close });
+		else (releaseLayer as () => void)();
 		const bind = on ? document.addEventListener : document.removeEventListener;
-		bind.call(document, "keydown", onKeydown, true);
 		bind.call(document, "pointerdown", onOutside, true);
 		bind.call(document, "scroll", onOutside, true);
 		const bindWindow = on
