@@ -21,6 +21,27 @@ const unsafeUrls: [string, string][] = [
 	["percent-encoded colon", "javascript%3Aalert(1)"],
 	["percent-encoded letters", "%6Aavascript:alert(1)"],
 	["literal tab in scheme", "java\tscript:alert(1)"],
+	["entity without its semicolon", "&#106avascript:alert(1)"],
+	["unknown named entity", "java&bogus;script:alert(1)"],
+	["run-on named entity", "javascript&colonalert(1)"],
+	["entity beyond the code points", "&#x110000;javascript:alert(1)"],
+	["undecodable percent sequence", "javascript:%E0%A4%A"],
+	[
+		"c1 control character in scheme",
+		`java${String.fromCharCode(0x85)}script:alert(1)`,
+	],
+	[
+		"delete character in scheme",
+		`java${String.fromCharCode(0x7f)}script:alert(1)`,
+	],
+	[
+		"line separator in scheme",
+		`java${String.fromCharCode(0x2028)}script:alert(1)`,
+	],
+	[
+		"paragraph separator in scheme",
+		`java${String.fromCharCode(0x2029)}script:alert(1)`,
+	],
 	["protocol-relative", "//example.com/x"],
 	["other scheme", "ftp://example.com/x"],
 ];
@@ -86,11 +107,19 @@ describe("Markdown links", () => {
 			["mailto", "mailto:someone@example.com"],
 			["hash route", "#/domains/sales"],
 			["section anchor", "#overview"],
+			["undecodable percent sequence", "https://example.com/%E0%A4%A"],
+			["unknown named entity", "https://example.com/?a=&bogus;"],
 		])("%s", (_name, url) => {
 			const a = html(`[label](${url})`).querySelector("a");
 			expect(a).not.toBeNull();
 			expect(a?.getAttribute("href")).toBe(url);
 			expect(a?.textContent).toBe("label");
+		});
+
+		it("links a url whose entity is beyond the code points", () => {
+			expect(
+				html("[label](https://example.com/?a=&#x110000;)").querySelector("a"),
+			).not.toBeNull();
 		});
 
 		it("keeps a title and markdown in the text", () => {

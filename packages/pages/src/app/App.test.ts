@@ -183,6 +183,40 @@ describe("App (embedded in VS Code)", () => {
 		await waitFor(() => expect(location.hash).toBe("#/y"));
 	});
 
+	it("answers a probe with the links and images inside rendered descriptions only", async () => {
+		const {
+			App: EmbeddedApp,
+			api,
+			render: renderEmbedded,
+		} = await embeddedApp();
+		const schema = {
+			...petstore,
+			description:
+				"[safe](https://example.com/a) [unsafe](javascript:alert(1)) ![pic](https://example.com/p.png) ![gone](data:image/png;base64,AAAA)",
+		};
+		renderEmbedded(EmbeddedApp, {
+			initial: { workspaces: [{ schema, fileLabel: "x.json" }] },
+		});
+		const outside = document.createElement("a");
+		outside.setAttribute("href", "#/outside");
+		document.body.append(outside);
+		await waitFor(() =>
+			expect(api.postMessage).toHaveBeenCalledWith({ type: "ready" }),
+		);
+		await waitFor(() =>
+			expect(document.querySelector(".md a[href]")).toBeInTheDocument(),
+		);
+		post({ type: "probe" });
+		await waitFor(() =>
+			expect(api.postMessage).toHaveBeenCalledWith({
+				type: "rendered",
+				hrefs: ["https://example.com/a"],
+				images: ["https://example.com/p.png"],
+			}),
+		);
+		outside.remove();
+	});
+
 	it("handles a model message, loading workspaces and navigating to its ref", async () => {
 		const {
 			App: EmbeddedApp,

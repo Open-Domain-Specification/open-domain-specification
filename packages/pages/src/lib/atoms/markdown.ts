@@ -28,7 +28,7 @@ function decode(href: string): string {
 	// Browsers drop controls, whitespace and line separators before reading a scheme.
 	return [...out]
 		.filter((c) => {
-			const n = c.codePointAt(0) ?? 0;
+			const n = c.codePointAt(0) as number;
 			return !(
 				n <= 0x20 ||
 				(n >= 0x7f && n <= 0x9f) ||

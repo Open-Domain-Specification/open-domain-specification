@@ -55,7 +55,7 @@ onMount(() => {
 		else if (msg.type === "probe") {
 			const attr = (selector: string, name: string) =>
 				[...document.querySelectorAll(selector)].map(
-					(el) => el.getAttribute(name) ?? "",
+					(el) => el.getAttribute(name) as string,
 				);
 			host.postMessage({
 				type: "rendered",
