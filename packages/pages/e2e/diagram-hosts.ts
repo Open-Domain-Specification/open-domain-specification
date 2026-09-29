@@ -2,6 +2,8 @@ import type { Locator, Page } from "@playwright/test";
 import {
 	EXPORT_ORIGIN,
 	openInteractiveDiagram,
+	servePetstore,
+	viewerAt,
 	WORKSPACE_NAME,
 } from "./helpers";
 
@@ -13,6 +15,21 @@ import {
  */
 
 export type Host = "viewer" | "export";
+
+/** The page at `ref`, in either host. */
+export async function openPage(
+	page: Page,
+	host: Host,
+	ref: string,
+): Promise<void> {
+	if (host === "viewer") {
+		await servePetstore(page);
+		await page.goto(viewerAt(ref));
+		return;
+	}
+	await page.goto(`${EXPORT_ORIGIN}/${ref}`);
+	await page.getByRole("link", { name: WORKSPACE_NAME }).click();
+}
 
 /** The diagram whose caption contains `title`, on the page at `ref`, in either host. */
 export async function openDiagram(
