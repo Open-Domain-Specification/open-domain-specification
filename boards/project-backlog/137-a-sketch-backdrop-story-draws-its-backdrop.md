@@ -1,10 +1,10 @@
 ---
-column: doing
+column: done
 labels: [bug, frontend, testing]
 priority: medium
 agent: developer
 live: false
-updatedAt: 2026-09-29T15:30:00.000Z
+updatedAt: 2026-09-29T21:00:00.000Z
 ---
 # A sketch backdrop story draws its backdrop, and the Storybook check refuses a canvas that painted nothing
 
@@ -31,3 +31,4 @@ Issue 41, a child of epic 60. All four `Flow/SketchBackdrop` stories painted not
 - **developer** (2026-09-29T14:10:00.000Z): The blank story is proved against DOM rather than a shipped story, because a deliberately blank story in the catalogue would fail its own check (`packages/pages/e2e/storybook.spec.ts:178-215`). The fixture is a flow canvas with the attribution, a clip path with an empty `d`, three empty backdrop paths (one whitespace-only) and a zero-size rect; it must score `{ text: 0, shapes: 0, nodes: 0 }`. A second test shows real geometry, a flow node and plain words each score. The focused geometry test asserts each story's node count (6, 8, 6, 1), a blob spanning more than 50 by 50, boundaries where the story has two or more regions, and domain borders for the two-domains story only.
 - **developer** (2026-09-29T14:10:00.000Z): Checks, run against a separate Playwright config that starts only the Storybook server on 4176 (the full config holds 4173, which the lead's gate owns): `npx storybook build` green, `storybook.spec.ts` 235 passed; pages vitest 768 passed, 1 skipped, and `src/site.test.ts` failing only because `packages/pages/app` was not built in this worktree. `npx @biomejs/biome check` on the three touched source files reported no findings; both gates stay unchecked until the lead runs them.
 - **lead** (2026-09-29T15:30:00.000Z): Reviewed. Reworded the harness comment, which described the missing args as a one-tick delay (`packages/pages/src/lib/flow/SketchBackdrop.harness.svelte:17-19`), and appended the real cause to vsc-extension card 21. Gate green on 47c73ede. The card stays in `doing` until the PR merges; issue 41 stays open until then.
+- **lead** (2026-09-29T21:00:00.000Z): Landed. PR #72 was merged into develop by the owner as c26ca28 after review, and post-merge CI run 36583350831 is green (test, e2e). Issue #41 closed; the card moves to `done`.

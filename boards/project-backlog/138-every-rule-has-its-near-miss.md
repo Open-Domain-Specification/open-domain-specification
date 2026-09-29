@@ -1,10 +1,10 @@
 ---
-column: doing
+column: done
 labels: [backend, ddd]
 priority: high
 agent: developer
 live: false
-updatedAt: 2026-09-29T19:20:00.000Z
+updatedAt: 2026-09-29T21:00:00.000Z
 ---
 # Every validator rule has the smallest model that trips it and the nearest model that must stay clean
 
@@ -138,3 +138,4 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - **developer** (2026-09-29T18:50:00.000Z): Slice 9, the file itself: 6 pairs in `packages/core/src/rule-cases.file.test.ts`, all three rules. These are the one family the DSL cannot express a fault in, since a model built through it is written against this core, holds only refs that resolve and carries only known fields, so the file's header says so and the hostile models are JSON: a clean workspace written with `toSchema()`, one fault put into the JSON, read back through `Workspace.fromSchema`, the loader the validator's file path uses. The near-miss is the same JSON without the fault (for `ods-version`, also a newer minor of the same major). A dropped ref leaves its context serving nothing, so `context-serves-subdomain` is named in `fires` beside `unresolved-ref`. Mutation checks, each reverted: making `unknown-field` never fire, making `unresolved-ref` never fire, and comparing the whole version instead of the major in `recordOdsVersion` (`workspace-from-schema.ts`) each fail the expected pairs. No defect found. `rule-cases.test.ts` now also asserts that no entry of the family map is still `todo`, and the `todo` constructor is gone from `rule-cases.families.ts`, so the map cannot regress without somebody writing it back.
 - **developer** (2026-09-29T18:50:00.000Z): Closing entry: all 70 catalogue rules are covered, each with a trigger and a nearest-valid case in a `rule-cases.<family>.test.ts` file, and the table above has no row left todo. The near-misses never edit a pinned list, a reference model or an existing assertion, and no rule was changed: `git diff` of `packages/core/src/validate.ts` against the start of the branch is empty. No validator defect was found in any of the ten families; every consequence that a hostile model cannot avoid tripping beside its rule is named in that pair's `fires` so the smallest fixture is pinned. The gates stay unchecked: `bash scripts/verify-all.sh` and the biome check across the touched files are the code lead's to run and tick.
 - **lead** (2026-09-29T19:20:00.000Z): Reviewed. The branch adds only test files and this card; `validate.ts`, the loader and `models/` are untouched, so every reference model's diagnostics are as pinned. Corrected the title and intro, which still described slice 1. Gate green on c841e4e7. The card stays in `doing` until the PR merges.
+- **lead** (2026-09-29T21:00:00.000Z): Landed. PR #72 was merged into develop by the owner as c26ca28 after review, and post-merge CI run 36583350831 is green (test, e2e). Issue #57 closed; the card moves to `done`.

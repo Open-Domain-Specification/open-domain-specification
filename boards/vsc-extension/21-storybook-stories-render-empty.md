@@ -1,10 +1,10 @@
 ---
-column: todo
+column: done
 labels: [bug, frontend]
 priority: low
 agent: dev-sonnet
 clean-code-swept: true
-updatedAt: 2026-09-05T02:30:00.000Z
+updatedAt: 2026-09-29T21:00:00.000Z
 ---
 # Pre-existing Storybook stories render the bare component instead of their body
 
@@ -44,3 +44,4 @@ updatedAt: 2026-09-05T02:30:00.000Z
 - 2026-09-11, lead: held back from done. Four `Flow/SketchBackdrop` stories still paint an empty canvas, so this card's claim is not met; issue 41.
 
 - 2026-09-29, lead: the cause of issue 41 was not the `$state.raw` array this card ruled on: `addon-svelte-csf` passes no args through a meta-level `render`, so the SketchBackdrop harness never received `nodes`. Card 137 names the harness as the stories' `component` and makes the Storybook check refuse a canvas that painted nothing. This card can move once card 137 lands.
+- 2026-09-29, lead: the four `Flow/SketchBackdrop` stories now paint, and the Storybook check refuses a canvas that painted nothing (card 137, merged in c26ca28, issue #41 closed). This card's claim, that every story renders its own component, now holds; moved to `done`.
