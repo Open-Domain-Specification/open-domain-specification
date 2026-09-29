@@ -13,7 +13,12 @@ import { fitClusters } from "../flow/cluster-fit";
 import DiagramOptionsPanel from "../flow/DiagramOptionsPanel.svelte";
 import { createDisclosure, withDisclosure } from "../flow/disclosure.svelte";
 import { createDiagramFit } from "../flow/fit.svelte";
-import { flowEdges, flowNodes, groupLabels } from "../flow/flow-nodes";
+import {
+	flowEdges,
+	flowNodes,
+	groupLabels,
+	opensPage,
+} from "../flow/flow-nodes";
 import { createFullscreen } from "../flow/fullscreen.svelte";
 import type { Graph } from "../flow/graph";
 import { diagramKind, sketchApplies } from "../flow/kind";
@@ -27,6 +32,16 @@ import { edgeTypes, nodeTypes } from "../flow/registry";
 import SketchBackdrop from "../flow/SketchBackdrop.svelte";
 import { hostColorMode } from "../flow/theme.svelte";
 import DisclosureCard from "./DisclosureCard.svelte";
+
+/**
+ * What Svelte Flow tells a screen reader about a node, in words that are true
+ * here: nothing on these maps is selected, moved or deleted, a node opens its page.
+ */
+const NODE_KEYS = {
+	"node.a11yDescription.default": "Press enter or space to open its page.",
+	"node.a11yDescription.keyboardDisabled":
+		"Press enter or space to open its page.",
+};
 
 /**
  * A pannable, zoomable version of a figure. Nodes are refs, so clicking one
@@ -67,6 +82,26 @@ const fit = createDiagramFit();
 let container = $state<HTMLElement>();
 onDestroy(fullscreen.stop);
 onDestroy(disclosure.stop);
+/** What a click on a node does, and so what Enter and Space do on the focused one. */
+const open = (id: string) => {
+	if (!opensPage(id)) return;
+	fullscreen.exit();
+	location.hash = id;
+};
+/**
+ * Svelte Flow selects a node on Enter and Space, and this diagram has nothing
+ * to select: its nodes are pages. So the keys go where a click goes. Only a
+ * key pressed on the node itself counts; one pressed on a control inside it
+ * is that control's own.
+ */
+const onKeydown = (event: KeyboardEvent) => {
+	if (event.key !== "Enter" && event.key !== " ") return;
+	const target = event.target as HTMLElement;
+	if (!target.classList.contains("svelte-flow__node") || !target.dataset.id)
+		return;
+	event.preventDefault();
+	open(target.dataset.id);
+};
 /** Free maps refit their cluster boxes round the nodes as one is dragged. */
 const refit = () => {
 	if (kind === "context") nodes = fitClusters(nodes);
@@ -74,8 +109,9 @@ const refit = () => {
 </script>
 
 <!-- `data-fit` names the step of relief the fit had to take; the e2e reads it. -->
-<div class="interactive" class:fullscreen={fullscreen.active} data-fit={fit.step} bind:this={container}>
-	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={fit.minZoom} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} onnodeclick={({ node }) => { if (node.id.startsWith("#")) { fullscreen.exit(); location.hash = node.id; } }} onnodedrag={refit} onnodedragstop={refit}>
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="interactive" onkeydown={onKeydown} class:fullscreen={fullscreen.active} data-fit={fit.step} bind:this={container}>
+	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={fit.minZoom} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} onnodeclick={({ node }) => open(node.id)} ariaLabelConfig={NODE_KEYS} onnodedrag={refit} onnodedragstop={refit}>
 		<Background />
 		{#if sketch}<SketchBackdrop {nodes} groupLabels={labels} />{/if}
 		<Controls showLock={false} />

@@ -87,13 +87,130 @@ describe("InteractiveDiagram", () => {
 	});
 });
 
+describe("InteractiveDiagram from the keyboard", () => {
+	const graph = () => contextGraph(ODSContextMap.fromWorkspace(workspace));
+	const salesNode = (container: HTMLElement) =>
+		container.querySelector(`[data-id="${sales.ref}"]`) as HTMLElement;
+
+	it("names each node for what it is, makes it a focusable link and explains the keys truthfully", async () => {
+		const { container } = render(InteractiveDiagram, { graph: graph() });
+		await waitFor(() => expect(salesNode(container)).toBeTruthy());
+		const node = salesNode(container);
+		expect(node.getAttribute("aria-label")).toBe("Sales BC, bounded context");
+		expect(node.getAttribute("role")).toBe("link");
+		expect(node.tabIndex).toBe(0);
+		// A region is neither named nor a stop.
+		const region = container.querySelector(
+			".svelte-flow__node-cluster",
+		) as HTMLElement;
+		expect(region.hasAttribute("tabindex")).toBe(false);
+		// The description a node points at says what the keys do here, not what
+		// they do on a diagram whose nodes can be selected and deleted.
+		const description = container.querySelector(
+			`#${node.getAttribute("aria-describedby")}`,
+		) as HTMLElement;
+		expect(description.textContent?.trim()).toBe(
+			"Press enter or space to open its page.",
+		);
+	});
+
+	it("opens the focused node's page on Enter and on Space, and takes the key so the page does not scroll", async () => {
+		location.hash = "";
+		const { container } = render(InteractiveDiagram, { graph: graph() });
+		await waitFor(() => expect(salesNode(container)).toBeTruthy());
+		const enter = new KeyboardEvent("keydown", {
+			key: "Enter",
+			bubbles: true,
+			cancelable: true,
+		});
+		salesNode(container).dispatchEvent(enter);
+		expect(location.hash).toBe(sales.ref);
+		expect(enter.defaultPrevented).toBe(true);
+
+		location.hash = "";
+		const space = new KeyboardEvent("keydown", {
+			key: " ",
+			bubbles: true,
+			cancelable: true,
+		});
+		salesNode(container).dispatchEvent(space);
+		expect(location.hash).toBe(sales.ref);
+		expect(space.defaultPrevented).toBe(true);
+	});
+
+	it("leaves every other key, and a key on something inside a node, alone", async () => {
+		location.hash = "";
+		const { container } = render(InteractiveDiagram, { graph: graph() });
+		await waitFor(() => expect(salesNode(container)).toBeTruthy());
+		const tab = new KeyboardEvent("keydown", {
+			key: "Tab",
+			bubbles: true,
+			cancelable: true,
+		});
+		salesNode(container).dispatchEvent(tab);
+		expect(tab.defaultPrevented).toBe(false);
+		// Enter on a control inside the card is that control's, not the card's.
+		const inner = salesNode(container).querySelector(
+			".flow-card",
+		) as HTMLElement;
+		inner.dispatchEvent(
+			new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+		);
+		// Nor does a key on the canvas itself open anything.
+		(container.querySelector(".interactive") as HTMLElement).dispatchEvent(
+			new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+		);
+		expect(location.hash).toBe("");
+	});
+
+	it("does not open a node that is not a page", async () => {
+		location.hash = "";
+		const { container } = render(InteractiveDiagram, {
+			graph: {
+				nodes: [
+					{
+						id: "plain",
+						type: "context",
+						label: "P",
+						kind: "thing",
+						icon: "boundedcontext",
+					},
+				],
+				edges: [],
+			},
+		});
+		await waitFor(() =>
+			expect(container.querySelector('[data-id="plain"]')).toBeTruthy(),
+		);
+		const node = container.querySelector('[data-id="plain"]') as HTMLElement;
+		expect(node.getAttribute("role")).toBe("group");
+		node.dispatchEvent(
+			new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+		);
+		await fireEvent.click(node);
+		expect(location.hash).toBe("");
+	});
+});
+
 describe("InteractiveDiagram with a bare graph", () => {
 	it("draws ungrouped nodes at the top level and dashed, directed edges", async () => {
 		const { container } = render(InteractiveDiagram, {
 			graph: {
 				nodes: [
-					{ id: "#/a", type: "context", label: "A", icon: "boundedcontext" },
-					{ id: "#/b", type: "context", label: "B", icon: "boundedcontext" },
+					{
+						id: "#/a",
+						type: "context",
+						label: "A",
+						kind: "bounded context",
+						icon: "boundedcontext",
+					},
+					{
+						id: "#/b",
+						type: "context",
+						label: "B",
+						kind: "bounded context",
+						icon: "boundedcontext",
+					},
 				],
 				edges: [
 					{

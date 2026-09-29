@@ -334,6 +334,18 @@ h1 {
 	padding: 0;
 	cursor: pointer;
 }
+/* Keyboard focus on the map, drawn as the workbench draws it everywhere else. A node is a
+   link to its page and a badge is a button that opens its evidence; both take Tab, and the
+   browser's own ring is a different colour in every host. The ring goes on the node's box
+   rather than the card so the octagon of a big ball of mud is not clipped out of it. */
+.svelte-flow .svelte-flow__node:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder, var(--accent));
+	outline-offset: 2px;
+}
+.svelte-flow .svelte-flow__edge-label.port button.port-label:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder, var(--accent));
+	outline-offset: 3px;
+}
 /* Fixed handles are small dots in the card colours. The diagrams are read-only: a handle only
    ever receives an edge Svelte Flow lays out, so it must never start one, and it takes on the
    node's own pointer cursor rather than the library's crosshair. `isConnectable={false}` on the
