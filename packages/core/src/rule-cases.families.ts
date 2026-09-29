@@ -113,11 +113,11 @@ export const RULE_FAMILIES: Record<string, FamilyEntry> = {
 	"policy-complete": covered("processes-and-policies"),
 
 	// Events: who raises them, and what raising one may say.
-	"raises-in-context": todo("events-and-raising"),
-	"raises-in-aggregate": todo("events-and-raising"),
-	"raises-restated": todo("events-and-raising"),
-	"rejection-raised": todo("events-and-raising"),
-	"event-unraised": todo("events-and-raising"),
+	"raises-in-context": covered("events-and-raising"),
+	"raises-in-aggregate": covered("events-and-raising"),
+	"raises-restated": covered("events-and-raising"),
+	"rejection-raised": covered("events-and-raising"),
+	"event-unraised": covered("events-and-raising"),
 
 	// Documentation, the glossary and the strategic map.
 	"term-in-context": todo("documentation-and-strategy"),

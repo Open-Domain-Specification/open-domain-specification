@@ -4,7 +4,7 @@ labels: [backend, ddd]
 priority: high
 agent: developer
 live: true
-updatedAt: 2026-09-29T15:40:00.000Z
+updatedAt: 2026-09-29T16:10:00.000Z
 ---
 # Every validator rule has the smallest model that trips it and the nearest model that must stay clean, starting with the boundary, caller and answer-routing rules
 
@@ -26,7 +26,7 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - invariants: 0 of 6 covered
 - relationships-and-roles: 9 of 9 covered
 - processes-and-policies: 5 of 5 covered
-- events-and-raising: 0 of 5 covered
+- events-and-raising: 5 of 5 covered
 - documentation-and-strategy: 0 of 4 covered
 
 | Rule | Family | Trigger test | Nearest-valid test | Existing pair, for reference | Status |
@@ -92,11 +92,11 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 | `process-starts` | processes-and-policies | `rule-cases.processes`: a process that ends and names no start | `rule-cases.processes`: it starts on its context's Start operation | `validate.test.ts` "process-starts" | covered |
 | `policy-in-context` | processes-and-policies | `rule-cases.processes`: a policy issues Up's operation | `rule-cases.processes`: it issues its own context's | `validate.test.ts` "policy-in-context" | covered |
 | `policy-complete` | processes-and-policies | `rule-cases.processes`: a policy with no event; a policy issuing nothing | `rule-cases.processes`: each given its missing half | `validate.test.ts` "the rules a process shares with a policy" | covered |
-| `raises-in-context` | events-and-raising | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `raises-in-aggregate` | events-and-raising | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `raises-restated` | events-and-raising | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `rejection-raised` | events-and-raising | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `event-unraised` | events-and-raising | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
+| `raises-in-context` | events-and-raising | `rule-cases.events`: Down's operation raises Up's event | `rule-cases.events`: it raises its own | `validate.test.ts` "raises-in-context" | covered |
+| `raises-in-aggregate` | events-and-raising | `rule-cases.events`: an aggregate raises another aggregate's event; a domain service raises an aggregate's | `rule-cases.events`: its own event; the same operation on an application service | `validate.test.ts` "raises-in-aggregate" | covered |
+| `raises-restated` | events-and-raising | `rule-cases.events`: Place raises Reserved, which Reserve, the operation it calls, raises | `rule-cases.events`: Place raises nothing of its own | `validate.test.ts` "raises-restated" | covered |
+| `rejection-raised` | events-and-raising | `rule-cases.events`: Submit rejects with and raises Refusal, and nobody hears it | `rule-cases.events`: a policy reacts to the event | `validate.test.ts` "rejection-raised" | covered |
+| `event-unraised` | events-and-raising | `rule-cases.events`: an event no operation raises | `rule-cases.events`: an operation raises it | `validate.test.ts` "event-unraised" | covered |
 | `term-in-context` | documentation-and-strategy | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
 | `context-serves-subdomain` | documentation-and-strategy | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
 | `comments-required` | documentation-and-strategy | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
@@ -113,7 +113,7 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - [ ] Invariants and contracts (6 rules)
 - [x] Relationships and roles (9 rules): relationship-roles-backed, consumption-agreement, relationship-declared, relationship-duplicate, relationship-cycle, partnership-backed, shared-kernel-backed, conformist-backed, mud-needs-acl
 - [x] Processes and policies (5 rules): process-in-context, process-has-ends, process-starts, policy-in-context, policy-complete
-- [ ] Events and raising (5 rules)
+- [x] Events and raising (5 rules): raises-in-context, raises-in-aggregate, raises-restated, rejection-raised, event-unraised
 - [ ] Documentation and strategy (4 rules)
 
 ## Gates
@@ -129,3 +129,4 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - **developer** (2026-09-29T14:30:00.000Z): No validator defect found in slice 1: every near-miss validated clean and every trigger fired, without changing a rule, a test assertion or a reference model. Nothing under `models/` was touched. Not exercised in this slice, and named so the next one does not assume it was: the anti-corruption-layer carve-out of `schema-context` (a consumable carrying an upstream shape it translates), a process hearing an answer through a local `by` chain, the one-hop boundary stop, and external invariants that name a contract; the older tests in `validate.test.ts` hold those, and the table points at them.
 - **developer** (2026-09-29T15:10:00.000Z): Slice 2, relationships and roles: 10 pairs in `packages/core/src/rule-cases.relationships.test.ts`, all nine rules. The building blocks and the harness moved out of the boundary file into `packages/core/src/rule-cases.support.ts` so every family file is written and run the same way; the boundary pairs are unchanged. Where a rule cannot be tripped without a consequence of the same absence, the consequence is named in `fires`: taking nothing from a conformist upstream also leaves the conformist role undeclared by any consumption (`relationship-roles-backed`); an exchange that names no agreement, or one that joins other contexts, backs neither agreement's roles. Mutation checks, each reverted: widening `partnership-backed` to shared kernels fails the shared-kernel pair; making `conformist-backed` ignore consumptions fails its near-miss and the relationship-cycle pairs, which lean on it; letting any downstream role clear `mud-needs-acl` fails its trigger. No defect found. None of the four behaviours the slice-1 journal names as held only by older tests belongs to this family, so none was added here.
 - **developer** (2026-09-29T15:40:00.000Z): Slice 3, processes and policies: 7 pairs in `packages/core/src/rule-cases.processes.test.ts`, all five rules, each near-miss wholly clean and each hostile model tripping only the rule under test. `process-in-context` has two pairs, one for what a process issues and one for the command it starts on (a neighbour's event may start one, a neighbour's operation may not); `policy-complete` has one per missing half. Mutation checks, each reverted: dropping the starting-command half of `process-in-context` fails the start pair; requiring both halves missing in `policy-complete` fails both of its pairs; making `process-has-ends` never fire fails its trigger. No defect found. The behaviours the slice-1 journal lists as held by older tests (the anti-corruption-layer carve-out, the local `by` chain, the one-hop stop, external invariants) do not belong to this family either.
+- **developer** (2026-09-29T16:10:00.000Z): Slice 4, events and raising: 6 pairs in `packages/core/src/rule-cases.events.test.ts`, all five rules, every near-miss wholly clean and every hostile model tripping only its own rule. `raises-in-aggregate` has two pairs, one for an aggregate raising a sibling's event and one for the domain-service versus application-service line the rule draws. Mutation checks, each reverted: restricting `raises-in-aggregate` to aggregates fails the domain-service pair; ignoring hearers in `rejection-raised` fails its near-miss; making `raises-restated` never fire fails its trigger. No defect found. Slices 2 to 4 leave 28 rules todo across five families; the four behaviours the slice-1 journal names as held only by older tests (the anti-corruption-layer carve-out of `schema-context`, a process hearing an answer through a local `by` chain, the one-hop boundary stop, external invariants) belong to the boundary, callers and invariants families, and none fell in slices 2 to 4, so their fresh near-misses are still owed: the first three to a supplement of the slice-1 files, the last to the invariants slice.
