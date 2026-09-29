@@ -37,26 +37,56 @@ function remembered(): string {
 	}
 }
 
+const NEXT = "Choose a workspace file from a project's .ods folder.";
+
+/** A load that failed says what went wrong and what to do about it, since it is read aloud with nothing else on screen to point at. */
 async function fromUrl() {
 	const target = toAbsoluteUrl(url);
 	url = target;
 	loading = true;
 	error = undefined;
 	try {
-		const res = await fetch(target);
+		let res: Response;
+		try {
+			res = await fetch(target);
+		} catch {
+			throw new Error(
+				`Could not reach ${target}. Check the address and your connection, and that the host allows cross-origin requests, then choose Load to try again.`,
+			);
+		}
 		if (!res.ok)
 			throw new Error(
-				`Failed to fetch workspace from ${target} (${res.status})`,
+				`The server answered ${res.status} for ${target}. Check the address is correct and the file is public, then choose Load to try again.`,
 			);
-		const schema = await res.json();
+		let schema: unknown;
+		try {
+			schema = await res.json();
+		} catch {
+			throw new Error(
+				`${target} is not valid JSON. Point it at the workspace file in a project's .ods folder, not at a web page, then choose Load.`,
+			);
+		}
+		const label = target.split("/").pop() || target;
 		try {
 			localStorage.setItem(KEY, target);
 		} catch {}
-		onload(schema, target.split("/").pop() || target);
+		open(schema, label);
 	} catch (e) {
-		error = e instanceof Error ? e.message : String(e);
+		// Every path above throws an Error of its own, so the message is always one to show.
+		error = (e as Error).message;
 	} finally {
 		loading = false;
+	}
+}
+
+/** Hands the parsed JSON to the host; a throw means it was valid JSON but not a workspace. */
+function open(schema: unknown, label: string) {
+	try {
+		onload(schema, label);
+	} catch {
+		throw new Error(
+			`${label} is valid JSON but is not an Open Domain Specification workspace: it does not match the workspace schema. ${NEXT}`,
+		);
 	}
 }
 
@@ -65,9 +95,15 @@ async function fromFile(e: Event) {
 	if (!file) return;
 	error = undefined;
 	try {
-		onload(JSON.parse(await file.text()), file.name);
+		let schema: unknown;
+		try {
+			schema = JSON.parse(await file.text());
+		} catch {
+			throw new Error(`${file.name} is not valid JSON. ${NEXT}`);
+		}
+		open(schema, file.name);
 	} catch (err) {
-		error = err instanceof Error ? err.message : String(err);
+		error = (err as Error).message;
 	}
 }
 
@@ -103,7 +139,8 @@ if (new URLSearchParams(location.search).get("url")) fromUrl();
 		</form>
 		<label for="file">From a file</label>
 		<input id="file" type="file" accept=".json,application/json" onchange={fromFile} />
-		{#if error}<p class="problems error">{error}</p>{/if}
+		<div role="status" class="status dim">{#if loading}Loading the workspace…{/if}</div>
+		<div role="alert">{#if error}<p class="problems error">{error}</p>{/if}</div>
 		{#if examples.length}
 			<h2 class="examples-title">Or try an example</h2>
 			<div class="grid examples">

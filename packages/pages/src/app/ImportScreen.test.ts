@@ -233,14 +233,14 @@ describe("ImportScreen", () => {
 		await waitFor(() =>
 			expect(
 				screen.getByText(
-					"Failed to fetch workspace from https://example.com/missing.json (404)",
+					"The server answered 404 for https://example.com/missing.json. Check the address is correct and the file is public, then choose Load to try again.",
 				),
 			).toBeInTheDocument(),
 		);
 		expect(onload).not.toHaveBeenCalled();
 	});
 
-	it("shows a stringified error when fetch rejects with a non-Error value", async () => {
+	it("says the url could not be reached when fetch rejects, with what to check", async () => {
 		vi.stubGlobal("fetch", vi.fn().mockRejectedValue("network down"));
 		render(ImportScreen, { onload: vi.fn() });
 
@@ -249,7 +249,9 @@ describe("ImportScreen", () => {
 		});
 		await fireEvent.click(screen.getByRole("button", { name: /load/i }));
 		await waitFor(() =>
-			expect(screen.getByText("network down")).toBeInTheDocument(),
+			expect(screen.getByRole("alert")).toHaveTextContent(
+				"Could not reach https://example.com/petstore.json. Check the address and your connection, and that the host allows cross-origin requests, then choose Load to try again.",
+			),
 		);
 	});
 
@@ -285,15 +287,66 @@ describe("ImportScreen", () => {
 		);
 	});
 
-	it("shows a stringified error when the file handler throws a non-Error", async () => {
+	it("says the json is not a workspace when the host refuses it, without the raw error", async () => {
 		const onload = vi.fn(() => {
-			throw "boom";
+			throw new TypeError("Cannot read properties of undefined");
 		});
 		render(ImportScreen, { onload });
 		const file = new File(["{}"], "ok.json", { type: "application/json" });
 		const input = document.getElementById("file") as HTMLInputElement;
 		await fireEvent.change(input, { target: { files: [file] } });
-		await waitFor(() => expect(screen.getByText("boom")).toBeInTheDocument());
+		await waitFor(() =>
+			expect(screen.getByRole("alert")).toHaveTextContent(
+				"ok.json is valid JSON but is not an Open Domain Specification workspace",
+			),
+		);
+		expect(screen.getByRole("alert")).not.toHaveTextContent("Cannot read");
+	});
+
+	it("says a url that answers with something other than json is not valid JSON", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn().mockResolvedValue({
+				ok: true,
+				json: async () => {
+					throw new SyntaxError("Unexpected token <");
+				},
+			}),
+		);
+		render(ImportScreen, { onload: vi.fn() });
+		await fireEvent.input(screen.getByLabelText("From a URL"), {
+			target: { value: "https://example.com/page.html" },
+		});
+		await fireEvent.click(screen.getByRole("button", { name: /load/i }));
+		await waitFor(() =>
+			expect(screen.getByRole("alert")).toHaveTextContent(
+				"https://example.com/page.html is not valid JSON. Point it at the workspace file in a project's .ods folder",
+			),
+		);
+	});
+
+	it("announces loading in a polite status region that is in the page before the load starts", async () => {
+		let resolve!: (r: unknown) => void;
+		vi.stubGlobal(
+			"fetch",
+			vi.fn().mockReturnValue(
+				new Promise((r) => {
+					resolve = r;
+				}),
+			),
+		);
+		render(ImportScreen, { onload: vi.fn() });
+		const status = screen.getByRole("status");
+		expect(status).toHaveTextContent("");
+		await fireEvent.input(screen.getByLabelText("From a URL"), {
+			target: { value: "https://example.com/petstore.json" },
+		});
+		await fireEvent.click(screen.getByRole("button", { name: /load/i }));
+		await waitFor(() =>
+			expect(status).toHaveTextContent("Loading the workspace…"),
+		);
+		resolve({ ok: true, json: async () => ({}) });
+		await waitFor(() => expect(status).toHaveTextContent(""));
 	});
 });
 
