@@ -2,6 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import AxeBuilder from "@axe-core/playwright";
 import { Workspace } from "@open-domain-specification/core";
 import { expect, type Page, test } from "@playwright/test";
 import { exportSite } from "../dist/site.js";
@@ -96,6 +97,29 @@ for (const host of hosts) {
 			expect(names).toHaveLength(2);
 			expect(new Set(names).size).toBe(2);
 			expect(names.every(Boolean)).toBe(true);
+		});
+
+		test("every navigation landmark has a distinct, non-empty name, and axe finds no duplicate landmark", async ({
+			page,
+		}) => {
+			await page.evaluate((ref) => {
+				location.hash = ref;
+			}, CATALOG);
+			await expect(page.locator("main h1")).toHaveText(/^\s*Catalog\b/);
+			const names = await page
+				.getByRole("navigation")
+				.evaluateAll((els) =>
+					els.map((el) => el.getAttribute("aria-label") ?? ""),
+				);
+			expect(names.sort()).toEqual([
+				"Breadcrumb",
+				"On this page",
+				"Workspace elements",
+			]);
+			const result = await new AxeBuilder({ page })
+				.withRules(["landmark-unique"])
+				.analyze();
+			expect(result.violations.map((v) => v.id)).toEqual([]);
 		});
 
 		test("the page being read is marked current in the tree, and the mark follows every navigation", async ({

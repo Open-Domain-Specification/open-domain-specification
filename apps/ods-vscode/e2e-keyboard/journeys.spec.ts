@@ -228,7 +228,7 @@ test.describe("focus, landmarks and states on a page", () => {
 		console.log(`history.length in the webview: ${length}`);
 	});
 
-	test("#50 the webview draws main, the crumbs and the contents, and no workspace tree", async () => {
+	test("#50 the webview draws main, the named crumbs and contents, and no workspace tree", async () => {
 		const frame = await openOrders(host);
 		expect(
 			await frame.evaluate(() => ({
@@ -245,12 +245,15 @@ test.describe("focus, landmarks and states on a page", () => {
 			main: 1,
 			tree: 0,
 			navs: [
-				["crumbs", null],
+				["crumbs", "Breadcrumb"],
 				["toc", "On this page"],
 			],
 			treeCurrent: 0,
 		});
-		// The one navigation that names itself is told apart from the other by name.
+		// Every navigation is named, and the names are distinct.
+		await expect(
+			frame.getByRole("navigation", { name: "Breadcrumb" }),
+		).toHaveCount(1);
 		await expect(
 			frame.getByRole("navigation", { name: "On this page" }),
 		).toHaveCount(1);
