@@ -35,8 +35,12 @@ export type Case = {
 // Building blocks. Small on purpose: a case reads as the model it describes.
 // ---------------------------------------------------------------------------
 
-export function world() {
-	const ws = new Workspace("Cases", { description: "", version: "0" });
+export function world({ commentsRequired = false } = {}) {
+	const ws = new Workspace("Cases", {
+		description: "",
+		version: "0",
+		...(commentsRequired ? { options: { rules: { commentsRequired } } } : {}),
+	});
 	const subdomain = ws
 		.addDomain("Domain", { description: "" })
 		.addSubdomain("Domain.Sub", { type: "core", description: "" });
@@ -47,13 +51,17 @@ export function world() {
 			external?: boolean;
 			boundaryOnly?: boolean;
 			bigBallOfMud?: boolean;
+			/** False leaves the context serving no subdomain. */
+			serves?: boolean;
 		} = {},
-	) =>
-		ws.addBoundedContext(name, {
+	) => {
+		const { serves = true, ...rest } = flags;
+		return ws.addBoundedContext(name, {
 			description: "",
-			subdomains: [subdomain],
-			...flags,
+			subdomains: serves ? [subdomain] : [],
+			...rest,
 		});
+	};
 	return { ws, context };
 }
 

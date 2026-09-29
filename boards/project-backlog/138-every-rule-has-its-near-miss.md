@@ -4,7 +4,7 @@ labels: [backend, ddd]
 priority: high
 agent: developer
 live: true
-updatedAt: 2026-09-29T18:00:00.000Z
+updatedAt: 2026-09-29T18:25:00.000Z
 ---
 # Every validator rule has the smallest model that trips it and the nearest model that must stay clean, starting with the boundary, caller and answer-routing rules
 
@@ -27,7 +27,7 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - relationships-and-roles: 9 of 9 covered
 - processes-and-policies: 5 of 5 covered
 - events-and-raising: 5 of 5 covered
-- documentation-and-strategy: 0 of 4 covered
+- documentation-and-strategy: 4 of 4 covered
 
 | Rule | Family | Trigger test | Nearest-valid test | Existing pair, for reference | Status |
 | --- | --- | --- | --- | --- | --- |
@@ -97,10 +97,10 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 | `raises-restated` | events-and-raising | `rule-cases.events`: Place raises Reserved, which Reserve, the operation it calls, raises | `rule-cases.events`: Place raises nothing of its own | `validate.test.ts` "raises-restated" | covered |
 | `rejection-raised` | events-and-raising | `rule-cases.events`: Submit rejects with and raises Refusal, and nobody hears it | `rule-cases.events`: a policy reacts to the event | `validate.test.ts` "rejection-raised" | covered |
 | `event-unraised` | events-and-raising | `rule-cases.events`: an event no operation raises | `rule-cases.events`: an operation raises it | `validate.test.ts` "event-unraised" | covered |
-| `term-in-context` | documentation-and-strategy | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `context-serves-subdomain` | documentation-and-strategy | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `comments-required` | documentation-and-strategy | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `disposition-needs-comment` | documentation-and-strategy | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
+| `term-in-context` | documentation-and-strategy | `rule-cases.documentation`: Sales' term embodied by Billing's Invoice | `rule-cases.documentation`: embodied by Sales' Order | `validate.test.ts` "term-in-context" | covered |
+| `context-serves-subdomain` | documentation-and-strategy | `rule-cases.documentation`: a context serving none; an unserved non-external context; a kernel with one sharer | `rule-cases.documentation`: it serves one; it is external; two contexts share the kernel | `validate.test.ts` "context-serves-subdomain and the shared kernel" | covered |
+| `comments-required` | documentation-and-strategy | `rule-cases.documentation`: a relationship with no comment where comments are required | `rule-cases.documentation`: it carries one; the workspace does not require them | `validate.test.ts` "comments-required" | covered |
+| `disposition-needs-comment` | documentation-and-strategy | `rule-cases.documentation`: a tolerated, or refactor, relationship with no comment | `rule-cases.documentation`: it carries a comment; by-design owes none | `validate.test.ts` "disposition-needs-comment" | covered |
 
 ## Checklist
 
@@ -114,7 +114,7 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - [x] Relationships and roles (9 rules): relationship-roles-backed, consumption-agreement, relationship-declared, relationship-duplicate, relationship-cycle, partnership-backed, shared-kernel-backed, conformist-backed, mud-needs-acl
 - [x] Processes and policies (5 rules): process-in-context, process-has-ends, process-starts, policy-in-context, policy-complete
 - [x] Events and raising (5 rules): raises-in-context, raises-in-aggregate, raises-restated, rejection-raised, event-unraised
-- [ ] Documentation and strategy (4 rules)
+- [x] Documentation and strategy (4 rules): term-in-context, context-serves-subdomain, comments-required, disposition-needs-comment
 
 ## Gates
 
@@ -134,3 +134,4 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - **developer** (2026-09-29T17:00:00.000Z): Slice 5, invariants: 8 pairs in `packages/core/src/rule-cases.invariants.test.ts`, all six rules, plus the fourth owed pair, for `external-is-boundary`: an external context's published precondition may constrain the attributes of the shapes its own operation carries (clean) and not an attribute of our entity (trips). Every near-miss is wholly clean and every hostile model trips only its own rule. `postcondition-names-operation` has a second pair for the rule that a check is a precondition or a postcondition, not both. Mutation checks, each reverted: making `invariant-in-aggregate` never fire, making `context-invariant-is-checked` never fire, letting the contract reach be ignored (fails the external pair and the value-object pair, which share the line), and letting any invariant pass `precondition-names-operation`, each fail the expected pair. No defect found.
 - **developer** (2026-09-29T17:30:00.000Z): Slice 6, aggregates and identity: 13 pairs in `packages/core/src/rule-cases.aggregates.test.ts`, all nine rules; `aggregate-root` has a pair per severity (no root, two roots), `cross-aggregate-reference` one for `includes` across aggregates and one for a reference landing on a child, `aggregate-tree` one each for a used entity, an included value object and an unreachable entity. Consequences of the same fault are named in `fires`: a used entity is also unreachable (`aggregate-tree` twice), and a kind marked root leaves the aggregate with two roots and asks the second an identity of its own (`aggregate-root`, `root-identity`). A near-miss that uses a value object also types an attribute by it, or `attribute-relation-coherence` asks where. Mutation checks, each reverted: `aggregate-root` ignoring the no-root case, `cross-aggregate-reference` accepting children, `entity-identity` skipping any entity with an attribute, and `identity-not-optional` never firing each fail the expected pair. No defect found.
 - **developer** (2026-09-29T18:00:00.000Z): Slice 7, value objects and attributes: 9 pairs in `packages/core/src/rule-cases.values.test.ts`, all six rules (the family keeps its earlier name although the specialisation rules that name suggested were filed with aggregates). `value-object-shape` has three pairs (an identity, an include, a reach into an entity), `attribute-one-shape` two (both shapes, a schema on an entity). Consequences named in `fires`: a value object that uses an entity is also a uses that lands on an entity (`aggregate-tree`), and a relation whose `for` names an attribute that is not there also matches none (`attribute-relation-coherence`). An event that returns or rejects is built with those options rather than mutated afterwards, because `rejects` is derived. Mutation checks, each reverted: letting a value object include, letting an entity's attribute name a schema, making `relation-for-resolves` never fire, and widening `rejects-on-operation` to operations each fail the expected pairs. No defect found.
+- **developer** (2026-09-29T18:25:00.000Z): Slice 8, documentation and strategy: 8 pairs in `packages/core/src/rule-cases.documentation.test.ts`, all four rules, every near-miss wholly clean and every hostile model tripping only its own rule. `context-serves-subdomain` has three (unserved, external, a kernel shared by one context against two), `comments-required` two (a missing comment, and the opt-in itself) and `disposition-needs-comment` two (a missing comment, and by-design owing none). `world()` in the support file now takes `commentsRequired` and a per-context `serves`. Mutation checks, each reverted: letting any context's element embody a term, exempting a kernel with one sharer, asking by-design a comment, and ignoring the comments-required opt-in each fail the expected pairs. No defect found.

@@ -120,8 +120,8 @@ export const RULE_FAMILIES: Record<string, FamilyEntry> = {
 	"event-unraised": covered("events-and-raising"),
 
 	// Documentation, the glossary and the strategic map.
-	"term-in-context": todo("documentation-and-strategy"),
-	"context-serves-subdomain": todo("documentation-and-strategy"),
-	"comments-required": todo("documentation-and-strategy"),
-	"disposition-needs-comment": todo("documentation-and-strategy"),
+	"term-in-context": covered("documentation-and-strategy"),
+	"context-serves-subdomain": covered("documentation-and-strategy"),
+	"comments-required": covered("documentation-and-strategy"),
+	"disposition-needs-comment": covered("documentation-and-strategy"),
 };
