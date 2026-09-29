@@ -1,5 +1,6 @@
 <script lang="ts">
 import { focusArrival } from "../focus";
+import { scrollBehavior } from "../motion.svelte";
 
 /**
  * The page's own sections, as the Outline lists a file's symbols: a title in
@@ -8,7 +9,8 @@ import { focusArrival } from "../focus";
  * pointer is on. Clicking scrolls rather than navigates, so the reader keeps
  * their place in the page and history is untouched; it also moves focus to
  * the section's heading, so the next Tab is the next control in that section
- * and a screen reader starts reading at it.
+ * and a screen reader starts reading at it. The scroll is smooth unless the
+ * reader has asked for less motion.
  */
 const { sections }: { sections: { id: string; label: string }[] } = $props();
 
@@ -16,7 +18,7 @@ const jump = (id: string) => (e: Event) => {
 	e.preventDefault();
 	const section = document.getElementById(id);
 	if (!section) return;
-	section.scrollIntoView({ behavior: "smooth", block: "start" });
+	section.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
 	focusArrival(section.querySelector<HTMLElement>(".heading") ?? section, {
 		preventScroll: true,
 	});

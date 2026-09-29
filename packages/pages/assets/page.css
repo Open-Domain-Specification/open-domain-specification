@@ -444,3 +444,36 @@ h1 {
 	background: transparent;
 	color: var(--muted);
 }
+
+/* A reader who has asked for less motion gets none (card 151). Three things move in these
+   pages by stylesheet: the flash on the element a ref lands on, the dashes marching along
+   every diagram edge, and whatever a library adds (a spinner, a transition). The flash keeps
+   its mark and loses its fade: the reader still has to be shown where they landed, so the wash
+   stays put instead. The dashes stop where they are; the dash pattern still says which way an
+   edge runs. The last rule is the net for anything not named above, a duration too short to
+   see rather than `none` so that an `animationend` a script waits on still arrives.
+   Programmatic motion (smooth scrolling, viewport easing) cannot be reached from here and asks
+   `src/lib/motion.svelte.ts` instead. */
+@media (prefers-reduced-motion: reduce) {
+	.flash {
+		animation: none;
+		background: var(--vscode-list-hoverBackground, var(--card));
+	}
+	.svelte-flow .svelte-flow__edge.animated .svelte-flow__edge-path,
+	.svelte-flow .svelte-flow__edge.animated.dashed .svelte-flow__edge-path,
+	.svelte-flow .svelte-flow__edge.animated .svelte-flow__edge-path.dashed {
+		animation: none;
+	}
+	*,
+	*::before,
+	*::after {
+		/* biome-ignore lint/complexity/noImportantStyles: the net has to beat a library's own, more specific, animation and transition rules, which `*` never would. */
+		animation-duration: 0.01ms !important;
+		/* biome-ignore lint/complexity/noImportantStyles: the net has to beat a library's own, more specific, animation and transition rules, which `*` never would. */
+		animation-iteration-count: 1 !important;
+		/* biome-ignore lint/complexity/noImportantStyles: the net has to beat a library's own, more specific, animation and transition rules, which `*` never would. */
+		transition-duration: 0.01ms !important;
+		/* biome-ignore lint/complexity/noImportantStyles: the net has to beat a library's own, more specific, animation and transition rules, which `*` never would. */
+		scroll-behavior: auto !important;
+	}
+}

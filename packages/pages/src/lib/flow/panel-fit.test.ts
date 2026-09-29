@@ -148,6 +148,12 @@ describe("fitPastPanels", () => {
 		});
 	});
 
+	it("refits at once: the call carries no duration, so the viewport never eases", () => {
+		const fitView = vi.fn();
+		fitPastPanels({ fitView }, container(VIEW, [tall(15, 215)]));
+		expect(Object.keys(fitView.mock.calls[0][0])).toEqual(["padding"]);
+	});
+
 	it("does nothing without a container to measure", () => {
 		const fitView = vi.fn();
 		fitPastPanels({ fitView }, undefined);

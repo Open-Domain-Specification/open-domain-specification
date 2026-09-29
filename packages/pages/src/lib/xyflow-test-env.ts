@@ -1,4 +1,4 @@
-import { beforeAll } from "vitest";
+import { beforeAll, vi } from "vitest";
 
 /** jsdom lacks what @xyflow/svelte measures with; install minimal stand-ins once per file. */
 export function installXyflowTestEnv(): void {
@@ -26,6 +26,42 @@ export function installXyflowTestEnv(): void {
 				}) as any;
 		}
 	});
+}
+
+/**
+ * Makes `prefers-reduced-motion` read `reduced` until the spy is restored (the
+ * suite restores mocks after each test), and hands back a switch that flips it
+ * and tells whoever is listening, as the browser does when a reader changes
+ * the setting with the page open.
+ */
+export function stubReducedMotion(reduced: boolean) {
+	const listeners = new Set<(event: MediaQueryListEvent) => void>();
+	let matches = reduced;
+	vi.spyOn(window, "matchMedia").mockImplementation((media) => {
+		// Only the reduced-motion query is stubbed; any other (the colour scheme
+		// Svelte Flow reads) is a query nothing matches and nobody can change.
+		const ours = media.includes("prefers-reduced-motion");
+		return {
+			get matches() {
+				return ours && matches;
+			},
+			media,
+			addEventListener: (_: string, l: (e: MediaQueryListEvent) => void) => {
+				if (ours) listeners.add(l);
+			},
+			removeEventListener: (_: string, l: (e: MediaQueryListEvent) => void) => {
+				if (ours) listeners.delete(l);
+			},
+			// biome-ignore lint/suspicious/noExplicitAny: minimal test stand-in
+		} as any;
+	});
+	return {
+		listeners,
+		set(next: boolean) {
+			matches = next;
+			for (const l of listeners) l({ matches: next } as MediaQueryListEvent);
+		},
+	};
 }
 
 /** A placed, sized node for the internal-node mock; `handles` are its target handles unless typed `source`. */

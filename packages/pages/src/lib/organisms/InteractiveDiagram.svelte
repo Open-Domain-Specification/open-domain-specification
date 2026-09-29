@@ -31,6 +31,7 @@ import PanelFit from "../flow/PanelFit.svelte";
 import { edgeTypes, nodeTypes } from "../flow/registry";
 import SketchBackdrop from "../flow/SketchBackdrop.svelte";
 import { hostColorMode } from "../flow/theme.svelte";
+import { createReducedMotion } from "../motion.svelte";
 import DisclosureCard from "./DisclosureCard.svelte";
 
 /**
@@ -82,6 +83,15 @@ const fit = createDiagramFit();
 let container = $state<HTMLElement>();
 onDestroy(fullscreen.stop);
 onDestroy(disclosure.stop);
+/**
+ * Every viewport change this diagram makes itself (the initial fit, the panel-aware refit,
+ * the Fit View and zoom controls, a focused node panned into view) is called without a
+ * duration, so it is immediate whatever the preference. The one animation left is the
+ * library's own double-click zoom, an eased transition it does not let a caller shorten,
+ * so under reduced motion the gesture is off; the wheel, the pinch and the controls zoom.
+ */
+const motion = createReducedMotion();
+onDestroy(motion.stop);
 /** What a click on a node does, and so what Enter and Space do on the focused one. */
 const open = (id: string) => {
 	if (!opensPage(id)) return;
@@ -111,7 +121,7 @@ const refit = () => {
 <!-- `data-fit` names the step of relief the fit had to take; the e2e reads it. -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="interactive" onkeydown={onKeydown} class:fullscreen={fullscreen.active} data-fit={fit.step} bind:this={container}>
-	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={fit.minZoom} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} onnodeclick={({ node }) => open(node.id)} ariaLabelConfig={NODE_KEYS} onnodedrag={refit} onnodedragstop={refit}>
+	<SvelteFlow bind:nodes bind:edges {nodeTypes} {edgeTypes} fitView fitViewOptions={{ padding: 0.25 }} minZoom={fit.minZoom} colorMode={hostColorMode.value} nodesConnectable={false} elementsSelectable={false} zoomOnDoubleClick={!motion.reduced} onnodeclick={({ node }) => open(node.id)} ariaLabelConfig={NODE_KEYS} onnodedrag={refit} onnodedragstop={refit}>
 		<Background />
 		{#if sketch}<SketchBackdrop {nodes} groupLabels={labels} />{/if}
 		<Controls showLock={false} />

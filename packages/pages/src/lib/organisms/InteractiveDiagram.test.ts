@@ -8,7 +8,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { petstoreModel } from "../fixtures";
 import { consumableGraph, contextGraph, relationGraph } from "../flow/graph";
 import { diagramOptions } from "../flow/options.svelte";
-import { installXyflowTestEnv } from "../xyflow-test-env";
+import { installXyflowTestEnv, stubReducedMotion } from "../xyflow-test-env";
 import InteractiveDiagram from "./InteractiveDiagram.svelte";
 
 installXyflowTestEnv();
@@ -84,6 +84,40 @@ describe("InteractiveDiagram", () => {
 			).toBeGreaterThan(1);
 		});
 		expect(relations.container.querySelector(".stereotype")).toBeTruthy();
+	});
+});
+
+describe("InteractiveDiagram and reduced motion", () => {
+	/** d3-zoom keeps its listeners on the element as `__on`; the double-click one is what eases. */
+	const doubleClickZoom = (container: HTMLElement) =>
+		(
+			(
+				container.querySelector(".svelte-flow__zoom") as unknown as {
+					__on: { type: string; name: string }[];
+				}
+			).__on ?? []
+		).some((l) => l.type === "dblclick" && l.name === "zoom");
+	const drawn = async () => {
+		const view = render(InteractiveDiagram, {
+			graph: contextGraph(ODSContextMap.fromWorkspace(workspace)),
+		});
+		await waitFor(() =>
+			expect(view.container.querySelector(".context-node")).toBeTruthy(),
+		);
+		return view.container;
+	};
+
+	it("zooms on a double click, which the library eases, only while motion is allowed", async () => {
+		stubReducedMotion(false);
+		expect(doubleClickZoom(await drawn())).toBe(true);
+	});
+
+	it("drops the double-click zoom for a reader who has asked for less motion, and follows the setting while the page is open", async () => {
+		const motion = stubReducedMotion(true);
+		const container = await drawn();
+		expect(doubleClickZoom(container)).toBe(false);
+		motion.set(false);
+		await waitFor(() => expect(doubleClickZoom(container)).toBe(true));
 	});
 });
 

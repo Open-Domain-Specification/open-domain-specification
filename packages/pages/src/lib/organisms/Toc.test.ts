@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it, vi } from "vitest";
+import { stubReducedMotion } from "../xyflow-test-env";
 import Toc from "./Toc.svelte";
 
 const sections = [
@@ -44,6 +45,25 @@ describe("Toc", () => {
 		);
 		expect(scrollIntoView).toHaveBeenCalledWith({
 			behavior: "smooth",
+			block: "start",
+		});
+		section.remove();
+	});
+
+	it("jumps rather than scrolls when the reader has asked for less motion", async () => {
+		stubReducedMotion(true);
+		const section = document.createElement("section");
+		section.id = "present";
+		const scrollIntoView = vi.fn();
+		section.scrollIntoView = scrollIntoView;
+		document.body.appendChild(section);
+
+		render(Toc, { sections });
+		await fireEvent.click(
+			screen.getByRole("link", { name: "Present Section" }),
+		);
+		expect(scrollIntoView).toHaveBeenCalledWith({
+			behavior: "auto",
 			block: "start",
 		});
 		section.remove();
