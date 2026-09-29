@@ -2,7 +2,6 @@
 import { defineMeta } from "@storybook/addon-svelte-csf";
 import type { Node } from "@xyflow/svelte";
 import Harness from "./SketchBackdrop.harness.svelte";
-import SketchBackdrop from "./SketchBackdrop.svelte";
 
 const ctx = (id: string, x: number, y: number, parentId?: string): Node => ({
 	id,
@@ -60,8 +59,7 @@ const domains: Node[] = [
 ];
 const { Story } = defineMeta({
 	title: "Flow/SketchBackdrop",
-	component: SketchBackdrop,
-	render: Harness,
+	component: Harness,
 	args: { nodes, groupLabels },
 });
 </script>
