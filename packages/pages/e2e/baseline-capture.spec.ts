@@ -590,7 +590,9 @@ describe("baseline capture (ODS_BASELINE=1)", () => {
 					family: "Modal (strategic table row)",
 					host,
 					vp: desktop,
-					open: at(NB, KYC),
+					// The one context with a relationship marked for refactoring, so its
+					// strategic table carries the evidence toggles.
+					open: at(NB, "#/boundedcontexts/branch_&_contact_centre"),
 					run: async (p) => {
 						await p
 							.locator("button[aria-controls=relationship-modal]")
@@ -653,6 +655,8 @@ describe("baseline capture (ODS_BASELINE=1)", () => {
 					deviceScaleFactor: 1,
 				});
 				const page = await context.newPage();
+				// A state that cannot be reached is a manifest row, not a hang.
+				page.setDefaultTimeout(8000);
 				const problems = watchForProblems(page);
 				await serveModels(page);
 				let failure: string | undefined;
@@ -683,6 +687,7 @@ describe("baseline capture (ODS_BASELINE=1)", () => {
 				if (failure) {
 					entry.status = `failed: ${failure}`;
 				}
+				await page.unrouteAll({ behavior: "ignoreErrors" });
 				await context.close();
 			}
 			expect(true).toBe(true);
