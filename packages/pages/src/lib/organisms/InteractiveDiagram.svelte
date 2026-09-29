@@ -11,6 +11,7 @@ import "@xyflow/svelte/dist/style.css";
 import { onDestroy } from "svelte";
 import { fitClusters } from "../flow/cluster-fit";
 import DiagramOptionsPanel from "../flow/DiagramOptionsPanel.svelte";
+import DoubleClickZoom from "../flow/DoubleClickZoom.svelte";
 import { createDisclosure, withDisclosure } from "../flow/disclosure.svelte";
 import { createDiagramFit } from "../flow/fit.svelte";
 import {
@@ -33,6 +34,9 @@ import SketchBackdrop from "../flow/SketchBackdrop.svelte";
 import { hostColorMode } from "../flow/theme.svelte";
 import { createReducedMotion } from "../motion.svelte";
 import DisclosureCard from "./DisclosureCard.svelte";
+
+/** Svelte Flow's own ceiling, which the diagram never overrides. */
+const MAX_ZOOM = 2;
 
 /**
  * What Svelte Flow tells a screen reader about a node, in words that are true
@@ -91,7 +95,8 @@ onDestroy(disclosure.stop);
  * the Fit View and zoom controls, a focused node panned into view) is called without a
  * duration, so it is immediate whatever the preference. The one animation left is the
  * library's own double-click zoom, an eased transition it does not let a caller shorten,
- * so under reduced motion the gesture is off; the wheel, the pinch and the controls zoom.
+ * so under reduced motion the library's gesture is off and `DoubleClickZoom` does the same
+ * step immediately.
  */
 const motion = createReducedMotion();
 onDestroy(motion.stop);
@@ -132,6 +137,7 @@ const refit = () => {
 		<DiagramOptionsPanel {kind} {fullscreen} {container} panel={fit.options} />
 		<LegendPanel {graph} {kind} legend={fit.legend} />
 		<PanelFit {container} {fit} />
+		<DoubleClickZoom {container} reduced={motion.reduced} minZoom={fit.minZoom} maxZoom={MAX_ZOOM} />
 		<DisclosureCard {disclosure} />
 	</SvelteFlow>
 </div>

@@ -112,7 +112,49 @@ describe("InteractiveDiagram and reduced motion", () => {
 		expect(doubleClickZoom(await drawn())).toBe(true);
 	});
 
-	it("drops the double-click zoom for a reader who has asked for less motion, and follows the setting while the page is open", async () => {
+	const transform = (container: HTMLElement) =>
+		(container.querySelector(".svelte-flow__viewport") as HTMLElement).style
+			.transform;
+	const doubleClick = (target: Element, init: MouseEventInit = {}) =>
+		target.dispatchEvent(
+			new MouseEvent("dblclick", {
+				bubbles: true,
+				clientX: 40,
+				clientY: 30,
+				...init,
+			}),
+		);
+
+	it("hands the double click back at once under reduced motion: the pane zooms in without a transition, Shift zooms out, and nothing else does", async () => {
+		stubReducedMotion(true);
+		const container = await drawn();
+		const before = transform(container);
+		const pane = container.querySelector(".svelte-flow__pane") as HTMLElement;
+		// A double click on a node or a control is theirs, not the pane's.
+		doubleClick(container.querySelector(".svelte-flow__node") as Element);
+		doubleClick(container.querySelector(".svelte-flow__controls") as Element);
+		expect(transform(container)).toBe(before);
+		doubleClick(pane);
+		await waitFor(() => expect(transform(container)).not.toBe(before));
+		const scale = (t: string) => Number(/scale\(([\d.]+)\)/.exec(t)?.[1]);
+		const zoomedIn = scale(transform(container));
+		expect(zoomedIn).toBeGreaterThan(scale(before));
+		doubleClick(pane, { shiftKey: true });
+		await waitFor(() =>
+			expect(scale(transform(container))).toBeLessThan(zoomedIn),
+		);
+	});
+
+	it("leaves the double click to the library while motion is allowed", async () => {
+		stubReducedMotion(false);
+		const container = await drawn();
+		const before = transform(container);
+		doubleClick(container.querySelector(".svelte-flow__pane") as Element);
+		// The library's gesture is d3's, which needs a real pointer; ours must not have fired.
+		expect(transform(container)).toBe(before);
+	});
+
+	it("drops the library's double-click zoom for a reader who has asked for less motion, and follows the setting while the page is open", async () => {
 		const motion = stubReducedMotion(true);
 		const container = await drawn();
 		expect(doubleClickZoom(container)).toBe(false);

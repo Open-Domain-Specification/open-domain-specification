@@ -158,7 +158,12 @@ for (const host of ["viewer", "export"] as const) {
 			await page.emulateMedia({ reducedMotion: "reduce" });
 			flow = await openDiagram(page, host, "Context map", "");
 			const steps = await zoom(flow);
+			// The gesture still works, and lands at once: from the fitted zoom to
+			// the next step in, with nothing sampled between.
 			expect(steps.length).toBeLessThanOrEqual(2);
+			expect(steps).toHaveLength(2);
+			const scale = (t: string) => Number(/scale\(([\d.]+)\)/.exec(t)?.[1]);
+			expect(scale(steps[1])).toBeGreaterThan(scale(steps[0]));
 		});
 
 		test("the fit control and fullscreen refit the map at once, whatever the preference", async ({
