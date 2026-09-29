@@ -23,14 +23,14 @@ const jump = (id: string) => (e: Event) => {
 };
 </script>
 
-<aside class="toc">
-	<p class="toc-title">On this page</p>
+<nav class="toc" aria-label="On this page">
+	<p class="toc-title" aria-hidden="true">On this page</p>
 	<ul>
 		{#each sections as s (s.id)}
 			<li><a href={`#${s.id}`} onclick={jump(s.id)}>{s.label}</a></li>
 		{/each}
 	</ul>
-</aside>
+</nav>
 
 <style>
 	.toc {

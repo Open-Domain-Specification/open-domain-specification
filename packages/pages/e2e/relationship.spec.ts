@@ -245,7 +245,7 @@ test("a role code on the relationship page discloses the same card, and the evid
 	await acl.click();
 	// In view already, since a scroll to reach it would close the card first,
 	// and not a keyword: the title's own type would open a card of its own.
-	const elsewhere = page.locator("aside.toc").getByText("On this page");
+	const elsewhere = page.locator("nav.toc").getByText("On this page");
 	await elsewhere.hover();
 	await expect(card).toBeVisible();
 	await elsewhere.click();
@@ -387,7 +387,7 @@ test("a relationship ref opens the relationship as its own page", async ({
 	);
 	// The table of contents points at the detail's own blocks.
 	await expect(
-		page.locator("aside.toc").getByRole("link", { name: "Comments" }),
+		page.locator("nav.toc").getByRole("link", { name: "Comments" }),
 	).toBeVisible();
 
 	// Its crumbs lead back to both contexts it joins.

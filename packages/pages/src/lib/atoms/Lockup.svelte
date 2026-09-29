@@ -18,6 +18,7 @@ const {
 	id,
 	detail,
 	size = "row",
+	current,
 }: {
 	kind: Kind;
 	name: string;
@@ -25,12 +26,14 @@ const {
 	id?: string;
 	detail?: string;
 	size?: "row" | "title";
+	/** Passed to the link as `aria-current`; only a tree row has one. */
+	current?: "page" | "true";
 } = $props();
 </script>
 
 <span class={`lockup ${size}`}>
 	<i class={`codicon codicon-${kindIcon(kind)}`} style:color={iconColor(kind)} aria-hidden="true"></i>
-	{#if ref}<Ref {ref} label={name} />{:else}<span class="name">{name}</span>{/if}
+	{#if ref}<Ref {ref} label={name} {current} />{:else}<span class="name">{name}</span>{/if}
 	{#if id}<code class="id">{id}</code>{/if}
 	{#if detail}<span class="detail">{detail}</span>{/if}
 </span>

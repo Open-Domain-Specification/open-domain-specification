@@ -8,6 +8,19 @@ const sections = [
 ];
 
 describe("Toc", () => {
+	it("is a navigation landmark named for what it lists, not an aside", () => {
+		const { container } = render(Toc, { sections });
+		const nav = container.querySelector("nav.toc") as HTMLElement;
+		expect(nav).toHaveAttribute("aria-label", "On this page");
+		expect(container.querySelector("aside")).toBeNull();
+		expect(screen.getByRole("navigation", { name: "On this page" })).toBe(nav);
+		// The visible title is the landmark's name, so it is not read twice.
+		expect(container.querySelector(".toc-title")).toHaveAttribute(
+			"aria-hidden",
+			"true",
+		);
+	});
+
 	it("titles itself in plain sentence case and lists every section as a link to its id", () => {
 		const { container } = render(Toc, { sections });
 		const title = container.querySelector(".toc-title") as HTMLElement;

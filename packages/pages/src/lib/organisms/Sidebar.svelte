@@ -51,16 +51,31 @@ const items = $derived<Item[]>([
 		kind: "team" as Kind,
 	})),
 ]);
-const active = (ref: string) =>
+const onTheWay = (ref: string) =>
 	current === ref || current.startsWith(`${ref}/`);
+const flat = (entries: Item[]): Item[] =>
+	entries.flatMap((i) => [i, ...flat(i.children ?? [])]);
+/** The row for the page being read: the deepest one the current ref is at or under. */
+const here = $derived(
+	flat(items)
+		.filter((i) => onTheWay(i.ref))
+		.sort((a, b) => b.ref.length - a.ref.length)[0]?.ref,
+);
+/**
+ * One decision drives the wash and `aria-current`, so they cannot disagree:
+ * the row for the page is `page`, its ancestors, which the wash also marks,
+ * are `true`, and every other row is neither.
+ */
+const state = (ref: string) =>
+	ref === here ? "page" : onTheWay(ref) ? "true" : undefined;
 </script>
 
 {#snippet list(entries: Item[])}
 	<ul>
 		{#each entries as i (i.ref)}
 			<li>
-				<span class="item" class:active={active(i.ref)}>
-					<Lockup kind={i.kind} name={i.label} ref={i.ref} />
+				<span class="item" class:active={state(i.ref) !== undefined}>
+					<Lockup kind={i.kind} name={i.label} ref={i.ref} current={state(i.ref)} />
 				</span>
 				{#if i.children?.length}{@render list(i.children)}{/if}
 			</li>
@@ -68,7 +83,7 @@ const active = (ref: string) =>
 	</ul>
 {/snippet}
 
-<nav class="tree">
+<nav class="tree" aria-label="Workspace elements">
 	<p class="brand"><Logo size={16} /><a href="#/">{workspace.name}</a></p>
 	{@render list(items)}
 </nav>

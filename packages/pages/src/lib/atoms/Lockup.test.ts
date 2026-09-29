@@ -3,6 +3,19 @@ import { describe, expect, it } from "vitest";
 import Lockup from "./Lockup.svelte";
 
 describe("Lockup", () => {
+	it("passes `current` to its link", () => {
+		render(Lockup, {
+			kind: "boundedcontext",
+			name: "Catalog BC",
+			ref: "#/boundedcontexts/catalog_bc",
+			current: "true",
+		});
+		expect(screen.getByRole("link", { name: "Catalog BC" })).toHaveAttribute(
+			"aria-current",
+			"true",
+		);
+	});
+
 	it("draws the kind's codicon in its symbol colour and links the name when it has a ref", () => {
 		const { container } = render(Lockup, {
 			kind: "boundedcontext",

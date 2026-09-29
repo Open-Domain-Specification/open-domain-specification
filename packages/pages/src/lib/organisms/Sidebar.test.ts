@@ -59,4 +59,58 @@ describe("Sidebar", () => {
 			"active",
 		);
 	});
+
+	it("names itself as a navigation landmark", () => {
+		const { container } = render(Harness);
+		expect(container.querySelector("nav.tree")).toHaveAttribute(
+			"aria-label",
+			"Workspace elements",
+		);
+	});
+
+	it("marks the page being read aria-current=page, its ancestor true, and every other row neither, on the same rows the wash marks", () => {
+		const { container } = render(Harness);
+		const link = (ref: string) => container.querySelector(`a[href="${ref}"]`);
+		expect(link("#/boundedcontexts/catalog_bc/aggregates/pet")).toHaveAttribute(
+			"aria-current",
+			"page",
+		);
+		expect(link("#/boundedcontexts/catalog_bc")).toHaveAttribute(
+			"aria-current",
+			"true",
+		);
+		expect(link("#/boundedcontexts/sales_bc")).not.toHaveAttribute(
+			"aria-current",
+		);
+		expect(container.querySelectorAll('[aria-current="page"]')).toHaveLength(1);
+		const drawn = [...container.querySelectorAll(".item.active a")];
+		expect(drawn).toEqual([...container.querySelectorAll("[aria-current]")]);
+	});
+
+	it("marks the row the page is under when the ref points inside a page the tree has no row for", () => {
+		const { container } = render(Harness, {
+			current: "#/boundedcontexts/catalog_bc/aggregates/pet/entities/pet",
+		});
+		expect(
+			container.querySelector(
+				'a[href="#/boundedcontexts/catalog_bc/aggregates/pet"]',
+			),
+		).toHaveAttribute("aria-current", "page");
+	});
+
+	it("marks nothing when the current page has no row, such as the workspace or the health report", () => {
+		for (const current of ["#", "#/health"]) {
+			const { container, unmount } = render(Harness, { current });
+			expect(container.querySelector("[aria-current]")).toBeNull();
+			expect(container.querySelector(".item.active")).toBeNull();
+			unmount();
+		}
+	});
+
+	it("does not treat a ref that merely starts with another's name as under it", () => {
+		const { container } = render(Harness, {
+			current: "#/boundedcontexts/catalog_bc_extra",
+		});
+		expect(container.querySelector("[aria-current]")).toBeNull();
+	});
 });

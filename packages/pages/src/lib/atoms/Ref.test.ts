@@ -3,6 +3,19 @@ import { describe, expect, it } from "vitest";
 import Ref from "./Ref.svelte";
 
 describe("Ref", () => {
+	it("carries aria-current only when it is told it is the current page or on the way to it", () => {
+		const { unmount } = render(Ref, { ref: "#/x", label: "Plain" });
+		expect(screen.getByRole("link", { name: "Plain" })).not.toHaveAttribute(
+			"aria-current",
+		);
+		unmount();
+		render(Ref, { ref: "#/x", label: "Here", current: "page" });
+		expect(screen.getByRole("link", { name: "Here" })).toHaveAttribute(
+			"aria-current",
+			"page",
+		);
+	});
+
 	it("links a ref as the hash route and marks it for the host", () => {
 		render(Ref, { ref: "#/boundedcontexts/sales_bc", label: "Sales BC" });
 		const a = screen.getByRole("link", { name: "Sales BC" });

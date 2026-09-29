@@ -48,7 +48,7 @@ test("clicking a sidebar item routes to its page and marks it active", async ({
 });
 
 test("table of contents entries scroll to their section", async ({ page }) => {
-	const toc = page.locator("aside.toc");
+	const toc = page.locator("nav.toc");
 	await expect(toc.getByRole("link", { name: "Health" })).toBeVisible();
 
 	await expect(page.locator("#health")).not.toBeInViewport();
@@ -64,7 +64,7 @@ test("the context page's reactions are one section: both tables, then the map", 
 	await expect(page.locator("main h1")).toContainText("Sales BC");
 
 	// One table-of-contents entry for the two reaction tables (card 88).
-	const toc = page.locator("aside.toc");
+	const toc = page.locator("nav.toc");
 	await expect(toc.getByRole("link", { name: "Reactions" })).toBeVisible();
 	await expect(toc.getByRole("link", { name: "Policies" })).toHaveCount(0);
 	await expect(toc.getByRole("link", { name: "Processes" })).toHaveCount(0);
