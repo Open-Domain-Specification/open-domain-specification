@@ -3,8 +3,8 @@ column: doing
 labels: [accessibility]
 priority: medium
 agent: developer
-live: true
-updatedAt: 2026-09-29T16:55:00.000Z
+live: false
+updatedAt: 2026-09-29T20:49:19Z
 ---
 # The reader knows where they are
 
@@ -23,8 +23,8 @@ Issue #50, a child of epic #61. The tree marked the page being read with a backg
 ## Gates
 
 - [x] biome check on the touched files
-- [ ] `bash scripts/verify-all.sh`
-- [ ] real VS Code host check (lead)
+- [x] `bash scripts/verify-all.sh` on 54b75e3f (lead): the gate ran 20:44–20:48Z, core 1040, pages 978 at 100% coverage, pages e2e 389 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match; CI green on the same head
+- [x] real VS Code host check (lead): `npm run test:vscode:keyboard` 19 passed and `npm run test:vscode` green (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), both on 54b75e3f in real VS Code 1.96.4
 
 ## Comments
 
@@ -33,3 +33,4 @@ Issue #50, a child of epic #61. The tree marked the page being read with a backg
 - **developer** (2026-09-29T16:55:00.000Z): Design record: `docs/design/design-language-v2.md` now states `Ref` and `Lockup` `current`, the tree and contents landmarks and the single `main`, and `Sidebar`'s `aria-current` rule (entries in the primitive and organism tables).
 - **developer** (2026-09-29T17:23:44.000Z): Real VS Code host, verified with `apps/ods-vscode/e2e-keyboard/journeys.spec.ts` (`npm run test:vscode:keyboard`, real VS Code 1.96.4 driven by Playwright-Electron: real key and pointer events at the workbench, the webview's DOM only read; one launch per describe): the webview draws no workspace tree (no `nav.tree`, so no `aria-current` row to assert). It draws one `main`, a breadcrumb `nav.crumbs` with no label, and a `nav` named "On this page" (present at a 1300x900 window, absent at 900x700 where the layout drops the contents by design). The journey asserts exactly that, so a tree appearing in the webview would fail it. `aria-current="page"` on a tree row is therefore covered by the viewer and export specs only.
 - **developer** (2026-09-29T17:33:31.000Z): Fix from the real host journey. `nav.crumbs` (`packages/pages/src/lib/molecules/Crumbs.svelte`) had no accessible name, so a page had two landmarks of one role and one unnamed (axe `landmark-unique`). It now has `aria-label="Breadcrumb"`; the other two were already named (`Workspace elements` in `Sidebar.svelte`, `On this page` in `Toc.svelte`), and those are the only three `<nav>` in the bundle. No crumb is marked `aria-current`, on purpose: the trail holds the ancestors (`contextCrumbs`, `ownerCrumbs`), never the page being read, which the `h1` names, so it agrees with the tree's rule that only the page's own row is `page`. Tests: `Crumbs.test.ts` (label, no `aria-current`); `e2e/current-page-landmarks.spec.ts` on the viewer and the export asserts the three names are exactly `Breadcrumb`, `On this page`, `Workspace elements` on a context page and that axe's `landmark-unique` reports nothing; the real-host journey pins the webview's set (`Breadcrumb`, `On this page`). Fail first on the viewer (port 4191): without the label the new test failed on both hosts with `""` where `"Breadcrumb"` was expected; with it, 9 of 9 pass.
+- **lead** (2026-09-29T20:49:19Z): Gate green on 54b75e3f (lead): the gate ran 20:44–20:48Z, core 1040, pages 978 at 100% coverage, pages e2e 389 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match; CI green on the same head. Real host: `npm run test:vscode:keyboard` 19 passed and `npm run test:vscode` green (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), both on 54b75e3f in real VS Code 1.96.4. The card stays in `doing` until PR #76 merges.

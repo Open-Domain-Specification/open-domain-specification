@@ -5,7 +5,7 @@ priority: high
 agent: dev-sonnet
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-29T16:36:00.000Z
+updatedAt: 2026-09-29T20:49:19Z
 ---
 # Strategic position table overflows its frame by 2px at 1300px
 
@@ -60,8 +60,8 @@ Ruling (lead, 2026-09-29): option (d), apply the design as written and change no
 ## Gates (reconciliation)
 
 - [x] biome check on the touched files
-- [ ] `bash scripts/verify-all.sh`
-- [ ] real VS Code host check (lead)
+- [x] `bash scripts/verify-all.sh` on 54b75e3f (lead): the gate ran 20:44–20:48Z, core 1040, pages 978 at 100% coverage, pages e2e 389 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match; CI green on the same head
+- [x] real VS Code host check (lead): `npm run test:vscode:keyboard` 19 passed and `npm run test:vscode` green (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), both on 54b75e3f in real VS Code 1.96.4
 
 ## Journal
 
@@ -69,3 +69,4 @@ Ruling (lead, 2026-09-29): option (d), apply the design as written and change no
 - 2026-09-29T16:35:14.000Z Committed the tests (`e2e/relationship.spec.ts` new test after the "narrower still" test; helpers in `e2e/helpers.ts`). They pass on the viewer and the export (port 4192 only) at 1300 and 1600px, and the two existing tests pass with the computed floor. Invariant broken on purpose: a temporary `min-width: 1200px` on `.data` in `DataTable.svelte` made both viewer runs fail (a frame scrolling with its prose above the floor); reverted and rebuilt, green again.
 - 2026-09-29T16:35:28.000Z Design text: the sentence is in the strategic-table spec and the design language DataTable row. The cause is generic to no table: it is this table's content width against its frame, so `DataTable` is unchanged.
 - 2026-09-29T17:23:44.000Z Real VS Code host, verified with `apps/ods-vscode/e2e-keyboard/journeys.spec.ts` (`npm run test:vscode:keyboard`, real VS Code 1.96.4 driven by Playwright-Electron: real key and pointer events at the workbench, the webview's DOM only read; one launch per describe): the site tree does not exist in the webview, so 1300x900 is not comparable as a viewport, but the invariant does not depend on it. Sizing the real window with `BrowserWindow.setContentSize` gives webviews of 996px (1300x900), 596px (900x700) and 1496px (1800x1000); at each the document never scrolls sideways, a frame that scrolls has its prose column within 1px of the computed `min-width` (196.523px), and a frame whose prose is above the floor does not scroll (observed: 94px of scroll at 996, 159 and 262px at 596, none at 1496). The site's 2px case at 1300 is not reproduced, because the webview at that window is narrower than the site's frame.
+- **lead** (2026-09-29T20:49:19Z): Gate green on 54b75e3f (lead): the gate ran 20:44–20:48Z, core 1040, pages 978 at 100% coverage, pages e2e 389 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match; CI green on the same head. Real host: `npm run test:vscode:keyboard` 19 passed and `npm run test:vscode` green (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), both on 54b75e3f in real VS Code 1.96.4. The card stays in `doing` until PR #76 merges.

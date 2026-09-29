@@ -3,8 +3,8 @@ column: doing
 labels: [bug, frontend]
 priority: medium
 agent: developer
-live: true
-updatedAt: 2026-09-29T17:36:18.000Z
+live: false
+updatedAt: 2026-09-29T20:49:19Z
 ---
 # The static theme shows every state
 
@@ -22,8 +22,8 @@ Issue #52, a child of epic #61 (accessible navigation across the viewer, export 
 ## Gates
 
 - [x] biome check on the touched files
-- [ ] `bash scripts/verify-all.sh`
-- [ ] real VS Code host check (lead)
+- [x] `bash scripts/verify-all.sh` on 54b75e3f (lead): the gate ran 20:44–20:48Z, core 1040, pages 978 at 100% coverage, pages e2e 389 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match; CI green on the same head
+- [x] real VS Code host check (lead): `npm run test:vscode:keyboard` 19 passed and `npm run test:vscode` green (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), both on 54b75e3f in real VS Code 1.96.4
 
 ## Journal
 
@@ -35,3 +35,4 @@ Issue #52, a child of epic #61 (accessible navigation across the viewer, export 
 - 2026-09-29T16:32:00.000Z Not asserted, on purpose: high contrast. The static theme has no high-contrast variant and never sets `.vscode-high-contrast`, so the dashed `contrastActiveBorder` hover is an extension-only state; the lead's real host check covers it.
 - 2026-09-29T17:23:44.000Z Real VS Code host, verified with `apps/ods-vscode/e2e-keyboard/journeys.spec.ts` (`npm run test:vscode:keyboard`, real VS Code 1.96.4 driven by Playwright-Electron: real key and pointer events at the workbench, the webview's DOM only read; one launch per describe): with the real theme, the focused link after a real Tab has `:focus-visible` and a drawn outline or shadow, `--vscode-focusBorder` is supplied by the host, and moving the real pointer over a strategic-position table row changes its background to a non-transparent wash. High contrast was not run (the real host ran its default theme).
 - 2026-09-29T17:36:18.000Z Gate failure on be22b38, "the static export" light and dark: `Tab never reached the target within 120 presses` (`packages/pages/e2e/interaction-states.spec.ts` `tabTo`, first call, the tree link). Diagnosed by logging 300 Tab presses on the export's Sales BC page: not a keyboard trap. Focus passes through the strategic table, the port-label buttons, every diagram (nodes, Svelte Flow controls, Options, Legend) and the reference lists, reaches the body at press 205 and wraps back to the tree (a cycle of about 205 stops). The cause is the starting point: since #46 to #50 focus moves into the main region on arrival, and `blur()` leaves the sequential focus starting point there, so Tab moves forward through main and reaches the tree, which comes earlier in the document, only after the wrap. The test now focuses a known place (`tabFrom`: the first tree link, then at most one press per tree link; the toggle one press after the tree link) instead of raising the limit. Viewer and export, light and dark, 4 of 4 green on port 4192 (export served by `e2e/static-server.mjs` from the same `e2e/.export`, the gate's wiring except for the port).
+- **lead** (2026-09-29T20:49:19Z): Gate green on 54b75e3f (lead): the gate ran 20:44–20:48Z, core 1040, pages 978 at 100% coverage, pages e2e 389 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match; CI green on the same head. Real host: `npm run test:vscode:keyboard` 19 passed and `npm run test:vscode` green (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), both on 54b75e3f in real VS Code 1.96.4. The card stays in `doing` until PR #76 merges.

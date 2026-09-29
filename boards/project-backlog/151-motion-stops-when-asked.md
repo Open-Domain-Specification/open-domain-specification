@@ -3,8 +3,8 @@ column: doing
 labels: [pages, accessibility]
 priority: medium
 agent: developer
-live: true
-updatedAt: 2026-09-29T17:07:50.000Z
+live: false
+updatedAt: 2026-09-29T20:49:19Z
 ---
 # Motion stops when asked
 
@@ -38,8 +38,8 @@ Issue #51, a child of epic #61 (accessible navigation across the viewer, export 
 ## Gates
 
 - [x] `npx @biomejs/biome check` on the touched files exits 0
-- [ ] `bash scripts/verify-all.sh` green
-- [ ] real VS Code host check (lead)
+- [x] `bash scripts/verify-all.sh` green on 54b75e3f (lead): the gate ran 20:44–20:48Z, core 1040, pages 978 at 100% coverage, pages e2e 389 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match; CI green on the same head
+- [x] real VS Code host check (lead): `npm run test:vscode:keyboard` 19 passed and `npm run test:vscode` green (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), both on 54b75e3f in real VS Code 1.96.4
 
 ## Comments
 
@@ -53,3 +53,4 @@ Issue #51, a child of epic #61 (accessible navigation across the viewer, export 
 - **developer** (2026-09-29T16:58:00.000Z): Test seam. `stubReducedMotion` in `xyflow-test-env.ts` stubs the one query, hands back a switch that fires the `change` event, and leaves every other query (Svelte Flow reads the colour scheme) unmatched: a first version answered every query and Svelte Flow's colour-scheme listener received a fake event.
 - **developer** (2026-09-29T17:07:50.000Z): Follow-up from review, overruling the earlier decision to switch double-click zoom off: the gesture is kept and made instant. Under reduced motion `zoomOnDoubleClick` is false and `DoubleClickZoom.svelte` (inside the flow, so it can reach `setViewport`) handles `dblclick` on the pane itself: `zoomedAt` (`double-click-zoom.ts`) works the same step d3 would (doubles, halves with Shift, clamped to the map's limits, the point under the pointer stays put) and it is applied with `setViewport(..., { duration: 0 })`. Only the pane counts, as d3's own filter does: a node opens its page and a control is its own. Without reduce, the library's default is untouched. Failing first: the e2e now asserts, under reduce, that the zoom grows and that exactly two viewport transforms are sampled per frame (before and after); on the previous bundle it failed because the gesture was gone (one transform). The no-preference control still shows 4 or more transforms. Both hosts pass; unit coverage is 100%.
 - **developer** (2026-09-29T17:23:44.000Z): Real VS Code host, verified with `apps/ods-vscode/e2e-keyboard/journeys.spec.ts` (`npm run test:vscode:keyboard`, real VS Code 1.96.4 driven by Playwright-Electron: real key and pointer events at the workbench, the webview's DOM only read; one launch per describe), using `window.emulateMedia({reducedMotion})` on the workbench page, which reaches the webview frame: with `no-preference` the map has running animations and a double click on the pane passes through more than 3 viewport transforms; under `reduce`, `document.getAnimations()` in the frame has none running, no element has a computed transition or animation over 1ms, Fit View by real Tab and Enter refits in at most 2 transforms, and a double click zooms in exactly 2 transforms (before and after, at once). A contents jump by real Enter calls `scrollIntoView` with `smooth` under no-preference and `auto` under reduce.
+- **lead** (2026-09-29T20:49:19Z): Gate green on 54b75e3f (lead): the gate ran 20:44–20:48Z, core 1040, pages 978 at 100% coverage, pages e2e 389 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match; CI green on the same head. Real host: `npm run test:vscode:keyboard` 19 passed and `npm run test:vscode` green (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), both on 54b75e3f in real VS Code 1.96.4. The card stays in `doing` until PR #76 merges.

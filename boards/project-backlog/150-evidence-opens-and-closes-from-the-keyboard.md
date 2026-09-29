@@ -3,8 +3,8 @@ column: doing
 labels: [pages, accessibility]
 priority: medium
 agent: developer
-live: true
-updatedAt: 2026-09-29T17:07:50.000Z
+live: false
+updatedAt: 2026-09-29T20:49:19Z
 ---
 # Evidence opens and closes from the keyboard
 
@@ -23,8 +23,8 @@ Issue #48, a child of epic #61 (accessible navigation across the viewer, export 
 ## Gates
 
 - [x] `npx @biomejs/biome check` on the touched files exits 0
-- [ ] `bash scripts/verify-all.sh` green
-- [ ] real VS Code host check (lead)
+- [x] `bash scripts/verify-all.sh` green on 54b75e3f (lead): the gate ran 20:44–20:48Z, core 1040, pages 978 at 100% coverage, pages e2e 389 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match; CI green on the same head
+- [x] real VS Code host check (lead): `npm run test:vscode:keyboard` 19 passed and `npm run test:vscode` green (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), both on 54b75e3f in real VS Code 1.96.4
 
 ## Comments
 
@@ -37,3 +37,4 @@ Issue #48, a child of epic #61 (accessible navigation across the viewer, export 
 - **developer** (2026-09-29T16:48:27.000Z): Not changed at the time, and worth a decision: in fullscreen, one Escape closed the card and the overlay together, because both listen on `window`. Fixed in the follow-up below.
 - **developer** (2026-09-29T17:07:50.000Z): Follow-up from review: Escape in fullscreen closes the innermost layer. The disclosure's window listener now runs in the capture phase and calls `stopImmediatePropagation` on Escape (`disclosure.svelte.ts`, `show`), so the fullscreen overlay's own `window` listener never sees the key while a card is up: the card closes, focus returns to its badge, and the diagram stays fullscreen; the next Escape, with no card, reaches the overlay and leaves fullscreen. Every other key passes through. Failing first: the fullscreen test in `diagram-evidence-keyboard.spec.ts` failed on the fullscreen-still-on assertion (both closed at once); it now passes on the viewer and the export. Focus after the second Escape is not moved: the existing fullscreen module has no return-focus convention (the fullscreen control is not tracked), so focus stays where it was, on the badge; that is the one part of the lead's request I did not add, because it would be a new convention rather than an existing one.
 - **developer** (2026-09-29T17:23:44.000Z): Real VS Code host, verified with `apps/ods-vscode/e2e-keyboard/journeys.spec.ts` (`npm run test:vscode:keyboard`, real VS Code 1.96.4 driven by Playwright-Electron: real key and pointer events at the workbench, the webview's DOM only read; one launch per describe): on the cross-surface fixture's Orders context map, Tab reaches the tolerated relationship's badge (`aria-haspopup=dialog`, `aria-expanded=false`); Enter and, separately, Space open a `role=dialog` card that holds focus and is named by the badge's `aria-controls`; Escape closes it with focus back on the badge and `aria-expanded=false`. In fullscreen (Tab to Enter fullscreen, Enter), the first Escape closes only the card with focus on the badge and the diagram still fullscreen, and the second Escape leaves fullscreen.
+- **lead** (2026-09-29T20:49:19Z): Gate green on 54b75e3f (lead): the gate ran 20:44–20:48Z, core 1040, pages 978 at 100% coverage, pages e2e 389 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match; CI green on the same head. Real host: `npm run test:vscode:keyboard` 19 passed and `npm run test:vscode` green (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), both on 54b75e3f in real VS Code 1.96.4. The card stays in `doing` until PR #76 merges.

@@ -3,8 +3,8 @@ column: doing
 labels: [pages, accessibility]
 priority: medium
 agent: developer
-live: true
-updatedAt: 2026-09-29T17:07:50.000Z
+live: false
+updatedAt: 2026-09-29T20:49:19Z
 ---
 # A diagram node opens from the keyboard
 
@@ -24,8 +24,8 @@ Issue #47, a child of epic #61 (accessible navigation across the viewer, export 
 ## Gates
 
 - [x] `npx @biomejs/biome check` on the touched files exits 0
-- [ ] `bash scripts/verify-all.sh` green
-- [ ] real VS Code host check (lead)
+- [x] `bash scripts/verify-all.sh` green on 54b75e3f (lead): the gate ran 20:44–20:48Z, core 1040, pages 978 at 100% coverage, pages e2e 389 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match; CI green on the same head
+- [x] real VS Code host check (lead): `npm run test:vscode:keyboard` 19 passed and `npm run test:vscode` green (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), both on 54b75e3f in real VS Code 1.96.4
 
 ## Comments
 
@@ -38,3 +38,4 @@ Issue #47, a child of epic #61 (accessible navigation across the viewer, export 
 - **developer** (2026-09-29T16:35:37.000Z): Focus ring at `page.css:341`, `1px solid var(--vscode-focusBorder, var(--accent))` with a 2px offset, on the node's box so a big ball of mud's clipped octagon does not clip the ring. The variable needs its fallback: the viewer and the export do not define `--vscode-focusBorder` on that page and the bare form computed to no outline at all, which the e2e caught.
 - **developer** (2026-09-29T17:07:50.000Z): Follow-up from review: edges out of the Tab order. Clicking an edge does nothing on any of the four maps: there is no `onedgeclick` in `InteractiveDiagram.svelte`, and the badges on a context edge are their own buttons (card 150), so no kind of edge has an action to give keyboard parity to. So `edgesFocusable={false}` (`InteractiveDiagram.svelte:132`), and the order is badges, nodes, controls. Before, each edge was a stop named "Edge from A to B" carrying the library's "select an edge ... delete it" description. Failing first: `diagram-keyboard.spec.ts` ("Tab stops only on things that do something") found edge stops and a `select`/`delete` description on the unchanged bundle; it now passes on the viewer and the export, tabbing through the whole context map and asserting no stop is named "Edge from ..." and none is described with select, delete or move. Only the context map has edges with an action of any kind (the badges); the consumable, relation and flow maps' edges have none.
 - **developer** (2026-09-29T17:23:44.000Z): Real VS Code host, verified with `apps/ods-vscode/e2e-keyboard/journeys.spec.ts` (`npm run test:vscode:keyboard`, real VS Code 1.96.4 driven by Playwright-Electron: real key and pointer events at the workbench, the webview's DOM only read; one launch per describe): the context map's nodes are named "Orders, bounded context", "Billing, bounded context" and "Shipping, bounded context", reached with real Tab in document order, no stop is named "Edge from ...", the focused node has a solid `:focus-visible` outline; Enter on "Billing, bounded context" opens `#/boundedcontexts/billing`; Space on "Shipping" opens its page and the keydown was `defaultPrevented`. Fail first: with the Enter and Space handler in `InteractiveDiagram.svelte` disabled and the bundle rebuilt, the Enter and Space journeys failed; restored and green.
+- **lead** (2026-09-29T20:49:19Z): Gate green on 54b75e3f (lead): the gate ran 20:44–20:48Z, core 1040, pages 978 at 100% coverage, pages e2e 389 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match; CI green on the same head. Real host: `npm run test:vscode:keyboard` 19 passed and `npm run test:vscode` green (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), both on 54b75e3f in real VS Code 1.96.4. The card stays in `doing` until PR #76 merges.

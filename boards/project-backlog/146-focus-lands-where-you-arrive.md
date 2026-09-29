@@ -3,8 +3,8 @@ column: doing
 labels: [accessibility]
 priority: medium
 agent: developer
-live: true
-updatedAt: 2026-09-29T16:55:00.000Z
+live: false
+updatedAt: 2026-09-29T20:49:19Z
 ---
 # Focus lands where you arrive
 
@@ -25,8 +25,8 @@ Issue #46, a child of epic #61. Following a page link, a sidebar entry or a tabl
 ## Gates
 
 - [x] biome check on the touched files
-- [ ] `bash scripts/verify-all.sh`
-- [ ] real VS Code host check (lead)
+- [x] `bash scripts/verify-all.sh` on 54b75e3f (lead): the gate ran 20:44–20:48Z, core 1040, pages 978 at 100% coverage, pages e2e 389 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match; CI green on the same head
+- [x] real VS Code host check (lead): `npm run test:vscode:keyboard` 19 passed and `npm run test:vscode` green (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), both on 54b75e3f in real VS Code 1.96.4
 
 ## Comments
 
@@ -35,3 +35,4 @@ Issue #46, a child of epic #61. Following a page link, a sidebar entry or a tabl
 - **developer** (2026-09-29T16:43:00.000Z): Where the next Tab goes, measured: after a page link, Tab from the heading reaches a control inside `main`, not the sidebar and not the top of the document; after a contents entry, Tab reaches the next control in or after that section. Both are asserted in the spec on both hosts.
 - **developer** (2026-09-29T16:55:00.000Z): Focus after an import, accepted by the lead as arrival focus. `packages/pages/src/app/ImportScreen.svelte:91-99` takes an `asked` flag: Load, Enter in the field (both `fromUrl(true)`), a file choice and an example card pass true, and only then does it call the new `onopened` prop after the workspace was handed to `onload` and accepted. The `?url=` deep link on first load calls `fromUrl()` with the default false, so it never does. `packages/pages/src/app/App.svelte:44-48` `opened()` waits a tick for the page to render and focuses `main h1` with `focusArrival`. The webview's `model` message never passes through the import screen, so it cannot reach it. No separate success announcement: the heading names the workspace. The message-based distinction is by call path, not by inspecting the environment, so nothing else can trigger it by accident.
 - **developer** (2026-09-29T17:23:44.000Z): Real VS Code host, verified with `apps/ods-vscode/e2e-keyboard/journeys.spec.ts` (`npm run test:vscode:keyboard`, real VS Code 1.96.4 driven by Playwright-Electron: real key and pointer events at the workbench, the webview's DOM only read; one launch per describe): Tab then Enter on a page link lands focus on the destination `h1` (`tabindex=-1`) and the next Tab is inside `main`; Enter on the "Strategic position" contents entry focuses its section heading and the next Tab stays in `main`; a page the extension opens through F1 > ODS: Search Domain Model leaves `document.activeElement` on `BODY` (no focus stolen). History: the webview has no back button and VS Code binds no key to the page's history, so the router is reached with `history.back()` and `history.forward()` from the frame; both restore the page and focus its heading, so the router's history works inside the webview. Fail first: with the `focusArrival(heading)` call removed from `Page.svelte` and the bundle rebuilt, the page-link and history journeys failed; restored and green.
+- **lead** (2026-09-29T20:49:19Z): Gate green on 54b75e3f (lead): the gate ran 20:44–20:48Z, core 1040, pages 978 at 100% coverage, pages e2e 389 passed and 20 skipped (the gated capture harness), every model suite at its pinned count, schema comparison match; CI green on the same head. Real host: `npm run test:vscode:keyboard` 19 passed and `npm run test:vscode` green (9 passing, 4 pending screenshots; hostile-links 1; cross-surface 4), both on 54b75e3f in real VS Code 1.96.4. The card stays in `doing` until PR #76 merges.
