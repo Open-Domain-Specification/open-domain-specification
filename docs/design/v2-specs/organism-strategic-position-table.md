@@ -32,3 +32,16 @@ The expanded row spans all columns and renders `RelationshipDetail` with
 
 The description column is capped at 34ch and wraps, as today. The table is
 full width; description takes the remaining width.
+
+## Width behaviour (2026-09-29, issue 42)
+
+At full width the table fits and its frame does not scroll. Beside the site
+tree at 1300px the frame is 760px, the other six columns need about 565px and
+the prose column's floor is 24ch, which is about 197px in the 13px font, so
+the prose is at its floor and the frame may scroll sideways by the width the
+floor needs (about 2px); the page never scrolls sideways. That scroll is the
+design working, not a defect. `packages/pages/e2e/relationship.spec.ts` holds
+it in font-independent terms ("the Strategic position frame scrolls only when
+the prose is at its floor"): a scrolling frame has its prose at the computed
+`min-width`, and a frame with room, as at 1600px, does not scroll.
+

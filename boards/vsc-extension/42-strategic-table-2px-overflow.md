@@ -1,11 +1,11 @@
 ---
-column: todo
+column: doing
 labels: [bug, frontend]
 priority: high
 agent: dev-sonnet
 live: false
 clean-code-swept: true
-updatedAt: 2026-09-05T18:30:00.000Z
+updatedAt: 2026-09-29T16:36:00.000Z
 ---
 # Strategic position table overflows its frame by 2px at 1300px
 
@@ -40,3 +40,32 @@ Two pixels is not a visible defect, but the assertion is the one that guards the
 - 2026-09-11, lead: held back from done. The two pixels this card says it fixed are still measurable; issue 42 asks which of this card and card 46 is right.
 
 - 2026-09-11, lead: held back from done. The two pixels this card says it fixed are still measurable; issue 42 asks which of this card and card 46 is right.
+
+## Correction, 2026-09-29 (issue #42, epic #61)
+
+Struck by this correction and left as written above: the claim that the two pixels are "a genuine rounding artefact of `<table>` auto-layout" (the 2026-09-05T18:10 and 18:20 comments), the assertion loosened to `toBeLessThanOrEqual(2)`, and the "fixed" reading of the card. The two pixels are real content width. The prose column's `min-width: 24ch` computes to 196.523px in the 13px system font (24ch is about 197px, not the 168px `PROSE_FLOOR = 24 * 7` assumed), so the prose is at its floor; the other columns sum to about 565px, and the table needs 761.5px of the frame's 760px. The design language says the frame scrolls sideways "when that still cannot give the prose its floor", so the 2px scroll at 1300x900 with the tree is the intended behaviour. There was no off-by-one in `DataTable.svelte` and none was changed.
+
+Ruling (lead, 2026-09-29): option (d), apply the design as written and change no layout. The lead's first ruling that no overflow was intended rested on the 168px floor and was withdrawn once the computed `min-width` was measured.
+
+## Checklist (reconciliation)
+
+- [x] Ruling recorded: the scroll at 1300 with the tree is the design working; the floor is 24ch, about 197px
+- [x] Reproduced: an absolute "frame overflow is 0" assertion at 1300x900 with the tree fails with 2 on 2026-09-29, and the measurement shows why (`min-width` 196.523px, table 761.55px, frame 760px)
+- [x] No layout fix: nothing in `DataTable.svelte` changes
+- [x] Regression, wide and tree widths, viewer and static export at 1300 and 1600px: `e2e/relationship.spec.ts` "the Strategic position frame scrolls only when the prose is at its floor" (page never scrolls; a scrolling frame has its prose within 1px of the computed `min-width`; at 1600 the frame does not scroll and the prose is above the floor); helpers `growColumn` and `expectScrollOnlyAtTheFloor` in `e2e/helpers.ts`
+- [x] Regression, narrow tier: "narrower still" at 1100px reads the computed `min-width` instead of the hard-coded 168, and asserts the frame scrolls and the page does not; `PROSE_FLOOR` removed
+- [x] Doc sentence: `docs/design/v2-specs/organism-strategic-position-table.md` "Width behaviour" and the DataTable row of `docs/design/design-language-v2.md`
+- [x] Pages unit coverage 100%, `npm run check` and biome clean
+
+## Gates (reconciliation)
+
+- [x] biome check on the touched files
+- [ ] `bash scripts/verify-all.sh`
+- [ ] real VS Code host check (lead)
+
+## Journal
+
+- 2026-09-29T16:30:00.000Z (approximate) Reproduced on the epic branch: `frame.scrollWidth - clientWidth` is 2 at 1300x900 with the tree. Instrumented headers 29.3, 124.1, 196.5, 153.5, 75.0, 91.9, 91.1; `td.grow` computed `min-width` 196.523px; table 761.55px; frame `clientWidth` 760.
+- 2026-09-29T16:35:14.000Z Committed the tests (`e2e/relationship.spec.ts` new test after the "narrower still" test; helpers in `e2e/helpers.ts`). They pass on the viewer and the export (port 4192 only) at 1300 and 1600px, and the two existing tests pass with the computed floor. Invariant broken on purpose: a temporary `min-width: 1200px` on `.data` in `DataTable.svelte` made both viewer runs fail (a frame scrolling with its prose above the floor); reverted and rebuilt, green again.
+- 2026-09-29T16:35:28.000Z Design text: the sentence is in the strategic-table spec and the design language DataTable row. The cause is generic to no table: it is this table's content width against its frame, so `DataTable` is unchanged.
+
