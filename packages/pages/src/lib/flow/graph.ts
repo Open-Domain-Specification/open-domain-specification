@@ -48,6 +48,12 @@ export type GraphEdge = {
 	 * the exchange. Empty means the whole consumer (decision 21).
 	 */
 	by?: string[];
+	/**
+	 * On a consumable edge, what the agreement the exchange runs under is called
+	 * (its name, or its type where it has none). Absent means the consumption
+	 * names none.
+	 */
+	agreement?: string;
 	/** Handle ids at each end, when a node offers more than one. */
 	sourceHandle?: string;
 	targetHandle?: string;

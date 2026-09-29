@@ -29,6 +29,8 @@ export type ContextEdgeData = {
 	 * consumption; the edge shows them when the line is hovered.
 	 */
 	by?: string[];
+	/** On a consumable edge, the agreement the exchange runs under, for the hover. */
+	agreement?: string;
 };
 
 /** What shapes the Svelte Flow nodes beyond the layout: the options and the map's freedoms. */
@@ -140,6 +142,7 @@ export function flowEdges(positioned: Positioned): Edge[] {
 			targetLabel: e.targetLabel,
 			name: e.name,
 			by: e.by,
+			agreement: e.agreement,
 			...(e.intent && {
 				disposition: dispositionOf(e.intent),
 				summary: intentSummary(e.intent),

@@ -136,6 +136,27 @@ describe("ConsumableEdge without a measured socket", () => {
 		await waitFor(() => expect(whole.querySelector("path")).toBeTruthy());
 		expect(whole.querySelector(".edge-label title")).toBeNull();
 	});
+	it("adds the agreement the exchange runs under to the hover, after what makes it, and hovers to it alone when the whole consumer makes it", async () => {
+		diagramOptions.set({ handles: "fixed", edges: "bezier" });
+		const { container } = edge({
+			data: { by: ["ReservePet"], agreement: "purchase order lookup" },
+		});
+		await waitFor(() => expect(container.querySelector("path")).toBeTruthy());
+		expect(container.querySelector(".edge-label title")?.textContent).toBe(
+			"Made by ReservePet\nUnder the purchase order lookup agreement",
+		);
+		const { container: whole } = edge({
+			data: { by: [], agreement: "legacy stock feed" },
+		});
+		await waitFor(() => expect(whole.querySelector("path")).toBeTruthy());
+		expect(whole.querySelector(".edge-label title")?.textContent).toBe(
+			"Under the legacy stock feed agreement",
+		);
+		// The midpoint label stays the consumable's name.
+		expect(whole.querySelector(".edge-label")?.textContent).toContain(
+			"Reserve Pet",
+		);
+	});
 	it("omits what it has none for and falls back to the fixed target, drawing the provider port itself, when the slot handle is not measured or not named", async () => {
 		diagramOptions.set({ handles: "fixed", edges: "bezier" });
 		boxes["#/b"] = { ...provider(), handles: undefined };

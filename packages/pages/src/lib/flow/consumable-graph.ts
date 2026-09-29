@@ -124,6 +124,7 @@ export function consumableGraph(map: ODSConsumableMap): Graph {
 			sourceLabel: e.sourcePattern,
 			targetLabel: e.targetPattern,
 			by: e.by,
+			agreement: e.agreement && (e.agreement.name ?? e.agreement.type),
 		})),
 	};
 }

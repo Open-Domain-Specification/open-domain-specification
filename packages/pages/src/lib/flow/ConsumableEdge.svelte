@@ -42,7 +42,12 @@ let {
 	targetHandleId,
 	data,
 }: EdgeProps & {
-	data?: { sourceLabel?: string; targetLabel?: string; by?: string[] };
+	data?: {
+		sourceLabel?: string;
+		targetLabel?: string;
+		by?: string[];
+		agreement?: string;
+	};
 } = $props();
 // An edge's ends never change once created, so the initial ids are the ids.
 // svelte-ignore state_referenced_locally
@@ -90,9 +95,17 @@ const params: EdgeEndpoints = $derived.by(() => {
 	};
 });
 
-/** The consumer's operations or policies behind the consumption, for the hover. */
+/**
+ * The hover: the consumer's operations or policies behind the consumption,
+ * then the agreement it runs under, each on a line where it is known.
+ */
 const madeBy = $derived(
-	data?.by?.length ? `Made by ${data.by.join(", ")}` : undefined,
+	[
+		data?.by?.length ? `Made by ${data.by.join(", ")}` : undefined,
+		data?.agreement ? `Under the ${data.agreement} agreement` : undefined,
+	]
+		.filter(Boolean)
+		.join("\n") || undefined,
 );
 
 /** The socket is the consumer's port; without one the edge draws it. */

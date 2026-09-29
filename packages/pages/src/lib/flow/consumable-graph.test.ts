@@ -52,6 +52,11 @@ const edges: [string, ODSConsumptionMapEdge][] = [
 			targetPattern: "open-host-service",
 			// One operation of the consumer makes this call; the rest do not.
 			by: ["Approve Order"],
+			agreement: {
+				name: "purchase order lookup",
+				type: "customer-supplier",
+				ref: "#/relationships/a",
+			},
 		},
 	],
 	["e2", { source: consumer, target: changed, by: [] }],
@@ -134,6 +139,7 @@ describe("consumableGraph", () => {
 				sourceLabel: "anti-corruption-layer",
 				targetLabel: "open-host-service",
 				by: ["Approve Order"],
+				agreement: "purchase order lookup",
 			},
 			{
 				id: "e2",
@@ -163,6 +169,27 @@ describe("consumableGraph", () => {
 			},
 		]);
 	});
+	it("names the agreement by its type where the relationship has no name, and carries none where the consumption names none", () => {
+		const unnamed = {
+			...map,
+			edges: new Map([
+				[
+					"u",
+					{
+						source: consumer,
+						target: reserve,
+						by: [],
+						agreement: { type: "customer-supplier", ref: "#/relationships/b" },
+					},
+				],
+				["n", { source: consumer, target: changed, by: [] }],
+			]),
+		} as unknown as ODSConsumableMap;
+		const [u, n] = consumableGraph(unnamed).edges;
+		expect(u.agreement).toBe("customer-supplier");
+		expect(n.agreement).toBeUndefined();
+	});
+
 	it("labels a nameless node with its ref", () => {
 		const nameless = {
 			...map,
