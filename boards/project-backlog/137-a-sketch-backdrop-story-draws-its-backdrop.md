@@ -3,8 +3,8 @@ column: doing
 labels: [bug, frontend, testing]
 priority: medium
 agent: developer
-live: true
-updatedAt: 2026-09-29T14:10:00.000Z
+live: false
+updatedAt: 2026-09-29T15:30:00.000Z
 ---
 # A sketch backdrop story draws its backdrop, and the Storybook check refuses a canvas that painted nothing
 
@@ -20,8 +20,8 @@ Issue 41, a child of epic 60. All four `Flow/SketchBackdrop` stories painted not
 
 ## Gates
 
-- [ ] `npx @biomejs/biome check` clean on the touched files
-- [ ] `bash scripts/verify-all.sh` green
+- [x] `npx @biomejs/biome check` clean on the touched files
+- [x] `bash scripts/verify-all.sh` green on 47c73ede (lead, 2026-09-29): core 814, pages 769, pages e2e 303, every other suite green, schema comparison match
 
 ## Comments
 
@@ -30,3 +30,4 @@ Issue 41, a child of epic 60. All four `Flow/SketchBackdrop` stories painted not
 - **developer** (2026-09-29T14:10:00.000Z): Predicate at `packages/pages/e2e/helpers.ts:208-239` (`paintedIn`, `meaningful`): a story is painted when its readable text (the `.svelte-flow__attribution` text removed), plus its SVG shapes, plus its `.svelte-flow__node` count is above zero. A shape counts only outside `defs`/`clipPath`/`marker`/`mask`/`pattern`, with a non-blank `d` for paths, and a `getBBox` with width or height. Chosen over a text-only rule because several legitimate stories (icons, diagrams) paint only SVG; chosen over a bare SVG count because an empty backdrop is still an `<svg>`. `storybook.spec.ts:64` uses it for every story; the `RENDERS_NOTHING` allow-list is unchanged.
 - **developer** (2026-09-29T14:10:00.000Z): The blank story is proved against DOM rather than a shipped story, because a deliberately blank story in the catalogue would fail its own check (`packages/pages/e2e/storybook.spec.ts:178-215`). The fixture is a flow canvas with the attribution, a clip path with an empty `d`, three empty backdrop paths (one whitespace-only) and a zero-size rect; it must score `{ text: 0, shapes: 0, nodes: 0 }`. A second test shows real geometry, a flow node and plain words each score. The focused geometry test asserts each story's node count (6, 8, 6, 1), a blob spanning more than 50 by 50, boundaries where the story has two or more regions, and domain borders for the two-domains story only.
 - **developer** (2026-09-29T14:10:00.000Z): Checks, run against a separate Playwright config that starts only the Storybook server on 4176 (the full config holds 4173, which the lead's gate owns): `npx storybook build` green, `storybook.spec.ts` 235 passed; pages vitest 768 passed, 1 skipped, and `src/site.test.ts` failing only because `packages/pages/app` was not built in this worktree. `npx @biomejs/biome check` on the three touched source files reported no findings; both gates stay unchecked until the lead runs them.
+- **lead** (2026-09-29T15:30:00.000Z): Reviewed. Reworded the harness comment, which described the missing args as a one-tick delay (`packages/pages/src/lib/flow/SketchBackdrop.harness.svelte:17-19`), and appended the real cause to vsc-extension card 21. Gate green on 47c73ede. The card stays in `doing` until the PR merges; issue 41 stays open until then.
