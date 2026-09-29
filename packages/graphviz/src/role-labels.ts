@@ -77,4 +77,6 @@ export const STEREOTYPES: Record<ODSRelationMapNode["type"], string> = {
 	valueobject: "value object",
 	foreign_valueobject: BORROWED_STEREOTYPE,
 	external_context: "external system",
+	boundary_only_context: "boundary only",
+	big_ball_of_mud_context: "big ball of mud",
 };

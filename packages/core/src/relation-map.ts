@@ -31,7 +31,15 @@ function relationNodeType(
 	node: RelationMapMember,
 	borrowed: boolean,
 ): ODSRelationMapNode["type"] {
-	if (node instanceof BoundedContext) return "external_context";
+	// An identity may name a whole context only where the entity inside is not
+	// ours to state, and the box says which kind of context that is, in the
+	// words the context map uses (decision 28; issue 56).
+	if (node instanceof BoundedContext)
+		return node.bigBallOfMud
+			? "big_ball_of_mud_context"
+			: node.boundaryOnly
+				? "boundary_only_context"
+				: "external_context";
 	if (!(node instanceof Entity))
 		return borrowed ? "foreign_valueobject" : "valueobject";
 	return node.root ? "entity_root" : "entity";
@@ -377,7 +385,9 @@ export type ODSRelationMapNode = {
 		| "entity"
 		| "valueobject"
 		| "foreign_valueobject"
-		| "external_context";
+		| "external_context"
+		| "boundary_only_context"
+		| "big_ball_of_mud_context";
 	/** Attributes drawn in the node's compartment; empty when none are declared. */
 	attributes: ODSRelationMapAttribute[];
 };

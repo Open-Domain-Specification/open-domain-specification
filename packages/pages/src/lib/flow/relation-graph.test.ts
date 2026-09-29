@@ -5,6 +5,7 @@ import type {
 } from "@open-domain-specification/core";
 import { STEREOTYPES } from "@open-domain-specification/graphviz";
 import { describe, expect, it } from "vitest";
+import { ICONS } from "../icons";
 import {
 	type RelationNodeData,
 	relationEdgeType,
@@ -78,6 +79,20 @@ describe("relationGraph", () => {
 		expect(borrowed.groupPath).toBe("Shared Kernel");
 		expect(borrowed.icon).toBe(own.icon);
 	});
+
+	it.each([
+		["external_context", "external system"],
+		["boundary_only_context", "boundary only"],
+		["big_ball_of_mud_context", "big ball of mud"],
+	] as const)(
+		"draws a %s node under its own kind's stereotype",
+		(type, stereotype) => {
+			const [n] = relationGraph(mapOf([node({ type })])).nodes;
+			expect(n.chips).toEqual([stereotype]);
+			expect(n.tone).toBe("muted");
+			expect(n.icon).toBe(ICONS.boundedcontext);
+		},
+	);
 
 	it("labels a nameless node with its ref", () => {
 		const [n] = relationGraph(

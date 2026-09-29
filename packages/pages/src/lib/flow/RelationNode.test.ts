@@ -73,6 +73,27 @@ describe("RelationNode", () => {
 		expect(container.querySelectorAll(".handle-hidden").length).toBe(2);
 	});
 
+	it.each(["external system", "boundary only", "big ball of mud"])(
+		"draws a context box under the «%s» stereotype, muted",
+		async (kind) => {
+			const { container } = relation({
+				id: "#/target",
+				type: "relation",
+				label: "Target",
+				icon: "symbol-namespace",
+				chips: [kind],
+				tone: "muted",
+			});
+			await waitFor(() =>
+				expect(container.querySelector(".relation-node")).toBeTruthy(),
+			);
+			expect(container.querySelector(".relation-node")).toHaveClass("muted");
+			expect(container.querySelector(".stereotype")).toHaveTextContent(
+				`«${kind}»`,
+			);
+		},
+	);
+
 	it("dashes a value object", async () => {
 		const { container } = relation({
 			id: "#/v",
