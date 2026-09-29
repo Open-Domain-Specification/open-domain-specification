@@ -95,15 +95,15 @@ export const RULE_FAMILIES: Record<string, FamilyEntry> = {
 	"postcondition-names-operation": todo("invariants"),
 
 	// Context relationships, their roles and what backs them.
-	"relationship-roles-backed": todo("relationships-and-roles"),
-	"consumption-agreement": todo("relationships-and-roles"),
-	"relationship-declared": todo("relationships-and-roles"),
-	"relationship-duplicate": todo("relationships-and-roles"),
-	"relationship-cycle": todo("relationships-and-roles"),
-	"partnership-backed": todo("relationships-and-roles"),
-	"shared-kernel-backed": todo("relationships-and-roles"),
-	"conformist-backed": todo("relationships-and-roles"),
-	"mud-needs-acl": todo("relationships-and-roles"),
+	"relationship-roles-backed": covered("relationships-and-roles"),
+	"consumption-agreement": covered("relationships-and-roles"),
+	"relationship-declared": covered("relationships-and-roles"),
+	"relationship-duplicate": covered("relationships-and-roles"),
+	"relationship-cycle": covered("relationships-and-roles"),
+	"partnership-backed": covered("relationships-and-roles"),
+	"shared-kernel-backed": covered("relationships-and-roles"),
+	"conformist-backed": covered("relationships-and-roles"),
+	"mud-needs-acl": covered("relationships-and-roles"),
 
 	// Policies and processes: where they live and what starts and ends them.
 	"process-in-context": todo("processes-and-policies"),

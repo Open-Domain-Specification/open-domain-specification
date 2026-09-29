@@ -4,7 +4,7 @@ labels: [backend, ddd]
 priority: high
 agent: developer
 live: true
-updatedAt: 2026-09-29T14:30:00.000Z
+updatedAt: 2026-09-29T15:10:00.000Z
 ---
 # Every validator rule has the smallest model that trips it and the nearest model that must stay clean, starting with the boundary, caller and answer-routing rules
 
@@ -24,7 +24,7 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - aggregates-and-identity: 0 of 9 covered
 - value-objects-and-specialisation: 0 of 6 covered
 - invariants: 0 of 6 covered
-- relationships-and-roles: 0 of 9 covered
+- relationships-and-roles: 9 of 9 covered
 - processes-and-policies: 0 of 5 covered
 - events-and-raising: 0 of 5 covered
 - documentation-and-strategy: 0 of 4 covered
@@ -78,15 +78,15 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 | `context-invariant-is-checked` | invariants | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
 | `precondition-names-operation` | invariants | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
 | `postcondition-names-operation` | invariants | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `relationship-roles-backed` | relationships-and-roles | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `consumption-agreement` | relationships-and-roles | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `relationship-declared` | relationships-and-roles | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `relationship-duplicate` | relationships-and-roles | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `relationship-cycle` | relationships-and-roles | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `partnership-backed` | relationships-and-roles | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `shared-kernel-backed` | relationships-and-roles | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `conformist-backed` | relationships-and-roles | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
-| `mud-needs-acl` | relationships-and-roles | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
+| `relationship-roles-backed` | relationships-and-roles | `rule-cases.relationships`: an upstream role (published-language) declared that nothing offered carries | `rule-cases.relationships`: only the role Ping carries | `validate.test.ts` "relationship-roles-backed", "...and published languages" | covered |
+| `consumption-agreement` | relationships-and-roles | `rule-cases.relationships`: a consumption across two named agreements names none; names one that joins other contexts | `rule-cases.relationships`: it names the agreement that joins the pair | `validate.test.ts` "consumption-agreement" | covered |
+| `relationship-declared` | relationships-and-roles | `rule-cases.relationships`: a call from Down to Up with no relationship | `rule-cases.relationships`: the relationship declared | `validate.test.ts` "relationship-declared" | covered |
+| `relationship-duplicate` | relationships-and-roles | `rule-cases.relationships`: two unnamed upstream-downstream relationships, Up to Down | `rule-cases.relationships`: the two named | `validate.test.ts` "relationship-duplicate" | covered |
+| `relationship-cycle` | relationships-and-roles | `rule-cases.relationships`: X and Y each call the other on conformist terms | `rule-cases.relationships`: one direction behind an anti-corruption layer | `validate.test.ts` "relationship-cycle" | covered |
+| `partnership-backed` | relationships-and-roles | `rule-cases.relationships`: partners with nothing crossing | `rule-cases.relationships`: Down calls Up's operation | `validate.test.ts` "partnership-backed" | covered |
+| `shared-kernel-backed` | relationships-and-roles | `rule-cases.relationships`: a shared kernel with nothing in it | `rule-cases.relationships`: Down calls Up's operation | `validate.test.ts` "shared-kernel-backed" | covered |
+| `conformist-backed` | relationships-and-roles | `rule-cases.relationships`: a declared conformist that consumes nothing of its upstream | `rule-cases.relationships`: it consumes Up's operation | `validate.test.ts` "...conformist" tests in "role-coherence" blocks | covered |
+| `mud-needs-acl` | relationships-and-roles | `rule-cases.relationships`: a consumption out of a big ball of mud as conformist | `rule-cases.relationships`: the same behind an anti-corruption layer | `validate.test.ts` "mud-needs-acl" | covered |
 | `process-in-context` | processes-and-policies | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
 | `process-has-ends` | processes-and-policies | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
 | `process-starts` | processes-and-policies | `rule-catalog.test.ts` fixture; per-rule tests in `validate.test.ts` not yet mapped | not yet written | | todo |
@@ -111,7 +111,7 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - [ ] Aggregates and identity (9 rules)
 - [ ] Value objects, attributes and relations (6 rules)
 - [ ] Invariants and contracts (6 rules)
-- [ ] Relationships and roles (9 rules)
+- [x] Relationships and roles (9 rules): relationship-roles-backed, consumption-agreement, relationship-declared, relationship-duplicate, relationship-cycle, partnership-backed, shared-kernel-backed, conformist-backed, mud-needs-acl
 - [ ] Processes and policies (5 rules)
 - [ ] Events and raising (5 rules)
 - [ ] Documentation and strategy (4 rules)
@@ -127,3 +127,4 @@ Slice 1 borderline calls. `role-coherence` is in callers and answer routing beca
 - **developer** (2026-09-29T14:30:00.000Z): Thirty-four pairs across the 23 rules in slice 1 (69 tests with the coverage-bookkeeping test). Where a fixture cannot trip a rule without tripping a consequence of the same missing line, the consequence is named in `fires` rather than filtered: `partnership-backed` beside a partnership that lets nothing be borrowed, `relationship-declared` beside a value object borrowed with no relationship at all, the three role and conformist warnings beside a policy with no consumption, the duplicated `domain-service-internal` for the upstream role a domain service declares and for being called from outside. Where the near-miss needs a second line to stay wholly clean, it is stated at the line: a shared kernel is reported by `shared-kernel-backed` when nothing is in it, so the specialisation near-miss has Down hold Money.
 - **developer** (2026-09-29T14:30:00.000Z): Mutation checks against `packages/core/src/validate.ts`, each reverted after the run. Widening `role-coherence` to ask a boundary-only consumer for a downstream role fails the role-coherence near-miss. Dropping the shared-kernel exemption from `aggregate-not-public` fails its near-miss. Removing `boundaryOnly` from the `identifies-entity` bounded-context exemption fails that near-miss. Making `consumption-by-operation` never fire fails its trigger. Dropping the single-operation exemption from `consumption-by-required` fails the no-operation near-miss and three fixtures that rely on one operation being its own answer.
 - **developer** (2026-09-29T14:30:00.000Z): No validator defect found in slice 1: every near-miss validated clean and every trigger fired, without changing a rule, a test assertion or a reference model. Nothing under `models/` was touched. Not exercised in this slice, and named so the next one does not assume it was: the anti-corruption-layer carve-out of `schema-context` (a consumable carrying an upstream shape it translates), a process hearing an answer through a local `by` chain, the one-hop boundary stop, and external invariants that name a contract; the older tests in `validate.test.ts` hold those, and the table points at them.
+- **developer** (2026-09-29T15:10:00.000Z): Slice 2, relationships and roles: 10 pairs in `packages/core/src/rule-cases.relationships.test.ts`, all nine rules. The building blocks and the harness moved out of the boundary file into `packages/core/src/rule-cases.support.ts` so every family file is written and run the same way; the boundary pairs are unchanged. Where a rule cannot be tripped without a consequence of the same absence, the consequence is named in `fires`: taking nothing from a conformist upstream also leaves the conformist role undeclared by any consumption (`relationship-roles-backed`); an exchange that names no agreement, or one that joins other contexts, backs neither agreement's roles. Mutation checks, each reverted: widening `partnership-backed` to shared kernels fails the shared-kernel pair; making `conformist-backed` ignore consumptions fails its near-miss and the relationship-cycle pairs, which lean on it; letting any downstream role clear `mud-needs-acl` fails its trigger. No defect found. None of the four behaviours the slice-1 journal names as held only by older tests belongs to this family, so none was added here.
