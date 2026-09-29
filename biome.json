@@ -6,7 +6,19 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"ignoreUnknown": false
+		"ignoreUnknown": false,
+		"includes": [
+			"**",
+			"!**/.claude",
+			"!**/.codex",
+			"!**/.agents",
+			"!**/.handovers",
+			"!models/*/.ods",
+			"!models/*/docs",
+			"!packages/skill/src/bundle.generated.ts",
+			"!packages/skill/skill/references",
+			"!boards/**/.config.json"
+		]
 	},
 	"formatter": {
 		"enabled": true,
