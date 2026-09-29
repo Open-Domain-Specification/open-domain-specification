@@ -71,6 +71,33 @@ describe("createDisclosure", () => {
 	});
 });
 
+describe("Escape in a fullscreen diagram", () => {
+	it("closes the card and goes no further, so the overlay behind it stays up", () => {
+		const behind = vi.fn();
+		window.addEventListener("keydown", behind);
+		const disclosure = createDisclosure();
+		disclosure.show(relationship, { x: 0, y: 0 });
+		press("Escape");
+		expect(disclosure.open).toBeUndefined();
+		expect(behind).not.toHaveBeenCalled();
+		// With no card up, the key is not held back: the next Escape reaches the overlay.
+		press("Escape");
+		expect(behind).toHaveBeenCalledTimes(1);
+		window.removeEventListener("keydown", behind);
+	});
+
+	it("lets every other key through to whatever is behind it", () => {
+		const behind = vi.fn();
+		window.addEventListener("keydown", behind);
+		const disclosure = createDisclosure();
+		disclosure.show(relationship, { x: 0, y: 0 });
+		press("Tab");
+		expect(behind).toHaveBeenCalledTimes(1);
+		disclosure.stop();
+		window.removeEventListener("keydown", behind);
+	});
+});
+
 describe("returning focus", () => {
 	const badge = () => {
 		const button = document.createElement("button");

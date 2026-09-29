@@ -94,6 +94,29 @@ for (const host of ["viewer", "export"] as const) {
 			await expect(badge).toBeFocused();
 		});
 
+		test("in fullscreen Escape closes the card first and fullscreen second", async ({
+			page,
+		}) => {
+			const flow = await openDiagram(page, host, "Sales BC context map", SALES);
+			const badge = flow.locator(BADGE);
+			const diagram = page.locator(".interactive.fullscreen");
+			await flow.getByRole("button", { name: "Enter fullscreen" }).focus();
+			await page.keyboard.press("Enter");
+			await expect(diagram).toHaveCount(1);
+			await arriveAt(flow);
+			expect(await tabUntil(page, BADGE)).toBe(true);
+			await page.keyboard.press("Enter");
+			await expect(flow.getByRole("dialog")).toBeVisible();
+
+			await page.keyboard.press("Escape");
+			await expect(flow.getByRole("dialog")).toHaveCount(0);
+			await expect(badge).toBeFocused();
+			await expect(diagram).toHaveCount(1);
+
+			await page.keyboard.press("Escape");
+			await expect(diagram).toHaveCount(0);
+		});
+
 		test("the pointer still opens it, and a click elsewhere closes it without taking focus back", async ({
 			page,
 		}) => {

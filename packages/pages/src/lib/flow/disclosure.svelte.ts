@@ -13,6 +13,10 @@
  * toggle that opened that. A click somewhere else, or a link followed out of
  * the card, closes it without taking focus from wherever the reader went.
  *
+ * Escape closes the card and nothing else: the listener runs in the capture
+ * phase and stops the key there, so a fullscreen diagram stays fullscreen
+ * until the second Escape.
+ *
  * The window listeners exist only while a card is open, so this never swallows
  * a key or a click on a page that has no card up. The card element itself
  * stops `pointerdown` from reaching the window, which is what makes "anywhere
@@ -64,7 +68,7 @@ export function createDisclosure(): Disclosure {
 	let onDismiss: (() => void) | undefined;
 	const stop = () => {
 		if (!onKeydown || !onDismiss) return;
-		window.removeEventListener("keydown", onKeydown);
+		window.removeEventListener("keydown", onKeydown, true);
 		window.removeEventListener("pointerdown", onDismiss);
 		window.removeEventListener("hashchange", onDismiss);
 		onKeydown = undefined;
@@ -88,10 +92,14 @@ export function createDisclosure(): Disclosure {
 			stop();
 			open = { relationship, x: at.x, y: at.y, invoker };
 			onKeydown = (event) => {
-				if (event.key === "Escape") dismiss();
+				if (event.key !== "Escape") return;
+				// The card is the innermost layer: Escape is spent closing it, and
+				// does not go on to leave the fullscreen overlay behind it.
+				event.stopImmediatePropagation();
+				dismiss();
 			};
 			onDismiss = close;
-			window.addEventListener("keydown", onKeydown);
+			window.addEventListener("keydown", onKeydown, true);
 			window.addEventListener("pointerdown", onDismiss);
 			window.addEventListener("hashchange", onDismiss);
 		},
