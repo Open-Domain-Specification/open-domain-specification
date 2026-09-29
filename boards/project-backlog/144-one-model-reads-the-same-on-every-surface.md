@@ -3,8 +3,8 @@ column: doing
 labels: [pages, doc, tooling]
 priority: medium
 agent: developer
-live: true
-updatedAt: 2026-09-29T23:00:00.000Z
+live: false
+updatedAt: 2026-09-29T23:30:00.000Z
 ---
 # One model reads the same on every surface
 
@@ -25,8 +25,8 @@ The fixture is `apps/ods-vscode/src/test/fixtures/cross-surface/.ods/cross_surfa
 
 ## Gates
 
-- [ ] `npx @biomejs/biome check` on the touched files exits 0
-- [ ] `bash scripts/verify-all.sh` green
+- [x] `npx @biomejs/biome check` on the touched files exits 0 (root `biome check .`: no fixes, 2026-09-29)
+- [x] `bash scripts/verify-all.sh` green on c3ae0910 (lead, 2026-09-29): core 1040, graphviz 35, doc 44, pages 906 at 100% coverage, pages e2e passed including `cross-surface-facts`, every model suite at its pinned count, schema comparison match
 - [x] `npm run test:vscode` green (developer, 2026-09-29): the cross-surface suite reports 4 passing (a real Extension Development Host, VS Code 1.96.4), the petstore suite 9 passing and the hostile-links suite 1 passing, exit code 0
 
 ## Comments
@@ -36,3 +36,4 @@ The fixture is `apps/ods-vscode/src/test/fixtures/cross-surface/.ods/cross_surfa
 - **developer** (2026-09-29T23:00:00.000Z): `expected.ts` holds values and no imports, so the Playwright and Vitest runs and the extension's own compile can all read it. It deliberately does not state the health label: each harness asks core for `relationshipTitle` and compares, so the glyph is stated once, in core. The hover text and the generated sentence are stated literally, so a wording change moves all four harnesses at once.
 - **developer** (2026-09-29T23:00:00.000Z): `apps/ods-vscode/tsconfig.json` now excludes `src/test/fixtures`, and `tsconfig.test.json` excludes the generator, which uses `import.meta` and is run with node; `expected.ts` is compiled into `out/` for the extension test.
 - **developer** (2026-09-29T23:00:00.000Z): The cross-surface pass found no inconsistency between surfaces for the four facts. The wording differs by surface as designed (the keyword `generated` on pages, `(generated)` in Markdown; an empty cell on pages, `-` in the Markdown column; a link on pages, plain text in Markdown).
+- **lead** (2026-09-29T23:30:00.000Z): Integrated on the epic 62 branch in the epic's order (#44, #43, #55, #56, then the cross-surface pass). The landing gate passed on c3ae0910, and `npm run test:vscode` passed on the same commit in real VS Code 1.96.4: cross-surface 4 passing, hostile-links 1, petstore 9 (4 pending screenshots). The card stays in `doing` until PR 73 merges.

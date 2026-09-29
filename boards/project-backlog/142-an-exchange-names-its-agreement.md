@@ -3,8 +3,8 @@ column: doing
 labels: [pages, doc]
 priority: medium
 agent: developer
-live: true
-updatedAt: 2026-09-29T15:10:00.000Z
+live: false
+updatedAt: 2026-09-29T23:30:00.000Z
 ---
 # An exchange names its agreement
 
@@ -24,8 +24,8 @@ Issue #55, a child of epic #62. A consumption can name the relationship it runs 
 
 ## Gates
 
-- [ ] `npx @biomejs/biome check` on the touched files exits 0
-- [ ] `bash scripts/verify-all.sh` green
+- [x] `npx @biomejs/biome check` on the touched files exits 0 (root `biome check .`: no fixes, 2026-09-29)
+- [x] `bash scripts/verify-all.sh` green on c3ae0910 (lead, 2026-09-29): core 1040, graphviz 35, doc 44, pages 906 at 100% coverage, pages e2e passed including `cross-surface-facts`, every model suite at its pinned count, schema comparison match
 
 ## Comments
 
@@ -35,3 +35,4 @@ Issue #55, a child of epic #62. A consumption can name the relationship it runs 
 - **developer** (2026-09-29T15:20:00.000Z): Markdown `packages/doc/src/consumptions.md.ts:20-23` (`agreementMd`, after Provider and Made by) adds the bullet. `consumptionsTableMd` (`:33`) is the one function that builds the Consumptions table for `boundedcontext.md.ts:234`, `domain.md.ts:40` and `subdomain.md.ts:44`: it inserts the `Agreement` column after `Consumed As` only when some row in that table names a relationship, with `-` for a row that names none. Petstore and clinic name none, so after the lead's ruling their `docs` are byte-identical: both builds report 0 diagnostics and the tree shows no change under `models/`. This replaces my first version, which always added the column and would have changed nine tracked files.
 - **developer** (2026-09-29T15:10:00.000Z): Tests. Core `packages/core/src/consumable-map.test.ts`, graphviz `consumable-map-agreement.test.ts`, doc `consumptions.test.ts`, pages `ConsumesTable.test.ts` (RiverMart's WarehouseAPI), `ConsumableEdge.test.ts`, `consumable-graph.test.ts`, and `packages/pages/e2e/consumption-agreement.spec.ts` (viewer route, RiverMart's `purchaseOrderLookup` and `legacyStockFeed`). The e2e ran against a throwaway config on port 4183 that was deleted afterwards.
 - **developer** (2026-09-29T15:20:00.000Z): Doc tests are in `packages/doc/src/consumptions.test.ts`: the column and the `-` on the context, domain and subdomain tables, and no column on any of the three where no row names an agreement. The relationship page's heading not naming the agreement is left alone, out of this issue's scope (lead).
+- **lead** (2026-09-29T23:30:00.000Z): Integrated on the epic 62 branch in the epic's order (#44, #43, #55, #56, then the cross-surface pass). The landing gate passed on c3ae0910, and `npm run test:vscode` passed on the same commit in real VS Code 1.96.4: cross-surface 4 passing, hostile-links 1, petstore 9 (4 pending screenshots). The card stays in `doing` until PR 73 merges.

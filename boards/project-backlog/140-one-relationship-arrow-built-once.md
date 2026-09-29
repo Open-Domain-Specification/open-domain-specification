@@ -3,8 +3,8 @@ column: doing
 labels: [pages, core]
 priority: low
 agent: developer
-live: true
-updatedAt: 2026-09-29T22:00:00.000Z
+live: false
+updatedAt: 2026-09-29T23:30:00.000Z
 ---
 # One relationship arrow, built once
 
@@ -21,8 +21,8 @@ Issue #44, a child of epic #62. The glyph between a relationship's two contexts 
 
 ## Gates
 
-- [ ] `npx @biomejs/biome check` on the touched files exits 0
-- [ ] `bash scripts/verify-all.sh` green
+- [x] `npx @biomejs/biome check` on the touched files exits 0 (root `biome check .`: no fixes, 2026-09-29)
+- [x] `bash scripts/verify-all.sh` green on c3ae0910 (lead, 2026-09-29): core 1040, graphviz 35, doc 44, pages 906 at 100% coverage, pages e2e passed including `cross-surface-facts`, every model suite at its pinned count, schema comparison match
 
 ## Comments
 
@@ -30,3 +30,4 @@ Issue #44, a child of epic #62. The glyph between a relationship's two contexts 
 - **developer** (2026-09-29T22:00:00.000Z): Tests. `packages/core/src/relationship.test.ts:52` pins both arrows and the title. `packages/pages/src/lib/organisms/HealthReport.test.ts:78` renders the petstore and the edge-case workspace, finds every intent cell, rebuilds its text from the two `.name` lockups and the `.arrow`, and looks it up among `relationshipTitle` of the workspace's relationships. It then requires exactly two links, with the source and target names and `ref` hrefs, and that both a directed and a symmetric arrow were seen.
 - **developer** (2026-09-29T22:00:00.000Z): Drift shown. With the fix in place, the core glyph was temporarily changed to `<->` and `->`: the three core tests that pin the literal glyph failed (`relationshipTitle` twice, `relationshipArrow` once) and the health-report test's title comparison for every cell still held, so the two moved together; its only failure was a literal-glyph assertion on the set of arrows seen, which was then replaced by a count of two distinct arrows so the test states no glyph of its own. With the old duplicated glyph restored in `HealthReport.svelte` and the core glyph changed, the health-report test failed with "no relationship is titled \"Catalog BC ↔ Inventory BC\"". Both experiments were reverted; the tree carries the real glyphs.
 - **developer** (2026-09-29T22:00:00.000Z): No generated Markdown moves: `relationshipTitle` returns the same string for every input, and no model docs were regenerated.
+- **lead** (2026-09-29T23:30:00.000Z): Integrated on the epic 62 branch in the epic's order (#44, #43, #55, #56, then the cross-surface pass). The landing gate passed on c3ae0910, and `npm run test:vscode` passed on the same commit in real VS Code 1.96.4: cross-surface 4 passing, hostile-links 1, petstore 9 (4 pending screenshots). The card stays in `doing` until PR 73 merges.

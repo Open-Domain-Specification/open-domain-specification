@@ -3,8 +3,8 @@ column: doing
 labels: [pages, doc]
 priority: medium
 agent: developer
-live: true
-updatedAt: 2026-09-29T15:12:18.000Z
+live: false
+updatedAt: 2026-09-29T23:30:00.000Z
 ---
 # A generated description says so
 
@@ -22,8 +22,8 @@ Issue #43, a child of epic #62. Where a relationship has no description, the str
 
 ## Gates
 
-- [ ] `npx @biomejs/biome check` on the touched files
-- [ ] `bash scripts/verify-all.sh`
+- [x] `npx @biomejs/biome check` on the touched files (root `biome check .`: no fixes, 2026-09-29)
+- [x] `bash scripts/verify-all.sh` on c3ae0910 (lead, 2026-09-29): core 1040, graphviz 35, doc 44, pages 906 at 100% coverage, pages e2e passed including `cross-surface-facts`, every model suite at its pinned count, schema comparison match
 
 ## Comments
 
@@ -32,3 +32,4 @@ Issue #43, a child of epic #62. Where a relationship has no description, the str
 - **developer** (2026-09-29T15:12:18.000Z): Tests assert content and provenance. Pages `StrategicPositionTable.test.ts:152` checks the authored span is exactly the authored text with no `generated` class and no keyword, and the generated span carries both classes, starts with core's own sentence, and holds a keyword reading `generated` with the title. `packages/pages/e2e/generated-description.spec.ts` runs against RiverMart's Order Management page (three generated rows, six authored) and checks every generated row has the keyword and title, no authored row has either, and the two sets differ in colour. It failed against the old component (the generated count was 0) and passes against the new. It ran on a throwaway config on port 4183 that has been deleted; the cross-host pass is the lead's.
 - **developer** (2026-09-29T15:12:18.000Z): Model builds. Petstore and clinic each report 0 diagnostics and `git status` is clean after `npm run build`, so no tracked model docs change: every relationship in both carries a description. RiverMart, StreamLine and NorthBank docs are generated and ignored by git, and 35 of their pages now carry `(generated)`; their diagnostics are as pinned.
 - **developer** (2026-09-29T15:30:00.000Z): Lead found a mismatch: pages fell back when `r.description` was falsy but Markdown used `??`, so `description: ""` (which the DSL writes) gave the generated sentence on the page and an empty cell in Markdown. Fixed with one predicate, `hasAuthoredDescription` in `packages/core/src/narrative.ts:241`, beside the sentence it guards. Both `packages/pages/src/lib/organisms/StrategicPositionTable.svelte:116` and `packages/doc/src/strategic-position.md.ts:29` ask it. The rule: a description is authored only if it has non-whitespace text, so `undefined`, `""` and whitespace-only all count as generated and get the marker. An authored description is still printed as written, untrimmed. Tested in `packages/core/src/narrative.test.ts`, the pages table test and the doc test, each for `""` and a whitespace-only string. Petstore and clinic rebuilt with 0 diagnostics and no `models/*/docs` change.
+- **lead** (2026-09-29T23:30:00.000Z): Integrated on the epic 62 branch in the epic's order (#44, #43, #55, #56, then the cross-surface pass). The landing gate passed on c3ae0910, and `npm run test:vscode` passed on the same commit in real VS Code 1.96.4: cross-surface 4 passing, hostile-links 1, petstore 9 (4 pending screenshots). The card stays in `doing` until PR 73 merges.
