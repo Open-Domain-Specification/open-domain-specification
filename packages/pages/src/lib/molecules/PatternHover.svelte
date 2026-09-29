@@ -65,6 +65,14 @@ onDestroy(hover.stop);
 
 /** Places the card layer the moment it exists, against where the word is now. */
 const place = (layer: HTMLElement) => {
+	// Measure the card as it is on its own, not as the last placement left it:
+	// with the old cap still applied it measures as tall as the cap, `placeHover`
+	// concludes no cap is needed, and the assignment below clears it, so a card
+	// taller than the room grew past the viewport on every other placement.
+	// Offsets go too, because the card's width can depend on where it sits.
+	layer.style.maxHeight = "";
+	layer.style.top = "";
+	layer.style.left = "";
 	const anchor = (trigger as HTMLElement).getBoundingClientRect();
 	const { width, height } = layer.getBoundingClientRect();
 	const { clientWidth, clientHeight } = document.documentElement;

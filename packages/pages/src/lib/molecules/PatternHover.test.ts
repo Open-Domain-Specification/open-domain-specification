@@ -274,6 +274,92 @@ describe("PatternHover", () => {
 		expect(container.querySelector(".hover-card")).toBeNull();
 	});
 
+	it("gives the same cap every time it places a card taller than the room: repeated, and moved by a scroll", async () => {
+		// An 800x400 viewport and a keyword at top 200, bottom 220, over content
+		// that is naturally 500px tall.
+		Object.defineProperty(document.documentElement, "clientWidth", {
+			get: () => 800,
+			configurable: true,
+		});
+		Object.defineProperty(document.documentElement, "clientHeight", {
+			get: () => 400,
+			configurable: true,
+		});
+		const NATURAL = 500;
+		let word = { top: 200, bottom: 220 };
+		// The layer is as tall as its content, or as its inline cap if it has one:
+		// what the browser does for a box with `overflow-y: auto`.
+		vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+			function (this: HTMLElement) {
+				if (this.classList.contains("trigger"))
+					return {
+						...word,
+						left: 100,
+						right: 130,
+						width: 30,
+						height: 20,
+					} as DOMRect;
+				const cap = Number.parseFloat(this.style.maxHeight);
+				const height = Number.isNaN(cap) ? NATURAL : Math.min(NATURAL, cap);
+				const top = Number.parseFloat(this.style.top) || 0;
+				return {
+					top,
+					bottom: top + height,
+					left: 0,
+					right: 400,
+					width: 400,
+					height,
+				} as DOMRect;
+			},
+		);
+		const { container } = show();
+		const term = container.querySelector(".pattern-hover") as HTMLElement;
+		const button = screen.getByRole("button", { name: "ACL" });
+		button.focus();
+		await fireEvent.focusIn(term);
+		const layer = () => container.querySelector(".layer") as HTMLElement;
+		/** What the layer is on screen: its box, and whether it is inside the viewport. */
+		const placed = () => {
+			const box = layer().getBoundingClientRect();
+			return {
+				top: box.top,
+				height: box.height,
+				bottom: box.bottom,
+				cap: layer().style.maxHeight,
+			};
+		};
+
+		// Above the word: 192px of room (200 - 8), so the card is capped to it.
+		const first = placed();
+		expect(first).toEqual({ top: 8, height: 192, bottom: 200, cap: "192px" });
+
+		// The same anchor, placed again by scrolls the keyboard caused: identical.
+		for (let i = 0; i < 3; i += 1) {
+			await fireEvent.scroll(container);
+			await tick();
+			expect(placed()).toEqual(first);
+			expect(placed().bottom).toBeLessThanOrEqual(400 - 8);
+		}
+
+		// A scroll that moved the keyword: 252px of room now, capped to that and
+		// still inside the viewport.
+		word = { top: 260, bottom: 280 };
+		await fireEvent.scroll(container);
+		await tick();
+		expect(placed()).toEqual({
+			top: 8,
+			height: 252,
+			bottom: 260,
+			cap: "252px",
+		});
+
+		// And back: the cap comes back down with it, not left at the larger one.
+		word = { top: 200, bottom: 220 };
+		await fireEvent.scroll(container);
+		await tick();
+		expect(placed()).toEqual(first);
+	});
+
 	it("keeps an explanation the keyboard opened when the pointer crosses the keyword and leaves, and closes it once focus is elsewhere", async () => {
 		const { container } = show();
 		const term = container.querySelector(".pattern-hover") as HTMLElement;

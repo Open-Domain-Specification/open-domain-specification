@@ -237,6 +237,101 @@ for (const host of ["viewer", "export"] as const) {
 			await expect(page.locator(trigger).first()).toBeFocused();
 		});
 
+		test("an explanation taller than the room stays inside the viewport and scrolls, however often a scroll places it again", async ({
+			page,
+		}) => {
+			// A short window, so that what the keyword explains is taller than the
+			// room above or below it.
+			await page.setViewportSize({ width: 800, height: 110 });
+			const flow = await openDiagram(page, host, "Sales BC context map", SALES);
+			await arriveAt(flow);
+			expect(await tabUntil(page, BADGE)).toBe(true);
+			await page.keyboard.press("Enter");
+			const card = flow.getByRole("dialog");
+			await expect(card).toBeVisible();
+			const trigger = ".anchored .pattern-hover .trigger";
+			expect(await tabUntil(page, trigger)).toBe(true);
+			await expect(card.getByRole("tooltip")).toBeVisible();
+
+			/** The explanation's box against the viewport, and how far it can scroll. */
+			const measure = () =>
+				page.evaluate(() => {
+					const layer = document.querySelector(".layer") as HTMLElement;
+					const box = layer.getBoundingClientRect();
+					return {
+						top: box.top,
+						bottom: box.bottom,
+						height: box.height,
+						viewport: document.documentElement.clientHeight,
+						scrollHeight: layer.scrollHeight,
+						clientHeight: layer.clientHeight,
+						cap: layer.style.maxHeight,
+					};
+				});
+			const contained = async (when: string) => {
+				const m = await measure();
+				expect(m.top, `${when}: top`).toBeGreaterThanOrEqual(0);
+				expect(m.bottom, `${when}: bottom`).toBeLessThanOrEqual(m.viewport);
+				expect(m.cap, `${when}: capped`).not.toBe("");
+				// Taller than the room, so it scrolls inside itself.
+				expect(m.scrollHeight, `${when}: content`).toBeGreaterThan(
+					m.clientHeight,
+				);
+				return m;
+			};
+			const first = await contained("opened");
+
+			// Scrolls of the diagram's container, as the browser's own reveal of the
+			// focused keyword makes, each placing the explanation again. The first is
+			// a real scroll; each after it is one more report of a scroll, one
+			// placement apiece, so that a placement that undoes the last one shows
+			// on the very next check.
+			await flow.evaluate((el) => {
+				const room = document.createElement("div");
+				room.style.cssText =
+					"position:absolute;left:0;top:0;width:4000px;height:1px;pointer-events:none";
+				el.appendChild(room);
+			});
+			const frames = () =>
+				page.evaluate(
+					() =>
+						new Promise((done) =>
+							requestAnimationFrame(() =>
+								requestAnimationFrame(() => done(null)),
+							),
+						),
+				);
+			for (let i = 1; i <= 5; i += 1) {
+				if (i === 1) {
+					const scrolled = await flow.evaluate((el) => {
+						el.scrollLeft += 40;
+						return el.scrollLeft;
+					});
+					expect(scrolled).toBeGreaterThan(0);
+				} else {
+					await flow.evaluate((el) => {
+						el.dispatchEvent(new Event("scroll"));
+					});
+				}
+				await frames();
+				await expect(card.getByRole("tooltip")).toBeVisible();
+				const again = await contained(`after scroll ${i}`);
+				expect(again.height, `after scroll ${i}: same height`).toBeCloseTo(
+					first.height,
+					0,
+				);
+				expect(again.cap, `after scroll ${i}: same cap`).toBe(first.cap);
+			}
+
+			// And it scrolls: the last of its content can be brought into view.
+			const scrolled = await page.evaluate(() => {
+				const layer = document.querySelector(".layer") as HTMLElement;
+				layer.scrollTop = layer.scrollHeight;
+				return layer.scrollTop;
+			});
+			expect(scrolled).toBeGreaterThan(0);
+		});
+
 		test("the pointer still opens it, and a click elsewhere closes it without taking focus back", async ({
 			page,
 		}) => {

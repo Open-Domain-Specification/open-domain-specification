@@ -510,6 +510,94 @@ test.describe("Escape closes the innermost layer", () => {
 	}
 });
 
+test.describe("an explanation taller than the room", () => {
+	let host: Host;
+	test.beforeAll(async () => {
+		host = await launchVSCode({ folder: "src/test/fixtures/cross-surface" });
+	});
+	test.afterAll(async () => {
+		await host.close();
+	});
+
+	test("#48 stays inside the webview and scrolls, however often a scroll places it again", async () => {
+		// As short as the workbench lets the window be, so that what a keyword
+		// explains is taller than the room above or below it.
+		await resize(host, 1300, 300);
+		const frame = await openOrders(host);
+		const badge = frame.locator(TOLERATED_BADGE);
+		await tabToLabel(
+			host,
+			frame,
+			(await badge.getAttribute("aria-label")) as string,
+		);
+		await host.window.keyboard.press("Enter");
+		const card = frame.getByRole("dialog");
+		await expect(card).toBeVisible();
+		await pressUntil(
+			host,
+			frame,
+			(stop) =>
+				stop.tag === "BUTTON" && stop.label === null && stop.text !== "",
+			"a pattern keyword in the card",
+		);
+		await expect(card.getByRole("tooltip")).toBeVisible();
+
+		const measure = () =>
+			frame.evaluate(() => {
+				const layer = document.querySelector(".layer") as HTMLElement;
+				const box = layer.getBoundingClientRect();
+				return {
+					top: box.top,
+					bottom: box.bottom,
+					height: box.height,
+					viewport: document.documentElement.clientHeight,
+					scrollHeight: layer.scrollHeight,
+					clientHeight: layer.clientHeight,
+					cap: layer.style.maxHeight,
+				};
+			});
+		const contained = async (when: string) => {
+			const m = await measure();
+			expect(m.top, `${when}: top`).toBeGreaterThanOrEqual(0);
+			expect(m.bottom, `${when}: bottom`).toBeLessThanOrEqual(m.viewport);
+			expect(m.cap, `${when}: capped`).not.toBe("");
+			expect(m.scrollHeight, `${when}: content`).toBeGreaterThan(
+				m.clientHeight,
+			);
+			return m;
+		};
+		const first = await contained("opened");
+		for (let i = 1; i <= 5; i += 1) {
+			await frame.evaluate(() => {
+				document
+					.querySelector(".svelte-flow")
+					?.dispatchEvent(new Event("scroll"));
+			});
+			await frame.evaluate(
+				() =>
+					new Promise((done) =>
+						requestAnimationFrame(() =>
+							requestAnimationFrame(() => done(null)),
+						),
+					),
+			);
+			await expect(card.getByRole("tooltip")).toBeVisible();
+			const again = await contained(`after scroll ${i}`);
+			expect(again.height, `after scroll ${i}: same height`).toBeCloseTo(
+				first.height,
+				0,
+			);
+			expect(again.cap, `after scroll ${i}: same cap`).toBe(first.cap);
+		}
+		const scrolled = await frame.evaluate(() => {
+			const layer = document.querySelector(".layer") as HTMLElement;
+			layer.scrollTop = layer.scrollHeight;
+			return layer.scrollTop;
+		});
+		expect(scrolled).toBeGreaterThan(0);
+	});
+});
+
 test.describe("reduced motion", () => {
 	let host: Host;
 	test.beforeAll(async () => {
