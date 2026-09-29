@@ -1,9 +1,5 @@
-import { expect, type Locator, type Page, test } from "@playwright/test";
-import {
-	EXPORT_ORIGIN,
-	openInteractiveDiagram,
-	WORKSPACE_NAME,
-} from "./helpers";
+import { expect, test } from "@playwright/test";
+import { arriveAt, openDiagram, tabTo } from "./diagram-hosts";
 
 /**
  * A diagram is read with the keyboard as well as the pointer (epic 61, cards
@@ -12,51 +8,6 @@ import {
  * the two hosts this suite can reach, the viewer and the export, run the same
  * claims.
  */
-
-type Host = "viewer" | "export";
-
-/** The diagram whose caption contains `title`, on the page at `ref`, in either host. */
-async function openDiagram(
-	page: Page,
-	host: Host,
-	title: string,
-	ref: string,
-): Promise<Locator> {
-	if (host === "viewer") return openInteractiveDiagram(page, title, ref);
-	await page.goto(`${EXPORT_ORIGIN}/${ref}`);
-	await page.getByRole("link", { name: WORKSPACE_NAME }).click();
-	const figure = page.locator("figure.diagram", { hasText: title });
-	await figure.scrollIntoViewIfNeeded();
-	return figure.locator(".svelte-flow");
-}
-
-/**
- * Puts the reader's place just before the diagram, the way arriving from the
- * text above it would, so that Tab is what carries them in.
- */
-async function arriveAt(flow: Locator): Promise<void> {
-	await flow.evaluate((el) => {
-		const figure = el.closest("figure") as HTMLElement;
-		figure.tabIndex = -1;
-		figure.focus();
-	});
-}
-
-/** Presses Tab until the focused element has `name`, or gives up after `limit` presses. */
-async function tabTo(
-	page: Page,
-	name: string,
-	limit = 40,
-): Promise<number | undefined> {
-	for (let presses = 1; presses <= limit; presses++) {
-		await page.keyboard.press("Tab");
-		const label = await page.evaluate(() =>
-			document.activeElement?.getAttribute("aria-label"),
-		);
-		if (label === name) return presses;
-	}
-	return undefined;
-}
 
 for (const host of ["viewer", "export"] as const) {
 	test.describe(`${host}: a diagram node is a control`, () => {
