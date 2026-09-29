@@ -1,8 +1,8 @@
-import type { Consumption, Service } from "@open-domain-specification/core";
+import type { Service } from "@open-domain-specification/core";
 import { contextBreadcrumbsMd } from "./breadcrumbs.md";
 import { providesTableMd } from "./consumables.md";
 import { consumptionSectionMd } from "./consumptions.md";
-import { pathToConsumableMapSvg, pathToIndexMd } from "./lib/paths";
+import { pathToConsumableMapSvg } from "./lib/paths";
 import type { Options } from "./options";
 
 export const serviceMd = (service: Service, options?: Options) => `
