@@ -350,6 +350,67 @@ describe("ImportScreen", () => {
 	});
 });
 
+describe("ImportScreen tells the host when the reader opened a workspace", () => {
+	const schema = { name: "petstore" };
+	const ok = () =>
+		vi.stubGlobal(
+			"fetch",
+			vi.fn().mockResolvedValue({ ok: true, json: async () => schema }),
+		);
+
+	it("does after a submitted URL, after a chosen file and after an example card", async () => {
+		ok();
+		const onopened = vi.fn();
+		render(ImportScreen, {
+			onload: vi.fn(),
+			onopened,
+			examples: [{ name: "Ex", url: "https://example.com/ex.json" }],
+		});
+		await fireEvent.input(screen.getByLabelText("From a URL"), {
+			target: { value: "https://example.com/petstore.json" },
+		});
+		await fireEvent.click(screen.getByRole("button", { name: /load/i }));
+		await waitFor(() => expect(onopened).toHaveBeenCalledTimes(1));
+
+		const file = new File([JSON.stringify(schema)], "a.json");
+		await fireEvent.change(document.getElementById("file") as HTMLElement, {
+			target: { files: [file] },
+		});
+		await waitFor(() => expect(onopened).toHaveBeenCalledTimes(2));
+
+		await fireEvent.click(screen.getByRole("button", { name: /Ex/ }));
+		await waitFor(() => expect(onopened).toHaveBeenCalledTimes(3));
+	});
+
+	it("does not for the ?url= deep link that loads by itself", async () => {
+		history.replaceState(null, "", "/?url=https://example.com/petstore.json");
+		ok();
+		const onload = vi.fn();
+		const onopened = vi.fn();
+		render(ImportScreen, { onload, onopened });
+		await waitFor(() => expect(onload).toHaveBeenCalled());
+		expect(onopened).not.toHaveBeenCalled();
+	});
+
+	it("does not when the host refuses the workspace", async () => {
+		const onopened = vi.fn();
+		render(ImportScreen, {
+			onload: () => {
+				throw new Error("no");
+			},
+			onopened,
+		});
+		const file = new File(["{}"], "a.json");
+		await fireEvent.change(document.getElementById("file") as HTMLElement, {
+			target: { files: [file] },
+		});
+		await waitFor(() =>
+			expect(screen.getByRole("alert")).toHaveTextContent("a.json"),
+		);
+		expect(onopened).not.toHaveBeenCalled();
+	});
+});
+
 describe("ImportScreen examples", () => {
 	const examples = [
 		{

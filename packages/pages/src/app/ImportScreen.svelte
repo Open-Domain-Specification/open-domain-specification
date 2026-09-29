@@ -5,9 +5,12 @@ import type { Example } from "../protocol";
 /** Import by URL (query parameter or form), by file upload, or from an example card; the last URL is remembered. */
 let {
 	onload,
+	onopened,
 	examples = [],
 }: {
 	onload: (schema: unknown, fileLabel: string) => void;
+	/** Called after a load the reader asked for has been handed to `onload`. */
+	onopened?: () => void;
 	examples?: Example[];
 } = $props();
 const KEY = "ods-viewer-url";
@@ -40,7 +43,7 @@ function remembered(): string {
 const NEXT = "Choose a workspace file from a project's .ods folder.";
 
 /** A load that failed says what went wrong and what to do about it, since it is read aloud with nothing else on screen to point at. */
-async function fromUrl() {
+async function fromUrl(asked = false) {
 	const target = toAbsoluteUrl(url);
 	url = target;
 	loading = true;
@@ -70,7 +73,7 @@ async function fromUrl() {
 		try {
 			localStorage.setItem(KEY, target);
 		} catch {}
-		open(schema, label);
+		open(schema, label, asked);
 	} catch (e) {
 		// Every path above throws an Error of its own, so the message is always one to show.
 		error = (e as Error).message;
@@ -79,8 +82,13 @@ async function fromUrl() {
 	}
 }
 
-/** Hands the parsed JSON to the host; a throw means it was valid JSON but not a workspace. */
-function open(schema: unknown, label: string) {
+/**
+ * Hands the parsed JSON to the host; a throw means it was valid JSON but not a
+ * workspace. `asked` is true when the reader did it (Load, Enter in the field,
+ * a file choice, an example card) and false for the `?url=` deep link that
+ * loads by itself, and only an asked load tells the host it has opened.
+ */
+function open(schema: unknown, label: string, asked: boolean) {
 	try {
 		onload(schema, label);
 	} catch {
@@ -88,6 +96,7 @@ function open(schema: unknown, label: string) {
 			`${label} is valid JSON but is not an Open Domain Specification workspace: it does not match the workspace schema. ${NEXT}`,
 		);
 	}
+	if (asked) onopened?.();
 }
 
 async function fromFile(e: Event) {
@@ -101,7 +110,7 @@ async function fromFile(e: Event) {
 		} catch {
 			throw new Error(`${file.name} is not valid JSON. ${NEXT}`);
 		}
-		open(schema, file.name);
+		open(schema, file.name, true);
 	} catch (err) {
 		error = (err as Error).message;
 	}
@@ -109,7 +118,7 @@ async function fromFile(e: Event) {
 
 function fromExample(example: Example) {
 	url = toAbsoluteUrl(example.url);
-	fromUrl();
+	fromUrl(true);
 }
 
 if (new URLSearchParams(location.search).get("url")) fromUrl();
@@ -119,7 +128,7 @@ if (new URLSearchParams(location.search).get("url")) fromUrl();
 	<main class="import">
 		<h1 class="brand"><Logo size={32} /> Open a workspace</h1>
 		<p class="lead">Load an Open Domain Specification workspace file to browse it.</p>
-		<form onsubmit={(e) => { e.preventDefault(); fromUrl(); }}>
+		<form onsubmit={(e) => { e.preventDefault(); fromUrl(true); }}>
 			<label for="url">From a URL</label>
 			<div class="row">
 				<input
