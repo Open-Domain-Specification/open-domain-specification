@@ -217,6 +217,53 @@ describe("App (embedded in VS Code)", () => {
 		outside.remove();
 	});
 
+	it("answers a probe that carries selectors with each match's text, class, title and href", async () => {
+		const {
+			App: EmbeddedApp,
+			api,
+			render: renderEmbedded,
+		} = await embeddedApp();
+		renderEmbedded(EmbeddedApp, {
+			initial: { workspaces: [payload()] },
+		});
+		await waitFor(() =>
+			expect(api.postMessage).toHaveBeenCalledWith({ type: "ready" }),
+		);
+		await waitFor(() =>
+			expect(document.querySelector(".site")).toBeInTheDocument(),
+		);
+		const marked = document.createElement("a");
+		marked.className = "probe-target one";
+		marked.setAttribute("title", "a title");
+		marked.setAttribute("href", "#/somewhere");
+		marked.textContent = "first";
+		const bare = document.createElement("span");
+		bare.className = "probe-target";
+		document.body.append(marked, bare);
+		post({ type: "probe", selectors: [".probe-target", ".nothing-here"] });
+		await waitFor(() =>
+			expect(api.postMessage).toHaveBeenCalledWith({
+				type: "rendered",
+				hrefs: expect.any(Array),
+				images: expect.any(Array),
+				probed: {
+					".probe-target": [
+						{
+							text: "first",
+							class: "probe-target one",
+							title: "a title",
+							href: "#/somewhere",
+						},
+						{ text: "", class: "probe-target", title: null, href: null },
+					],
+					".nothing-here": [],
+				},
+			}),
+		);
+		marked.remove();
+		bare.remove();
+	});
+
 	it("handles a model message, loading workspaces and navigating to its ref", async () => {
 		const {
 			App: EmbeddedApp,
