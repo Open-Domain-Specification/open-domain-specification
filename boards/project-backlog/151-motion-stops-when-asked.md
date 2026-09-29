@@ -1,0 +1,53 @@
+---
+column: doing
+labels: [pages, accessibility]
+priority: medium
+agent: developer
+live: true
+updatedAt: 2026-09-29T16:58:00.000Z
+---
+# Motion stops when asked
+
+Issue #51, a child of epic #61 (accessible navigation across the viewer, export and extension). No animation in the pages honoured `prefers-reduced-motion`: the dashes marched along every diagram edge for as long as the page was open, the element a ref lands on faded from a wash, the table of contents scrolled smoothly, and a double click on a map eased its zoom. The owner's instruction was to inspect the actual animation paths, programmatic fit and transition calls included, rather than cover CSS alone, so the inventory below is the work; the code follows it. One shared helper, `src/lib/motion.svelte.ts`, holds the query for what a script asks for, and one `@media (prefers-reduced-motion: reduce)` block in `page.css` covers what a stylesheet does. The same bundle runs in the webview, the viewer and the static export; the real VS Code host is the lead's integration pass.
+
+## Animation paths found, and how each is handled
+
+| Path | Where | Handled |
+| --- | --- | --- |
+| Dash march on every diagram edge, solid and dashed, infinite | `page.css:244`, `:249` (keyframes `:251`, `:259`); the library's own copy in `@xyflow/svelte/dist/style.css` | `animation: none` on all three selectors under reduce (`page.css:462-466`); the dash pattern stays, so direction still reads |
+| Flash on the element a ref lands on | `page.css:98` (keyframes `:101`), class set at `Page.svelte:98` | No fade under reduce; the wash stays as a static mark, so the reader is still shown where they landed |
+| Table-of-contents jump | `Toc.svelte:18`, was `scrollIntoView({ behavior: "smooth" })` | `behavior: scrollBehavior()` from `motion.svelte.ts`: `smooth`, or `auto` under reduce |
+| Double-click zoom on the map | the library's d3-zoom, 250ms transition it does not let a caller shorten (`d3-zoom/src/zoom.js:312`) | `zoomOnDoubleClick={!motion.reduced}` (`InteractiveDiagram.svelte:124`), following the setting live; wheel, pinch and the controls still zoom |
+| Initial `fitView`, panel-aware refit, Fit View control, fullscreen refit, Zoom In and Out | `InteractiveDiagram.svelte:124`, `panel-fit.ts:174`, `fullscreen.svelte.ts:35`, the library's Controls | Already immediate: none passes a `duration`, and the library defaults to none (`getD3Transition`, `@xyflow/system`). Pinned by `panel-fit.test.ts` (the call carries `padding` alone) and by the e2e, which samples the viewport every frame under both preferences |
+| Panning a focused node into view | the library's `setCenter` in `NodeWrapper`'s focus handler | Already immediate: no duration |
+| `scrollIntoView` to a ref's element | `Page.svelte:97` | No `behavior`, so it takes the page's `scroll-behavior`, which is `auto` (and forced to `auto` under reduce) |
+| CSS transitions, Svelte `fly`, `fade`, `slide`, `animate:` | none exist in `src`, `assets` or the apps | Nothing to guard; the catch-all rule keeps it so for a library that adds one |
+| A spinner in the codicon font | `codicon.css:29-39` (`codicon-spin`), not used by any page | Covered by the catch-all rule if one is ever used |
+| Anything else a library adds | | `*, *::before, *::after` capped at 0.01ms, one iteration, `scroll-behavior: auto` (`page.css:467-479`) |
+
+## Checklist
+
+- [x] The inventory above, from a search of `src`, `assets`, both apps and `@xyflow/svelte`, `@xyflow/system` and `d3-zoom`
+- [x] A Playwright test under `emulateMedia({ reducedMotion })` that failed first: 5 animations running, a smooth scroll, a 17-step zoom, a fading flash
+- [x] Each claim paired with the same page under `no-preference`, so the check can fail
+- [x] `src/lib/motion.svelte.ts`: `prefersReducedMotion`, `scrollBehavior`, and `createReducedMotion` for a prop that follows the setting live
+- [x] One `@media (prefers-reduced-motion: reduce)` block in `page.css`
+- [x] Verified on the viewer and the static export
+- [x] `npx vitest run --coverage` in packages/pages holds 100%, `npm run check` clean
+
+## Gates
+
+- [x] `npx @biomejs/biome check` on the touched files exits 0
+- [ ] `bash scripts/verify-all.sh` green
+- [ ] real VS Code host check (lead)
+
+## Comments
+
+- **developer** (2026-09-29T16:58:00.000Z): Failing first. `e2e/reduced-motion.spec.ts` on the bundle before the change, viewer: 4 of 5 fail. `getAnimations()` finds 5 running animations after `reducedMotion: "reduce"`; the last `scrollIntoView` from a table-of-contents click is `smooth`; a double click takes 17 distinct viewport transforms over 700ms where an instant change takes 2; the flash row's computed `animation-name` is `flash`. The fifth, fit and fullscreen refit, passes, which is the finding: those were never animated, and the test now holds them so.
+- **developer** (2026-09-29T16:58:00.000Z): The programmatic calls the issue names. Searched `src`, both apps and the libraries for `fitView`, `setViewport`, `setCenter`, `zoomTo`, `zoomIn`, `zoomOut`, `duration`, `scrollIntoView`, `scrollTo`, `behavior`, `svelte/transition`, `svelte/motion`, `animate:` and `requestAnimationFrame`. Only `scrollIntoView({ behavior: "smooth" })` in the table of contents was an animation a script asked for. Every `fitView` in this code is called without `duration`, and `@xyflow/system`'s `getD3Transition` runs no transition for a duration of 0 or none. The animation the library adds by itself is the d3-zoom double-click: `duration = 250` is d3's default and xyflow does not override it.
+- **developer** (2026-09-29T16:58:00.000Z): Decision, the double click. There is no hook to shorten the library's eased zoom, so under reduced motion the gesture is switched off rather than left to ease. That takes a pointer gesture away from a reader who asked for less motion; it is the smaller cost against an animation they asked not to see, and every other way to zoom remains. The alternative, a handler of our own that calls `zoomBy` without a duration at the pointer, is more code to reproduce a gesture. Worth the lead's eye.
+- **developer** (2026-09-29T16:58:00.000Z): Decision, the flash. Under reduce the row keeps a static wash instead of fading out (`page.css:458-461`). Removing the mark would have left a reader with a page that scrolled to the right row and no sign of which row it was. The wash has no motion and stays until the page changes.
+- **developer** (2026-09-29T16:58:00.000Z): Decision, the dashes. They stop where they are rather than being restyled: the edge keeps its long or short dash pattern, so a dashed implied relationship and a solid declared one still read differently, and the arrowhead still says which way it runs.
+- **developer** (2026-09-29T16:58:00.000Z): The catch-all rule uses a duration of 0.01ms rather than `none` so that an `animationend` a script might wait on still arrives, and needs `!important` to beat a library's more specific rule. Each of the four declarations carries a `biome-ignore` giving that reason (`page.css:467-479`); biome's `noImportantStyles` otherwise warns.
+- **developer** (2026-09-29T16:58:00.000Z): The preference is the host's. A webview inherits `prefers-reduced-motion` from the workbench, which in VS Code follows `workbench.reduceMotion`; the viewer and the export inherit the browser's. That the webview really does is the lead's integration pass; this card claims the viewer and the static export only.
+- **developer** (2026-09-29T16:58:00.000Z): Test seam. `stubReducedMotion` in `xyflow-test-env.ts` stubs the one query, hands back a switch that fires the `change` event, and leaves every other query (Svelte Flow reads the colour scheme) unmatched: a first version answered every query and Svelte Flow's colour-scheme listener received a fake event.
