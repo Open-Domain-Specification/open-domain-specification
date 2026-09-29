@@ -100,6 +100,11 @@ export class DetailPanel implements vscode.Disposable {
 		this.panel.webview.html = this.shell();
 	}
 
+	/** Test seam: asks the webview what its rendered descriptions hold; it answers with a `rendered` message. */
+	probe(): void {
+		this.post({ type: "probe" });
+	}
+
 	private post(msg: HostMessage): void {
 		void this.panel?.webview.postMessage(msg);
 	}

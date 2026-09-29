@@ -52,6 +52,17 @@ onMount(() => {
 			chosen = 0;
 			if (msg.ref) router.go(msg.ref);
 		} else if (msg.type === "navigate") router.go(msg.ref);
+		else if (msg.type === "probe") {
+			const attr = (selector: string, name: string) =>
+				[...document.querySelectorAll(selector)].map(
+					(el) => el.getAttribute(name) ?? "",
+				);
+			host.postMessage({
+				type: "rendered",
+				hrefs: attr(".md a[href]", "href"),
+				images: attr(".md img", "src"),
+			});
+		}
 	};
 	window.addEventListener("message", onMessage);
 	host.postMessage({ type: "ready" });

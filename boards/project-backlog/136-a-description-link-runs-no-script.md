@@ -4,7 +4,7 @@ labels: [pages, security]
 priority: high
 agent: developer
 live: true
-updatedAt: 2026-09-29T14:30:00.000Z
+updatedAt: 2026-09-29T15:00:00.000Z
 ---
 # A description link runs no script
 
@@ -17,7 +17,7 @@ Issue #49, a child of epic #60. A reader opening a model somebody else authored 
 - [x] Covered for inline links, links with titles, reference-style links, autolinks and images, with `javascript:`, `data:`, `vbscript:`, `file:` and the obfuscated forms
 - [x] http, https, mailto and hash-route links, titles and Markdown inside link text still work; raw HTML is still shown as text
 - [x] A Playwright case tries each unsafe scheme on the hosted viewer, the static export and the embedded bundle the webview loads, and follows an allowed in-model link
-- [ ] The real VS Code host is checked (not possible from an extension-host test, see the journal)
+- [x] The real VS Code host is checked: `npm run test:vscode` opens a hostile fixture in a real VS Code 1.96.4 webview and asks it, through a test probe, which links and images it rendered
 
 ## Gates
 
@@ -32,3 +32,6 @@ Issue #49, a child of epic #60. A reader opening a model somebody else authored 
 - **developer** (2026-09-29T14:30:00.000Z): The renderer's existing `<` and `>` escaping stays, so `<javascript:...>` autolinks and raw `<a href>` were already text; they are pinned in `packages/pages/src/lib/atoms/Markdown.test.ts` (82 cases, 63 failing before the change).
 - **developer** (2026-09-29T14:30:00.000Z): `packages/pages/e2e/link-schemes.spec.ts` opens one hostile description on the viewer (`?url=` import), on a static export built into a temp folder and opened from `file://`, and on the embedded bundle driven by host `postMessage` in a browser. The last is a browser run of the bundle the webview loads, not VS Code.
 - **developer** (2026-09-29T14:30:00.000Z): The real VS Code host is not covered. `apps/ods-vscode` has a real-VS-Code harness (`.vscode-test.mjs`, `src/test/extension.test.ts`) but it observes the webview only through the messages it posts, not its DOM, and it opens the fixed petstore folder. A test there would need a product seam that reports link state, which this card does not add. The webview's own Content-Security-Policy (`apps/ods-vscode/src/pages/panel.ts:156`) permits only nonce-tagged scripts, so a `javascript:` href would not run there even before this change; that is defence in depth, not the fix, and it is not asserted.
+- **developer** (2026-09-29T15:00:00.000Z): The owner chose the test seam, so the earlier "not covered" entry no longer holds. The seam is a `probe` host message and a `rendered` webview message (`packages/pages/src/protocol.ts`); the app answers with the `href` of every `.md a[href]` and the `src` of every `.md img` (`packages/pages/src/app/App.svelte`), and `DetailPanel.probe()` (`apps/ods-vscode/src/pages/panel.ts`) lets a test send it. Nothing in normal use sends it and it adds no product behaviour.
+- **developer** (2026-09-29T15:00:00.000Z): `apps/ods-vscode/src/test/link-schemes.test.ts` opens `apps/ods-vscode/src/test/fixtures/hostile-links/.ods/hostile_links.json` (the e2e spec's hostile description in a small workspace, so no reference model or generated file moves) and asserts that the only hrefs are the four safe ones and that there are no images. `.vscode-test.mjs` is now two configurations, so this fixture has its own window and the petstore suite still sees only the petstore.
+- **developer** (2026-09-29T15:00:00.000Z): Failed first. With `isSafeUrl` temporarily returning `true`, `test:vscode` failed the new case with the unsafe hrefs listed (`javascript:...`, `data:text/html,...`, `file:///etc/passwd`, `JaVaScRiPt:...`) among the actual values; restored, the petstore suite passes 9 and the new case passes 1. No gate was running (`ps` showed no `verify-all.sh`) when `test:vscode` was run.
