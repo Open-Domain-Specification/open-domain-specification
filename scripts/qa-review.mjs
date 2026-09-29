@@ -25,7 +25,6 @@ for (const board of boards) {
 		if (column !== "review") continue;
 		const title = text.match(/^# (.+)$/m)?.[1] ?? file;
 		const unchecked = (text.match(/^- \[ \] /gm) ?? []).length;
-		const swept = /^clean-code-swept:\s*true/m.test(fm);
 		const paths = new Set();
 		for (const m of text.matchAll(PATH_RE))
 			paths.add(m[1].replace(/[.,]$/, ""));
@@ -40,7 +39,7 @@ for (const board of boards) {
 for (const r of rows) {
 	const flag = r.problems.length ? "!!" : "ok";
 	console.log(
-		`${flag} ${r.board}/${r.file} — ${r.title} [${r.refs} refs]${r.problems.length ? "\n     " + r.problems.join("; ") : ""}`,
+		`${flag} ${r.board}/${r.file} — ${r.title} [${r.refs} refs]${r.problems.length ? `\n     ${r.problems.join("; ")}` : ""}`,
 	);
 	if (r.missing.length)
 		console.log(

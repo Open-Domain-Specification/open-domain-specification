@@ -76,9 +76,9 @@ describe("WorkspacePage", () => {
 		expect(health.querySelector("h2")).toHaveTextContent("Health");
 		const subheads = health.querySelectorAll("h3");
 		expect(subheads).toHaveLength(4);
-		["Structure", "Refactor", "Tolerated", "No comments"].forEach((name, i) =>
-			expect(subheads[i]).toHaveTextContent(name),
-		);
+		["Structure", "Refactor", "Tolerated", "No comments"].forEach((name, i) => {
+			expect(subheads[i]).toHaveTextContent(name);
+		});
 		expect(health.querySelector(".health-report")).toBeInTheDocument();
 		expect(
 			screen.getByRole("link", { name: /Open the full health report/ }),
