@@ -171,3 +171,55 @@ Each has a light or dark twin in the same folder layout; `export-picker` sits un
 - VS Code high-contrast and high-contrast-light themes, and VS Code light and dark with real host tokens.
 - The real VS Code webview: covered by `apps/ods-vscode/e2e-keyboard/journeys.spec.ts` and `npm run test:vscode`, not by this harness.
 - Behaviour listed under "Not run" above, and the ods-ui deployable smoke shot.
+
+## Design review
+
+Reviewer: lead (Claude Opus 5.5), 2026-09-29T19:28:55Z. The designer agent began this review and was cut off by a model usage limit before writing anything, so the lead reviewed the screenshots directly. No design decision is made here. Where a fix needs one, the issue leaves it to the designer.
+
+Screenshots opened (8), all at 1300×900 unless stated:
+- export-http, dark: keyboard-focus.
+- viewer, light: keyboard-focus.
+- viewer, light: modal-relationship-evidence.
+- viewer, light: diagram-fullscreen, at 464614f6 and at 6469b16.
+- viewer, dark: import-error.
+- viewer, 390×844, dark: invariant-valueobject.
+- viewer, light: relationship.
+
+The rest of the 370 shots were not opened. Their coverage comes from the automated counts above.
+
+### Epic #61's outcomes, as seen
+
+| Outcome | Seen | Result |
+| --- | --- | --- |
+| A focus ring is visible in the static theme (#52) | A tree link focused by keyboard, in light (viewer) and dark (export) | Holds |
+| The active item is visible and differs from hover (#50, #52) | The current context's tree row is a filled wash, in both themes | Holds |
+| A heading takes focus on arrival (#46) | The relationship page's `h1` shows the focusBorder ring after the capture's hash navigation | Holds |
+| An import failure is actionable (#45) | "The server answered 404 for …. Check the address is correct and the file is public, then choose Load to try again." | Holds |
+| A generated description is marked (#62, still intact) | The strategic table's generated rows end with "generated" in the secondary colour | Holds |
+| The evidence dialog (#48) | A titled dialog over a dimmed page, with its close button | Holds visually; keyboard behaviour is covered by e2e and the real host |
+
+### Findings
+
+| Finding | Classification | Severity | Where | Issue |
+| --- | --- | --- | --- | --- |
+| Text contrast below AA (`warn` keyword, mud name in dark, `internal`, `.port-label`) | Separate defect; not an epic #61 criterion | Serious | 81 captures, both themes, viewer and export | #78 |
+| Links in running text marked by colour only | Separate defect | Serious | 66 captures | #79 |
+| The attributes table's icon column has an empty header | Separate defect | Minor | 114 captures, six families | #80 |
+| The relationship page skips from `h1` to `h3` | Separate defect | Moderate | 18 captures, every host | #81 |
+| At phone width the page overflows sideways and the whole tree precedes the content | Separate defect | Serious at that width | 9 families at 390×844 | #82 |
+| No skip link; a Tab cycle is about 205 stops | Separate defect; the epic's criteria hold (every stop is meaningful, focus is predictable) | Moderate | Every page with a tree or a diagram | #83 |
+| Two role descriptions run together ("context.PL") | Separate defect | Minor | The relationship modal and page | #84 |
+| A consumable's icon breaks off its name in the crossings table at 1300 | Separate defect | Minor | The relationship page | #85 |
+| A fullscreen diagram fills only part of the screen | Separate defect, predating the epic (same at 6469b16); may be capture timing | Moderate | The context map, fullscreen | #86 |
+| The extension's page view has no way back | Separate defect, from the real-host journeys | Moderate | The VS Code webview | #77 |
+| `landmark-unique` | Fixed by #50 (300 → 0) | — | — | — |
+| The file:// export's blocked CSS XHR | Not a product defect: axe re-fetches the stylesheet, and rendering is unaffected | — | Harness only; axe colour results on export-file are partial | — |
+
+**Blocking epic #61: none.** No finding contradicts an acceptance criterion of the epic. Each is raised as its own issue.
+
+### Not covered by this review
+
+- Screen readers: none were run. Every accessible-name and state claim is a DOM or accessibility-tree check, not an assistive-technology test.
+- VS Code high-contrast themes, and `forced-colors`.
+- The real VS Code webview's appearance. Its behaviour is covered by `apps/ods-vscode/e2e-keyboard/journeys.spec.ts` (real keys in VS Code 1.96.4) and `npm run test:vscode`, not by this capture.
+- export-file at 800, 390 and 1150.
