@@ -42,17 +42,22 @@ async function expectVisibleFocusRing(target: Locator) {
 	expect(outline || shadow, JSON.stringify(ring)).toBe(true);
 }
 
-/** Tab from the top of the page until `target` has focus, as a keyboard reader would. */
-async function tabTo(page: Page, target: Locator, limit = 120) {
-	await page.evaluate(() => {
-		window.scrollTo(0, 0);
-		(document.activeElement as HTMLElement | null)?.blur();
-	});
+/**
+ * Tab to `target` from a known place: focus `from`, the element just before
+ * it in the reading order, then press Tab as a keyboard reader would. Not "from
+ * the top": when a page arrives, focus moves into its main region and Tab
+ * carries on forward from there, so the tree (which comes earlier in the
+ * document) is only reached after a wrap through every stop in the page. The
+ * limit is a few presses, so a target that has left the Tab order fails at
+ * once and says so.
+ */
+async function tabFrom(page: Page, from: Locator, target: Locator, limit = 5) {
+	await from.focus();
 	for (let i = 0; i < limit; i++) {
 		await page.keyboard.press("Tab");
 		if (await target.evaluate((el) => el === document.activeElement)) return;
 	}
-	throw new Error(`Tab never reached the target within ${limit} presses`);
+	throw new Error(`Tab did not reach the target within ${limit} presses`);
 }
 
 const background = (row: Locator) =>
@@ -63,12 +68,15 @@ async function expectStates(page: Page) {
 
 	// Focus: a link in the tree, and a button in the table.
 	const treeLink = nav.getByRole("link", { name: "Orders Team" });
-	await tabTo(page, treeLink);
+	// The tree is a run of links; walking it from its first is at most one
+	// press per link.
+	const links = nav.getByRole("link");
+	await tabFrom(page, links.first(), treeLink, await links.count());
 	await expectVisibleFocusRing(treeLink);
 
 	const table = page.locator(".strategic-position");
 	const toggle = table.getByRole("button", { name: /^Evidence for / }).first();
-	await tabTo(page, toggle);
+	await tabFrom(page, treeLink, toggle);
 	await expectVisibleFocusRing(toggle);
 
 	// Hover: a tree row and a table row take a wash they did not have.
