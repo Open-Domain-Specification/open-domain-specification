@@ -1,10 +1,10 @@
 ---
-column: doing
+column: done
 labels: [pages, doc]
 priority: medium
 agent: developer
 live: false
-updatedAt: 2026-09-29T23:30:00.000Z
+updatedAt: 2026-09-30T09:00:00.000Z
 ---
 # An exchange names its agreement
 
@@ -36,3 +36,4 @@ Issue #55, a child of epic #62. A consumption can name the relationship it runs 
 - **developer** (2026-09-29T15:10:00.000Z): Tests. Core `packages/core/src/consumable-map.test.ts`, graphviz `consumable-map-agreement.test.ts`, doc `consumptions.test.ts`, pages `ConsumesTable.test.ts` (RiverMart's WarehouseAPI), `ConsumableEdge.test.ts`, `consumable-graph.test.ts`, and `packages/pages/e2e/consumption-agreement.spec.ts` (viewer route, RiverMart's `purchaseOrderLookup` and `legacyStockFeed`). The e2e ran against a throwaway config on port 4183 that was deleted afterwards.
 - **developer** (2026-09-29T15:20:00.000Z): Doc tests are in `packages/doc/src/consumptions.test.ts`: the column and the `-` on the context, domain and subdomain tables, and no column on any of the three where no row names an agreement. The relationship page's heading not naming the agreement is left alone, out of this issue's scope (lead).
 - **lead** (2026-09-29T23:30:00.000Z): Integrated on the epic 62 branch in the epic's order (#44, #43, #55, #56, then the cross-surface pass). The landing gate passed on c3ae0910, and `npm run test:vscode` passed on the same commit in real VS Code 1.96.4: cross-surface 4 passing, hostile-links 1, petstore 9 (4 pending screenshots). The card stays in `doing` until PR 73 merges.
+- **lead** (2026-09-30T09:00:00.000Z): Landed. The owner reviewed PR #73 and merged it into develop as 9bb24cc, and post-merge CI run 36594778877 is green (test, e2e). Issue #55 closed; the card moves to `done`.

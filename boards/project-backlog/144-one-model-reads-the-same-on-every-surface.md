@@ -1,10 +1,10 @@
 ---
-column: doing
+column: done
 labels: [pages, doc, tooling]
 priority: medium
 agent: developer
 live: false
-updatedAt: 2026-09-29T23:30:00.000Z
+updatedAt: 2026-09-30T09:00:00.000Z
 ---
 # One model reads the same on every surface
 
@@ -37,3 +37,4 @@ The fixture is `apps/ods-vscode/src/test/fixtures/cross-surface/.ods/cross_surfa
 - **developer** (2026-09-29T23:00:00.000Z): `apps/ods-vscode/tsconfig.json` now excludes `src/test/fixtures`, and `tsconfig.test.json` excludes the generator, which uses `import.meta` and is run with node; `expected.ts` is compiled into `out/` for the extension test.
 - **developer** (2026-09-29T23:00:00.000Z): The cross-surface pass found no inconsistency between surfaces for the four facts. The wording differs by surface as designed (the keyword `generated` on pages, `(generated)` in Markdown; an empty cell on pages, `-` in the Markdown column; a link on pages, plain text in Markdown).
 - **lead** (2026-09-29T23:30:00.000Z): Integrated on the epic 62 branch in the epic's order (#44, #43, #55, #56, then the cross-surface pass). The landing gate passed on c3ae0910, and `npm run test:vscode` passed on the same commit in real VS Code 1.96.4: cross-surface 4 passing, hostile-links 1, petstore 9 (4 pending screenshots). The card stays in `doing` until PR 73 merges.
+- **lead** (2026-09-30T09:00:00.000Z): Landed. The owner reviewed PR #73 and merged it into develop as 9bb24cc, and post-merge CI run 36594778877 is green (test, e2e). Epic #62 closed; the card moves to `done`.
