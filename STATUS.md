@@ -6,7 +6,16 @@ Goal (set by the owner on 2026-09-07): the lead, asked whether the DDD metamodel
 
 ## Now
 
-No card is live and no work is in flight. Epic 60 (safe model rendering and dependable verification) landed on 2026-09-29. The owner reviewed PR 72 and merged it into develop as `c26ca28`, and post-merge CI run 36583350831 is green (test, e2e). The landing gate and `npm run test:vscode` were green on the merged head `39a12662` before the merge. Issues 41, 49, 57 and 58 and epic 60 are closed, and cards 136 to 139 and vsc-extension card 21 are `done`.
+Epic 62 (faithful relationship and identity views) is implemented on branch `epic-62/faithful-relationship-and-identity-views`, in one pull request against develop (PR 73), and is awaiting the owner's review. It presents facts the model already records; there is no metamodel change, and no reference model's diagnostics or tracked generated docs moved.
+- #44, card 140: core's `relationshipArrow` builds the glyph once. `relationshipTitle`, the health report and the relationship heading compose it, and the health report keeps each context endpoint its own link.
+- #43, card 141: a relationship with no authored description (core's `hasAuthoredDescription`, where blank counts as none) shows its generated sentence marked `generated` in pages and `(generated)` in Markdown. Authored text is unchanged.
+- #55, card 142: a consumption that names its agreement shows it. Pages' consumes tables and consumable-map hover, the Graphviz map label and tooltip, and Markdown's bullet and Consumptions tables all carry it; the column appears only where a row names an agreement.
+- #56, card 143: the relation map draws a context-valued identity target as «external system», «boundary only» or «big ball of mud», matching the source context.
+- Card 144: one cross-surface fixture and one list of expected facts, asserted on the viewer and static export (Playwright), in the real VS Code 1.96.4 webview (`npm run test:vscode`, through the test probe) and in generated Markdown.
+
+Design: `docs/design/v2-specs/relationship-provenance-and-agreements.md`, the designer's spec with the lead's rulings. The children stay open, and their cards in `doing`, until the PR merges.
+
+Epic 60 (safe model rendering and dependable verification) landed on 2026-09-29. The owner reviewed PR 72 and merged it into develop as `c26ca28`, and post-merge CI run 36583350831 is green (test, e2e). The landing gate and `npm run test:vscode` were green on the merged head `39a12662` before the merge. Issues 41, 49, 57 and 58 and epic 60 are closed, and cards 136 to 139 and vsc-extension card 21 are `done`.
 - #49, card 136: a description link is a link only for http, https, mailto and in-model refs. Verified on the hosted viewer and the static export in Playwright, and in a real VS Code 1.96.4 webview through a test probe (`npm run test:vscode`, run by hand).
 - #41, card 137: the four sketch-backdrop stories draw their backdrop, and the Storybook check refuses a canvas that painted nothing.
 - #58, card 139: `biome.json` excludes generated output and tool folders, and a second `npm run format` is a no-op, including from the main checkout while agent worktrees exist.
@@ -18,7 +27,7 @@ Before epic 60: The sixteenth round held on the card 135 head and the lead answe
 
 ## Next
 
-The owner hands over the next work package; the lead does not pick one from the backlog unprompted. Issue 69 (make `test:vscode` a required automated check) is the open follow-up from epic 60. Continue on the backlog incrementally: issues 35 to 59 hold everything waiting, and merging to main is now safe because it releases nothing. Release 0.5.0 by hand when the time is right. A future review round starts from the current positions at the top of every decision. From here Codex runs only when the lead is very confident it will answer yes, at the owner's instruction (its usage is limited); Antigravity and a fresh architect review each head. Expected result: Antigravity and the architect hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
+The owner reviews and merges PR 73. After that, close #43, #44, #55 and #56, move cards 140 to 144 to `done`, and close epic 62. The owner then hands over the next work package; the lead does not pick one from the backlog unprompted. Issue 69 (make `test:vscode` a required automated check) is the open follow-up from epic 60. Continue on the backlog incrementally: issues 35 to 59 hold everything waiting, and merging to main is now safe because it releases nothing. Release 0.5.0 by hand when the time is right. A future review round starts from the current positions at the top of every decision. From here Codex runs only when the lead is very confident it will answer yes, at the owner's instruction (its usage is limited); Antigravity and a fresh architect review each head. Expected result: Antigravity and the architect hold at yes with named costs and name no new defect; then the lead answers the question and pull request 25 is the owner's to merge.
 
 ## Later
 
@@ -40,5 +49,5 @@ The owner hands over the next work package; the lead does not pick one from the 
 
 ## Working state
 
-Updated: 2026-09-29, after epic 60 landed (PR 72, `c26ca28`) and was closed out. Earlier entry, 2026-09-10, at the end of the run, with the question answered. Branch: develop. Checked commit: the one immediately before this STATUS.md on develop; the working tree has no modified tracked file and develop is level with origin. Partial changes in the checkout: only the untracked files listed under Later, none of them the lead's. Landing gate: `npm run verify` at the root, run detached with `nohup` because it can outlast a ten-minute command cap; before running it, `pgrep -f 'ods-vscode.*dev.mjs'` and `pgrep -f extensionDevelopmentPath` must find nothing, because a running extension host rewrites the petstore schema.
+Updated: 2026-09-29, with epic 62 in PR 73 awaiting review; nothing of it is merged. Before that, 2026-09-29, after epic 60 landed (PR 72, `c26ca28`) and was closed out. Earlier entry, 2026-09-10, at the end of the run, with the question answered. Branch: develop. Checked commit: the one immediately before this STATUS.md on develop; the working tree has no modified tracked file and develop is level with origin. Partial changes in the checkout: only the untracked files listed under Later, none of them the lead's. Landing gate: `npm run verify` at the root, run detached with `nohup` because it can outlast a ten-minute command cap; before running it, `pgrep -f 'ods-vscode.*dev.mjs'` and `pgrep -f extensionDevelopmentPath` must find nothing, because a running extension host rewrites the petstore schema.
 
