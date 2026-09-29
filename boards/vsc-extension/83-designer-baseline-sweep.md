@@ -6,7 +6,7 @@ agent: lead
 live: false
 status: Partial baseline; remaining visual coverage blocked on browser UI access
 progress: 85
-updatedAt: 2026-09-05T17:08:02.807787+00:00
+updatedAt: 2026-09-29T17:05:32+00:00
 ---
 # Designer baseline sweep of ODS
 
@@ -18,6 +18,9 @@ User-requested baseline across extension/shared pages: visual consistency, acces
 - [x] the accessibility reviewer accessibility and interaction review
 - [x] Verify findings, deduplicate existing cards and raise tickets
 - [x] Record tested coverage and limitations
+- [x] Inventory of page families, global surfaces, interactions and the host, theme and viewport matrix (`docs/design/baseline/inventory.md`)
+- [x] Capture harness (`packages/pages/e2e/baseline-capture.spec.ts`, gated behind `ODS_BASELINE=1`)
+- [ ] Final browser pass on the integrated head, with the tested commit recorded and browser, static-export and real-extension-host evidence kept distinct
 
 ## Comments
 
@@ -28,3 +31,5 @@ User-requested baseline across extension/shared pages: visual consistency, acces
 - **lead** (2026-09-05T16:30:56.598836+00:00): the accessibility reviewer report complete at docs/bots/design/ (deleted 2026-09-07)2026-09-05-the accessibility reviewer-baseline.md:1; parent reran the accessibility review (report deleted 2026-09-07)accessibility.probe.test.ts:1 (7/7). Raised distinct cards84–91; the optional health aria-controls suggestion is not treated as a confirmed bug. the design reviewer visual sweep remains active.
 
 - **lead** (2026-09-05T17:08:02.807787+00:00): Eight distinct issues raised in cards84–91; existing fullscreen card14 and navigation card86 enriched with the design reviewer native observations. Remaining visual/AT coverage is explicit in boards/vsc-extension/92-complete-visual-baseline-coverage.md:1. Keeping this card incomplete; no human sign-off or completed full sweep implied.
+
+- **developer** (2026-09-29T17:05:32+00:00): This card now tracks issue #53 under epic #61 (the design and accessibility sweep finished across a browser and every page family). The inventory is at docs/design/baseline/inventory.md and the capture harness is packages/pages/e2e/baseline-capture.spec.ts. The final browser pass on the integrated head is still to do.
