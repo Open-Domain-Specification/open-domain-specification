@@ -78,7 +78,8 @@ export function contextIdentified(target: IdentityTarget): BoundedContext {
  */
 export function identityNamed(crossing: IdentityCrossing): string {
 	const { target, to } = crossing;
-	if (target instanceof BoundedContext) return `an id belonging to "${to.name}"`;
+	if (target instanceof BoundedContext)
+		return `an id belonging to "${to.name}"`;
 	if (target instanceof DataSchema)
 		return `the identity of a "${target.name}" in "${to.name}"`;
 	return `the identity of "${target.name}" in "${to.name}"`;

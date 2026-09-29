@@ -196,13 +196,15 @@ const patientLookupRequestSchema = recordsBC.addSchema(
 patientLookupRequestSchema.addAttribute("patientId", { type: "string" });
 
 const patientDetailsSchema = recordsBC.addSchema("Patient Details", {
-	description: "What is known about a new patient when they are first registered.",
+	description:
+		"What is known about a new patient when they are first registered.",
 });
 patientDetailsSchema.addAttribute("fullName", { type: "string" });
 patientDetailsSchema.addAttribute("dateOfBirth", { type: "string" });
 
 const gpReferenceDetailsSchema = recordsBC.addSchema("GP Reference Details", {
-	description: "A patient's GP practice number, to be linked to our own record.",
+	description:
+		"A patient's GP practice number, to be linked to our own record.",
 });
 gpReferenceDetailsSchema.addAttribute("patientId", { type: "string" });
 gpReferenceDetailsSchema.addAttribute("gpPatientNumber", {
@@ -310,13 +312,16 @@ const patientDirectorySvc = recordsBC.addService("Patient Directory", {
 	type: "application",
 	description: "Fronts Records for the rest of the clinic.",
 });
-const getPatientSummaryOp = patientDirectorySvc.provides("Get Patient Summary", {
-	type: "operation",
-	pattern: "open-host-service",
-	description: "Looks a patient up by their internal id.",
-	schema: patientLookupRequestSchema,
-	returns: patientSummarySchema,
-});
+const getPatientSummaryOp = patientDirectorySvc.provides(
+	"Get Patient Summary",
+	{
+		type: "operation",
+		pattern: "open-host-service",
+		description: "Looks a patient up by their internal id.",
+		schema: patientLookupRequestSchema,
+		returns: patientSummarySchema,
+	},
+);
 
 recordsBC.addTerm("Patient", {
 	definition: "Somebody the clinic has, or will, care for.",
@@ -378,7 +383,8 @@ const labTestRequestDetailsSchema = triageBC.addSchema(
 labTestRequestDetailsSchema.addAttribute("testCode", { type: "string" });
 
 const labResultDetailsSchema = triageBC.addSchema("Lab Result Details", {
-	description: "A lab result, translated out of the lab's own report shape into ours.",
+	description:
+		"A lab result, translated out of the lab's own report shape into ours.",
 });
 labResultDetailsSchema.addAttribute("resultCode", { type: "string" });
 
@@ -386,14 +392,16 @@ const referralCaseAgg = triageBC.addAggregate("Referral Case", {
 	description: "One referral, from the moment it becomes a case of ours.",
 });
 const referralEntity = referralCaseAgg.addRootEntity("Referral", {
-	description: "A GP referral, once it is a case of ours rather than the GP's message.",
+	description:
+		"A GP referral, once it is a case of ours rather than the GP's message.",
 });
 referralEntity.addAttribute("referralId", { type: "string", identity: true });
 const referralPatientIdAttr = referralEntity.addAttribute("patientId", {
 	type: "string",
 	optional: true,
 	identifies: patientEntity,
-	description: "Set once Records has matched this referral to one of our patients.",
+	description:
+		"Set once Records has matched this referral to one of our patients.",
 });
 referralEntity.addAttribute("gpReferralReference", {
 	type: "string",
@@ -434,15 +442,19 @@ referralEntity.uses(clinicalCodeVO, "coded-as", "0..1", {
 
 const registerReferralOp = referralCaseAgg.provides("Register Referral", {
 	type: "operation",
-	description: "Creates a case of our own from a referral the GP practice system sent.",
+	description:
+		"Creates a case of our own from a referral the GP practice system sent.",
 	schema: referralDetailsSchema,
 });
-const referralRegisteredEvent = referralCaseAgg.provides("Referral Registered", {
-	type: "event",
-	pattern: "published-language",
-	description: "A referral has become a case of ours.",
-	schema: referralDetailsSchema,
-});
+const referralRegisteredEvent = referralCaseAgg.provides(
+	"Referral Registered",
+	{
+		type: "event",
+		pattern: "published-language",
+		description: "A referral has become a case of ours.",
+		schema: referralDetailsSchema,
+	},
+);
 registerReferralOp.raises(referralRegisteredEvent);
 
 const acceptReferralOp = referralCaseAgg.provides("Accept Referral", {
@@ -664,7 +676,8 @@ const schedulingBC = workspace.addBoundedContext("Scheduling", {
 schedulingBC.ownedBy(schedulingTeam);
 
 const slotOfferRequestSchema = schedulingBC.addSchema("Slot Offer Request", {
-	description: "Which accepted case, and which patient, is being offered a slot.",
+	description:
+		"Which accepted case, and which patient, is being offered a slot.",
 });
 slotOfferRequestSchema.addAttribute("referralId", {
 	type: "string",
@@ -693,18 +706,30 @@ patientWaitlistedSchema.addAttribute("bookingId", {
 	type: "string",
 	identity: true,
 });
-patientWaitlistedSchema.addAttribute("note", { type: "string", optional: true });
-
-const bookingCancelledSchema = schedulingBC.addSchema("Booking Cancelled Details", {
-	description: "Which booking was cancelled, and why.",
+patientWaitlistedSchema.addAttribute("note", {
+	type: "string",
+	optional: true,
 });
-bookingCancelledSchema.addAttribute("reason", { type: "string", optional: true });
+
+const bookingCancelledSchema = schedulingBC.addSchema(
+	"Booking Cancelled Details",
+	{
+		description: "Which booking was cancelled, and why.",
+	},
+);
+bookingCancelledSchema.addAttribute("reason", {
+	type: "string",
+	optional: true,
+});
 
 const cancellationRequestSchema = schedulingBC.addSchema(
 	"Cancellation Request",
 	{ description: "Which booking is being cancelled." },
 );
-cancellationRequestSchema.addAttribute("reason", { type: "string", optional: true });
+cancellationRequestSchema.addAttribute("reason", {
+	type: "string",
+	optional: true,
+});
 
 const clinicScheduleAgg = schedulingBC.addAggregate("Clinic Schedule", {
 	description: "One clinic session and its bookable slots.",
@@ -712,7 +737,10 @@ const clinicScheduleAgg = schedulingBC.addAggregate("Clinic Schedule", {
 const clinicSessionEntity = clinicScheduleAgg.addRootEntity("Clinic Session", {
 	description: "A run of appointments on a given day with a given clinician.",
 });
-clinicSessionEntity.addAttribute("sessionId", { type: "string", identity: true });
+clinicSessionEntity.addAttribute("sessionId", {
+	type: "string",
+	identity: true,
+});
 clinicSessionEntity.addAttribute("clinicianName", { type: "string" });
 clinicSessionEntity.addAttribute("date", { type: "string" });
 clinicSessionEntity.addAttribute("specialty", { type: "string" });
@@ -729,14 +757,18 @@ const bookingAgg = schedulingBC.addAggregate("Booking", {
 	description: "One patient booked, or waitlisted, against a slot.",
 });
 const bookingEntity = bookingAgg.addRootEntity("Booking", {
-	description: "A patient's claim on a slot, from an offer through to its outcome.",
+	description:
+		"A patient's claim on a slot, from an offer through to its outcome.",
 });
 bookingEntity.addAttribute("bookingId", { type: "string", identity: true });
 bookingEntity.addAttribute("clinicSessionId", {
 	type: "string",
 	identifies: clinicSessionEntity,
 });
-bookingEntity.addAttribute("slotId", { type: "string", identifies: slotEntity });
+bookingEntity.addAttribute("slotId", {
+	type: "string",
+	identifies: slotEntity,
+});
 bookingEntity.addAttribute("patientId", {
 	type: "string",
 	identifies: patientEntity,
@@ -750,13 +782,15 @@ const bookingConfirmedEvent = bookingAgg.provides("Booking Confirmed", {
 });
 const patientWaitlistedEvent = bookingAgg.provides("Patient Waitlisted", {
 	type: "event",
-	description: "A patient was put on the waiting list instead of taking the offered slot.",
+	description:
+		"A patient was put on the waiting list instead of taking the offered slot.",
 	schema: patientWaitlistedSchema,
 });
 
 const cancelBookingOp = bookingAgg.provides("Cancel Booking", {
 	type: "operation",
-	description: "Called by the patient or the scheduler to give up a confirmed booking.",
+	description:
+		"Called by the patient or the scheduler to give up a confirmed booking.",
 	schema: cancellationRequestSchema,
 });
 const bookingCancelledEvent = bookingAgg.provides("Booking Cancelled", {
@@ -824,7 +858,8 @@ schedulingDeskSvc.consumes(referralAcceptedEvent, {
 
 schedulingBC
 	.addInvariant("Slot Offered Once", {
-		description: "A slot is never offered to a second patient while it is already held.",
+		description:
+			"A slot is never offered to a second patient while it is already held.",
 		precondition: true,
 	})
 	.constrains(slotStatusAttr, offerSlotOp);
@@ -837,7 +872,10 @@ const appointmentLifecycleProcess = schedulingBC.addProcess(
 	},
 );
 appointmentLifecycleProcess.starts(bookingConfirmedEvent);
-appointmentLifecycleProcess.ends(bookingCancelledEvent, appointmentDayReachedEvent);
+appointmentLifecycleProcess.ends(
+	bookingCancelledEvent,
+	appointmentDayReachedEvent,
+);
 
 schedulingBC.downstreamOf(triageBC, {
 	upstreamRoles: ["published-language"],
