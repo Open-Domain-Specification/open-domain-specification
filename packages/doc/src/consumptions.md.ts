@@ -1,4 +1,5 @@
 import type { Consumption } from "@open-domain-specification/core";
+import { markdownTable } from "./lib/markdown-table";
 import { pathToIndexMd } from "./lib/paths";
 
 /**
@@ -21,6 +22,41 @@ export const agreementMd = (consumption: Consumption) =>
 	consumption.relationship
 		? `\n- **Agreement**: ${consumption.relationship.name ?? consumption.relationship.type}`
 		: "";
+
+/**
+ * A Consumptions table with the Agreement column, placed after `Consumed As`,
+ * only when at least one of its rows names a relationship: where a pair holds
+ * one agreement nobody names it, so a table with none has nothing to show. A
+ * row that names none reads "-" once the column is there, as every other
+ * absent value in these tables does.
+ */
+export const consumptionsTableMd = (
+	consumptions: Consumption[],
+	headers: string[],
+	row: (consumption: Consumption) => string[],
+) => {
+	const rows = consumptions.map(row);
+	if (!consumptions.some((it) => it.relationship)) {
+		return markdownTable(headers, rows);
+	}
+	const at = headers.indexOf("Consumed As") + 1;
+	const insert = <T>(list: T[], value: T) => [
+		...list.slice(0, at),
+		value,
+		...list.slice(at),
+	];
+	return markdownTable(
+		insert(headers, "Agreement"),
+		rows.map((row, i) =>
+			insert(
+				row,
+				consumptions[i].relationship?.name ??
+					consumptions[i].relationship?.type ??
+					"-",
+			),
+		),
+	);
+};
 
 /** One consumption on the page of the aggregate or service that makes it. */
 export const consumptionSectionMd = (consumption: Consumption) => `

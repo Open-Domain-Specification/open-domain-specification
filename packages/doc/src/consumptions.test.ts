@@ -6,10 +6,12 @@ import { toDoc } from "./index";
  * A warehouse downstream of a vendor system under two agreements, with a
  * consumption under each and a third that names none (issue #55).
  */
-function twoAgreements() {
+function twoAgreements({ named = true } = {}) {
 	const ws = new Workspace("W", { description: "d", version: "0" });
-	const vendor = ws.addBoundedContext("Vendor", { description: "d" });
-	const warehouse = ws.addBoundedContext("Warehouse", { description: "d" });
+	const shop = ws.addDomain("Shop", { description: "d" });
+	const trade = shop.addSubdomain("Trade", { type: "core", description: "d" });
+	const vendor = trade.addBoundedcontext("Vendor", { description: "d" });
+	const warehouse = trade.addBoundedcontext("Warehouse", { description: "d" });
 	const lookup = warehouse.downstreamOf(vendor, {
 		name: "purchase order lookup",
 		type: "customer-supplier",
@@ -36,8 +38,8 @@ function twoAgreements() {
 		description: "d",
 		type: "application",
 	});
-	api.consumes(getPo, { relationship: lookup });
-	api.consumes(received, { relationship: feed });
+	api.consumes(getPo, named ? { relationship: lookup } : {});
+	api.consumes(received, named ? { relationship: feed } : {});
 	api.consumes(ping);
 	return ws;
 }
@@ -63,17 +65,16 @@ describe("the agreement an exchange runs under, in Markdown", () => {
 		expect(section("Ping")).not.toContain("Agreement");
 	});
 
+	const cells = (row: string) =>
+		row
+			.split("|")
+			.slice(1, -1)
+			.map((c) => c.trim());
+	const tableOf = (docs: Record<string, string>, suffix: string) =>
+		page(docs, suffix).split("## Consumptions")[1].trim().split("\n");
+
 	it("adds an Agreement column to the context's consumptions table, with a dash where none is named", async () => {
-		const docs = await toDoc(twoAgreements());
-		const table = page(docs, "warehouse/index.md")
-			.split("## Consumptions")[1]
-			.trim()
-			.split("\n");
-		const cells = (row: string) =>
-			row
-				.split("|")
-				.slice(1, -1)
-				.map((c) => c.trim());
+		const table = tableOf(await toDoc(twoAgreements()), "warehouse/index.md");
 		expect(cells(table[0])).toEqual([
 			"Consumer",
 			"Made By",
@@ -89,4 +90,43 @@ describe("the agreement an exchange runs under, in Markdown", () => {
 		expect(agreementOf("PO Received")).toBe("legacy stock feed");
 		expect(agreementOf("Ping")).toBe("-");
 	});
+
+	it.each([
+		["domain", "shop/index.md"],
+		["subdomain", "trade/index.md"],
+	])(
+		"adds the same column to the %s's consumptions table, after Consumed As",
+		async (_level, suffix) => {
+			const table = tableOf(await toDoc(twoAgreements()), suffix);
+			expect(cells(table[0])).toEqual([
+				"Consumer",
+				"Consumed As",
+				"Agreement",
+				"Provider",
+				"Consumable",
+				"Provided As",
+			]);
+			const agreementOf = (consumable: string) =>
+				cells(table.find((r) => cells(r)[4] === consumable) ?? "")[2];
+			expect(agreementOf("Get PO")).toBe("purchase order lookup");
+			expect(agreementOf("PO Received")).toBe("legacy stock feed");
+			expect(agreementOf("Ping")).toBe("-");
+		},
+	);
+
+	it.each([
+		["context", "warehouse/index.md"],
+		["domain", "shop/index.md"],
+		["subdomain", "trade/index.md"],
+	])(
+		"leaves the %s's consumptions table without the column where no row names an agreement",
+		async (_level, suffix) => {
+			const table = tableOf(
+				await toDoc(twoAgreements({ named: false })),
+				suffix,
+			);
+			expect(cells(table[0])).not.toContain("Agreement");
+			expect(table).toHaveLength(5);
+		},
+	);
 });
