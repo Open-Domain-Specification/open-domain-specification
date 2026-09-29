@@ -232,3 +232,7 @@ Expected: the `error` codicon in the error colour in a gutter, then the message 
 - The real webview's appearance: not captured. Its behaviour (Escape layers, focus movement, current row) is covered by `apps/ods-vscode/e2e-keyboard/journeys.spec.ts`.
 - Pointer hover and active states on tree rows, table rows and buttons: a static shot cannot hold a pointer; `keyboard-focus` and `hover-pattern` show the focus-driven equivalents.
 - Reduced motion: no shot can show it; it is the #51 Playwright check.
+
+### Issues raised (lead, 2026-09-29T22:00:28Z)
+
+New-1 to New-7 are raised as #87, #88, #89, #90, #91, #92 and #93, in that order. The two polish items are #94. None blocks epic #61. The shared wash on the current row and its ancestors stays as the Sidebar spec draws it; only the current row carries `aria-current` (#50).
