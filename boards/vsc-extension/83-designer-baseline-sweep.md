@@ -4,9 +4,9 @@ labels: [frontend, docs]
 priority: high
 agent: lead
 live: false
-status: Captures and automated checks done; the visual review of every page family is still to do
-progress: 80
-updatedAt: 2026-09-29T21:21:07Z
+status: Baseline complete on 29048949; findings raised as #77 to #94, none blocking epic 61
+progress: 100
+updatedAt: 2026-09-29T22:00:57Z
 ---
 # Designer baseline sweep of ODS
 
@@ -14,13 +14,13 @@ User-requested baseline across extension/shared pages: visual consistency, acces
 
 ## Checklist
 
-- [ ] the design reviewer visual and user-journey review of every page family, on the final code state (reopened 2026-09-29 by the owner's review of PR #76: only eight screenshots were opened)
+- [x] the design reviewer visual and user-journey review of every page family, on the final code state (reopened 2026-09-29 by the owner's review of PR #76; done on 29048949: 107 screenshots opened by the designer, covering every family and state)
 - [x] the accessibility reviewer accessibility and interaction review
 - [x] Verify findings, deduplicate existing cards and raise tickets
 - [x] Record tested coverage and limitations
 - [x] Inventory of page families, global surfaces, interactions and the host, theme and viewport matrix (`docs/design/baseline/inventory.md`)
 - [x] Capture harness (`packages/pages/e2e/baseline-capture.spec.ts`, gated behind `ODS_BASELINE=1`)
-- [ ] Final browser pass on the integrated head, with the tested commit recorded and browser, static-export and real-extension-host evidence kept distinct
+- [x] Final browser pass on the integrated head, with the tested commit recorded and browser, static-export and real-extension-host evidence kept distinct
 
 ## Comments
 
@@ -38,3 +38,8 @@ User-requested baseline across extension/shared pages: visual consistency, acces
 
 - **lead** (2026-09-29T19:29:09Z): The final browser pass ran on the integrated head 464614f6: 370 Playwright Chromium captures across the viewer, export-http and export-file, in light and dark, at 1300×900, 800×900, 390×844 and 1150×700 as the inventory sets out, with axe. `landmark-unique` fell from 300 to 0 (#50). The lead reviewed eight screenshots directly. Findings are in `docs/design/baseline/final-pass.md`, and nine separate defects are raised as #78 to #86, with #77 from the real-host journeys. None blocks epic 61. Real-host behaviour is covered by `apps/ods-vscode/e2e-keyboard/journeys.spec.ts`. No screen reader was run.
 - **lead** (2026-09-29T21:21:07Z): Correction to the entry above. It called the final pass complete, but the visual review opened eight screenshots, and most page families were never looked at. The owner's review of PR #76 reopened it. The captures, the axe counts and issues #77 to #86 stand. Still to do: a visual review of every required page family and the relevant interaction states, on the final code state after the #48 and #50 fixes, recording host, theme, viewport and findings for each.
+- **lead** (2026-09-29T22:00:57Z): The page-family review is done on the final code state, 290489491d7fcb27395bfa4054742dc4a71c8ee9, the head carrying the #48 and #50 review fixes.
+  - Captures: 370 shots with axe (`docs/design/audit/29048949/manifest.json`).
+  - Review: the designer opened 107 screenshots, recorded in `docs/design/baseline/final-pass-2.md`. Every one of the 24 page ids was seen at viewer/light/1300, export-http/dark/1300, and one 800 or 390 shot. All nine states were seen in both themes, with export-file spot checks.
+  - Findings: nothing blocks the epic. Seven new defects are raised as #87 to #93, and two polish items as #94; the earlier issues #77 to #86 were seen again.
+  - Not covered: screen readers, VS Code high contrast, `forced-colors`, and the webview's appearance. The webview's behaviour is covered by the Playwright-Electron journeys.
