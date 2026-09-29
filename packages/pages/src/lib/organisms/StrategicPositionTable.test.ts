@@ -1,4 +1,10 @@
-import { type BoundedContext, PATTERNS } from "@open-domain-specification/core";
+import {
+	type BoundedContext,
+	narrativeText,
+	PATTERNS,
+	relationshipNarrative,
+	Workspace,
+} from "@open-domain-specification/core";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import Harness from "../evidence/WithModel.harness.svelte";
@@ -141,5 +147,47 @@ describe("StrategicPositionTable", () => {
 				"No explicit relationships. Consumptions imply upstream and downstream links.",
 			),
 		).toHaveClass("empty");
+	});
+
+	it("marks a description the model generated, and leaves an authored one exactly as written", () => {
+		const workspace = new Workspace("Provenance", {
+			description: "Two relationships, one described.",
+			version: "0.1.0",
+		});
+		const hub = workspace.addBoundedContext("Hub", { description: "The hub." });
+		const written = workspace.addBoundedContext("Written", {
+			description: "Has an authored relationship.",
+		});
+		const silent = workspace.addBoundedContext("Silent", {
+			description: "Has none.",
+		});
+		const authored = "A sentence somebody chose to write.";
+		hub.upstreamOf(written, { description: authored });
+		const generatedRel = hub.upstreamOf(silent);
+		const model = { workspace, fileLabel: "p.json", diagnostics: [] };
+		const { container } = position(model, hub);
+
+		const spans = [...container.querySelectorAll("span.description")];
+		expect(spans).toHaveLength(2);
+		const written$ = spans.find((s) => s.textContent?.includes(authored));
+		const generated = spans.find((s) => s !== written$) as HTMLElement;
+
+		// Authored: the text and nothing else.
+		expect(written$?.textContent).toBe(authored);
+		expect(written$).not.toHaveClass("generated");
+		expect(written$?.querySelector(".keyword")).toBeNull();
+
+		// Generated: the core sentence, in the generated class, then the keyword.
+		const sentence = narrativeText(relationshipNarrative(generatedRel, hub));
+		expect(generated).toHaveClass("description", "generated");
+		expect(generated.textContent?.startsWith(sentence)).toBe(true);
+		const keyword = generated.querySelector(".keyword") as HTMLElement;
+		expect(keyword).toHaveTextContent("generated");
+		expect(keyword.title).toBe(
+			"Generated from the relationship's type and roles. The model has no authored description.",
+		);
+		expect(
+			container.querySelectorAll(".keyword[title^='Generated from']"),
+		).toHaveLength(1);
 	});
 });

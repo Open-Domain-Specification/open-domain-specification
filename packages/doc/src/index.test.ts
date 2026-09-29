@@ -1,6 +1,11 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { PATTERNS, Workspace } from "@open-domain-specification/core";
+import {
+	narrativeText,
+	PATTERNS,
+	relationshipNarrative,
+	Workspace,
+} from "@open-domain-specification/core";
 import { describe, expect, it } from "vitest";
 import { toDoc } from "./index";
 
@@ -426,7 +431,7 @@ describe("toDoc", () => {
 		expect(salesDoc).toContain("Identity");
 	});
 
-	it("falls back to the generated sentence, in italics, when a relationship has no description", async () => {
+	it("falls back to the generated sentence, in italics and marked generated, when a relationship has no description", async () => {
 		const workspace = new Workspace("Bare", {
 			description: "One relationship nobody described.",
 			version: "0.1.0",
@@ -447,10 +452,10 @@ describe("toDoc", () => {
 
 		// Written from each context, so the same relationship reads two ways.
 		expect(docs["boundedcontexts/sales/index.md"]).toContain(
-			"| *Sales depends on Catalog as a customer, consuming its Open Host Service, and it protects its model with an Anti-Corruption Layer.* |",
+			"| *Sales depends on Catalog as a customer, consuming its Open Host Service, and it protects its model with an Anti-Corruption Layer.* (generated) |",
 		);
 		expect(docs["boundedcontexts/catalog/index.md"]).toContain(
-			"| *Catalog acts as an upstream supplier to Sales, exposing an Open Host Service, while Sales protects its model with an Anti-Corruption Layer.* |",
+			"| *Catalog acts as an upstream supplier to Sales, exposing an Open Host Service, while Sales protects its model with an Anti-Corruption Layer.* (generated) |",
 		);
 	});
 
@@ -715,5 +720,35 @@ describe("toDoc", () => {
 		expect(docs["boundedcontexts/payments/index.md"]).not.toContain(
 			"Boundary only",
 		);
+	});
+
+	it("marks a generated relationship description as generated and prints an authored one verbatim", async () => {
+		const workspace = new Workspace("Provenance", {
+			description: "Two relationships, one described.",
+			version: "0.1.0",
+		});
+		const hub = workspace.addBoundedContext("Hub", { description: "The hub." });
+		const written = workspace.addBoundedContext("Written", {
+			description: "Has an authored relationship.",
+		});
+		const silent = workspace.addBoundedContext("Silent", {
+			description: "Has none.",
+		});
+		const authored = "A sentence somebody chose to write.";
+		hub.upstreamOf(written, { description: authored });
+		const generatedRel = hub.upstreamOf(silent);
+
+		const docs = await toDoc(workspace);
+		const table = docs["boundedcontexts/hub/index.md"]
+			.split("## Context Relationships")[1]
+			.split("\n")
+			.filter((line) => line.startsWith("|"));
+		const sentence = narrativeText(relationshipNarrative(generatedRel, hub));
+		const rowFor = (name: string) =>
+			table.find((line) => line.startsWith(`| ${name} `)) as string;
+
+		expect(rowFor("Silent")).toContain(`| *${sentence}* (generated) |`);
+		expect(rowFor("Written")).toContain(`| ${authored} |`);
+		expect(rowFor("Written")).not.toContain("generated");
 	});
 });
