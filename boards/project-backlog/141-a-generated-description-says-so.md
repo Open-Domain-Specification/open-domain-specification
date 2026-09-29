@@ -4,7 +4,7 @@ labels: [pages, doc]
 priority: medium
 agent: developer
 live: false
-updatedAt: 2026-09-30T09:00:00.000Z
+updatedAt: 2026-09-29T16:20:39.000Z
 ---
 # A generated description says so
 
@@ -34,3 +34,4 @@ Issue #43, a child of epic #62. Where a relationship has no description, the str
 - **developer** (2026-09-29T15:30:00.000Z): Lead found a mismatch: pages fell back when `r.description` was falsy but Markdown used `??`, so `description: ""` (which the DSL writes) gave the generated sentence on the page and an empty cell in Markdown. Fixed with one predicate, `hasAuthoredDescription` in `packages/core/src/narrative.ts:241`, beside the sentence it guards. Both `packages/pages/src/lib/organisms/StrategicPositionTable.svelte:116` and `packages/doc/src/strategic-position.md.ts:29` ask it. The rule: a description is authored only if it has non-whitespace text, so `undefined`, `""` and whitespace-only all count as generated and get the marker. An authored description is still printed as written, untrimmed. Tested in `packages/core/src/narrative.test.ts`, the pages table test and the doc test, each for `""` and a whitespace-only string. Petstore and clinic rebuilt with 0 diagnostics and no `models/*/docs` change.
 - **lead** (2026-09-29T23:30:00.000Z): Integrated on the epic 62 branch in the epic's order (#44, #43, #55, #56, then the cross-surface pass). The landing gate passed on c3ae0910, and `npm run test:vscode` passed on the same commit in real VS Code 1.96.4: cross-surface 4 passing, hostile-links 1, petstore 9 (4 pending screenshots). The card stays in `doing` until PR 73 merges.
 - **lead** (2026-09-30T09:00:00.000Z): Landed. The owner reviewed PR #73 and merged it into develop as 9bb24cc, and post-merge CI run 36594778877 is green (test, e2e). Issue #43 closed; the card moves to `done`.
+- **lead** (2026-09-29T16:20:39.000Z): Correction to the two lead entries above. They carry timestamps the lead wrote by hand, not the times the events happened. The entry stamped 2026-09-29T23:30:00.000Z was committed at 2026-09-29T15:35:38Z (commit 23fefaf). The entry stamped 2026-09-30T09:00:00.000Z was committed at 2026-09-29T16:11:34Z (commit a1eb80f). PR #73 merged at 2026-09-29T16:02:27Z, not on 2026-09-30. The entries stay as written; this entry and every later one use actual times.

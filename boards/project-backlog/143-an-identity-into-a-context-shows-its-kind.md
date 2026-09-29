@@ -4,7 +4,7 @@ labels: [tooling]
 priority: medium
 agent: developer
 live: false
-updatedAt: 2026-09-30T09:00:00.000Z
+updatedAt: 2026-09-29T16:20:39.000Z
 ---
 # An identity into a context shows its kind
 
@@ -31,3 +31,4 @@ Issue #56, a child of epic #62. The relation map drew every context-valued ident
 - **developer** (2026-09-29T22:00:00.000Z): Tests: `packages/core/src/derived-maps.test.ts:480` (each kind, plus a schema of the external and boundary-only ones), `packages/graphviz/src/relation-map.test.ts:186`, `packages/pages/src/lib/flow/relation-graph.test.ts:83`, `packages/pages/src/lib/flow/RelationNode.test.ts:76`. The mud and boundary-only core cases failed before the change (both read `external_context`). Nothing in `packages/doc` draws the relation map's stereotypes beyond the Graphviz SVG.
 - **lead** (2026-09-29T23:30:00.000Z): Integrated on the epic 62 branch in the epic's order (#44, #43, #55, #56, then the cross-surface pass). The landing gate passed on c3ae0910, and `npm run test:vscode` passed on the same commit in real VS Code 1.96.4: cross-surface 4 passing, hostile-links 1, petstore 9 (4 pending screenshots). The mud stereotype reads «big ball of mud»: the relation map writes every node kind as a UML stereotype, so the kind's name matches the context map and only its notation differs. The card stays in `doing` until PR 73 merges.
 - **lead** (2026-09-30T09:00:00.000Z): Landed. The owner reviewed PR #73 and merged it into develop as 9bb24cc, and post-merge CI run 36594778877 is green (test, e2e). Issue #56 closed; the card moves to `done`.
+- **lead** (2026-09-29T16:20:39.000Z): Correction to the two lead entries above. They carry timestamps the lead wrote by hand, not the times the events happened. The entry stamped 2026-09-29T23:30:00.000Z was committed at 2026-09-29T15:35:38Z (commit 23fefaf). The entry stamped 2026-09-30T09:00:00.000Z was committed at 2026-09-29T16:11:34Z (commit a1eb80f). PR #73 merged at 2026-09-29T16:02:27Z, not on 2026-09-30. The entries stay as written; this entry and every later one use actual times.
