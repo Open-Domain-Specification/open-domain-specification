@@ -28,9 +28,11 @@ let current: Hover | undefined;
 export type Hover = {
 	/** True while the card is on screen. */
 	readonly open: boolean;
+	/** Counts scrolls that moved the keyword under an open card the keyboard has focus in. */
+	readonly moves: number;
 	/** Pointer entered the trigger: open after {@link OPEN_DELAY}. */
 	hover(): void;
-	/** Pointer left the trigger and its card: close unless pinned. */
+	/** Pointer left the trigger and its card: close unless pinned or the keyboard has focus in it. */
 	unhover(): void;
 	/** Keyboard focus reached the trigger: open at once, with no pause to wait through. */
 	focus(): void;
@@ -63,6 +65,25 @@ export function createHover(root: () => HTMLElement | undefined): Hover {
 		hover.close();
 	};
 
+	/**
+	 * How many times the keyword moved under a card the keyboard opened. Focusing
+	 * a keyword can scroll a container to reveal it (a diagram's viewport, a card
+	 * given less room than it needs), and the browser does that, and reports it,
+	 * after the card has opened where the keyword was. That is not the reader
+	 * leaving, so it must not close the card, but the card is placed in viewport
+	 * coordinates and has to follow: the component places it again when this
+	 * changes. It made a keyword focused by keyboard sometimes not disclose at
+	 * all, about one run in seven in the real webview.
+	 */
+	let moves = $state(0);
+	const onScroll = (event: Event) => {
+		if (!pinned && root()?.contains(document.activeElement)) {
+			moves += 1;
+			return;
+		}
+		onOutside(event);
+	};
+
 	let releaseLayer: (() => void) | undefined;
 	const listen = (on: boolean) => {
 		// Escape is the layer stack's (`layers.ts`): this explanation is the top layer
@@ -71,7 +92,7 @@ export function createHover(root: () => HTMLElement | undefined): Hover {
 		else (releaseLayer as () => void)();
 		const bind = on ? document.addEventListener : document.removeEventListener;
 		bind.call(document, "pointerdown", onOutside, true);
-		bind.call(document, "scroll", onOutside, true);
+		bind.call(document, "scroll", onScroll, true);
 		const bindWindow = on
 			? window.addEventListener
 			: window.removeEventListener;
@@ -92,6 +113,9 @@ export function createHover(root: () => HTMLElement | undefined): Hover {
 		get open() {
 			return open;
 		},
+		get moves() {
+			return moves;
+		},
 		hover() {
 			clearTimeout(timer);
 			if (open) return;
@@ -99,7 +123,10 @@ export function createHover(root: () => HTMLElement | undefined): Hover {
 		},
 		unhover() {
 			clearTimeout(timer);
-			if (!pinned) hover.close();
+			// A pointer leaving does not take away what the keyboard opened: while
+			// focus is on the keyword the explanation stays, whatever the mouse
+			// cursor does (a real one rests wherever it was left over the window).
+			if (!pinned && !root()?.contains(document.activeElement)) hover.close();
 		},
 		focus: show,
 		pin() {

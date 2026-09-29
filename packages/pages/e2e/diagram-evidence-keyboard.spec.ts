@@ -167,6 +167,76 @@ for (const host of ["viewer", "export"] as const) {
 			});
 		}
 
+		test("a keyword focused by keyboard keeps its explanation through a late scroll report and a pointer crossing", async ({
+			page,
+		}) => {
+			const flow = await openDiagram(page, host, "Sales BC context map", SALES);
+			await arriveAt(flow);
+			expect(await tabUntil(page, BADGE)).toBe(true);
+			await page.keyboard.press("Enter");
+			const card = flow.getByRole("dialog");
+			await expect(card).toBeVisible();
+			const trigger = ".anchored .pattern-hover .trigger";
+			expect(await tabUntil(page, trigger)).toBe(true);
+			const explanation = card.getByRole("tooltip");
+			await expect(explanation).toBeVisible();
+
+			/** Where the explanation sits relative to its keyword. */
+			const offsetFromKeyword = () =>
+				page.evaluate((selector) => {
+					const word = document
+						.querySelector(selector)
+						?.getBoundingClientRect() as DOMRect;
+					const tip = document
+						.querySelector(".hover-card")
+						?.getBoundingClientRect() as DOMRect;
+					return { dy: tip.top - word.top, dx: tip.left - word.left };
+				}, trigger);
+			const placed = await offsetFromKeyword();
+
+			// Focusing a keyword can scroll the diagram's container to reveal it, and
+			// the browser does that after the explanation has opened (in the real
+			// webview it did, about one run in seven, and the scroll closed it). Do
+			// what the browser did: scroll the container under the open explanation.
+			// Svelte Flow puts the container back at once, as it does for the
+			// browser's own reveal, so what the page sees is the scroll events and a
+			// keyword that may have moved and come back.
+			const scrolled = await flow.evaluate((el) => {
+				// A narrow window lets the card overflow the container; give it the
+				// same room to scroll here, wherever the viewport is.
+				const room = document.createElement("div");
+				room.style.cssText =
+					"position:absolute;left:0;top:0;width:4000px;height:1px;pointer-events:none";
+				el.appendChild(room);
+				const from = el.scrollLeft;
+				el.scrollLeft = from + 40;
+				return el.scrollLeft - from;
+			});
+			expect(scrolled).toBeGreaterThan(0);
+			await page.evaluate(
+				() => new Promise((done) => requestAnimationFrame(() => done(null))),
+			);
+			await expect(explanation).toBeVisible();
+			// And it still sits where it did against the keyword.
+			const after = await offsetFromKeyword();
+			expect(Math.abs(after.dy - placed.dy)).toBeLessThan(1);
+			expect(Math.abs(after.dx - placed.dx)).toBeLessThan(1);
+
+			// A real pointer crossing the keyword and leaving, while keyboard focus
+			// is on it, is not a reason to take the explanation away.
+			const box = (await page.locator(trigger).first().boundingBox()) as {
+				x: number;
+				y: number;
+				width: number;
+				height: number;
+			};
+			await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+			await page.mouse.move(2, 2);
+			await page.evaluate(() => new Promise((done) => setTimeout(done, 300)));
+			await expect(explanation).toBeVisible();
+			await expect(page.locator(trigger).first()).toBeFocused();
+		});
+
 		test("the pointer still opens it, and a click elsewhere closes it without taking focus back", async ({
 			page,
 		}) => {

@@ -64,7 +64,7 @@ const hover = createHover(() => root);
 onDestroy(hover.stop);
 
 /** Places the card layer the moment it exists, against where the word is now. */
-const placeLayer = (layer: HTMLElement) => {
+const place = (layer: HTMLElement) => {
 	const anchor = (trigger as HTMLElement).getBoundingClientRect();
 	const { width, height } = layer.getBoundingClientRect();
 	const { clientWidth, clientHeight } = document.documentElement;
@@ -75,7 +75,12 @@ const placeLayer = (layer: HTMLElement) => {
 	);
 	layer.style.top = `${at.top}px`;
 	layer.style.left = `${at.left}px`;
-	if (at.maxHeight !== undefined) layer.style.maxHeight = `${at.maxHeight}px`;
+	layer.style.maxHeight = at.maxHeight === undefined ? "" : `${at.maxHeight}px`;
+};
+/** Places the card when it appears, and again whenever a scroll moved the keyword under it. */
+const placeLayer = (layer: HTMLElement, _moves: number) => {
+	place(layer);
+	return { update: () => place(layer) };
 };
 </script>
 
@@ -95,7 +100,7 @@ const placeLayer = (layer: HTMLElement) => {
 		onclick={hover.pin}
 	><Keyword text={label ?? nature.abbreviation} {mono} /></button>
 	{#if hover.open}
-		<span class="layer" use:placeLayer>
+		<span class="layer" use:placeLayer={hover.moves}>
 			<HoverCard {heading}>
 				<p>{nature.summary}</p>
 				<!-- The trade-offs stay on the docs site; a hover is one thought.

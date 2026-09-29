@@ -4,6 +4,7 @@ import {
 	PATTERNS,
 } from "@open-domain-specification/core";
 import { fireEvent, render, screen } from "@testing-library/svelte";
+import { tick } from "svelte";
 import { describe, expect, it, vi } from "vitest";
 import Pair from "./PatternHover.harness.svelte";
 import PatternHover from "./PatternHover.svelte";
@@ -227,6 +228,64 @@ describe("PatternHover", () => {
 
 		await fireEvent.click(button);
 		await fireEvent(window, new Event("resize"));
+		expect(container.querySelector(".hover-card")).toBeNull();
+	});
+
+	it("keeps an explanation the keyboard opened when focus scrolls a container to reveal the keyword, and places it again where the keyword now is", async () => {
+		Object.defineProperty(document.documentElement, "clientWidth", {
+			get: () => 2000,
+			configurable: true,
+		});
+		Object.defineProperty(document.documentElement, "clientHeight", {
+			get: () => 1000,
+			configurable: true,
+		});
+		let left = 415;
+		vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+			function (this: HTMLElement) {
+				const word = this.classList.contains("trigger");
+				return {
+					top: 100,
+					left: word ? left : 0,
+					bottom: 122,
+					right: word ? left + 30 : 0,
+					width: word ? 30 : 400,
+					height: word ? 22 : 200,
+				} as DOMRect;
+			},
+		);
+		const { container } = show();
+		const term = container.querySelector(".pattern-hover") as HTMLElement;
+		const button = screen.getByRole("button", { name: "ACL" });
+		button.focus();
+		await fireEvent.focusIn(term);
+		const layer = () => container.querySelector(".layer") as HTMLElement;
+		const first = layer().style.left;
+		// The browser scrolled the container after the card opened, and reports it
+		// a frame later: the keyword is somewhere else and nothing was left.
+		left = 590;
+		await fireEvent.scroll(container);
+		await tick();
+		expect(container.querySelector(".hover-card")).not.toBeNull();
+		expect(layer().style.left).not.toBe(first);
+		// With focus elsewhere, the same scroll is the reader leaving.
+		button.blur();
+		await fireEvent.scroll(container);
+		expect(container.querySelector(".hover-card")).toBeNull();
+	});
+
+	it("keeps an explanation the keyboard opened when the pointer crosses the keyword and leaves, and closes it once focus is elsewhere", async () => {
+		const { container } = show();
+		const term = container.querySelector(".pattern-hover") as HTMLElement;
+		const button = screen.getByRole("button", { name: "ACL" });
+		button.focus();
+		await fireEvent.focusIn(term);
+		await fireEvent.mouseEnter(term);
+		await fireEvent.mouseLeave(term);
+		expect(container.querySelector(".hover-card")).not.toBeNull();
+
+		button.blur();
+		await fireEvent.mouseLeave(term);
 		expect(container.querySelector(".hover-card")).toBeNull();
 	});
 
