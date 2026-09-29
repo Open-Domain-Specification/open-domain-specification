@@ -4,7 +4,7 @@ labels: [accessibility]
 priority: medium
 agent: developer
 live: true
-updatedAt: 2026-09-29T16:49:00.000Z
+updatedAt: 2026-09-29T16:55:00.000Z
 ---
 # The reader knows where they are
 
@@ -30,3 +30,4 @@ Issue #50, a child of epic #61. The tree marked the page being read with a backg
 
 - **developer** (2026-09-29T16:49:00.000Z): Mechanism. `packages/pages/src/lib/organisms/Sidebar.svelte:54-70` is the single decision: `here` is the deepest tree row the current ref is at or under, and `state(ref)` is `page` for it, `true` for the rows above it and undefined for the rest; `:77-78` uses that for both the `.active` wash and the link's `aria-current`. `packages/pages/src/lib/atoms/Lockup.svelte:29` and `packages/pages/src/lib/atoms/Ref.svelte:28,39` carry the value to the anchor, which is where `aria-current` belongs. Landmarks: `Sidebar.svelte:86` `nav` "Workspace elements", `packages/pages/src/lib/organisms/Toc.svelte:26` `nav` "On this page" (its visible title is `aria-hidden`, so the name is not read twice), and the `main` in `packages/pages/src/lib/templates/PageLayout.svelte:20`, which is the only one in the app once a workspace is open and so needs no name. `aside.toc` in `packages/pages/e2e/browse.spec.ts` and `relationship.spec.ts` became `nav.toc`.
 - **developer** (2026-09-29T16:49:00.000Z): Decisions. (1) The wash already marked a page's row and its ancestors, and a card pinned that, so the design is unchanged and the ancestors get `aria-current="true"`; only the row for the page has `page`, so "exactly one current page" holds and the accessible state equals the drawn state. If the owner would rather the ancestors carry nothing, the wash should then be narrowed to the one row, and that is a design change. (2) The brand line, which links to the workspace page, is not marked current on the workspace page: it draws no wash there today, and marking it for assistive technology alone would put the two out of step. Recommend the designer decide whether the brand should wear the wash on the workspace page; the accessible mark then follows. (3) A page with no tree row (the workspace, the health report) marks nothing. (4) Labels avoid the word "navigation", which the role already announces.
+- **developer** (2026-09-29T16:55:00.000Z): Design record: `docs/design/design-language-v2.md` now states `Ref` and `Lockup` `current`, the tree and contents landmarks and the single `main`, and `Sidebar`'s `aria-current` rule (entries in the primitive and organism tables).
