@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
-import { watchForProblems } from "./helpers";
+import { meaningful, paintedIn, watchForProblems } from "./helpers";
 
 /**
  * Every evidence design surface actually renders in the built Storybook.
@@ -55,14 +55,13 @@ test.describe("built Storybook renders every story", () => {
 			const root = page.locator("#storybook-root");
 			await expect(root).toBeAttached();
 			// Storybook paints its own error screen into the root, so an empty
-			// root and a thrown story both have to be caught separately. Some
-			// stories (diagrams, icons) paint only SVG with no text, so either
-			// counts as rendered.
-			const painted = async () => {
-				const text = (await root.innerText()).trim().length;
-				const svg = await root.locator("svg").count();
-				return text + svg;
-			};
+			// root and a thrown story both have to be caught separately. A flow
+			// canvas carries the library's attribution and an SVG element even
+			// when it drew nothing, so neither counts: a story painted something
+			// only with readable text, an SVG shape with extent, or a flow node.
+			// Some stories (diagrams, icons) paint only SVG with no text, which
+			// the shape count covers.
+			const painted = async () => meaningful(await paintedIn(root));
 			if (RENDERS_NOTHING.has(story.id)) {
 				// Give the story a moment to (not) paint before asserting the
 				// negative, so this isn't just checking before it had a chance to.
@@ -82,4 +81,129 @@ test.describe("built Storybook renders every story", () => {
 			expect(real, `story ${story.id} reported problems`).toEqual([]);
 		});
 	}
+});
+
+/**
+ * The generic check above passes a story on any painted content, which is
+ * enough to catch an empty root but not a canvas that holds a backdrop and no
+ * geometry. The sketch backdrop's stories exist to show its curves, so they
+ * are held to the geometry itself: the story's nodes are on the canvas and
+ * the blob, boundary and domain-border paths carry a real `d` the browser
+ * measures as having extent.
+ */
+const SKETCH_STORIES: {
+	id: string;
+	nodes: number;
+	boundaries: boolean;
+	domainBorders: boolean;
+}[] = [
+	{
+		id: "flow-sketchbackdrop--two-regions-and-a-loose-node",
+		nodes: 6,
+		boundaries: true,
+		domainBorders: false,
+	},
+	{
+		id: "flow-sketchbackdrop--two-domains-with-subdomains",
+		nodes: 8,
+		boundaries: true,
+		domainBorders: true,
+	},
+	{
+		id: "flow-sketchbackdrop--tight-padding",
+		nodes: 6,
+		boundaries: true,
+		domainBorders: false,
+	},
+	{
+		id: "flow-sketchbackdrop--single-node",
+		nodes: 1,
+		boundaries: false,
+		domainBorders: false,
+	},
+];
+
+test.describe("the sketch backdrop stories draw their backdrop", () => {
+	test.skip(
+		stories.length === 0,
+		"no storybook-static build; run `npm run build-storybook` first",
+	);
+
+	for (const s of SKETCH_STORIES) {
+		test(s.id, async ({ page }) => {
+			await page.goto(
+				`${BASE}/iframe.html?viewMode=story&id=${encodeURIComponent(s.id)}`,
+			);
+			const root = page.locator("#storybook-root");
+			await expect(
+				root.locator(".svelte-flow__node"),
+				"the story's nodes reach the canvas",
+			).toHaveCount(s.nodes);
+			const extent = (cls: string) =>
+				root
+					.locator(`.sketch-backdrop path.${cls}`)
+					.evaluate((p: SVGGraphicsElement) => {
+						const b = p.getBBox();
+						return {
+							d: (p.getAttribute("d") ?? "").length,
+							width: b.width,
+							height: b.height,
+						};
+					});
+			const blob = await extent("blob");
+			expect(blob.d, "the blob has a path").toBeGreaterThan(0);
+			expect(blob.width, "the blob spans the nodes").toBeGreaterThan(50);
+			expect(blob.height, "the blob spans the nodes").toBeGreaterThan(50);
+			const boundaries = await extent("boundaries");
+			if (s.boundaries) {
+				expect(boundaries.d, "boundaries between regions").toBeGreaterThan(0);
+				expect(boundaries.width + boundaries.height).toBeGreaterThan(50);
+			}
+			const borders = await extent("domain-borders");
+			if (s.domainBorders) {
+				expect(borders.d, "borders between domains").toBeGreaterThan(0);
+				expect(borders.width + borders.height).toBeGreaterThan(50);
+			}
+		});
+	}
+});
+
+/**
+ * The predicate itself, against DOM that has the shape of a blank story: a
+ * flow canvas holding only the library's attribution and SVG elements whose
+ * paths are empty. This has to score zero or the check above is decoration.
+ * Run against `setContent` so it needs no Storybook build and no blank story
+ * has to ship in the catalogue.
+ */
+test.describe("the story check refuses a blank story", () => {
+	const blank = `<div id="storybook-root">
+		<div class="svelte-flow">
+			<svg class="sketch-backdrop" width="1" height="1">
+				<defs><clipPath id="c"><path d=""/></clipPath></defs>
+				<path class="blob" d=""/>
+				<path class="boundaries" d="  "/>
+				<path class="domain-borders" d=""/>
+				<rect width="0" height="0"/>
+			</svg>
+			<div class="svelte-flow__panel svelte-flow__attribution"><a href="https://svelteflow.dev">Svelte Flow</a></div>
+		</div>
+	</div>`;
+
+	test("attribution and empty SVG elements score nothing", async ({ page }) => {
+		await page.setContent(blank);
+		const painted = await paintedIn(page.locator("#storybook-root"));
+		expect(painted).toEqual({ text: 0, shapes: 0, nodes: 0 });
+		expect(meaningful(painted)).toBe(0);
+	});
+
+	test("real geometry, a node or words each score", async ({ page }) => {
+		await page.setContent(
+			`<div id="a"><svg width="100" height="100"><path d="M0 0 L50 50"/></svg></div>
+			 <div id="b"><div class="svelte-flow__node">x</div></div>
+			 <div id="c"><p>words</p></div>`,
+		);
+		expect(meaningful(await paintedIn(page.locator("#a")))).toBe(1);
+		expect(meaningful(await paintedIn(page.locator("#b")))).toBeGreaterThan(0);
+		expect(meaningful(await paintedIn(page.locator("#c")))).toBe(5);
+	});
 });

@@ -14,9 +14,9 @@ let {
 	padding?: number;
 } = $props();
 // svelte-ignore state_referenced_locally
-// `initial` arrives undefined for one tick while Storybook resolves args; `bind:nodes`
-// on SvelteFlow can't accept `undefined` since `nodes` has a fallback value there, so
-// this raw array always starts non-empty and only re-syncs once `initial` is real.
+// The stories must name this harness as their `component`: a meta-level `render` gets
+// no args, and `initial` then stays undefined. `bind:nodes` on SvelteFlow can't accept
+// `undefined` since `nodes` has a fallback value there, so the raw array starts as a list.
 let nodes = $state.raw<Node[]>(initial ?? []);
 // Sync from a re-render's `initial`, without undoing a drag done through `bind:nodes` below.
 $effect(() => {
