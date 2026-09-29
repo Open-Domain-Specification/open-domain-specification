@@ -1,0 +1,11 @@
+{
+	"id": "hostile_links",
+	"name": "Hostile links",
+	"description": "Hostile description.\n- [unsafe javascript](javascript:window.__ran=1)\n- [unsafe mixed case](JaVaScRiPt:window.__ran=1)\n- [unsafe data](data:text/html,<script>window.__ran=1</script>)\n- [unsafe vbscript](vbscript:msgbox(1))\n- [unsafe file](file:///etc/passwd)\n- [unsafe entity-encoded tab](java&#x09;script:window.__ran=1)\n- [unsafe entity-encoded letter](&#106;avascript:window.__ran=1)\n- [unsafe percent-encoded](javascript%3Awindow.__ran=1)\n- ![unsafe image](data:text/html,<script>window.__ran=1</script>)\n- [reference][r]\n- <javascript:window.__ran=1>\n- [safe http](http://example.com/a)\n- [safe https](https://example.com/b)\n- [safe mailto](mailto:someone@example.com)\n- [safe in-model](#/teams/orders_team)\n\n[r]: javascript:window.__ran=1",
+	"version": "0.0.1",
+	"odsVersion": "2.0.0",
+	"domains": {},
+	"teams": {},
+	"boundedcontexts": {},
+	"relationships": []
+}

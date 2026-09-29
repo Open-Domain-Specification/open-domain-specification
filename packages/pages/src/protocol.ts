@@ -37,10 +37,17 @@ export type HostMessage =
 	| { type: "model"; workspaces: WorkspacePayload[]; ref?: string }
 	| { type: "navigate"; ref: string }
 	/** Relayed by the webview shell when its toolbar is used. */
-	| { type: "toolbar"; action: "reveal" };
+	| { type: "toolbar"; action: "reveal" }
+	/**
+	 * Test seam for the real-host check (`apps/ods-vscode`, `test:vscode`): asks
+	 * the app what its rendered descriptions hold. Nothing in normal use sends it.
+	 */
+	| { type: "probe" };
 
 /** Messages from the webview back to the extension. */
 export type WebviewMessage =
 	| { type: "ready" }
 	| { type: "navigated"; ref: string }
-	| { type: "reveal"; ref: string };
+	| { type: "reveal"; ref: string }
+	/** The answer to `probe`: the destinations of the links and images inside rendered descriptions. */
+	| { type: "rendered"; hrefs: string[]; images: string[] };

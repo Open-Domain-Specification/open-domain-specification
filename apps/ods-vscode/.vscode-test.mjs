@@ -11,13 +11,28 @@ const userDataDir = join(tmpdir(), "ods-vscode-test");
 // petstore reference model so the extension has an .ods file to load. Sources
 // are compiled by tsconfig.test.json into out/; the extension itself is the
 // esbuild bundle in dist/, exactly what ships.
-export default defineConfig({
-	files: "out/test/**/*.test.js",
-	workspaceFolder: "../../models/petstore",
+const shared = {
 	version: "1.96.4",
 	launchArgs: ["--disable-extensions", "--user-data-dir", userDataDir],
 	mocha: {
 		ui: "bdd",
 		timeout: 60000,
 	},
-});
+};
+
+export default defineConfig([
+	{
+		...shared,
+		label: "petstore",
+		files: "out/test/extension.test.js",
+		workspaceFolder: "../../models/petstore",
+	},
+	// A workspace whose descriptions carry hostile links, kept out of the
+	// reference models so nothing generated changes.
+	{
+		...shared,
+		label: "hostile-links",
+		files: "out/test/link-schemes.test.js",
+		workspaceFolder: "src/test/fixtures/hostile-links",
+	},
+]);
