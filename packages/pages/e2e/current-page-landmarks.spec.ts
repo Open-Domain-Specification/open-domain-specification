@@ -59,7 +59,7 @@ const marked = (page: Page) =>
 		const out: Record<string, string[]> = {};
 		for (const a of document.querySelectorAll("nav.tree a[aria-current]")) {
 			const value = a.getAttribute("aria-current") as string;
-			(out[value] ??= []).push(a.getAttribute("href") as string);
+			out[value] = [...(out[value] ?? []), a.getAttribute("href") as string];
 		}
 		return out;
 	});
