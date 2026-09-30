@@ -1,5 +1,12 @@
-import { expect, type Locator, type Page, test } from "@playwright/test";
-import { expectClear, expectFilled, settledFit, sizeOf } from "./diagram-fit";
+import { expect, test } from "@playwright/test";
+import {
+	drive,
+	expectClear,
+	expectFilled,
+	expectOverlay,
+	settledFit,
+	sizeOf,
+} from "./diagram-fit";
 import { openPage } from "./diagram-hosts";
 import { serveModel } from "./helpers";
 
@@ -18,43 +25,6 @@ import { serveModel } from "./helpers";
  */
 
 const SCREEN = { width: 1300, height: 900 };
-
-/** Enters or leaves fullscreen the way a reader does: by pointer, by key, or by Escape. */
-async function drive(
-	flow: Locator,
-	page: Page,
-	how: "click" | "key" | "escape",
-) {
-	const label = (await flow
-		.locator(".diagram-options .fullscreen")
-		.getAttribute("aria-label")) as string;
-	if (how === "escape") {
-		await page.keyboard.press("Escape");
-		return;
-	}
-	const button = flow.getByRole("button", { name: label });
-	if (how === "click") await button.click();
-	else {
-		await button.focus();
-		await page.keyboard.press("Enter");
-	}
-}
-
-/** The overlay is up and covers the window. */
-async function expectOverlay(flow: Locator, page: Page, where: string) {
-	const fit = await settledFit(flow);
-	const screen = await page.evaluate(() => [
-		document.documentElement.clientWidth,
-		document.documentElement.clientHeight,
-	]);
-	expect(
-		[fit.view.left, fit.view.top, fit.view.right, fit.view.bottom],
-		`the fullscreen canvas covers the window, ${where}`,
-	).toEqual([0, 0, ...screen]);
-	expectClear(fit, `fullscreen, ${where}`);
-	expectFilled(fit, `fullscreen, ${where}`);
-	return fit;
-}
 
 const CASES = [
 	// Dense: fifteen contexts, fitted at the floor inline.

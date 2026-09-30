@@ -176,12 +176,13 @@ const refit = () => {
 
 <style>
 	.interactive { height: 60vh; min-height: 320px; }
-	/* A webview iframe is not granted the Fullscreen API, so the overlay is drawn, not requested. */
+	/* A webview iframe is not granted the Fullscreen API, so the overlay is drawn, not requested.
+	   `inset: 0` alone sizes it to the viewport a reader sees: `100vw` counts a classic
+	   scrollbar's width too, and the fit drew nodes behind it (#86, Linux webview). */
 	.interactive.fullscreen {
 		position: fixed;
 		inset: 0;
-		width: 100vw;
-		height: 100vh;
+		height: auto;
 		z-index: 1000;
 		background: var(--bg);
 	}

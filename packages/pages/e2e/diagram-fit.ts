@@ -1,4 +1,4 @@
-import { expect, type Locator } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 /**
  * What a diagram's fit looks like once it has settled, measured in the
@@ -237,4 +237,41 @@ export function expectFilled(fit: SettledFit, where: string): void {
 			Object.fromEntries(Object.entries(g).map(([k, n]) => [k, Math.round(n)])),
 		)}, zoom ${fit.zoom.toFixed(3)} (${fit.step})`,
 	).toBe(true);
+}
+
+/** Enters or leaves fullscreen the way a reader does: by pointer, by key, or by Escape. */
+export async function drive(
+	flow: Locator,
+	page: Page,
+	how: "click" | "key" | "escape",
+) {
+	const label = (await flow
+		.locator(".diagram-options .fullscreen")
+		.getAttribute("aria-label")) as string;
+	if (how === "escape") {
+		await page.keyboard.press("Escape");
+		return;
+	}
+	const button = flow.getByRole("button", { name: label });
+	if (how === "click") await button.click();
+	else {
+		await button.focus();
+		await page.keyboard.press("Enter");
+	}
+}
+
+/** The overlay is up and covers the window. */
+export async function expectOverlay(flow: Locator, page: Page, where: string) {
+	const fit = await settledFit(flow);
+	const screen = await page.evaluate(() => [
+		document.documentElement.clientWidth,
+		document.documentElement.clientHeight,
+	]);
+	expect(
+		[fit.view.left, fit.view.top, fit.view.right, fit.view.bottom],
+		`the fullscreen canvas covers the window, ${where}`,
+	).toEqual([0, 0, ...screen]);
+	expectClear(fit, `fullscreen, ${where}`);
+	expectFilled(fit, `fullscreen, ${where}`);
+	return fit;
 }
