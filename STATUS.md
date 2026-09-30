@@ -14,7 +14,11 @@ Epic #96 / #75 landed in PR #97. Codex reviewed head `a0c66214`, which passed th
 
 Epic #100 / #99 landed in PR #101. On Node 25 and later, the global `localStorage` and `sessionStorage` are Node's own, undefined without `--localstorage-file`. Vitest 3 does not replace a global that already exists, so the pages jsdom suites got Node's empty storage and 33 tests failed on Node 26.8.1. The pages setup file now binds both globals to jsdom's storage, and a regression test pins that. It is a test-environment change only, with no renderer, model or assertion change. `bash scripts/verify-all.sh` now runs as documented on Node 26.8.1 with no `NODE_OPTIONS`, and it passed on the reviewed head `8e429bec`. Codex reviewed that head, and it merged to `develop` as `fcfd6855` at 2026-09-30 17:50:06 UTC. Post-merge CI run 36754238029 passed `test`, `e2e` and `real-vscode`; #99 and #100 are closed and card 154 is `done`. CI still runs only Node 24, so Node 26 is covered by the local gate.
 
-Epic #98 / #74, #81, #84, #85 is next: named agreement identity, heading order, role separation and intact consumable lockups on the relationship page. The epic and its children are open and linked.
+Epic #98 / #74, #81, #84, #85 is in review as card 155 on `codex/epic-98-relationship-pages`, with focused commits per child, with no metamodel or validator change and no pinned diagnostic or tracked generated file moved. Each defect was first reproduced in the viewer on a reference model, and each browser regression fails on the code before its fix.
+- #74: core's `relationshipTitle` adds a named agreement's name after a middle dot ("Vendor → Warehouse · purchase feed"), the form the context map's badge already used. The relationship heading (page, modal, map card), the health report, a strategic position row (the name under its type) and its toggle, the extension tree and search, and Markdown's health list, context-map and strategic position tables all read it. Asserted on the cross-surface fixture's two named agreements in the viewer, the export, the real VS Code webview, tree and search, and Markdown.
+- #81: on its own page the relationship's parts are `h2` under the `h1`, at the same look; in the modal and the map card they stay `h3`. Checked with axe `heading-order` and computed styles on the viewer and the export.
+- #84: each of a side's roles is its own list item, code then name and summary; the first stays on its context's line. NorthBank's two upstream roles are checked on the page and in the modal; Markdown's separate role footnotes are pinned.
+- #85: a link drawn with an icon holds the icon and name in one `nowrap` span, the lockup rule, inside the link so a list's comma still wraps. Measured in rendered line boxes at 1300x900 with the tree open, then at 1100, 800 and 390 with no sideways page scroll, on the viewer and a NorthBank static export.
 
 Epic 61 (accessible navigation across the viewer, export and extension) landed on 2026-09-30: the owner merged PR 76 into develop as `395c859a` at 10:25:39 UTC, after three review rounds and a passing re-review at 073e65fd. Post-merge CI run 36702357346 is green (test, e2e). Before the merge, the landing gate was green on cac9ac6f, and so were both real-VS-Code suites (`test:vscode:keyboard` 23 of 23, three consecutive runs; `test:vscode`). Epic 61 and issues 42, 45, 46, 47, 48, 50, 51, 52 and 53 are closed, and cards 145 to 151 and vsc-extension cards 42 and 83 are `done`. Not verified: screen readers, VS Code high-contrast themes, `forced-colors`, and the webview's appearance.
 - #45, card 145: the import screen announces loading in a status region and failure in an alert, and each failure names the cause and the next step. After an import the reader asked for, focus lands on the workspace heading.
@@ -51,7 +55,7 @@ Before epic 60: The sixteenth round held on the card 135 head and the lead answe
 
 ## Next
 
-Epic #98 / #74, #81, #84, #85. Each gets one PR to `develop`, independent Codex review, the full landing gate and post-merge CI before close-out. Merge enforcement of `real-vscode` remains a separate repository-admin task; the passing job is currently not a required check. Possible follow-up: `apps/ods-vscode/src/test/fixtures/long-evidence/.ods/long_evidence.json` has no committed generator, and biome still formats it.
+Codex reviews the epic #98 PR head and merges after CI; then post-merge CI and close-out of #74, #81, #84, #85, #98 and card 155. Each epic gets one PR to `develop`, independent Codex review, the full landing gate and post-merge CI before close-out. Merge enforcement of `real-vscode` remains a separate repository-admin task; the passing job is currently not a required check. Possible follow-up: `apps/ods-vscode/src/test/fixtures/long-evidence/.ods/long_evidence.json` has no committed generator, and biome still formats it.
 
 ## Later
 
@@ -73,4 +77,4 @@ Epic #98 / #74, #81, #84, #85. Each gets one PR to `develop`, independent Codex 
 
 ## Working state
 
-Updated: 2026-09-30 17:56 UTC. `origin/develop` is at `fcfd6855` before this close-out documentation commit. The managed worktree is on `codex/epic-100-closeout` from that merge commit; the epic branch is preserved. The main checkout's unrelated `biome.json` edit and `media/promo/` directory remain untouched.
+Updated: 2026-09-30 18:37 UTC. `origin/develop` is at `e19056ac`. The managed worktree is on `codex/epic-98-relationship-pages` for epic #98, card 155. The main checkout's unrelated `biome.json` edit and `media/promo/` directory remain untouched.
